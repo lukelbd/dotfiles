@@ -9,12 +9,6 @@ set nocompatible
   "always use the vim default where vi and vim differ; for example, if you
   "put this too late, whichwrap will be resset
 
-"SESSION MANAGEMENT
-" nnoremap <leader>S :ToggleWorkspace<CR>
-" let g:workspace_session_name = '.session.vim'
-autocmd VimEnter * Obsession .session.vim
-  "obsession records tabs, etc.
-
 "LEADER -- most important line
 let mapleader = "\<Space>"
 noremap <Space> <Nop>
@@ -883,6 +877,7 @@ Plug 'vim-scripts/matchit.zip'
 Plug 'scrooloose/nerdtree'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
+Plug 'tpope/vim-obsession'
 if v:version >= 800
   Plug 'majutsushi/tagbar'
   "VIM had major issues with tagbar on remote servers
@@ -894,7 +889,6 @@ if has("lua")
 endif
 Plug 'vim-scripts/Toggle'
 Plug 'tpope/vim-surround'
-Plug 'tpope/vim-obsession'
 Plug 'metakirby5/codi.vim'
 Plug 'Tumbler/highlightMarks'
 Plug 'godlygeek/tabular'
