@@ -1,2 +1,29 @@
+#!/bin/bash
+################################################################################
+# setup
+# This script creates symlinks from $HOME to the committed files in $HOME/dotfiles
+################################################################################
 
+# Variables
+curdir=~/dotfiles
+olddir=~/dotfiles/old
+files=($(git ls-tree --name-only master)) # get list of committed files
 
+# Create storage for old dotfiles
+echo "Creating $olddir for backup of any existing dotfiles..."
+[ ! -d $olddir ] && mkdir $olddir
+
+# Change to the dotfiles directory
+echo "Changing to the $curdir directory..."
+cd $curdir
+
+# Move existing stuff to storage, then create symlinks 
+# Only move if the item itself is not a symlink
+for file in ${files[@]}; do
+  if [ $file != "setup" ]; then
+    echo "Moving any existing dotfiles from $HOME to $olddir..."
+    [ ! -L $HOME/$file ] && mv $HOME/$file $olddir/
+    echo "Creating symlink to $file in $HOME..."
+    ln -sh $curdir/$file $HOME/$file
+  fi
+done
