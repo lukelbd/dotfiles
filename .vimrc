@@ -891,7 +891,7 @@ if has("lua")
   Plug 'shougo/neocomplete.vim'
   Plug 'davidhalter/jedi-vim'
   "These need special support
-fi
+endif
 Plug 'vim-scripts/Toggle'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-obsession'
