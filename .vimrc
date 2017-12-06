@@ -755,10 +755,11 @@ function! s:texmacros()
 "COMMANDS FOR COMPILING LATEX
 "-use clear, because want to clean up previous output first
 "-use set -x to ECHO LAST COMMAND
-  noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; which compile; "
-        \."compile false ".shellescape(@%))<CR>
-  noremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; which compile; "
-        \."compile true ".shellescape(@%))<CR>
+  noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
+        \."~/.vim/compile false ".shellescape(@%))<CR>
+  noremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; "
+        \."~/.vim/compile true ".shellescape(@%))<CR>
+    "must store script in .VIM FOLDER
   " inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; which latex; "
         " \."latex ".shellescape(@%))<CR>a
 "WORD COUNT
@@ -882,11 +883,18 @@ Plug 'vim-scripts/matchit.zip'
 Plug 'scrooloose/nerdtree'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
-Plug 'majutsushi/tagbar'
+if v:version >= 800
+  Plug 'majutsushi/tagbar'
+  "VIM had major issues with tagbar on remote servers
+endif
+if has("lua")
+  Plug 'shougo/neocomplete.vim'
+  Plug 'davidhalter/jedi-vim'
+  "These need special support
+fi
 Plug 'vim-scripts/Toggle'
 Plug 'tpope/vim-surround'
 Plug 'tpope/vim-obsession'
-Plug 'shougo/neocomplete.vim'
 Plug 'metakirby5/codi.vim'
 Plug 'Tumbler/highlightMarks'
 Plug 'godlygeek/tabular'
@@ -899,8 +907,6 @@ Plug 'triglav/vim-visual-increment' "visual incrementing
 "Had issues with python plugins before; brew upgrading VIM fixed them magically
 "Note you must choose between jedi-vim and python-mode; cannot use both! See github
 " Plug 'ivanov/vim-ipython'
-Plug 'davidhalter/jedi-vim'
-"not broken anymore
 " Plug 'hdima/python-syntax' "does not seem to work
   "INSTEAD THIS FUNCTION IS PUT MANUALLY IN SYNTAX FOLDER; VIM-PLUG FAILED
 " Plug 'klen/python-mode' "must make VIM compiled with anaconda for this to work
@@ -1187,6 +1193,9 @@ nnoremap <expr> c\| ""
 nnoremap <expr> c- ""
     \.""
     \."mAo<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>`A"
+nnoremap <expr> c_ ""
+    \.""
+    \."mAo<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>`A"
 "Create python docstring
 nnoremap c' o"""<CR>.<CR>"""<Up><Esc>A<BS>
 
