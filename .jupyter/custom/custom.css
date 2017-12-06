@@ -1,0 +1,6 @@
+/* Modifications to notebook format  */
+#notebook { padding-top:0px !important; } /* eliminate top gray */
+.container { width:100% !important; } /* eliminate side gray */
+.end_space { min-height:0px !important; } /* eliminate bottom gray */
+.edit_mode .cell.selected .CodeMirror-focused.cm-fat-cursor { background-color: #ffffff !important; } /* normal mode color */
+.edit_mode .cell.selected .CodeMirror-focused:not(.cm-fat-cursor) { background-color: #ffffff !important; } /* insert mode color */
