@@ -4,17 +4,17 @@
 # Check out what is in the system defaults before using this, make sure
 # your $PATH is populated.
 
-#------------------------------------------------------------------------------
+################################################################################
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message: 
 # 1) https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
-#------------------------------------------------------------------------------
+################################################################################
 [[ $- != *i* ]] && return
 
-#------------------------------------------------------------------------------
-# Basic/universal stuff
-#------------------------------------------------------------------------------
+################################################################################
+# Shell stuff
+################################################################################
 # Check if we are on MacOS
 [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
 # Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
@@ -78,9 +78,9 @@ export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # 
   cdo conda pip easy_install python ipython jupyter notebook qtpython) # python stuff
   # interactive stuff gets SUPER WONKY if you try to redirect it with this script
 
-#------------------------------------------------------------------------------
-# $PATH modification
-#------------------------------------------------------------------------------
+################################################################################
+# PATH management
+################################################################################
 if $macos; then
   # MAC OPTIONS
   # Defaults... but will reset them
@@ -165,9 +165,9 @@ if [ "$HOSTNAME" == "euclid" ]; then
   export PYTHONPATH="$HOME:/birner-home/ldavis"
 fi
 
-#------------------------------------------------------------------------------
-# GUI applications and tools for data analaysis
-#------------------------------------------------------------------------------
+################################################################################
+# More general utilties
+################################################################################
 if $macos; then
   # Programs from command line
   alias preview='open -a Preview'
@@ -213,9 +213,9 @@ function connect() { # connect to remove notebook on port
   fi
 }
 
-#------------------------------------------------------------------------------
-# More general utilties
-#------------------------------------------------------------------------------
+################################################################################
+# General utilties
+################################################################################
 # LS aliases, basic file management, helpful utilities
 if [[ "$OSTYPE" =~ darwin ]]; then
   lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
@@ -286,10 +286,24 @@ export archive='/media/archives/reanalyses/era_interim/'
 # export olbers='ldavis@129.82.49.159'
 function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
 
-# # Python virtual environments; useful because conda has many scientific tools avialable,
-# # can build them in virtual env
-# alias env='. activate utils'
-# alias vne='. deactivate'
+# Tab completion control; use "complete" command
+# -d filters to only directories
+# -f filters to only files
+# -X filters based on EXTENDED GLOBBING pattern (search that)
+complete -d cd # complete changes behavior of "Tab" after command; cd
+  # shows only DIRECTORIES now
+complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
+  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
+complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
+complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
+complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
+complete -f -X '!*.@(tex|py)' -o plusdirs latex
+complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
+complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
+complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
+# Some shells disable tab-completion of dangerous commands; re-enable
+complete -f -o plusdirs mv
+complete -f -o plusdirs rm
 
 # Functions for scp-ing from local to remote, and vice versa
 # See: https://stackoverflow.com/a/25486130/4970632
@@ -426,38 +440,12 @@ function sdsync() {
   date +%s >> "$locloc/sdlog"
 }
 
-#------------------------------------------------------------------------------
-# Tab completion control
-#------------------------------------------------------------------------------
-# Use complete command
-# -d filters to only directories
-# -f filters to only files
-# -X filters based on EXTENDED GLOBBING pattern (search that)
-complete -d cd # complete changes behavior of "Tab" after command; cd
-  # shows only DIRECTORIES now
-complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
-  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
-complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
-complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-complete -f -X '!*.@(tex|py)' -o plusdirs latex
-complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
-complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
-complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-# Some shells disable tab-completion of dangerous commands; re-enable
-complete -f -o plusdirs mv
-complete -f -o plusdirs rm
-
-#------------------------------------------------------------------------------
-# Aesthetic stuff
-#------------------------------------------------------------------------------
-# Enable color support for less, man, etc.
+# Color support for less, man, etc.
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
 export LESS="--RAW-CONTROL-CHARS"
 if [ -f ~/.LESS_TERMPCAMP ]; then
   . ~/.LESS_TERMCAP
 fi
-# Better colors
 if hash tput 2>/dev/null; then
   # Color configuration
   export LESS_TERMCAP_mb=$(tput setaf 2) # 2=green
@@ -486,24 +474,21 @@ if hash tput 2>/dev/null; then
   #export LESS_TERMCAP_us=$'\E[01;32m'
 fi
 
-# Powerline-shell prompt (ugly, so nah)
-hash powerline-shell 2>/dev/null && {
-  function _update_ps1() {
-    PS1="$(powerline-shell $?)"
-    }
-  if [ "$TERM" != "linux" ]; then
-    PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
-  fi
-}
+# Powerline-shell prompt (ugly, so forget it)
+# hash powerline-shell 2>/dev/null && {
+#   function _update_ps1() {
+#     PS1="$(powerline-shell $?)"
+#     }
+#   if [ "$TERM" != "linux" ]; then
+#     PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
+#   fi
+#   }
 
-#------------------------------------------------------------------------------
-# Send message
-#------------------------------------------------------------------------------
 echo 'Custom .bashrc loaded; aliases/functions declared.'
 
-#------------------------------------------------------------------------------
-# Some notes
-#------------------------------------------------------------------------------
+################################################################################
+# Notes
+################################################################################
 # BASH NOTES:
 #  -prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
 #   if aliased or some 'exit' is in $PATH
