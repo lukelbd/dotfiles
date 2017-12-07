@@ -10,37 +10,36 @@
 # 1) https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 #------------------------------------------------------------------------------
-if [[ $- != *i* ]]; then return; fi
+[[ $- != *i* ]] && return
 
 #------------------------------------------------------------------------------
 # Basic/universal stuff
 #------------------------------------------------------------------------------
-# # Load /etc/profile (on macOS, this runs a path setup executeable and resets
-# # the $PATH variable), and /etc/bashrc
-# if [ -f /etc/profile ]; then
-#   . /etc/profile
-#     # ...this itself should also run /etc/bashrc
-# fi
-
 # Check if we are on MacOS
-if [[ "$OSTYPE" == "darwin"* ]]; then
-  macos=true
-else
-  macos=false
-fi
+[[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
+# Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
+# [ -f /etc/profile ] && . /etc/profile
+# ...this itself should also run /etc/bashrc
+# Linux loading; make sure default bashrc is loaded first, if exists
+# [ -f /etc/bashrc ] && . /etc/bashrc
+# [ -f /etc/profile ] && . /etc/profile
 
 # Shell prompt stuff
-export PS1='\h[\j]:\W \u\$ ' # prompt string 1; shows "<comp name>:<work dir> <user>$"
-shopt -s checkwinsize # allow window resizing
+set +H
+  # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
-shopt -s extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with
-# shopt -s nullglob # normal globbing
+shopt -s checkwinsize # allow window resizing
+shopt -u nullglob # turn off nullglob; so e.g. no expansion of ?, *, attempted if no matches
+shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with
   # separation OR using |; EXTENDED allows e.g. rm !(*.jpg|*.gif|*.png);
-  # NEW: ?=0-1, *=0-Inf, +=1-Inf, @=1, !=ONLY ZERO, [a|b|c]=1 item inside
-  # OLD: *=0-Inf, ?=1 EXACTLY, [abc]=1 item inside, [!abc]=ZERO items inside
-  # SPECIAL CHARS: [:alnum:]=(a-z,A-Z,0-9), [:space:] (whtespace), [:digit:]
-  # e.g. [[:space:]_-]) = whitespace, underscore, OR dash
+# Yes extglob: ?=0-1, *=0-Inf, +=1-Inf, @=1, !=ONLY ZERO, [a|b|c]=1 item inside
+# No extglob: *=0-Inf, ?=1 EXACTLY, [abc]=1 item inside, [!abc]=ZERO items inside
+# Special chars: [:alnum:]=(a-z,A-Z,0-9), [:space:] (whtespace), [:digit:]
+# e.g. [[:space:]_-]) = whitespace, underscore, OR dash
+
+# Left-hand prompt style
+export PS1='\h[\j]:\W \u\$ ' # prompt string 1; shows "<comp name>:<work dir> <user>$"
 
 # Vim stuff
 alias vims="vim -S .session.vim" # for working with obsession
@@ -49,7 +48,7 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 bind -r '\C-s' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
 stty -ixon # for putty, have to edit STTY value and set ixon to zero in term options
 
-# Changing stderr color
+# Magic changing stderr color
 # See comment: https://stackoverflow.com/a/21320645/4970632
 # See exec summary: https://stackoverflow.com/a/18351547/4970632
 # For trap info: https://www.computerhope.com/unix/utrap.htm
@@ -97,15 +96,6 @@ if $macos; then
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
 
 else
-  # LINUX OPTIONS
-  # Make sure default bashrc is loaded first, if exists
-  if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-  fi
-  if [ -f /etc/profile ]; then
-    . /etc/profile
-  fi
-  
   # GAUSS OPTIONS
   if [ "$HOSTNAME" == "gauss" ]; then
     # Basics
@@ -148,8 +138,10 @@ else
   fi
 fi
 
-# SAVE SIMPLE PATH
+# SAVE SIMPLE PATH FOR HOMEBREW
 export SIMPLEPATH=$PATH
+alias brew="PATH=$SIMPLEPATH brew"
+# brew conflicts with anaconda (try "brew doctor" to see); keep those out of path
 
 # EXECUTABLES IN HOME DIRECTORY
 export PATH="$HOME:$PATH"
@@ -224,21 +216,7 @@ function connect() { # connect to remove notebook on port
 #------------------------------------------------------------------------------
 # More general utilties
 #------------------------------------------------------------------------------
-# Change directories; some default names
-# This was stupid, forget it
-# alias cd='cd -P ' # adds extra space, so below shortcuts work, and follow physical location
-# alias h='~/'
-# alias v='~/.vim'
-# alias t='~/.vim/templates'
-# alias d='~/data'
-# alias m='~/models'
-# # And some specific to Mac
-# alias D='~/Dropbox'
-# alias W='~/Work'
-# alias S='~/School'
-
-# LS aliases, basic file management
-alias cd='cd -P' # -P follows physical location
+# LS aliases, basic file management, helpful utilities
 if [[ "$OSTYPE" =~ darwin ]]; then
   lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
   sortcmd='gsort' # GNU utilities, different from mac versions
@@ -246,35 +224,26 @@ else
   lscolor='--color=always'
   sortcmd='sort'
 fi
-alias ll="ls $lscolor -AFhl" # ls "list"
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
+alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 alias lx="ls $lscolor -AF -lsa | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
+alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
 alias ld="find . -maxdepth 1 -type d -mindepth 1 -exec du -hs {} \; | $sortcmd -sh" # directory sizes
-  # NEED COREUTILS FOR sort -h; use brew install coreutils, they're installed
+  # need COREUTILS for sort -h; use brew install coreutils, they're installed
   # with prefix g (the Linux version; MacOS comes with truncated versions)
-# alias ld="ls $lscolor -d {*/,.*/}" # just directories (ugly slashes on end; can't get rid of them)
-# alias lf='grep --include=\*.{m,py} -nw "./" -e' # find files with text matching certain string
-#   # Useful for looking for the last time you used some utility, need to copy+paste code
-#   # -r is recursive, -n shows line number, -w stands for 'match whole word'
-
-# Current resources
-alias computer="cat /etc/*-release"  # print out Debian, etc. release info
-alias cpu="lscpu"           # info about cpu resources
-alias type="type -a"       # alias 'type' to show ALL instances of path/function/variable/file
-alias disk="df -h"             # disk useage
-
-# Examining current processes
+alias df="df -h"          # disk useage
+alias cd="cd -P" # -P follows physical location
+alias type="type -a" # alias 'type' to show ALL instances of path/function/variable/file
+  # just some simple ones
+alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
+  # prints out release info
 alias ps="ps" # processes in this shell
 alias pc="mpstat -P ALL 1" # list individual core usage
 alias pt="top"             # table of processes, total
-
-# Miscellaneous
-alias brew="PATH=$SIMPLEPATH brew"
-  # brew conflicts with anaconda (try "brew doctor" to see); keep those out of path
+  # examine current proceses
 alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
   # list number of songs per artist; can't have leading spaces in line continuation
 alias weather="curl wttr.in/Fort\ Collins" # list weather information
-# alias ltitles='ls -1 *.{mp3,m4a} | sed -e "s/\..*$//"'
 #   # shows filenames without extensions; isn't SED awesome? the -1 forces
 #   # one-per-line output, the -e appends command to each line in pipe,
 alias gitt="git log --graph --pretty=format:\"%h %d - %an, %ar : %s\""
