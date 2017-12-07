@@ -804,7 +804,8 @@ function! s:pymacros()
   setlocal softtabstop=4
   setlocal shiftwidth=4
   "Get simple pydoc string (space, because manpage/help page shortcuts start with space)
-  noremap <buffer> <expr> <Leader>d ":!clear; set -x; pydoc "
+  "Now obsolute because have jedi-vim
+  noremap <buffer> <expr> ?p ":!clear; set -x; pydoc "
         \.input("Enter python documentation keyword: ")."<CR>"
   "Run current file (rename to tmp, because couldn't figure out how to use magic code there)
   noremap <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
@@ -828,11 +829,11 @@ endfunction
 autocmd FileType html call s:htmlmacros()
 
 "SHELL MACROS
-"Reading manpages
-noremap <expr> <Leader>m ":silent !clear; man "
+"MANPAGES of stuff
+noremap <expr> ?m ":silent !clear; man "
     \.input('Search manpages: ')."<CR>:redraw!<CR>"
 "--help info; pipe output into less for better interaction
-noremap <expr> <Leader>- ":!clear; "
+noremap <expr> ?h ":!clear; "
     \.input('Show --help info: ')." --help \| less<CR>:redraw!<CR>"
 
 "------------------------------------------------------------------------------
@@ -908,19 +909,21 @@ Plug 'triglav/vim-visual-increment' "visual incrementing
 call plug#end()
   "the plug#end also declares filetype syntax and indent on
 
-"VIM visual increment
-"Disable all remaps
-imap <Left> <Nop>
-imap <Right> <Nop>
-imap <Up> <Nop>
-imap <Down> <Nop>
-"Disable old ones
-silent! vunmap <C-a>
-silent! vunmap <C-x>
-vmap <Left> <Nop>
-vmap <Right> <Nop>
-vmap <Up> <Plug>VisualIncrement
-vmap <Down> <Plug>VisualDecrement
+"VIM HELP PAGES
+noremap ?? :vert help 
+au FileType help wincmd L
+au FileType help setlocal nospell
+au FileType help noremap <buffer> q :q<CR>
+autocmd BufEnter help if len(tabpagebuflist())==1 | q | endif
+  "exit from help window, if it is only one left
+" autocmd FileType help wincmd T
+"   "using vsplit help doesn't work when i tried it; also need to
+"   "turn off spelling
+"The doc pages appear in rst files, so turn off extra chars for them
+autocmd FileType rst setlocal nolist
+autocmd FileType rst setlocal nonumber
+autocmd FileType help setlocal nolist
+autocmd FileType help setlocal nonumber
 
 "Jedi-VIM
 "See: https://github.com/davidhalter/jedi-vim
@@ -934,18 +937,14 @@ let g:jedi#rename_command = ""
   "GOOD EXAMPLE IS TRY RENAMING 'debug' IN METADATA FUNCTION;
   "JEDI SKIPS F-STRINGS, SKIPS ITS RE-ASSIGNMENT IN FOR LOOP,
   "SKIPS WHERE IT APPEARED AS DEFAULT KWARG IN FUNCTION
-let g:jedi#usages_command = "<Leader>g"
+let g:jedi#usages_command = "?g"
   "open up list of places where variable appears; then can 'goto'
-let g:jedi#goto_assignments_command = "<Leader>G"
+let g:jedi#goto_assignments_command = "?G"
   "goto location where definition/class defined
+let g:jedi#documentation_command = "?d"
 autocmd FileType python setlocal completeopt-=preview
-
 "VIM python-mode
-let g:pymode_python='python3'
-
-"GENERATE DOCUMENTATION
-"Should be done already by vimplug
-"helptags ~/.vim/doc
+" let g:pymode_python='python3'
 
 "MARK HIGHLIGHTING
 " let g:highlightMarks_colors=['orange', 'yellow', 'green', 'blue', 'purple', '#00BB33']
@@ -954,26 +953,26 @@ let g:pymode_python='python3'
 let g:highlightMarks_colors=['blue']
 let g:highlightMarks_cterm_colors=[4] "4 and 1 are best
 
-"VIM HELP PAGES
-noremap <Leader>v :vert help 
-au FileType help wincmd L
-au FileType help setlocal nospell
-au FileType help noremap <buffer> q :q<CR>
-autocmd BufEnter help if len(tabpagebuflist())==1 | q | endif
-  "exit from help window, if it is only one left
-" autocmd FileType help wincmd T
-"   "using vsplit help doesn't work when i tried it; also need to
-"   "turn off spelling
-
-"AFTER/LATEX SYNTAX
-"...weird behavior, come back to this; switches back and forth between regular one and the 'after'
-
 "PYTHON SYNTAX
 "...must enable some options manually
 au FileType python let python_highlight_all=1
 " au FileType python Python3Syntax
 "python3 is enabled by default; see doc info
 "...might also try the default... was it better? think it was worse
+
+"VIM visual increment; creating columns of 1/2/3/4 etc.
+"Disable all remaps
+imap <Left> <Nop>
+imap <Right> <Nop>
+imap <Up> <Nop>
+imap <Down> <Nop>
+"Disable old ones
+silent! vunmap <C-a>
+silent! vunmap <C-x>
+vmap <Left> <Nop>
+vmap <Right> <Nop>
+vmap <Up> <Plug>VisualIncrement
+vmap <Down> <Plug>VisualDecrement
 
 "CODI (MATHEMATICAL NOTEPAD)
 nnoremap <silent> <expr> <Space>C ':tabe '.input('Enter calculator name: ').'.py<CR>:Codi python<CR>'
