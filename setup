@@ -30,6 +30,6 @@ for file in ${files[@]}; do # iterate through files
       mv -r $HOME/$file $olddir/ # copy if not
     fi
     # Finally create symlink
-    ln -sh $curdir/$file $HOME/$file
+    ln -s $curdir/$file $HOME/$file
   fi
 done
