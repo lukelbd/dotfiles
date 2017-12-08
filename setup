@@ -19,11 +19,17 @@ cd $curdir
 
 # Move existing stuff to storage, then create symlinks 
 # Only move if the item itself is not a symlink
-for file in ${files[@]}; do
-  if [ $file != "setup" ]; then
-    echo "Moving any existing dotfiles from $HOME to $olddir..."
-    [ ! -L $HOME/$file ] && mv $HOME/$file $olddir/
+echo "Moving any existing dotfiles from $HOME to $olddir..."
+for file in ${files[@]}; do # iterate through files
+  if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
     echo "Creating symlink to $file in $HOME..."
+    # Be conservative
+    if [ -L $HOME/$file ]; then
+      rm $HOME/$file # remove if symlink
+    elif [ -r $HOME/$file ]; then
+      mv -r $HOME/$file $olddir/ # copy if not
+    fi
+    # Finally create symlink
     ln -sh $curdir/$file $HOME/$file
   fi
 done
