@@ -2,3 +2,5 @@
 	add-commit = git push origin master add -A && git commit
 	quick = !git add -A && git commit
 	dad = !curl https://icanhazdadjoke.com/ && git add
+[push]
+	default = current
