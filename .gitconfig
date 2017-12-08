@@ -1,6 +1,8 @@
+# Configuration file. The push-default allows "git push" to go to origin-master.
 [alias]
 	add-commit = git push origin master add -A && git commit
 	quick = !git add -A && git commit
 	dad = !curl https://icanhazdadjoke.com/ && git add
 [push]
 	default = current
+
