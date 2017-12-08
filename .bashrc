@@ -168,25 +168,15 @@ fi
 ################################################################################
 # More general utilties
 ################################################################################
+# Matlab aliases; set up quick terminal-session
 if $macos; then
-  # Programs from command line
-  alias preview='open -a Preview'
-  alias chrome='open -a Google\ Chrome'
-  alias skim='open -a Skim'
-fi
-
-# Matlab
-if $macos; then
-  bmatlab='/Applications/MATLAB_R2014a.app/bin/matlab'
-  bmatlab2012='/Applications/MATLAB_R2012b.app/bin/matlab'
+  MATLABPATH='/Applications/MATLAB_R2014a.app/bin/matlab'
 elif [ "$HOSTNAME" = "olbers" ]; then
-  bmatlab='/opt/Mathworks/R2016a/bin/matlab'
+  MATLABPATH='/opt/Mathworks/R2016a/bin/matlab'
 fi
-alias matlab="$bmatlab -nodesktop -nosplash -r \"run('~/startup.m')\""
-alias matlab2012="$bmatlab2012 -nodesktop -nosplash -r \"run('~/startup.m')\""
+[ ! -z $MATLABPATH ] && alias matlab="$MATLABPATH -nodesktop -nosplash -r \"run('~/startup.m')\""
 
-# Python aliases, 0) Anaconda distro
-# ...anaconda versions should be defaults, since prepended the conda bin to $PATH
+# iPython aliases; set up quick terminal-session
 # io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
 io="import pandas as pd; import xarray as xr; "
 basic="import numpy as np; from datetime import datetime; from datetime import date; "
@@ -196,28 +186,44 @@ pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related 
 alias ipython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
 alias pypython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
 alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
-# Start up notebook; optionally specify port
+
+# Jupyter notebook aliases
 function notebook() {
-  [ ! -z $1 ] && port="--port=$1"
-  echo "Using port: $1"
-  jupyter notebook --no-browser $port --NotebookApp.iopub_data_rate_limit=10000000
+  port=$1 # optional port argument
+  [ -z $port ] && port="1000" # easy-to-remember default
+  echo "Initializing jupyter notebook over port port: $port"
+  jupyter notebook --no-browser --port=$port --NotebookApp.iopub_data_rate_limit=10000000
   } # need to extend data rate limit when making some plots with lots of stuff
 # Set up connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
-  if [ -z $1 ]; then
-    echo "Must enter the hostname."
-  else
-  \ssh -N -f -L localhost:8880:localhost:8880 $1 # backslash says to ignore aliases
-      # necessary because have ssh alias to allow for port forwarding back to localhost from
-      # a remote host, for easy/simplified file transfer
+  hostname=$1 # required host argument
+  port=$2 # optional listening port
+  if [ -z $hostname ]; then
+    echo "ERROR: Must enter the hostname."
+    return 1
   fi
-}
+  [ -z $port ] && port="2000" # easy-to-remember default
+  echo "Connecting to $hostname over port $port."
+  \ssh -N -f -L localhost:$port:localhost:$port $hostname # backslash says to ignore aliases
+      # necessary because have ssh alias to allow for port forwarding back to localhost
+  }
+# Include option to cancel connection: see: https://stackoverflow.com/a/20240445/4970632
+function disconnect() {
+  port=$1 # optional listening port
+  [ -z $port ] && port="2000" # easy-to-remember default
+  echo "Cancelling port-forwarding over port $port."
+  lsof -t -i tcp:$port | xargs kill -9
+  }
 
 ################################################################################
 # General utilties
 ################################################################################
 # LS aliases, basic file management, helpful utilities
-if [[ "$OSTYPE" =~ darwin ]]; then
+if $macos; then
+  alias preview='\open -a Preview' # use un-aliased "open" command
+  alias chrome='\open -a Google\ Chrome'
+  alias open='\open -a TextEdit'
+  alias skim='\open -a Skim'
   lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
   sortcmd='gsort' # GNU utilities, different from mac versions
 else
@@ -285,25 +291,6 @@ export zephyr='lukelbd@zephyr.meteo.mcgill.ca'
 export archive='/media/archives/reanalyses/era_interim/'
 # export olbers='ldavis@129.82.49.159'
 function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
-
-# Tab completion control; use "complete" command
-# -d filters to only directories
-# -f filters to only files
-# -X filters based on EXTENDED GLOBBING pattern (search that)
-complete -d cd # complete changes behavior of "Tab" after command; cd
-  # shows only DIRECTORIES now
-complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
-  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
-complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
-complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-complete -f -X '!*.@(tex|py)' -o plusdirs latex
-complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
-complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
-complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-# Some shells disable tab-completion of dangerous commands; re-enable
-complete -f -o plusdirs mv
-complete -f -o plusdirs rm
 
 # Functions for scp-ing from local to remote, and vice versa
 # See: https://stackoverflow.com/a/25486130/4970632
@@ -439,6 +426,25 @@ function sdsync() {
   # Record in Playlist when last sync occurred
   date +%s >> "$locloc/sdlog"
 }
+
+# Tab completion control; use "complete" command
+# -d filters to only directories
+# -f filters to only files
+# -X filters based on EXTENDED GLOBBING pattern (search that)
+complete -d cd # complete changes behavior of "Tab" after command; cd
+  # shows only DIRECTORIES now
+complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
+  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
+complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
+complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
+complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
+complete -f -X '!*.@(tex|py)' -o plusdirs latex
+complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
+complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
+complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
+# Some shells disable tab-completion of dangerous commands; re-enable
+complete -f -o plusdirs mv
+complete -f -o plusdirs rm
 
 # Color support for less, man, etc.
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
