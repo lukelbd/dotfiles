@@ -74,8 +74,10 @@ function redirect(){
 trap "redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
 export PROMPT_COMMAND="undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
 export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # commands
+  youtube metadata # some scripts
+  \\ipython \\jupyter \\python \\matlab # disabled alias versions
   node rhino ncl matlab # misc languages; javascript, NCL, matlab
-  cdo conda pip easy_install python ipython jupyter notebook qtpython) # python stuff
+  cdo conda pip easy_install python ipython jupyter notebook) # python stuff
   # interactive stuff gets SUPER WONKY if you try to redirect it with this script
 
 ################################################################################

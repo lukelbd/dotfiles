@@ -1,12 +1,29 @@
 # Configuration file for jupyter-notebook.
 
-# #------------------------------------------------------------------------------
-# # Custom stuff
-# #------------------------------------------------------------------------------
-# c.InteractiveShellApp.extensions = ['autoreload']
-# c.InteractiveShellApp.exec_lines = ['%autoreload 2']
-# c.InteractiveShellApp.exec_lines.append('print("Warning: disable autoreload in ipython_config.py to improve performance.")')
+################################################################################
+# Custom stuff; see link for help
+# http://jupyter-notebook.readthedocs.io/en/stable/config.html
+# TODO TERRIBLE ERROR: jupyter apparently will not read some of these options, at least
+# aren't documented in the above, so cannot exec liens, etc. Need to do this stuff
+# manually... and I suppose the only option is that notebook script.
+# c = get_config()
+# c.InteractiveShellApp.extensions = ['autoreload'] # any load_ext commands
+# c.InteractiveShellApp.exec_lines = ['%autoreload 2', # reload everything if modified
+#     '%matplotlib inline', # for some reason below commands fail
+#     '%config InlineBackend.figure_format=\'retina\'',
+#     '%config InlineBackend.print_figure_kwargs={\'bbox_inches\':None}',
+#     '%autosave 60', # save every 60 seconds
+#     ] # and done with the lines
+# # c.IPKernelApp.matplotlib = 'inline' # found this online
+# # c.InteractiveShellApp.matplotlib = 'inline' # but this works too
+# # c.InlineBackend.figure_formats = ['retina'] # 'svg' is an option, but very slow
+# # c.InlineBackend.print_figure_kwargs = {'bbox_inches':None} # optionally make 'tight'
+# # c.TerminalIPythonApp.display_banner = False # no banner ever
+# c.TerminalInteractiveShell.confirm_exit = False # no confirm exit
+# c.PlainTextFormatter.pprint = True # enable pretty printing (may be default)
+# c.BaseIPythonApplication.profile = 'default' # explicitly name default profile
 
+################################################################################
 #------------------------------------------------------------------------------
 # Application(SingletonConfigurable) configuration
 #------------------------------------------------------------------------------

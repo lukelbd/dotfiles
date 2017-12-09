@@ -1,12 +1,20 @@
 # Configuration file for ipython.
 
-# #------------------------------------------------------------------------------
-# # Custom stuff
-# #------------------------------------------------------------------------------
-# c.InteractiveShellApp.extensions = ['autoreload']
-# c.InteractiveShellApp.exec_lines = ['%autoreload 2']
-# c.InteractiveShellApp.exec_lines.append('print("Warning: disable autoreload in ipython_config.py to improve performance.")')
+################################################################################
+# Custom stuff; see link for help
+# http://ipython.readthedocs.io/en/stable/config/intro.html#setting-configurable-options
+# TODO TERRIBLE ERROR: jupyter notebook can't read this stuff (see jupyter_notebook_config file)
+# so why bother with ipython? Might as well keep things, resort to the aliases.
+# c = get_config()
+# c.InteractiveShellApp.extensions = ['autoreload'] # any load_ext commands
+# c.InteractiveShellApp.exec_lines = ['%autoreload 2'] # reload everything if modified
+# c.TerminalIPythonApp.display_banner = False # no banner ever
+# c.TerminalInteractiveShell.confirm_exit = False # no confirm exit
+# c.BaseIPythonApplication.profile = 'default' # explicitly name default profile
+# c.PlainTextFormatter.pprint = True # enable pretty printing (may be default)
+# c.InteractiveShell.deep_reload = True # failed for ipython
 
+################################################################################
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration
 #------------------------------------------------------------------------------
