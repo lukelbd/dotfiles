@@ -24,6 +24,7 @@ for file in ${files[@]}; do # iterate through files
     echo "Creating symlink to $file in $(realpath $HOME/)..."
     # Be conservative
     if [ -L $root/$file ]; then
+      echo "Removing existing symlink \"$root/$file\"..."
       rm $root/$file # remove if symlink
     elif [ -r $root/$file ]; then
       echo "Moving existing \"$file\" file to $storage..."
