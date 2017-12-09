@@ -36,6 +36,8 @@ bibfiles=(*.bib)
 if [ ${#bibfiles[@]} -gt 0 ]; then
   [ -r "$stem.bib" ] && bibfile="$stem.bib" || bibfile=${bibfiles[0]}
 fi
+# bibfile= # special
+echo $filename
 
 # Get difference-LaTeX file, with track changes
 if $difference; then
