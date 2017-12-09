@@ -2,7 +2,6 @@
 ################################################################################
 # setup
 # This script creates symlinks from $HOME to the committed files in $HOME/dotfiles
-# Includes special exceptions when called in Euclid server
 ################################################################################
 
 # Variables
@@ -21,8 +20,6 @@ echo "Creating \"$storage\" for backup of any existing dotfiles..."
 
 # Move existing stuff to storage, then create symlinks 
 # Only move if the item itself is not a symlink
-# Also no longer reference home, for special case of sharing home directory
-# with external server linked indirectlry (e.g. euclid to gauss)
 root="$HOME" # default location for real dotfiles
 for file in ${files[@]}; do # iterate through files
   if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
