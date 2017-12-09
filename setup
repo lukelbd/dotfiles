@@ -40,11 +40,3 @@ for file in ${files[@]}; do # iterate through files
     ln -s $dotfiles/$file $root/$file
   fi
 done
-
-# Extra special option
-if [ "$HOSTNAME" == "euclid" ]; then
-  shopt -s nullglob # don't want nullglob
-  for distro in $root/anaconda*; do
-    ln -s $distro $root/${distro##*/}
-  done # link anaconda from home
-fi
