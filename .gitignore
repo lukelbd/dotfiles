@@ -6,6 +6,10 @@
   # VERY IMPORTANT, need to install manually with :PlugInstall
   # on every server, otherwise everything fails
 
+# iPython history #
+###################
+.ipython/**/history.sqlite
+
 # Storage #
 ###########
 old

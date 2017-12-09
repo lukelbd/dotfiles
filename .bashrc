@@ -190,7 +190,10 @@ alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.
 # Jupyter notebook aliases
 function notebook() {
   port=$1 # optional port argument
-  [ -z $port ] && port="1000" # easy-to-remember default
+  [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
+  [ -z $port ] && {
+    $macos && port="1000" || port="2000" # easy-to-remember defaults
+    } # port 1000 if local, port 2000 if remote!
   echo "Initializing jupyter notebook over port port: $port"
   jupyter notebook --no-browser --port=$port --NotebookApp.iopub_data_rate_limit=10000000
   } # need to extend data rate limit when making some plots with lots of stuff
