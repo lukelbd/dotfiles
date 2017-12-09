@@ -44,7 +44,8 @@
   "toc2": {
     "toc_window_display": false,
     "toc_cell": true,
-    "sideBar": false
+    "sideBar": false,
+    "moveMenuLeft": false
   },
   "keys": {
     "command": {
