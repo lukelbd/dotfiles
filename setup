@@ -5,7 +5,9 @@
 ################################################################################
 
 # Variables
-storage=$HOME/dotfiles/old # storage
+cdir=$(pwd)
+storage=$cdir/old # storage
+basedir=${cdir##*/} # current top-level name
 files=($(git ls-tree --name-only master)) # get list of committed files
 
 # Create storage for old dotfiles
@@ -14,18 +16,20 @@ echo "Creating $storage for backup of any existing dotfiles..."
 
 # Move existing stuff to storage, then create symlinks 
 # Only move if the item itself is not a symlink
+# Also no longer reference home, for special case of sharing home directory
+# with external server linked indirectlry (e.g. euclid to gauss)
 for file in ${files[@]}; do # iterate through files
   if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
-    echo "Creating symlink to $file in $HOME..."
+    echo "Creating symlink to $file in $(realpath ../)..."
     # Be conservative
-    if [ -L $HOME/$file ]; then
-      rm $HOME/$file # remove if symlink
-    elif [ -r $HOME/$file ]; then
+    if [ -L ../$file ]; then
+      rm ../$file # remove if symlink
+    elif [ -r ../$file ]; then
       echo "Moving existing file \"$file\" to $storage..."
-      mv -r $HOME/$file $storage/ # copy if not
+      mv -r ../$file $storage/ # copy if not
     fi
     # Finally create symlink
-    # Make sure source-file is path RELATIVE to 
-    ln -s dotfiles/$file ../$file
+    # Make sure source-file is path RELATIVE to current location
+    ln -s $basedir/$file ../$file
   fi
 done
