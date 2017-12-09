@@ -1,7 +1,5 @@
 ## The dotfiles repo
-This syncs my settings for `bash`, `vim`, `tmux`, `screen`, and some limited python settings. Full 
-syncing of python settings, including `.jupyter` and `.ipython`, is now disabled because it's a bit of a can of 
-worms, and we don't really want to sync history for example. Just maintain separate distros across systems.
+This syncs my settings for `bash`, `vim`, `tmux`, `screen`, and some limited `python` settings.
 
 Good idea to keep separate installations of **`anaconda`** at least, because for example
 compiling the ISCA module must be complicated if the distro is shared by two servers with different utilities.
