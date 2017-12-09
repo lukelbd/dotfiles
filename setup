@@ -7,7 +7,8 @@
 
 # Variables
 [ "$HOSTNAME" == "euclid" ] && euclid=true || euclid=false
-storage="./old" # place old files into here
+dotfiles="dotfiles" # place where everything stored
+storage="dotfiles/old" # place old files into here
 files=($(git ls-tree --name-only master)) # get list of committed files
 
 # Create storage for old dotfiles
@@ -21,24 +22,25 @@ echo "Creating \"$storage\" for backup of any existing dotfiles..."
 $euclid && root="/birner-home/ldavis" || root="$HOME" # symlink location
 for file in ${files[@]}; do # iterate through files
   if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
-    echo "Creating symlink to $file in $(realpath $HOME/)..."
+    echo "Creating symlink to $file in $HOME/..."
     # Be conservative
     if [ -L $root/$file ]; then
-      echo "Removing existing symlink \"$root/$file\"..."
+      echo "Removing existing symlink $root/$file..."
       rm $root/$file # remove if symlink
     elif [ -r $root/$file ]; then
-      echo "Moving existing \"$file\" file to $storage..."
+      echo "Moving existing $file file to $storage..."
       mv -r $root/$file $storage/ # copy if not
     fi
     # Finally create symlink
     # Make sure source-file is path RELATIVE to current location
-    ln -s $(realpath $file) $root/$file
+    ln -s $dotfiles/$file $root/$file
   fi
 done
 
 # Extra special option
 if $euclid; then
-  for distro in $HOME/anaconda*; do
-    ln -s $distro $HOME/${distro##*/}
+  for distro in $root/anaconda*; do
+    trueroot="$HOME" # actual home directory
+    ln -s $distro $trueroot/${distro##*/}
   done # link anaconda from home
 fi
