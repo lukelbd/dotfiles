@@ -6,8 +6,8 @@
 ################################################################################
 
 # Variables
+[ "$HOSTNAME" == "euclid" ] && euclid=true || euclid=false
 storage="./old" # place old files into here
-[ "$HOSTNAME" == "euclid" ] && root="/birner-home/ldavis" || root="$HOME" # symlink location
 files=($(git ls-tree --name-only master)) # get list of committed files
 
 # Create storage for old dotfiles
@@ -18,6 +18,7 @@ echo "Creating \"$storage\" for backup of any existing dotfiles..."
 # Only move if the item itself is not a symlink
 # Also no longer reference home, for special case of sharing home directory
 # with external server linked indirectlry (e.g. euclid to gauss)
+$euclid && root="/birner-home/ldavis" || root="$HOME" # symlink location
 for file in ${files[@]}; do # iterate through files
   if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
     echo "Creating symlink to $file in $(realpath $HOME/)..."
@@ -33,3 +34,10 @@ for file in ${files[@]}; do # iterate through files
     ln -s $(realpath $file) $root/$file
   fi
 done
+
+# Extra special option
+if $euclid; then
+  for distro in $HOME/anaconda*; do
+    ln -s $distro $HOME/${distro##*/}
+  done # link anaconda from home
+fi
