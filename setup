@@ -6,9 +6,13 @@
 ################################################################################
 
 # Variables
-[ "$HOSTNAME" == "euclid" ] && euclid=true || euclid=false
-dotfiles="dotfiles" # place where everything stored
-storage="dotfiles/old" # place old files into here
+if hash realpath 2>/dev/null; then
+  dotfiles="$(realpath ${0%/*})" # place where everything stored
+else # realpath not avialable on linux often
+  dotfiles="$(readlink -f ${0%/*})"
+fi # have determined abs path
+cd $dotfiles # move to this directory, if not present
+storage="$dotfiles/old" # place old files into here
 files=($(git ls-tree --name-only master)) # get list of committed files
 
 # Create storage for old dotfiles
@@ -19,7 +23,7 @@ echo "Creating \"$storage\" for backup of any existing dotfiles..."
 # Only move if the item itself is not a symlink
 # Also no longer reference home, for special case of sharing home directory
 # with external server linked indirectlry (e.g. euclid to gauss)
-$euclid && root="/birner-home/ldavis" || root="$HOME" # symlink location
+root="$HOME" # default location for real dotfiles
 for file in ${files[@]}; do # iterate through files
   if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
     echo "Creating symlink to $file in $HOME/..."
@@ -38,9 +42,9 @@ for file in ${files[@]}; do # iterate through files
 done
 
 # Extra special option
-if $euclid; then
+if [ "$HOSTNAME" == "euclid" ]; then
+  shopt -s nullglob # don't want nullglob
   for distro in $root/anaconda*; do
-    trueroot="$HOME" # actual home directory
-    ln -s $distro $trueroot/${distro##*/}
+    ln -s $distro $root/${distro##*/}
   done # link anaconda from home
 fi
