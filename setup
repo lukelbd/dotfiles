@@ -30,7 +30,7 @@ for file in ${files[@]}; do # iterate through files
       rm $root/$file # remove if symlink
     elif [ -r $root/$file ]; then
       echo "Moving existing $file file to $storage..."
-      mv -r $root/$file $storage/ # copy if not
+      mv $root/$file $storage/ # copy if not
     fi
     # Finally create symlink
     # Make sure source-file is path RELATIVE to current location
