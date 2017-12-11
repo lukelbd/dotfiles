@@ -168,7 +168,7 @@ if [ "$HOSTNAME" == "euclid" ]; then
 fi
 
 ################################################################################
-# More general utilties
+# Workspace setup
 ################################################################################
 # Matlab aliases; set up quick terminal-session
 if $macos; then
@@ -189,14 +189,20 @@ alias ipython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
 alias pypython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
 alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
 
+# Jupyter themes configuration
+# Refresh currently open notebooks to see these changes applied
+# This makes all fonts the same size (10) and makes cells nice and wide (95%)
+jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
+
 # Jupyter notebook aliases
 function notebook() {
   port=$1 # optional port argument
   [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
   [ -z $port ] && {
-    $macos && port="1000" || port="2000" # easy-to-remember defaults
+    $macos && port="10000" || port="20000" # easy-to-remember defaults
     } # port 1000 if local, port 2000 if remote!
   echo "Initializing jupyter notebook over port port: $port"
+  jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of contents
   jupyter notebook --no-browser --port=$port --NotebookApp.iopub_data_rate_limit=10000000
   } # need to extend data rate limit when making some plots with lots of stuff
 # Set up connection to another server, enables REMOTE NOTEBOOK ACCESS
@@ -207,7 +213,7 @@ function connect() { # connect to remove notebook on port
     echo "ERROR: Must enter the hostname."
     return 1
   fi
-  [ -z $port ] && port="2000" # easy-to-remember default
+  [ -z $port ] && port="20000" # easy-to-remember default
   echo "Connecting to $hostname over port $port."
   \ssh -N -f -L localhost:$port:localhost:$port $hostname # backslash says to ignore aliases
       # necessary because have ssh alias to allow for port forwarding back to localhost
@@ -215,7 +221,7 @@ function connect() { # connect to remove notebook on port
 # Include option to cancel connection: see: https://stackoverflow.com/a/20240445/4970632
 function disconnect() {
   port=$1 # optional listening port
-  [ -z $port ] && port="2000" # easy-to-remember default
+  [ -z $port ] && port="20000" # easy-to-remember default
   echo "Cancelling port-forwarding over port $port."
   lsof -t -i tcp:$port | xargs kill -9
   }
@@ -242,7 +248,7 @@ alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
 alias ld="find . -maxdepth 1 -type d -mindepth 1 -exec du -hs {} \; | $sortcmd -sh" # directory sizes
   # need COREUTILS for sort -h; use brew install coreutils, they're installed
   # with prefix g (the Linux version; MacOS comes with truncated versions)
-alias df="df -h"          # disk useage
+alias df="df -h" # disk useage
 alias cd="cd -P" # -P follows physical location
 alias type="type -a" # alias 'type' to show ALL instances of path/function/variable/file
   # just some simple ones
@@ -263,14 +269,14 @@ alias gitt="git log --graph --pretty=format:\"%h %d - %an, %ar : %s\""
 
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
-function ncdmnlist() {
+function ncdmnlist() { # get list of dimensions
   ncdump -h $1 | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs;
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
   ncdump -h $1 | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs;
 }
-function ncvardump() {
+function ncvardump() { # dump variable contents (first argument) from file (second argument)
   ncks -s "%f " -H -C -v $1 $2;
 }
 # function ncdmnlist() { ncks -m $1 | cut -d ':' -f 1 | cut -d '=' -s -f 1 | xargs; }

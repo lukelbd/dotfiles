@@ -2,6 +2,7 @@
 ##############
 .session.*
 .*.sw[a-z]
+./**/.*.sw[a-z]
 .vim/plugged
   # VERY IMPORTANT, need to install manually with :PlugInstall
   # on every server, otherwise everything fails
@@ -47,10 +48,10 @@ __trash__
 
 # OS generated files #
 ######################
-**/.DS_Store
-**/.DS_Store?
-**/._*
-**/.Spotlight-V100
-**/.Trashes
-**/ehthumbs.db
-**/Thumbs.db
+./**/.DS_Store
+./**/.DS_Store?
+./**/._*
+./**/.Spotlight-V100
+./**/.Trashes
+./**/ehthumbs.db
+./**/Thumbs.db

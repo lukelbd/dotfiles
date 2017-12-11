@@ -909,10 +909,10 @@ Plug 'triglav/vim-visual-increment' "visual incrementing
 call plug#end()
   "the plug#end also declares filetype syntax and indent on
 
-"VIM HELP PAGES
+"DISABLE LINE NUMBERS AND SPECIAL CHARACTERS IN SPECIAL WINDOWS; ENABLE q-QUITTING
+"AND SOME HELP SETTINGS
 noremap ?? :vert help 
 au FileType help wincmd L
-au FileType help setlocal nospell
 au FileType help noremap <buffer> q :q<CR>
 autocmd BufEnter help if len(tabpagebuflist())==1 | q | endif
   "exit from help window, if it is only one left
@@ -920,10 +920,16 @@ autocmd BufEnter help if len(tabpagebuflist())==1 | q | endif
 "   "using vsplit help doesn't work when i tried it; also need to
 "   "turn off spelling
 "The doc pages appear in rst files, so turn off extra chars for them
+"Also the syntastic shows up as qf files
 autocmd FileType rst setlocal nolist
 autocmd FileType rst setlocal nonumber
+autocmd FileType rst setlocal nospell
 autocmd FileType help setlocal nolist
 autocmd FileType help setlocal nonumber
+autocmd FileType help setlocal nospell
+autocmd FileType qf setlocal nolist
+autocmd FileType qf setlocal nonumber
+autocmd FileType qf setlocal nospell
 
 "Jedi-VIM
 "See: https://github.com/davidhalter/jedi-vim
