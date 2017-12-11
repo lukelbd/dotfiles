@@ -1,6 +1,8 @@
 "------------------------------------------------------------------------------
 "HIGHLIGHT MATCHING MATCHIT.VIM GROUPS
-"SOME OTHER PLUGIN BROKE THIS A WHILE AGO; NOT SURE WHICH, SHOULD FIGURE OUT
+"TODO NOTE THE DEFAULT '%' PRESS WITH MARKDOWN FILES RESULTS IN THIS WEIRD ANNOYING
+"DELAY THAT ISN'T REALLY RELATED TO THIS PLUGIN; ADDED PATCH TO EXIT THE MATCHING FUNCTION
+"WITH MARKDOWN FILETYPES
 "------------------------------------------------------------------------------
 "Matching % codes (loads macros with default matching REG-EXPs)
 " runtime macros/matchit.vim
@@ -11,7 +13,7 @@ function! s:get_match_lines(line) abort
   " Loop until `%` returns the original line number; abort if
   " (1) the % operator keeps us on the same line, or
   " (2) the % operator doesn't return us to the same line after some nubmer of jumps
-  let a:tolerance=25
+  let a:tolerance=5 "keep it small so don't get slowdowns
   let a:badbreak=1
   let a:linebefore=-1
   let lines = []
@@ -39,9 +41,13 @@ function! s:get_match_lines(line) abort
 endfunction
 function! s:hl_matching_lines() abort
   let b:hl_ranORcleared = 1
-  " `b:hl_last_line` prevents running the script again while the cursor is
-  " moved on the same line.  Otherwise, the cursor won't move if the current
-  " line has matching pairs of something.
+  " Exit early on some files where this fails due to underlying Match_wrapper default
+  " function provided with VIM; currently, some VIMscript files have slow % motion, and
+  " markdown files can be awful
+  if &ft == "markdown"
+    return
+  endif
+  " Prevent running script again when cursor moves on same line using `b:hl_last_line`
   if exists('b:hl_last_line') && b:hl_last_line == line('.')
     return
   endif
