@@ -202,7 +202,6 @@ function notebook() {
     $macos && port="10000" || port="20000" # easy-to-remember defaults
     } # port 1000 if local, port 2000 if remote!
   echo "Initializing jupyter notebook over port port: $port"
-  jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of contents
   jupyter notebook --no-browser --port=$port --NotebookApp.iopub_data_rate_limit=10000000
   } # need to extend data rate limit when making some plots with lots of stuff
 # Set up connection to another server, enables REMOTE NOTEBOOK ACCESS
