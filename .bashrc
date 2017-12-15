@@ -314,28 +314,42 @@ export archive='/media/archives/reanalyses/era_interim/'
 # export olbers='ldavis@129.82.49.159'
 function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
 
+# Preface: enabling FILES WITH SPACES is tricky, need: https://stackoverflow.com/a/20364170/4970632
+# 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
+# destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
+# 2) Another weird thing; note we must ESCAPE TILDE IN A PARAMETER EXPANSION, even
+# though this is not necessary in double quotes alone; makes sense... maybe...
+
 # Functions for scp-ing from local to remote, and vice versa
 # See: https://stackoverflow.com/a/25486130/4970632
 alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222... not sure exactly how it works
-# Note to ENABLE FILES WITH SPACES, need: https://stackoverflow.com/a/20364170/4970632
-# Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by destination shell
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
   args=${@:1:$#-2}  # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}"  # second to last
   dest="${@:(-1)}"    # !# apparently gets last value
-  dest="${dest/#$HOME/~}" # don't need to escape ~ since quoted
+  dest="${dest/#$HOME/\~}"
+  if [[ "$dest" == "~"* ]]; then
+    dest="${dest#\~}"
+    tilde="~"
+  else tilde="" # empty
+  fi
   echo "Copying $file on this server to home server at: $dest..."
-  scp -P2222 $args "$file" ldavis@127.0.0.1:"'$dest'"
+  scp -P2222 $args "$file" ldavis@127.0.0.1:"$tilde'$dest'"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}"  # second to last value
   dest="${@:(-1)}"    # !# apparently gets last value
-  file="${file/#$HOME/~}" # don't need to escape ~ since quoted
+  file="${file/#$HOME/\~}"
+  if [[ "$file" == "~"* ]]; then
+    file="${file#\~}"
+    tilde="~"
+  else tilde="" # empty
+  fi
   echo "Copying $file from home server to this server at: $dest..."
-  scp -P2222 $args ldavis@127.0.0.1:"'$file'" "$dest"
+  scp -P2222 $args ldavis@127.0.0.1:"$tilde'$file'" "$dest"
     # quote stuff we want to be ONE argument
 }
 # Copy <file> on this server to another server, preserving full path but 
