@@ -63,22 +63,24 @@ exec 8> >( # open this "process substitution" for writing on descriptor 8
   done # "read" reads from standard input (whatever stream fed into this process)
 )
 # function undirect(){ echo -ne '\0'; exec 2>&9; } # return stream 2 to "dummy stream" 9
-function undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
-function redirect(){
-  local PRG="${BASH_COMMAND%% *}" # ignore flags/arguments
-  for X in ${STDERR_COLOR_EXCEPTIONS[@]}; do
-    [ "$X" == "${PRG##*/}" ] && return 1; # trim directories
-  done # if special program, don't send to coloring stream
-  exec 2>&8 # send stream 2 to the coloring stream
-}
-trap "redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
-export PROMPT_COMMAND="undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
-export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # commands
-  youtube metadata # some scripts
-  \\ipython \\jupyter \\python \\matlab # disabled alias versions
-  node rhino ncl matlab # misc languages; javascript, NCL, matlab
-  cdo conda pip easy_install python ipython jupyter notebook) # python stuff
-  # interactive stuff gets SUPER WONKY if you try to redirect it with this script
+# function undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
+# function redirect(){
+#   local PRG="${BASH_COMMAND%% *}" # ignore flags/arguments
+#   for X in ${STDERR_COLOR_EXCEPTIONS[@]}; do
+#     [ "$X" == "${PRG##*/}" ] && return 1; # trim directories
+#   done # if special program, don't send to coloring stream
+#   exec 2>&8 # send stream 2 to the coloring stream
+# }
+# trap "redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
+# export PROMPT_COMMAND="undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
+# export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # commands
+#   brew
+#   brew\ cask
+#   youtube metadata # some scripts
+#   \\ipython \\jupyter \\python \\matlab # disabled alias versions
+#   node rhino ncl matlab # misc languages; javascript, NCL, matlab
+#   cdo conda pip easy_install python ipython jupyter notebook) # python stuff
+#   # interactive stuff gets SUPER WONKY if you try to redirect it with this script
 
 ################################################################################
 # PATH management
@@ -260,8 +262,8 @@ alias pt="top"             # table of processes, total
 alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
   # list number of songs per artist; can't have leading spaces in line continuation
 alias weather="curl wttr.in/Fort\ Collins" # list weather information
-#   # shows filenames without extensions; isn't SED awesome? the -1 forces
-#   # one-per-line output, the -e appends command to each line in pipe,
+  # shows filenames without extensions; isn't SED awesome? the -1 forces
+  # one-per-line output, the -e appends command to each line in pipe,
 alias gitt="git log --graph --pretty=format:\"%h %d - %an, %ar : %s\""
   # nice git log (should maybe use git-config instead; check stack overflow,
   # but not sure how to SAVE those shortcuts)
@@ -353,25 +355,25 @@ function extract() {
   for name in "$@"; do
       # shell actually passes **already expanded** glob pattern when you call it as argument
       # to a function; so, need to cat all input arguments with @ into list
-    if [[ -f $name ]] ; then
-        case $name in
-            *.tar.bz2)   tar xvjf $name    ;;
-            *.tar.xz)    tar xf $name      ;;
-            *.tar.gz)    tar xvzf $name    ;;
-            *.bz2)       bunzip2 $name     ;;
-            *.rar)       unrar x $name     ;;
-            *.gz)        gunzip $name      ;;
-            *.tar)       tar xvf $name     ;;
-            *.tbz2)      tar xvjf $name    ;;
-            *.tgz)       tar xvzf $name    ;;
-            *.zip)       unzip $name       ;;
-            *.Z)         uncompress $name  ;;
-            *.7z)        7z x $name        ;;
-            *)           echo "don't know how to extract '$name'..." ;;
-        esac
-        echo "$name was extracted."
+    if [ -f "$name" ] ; then
+      case "$name" in
+        *.tar.bz2)   tar xvjf "$name"    ;;
+        *.tar.xz)    tar xf "$name"      ;;
+        *.tar.gz)    tar xvzf "$name"    ;;
+        *.bz2)       bunzip2 "$name"     ;;
+        *.rar)       unrar x "$name"     ;;
+        *.gz)        gunzip "$name"      ;;
+        *.tar)       tar xvf "$name"     ;;
+        *.tbz2)      tar xvjf "$name"    ;;
+        *.tgz)       tar xvzf "$name"    ;;
+        *.zip)       unzip "$name"       ;;
+        *.Z)         uncompress "$name"  ;;
+        *.7z)        7z x "$name"        ;;
+        *)           echo "Don't know how to extract '$name'..." ;;
+      esac
+      echo "'$name' was extracted."
     else
-        echo "'$name' is not a valid file!"
+      echo "'$name' is not a valid file!"
     fi
   done
 }

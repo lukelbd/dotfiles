@@ -1,15 +1,15 @@
 {
   "load_extensions": {
+    "jupyter-js-widgets/extension": false,
     "nbextensions_configurator/config_menu/main": true,
     "contrib_nbextensions_help_item/main": true,
     "highlight_selected_word/main": false,
-    "comment-uncomment/main": false,
+    "comment-uncomment/main": true,
     "code_prettify/code_prettify": false,
     "search-replace/main": false,
     "scroll_down/main": true,
     "python-markdown/main": false,
     "autoscroll/main": true,
-    "jupyter-js-widgets/extension": false,
     "toggle_all_line_numbers/main": false,
     "jupyter_themes/theme_selector": true,
     "vim_binding/vim_binding": false,
@@ -43,15 +43,47 @@
   ],
   "toc2": {
     "toc_window_display": false,
-    "toc_cell": true,
-    "sideBar": false,
-    "moveMenuLeft": false
+    "toc_cell": false,
+    "sideBar": true,
+    "moveMenuLeft": false,
+    "colors": {
+      "running_highlight": "#ff5d59",
+      "selected_highlight": "#fff968",
+      "hover_highlight": "#ece260"
+    }
   },
   "keys": {
     "command": {
       "bind": {
-        "x": "jupyter-notebook:clear-cell-output"
-      }
+        "x": "jupyter-notebook:clear-cell-output",
+        "s": "jupyter-notebook:save-notebook",
+        "i": "jupyter-notebook:interrupt-kernel",
+        "0": "jupyter-notebook:confirm-restart-kernel",
+        "-": "jupyter-notebook:split-cell-at-cursor",
+        "d": "jupyter-notebook:delete-cell",
+        "u": "jupyter-notebook:undo-cell-deletion",
+        "/": "jupyter-notebook:find-and-replace",
+        ":": "jupyter-notebook:show-command-palette",
+        "w": "jupyter-notebook:save-notebook"
+      },
+      "unbind": [
+        "s",
+        "i,i",
+        "0,0",
+        "d,d",
+        "z",
+        "space",
+        "shift-space",
+        "shift-l",
+        "p",
+        "shift-m",
+        "shift-up",
+        "shift-down",
+        "down",
+        "up"
+      ]
     }
-  }
+  },
+  "comment_uncomment_indent": true,
+  "comment_uncomment_keybinding": "alt-c"
 }

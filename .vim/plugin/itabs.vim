@@ -8,12 +8,13 @@ hi TabLine      ctermfg=White  ctermbg=Black     cterm=bold
 hi TabLineFill  ctermfg=White  ctermbg=Black     cterm=bold
 hi TabLineSel   ctermfg=Black  ctermbg=White     cterm=bold
 "Hijacked from Tabline function, and modified
+"Only display name of a 'primary' file, not e.g. tagbar
 let g:bufignore = ['nerdtree', 'tagbar', 'codi', 'help'] "filetypes considered 'helpers'
 function! Tabline()
   let s = '' "the tab title
   for i in range(tabpagenr('$')) "iterate through each tab
     let tab = i + 1 "the tab number
-    let buflist = tabpagebuflist(tab)
+    let buflist = tabpagebuflist(tab) "call with arg to specify number, or without to specify current tab
     for b in buflist "get the 'primary' panel in a tab, ignore 'helper' panels even if they are in focus
       let buftype = getbufvar(b, "&filetype")
       if index(g:bufignore, buftype)==-1 "index returns -1 if the item is not contained in the list
@@ -23,6 +24,9 @@ function! Tabline()
         let bufnr = b
       endif
     endfor
+    if tab==tabpagenr()
+      let g:bufmain=bufnr
+    endif
     let bufname = bufname(bufnr) "actual name
     let bufmodified = getbufvar(bufnr, "&mod")
     let s .= '%' . tab . 'T' "start 'tab' here; denotes edges of highlight groups and clickable area

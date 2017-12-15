@@ -2,6 +2,7 @@
 # This script compile LaTeX documents on macOS
 difference=$1 # get difference between this and previous (sorted alphanumerically)
 filename=$2 # the current file
+diff=$(dirname $1)/diff.tex # difference output file
 if [ -z $difference ]; then
   echo "ERROR: Must specify whether we take difference or not."
   exit 1
@@ -41,7 +42,7 @@ echo $filename
 
 # Get difference-LaTeX file, with track changes
 if $difference; then
-  [ -r diff.tex ] && rm diff.tex # otherwise shows up in list
+  [ -r $diff ] && rm $diff # otherwise shows up in list
   texfiles=(*.tex) # delete old difference
   for index in ${!texfiles[@]}; do
     [ ${texfiles[$index]} == $filename ] && break
@@ -51,11 +52,17 @@ if $difference; then
   else
     cfilename=${texfiles[$(($index - 1))]} # previous index
     echo "Compiling difference-PDF of $filename minus $cfilename..." # message
-    latexdiff $cfilename $filename 2>/dev/null 1>diff.tex # suppress errors
-    filename=diff.tex # rename the filename
-    stem=diff # new stem
+    # latexdiff $cfilename $filename 2>/dev/null $diff # suppress errors
+    echo $cfilename $filename
+    latexdiff $cfilename $filename $diff # suppress errors
+    filename=$diff # rename the filename
+    stem=${diff%.tex} # new stem
   fi
 fi
+# if [ ! -r $diff ]; then
+#   echo "ERROR: diff.tex not produed."
+#   exit 1
+# fi
 # Compile normal PDF, or the track-changes version
 # Always compile TWICE to enable glossary-references, equation-references
 # latex=xelatex
