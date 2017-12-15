@@ -7,9 +7,9 @@ set laststatus=2
 set showcmd
 set noshowmode
 "Colors
-highlight StatusLine ctermbg=White ctermfg=Black cterm=Bold
-au InsertEnter * highlight StatusLine ctermbg=Black ctermfg=White cterm=Bold
-au InsertLeave * highlight StatusLine ctermbg=White ctermfg=Black cterm=Bold
+highlight StatusLine ctermbg=White ctermfg=Black cterm=None
+au InsertEnter * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
+au InsertLeave * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
   "more visible insert mode
 " Define all the different modes
 " Show whether in pastemode
