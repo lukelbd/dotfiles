@@ -53,15 +53,17 @@ stty -ixon # for putty, have to edit STTY value and set ixon to zero in term opt
 # See exec summary: https://stackoverflow.com/a/18351547/4970632
 # For trap info: https://www.computerhope.com/unix/utrap.htm
 # But unreliable; there is issue with sometimes no newline generated
-export COLOR_RED="$(tput setaf 1)"
-export COLOR_RESET="$(tput sgr0)"
-exec 9>&2 # copy error descriptor onto write file descriptor 9
-exec 8> >( # open this "process substitution" for writing on descriptor 8
-  # while IFS='' read -r -d $'\0' line || [ -n "$line" ]; do
-  while IFS='' read -r line || [ -n "$line" ]; do
-    echo -e "${COLOR_RED}${line}${COLOR_RESET}" # -n is non-empty; this terminates at end
-  done # "read" reads from standard input (whatever stream fed into this process)
-)
+
+# Uncomment stuff below to restore
+# export COLOR_RED="$(tput setaf 1)"
+# export COLOR_RESET="$(tput sgr0)"
+# exec 9>&2 # copy error descriptor onto write file descriptor 9
+# exec 8> >( # open this "process substitution" for writing on descriptor 8
+#   # while IFS='' read -r -d $'\0' line || [ -n "$line" ]; do
+#   while IFS='' read -r line || [ -n "$line" ]; do
+#     echo -e "${COLOR_RED}${line}${COLOR_RESET}" # -n is non-empty; this terminates at end
+#   done # "read" reads from standard input (whatever stream fed into this process)
+# )
 # function undirect(){ echo -ne '\0'; exec 2>&9; } # return stream 2 to "dummy stream" 9
 # function undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
 # function redirect(){
@@ -325,29 +327,21 @@ function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-
 alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222... not sure exactly how it works
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
-  args=${@:1:$#-2}  # $# stores number of args passed to shell, and perform minus 1
-  file="${@:(-2):1}"  # second to last
-  dest="${@:(-1)}"    # !# apparently gets last value
-  dest="${dest/#$HOME/\~}"
-  if [[ "$dest" == "~"* ]]; then
-    dest="${dest#\~}"
-    tilde="~"
-  else tilde="" # empty
-  fi
+  args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
+  file="${@:(-2):1}" # second to last
+  dest="${@:(-1)}"   # last value
+  dest="${dest/#$HOME/\~}" # restore expanded tilde
+  dest="${dest/\ /\\\ }"   # escape slashes manually
   echo "Copying $file on this server to home server at: $dest..."
-  scp -P2222 $args "$file" ldavis@127.0.0.1:$tilde"'$dest'"
+  scp -P2222 $args "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
-  file="${@:(-2):1}"  # second to last value
-  dest="${@:(-1)}"    # !# apparently gets last value
-  file="${file/#$HOME/\~}"
-  if [[ "$file" == "~"* ]]; then
-    file="${file#\~}"
-    tilde="~"
-  else tilde="" # empty
-  fi
+  file="${@:(-2):1}" # second to last
+  dest="${@:(-1)}"   # last value
+  file="${file/#$HOME/\~}" # restore expanded tilde
+  file="${file/\ /\\\ }"   # escape slashes manually
   echo "Copying $file from home server to this server at: $dest..."
   scp -P2222 $args ldavis@127.0.0.1:$tilde"'$file'" "$dest"
     # quote stuff we want to be ONE argument
