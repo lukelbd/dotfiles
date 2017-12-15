@@ -1036,11 +1036,6 @@ augroup END
 "-------------------------------------------------------------------------------
 "CRITICAL KEY MAPPINGS
 if g:requirement2 "neocomplete not installed; don't do these mappings
-  "Simple remaps without neocomplete
-  inoremap <silent> <C-c> <Esc>:call <sid>escape()<CR>
-  inoremap <silent> <Esc> <Esc>:call <sid>escape()<CR>
-  inoremap <silent> <expr> jk pumvisible() ? neocomplete#smart_close_popup()."\<Esc>:call <sid>escape()\<CR>%%a" : "\<Esc>:call <sid>escape()\<CR>%%a"
-else
   "Change basic behavior in context of neocomplete
   " inoremap <silent> <expr> [3~ pumvisible() ? neocomplete#smart_close_popup()."\<Delete>" : "\<Delete>"
     "ruins bracket autofill in insert mode, so forget it; idea was make delete
@@ -1061,6 +1056,11 @@ else
   "Came with installation, but not necesssary? Or already installed?
   " inoremap <expr> <BS> neocomplete#smart_close_popup()."\<BS>"
   " inoremap <expr> <Space> neocomplete#smart_close_popup()."\<Space>"
+else
+  "Simple remaps without neocomplete
+  inoremap <silent> <C-c> <Esc>:call <sid>escape()<CR>
+  inoremap <silent> <Esc> <Esc>:call <sid>escape()<CR>
+  inoremap <silent> <expr> jk pumvisible() ? neocomplete#smart_close_popup()."\<Esc>:call <sid>escape()\<CR>%%a" : "\<Esc>:call <sid>escape()\<CR>%%a"
 endif
 "-------------------------------------------------------------------------------
 "OTHER SETTINGS
