@@ -326,7 +326,6 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   dest="${@:(-1)}"    # !# apparently gets last value
   dest="${dest/#$HOME/~}" # don't need to escape ~ since quoted
   echo "Copying $file on this server to home server at: $dest..."
-  return 1
   scp -P2222 $args "$file" ldavis@127.0.0.1:"'$dest'"
 }
 # Copy from local macbook to <this server>
