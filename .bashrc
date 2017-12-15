@@ -196,6 +196,14 @@ alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.
 # This makes all fonts the same size (10) and makes cells nice and wide (95%)
 jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
 
+# IMPORTANT note: to uninstall nbextensions completely, use
+#  jupyter contrib nbextension uninstall --user
+#  pip uninstall jupyter_contrib_nbextensions
+# One step more is needed to remove the configurator
+#  jupyter nbextensions_configurator disable
+# If you have issues where themes is just not changing in Chrome, open Developer
+# tab with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
+
 # Jupyter notebook aliases
 function notebook() {
   port=$1 # optional port argument
@@ -224,8 +232,10 @@ function disconnect() {
   port=$1 # optional listening port
   [ -z $port ] && port="20000" # easy-to-remember default
   echo "Cancelling port-forwarding over port $port."
-  lsof -t -i tcp:$port | xargs kill -9
+  lsof -t -i tcp:$port | xargs kill
   }
+# See current ssh connection
+alias lssh="ps aux | grep ssh"
 
 ################################################################################
 # General utilties
@@ -312,16 +322,17 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   args=${@:1:$#-2}  # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}"  # second to last
   dest="${@:(-1)}"    # !# apparently gets last value
-  dest="${dest/#$HOME/\~}" # ~ will be expanded before passing to variable; if in destination argument, put ~ back
+  dest="${dest/#$HOME/~}" # don't need to escape ~ since quoted
   echo "Copying $file on this server to home server at: $dest..."
+  return 1
   scp -P2222 $args "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
-  args=${@:1:$#-2}  # $# stores number of args passed to shell, and perform minus 1
+  args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}"  # second to last value
   dest="${@:(-1)}"    # !# apparently gets last value
-  file="${file/#$HOME/\~}"
+  file="${file/#$HOME/~}" # don't need to escape ~ since quoted
   echo "Copying $file from home server to this server at: $dest..."
   scp -P2222 $args ldavis@127.0.0.1:"$file" "$dest"
     # quote stuff we want to be ONE argument
