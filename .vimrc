@@ -230,8 +230,8 @@ let &t_EI = "\<Esc>]50;CursorShape=0\x7"
 "-------------------------------------------------------------------------------
 augroup SECTION2
 augroup END
-let g:restriction1=eval(v:version>=800)
-let g:restriction2=has("lua") "compatibility issues for these
+let g:requirement1=eval(v:version>=800)
+let g:requirement2=has("lua") "compatibility issues for these
 "-------------------------------------------------------------------------------
 "VIM-PLUG PLUGINS
 augroup plug
@@ -242,12 +242,12 @@ Plug 'scrooloose/nerdtree'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-obsession'
-if g:restriction1
+if g:requirement1
   Plug 'majutsushi/tagbar'
   "VIM had major issues with tagbar on remote servers
   "Going to assume it is just a versioning issue
 endif
-if g:restriction2
+if g:requirement2
   Plug 'shougo/neocomplete.vim'
   Plug 'davidhalter/jedi-vim'
   "These need special support
@@ -1035,7 +1035,7 @@ augroup complete
 augroup END
 "-------------------------------------------------------------------------------
 "CRITICAL KEY MAPPINGS
-if g:restriction2 "neocomplete not installed; don't do these mappings
+if g:requirement2 "neocomplete not installed; don't do these mappings
   "Simple remaps without neocomplete
   inoremap <silent> <C-c> <Esc>:call <sid>escape()<CR>
   inoremap <silent> <Esc> <Esc>:call <sid>escape()<CR>
