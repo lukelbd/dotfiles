@@ -335,7 +335,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   else tilde="" # empty
   fi
   echo "Copying $file on this server to home server at: $dest..."
-  scp -P2222 $args "$file" ldavis@127.0.0.1:"$tilde'$dest'"
+  scp -P2222 $args "$file" ldavis@127.0.0.1:$tilde"'$dest'"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
@@ -349,7 +349,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   else tilde="" # empty
   fi
   echo "Copying $file from home server to this server at: $dest..."
-  scp -P2222 $args ldavis@127.0.0.1:"$tilde'$file'" "$dest"
+  scp -P2222 $args ldavis@127.0.0.1:$tilde"'$file'" "$dest"
     # quote stuff we want to be ONE argument
 }
 # Copy <file> on this server to another server, preserving full path but 
