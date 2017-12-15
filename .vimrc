@@ -230,6 +230,8 @@ let &t_EI = "\<Esc>]50;CursorShape=0\x7"
 "-------------------------------------------------------------------------------
 augroup SECTION2
 augroup END
+let g:restriction1=eval(v:version>=800)
+let g:restriction2=has("lua") "compatibility issues for these
 "-------------------------------------------------------------------------------
 "VIM-PLUG PLUGINS
 augroup plug
@@ -240,11 +242,12 @@ Plug 'scrooloose/nerdtree'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-obsession'
-if v:version >= 800
+if g:restriction1
   Plug 'majutsushi/tagbar'
   "VIM had major issues with tagbar on remote servers
+  "Going to assume it is just a versioning issue
 endif
-if has("lua")
+if g:restriction2
   Plug 'shougo/neocomplete.vim'
   Plug 'davidhalter/jedi-vim'
   "These need special support
@@ -1032,29 +1035,33 @@ augroup complete
 augroup END
 "-------------------------------------------------------------------------------
 "CRITICAL KEY MAPPINGS
-" inoremap <silent> <expr> [3~ pumvisible() ? neocomplete#smart_close_popup()."\<Delete>" : "\<Delete>"
-  "ruins bracket autofill in insert mode, so forget it; idea was make delete
-  "close popup menu, but ALREADY DOES, because <Delete> actually escapes us from
-  "normal mode, then the [3~ gets triggered
-inoremap <silent> <expr> jk pumvisible() ? neocomplete#smart_close_popup()."\<Esc>:call <sid>escape()\<CR>%%a" : "\<Esc>:call <sid>escape()\<CR>%%a"
-" inoremap <silent> <expr> l; pumvisible() ? neocomplete#smart_close_popup()."\<Esc>:call <sid>escape()\<CR>%%a" : "\<Esc>:call <sid>escape()\<CR>%%a"
-  "above remaps let me bang on those keys in ANY ORDER! they don't interfere with each other
-inoremap <silent> <expr> kj pumvisible() ? "\<C-y>" : "kj"
-  "complete_common_string keeps popup open, for some reason
-" inoremap <silent> <expr> ;l neocomplete#complete_common_string()
-" inoremap <silent> <expr> :u neocomplete#undo_completion()
-inoremap <silent> <expr> <C-c> pumvisible() ? neocomplete#smart_close_popup()."<Esc>:call <sid>escape()<CR>" : "<Esc>:call <sid>escape()<CR>"
-inoremap <silent> <expr> <Esc> pumvisible() ? neocomplete#smart_close_popup()."<Esc>:call <sid>escape()<CR>" : "<Esc>:call <sid>escape()<CR>"
-" inoremap <silent> <expr> <C-c> pumvisible() ? neocomplete#smart_close_popup() : "<Esc>:call <sid>escape()<CR>"
-" inoremap <silent> <expr> <Esc> pumvisible() ? neocomplete#smart_close_popup() : "<Esc>:call <sid>escape()<CR>"
-"...tab completion
-inoremap <expr> <Tab>  pumvisible() ? "\<C-n>" : "\<Tab>"
-inoremap <expr> `  pumvisible() ? "\<C-p>" : "`"
-"...undo menu selection with Enter; will only use ;l for that
-inoremap <expr> <CR> neocomplete#smart_close_popup()."\<CR>"
-" installatio
-" inoremap <expr> <BS> neocomplete#smart_close_popup()."\<BS>"
-" inoremap <expr> <Space> neocomplete#smart_close_popup()."\<Space>"
+if g:restriction2 "neocomplete not installed; don't do these mappings
+  "Simple remaps without neocomplete
+  inoremap <silent> <C-c> <Esc>:call <sid>escape()<CR>
+  inoremap <silent> <Esc> <Esc>:call <sid>escape()<CR>
+  inoremap <silent> <expr> jk pumvisible() ? neocomplete#smart_close_popup()."\<Esc>:call <sid>escape()\<CR>%%a" : "\<Esc>:call <sid>escape()\<CR>%%a"
+else
+  "Change basic behavior in context of neocomplete
+  " inoremap <silent> <expr> [3~ pumvisible() ? neocomplete#smart_close_popup()."\<Delete>" : "\<Delete>"
+    "ruins bracket autofill in insert mode, so forget it; idea was make delete
+    "close popup menu, but ALREADY DOES, because <Delete> actually escapes us from
+    "normal mode, then the [3~ gets triggered
+  inoremap <silent> <expr> jk pumvisible() ? neocomplete#smart_close_popup()."\<Esc>:call <sid>escape()\<CR>%%a" : "\<Esc>:call <sid>escape()\<CR>%%a"
+  inoremap <silent> <expr> kj pumvisible() ? "\<C-y>" : "kj"
+    "complete_common_string keeps popup open, for some reason
+  " inoremap <silent> <expr> ;l neocomplete#complete_common_string()
+  " inoremap <silent> <expr> ;k neocomplete#undo_completion()
+  inoremap <silent> <expr> <C-c> pumvisible() ? neocomplete#smart_close_popup()."<Esc>:call <sid>escape()<CR>" : "<Esc>:call <sid>escape()<CR>"
+  inoremap <silent> <expr> <Esc> pumvisible() ? neocomplete#smart_close_popup()."<Esc>:call <sid>escape()<CR>" : "<Esc>:call <sid>escape()<CR>"
+  "...tab completion
+  inoremap <expr> <Tab>  pumvisible() ? "\<C-n>" : "\<Tab>"
+  inoremap <expr> `  pumvisible() ? "\<C-p>" : "`"
+  "...undo menu selection with Enter; will only use ;l for that
+  inoremap <expr> <CR> neocomplete#smart_close_popup()."\<CR>"
+  "Came with installation, but not necesssary? Or already installed?
+  " inoremap <expr> <BS> neocomplete#smart_close_popup()."\<BS>"
+  " inoremap <expr> <Space> neocomplete#smart_close_popup()."\<Space>"
+endif
 "-------------------------------------------------------------------------------
 "OTHER SETTINGS
 let g:acp_enableAtStartup = 1
