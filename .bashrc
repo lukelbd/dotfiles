@@ -343,8 +343,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   file="${file/#$HOME/\~}" # restore expanded tilde
   file="${file/\ /\\\ }"   # escape slashes manually
   echo "Copying $file from home server to this server at: $dest..."
-  scp -P2222 $args ldavis@127.0.0.1:$tilde"'$file'" "$dest"
-    # quote stuff we want to be ONE argument
+  scp -P2222 $args ldavis@127.0.0.1:"$file" "$dest"
 }
 # Copy <file> on this server to another server, preserving full path but 
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
