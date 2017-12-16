@@ -4,6 +4,11 @@
 # This script creates symlinks from $HOME to the committed files in $HOME/dotfiles
 ################################################################################
 
+# Some syncing notes; use the following to reset if stuff changed:
+# git fetch --all
+# git reset --hard origin/master
+# This will just re-clone everything, forget local changes
+
 # Variables
 if hash realpath 2>/dev/null; then
   dotfiles="$(realpath ${0%/*})" # place where everything stored
