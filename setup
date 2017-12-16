@@ -10,11 +10,12 @@
 # This will just re-clone everything, forget local changes
 
 # Variables
-if hash realpath 2>/dev/null; then
-  dotfiles="$(realpath ${0%/*})" # place where everything stored
-else # realpath not avialable on linux often
-  dotfiles="$(readlink -f ${0%/*})"
-fi # have determined abs path
+# if hash realpath 2>/dev/null; then
+#   dotfiles="$(realpath ${0%/*})" # place where everything stored
+# else # realpath not avialable on linux often
+#   dotfiles="$(readlink -f ${0%/*})"
+# fi # have determined abs path
+dotfiles=~/dotfiles # other commands can be unpredictable
 cd $dotfiles # move to this directory, if not present
 storage="$dotfiles/old" # place old files into here
 files=($(git ls-tree --name-only master)) # get list of committed files
@@ -26,8 +27,10 @@ echo "Creating \"$storage\" for backup of any existing dotfiles..."
 # Move existing stuff to storage, then create symlinks 
 # Only move if the item itself is not a symlink
 root="$HOME" # default location for real dotfiles
+fignore=(README.md setup nbsetup macsetup .gitignore)
 for file in ${files[@]}; do # iterate through files
-  if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
+  # if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
+  if [[ ! "${fignore[@]}" =~ " $file " ]]; then
     echo "Creating symlink to $file in $HOME/..."
     # Be conservative
     if [ -L $root/$file ]; then
