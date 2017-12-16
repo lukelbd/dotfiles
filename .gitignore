@@ -1,3 +1,10 @@
+# Special for this directory #
+##############################
+.jupyter/jupyter_nbconvert_config.json
+  # this MUST be ignored because it encodes a hardpath for particular anaconda distributions
+  # (not relative path) which seems to mess up the jupyterthemes font setup
+  # the other json, jupyter_notebook_config.json, just tells jupyter to use nbextensions
+
 # VIM extras #
 ##############
 .session.*
