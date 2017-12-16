@@ -98,8 +98,9 @@ noremap , @1
 noremap @ <Nop>
   "new macro useage; almost always just use one at a time
   "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
-noremap \ "
-  "use BACKSLASH FOR REGISTER KEY (easier to access)
+noremap \ :echo "Enabling throwaway register."<CR>"_
+  "use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
+  "THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
 map " mq:echo "Throwaway mark was set."<CR>
 map 1" mi:echo "Mark 1 was set."<CR>
 map 2" mj:echo "Mark 2 was set."<CR>
@@ -293,11 +294,17 @@ autocmd VimEnter * Obsession .session.vim
 "DELIMITMATE (auto-generate closing delimiters)
 augroup delimit
 augroup END
-"...ok with default behavior now, few remaps
-" au BufEnter * let b:delimitMate_quotes = "\" ' $ |"
-au BufEnter * let b:delimitMate_quotes = "\" '"
-au BufEnter * let b:delimitMate_matchpairs = "(:),{:},[:]"
-"_quotes are identical left-right delimiters, and _matchpairs
+"Set up delimiter paris; delimitMate uses these by default
+"Can set global defaults along with buffer-specific alternatives
+let g:delimitMate_quotes="\" '"
+let g:delimitMate_matchpairs="(:),{:},[:]"
+  "if this unset looks for VIM &matchpairs variable; generally should be the
+  "same but we just want to make sure
+au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
+au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
+  "markdown need backticks for code, and can maybe do LaTeX
+au FileType tex let b:delimitMate_quotes = "\" ' $ |"
+  "tex need | for verbatim environments
 "are different (but single-char) left-right delimiters... note you
 "CANNOT use 'set matchpairs', or plugin breaks! for some reason...
 "also, don't use <> because use them as comparison operators too much
@@ -827,6 +834,8 @@ endfunction
 "Toggle all these mappings
 autocmd FileType tex call s:texmacros()
 autocmd BufNewFile *.tex call s:textemplates()
+  "no worries since ever TeX file should end in .tex; can't
+  "think of situation where that's not true
 
 "-------------------------------------------------------------------------------
 "HTML MACROS, lots of insert-mode stuff
@@ -971,28 +980,35 @@ noremap <expr> ?h ":!clear; "
 augroup help
 augroup END
 noremap ?? :vert help 
-au FileType help wincmd L
-au FileType help noremap <buffer> q :q<CR>
-autocmd BufEnter help if len(tabpagebuflist())==1 | q | endif
-  "exit from help window, if it is only one left
-" autocmd FileType help wincmd T
-"   "using vsplit help doesn't work when i tried it; also need to
-"   "turn off spelling
-"The doc pages appear in rst files, so turn off extra chars for them
-"Also the syntastic shows up as qf files
-autocmd FileType rst setlocal nolist
-autocmd FileType rst setlocal nonumber
-autocmd FileType rst setlocal nospell
-autocmd FileType help setlocal nolist
-autocmd FileType help setlocal nonumber
-autocmd FileType help setlocal nospell
-autocmd FileType help vertical resize 79
-autocmd FileType help nnoremap <buffer> <CR> <C-]>
-autocmd FileType help nnoremap <buffer> <nowait> <LeftMouse> <LeftMouse><C-]>
+" function! s:helpclick()
+"   "If LeftClick did not remove us from help-menu, then jump to tag
+"   if &ft=="help"
+"     normal! <C-]>
+"       "weirdly :normal causes error< and :normal! does nothing
+"   endif
+" endfunction
+function! s:helpsetup()
+  if len(tabpagebuflist())==1 | q | endif "exit from help window, if it is only one left
+  wincmd L "moves current window to be at far-right; 'wincmd' executes Ctrl+W functions
+  vertical resize 79
+  noremap <buffer> q :q<CR>
+  nnoremap <buffer> <CR> <C-]>
+  nnoremap <nowait> <buffer> [ :pop<CR>
+  " nnoremap <buffer> <nowait> <LeftMouse> <LeftMouse>:call <sid>helpclick()<CR>
+  setlocal nolist
+  setlocal nonumber
+  setlocal nospell
   "better jumping behavior; note these must be C-], not Ctrl-]
-autocmd FileType qf setlocal nolist
-autocmd FileType qf setlocal nonumber
-autocmd FileType qf setlocal nospell
+endfunction
+au FileType help call s:helpsetup()
+"The doc pages appear in rst files, so turn off extra chars for them
+"Also the syntastic shows up as qf files so want extra stuff turned off there too
+function! s:simplesetup()
+  setlocal nolist
+  setlocal nonumber
+  setlocal nospell
+endfunction
+au FileType rst,qf call s:simpleseup()
 
 "-------------------------------------------------------------------------------
 "MARK HIGHLIGHTING
@@ -1157,7 +1173,7 @@ noremap <Tab>J :NERDTreeTabsToggle<CR>
   "had some issues with NERDTreeToggle; failed/gave weird results
 "slash, because directory hierarchies have slashes?
 "...no, confusing; instead { because it shows up on left
-let g:NERDTreeWinPos="left"
+let g:NERDTreeWinPos="right"
 let g:NERDTreeWinSize=20 "instead of 31 default
 let g:NERDTreeShowHidden=1
 let g:NERDTreeMinimalUI=1
@@ -1307,27 +1323,36 @@ hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 "TAGBAR (requires 'brew install ctags-exuberant')
 augroup tagbar
 augroup END
-"Neat idea for function
-"Can put other things in here too
+"Neat idea for function; just call this whenever Tagbar is toggled
+"Can put other things in here too; the buffer remaps can be declared
+"in separate FileType autocmds but this is nice too
+" * Note LEADER does not work as first key for the Tagbar Space-Space remap;
+"   since it already has a single-space-press command. Need to declare 'Leader' specifically.
+" * Best approach for this situation; make GLOBAL remap, but allow overriding
+"   buffer-specific remap. Seems to be cleanest way.
+" * Note I tried doing the below with autocmd FileType tagbar but didn't really work
+"   perhaps because we need other FileType cmds to act first.
 function! s:tagbarsetup()
-  if &ft=="tagbar" && exists("g:bufmain") "make sure we are currently in the tagbar
-    "also g:bufmain is defined in the 'itabs.vim' plugin
-    if fnamemodify(bufname(g:bufmain),":t")==".vimrc" "special for VIM files
-    " if getbufvar(g:bufmain, "&ft")=="vim" "special for VIM files
-      " let a:position=winsaveview()
-      " exec "/^\. functions$"
-      " normal -
-      "   "minus is 'close fold', plus is 'open', o is 'toggle'
-      "   "for some reason we need to use exec here
-      " exec "/^\. variables$"
-      " normal -
-      " exec "/^\. commands$"
-      " normal -
-      " exec "/^\. maps$"
-      " normal -
-      " exec "/^\. autocommand groups$"
-      " normal +
-      " call winrestview(a:position)
+  "First toggle the tagbar; issues when toggling from NERDTree so switch
+  "back if cursor is already there. No issues toggline from Help window.
+  "Note toggling tagbar in a help menu appears to be fine
+  if &ft=="nerdtree"
+    wincmd h
+    wincmd h "move two places in case e.g. have help menu + nerdtree already
+  endif
+  TagbarToggle "you just state commands like these
+  "Then some fancy stuff, if the command just activated Tagbar
+  if &ft=="tagbar"
+    "Initial stuff
+    let tabfts=[]
+    let tabnms=[]
+    for b in tabpagebuflist()
+      call add(tabfts, getbufvar(b, "&ft"))
+      call add(tabnms, fnamemodify(bufname(b),":t"))
+    endfor
+    "Change the default open stuff for vimrc
+    "Do so by testing names of files in this tab
+    if index(tabnms,".vimrc")!=-1
       normal! gg
       while 1
         let a:line=search(g:tagbar#icon_open,"W","$")
@@ -1340,13 +1365,19 @@ function! s:tagbarsetup()
       exec "/^\. autocommand groups$"
       normal +
     endif
-  " add other file-speicif options
+    "Make sure NERDTree is always flushed to the far right
+    "Do this by moving TagBar one spot to the left if it is opened
+    "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
+    if index(tabfts,"nerdtree")!=-1
+      wincmd h
+      wincmd x
+    endif
+    "The remap to travel to tag on typing
+    nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR><CR>"
   endif
 endfunction
-" au FileType tagbar call s:tagbarsetup()
-  " fails for some reason... maybe tags are generates *after* FileType is called
-nnoremap <silent> <Tab>k :TagbarToggle<CR>:call <sid>tagbarsetup()<CR>
-nmap <expr> <Leader><Space> ":TagbarOpen<CR><C-w>l/".input("Travel to this tagname regex: ")."<CR><CR>"
+nnoremap <silent> <Tab>k :call <sid>tagbarsetup()<CR>
+nmap <expr> <Space><Space> ":TagbarOpen<CR><C-w>l/".input("Travel to this tagname regex: ")."<CR><CR>"
 "Switch updatetime (necessary for Tagbar highlights to follow cursor)
 set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
 "Note the default mappings:
@@ -1371,7 +1402,7 @@ let g:tagbar_autofocus=1 "autojump to window if opened
 let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
 let g:tagbar_case_insensitive=1 "make sorting case insensitive
 let g:tagbar_compact=1 "no header information in panel
-let g:tagbar_singleclick=1 "one click select 
+let g:tagbar_singleclick=0 "one click select 
   "(don't use this; inconsistent with help menu and makes it impossible to switch windows by clicking)
 let g:tagbar_width=25 "better default
 " au FileType python :TagbarOpen | :syntax on
@@ -1712,7 +1743,8 @@ noremap <Tab>t <C-w>t
   "put current window into tab
 noremap <Tab>n <C-w>w
 " noremap <Tab><Tab>. <C-w>w
-  "next
+  "next; this may be most useful one
+  "just USE THIS instead of switching windows directionally
 
 "------------------------------------------------------------------------------
 "COPY/PASTING CLIPBOARD
@@ -1829,13 +1861,17 @@ nnoremap <nowait> = ==
 nnoremap <silent> <nowait> [ [[
 nnoremap <silent> <nowait> ] ]]
 nnoremap <silent> <nowait> g gg
+vnoremap <silent> <nowait> g gg
 function! OneKeystrokeMaps()
+  if &ft!="help" "want to use [ for something else then
   " nmap <silent> <buffer> <nowait> g :<C-u>exe 'normal '.v:count.'gg'<CR>
   nmap <silent> <buffer> <nowait> g gg
+  vmap <silent> <buffer> <nowait> g gg
     "don't know why this works, but it does; just using nnoremap above fails
     "and trying the <C-u> exe thing results in 'command too recursive'
   nmap <silent> <buffer> <nowait> [ :<C-u>exe 'normal '.v:count.'[['<CR>
   nmap <silent> <buffer> <nowait> ] :<C-u>exe 'normal '.v:count.']]'<CR>
+  endif
 endfunction
 autocmd FileType * call OneKeystrokeMaps()
 "And restore some useful 'g' commands
