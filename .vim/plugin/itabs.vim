@@ -16,8 +16,7 @@ function! Tabline()
     let tab = i + 1 "the tab number
     let buflist = tabpagebuflist(tab) "call with arg to specify number, or without to specify current tab
     for b in buflist "get the 'primary' panel in a tab, ignore 'helper' panels even if they are in focus
-      let buftype = getbufvar(b, "&filetype")
-      if index(g:bufignore, buftype)==-1 "index returns -1 if the item is not contained in the list
+      if index(g:bufignore, getbufvar(b, "&ft"))==-1 "index returns -1 if the item is not contained in the list
         let bufnr = b "we choose this as our 'primary' file for tab title
         break
       elseif b==buflist[-1] "occurs if e.g. entire tab is a help window; EXCEPTION, and use it for tab title
