@@ -133,7 +133,8 @@ vnoremap P "_dP
 "   "pressing enter on empty line preserves leading whitespace (HACKY)
 "   "works because Vim doesn't remove spaces when text has been inserted
 "------------------------------------------------------------------------------
-"CHANGE MOVEMENT/MOVEMENT (some options for presence of wrapped lines)
+"REALLY BASIC NORMAL MODE/INSERT MODE/VISUAL MODE STUFF
+"CHANGE MOVEMENT (some options for presence of wrapped lines)
 " noremap $ g$
 " noremap 0 g0
   "go to visual line ends/starts
@@ -149,7 +150,6 @@ noremap H g^
 noremap L g$geE
   "shortcuts for 'go to first char' and 'go to eol'
   "make these work for VISUAL movement
-""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "BETTER NAVIGATION DEFAULTS
 "Basic wrap-mode navigation, always move visually
 "Still might occasionally want to navigate by lines though
@@ -165,16 +165,37 @@ inoremap <Home>  <Nop>
 inoremap <End>   <Nop>
 inoremap <Left>  <Nop>
 inoremap <Right> <Nop>
-"------------------------------------------------------------------------------
-"MAKE VISUAL MODE DEFAULTS A BIT BETTER
+"ROW/LINE MANIPULATION
+"Unjoin lines/cut at cursor
+" nnoremap <Leader>o mAA<CR><Esc>`A
+" nnoremap <Leader>O mA<Up>A<CR><Esc>`A
+nnoremap <Leader>o mAo<Esc>`A
+nnoremap <Leader>O mAO<Esc>`A
+"BETTER PNEUMONIC BEHAVIOR OF BASIC COMMANDS
+"Better join behavior -- before 2J joined this line and next, now it
+"means 'join the two lines below'; more intuitive. uses if statement
+"in <expr> remap, and v:count the user input count
+nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
+"Yank, substitute, delete until end of current line
+nnoremap Y y$
+nnoremap D D
+nnoremap S c$
+  "same behavior; NOTE use 'cc' instead to substitute whole line
+"SOME VISUAL MODE SPECIALTIES
 "Cursor movement/scrolling while preserving highlights
-"...1) create local variables, mark when entering visual mode
+"1) create local variables, mark when entering visual mode
 nnoremap <silent> v :let b:v_mode='v'<CR>mVv
 nnoremap <silent> V :let b:v_mode='V'<CR>mVV
-"...2) using the above, let user click around to move selection
+"2) using the above, let user click around to move selection
 vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V'.b:v_mode.'`N'
 "Enter to exit visual mode, much more natural
 vnoremap <CR> <Esc>
+"NEAT IDEA FOR INSERT MODE REMAP; PUT CLOSING BRACES ON NEXT LINE
+"Adapted from: https://blog.nickpierson.name/colemak-vim/
+" inoremap (<CR> (<CR>)<Esc>ko
+" inoremap {<CR> {<CR>}<Esc>ko
+" inoremap ({<CR> ({<CR>});<Esc>ko
+
 "------------------------------------------------------------------------------
 "HIGHLIGHTING/SPECIAL CHARACTER MANAGEMENT
 "highlight toggle
@@ -201,28 +222,12 @@ nnoremap <Leader>0 <C-x>
 nnoremap <Leader>9 <C-a>h
   "for some reasons <C-a> by itself moves cursor to right; have to adjust
 "------------------------------------------------------------------------------
-"ROW/LINE MANIPULATION
-"Unjoin lines/cut at cursor
-" nnoremap <Leader>o mAA<CR><Esc>`A
-" nnoremap <Leader>O mA<Up>A<CR><Esc>`A
-nnoremap <Leader>o mAo<Esc>`A
-nnoremap <Leader>O mAO<Esc>`A
-"-------------------------------------------------------------------------------
-"BETTER PNEUMONIC BEHAVIOR OF BASIC COMMANDS
-"Better join behavior -- before 2J joined this line and next, now it
-"means 'join the two lines below'; more intuitive. uses if statement
-"in <expr> remap, and v:count the user input count
-nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
-"Yank, substitute, delete until end of current line
-nnoremap Y y$
-nnoremap D D
-nnoremap S c$
-  "same behavior; NOTE use 'cc' instead to substitute whole line
-"------------------------------------------------------------------------------
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works in iTerm2
-let &t_SI = "\<Esc>]50;CursorShape=1\x7"
-let &t_SR = "\<Esc>]50;CursorShape=2\x7"
-let &t_EI = "\<Esc>]50;CursorShape=0\x7"
+if exists("&t_SI") && exists("&t_SR") && exists("&t_EI")
+  let &t_SI = "\<Esc>]50;CursorShape=1\x7"
+  let &t_SR = "\<Esc>]50;CursorShape=2\x7"
+  let &t_EI = "\<Esc>]50;CursorShape=0\x7"
+endif
 
 "-------------------------------------------------------------------------------
 "-------------------------------------------------------------------------------
