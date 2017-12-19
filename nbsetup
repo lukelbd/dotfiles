@@ -4,6 +4,21 @@ Script to set up magic commands and other notebook properties.
 Just call this in the first cell with "run pyfuncs/notebook". And voila!
 Call with optional directory argument to make that the new working directory.
 Function suppresses output by default: see https://stackoverflow.com/a/40984270/4970632
+
+Some notes on jupyter configuration:
+    * in .jupyter, the jupyter_nbconvert_config.json sets up locations of stuff; templates
+        for nbextensions and formatting files for markdown/code cells.
+    * in .jupyter, the jupyter_notebook_config.json installs the configurator extension
+        for managing extra plugins.
+    * in .jupyter, not sure yet how to successfully use jupyter_console_config.py and
+        jupyter_notebook_config.py; couldn't get it to do what this function does on startup.
+    * in .jupyter/custom, current_theme.txt lists the current jupyterthemes theme, custom.css
+        contains CSS formatting for it, and fonts should contain font files -- note that there
+        are not font files on my Mac, even though jupyterthemes works; sometimes may be empty
+    * in .jupyter/nbconfig, tree.json loads the extra tab for the NBconfigurator, and 
+        common.json gives option to hide incompatible plugs, and notebook.json contains all
+        the new settings; just copy it over to current notebook to update
+
 """
 from IPython import get_ipython
 from contextlib import redirect_stdout
