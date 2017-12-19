@@ -330,8 +330,8 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
-  dest="${dest/#$HOME/\~}" # restore expanded tilde
-  dest="${dest/\ /\\\ }"   # escape slashes manually
+  dest="${dest/#$HOME/~}" # restore expanded tilde
+  dest="${dest//\ /\\\ }"   # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
   scp -P2222 $args "$file" ldavis@127.0.0.1:"$dest"
 }
@@ -340,8 +340,8 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
-  file="${file/#$HOME/\~}" # restore expanded tilde
-  file="${file/\ /\\\ }"   # escape slashes manually
+  file="${file/#$HOME/~}" # restore expanded tilde
+  file="${file//\ /\\\ }"   # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
   scp -P2222 $args ldavis@127.0.0.1:"$file" "$dest"
 }
