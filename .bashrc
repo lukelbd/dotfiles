@@ -172,6 +172,38 @@ if [ "$HOSTNAME" == "euclid" ]; then
 fi
 
 ################################################################################
+# General utilties
+################################################################################
+# LS aliases, basic file management, helpful utilities
+if $macos; then
+  lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
+  sortcmd='gsort' # GNU utilities, different from mac versions
+else
+  lscolor='--color=always'
+  sortcmd='sort'
+fi
+alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
+alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
+alias lx="ls $lscolor -AF -lsa | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
+alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
+alias ld="find . -maxdepth 1 -type d -mindepth 1 -exec du -hs {} \; | $sortcmd -sh" # directory sizes
+  # need COREUTILS for sort -h; use brew install coreutils, they're installed
+  # with prefix g (the Linux version; MacOS comes with truncated versions)
+alias df="df -h" # disk useage
+alias cd="cd -P" # -P follows physical location
+alias type="type -a" # alias 'type' to show ALL instances of path/function/variable/file
+  # just some simple ones
+alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
+  # prints out release info
+alias ps="ps" # processes in this shell
+alias pc="mpstat -P ALL 1" # list individual core usage
+alias pt="top"             # table of processes, total
+  # examine current proceses
+alias gitt="git log --graph --pretty=format:\"%h %d - %an, %ar : %s\""
+  # nice git log (should maybe use git-config instead; check stack overflow,
+  # but not sure how to SAVE those shortcuts)
+
+################################################################################
 # Workspace setup
 ################################################################################
 # Matlab aliases; set up quick terminal-session
@@ -212,7 +244,7 @@ function notebook() {
   [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
   [ -z $port ] && {
     $macos && port="10000" || port="20000" # easy-to-remember defaults
-    } # port 1000 if local, port 2000 if remote!
+    } # port 10000 if local, port 20000 if remote!
   echo "Initializing jupyter notebook over port port: $port"
   jupyter notebook --no-browser --port=$port --NotebookApp.iopub_data_rate_limit=10000000
   } # need to extend data rate limit when making some plots with lots of stuff
@@ -224,15 +256,19 @@ function connect() { # connect to remove notebook on port
     echo "ERROR: Must enter the hostname."
     return 1
   fi
-  [ -z $port ] && port="20000" # easy-to-remember default
+  [ -z $port ] && { port="20000"; echo "Using default port $port."; } # easy-to-remember default
+    # default asumes port 20000 on remote servers
   echo "Connecting to $hostname over port $port."
   \ssh -N -f -L localhost:$port:localhost:$port $hostname # backslash says to ignore aliases
       # necessary because have ssh alias to allow for port forwarding back to localhost
+      # the -f command sets this port-forwarding to the background for the duration of the
+      # ssh command to follow; but the -N command says we don't need to issue a command,
+      # the port will just remain forwarded indefinitely
   }
 # Include option to cancel connection: see: https://stackoverflow.com/a/20240445/4970632
 function disconnect() {
   port=$1 # optional listening port
-  [ -z $port ] && port="20000" # easy-to-remember default
+  [ -z $port ] && { port="20000"; echo "Using default port $port."; } # easy-to-remember default
   echo "Cancelling port-forwarding over port $port."
   lsof -t -i tcp:$port | xargs kill
   }
@@ -240,69 +276,9 @@ function disconnect() {
 alias lssh="ps aux | grep ssh"
 
 ################################################################################
-# General utilties
-################################################################################
-# LS aliases, basic file management, helpful utilities
-if $macos; then
-  alias preview='\open -a Preview' # use un-aliased "open" command
-  alias chrome='\open -a Google\ Chrome'
-  alias open='\open -a TextEdit'
-  alias skim='\open -a Skim'
-  lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
-  sortcmd='gsort' # GNU utilities, different from mac versions
-else
-  lscolor='--color=always'
-  sortcmd='sort'
-fi
-alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
-alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-alias lx="ls $lscolor -AF -lsa | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
-alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
-alias ld="find . -maxdepth 1 -type d -mindepth 1 -exec du -hs {} \; | $sortcmd -sh" # directory sizes
-  # need COREUTILS for sort -h; use brew install coreutils, they're installed
-  # with prefix g (the Linux version; MacOS comes with truncated versions)
-alias df="df -h" # disk useage
-alias cd="cd -P" # -P follows physical location
-alias type="type -a" # alias 'type' to show ALL instances of path/function/variable/file
-  # just some simple ones
-alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
-  # prints out release info
-alias ps="ps" # processes in this shell
-alias pc="mpstat -P ALL 1" # list individual core usage
-alias pt="top"             # table of processes, total
-  # examine current proceses
-alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
-  # list number of songs per artist; can't have leading spaces in line continuation
-alias weather="curl wttr.in/Fort\ Collins" # list weather information
-  # shows filenames without extensions; isn't SED awesome? the -1 forces
-  # one-per-line output, the -e appends command to each line in pipe,
-alias gitt="git log --graph --pretty=format:\"%h %d - %an, %ar : %s\""
-  # nice git log (should maybe use git-config instead; check stack overflow,
-  # but not sure how to SAVE those shortcuts)
-
-# NetCDF tools (should just remember these)
-# NCKS behavior very different between versions, so use ncdump instead
-function ncdmnlist() { # get list of dimensions
-  ncdump -h $1 | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs;
-}
-function ncvarlist() { # only get text between variables: and linebreak before global attributes
-  ncdump -h $1 | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-    | cut -d '(' -f 1 | sed 's/.* //g' | xargs;
-}
-function ncvardump() { # dump variable contents (first argument) from file (second argument)
-  ncks -s "%f " -H -C -v $1 $2;
-}
-# function ncdmnlist() { ncks -m $1 | cut -d ':' -f 1 | cut -d '=' -s -f 1 | xargs; }
-# function ncvarlist() { ncks -m $1 | grep -v '[:=]' | cut -d '(' -f 1 -s | sed 's/.* //g' | xargs; }
-# function ncvarlist2() { ncks -m $1 | grep "^\S*:" | cut -d ':' -f 1 -s | xargs; }
-# alias ln="cdo sinfon" # list netcdf information with CDO; this is my favorite format
-# alias lh="ncdump -h"  # with ncdump; h for 'headers'
-# function lv() { ncdump -t "-v,$1" "$2"; } # list variable
-#   # note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
-#   # the homebrew install location 'brew tap homebrew/science, brew install cdo'...which is bad, because
-#   # the current version can't read netcdf4 files; you really don't need HDF4, so just don't install it
-
 # Session management
+################################################################################
+# First, just declare some names for active servers
 # alias olbers='ssh -XC ldavis@129.82.49.1'
 # export ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
 export work='ldavis@10.83.16.91' # for scp'ing into my Mac
@@ -324,7 +300,8 @@ function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-
 
 # Functions for scp-ing from local to remote, and vice versa
 # See: https://stackoverflow.com/a/25486130/4970632
-alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222... not sure exactly how it works
+# alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222... not sure exactly how it works
+alias ssh="ssh -R 127.0.0.1:1111:127.0.0.1:11"
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
@@ -333,7 +310,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   dest="${dest/#$HOME/\~}" # restore expanded tilde
   dest="${dest//\ /\\\ }"   # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
-  scp -P2222 $args "$file" ldavis@127.0.0.1:"$dest"
+  scp -P1111 $args "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
@@ -343,7 +320,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   file="${file/#$HOME/\~}" # restore expanded tilde
   file="${file//\ /\\\ }"   # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
-  scp -P2222 $args ldavis@127.0.0.1:"$file" "$dest"
+  scp -P1111 $args ldavis@127.0.0.1:"$file" "$dest"
 }
 # Copy <file> on this server to another server, preserving full path but 
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
@@ -368,6 +345,31 @@ function ccp() {
     # note $file CANNOT contain the literal/escaped tilde; will not be expanded
     # by scp if quoted, but still need quotes in case name has spaces
 }
+
+################################################################################
+# Dataset utilities
+################################################################################
+# NetCDF tools (should just remember these)
+# NCKS behavior very different between versions, so use ncdump instead
+function ncdmnlist() { # get list of dimensions
+  ncdump -h $1 | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs;
+}
+function ncvarlist() { # only get text between variables: and linebreak before global attributes
+  ncdump -h $1 | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
+    | cut -d '(' -f 1 | sed 's/.* //g' | xargs;
+}
+function ncvardump() { # dump variable contents (first argument) from file (second argument)
+  ncks -s "%f " -H -C -v $1 $2;
+}
+# function ncdmnlist() { ncks -m $1 | cut -d ':' -f 1 | cut -d '=' -s -f 1 | xargs; }
+# function ncvarlist() { ncks -m $1 | grep -v '[:=]' | cut -d '(' -f 1 -s | sed 's/.* //g' | xargs; }
+# function ncvarlist2() { ncks -m $1 | grep "^\S*:" | cut -d ':' -f 1 -s | xargs; }
+# alias ln="cdo sinfon" # list netcdf information with CDO; this is my favorite format
+# alias lh="ncdump -h"  # with ncdump; h for 'headers'
+# function lv() { ncdump -t "-v,$1" "$2"; } # list variable
+#   # note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
+#   # the homebrew install location 'brew tap homebrew/science, brew install cdo'...which is bad, because
+#   # the current version can't read netcdf4 files; you really don't need HDF4, so just don't install it
 
 # Extract generalized files
 function extract() {
@@ -397,67 +399,88 @@ function extract() {
   done
 }
 
-# Sync a local directory with files on SD card
-# This function will only modify files on the SD card, never the local directory
-function sdsync() {
-  # Behavior option: check for modified files?
-  # Only problem: file "modified" every time transferred to SD card
-  updateold=true
-  # Can change this, but default will be to sync playlist
-  sdcard="NO NAME" # edit when get new card
-  sdloc="/Volumes/$sdcard/Playlist" # sd data
-  locloc="$HOME/Google Drive/Playlist" # local data
-  echo "SD Location: $sdloc"
-  echo "Local location: $locloc"
-  # Iterate through local files
-  copied=false # copied anything?
-  updated=false # updated anything?
-  deleted=false # deleted anything?
-  shopt -s nullglob
-  $macos && date=gdate || date=date
-  for path in "$locloc/"*.{mp3,m4a}; do
-    file="${path##*/}"
-    if [ ! -r "$sdloc/$file" ]; then
-      copied=true # record
-      echo "New local file: $file. Copying to SD..."
-      cp "$path" "$sdloc/$file"
-    elif $updateold; then
-      # This will work, because just record last date that sync occurred
-      [ -r "$locloc/sdlog" ] || touch "$locloc/sdlog" # if doesn't exist, make
-      datec=$(tail -n 1 "$locloc/sdlog") # date copied to SD
-      datem=$($date -r "$path" +%s) # date last modified
-      if [ -z "$datec" ]; then # initializing directory
-        if [ $datem -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changes in last 50 days
-          modified=true
-        else modified=false
-        fi
-      elif [ "$datem" -gt "$datec" ]; then
-        modified=true # modified since last copied
-      else modified=false # not modified since last copied
-      fi
-      $modified && {
-        echo "Modified local file \"$file\" since previous sync."
-        updated=true
-        cp "$path" "$sdloc/$file"
-        }
-    fi
-  done
-  $copied || echo "No new files found."
-  $updated || echo "No recently modified files found."
-  # Iterate through remote files
-  for path in "$sdloc/"*.{mp3,m4a}; do
-    file="${path##*/}"
-    if [ ! -r "$locloc/$file" ]; then
-      deleted=true # record
-      echo "Deleted local file: $file. Deleting from SD..."
-      rm "$path"
-    fi
-  done
-  $deleted || echo "No old files deleted."
-  # Record in Playlist when last sync occurred
-  date +%s >> "$locloc/sdlog"
-}
+################################################################################
+# Personal utilities/for MacBook specially
+################################################################################
+if $macos; then
+  # Opening commands for some GUI apps
+  alias preview='\open -a Preview' # use un-aliased "open" command
+  alias chrome='\open -a Google\ Chrome'
+  alias open='\open -a TextEdit'
+  alias skim='\open -a Skim'
 
+  # Fun stuff
+  alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
+    # list number of songs per artist; can't have leading spaces in line continuation
+  alias weather="curl wttr.in/Fort\ Collins" # list weather information
+    # shows filenames without extensions; isn't SED awesome? the -1 forces
+    # one-per-line output, the -e appends command to each line in pipe,
+
+  # Sync a local directory with files on SD card
+  # This function will only modify files on the SD card, never the local directory
+  function sdsync() {
+    # Behavior option: check for modified files?
+    # Only problem: file "modified" every time transferred to SD card
+    updateold=true
+    # Can change this, but default will be to sync playlist
+    sdcard="NO NAME" # edit when get new card
+    sdloc="/Volumes/$sdcard/Playlist" # sd data
+    locloc="$HOME/Google Drive/Playlist" # local data
+    echo "SD Location: $sdloc"
+    echo "Local location: $locloc"
+    # Iterate through local files
+    copied=false # copied anything?
+    updated=false # updated anything?
+    deleted=false # deleted anything?
+    shopt -s nullglob
+    $macos && date=gdate || date=date
+    for path in "$locloc/"*.{mp3,m4a}; do
+      file="${path##*/}"
+      if [ ! -r "$sdloc/$file" ]; then
+        copied=true # record
+        echo "New local file: $file. Copying to SD..."
+        cp "$path" "$sdloc/$file"
+      elif $updateold; then
+        # This will work, because just record last date that sync occurred
+        [ -r "$locloc/sdlog" ] || touch "$locloc/sdlog" # if doesn't exist, make
+        datec=$(tail -n 1 "$locloc/sdlog") # date copied to SD
+        datem=$($date -r "$path" +%s) # date last modified
+        if [ -z "$datec" ]; then # initializing directory
+          if [ $datem -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changes in last 50 days
+            modified=true
+          else modified=false
+          fi
+        elif [ "$datem" -gt "$datec" ]; then
+          modified=true # modified since last copied
+        else modified=false # not modified since last copied
+        fi
+        $modified && {
+          echo "Modified local file \"$file\" since previous sync."
+          updated=true
+          cp "$path" "$sdloc/$file"
+          }
+      fi
+    done
+    $copied || echo "No new files found."
+    $updated || echo "No recently modified files found."
+    # Iterate through remote files
+    for path in "$sdloc/"*.{mp3,m4a}; do
+      file="${path##*/}"
+      if [ ! -r "$locloc/$file" ]; then
+        deleted=true # record
+        echo "Deleted local file: $file. Deleting from SD..."
+        rm "$path"
+      fi
+    done
+    $deleted || echo "No old files deleted."
+    # Record in Playlist when last sync occurred
+    date +%s >> "$locloc/sdlog"
+  }
+fi
+
+################################################################################
+# Shell behavior/look
+################################################################################
 # Tab completion control; use "complete" command
 # -d filters to only directories
 # -f filters to only files
