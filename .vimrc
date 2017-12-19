@@ -13,6 +13,13 @@ set nocompatible
   "always use the vim default where vi and vim differ; for example, if you
   "put this too late, whichwrap will be resset
 "------------------------------------------------------------------------------
+"TEST IF WE HAVE NOWAIT REMAP OPTION -- see: https://vi.stackexchange.com/a/14577/8084
+if v:version>703 || v:version==703 && has("patch1261")
+  let g:has_nowait=1
+else
+  let g:has_nowait=0
+endif
+"------------------------------------------------------------------------------
 "LEADER -- most important line
 let mapleader = "\<Space>"
 noremap <Space> <Nop>
@@ -73,7 +80,9 @@ set slm=
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 nnoremap <C-r> :redraw<CR>
   "refresh screen; because C-r has a better pneumonic, and I map <C-r> to U for REDO
-noremap <nowait> q q:
+if g:has_nowait
+  noremap <nowait> q q:
+endif
   "view last command-window stuff
   "added benefit that this is disabled in extra windows; only allowed in primary ones
 function! s:commandline_check()
@@ -291,9 +300,11 @@ autocmd BufReadPost *
    \   exe "normal! g`\"" |
    \ endif
 "Restore sessions
-" nnoremap <leader>S :ToggleWorkspace<CR>
-" let g:workspace_session_name = '.session.vim'
-autocmd VimEnter * Obsession .session.vim
+if has_key(g:plugs, "vim-obsession")
+  " nnoremap <leader>S :ToggleWorkspace<CR>
+  " let g:workspace_session_name = '.session.vim'
+  autocmd VimEnter * Obsession .session.vim
+endif
 
 "-------------------------------------------------------------------------------
 "DELIMITMATE (auto-generate closing delimiters)
@@ -301,18 +312,20 @@ augroup delimit
 augroup END
 "Set up delimiter paris; delimitMate uses these by default
 "Can set global defaults along with buffer-specific alternatives
-let g:delimitMate_quotes="\" '"
-let g:delimitMate_matchpairs="(:),{:},[:]"
-  "if this unset looks for VIM &matchpairs variable; generally should be the
-  "same but we just want to make sure
-au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
-au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
-  "markdown need backticks for code, and can maybe do LaTeX
-au FileType tex let b:delimitMate_quotes = "\" ' $ |"
-  "tex need | for verbatim environments
-"are different (but single-char) left-right delimiters... note you
-"CANNOT use 'set matchpairs', or plugin breaks! for some reason...
-"also, don't use <> because use them as comparison operators too much
+if has_key(g:plugs, "delimitmate")
+  let g:delimitMate_quotes="\" '"
+  let g:delimitMate_matchpairs="(:),{:},[:]"
+    "if this unset looks for VIM &matchpairs variable; generally should be the
+    "same but we just want to make sure
+  au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
+  au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
+    "markdown need backticks for code, and can maybe do LaTeX
+  au FileType tex let b:delimitMate_quotes = "\" ' $ |"
+    "tex need | for verbatim environments
+  "are different (but single-char) left-right delimiters... note you
+  "CANNOT use 'set matchpairs', or plugin breaks! for some reason...
+  "also, don't use <> because use them as comparison operators too much
+endif
 
 "-------------------------------------------------------------------------------
 "SURROUND (place delimiters around stuff)
@@ -920,30 +933,31 @@ autocmd FileType python call s:pymacros()
 "MACROS FROM JEDI-VIM
 "See: https://github.com/davidhalter/jedi-vim
 "The autocmd line disables docstring popup window
-" let g:jedi#force_py_version=3
-let g:jedi#auto_vim_configuration = 0
-  " set these myself instead
-let g:jedi#rename_command = ""
-  "jedi-vim recommended way of disabling commands
-  "NOTE JEDI AUTO-RENAMING SKETCHY, SOMETIMES FAILS
-  "GOOD EXAMPLE IS TRY RENAMING 'debug' IN METADATA FUNCTION;
-  "JEDI SKIPS F-STRINGS, SKIPS ITS RE-ASSIGNMENT IN FOR LOOP,
-  "SKIPS WHERE IT APPEARED AS DEFAULT KWARG IN FUNCTION
-let g:jedi#usages_command = "?g"
-  "open up list of places where variable appears; then can 'goto'
-let g:jedi#goto_assignments_command = "?G"
-  "goto location where definition/class defined
-let g:jedi#documentation_command = "?d"
-autocmd FileType python setlocal completeopt-=preview
+if has_key(g:plugs, "jedi-vim")
+  " let g:jedi#force_py_version=3
+  let g:jedi#auto_vim_configuration = 0
+    " set these myself instead
+  let g:jedi#rename_command = ""
+    "jedi-vim recommended way of disabling commands
+    "NOTE JEDI AUTO-RENAMING SKETCHY, SOMETIMES FAILS
+    "GOOD EXAMPLE IS TRY RENAMING 'debug' IN METADATA FUNCTION;
+    "JEDI SKIPS F-STRINGS, SKIPS ITS RE-ASSIGNMENT IN FOR LOOP,
+    "SKIPS WHERE IT APPEARED AS DEFAULT KWARG IN FUNCTION
+  let g:jedi#usages_command = "?g"
+    "open up list of places where variable appears; then can 'goto'
+  let g:jedi#goto_assignments_command = "?G"
+    "goto location where definition/class defined
+  let g:jedi#documentation_command = "?d"
+  autocmd FileType python setlocal completeopt-=preview
+endif
 "-------------------------------------------------------------------------------
 "VIM python-mode
-" let g:pymode_python='python3'
-"PYTHON-SYNTAX MACROS
-"...must enable some options manually
+if has_key(g:plugs, "python-mode")
+  let g:pymode_python='python3'
+endif
+"-------------------------------------------------------------------------------
+"PYTHON-SYNTAX; these should be provided with VIM by default
 au FileType python let g:python_highlight_all=1
-" au FileType python Python3Syntax
-"python3 is enabled by default; see doc info
-"...might also try the default... was it better? think it was worse
 
 "-------------------------------------------------------------------------------
 "FORTRAN MACROS
@@ -967,6 +981,7 @@ augroup END
 " set complete-=k complete+=k " Add dictionary search (as per dictionary option)
 " au BufRead,BufNewFile *.ncl set dictionary=~/.vim/words/ncl.dic
 au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
+  "can put other stuff here; right now this is just for the NCL dict for NCL
 
 "-------------------------------------------------------------------------------
 "SHELL MACROS
@@ -998,8 +1013,10 @@ function! s:helpsetup()
   vertical resize 79
   noremap <buffer> q :q<CR>
   nnoremap <buffer> <CR> <C-]>
-  nnoremap <nowait> <buffer> [ :pop<CR>
-  " nnoremap <buffer> <nowait> <LeftMouse> <LeftMouse>:call <sid>helpclick()<CR>
+  if g:has_nowait
+    nnoremap <nowait> <buffer> [ :pop<CR>
+    " nnoremap <buffer> <nowait> <LeftMouse> <LeftMouse>:call <sid>helpclick()<CR>
+  endif
   setlocal nolist
   setlocal nonumber
   setlocal nospell
@@ -1019,13 +1036,13 @@ au FileType rst,qf call s:simpleseup()
 "MARK HIGHLIGHTING
 augroup marks
 augroup END
-" let g:highlightMarks_colors=['orange', 'yellow', 'green', 'blue', 'purple', '#00BB33']
-" let g:highlightMarks_cterm_colors=[3, 2, 4, 1]
-  "above is default
-" let g:highlightMarks_colors=['blue']
-" let g:highlightMarks_colors=['yellow']
-let g:highlightMarks_cterm_colors=[7] "4 and 1 are best
-  "use 4 for light blue, 11 for light yellow, 7 for white (best)
+if has_key(g:plugs, "highlightMarks")
+  let g:highlightMarks_cterm_colors=[7] "4 and 1 are best
+    "use 4 for light blue, 11 for light yellow, 7 for white (best)
+  " let g:highlightMarks_colors=['orange', 'yellow', 'green', 'blue', 'purple', '#00BB33']
+  " let g:highlightMarks_cterm_colors=[3, 2, 4, 1]
+    "above is default
+endif
 
 "-------------------------------------------------------------------------------
 "VIM visual increment; creating columns of 1/2/3/4 etc.
@@ -1033,22 +1050,26 @@ let g:highlightMarks_cterm_colors=[7] "4 and 1 are best
 augroup increment
 augroup END
 "Disable old ones
-silent! vunmap <C-a>
-silent! vunmap <C-x>
-vmap <Up> <Plug>VisualIncrement
-vmap <Down> <Plug>VisualDecrement
+if has_key(g:plugs, "vim-visual-increment")
+  silent! vunmap <C-a>
+  silent! vunmap <C-x>
+  vmap <Up> <Plug>VisualIncrement
+  vmap <Down> <Plug>VisualDecrement
+endif
 
 "-------------------------------------------------------------------------------
 "CODI (MATHEMATICAL NOTEPAD)
 augroup codi
 augroup END
-nnoremap <silent> <expr> <Leader>m ':Codi '.eval('&ft').'<CR>'
-nnoremap <silent> <expr> <Leader>M ':tabe '.input('Enter calculator name: ').'.py<CR>:Codi python<CR>'
-  "turns current file into calculator
-  "the m is meant to stand for 'MATH'
-let g:codi#rightalign = 0
-let g:codi#rightsplit = 0
-let g:codi#width = 20
+if has_key(g:plugs, "codi.vim")
+  nnoremap <silent> <expr> <Leader>m ':Codi '.eval('&ft').'<CR>'
+  nnoremap <silent> <expr> <Leader>M ':tabe '.input('Enter calculator name: ').'.py<CR>:Codi python<CR>'
+    "turns current file into calculator
+    "the m is meant to stand for 'MATH'
+  let g:codi#rightalign = 0
+  let g:codi#rightsplit = 0
+  let g:codi#width = 20
+endif
 
 "-------------------------------------------------------------------------------
 "NEOCOMPLETE (RECOMMENDED SETTINGS)
@@ -1056,7 +1077,8 @@ augroup complete
 augroup END
 "-------------------------------------------------------------------------------
 "CRITICAL KEY MAPPINGS
-if g:requirement2 "neocomplete not installed; don't do these mappings
+" if g:requirement2 "neocomplete not installed; don't do these mappings
+if has_key(g:plugs, "neocomplete.vim") "just check if activated
   "Change basic behavior in context of neocomplete
   " inoremap <silent> <expr> [3~ pumvisible() ? neocomplete#smart_close_popup()."\<Delete>" : "\<Delete>"
     "ruins bracket autofill in insert mode, so forget it; idea was make delete
@@ -1085,29 +1107,31 @@ else
 endif
 "-------------------------------------------------------------------------------
 "OTHER SETTINGS
-let g:acp_enableAtStartup = 1
-" Use neocomplete.
-let g:neocomplete#enable_at_startup = 1
-" Do not use smartcase.
-let g:neocomplete#enable_smart_case = 0
-let g:neocomplete#enable_camel_case = 0
-let g:neocomplete#enable_ignore_case = 0
-"Auto complete (turn below on and off)
-let g:neocomplete#enable_auto_select = 1
-let g:neocomplete#auto_completion_start_length = 2
-" Set minimum syntax keyword length.
-let g:neocomplete#sources#syntax#min_keyword_length = 2
-" Define dictionary.
-let g:neocomplete#sources#dictionary#dictionaries = {
-  \ 'default' : '',
-  \ 'vimshell' : $HOME.'/.vimshell_hist',
-  \ 'scheme' : $HOME.'/.gosh_completions'
-      \ }
-" Define keyword.
-if !exists('g:neocomplete#keyword_patterns')
-  let g:neocomplete#keyword_patterns = {}
+if has_key(g:plugs, "neocomplete.vim") "just check if activated
+  let g:acp_enableAtStartup = 1
+  " Use neocomplete.
+  let g:neocomplete#enable_at_startup = 1
+  " Do not use smartcase.
+  let g:neocomplete#enable_smart_case = 0
+  let g:neocomplete#enable_camel_case = 0
+  let g:neocomplete#enable_ignore_case = 0
+  "Auto complete (turn below on and off)
+  let g:neocomplete#enable_auto_select = 1
+  let g:neocomplete#auto_completion_start_length = 2
+  " Set minimum syntax keyword length.
+  let g:neocomplete#sources#syntax#min_keyword_length = 2
+  " Define dictionary.
+  let g:neocomplete#sources#dictionary#dictionaries = {
+    \ 'default' : '',
+    \ 'vimshell' : $HOME.'/.vimshell_hist',
+    \ 'scheme' : $HOME.'/.gosh_completions'
+        \ }
+  " Define keyword.
+  if !exists('g:neocomplete#keyword_patterns')
+    let g:neocomplete#keyword_patterns = {}
+  endif
+  let g:neocomplete#keyword_patterns['default'] = '\h\w*'
 endif
-let g:neocomplete#keyword_patterns['default'] = '\h\w*'
 "Shell like behavior(not recommended).
 " set completeopt+=longest
 " let g:neocomplete#enable_auto_select = 1
@@ -1169,26 +1193,28 @@ augroup END
 "and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
 "'I' toggle hidden file display, '?' toggle help
 "Remap NerdTree command
-" noremap <expr> { exists("t:NERDTreeBufName") && bufwinnr(t:NERDTreeBufName)!=-1 ? ":NERDTreeClose<CR>" : ":NERDTree<CR>"
-" noremap <expr> { exists("t:NERDTreeBufName") && bufwinnr(t:NERDTreeBufName)!=-1 ? ":NERDTreeTabsClose<CR>" : ":NERDTreeTabsOpen<CR>"
-" noremap <Tab>j :NERDTreeTabsToggle<CR>
-" noremap <expr> <Tab>j exists("NERDTreeTabsToggle") ? ":NERDTreeTabsToggle<CR>" : ":NERDTreeToggle<CR>"
-noremap <Tab>j :NERDTreeToggle<CR>
-noremap <Tab>J :NERDTreeTabsToggle<CR>
-  "had some issues with NERDTreeToggle; failed/gave weird results
-"slash, because directory hierarchies have slashes?
-"...no, confusing; instead { because it shows up on left
-let g:NERDTreeWinPos="right"
-let g:NERDTreeWinSize=20 "instead of 31 default
-let g:NERDTreeShowHidden=1
-let g:NERDTreeMinimalUI=1
-  "remove annoying ? for help note
-let g:NERDTreeMapChangeRoot="D"
-  "C was annoying, because VIM will wait for 'CD'
-autocmd BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-  "close nerdtree if last in tab
-autocmd FileType nerdtree setlocal nolist
-autocmd FileType nerdtree normal! <C-w>r
+if has_key(g:plugs, "nerdtree")
+  " noremap <expr> { exists("t:NERDTreeBufName") && bufwinnr(t:NERDTreeBufName)!=-1 ? ":NERDTreeClose<CR>" : ":NERDTree<CR>"
+  " noremap <expr> { exists("t:NERDTreeBufName") && bufwinnr(t:NERDTreeBufName)!=-1 ? ":NERDTreeTabsClose<CR>" : ":NERDTreeTabsOpen<CR>"
+  " noremap <Tab>j :NERDTreeTabsToggle<CR>
+  " noremap <expr> <Tab>j exists("NERDTreeTabsToggle") ? ":NERDTreeTabsToggle<CR>" : ":NERDTreeToggle<CR>"
+  noremap <Tab>j :NERDTreeToggle<CR>
+  noremap <Tab>J :NERDTreeTabsToggle<CR>
+    "had some issues with NERDTreeToggle; failed/gave weird results
+  "slash, because directory hierarchies have slashes?
+  "...no, confusing; instead { because it shows up on left
+  let g:NERDTreeWinPos="right"
+  let g:NERDTreeWinSize=20 "instead of 31 default
+  let g:NERDTreeShowHidden=1
+  let g:NERDTreeMinimalUI=1
+    "remove annoying ? for help note
+  let g:NERDTreeMapChangeRoot="D"
+    "C was annoying, because VIM will wait for 'CD'
+  autocmd BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+    "close nerdtree if last in tab
+  autocmd FileType nerdtree setlocal nolist
+  autocmd FileType nerdtree normal! <C-w>r
+endif
 
 "-------------------------------------------------------------------------------
 "NERDCommenter (comment out stuff)
@@ -1203,126 +1229,130 @@ augroup END
 " -cy yanks lines before commenting
 " -c$ comments to eol
 " -cu uncomments line
-"Disable default mappings (make my own)
-let g:NERDCreateDefaultMappings = 0
-"NCL delimiters
-au FileType ncl set commentstring=;\ %s
-  "don't know why %s is necessary
-"Custom delimiter overwrites (default python includes space for some reason)
-let g:NERDCustomDelimiters = {'python': {'left': '#'}}
-"Comments led with spaces
-let g:NERDSpaceDelims = 1
-"Use compact syntax for prettified multi-line comments
-let g:NERDCompactSexyComs = 1
-"Trailing whitespace deletion
-let g:NERDTrimTrailingWhitespace=1
-"Allow commenting and inverting empty lines (useful when commenting a region)
-let g:NERDCommentEmptyLines = 1
-"Align line-wise comment delimiters flush left instead of following code indentation
-let g:NERDDefaultAlign = 'left'
-let g:NERDCommentWholeLinesInVMode = 1
-"Set up *dividers* using the NerdComment() command (arg1 is mode [1 for normal], arg2 is type)
-"below will extend divider to 79th column from current column position
-nnoremap <expr> c\ ""
-    \.""
-    \."o<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>"
-    \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>"
-    \."o<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>"
-    \."<Up>A"
-nnoremap <expr> c\| ""
-    \.""
-    \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>"
-    \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>"
-    \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>"
-    \."<Up>A"
-nnoremap <expr> c- ""
-    \.""
-    \."mAo<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>`A"
-nnoremap <expr> c_ ""
-    \.""
-    \."mAo<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>`A"
-"Create python docstring
-nnoremap c' o"""<CR>.<CR>"""<Up><Esc>A<BS>
-" nnoremap c\| ox<BS><CR>x<BS><CR>x<BS><Esc>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Up><Up>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Down>:call NERDComment('n', 'toggle')<CR>0a<Space>
-"Set up custom remaps
-nnoremap co :call NERDComment('n', 'comment')<CR>
-nnoremap cO :call NERDComment('n', 'uncomment')<CR>
-nnoremap c. :call NERDComment('n', 'toggle')<CR>
-vnoremap co :call NERDComment('v', 'comment')<CR>
-vnoremap cO :call NERDComment('v', 'uncomment')<CR>
-vnoremap c. :call NERDComment('v', 'toggle')<CR>
+if has_key(g:plugs, "nerdcommenter")
+  "Disable default mappings (make my own)
+  let g:NERDCreateDefaultMappings = 0
+  "NCL delimiters
+  au FileType ncl set commentstring=;\ %s
+    "don't know why %s is necessary
+  "Custom delimiter overwrites (default python includes space for some reason)
+  let g:NERDCustomDelimiters = {'python': {'left': '#'}}
+  "Comments led with spaces
+  let g:NERDSpaceDelims = 1
+  "Use compact syntax for prettified multi-line comments
+  let g:NERDCompactSexyComs = 1
+  "Trailing whitespace deletion
+  let g:NERDTrimTrailingWhitespace=1
+  "Allow commenting and inverting empty lines (useful when commenting a region)
+  let g:NERDCommentEmptyLines = 1
+  "Align line-wise comment delimiters flush left instead of following code indentation
+  let g:NERDDefaultAlign = 'left'
+  let g:NERDCommentWholeLinesInVMode = 1
+  "Set up *dividers* using the NerdComment() command (arg1 is mode [1 for normal], arg2 is type)
+  "below will extend divider to 79th column from current column position
+  nnoremap <expr> c\ ""
+      \.""
+      \."o<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>"
+      \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>"
+      \."o<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>"
+      \."<Up>A"
+  nnoremap <expr> c\| ""
+      \.""
+      \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>"
+      \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>"
+      \."o<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>"
+      \."<Up>A"
+  nnoremap <expr> c- ""
+      \.""
+      \."mAo<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>`A"
+  nnoremap <expr> c_ ""
+      \.""
+      \."mAo<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>`A"
+  "Create python docstring
+  nnoremap c' o"""<CR>.<CR>"""<Up><Esc>A<BS>
+  " nnoremap c\| ox<BS><CR>x<BS><CR>x<BS><Esc>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Up><Up>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Down>:call NERDComment('n', 'toggle')<CR>0a<Space>
+  "Set up custom remaps
+  nnoremap co :call NERDComment('n', 'comment')<CR>
+  nnoremap cO :call NERDComment('n', 'uncomment')<CR>
+  nnoremap c. :call NERDComment('n', 'toggle')<CR>
+  vnoremap co :call NERDComment('v', 'comment')<CR>
+  vnoremap cO :call NERDComment('v', 'uncomment')<CR>
+  vnoremap c. :call NERDComment('v', 'toggle')<CR>
+endif
 
 "-------------------------------------------------------------------------------
 "SYNTASTIC (syntax checking for code)
 augroup syntastic
 augroup END
-"Turn off signcolumn (ugly; much better to just HIGHLIGHT LINES IN RED)
-if exists("&signcolumn")
-  set signcolumn=no
-endif
-"Commands for circular location-list (error) scrolling
-command! Lnext try | lnext | catch | lfirst | catch | endtry
-command! Lprev try | lprev | catch | llast | catch | endtry
-  "the capital L are circular versions
-"Helper function; checks status
-function! s:syntastic_status() 
-  if exists("b:syntastic_loclist")
-    if empty(b:syntastic_loclist)
-      return 0
-    else
-      return 1
-    endif
-  else
-    return 0
+if has_key(g:plugs, "syntastic")
+  "Turn off signcolumn (ugly; much better to just HIGHLIGHT LINES IN RED)
+  if exists("&signcolumn")
+    set signcolumn=no
   endif
-endfunction
-"Set up custom remaps; there are some letters that i pretty much never use after
-"yanking (y), so can use 'y' for sYntax
-" nnoremap yn :Lnext<CR>
-" nnoremap yN :Lprev<CR>
-nnoremap yo :noh<CR>:SyntasticCheck<CR>
-nnoremap yO :SyntasticReset<CR>
-nnoremap <expr> y. <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":noh<CR>:SyntasticCheck<CR>"
-  "toggle state
-nnoremap <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
-nnoremap <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
-  "moving between errors
-"Disable auto checking (passive mode means it only checks when we call it)
-let g:syntastic_mode_map = {'mode': 'passive', 'active_filetypes': [],'passive_filetypes': []}
-" au BufEnter * let b:syntastic_mode='passive'
-" let g:syntastic_stl_format = "[%E{Err: %fe #%e}%B{, }%W{Warn: %fw #%w}]"
-let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
-" nnoremap y. :SyntasticToggleMode<CR>
-"And options, statusline management
-set statusline+=%#warningmsg#
-set statusline+=%{SyntasticStatuslineFlag()}
-set statusline+=%*
-"Other defaults
-let g:syntastic_always_populate_loc_list = 1
-  "necessary, or get errors
-let g:syntastic_auto_loc_list = 1
-  "creates window; if 0, does not create window
-let g:syntastic_loc_list_height = 5
-let g:syntastic_mode = 'passive'
-  "opens little panel
-let g:syntastic_check_on_open = 0
-let g:syntastic_check_on_wq = 0
-"Choose syntax checkers
-"and pylint location, add checker
-let g:syntastic_tex_checkers=['lacheck']
-" let g:syntastic_python_checkers=['pyflakes', 'pylint', 'pep8']
-" let g:syntastic_python_checkers=['pyflakes', 'pylint']
-let g:syntastic_python_checkers=['pyflakes']
-  "PYLINT IS VERY SLOW! pyflakes is supposed to be light by comparison
-let g:syntastic_fortran_checkers=['gfortran']
-let g:syntastic_vim_checkers=['vimlint']
-"overwrite locations
-" let g:syntastic_python_pylint_exec=$HOME.'/anaconda3/bin/pylint'
-" let g:syntastic_python_pyflakes_exec=$HOME.'/anaconda3/bin/pyflakes'
-" let g:syntastic_python_pep8_exec=$HOME.'/anaconda3/bin/pep8'
-"colors
-hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
-hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
+  "Commands for circular location-list (error) scrolling
+  command! Lnext try | lnext | catch | lfirst | catch | endtry
+  command! Lprev try | lprev | catch | llast | catch | endtry
+    "the capital L are circular versions
+  "Helper function; checks status
+  function! s:syntastic_status() 
+    if exists("b:syntastic_loclist")
+      if empty(b:syntastic_loclist)
+        return 0
+      else
+        return 1
+      endif
+    else
+      return 0
+    endif
+  endfunction
+  "Set up custom remaps; there are some letters that i pretty much never use after
+  "yanking (y), so can use 'y' for sYntax
+  " nnoremap yn :Lnext<CR>
+  " nnoremap yN :Lprev<CR>
+  nnoremap yo :noh<CR>:SyntasticCheck<CR>
+  nnoremap yO :SyntasticReset<CR>
+  nnoremap <expr> y. <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":noh<CR>:SyntasticCheck<CR>"
+    "toggle state
+  nnoremap <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
+  nnoremap <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
+    "moving between errors
+  "Disable auto checking (passive mode means it only checks when we call it)
+  let g:syntastic_mode_map = {'mode': 'passive', 'active_filetypes': [],'passive_filetypes': []}
+  " au BufEnter * let b:syntastic_mode='passive'
+  " let g:syntastic_stl_format = "[%E{Err: %fe #%e}%B{, }%W{Warn: %fw #%w}]"
+  let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
+  " nnoremap y. :SyntasticToggleMode<CR>
+  "And options, statusline management
+  set statusline+=%#warningmsg#
+  set statusline+=%{SyntasticStatuslineFlag()}
+  set statusline+=%*
+  "Other defaults
+  let g:syntastic_always_populate_loc_list = 1
+    "necessary, or get errors
+  let g:syntastic_auto_loc_list = 1
+    "creates window; if 0, does not create window
+  let g:syntastic_loc_list_height = 5
+  let g:syntastic_mode = 'passive'
+    "opens little panel
+  let g:syntastic_check_on_open = 0
+  let g:syntastic_check_on_wq = 0
+  "Choose syntax checkers
+  "and pylint location, add checker
+  let g:syntastic_tex_checkers=['lacheck']
+  " let g:syntastic_python_checkers=['pyflakes', 'pylint', 'pep8']
+  " let g:syntastic_python_checkers=['pyflakes', 'pylint']
+  let g:syntastic_python_checkers=['pyflakes']
+    "PYLINT IS VERY SLOW! pyflakes is supposed to be light by comparison
+  let g:syntastic_fortran_checkers=['gfortran']
+  let g:syntastic_vim_checkers=['vimlint']
+  "overwrite locations
+  " let g:syntastic_python_pylint_exec=$HOME.'/anaconda3/bin/pylint'
+  " let g:syntastic_python_pyflakes_exec=$HOME.'/anaconda3/bin/pyflakes'
+  " let g:syntastic_python_pep8_exec=$HOME.'/anaconda3/bin/pep8'
+  "colors
+  hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
+  hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
+endif
 
 "-------------------------------------------------------------------------------
 "TAGBAR (requires 'brew install ctags-exuberant')
@@ -1337,86 +1367,88 @@ augroup END
 "   buffer-specific remap. Seems to be cleanest way.
 " * Note I tried doing the below with autocmd FileType tagbar but didn't really work
 "   perhaps because we need other FileType cmds to act first.
-function! s:tagbarsetup()
-  "First toggle the tagbar; issues when toggling from NERDTree so switch
-  "back if cursor is already there. No issues toggline from Help window.
-  "Note toggling tagbar in a help menu appears to be fine
-  if &ft=="nerdtree"
-    wincmd h
-    wincmd h "move two places in case e.g. have help menu + nerdtree already
-  endif
-  TagbarToggle "you just state commands like these
-  "Then some fancy stuff, if the command just activated Tagbar
-  if &ft=="tagbar"
-    "Initial stuff
-    let tabfts=[]
-    let tabnms=[]
-    for b in tabpagebuflist()
-      call add(tabfts, getbufvar(b, "&ft"))
-      call add(tabnms, fnamemodify(bufname(b),":t"))
-    endfor
-    "Change the default open stuff for vimrc
-    "Do so by testing names of files in this tab
-    if index(tabnms,".vimrc")!=-1
-      normal! gg
-      while 1
-        let a:line=search(g:tagbar#icon_open,"W","$")
-        if empty(a:line)
-          break
-        endif
-        exec "normal! ".a:line."gg"
-        normal -
-      endwhile
-      exec "/^\. autocommand groups$"
-      normal +
-    endif
-    "Make sure NERDTree is always flushed to the far right
-    "Do this by moving TagBar one spot to the left if it is opened
-    "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
-    if index(tabfts,"nerdtree")!=-1
+if has_key(g:plugs, "tagbar")
+  function! s:tagbarsetup()
+    "First toggle the tagbar; issues when toggling from NERDTree so switch
+    "back if cursor is already there. No issues toggline from Help window.
+    "Note toggling tagbar in a help menu appears to be fine
+    if &ft=="nerdtree"
       wincmd h
-      wincmd x
+      wincmd h "move two places in case e.g. have help menu + nerdtree already
     endif
-    "The remap to travel to tag on typing
-    nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR><CR>"
-  endif
-endfunction
-nnoremap <silent> <Tab>k :call <sid>tagbarsetup()<CR>
-nmap <expr> <Space><Space> ":TagbarOpen<CR><C-w>l/".input("Travel to this tagname regex: ")."<CR><CR>"
-"Switch updatetime (necessary for Tagbar highlights to follow cursor)
-set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
-"Note the default mappings:
-" -p jumps to tag under cursor, in code window, but remain in tagbar
-" -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
-" -C-n and C-p browses by top-level tags
-" - +,- open and close folds under cursor
-" -o toggles the fold under cursor, or current one
-" -q quits the window
-"Some settings
-let g:tagbar_silent=1 "no information echoed
-let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
-let g:tagbar_left=0 "open on left; more natural this way
-  "nevermind right is better; left is in the way
-let g:tagbar_zoomwidth=0 "zoom to width of longest tag, not infinity!
-let g:tagbar_foldlevel=-1 "default none
-let g:tagbar_indent=-1 "only one space indent
-let g:tagbar_autoshowtag=0 "expand when new tags
-  "actually nevermind, this shit is schizo
-let g:tagbar_show_linenumbers=0 "don't show line numbers
-let g:tagbar_autofocus=1 "autojump to window if opened
-let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
-let g:tagbar_case_insensitive=1 "make sorting case insensitive
-let g:tagbar_compact=1 "no header information in panel
-let g:tagbar_singleclick=0 "one click select 
-  "(don't use this; inconsistent with help menu and makes it impossible to switch windows by clicking)
-let g:tagbar_width=25 "better default
-" au FileType python :TagbarOpen | :syntax on
-" au BufEnter * nested :call tagbar#autoopen(0)
-" au BufEnter python nested :TagbarOpen
-" au VimEnter * nested :TagbarOpen
-" au BufRead python normal }
-"the vertical line, because it wasn't used and tagbar makes a 'panel'
-"...no, instead } because it shows up on right
+    TagbarToggle "you just state commands like these
+    "Then some fancy stuff, if the command just activated Tagbar
+    if &ft=="tagbar"
+      "Initial stuff
+      let tabfts=[]
+      let tabnms=[]
+      for b in tabpagebuflist()
+        call add(tabfts, getbufvar(b, "&ft"))
+        call add(tabnms, fnamemodify(bufname(b),":t"))
+      endfor
+      "Change the default open stuff for vimrc
+      "Do so by testing names of files in this tab
+      if index(tabnms,".vimrc")!=-1
+        normal! gg
+        while 1
+          let a:line=search(g:tagbar#icon_open,"W","$")
+          if empty(a:line)
+            break
+          endif
+          exec "normal! ".a:line."gg"
+          normal -
+        endwhile
+        exec "/^\. autocommand groups$"
+        normal +
+      endif
+      "Make sure NERDTree is always flushed to the far right
+      "Do this by moving TagBar one spot to the left if it is opened
+      "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
+      if index(tabfts,"nerdtree")!=-1
+        wincmd h
+        wincmd x
+      endif
+      "The remap to travel to tag on typing
+      nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR><CR>"
+    endif
+  endfunction
+  nnoremap <silent> <Tab>k :call <sid>tagbarsetup()<CR>
+  nmap <expr> <Space><Space> ":TagbarOpen<CR><C-w>l/".input("Travel to this tagname regex: ")."<CR><CR>"
+  "Switch updatetime (necessary for Tagbar highlights to follow cursor)
+  set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
+  "Note the default mappings:
+  " -p jumps to tag under cursor, in code window, but remain in tagbar
+  " -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
+  " -C-n and C-p browses by top-level tags
+  " - +,- open and close folds under cursor
+  " -o toggles the fold under cursor, or current one
+  " -q quits the window
+  "Some settings
+  let g:tagbar_silent=1 "no information echoed
+  let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
+  let g:tagbar_left=0 "open on left; more natural this way
+    "nevermind right is better; left is in the way
+  let g:tagbar_zoomwidth=0 "zoom to width of longest tag, not infinity!
+  let g:tagbar_foldlevel=-1 "default none
+  let g:tagbar_indent=-1 "only one space indent
+  let g:tagbar_autoshowtag=0 "expand when new tags
+    "actually nevermind, this shit is schizo
+  let g:tagbar_show_linenumbers=0 "don't show line numbers
+  let g:tagbar_autofocus=1 "autojump to window if opened
+  let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
+  let g:tagbar_case_insensitive=1 "make sorting case insensitive
+  let g:tagbar_compact=1 "no header information in panel
+  let g:tagbar_singleclick=0 "one click select 
+    "(don't use this; inconsistent with help menu and makes it impossible to switch windows by clicking)
+  let g:tagbar_width=25 "better default
+  " au FileType python :TagbarOpen | :syntax on
+  " au BufEnter * nested :call tagbar#autoopen(0)
+  " au BufEnter python nested :TagbarOpen
+  " au VimEnter * nested :TagbarOpen
+  " au BufRead python normal }
+  "the vertical line, because it wasn't used and tagbar makes a 'panel'
+  "...no, instead } because it shows up on right
+endif
 
 "-------------------------------------------------------------------------------
 "WRAPPING AND LINE BREAKING
@@ -1468,41 +1500,42 @@ noremap <silent> <Leader>w :call <sid>wraptoggle(-1)<CR>
 "TABULAR - ALIGNING AROUND :,=,ETC.
 augroup tabular
 augroup END
-"aligns around character
-"NOTE: e.g. for aligning text after colons, input character :\zs; aligns
-"first character after matching preceding character
-vnoremap <expr> -t ":Tabularize /".input("Align character: ")."<CR>"
-nnoremap <expr> -t ":Tabularize /".input("Align character: ")."<CR>"
-  "arbitrary character
-vnoremap <expr> -c ":Tabularize /^\\s*\\S.*\\zs".b:NERDCommenterDelims['left']."<CR>"
-nnoremap <expr> -c ":Tabularize /^\\s*\\S.*\\zs".b:NERDCommenterDelims['left']."<CR>"
-  "by comment character; ^ is start of line, . is any char, .* is any number, \\zs
-  "is start match here (must escape backslash), then search for the comment
-vnoremap <expr> -C ":Tabularize /^.*\\zs".b:NERDCommenterDelims['left']."<CR>"
-nnoremap <expr> -C ":Tabularize /^.*\\zs".b:NERDCommenterDelims['left']."<CR>"
-  "by comment character, but instead don't ignore comments on their own line
-nnoremap -, :Tabularize /,\zs/l0r2<CR>
-vnoremap -, :Tabularize /,\zs/l0r2<CR>
-  "suitable for diag_table's in models
-vnoremap -= :Tabularize /^[^=]*\zs=<CR>
-nnoremap -= :Tabularize /^[^=]*\zs=<CR>
-vnoremap -- :Tabularize /^[^=]*\zs=\zs<CR>
-nnoremap -- :Tabularize /^[^=]*\zs=\zs<CR>
-  "align assignments, and keep equals signs on the left; only first equals sign
-vnoremap -d :Tabularize /:\zs<CR>
-nnoremap -d :Tabularize /:\zs<CR>
-  "align colon table, and keeps colon on the left; the zs means start match **after** colon
+if has_key(g:plugs, "tabular")
+  "NOTE: e.g. for aligning text after colons, input character :\zs; aligns
+  "first character after matching preceding character
+  vnoremap <expr> -t ":Tabularize /".input("Align character: ")."<CR>"
+  nnoremap <expr> -t ":Tabularize /".input("Align character: ")."<CR>"
+    "arbitrary character
+  vnoremap <expr> -c ":Tabularize /^\\s*\\S.*\\zs".b:NERDCommenterDelims['left']."<CR>"
+  nnoremap <expr> -c ":Tabularize /^\\s*\\S.*\\zs".b:NERDCommenterDelims['left']."<CR>"
+    "by comment character; ^ is start of line, . is any char, .* is any number, \\zs
+    "is start match here (must escape backslash), then search for the comment
+  vnoremap <expr> -C ":Tabularize /^.*\\zs".b:NERDCommenterDelims['left']."<CR>"
+  nnoremap <expr> -C ":Tabularize /^.*\\zs".b:NERDCommenterDelims['left']."<CR>"
+    "by comment character, but instead don't ignore comments on their own line
+  nnoremap -, :Tabularize /,\zs/l0r2<CR>
+  vnoremap -, :Tabularize /,\zs/l0r2<CR>
+    "suitable for diag_table's in models
+  vnoremap -= :Tabularize /^[^=]*\zs=<CR>
+  nnoremap -= :Tabularize /^[^=]*\zs=<CR>
+  vnoremap -- :Tabularize /^[^=]*\zs=\zs<CR>
+  nnoremap -- :Tabularize /^[^=]*\zs=\zs<CR>
+    "align assignments, and keep equals signs on the left; only first equals sign
+  vnoremap -d :Tabularize /:\zs<CR>
+  nnoremap -d :Tabularize /:\zs<CR>
+    "align colon table, and keeps colon on the left; the zs means start match **after** colon
+endif
 
 "-------------------------------------------------------------------------------
 "'TOGGLE' PLUGIN for BOOLEANS
 augroup toggle
 augroup END
-"WANT NORMAL-MODE MAP SAME AS INSERT-MODE
-"plugin for boolean things: yes/no, true/false, True/False, +/-
-"...mostly like the default maps
-"applied to number, will change its sign
-nmap <C-t> +
-" nmap <Leader>. +
+if has_key(g:plugs, "Toggle")
+  "WANT NORMAL-MODE MAP SAME AS INSERT-MODE
+  "Plugin for boolean things: yes/no, true/false, True/False, +/-
+  "Applied to number, will change its sign
+  nmap <C-t> +
+endif
 
 "-------------------------------------------------------------------------------
 "FTPLUGINS
@@ -1857,32 +1890,34 @@ nnoremap zO zf
 "Single-keystroke indent, dedent, fix indentation
 augroup onekeystroke
 augroup END
-nnoremap <nowait> > >>
-nnoremap <nowait> < <<
-nnoremap <nowait> = ==
-"Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
-"Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff>
-"may get re-mapped
-nnoremap <silent> <nowait> [ [[
-nnoremap <silent> <nowait> ] ]]
-nnoremap <silent> <nowait> g gg
-vnoremap <silent> <nowait> g gg
-function! OneKeystrokeMaps()
-  if &ft!="help" "want to use [ for something else then
-  " nmap <silent> <buffer> <nowait> g :<C-u>exe 'normal '.v:count.'gg'<CR>
-  nmap <silent> <buffer> <nowait> g gg
-  vmap <silent> <buffer> <nowait> g gg
-    "don't know why this works, but it does; just using nnoremap above fails
-    "and trying the <C-u> exe thing results in 'command too recursive'
-  nmap <silent> <buffer> <nowait> [ :<C-u>exe 'normal '.v:count.'[['<CR>
-  nmap <silent> <buffer> <nowait> ] :<C-u>exe 'normal '.v:count.']]'<CR>
-  endif
-endfunction
-autocmd FileType * call OneKeystrokeMaps()
-"And restore some useful 'g' commands
-noremap <Leader>i gi
-noremap <Leader>v gv
- "return to last insert location
+if g:has_nowait
+  nnoremap <nowait> > >>
+  nnoremap <nowait> < <<
+  nnoremap <nowait> = ==
+  "Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
+  "Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff>
+  "may get re-mapped
+  nnoremap <silent> <nowait> [ [[
+  nnoremap <silent> <nowait> ] ]]
+  nnoremap <silent> <nowait> g gg
+  vnoremap <silent> <nowait> g gg
+  function! OneKeystrokeMaps()
+    if &ft!="help" "want to use [ for something else then
+    " nmap <silent> <buffer> <nowait> g :<C-u>exe 'normal '.v:count.'gg'<CR>
+    nmap <silent> <buffer> <nowait> g gg
+    vmap <silent> <buffer> <nowait> g gg
+      "don't know why this works, but it does; just using nnoremap above fails
+      "and trying the <C-u> exe thing results in 'command too recursive'
+    nmap <silent> <buffer> <nowait> [ :<C-u>exe 'normal '.v:count.'[['<CR>
+    nmap <silent> <buffer> <nowait> ] :<C-u>exe 'normal '.v:count.']]'<CR>
+    endif
+  endfunction
+  autocmd FileType * call OneKeystrokeMaps()
+  "And restore some useful 'g' commands
+  noremap <Leader>i gi
+  noremap <Leader>v gv
+   "return to last insert location
+endif
 
 "------------------------------------------------------------------------------
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
