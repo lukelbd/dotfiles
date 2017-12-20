@@ -370,9 +370,10 @@ function ncvarinfo() { # get information for particular variable
 }
 function ncvardata() { # parses the CDO parameter table
   [ -z $2 ] && { echo "Must declare variable name."; return 1; }
-  cdo infon -seltimestep,1 -selname,"$2" "$1"
+  cdo infon -seltimestep,1 -selname,"$2" "$1" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6- | column -t
     # this procedure is ideal for "sanity checks" of data; just test one
-    # slice at every level
+    # slice at every level; the tr -s ' ' trims multiple whitespace to single
+    # and the column command re-aligns columns
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ -z $2 ] && { echo "Must declare variable name."; return 1; }
