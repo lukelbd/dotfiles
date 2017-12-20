@@ -352,14 +352,24 @@ function ccp() {
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
 function ncdmnlist() { # get list of dimensions
-  ncdump -h $1 | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs;
+  ncdump -h $1 | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
   ncdump -h $1 | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-    | cut -d '(' -f 1 | sed 's/.* //g' | xargs;
+    | cut -d '(' -f 1 | sed 's/.* //g' | xargs
+}
+function ncvarinfo() { # get information for particular variable
+  [ -z $2 ] && { echo "Must declare variable name."; return 1; }
+  ncdump -h $1 | grep -A 100 "[[:space:]]$2(" | grep -B 100 "[[:space:]]$2:" | sed "s/$2://g" | sed $'s/^\t//g'
+    # the space makes sure it isn't another variable that has trailing-substring
+    # identical to this variable; and the $'' is how to insert literal tab
+    # -A means print x TRAILING lines starting from FIRST match
+    # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
-  ncks -s "%f " -H -C -v $1 $2;
+  [ -z $2 ] && { echo "Must declare variable name."; return 1; }
+  ncks -s "%f " -H -C -v $2 $1 | grep -A 1 "data:" | tail -n 1
+    # the tail command then trims to get just the data
 }
 # function ncdmnlist() { ncks -m $1 | cut -d ':' -f 1 | cut -d '=' -s -f 1 | xargs; }
 # function ncvarlist() { ncks -m $1 | grep -v '[:=]' | cut -d '(' -f 1 -s | sed 's/.* //g' | xargs; }
