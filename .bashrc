@@ -370,7 +370,7 @@ function ncvarinfo() { # get information for particular variable
 }
 function ncvardata() { # parses the CDO parameter table
   [ -z $2 ] && { echo "Must declare variable name."; return 1; }
-  cdo infon -seltimestep,1 "$1" | egrep " : $2| : Parameter" # keeps headers, and variables
+  cdo infon -seltimestep,1 -selname,"$2" "$1"
     # this procedure is ideal for "sanity checks" of data; just test one
     # slice at every level
 }
