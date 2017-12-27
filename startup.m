@@ -1,0 +1,53 @@
+% My matlab startup program. Sets plotting defaults and
+% adds my heavily used library to the workspace path.
+ 
+%% OS?
+if ispc; base = getenv('USERPROFILE'); 
+else; base = '~'; % base = getenv('HOME');
+end
+ 
+%% Starting location... actually should just be wherever you called Matlab command
+%cd([base '/Dropbox/MATLAB']);
+%ls % where to?
+ 
+%% Local "useful" functions
+addpath([base '/matfuncs']);
+ 
+%% Plotting
+% default settings
+%set(0, 'DefaultFigurePaperType', 'letter');
+set(0, 'RecursionLimit', 50);
+set(0, 'DefaultFigureWindowStyle', 'normal');
+set(0, 'DefaultFigureUnits', 'normalized');
+set(0, 'DefaultFigurePosition', [0.5 0.25 0.5 0.5]);
+set(0, 'DefaultFigureColor', 'w'); % this is how it will look on paper
+set(0, 'DefaultAxesYGrid', 'on'); % enable gridlines
+set(0, 'DefaultAxesXGrid', 'on');
+set(0, 'DefaultAxesBox', 'on');
+set(0, 'DefaultAxesXColor', [0.25 0.25 0.25]);
+set(0, 'DefaultAxesYColor', [0.25 0.25 0.25]);
+set(0, 'DefaultAxesXMinorTick', 'on');
+set(0, 'DefaultAxesYMinorTick', 'on');
+set(0, 'DefaultAxesXMinorGrid', 'off');
+set(0, 'DefaultAxesYMinorTick', 'off');
+set(0, 'DefaultAxesGridLineStyle', ':');
+set(0, 'DefaultPatchEdgeColor', 'none'); % for contours; want no boundary by default
+set(0, 'DefaultSurfaceEdgeColor', 'none'); % pcolor makes surfaces; want edgecolor none
+set(0, 'DefaultAxesLayer', 'top'); % so grid lines, etc. are on top of e.g.  colormaps
+set(0, 'DefaultAxesColorOrder', ... % set to R2014b+ color order
+        [ 0    0.4470    0.7410; ...
+            0.8500    0.3250    0.0980; ...
+            0.9290    0.6940    0.1250; ...
+            0.4940    0.1840    0.5560; ...
+            0.4660    0.6740    0.1880; ...
+            0.3010    0.7450    0.9330; ...
+            0.6350    0.0780    0.1840]);
+set(0, 'DefaultTextFontSize', 16);
+set(0, 'DefaultAxesFontSize', 14);
+set(0, 'DefaultUicontrolFontSize', 8);
+%% Important; on Mac, seems to have trouble with certain linewidths and not draw them, sometimes... I think the Java patches introduce some other issues
+set(0, 'DefaultAxesLineWidth', 1.2);
+set(0, 'DefaultLineLineWidth', 1.2);
+ 
+%% Confirm
+disp('Custom startup loaded.');
