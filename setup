@@ -17,7 +17,7 @@
 # fi # have determined abs path
 dotfiles=~/dotfiles # other commands can be unpredictable
 cd $dotfiles # move to this directory, if not present
-storage="$dotfiles/old" # place old files into here
+storage="$dotfiles/originals" # place old files into here
 files=($(git ls-tree --name-only master)) # get list of committed files
 
 # Create storage for old dotfiles
