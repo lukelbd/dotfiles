@@ -13,6 +13,11 @@
 [[ $- != *i* ]] && return
 
 ################################################################################
+# SHELL INTEGRATION; iTerm2 feature only
+################################################################################
+[ -e "${HOME}/.iterm2_shell_integration.bash" ] && . "${HOME}/.iterm2_shell_integration.bash"
+
+################################################################################
 # Shell stuff
 ################################################################################
 # Check if we are on MacOS
@@ -48,7 +53,11 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 bind -r '\C-s' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
 stty -ixon # for putty, have to edit STTY value and set ixon to zero in term options
 
+################################################################################
 # Magic changing stderr color
+# Turns out that iTerm2 SHELL INTEGRATION mostly handles the idea behind this;
+# want "bad commands" to be more visible
+################################################################################
 # See comment: https://stackoverflow.com/a/21320645/4970632
 # See exec summary: https://stackoverflow.com/a/18351547/4970632
 # For trap info: https://www.computerhope.com/unix/utrap.htm
@@ -372,7 +381,7 @@ function ncvardata() { # parses the CDO parameter table
   [ -z $2 ] && { echo "Must declare variable name."; return 1; }
   cdo infon -seltimestep,1 -selname,"$2" "$1" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
     # this procedure is ideal for "sanity checks" of data; just test one
-    # slice at every level; the tr -s ' ' trims multiple whitespace to single
+    # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)

@@ -24,6 +24,10 @@ endif
 let mapleader = "\<Space>"
 noremap <Space> <Nop>
 "------------------------------------------------------------------------------
+"STANDARDIZE COLORS -- need to make sure background set to dark, and should be good to go
+"See solution: https://unix.stackexchange.com/a/414395/112647
+set background=dark
+"------------------------------------------------------------------------------
 "TAB COMPLETION OPENING NEW FILES
 set wildignore=
 set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.ipynb,*.o,*.mod
@@ -61,10 +65,8 @@ nnoremap <Esc>[3~ <Nop>
   "note that [3~ is triggered only if we left insert mode, but this is triggered if
   "pressing delete from normal mode only... also means that VIM now waits when you press
   "Escape in normal mode, but no big deal
-set mouse=a
-autocmd InsertEnter * set mouse=
-autocmd InsertLeave * set mouse=a
-  "...weird things happen if don't disable mouse in insert mode, especially with neocomplete
+set mouse=n
+  "weird things happen if don't disable mouse in insert mode, especially with neocomplete
   "enables left-click movement
 "------------------------------------------------------------------------------
 "DISABLE ANNOYING SPECIAL MODES/DANGEROUS ACTIONS
@@ -142,7 +144,7 @@ vnoremap P "_dP
 "   "pressing enter on empty line preserves leading whitespace (HACKY)
 "   "works because Vim doesn't remove spaces when text has been inserted
 "------------------------------------------------------------------------------
-"REALLY BASIC NORMAL MODE/INSERT MODE/VISUAL MODE STUFF
+"REALLY BASIC NORMAL MODE/INSERT MODE STUFF
 "CHANGE MOVEMENT (some options for presence of wrapped lines)
 " noremap $ g$
 " noremap 0 g0
@@ -190,20 +192,42 @@ nnoremap Y y$
 nnoremap D D
 nnoremap S c$
   "same behavior; NOTE use 'cc' instead to substitute whole line
-"SOME VISUAL MODE SPECIALTIES
-"Cursor movement/scrolling while preserving highlights
-"1) create local variables, mark when entering visual mode
-nnoremap <silent> v :let b:v_mode='v'<CR>mVv
-nnoremap <silent> V :let b:v_mode='V'<CR>mVV
-"2) using the above, let user click around to move selection
-vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V'.b:v_mode.'`N'
-"Enter to exit visual mode, much more natural
-vnoremap <CR> <Esc>
 "NEAT IDEA FOR INSERT MODE REMAP; PUT CLOSING BRACES ON NEXT LINE
 "Adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
+"-------------------------------------------------------------------------------
+"SOME VISUAL MODE SPECIALTIES
+"Cursor movement/scrolling while preserving highlights
+"0) Need command-line ways to enter visual mode
+"See answer: https://vi.stackexchange.com/a/3701/8084
+"Why do this? Because had trouble storing <C-v> as variable, then issuing it as command
+command! Visual      normal! v
+command! VisualLine  normal! V
+command! VisualBlock execute "normal! \<C-v>"
+"1) create local variables, mark when entering visual mode
+" nnoremap <silent> v :let b:v_mode='v'<CR>:setlocal mouse+=v<CR>mVv
+" nnoremap <silent> V :let b:v_mode='V'<CR>:setlocal mouse+=v<CR>mVV
+nnoremap <silent> v :let b:v_mode='Visual'<CR>mVv
+nnoremap <silent> V :let b:v_mode='VisualLine'<CR>mVV
+nnoremap <silent> <C-v> :let b:v_mode='VisualBlock'<CR>mV<C-v>
+"2) using the above, let user click around to move selection
+" vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V'.b:v_mode.'`N'
+vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:'.b:v_mode.'<CR>`N'
+"3) let this work without mouse=v enabled; don't want to allow double-click
+"to trigger visual mode but do want occasionally to select with mouse-click
+" * below makes sure there are v<something> and V<something> commands so that
+"   VIM will wait for next keystroke
+" * it will respond to immediate LeftClick, but not subsequent ones... and usually
+"   this is my desired usage/behavior for quickly selecting stuff
+nnoremap v<CR> <Nop>
+nnoremap V<CR> <Nop>
+nnoremap <C-v><CR> <Nop>
+"Enter to exit visual mode, much more natural
+" vnoremap <CR> <Esc>:setlocal mouse-=v<CR>
+vnoremap <CR> <Esc>
+vnoremap <Esc> <Nop>
 
 "------------------------------------------------------------------------------
 "HIGHLIGHTING/SPECIAL CHARACTER MANAGEMENT
@@ -213,7 +237,7 @@ noremap <Leader>n :noh<CR>
 "show whitespace chars, newlines, and define characters used
 set list
 nnoremap <Leader>l :setlocal list!<CR>
-set listchars=tab:▸\ ,eol:↘,trail:·
+set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
 " set listchars=tab:▸\ ,eol:↘,trail:·
 "other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
 "browse Unicode tables for more
@@ -816,9 +840,9 @@ function! s:texmacros()
 "-use clear, because want to clean up previous output first
 "-use set -x to ECHO LAST COMMAND
   noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
-        \."~/.vim/compile false ".shellescape(@%))<CR>
+        \."~/dotfiles/compile false ".shellescape(@%))<CR>
   noremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; "
-        \."~/.vim/compile true ".shellescape(@%))<CR>
+        \."~/dotfiles/compile true ".shellescape(@%))<CR>
     "must store script in .VIM FOLDER
   " inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; which latex; "
         " \."latex ".shellescape(@%))<CR>a
@@ -1131,6 +1155,13 @@ if has_key(g:plugs, "neocomplete.vim") "just check if activated
     let g:neocomplete#keyword_patterns = {}
   endif
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
+  " Navigating popup menu
+  inoremap <expr> <C-j> pumvisible() ? "<Down>" : "<Esc>gja"
+  inoremap <expr> <C-k> pumvisible() ? "<Up>" : "<Esc>gka"
+  " inoremap <expr> <ScrollWheelUp> pumvisible() ? "<Up>" : "<Nop>"
+  " inoremap <expr> <ScrollWheelDown> pumvisible() ? "<Down>" : "<Nop>"
+  " inoremap <ScrollWheelUp> <Nop>
+  " inoremap <ScrollWheelDown> <Nop>
 endif
 "Shell like behavior(not recommended).
 " set completeopt+=longest
@@ -1171,13 +1202,6 @@ autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 highlight Pmenu ctermbg=Black ctermfg=Yellow cterm=None
 highlight PmenuSel ctermbg=Black ctermfg=Black cterm=None
 highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
-"Navigating popup menu
-inoremap <expr> <C-j> pumvisible() ? "<Down>" : "<Esc>gja"
-inoremap <expr> <C-k> pumvisible() ? "<Up>" : "<Esc>gka"
-" inoremap <expr> <ScrollWheelUp> pumvisible() ? "<Up>" : "<Nop>"
-" inoremap <expr> <ScrollWheelDown> pumvisible() ? "<Down>" : "<Nop>"
-" inoremap <ScrollWheelUp> <Nop>
-" inoremap <ScrollWheelDown> <Nop>
 
 "-------------------------------------------------------------------------------
 "NERDTREE
@@ -1275,9 +1299,12 @@ if has_key(g:plugs, "nerdcommenter")
   nnoremap co :call NERDComment('n', 'comment')<CR>
   nnoremap cO :call NERDComment('n', 'uncomment')<CR>
   nnoremap c. :call NERDComment('n', 'toggle')<CR>
+  nnoremap c<CR> <Nop>
   vnoremap co :call NERDComment('v', 'comment')<CR>
   vnoremap cO :call NERDComment('v', 'uncomment')<CR>
   vnoremap c. :call NERDComment('v', 'toggle')<CR>
+  vnoremap c<CR> s
+  "common to want to select-then-change text
 endif
 
 "-------------------------------------------------------------------------------
@@ -1566,7 +1593,8 @@ augroup END
 "BUFFER WRITING/SAVING
 augroup saving
 augroup END
-nnoremap <C-s> :w<CR>
+nnoremap <C-s> :w!<CR>
+  "use force write, in case old version exists
 " inoremap <C-s> <Esc>:w<CR>a
 au FileType help nnoremap <buffer> <C-s> <Nop>
 nnoremap <C-q> :tabclose<CR>
