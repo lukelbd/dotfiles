@@ -30,7 +30,7 @@ root="$HOME" # default location for real dotfiles
 fignore=(README.md setup nbsetup macsetup .gitignore)
 for file in ${files[@]}; do # iterate through files
   # if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
-  if [[ ! "${fignore[@]}" =~ " $file " ]]; then
+  if [[ ! " ${fignore[@]} " =~ " $file " ]]; then
     echo "Creating symlink to $file in $HOME/..."
     # Be conservative
     if [ -L $root/$file ]; then
