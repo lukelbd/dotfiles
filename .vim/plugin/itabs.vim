@@ -4,9 +4,9 @@
 "Change highlghting groups; Tabline formats tab names better
 set showtabline=1
   "always show, even if 1 file
-hi TabLine      ctermfg=White  ctermbg=Black     cterm=bold
-hi TabLineFill  ctermfg=White  ctermbg=Black     cterm=bold
-hi TabLineSel   ctermfg=Black  ctermbg=White     cterm=bold
+hi TabLine     ctermfg=White ctermbg=Black cterm=None
+hi TabLineFill ctermfg=White ctermbg=Black cterm=None
+hi TabLineSel  ctermfg=Black ctermbg=White cterm=None
 "Hijacked from Tabline function, and modified
 "Only display name of a 'primary' file, not e.g. tagbar
 let g:bufignore = ['nerdtree', 'tagbar', 'codi', 'help'] "filetypes considered 'helpers'
