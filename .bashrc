@@ -15,7 +15,9 @@
 ################################################################################
 # SHELL INTEGRATION; iTerm2 feature only
 ################################################################################
+printf "Enabling shell integration... "
 [ -e "${HOME}/.iterm2_shell_integration.bash" ] && . "${HOME}/.iterm2_shell_integration.bash"
+echo "Done."
 
 ################################################################################
 # Shell stuff
@@ -248,7 +250,9 @@ alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.
 # Jupyter themes configuration
 # Refresh currently open notebooks to see these changes applied
 # This makes all fonts the same size (10) and makes cells nice and wide (95%)
+printf "Setting jupyter notebook theme... "
 jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
+echo "Done."
 
 # IMPORTANT note: to uninstall nbextensions completely, use
 #  jupyter contrib nbextension uninstall --user
@@ -320,8 +324,8 @@ function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-
 
 # Functions for scp-ing from local to remote, and vice versa
 # See: https://stackoverflow.com/a/25486130/4970632
-# alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222... not sure exactly how it works
-alias ssh="ssh -R 127.0.0.1:1111:127.0.0.1:11"
+# alias ssh="ssh -R 127.0.0.1:1111:127.0.0.1:11"
+alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
@@ -330,7 +334,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   dest="${dest/#$HOME/\~}" # restore expanded tilde
   dest="${dest//\ /\\\ }"   # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
-  scp -P1111 $args "$file" ldavis@127.0.0.1:"$dest"
+  scp -P2222 $args "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
@@ -340,7 +344,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   file="${file/#$HOME/\~}" # restore expanded tilde
   file="${file//\ /\\\ }"   # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
-  scp -P1111 $args ldavis@127.0.0.1:"$file" "$dest"
+  scp -P2222 $args ldavis@127.0.0.1:"$file" "$dest"
 }
 # Copy <file> on this server to another server, preserving full path but 
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
