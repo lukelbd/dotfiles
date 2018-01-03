@@ -28,6 +28,7 @@
 	<true/>
 	<key>Coprocess MRU</key>
 	<array>
+		<string>echo cd /Users/ldavis/dotfiles/README.md; echo pwd</string>
 		<string>echo cd /Users/ldavis/Google\ Drive/SST; echo pwd</string>
 		<string>echo cd /Users/ldavis/youtubetag/__pycache__; echo pwd</string>
 		<string>echo cd /Users/ldavis/dotfiles/learning; echo pwd</string>
@@ -1631,7 +1632,7 @@ Close</string>
 	<key>NSWindow Frame SessionsPreferences</key>
 	<string>736 285 606 469 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>328 283 796 473 0 0 1440 877 </string>
+	<string>328 336 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
@@ -1648,6 +1649,8 @@ Close</string>
 	<string>41 0 1399 877 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 6</key>
 	<string>281 421 570 426 0 0 1440 877 </string>
+	<key>NSWindow Frame iTerm Window 7</key>
+	<string>302 354 598 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 8</key>
 	<string>323 375 572 428 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 9</key>
@@ -2091,9 +2094,9 @@ Close</string>
 			<key>Semantic History</key>
 			<dict>
 				<key>action</key>
-				<string>coprocess</string>
+				<string>best editor</string>
 				<key>editor</key>
-				<string>com.github.atom</string>
+				<string>com.sublimetext.3</string>
 				<key>text</key>
 				<string>echo cd \1; echo pwd</string>
 			</dict>
