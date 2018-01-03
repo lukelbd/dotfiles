@@ -1949,7 +1949,6 @@ endif
 
 "------------------------------------------------------------------------------
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
-"TODO MAYBE USE THIS TO FIX YELLOW-COLOR ON IF STATEMENTS, ETC. DURING SSH
 augroup colors
 augroup END
 "Special characters

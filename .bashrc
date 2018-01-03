@@ -184,10 +184,19 @@ fi
 # General utilties
 ################################################################################
 # LS aliases, basic file management, helpful utilities
+# * See the README; found the default LSCOLOR for mac, and roughly converted it
+#   to be identical in SSH sessions
+# * Run "dircolors" to output commands to set up current default LS_COLORS on 
+#   Linux macthine
+# * The commented-out export gives ls styles of Linux default, excluding filetype-specific ones
 if $macos; then
-  lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
+  export LSCOLORS="exfxcxdxbxexexabagacad"
   sortcmd='gsort' # GNU utilities, different from mac versions
+  lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
 else
+#   export LS_COLORS="rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:"\
+# "or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:"
+  export LS_COLORS="di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=0;41:sg=0;46:tw=0;42:ow=0;43:"
   lscolor='--color=always'
   sortcmd='sort'
 fi
