@@ -321,6 +321,10 @@ function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-
 # destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
 # 2) Another weird thing; note we must ESCAPE TILDE IN A PARAMETER EXPANSION, even
 # though this is not necessary in double quotes alone; makes sense... maybe...
+# 3) BEWARE: replacing string with tilde in parameter expansion seems to behave DIFFERENTLY
+# ACROSS DIFFERENT VERSIONS OF BASH. Test this with foo=~/data, foobar="${foo/#$HOME/~}".
+#   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
+#   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 
 # Functions for scp-ing from local to remote, and vice versa
 # See: https://stackoverflow.com/a/25486130/4970632
@@ -331,8 +335,9 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
-  dest="${dest/#$HOME/\~}" # restore expanded tilde
-  dest="${dest//\ /\\\ }"   # escape whitespace manually
+  dest="${dest/#$HOME/~}"  # restore expanded tilde: older versions of bash
+  dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
   scp -P2222 $args "$file" ldavis@127.0.0.1:"$dest"
 }
@@ -341,8 +346,9 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
-  file="${file/#$HOME/\~}" # restore expanded tilde
-  file="${file//\ /\\\ }"   # escape whitespace manually
+  file="${file/#$HOME/~}"  # restore expanded tilde: older versions of bash
+  file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  file="${file//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
   scp -P2222 $args ldavis@127.0.0.1:"$file" "$dest"
 }
