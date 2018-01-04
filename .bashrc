@@ -335,7 +335,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
-  dest="${dest/#$HOME/~}"  # restore expanded tilde: older versions of bash
+  dest="${dest/#$HOME/~}"  # restore expanded tilde
   dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
@@ -346,7 +346,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
-  file="${file/#$HOME/~}"  # restore expanded tilde: older versions of bash
+  file="${file/#$HOME/~}"  # restore expanded tilde
   file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   file="${file//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
@@ -528,9 +528,9 @@ if $macos; then
 fi
 
 ################################################################################
-# Shell behavior/look
+# Tab completion
 ################################################################################
-# Tab completion control; use "complete" command
+# Use "complete" command for setup
 # -d filters to only directories
 # -f filters to only files
 # -X filters based on EXTENDED GLOBBING pattern (search that)
@@ -548,6 +548,23 @@ complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o
 # Some shells disable tab-completion of dangerous commands; re-enable
 complete -f -o plusdirs mv
 complete -f -o plusdirs rm
+
+################################################################################
+# Colors
+################################################################################
+# Useful function to spit out color display
+# See: https://askubuntu.com/a/279014/712604
+function colors() {
+  for x in {0..8}; do
+    for i in {30..37}; do
+      for a in {40..47}; do
+        echo -ne "\e[$x;$i;$a""m\\\e[$x;$i;$a""m\e[0;37;40m "
+      done
+    echo
+    done
+  done
+  echo ""
+}
 
 # Color support for less, man, etc.
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
