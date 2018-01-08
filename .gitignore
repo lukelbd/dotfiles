@@ -13,6 +13,10 @@
   # VERY IMPORTANT, need to install manually with :PlugInstall
   # on every server, otherwise everything fails
 
+# R history #
+#############
+.Rhistory
+
 # iPython history #
 ###################
 .ipython/**/history.sqlite
