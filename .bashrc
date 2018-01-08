@@ -38,15 +38,16 @@ unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
 shopt -s checkwinsize # allow window resizing
 shopt -u nullglob # turn off nullglob; so e.g. no expansion of ?, *, attempted if no matches
-shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with
-  # separation OR using |; EXTENDED allows e.g. rm !(*.jpg|*.gif|*.png);
-# Yes extglob: ?=0-1, *=0-Inf, +=1-Inf, @=1, !=ONLY ZERO, [a|b|c]=1 item inside
-# No extglob: *=0-Inf, ?=1 EXACTLY, [abc]=1 item inside, [!abc]=ZERO items inside
-# Special chars: [:alnum:]=(a-z,A-Z,0-9), [:space:] (whtespace), [:digit:]
+shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  # Note extended globbing IS ONLY USED WITH THESE PARENTHESES; otherwise is same
+  # * Use rm !(*.jpg|*.gif|*.png) instead of rm *{.jpg,.gif,.png}, but latter raises error if one has 0 matches
+  # * Extglob: ?=0-1, *=0-Inf, +=1-Inf, @=1, !=ONLY ZERO, [a|b|c]=1 item inside
+  # * Normal glob: *=0-Inf, ?=1 EXACTLY, [abc]=1 item inside, [!abc]=ZERO items inside
+  # * Special chars: [:alnum:]=(a-z,A-Z,0-9), [:space:] (whtespace), [:digit:]
+export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+  # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
+  # see: https://unix.stackexchange.com/a/124408/112647
 # e.g. [[:space:]_-]) = whitespace, underscore, OR dash
-
-# Left-hand prompt style
-export PS1='\h[\j]:\W \u\$ ' # prompt string 1; shows "<comp name>:<work dir> <user>$"
 
 # Vim stuff
 alias vims="vim -S .session.vim" # for working with obsession
@@ -182,8 +183,17 @@ if [ "$HOSTNAME" == "euclid" ]; then
   export PYTHONPATH="$HOME:/birner-home/ldavis"
 fi
 
+# MATLAB options
+if $macos; then
+  MATLABPATH='/Applications/MATLAB_R2014a.app/bin/matlab'
+elif [ "$HOSTNAME" = "olbers" ]; then
+  MATLABPATH='/opt/Mathworks/R2016a/bin/matlab'
+fi
+[ ! -z $MATLABPATH ] && alias matlab="$MATLABPATH -nodesktop -nosplash -r \"run('~/startup.m')\""
+
+
 ################################################################################
-# General utilties
+# General utilties, and colorizing them
 ################################################################################
 # LS aliases, basic file management, helpful utilities
 # * See the README; found the default LSCOLOR for mac, and roughly converted it
@@ -221,31 +231,65 @@ alias ps="ps" # processes in this shell
 alias pc="mpstat -P ALL 1" # list individual core usage
 alias pt="top"             # table of processes, total
   # examine current proceses
-alias gitt="git log --graph --pretty=format:\"%h %d - %an, %ar : %s\""
-  # nice git log (should maybe use git-config instead; check stack overflow,
-  # but not sure how to SAVE those shortcuts)
+# Standardize less/man/etc. colors
+# [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
+export LESS="--RAW-CONTROL-CHARS"
+[ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
+if hash tput 2>/dev/null; then
+  export LESS_TERMCAP_mb=$(tput setaf 2) # 2=green
+  export LESS_TERMCAP_md=$(tput setaf 6) # cyan
+    # took off "bold" for these; was too light
+  export LESS_TERMCAP_me=$(tput sgr0)
+  export LESS_TERMCAP_so=$(tput bold; tput setaf 3; tput setab 4) # yellow on blue
+  export LESS_TERMCAP_se=$(tput rmso; tput sgr0)
+  export LESS_TERMCAP_us=$(tput smul; tput bold; tput setaf 7) # white
+  export LESS_TERMCAP_ue=$(tput rmul; tput sgr0)
+  export LESS_TERMCAP_mr=$(tput rev)
+  export LESS_TERMCAP_mh=$(tput dim)
+  export LESS_TERMCAP_ZN=$(tput ssubm)
+  export LESS_TERMCAP_ZV=$(tput rsubm)
+  export LESS_TERMCAP_ZO=$(tput ssupm)
+  export LESS_TERMCAP_ZW=$(tput rsupm)
+fi
+# Tool for changing iTerm2 profile before command executed, and returning
+# after executed (e.g. interactive prompts)
+function colorize() {
+  # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
+  # Or that's dumb and just use ITERM_PROFILE
+  newprofile=FrontEndDelight
+  oldprofile=$ITERM_PROFILE
+  # Restore the current settings if the user ctrl-c's out of the command
+  trap ctrl_c INT
+  function ctrl_c() {
+    echo -e "\033]50;SetProfile=$oldprofile\a"
+    exit
+  }
+  # Set profile; if you want you can allow profile as $1, then call shift,
+  # and now the remaining command arguments are $@
+  echo -e "\033]50;SetProfile=$newprofile\a"
+  # Note, can use 'command' to avoid function/alias lookup
+  # See: https://stackoverflow.com/a/6365872/4970632
+  echo $oldprofile $newprofile
+  "$@" # need to quote it, might need to escape stuff
+  # Restore settings
+  echo -e "\033]50;SetProfile=$oldprofile\a"
+}
 
 ################################################################################
 # Workspace setup
 ################################################################################
-# Matlab aliases; set up quick terminal-session
-if $macos; then
-  MATLABPATH='/Applications/MATLAB_R2014a.app/bin/matlab'
-elif [ "$HOSTNAME" = "olbers" ]; then
-  MATLABPATH='/opt/Mathworks/R2016a/bin/matlab'
-fi
-[ ! -z $MATLABPATH ] && alias matlab="$MATLABPATH -nodesktop -nosplash -r \"run('~/startup.m')\""
-
-# iPython aliases; set up quick terminal-session
+# Interactive shell utilities
+# Colorize them
 # io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
 io="import pandas as pd; import xarray as xr; "
 basic="import numpy as np; from datetime import datetime; from datetime import date; "
 magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autoreload 2'); "
 plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
 pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
-alias ipython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-alias pypython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
+alias ipython="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
+alias pypython="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
+alias perl="colorize perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
+alias R="colorize R"
 
 # Jupyter themes configuration
 # Refresh currently open notebooks to see these changes applied
@@ -253,7 +297,6 @@ alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.
 printf "Setting jupyter notebook theme... "
 jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
 echo "Done."
-
 # IMPORTANT note: to uninstall nbextensions completely, use
 #  jupyter contrib nbextension uninstall --user
 #  pip uninstall jupyter_contrib_nbextensions
@@ -549,57 +592,6 @@ complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o
 complete -f -o plusdirs mv
 complete -f -o plusdirs rm
 
-################################################################################
-# Colors
-################################################################################
-# Useful function to spit out color display
-# See: https://askubuntu.com/a/279014/712604
-function colors() {
-  for x in {0..8}; do
-    for i in {30..37}; do
-      for a in {40..47}; do
-        echo -ne "\e[$x;$i;$a""m\\\e[$x;$i;$a""m\e[0;37;40m "
-      done
-    echo
-    done
-  done
-  echo ""
-}
-
-# Color support for less, man, etc.
-# [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
-export LESS="--RAW-CONTROL-CHARS"
-if [ -f ~/.LESS_TERMPCAMP ]; then
-  . ~/.LESS_TERMCAP
-fi
-if hash tput 2>/dev/null; then
-  # Color configuration
-  export LESS_TERMCAP_mb=$(tput setaf 2) # 2=green
-  export LESS_TERMCAP_md=$(tput setaf 6) # cyan
-    # took off "bold" for these; was too light
-  export LESS_TERMCAP_me=$(tput sgr0)
-  export LESS_TERMCAP_so=$(tput bold; tput setaf 3; tput setab 4) # yellow on blue
-  export LESS_TERMCAP_se=$(tput rmso; tput sgr0)
-  export LESS_TERMCAP_us=$(tput smul; tput bold; tput setaf 7) # white
-  export LESS_TERMCAP_ue=$(tput rmul; tput sgr0)
-  export LESS_TERMCAP_mr=$(tput rev)
-  export LESS_TERMCAP_mh=$(tput dim)
-  export LESS_TERMCAP_ZN=$(tput ssubm)
-  export LESS_TERMCAP_ZV=$(tput rsubm)
-  export LESS_TERMCAP_ZO=$(tput ssupm)
-  export LESS_TERMCAP_ZW=$(tput rsupm)
-  # export LESS_TERMCAP_mb=$(tput bold; tput setaf 2) # green
-  # export LESS_TERMCAP_md=$(tput bold; tput setaf 6) # cyan
-  # From general .bashrc StackOverflow thread
-  #export LESS_TERMCAP_mb=$'\E[01;31m'
-  #export LESS_TERMCAP_md=$'\E[01;31m'
-  #export LESS_TERMCAP_me=$'\E[0m'
-  #export LESS_TERMCAP_se=$'\E[0m'
-  #export LESS_TERMCAP_so=$'\E[01;44;33m'
-  #export LESS_TERMCAP_ue=$'\E[0m'
-  #export LESS_TERMCAP_us=$'\E[01;32m'
-fi
-
 # Powerline-shell prompt (ugly, so forget it)
 # hash powerline-shell 2>/dev/null && {
 #   function _update_ps1() {
@@ -610,7 +602,7 @@ fi
 #   fi
 #   }
 
-echo 'Custom .bashrc loaded; aliases/functions declared.'
+echo 'Shell configured and namespace populated.'
 
 ################################################################################
 # Notes
