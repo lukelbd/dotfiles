@@ -28,6 +28,12 @@ noremap <Space> <Nop>
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set background=dark
 "------------------------------------------------------------------------------
+"NO MORE SWAP FILES
+"THIS IS DANGEROUS BUT I AM CONSTANTLY HITTING <CTRL-S> SO IS USUALLY FINE
+set nobackup
+set noswapfile
+set noundofile
+"------------------------------------------------------------------------------
 "TAB COMPLETION OPENING NEW FILES
 set wildignore=
 set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.ipynb,*.o,*.mod
@@ -1962,8 +1968,8 @@ highlight MatchParen ctermfg=Yellow ctermbg=Blue
   "gray, and 'ANSI black bold' to black).
 set cursorline
 highlight CursorLine cterm=None ctermbg=Black
-highlight CursorLineNR cterm=bold ctermfg=Yellow ctermbg=Black
-highlight LineNR cterm=bold ctermfg=Black ctermbg=NONE
+highlight CursorLineNR cterm=None ctermfg=Yellow ctermbg=Black
+highlight LineNR cterm=None ctermfg=Black ctermbg=NONE
 "Column stuff; color 80th column, and after 120
 highlight ColorColumn cterm=None ctermbg=Black
 highlight SignColumn cterm=None ctermbg=Black
