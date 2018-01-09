@@ -294,9 +294,12 @@ alias R="colorize R"
 # Jupyter themes configuration
 # Refresh currently open notebooks to see these changes applied
 # This makes all fonts the same size (10) and makes cells nice and wide (95%)
-printf "Setting jupyter notebook theme... "
-jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
-echo "Done."
+if [ -z $jtime ] || [[ $jtime -lt $(date +%s -r ~/.jupyter/custom/custom.css 2>/dev/null) ]]; then
+  printf "Setting jupyter notebook theme... "
+  jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
+  jtime=$(date +%s) # remember
+  echo "Done."
+fi
 # IMPORTANT note: to uninstall nbextensions completely, use
 #  jupyter contrib nbextension uninstall --user
 #  pip uninstall jupyter_contrib_nbextensions
@@ -425,15 +428,28 @@ function ccp() {
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
 function ncdmnlist() { # get list of dimensions
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs
+}
+function ncvarinfos() { # get information for particular variable
+    # the cdo parameter table actually gives a subset if this information, so don't
+    # bother parsing that information
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+    # the space makes sure it isn't another variable that has trailing-substring
+    # identical to this variable; and the $'' is how to insert literal tab
+    # -A means print x TRAILING lines starting from FIRST match
+    # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvarinfo() { # get information for particular variable
     # the cdo parameter table actually gives a subset if this information, so don't
     # bother parsing that information
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   [ -z $2 ] && { echo "Must declare variable name."; return 1; }
   ncdump -h "$1" | grep -A 100 "[[:space:]]$2(" | grep -B 100 "[[:space:]]$2:" | sed "s/$2://g" | sed $'s/^\t//g'
     # the space makes sure it isn't another variable that has trailing-substring
@@ -442,14 +458,16 @@ function ncvarinfo() { # get information for particular variable
     # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvardata() { # parses the CDO parameter table
-  [ -z $2 ] && { echo "Must declare variable name."; return 1; }
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  [ -z "$2" ] && { echo "Must declare variable name."; return 1; }
   cdo infon -seltimestep,1 -selname,"$2" "$1" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
     # this procedure is ideal for "sanity checks" of data; just test one
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
-  [ -z $2 ] && { echo "Must declare variable name."; return 1; }
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  [ -z "$2" ] && { echo "Must declare variable name."; return 1; }
   ncks -s "%f " -H -C -v "$2" "$1" | grep -A 1 "data:" | tail -n 1
     # the tail command then trims to get just the data
 }
