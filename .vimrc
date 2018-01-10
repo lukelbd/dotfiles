@@ -436,6 +436,10 @@ vnoremap ;' mA<Esc>`>a'<Esc>`<i'<Esc>`Al
 " inoremap ;" ""<Left>
 nnoremap ;" mAlbi"<Esc>ea"<Esc>`A
 vnoremap ;" mA<Esc>`>a"<Esc>`<i"<Esc>`Al
+"Backtick quotes <> ('a' for carats)
+" inoremap ;" ""<Left>
+nnoremap ;` mAlbi`<Esc>ea`<Esc>`A
+vnoremap ;` mA<Esc>`>a`<Esc>`<i`<Esc>`Al
 "WORD Parentheses ('b' for default vim)
 " nnoremap ;B mAlBi(<Esc>Ea)<Esc>`A
 "WORD Brackets ('r' for brackets)
@@ -1549,6 +1553,9 @@ if has_key(g:plugs, "tabular")
   nnoremap -, :Tabularize /,\zs/l0r2<CR>
   vnoremap -, :Tabularize /,\zs/l0r2<CR>
     "suitable for diag_table's in models
+  vnoremap -<Space> :Tabularize /\ /l0<CR>
+  nnoremap -<Space> :Tabularize /\ /l0<CR>
+    "tab by spaces (simple)
   vnoremap -= :Tabularize /^[^=]*\zs=<CR>
   nnoremap -= :Tabularize /^[^=]*\zs=<CR>
   vnoremap -- :Tabularize /^[^=]*\zs=\zs<CR>
