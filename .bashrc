@@ -443,7 +443,7 @@ function ncdmnlist() { # get list of dimensions
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  cdo -s shownames "$1" # just variables
+  cdo -s showname "$1" # just variables
   # ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
   #   | cut -d '(' -f 1 | sed 's/.* //g' | xargs
 }
