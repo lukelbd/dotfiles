@@ -50,6 +50,8 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 # e.g. [[:space:]_-]) = whitespace, underscore, OR dash
 
 # Vim stuff
+# Thought about wrapping vim alias in function "tmux set-option mode-mouse off" but realized
+# this option would become GLOBAL to other panes, which don't necessarily want
 alias vims="vim -S .session.vim" # for working with obsession
 export EDITOR=vim # default editor
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
@@ -231,6 +233,8 @@ alias ps="ps" # processes in this shell
 alias pc="mpstat -P ALL 1" # list individual core usage
 alias pt="top"             # table of processes, total
   # examine current proceses
+function join { local IFS="$1"; shift; echo "$*"; }
+  # join array elements by some separator
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
 export LESS="--RAW-CONTROL-CHARS"
@@ -427,11 +431,17 @@ function ccp() {
 ################################################################################
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
+#   * note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
+#     the homebrew install location 'brew tap homebrew/science, brew install cdo'
+#   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
+#     so just don't install it
 function ncdmnlist() { # get list of dimensions
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs
@@ -439,6 +449,7 @@ function ncvarlist() { # only get text between variables: and linebreak before g
 function ncvarinfos() { # get information for particular variable
     # the cdo parameter table actually gives a subset if this information, so don't
     # bother parsing that information
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
     # the space makes sure it isn't another variable that has trailing-substring
@@ -449,38 +460,35 @@ function ncvarinfos() { # get information for particular variable
 function ncvarinfo() { # get information for particular variable
     # the cdo parameter table actually gives a subset if this information, so don't
     # bother parsing that information
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  [ -z $2 ] && { echo "Must declare variable name."; return 1; }
-  ncdump -h "$1" | grep -A 100 "[[:space:]]$2(" | grep -B 100 "[[:space:]]$2:" | sed "s/$2://g" | sed $'s/^\t//g'
+  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
+  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
     # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvardata() { # parses the CDO parameter table
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  [ -z "$2" ] && { echo "Must declare variable name."; return 1; }
-  cdo infon -seltimestep,1 -selname,"$2" "$1" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
+  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
     # this procedure is ideal for "sanity checks" of data; just test one
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  [ -z "$2" ] && { echo "Must declare variable name."; return 1; }
-  ncks -s "%f " -H -C -v "$2" "$1" | grep -A 1 "data:" | tail -n 1
-    # the tail command then trims to get just the data
+  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
+  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  # ncdump -v "$1" "$2" | grep -A 100 "[[:space:]]$1[[:space:]]" #| tail -n +2
+  # ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | tail -r | tail -n +2 | tail -r
+  ncdump -v "$1" "$2" | tail -r | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | tail -n +2 | tail -r
+    # shhh... just let it happen baby
+    # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
+    # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
-# function ncdmnlist() { ncks -m $1 | cut -d ':' -f 1 | cut -d '=' -s -f 1 | xargs; }
-# function ncvarlist() { ncks -m $1 | grep -v '[:=]' | cut -d '(' -f 1 -s | sed 's/.* //g' | xargs; }
-# function ncvarlist2() { ncks -m $1 | grep "^\S*:" | cut -d ':' -f 1 -s | xargs; }
-# alias ln="cdo sinfon" # list netcdf information with CDO; this is my favorite format
-# alias lh="ncdump -h"  # with ncdump; h for 'headers'
-# function lv() { ncdump -t "-v,$1" "$2"; } # list variable
-#   # note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
-#   # the homebrew install location 'brew tap homebrew/science, brew install cdo'...which is bad, because
-#   # the current version can't read netcdf4 files; you really don't need HDF4, so just don't install it
-
 # Extract generalized files
 function extract() {
   for name in "$@"; do
@@ -518,75 +526,70 @@ if $macos; then
   alias chrome='\open -a Google\ Chrome'
   alias open='\open -a TextEdit'
   alias skim='\open -a Skim'
-
   # Fun stuff
   alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
-    # list number of songs per artist; can't have leading spaces in line continuation
   alias weather="curl wttr.in/Fort\ Collins" # list weather information
-    # shows filenames without extensions; isn't SED awesome? the -1 forces
-    # one-per-line output, the -e appends command to each line in pipe,
-
-  # Sync a local directory with files on SD card
-  # This function will only modify files on the SD card, never the local directory
-  function sdsync() {
-    # Behavior option: check for modified files?
-    # Only problem: file "modified" every time transferred to SD card
-    updateold=true
-    # Can change this, but default will be to sync playlist
-    sdcard="NO NAME" # edit when get new card
-    sdloc="/Volumes/$sdcard/Playlist" # sd data
-    locloc="$HOME/Google Drive/Playlist" # local data
-    echo "SD Location: $sdloc"
-    echo "Local location: $locloc"
-    # Iterate through local files
-    copied=false # copied anything?
-    updated=false # updated anything?
-    deleted=false # deleted anything?
-    shopt -s nullglob
-    $macos && date=gdate || date=date
-    for path in "$locloc/"*.{mp3,m4a}; do
-      file="${path##*/}"
-      if [ ! -r "$sdloc/$file" ]; then
-        copied=true # record
-        echo "New local file: $file. Copying to SD..."
-        cp "$path" "$sdloc/$file"
-      elif $updateold; then
-        # This will work, because just record last date that sync occurred
-        [ -r "$locloc/sdlog" ] || touch "$locloc/sdlog" # if doesn't exist, make
-        datec=$(tail -n 1 "$locloc/sdlog") # date copied to SD
-        datem=$($date -r "$path" +%s) # date last modified
-        if [ -z "$datec" ]; then # initializing directory
-          if [ $datem -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changes in last 50 days
-            modified=true
-          else modified=false
-          fi
-        elif [ "$datem" -gt "$datec" ]; then
-          modified=true # modified since last copied
-        else modified=false # not modified since last copied
-        fi
-        $modified && {
-          echo "Modified local file \"$file\" since previous sync."
-          updated=true
-          cp "$path" "$sdloc/$file"
-          }
-      fi
-    done
-    $copied || echo "No new files found."
-    $updated || echo "No recently modified files found."
-    # Iterate through remote files
-    for path in "$sdloc/"*.{mp3,m4a}; do
-      file="${path##*/}"
-      if [ ! -r "$locloc/$file" ]; then
-        deleted=true # record
-        echo "Deleted local file: $file. Deleting from SD..."
-        rm "$path"
-      fi
-    done
-    $deleted || echo "No old files deleted."
-    # Record in Playlist when last sync occurred
-    date +%s >> "$locloc/sdlog"
-  }
 fi
+# Sync a local directory with files on SD card
+# This function will only modify files on the SD card, never the local directory
+function sdsync() {
+  # Behavior option: check for modified files?
+  # Only problem: file "modified" every time transferred to SD card
+  updateold=true
+  # Can change this, but default will be to sync playlist
+  sdcard="NO NAME" # edit when get new card
+  sdloc="/Volumes/$sdcard/Playlist" # sd data
+  locloc="$HOME/Google Drive/Playlist" # local data
+  echo "SD Location: $sdloc"
+  echo "Local location: $locloc"
+  # Iterate through local files
+  copied=false # copied anything?
+  updated=false # updated anything?
+  deleted=false # deleted anything?
+  shopt -s nullglob
+  $macos && date=gdate || date=date
+  for path in "$locloc/"*.{mp3,m4a}; do
+    file="${path##*/}"
+    if [ ! -r "$sdloc/$file" ]; then
+      copied=true # record
+      echo "New local file: $file. Copying to SD..."
+      cp "$path" "$sdloc/$file"
+    elif $updateold; then
+      # This will work, because just record last date that sync occurred
+      [ -r "$locloc/sdlog" ] || touch "$locloc/sdlog" # if doesn't exist, make
+      datec=$(tail -n 1 "$locloc/sdlog") # date copied to SD
+      datem=$($date -r "$path" +%s) # date last modified
+      if [ -z "$datec" ]; then # initializing directory
+        if [ $datem -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changes in last 50 days
+          modified=true
+        else modified=false
+        fi
+      elif [ "$datem" -gt "$datec" ]; then
+        modified=true # modified since last copied
+      else modified=false # not modified since last copied
+      fi
+      $modified && {
+        echo "Modified local file \"$file\" since previous sync."
+        updated=true
+        cp "$path" "$sdloc/$file"
+        }
+    fi
+  done
+  $copied || echo "No new files found."
+  $updated || echo "No recently modified files found."
+  # Iterate through remote files
+  for path in "$sdloc/"*.{mp3,m4a}; do
+    file="${path##*/}"
+    if [ ! -r "$locloc/$file" ]; then
+      deleted=true # record
+      echo "Deleted local file: $file. Deleting from SD..."
+      rm "$path"
+    fi
+  done
+  $deleted || echo "No old files deleted."
+  # Record in Playlist when last sync occurred
+  date +%s >> "$locloc/sdlog"
+}
 
 ################################################################################
 # Tab completion
