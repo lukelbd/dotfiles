@@ -142,6 +142,17 @@ else
     export LD_LIBRARY_PATH="/usr/local/lib"
   fi
 
+  # MONDE OPTIONS
+  if [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
+    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    export PATH=""
+    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
+    # PGI utilites, plus Matlab
+    source set_pgi.sh # is in /usr/local/bin
+    # And edit the library path
+    export LD_LIBRARY_PATH="/usr/local/lib"
+  fi
+
   # OLBERS OPTIONS
   if [ "$HOSTNAME" == "olbers" ]; then
     # Add netcdf4 executables to path, for ncdump
