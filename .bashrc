@@ -179,6 +179,7 @@ export PATH="$HOME:$PATH"
 
 # NCL NCAR command language (had trouble getting it to work on Mac with conda, 
 # but on Linux distributions seems to work fine inside anaconda)
+# The Euclid/Gauss servers do not have NCL, so need to use conda
 if $macos; then
   alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
   export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
@@ -186,6 +187,9 @@ if $macos; then
     # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends 
     # up in above path after brew install gcc49... and must install this rather than gcc, which 
     # loads libgfortran.3.dylib and yields gcc version 7
+elif [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
+  export NCARG_ROOT="/usr/local"
+    # need this to function
 fi
 
 # ANACONDA options
