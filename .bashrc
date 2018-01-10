@@ -482,9 +482,9 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  # ncdump -v "$1" "$2" | grep -A 100 "[[:space:]]$1[[:space:]]" #| tail -n +2
-  # ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | tail -r | tail -n +2 | tail -r
-  ncdump -v "$1" "$2" | tail -r | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | tail -n +2 | tail -r
+  $macos && reverse="tail -r" || reverse="tac"
+  # ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
+  ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | tail -n +2 | $reverse
     # shhh... just let it happen baby
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
