@@ -32074,23 +32074,23 @@ Close</string>
 	<key>NSWindow Frame SUUpdateAlert</key>
 	<string>430 363 620 392 0 0 1440 877 </string>
 	<key>NSWindow Frame SessionsPreferences</key>
-	<string>518 328 606 469 0 0 1440 877 </string>
+	<string>518 409 599 388 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>307 337 796 473 0 0 1440 877 </string>
+	<string>307 381 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>41 0 1399 877 0 0 1440 877 </string>
+	<string>318 397 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
-	<string>537 328 570 426 0 0 1440 877 </string>
+	<string>41 451 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
 	<string>443 298 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 3</key>
 	<string>41 451 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 4</key>
-	<string>283 250 570 426 0 0 1440 877 </string>
-	<key>NSWindow Frame iTerm Window 5</key>
 	<string>41 0 1399 877 0 0 1440 877 </string>
+	<key>NSWindow Frame iTerm Window 5</key>
+	<string>178 426 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 6</key>
 	<string>281 421 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 7</key>
@@ -44431,7 +44431,7 @@ Close</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2018-01-09T04:59:56Z</date>
+	<date>2018-01-20T11:21:10Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>ShowBookmarkName</key>
@@ -44462,7 +44462,7 @@ Close</string>
 	<key>TripleClickSelectsFullWrappedLines</key>
 	<true/>
 	<key>UKCrashReporterLastCrashReportDate</key>
-	<real>1515050496</real>
+	<real>1515723904</real>
 	<key>UseBorder</key>
 	<false/>
 	<key>UseLionStyleFullscreen</key>

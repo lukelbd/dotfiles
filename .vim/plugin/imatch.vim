@@ -47,6 +47,9 @@ function! s:hl_matching_lines() abort
   if &ft == "markdown"
     return
   endif
+  if expand("%:t")==".vimrc" "major issues there
+    return
+  endif
   " Prevent running script again when cursor moves on same line using `b:hl_last_line`
   if exists('b:hl_last_line') && b:hl_last_line == line('.')
     return

@@ -54,30 +54,12 @@
   },
   "keys": {
     "command": {
-      "bind": {
-        "1": "jupyter-notebook:to-code",
-        "2": "jupyter-notebook:to-markdown",
-        "cmd-r": "jupyter-notebook:rename-notebook",
-        "s": "jupyter-notebook:save-notebook",
-        "i": "jupyter-notebook:interrupt-kernel",
-        "0": "jupyter-notebook:confirm-restart-kernel",
-        "-": "jupyter-notebook:split-cell-at-cursor",
-        "d": "jupyter-notebook:delete-cell",
-        "u": "jupyter-notebook:undo-cell-deletion",
-        "/": "jupyter-notebook:find-and-replace",
-        ":": "jupyter-notebook:show-command-palette",
-        "w": "jupyter-notebook:save-notebook",
-        "y": "jupyter-notebook:copy-cell",
-        "p": "jupyter-notebook:paste-cell-below",
-        "shift-p": "jupyter-notebook:paste-cell-above",
-        "r": "jupyter-notebook:rename-notebook",
-        "x": "jupyter-notebook:clear-cell-output",
-        "q": "jupyter-notebook:interrupt-kernel"
-      },
       "unbind": [
+        "q",
         "1",
         "2",
         "r",
+        "x",
         "m",
         "y",
         "i,i",
@@ -95,10 +77,26 @@
         "down",
         "up",
         "v",
-        "shift-v",
-        "x",
-        "q"
-      ]
+        "shift-v"
+      ],
+      "bind": {
+        "1": "jupyter-notebook:to-code",
+        "2": "jupyter-notebook:to-markdown",
+        "cmd-r": "jupyter-notebook:rename-notebook",
+        "x": "jupyter-notebook:clear-cell-output",
+        "s": "jupyter-notebook:save-notebook",
+        "q": "jupyter-notebook:interrupt-kernel",
+        "0": "jupyter-notebook:confirm-restart-kernel",
+        "-": "jupyter-notebook:split-cell-at-cursor",
+        "d": "jupyter-notebook:delete-cell",
+        "u": "jupyter-notebook:undo-cell-deletion",
+        "/": "jupyter-notebook:find-and-replace",
+        ":": "jupyter-notebook:show-command-palette",
+        "w": "jupyter-notebook:save-notebook",
+        "y": "jupyter-notebook:copy-cell",
+        "p": "jupyter-notebook:paste-cell-below",
+        "shift-p": "jupyter-notebook:paste-cell-above"
+      }
     }
   },
   "comment_uncomment_indent": true,

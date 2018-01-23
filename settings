@@ -1,12 +1,32 @@
 #!/bin/bash
 # This script is intended to carry out some basic workspace environments done to my Mac
+# Includes settings for JUPYTER NOTEBOOK and some KARABINER REMAPS.
 # Try to store as many as possible here so switching to a new laptop will be more painless
+# Issues:
+# * Some settings are read from notebook.json, but the notebook has to be created
+#   after editing (or perhaps COPIED; try that out).
+# * Some settings are never ever read; currently seems to be just menu options but
+#   not sure of pattern. Needs more testing
+# * Post issue to jupyter notebook.
 
-# First enable the complex Karabiner remap that allows switching hyphen and underscore keys
+# Copy over my custom jupyter notebook settings to global location
+# The GUI method is scary and don't want settings to get overwritten
+[ hash colordiff 2>/dev/null ] && diff=colordiff || diff=diff
+if true; then
+  $diff notebook.json ~/.jupyter/nbconfig/notebook.json
+  read -p "Overwrite current jupyter notebook settings?" -n 1 -r
+  echo # move to new line
+  if [[ "$REPLY" =~ "^[Yy]$" ]]; then
+    cp notebook.json ~/.jupyter/nbconfig/notebook.json
+  fi
+fi
+
+# Enable the complex Karabiner remap that allows switching hyphen and underscore keys
 # See this Issues page: https://github.com/tekezo/Karabiner-Elements/issues/329
 # GUI instructions: Go to "Complex Modifications" in Karabiner prefs and "Add Rule"
-location=~/.config/karabiner/assets/complex_modifications/exchange_hyphen_and_underscore.json
-cat > $location << EOF
+if false; then
+  location=~/.config/karabiner/assets/complex_modifications/exchange_hyphen_and_underscore.json
+  cat > $location << EOF
 {
   "title": "Exchange hyphen and underscore (manually installed)",
   "rules": [
@@ -56,3 +76,4 @@ cat > $location << EOF
   ]
 }
 EOF
+fi

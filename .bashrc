@@ -288,7 +288,6 @@ function colorize() {
   echo -e "\033]50;SetProfile=$newprofile\a"
   # Note, can use 'command' to avoid function/alias lookup
   # See: https://stackoverflow.com/a/6365872/4970632
-  echo $oldprofile $newprofile
   "$@" # need to quote it, might need to escape stuff
   # Restore settings
   echo -e "\033]50;SetProfile=$oldprofile\a"
@@ -450,6 +449,18 @@ function ccp() {
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
+function ncinfo() { # only get text between variables: and linebreak before global attributes
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ncdump -h "$1" | sed '/^$/q' | tail -n +2 | tail -r | tail -n +2 | tail -r
+    # trims first and last lines; do not need these
+}
+function nclist() { # only get text between variables: and linebreak before global attributes
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
+    | cut -d '(' -f 1 | sed 's/.* //g' | xargs
+}
 function ncdmnlist() { # get list of dimensions
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
@@ -458,9 +469,17 @@ function ncdmnlist() { # get list of dimensions
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  cdo -s showname "$1" # just variables
-  # ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-  #   | cut -d '(' -f 1 | sed 's/.* //g' | xargs
+  # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
+  #   # data model, so don't use this approach
+  local list=($(nclist "$1"))
+  local dmnlist=($(ncdmnlist "$1"))
+  local varlist=() # add variables here
+  for item in "${list[@]}"; do
+    if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
+      varlist+=("$item")
+    fi
+  done
+  echo "${varlist[@]}" # prints results
 }
 function ncvarinfos() { # get information for particular variable
     # the cdo parameter table actually gives a subset if this information, so don't
