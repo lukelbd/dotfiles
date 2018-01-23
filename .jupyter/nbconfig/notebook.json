@@ -42,7 +42,7 @@
     "23"
   ],
   "toc2": {
-    "toc_window_display": false,
+    "toc_window_display": true,
     "toc_cell": false,
     "sideBar": true,
     "moveMenuLeft": false,
@@ -55,7 +55,9 @@
   "keys": {
     "command": {
       "bind": {
-        "x": "jupyter-notebook:clear-cell-output",
+        "1": "jupyter-notebook:to-code",
+        "2": "jupyter-notebook:to-markdown",
+        "cmd-r": "jupyter-notebook:rename-notebook",
         "s": "jupyter-notebook:save-notebook",
         "i": "jupyter-notebook:interrupt-kernel",
         "0": "jupyter-notebook:confirm-restart-kernel",
@@ -64,14 +66,25 @@
         "u": "jupyter-notebook:undo-cell-deletion",
         "/": "jupyter-notebook:find-and-replace",
         ":": "jupyter-notebook:show-command-palette",
-        "w": "jupyter-notebook:save-notebook"
+        "w": "jupyter-notebook:save-notebook",
+        "y": "jupyter-notebook:copy-cell",
+        "p": "jupyter-notebook:paste-cell-below",
+        "shift-p": "jupyter-notebook:paste-cell-above",
+        "r": "jupyter-notebook:rename-notebook",
+        "x": "jupyter-notebook:clear-cell-output",
+        "q": "jupyter-notebook:interrupt-kernel"
       },
       "unbind": [
-        "s",
+        "1",
+        "2",
+        "r",
+        "m",
+        "y",
         "i,i",
         "0,0",
         "d,d",
         "z",
+        "cmd-r",
         "space",
         "shift-space",
         "shift-l",
@@ -80,7 +93,11 @@
         "shift-up",
         "shift-down",
         "down",
-        "up"
+        "up",
+        "v",
+        "shift-v",
+        "x",
+        "q"
       ]
     }
   },

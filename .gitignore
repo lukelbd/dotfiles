@@ -5,11 +5,14 @@
   # (not relative path) which seems to mess up the jupyterthemes font setup
   # the other json, jupyter_notebook_config.json, just tells jupyter to use nbextensions
 
+# Deliberately ignored #
+########################
+.vim/plugged
+
 # VIM extras #
 ##############
 .session.*
 .*.sw[a-z]
-.vim/plugged
   # VERY IMPORTANT, need to install manually with :PlugInstall
   # on every server, otherwise everything fails
 

@@ -7,7 +7,19 @@ Don't really use any `.ipython` settings as they are enabled by cell magic on st
 
 And don't really need `.jupyter` for enabling themes because can just enable on them on startup every time with an alias to `jt`. However we do want stuff stored in `nbconfig/notebook.json` (these are all the keyboard shortcuts and extension options).
 
-## Customization notes for iTerm2 and macbook
+## Jupyter Customization
+
+Need to understand what each section in `~/.jupyter` does.
+
+* Every file has its own metadata; it will start with settings from files in `~/.jupyter` directory, then if settings changed with GUI, they may or may not be saved globally and re-loaded next. This is the annoying part.
+* The `jupyter_nbconvert_config.json` controls settings for exporting the notebook to other formats. Not relevant.
+* The `jupyter_notebook_config.json` enables the nbextensions tab.
+* The `nbconfig/tree.json` controls the tree tab (not relevant), and the `nbconfig/common.json` controls hiding of incompatible extensions (not relevant).
+* The `nbconfig/notebook.json` controls which extensions are enabled, and their settings (e.g. highlight colors, autoscroll, cell font [this may be separate from `jupyterthemes`], table of contents, and keyboard shortcuts).
+* The `custom/custom.css` is changed by `jupyterthemes` and sets up the pretty colors.
+* The `custom/custom.js` can be changed to enable other weird stuff.
+
+## iTerm2 Customization
 * Make sure Profiles-->Terminal-->Enable Mouse Reporting is turned on so can use mouse in VIM.
 * Change mouse settings to allow alt-clicking to move cursor while entering shell command.
 * Delete all Profile-specific keyboard mappings and make the special Alt+Arrow escape sequence mappings to allow moving cursor by word like you can do elsewhere in the OS.

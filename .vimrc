@@ -116,6 +116,7 @@ noremap @ <Nop>
   "new macro useage; almost always just use one at a time
   "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
 noremap \ :echo "Enabling throwaway register."<CR>"_
+noremap <expr> \| has("clipboard") ? ':echo "Enabling system clipboard."<CR>"*' : ':echo "VIM not compiled with +clipboard."<CR>'
   "use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
   "THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
 map " mq:echo "Throwaway mark was set."<CR>
@@ -287,6 +288,7 @@ Plug 'scrooloose/nerdtree'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-obsession'
+Plug 'tpope/vim-fugitive'
 if g:requirement1
   Plug 'majutsushi/tagbar'
   "VIM had major issues with tagbar on remote servers
@@ -348,6 +350,7 @@ if has_key(g:plugs, "delimitmate")
     "if this unset looks for VIM &matchpairs variable; generally should be the
     "same but we just want to make sure
   au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
+    "override for formats that use carats
   au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
     "markdown need backticks for code, and can maybe do LaTeX
   au FileType tex let b:delimitMate_quotes = "\" ' $ |"
@@ -484,6 +487,9 @@ function! s:texmacros()
   "CONVENIENCE, IN CONTEXT OF OTHER SHORTCUTS
   inoremap <buffer> .. .
   inoremap <buffer> ,, ,
+  nnoremap <buffer> ,, @1
+    "special exception; otherwise my 'macro repitition' shortcut fails
+    "in LaTeX documents
   inoremap <buffer> .<Space> .<Space>
   inoremap <buffer> ,<Space> ,<Space>
 "-------------------------------------------------------------------------------
@@ -639,7 +645,7 @@ function! s:texmacros()
   inoremap <buffer> ;c \left\{\begin{matrix}[ll]<Esc>mAa\end{matrix}\right.<Esc>`Aa
     "works...because disabled ;c for curly bracket
   "Make fraction
-  inoremap <buffer> ;f \frac{}{}<Left><Left><Left>
+  inoremap <buffer> ;f \dfrac{}{}<Left><Left><Left>
   "Cancelto
   inoremap <buffer> ;0 \cancelto{}{}<Left><Left><Left>
   "Centerline (can modify this; \rule is simple enough to understand)
@@ -791,7 +797,8 @@ function! s:texmacros()
   "Lists
   inoremap <buffer> ,i \begin{itemize}<CR>\end{itemize}<Up><End><CR>
   vnoremap <buffer> ,i mA<Esc>`>a<CR>\end{itemize}<Esc>`<i\begin{itemize}<CR><Esc>`AF\
-  inoremap <buffer> ,n \begin{enumerate}<CR>\end{enumerate}<Up><Esc>A[]<Left>
+  " inoremap <buffer> ,n \begin{enumerate}<CR>\end{enumerate}<Up><Esc>A[]<Left>
+  inoremap <buffer> ,n \begin{enumerate}<CR>\end{enumerate}<Up><Esc>A<CR>
   vnoremap <buffer> ,n mA<Esc>`>a<CR>\end{enumerate}<Esc>`<i\begin{enumerate}<CR><Esc>`AF\
   inoremap <buffer> ,d \begin{description}<CR>\end{description}<Up><Esc>A<CR>
   vnoremap <buffer> ,d mA<Esc>`>a<CR>\end{description}<Esc>`<i\begin{description}<CR><Esc>`AF\
@@ -850,9 +857,9 @@ function! s:texmacros()
 "-use clear, because want to clean up previous output first
 "-use set -x to ECHO LAST COMMAND
   noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
-        \."~/dotfiles/compile false ".shellescape(@%))<CR>
+        \.'~/dotfiles/compile false '.shellescape(@%))<CR>
   noremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; "
-        \."~/dotfiles/compile true ".shellescape(@%))<CR>
+        \.'~/dotfiles/compile true "'.shellescape(@%).'"')<CR>
     "must store script in .VIM FOLDER
   " inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; which latex; "
         " \."latex ".shellescape(@%))<CR>a
@@ -1064,7 +1071,7 @@ function! s:simplesetup()
   setlocal nonumber
   setlocal nospell
 endfunction
-au FileType rst,qf call s:simpleseup()
+au FileType gitcommit,rst,qf call s:simplesetup()
 
 "-------------------------------------------------------------------------------
 "MARK HIGHLIGHTING
@@ -1540,26 +1547,34 @@ augroup END
 if has_key(g:plugs, "tabular")
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns
   "first character after matching preceding character
-  vnoremap <expr> -t ":Tabularize /".input("Align character: ")."<CR>"
-  nnoremap <expr> -t ":Tabularize /".input("Align character: ")."<CR>"
+  vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
+  nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
     "arbitrary character
-  vnoremap <expr> -c ":Tabularize /^\\s*\\S.*\\zs".b:NERDCommenterDelims['left']."<CR>"
-  nnoremap <expr> -c ":Tabularize /^\\s*\\S.*\\zs".b:NERDCommenterDelims['left']."<CR>"
+  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
+  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
     "by comment character; ^ is start of line, . is any char, .* is any number, \\zs
     "is start match here (must escape backslash), then search for the comment
-  vnoremap <expr> -C ":Tabularize /^.*\\zs".b:NERDCommenterDelims['left']."<CR>"
-  nnoremap <expr> -C ":Tabularize /^.*\\zs".b:NERDCommenterDelims['left']."<CR>"
+  vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
+  nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
     "by comment character, but instead don't ignore comments on their own line
-  nnoremap -, :Tabularize /,\zs/l0r2<CR>
-  vnoremap -, :Tabularize /,\zs/l0r2<CR>
+  nnoremap -, :Tabularize /,\zs/l0r1<CR>
+  vnoremap -, :Tabularize /,\zs/l0r1<CR>
     "suitable for diag_table's in models
-  vnoremap -<Space> :Tabularize /\ /l0<CR>
-  nnoremap -<Space> :Tabularize /\ /l0<CR>
-    "tab by spaces (simple)
-  vnoremap -= :Tabularize /^[^=]*\zs=<CR>
-  nnoremap -= :Tabularize /^[^=]*\zs=<CR>
-  vnoremap -- :Tabularize /^[^=]*\zs=\zs<CR>
-  nnoremap -- :Tabularize /^[^=]*\zs=\zs<CR>
+  vnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  nnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+    "check out documentation on \@<! atom; difference between that and \@! is that \@<!
+    "checks whether something doesn't match *anywhere before* what follows
+    "also the \S has to come before the \(\) atom instead of after for some reason
+  "TODO: Note the above still has limitations due to Tabularize behavior; if have
+  "  a b c d e f
+  "  a b # a comment
+  "the c/d/e/f will be pushed past the comment since the b and everything that follows
+  "are considered part of the same delimeted field. just make sure lines with comments
+  "are longer than the lines we actually want to align
+  vnoremap -- :Tabularize /^[^=]*\zs=<CR>
+  nnoremap -- :Tabularize /^[^=]*\zs=<CR>
+  vnoremap -= :Tabularize /^[^=]*\zs=\zs<CR>
+  nnoremap -= :Tabularize /^[^=]*\zs=\zs<CR>
     "align assignments, and keep equals signs on the left; only first equals sign
   vnoremap -d :Tabularize /:\zs<CR>
   nnoremap -d :Tabularize /:\zs<CR>

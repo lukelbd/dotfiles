@@ -1,29 +1,32 @@
 #!/bin/bash
 # This script compile LaTeX documents on macOS
 difference=$1 # get difference between this and previous (sorted alphanumerically)
-filename=$2 # the current file
+filename="$2" # the current file
 diff=$(dirname $1)/diff.tex # difference output file
 if [ -z $difference ]; then
   echo "ERROR: Must specify whether we take difference or not."
   exit 1
 fi
-if [ -z $filename ]; then
+if [ -z "$filename" ]; then
   echo "ERROR: Must call compile-script with filename."
   exit 1
 fi
-if [ ! -r $filename ]; then
+if [ ! -r "$filename" ]; then
   echo "ERROR: File does not exist."
   exit 1
 fi
-stem=${filename%.*} # the stem, without .tex
-if [[ $filename =~ / ]]; then
-  directory=${filename%/*} # trim shortest pattern matching <stuff>/*, keep "stuff"
-  filename=${filename##*/} # trim longest pattern matching */<stuff>, keep "stuff"
-  if [ ! -d $directory ]; then
+# asd  asas    dsf asdfaas asd asd
+# dsji dsaoji  asd asd     asd as  # helloHhh asd as
+# asd  asdaasd ij  ij      ij  asd # sdajio asdjioas jo ajio
+stem="${filename%.*}" # the stem, without .tex
+if [[ "$filename" =~ / ]]; then
+  directory="${filename%/*}" # trim shortest pattern matching <stuff>/*, keep "stuff"
+  filename="${filename##*/}" # trim longest pattern matching */<stuff>, keep "stuff"
+  if [ ! -d "$directory" ]; then
     echo "ERROR: Directory does not exist."
     exit 1
   fi
-  cd $directory
+  cd "$directory"
 fi
 
 # Run filtered LaTeX command; if any .bib exists, do the bibtex workflow
@@ -38,25 +41,25 @@ if [ ${#bibfiles[@]} -gt 0 ]; then
   [ -r "$stem.bib" ] && bibfile="$stem.bib" || bibfile=${bibfiles[0]}
 fi
 # bibfile= # special
-echo $filename
+echo "$filename"
 
 # Get difference-LaTeX file, with track changes
 if $difference; then
   [ -r $diff ] && rm $diff # otherwise shows up in list
   texfiles=(*.tex) # delete old difference
   for index in ${!texfiles[@]}; do
-    [ ${texfiles[$index]} == $filename ] && break
+    [ ${texfiles[$index]} == "$filename" ] && break
   done
   if [ $index -eq 0 ]; then # the index just before break
     echo "Cannot find suitable .tex file for latexdiff."
   else
     cfilename=${texfiles[$(($index - 1))]} # previous index
-    echo "Compiling difference-PDF of $filename minus $cfilename..." # message
-    # latexdiff $cfilename $filename 2>/dev/null $diff # suppress errors
-    echo $cfilename $filename
-    latexdiff $cfilename $filename $diff # suppress errors
+    echo "Compiling difference-PDF of "$filename" minus $cfilename..." # message
+    # latexdiff $cfilename "$filename" 2>/dev/null $diff # suppress errors
+    echo $cfilename "$filename"
+    latexdiff $cfilename "$filename" $diff # suppress errors
     filename=$diff # rename the filename
-    stem=${diff%.tex} # new stem
+    stem="${diff%.tex}" # new stem
   fi
 fi
 # if [ ! -r $diff ]; then
@@ -70,15 +73,15 @@ latex=pdflatex
 bibtex=bibtex
 if [ ! -z $bibfile ]; then
   echo "Preparing bibliography $bibfile..."
-  $latex -draftmode $flags $stem &>/dev/null
-  $bibtex $stem #&>/dev/null
+  $latex -draftmode $flags "$stem" &>/dev/null
+  $bibtex "$stem" #&>/dev/null
     # run bibtex on <current file>.aux, not on the bibliography itself, dummy!
     # should specify bib resource in text of latex file
 fi
 echo "Compiling PDF $filename..."
-$latex -draftmode $flags $stem &>/dev/null
-$latex $flags $stem | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
-if [ ! -r $stem.pdf ]; then
+$latex -draftmode $flags "$stem" &>/dev/null
+$latex $flags "$stem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
+if [ ! -r "$stem.pdf" ]; then
   echo "ERROR: Failed to produce PDF."
   exit 1
 fi
@@ -88,19 +91,19 @@ if true; then
   newfiles=(*) # new files
   deletefiles=() # record deleted
   ignorestems=(tex html pdf bbl) # ignore these
-  for filename in ${newfiles[@]}; do
+  for filename in "${newfiles[@]}"; do
     if [[ ! " ${oldfiles[@]} " =~ " $filename " ]]; then
       if [[ ! " ${ignorestems[@]} " =~ " ${filename##*.} " ]]; then
-        rm $filename # delete the file
-        deletefiles+=($filename)
+        rm "$filename" # delete the file
+        deletefiles+=("$filename")
       fi
     fi
   done
-  [ ${#deletefiles[@]} -gt 0 ] && echo "Deleted files:"" ${deletefiles[@]}"
+  [ "${#deletefiles[@]}" -gt 0 ] && echo "Deleted files:"" ${deletefiles[@]}"
 fi
 
 # Finally open up in Skim and return focus to terminal
-open -a Skim $stem.pdf # open file
+open -a Skim "$stem.pdf" # open file
 [ $TERM_PROGRAM = "Apple_Terminal" ] && app="Terminal" || app="$TERM_PROGRAM"
 if [ -z $TERM_PROGRAM ]; then
   echo "ERROR: Could not find terminal from which this command executed."
