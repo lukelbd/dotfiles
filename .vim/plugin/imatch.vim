@@ -1,8 +1,11 @@
 "------------------------------------------------------------------------------
 "HIGHLIGHT MATCHING MATCHIT.VIM GROUPS
-"TODO NOTE THE DEFAULT '%' PRESS WITH MARKDOWN FILES RESULTS IN THIS WEIRD ANNOYING
-"DELAY THAT ISN'T REALLY RELATED TO THIS PLUGIN; ADDED PATCH TO EXIT THE MATCHING FUNCTION
-"WITH MARKDOWN FILETYPES
+" * Note it may be impossible to preserve the jumplist when pressing '%'; this generally
+"   calls a function that jumps around to the matching delimiter, but according to :keepjumps
+"   documentation, running :keepjumps func() on func that jumps around will not preserve jumplist
+" * Note the default '%' press with markdown files results in this weird annoying
+"   delay that isn't really related to this plugin; added patch to exit the matching function
+"   with markdown filetypes
 "------------------------------------------------------------------------------
 "Matching % codes (loads macros with default matching REG-EXPs)
 " runtime macros/matchit.vim
@@ -21,7 +24,7 @@ function! s:get_match_lines(line) abort
   while a:tolerance && a:linebefore != line('.')
     let a:linebefore=line('.')
     let a:tolerance-=1
-    normal %
+    keepjumps normal %
       " do NOT use normal!; may need maps; check out results of ':map %'
     if line('.') == a:line
       " Note that the current line number is never added to the `lines`
@@ -32,7 +35,8 @@ function! s:get_match_lines(line) abort
     call add(lines, line('.'))
   endwhile
   "Return to original line no matter what, return list of lines to highlight
-  execute "normal! ".a:line."gg"
+  "Documentation says keepjumps exe 'command' fails; must use exe 'keepjumps command'
+  execute "keepjumps normal! ".a:line."gg"
   if a:badbreak
     return []
   else
@@ -47,9 +51,9 @@ function! s:hl_matching_lines() abort
   if &ft == "markdown"
     return
   endif
-  if expand("%:t")==".vimrc" "major issues there
-    return
-  endif
+  " if expand("%:t")==".vimrc" "major issues there
+  "   return
+  " endif
   " Prevent running script again when cursor moves on same line using `b:hl_last_line`
   if exists('b:hl_last_line') && b:hl_last_line == line('.')
     return
@@ -62,12 +66,14 @@ function! s:hl_matching_lines() abort
   silent! call matchdelete(12345)
   " Try to get matching lines from the current cursor position.
   let lines = s:get_match_lines(view.lnum)
+  " keepjumps let lines = s:get_match_lines(view.lnum)
   if empty(lines)
     " It's possible that the line has another matching line, but can't be
     " matched at the current column.  Move the cursor to column 1 to try
     " one more time.
     call cursor(view.lnum, 1)
     let lines = s:get_match_lines(view.lnum)
+    " keepjumps let lines = s:get_match_lines(view.lnum)
   endif
   if len(lines)
     " Since the current line is not in the `lines` list, only the other
@@ -101,7 +107,7 @@ highlight link MatchLine MatchParen
 augroup matching_lines
   autocmd!
   " Highlight lines as the cursor moves.
-  autocmd CursorMoved * call s:hl_matching_lines()
+  autocmd CursorMoved * keepjumps call s:hl_matching_lines()
   " Remove the highlight while in insert mode.
   autocmd InsertEnter * call s:hl_matching_lines_clear()
   " Remove the highlight after TextChanged.
