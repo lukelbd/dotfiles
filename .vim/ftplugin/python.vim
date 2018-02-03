@@ -42,16 +42,16 @@ let s:all1 = s:ini1 . '\|' . s:tail1
 let s:all2 = s:ini2 . '\|' . s:tail2
 
 fun! s:PyMatch(type, mode) range
-  " I have to do this before the :normal gv...
+  " I have to do this before the :keepjumps normal gv...
   let cnt = v:count1
   " If this function was called from Visual mode, make sure that the cursor
   " is at the correct end of the Visual range:
   if a:mode == "v"
-    execute "normal! gv\<Esc>"
+    execute "keepjumps normal! gv\<Esc>"
   endif
   " Use default behavior if called as % with a count.
   if a:type == "%" && v:count
-    exe "normal! " . v:count . "%"
+    exe "keepjumps normal! " . v:count . "%"
     return s:CleanUp('', a:mode)
   endif
 
@@ -66,7 +66,7 @@ fun! s:PyMatch(type, mode) range
   endif
   let startindent = indent(currline)
   " Set a mark before jumping.
-  normal! m'
+  keepjumps normal! m'
 
   " If called as [%, find the start of the current block.
   " If called as ]%, find the end of the current block.
@@ -87,7 +87,7 @@ fun! s:PyMatch(type, mode) range
       \ || text !~ '^\s*\%(' . s:all1 . '\|' . s:all2 . '\)'
       " cursor not on the first WORD or no keyword so bail out
       if a:type == '%'
-normal! %
+        keepjumps normal! %
       endif
       return s:CleanUp('', a:mode)
     endif
@@ -255,7 +255,7 @@ fun! s:CleanUp(options, mode, ...)
   " Open folds, if appropriate.
   if a:mode != "o"
     if &foldopen =~ "percent"
-      normal! zv
+      keepjumps normal! zv
     endif
   " In Operator-pending mode, we want to include the whole match
   " (for example, d%).
