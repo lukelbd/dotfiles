@@ -55,8 +55,8 @@
   "keys": {
     "command": {
       "bind": {
-        "1": "jupyter-notebook:to-code",
-        "2": "jupyter-notebook:to-markdown",
+        "1": "jupyter-notebook:change-cell-to-heading-1",
+        "2": "jupyter-notebook:change-cell-to-heading-2",
         "cmd-r": "jupyter-notebook:rename-notebook",
         "s": "jupyter-notebook:save-notebook",
         "i": "jupyter-notebook:interrupt-kernel",
@@ -71,8 +71,9 @@
         "p": "jupyter-notebook:paste-cell-below",
         "shift-p": "jupyter-notebook:paste-cell-above",
         "r": "jupyter-notebook:rename-notebook",
-        "x": "jupyter-notebook:clear-cell-output",
-        "q": "jupyter-notebook:interrupt-kernel"
+        "q": "jupyter-notebook:interrupt-kernel",
+        "c": "jupyter-notebook:change-cell-to-code",
+        "x": "jupyter-notebook:clear-cell-output"
       },
       "unbind": [
         "1",
@@ -97,7 +98,8 @@
         "v",
         "shift-v",
         "x",
-        "q"
+        "q",
+        "c"
       ]
     }
   },
