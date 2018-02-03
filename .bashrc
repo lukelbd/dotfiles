@@ -248,6 +248,8 @@ alias ps="ps" # processes in this shell
 alias pc="mpstat -P ALL 1" # list individual core usage
 alias pt="top"             # table of processes, total
   # examine current proceses
+hash colordiff 2>/dev/null && alias diff="colordiff"
+  # prettier differencing; use this if it exists
 function join { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
 # Standardize less/man/etc. colors
@@ -449,22 +451,24 @@ function ccp() {
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
+alias ncdump="ncdump -h" # almost always want this; access old versions in functions with backslash
 function ncinfo() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  ncdump -h "$1" | sed '/^$/q' | tail -n +2 | tail -r | tail -n +2 | tail -r
+  \ncdump -h "$1" | sed '/^$/q' | tail -n +2 | tail -r | tail -n +2 | tail -r
     # trims first and last lines; do not need these
 }
 function nclist() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-    | cut -d '(' -f 1 | sed 's/.* //g' | xargs
+  \ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
+    | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncdmnlist() { # get list of dimensions
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' | cut -d '=' -f 1 -s | xargs
+  \ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
+    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
@@ -479,14 +483,14 @@ function ncvarlist() { # only get text between variables: and linebreak before g
       varlist+=("$item")
     fi
   done
-  echo "${varlist[@]}" # prints results
+  echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
 function ncvarinfos() { # get information for particular variable
     # the cdo parameter table actually gives a subset if this information, so don't
     # bother parsing that information
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+  \ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -498,7 +502,7 @@ function ncvarinfo() { # get information for particular variable
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
+  \ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -518,8 +522,8 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $macos && reverse="tail -r" || reverse="tac"
-  # ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
-  ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | tail -n +2 | $reverse
+  # \ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
+  \ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | tail -n +2 | $reverse
     # shhh... just let it happen baby
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
