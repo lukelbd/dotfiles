@@ -43,25 +43,35 @@ function! s:get_match_lines(line) abort
     return lines
   endif
 endfunction
+" Unmatch function
+function! s:hl_matching_lines_clear() abort
+  let b:hl_ranORcleared = 0
+  silent! call matchdelete(12345)
+  unlet! b:hl_last_line
+endfunction
+" The highlight group that's used for highlighting matched lines.  By
 function! s:hl_matching_lines() abort
   let b:hl_ranORcleared = 1
   " Exit early on some files where this fails due to underlying Match_wrapper default
   " function provided with VIM; currently, some VIMscript files have slow % motion, and
   " markdown files can be awful
-  if &ft == "markdown"
-    return
-  endif
   " if expand("%:t")==".vimrc" "major issues there
   "   return
   " endif
-  " Prevent running script again when cursor moves on same line using `b:hl_last_line`
-  if exists('b:hl_last_line') && b:hl_last_line == line('.')
+  if mode()=="v"
+    call s:hl_matching_lines_clear()
+    return
+  endif
+  if &ft == "markdown"
+    return
+  endif
+  if exists('b:hl_last_line') && b:hl_last_line == line('.') "do not re-run if cursor on same line
     return
   endif
   let b:hl_last_line = line('.')
   " Save the window's state.
   let view = winsaveview()
-  " Delete a previous match highlight.  `12345` is used for the match ID.
+  " Delete a previous match highlight. `12345` is used for the match ID.
   " It can be anything as long as it's unique.
   silent! call matchdelete(12345)
   " Try to get matching lines from the current cursor position.
@@ -95,13 +105,6 @@ function! s:hl_matching_lines() abort
   " Restore the window's state.
   call winrestview(view)
 endfunction
-" Unmatch function
-function! s:hl_matching_lines_clear() abort
-  let b:hl_ranORcleared = 0
-  silent! call matchdelete(12345)
-  unlet! b:hl_last_line
-endfunction
-" The highlight group that's used for highlighting matched lines.  By
 " default, it will be the same as the `MatchParen` group.
 highlight link MatchLine MatchParen
 augroup matching_lines

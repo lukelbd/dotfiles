@@ -1,8 +1,9 @@
 #!/bin/bash
 #.bashrc
 # This file should override defaults in /etc/profile in /etc/bashrc.
-# Check out what is in the system defaults before using this, make sure
-# your $PATH is populated.
+# Check out what is in the system defaults before using this, make sure your $PATH is populated.
+# To SSH between servers without password use:
+# https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
 
 ################################################################################
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
@@ -15,9 +16,10 @@
 ################################################################################
 # SHELL INTEGRATION; iTerm2 feature only
 ################################################################################
-printf "Enabling shell integration... "
+# printf "Enabling shell integration... "
+# echo "Enabling shell integration."
 [ -e "${HOME}/.iterm2_shell_integration.bash" ] && . "${HOME}/.iterm2_shell_integration.bash"
-echo "Done."
+# echo "Done."
 
 ################################################################################
 # Shell stuff
@@ -315,10 +317,11 @@ alias R="colorize R"
 # Refresh currently open notebooks to see these changes applied
 # This makes all fonts the same size (10) and makes cells nice and wide (95%)
 if [ -z $jtime ] || [[ $jtime -lt $(date +%s -r ~/.jupyter/custom/custom.css 2>/dev/null) ]]; then
-  printf "Setting jupyter notebook theme... "
+  # printf "Setting jupyter notebook theme... "
+  echo "Setting jupyter notebook theme."
   jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
   jtime=$(date +%s) # remember
-  echo "Done."
+  # echo "Done."
 fi
 # IMPORTANT note: to uninstall nbextensions completely, use
 #  jupyter contrib nbextension uninstall --user
@@ -587,7 +590,7 @@ function sdsync() {
   deleted=false # deleted anything?
   shopt -s nullglob
   $macos && date=gdate || date=date
-  for path in "$locloc/"*.{mp3,m4a}; do
+  for path in "$locloc/"*.{mp3,m4a,m3u8}; do
     file="${path##*/}"
     if [ ! -r "$sdloc/$file" ]; then
       copied=true # record
@@ -617,7 +620,7 @@ function sdsync() {
   $copied || echo "No new files found."
   $updated || echo "No recently modified files found."
   # Iterate through remote files
-  for path in "$sdloc/"*.{mp3,m4a}; do
+  for path in "$sdloc/"*.{mp3,m4a,m3ua}; do
     file="${path##*/}"
     if [ ! -r "$locloc/$file" ]; then
       deleted=true # record
@@ -652,8 +655,13 @@ complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o
 complete -f -o plusdirs mv
 complete -f -o plusdirs rm
 
-# Powerline-shell prompt (ugly, so forget it)
-# hash powerline-shell 2>/dev/null && {
+# Message
+$macos && { neofetch --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
+# alias intro="neofetch --colors 4 1 8 8 8 7 --disable term && fortune | lolcat"
+# $macos && intro # only if on MacOS
+# alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
+# alias hack="cmatrix"
+# hash powerline-shell 2>/dev/null && { # ooglay so forget it
 #   function _update_ps1() {
 #     PS1="$(powerline-shell $?)"
 #     }
@@ -661,8 +669,6 @@ complete -f -o plusdirs rm
 #     PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 #   fi
 #   }
-
-echo 'Shell configured and namespace populated.'
 
 ################################################################################
 # Notes
