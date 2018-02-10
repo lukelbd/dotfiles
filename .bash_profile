@@ -10,5 +10,5 @@ if [ -f $HOME/.bashrc ]; then
   . ~/.bashrc
 fi
 
-# ...and that's it. This will keep startup properties
+# And that's it. This will keep startup properties
 # in ONE FILE, loaded no matter what

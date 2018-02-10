@@ -73,10 +73,13 @@ nnoremap <silent> <C-u> :call <sid>scroll(winheight(0)/2,1,1)<CR>
 " noremap <C-g> ]]
 "noremap <silent> <C-b> :call <sid>scroll(winheight(0),1,1)<CR>
 "noremap <silent> <C-f> :call <sid>scroll(winheight(0),0,1)<CR>
+"-------------------------------------------------------------------------------
+"Mouse remaps; they break things and default scrolling is fine so forget it
 " nnoremap <silent> <ScrollWheelUp> :call <sid>scroll(winheight(0)/12+1,1)<CR>
 " nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(winheight(0)/12+1,0)<CR>
-nnoremap <silent> <ScrollWheelUp> :call <sid>scroll(1,1,0)<CR>
-nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(1,0,0)<CR>
+" nnoremap <silent> <ScrollWheelUp> :call <sid>scroll(1,1,0)<CR>:redraw<CR>
+" nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(1,0,0)<CR>:redraw<CR>
+  "these commands break things and default scrolling is just fine
 "-------------------------------------------------------------------------------
 "And visual mode scrolling; never really use with wrapping toggled, so
 "will use standard <C-e> <C-y> scrolling here
@@ -92,8 +95,8 @@ vnoremap <silent> <expr> <C-u> eval(winheight(0)/2).'<C-y>'.eval(winheight(0)/2)
 " vnoremap <expr> <C-b> eval(winheight(0)).'<C-y>'.eval(winheight(0)).'gk'
 " vnoremap <C-f> [[
 " vnoremap <C-g> ]]
-vnoremap <silent> <ScrollWheelDown> <C-e>gj
-vnoremap <silent> <ScrollWheelUp> <C-y>gk
+" vnoremap <silent> <ScrollWheelDown> <C-e>gj
+" vnoremap <silent> <ScrollWheelUp> <C-y>gk
 "So don't confuse myself, make sure <C-d> and <C-u> then don't work
 " noremap <C-d> <Nop>
 " noremap <C-u> <Nop>
