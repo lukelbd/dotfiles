@@ -399,6 +399,8 @@ augroup END
 "First some simple maps for navigating jumplist
 noremap <C-k> <Tab>
 noremap <C-j> <C-o>
+noremap <C-h> g;
+noremap <C-l> g;
 if has_key(g:plugs, "EnhancedJumps")
   map <C-o> g<C-o>
   map <C-i> g<C-i>
@@ -1534,8 +1536,8 @@ function! s:enterpardir()
   call feedkeys("\<Up>", 't')
   return ''
 endfunction
-cnoremap <expr> <C-j> <sid>entersubdir()
-cnoremap <expr> <C-k> <sid>enterpardir()
+cnoremap <expr> <C-d> <sid>entersubdir()
+cnoremap <expr> <C-u> <sid>enterpardir()
   "note that <C-k> will ALWAYS trigger moving UP the directory tree while
   "<C-j> will ALWAYS trigger moving DEEPER INSIDE the directory tree; so if
   "you press <C-j> without completion options while inside ../, the .. will be deleted
@@ -1955,8 +1957,11 @@ nnoremap <expr> <Leader>C ":source $VIMRUNTIME/syntax/colortest.vim<CR>"
 "------------------------------------------------------------------------------
 "------------------------------------------------------------------------------
 "silent! !echo 'Custom vimrc loaded.'
-au BufRead * clearjumps "forget the jumplist
+" au BufRead * clearjumps "forget the jumplist
   "do this so that we don't have stuff in plugin files and the vimrc populating
   "the jumplist when starting for the very first time
+au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
+  "older versions of VIM have no clearjumps command, so this is a hack
+  "see this post: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 noh "run this at startup
 echo 'Custom vimrc loaded.'
