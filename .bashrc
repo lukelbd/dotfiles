@@ -298,7 +298,7 @@ function colorize() {
 }
 
 ################################################################################
-# Workspace setup
+# Python workspace setup
 ################################################################################
 # Interactive shell utilities
 # Colorize them
@@ -446,6 +446,24 @@ function ccp() {
 }
 
 ################################################################################
+# LaTeX utilities
+################################################################################
+# Should have "compile" executable in $HOME directory; generally only use this
+# with the .vimrc remap to <Ctrl+x> (compile, and potentially compile difference)
+# and <Ctrl+w> (for HTML docs)
+# Next need way to get word count
+function wordcount() {
+  file="$1"
+  cat "$file" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
+    | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | wc -w
+    # * prints word count between end of abstract and start of methods
+    # * explicitly delete begin/end environments because detex won't pick them up
+    #   and use the equals sign to exclud equations
+    # * note citations are left inside, but they are always right next to other
+    #   words/not separated by whitespace so they don't affect wordcounts
+}
+
+################################################################################
 # Dataset utilities
 ################################################################################
 # NetCDF tools (should just remember these)
@@ -458,8 +476,7 @@ alias ncdump="ncdump -h" # almost always want this; access old versions in funct
 function ncinfo() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | sed '/^$/q' | tail -n +2 | tail -r | tail -n +2 | tail -r
-    # trims first and last lines; do not need these
+  \ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' # trims first and last lines; do not need these
 }
 function nclist() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
@@ -488,19 +505,8 @@ function ncvarlist() { # only get text between variables: and linebreak before g
   done
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
-function ncvarinfos() { # get information for particular variable
-    # the cdo parameter table actually gives a subset if this information, so don't
-    # bother parsing that information
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
-    # -A means print x TRAILING lines starting from FIRST match
-    # -B means prinx x PRECEDING lines starting from LAST match
-}
 function ncvarinfo() { # get information for particular variable
-    # the cdo parameter table actually gives a subset if this information, so don't
+    # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
@@ -511,14 +517,14 @@ function ncvarinfo() { # get information for particular variable
     # -A means print x TRAILING lines starting from FIRST match
     # -B means prinx x PRECEDING lines starting from LAST match
 }
-function ncvardata() { # parses the CDO parameter table
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
-  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
-    # this procedure is ideal for "sanity checks" of data; just test one
-    # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
-    # and the column command re-aligns columns
+function ncvarinfos() { # as above, but show every variable; just no dimension info/global info
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  \ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+    # the space makes sure it isn't another variable that has trailing-substring
+    # identical to this variable; and the $'' is how to insert literal tab
+    # -A means print x TRAILING lines starting from FIRST match
+    # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
@@ -526,11 +532,20 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $macos && reverse="tail -r" || reverse="tac"
   # \ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
-  \ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | tail -n +2 | $reverse
+  \ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse
     # shhh... just let it happen baby
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
+# function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
+#   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
+#   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+#   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+#   cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+#     # this procedure is ideal for "sanity checks" of data; just test one
+#     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
+#     # and the column command re-aligns columns
+# }
 # Extract generalized files
 function extract() {
   for name in "$@"; do
@@ -655,8 +670,13 @@ complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o
 complete -f -o plusdirs mv
 complete -f -o plusdirs rm
 
+################################################################################
 # Message
-$macos && { neofetch --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
+################################################################################
+$macos && { grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'; }
+$macos && { [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash; }
+$macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
+# neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat
 # alias intro="neofetch --colors 4 1 8 8 8 7 --disable term && fortune | lolcat"
 # $macos && intro # only if on MacOS
 # alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
