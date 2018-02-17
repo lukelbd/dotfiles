@@ -62,12 +62,12 @@ filestem="${filename%.tex}"
 # if [[ "$filename" =~ ^manuscript....-..-..\.tex$ ]] || [[ "$filename" =~ ^supplementary....-..-..\.tex$ ]]; then
 [[ "$filename" =~ manuscript ]] && string=manuscript
 [[ "$filename" =~ supplementary ]] && string=supplementary
+[[ "$filename" =~ cover ]] && string=cover
 if [ ! -z $string ]; then
-  rfilename="$filestem.rtf" # the RTF for Dave
-  dfilename="changes${filename#$string}" # the difference file
+  # dfilename="changes${filename#$string}" # the difference file
+  dfilename="${filename%.tex}_changes.tex" # the difference file
   echo "This file is a manuscript. Will run latexdiff on the previous version."
 else
-  rfilename="" # keep empty
   dfilename="" # keep empty
   echo "This file is not a manuscript. Will not run latexdiff."
 fi
@@ -75,7 +75,9 @@ fi
 # Run filtered LaTeX command; if any .bib exists, do the bibtex workflow
 # See: https://stackoverflow.com/a/11163357/4970632
 # set +H # turn off exclamation-point-interpretation in double-quote string
-flags="-interaction=nonstopmode"
+# See: https://www.scivision.co/pdflatex-error-epstopdf-output-filename-not-allowed-in-restricted-mode/
+# the shellescape option helps use eps figures that aren't in actual .tex directory
+flags="-interaction=nonstopmode --shell-escape"
 bibfiles=(*.bib) # glob expansion of bibTeX files; for now don't expect "standard" bibtex format
 if [ ${#bibfiles[@]} -gt 1 ]; then
   echo "ERROR: Ambiguous which bibliography we should choose. Found the following: ${bibfiles[@]}."
@@ -84,6 +86,7 @@ if [ ${#bibfiles[@]} -gt 1 ]; then
 elif [ ${#bibfiles[@]} -eq 1 ]; then
   bibfile="${bibfiles[0]}" # choose this one
 fi
+bibfiles=()
 
 # Compile normal PDF, or the track-changes version
 # * Always compile TWICE to enable glossary-references, equation-references
@@ -108,7 +111,9 @@ if [ ! -r "$filestem.pdf" ]; then
 fi
 
 # Get difference-LaTeX file, with track changes
-if [ ! -z "$dfilename" ] && false; then
+dfilestem=""
+if [ ! -z "$dfilename" ] && true; then
+  # Check for earlier version
   [ -r "$dfilename" ] && rm "$dfilename" # otherwise shows up in list
   # texfiles=(*.tex) # delete old difference
   texfiles=($string????-??-??.tex) # sorted manuscript files (glob is sorted by default)
@@ -120,6 +125,7 @@ if [ ! -z "$dfilename" ] && false; then
   if [ $index -eq 0 ]; then # the index just before break
     echo "WARNING: Cannot find suitable .tex file for latexdiff."
   else
+    # Create difference texfile
     cfilename="${texfiles[$(($index - 1))]}" # previous index
     echo "Typesetting difference-PDF from $filename minus $cfilename..." # message
     latexdiff "$cfilename" "$filename" > "$dfilename"
@@ -129,11 +135,25 @@ if [ ! -z "$dfilename" ] && false; then
       cleanup
       exit 1
     fi
+    # Compile difference
+    dfilestem="${dfilename%.tex}"
+    if [ ! -z "$bibfile" ]; then
+      echo "Preparing bibliography $bibfile..."
+      $latex -draftmode $flags "$dfilestem" &>/dev/null
+      $bibtex "$dfilestem" #&>/dev/null
+    fi
+    echo "Typesetting PDF from $filename..."
+    $latex -draftmode $flags "$dfilestem" &>/dev/null
+    $latex $flags "$dfilestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
   fi # end check for suitable difference file
 fi # end check whether file-format implies we want difference
 
 # Get HTML or RTF-LaTeX file
-if [ ! -z "$rfilename" ] && $htmlcompile; then
+# echo "htlatex"
+# echo "$rfilename"
+if $htmlcompile; then
+# if [ ! -z "$rfilename" ] && $htmlcompile; then
+  # echo "HIHIHIHI"
   echo "Creating HTML file with htlatex."
   htlatex "$filename" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
   if [ ! -r "$filestem.html" ]; then
@@ -156,7 +176,8 @@ fi
 cleanup
 
 # Finally open up in Skim and return focus to terminal
-open -a Skim "$filestem.pdf" # open file
+[ -r "$dfilestem.pdf" ] && open -a Skim "$dfilestem.pdf" # open file
+[ -r "$filestem.pdf" ] && open -a Skim "$filestem.pdf" # open file
 [ $TERM_PROGRAM = "Apple_Terminal" ] && app="Terminal" || app="$TERM_PROGRAM"
 if [ -z $TERM_PROGRAM ]; then
   echo "ERROR: Could not find terminal from which this command executed."

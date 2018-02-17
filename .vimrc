@@ -42,7 +42,7 @@ set noundofile
 set wildignore=
 set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod
 set wildignore+=*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4
-set wildignore+=*.dmg,*.zip
+set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
   "never want to open these in VIM; includes GUI-only filetypes
   "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
 "------------------------------------------------------------------------------
@@ -196,9 +196,9 @@ nnoremap <expr> \| has("clipboard") ? ':echo "Enabling system clipboard."<CR>"*'
 vnoremap <expr> \| has("clipboard") ? '<Esc>:echo "Enabling system clipboard." <BAR> sleep 200m<CR>gv"*' : ':echo "VIM not compiled with +clipboard."<CR>'
   "use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
   "THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
-noremap <Right> ;
-noremap <Left> ,
-  "so i can still use the f, t stuff
+" noremap <Right> ;
+" noremap <Left> ,
+"   "so i can still use the f, t stuff
 nnoremap x "_x
 nnoremap X "_X
   "don't save single-character deletions to any register
@@ -233,16 +233,16 @@ noremap L g$geE
 "Still might occasionally want to navigate by lines though
 noremap  k      gk
 noremap  j      gj
-noremap  <Up>    <Nop>
-noremap  <Down>  <Nop>
-noremap  <Home>  <Nop>
-noremap  <End>   <Nop>
-inoremap <Up>    <Nop>
-inoremap <Down>  <Nop>
-inoremap <Home>  <Nop>
-inoremap <End>   <Nop>
-inoremap <Left>  <Nop>
-inoremap <Right> <Nop>
+" noremap  <Up>    <Nop>
+" noremap  <Down>  <Nop>
+" noremap  <Home>  <Nop>
+" noremap  <End>   <Nop>
+" inoremap <Up>    <Nop>
+" inoremap <Down>  <Nop>
+" inoremap <Home>  <Nop>
+" inoremap <End>   <Nop>
+" inoremap <Left>  <Nop>
+" inoremap <Right> <Nop>
 "ROW/LINE MANIPULATION
 "Unjoin lines/cut at cursor
 " nnoremap <Leader>o mAA<CR><Esc>`A
@@ -372,7 +372,7 @@ Plug 'tpope/vim-surround'
 Plug 'Tumbler/highlightMarks'
 Plug 'godlygeek/tabular'
 Plug 'raimondi/delimitmate'
-Plug 'jistr/vim-nerdtree-tabs'
+" Plug 'jistr/vim-nerdtree-tabs'
 Plug 'gioele/vim-autoswap' "deals with swap files automatically
 Plug 'triglav/vim-visual-increment' "visual incrementing
 "The conda plugin is for changing anconda VIRTUALENV; probably don't need it
@@ -502,10 +502,6 @@ function! s:delimscr(map,left,right,...)
   exe 'inoremap <buffer> ,'.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
   exe 'vnoremap <buffer> ,'.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
 endfunction
-"Match the VIM builtins like di[ etc. to SURROUND syntax used for csr etc.
-for s in ["r[", "a<"] "most simple ones
-  call s:surround(s[0], s[1])
-endfor
 "Capitalization stuff in familiar syntax
 nnoremap ~ ~h
 nnoremap ;u guiw
@@ -530,7 +526,13 @@ call s:delims('r', '[', ']')
 call s:delims('a', '<', '>')
 call s:delims("'", "'", "'")
 call s:delims('"', '"', '"')
+call s:delims('$', '$', '$')
 call s:delims('`', '`', '`')
+call s:delims('~', '“', '”')
+"Match the VIM builtins like di[ etc. to SURROUND syntax used for csr etc.
+for s in ["r[", "a<"] "most simple ones
+  call s:surround(s[0], s[1])
+endfor
 
 "-------------------------------------------------------------------------------
 "LATEX MACROS, lots of insert-mode stuff
@@ -1104,19 +1106,27 @@ if has_key(g:plugs, "nerdtree")
   noremap <Tab>j :NERDTreeToggle<CR>
   noremap <Tab>J :NERDTreeTabsToggle<CR>
     "had some issues with NERDTreeToggle; failed/gave weird results
-  "slash, because directory hierarchies have slashes?
-  "...no, confusing; instead { because it shows up on left
   let g:NERDTreeWinPos="right"
   let g:NERDTreeWinSize=20 "instead of 31 default
   let g:NERDTreeShowHidden=1
-  let g:NERDTreeMinimalUI=1
-    "remove annoying ? for help note
-  let g:NERDTreeMapChangeRoot="D"
-    "C was annoying, because VIM will wait for 'CD'
+  let g:NERDTreeMinimalUI=1 "remove annoying ? for help note
+  let g:NERDTreeMapChangeRoot="D" "C was annoying, because VIM will wait for 'CD'
+  "Sorting and filetypes ignored
+  let g:NERDTreeSortOrder=[] "use default sorting
+  let g:NERDTreeIgnore=split(&wildignore, ',')
+  for s:index in range(len(g:NERDTreeIgnore))
+    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
+    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\$', '')
+  endfor
+  "Close nerdtree if last in tab
   autocmd BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-    "close nerdtree if last in tab
-  autocmd FileType nerdtree setlocal nolist
-  autocmd FileType nerdtree normal! <C-w>r
+  "Setup maps
+  function! s:nerdtreesetup()
+    " normal! <C-w>r
+    setlocal nolist
+    nmap <buffer>  <Tab><Tab> :let g:PreTab=tabpagenr()<CR>T:exe 'tabn '.g:PreTab<CR>
+  endfunction
+  autocmd FileType nerdtree call s:nerdtreesetup()
 endif
 
 "-------------------------------------------------------------------------------
@@ -1667,7 +1677,8 @@ autocmd InsertLeave,CmdwinLeave * set iminsert=0
 "TAB NAVIGATION
 augroup tabs
 augroup END
-au TabLeave * let g:LastTab = tabpagenr()
+let g:LastTab=1
+au TabLeave * let g:LastTab=tabpagenr()
 "Basic switching, and shortcut for 'last active tab'
 noremap <Tab>1 1gt
 noremap <Tab>2 2gt
