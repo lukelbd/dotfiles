@@ -381,7 +381,8 @@ export monde='ldavis@monde.atmos.colostate.edu'
 export euclid='ldavis@euclid.atmos.colostate.edu'
 export olbers='ldavis@olbers.atmos.colostate.edu'
 export zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-export archive='/media/archives/reanalyses/era_interim/'
+export archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
+# export archive='/media/archives/reanalyses/era_interim/'
 # export olbers='ldavis@129.82.49.159'
 function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
 
