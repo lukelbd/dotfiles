@@ -152,7 +152,7 @@ else
     # PGI utilites, plus Matlab
     source set_pgi.sh # is in /usr/local/bin
     # And edit the library path
-    export LD_LIBRARY_PATH="/usr/local/lib"
+    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
   fi
 
   # OLBERS OPTIONS
