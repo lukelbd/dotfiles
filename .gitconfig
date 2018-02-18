@@ -1,10 +1,9 @@
 # Configuration file. The push-default allows "git push" to go to origin-master.
 [alias]
 	add-commit = !git push origin master add -A && git commit
-	history = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset%n' --abbrev-commit --date=relative --branches
 	quick = !git add -A && git commit
 	dad = !curl https://icanhazdadjoke.com/ && git add # common typo
-	tree = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset%n' --abbrev-commit --date=relative --branches
+	tree = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
 [push]
 	default = current
 [color]
