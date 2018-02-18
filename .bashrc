@@ -674,8 +674,9 @@ complete -f -o plusdirs rm
 
 ################################################################################
 # Message
+# If github push/pulls will require password, prompt password now and add everything
 ################################################################################
-$macos || { \ssh -oBatchMode=yes -T git@github.com; [ $? == 255 ] && eval $(ssh-agent -s) && ssh-add; }
+$macos || { \ssh -oBatchMode=yes -T git@github.com true &>/dev/null; [ $? == 255 ] && eval $(ssh-agent -s) && ssh-add && echo "Added SSH key for github."; }
 $macos && { grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'; }
 $macos && { [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash; }
 $macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
