@@ -31764,13 +31764,6 @@
 		<key>0x2c-0x80000</key>
 		<dict>
 			<key>Action</key>
-			<integer>12</integer>
-			<key>Text</key>
-			<string>&lt;-</string>
-		</dict>
-		<key>0x2e-0x100000</key>
-		<dict>
-			<key>Action</key>
 			<integer>30</integer>
 			<key>Text</key>
 			<string></string>
@@ -31789,6 +31782,13 @@ Show Toolbelt</string>
 			<integer>15</integer>
 			<key>Text</key>
 			<string></string>
+		</dict>
+		<key>0x3d-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>12</integer>
+			<key>Text</key>
+			<string>&lt;-</string>
 		</dict>
 		<key>0x50-0x120000</key>
 		<dict>
@@ -31810,6 +31810,13 @@ Show Toolbelt</string>
 			<integer>38</integer>
 			<key>Text</key>
 			<string>cd -\r</string>
+		</dict>
+		<key>0x5c-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>11</integer>
+			<key>Text</key>
+			<string>0x0C 0x10 0x0d</string>
 		</dict>
 		<key>0x63-0x100000</key>
 		<dict>
@@ -31864,6 +31871,22 @@ Marks and Annotations.Alerts.Alert on Next Mark</string>
 			<key>Text</key>
 			<string>print()\e[D</string>
 		</dict>
+		<key>0x71-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Close Terminal Window
+Close Terminal Window</string>
+		</dict>
+		<key>0x71-0x80000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Close Terminal Window
+Close Terminal Window</string>
+		</dict>
 		<key>0x72-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -31880,6 +31903,14 @@ Marks and Annotations.Alerts.Alert on Next Mark</string>
 Paste</string>
 		</dict>
 		<key>0x78-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Close
+Close</string>
+		</dict>
+		<key>0x78-0x80000</key>
 		<dict>
 			<key>Action</key>
 			<integer>25</integer>
@@ -31911,9 +31942,9 @@ Close</string>
 		<key>0xd-0x100000</key>
 		<dict>
 			<key>Action</key>
-			<integer>11</integer>
+			<integer>38</integer>
 			<key>Text</key>
-			<string>0x0C 0x10 0x0d</string>
+			<string>ls\r</string>
 		</dict>
 		<key>0xd-0x20000</key>
 		<dict>
@@ -32076,11 +32107,11 @@ Close</string>
 	<key>NSWindow Frame SessionsPreferences</key>
 	<string>518 409 599 388 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>105 343 796 473 0 0 1440 877 </string>
+	<string>105 387 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>40 0 696 877 0 0 1440 877 </string>
+	<string>203 451 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
 	<string>388 352 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
