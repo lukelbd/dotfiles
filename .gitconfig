@@ -1,10 +1,10 @@
 # Configuration file. The push-default allows "git push" to go to origin-master.
 # See this link+comments for some ideas: https://coderwall.com/p/euwpig/a-better-git-log
 [alias]
-	leaf = log --oneline --abbrev-commit --all --graph --decorate --color
-	tree = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative --branches
-	sexy = "log --color --graph --pretty=format:'%C(#dc322f)%h%C(#b58900)%d %C(#eee8d5)%s %C(#dc322f)| %C(#586f75)%cr %C(#dc322f)| %C(#586e75)%an%Creset' --abbrev-commit"
-	modern = log --graph --pretty=format:'%C(auto)%h -%d %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	leaf = !git log --oneline --abbrev-commit --all --graph --decorate --color $@
+	tree = !git log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative --branches $@
+	sexy = !git "log --color --graph --pretty=format:'%C(#dc322f)%h%C(#b58900)%d %C(#eee8d5)%s %C(#dc322f)| %C(#586f75)%cr %C(#dc322f)| %C(#586e75)%an%Creset' --abbrev-commit" $@
+	modern = !git log --graph --pretty=format:'%C(auto)%h -%d %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit $@
 	add-commit = !git push origin master add -A && git commit
 	quick = !git add -A && git commit
 	dad = !curl https://icanhazdadjoke.com/ && git add # common typo
