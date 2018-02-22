@@ -22,6 +22,32 @@ if [ ! -r "$filename" ]; then
   exit 1
 fi
 
+# Initial stuff
+if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
+  directory="${filename%/*}" # trim shortest pattern matching <stuff>/*, keep "stuff"
+  filename="${filename##*/}" # trim longest pattern matching */<stuff>, keep "stuff"
+  [ ! -d "$directory" ] && echo "ERROR: Directory $directory does not exist." && exit 1
+  cd "$directory" # move there
+fi
+filestem="${filename%.tex}" # simple
+
+# Parse raw file to get some options
+# First if GIF/animation in file, need to change from Skim to compatible viewer
+cat "$filename" | grep -v '^ *%' | grep '\\animategraphics' &>/dev/null && viewer="Adobe Acrobat Reader DC" || viewer="Skim"
+# Next detect if bibliography is present
+cat "$filename" | grep -v '^ *%' | egrep '\\bibliography{.*}|\\printbibliography' &>/dev/null && bibliography=true || bibliography=false
+# Finally detect if we want to run latexdiff on this file
+[[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]] && dfilename="${filename%.tex}changes.tex" || dfilename="" # keep empty
+# And detect if beamer presentation
+cat "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null && beamer=true || beamer=false
+$beamer && echo "Beamer presentation detected." && dfilename="" # never want difference files on beamer presentations, duh
+
+# Set the flags for compiling
+# * Nonstop mode means no interaction, but keep trying to compile if encounter errors.
+# * The shellescape option helps use eps figures that aren't in actual .tex directory.
+#   See: https://www.scivision.co/pdflatex-error-epstopdf-output-filename-not-allowed-in-restricted-mode/
+flags="-interaction=nonstopmode --shell-escape"
+
 # Helper function for deleting extra files
 # Call this before exiting every time
 oldfiles=(*) # glob expansion to every filename
@@ -29,7 +55,7 @@ function cleanup() {
   # Delete extra files
   newfiles=(*) # new files
   deletefiles=() # record deleted
-  ignorestems=(tex html rtf pdf bbl doc) # ignore these
+  ignorestems=(tex html rtf pdf bbl doc png jpg jpeg eps gif) # ignore these
   for filenew in "${newfiles[@]}"; do
     if [[ ! " ${oldfiles[@]} " =~ " $filenew " ]]; then
       if [[ ! " ${ignorestems[@]} " =~ " ${filenew##*.} " ]]; then
@@ -42,62 +68,16 @@ function cleanup() {
   # [ "${#deletefiles[@]}" -gt 0 ] && echo "Deleted files:"" ${deletefiles[@]}"
 }
 
-# Enter directory of our file to make life easier
-if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
-  directory="${filename%/*}" # trim shortest pattern matching <stuff>/*, keep "stuff"
-  filename="${filename##*/}" # trim longest pattern matching */<stuff>, keep "stuff"
-  if [ ! -d "$directory" ]; then
-    echo "ERROR: Directory does not exist."
-    exit 1
-  fi
-  cd "$directory" # move there
-fi
-
-# Get filestem for running commands
-filestem="${filename%.tex}"
-
-# First detect format of filename; will get the DIFFERENCE document
-# if the format looks like yyyy-mm-ddmanuscript.tex; in this case probably
-# want the difference between this one and the *previous* date
-# if [[ "$filename" =~ ^manuscript....-..-..\.tex$ ]] || [[ "$filename" =~ ^supplementary....-..-..\.tex$ ]]; then
-[[ "$filename" =~ manuscript ]] && string=manuscript
-[[ "$filename" =~ supplementary ]] && string=supplementary
-[[ "$filename" =~ cover ]] && string=cover
-if [ ! -z $string ]; then
-  # dfilename="changes${filename#$string}" # the difference file
-  dfilename="${filename%.tex}_changes.tex" # the difference file
-  echo "This file is a manuscript. Will run latexdiff on the previous version."
-else
-  dfilename="" # keep empty
-  echo "This file is not a manuscript. Will not run latexdiff."
-fi
-
-# Run filtered LaTeX command; if any .bib exists, do the bibtex workflow
-# See: https://stackoverflow.com/a/11163357/4970632
-# set +H # turn off exclamation-point-interpretation in double-quote string
-# See: https://www.scivision.co/pdflatex-error-epstopdf-output-filename-not-allowed-in-restricted-mode/
-# the shellescape option helps use eps figures that aren't in actual .tex directory
-flags="-interaction=nonstopmode --shell-escape"
-bibfiles=(*.bib) # glob expansion of bibTeX files; for now don't expect "standard" bibtex format
-if [ ${#bibfiles[@]} -gt 1 ]; then
-  echo "ERROR: Ambiguous which bibliography we should choose. Found the following: ${bibfiles[@]}."
-  exit 1
-# elif [ ${#bibfiles[@]} -eq 1 ] && [ $string != "supplementary" ]; then
-elif [ ${#bibfiles[@]} -eq 1 ]; then
-  bibfile="${bibfiles[0]}" # choose this one
-fi
-bibfiles=()
-
 # Compile normal PDF, or the track-changes version
 # * Always compile TWICE to enable glossary-references, equation-references
 # * If bibliography present, compile once to get .aux file, run bibtex
 #   on the auxfile (cannot call bibtex <file>.tex; must be bibtex <file> or
 #   bibtex <file>.aux), then run TWICE as before.
-# latex=xelatex
+$beamer && latex=xelatex || latex=pdflatex # some fancy .sty beamer packages need xelates
 latex=pdflatex
 bibtex=bibtex
-if [ ! -z "$bibfile" ]; then
-  echo "Preparing bibliography $bibfile..."
+if $bibliography; then
+  echo "Preparing bibliography..."
   $latex -draftmode $flags "$filestem" &>/dev/null
   $bibtex "$filestem" #&>/dev/null
 fi
@@ -105,83 +85,75 @@ echo "Typesetting PDF from $filename..."
 $latex -draftmode $flags "$filestem" &>/dev/null
 $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
 if [ ! -r "$filestem.pdf" ]; then
-  echo "ERROR: Failed to produce PDF."
-  cleanup
+  echo "ERROR: PDF not produced." && cleanup
   exit 1
 fi
 
 # Get difference-LaTeX file, with track changes
-dfilestem=""
-if [ ! -z "$dfilename" ] && true; then
+if [ ! -z "$dfilename" ]; then
+  echo "The filename contains a date string. Will run latexdiff on the previous version."
   # Check for earlier version
-  [ -r "$dfilename" ] && rm "$dfilename" # otherwise shows up in list
-  # texfiles=(*.tex) # delete old difference
-  texfiles=($string????-??-??.tex) # sorted manuscript files (glob is sorted by default)
-  for index in "${!texfiles[@]}"; do
-    [ "${texfiles[$index]}" == "$filename" ] && break
+  prefix=${filename%[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex} # parameter expensions are fire yo
+  pfiles=($prefix[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex) # sorted manuscript files (glob is sorted by default)
+  # echo PREFIX $prefix FILES ${pfiles[@]}
+  for index in "${!pfiles[@]}"; do
+    [ "${pfiles[$index]}" == "$filename" ] && break
       # get the part of list corresponding to files that
       # come BEFORE current one in alphanumeric sorting
   done
-  if [ $index -eq 0 ]; then # the index just before break
-    echo "WARNING: Cannot find suitable .tex file for latexdiff."
-  else
+  # Create difference file if earlier version exists
+  if [ "$index" -eq 0 ]; then echo "WARNING: Cannot find previous version of this file."
+  else # Tests index just before we broke from loop
     # Create difference texfile
-    cfilename="${texfiles[$(($index - 1))]}" # previous index
-    echo "Typesetting difference-PDF from $filename minus $cfilename..." # message
-    latexdiff "$cfilename" "$filename" > "$dfilename"
-    # "$dfilename" # suppress errors
+    pfilename="${pfiles[$(($index - 1))]}" # previous index
+    echo "Typesetting difference-PDF from $filename minus $pfilename..." # message
+    [ -e "$dfilename" ] && rm "$dfilename"
+    latexdiff "$pfilename" "$filename" > "$dfilename"
     if [ ! -r $dfilename ]; then
-      echo "ERROR: $dfilename not produed."
-      cleanup
+      echo "ERROR: Difference file not produed." && cleanup
       exit 1
     fi
     # Compile difference
     dfilestem="${dfilename%.tex}"
-    if [ ! -z "$bibfile" ]; then
-      echo "Preparing bibliography $bibfile..."
+    if $bibliography; then
+      echo "Preparing bibliography..."
       $latex -draftmode $flags "$dfilestem" &>/dev/null
       $bibtex "$dfilestem" #&>/dev/null
     fi
     echo "Typesetting PDF from $filename..."
     $latex -draftmode $flags "$dfilestem" &>/dev/null
     $latex $flags "$dfilestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
-  fi # end check for suitable difference file
-fi # end check whether file-format implies we want difference
+    if [ ! -r "$dfilestem.pdf" ]; then
+      echo "ERROR: Difference PDF not produced." && cleanup
+      exit 1
+    fi
+  fi
+fi
 
 # Get HTML or RTF-LaTeX file
-# echo "htlatex"
-# echo "$rfilename"
 if $htmlcompile; then
 # if [ ! -z "$rfilename" ] && $htmlcompile; then
   # echo "HIHIHIHI"
   echo "Creating HTML file with htlatex."
   htlatex "$filename" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
   if [ ! -r "$filestem.html" ]; then
-    echo "ERROR: Conversion to HTML failed."
-    cleanup
+    echo "ERROR: Conversion to HTML failed." && cleanup
     exit 1
   fi
   mv "$filestem.html" "$filestem.doc"
-  # echo "Creating RTF file with htlatex."
-  # latex2rtf "$filename"
-  # # | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
+  # echo "Creating RTF file with latex2rtf."
+  # latex2rtf "$filename" # | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
   # if [ ! -r "$filestem.rtf" ]; then
-  #   echo "ERROR: Conversion to RTF failed."
-  #   cleanup
+  #   echo "ERROR: Conversion to RTF failed." && cleanup
   #   exit 1
   # fi
 fi
 
-# Call cleanup
-cleanup
-
-# Finally open up in Skim and return focus to terminal
-[ -r "$dfilestem.pdf" ] && open -a Skim "$dfilestem.pdf" # open file
-[ -r "$filestem.pdf" ] && open -a Skim "$filestem.pdf" # open file
-[ $TERM_PROGRAM = "Apple_Terminal" ] && app="Terminal" || app="$TERM_PROGRAM"
-if [ -z $TERM_PROGRAM ]; then
-  echo "ERROR: Could not find terminal from which this command executed."
-  exit 1
-fi
-open -a $app # bring terminal back into focus
+# Clean things up and open the appropriate apps
+cleanup # delete new files
+[ ! -z "$dfilename" ] && open -a "$viewer" "$dfilestem.pdf" # open this first
+open -a "$viewer" "$filestem.pdf" # open this next
+[ -z $TERM_PROGRAM ] && echo "ERROR: Could not find terminal from which this command executed." && exit 1
+[ $TERM_PROGRAM = "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
+open -a $terminal # bring terminal back into focus
 
