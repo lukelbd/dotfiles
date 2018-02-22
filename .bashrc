@@ -221,23 +221,22 @@ fi
 #   Linux macthine. The default Mac LSCOLORS can be found in easy google search.
 # * The commented-out export gives ls styles of Linux default, excluding filetype-specific ones
 # * This page: https://geoff.greer.fm/lscolors/ gives easy conversion from BSD to
-#   Linux color string.
+#   the Linux color string.
 if $macos; then
   export LSCOLORS='exfxcxdxbxegedabagacad'
-  sortcmd='gsort' # GNU utilities, different from mac versions
-  lscolor='-G'    # macOS has a BSD ls version with different "show color" specifier
+  sortcmd='gsort' && lscolor='-G' # GNU utilities, different from mac versions
+    # macOS has a BSD ls version with different "show color" specifier
 else
 #   export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:'\
 # 'or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
   export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
-  lscolor='--color=always'
-  sortcmd='sort'
+  lscolor='--color=always' && sortcmd='sort'
 fi
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 alias lx="ls $lscolor -AF -lsa | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
 alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
-alias ld="find . -maxdepth 1 -type d -mindepth 1 -exec du -hs {} \; | $sortcmd -sh" # directory sizes
+alias ld="find . -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh" # directory sizes
   # need COREUTILS for sort -h; use brew install coreutils, they're installed
   # with prefix g (the Linux version; MacOS comes with truncated versions)
 alias df="df -h" # disk useage
@@ -464,6 +463,9 @@ function wordcount() {
     # * note citations are left inside, but they are always right next to other
     #   words/not separated by whitespace so they don't affect wordcounts
 }
+# Our presentation software; install with commented line below from: http://pygobject.readthedocs.io/en/latest/getting_started.html
+# brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
+alias present="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
 ################################################################################
 # Dataset utilities
@@ -581,10 +583,9 @@ function extract() {
 ################################################################################
 if $macos; then
   # Opening commands for some GUI apps
-  alias preview='\open -a Preview' # use un-aliased "open" command
-  alias chrome='\open -a Google\ Chrome'
-  alias open='\open -a TextEdit'
-  alias skim='\open -a Skim'
+  alias edit='\open -a TextEdit'
+  alias html='\open -a Google\ Chrome'
+  alias pdf='\open -a Skim'
   # Fun stuff
   alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
   alias weather="curl wttr.in/Fort\ Collins" # list weather information
@@ -683,7 +684,8 @@ complete -f -o plusdirs rm
 $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
 $macos && { grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'; }
 $macos && { [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash; }
-$macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
+$macos && fortune | lolcat || echo "Shell configured and namespace populated."
+# $macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
 # alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
 # alias hack="cmatrix"
 # hash powerline-shell 2>/dev/null && { # ooglay so forget it
