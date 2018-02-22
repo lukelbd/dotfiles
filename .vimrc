@@ -161,31 +161,6 @@ map @ <Nop>
 noremap , @q
   "new macro useage; almost always just use one at a time
   "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
-map " mq:echo "Throwaway mark was set."<CR>
-map 1" mi:echo "Mark 1 was set."<CR>
-map 2" mj:echo "Mark 2 was set."<CR>
-map 3" mk:echo "Mark 3 was set."<CR>
-map 4" mm:echo "Mark 4 was set."<CR>
-map 5" mn:echo "Mark 5 was set."<CR>
-map 6" mo:echo "Mark 6 was set."<CR>
-map 7" mp:echo "Mark 7 was set."<CR>
-map 8" mq:echo "Mark 8 was set."<CR>
-map 9" mr:echo "Mark 9 was set."<CR>
-  "allow recursion, so can use mark-highlighting plugin
-noremap ' `q:echo "Travelled to throwaway mark."<CR>
-noremap 1' `i:echo "Travelled to mark 1."<CR>
-noremap 2' `j:echo "Travelled to mark 2."<CR>
-noremap 3' `k:echo "Travelled to mark 3."<CR>
-noremap 4' `m:echo "Travelled to mark 4."<CR>
-noremap 5' `n:echo "Travelled to mark 5."<CR>
-noremap 6' `o:echo "Travelled to mark 6."<CR>
-noremap 7' `p:echo "Travelled to mark 7."<CR>
-noremap 8' `q:echo "Travelled to mark 8."<CR>
-noremap 9' `r:echo "Travelled to mark 9."<CR>
-  "new mark setting/getting; almost always will use one at a time
-  "use 1, because why not
-noremap ` :RemoveMarkHighlights<CR>
-  "remove the highlights
 nnoremap <C-r> :redraw<CR>
   "refresh screen; because C-r has a better pneumonic, and I map <C-r> to U for REDO
 nnoremap U <C-r>
@@ -216,10 +191,6 @@ vnoremap P "_dP
 " noremap $ g$
 " noremap 0 g0
   "go to visual line ends/starts
-noremap m ge
-noremap M gE
-  "navigate by ends of words backwards; logic is m was available, and
-  "it is to left of b just like e is to left of w
 " noremap A g$a
 " noremap I g^i
   "same for entering insert mode
@@ -228,6 +199,9 @@ noremap H g^
 noremap L g$geE
   "shortcuts for 'go to first char' and 'go to eol'
   "make these work for VISUAL movement
+noremap m ge
+noremap M gE
+  "navigate by words
 "BETTER NAVIGATION DEFAULTS
 "Basic wrap-mode navigation, always move visually
 "Still might occasionally want to navigate by lines though
@@ -245,15 +219,19 @@ noremap  j      gj
 " inoremap <Right> <Nop>
 "ROW/LINE MANIPULATION
 "Unjoin lines/cut at cursor
-" nnoremap <Leader>o mAA<CR><Esc>`A
-" nnoremap <Leader>O mA<Up>A<CR><Esc>`A
-nnoremap <Leader>o mAo<Esc>`A
-nnoremap <Leader>O mAO<Esc>`A
+" nnoremap <Leader>o mzA<CR><Esc>`z
+" nnoremap <Leader>O mz<Up>A<CR><Esc>`z
+nnoremap <Leader>o mzo<Esc>`z
+nnoremap <Leader>O mzO<Esc>`z
 "BETTER PNEUMONIC BEHAVIOR OF BASIC COMMANDS
 "Better join behavior -- before 2J joined this line and next, now it
 "means 'join the two lines below'; more intuitive. uses if statement
 "in <expr> remap, and v:count the user input count
 nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
+nnoremap <expr> K v:count > 1 ? 'JdwJdw' : 'Jdw'
+  "also remap K because not yet used; like J but adds no space
+  "note gJ was insufficient because retains leading whitespace from next line
+  "recall that the 'v' prefix indicated a VIM read-only builtin variable
 "Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
@@ -348,6 +326,7 @@ Plug 'Konfekt/FastFold'
   "this just points to a VimScript location; but have since edited this plugin
   "to not modify jumplist; so forget it
 Plug 'scrooloose/nerdtree'
+" Plug 'jistr/vim-nerdtree-tabs'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-obsession'
@@ -365,14 +344,12 @@ if g:requirement2
   " Plug 'davidhalter/jedi-vim'
   "These need special support
 endif
-Plug 'vim-scripts/Toggle'
+" Plug 'vim-scripts/Toggle'
 Plug 'tpope/vim-surround'
-" Plug 'metakirby5/codi.vim'
-  "CODI appears to be broken
-Plug 'Tumbler/highlightMarks'
+" Plug 'metakirby5/codi.vim' "CODI appears to be broken
+" Plug 'Tumbler/highlightMarks'
 Plug 'godlygeek/tabular'
 Plug 'raimondi/delimitmate'
-" Plug 'jistr/vim-nerdtree-tabs'
 Plug 'gioele/vim-autoswap' "deals with swap files automatically
 Plug 'triglav/vim-visual-increment' "visual incrementing
 "The conda plugin is for changing anconda VIRTUALENV; probably don't need it
@@ -470,6 +447,10 @@ augroup END
 " b, B, r, a correspond to ), }, ], > (second 2 should be memorized, first 2
 "     are just like vim)
 " p is a Vim-paragraph (block between blank lines)
+"First a helper function
+"Make cc behavior more intuitively for visual selection
+"Just like change line in normal mode
+vnoremap cc s
 "Helper function for building my own
 function! s:surround(original,new)
   "Function simply matches these builtin VIM methods with a new delimiter-identifier
@@ -495,7 +476,7 @@ function! s:delims(map,left,right,...)
   endif
   let a:buffer = (a:0==1 || a:0==2) ? "<buffer>" : ""
   exe 'inoremap '.a:buffer.' '.a:prefix.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-a:offset)
-  exe 'nnoremap '.a:buffer.' '.a:prefix.a:map.' mAlbi'.a:left.'<Esc>hea'.a:right.'<Esc>`A'
+  exe 'nnoremap '.a:buffer.' '.a:prefix.a:map.' mzlbi'.a:left.'<Esc>hea'.a:right.'<Esc>`z'
   exe 'vnoremap '.a:buffer.' '.a:prefix.a:map.' <Esc>`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-a:offset)
 endfunction
 function! s:delimscr(map,left,right,...)
@@ -503,6 +484,7 @@ function! s:delimscr(map,left,right,...)
   exe 'vnoremap <buffer> ,'.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
 endfunction
 "Capitalization stuff in familiar syntax
+noremap ;; ;
 nnoremap ~ ~h
 nnoremap ;u guiw
 vnoremap ;u gu
@@ -510,11 +492,11 @@ nnoremap ;U gUiw
 vnoremap ;U gU
 "Quick function selection for stuff formatted like function(text)
 "For functions the select/delete 'inner' stuff is already satisfied
-nnoremap daf mAF(bdt(lda(`A
-nnoremap dsf mAF(bdt(xf)x`A
+nnoremap daf mzF(bdt(lda(`z
+nnoremap dsf mzF(bdt(xf)x`z
 nnoremap caf F(bdt(lca(
-nnoremap <expr> csf 'mAF(bct('.input('Enter new function name: ').'<Esc>`A'
-nnoremap yaf mAF(bvf(%y`A
+nnoremap <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
+nnoremap yaf mzF(bvf(%y`z
 nnoremap <silent> vaf F(bvf(%
 "For selecting text in-between commented out lines
 nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
@@ -552,8 +534,8 @@ function! s:texmacros()
   nnoremap <buffer> ,, @q
     "special exception; otherwise my 'macro repitition' shortcut fails in LaTeX documents
   "Quick way of declaring \latex{} commands
-  vnoremap <buffer> <expr> ;. '<Esc>mA`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`A'
-  nnoremap <buffer> <expr> ;. 'mAviw<Esc>`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`A'
+  vnoremap <buffer> <expr> ;. '<Esc>mz`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`z'
+  nnoremap <buffer> <expr> ;. 'mzviw<Esc>`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`z'
   inoremap <buffer> <expr> ;. '\'.input('Enter \<name>{}-style environment name: ').'{}<Left>'
   "Quick way of declaring begin-end environments
   "1) start newline and enter \begin{}, then exit, then input new environment name inside, then exit
@@ -563,13 +545,16 @@ function! s:texmacros()
   "   messes up the < and > marks, so need to do that at end
   nnoremap <buffer> <expr> ,. 'A<CR>\begin{}<Esc>i'.input('Enter begin-end environment name: ').'<Esc>'
         \.'$".pF}a\end{<Esc>A}<Esc>F}a<CR><Esc><Up>A<CR>'
-  vnoremap <buffer> <expr> ,. '<Esc>mA`>a\end{'.input('Enter begin-end-style environment name: ').'}<Esc>"ayiB'
-        \.'F\i<CR><Esc>==`<i\begin{}<Esc>"aPf}a<CR><Esc>' . '<Up>V/\\end{<CR>==:noh<CR>`A'
+  " vnoremap <buffer> <expr> ,. '<Esc>mz`>a\end{'.input('Enter begin-end-style environment name: ').'}<Esc>yiB'
+  "       \.'F\i<CR><Esc>==`<i\begin{}<Esc>"aPf}a<CR><Esc><Up>V/\\end{<CR>==:noh<CR>`z'
+  vnoremap <buffer> <expr> ,. '<Esc>mz`>a<CR>\end{}<Esc>i'.input('Enter begin-end-style environment name: ').'<Esc>=='
+        \.'`<i\begin{<C-r>.}<CR><Esc><Up>==`z'
+        " \.'F\i<CR><Esc>==`<i\begin{}<Esc>"aPf}a<CR><Esc><Up>V/\\end{<CR>==:noh<CR>`z'
   inoremap <buffer> <expr> ,. '<CR>\begin{}<Esc>i'.input('Enter begin-end environment name: ').'<Esc>'
         \.'$".pF}a\end{<Esc>A}<Esc>F}a<CR><Esc><Up>A<CR>'
   "Apply 'inner'/'outer'/'surround' syntax to \command{text} and \begin{env}text\end{env}
   nmap <buffer> dsl F{F\dt{dsB
-  nnoremap <buffer> <expr> csl 'mAF{F\lct{'.input('Enter new \<name>{}-style environment name: ').'<Esc>`A'
+  nnoremap <buffer> <expr> csl 'mzF{F\lct{'.input('Enter new \<name>{}-style environment name: ').'<Esc>`z'
   nnoremap <buffer> dal F{F\dt{daB
   nnoremap <buffer> cal F{F\dt{caB
   nnoremap <buffer> yal F{F\vf{%y
@@ -578,15 +563,26 @@ function! s:texmacros()
   nnoremap <buffer> cil ciB
   nnoremap <buffer> yil yiB
   nnoremap <buffer> vil viB
-  nnoremap <buffer> dsL ?begin<CR>hdf}/end<CR>hdf}
-  nnoremap <buffer> <expr> csL 'mA?\\begin{<CR>t}ciB'.input('Enter new begin-end environment name: ')
-    \.'<Esc>/\\end{<CR>t}diB".P`A:noh<CR>'
-  nnoremap <buffer> viL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$
-  nnoremap <buffer> diL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$d
-  nnoremap <buffer> ciL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$d<Up>$<CR>
-  nnoremap <buffer> vaL ?\\begin{<CR>0v/\\end<CR>$
-  nnoremap <buffer> daL ?\\begin{<CR>0v/\\end<CR>$d
-  nnoremap <buffer> caL ?\\begin{<CR>0v/\\end<CR>$s
+  "The below maps had to be done without marks at all, because need recursive map
+  "to match '%' pairs but also disabled 'marking' functionality in this script
+  nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
+  nmap <silent> <buffer> diL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>d
+  nmap <silent> <buffer> ciL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>cc
+  nmap <silent> <buffer> vaL /\\end{<CR>:noh<CR>V^%
+  nmap <silent> <buffer> daL /\\end{<CR>:noh<CR>V^%d
+  nmap <silent> <buffer> caL /\\end{<CR>:noh<CR>V^%cc
+  nmap <silent> <buffer> dsL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>dp<Up>V<Up>d
+  nmap <silent> <buffer> <expr> csL '/\\end{<CR>:noh<CR>APLACEHOLDER<Esc>^%f{<Right>ciB'
+    \.input('Enter new begin-end environment name: ').'<Esc>/PLACEHOLDER<CR>:noh<CR>A {<C-r>.}<Esc>2F{dt{'
+  " nnoremap <buffer> dsL ?begin<CR>hdf}/end<CR>hdf}
+  " nnoremap <buffer> <expr> csL 'mz?\\begin{<CR>t}ciB'.input('Enter new begin-end environment name: ')
+  "   \.'<Esc>/\\end{<CR>t}diB".P`z:noh<CR>'
+  " nnoremap <buffer> viL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$
+  " nnoremap <buffer> diL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$d
+  " nnoremap <buffer> ciL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$d<Up>$<CR>
+  " nnoremap <buffer> vaL ?\\begin{<CR>0v/\\end<CR>$
+  " nnoremap <buffer> daL ?\\begin{<CR>0v/\\end<CR>$d
+  " nnoremap <buffer> caL ?\\begin{<CR>0v/\\end<CR>$s
   "Same, but for special Latex quotes
   nnoremap <buffer> dsq f'xF`x
   nnoremap <buffer> daq F`df'
@@ -608,7 +604,8 @@ function! s:texmacros()
   nnoremap <buffer> viQ T`vt'
   "Delimiters (advanced)/quick environments
   "First the delimiters without newlines
-  call s:delims('\|', '\left\\|', '\right\\|', 1, 1)
+  call s:delims(',', '\begin{center}', '\end{center}') "because , was available
+  call s:delims('\|', '\left\\|', '\right\\|', 1)
   call s:delims('{', '\left\{', '\right\}', 1)
   call s:delims('(', '\left(', '\right)', 1)
   call s:delims('[', '\left[', '\right]', 1)
@@ -632,7 +629,7 @@ function! s:texmacros()
   call s:delims('-', '\overline{', '}', 1)
   call s:delims('\', '\cancelto{}{', '}', 1)
   call s:delims('x', '\boxed{', '}', 1)
-  call s:delims('X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1)
+  call s:delims('X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1) "don't remember this one
   call s:delims('/', '\sqrt{', '}', 1)
   call s:delims('q', '`', "'", 1)
   call s:delims('Q', '``', "''", 1)
@@ -643,7 +640,6 @@ function! s:texmacros()
   call s:delims('K', '\overset{}{', '}', 1)
   call s:delims('J', '\underset{}{', '}', 1)
   call s:delims('f', '\dfrac{', '}{}', 1)
-  call s:delims('c', '\left\{\begin{matrix}[ll]', '\end{matrix}\right.', 1)
   call s:delims('0', '\frametitle{', '}', 1)
   call s:delims('1', '\section{', '}', 1)
   call s:delims('2', '\section*{', '}', 1)
@@ -651,6 +647,17 @@ function! s:texmacros()
   call s:delims('4', '\subsection*{', '}', 1)
   call s:delims('5', '\subsubsection{', '}', 1)
   call s:delims('6', '\subsubsection*{', '}', 1)
+  "Shortcuts for citations and such
+  call s:delims('a', '\caption{', '}', 1) "amazingly a not used yet
+  call s:delims('c', '\parencite{', '}', 1)
+  call s:delims('C', '\textcite{', '}', 1)
+  call s:delims('r', '\autoref{', '}', 1) "autoref is part of hyperref package;
+  call s:delims('R', '\label{', '}', 1) "to declare labels that autoref points to
+  call s:delims('*', '\tag{', '}', 1) "change the default 1-2-3 ordering; common to use *
+  "Shortcut for graphics
+  call s:delims('g', '\includegraphics[width=\textwidth]{', '}', 1)
+  call s:delims('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
+  " call s:delims('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1) "forgot where this is from
   "Comma-prefixed delimiters without newlines
   "Generally are more closely-related to the begin-end latex environments
   call s:delims('1', '{\tiny ', '}', 1, ',')
@@ -662,20 +669,16 @@ function! s:texmacros()
   call s:delims('7', '{\LARGE ', '}', 1, ',')
   call s:delims('8', '{\huge ', '}', 1, ',')
   call s:delims('9', '{\Huge ', '}', 1, ',')
-  call s:delims('p', '\begin{pmatrix}', '\end{pmatrix}', 1, ',')
-  call s:delims('b', '\begin{bmatrix}', '\end{bmatrix}', 1, ',')
-  call s:delims('g', '\includegraphics[width=', ']{}', 1, ',')
-  call s:delims('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1, ',')
-  call s:delims('x', '\caption{', '}', 1, ',')
-  call s:delims('l', '\label{', '}', 1, ',')
-    "label is to refer to object later on
-  call s:delims('L', '\tag{', '}', 1, ',')
-    "tagging is to change from the default 1-2-3 ordering of equations, figures, etc.
-  call s:delims('r', '\cite{', '}', 1, ',')
-  call s:delims('R', '\autoref{', '}', 1, ',')
+  call s:delims('{', '\left\{\begin{matrix}[ll]', '\end{matrix}\right.', 1, ',')
+  call s:delims('P', '\begin{pmatrix}', '\end{pmatrix}', 1, ',')
+  call s:delims('B', '\begin{bmatrix}', '\end{bmatrix}', 1, ',')
+  "Versions of the above, but this time puting them on own lines
+  " call s:delimscr('P', '\begin{pmatrix}', '\end{pmatrix}')
+  " call s:delimscr('B', '\begin{bmatrix}', '\end{bmatrix}')
   "Comma-prefixed delimiters with newlines
-  call s:delimscr('P', '\begin{pmatrix}', '\end{pmatrix}')
-  call s:delimscr('B', '\begin{bmatrix}', '\end{bmatrix}')
+  "Many of these important for beamer presentations
+  call s:delimscr('c', '\begin{columns}', '\end{columns}')
+  call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
   call s:delimscr('n', '\begin{enumerate}', '\end{enumerate}')
   call s:delimscr('d', '\begin{description}', '\end{description}')
@@ -685,14 +688,11 @@ function! s:texmacros()
   call s:delimscr('E', '\begin{equation}', '\end{equation}')
   call s:delimscr('A', '\begin{align}', '\end{align}')
   call s:delimscr('s', '\begin{frame}', '\end{frame}')
-  call s:delimscr('c', '\begin{columns}', '\end{columns}')
-  call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('m', '\begin{minipage}{\linewidth}', '\end{minipage}')
   call s:delimscr('f', '\begin{figure}', '\end{figure}')
   call s:delimscr('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
   call s:delimscr('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
-  "Math symbols
-  "Uses the greek alphabet conversion where possible
+  "Single-character maps
   inoremap <expr> <buffer> .m '\mathrm{'.nr2char(getchar()).'}'
   inoremap <expr> <buffer> .M '\mathbf{'.nr2char(getchar()).'}'
   inoremap <expr> <buffer> .h '\hat{'.nr2char(getchar()).'}'
@@ -701,11 +701,19 @@ function! s:texmacros()
   inoremap <expr> <buffer> .= '\overline{'.nr2char(getchar()).'}'
   " inoremap <expr> <buffer> .M '\mathcal{'.nr2char(getchar()).'}'
   " inoremap <expr> <buffer> .N '\mathbb{'.nr2char(getchar()).'}'
+  "Misc symbotls
+  inoremap <buffer> ., \pause
   inoremap <buffer> .i \item 
+  "Math symbols
   inoremap <buffer> .a \alpha 
   inoremap <buffer> .b \beta 
-  inoremap <buffer> .c \chi 
+  inoremap <buffer> .c \xi 
+  inoremap <buffer> .C \Xi 
     "weird curly one
+    "the upper case looks like 3 lines
+  inoremap <buffer> .x \chi 
+    "looks like an x so want to use this map
+    "pronounced 'zi', the 'i' in 'tide'
   inoremap <buffer> .d \delta 
   inoremap <buffer> .D \Delta 
   inoremap <buffer> .f \phi 
@@ -732,7 +740,6 @@ function! s:texmacros()
   inoremap <buffer> .Y \Psi 
   inoremap <buffer> .w \omega 
   inoremap <buffer> .W \Omega 
-  inoremap <buffer> .X \xi 
   inoremap <buffer> .z \zeta 
   inoremap <buffer> .1 \partial 
   inoremap <buffer> .2 \mathrm{d}
@@ -763,8 +770,6 @@ function! s:texmacros()
         \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>
   noremap <silent> <buffer> <C-w> :w<CR>:exec("!clear; set -x; "
         \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>
-  "Word count
-  vnoremap <C-w> g<C-g>
 endfunction
 "Function for loading templates
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
@@ -797,11 +802,17 @@ autocmd BufNewFile *.tex call s:textemplates()
 augroup html
 augroup END
 function! s:htmlmacros()
-  "Basic stuff
-  inoremap <buffer> ,h <head><CR><CR></head><Up>
-  vnoremap <buffer> ,h mA<Esc>`>a<CR></head><Esc>`<i<head><CR><Esc>`AF\
-  inoremap <buffer> ,b <body><CR><CR></body><Up>
-  vnoremap <buffer> ,b mA<Esc>`>a<CR></body><Esc>`<i<body><CR><Esc>`AF\
+  call s:delimscr('h', '<head>', '</head>')
+  call s:delimscr('b', '<body>', '</body>')
+  call s:delimscr('t', '<title>', '</title>')
+  call s:delimscr('p', '<p>', '</p>')
+  call s:delimscr('1', '<h1>', '</h1>')
+  call s:delimscr('2', '<h2>', '</h2>')
+  call s:delimscr('3', '<h3>', '</h3>')
+  call s:delimscr('4', '<h4>', '</h4>')
+  call s:delimscr('5', '<h5>', '</h5>')
+  call s:delims('e', '<em>', '</em>', 1, ',')
+  call s:delims('t', '<strong>', '</strong>', 1, ',')
 endfunction
 "Toggle mappings
 autocmd FileType html call s:htmlmacros()
@@ -978,18 +989,6 @@ endfunction
 au FileType gitcommit,rst,qf call s:simplesetup()
 
 "-------------------------------------------------------------------------------
-"MARK HIGHLIGHTING
-augroup marks
-augroup END
-if has_key(g:plugs, "highlightMarks")
-  let g:highlightMarks_cterm_colors=[7] "4 and 1 are best
-    "use 4 for light blue, 11 for light yellow, 7 for white (best)
-  " let g:highlightMarks_colors=['orange', 'yellow', 'green', 'blue', 'purple', '#00BB33']
-  " let g:highlightMarks_cterm_colors=[3, 2, 4, 1]
-    "above is default
-endif
-
-"-------------------------------------------------------------------------------
 "VIM visual increment; creating columns of 1/2/3/4 etc.
 "Disable all remaps
 augroup increment
@@ -998,8 +997,8 @@ augroup END
 if has_key(g:plugs, "vim-visual-increment")
   silent! vunmap <C-a>
   silent! vunmap <C-x>
-  vmap <Up> <Plug>VisualIncrement
-  vmap <Down> <Plug>VisualDecrement
+  vmap + <Plug>VisualIncrement
+  vmap - <Plug>VisualDecrement
 endif
 
 "-------------------------------------------------------------------------------
@@ -1101,13 +1100,9 @@ augroup END
 "'I' toggle hidden file display, '?' toggle help
 "Remap NerdTree command
 if has_key(g:plugs, "nerdtree")
-  " noremap <expr> { exists("t:NERDTreeBufName") && bufwinnr(t:NERDTreeBufName)!=-1 ? ":NERDTreeClose<CR>" : ":NERDTree<CR>"
-  " noremap <expr> { exists("t:NERDTreeBufName") && bufwinnr(t:NERDTreeBufName)!=-1 ? ":NERDTreeTabsClose<CR>" : ":NERDTreeTabsOpen<CR>"
-  " noremap <Tab>j :NERDTreeTabsToggle<CR>
-  " noremap <expr> <Tab>j exists("NERDTreeTabsToggle") ? ":NERDTreeTabsToggle<CR>" : ":NERDTreeToggle<CR>"
-  noremap <Tab>j :NERDTreeToggle<CR>
+  " noremap <Tab>j :NERDTreeFind<CR>
+  noremap <Tab>j :NERDTree %<CR>
   noremap <Tab>J :NERDTreeTabsToggle<CR>
-    "had some issues with NERDTreeToggle; failed/gave weird results
   let g:NERDTreeWinPos="right"
   let g:NERDTreeWinSize=20 "instead of 31 default
   let g:NERDTreeShowHidden=1
@@ -1123,10 +1118,12 @@ if has_key(g:plugs, "nerdtree")
   "Close nerdtree if last in tab
   autocmd BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
   "Setup maps
+  "See this thread for ideas: https://superuser.com/q/195022/506762
   function! s:nerdtreesetup()
     " normal! <C-w>r
     setlocal nolist
     nmap <buffer>  <Tab><Tab> :let g:PreTab=tabpagenr()<CR>T:exe 'tabn '.g:PreTab<CR>
+    noremap <buffer> <Tab>j :NERDTreeClose<CR>
   endfunction
   autocmd FileType nerdtree call s:nerdtreesetup()
 endif
@@ -1179,10 +1176,10 @@ if has_key(g:plugs, "nerdcommenter")
       \."<Up>A"
   nnoremap <expr> c- ""
       \.""
-      \."mAo<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>`A"
+      \."mzo<Esc>".col('.')."a<Space><Esc>xA".b:NERDCommenterDelims['left']."<Esc>".eval(79-col('.')+1)."a-<Esc>`z"
   nnoremap <expr> c_ ""
       \.""
-      \."mAo<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>`A"
+      \."mzo<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>`z"
   "Create python docstring
   nnoremap c' o"""<CR>.<CR>"""<Up><Esc>A<BS>
   " nnoremap c\| ox<BS><CR>x<BS><CR>x<BS><Esc>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Up><Up>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Down>:call NERDComment('n', 'toggle')<CR>0a<Space>
@@ -1462,17 +1459,6 @@ if has_key(g:plugs, "tabular")
 endif
 
 "-------------------------------------------------------------------------------
-"'TOGGLE' PLUGIN for BOOLEANS
-augroup toggle
-augroup END
-if has_key(g:plugs, "Toggle")
-  "WANT NORMAL-MODE MAP SAME AS INSERT-MODE
-  "Plugin for boolean things: yes/no, true/false, True/False, +/-
-  "Applied to number, will change its sign
-  nmap <C-t> +
-endif
-
-"-------------------------------------------------------------------------------
 "FTPLUGINS
 augroup ftplugin
 augroup END
@@ -1573,7 +1559,12 @@ nnoremap <silent> # :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:l
 " nnoremap <silent> # :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winrestview(b:position)<CR>
 "------------------------------------------------------------------------------
 "SPECIAL SEARCHING
-"Idea from: http://vim.wikia.com/wiki/Search_in_current_function
+"FIND AND REPLACE STUFF
+" * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
+" * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
+"   renaming, and do it by confirming every single instance
+" * Below is copied from: https://stackoverflow.com/a/597932/4970632
+" * This failed, BECAUSE gd 'goto definition where var declared' doesn't work in python often
 nnoremap <Leader>& /\<[A-Z]\+\><CR>
   "search all capital words
 function! s:scopesearch(replace)
@@ -1584,14 +1575,6 @@ function! s:scopesearch(replace)
   let a:first=line('.')
   keepjumps normal ][
   let a:last=line('.')
-  " keepjumps normal %
-  "   "suitable for filetypes with if/endif
-  " let a:last=line('.')
-  " if a:last==a:first
-  "   keepjumps normal ]
-  "     "usually suitable for python modules (definitions start in one place)
-  "   let a:last=line('.')
-  " endif
   call winrestview(saveview)
   if a:first<a:last
     if a:replace
@@ -1608,31 +1591,36 @@ function! s:scopesearch(replace)
       "backspace, because we failed, so forget the range limitation
   endif
 endfunction
+"Declare maps differently depending on file; for python almost always will
+"want to search within-file for something
+"* For that scopesearch function it is annoying to see entire line-selection
+"  light up, so delay implementation of the map by waiting for user to input
+"  first SUBSEQUENT character.
 " nnoremap <Leader>f /
 " nnoremap <Leader>F ?
+nnoremap <Leader>f :%s//gIc<Left><Left><Left><Left>
+nnoremap <Leader>F :%s/<C-r>///gn<CR>
 function! s:pythonmaps()
-  nnoremap <buffer> / /<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
-  nnoremap <buffer> ? ?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
+  nnoremap <expr> <buffer> / '/<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
+  nnoremap <expr> <buffer> ? '?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
   nnoremap <buffer> <Leader>/ /
   nnoremap <buffer> <Leader>? ?
+  nnoremap <buffer> <Leader>s :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
+  nnoremap <buffer> <Leader>S :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
 endfunction
 au FileType python call s:pythonmaps()
-nnoremap <Leader>/ /<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
-nnoremap <Leader>? ?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
+" nnoremap <Leader>/ /<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
+" nnoremap <Leader>? ?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
+nnoremap <expr> <Leader>/ '/<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
+nnoremap <expr> <Leader>? '?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
+nnoremap <Leader>s :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
+nnoremap <Leader>S :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
   "f for find or fancy, just have to remember it
   "the <C-r> means paste from the expression register i.e. result of following expr
-"------------------------------------------------------------------------------
-"FIND AND REPLACE STUFF
-" * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
-"   renaming, and do it by confirming every single instance
-" * Below is copied from: https://stackoverflow.com/a/597932/4970632
-" * This failed, BECAUSE gd 'goto definition where var declared' doesn't work in python often
 " nnoremap <Leader>s gd[{V%::s/<C-R>///gc<left><left><left>
 " nnoremap <Leader>S gD:%s/<C-R>///gc<left><left><left>
   "first one searches current scope, second one parent-level scope
 "Changing variables in the scope of function (small s) or globally (big S)
-nnoremap <Leader>s :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-nnoremap <Leader>S :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
   "need recursion, because BUILTIN FTPLUGIN FUNCTIONATLIY remaps [[ and ]]
   "see: https://github.com/vim/vim/blob/master/runtime/ftplugin/python.vim
 "Changing variable from current location to document end or before document
