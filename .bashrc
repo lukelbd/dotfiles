@@ -312,26 +312,19 @@ alias pypython="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"
 alias perl="colorize perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
 alias R="colorize R"
 
-# Jupyter themes configuration
-# Refresh currently open notebooks to see these changes applied
-# This makes all fonts the same size (10) and makes cells nice and wide (95%)
-if [ -z $jtime ] || [[ $jtime -lt $(date +%s -r ~/.jupyter/custom/custom.css 2>/dev/null) ]]; then
-  # printf "Setting jupyter notebook theme... "
-  echo "Setting jupyter notebook theme."
-  jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
-  jtime=$(date +%s) # remember
-  # echo "Done."
-fi
-# IMPORTANT note: to uninstall nbextensions completely, use
-#  jupyter contrib nbextension uninstall --user
-#  pip uninstall jupyter_contrib_nbextensions
-# One step more is needed to remove the configurator
-#  jupyter nbextensions_configurator disable
-# If you have issues where themes is just not changing in Chrome, open Developer
-# tab with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
-
 # Jupyter notebook aliases
+# * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
+# * IMPORTANT note: to uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
+#   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
+# * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
+#   and you can right-click refresh for a hard reset, cache reset
+export JUPYTERREADY=false
 function notebook() {
+  # Set the jupyter theme
+  echo "Configuring jupyter notebook theme."
+  ! $JUPYTERREADY && jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
+  JUPYTERREADY=true
+  # Initialize the notebook
   port=$1 # optional port argument
   [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
   [ -z $port ] && {
