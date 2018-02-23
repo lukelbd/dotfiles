@@ -90,7 +90,7 @@ if [ ! -r "$filestem.pdf" ]; then
 fi
 
 # Get difference-LaTeX file, with track changes
-if [ ! -z "$dfilename" ]; then
+if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
   echo "The filename contains a date string. Will run latexdiff on the previous version."
   # Check for earlier version
   prefix=${filename%[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex} # parameter expensions are fire yo
