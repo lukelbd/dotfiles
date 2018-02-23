@@ -610,7 +610,7 @@ function! s:texmacros()
   call s:delims('(', '\left(', '\right)', 1)
   call s:delims('[', '\left[', '\right]', 1)
   call s:delims('<', '\left<', '\right>', 1)
-  call s:delims('o', '\color{red}{', '}', 1)
+  call s:delims('o', '{\color{red}', '}', 1)
   call s:delims('t', '\textbf{', '}', 1)
   call s:delims('T', '\text{', '}', 1) "just text
   call s:delims('y', '\texttt{', '}', 1) "think y command in ipython notebook
@@ -656,8 +656,8 @@ function! s:texmacros()
   call s:delims('*', '\tag{', '}', 1) "change the default 1-2-3 ordering; common to use *
   "Shortcut for graphics
   call s:delims('g', '\includegraphics[width=\textwidth]{', '}', 1)
-  call s:delims('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
-  " call s:delims('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1) "forgot where this is from
+  call s:delims('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1) "center across margins
+  " call s:delims('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "Comma-prefixed delimiters without newlines
   "Generally are more closely-related to the begin-end latex environments
   call s:delims('1', '{\tiny ', '}', 1, ',')
@@ -1564,9 +1564,11 @@ nnoremap <silent> # :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:l
 " * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
 "   renaming, and do it by confirming every single instance
 " * Below is copied from: https://stackoverflow.com/a/597932/4970632
-" * This failed, BECAUSE gd 'goto definition where var declared' doesn't work in python often
-nnoremap <Leader>& /\<[A-Z]\+\><CR>
+" * This failed, BECAUSE gd 'goto definition where var declared' doesn't work in hello often
+nnoremap <Leader>z /\<[A-Z]\+\><CR>
   "search all capital words
+nnoremap :s/\(^ *\)\@<! \{2,}/ /g<CR>
+  "replace consecutive spaces on current line
 function! s:scopesearch(replace)
   let saveview=winsaveview()
   keepjumps normal [[
