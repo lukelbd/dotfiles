@@ -475,13 +475,35 @@ function ncinfo() { # only get text between variables: and linebreak before glob
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' # trims first and last lines; do not need these
 }
+function ncvarsinfo() { # get information for just variables (no dimension/global info)
+    # the cdo parameter table actually gives a subset of this information, so don't
+    # bother parsing that information
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  \ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+    # the space makes sure it isn't another variable that has trailing-substring
+    # identical to this variable; and the $'' is how to insert literal tab
+    # -A means print x TRAILING lines starting from FIRST match
+    # -B means prinx x PRECEDING lines starting from LAST match
+}
+function ncdimsinfo() { # get information for just variables (no dimension/global info)
+    # the cdo parameter table actually gives a subset of this information, so don't
+    # bother parsing that information
+  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  \ncdump -h "$1" | grep -B 100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t
+    # the space makes sure it isn't another variable that has trailing-substring
+    # identical to this variable; and the $'' is how to insert literal tab
+    # -A means print x TRAILING lines starting from FIRST match
+    # -B means prinx x PRECEDING lines starting from LAST match
+}
 function nclist() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-function ncdmnlist() { # get list of dimensions
+function ncdimlist() { # get list of dimensions
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
@@ -502,22 +524,11 @@ function ncvarlist() { # only get text between variables: and linebreak before g
   done
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
-function ncvarinfo() { # get information for particular variable
-    # the cdo parameter table actually gives a subset of this information, so don't
-    # bother parsing that information
+function ncvarinfo() { # as above but just for one variable
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   \ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
-    # -A means print x TRAILING lines starting from FIRST match
-    # -B means prinx x PRECEDING lines starting from LAST match
-}
-function ncvarinfos() { # as above, but show every variable; just no dimension info/global info
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -534,15 +545,21 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
-# function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
-#   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-#   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
-#   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-#   cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
-#     # this procedure is ideal for "sanity checks" of data; just test one
-#     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
-#     # and the column command re-aligns columns
-# }
+function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
+  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
+  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+    # this procedure is ideal for "sanity checks" of data; just test one
+    # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
+    # and the column command re-aligns columns
+}
+function ncvartable() { # as above but show everything
+  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
+  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null
+}
 # Extract generalized files
 function extract() {
   for name in "$@"; do
