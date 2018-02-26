@@ -62,8 +62,26 @@ augroup EscapeFix
   "the function explicitly in commands that bounce from insert to normal mode
 augroup END
 "------------------------------------------------------------------------------
-"ESCAPING CURRENT DELIMITER; USE MY OWN MAPS INSTEAD OF DELIMITMATE DEFAULTS
-"BECAUSE e.g. <C-g>g ONLY WORKS IF NO TEXT BETWEEN DELIMITERS
+"MOUSE SETTINGS
+set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
+if has('ttymouse') | set ttymouse=sgr | else | set ttymouse=xterm2 | endif
+ "fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
+"------------------------------------------------------------------------------
+"INSERT MODE REMAPS
+"SIMPLE ONES
+inoremap <C-l> <Esc>$a
+inoremap <C-h> <Esc>^i
+inoremap <C-p> <C-r>"
+" inoremap CC <Esc>C
+" inoremap II <Esc>I
+" inoremap AA <Esc>A
+" inoremap OO <Esc>O
+" inoremap SS <Esc>S
+" inoremap DD <Esc>dd
+" inoremap UU <Esc>u
+"FUNCTION FOR ESCAPING CURRENT DELIMITER
+" * Use my own instead of delimitmate defaults because e.g. <c-g>g only works
+"   if no text between delimiters.
 function! s:outofdelim(n) "get us out of delimiter cursos is inside
   for a:i in range(a:n)
     let a:pcol=col('.')
@@ -77,21 +95,9 @@ function! s:outofdelim(n) "get us out of delimiter cursos is inside
     endif
   endfor
 endfunction
-inoremap <expr> jk pumvisible() ? "\<C-e>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
-inoremap <expr> JK pumvisible() ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
-inoremap <C-l> <Esc>$a
-inoremap <C-h> <Esc>^i
-inoremap <C-p> <C-r>"
-"------------------------------------------------------------------------------
-"MOUSE SETTINGS
-set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
-if has('ttymouse') | set ttymouse=sgr | else | set ttymouse=xterm2 | endif
- "fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
-"------------------------------------------------------------------------------
-"OTHER INSERT MODE REMAPS IN CONTEXT OF POPUP MENU
+"MAPS IN CONTEXT OF POPUP MENU
 au BufEnter * let b:tabcount=0
 au InsertEnter * let b:tabcount=0
-"Special functions for increasing tab
 function! s:tabincrease() "use this inside <expr> remaps
   let b:tabcount+=1
   return "" "returns empty string so can be used inside <expr>
@@ -106,12 +112,10 @@ function! s:tabreset() "use this inside <expr> remaps
 endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Want to prevent automatic use of CR for confirming entry
-" inoremap <expr> <Space> pumvisible() ? "\<C-e>\<Space>" : "\<Space>"
-" inoremap <expr> <CR> pumvisible() ? "\<C-e>\<CR>" : "\<CR>"
-" inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>" : "\<BS>"
-" inoremap <expr> kj pumvisible() ? "\<C-y>" : "kj"
-" inoremap <expr> <C-j> pumvisible() ? "\<Down>" : ""
-" inoremap <expr> <C-k> pumvisible() ? "\<Up>" : ""
+inoremap <expr> jk pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(1)\<CR>a" :
+      \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
+inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" :
+      \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
 inoremap <expr> <C-u> neocomplete#undo_completion()
 inoremap <expr> <C-c> pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
 inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
@@ -121,6 +125,13 @@ inoremap <expr> <Tab> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
 inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
+inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+" inoremap <expr> <Space> pumvisible() ? "\<C-e>\<Space>" : "\<Space>"
+" inoremap <expr> <CR> pumvisible() ? "\<C-e>\<CR>" : "\<CR>"
+" inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>" : "\<BS>"
+" inoremap <expr> kj pumvisible() ? "\<C-y>" : "kj"
+" inoremap <expr> <C-j> pumvisible() ? "\<Down>" : ""
+" inoremap <expr> <C-k> pumvisible() ? "\<Up>" : ""
 "------------------------------------------------------------------------------
 "DISABLE ANNOYING SPECIAL MODES/DANGEROUS ACTIONS
 noremap K <Nop>
@@ -346,7 +357,7 @@ if g:requirement2
 endif
 " Plug 'vim-scripts/Toggle'
 Plug 'tpope/vim-surround'
-" Plug 'metakirby5/codi.vim' "CODI appears to be broken
+Plug 'metakirby5/codi.vim' "CODI appears to be broken
 " Plug 'Tumbler/highlightMarks'
 Plug 'godlygeek/tabular'
 Plug 'raimondi/delimitmate'
@@ -680,7 +691,9 @@ function! s:texmacros()
   call s:delimscr('c', '\begin{columns}', '\end{columns}')
   call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
+  call s:delimscr('I', '\begin{enumerate}[label=\roman*.]', '\end{enumerate}')
   call s:delimscr('n', '\begin{enumerate}', '\end{enumerate}')
+  call s:delimscr('N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
   call s:delimscr('d', '\begin{description}', '\end{description}')
   call s:delimscr('t', '\begin{tabular}', '\end{tabular}')
   call s:delimscr('e', '\begin{equation*}', '\end{equation*}')
@@ -770,6 +783,10 @@ function! s:texmacros()
         \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>
   noremap <silent> <buffer> <C-w> :w<CR>:exec("!clear; set -x; "
         \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>
+  inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
+        \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>a
+  inoremap <silent> <buffer> <C-w> <Esc>:w<CR>:exec("!clear; set -x; "
+        \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>a
 endfunction
 "Function for loading templates
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
@@ -871,14 +888,15 @@ function! s:pymacros()
   setlocal tabstop=4
   setlocal softtabstop=4
   setlocal shiftwidth=4
-  "A couple simple remaps
-  "Keyboard choices should match elesewhere in .vimrc
+  "Simple remaps
   nnoremap <buffer> <Leader>q o"""<CR>"""<Esc><Up>o
+  "Maps that call shell commands
   noremap <buffer> <expr> QD ":!clear; set -x; pydoc "
         \.input("Enter python documentation keyword: ")."<CR>"
   noremap <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>"
-        " \."ipython --no-banner --no-confirm-exit -c 'run ".shellescape(@%)."'<CR>"
+  inoremap <buffer> <expr> <C-x> "<Esc>:w<CR>:!clear; set -x; "
+        \."python ".shellescape(@%)."<CR>a"
 endfunction
 "Toggle mappings with autocmds...or disable because they suck for now
 autocmd FileType python call s:pymacros()
@@ -1006,7 +1024,7 @@ endif
 augroup codi
 augroup END
 if has_key(g:plugs, "codi.vim")
-  nnoremap <silent> <expr> <Leader>m ':Codi '.eval('&ft').'<CR>'
+  nnoremap <silent> <expr> <Leader>m ':Codi '.&ft.'<CR>'
   nnoremap <silent> <expr> <Leader>M ':tabe '.input('Enter calculator name: ').'.py<CR>:Codi python<CR>'
     "turns current file into calculator
     "the m is meant to stand for 'MATH'
