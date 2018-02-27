@@ -694,7 +694,7 @@ complete -f -o plusdirs rm
 $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
 $macos && { grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'; }
 $macos && { [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash; }
-$macos && fortune | lolcat || curl https://icanhazdadjoke.com/
+$macos && fortune | lolcat || { curl https://icanhazdadjoke.com/; echo; }
 # $macos && fortune | lolcat || echo "Shell configured and namespace populated."
 # $macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
 # alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
