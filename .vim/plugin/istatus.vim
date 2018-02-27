@@ -23,9 +23,9 @@ function! PrintMode()
     \ 'cv' : 'Vim Ex', 'ce' : 'Ex',
     \ 'rm' : 'More', 'r?' : 'Confirm', '!'  : 'Shell',
     \}
-  let a:print=a:currentmode[mode()]
+  let a:print=toupper(a:currentmode[mode()])
   if &paste
-    let a:print.=':Paste'
+    let a:print.=':PASTE'
   endif
   return a:print
 endfunction
