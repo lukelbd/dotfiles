@@ -151,7 +151,7 @@ fi
 
 # Clean things up and open the appropriate apps
 cleanup # delete new files
-[ ! -z "$dfilename" ] && open -a "$viewer" "$dfilestem.pdf" # open this first
+[ ! -z "$dfilestem" ] && open -a "$viewer" "$dfilestem.pdf" # open this first; make sure to test dfilestem
 open -a "$viewer" "$filestem.pdf" # open this next
 [ -z $TERM_PROGRAM ] && echo "ERROR: Could not find terminal from which this command executed." && exit 1
 [ $TERM_PROGRAM = "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
