@@ -328,6 +328,9 @@ let g:requirement2=has("lua") "compatibility issues for these
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
+" Plug 'vim-airline/vim-airline'
+" Plug 'itchyny/lightline.vim'
+" also consider vim-buftabline to use buffers instead
 " Plug 'vim-scripts/EnhancedJumps'
   "provides commands for only jumping in the current file
   "actually seems to be BROKEN; forget it
@@ -408,6 +411,20 @@ if has_key(g:plugs, "vim-obsession")
   " nnoremap <leader>S :ToggleWorkspace<CR>
   " let g:workspace_session_name = '.session.vim'
   autocmd VimEnter * Obsession .session.vim
+endif
+
+"-------------------------------------------------------------------------------
+"AIRLINE
+" augroup airline
+" augroup END
+if has_key(g:plugs, "vim-airline")
+  let g:airline#extensions#tabline#enabled = 1
+  let g:airline#extensions#tabline#formatter = 'default'
+endif
+if has_key(g:plugs, "lightline.vim")
+  let g:lightline = { 'colorscheme': 'powerline' }
+    " good ones: nord, PaperColor and PaperColor_dark (fave), OldHope, jellybeans,
+    " and Tomorrow_Night, Tomorrow_Night_Eighties
 endif
 
 "-------------------------------------------------------------------------------
@@ -1585,7 +1602,7 @@ nnoremap <silent> # :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:l
 " * This failed, BECAUSE gd 'goto definition where var declared' doesn't work in hello often
 nnoremap <Leader>z /\<[A-Z]\+\><CR>
   "search all capital words
-nnoremap :s/\(^ *\)\@<! \{2,}/ /g<CR>
+nnoremap <Leader>g :s/\(^ *\)\@<! \{2,}/ /g<CR>
   "replace consecutive spaces on current line
 function! s:scopesearch(replace)
   let saveview=winsaveview()

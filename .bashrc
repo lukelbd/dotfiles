@@ -694,7 +694,8 @@ complete -f -o plusdirs rm
 $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
 $macos && { grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'; }
 $macos && { [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash; }
-$macos && fortune | lolcat || echo "Shell configured and namespace populated."
+$macos && fortune | lolcat || curl https://icanhazdadjoke.com/
+# $macos && fortune | lolcat || echo "Shell configured and namespace populated."
 # $macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
 # alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
 # alias hack="cmatrix"
@@ -809,14 +810,3 @@ $macos && fortune | lolcat || echo "Shell configured and namespace populated."
 #  FOR JUPYTER NOTEBOOK (no command-line options for notebook server, must specify in notebook cells)
 #    %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non- GUI backend,"
 #  %matplotlib notebook: works fine
-#
-#------------------------------------------------------------------------------
-# Old stuff
-#------------------------------------------------------------------------------
-# Does not work:
-# # File list, no extensions
-# alias stems="script -q /dev/null ls $lscolor -1 | sed -e \"s/\..*$//\" | cat | column" # shows filenames without extensions;
-#   # the -1 forces one-per-line output, sed -e is applied to each line in pipe
-#   # and the 's' string does search-and-replace; using script preserves the
-#   # colorized output (google this)
-#
