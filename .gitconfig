@@ -5,13 +5,14 @@
 # want to git fetch and git merge changes to a different file.
 # amend = !git commit --amend -m \"$@\"
 [alias]
+	dad = !curl https://icanhazdadjoke.com/ && echo && git add $@ # common typo
 	update = !git stash clear; git stash; git merge $@; git stash pop
 	graph = !git log --graph --abbrev-commit --date=relative --decorate --oneline --all $@
 	twig = !git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@
 	tree = !git log --graph --abbrev-commit --date=relative --branches --name-status --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' $@
 	leaf = !git show-branch --topo-order $@
 	wtf = !git-wtf $@
-	dad = !curl https://icanhazdadjoke.com/ && echo && git add $@ # common typo
+	stat = !git diff --stat $@
 [push]
 	default = upstream
 [color]
