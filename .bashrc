@@ -427,7 +427,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
-  scp -P$p ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
+  scp -o StrictHostKeyChecking=no -P$p ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
@@ -442,7 +442,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   file="${file//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
-  scp -P$p ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
+  scp -o StrictHostKeyChecking=no -P$p ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
 # Copy <file> on this server to another server, preserving full path but 
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
