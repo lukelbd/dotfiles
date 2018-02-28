@@ -390,40 +390,69 @@ function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 
 # Functions for scp-ing from local to remote, and vice versa
-# See: https://stackoverflow.com/a/25486130/4970632
-# alias ssh="ssh -R 127.0.0.1:1111:127.0.0.1:11"
-alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222
+# For initial idea see: https://stackoverflow.com/a/25486130/4970632
+# For exit on forward see: https://serverfault.com/a/577830/427991
+# For why we alias the function see: https://serverfault.com/a/656535/427991
+# For enter command then remain in shell see: https://serverfault.com/q/79645/427991
+#   * Note this has nice side-effect of eliminating annoying "banner message"
+alias ssh="ssh_wrapper" # must be an alias or will fail!
+function ssh_wrapper() {
+  [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
+  args=($@) # all arguments
+  port=$(($RANDOM + 10000)) # random port; also sets this param in shell
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
+  listen=22 # default sshd listening port; see the link above
+  sshexit=255 # initialize with this
+  while [ $sshexit == 255 ]; do
+    \ssh -o ExitOnForwardFailure=yes -t \
+      -R 127.0.0.1:$port:127.0.0.1:$listen ${args[@]} \
+      "export port=$port && echo Port number: $port && /bin/bash -i" # -t says to stay interactive
+    sshexit=$? # save exit code
+    port=$(($RANDOM + 10000)) # generate new port
+  done
+  [ $? != 0 ] && echo "ERROR: Attempted ports ${ports[@]} and all are busy."
+  # \ssh $flags -R 127.0.0.1:$port:127.0.0.1:$listen ${args[@]} # enables remote forwarding through port 2222
+}
+# alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
-  args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
+  [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments." && return 1
+  local p=$port # default port
+  args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && args=(${args[@]:1})
+  [ -z $p ] && echo "ERROR: Port unavailable."
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
   dest="${dest/#$HOME/~}"  # restore expanded tilde
   dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
-  scp -P2222 $args "$file" ldavis@127.0.0.1:"$dest"
+  scp -P$p ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
-  args=${@:1:$#-2}   # $# stores number of args passed to shell, and perform minus 1
+  [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments." && return 1
+  local p=$port # default port
+  args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && args=(${args[@]:1})
+  [ -z $p ] && echo "ERROR: Port unavailable."
   file="${@:(-2):1}" # second to last
   dest="${@:(-1)}"   # last value
   file="${file/#$HOME/~}"  # restore expanded tilde
   file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   file="${file//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
-  scp -P2222 $args ldavis@127.0.0.1:"$file" "$dest"
+  scp -P$p ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
 # Copy <file> on this server to another server, preserving full path but 
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
 # each and then subfolders with same experiment name
 function ccp() {
-  if [ $# -lt 2 ]; then # number of args < 2
-    echo "ERROR: Need at least two arguments. Final argument is server name."
-    return 1
-  fi
-  args=${@:1:$#-2} # up to 2nd from last
+  [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments. Final argument is server name." && return 1
+  local p=$port # default port
+  args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && args=(${args[@]:1})
+  [ -z $p ] && echo "ERROR: Port unavailable."
   server=${@:(-1):1} # the last one
   file=${@:(-2):1} # the 2nd to last
   if [[ "${file:0:1}" != "/" ]]; then
@@ -434,7 +463,7 @@ function ccp() {
   destfile=${destfile//\/Dropbox\//\/} # bunch of symlinked stuff in here
   destfile=${destfile//$HOME/\~} # get error when doing this... for some reason
   echo "Copying $file to $destfile from $HOSTNAME to $server..."
-  scp $args "$file" "$server":"$destfile"
+  scp -P$p ${args[@]} "$file" "$server":"$destfile"
     # note $file CANNOT contain the literal/escaped tilde; will not be expanded
     # by scp if quoted, but still need quotes in case name has spaces
 }
