@@ -318,52 +318,75 @@ alias R="colorize R"
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
 #   and you can right-click refresh for a hard reset, cache reset
-export JUPYTERREADY=false
+jupyterready=false # theme is not initially setup because takes a long time
 function notebook() {
   # Set the jupyter theme
   echo "Configuring jupyter notebook theme."
-  ! $JUPYTERREADY && jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
-  JUPYTERREADY=true
-  # Initialize the notebook
-  port=$1 # optional port argument
-  [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
-  [ -z $port ] && {
-    $macos && port="10000" || port="20000" # easy-to-remember defaults
-    } # port 10000 if local, port 20000 if remote!
-  echo "Initializing jupyter notebook over port port: $port"
-  jupyter notebook --no-browser --port=$port --NotebookApp.iopub_data_rate_limit=10000000
-  } # need to extend data rate limit when making some plots with lots of stuff
-# Set up connection to another server, enables REMOTE NOTEBOOK ACCESS
-function connect() { # connect to remove notebook on port
-  hostname=$1 # required host argument
-  port=$2 # optional listening port
-  if [ -z $hostname ]; then
-    echo "ERROR: Must enter the hostname."
-    return 1
+  ! $jupyterready && jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
+  jupyterready=true # this value is available for rest of session
+  # Test the hostname and get unique port we have picked
+  if [ ! -z $1 ]; then
+    jupyterremote=$1 # override with user input
+  else case ${HOSTNAME%%.*} in
+      uriah)  jupyterport=20000;;
+      gauss)  jupyterport=20001;;
+      euclid) jupyterport=20002;;
+      monde)  jupyterport=20003;;
+      *)      echo "ERROR: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
+    esac
   fi
-  [ -z $port ] && { port="20000"; echo "Using default port $port."; } # easy-to-remember default
-    # default asumes port 20000 on remote servers
-  echo "Connecting to $hostname over port $port."
-  \ssh -N -f -L localhost:$port:localhost:$port $hostname # backslash says to ignore aliases
-      # necessary because have ssh alias to allow for port forwarding back to localhost
+  # Create the notebook
+  echo "Initializing jupyter notebook over port port: $jupyterport."
+  jupyter notebook --no-browser --port=$jupyterport --NotebookApp.iopub_data_rate_limit=10000000
+    # need to extend data rate limit when making some plots with lots of stuff
+}
+# See current ssh connections
+alias connections="ps aux | grep ssh"
+# Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
+function connect() { # connect to remove notebook on port
+  [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
+  local hostname=$1 # the host we connect to
+  if [ ! -z $1 ]; then
+    jupyterconnect=$1 # override with user input
+  else case ${hostname%%.*} in
+      gauss)  jupyterconnect=20001;;
+      euclid) jupyterconnect=20002;;
+      monde)  jupyterconnect=20003;;
+      *)      echo "ERROR: No jupyterport assigned to hostname \"${hostname%%.*}\". Edit your .bashrc." && return 1
+    esac
+  fi
+  # Establish the connection
+  echo "Connecting to $hostname over port $jupyterconnect."
+  echo "WARNING: Keep this window open to use your remote jupyter notebook!"
+  \ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $hostname
       # the -f command sets this port-forwarding to the background for the duration of the
       # ssh command to follow; but the -N command says we don't need to issue a command,
       # the port will just remain forwarded indefinitely
-  }
+}
 # Include option to cancel connection: see: https://stackoverflow.com/a/20240445/4970632
 function disconnect() {
-  port=$1 # optional listening port
-  [ -z $port ] && { port="20000"; echo "Using default port $port."; } # easy-to-remember default
+  # Determine the port to use
+  if [ ! -z $1 ]; then
+    local jupyterdisconnect=$1
+  elif [ ! -z $jupyterconnect ]; then
+    local jupyterdisconnect=$jupyterconnect
+  else
+    echo "ERROR: Must specify a port or make sure port is available from variable \"jupyterconnect\"."
+    return 1
+  fi
+  # Disable the connection
   echo "Cancelling port-forwarding over port $port."
-  lsof -t -i tcp:$port | xargs kill
-  }
-# See current ssh connection
-alias lssh="ps aux | grep ssh"
+  lsof -t -i tcp:$jupyterdisconnect | xargs kill
+  $? && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"$jupyterdisconnect\"."
+}
 
 ################################################################################
 # Session management
 ################################################################################
-# First, just declare some names for active servers
+# iTerm2 window title
+function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
+
+# Declare some names for active servers
 # alias olbers='ssh -XC ldavis@129.82.49.1'
 # export ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
 export work='ldavis@10.83.16.91' # for scp'ing into my Mac
@@ -377,7 +400,6 @@ export archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
 export ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
 # export archive='/media/archives/reanalyses/era_interim/'
 # export olbers='ldavis@129.82.49.159'
-function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
 
 # Preface: enabling FILES WITH SPACES is tricky, need: https://stackoverflow.com/a/20364170/4970632
 # 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
@@ -395,37 +417,37 @@ function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-
 # For why we alias the function see: https://serverfault.com/a/656535/427991
 # For enter command then remain in shell see: https://serverfault.com/q/79645/427991
 #   * Note this has nice side-effect of eliminating annoying "banner message"
+#   * Why iterate from ports 10000 upward? Because is even though disable host key
+#     checking, still get this warning message every time.
 alias ssh="ssh_wrapper" # must be an alias or will fail!
 function ssh_wrapper() {
   [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
-  args=($@) # all arguments
-  port=$(($RANDOM + 10000)) # random port; also sets this param in shell
+  port=10000 # starting port
+  local listen=22 # default sshd listening port; see the link above
+  local args=($@) # all arguments
   [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
-  listen=22 # default sshd listening port; see the link above
-  sshexit=255 # initialize with this
-  while [ $sshexit == 255 ]; do
-    \ssh -o ExitOnForwardFailure=yes -t \
-      -R 127.0.0.1:$port:127.0.0.1:$listen ${args[@]} \
+  while true; do
+    \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -t \
+      -R localhost:$port:localhost:$listen ${args[@]} \
       "export port=$port && echo Port number: $port && /bin/bash -i" # -t says to stay interactive
-    sshexit=$? # save exit code
-    port=$(($RANDOM + 10000)) # generate new port
+    [ $? != 255 ] && break # break if exit code doesn't indicate bad port
+    port=$(($port + 1)) # generate new port
+    # port=$(($RANDOM + 10000)) # generate new port
   done
   [ $? != 0 ] && echo "ERROR: Attempted ports ${ports[@]} and all are busy."
-  # \ssh $flags -R 127.0.0.1:$port:127.0.0.1:$listen ${args[@]} # enables remote forwarding through port 2222
 }
-# alias ssh="ssh -R 127.0.0.1:2222:127.0.0.1:22" # enables remote forwarding through port 2222
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
   [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments." && return 1
   local p=$port # default port
-  args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && args=(${args[@]:1})
+  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
   [ -z $p ] && echo "ERROR: Port unavailable."
-  file="${@:(-2):1}" # second to last
-  dest="${@:(-1)}"   # last value
-  dest="${dest/#$HOME/~}"  # restore expanded tilde
-  dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
-  dest="${dest//\ /\\\ }"  # escape whitespace manually
+  local file="${@:(-2):1}" # second to last
+  local dest="${@:(-1)}"   # last value
+  local dest="${dest/#$HOME/~}"  # restore expanded tilde
+  local dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  local dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$p ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
 }
@@ -433,14 +455,14 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
 function lrcp() {    # "copy to remote (from local); 'copy here'"
   [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments." && return 1
   local p=$port # default port
-  args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && args=(${args[@]:1})
+  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
   [ -z $p ] && echo "ERROR: Port unavailable."
-  file="${@:(-2):1}" # second to last
-  dest="${@:(-1)}"   # last value
-  file="${file/#$HOME/~}"  # restore expanded tilde
-  file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
-  file="${file//\ /\\\ }"  # escape whitespace manually
+  local file="${@:(-2):1}" # second to last
+  local dest="${@:(-1)}"   # last value
+  local file="${file/#$HOME/~}"  # restore expanded tilde
+  local file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  local file="${file//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$p ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
@@ -450,20 +472,19 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
 function ccp() {
   [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments. Final argument is server name." && return 1
   local p=$port # default port
-  args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && args=(${args[@]:1})
+  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
   [ -z $p ] && echo "ERROR: Port unavailable."
-  server=${@:(-1):1} # the last one
-  file=${@:(-2):1} # the 2nd to last
+  local server=${@:(-1):1} # the last one
+  local file=${@:(-2):1} # the 2nd to last
   if [[ "${file:0:1}" != "/" ]]; then
-    destfile="$(pwd -P)/$file"
-  else
-    destfile="$file"
+    local destfile="$(pwd -P)/$file"
+  else local destfile="$file"
   fi
-  destfile=${destfile//\/Dropbox\//\/} # bunch of symlinked stuff in here
-  destfile=${destfile//$HOME/\~} # get error when doing this... for some reason
+  local destfile=${destfile//\/Dropbox\//\/} # bunch of symlinked stuff in here
+  local destfile=${destfile//$HOME/\~} # get error when doing this... for some reason
   echo "Copying $file to $destfile from $HOSTNAME to $server..."
-  scp -P$p ${args[@]} "$file" "$server":"$destfile"
+  scp -o StrictHostKeyChecking=no -P$p ${args[@]} "$file" "$server":"$destfile"
     # note $file CANNOT contain the literal/escaped tilde; will not be expanded
     # by scp if quoted, but still need quotes in case name has spaces
 }
