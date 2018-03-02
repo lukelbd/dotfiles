@@ -251,6 +251,8 @@ alias pt="top"             # table of processes, total
   # examine current proceses
 hash colordiff 2>/dev/null && alias diff="colordiff"
   # prettier differencing; use this if it exists
+alias difference="diff --brief -x \".*\" -r"
+  # difference subdirectories; easier to remember this
 function join { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
 # Standardize less/man/etc. colors
@@ -345,14 +347,14 @@ alias connections="ps aux | grep ssh"
 # Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
   [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
-  local hostname=$1 # the host we connect to
-  if [ ! -z $1 ]; then
-    jupyterconnect=$1 # override with user input
+  local hostname=${1##*@} # the host we connect to, minus username
+  if [ ! -z $2 ]; then
+    jupyterconnect=$2 # override with user input
   else case ${hostname%%.*} in
       gauss)  jupyterconnect=20001;;
       euclid) jupyterconnect=20002;;
       monde)  jupyterconnect=20003;;
-      *)      echo "ERROR: No jupyterport assigned to hostname \"${hostname%%.*}\". Edit your .bashrc." && return 1
+      *)      echo "ERROR: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
     esac
   fi
   # Establish the connection
@@ -375,9 +377,9 @@ function disconnect() {
     return 1
   fi
   # Disable the connection
-  echo "Cancelling port-forwarding over port $port."
+  echo "Cancelling port-forwarding over port $jupyterdisconnect."
   lsof -t -i tcp:$jupyterdisconnect | xargs kill
-  $? && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"$jupyterdisconnect\"."
+  [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"$jupyterdisconnect\"."
 }
 
 ################################################################################
@@ -508,7 +510,7 @@ function wordcount() {
 }
 # Our presentation software; install with commented line below from: http://pygobject.readthedocs.io/en/latest/getting_started.html
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
-alias present="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
+alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
 ################################################################################
 # Dataset utilities
