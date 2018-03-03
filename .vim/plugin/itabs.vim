@@ -61,7 +61,7 @@ function! Tabline()
   let tabstart = 1 "will modify this as delete tabs
   let tabend = tabpagenr('$') "same
   let tabpage = tabpagenr() "continually test position relative to tabstart/tabend
-  while len(join(tabtexts,'')) > &columns "replace leading/trailing tabs with dots in meantime
+  while len(join(tabtexts,'')) + len(prefix) + len(suffix) > &columns "replace leading/trailing tabs with dots in meantime
     if tabend-tabpage > tabpage-tabstart "VIM lists are zero-indexed, end-inclusive
       let tabstrings = tabstrings[:-2]
       let tabtexts = tabtexts[:-2]
