@@ -346,15 +346,16 @@ Plug 'tpope/vim-obsession'
   "and exiting vim saves the session there
 Plug 'tpope/vim-fugitive'
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
-" Plug 'Valloric/YouCompleteMe'
-Plug 'ajh17/VimCompletesMe'
-" if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
+" Plug 'lifepillar/vim-mucomplete' "broken
+" Plug 'Valloric/YouCompleteMe' "broken
+" Plug 'ajh17/VimCompletesMe' "no auto-popup feature
+if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 " if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
-" Plug 'vim-scripts/Toggle' "created my own plugin for this
+" Plug 'vim-scripts/Toggle' "modified this myself
 Plug 'tpope/vim-surround'
 " Plug 'metakirby5/codi.vim' "CODI appears to be broken
-" Plug 'Tumbler/highlightMarks'
+" Plug 'Tumbler/highlightMarks' "modified this myself
 Plug 'godlygeek/tabular'
 Plug 'raimondi/delimitmate'
 Plug 'gioele/vim-autoswap' "deals with swap files automatically
@@ -914,17 +915,15 @@ autocmd FileType python call s:pymacros()
 "-------------------------------------------------------------------------------
 "MACROS FROM JEDI-VIM
 "See: https://github.com/davidhalter/jedi-vim
-"The autocmd line disables docstring popup window
 if has_key(g:plugs, "jedi-vim")
   " let g:jedi#force_py_version=3
   let g:jedi#auto_vim_configuration = 0
     " set these myself instead
   let g:jedi#rename_command = ""
     "jedi-vim recommended way of disabling commands
-    "NOTE JEDI AUTO-RENAMING SKETCHY, SOMETIMES FAILS
-    "GOOD EXAMPLE IS TRY RENAMING 'debug' IN METADATA FUNCTION;
-    "JEDI SKIPS F-STRINGS, SKIPS ITS RE-ASSIGNMENT IN FOR LOOP,
-    "SKIPS WHERE IT APPEARED AS DEFAULT KWARG IN FUNCTION
+    "note jedi auto-renaming sketchy, sometimes fails good example is try renaming 'debug'
+    "in metadata function; jedi skips f-strings, skips its re-assignment in for loop,
+    "skips where it appeared as default kwarg in function
   let g:jedi#usages_command = "QJ"
     "open up list of places where variable appears; then can 'goto'
   let g:jedi#goto_assignments_command = "QK"
@@ -932,6 +931,7 @@ if has_key(g:plugs, "jedi-vim")
   let g:jedi#documentation_command = "QW"
     "use 'W' for 'what is this?'
   autocmd FileType python setlocal completeopt-=preview
+    "disables docstring popup window
 endif
 "-------------------------------------------------------------------------------
 "VIM python-mode
@@ -1040,6 +1040,16 @@ if has_key(g:plugs, "codi.vim")
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
   let g:codi#width = 20
+endif
+
+"-------------------------------------------------------------------------------
+"MUCOMPLETE
+augroup mucomplete
+augroup END
+if has_key(g:plugs, "vim-mucomplete") "just check if activated
+  let g:mucomplete#enable_auto_at_startup = 1
+  let g:mucomplete#no_mappings = 1
+  let g:mucomplete#no_popup_mappings = 1
 endif
 
 "-------------------------------------------------------------------------------
