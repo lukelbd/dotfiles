@@ -348,7 +348,7 @@ Plug 'tpope/vim-fugitive'
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'Valloric/YouCompleteMe'
 Plug 'ajh17/VimCompletesMe'
-if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
+" if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 " if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
 " Plug 'vim-scripts/Toggle' "created my own plugin for this
