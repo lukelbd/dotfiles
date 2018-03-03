@@ -16,3 +16,5 @@
 	default = upstream
 [color]
 	ui = on
+[credential]
+	helper = store
