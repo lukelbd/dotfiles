@@ -324,6 +324,9 @@ augroup END
 let g:requirement1=eval(v:version>=800)
 let g:requirement2=has("lua") "compatibility issues for these
 "-------------------------------------------------------------------------------
+"WEIRD FIX
+"see: https://github.com/kien/ctrlp.vim/issues/566
+set shell=/bin/bash "will not work with e.g. brew-installed shell
 "VIM-PLUG PLUGINS
 augroup plug
 augroup END
@@ -340,6 +343,7 @@ Plug 'Konfekt/FastFold'
   "this just points to a VimScript location; but have since edited this plugin
   "to not modify jumplist; so forget it
 Plug 'scrooloose/nerdtree'
+" Plug 'ctrlpvim/ctrlp.vim'
 " Plug 'jistr/vim-nerdtree-tabs'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
@@ -352,15 +356,15 @@ if g:requirement1
   "VIM had major issues with tagbar on remote servers
   "Going to assume it is just a versioning issue
 endif
+" Plug 'Valloric/YouCompleteMe'
 if g:requirement2
   Plug 'shougo/neocomplete.vim'
   " Plug 'ervandew/supertab'
-  " Plug 'davidhalter/jedi-vim'
-  "These need special support
+  " Plug 'davidhalter/jedi-vim' "these need special support
 endif
-" Plug 'vim-scripts/Toggle'
+" Plug 'vim-scripts/Toggle' "created my own plugin for this
 Plug 'tpope/vim-surround'
-Plug 'metakirby5/codi.vim' "CODI appears to be broken
+" Plug 'metakirby5/codi.vim' "CODI appears to be broken
 " Plug 'Tumbler/highlightMarks'
 Plug 'godlygeek/tabular'
 Plug 'raimondi/delimitmate'

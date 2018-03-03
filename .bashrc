@@ -249,12 +249,16 @@ alias ps="ps" # processes in this shell
 alias pc="mpstat -P ALL 1" # list individual core usage
 alias pt="top"             # table of processes, total
   # examine current proceses
+# Extra utilities
 hash colordiff 2>/dev/null && alias diff="colordiff"
   # prettier differencing; use this if it exists
 alias difference="diff --brief -x \".*\" -r"
   # difference subdirectories; easier to remember this
-function join { local IFS="$1"; shift; echo "$*"; }
+function identical() { diff -sq $@ | grep identical; }
+  # identical files in two directories
+function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
+
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
 export LESS="--RAW-CONTROL-CHARS"
@@ -275,6 +279,7 @@ if hash tput 2>/dev/null; then
   export LESS_TERMCAP_ZO=$(tput ssupm)
   export LESS_TERMCAP_ZW=$(tput rsupm)
 fi
+
 # Tool for changing iTerm2 profile before command executed, and returning
 # after executed (e.g. interactive prompts)
 function colorize() {

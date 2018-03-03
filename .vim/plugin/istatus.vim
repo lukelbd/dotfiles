@@ -23,18 +23,19 @@ function! PrintMode()
     \ 'cv' : 'Vim Ex', 'ce' : 'Ex',
     \ 'rm' : 'More', 'r?' : 'Confirm', '!'  : 'Shell',
     \}
-  let a:print=toupper(a:currentmode[mode()])
+  " let a:print=toupper(a:currentmode[mode()])
+  let a:print=a:currentmode[mode()]
   if &paste
-    let a:print.=':PASTE'
+    " let a:print.=':PASTE'
+    let a:print.=':Paste'
   endif
   return a:print
 endfunction
 "Caps lock (are language maps enabled?)
 function! CapsLock()
-  if &iminsert
-      "iminsert is the option that enables/disables language remaps (lnoremap)
+  if &iminsert "iminsert is the option that enables/disables language remaps (lnoremap)
       "and if it is on, we turn on the caps-lock remaps
-    return '[CAPSLOCK] '
+    return '[CapsLock]'
   else
     return ''
   endif
@@ -132,6 +133,7 @@ let &stl.=' %m'     " Show modified status of buffer
 let &stl.='%{PrintLanguage()}' " Show language setting: UK english or US enlish
 let &stl.='%= '     " Right side of statusline, and perserve space between sides
 let &stl.='%{CapsLock()}'    " check if language maps enabled
+let &stl.='%{fugitive#statusline()}'
 let &stl.=' [%l/%L]'   " Cursor's current line, total lines
 let &stl.=' (%p%%)' " Percentage through file in lines, as in <c-g>
 
