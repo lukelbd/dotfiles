@@ -321,8 +321,9 @@ endif
 "-------------------------------------------------------------------------------
 augroup SECTION2
 augroup END
-let g:requirement1=eval(v:version>=800)
-let g:requirement2=has("lua") "compatibility issues for these
+let g:requirement1=((v:version>703 || v:version==703 && has("patch1058")) && 
+      \ str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))) "need str2num
+let g:requirement2=has("lua") "try alternative completion library
 "-------------------------------------------------------------------------------
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
@@ -1124,6 +1125,11 @@ autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 "   \ '<C-x><C-k><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
 "   "definitions
 
+"-------------------------------------------------------------------------------
+"CURRENT DIRECTORY
+"First of all match VIM 'current directory' to the file current directory; allows
+"us e.g. to use git commands on files on the fly
+" autocmd BufEnter * lcd %:p:h "messes up session restore
 "-------------------------------------------------------------------------------
 "NERDTREE
 augroup nerdtree
