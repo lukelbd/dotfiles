@@ -16,13 +16,6 @@ set nocompatible
   "always use the vim default where vi and vim differ; for example, if you
   "put this too late, whichwrap will be resset
 "------------------------------------------------------------------------------
-"TEST IF WE HAVE NOWAIT REMAP OPTION -- see: https://vi.stackexchange.com/a/14577/8084
-if v:version>703 || v:version==703 && has("patch1261")
-  let g:has_nowait=1
-else
-  let g:has_nowait=0
-endif
-"------------------------------------------------------------------------------
 "LEADER -- most important line
 let mapleader = "\<Space>"
 noremap <Space> <Nop>
@@ -321,13 +314,13 @@ endif
 "-------------------------------------------------------------------------------
 augroup SECTION2
 augroup END
-let g:requirement1=((v:version>703 || v:version==703 && has("patch1058")) && 
+let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
+let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && 
       \ str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))) "need str2num
-let g:requirement2=has("lua") "try alternative completion library
-"-------------------------------------------------------------------------------
+let g:compatible_neocomplete=has("lua") "try alternative completion library
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
-set shell=/bin/bash "will not work with e.g. brew-installed shell
+" set shell=/bin/bash "will not work with e.g. brew-installed shell
 "VIM-PLUG PLUGINS
 augroup plug
 augroup END
@@ -352,17 +345,12 @@ Plug 'tpope/vim-obsession'
   "for session-saving functionality; mapped in my .bashrc vims to vim -S session.vim
   "and exiting vim saves the session there
 Plug 'tpope/vim-fugitive'
-if g:requirement1
-  Plug 'majutsushi/tagbar'
-  "VIM had major issues with tagbar on remote servers
-  "Going to assume it is just a versioning issue
-endif
+if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'Valloric/YouCompleteMe'
-if g:requirement2
-  Plug 'shougo/neocomplete.vim'
-  " Plug 'ervandew/supertab'
-  " Plug 'davidhalter/jedi-vim' "these need special support
-endif
+Plug 'ajh17/VimCompletesMe'
+if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
+" if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif
+" if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
 " Plug 'vim-scripts/Toggle' "created my own plugin for this
 Plug 'tpope/vim-surround'
 " Plug 'metakirby5/codi.vim' "CODI appears to be broken
@@ -376,9 +364,8 @@ Plug 'triglav/vim-visual-increment' "visual incrementing
 "Had issues with python plugins before; brew upgrading VIM fixed them magically
 "Note you must choose between jedi-vim and python-mode; cannot use both! See github
 " Plug 'ivanov/vim-ipython'
-" Plug "
 " Plug 'hdima/python-syntax' "does not seem to work
-  "INSTEAD THIS FUNCTION IS PUT MANUALLY IN SYNTAX FOLDER; VIM-PLUG FAILED
+  "instead this function is put manually in syntax folder; vim-plug failed
 " Plug 'klen/python-mode' "must make VIM compiled with anaconda for this to work
   "otherwise get weird errors; same with vim conda and vim ipython
 call plug#end()
