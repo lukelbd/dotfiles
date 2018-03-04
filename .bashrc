@@ -325,11 +325,12 @@ alias R="colorize R"
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
 #   and you can right-click refresh for a hard reset, cache reset
+alias jtheme="jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10"
 jupyterready=false # theme is not initially setup because takes a long time
 function notebook() {
   # Set the jupyter theme
   echo "Configuring jupyter notebook theme."
-  ! $jupyterready && jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 # no table of content
+  ! $jupyterready && $jtheme # make it callable from command line
   jupyterready=true # this value is available for rest of session
   # Test the hostname and get unique port we have picked
   if [ ! -z $1 ]; then
@@ -795,8 +796,7 @@ $macos && fortune | lolcat || { curl https://icanhazdadjoke.com/; echo; }
 # followed by INSTALLATION-DEPENDENT DEFAULTS controlled by site.py file (this
 # should be in every directory that has python). for any package, check out
 # <pckg_nm>.__file__ to find its location
-# ....
-#   -currently have python in the following directories:
+# * Currently have python in the following directories:
 #     /usr/bin (system default; v2.7.10)
 #     /usr/local/bin (Homebrew location; v2.7.13)
 #       pip ALSO HERE, since it is not included by default; Homebrew installed
@@ -804,7 +804,7 @@ $macos && fortune | lolcat || { curl https://icanhazdadjoke.com/; echo; }
 #       here it is ONLY IN python2.7 version; nothing with just "python"
 #     ~/anaconda/bin (Anaconda location; v3.5.2)
 #       pip will GET PUT HERE if you conda install it
-#   -pip install seems to BY DEFAULT go to a site-packages folder (rest of
+# * Using pip install seems to BY DEFAULT go to a site-packages folder (rest of
 #       sys.path is included by default, maybe standard library); the locations
 #       of each for each distribution are...
 #     /usr/bin --> /Library/Python/2.7/site-packages
@@ -815,7 +815,7 @@ $macos && fortune | lolcat || { curl https://icanhazdadjoke.com/; echo; }
 #       ...maybe just leave this installation, can't be invoked
 #     ~/anaconda/bin --> ~/anaconda/lib/python3.5/site-packages
 #       ...where conda install puts stuff
-#   -conda NEEDS PIP to operate (under the hood), but we never want to use it
+# * Conda NEEDS PIP to operate (under the hood), but we never want to use it
 #       ourselves; should alias pip to original Homebrew version.
 #       then...
 #         -use pip to install/update python 2.x packages
