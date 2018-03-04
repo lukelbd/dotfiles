@@ -47,7 +47,6 @@
     "sideBar": true,
     "moveMenuLeft": false,
     "colors": {
-      "running_highlight": "#ff5d59",
       "selected_highlight": "#fff968",
       "hover_highlight": "#ece260"
     }
@@ -57,11 +56,17 @@
       "bind": {
         "1": "jupyter-notebook:change-cell-to-heading-1",
         "2": "jupyter-notebook:change-cell-to-heading-2",
-        "cmd-r": "jupyter-notebook:rename-notebook",
+        "3": "jupyter-notebook:change-cell-to-heading-3",
+        "4": "jupyter-notebook:change-cell-to-heading-4",
+        "5": "jupyter-notebook:change-cell-to-heading-5",
+        "0": "jupyter-notebook:change-cell-to-code",
+        "9": "jupyter-notebook:change-cell-to-markdown",
+        "r": "jupyter-notebook:run-cell",
+        "x": "jupyter-notebook:clear-cell-output",
         "s": "jupyter-notebook:save-notebook",
-        "i": "jupyter-notebook:interrupt-kernel",
-        "0": "jupyter-notebook:confirm-restart-kernel",
-        "-": "jupyter-notebook:split-cell-at-cursor",
+        "q": "jupyter-notebook:interrupt-kernel",
+        "shift-q": "jupyter-notebook:confirm-restart-kernel",
+        "cmd-c": "jupyter-notebook:split-cell-at-cursor",
         "d": "jupyter-notebook:delete-cell",
         "u": "jupyter-notebook:undo-cell-deletion",
         "/": "jupyter-notebook:find-and-replace",
@@ -70,37 +75,8 @@
         "y": "jupyter-notebook:copy-cell",
         "p": "jupyter-notebook:paste-cell-below",
         "shift-p": "jupyter-notebook:paste-cell-above",
-        "r": "jupyter-notebook:rename-notebook",
-        "q": "jupyter-notebook:interrupt-kernel",
-        "c": "jupyter-notebook:change-cell-to-code",
-        "x": "jupyter-notebook:clear-cell-output"
-      },
-      "unbind": [
-        "1",
-        "2",
-        "r",
-        "m",
-        "y",
-        "i,i",
-        "0,0",
-        "d,d",
-        "z",
-        "cmd-r",
-        "space",
-        "shift-space",
-        "shift-l",
-        "p",
-        "shift-m",
-        "shift-up",
-        "shift-down",
-        "down",
-        "up",
-        "v",
-        "shift-v",
-        "x",
-        "q",
-        "c"
-      ]
+        "i": "jupyter-notebook:enter-edit-mode"
+      }
     }
   },
   "comment_uncomment_indent": true,
