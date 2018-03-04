@@ -1,3 +1,11 @@
+// Jupyter.keyboard_manager.command_shortcuts.add_shortcut('r', {
+//     help : 'run cell',
+//     help_index : 'zz',
+//     handler : function (event) {
+//         IPython.notebook.execute_cell();
+//         return false;
+//     }}
+// );
 // Custom operator for commenting
 // (similar to commentary by Tim Pope)
 // this woks with visual selection ('vipc.') and with motions ('c.ip')
