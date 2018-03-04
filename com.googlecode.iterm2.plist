@@ -43,7 +43,7 @@
 		<string>echo cd /Users/ldavis/youtubetag/.old; echo pwd</string>
 	</array>
 	<key>CopySelection</key>
-	<true/>
+	<false/>
 	<key>Custom Color Presets</key>
 	<dict>
 		<key>3024 Day</key>
@@ -31802,6 +31802,13 @@ Show Toolbelt</string>
 			<key>Text</key>
 			<string>git commit -am "" &amp;&amp; git push\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D</string>
 		</dict>
+		<key>0x48-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>38</integer>
+			<key>Text</key>
+			<string>git commit -m "" &amp;&amp; git push\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D</string>
+		</dict>
 		<key>0x50-0x120000</key>
 		<dict>
 			<key>Action</key>
@@ -31850,7 +31857,7 @@ Copy</string>
 			<key>Action</key>
 			<integer>38</integer>
 			<key>Text</key>
-			<string>git add README.md &amp;&amp; git commit -m "Fixed README." &amp;&amp; git push</string>
+			<string>git commit -m ""\e[D</string>
 		</dict>
 		<key>0x6a-0x100000</key>
 		<dict>
@@ -31867,6 +31874,13 @@ Split Horizontally with Current Profile</string>
 			<key>Text</key>
 			<string>Split Vertically with Current Profile
 Split Vertically with Current Profile</string>
+		</dict>
+		<key>0x6c-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>38</integer>
+			<key>Text</key>
+			<string>ls\r</string>
 		</dict>
 		<key>0x6d-0x100000</key>
 		<dict>
@@ -31951,12 +31965,12 @@ Close</string>
 			<key>Text</key>
 			<string>0x17</string>
 		</dict>
-		<key>0xd-0x100000</key>
+		<key>0xd-0x40000</key>
 		<dict>
 			<key>Action</key>
-			<integer>38</integer>
+			<integer>42</integer>
 			<key>Text</key>
-			<string>ls\r</string>
+			<string>{"ConvertUnicodePunctuation":true,"WaitForPrompts":false,"Substitution":"","EscapeForShell":true,"Base64":false,"TabStopSize":4,"Delay":0.01,"RemoveNewlines":true,"Regex":"","ConvertNewlines":false,"TabTransform":0,"BracketAllowed":true,"UseRegexSubstitution":false,"ChunkSize":1024,"RemoveControls":true}</string>
 		</dict>
 		<key>0xd-0x80000</key>
 		<dict>
@@ -32110,19 +32124,19 @@ Close</string>
 	<key>NSWindow Frame SUUpdateAlert</key>
 	<string>430 363 620 392 0 0 1440 877 </string>
 	<key>NSWindow Frame SessionsPreferences</key>
-	<string>518 409 599 388 0 0 1440 877 </string>
+	<string>518 328 606 469 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>105 348 796 473 0 0 1440 877 </string>
+	<string>105 314 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>41 0 696 877 0 0 1440 877 </string>
+	<string>646 187 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
 	<string>388 352 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
 	<string>443 298 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 3</key>
-	<string>41 451 570 426 0 0 1440 877 </string>
+	<string>757 377 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 4</key>
 	<string>41 0 1399 877 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 5</key>
@@ -33663,12 +33677,16 @@ Close</string>
 			<false/>
 			<key>Ansi 0 Color</key>
 			<dict>
+				<key>Alpha Component</key>
+				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.56232324660633481</real>
+				<real>0.275482177734375</real>
+				<key>Color Space</key>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.54379904995920658</real>
+				<real>0.26878975632835689</real>
 				<key>Red Component</key>
-				<real>0.48946561629468649</real>
+				<real>0.24901258433237672</real>
 			</dict>
 			<key>Ansi 1 Color</key>
 			<dict>
@@ -33811,12 +33829,16 @@ Close</string>
 			<false/>
 			<key>Background Color</key>
 			<dict>
+				<key>Alpha Component</key>
+				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.18184389173984528</real>
+				<real>0.142486572265625</real>
+				<key>Color Space</key>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.17562578618526459</real>
+				<real>0.1380523586127409</real>
 				<key>Red Component</key>
-				<real>0.16979476809501648</real>
+				<real>0.13363768998533487</real>
 			</dict>
 			<key>Background Image Location</key>
 			<string></string>
@@ -44067,13 +44089,13 @@ Close</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2018-02-21T05:23:09Z</date>
+	<date>2018-03-02T05:10:40Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>ShowBookmarkName</key>
 	<true/>
 	<key>ShowFullScreenTabBar</key>
-	<true/>
+	<false/>
 	<key>ShowNewOutputIndicator</key>
 	<false/>
 	<key>ShowPaneTitles</key>
