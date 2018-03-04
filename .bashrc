@@ -820,26 +820,27 @@ $macos && fortune | lolcat || { curl https://icanhazdadjoke.com/; echo; }
 #       then...
 #         -use pip to install/update python 2.x packages
 #         -use conda to install/update python 3.x packages in ~/anaconda/bin
-# ...various versions are required for various things, so can't delete any of
-# these, but better to modify LOCAL VERSION OF PYTHON2.X (in /usr/local/bin)
-# than SYSTEM-WIDE version; otherwise need sudo pip, which is bad practice
-# ...so use the /usr/local/bin 'pip', 'python', and 'ipython', and run
-# pip install <pckg_name> with SHEBANG AT THE TOP '#!/usr/local/bin/python
-# (this is important because BY DEFAULT, even with brew install, it sometimes
-# uses #!/usr/bin/python -- pip IS NOT PYTHON SPECIFIC; just installs packages
-# according to WHICHEVER PYTHON THE SHEBANG POINTS TO)
-# ...also if NON-EMPTY, /usr/local/bin python or ipython will add to their
-# paths 'Users/ldavis/Library/Python/2.7/lib/python/site-packages'... weird!
-# installation goes there when using 'pip install --user' option
+# * Various versions are required for various things, so can't delete any of
+#   these, but better to modify LOCAL VERSION OF PYTHON2.X (in /usr/local/bin)
+#   than SYSTEM-WIDE version; otherwise need sudo pip, which is bad practice
+# * So use the /usr/local/bin 'pip', 'python', and 'ipython', and run
+#   pip install <pckg_name> with SHEBANG AT THE TOP '#!/usr/local/bin/python
+#   (this is important because BY DEFAULT, even with brew install, it sometimes
+#   uses #!/usr/bin/python -- pip IS NOT PYTHON SPECIFIC; just installs packages
+#   according to WHICHEVER PYTHON THE SHEBANG POINTS TO)
+# * Also if NON-EMPTY, /usr/local/bin python or ipython will add to their
+#   paths 'Users/ldavis/Library/Python/2.7/lib/python/site-packages'... weird!
+#   installation goes there when using 'pip install --user' option
 #
 # IPYTHON NOTES: for...
 #   -ipython, use %matplotlib qt5 or --matplotlib=qt5;
 #   -qtconsole, use %matplotlib qt5 or --matplotlib=;
 #   -notebook, use %matplotlib notebook in the relavent cell
-# 	-qt5 better than osx, because gives "save as" options (filetype).
-#TABLE OF RESULTS:
+#   -qt5 better than osx, because gives "save as" options (filetype).
+#
+# TABLE OF RESULTS:
 #  FOR IPYTHON TERMINAL:
-#    GUI SPEC:
+#  GUI SPEC:
 #    --gui=qt, %matplotlib qt: after trying to declare figure, get "missing 1 requiredositional argument: 'figure'" (um... what?)
 #  --gui=qt, --matplotlib=qt: get "no module named PyQt4"
 #  --gui=qt, %matplotlib qt5: success; different window format than osx, with save dialogue offering filetype choice
@@ -851,7 +852,7 @@ $macos && fortune | lolcat || { curl https://icanhazdadjoke.com/; echo; }
 #  --matplotlib=qt OR%matplotlib qt: get "no module named PyQt4"
 #  --matplotlib=osx OR %matplotlib osx: QApplication window NEVER STARTS; fig appears as temporaryopup
 #  FOR JUPYTER QTCONSOLE using jupyter qtconsole -- (args follow)
-#    GUI SPEC:
+# GUI SPEC:
 #    --gui=qt, %matplotlib qt5: get "RuntimeError: Cannot activate multiple GUI eventloops"
 #    --gui=qt, --matplotlib=qt5: works, creates QApplication window for figures (seriously... WHAT? then why the hell doesn't %matplotlib qt5 work?)
 #    --gui=qt, --matplotlib=inline OR %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non-GUI backend,"
