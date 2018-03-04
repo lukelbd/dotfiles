@@ -31837,14 +31837,6 @@ Show Toolbelt</string>
 			<key>Text</key>
 			<string>0x0C 0x10 0x0d</string>
 		</dict>
-		<key>0x63-0x100000</key>
-		<dict>
-			<key>Action</key>
-			<integer>25</integer>
-			<key>Text</key>
-			<string>Copy
-Copy</string>
-		</dict>
 		<key>0x67-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -32126,7 +32118,7 @@ Close</string>
 	<key>NSWindow Frame SessionsPreferences</key>
 	<string>518 328 606 469 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>105 314 796 473 0 0 1440 877 </string>
+	<string>320 360 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
@@ -33735,12 +33727,16 @@ Close</string>
 			</dict>
 			<key>Ansi 14 Color</key>
 			<dict>
+				<key>Alpha Component</key>
+				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.74187815387757039</real>
+				<real>0.866363525390625</real>
+				<key>Color Space</key>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.8030613687782806</real>
+				<real>0.68515372084948467</real>
 				<key>Red Component</key>
-				<real>0.32424480209917289</real>
+				<real>0.33883306384086614</real>
 			</dict>
 			<key>Ansi 15 Color</key>
 			<dict>
@@ -33771,12 +33767,16 @@ Close</string>
 			</dict>
 			<key>Ansi 4 Color</key>
 			<dict>
+				<key>Alpha Component</key>
+				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.67496818438914019</real>
+				<real>0.73135823011398315</real>
+				<key>Color Space</key>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.49827707227415013</real>
+				<real>0.39780820314808801</real>
 				<key>Red Component</key>
-				<real>0.1650784426346574</real>
+				<real>0.2000390291213989</real>
 			</dict>
 			<key>Ansi 5 Color</key>
 			<dict>
@@ -33789,12 +33789,16 @@ Close</string>
 			</dict>
 			<key>Ansi 6 Color</key>
 			<dict>
+				<key>Alpha Component</key>
+				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.6001695990562439</real>
+				<real>0.730133056640625</real>
+				<key>Color Space</key>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.6554722785949707</real>
+				<real>0.62586362634171999</real>
 				<key>Red Component</key>
-				<real>0.26824772357940674</real>
+				<real>0.30532877426594496</real>
 			</dict>
 			<key>Ansi 7 Color</key>
 			<dict>
@@ -35528,7 +35532,7 @@ Close</string>
 			</dict>
 			<key>Bound Hosts</key>
 			<array>
-				<string>gauss.atmos.colostate.edu</string>
+				<string>monde.atmos.colostate.edu</string>
 			</array>
 			<key>Character Encoding</key>
 			<integer>4</integer>
@@ -40189,12 +40193,16 @@ Close</string>
 			<false/>
 			<key>Ansi 0 Color</key>
 			<dict>
+				<key>Alpha Component</key>
+				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.27599999308586121</real>
+				<real>0.2257226868532598</real>
+				<key>Color Space</key>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.32499998807907104</real>
+				<real>0.2618126747017393</real>
 				<key>Red Component</key>
-				<real>0.43200001120567322</real>
+				<real>0.335357666015625</real>
 			</dict>
 			<key>Ansi 1 Color</key>
 			<dict>
@@ -40337,12 +40345,16 @@ Close</string>
 			<false/>
 			<key>Background Color</key>
 			<dict>
+				<key>Alpha Component</key>
+				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.14117647707462311</real>
+				<real>0.157196044921875</real>
+				<key>Color Space</key>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.11764705926179886</real>
+				<real>0.14097976791907629</real>
 				<key>Red Component</key>
-				<real>0.039215687662363052</real>
+				<real>0.077149255201220512</real>
 			</dict>
 			<key>Background Image Location</key>
 			<string></string>
@@ -40378,7 +40390,7 @@ Close</string>
 			</dict>
 			<key>Bound Hosts</key>
 			<array>
-				<string>monde.atmos.colostate.edu</string>
+				<string>gauss.atmos.colostate.edu</string>
 			</array>
 			<key>Character Encoding</key>
 			<integer>4</integer>
