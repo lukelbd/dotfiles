@@ -25,13 +25,15 @@ from contextlib import redirect_stdout
 import io
 import os
 import sys
-f = io.StringIO()
-with redirect_stdout(f):
+import socket
+cd = os.getcwd()
+home = os.path.expanduser('~')
+hostname = socket.gethostname().split('.')[0]
+_ = io.StringIO()
+with redirect_stdout(_):
     if len(sys.argv)>1:
-        curdir = sys.argv[-1] # the current directory
-        curdir = curdir.replace("~", os.environ["HOME"])
-        os.chdir(curdir) # move to this directory
-        print(f"Moved to directory {curdir}.")
+        os.chdir(sys.argv[-1].replace("~", os.environ["HOME"])) # move to this directory
+        print(f'Moved to directory {sys.argv[-1].replace("~", os.environ["HOME"])}.')
     if get_ipython() is not None:
         # Basic configuration
         # ipy.core.display.display(ipy.core.display.HTML(html_format))
@@ -51,7 +53,7 @@ with redirect_stdout(f):
             # optionally keep figures tight around edges
         get_ipython().magic("matplotlib inline") # change print_figure_kwargs to  see edges
 # Message management; note errors pass the with group and cancel execution
-prints = f.getvalue().split('\n')
-if prints[0].startswith("Moved to directory"):
-    print(prints[0].strip()) # and strip any whitespace
+_ = _.getvalue().split('\n')
+if _[0].startswith("Moved to directory"):
+    print(_[0].strip()) # and strip any whitespace
 print("Notebook is configured.")
