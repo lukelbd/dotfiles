@@ -33,7 +33,6 @@
   "autoscroll_show_selector": false,
   "CodeCell": {
     "cm_config": {
-      "theme": "xq-light",
       "font_family": "Default",
       "lineNumbers": false
     }
