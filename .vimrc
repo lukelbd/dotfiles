@@ -298,13 +298,18 @@ nnoremap <Leader>9 <C-a>h
   "for some reasons <C-a> by itself moves cursor to right; have to adjust
 "------------------------------------------------------------------------------
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works in iTerm2
+"The second line makes stuff work in Terminal too
+"See: https://superuser.com/questions/712098/customize-vim-cursor-style-under-mac-os-x-terminal
 if exists("&t_SI") && exists("&t_SR") && exists("&t_EI")
-  exe "set t_SI=".nr2char(27)."]50;CursorShape=1\x7"
-  exe "set t_SR=".nr2char(27)."]50;CursorShape=2\x7"
-  exe "set t_EI=".nr2char(27)."]50;CursorShape=0\x7"
-  " let &t_SI = "\<Esc>]50;CursorShape=1\x7"
-  " let &t_SR = "\<Esc>]50;CursorShape=2\x7"
-  " let &t_EI = "\<Esc>]50;CursorShape=0\x7"
+  let &t_SI = "\<Esc>]50;CursorShape=1\x7"
+  let &t_SR = "\<Esc>]50;CursorShape=2\x7"
+  let &t_EI = "\<Esc>]50;CursorShape=0\x7"
+  let &t_SI .= "\e[5 q"
+  let &t_SR .= "\e[4 q"
+  let &t_EI .= "\e[1 q"
+  " exe "set t_SI=".nr2char(27)."]50;CursorShape=1\x7"
+  " exe "set t_SR=".nr2char(27)."]50;CursorShape=2\x7"
+  " exe "set t_EI=".nr2char(27)."]50;CursorShape=0\x7"
 endif
 
 "-------------------------------------------------------------------------------
