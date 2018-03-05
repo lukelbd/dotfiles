@@ -18,7 +18,7 @@
 dotfiles=~/dotfiles # other commands can be unpredictable
 cd $dotfiles # move to this directory, if not present
 storage="$dotfiles/originals" # place old files into here
-files=($(git ls-tree --name-only master)) # get list of committed files
+files=($(git ls-tree --name-only master | xargs)) # get list of committed files
 
 # Create storage for old dotfiles
 echo "Creating \"$storage\" for backup of any existing dotfiles..."
