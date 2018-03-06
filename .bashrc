@@ -258,6 +258,8 @@ function identical() { diff -sq $@ | grep identical; }
   # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
+function killjobs() { kill $(jobs -p); }
+  # kill all background processes (sent to background with &)
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -434,15 +436,13 @@ function ssh_wrapper() {
   local listen=22 # default sshd listening port; see the link above
   local args=($@) # all arguments
   [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
-  while true; do
-    \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -t \
-      -R localhost:$port:localhost:$listen ${args[@]} \
-      "export port=$port && echo Port number: $port && /bin/bash -i" # -t says to stay interactive
-    [ $? != 255 ] && break # break if exit code doesn't indicate bad port
+  while netstat -an | grep ":$port" | grep -i listen &>/dev/null; do
+    echo "WARNING: Port $port unavailable." # warning message
     port=$(($port + 1)) # generate new port
-    # port=$(($RANDOM + 10000)) # generate new port
   done
-  [ $? != 0 ] && echo "ERROR: Attempted ports ${ports[@]} and all are busy."
+  \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -t \
+    -R localhost:$port:localhost:$listen ${args[@]} \
+    "export port=$port && echo Port number: $port && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"

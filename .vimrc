@@ -1649,15 +1649,15 @@ endfunction
 " nnoremap <Leader>F ?
 nnoremap <Leader>f :%s//gIc<Left><Left><Left><Left>
 nnoremap <Leader>F :%s/<C-r>///gn<CR>
-function! s:pythonmaps()
-  nnoremap <expr> <buffer> / '/<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
-  nnoremap <expr> <buffer> ? '?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
-  nnoremap <buffer> <Leader>/ /
-  nnoremap <buffer> <Leader>? ?
-  nnoremap <buffer> <Leader>s :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-  nnoremap <buffer> <Leader>S :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-endfunction
-au FileType python call s:pythonmaps()
+" function! s:pythonmaps()
+"   nnoremap <expr> <buffer> / '/<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
+"   nnoremap <expr> <buffer> ? '?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
+"   nnoremap <buffer> <Leader>/ /
+"   nnoremap <buffer> <Leader>? ?
+"   nnoremap <buffer> <Leader>s :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
+"   nnoremap <buffer> <Leader>S :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
+" endfunction
+" au FileType python call s:pythonmaps()
 " nnoremap <Leader>/ /<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
 " nnoremap <Leader>? ?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
 nnoremap <expr> <Leader>/ '/<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
