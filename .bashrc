@@ -249,7 +249,6 @@ alias ps="ps" # processes in this shell
 alias pc="mpstat -P ALL 1" # list individual core usage
 alias pt="top"             # table of processes, total
   # examine current proceses
-# Extra utilities
 hash colordiff 2>/dev/null && alias diff="colordiff"
   # prettier differencing; use this if it exists
 alias difference="diff --brief -x \".*\" -r"
@@ -258,8 +257,13 @@ function identical() { diff -sq $@ | grep identical; }
   # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
-function killjobs() { kill $(jobs -p); }
-  # kill all background processes (sent to background with &)
+function listjobs() { ps | grep "$1" | cut -d' ' -f1 | xargs; }
+  # list jobs by name
+function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern."; kill $(ps | grep "$1" | cut -d' ' -f1 | xargs); }
+  # kill jobs by name
+# function killjobs() { kill $(jobs -p); }
+#   # kill all background processes (sent to background with &)
+#   # this function only works if sent to background from shell directly, not from script
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
