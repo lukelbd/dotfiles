@@ -7,6 +7,9 @@
   # this MUST be ignored because it encodes a hardpath for particular anaconda distributions
   # (not relative path) which seems to mess up the jupyterthemes font setup
   # the other json, jupyter_notebook_config.json, just tells jupyter to use nbextensions
+.jupyter/custom
+  # because we want jupyterthemes to control this behavior completely; don't need
+  # to sync this folder
 
 # VIM extras #
 ##############
