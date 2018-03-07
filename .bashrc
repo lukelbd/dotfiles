@@ -257,9 +257,9 @@ function identical() { diff -sq $@ | grep identical; }
   # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
-function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern."; ps | grep "$1" | cut -d' ' -f1 | xargs; }
+function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; ps | grep "$1" | cut -d' ' -f1 | xargs; }
   # list jobs by name
-function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern."; kill $(ps | grep "$1" | cut -d' ' -f1 | xargs); }
+function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | cut -d' ' -f1 | xargs); }
   # kill jobs by name
 # function killjobs() { kill $(jobs -p); }
 #   # kill all background processes (sent to background with &)
