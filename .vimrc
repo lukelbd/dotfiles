@@ -301,15 +301,16 @@ nnoremap <Leader>9 <C-a>h
 "The second line makes stuff work in Terminal too
 "See: https://superuser.com/questions/712098/customize-vim-cursor-style-under-mac-os-x-terminal
 if exists("&t_SI") && exists("&t_SR") && exists("&t_EI")
-  let &t_SI = "\<Esc>]50;CursorShape=1\x7"
-  let &t_SR = "\<Esc>]50;CursorShape=2\x7"
-  let &t_EI = "\<Esc>]50;CursorShape=0\x7"
-  let &t_SI .= "\e[6 q"
-  let &t_SR .= "\e[4 q"
-  let &t_EI .= "\e[2 q"
-  " exe "set t_SI=".nr2char(27)."]50;CursorShape=1\x7"
-  " exe "set t_SR=".nr2char(27)."]50;CursorShape=2\x7"
-  " exe "set t_EI=".nr2char(27)."]50;CursorShape=0\x7"
+  " The first part/cursorshape part are for iTerm; the \e part is for Terminal
+  if exists('$TMUX')
+    let &t_SI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=1\x7\e[6 q\<Esc>\\"
+    let &t_SR = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=2\x7\e[4 q\<Esc>\\"
+    let &t_EI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=0\x7\e[2 q\<Esc>\\"
+  else
+    let &t_SI = "\<Esc>]50;CursorShape=1\x7\e[6 q"
+    let &t_SR = "\<Esc>]50;CursorShape=2\x7\e[4 q"
+    let &t_EI = "\<Esc>]50;CursorShape=0\x7\e[2 q"
+  endif
 endif
 
 "-------------------------------------------------------------------------------
@@ -386,10 +387,10 @@ augroup END
 " "'", "`", "G", "/", "?", "n",
 " "N", "%", "(", ")", "[[", "]]", "{", "}", ":s", ":tag", "L", "M", "H" and
 "First some simple maps for navigating jumplist
-noremap <C-k> <Tab>
-noremap <C-j> <C-o>
-noremap <C-h> g;
-noremap <C-l> g;
+noremap <C-l> <Tab>
+noremap <C-h> <C-o>
+noremap <C-j> g;
+noremap <C-k> g,
 if has_key(g:plugs, "EnhancedJumps")
   map <C-o> g<C-o>
   map <C-i> g<C-i>
@@ -703,7 +704,10 @@ function! s:texmacros()
   " call s:delimscr('B', '\begin{bmatrix}', '\end{bmatrix}')
   "Comma-prefixed delimiters with newlines
   "Many of these important for beamer presentations
-  call s:delimscr('c', '\begin{columns}', '\end{columns}')
+  "The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
+  "with default single column; see: https://tex.stackexchange.com/a/366422/73149
+  "Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
+  call s:delimscr('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
   call s:delimscr('I', '\begin{enumerate}[label=\roman*.]', '\end{enumerate}')
@@ -946,6 +950,17 @@ endif
 "-------------------------------------------------------------------------------
 "PYTHON-SYNTAX; these should be provided with VIM by default
 au FileType python let g:python_highlight_all=1
+
+"-------------------------------------------------------------------------------
+"C MACROS
+augroup c
+augroup END
+function! s:cmacros()
+  "Will compile code, then run it and show user the output
+  noremap  <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
+        \."gcc ".shellescape(@%)." -o ".expand('%:r')."; ./".expand('%:r')."<CR>"
+endfunction
+autocmd FileType c call s:cmacros()
 
 "-------------------------------------------------------------------------------
 "FORTRAN MACROS
