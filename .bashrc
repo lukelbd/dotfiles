@@ -210,7 +210,6 @@ elif [ "$HOSTNAME" = "olbers" ]; then
 fi
 [ ! -z $MATLABPATH ] && alias matlab="$MATLABPATH -nodesktop -nosplash -r \"run('~/startup.m')\""
 
-
 ################################################################################
 # General utilties, and colorizing them
 ################################################################################
@@ -264,6 +263,8 @@ function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." &&
 # function killjobs() { kill $(jobs -p); }
 #   # kill all background processes (sent to background with &)
 #   # this function only works if sent to background from shell directly, not from script
+function gif2png() { for f in "$@"; do convert "$f" "${f%.gif}.png"; done; }
+  # often needed because LaTeX can't read gif files
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -542,7 +543,7 @@ function ncvarsinfo() { # get information for just variables (no dimension/globa
     # bother parsing that information
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | grep -A 100 "^variables:$" | grep -B 100 "^$" | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+  \ncdump -h "$1" | grep -A 100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -577,7 +578,7 @@ function ncvarlist() { # only get text between variables: and linebreak before g
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
   local list=($(nclist "$1"))
-  local dmnlist=($(ncdmnlist "$1"))
+  local dmnlist=($(ncdimlist "$1"))
   local varlist=() # add variables here
   for item in "${list[@]}"; do
     if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
@@ -616,7 +617,7 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
 }
-function ncvartable() { # as above but show everything
+function ncvardatafull() { # as above but show everything
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }

@@ -60,13 +60,11 @@
         "5": "jupyter-notebook:change-cell-to-heading-5",
         "0": "jupyter-notebook:change-cell-to-code",
         "9": "jupyter-notebook:change-cell-to-markdown",
-        "r": "jupyter-notebook:run-cell",
         "x": "jupyter-notebook:clear-cell-output",
         "s": "jupyter-notebook:save-notebook",
         "q": "jupyter-notebook:interrupt-kernel",
         "shift-q": "jupyter-notebook:confirm-restart-kernel",
         "cmd-c": "jupyter-notebook:split-cell-at-cursor",
-        "d": "jupyter-notebook:delete-cell",
         "u": "jupyter-notebook:undo-cell-deletion",
         "/": "jupyter-notebook:find-and-replace",
         ":": "jupyter-notebook:show-command-palette",
@@ -74,7 +72,9 @@
         "y": "jupyter-notebook:copy-cell",
         "p": "jupyter-notebook:paste-cell-below",
         "shift-p": "jupyter-notebook:paste-cell-above",
-        "i": "jupyter-notebook:enter-edit-mode"
+        "i": "jupyter-notebook:enter-edit-mode",
+        "r": "jupyter-notebook:rename-notebook",
+        "d": "jupyter-notebook:cut-cell"
       }
     }
   },
