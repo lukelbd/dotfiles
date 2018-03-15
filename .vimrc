@@ -297,29 +297,30 @@ nnoremap <Leader>0 <C-x>
 nnoremap <Leader>9 <C-a>h
   "for some reasons <C-a> by itself moves cursor to right; have to adjust
 "------------------------------------------------------------------------------
-"DIFFERENT CURSOR SHAPE DIFFERENT MODES; works in iTerm2
-" The first part/cursorshape part are for iTerm; the \e part is for Terminal
+"DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
+" Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
+" Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
 " The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
-"See: https://superuser.com/questions/712098/customize-vim-cursor-style-under-mac-os-x-terminal
+" Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
 if exists("&t_SI")
   if exists('$TMUX')
-    let &t_SI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=1\x7\e[6 q\<Esc>\\"
+    let &t_SI = "\ePtmux;\e\e[6 q\e\\"
   else
-    let &t_SI = "\<Esc>]50;CursorShape=1\x7\e[6 q"
+    let &t_SI = "\e[6 q"
   endif
 endif
 if exists("&t_SR")
   if exists('$TMUX')
-    let &t_SR = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=2\x7\e[4 q\<Esc>\\"
+    let &t_SR = "\ePtmux;\e\e[4 q\e\\"
   else
-    let &t_SR = "\<Esc>]50;CursorShape=2\x7\e[4 q"
+    let &t_SR = "\e[4 q"
   endif
 endif
 if exists("&t_EI")
   if exists('$TMUX')
-    let &t_EI = "\<Esc>Ptmux;\<Esc>\<Esc>]50;CursorShape=0\x7\e[2 q\<Esc>\\"
+    let &t_EI = "\ePtmux;\e\e[2 q\e\\"
   else
-    let &t_EI = "\<Esc>]50;CursorShape=0\x7\e[2 q"
+    let &t_EI = "\e[2 q"
   endif
 endif
 
@@ -1639,8 +1640,6 @@ nnoremap <silent> # :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:l
 " * This failed, BECAUSE gd 'goto definition where var declared' doesn't work in hello often
 nnoremap <Leader>z /\<[A-Z]\+\><CR>
   "search all capital words
-nnoremap <Leader>g :s/\(^ *\)\@<! \{2,}/ /g<CR>
-  "replace consecutive spaces on current line
 function! s:scopesearch(replace)
   let saveview=winsaveview()
   keepjumps normal [[
@@ -1704,17 +1703,21 @@ nnoremap <Leader>S :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left
   "use <C-r>=expand('<cword>')<CR> instead of <C-r><C-w> to avoid errors on
   "blank lines; also the 'c' means 'confirm' each replacement
 "-------------------------------------------------------------------------------
-"DELETE MATCHES; SPECIAL BIBTEX TOOLS
+"SPECIAL DELETION TOOLS
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
 " au FileType bib nnoremap <buffer> <Leader>X :g/^\s*\(abstract\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=/d<CR>
 " nnoremap <Leader>x :g//d<Left><Left>
+nnoremap <Leader>Z :s/\(^ *\)\@<! \{2,}/ /g<CR>
+  "replace consecutive spaces on current line
 nnoremap <Leader>x :%s/\(\n\n\)\n\+/\1/gc<CR>
+  "replace consecutive newlines with single newline
 nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
-function! s:cutmaps() 
-  nnoremap <buffer> <Leader>X :%s/^\s*\(abstract\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  "replace commented lines
+function! s:cutmaps()
+  nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 endfunction
-au FileType bib call s:cutmaps()
-  "the new version highlighted entire line, requests user input for deletion
+au FileType bib,tex call s:cutmaps()
+  "some bibtex lines
 
 "------------------------------------------------------------------------------
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
