@@ -213,7 +213,7 @@ fi
 ################################################################################
 # General utilties, and colorizing them
 ################################################################################
-# LS aliases, basic file management, helpful utilities
+# Simple/quick aliases, often just change default behavior
 # * See the README; found the default LSCOLOR for mac, and roughly converted it
 #   to be identical in SSH sessions
 # * Run "dircolors" to output commands to set up current default LS_COLORS on 
@@ -240,18 +240,20 @@ alias ld="find . -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -
   # with prefix g (the Linux version; MacOS comes with truncated versions)
 alias df="df -h" # disk useage
 alias cd="cd -P" # -P follows physical location
-alias type="type -a" # alias 'type' to show ALL instances of path/function/variable/file
-  # just some simple ones
+alias ps="ps" # processes in this shell
+alias pt="top" # table of processes, total
+alias pc="mpstat -P ALL 1" # list individual core usage
+alias type="type -a"  # show ALL instances of path/function/variable/file
+alias which="which -a" # same
+
+# More complex aliases and functions
 alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
   # prints out release info
-alias ps="ps" # processes in this shell
-alias pc="mpstat -P ALL 1" # list individual core usage
-alias pt="top"             # table of processes, total
-  # examine current proceses
 hash colordiff 2>/dev/null && alias diff="colordiff"
   # prettier differencing; use this if it exists
 alias difference="diff --brief -x \".*\" -r"
   # difference subdirectories; easier to remember this
+  # also ignore hidden files
 function identical() { diff -sq $@ | grep identical; }
   # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
@@ -399,7 +401,7 @@ function disconnect() {
 # Session management
 ################################################################################
 # iTerm2 window title
-function title { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
+function iterm { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
 
 # Declare some names for active servers
 # alias olbers='ssh -XC ldavis@129.82.49.1'
