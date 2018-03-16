@@ -246,7 +246,7 @@ alias which="which -a" # same
 alias grep="grep --color=auto" # show color
 
 # More complex aliases and functions
-alias bindings="bind -p | egrep '\\e|\\C' | grep -v 'do-lowercase-version' | sort"
+alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
   # prints the keybindings
 alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
   # prints out release info
