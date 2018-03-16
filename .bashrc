@@ -63,6 +63,8 @@ unset USERNAME # forum quote: "if you use the sudo command, sudo typically
 shopt -s checkwinsize # allow window resizing
 shopt -u nullglob # turn off nullglob; so e.g. no expansion of ?, *, attempted if no matches
 shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+shopt -s dotglob # include dot patterns in glob matches
+shopt -s failglob # raise error when a glob match fails
 
 # Prompt
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
