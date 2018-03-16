@@ -64,7 +64,8 @@ shopt -s checkwinsize # allow window resizing
 shopt -u nullglob # turn off nullglob; so e.g. no expansion of ?, *, attempted if no matches
 shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
 shopt -s dotglob # include dot patterns in glob matches
-shopt -s failglob # raise error when a glob match fails
+[ -z $TMUX ] && shopt -s failglob # raise error when a glob match fails
+  # this caused problems with completion of wildcards in tmux sessions
 
 # Prompt
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
