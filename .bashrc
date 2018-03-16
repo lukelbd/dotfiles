@@ -223,7 +223,7 @@ fi
 #   the Linux color string.
 if $macos; then
   export LSCOLORS='exfxcxdxbxegedabagacad'
-  sortcmd='gsort' && lscolor='-G' # GNU utilities, different from mac versions
+  lscolor='-G' && sortcmd='gsort' # GNU utilities, different from mac versions
     # macOS has a BSD ls version with different "show color" specifier
 else
 #   export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:'\
@@ -236,8 +236,6 @@ alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 alias lx="ls $lscolor -AF -lsa | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
 alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
 alias ld="find . -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh" # directory sizes
-  # need COREUTILS for sort -h; use brew install coreutils, they're installed
-  # with prefix g (the Linux version; MacOS comes with truncated versions)
 alias df="df -h" # disk useage
 alias cd="cd -P" # -P follows physical location
 alias ps="ps" # processes in this shell
@@ -245,8 +243,11 @@ alias pt="top" # table of processes, total
 alias pc="mpstat -P ALL 1" # list individual core usage
 alias type="type -a"  # show ALL instances of path/function/variable/file
 alias which="which -a" # same
+alias grep="grep --color=auto" # show color
 
 # More complex aliases and functions
+alias bindings="bind -p | egrep '\\e|\\C' | grep -v 'do-lowercase-version' | sort"
+  # prints the keybindings
 alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
   # prints out release info
 hash colordiff 2>/dev/null && alias diff="colordiff"
