@@ -46,8 +46,8 @@ function man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
   local binman=/usr/bin/man
   if $binman bind | grep "BSD General Commands Manual" &>/dev/null; then
-    # LESS=-p"^ *$1 \\[.*$" $binman bash
-    $binman bash | less -p"^ *$1 \\[.*$"
+    LESS=-p"^ *$1 \\[.*$" $binman bash
+    # $binman bash | less -p"^ *$1 \\[.*$"
   elif ! $binman $1 &>/dev/null; then
     echo "No man entry for \"$1\"."
   else
