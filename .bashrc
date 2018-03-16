@@ -35,8 +35,10 @@
 # [ -f /etc/profile ] && . /etc/profile
 
 # Bindings
-bind '"\C-x":glob-complete-word'
-# bind '"\C-x":glob-expand-word' # this only expands it; the completion is what you want
+bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fail
+  # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
+# bind '"\ez":glob-complete-word'
+# bind '"\ez":glob-expand-word' # this only expands it; the completion is what you want
 bind 'set disable-completion off'
 bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
   # for some reason this must be encapsulated by bind command
