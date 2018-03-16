@@ -23,6 +23,7 @@
 
 ################################################################################
 # Shell stuff
+# Custom key bindings and interaction
 ################################################################################
 # Check if we are on MacOS
 [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
@@ -33,7 +34,27 @@
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
 
-# Shell prompt stuff
+# Bindings
+bind 'set disable-completion off'
+bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
+  # for some reason this must be encapsulated by bind command
+bind '"\ex":glob-expand-word'
+bind '"\eg":glob-complete-word'
+
+# Wrappers
+function man() { # always show useful information when man is called
+  # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
+  local binman=/usr/bin/man
+  if $binman bind | grep "BSD General Commands Manual" &>/dev/null; then
+    LESS=-p"^ *$1 \\[.*$" $binman bash
+  elif ! $binman $1 &>/dev/null; then
+    echo "No man entry for \"$1\"."
+  else
+    $binman $1
+  fi
+}
+
+# Options
 set +H
   # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
@@ -41,11 +62,8 @@ unset USERNAME # forum quote: "if you use the sudo command, sudo typically
 shopt -s checkwinsize # allow window resizing
 shopt -u nullglob # turn off nullglob; so e.g. no expansion of ?, *, attempted if no matches
 shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  # Note extended globbing IS ONLY USED WITH THESE PARENTHESES; otherwise is same
-  # * Use rm !(*.jpg|*.gif|*.png) instead of rm *{.jpg,.gif,.png}, but latter raises error if one has 0 matches
-  # * Extglob: ?=0-1, *=0-Inf, +=1-Inf, @=1, !=ONLY ZERO, [a|b|c]=1 item inside
-  # * Normal glob: *=0-Inf, ?=1 EXACTLY, [abc]=1 item inside, [!abc]=ZERO items inside
-  # * Special chars: [:alnum:]=(a-z,A-Z,0-9), [:space:] (whtespace), [:digit:]
+
+# Prompt
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
