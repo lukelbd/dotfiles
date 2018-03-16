@@ -35,11 +35,12 @@
 # [ -f /etc/profile ] && . /etc/profile
 
 # Bindings
+bind '"\C-x":glob-complete-word'
+# bind '"\C-x":glob-expand-word' # this only expands it; the completion is what you want
 bind 'set disable-completion off'
 bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
   # for some reason this must be encapsulated by bind command
-bind '"\ex":glob-expand-word'
-bind '"\eg":glob-complete-word'
+  
 
 # Wrappers
 function man() { # always show useful information when man is called
@@ -470,7 +471,8 @@ function ssh_wrapper() {
     echo "WARNING: Port $port unavailable." # warning message
     port=$(($port + 1)) # generate new port
   done
-  \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -t \
+  # \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -t \
+  \ssh -o StrictHostKeyChecking=no -t \
     -R localhost:$port:localhost:$listen ${args[@]} \
     "export port=$port && echo Port number: $port && /bin/bash -i" # -t says to stay interactive
 }
