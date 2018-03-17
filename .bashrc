@@ -35,26 +35,35 @@
 # [ -f /etc/profile ] && . /etc/profile
 
 # Bindings
+# The lines within single quotes can also be put inside .inputrc
+# bind '"\C-i":glob-expand-word' # expansion but not completion
 bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fail
   # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
-# bind '"\ez":glob-complete-word'
-# bind '"\ez":glob-expand-word' # this only expands it; the completion is what you want
+bind 'set completion-ignore-case on'
 bind 'set disable-completion off'
 bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
-  # for some reason this must be encapsulated by bind command
-  
 
 # Wrappers
+# See this page for how to avoid recursion when wrapping shell builtins and commands:
+# http://blog.jpalardy.com/posts/wrapping-command-line-tools/
+function help() {
+  if builtin help $1 &>/dev/null; then
+    builtin help $1 | less
+  elif $1 --help &>/dev/null; then
+    $1 --help | less
+  else
+    echo "No help information for \"$1\"."
+  fi
+}
 function man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-  local binman=/usr/bin/man
-  if $binman bind | grep "BSD General Commands Manual" &>/dev/null; then
-    LESS=-p"^ *$1 \\[.*$" $binman bash
-    # $binman bash | less -p"^ *$1 \\[.*$"
-  elif ! $binman $1 &>/dev/null; then
+  if command man $1 | grep "BSD General Commands Manual" &>/dev/null; then
+    [ $1 == "builtin" ] && local search=$1 || local search=bash
+    LESS=-p"^ *$1 \[.*$" command man $search
+  elif ! command man $1 &>/dev/null; then
     echo "No man entry for \"$1\"."
   else
-    $binman $1
+    command man $1
   fi
 }
 
