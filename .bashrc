@@ -87,7 +87,9 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
   # see: https://unix.stackexchange.com/a/124408/112647
 # e.g. [[:space:]_-]) = whitespace, underscore, OR dash
 
-# Vim stuff
+# Editor stuff
+# Use this for watching log files
+alias watch="less +F" # actually already is a watch command
 # Thought about wrapping vim alias in function "tmux set-option mode-mouse off" but realized
 # this option would become GLOBAL to other panes, which don't necessarily want
 alias vims="vim -S .session.vim" # for working with obsession
