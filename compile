@@ -73,6 +73,8 @@ function cleanup() {
 # * If bibliography present, compile once to get .aux file, run bibtex
 #   on the auxfile (cannot call bibtex <file>.tex; must be bibtex <file> or
 #   bibtex <file>.aux), then run TWICE as before.
+# * See this page for matching consecutive lines with SED:
+#   https://unix.stackexchange.com/q/165362/112647
 $beamer && latex=xelatex || latex=pdflatex # some fancy .sty beamer packages need xelates
 latex=pdflatex
 bibtex=bibtex
@@ -83,7 +85,11 @@ if $bibliography; then
 fi
 echo "Typesetting PDF from $filename..."
 $latex -draftmode $flags "$filestem" &>/dev/null
-$latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
+# $latex $flags "$filestem" 2>&1 | less # simple, use for debuggin
+$latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
+  | grep -A2 '^$' | sed '/^$/d' # the last line matches only triplets created
+  # by the second sed line (blank\nmessage\nline#) and inserts '--' between groups of matches
+  # sed -E uses extended regular expressions, not basic; allows or operator, like egrep
 if [ ! -r "$filestem.pdf" ]; then
   echo "ERROR: PDF not produced." && cleanup
   exit 1

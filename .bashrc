@@ -57,7 +57,9 @@ function help() {
 }
 function man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-  if command man $1 | grep "BSD General Commands Manual" &>/dev/null; then
+  # We test the second line of manpage
+  # if command man $1 | grep "^BUILTIN(1)" &>/dev/null; then
+  if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
     [ $1 == "builtin" ] && local search=$1 || local search=bash
     LESS=-p"^ *$1 \[.*$" command man $search
   elif ! command man $1 &>/dev/null; then
@@ -478,13 +480,13 @@ function ssh_wrapper() {
   local listen=22 # default sshd listening port; see the link above
   local args=($@) # all arguments
   [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
-  while netstat -an | grep ":$port" | grep -i listen &>/dev/null; do
+  while netstat -an | grep "$port" | grep -i listen &>/dev/null; do
     echo "WARNING: Port $port unavailable." # warning message
     port=$(($port + 1)) # generate new port
   done
-  # \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -t \
-  \ssh -o StrictHostKeyChecking=no -t \
-    -R localhost:$port:localhost:$listen ${args[@]} \
+  # \ssh -o StrictHostKeyChecking=no \
+  \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
+    -t -R localhost:$port:localhost:$listen ${args[@]} \
     "export port=$port && echo Port number: $port && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
@@ -690,17 +692,28 @@ function extract() {
 }
 
 ################################################################################
-# Personal utilities/for MacBook specially
+# Utilities handling media and PDF files
 ################################################################################
-if $macos; then
-  # Opening commands for some GUI apps
-  alias edit='\open -a TextEdit'
-  alias html='\open -a Google\ Chrome'
-  alias pdf='\open -a Skim'
-  # Fun stuff
-  alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
-  alias weather="curl wttr.in/Fort\ Collins" # list weather information
-fi
+# Extracting PDF annotations
+function unannotate() {
+  local original=$1
+  local final=${original%.pdf}_unannotated.pdf
+  [ ${original##*.} != "pdf" ] && echo "ERROR: Must input PDF file." && return 1
+  pdftk $original output uncompressed.pdf uncompress
+  LANG=C sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
+  pdftk stripped.pdf output $final compress
+  rm uncompressed.pdf stripped.pdf
+}
+
+# Opening commands for some GUI apps
+alias edit='\open -a TextEdit'
+alias html='\open -a Google\ Chrome'
+alias pdf='\open -a Skim'
+
+# Fun stuff
+alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
+alias weather="curl wttr.in/Fort\ Collins" # list weather information
+
 # Sync a local directory with files on SD card
 # This function will only modify files on the SD card, never the local directory
 function sdsync() {
