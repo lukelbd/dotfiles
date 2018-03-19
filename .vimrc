@@ -642,7 +642,7 @@ function! s:texmacros()
   nnoremap <buffer> viQ T`vt'
   "Delimiters (advanced)/quick environments
   "First the delimiters without newlines
-  call s:delims(',', '\begin{center}', '\end{center}') "because , was available
+  call s:delims(',', '\begin{center}', '\end{center}', 1) "because , was available
   call s:delims('\|', '\left\\|', '\right\\|', 1)
   call s:delims('{', '\left\{', '\right\}', 1)
   call s:delims('(', '\left(', '\right)', 1)
@@ -650,8 +650,8 @@ function! s:texmacros()
   call s:delims('<', '\left<', '\right>', 1)
   call s:delims('o', '{\color{red}', '}', 1)
   call s:delims('t', '\textbf{', '}', 1)
-  call s:delims('T', '\text{', '}', 1) "just text
-  call s:delims('y', '\texttt{', '}', 1) "think y command in ipython notebook
+  call s:delims('T', '\emph{', '}', 1) "for beamer
+  call s:delims('y', '\texttt{', '}', 1) "typewriter text
   call s:delims('i', '\textit{', '}', 1)
   call s:delims('l', '\underline{', '}', 1) "l for line
   call s:delims('m', '\mathrm{', '}', 1)
@@ -686,9 +686,11 @@ function! s:texmacros()
   call s:delims('5', '\subsubsection{', '}', 1)
   call s:delims('6', '\subsubsection*{', '}', 1)
   "Shortcuts for citations and such
+  call s:delims('z', '\note{', '}', 1) "extra
+  call s:delims('Z', '\strikeoue{', '}', 1) "extra
   call s:delims('a', '\caption{', '}', 1) "amazingly a not used yet
-  call s:delims('c', '\parencite{', '}', 1)
-  call s:delims('C', '\textcite{', '}', 1)
+  call s:delims('C', '\parencite{', '}', 1)
+  call s:delims('c', '\textcite{', '}', 1)
   call s:delims('r', '\autoref{', '}', 1) "autoref is part of hyperref package;
   call s:delims('R', '\label{', '}', 1) "to declare labels that autoref points to
   call s:delims('*', '\tag{', '}', 1) "change the default 1-2-3 ordering; common to use *
@@ -1714,7 +1716,7 @@ nnoremap <Leader>x :%s/\(\n\n\)\n\+/\1/gc<CR>
 nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
   "replace commented lines
 function! s:cutmaps()
-  nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 endfunction
 au FileType bib,tex call s:cutmaps()
   "some bibtex lines
