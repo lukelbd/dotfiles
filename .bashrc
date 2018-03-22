@@ -4,10 +4,9 @@
 # Check out what is in the system defaults before using this, make sure your $PATH is populated.
 # To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-
 ################################################################################
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
-# Known bug, scp/rsync fail without this line due to greeting message: 
+# Known bug, scp/rsync fail without this line due to greeting message:
 # 1) https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 ################################################################################
@@ -87,6 +86,8 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
   # see: https://unix.stackexchange.com/a/124408/112647
 # e.g. [[:space:]_-]) = whitespace, underscore, OR dash
 
+# nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+
 # Editor stuff
 # Use this for watching log files
 alias watch="less +F" # actually already is a watch command
@@ -150,7 +151,7 @@ if $macos; then
   export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
   # LaTeX and X11
   export PATH="/opt/X11/bin:/Library/TeX/texbin:$PATH"
-  # Macports 
+  # Macports
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
   # Homebrew
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
@@ -170,7 +171,7 @@ else
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
   fi
-  
+
   # EUCLID OPTIONS
   if [ "$HOSTNAME" == "euclid" ]; then
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
@@ -217,15 +218,15 @@ alias brew="PATH=$SIMPLEPATH brew"
 # EXECUTABLES IN HOME DIRECTORY
 export PATH="$HOME:$PATH"
 
-# NCL NCAR command language (had trouble getting it to work on Mac with conda, 
+# NCL NCAR command language (had trouble getting it to work on Mac with conda,
 # but on Linux distributions seems to work fine inside anaconda)
 # The Euclid/Gauss servers do not have NCL, so need to use conda
 if $macos; then
   alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
   export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
   export NCARG_ROOT="$HOME/ncl" # critically necessary to run NCL
-    # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends 
-    # up in above path after brew install gcc49... and must install this rather than gcc, which 
+    # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends
+    # up in above path after brew install gcc49... and must install this rather than gcc, which
     # loads libgfortran.3.dylib and yields gcc version 7
 elif [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
   export NCARG_ROOT="/usr/local"
@@ -254,7 +255,7 @@ fi
 # Simple/quick aliases, often just change default behavior
 # * See the README; found the default LSCOLOR for mac, and roughly converted it
 #   to be identical in SSH sessions
-# * Run "dircolors" to output commands to set up current default LS_COLORS on 
+# * Run "dircolors" to output commands to set up current default LS_COLORS on
 #   Linux macthine. The default Mac LSCOLORS can be found in easy google search.
 # * The commented-out export gives ls styles of Linux default, excluding filetype-specific ones
 # * This page: https://geoff.greer.fm/lscolors/ gives easy conversion from BSD to
@@ -297,9 +298,9 @@ function identical() { diff -sq $@ | grep identical; }
   # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
-function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; ps | grep "$1" | cut -d' ' -f1 | xargs; }
+function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
   # list jobs by name
-function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | cut -d' ' -f1 | xargs); }
+function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
   # kill jobs by name
 # function killjobs() { kill $(jobs -p); }
 #   # kill all background processes (sent to background with &)
@@ -521,7 +522,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   echo "Copying $file from home server to this server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$p ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
-# Copy <file> on this server to another server, preserving full path but 
+# Copy <file> on this server to another server, preserving full path but
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
 # each and then subfolders with same experiment name
 function ccp() {

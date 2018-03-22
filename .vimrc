@@ -8,7 +8,7 @@
 " the enter key e.g. in an <expr>, and `\<CR\>` is always a literal string containing `<CR>`.
 "------------------------------------------------------------------------------
 "BUTT-TONS OF CHANGES
-augroup SECTION1
+augroup SECTION1 "a comment
 augroup END
 "------------------------------------------------------------------------------
 "NOCOMPATIBLE -- changes other stuff, so must be first
@@ -642,7 +642,6 @@ function! s:texmacros()
   nnoremap <buffer> viQ T`vt'
   "Delimiters (advanced)/quick environments
   "First the delimiters without newlines
-  call s:delims(',', '\begin{center}', '\end{center}', 1) "because , was available
   call s:delims('\|', '\left\\|', '\right\\|', 1)
   call s:delims('{', '\left\{', '\right\}', 1)
   call s:delims('(', '\left(', '\right)', 1)
@@ -720,6 +719,7 @@ function! s:texmacros()
   "The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
   "with default single column; see: https://tex.stackexchange.com/a/366422/73149
   "Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
+  call s:delimscr(';', '\begin{center}', '\end{center}') "because ; was available
   call s:delimscr('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
@@ -1709,11 +1709,15 @@ nnoremap <Leader>S :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
 " au FileType bib nnoremap <buffer> <Leader>X :g/^\s*\(abstract\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=/d<CR>
 " nnoremap <Leader>x :g//d<Left><Left>
-nnoremap <Leader>Z :s/\(^ *\)\@<! \{2,}/ /g<CR>
+nnoremap <Leader>q :s/\(^ *\)\@<! \{2,}/ /g<CR>
   "replace consecutive spaces on current line
-nnoremap <Leader>x :%s/\(\n\n\)\n\+/\1/gc<CR>
+nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
   "replace consecutive newlines with single newline
-nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+nnoremap <expr> <Leader>x ':%s/\s\+$//gc<CR>'
+  "replace trailing whitespace
+nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
   "replace commented lines
 function! s:cutmaps()
   nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
