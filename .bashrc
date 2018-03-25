@@ -157,6 +157,21 @@ if $macos; then
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
 
 else
+  # OLBERS OPTIONS
+  if [ "$HOSTNAME" == "olbers" ]; then
+    # Add netcdf4 executables to path, for ncdump
+    export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
+    export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
+    # And HDF5 utilities (not needed now, but maybe someday)
+    export PATH="/usr/local/hdf5/bin:$PATH"
+    # And MPICH utilities
+    export PATH="/usr/local/mpich3/bin:$PATH"
+    # And PGI utilities
+    export PATH="/opt/pgi/linux86-64/2017/bin:$PATH"
+    # And edit library path
+    export LD_LIBRARY_PATH=/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib
+  fi
+
   # GAUSS OPTIONS
   if [ "$HOSTNAME" == "gauss" ]; then
     # Basics
@@ -193,21 +208,6 @@ else
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
   fi
-
-  # OLBERS OPTIONS
-  if [ "$HOSTNAME" == "olbers" ]; then
-    # Add netcdf4 executables to path, for ncdump
-    export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
-    export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
-    # And HDF5 utilities (not needed now, but maybe someday)
-    export PATH="/usr/local/hdf5/bin:$PATH"
-    # And MPICH utilities
-    export PATH="/usr/local/mpich3/bin:$PATH"
-    # And PGI utilities
-    export PATH="/opt/pgi/linux86-64/2017/bin:$PATH"
-    # And edit library path
-    export LD_LIBRARY_PATH=/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib
-  fi
 fi
 
 # SAVE SIMPLE PATH FOR HOMEBREW
@@ -217,6 +217,14 @@ alias brew="PATH=$SIMPLEPATH brew"
 
 # EXECUTABLES IN HOME DIRECTORY
 export PATH="$HOME:$PATH"
+
+# ISCA modeling stuff
+if [[ "$HOSTNAME" == "monde" ]]; then # so far only set up there
+  export GFDL_BASE=$HOME/isca
+  export GFDL_ENV=monde # "environment" configuration for emps-gv4
+  export GFDL_WORK=/mdata1/ldavis/isca_work # temporary working directory used in running the model
+  export GFDL_DATA=/mdata1/ldavis/isca_data # directory for storing model output
+fi
 
 # NCL NCAR command language (had trouble getting it to work on Mac with conda,
 # but on Linux distributions seems to work fine inside anaconda)
