@@ -441,7 +441,8 @@ function disconnect() {
   fi
   # Disable the connection
   echo "Cancelling port-forwarding over port $jupyterdisconnect."
-  lsof -t -i tcp:$jupyterdisconnect | xargs kill
+  # lsof -t -i tcp:$jupyterdisconnect | xargs kill # this can accidentally kill Chrome instance
+  lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs kill
   [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"$jupyterdisconnect\"."
 }
 
@@ -663,7 +664,8 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+  args=($@) args=(${args[@]:2}) # extra arguments
+  cdo infon $args -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
     # this procedure is ideal for "sanity checks" of data; just test one
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
@@ -672,7 +674,8 @@ function ncvardatafull() { # as above but show everything
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null
+  args=($@) args=(${args[@]:2}) # extra arguments
+  cdo infon $args -seltimestep,1 -selname,"$1" "$2" 2>/dev/null
 }
 # Extract generalized files
 function extract() {
