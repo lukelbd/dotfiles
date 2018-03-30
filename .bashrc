@@ -442,8 +442,10 @@ function disconnect() {
   # Disable the connection
   echo "Cancelling port-forwarding over port $jupyterdisconnect."
   # lsof -t -i tcp:$jupyterdisconnect | xargs kill # this can accidentally kill Chrome instance
-  lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs kill
-  [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"$jupyterdisconnect\"."
+  local ports=($(lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs))
+  [ -z $ports ] && echo "ERROR: Connection over port \"${jupyterdisconnect}\" not found." && return 1
+  kill ${ports[@]} # kill the SSH processes
+  [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"${jupyterdisconnect}\"."
 }
 
 ################################################################################
