@@ -56,14 +56,21 @@ function help() {
 }
 function man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-  # We test the second line of manpage
-  # if command man $1 | grep "^BUILTIN(1)" &>/dev/null; then
-  if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
-    [ $1 == "builtin" ] && local search=$1 || local search=bash
-    LESS=-p"^ *$1 \[.*$" command man $search
+  # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
+  # show as first line BASH_BUILTINS(1); so we search the first two lines
+  # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+  if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
+    if $macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
+      [ $1 == "builtin" ] && local search=$1 || local search=bash
+    else local search=$1 # linux shows all info necessary, just have to find it
+    fi
+    echo "Searching for stuff in ${search}."
+    LESS=-p"^ *${1}.*\[.*$" command man $search
+    # LESS=-p"^ *$1 \[.*$" command man $search
   elif ! command man $1 &>/dev/null; then
     echo "No man entry for \"$1\"."
   else
+    echo "Item has own man page."
     command man $1
   fi
 }
@@ -666,8 +673,10 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  args=($@) args=(${args[@]:2}) # extra arguments
-  cdo infon $args -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+  local args=($@)
+  local args=(${args[@]:2}) # extra arguments
+  echo ${args[@]}
+  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
     # this procedure is ideal for "sanity checks" of data; just test one
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
@@ -676,8 +685,11 @@ function ncvardatafull() { # as above but show everything
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  args=($@) args=(${args[@]:2}) # extra arguments
-  cdo infon $args -seltimestep,1 -selname,"$1" "$2" 2>/dev/null
+  local args=($@)
+  local args=(${args[@]:2}) # extra arguments
+  echo ${args[@]}
+  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2"
+  # 2>/dev/null
 }
 # Extract generalized files
 function extract() {
