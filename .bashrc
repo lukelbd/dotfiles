@@ -389,12 +389,22 @@ alias R="colorize R"
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
 #   and you can right-click refresh for a hard reset, cache reset
-alias jtheme="jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10"
+alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
 jupyterready=false # theme is not initially setup because takes a long time
+function jupytertheme() {
+  themes=($(jt -l)) themes=(${themes[@]:2}) # possible themes
+  if [ ! -z $1 ]; then
+    [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "ERROR: Theme $1 is invalid; choose from ${themes[@]}." && return 1
+    args="-t $1" # use custom theme
+  else args="-t grade3" # default
+  fi
+  [ ! -z $2 ] && args+="-f $2" || args+="-f meslo"
+  jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 $args
+}
 function notebook() {
   # Set the jupyter theme
   echo "Configuring jupyter notebook theme."
-  ! $jupyterready && $jtheme # make it callable from command line
+  ! $jupyterready && $jupytertheme # make it callable from command line
   jupyterready=true # this value is available for rest of session
   # Test the hostname and get unique port we have picked
   if [ ! -z $1 ]; then
@@ -447,12 +457,12 @@ function disconnect() {
     return 1
   fi
   # Disable the connection
-  echo "Cancelling port-forwarding over port $jupyterdisconnect."
   # lsof -t -i tcp:$jupyterdisconnect | xargs kill # this can accidentally kill Chrome instance
   local ports=($(lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs))
   [ -z $ports ] && echo "ERROR: Connection over port \"${jupyterdisconnect}\" not found." && return 1
   kill ${ports[@]} # kill the SSH processes
   [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"${jupyterdisconnect}\"."
+  echo "Connection over port ${jupyterdisconnect} removed."
 }
 
 ################################################################################
