@@ -392,14 +392,13 @@ alias R="colorize R"
 alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
 jupyterready=false # theme is not initially setup because takes a long time
 function jupytertheme() {
+  local args="" # initialize empty variable
+  local defaults=(chesterish cousine) # defaults
   themes=($(jt -l)) themes=(${themes[@]:2}) # possible themes
-  if [ ! -z $1 ]; then
-    [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "ERROR: Theme $1 is invalid; choose from ${themes[@]}." && return 1
-    args="-t $1 " # use custom theme
-  else args="-t grade3 " # default
-  fi
-  [ ! -z $2 ] && args+="-f $2" || args+="-f meslo"
-  jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 $args
+  [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "ERROR: Theme $1 is invalid; choose from ${themes[@]}." && return 1
+  [ ! -z $1 ] && local args+="-t $1 " || local args+="-t ${defaults[0]} " # default
+  [ ! -z $2 ] && local args+="-f $2 " || local args+="-f ${defaults[1]} " # best are cousine, office
+  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 $args
 }
 function notebook() {
   # Set the jupyter theme
