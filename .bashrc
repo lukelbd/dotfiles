@@ -395,8 +395,8 @@ function jupytertheme() {
   themes=($(jt -l)) themes=(${themes[@]:2}) # possible themes
   if [ ! -z $1 ]; then
     [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "ERROR: Theme $1 is invalid; choose from ${themes[@]}." && return 1
-    args="-t $1" # use custom theme
-  else args="-t grade3" # default
+    args="-t $1 " # use custom theme
+  else args="-t grade3 " # default
   fi
   [ ! -z $2 ] && args+="-f $2" || args+="-f meslo"
   jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 $args
