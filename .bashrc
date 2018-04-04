@@ -295,9 +295,12 @@ alias cd="cd -P" # -P follows physical location
 alias ps="ps" # processes in this shell
 alias pt="top" # table of processes, total
 alias pc="mpstat -P ALL 1" # list individual core usage
-alias type="type -a"  # show ALL instances of path/function/variable/file
-alias which="which -a" # same
+alias gf="grep -rn ." # grep files; input string then directory location, n says to show line number
+alias ff="find . -name" # find files; input a quoted glob pattern
+alias dd="diff --brief --strip-trailing-cr -r" # difference directories; input two directory names
 alias grep="grep --color=auto" # show color
+alias type="type -a" # show all instances of path/function/variable/file
+alias which="which -a" # same
 
 # More complex aliases and functions
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
@@ -393,7 +396,9 @@ alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
 jupyterready=false # theme is not initially setup because takes a long time
 function jupytertheme() {
   local args="" # initialize empty variable
-  local defaults=(chesterish cousine) # defaults
+  local defaults=(gruvboxd cousine) # chesterish is best; monokai has green/pink theme;
+    # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
+    # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
   themes=($(jt -l)) themes=(${themes[@]:2}) # possible themes
   [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "ERROR: Theme $1 is invalid; choose from ${themes[@]}." && return 1
   [ ! -z $1 ] && local args+="-t $1 " || local args+="-t ${defaults[0]} " # default
@@ -422,7 +427,7 @@ function notebook() {
     # need to extend data rate limit when making some plots with lots of stuff
 }
 # See current ssh connections
-alias connections="ps aux | grep ssh"
+alias connections="ps aux | grep -v grep | grep ssh"
 # Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
   [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
@@ -525,7 +530,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   local p=$port # default port
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable."
+  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
   local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
   local dest="${dest/#$HOME/~}"  # restore expanded tilde
@@ -540,7 +545,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   local p=$port # default port
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable."
+  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
   local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
   local file="${file/#$HOME/~}"  # restore expanded tilde
@@ -557,7 +562,7 @@ function ccp() {
   local p=$port # default port
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable."
+  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
   local server=${@:(-1):1} # the last one
   local file=${@:(-2):1} # the 2nd to last
   if [[ "${file:0:1}" != "/" ]]; then
