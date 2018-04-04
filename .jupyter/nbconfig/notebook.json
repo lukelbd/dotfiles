@@ -47,7 +47,11 @@
     "moveMenuLeft": false,
     "colors": {
       "selected_highlight": "#fff968",
-      "hover_highlight": "#ece260"
+      "hover_highlight": "#ece260",
+      "wrapper_background": "#ffffff",
+      "sidebar_border": "#ffffff",
+      "navigate_num": "#000000",
+      "navigate_text": "#000000"
     }
   },
   "keys": {
