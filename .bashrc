@@ -97,6 +97,7 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 
 # Editor stuff
 # Use this for watching log files
+alias vi="vim -u NONE -c \"syntax on | filetype plugin on | filetype indent on\""
 alias watch="less +F" # actually already is a watch command
 # Thought about wrapping vim alias in function "tmux set-option mode-mouse off" but realized
 # this option would become GLOBAL to other panes, which don't necessarily want
@@ -162,10 +163,12 @@ if $macos; then
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
   # Homebrew
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
-
+  # PGI compilers
+  export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
 else
+  case $HOSTNAME in
   # OLBERS OPTIONS
-  if [ "$HOSTNAME" == "olbers" ]; then
+  olbers)
     # Add netcdf4 executables to path, for ncdump
     export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
     export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
@@ -177,10 +180,8 @@ else
     export PATH="/opt/pgi/linux86-64/2017/bin:$PATH"
     # And edit library path
     export LD_LIBRARY_PATH=/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib
-  fi
-
   # GAUSS OPTIONS
-  if [ "$HOSTNAME" == "gauss" ]; then
+  ;; gauss)
     # Basics
     export PATH=""
     export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
@@ -192,10 +193,8 @@ else
     export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
-  fi
-
   # EUCLID OPTIONS
-  if [ "$HOSTNAME" == "euclid" ]; then
+  ;; euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     export PATH=""
     export PATH="/usr/local/bin:/usr/bin:/bin$PATH"
@@ -203,10 +202,8 @@ else
     export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/local/lib"
-  fi
-
   # MONDE OPTIONS
-  if [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
+  ;; monde*)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     export PATH=""
     export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
@@ -214,7 +211,9 @@ else
     source set_pgi.sh # is in /usr/local/bin
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-  fi
+  # OTHER OPTIONS
+  ;; *) echo "\"HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
+  ;; esac
 fi
 
 # SAVE SIMPLE PATH FOR HOMEBREW
