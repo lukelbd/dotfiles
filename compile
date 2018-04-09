@@ -7,6 +7,7 @@
 #   for every version of the manuscript. If you have more than one .bib file
 #   the function will fail.
 shopt -s nullglob # glob-expand into zero entries
+templates="$HOME/templates" # location of LaTeX templates and style files
 filename="$1" # the current file
 htmlcompile="$2" # option
 if [ -z "$filename" ]; then
@@ -42,6 +43,19 @@ cat "$filename" | grep -v '^ *%' | egrep '\\bibliography{.*}|\\printbibliography
 cat "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null && beamer=true || beamer=false
 $beamer && echo "Beamer presentation detected." && dfilename="" # never want difference files on beamer presentations, duh
 
+# Automatically copy over custom .sty files
+# Will ignore commented out lines; see https://unix.stackexchange.com/a/157607/112647
+packages=($(cat "$filename" | grep -o '^[^%]*' | \
+  grep '^.*\\usepackage' | cut -d'{' -f2 | cut -d'}' -f1))
+for package in ${packages[@]}; do
+  # echo "Searching for ${package}.sty."
+  if ! kpsewhich ${package}.sty &>/dev/null; then # search failed
+  else
+    echo "Package ${package}.sty not found in templates folder."
+  fi
+done
+exit
+
 # Set the flags for compiling
 # * Nonstop mode means no interaction, but keep trying to compile if encounter errors.
 # * The shellescape option helps use eps figures that aren't in actual .tex directory.
@@ -75,7 +89,7 @@ function cleanup() {
 #   bibtex <file>.aux), then run TWICE as before.
 # * See this page for matching consecutive lines with SED:
 #   https://unix.stackexchange.com/q/165362/112647
-$beamer && latex=xelatex || latex=pdflatex # some fancy .sty beamer packages need xelates
+$beamer && latex=xelatex || latex=pdflatex # some fancy .sty beamer packages need xelatex
 latex=pdflatex
 bibtex=bibtex
 if $bibliography; then
