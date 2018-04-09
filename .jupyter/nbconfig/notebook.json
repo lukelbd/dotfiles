@@ -78,7 +78,11 @@
         "shift-p": "jupyter-notebook:paste-cell-above",
         "i": "jupyter-notebook:enter-edit-mode",
         "r": "jupyter-notebook:rename-notebook",
-        "d": "jupyter-notebook:cut-cell"
+        "d": "jupyter-notebook:cut-cell",
+        "shift-t": "jupyter-notebook:toggle-cell-output-scrolled",
+        "t": "jupyter-notebook:toggle-cell-output-collapsed",
+        "shift-o": "jupyter-notebook:insert-cell-above",
+        "o": "jupyter-notebook:insert-cell-below"
       }
     }
   },
