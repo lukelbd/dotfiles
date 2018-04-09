@@ -823,7 +823,7 @@ endfunction
 "Function for loading templates
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
 function! s:textemplates()
-  let templates=split(globpath('~/templates/', '*.tex'),"\n")
+  let templates=split(globpath('~/latex/', '*.tex'),"\n")
   let names=[]
   for template in templates
     call add(names, '"'.fnamemodify(template, ":t:r").'"')
@@ -832,7 +832,7 @@ function! s:textemplates()
   endfor
   while 1
     echo "Current templates available: ".join(names, ", ")."."
-    let template=expand("~")."/templates/".input("Enter choice: ").".tex"
+    let template=expand("~")."/latex/".input("Enter choice: ").".tex"
     if filereadable(template)
       execute "0r ".template
       break
