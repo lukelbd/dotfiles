@@ -220,6 +220,7 @@ fi
 export SIMPLEPATH=$PATH
 alias brew="PATH=$SIMPLEPATH brew"
 # brew conflicts with anaconda (try "brew doctor" to see); keep those out of path
+# isn't this insanely fucking clever? yay me.
 
 # EXECUTABLES IN HOME DIRECTORY
 export PATH="$HOME:$PATH"
@@ -297,11 +298,15 @@ alias pc="mpstat -P ALL 1" # list individual core usage
 alias gf="grep -rn ." # grep files; input string then directory location, n says to show line number
 alias ff="find . -name" # find files; input a quoted glob pattern
 alias dd="diff --brief --strip-trailing-cr -r" # difference directories; input two directory names
+
+# Simple option overrides
 alias grep="grep --color=auto" # show color
 alias type="type -a" # show all instances of path/function/variable/file
 alias which="which -a" # same
 
 # More complex aliases and functions
+alias shameonme="touch -mt"
+  # changes the last modified date on a file to specified YYYYMMDDhhmm format
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
   # prints the keybindings
 alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
@@ -470,34 +475,79 @@ function disconnect() {
 
 ################################################################################
 # Session management
-################################################################################
-# iTerm2 window title
-function iterm { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
-
-# Declare some names for active servers
-# alias olbers='ssh -XC ldavis@129.82.49.1'
-# export ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-export work='ldavis@10.83.16.91' # for scp'ing into my Mac
-export home='ldavis@10.253.201.216'
-export gauss='ldavis@gauss.atmos.colostate.edu'
-export monde='ldavis@monde.atmos.colostate.edu'
-export euclid='ldavis@euclid.atmos.colostate.edu'
-export olbers='ldavis@olbers.atmos.colostate.edu'
-export zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-export archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
-export ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
-# export archive='/media/archives/reanalyses/era_interim/'
-# export olbers='ldavis@129.82.49.159'
-
-# Preface: enabling FILES WITH SPACES is tricky, need: https://stackoverflow.com/a/20364170/4970632
+# Note: enabling files with spaces is tricky, need: https://stackoverflow.com/a/20364170/4970632
 # 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
 # destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
 # 2) Another weird thing; note we must ESCAPE TILDE IN A PARAMETER EXPANSION, even
 # though this is not necessary in double quotes alone; makes sense... maybe...
-# 3) BEWARE: replacing string with tilde in parameter expansion seems to behave DIFFERENTLY
+# 3) BEWARE: replacing string with tilde in parameter expansion behaves DIFFERENTLY
 # ACROSS DIFFERENT VERSIONS OF BASH. Test this with foo=~/data, foobar="${foo/#$HOME/~}".
 #   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
+################################################################################
+# iTerm2 window title
+function iterm() { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
+
+# Declare some names for active servers
+# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+work='ldavis@10.83.16.91' # for scp'ing into my Mac
+home='ldavis@10.253.201.216'
+gauss='ldavis@gauss.atmos.colostate.edu'
+monde='ldavis@monde.atmos.colostate.edu'
+euclid='ldavis@euclid.atmos.colostate.edu'
+olbers='ldavis@olbers.atmos.colostate.edu'
+zephyr='lukelbd@zephyr.meteo.mcgill.ca'
+archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
+ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
+# archive='/media/archives/reanalyses/era_interim/'
+# olbers='ldavis@129.82.49.159'
+
+# Functions for executing stuff on remote servers
+# Note git pull will fail if the merge is anything other than
+# a fast-forward merge (e.g. modifying multiple files); otherwise
+# need to commit local changes first
+function figuresync() {
+  # For now this function is designed specifically for one project; for
+  # future projects can modify it
+  # * The exclude-standard flag excludes ignored files listed with 'other' -o flag
+  #   See: https://stackoverflow.com/a/26891150/4970632
+  # * Takes server argument..
+  [ -z "$1" ] && echo "ERROR: Hostname argument required." && return 1
+  local localdir="$HOME/Google Drive/Tau" # local working directory
+  local server="$1" # server
+  case $server in
+    *monde.atmos.colostate.edu)  remotedir="/home/ldavis/working" ;;
+    *euclid.atmos.colostate.edu) remotedir="/birner-home/ldavis/working" ;;
+    *) echo "Hostname \"$server\" is not valid." && return 1;;
+  esac
+  \ssh $server 'cd '"$remotedir"'; git status -s; sleep 2
+    mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
+    ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
+    space="" message="" # initialize message
+    [ $Nmfiles -eq 1 ] && mfigures="figure" || mfigures="figures"
+    [ $Nofiles -eq 1 ] && ofigures="figure" || ofigures="figures"
+    [ $Nmfiles -ne 0 ] && message+="Modified $Nmfiles $mfigures." && space=" "
+    [ $Nofiles -ne 0 ] && message+="${space}Made $Nofiles new $ofigures."
+    if [ ! -z "$message" ]; then
+      echo "Commiting changes with message: \"$message\""
+      git add --all && git commit -q -m "$message" && git push -q
+    else echo "No new figures." && exit 1
+    fi'
+  if [ $? -eq 0 ]; then # non-zero exit code
+    echo "Pulling changes to macbook."
+    cd "$localdir" && git pull # attempt pull
+  fi
+# Method using read command
+#   local commands # create local commands variable; https://stackoverflow.com/a/23991919/4970632
+#   read -r -d '' commands << EOF
+# commands go here
+# EOF
+#   \ssh $server "$commands"
+# Method using multiline string 
+# \ssh $server "command 1
+#   command 2
+#   command 3"
+}
 
 # Functions for scp-ing from local to remote, and vice versa
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
@@ -507,7 +557,7 @@ export ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
 #   * Note this has nice side-effect of eliminating annoying "banner message"
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
-alias ssh="ssh_wrapper" # must be an alias or will fail!
+alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
 function ssh_wrapper() {
   [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
   port=10000 # starting port
@@ -760,20 +810,21 @@ alias weather="curl wttr.in/Fort\ Collins" # list weather information
 function sdsync() {
   # Behavior option: check for modified files?
   # Only problem: file "modified" every time transferred to SD card
+  shopt -u nullglob # no nullglob
   updateold=true
   # Can change this, but default will be to sync playlist
   sdcard="NO NAME" # edit when get new card
   sdloc="/Volumes/$sdcard/Playlist" # sd data
-  locloc="$HOME/Google Drive/Playlist" # local data
+  locloc="$HOME/Playlist" # local data
   echo "SD Location: $sdloc"
   echo "Local location: $locloc"
   # Iterate through local files
   copied=false # copied anything?
   updated=false # updated anything?
   deleted=false # deleted anything?
-  shopt -s nullglob
   $macos && date=gdate || date=date
   for path in "$locloc/"*.{mp3,m4a,m3u8}; do
+    [ ! -r "$path" ] && continue # e.g. if glob failed
     file="${path##*/}"
     if [ ! -r "$sdloc/$file" ]; then
       copied=true # record
@@ -803,7 +854,8 @@ function sdsync() {
   $copied || echo "No new files found."
   $updated || echo "No recently modified files found."
   # Iterate through remote files
-  for path in "$sdloc/"*.{mp3,m4a,m3ua}; do
+  for path in "$sdloc/"*.{mp3,m4a,m3u8}; do
+    [ ! -r "$path" ] && continue # e.g. if glob failed
     file="${path##*/}"
     if [ ! -r "$locloc/$file" ]; then
       deleted=true # record
