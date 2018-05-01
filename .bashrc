@@ -324,11 +324,17 @@ function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." &&
   # list jobs by name
 function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
   # kill jobs by name
-# function killjobs() { kill $(jobs -p); }
-#   # kill all background processes (sent to background with &)
-#   # this function only works if sent to background from shell directly, not from script
-function gif2png() { for f in "$@"; do convert "$f" "${f%.gif}.png"; done; }
+function gif2png() { for f in "$@"; do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"; done; }
   # often needed because LaTeX can't read gif files
+function pdf2tiff() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && convert -flatten -units PixelsPerInch -density 1200 $f ${f%.pdf}.tiff; done; }
+function pdf2png() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && convert -flatten -units PixelsPerInch -density 1200 $f ${f%.pdf}.png; done; }
+function pdf2eps() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"; done; }
+  # flatten gets rid of transparency/renders it against white background, and the units/density specify
+  # a 300dpi resulting .tiff file; another option is "-background white -alpha remove", try this
+  # the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text
+# function pdf2flat() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && convert -flatten $f ${f%.pdf}-flat.pdf; done; }
+  # imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
+  # cannot flatten with this approach
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -485,8 +491,10 @@ function disconnect() {
 #   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
-# iTerm2 window title
-function iterm() { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
+# Set the iTerm2 window title; doesn't work
+# function iterm() { title="$*"; echo -ne "\033]0;"$title"\007"; } # name terminal title (also, Cmd-I from iterm2)
+# [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
+# iterm "$title" # create title
 
 # Declare some names for active servers
 # ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
@@ -512,6 +520,7 @@ function figuresync() {
   # * The exclude-standard flag excludes ignored files listed with 'other' -o flag
   #   See: https://stackoverflow.com/a/26891150/4970632
   # * Takes server argument..
+  extramessage="$2" # may be empty
   [ -z "$1" ] && echo "ERROR: Hostname argument required." && return 1
   local localdir="$HOME/Google Drive/Tau" # local working directory
   local server="$1" # server
@@ -523,11 +532,12 @@ function figuresync() {
   \ssh $server 'cd '"$remotedir"'; git status -s; sleep 2
     mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
     ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
-    space="" message="" # initialize message
+    space1="" space2="" message="" # initialize message
     [ $Nmfiles -eq 1 ] && mfigures="figure" || mfigures="figures"
     [ $Nofiles -eq 1 ] && ofigures="figure" || ofigures="figures"
-    [ $Nmfiles -ne 0 ] && message+="Modified $Nmfiles $mfigures." && space=" "
-    [ $Nofiles -ne 0 ] && message+="${space}Made $Nofiles new $ofigures."
+    [ $Nmfiles -ne 0 ] && message+="Modified $Nmfiles $mfigures." && space1=" "
+    [ $Nofiles -ne 0 ] && message+="${space1}Made $Nofiles new $ofigures." && space2=" "
+    [ ! -z "'"$extramessage"'" ] && message+="${space2}'"$extramessage"'"
     if [ ! -z "$message" ]; then
       echo "Commiting changes with message: \"$message\""
       git add --all && git commit -q -m "$message" && git push -q

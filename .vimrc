@@ -158,6 +158,8 @@ au CmdwinLeave * setlocal laststatus=2
   "don't diable q; have that remapped to show window
 " noremap `` @@
 " noremap , @1
+noremap " :echo "Setting mark q."<CR>mq
+noremap ' `q
 map s <Nop>
   "will use the s-prefix for SPELLING commands and SPELLCHECK stuff; never use
   "s for substitute anyway
@@ -687,20 +689,22 @@ function! s:texmacros()
   call s:delims('f', '\dfrac{', '}{}', 1)
   call s:delims('0', '\frametitle{', '}', 1)
   call s:delims('1', '\section{', '}', 1)
-  call s:delims('2', '\section*{', '}', 1)
-  call s:delims('3', '\subsection{', '}', 1)
-  call s:delims('4', '\subsection*{', '}', 1)
-  call s:delims('5', '\subsubsection{', '}', 1)
+  call s:delims('2', '\subsection{', '}', 1)
+  call s:delims('3', '\subsubsection{', '}', 1)
+  call s:delims('4', '\section*{', '}', 1)
+  call s:delims('5', '\subsection*{', '}', 1)
   call s:delims('6', '\subsubsection*{', '}', 1)
   "Shortcuts for citations and such
-  call s:delims('z', '\note{', '}', 1) "extra
-  call s:delims('Z', '\strikeoue{', '}', 1) "extra
-  call s:delims('a', '\caption{', '}', 1) "amazingly a not used yet
-  call s:delims('C', '\parencite{', '}', 1)
-  call s:delims('c', '\textcite{', '}', 1)
-  call s:delims('r', '\autoref{', '}', 1) "autoref is part of hyperref package;
-  call s:delims('R', '\label{', '}', 1) "to declare labels that autoref points to
+  call s:delims('7', '\ref{', '}', 1) "just the number
+  call s:delims('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
+  call s:delims('9', '\label{', '}', 1) "declare labels that ref and autoref point to
   call s:delims('*', '\tag{', '}', 1) "change the default 1-2-3 ordering; common to use *
+  call s:delims('z', '\note{', '}', 1) "extra
+  call s:delims('Z', '\strikeout{', '}', 1) "extra
+  call s:delims('a', '\caption{', '}', 1) "amazingly a not used yet
+  call s:delims('c', '\cite{', '}', 1) "most common
+  call s:delims('C', '\citet{', '}', 1) "second most common one
+    "other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Shortcut for graphics
   call s:delims('g', '\includegraphics[width=\textwidth]{', '}', 1)
   call s:delims('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1) "center across margins
@@ -755,6 +759,11 @@ function! s:texmacros()
   inoremap <expr> <buffer> .= '\overline{'.nr2char(getchar()).'}'
   " inoremap <expr> <buffer> .M '\mathcal{'.nr2char(getchar()).'}'
   " inoremap <expr> <buffer> .N '\mathbb{'.nr2char(getchar()).'}'
+  "Arrows
+  inoremap <buffer> ., \pause
+  inoremap <buffer> ., \pause
+  inoremap <buffer> ., \pause
+  inoremap <buffer> ., \pause
   "Misc symbotls
   inoremap <buffer> ., \pause
   inoremap <buffer> .i \item 
