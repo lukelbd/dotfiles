@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# May need bash 4
 # This script compile LaTeX documents on macOS
 # * Will compile a RTF version of document if filename is specially
 #   formatted like manuscriptYYYY-MM-DD.tex
@@ -25,12 +26,6 @@ if [ ! -r "$filename" ]; then
   exit 1
 fi
 
-# Helper function
-function remove() {
-  [ -r "$1" ] && [ "$(realpath "$(pwd)")" != "$(realpath $templates)" ] \
-    && rm "$1" # removes .sty or .bst file if not in template directory
-}
-
 # Initial stuff
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   directory="${filename%/*}" # trim shortest pattern matching <stuff>/*, keep "stuff"
@@ -54,53 +49,92 @@ cat "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null \
 cat "$filename" | grep 'fontspec' &>/dev/null \
   && latex=xelatex && dfilename="" && htmlcompile=false
 
-# Automatically copy over custom .sty files
-# Will ignore commented out lines; see https://unix.stackexchange.com/a/157607/112647
-# Will also detect \usepackage{package1,package2} lists
-packages=($(cat "$filename" | grep -o '^[^%]*' |  grep '^.*\\usepackage' \
-  | cut -d'{' -f2 | cut -d'}' -f1 | tr ',' ' ' | xargs))
-# for f in *.sty; do echo $f; done
-for package in ${packages[@]}; do
-  # Potentially delete local .sty file to 'refresh' things
-  # May comment this out in future
-  # remove "./${package}.sty"
-  # Find packages and potentially copy from custom directory
-  if ! kpsewhich ${package}.sty &>/dev/null; then # search failed
-    if [ -r "${templates}/${package}.sty" ]; then
-      echo "Copying \"${package}.sty\" from latex directory to current directory."
-      cp "${templates}/${package}.sty" ./
-    else
-      echo "Package \"${package}.sty\" not found in latex directory or with kpsewhich."
-      exit 1
+################################################################################
+# Manage all LaTeX files, and move them around if necessary
+################################################################################
+# Helper function for removing stuff
+function remove() {
+  [ -r "$1" ] && [ "$(realpath "$(pwd)")" != "$(realpath $templates)" ] \
+    && rm "$1" # removes .sty or .bst file if not in template directory
+}
+
+# Helper function for finding stuff
+# * Supply with a list of latex-ish file names, then the extension as last argument
+# * Important to call kpsewhich with a list of files rather than calling it
+#   successively; otherwise can be extremely slow, for some strange reason
+function latexfind() {
+  [ $# -eq 1 ] && return 1
+  ext=${!#} # the last argument
+  names=(${@:1:$#-1}) # the previous arguments 
+  files=($(kpsewhich ${names[@]/%/.${ext}})) # append suffix to each file
+  # echo NAMES "${names[@]/%/.${ext}}"
+  # echo FOUND ${files[@]##*/} # show the files found
+  for name in ${names[@]}; do
+    file="${name}.${ext}" # file we want
+    # Potentially delete local file to 'refresh' things
+    # remove ${file}
+    # Determine location and stuff
+    if [[ ${files[@]} =~ $file ]]; then # search succeeded
+      if [[ " ${files[@]}" =~ " ./${name}.${ext}" ]]; then # is in cd
+        echo "Using \"${file}\" from current directory."
+      else
+        echo "Using \"${file}\" from TeXLive distribution."
+      fi
+    else # search failed
+      if [ -r "${templates}/${file}" ]; then
+        echo "Copying \"${file}\" from latex directory to current directory."
+        cp "${templates}/${file}" ./
+      else
+        echo "File \"${file}\" not found in latex directory or with kpsewhich."
+        exit 1
+      fi
     fi
-  elif [ -r "./${package}.sty" ]; then
-    echo "Using \"${package}.sty\" from current directory."
-  else
-    echo "Using \"${package}.sty\" from TeXLive distribution."
-  fi
-done
+  done
+}
+
+# Automatically detect custom .cls file and copy it over
+# Will ignore commented out lines; see https://unix.stackexchange.com/a/157607/112647
+class=($(cat "$filename" | grep -o '^[^%]*' | grep '^.*\\documentclass' |
+  cut -s -d'{' -f2 | cut -s -d'}' -f1 ))
+[ ${#class[@]} -gt 1 ] && echo "ERROR: Ambiguous document class." && exit 1
+latexfind $class cls
+
+# As above but for the RequirePackage lines in the .cls file
+# * Have encountered a RequirePackage inside AtEndOfClass, so we also account for that
+# * Also must delete stuff inside [] to account for possible nested {} argument
+#   found there; see the regex from here: https://unix.stackexchange.com/a/14840/112647
+# * Then we ignore lines with stray brackets; see https://stackoverflow.com/a/17050349/4970632
+#   for how to do this with awk; for some reason sed wouldn't work, but gsed did work
+# * Finally need to account for newcommand with RequirePackage inside it, which we
+#   do by deleting lines containing a '#' character
+# * Note this is *incomplete*, as it cannot handle multi-line requirepackage
+#   commands which happens sometimes.
+classfile=$(kpsewhich ${class}.cls)
+[ -z $classfile ] && echo "ERROR: Could not find class file ${class}.cls" && exit 1
+rpackages=($(cat "$classfile" | grep -o '^[^%]*' | grep '^.*\\RequirePackage' \
+  | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
+  | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
+  | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs)) # | awk '!/\[|\]/'
+latexfind ${rpackages[@]} sty
+
+# As above but for .sty files
+# Will also detect \usepackage{package1,package2} lists
+packages=($(cat "$filename" | grep -o '^[^%]*' |  egrep '^.*\\usepackage|^.*\\templatetype' \
+  | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
+  | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
+  | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs))
+latexfind ${packages[@]} sty
 
 # As above but for .bst file
-bibstyle=($(cat "$filename" | grep -o '^[^%]*' | \
-  grep '^.*\\bibliographystyle' | cut -d'{' -f2 | cut -d'}' -f1))
-if [ ! -z $bibstyle ]; then
-  [ ${#bibstyle[@]} -gt 1 ] && echo "More than one bibliographystyle found." && exit 1
-  remove "./${bibstyle}.bst"
-  if ! kpsewhich ${bibstyle}.bst &>/dev/null; then # search failed
-    if [ -r "${templates}/${bibstyle}.bst" ]; then
-      echo "Copying \"${bibstyle}.bst\" from latex directory to current directory."
-      cp "${templates}/${bibstyle}.bst" ./
-    else
-      echo "Bibliography style \"${bibstyle}.bst\" not found in latex directory or with kpsewhich."
-      exit 1
-    fi
-  elif [ -r "./${bibstyle}.bst" ]; then
-    echo "Using \"${bibstyle}.bst\" from current directory."
-  else
-    echo "Using \"${bibstyle}.bst\" from TeXLive distribution."
-  fi
-fi
+bibstyle=($(cat "$filename" | grep -o '^[^%]*' \
+  | grep '^.*\\bibliographystyle' \
+  | cut -s -d'{' -f2 | cut -s -d'}' -f1))
+[ ${#bibstyle[@]} -gt 1 ] && echo "More than one bibliographystyle found." && exit 1
+latexfind $bibstyle bst
 
+################################################################################
+# Compile the document and display it
+################################################################################
 # Set the flags for compiling
 # * Nonstop mode means no interaction, but keep trying to compile if encounter errors.
 # * The shellescape option helps use eps figures that aren't in actual .tex directory.
@@ -136,13 +170,15 @@ function cleanup() {
 #   https://unix.stackexchange.com/q/165362/112647
 echo "Compiling with $latex."
 if $bibliography; then
-  echo "Preparing bibliography..."
+  echo "Generating aux file..."
   $latex -draftmode $flags "$filestem" &>/dev/null
+  echo "Generating bibliography..."
   $bibtex "$filestem" #&>/dev/null
 fi
-echo "Typesetting PDF from $filename..."
+echo "Initial pass..."
 $latex -draftmode $flags "$filestem" &>/dev/null
 # $latex $flags "$filestem" 2>&1 | less # simple, use for debuggin
+echo "Final pass..."
 $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
   | grep -A2 '^$' | sed '/^$/d' # the last line matches only triplets created
   # by the second sed line (blank\nmessage\nline#) and inserts '--' between groups of matches
