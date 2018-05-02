@@ -47,7 +47,11 @@
     "moveMenuLeft": false,
     "colors": {
       "selected_highlight": "#fff968",
-      "hover_highlight": "#ece260"
+      "hover_highlight": "#ece260",
+      "wrapper_background": "#ffffff",
+      "sidebar_border": "#ffffff",
+      "navigate_num": "#000000",
+      "navigate_text": "#000000"
     }
   },
   "keys": {
@@ -74,7 +78,11 @@
         "shift-p": "jupyter-notebook:paste-cell-above",
         "i": "jupyter-notebook:enter-edit-mode",
         "r": "jupyter-notebook:rename-notebook",
-        "d": "jupyter-notebook:cut-cell"
+        "d": "jupyter-notebook:cut-cell",
+        "shift-t": "jupyter-notebook:toggle-cell-output-scrolled",
+        "t": "jupyter-notebook:toggle-cell-output-collapsed",
+        "shift-o": "jupyter-notebook:insert-cell-above",
+        "o": "jupyter-notebook:insert-cell-below"
       }
     }
   },
