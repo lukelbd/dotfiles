@@ -4,10 +4,9 @@
 # Check out what is in the system defaults before using this, make sure your $PATH is populated.
 # To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-
 ################################################################################
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
-# Known bug, scp/rsync fail without this line due to greeting message: 
+# Known bug, scp/rsync fail without this line due to greeting message:
 # 1) https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 ################################################################################
@@ -57,14 +56,21 @@ function help() {
 }
 function man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-  # We test the second line of manpage
-  # if command man $1 | grep "^BUILTIN(1)" &>/dev/null; then
-  if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
-    [ $1 == "builtin" ] && local search=$1 || local search=bash
-    LESS=-p"^ *$1 \[.*$" command man $search
+  # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
+  # show as first line BASH_BUILTINS(1); so we search the first two lines
+  # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+  if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
+    if $macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
+      [ $1 == "builtin" ] && local search=$1 || local search=bash
+    else local search=$1 # linux shows all info necessary, just have to find it
+    fi
+    echo "Searching for stuff in ${search}."
+    LESS=-p"^ *${1}.*\[.*$" command man $search
+    # LESS=-p"^ *$1 \[.*$" command man $search
   elif ! command man $1 &>/dev/null; then
     echo "No man entry for \"$1\"."
   else
+    echo "Item has own man page."
     command man $1
   fi
 }
@@ -87,7 +93,12 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
   # see: https://unix.stackexchange.com/a/124408/112647
 # e.g. [[:space:]_-]) = whitespace, underscore, OR dash
 
-# Vim stuff
+# nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+
+# Editor stuff
+# Use this for watching log files
+alias vi="vim -u NONE -c \"syntax on | filetype plugin on | filetype indent on\""
+alias watch="less +F" # actually already is a watch command
 # Thought about wrapping vim alias in function "tmux set-option mode-mouse off" but realized
 # this option would become GLOBAL to other panes, which don't necessarily want
 alias vims="vim -S .session.vim" # for working with obsession
@@ -148,51 +159,16 @@ if $macos; then
   export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
   # LaTeX and X11
   export PATH="/opt/X11/bin:/Library/TeX/texbin:$PATH"
-  # Macports 
+  # Macports
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
   # Homebrew
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
-
+  # PGI compilers
+  export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
 else
-  # GAUSS OPTIONS
-  if [ "$HOSTNAME" == "gauss" ]; then
-    # Basics
-    export PATH=""
-    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
-    # Add all other utilities to path
-    export PATH="/usr/local/netcdf4-pgi/bin:$PATH"
-    export PATH="/usr/local/hdf5-pgi/bin:$PATH"
-    export PATH="/usr/local/mpich3-pgi/bin:$PATH"
-    # And PGI utilities, plus Matlab
-    export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
-    # And edit the library path
-    export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
-  fi
-  
-  # EUCLID OPTIONS
-  if [ "$HOSTNAME" == "euclid" ]; then
-    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH=""
-    export PATH="/usr/local/bin:/usr/bin:/bin$PATH"
-    # PGI utilites, plus Matlab
-    export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
-    # And edit the library path
-    export LD_LIBRARY_PATH="/usr/local/lib"
-  fi
-
-  # MONDE OPTIONS
-  if [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
-    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH=""
-    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
-    # PGI utilites, plus Matlab
-    source set_pgi.sh # is in /usr/local/bin
-    # And edit the library path
-    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-  fi
-
+  case $HOSTNAME in
   # OLBERS OPTIONS
-  if [ "$HOSTNAME" == "olbers" ]; then
+  olbers)
     # Add netcdf4 executables to path, for ncdump
     export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
     export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
@@ -204,26 +180,68 @@ else
     export PATH="/opt/pgi/linux86-64/2017/bin:$PATH"
     # And edit library path
     export LD_LIBRARY_PATH=/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib
-  fi
+  # GAUSS OPTIONS
+  ;; gauss)
+    # Basics
+    export PATH=""
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    # Add all other utilities to path
+    export PATH="/usr/local/netcdf4-pgi/bin:$PATH"
+    export PATH="/usr/local/hdf5-pgi/bin:$PATH"
+    export PATH="/usr/local/mpich3-pgi/bin:$PATH"
+    # And PGI utilities, plus Matlab
+    export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
+    # And edit the library path
+    export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
+  # EUCLID OPTIONS
+  ;; euclid)
+    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    export PATH=""
+    export PATH="/usr/local/bin:/usr/bin:/bin$PATH"
+    # PGI utilites, plus Matlab
+    export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
+    # And edit the library path
+    export LD_LIBRARY_PATH="/usr/local/lib"
+  # MONDE OPTIONS
+  ;; monde*)
+    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    export PATH=""
+    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
+    # PGI utilites, plus Matlab
+    source set_pgi.sh # is in /usr/local/bin
+    # And edit the library path
+    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
+  # OTHER OPTIONS
+  ;; *) echo "\"HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
+  ;; esac
 fi
 
 # SAVE SIMPLE PATH FOR HOMEBREW
 export SIMPLEPATH=$PATH
 alias brew="PATH=$SIMPLEPATH brew"
 # brew conflicts with anaconda (try "brew doctor" to see); keep those out of path
+# isn't this insanely fucking clever? yay me.
 
 # EXECUTABLES IN HOME DIRECTORY
 export PATH="$HOME:$PATH"
 
-# NCL NCAR command language (had trouble getting it to work on Mac with conda, 
+# ISCA modeling stuff
+if [[ "$HOSTNAME" == "monde" ]]; then # so far only set up there
+  export GFDL_BASE=$HOME/isca
+  export GFDL_ENV=monde # "environment" configuration for emps-gv4
+  export GFDL_WORK=/mdata1/ldavis/isca_work # temporary working directory used in running the model
+  export GFDL_DATA=/mdata1/ldavis/isca_data # directory for storing model output
+fi
+
+# NCL NCAR command language (had trouble getting it to work on Mac with conda,
 # but on Linux distributions seems to work fine inside anaconda)
 # The Euclid/Gauss servers do not have NCL, so need to use conda
 if $macos; then
   alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
   export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
   export NCARG_ROOT="$HOME/ncl" # critically necessary to run NCL
-    # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends 
-    # up in above path after brew install gcc49... and must install this rather than gcc, which 
+    # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends
+    # up in above path after brew install gcc49... and must install this rather than gcc, which
     # loads libgfortran.3.dylib and yields gcc version 7
 elif [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
   export NCARG_ROOT="/usr/local"
@@ -252,7 +270,7 @@ fi
 # Simple/quick aliases, often just change default behavior
 # * See the README; found the default LSCOLOR for mac, and roughly converted it
 #   to be identical in SSH sessions
-# * Run "dircolors" to output commands to set up current default LS_COLORS on 
+# * Run "dircolors" to output commands to set up current default LS_COLORS on
 #   Linux macthine. The default Mac LSCOLORS can be found in easy google search.
 # * The commented-out export gives ls styles of Linux default, excluding filetype-specific ones
 # * This page: https://geoff.greer.fm/lscolors/ gives easy conversion from BSD to
@@ -277,11 +295,18 @@ alias cd="cd -P" # -P follows physical location
 alias ps="ps" # processes in this shell
 alias pt="top" # table of processes, total
 alias pc="mpstat -P ALL 1" # list individual core usage
-alias type="type -a"  # show ALL instances of path/function/variable/file
-alias which="which -a" # same
+alias gf="grep -rn ." # grep files; input string then directory location, n says to show line number
+alias ff="find . -name" # find files; input a quoted glob pattern
+alias dd="diff --brief --strip-trailing-cr -r" # difference directories; input two directory names
+
+# Simple option overrides
 alias grep="grep --color=auto" # show color
+alias type="type -a" # show all instances of path/function/variable/file
+alias which="which -a" # same
 
 # More complex aliases and functions
+alias shameonme="touch -mt"
+  # changes the last modified date on a file to specified YYYYMMDDhhmm format
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
   # prints the keybindings
 alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
@@ -295,15 +320,21 @@ function identical() { diff -sq $@ | grep identical; }
   # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
-function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; ps | grep "$1" | cut -d' ' -f1 | xargs; }
+function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
   # list jobs by name
-function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | cut -d' ' -f1 | xargs); }
+function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
   # kill jobs by name
-# function killjobs() { kill $(jobs -p); }
-#   # kill all background processes (sent to background with &)
-#   # this function only works if sent to background from shell directly, not from script
-function gif2png() { for f in "$@"; do convert "$f" "${f%.gif}.png"; done; }
+function gif2png() { for f in "$@"; do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"; done; }
   # often needed because LaTeX can't read gif files
+function pdf2tiff() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && convert -flatten -units PixelsPerInch -density 1200 $f ${f%.pdf}.tiff; done; }
+function pdf2png() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && convert -flatten -units PixelsPerInch -density 1200 $f ${f%.pdf}.png; done; }
+function pdf2eps() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"; done; }
+  # flatten gets rid of transparency/renders it against white background, and the units/density specify
+  # a 300dpi resulting .tiff file; another option is "-background white -alpha remove", try this
+  # the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text
+# function pdf2flat() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && convert -flatten $f ${f%.pdf}-flat.pdf; done; }
+  # imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
+  # cannot flatten with this approach
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -371,12 +402,23 @@ alias R="colorize R"
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
 #   and you can right-click refresh for a hard reset, cache reset
-alias jtheme="jt -t grade3 -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10"
+alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
 jupyterready=false # theme is not initially setup because takes a long time
+function jupytertheme() {
+  local args="" # initialize empty variable
+  local defaults=(gruvboxd cousine) # chesterish is best; monokai has green/pink theme;
+    # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
+    # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
+  themes=($(jt -l)) themes=(${themes[@]:2}) # possible themes
+  [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "ERROR: Theme $1 is invalid; choose from ${themes[@]}." && return 1
+  [ ! -z $1 ] && local args+="-t $1 " || local args+="-t ${defaults[0]} " # default
+  [ ! -z $2 ] && local args+="-f $2 " || local args+="-f ${defaults[1]} " # best are cousine, office
+  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 $args
+}
 function notebook() {
   # Set the jupyter theme
   echo "Configuring jupyter notebook theme."
-  ! $jupyterready && $jtheme # make it callable from command line
+  ! $jupyterready && $jupytertheme # make it callable from command line
   jupyterready=true # this value is available for rest of session
   # Test the hostname and get unique port we have picked
   if [ ! -z $1 ]; then
@@ -395,7 +437,7 @@ function notebook() {
     # need to extend data rate limit when making some plots with lots of stuff
 }
 # See current ssh connections
-alias connections="ps aux | grep ssh"
+alias connections="ps aux | grep -v grep | grep ssh"
 # Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
   [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
@@ -429,41 +471,93 @@ function disconnect() {
     return 1
   fi
   # Disable the connection
-  echo "Cancelling port-forwarding over port $jupyterdisconnect."
-  lsof -t -i tcp:$jupyterdisconnect | xargs kill
-  [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"$jupyterdisconnect\"."
+  # lsof -t -i tcp:$jupyterdisconnect | xargs kill # this can accidentally kill Chrome instance
+  local ports=($(lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs))
+  [ -z $ports ] && echo "ERROR: Connection over port \"${jupyterdisconnect}\" not found." && return 1
+  kill ${ports[@]} # kill the SSH processes
+  [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"${jupyterdisconnect}\"."
+  echo "Connection over port ${jupyterdisconnect} removed."
 }
 
 ################################################################################
 # Session management
-################################################################################
-# iTerm2 window title
-function iterm { echo -ne "\033]0;"$*"\007"; } # name terminal title (also, Cmd-I from iterm2)
-
-# Declare some names for active servers
-# alias olbers='ssh -XC ldavis@129.82.49.1'
-# export ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-export work='ldavis@10.83.16.91' # for scp'ing into my Mac
-export home='ldavis@10.253.201.216'
-export gauss='ldavis@gauss.atmos.colostate.edu'
-export monde='ldavis@monde.atmos.colostate.edu'
-export euclid='ldavis@euclid.atmos.colostate.edu'
-export olbers='ldavis@olbers.atmos.colostate.edu'
-export zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-export archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
-export ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
-# export archive='/media/archives/reanalyses/era_interim/'
-# export olbers='ldavis@129.82.49.159'
-
-# Preface: enabling FILES WITH SPACES is tricky, need: https://stackoverflow.com/a/20364170/4970632
+# Note: enabling files with spaces is tricky, need: https://stackoverflow.com/a/20364170/4970632
 # 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
 # destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
 # 2) Another weird thing; note we must ESCAPE TILDE IN A PARAMETER EXPANSION, even
 # though this is not necessary in double quotes alone; makes sense... maybe...
-# 3) BEWARE: replacing string with tilde in parameter expansion seems to behave DIFFERENTLY
+# 3) BEWARE: replacing string with tilde in parameter expansion behaves DIFFERENTLY
 # ACROSS DIFFERENT VERSIONS OF BASH. Test this with foo=~/data, foobar="${foo/#$HOME/~}".
 #   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
+################################################################################
+# Set the iTerm2 window title; doesn't work
+# function iterm() { title="$*"; echo -ne "\033]0;"$title"\007"; } # name terminal title (also, Cmd-I from iterm2)
+# [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
+# iterm "$title" # create title
+
+# Declare some names for active servers
+# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+work='ldavis@10.83.16.91' # for scp'ing into my Mac
+home='ldavis@10.253.201.216'
+gauss='ldavis@gauss.atmos.colostate.edu'
+monde='ldavis@monde.atmos.colostate.edu'
+euclid='ldavis@euclid.atmos.colostate.edu'
+olbers='ldavis@olbers.atmos.colostate.edu'
+zephyr='lukelbd@zephyr.meteo.mcgill.ca'
+archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
+ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
+# archive='/media/archives/reanalyses/era_interim/'
+# olbers='ldavis@129.82.49.159'
+
+# Functions for executing stuff on remote servers
+# Note git pull will fail if the merge is anything other than
+# a fast-forward merge (e.g. modifying multiple files); otherwise
+# need to commit local changes first
+function figuresync() {
+  # For now this function is designed specifically for one project; for
+  # future projects can modify it
+  # * The exclude-standard flag excludes ignored files listed with 'other' -o flag
+  #   See: https://stackoverflow.com/a/26891150/4970632
+  # * Takes server argument..
+  extramessage="$2" # may be empty
+  [ -z "$1" ] && echo "ERROR: Hostname argument required." && return 1
+  local localdir="$HOME/Google Drive/Tau" # local working directory
+  local server="$1" # server
+  case $server in
+    *monde.atmos.colostate.edu)  remotedir="/home/ldavis/working" ;;
+    *euclid.atmos.colostate.edu) remotedir="/birner-home/ldavis/working" ;;
+    *) echo "Hostname \"$server\" is not valid." && return 1;;
+  esac
+  \ssh $server 'cd '"$remotedir"'; git status -s; sleep 2
+    mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
+    ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
+    space1="" space2="" message="" # initialize message
+    [ $Nmfiles -eq 1 ] && mfigures="figure" || mfigures="figures"
+    [ $Nofiles -eq 1 ] && ofigures="figure" || ofigures="figures"
+    [ $Nmfiles -ne 0 ] && message+="Modified $Nmfiles $mfigures." && space1=" "
+    [ $Nofiles -ne 0 ] && message+="${space1}Made $Nofiles new $ofigures." && space2=" "
+    [ ! -z "'"$extramessage"'" ] && message+="${space2}'"$extramessage"'"
+    if [ ! -z "$message" ]; then
+      echo "Commiting changes with message: \"$message\""
+      git add --all && git commit -q -m "$message" && git push -q
+    else echo "No new figures." && exit 1
+    fi'
+  if [ $? -eq 0 ]; then # non-zero exit code
+    echo "Pulling changes to macbook."
+    cd "$localdir" && git pull # attempt pull
+  fi
+# Method using read command
+#   local commands # create local commands variable; https://stackoverflow.com/a/23991919/4970632
+#   read -r -d '' commands << EOF
+# commands go here
+# EOF
+#   \ssh $server "$commands"
+# Method using multiline string 
+# \ssh $server "command 1
+#   command 2
+#   command 3"
+}
 
 # Functions for scp-ing from local to remote, and vice versa
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
@@ -473,7 +567,7 @@ export ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
 #   * Note this has nice side-effect of eliminating annoying "banner message"
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
-alias ssh="ssh_wrapper" # must be an alias or will fail!
+alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
 function ssh_wrapper() {
   [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
   port=10000 # starting port
@@ -495,7 +589,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   local p=$port # default port
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable."
+  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
   local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
   local dest="${dest/#$HOME/~}"  # restore expanded tilde
@@ -510,7 +604,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   local p=$port # default port
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable."
+  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
   local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
   local file="${file/#$HOME/~}"  # restore expanded tilde
@@ -519,7 +613,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   echo "Copying $file from home server to this server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$p ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
-# Copy <file> on this server to another server, preserving full path but 
+# Copy <file> on this server to another server, preserving full path but
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
 # each and then subfolders with same experiment name
 function ccp() {
@@ -527,7 +621,7 @@ function ccp() {
   local p=$port # default port
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable."
+  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
   local server=${@:(-1):1} # the last one
   local file=${@:(-2):1} # the 2nd to last
   if [[ "${file:0:1}" != "/" ]]; then
@@ -652,7 +746,10 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+  local args=($@)
+  local args=(${args[@]:2}) # extra arguments
+  echo ${args[@]}
+  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
     # this procedure is ideal for "sanity checks" of data; just test one
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
@@ -661,7 +758,11 @@ function ncvardatafull() { # as above but show everything
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null
+  local args=($@)
+  local args=(${args[@]:2}) # extra arguments
+  echo ${args[@]}
+  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2"
+  # 2>/dev/null
 }
 # Extract generalized files
 function extract() {
@@ -719,20 +820,21 @@ alias weather="curl wttr.in/Fort\ Collins" # list weather information
 function sdsync() {
   # Behavior option: check for modified files?
   # Only problem: file "modified" every time transferred to SD card
+  shopt -u nullglob # no nullglob
   updateold=true
   # Can change this, but default will be to sync playlist
   sdcard="NO NAME" # edit when get new card
   sdloc="/Volumes/$sdcard/Playlist" # sd data
-  locloc="$HOME/Google Drive/Playlist" # local data
+  locloc="$HOME/Playlist" # local data
   echo "SD Location: $sdloc"
   echo "Local location: $locloc"
   # Iterate through local files
   copied=false # copied anything?
   updated=false # updated anything?
   deleted=false # deleted anything?
-  shopt -s nullglob
   $macos && date=gdate || date=date
   for path in "$locloc/"*.{mp3,m4a,m3u8}; do
+    [ ! -r "$path" ] && continue # e.g. if glob failed
     file="${path##*/}"
     if [ ! -r "$sdloc/$file" ]; then
       copied=true # record
@@ -762,7 +864,8 @@ function sdsync() {
   $copied || echo "No new files found."
   $updated || echo "No recently modified files found."
   # Iterate through remote files
-  for path in "$sdloc/"*.{mp3,m4a,m3ua}; do
+  for path in "$sdloc/"*.{mp3,m4a,m3u8}; do
+    [ ! -r "$path" ] && continue # e.g. if glob failed
     file="${path##*/}"
     if [ ! -r "$locloc/$file" ]; then
       deleted=true # record

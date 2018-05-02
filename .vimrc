@@ -8,7 +8,7 @@
 " the enter key e.g. in an <expr>, and `\<CR\>` is always a literal string containing `<CR>`.
 "------------------------------------------------------------------------------
 "BUTT-TONS OF CHANGES
-augroup SECTION1
+augroup SECTION1 "a comment
 augroup END
 "------------------------------------------------------------------------------
 "NOCOMPATIBLE -- changes other stuff, so must be first
@@ -158,6 +158,8 @@ au CmdwinLeave * setlocal laststatus=2
   "don't diable q; have that remapped to show window
 " noremap `` @@
 " noremap , @1
+noremap " :echo "Setting mark q."<CR>mq
+noremap ' `q
 map s <Nop>
   "will use the s-prefix for SPELLING commands and SPELLCHECK stuff; never use
   "s for substitute anyway
@@ -239,8 +241,9 @@ nnoremap <expr> K v:count > 1 ? 'JdwJdw' : 'Jdw'
 "Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
-nnoremap S c$
   "same behavior; NOTE use 'cc' instead to substitute whole line
+nnoremap S s
+  "restore use of substitute 's' key; then use s<stuff> for spellcheck
 "NEAT IDEA FOR INSERT MODE REMAP; PUT CLOSING BRACES ON NEXT LINE
 "Adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
@@ -371,7 +374,8 @@ if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
 " Plug 'vim-scripts/Toggle' "modified this myself
 Plug 'tpope/vim-surround'
-" Plug 'metakirby5/codi.vim' "CODI appears to be broken
+" Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
+Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins disabled
 " Plug 'Tumbler/highlightMarks' "modified this myself
 Plug 'godlygeek/tabular'
 Plug 'raimondi/delimitmate'
@@ -391,13 +395,15 @@ call plug#end()
 
 "-------------------------------------------------------------------------------
 "JUMPS
-augroup session
+augroup jumps
 augroup END
 "VIM documentation says a "jump" is one of the following commands:
 "The G ? and n commands will be especially useful to jump back from
 " "'", "`", "G", "/", "?", "n",
 " "N", "%", "(", ")", "[[", "]]", "{", "}", ":s", ":tag", "L", "M", "H" and
 "First some simple maps for navigating jumplist
+"The l/h navigate jumplist (e.g. undoing an 'n' or 'N' keystroke), the j/k just
+"navigate the changelist (i.e. where text last modified)
 noremap <C-l> <Tab>
 noremap <C-h> <C-o>
 noremap <C-j> g;
@@ -511,6 +517,9 @@ function! s:delims(map,left,right,...)
     let a:offset = a:extra
   else
     let a:prefix = a:extra
+  endif
+  if a:right =~ "|" "need special consideration when doing | maps
+    let a:offset += 1
   endif
   let a:buffer = (a:0==1 || a:0==2) ? "<buffer>" : ""
   exe 'inoremap '.a:buffer.' '.a:prefix.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-a:offset)
@@ -642,8 +651,8 @@ function! s:texmacros()
   nnoremap <buffer> viQ T`vt'
   "Delimiters (advanced)/quick environments
   "First the delimiters without newlines
-  call s:delims(',', '\begin{center}', '\end{center}', 1) "because , was available
-  call s:delims('\|', '\left\\|', '\right\\|', 1)
+  " call s:delims('\|', '\left\\|', '\right\\|', 1)
+  call s:delims('\|', '\left\|', '\right\|', 1)
   call s:delims('{', '\left\{', '\right\}', 1)
   call s:delims('(', '\left(', '\right)', 1)
   call s:delims('[', '\left[', '\right]', 1)
@@ -680,20 +689,22 @@ function! s:texmacros()
   call s:delims('f', '\dfrac{', '}{}', 1)
   call s:delims('0', '\frametitle{', '}', 1)
   call s:delims('1', '\section{', '}', 1)
-  call s:delims('2', '\section*{', '}', 1)
-  call s:delims('3', '\subsection{', '}', 1)
-  call s:delims('4', '\subsection*{', '}', 1)
-  call s:delims('5', '\subsubsection{', '}', 1)
+  call s:delims('2', '\subsection{', '}', 1)
+  call s:delims('3', '\subsubsection{', '}', 1)
+  call s:delims('4', '\section*{', '}', 1)
+  call s:delims('5', '\subsection*{', '}', 1)
   call s:delims('6', '\subsubsection*{', '}', 1)
   "Shortcuts for citations and such
-  call s:delims('z', '\note{', '}', 1) "extra
-  call s:delims('Z', '\strikeoue{', '}', 1) "extra
-  call s:delims('a', '\caption{', '}', 1) "amazingly a not used yet
-  call s:delims('C', '\parencite{', '}', 1)
-  call s:delims('c', '\textcite{', '}', 1)
-  call s:delims('r', '\autoref{', '}', 1) "autoref is part of hyperref package;
-  call s:delims('R', '\label{', '}', 1) "to declare labels that autoref points to
+  call s:delims('7', '\ref{', '}', 1) "just the number
+  call s:delims('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
+  call s:delims('9', '\label{', '}', 1) "declare labels that ref and autoref point to
   call s:delims('*', '\tag{', '}', 1) "change the default 1-2-3 ordering; common to use *
+  call s:delims('z', '\note{', '}', 1) "extra
+  call s:delims('Z', '\strikeout{', '}', 1) "extra
+  call s:delims('a', '\caption{', '}', 1) "amazingly a not used yet
+  call s:delims('c', '\cite{', '}', 1) "most common
+  call s:delims('C', '\citet{', '}', 1) "second most common one
+    "other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Shortcut for graphics
   call s:delims('g', '\includegraphics[width=\textwidth]{', '}', 1)
   call s:delims('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1) "center across margins
@@ -704,11 +715,12 @@ function! s:texmacros()
   call s:delims('2', '{\scriptsize ', '}', 1, ',')
   call s:delims('3', '{\footnotesize ', '}', 1, ',')
   call s:delims('4', '{\small ', '}', 1, ',')
-  call s:delims('5', '{\large ', '}', 1, ',')
-  call s:delims('6', '{\Large ', '}', 1, ',')
-  call s:delims('7', '{\LARGE ', '}', 1, ',')
-  call s:delims('8', '{\huge ', '}', 1, ',')
-  call s:delims('9', '{\Huge ', '}', 1, ',')
+  call s:delims('5', '{\normalsize ', '}', 1, ',')
+  call s:delims('6', '{\large ', '}', 1, ',')
+  call s:delims('7', '{\Large ', '}', 1, ',')
+  call s:delims('8', '{\LARGE ', '}', 1, ',')
+  call s:delims('9', '{\huge ', '}', 1, ',')
+  call s:delims('0', '{\Huge ', '}', 1, ',')
   call s:delims('{', '\left\{\begin{matrix}[ll]', '\end{matrix}\right.', 1, ',')
   call s:delims('P', '\begin{pmatrix}', '\end{pmatrix}', 1, ',')
   call s:delims('B', '\begin{bmatrix}', '\end{bmatrix}', 1, ',')
@@ -720,6 +732,7 @@ function! s:texmacros()
   "The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
   "with default single column; see: https://tex.stackexchange.com/a/366422/73149
   "Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
+  call s:delimscr(';', '\begin{center}', '\end{center}') "because ; was available
   call s:delimscr('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
@@ -746,6 +759,11 @@ function! s:texmacros()
   inoremap <expr> <buffer> .= '\overline{'.nr2char(getchar()).'}'
   " inoremap <expr> <buffer> .M '\mathcal{'.nr2char(getchar()).'}'
   " inoremap <expr> <buffer> .N '\mathbb{'.nr2char(getchar()).'}'
+  "Arrows
+  inoremap <buffer> ., \pause
+  inoremap <buffer> ., \pause
+  inoremap <buffer> ., \pause
+  inoremap <buffer> ., \pause
   "Misc symbotls
   inoremap <buffer> ., \pause
   inoremap <buffer> .i \item 
@@ -823,7 +841,7 @@ endfunction
 "Function for loading templates
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
 function! s:textemplates()
-  let templates=split(globpath('~/.vim/templates/', '*.tex'),"\n")
+  let templates=split(globpath('~/latex/', '*.tex'),"\n")
   let names=[]
   for template in templates
     call add(names, '"'.fnamemodify(template, ":t:r").'"')
@@ -832,7 +850,7 @@ function! s:textemplates()
   endfor
   while 1
     echo "Current templates available: ".join(names, ", ")."."
-    let template=expand("~")."/.vim/templates/".input("Enter choice: ").".tex"
+    let template=expand("~")."/latex/".input("Enter choice: ").".tex"
     if filereadable(template)
       execute "0r ".template
       break
@@ -1002,20 +1020,20 @@ au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
 "-------------------------------------------------------------------------------
 "SHELL MACROS
 "MANPAGES of stuff
-augroup shell
-augroup END
-noremap <expr> QM ":silent !clear; man "
-    \.input('Search manpages: ')."<CR>:redraw!<CR>"
-"--help info; pipe output into less for better interaction
-noremap <expr> QH ":!clear; "
-    \.input('Show --help info: ')." --help \| less<CR>:redraw!<CR>"
+" augroup shell
+" augroup END
+" noremap <expr> QM ":silent !clear; man "
+"     \.input('Search manpages: ')."<CR>:redraw!<CR>"
+" "--help info; pipe output into less for better interaction
+" noremap <expr> QH ":!clear; "
+"     \.input('Show --help info: ')." --help \| less<CR>:redraw!<CR>"
 
 "-------------------------------------------------------------------------------
 "DISABLE LINE NUMBERS AND SPECIAL CHARACTERS IN SPECIAL WINDOWS; ENABLE q-QUITTING
 "AND SOME HELP SETTINGS
 augroup help
 augroup END
-noremap QQ :vert help 
+noremap Q :vert help 
 " function! s:helpclick()
 "   "If LeftClick did not remove us from help-menu, then jump to tag
 "   if &ft=="help"
@@ -1058,7 +1076,9 @@ if has_key(g:plugs, "vim-visual-increment")
   silent! vunmap <C-a>
   silent! vunmap <C-x>
   vmap + <Plug>VisualIncrement
-  vmap - <Plug>VisualDecrement
+  vmap _ <Plug>VisualDecrement
+  nnoremap + <C-a>
+  nnoremap _ <C-x>
 endif
 
 "-------------------------------------------------------------------------------
@@ -1067,13 +1087,24 @@ augroup codi
 augroup END
 if has_key(g:plugs, "codi.vim")
   nnoremap <silent> <expr> <Leader>m ':Codi '.&ft.'<CR>'
+    "turns current file into calculator; m stands for math
   nnoremap <silent> <expr> <Leader>M ':tabe '.input('Enter calculator name: ').'.py<CR>:Codi python<CR>'
-    "turns current file into calculator
-    "the m is meant to stand for 'MATH'
+    "turns
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
   let g:codi#width = 20
 endif
+
+"-------------------------------------------------------------------------------
+"HOWMUCH (SUMMING TABLE ELEMENTS)
+"NO LONGER CONTROLLED BY PLUGIN MANAGER
+augroup howmuch
+augroup END
+let g:HowMuch_auto_engines=['py', 'bc'] "python engine uses from math import *
+let g:HowMuch_scale=3 "precision
+" if has_key(g:plugs, "HowMuch")
+"   "default maps are <Leader>?
+" endif
 
 "-------------------------------------------------------------------------------
 "MUCOMPLETE
@@ -1256,7 +1287,8 @@ if has_key(g:plugs, "nerdcommenter")
       \.""
       \."mzo<Esc>".col('.')."a<Space><Esc>x".eval(80-col('.')+1)."a".b:NERDCommenterDelims['left']."<Esc>`z"
   "Create python docstring
-  nnoremap c' o"""<CR>.<CR>"""<Up><Esc>A<BS>
+  nnoremap c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
+  nnoremap c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
   " nnoremap c\| ox<BS><CR>x<BS><CR>x<BS><Esc>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Up><Up>:call NERDComment('n', 'toggle')<CR>078a-<Esc><Down>:call NERDComment('n', 'toggle')<CR>0a<Space>
   "Set up custom remaps
   nnoremap co :call NERDComment('n', 'comment')<CR>
@@ -1490,7 +1522,10 @@ function! s:autowrap()
 endfunction
 autocmd BufEnter * call s:autowrap()
 "Declare mapping, to toggle on and off
-noremap <silent> <Leader>w :call <sid>wraptoggle(-1)<CR>
+" noremap <silent> <Leader>w :call <sid>wraptoggle(-1)<CR>
+"Create word counting map instead
+nnoremap <Leader>w g<C-g>
+vnoremap <Leader>w g<C-g>
 
 "-------------------------------------------------------------------------------
 "TABULAR - ALIGNING AROUND :,=,ETC.
@@ -1673,8 +1708,6 @@ endfunction
 "  first SUBSEQUENT character.
 " nnoremap <Leader>f /
 " nnoremap <Leader>F ?
-nnoremap <Leader>f :%s//gIc<Left><Left><Left><Left>
-nnoremap <Leader>F :%s/<C-r>///gn<CR>
 " function! s:pythonmaps()
 "   nnoremap <expr> <buffer> / '/<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
 "   nnoremap <expr> <buffer> ? '?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
@@ -1688,10 +1721,13 @@ nnoremap <Leader>F :%s/<C-r>///gn<CR>
 " nnoremap <Leader>? ?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>
 nnoremap <expr> <Leader>/ '/<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
 nnoremap <expr> <Leader>? '?<C-r>=<sid>scopesearch(0)<CR><CR>/<Up>'.nr2char(getchar())
-nnoremap <Leader>s :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-nnoremap <Leader>S :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-  "f for find or fancy, just have to remember it
+nnoremap <Leader>r :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
+nnoremap <Leader>R :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
   "the <C-r> means paste from the expression register i.e. result of following expr
+nnoremap <Leader>d :%s///gIc<Left><Left><Left><Left><Left>
+nnoremap <Leader>D :<C-r>=<sid>scopesearch(1)<CR>///gIc<Left><Left><Left><Left><Left>
+  "similar but delete stuff instead
+" nnoremap <Leader>D :%s/<C-r>///gn<CR>
 " nnoremap <Leader>s gd[{V%::s/<C-R>///gc<left><left><left>
 " nnoremap <Leader>S gD:%s/<C-R>///gc<left><left><left>
   "first one searches current scope, second one parent-level scope
@@ -1709,11 +1745,15 @@ nnoremap <Leader>S :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
 " au FileType bib nnoremap <buffer> <Leader>X :g/^\s*\(abstract\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=/d<CR>
 " nnoremap <Leader>x :g//d<Left><Left>
-nnoremap <Leader>Z :s/\(^ *\)\@<! \{2,}/ /g<CR>
+nnoremap <Leader>q :s/\(^ *\)\@<! \{2,}/ /g<CR>
   "replace consecutive spaces on current line
-nnoremap <Leader>x :%s/\(\n\n\)\n\+/\1/gc<CR>
+nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
   "replace consecutive newlines with single newline
-nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+nnoremap <expr> <Leader>x ':%s/\s\+$//gc<CR>'
+  "replace trailing whitespace
+nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
   "replace commented lines
 function! s:cutmaps()
   nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>

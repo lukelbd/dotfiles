@@ -26,6 +26,12 @@
 ###################
 .ipython/**/history.sqlite
 
+# Temp files #
+##############
+*.tmp
+.nfs*
+  # .nfs files appear on Linux servers sometimes
+
 # Storage #
 ###########
 old
