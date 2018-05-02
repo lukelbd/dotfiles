@@ -361,7 +361,7 @@ Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-obsession'
   "for session-saving functionality; mapped in my .bashrc vims to vim -S session.vim
   "and exiting vim saves the session there
-Plug 'tpope/vim-fugitive'
+" Plug 'tpope/vim-fugitive'
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'lifepillar/vim-mucomplete' "broken
 " Plug 'Valloric/YouCompleteMe' "broken
