@@ -133,7 +133,7 @@ let &stl.=' %m'     " Show modified status of buffer
 let &stl.='%{PrintLanguage()}' " Show language setting: UK english or US enlish
 let &stl.='%= '     " Right side of statusline, and perserve space between sides
 let &stl.='%{CapsLock()}'    " check if language maps enabled
-let &stl.='%{fugitive#statusline()}'
+" let &stl.='%{fugitive#statusline()}'
 let &stl.=' [%l/%L]'   " Cursor's current line, total lines
 let &stl.=' (%p%%)' " Percentage through file in lines, as in <c-g>
 
