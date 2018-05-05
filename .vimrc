@@ -351,7 +351,7 @@ call plug#begin('~/.vim/plugged')
 " Plug 'vim-scripts/EnhancedJumps'
   "provides commands for only jumping in the current file
   "actually seems to be BROKEN; forget it
-Plug 'tmhedberg/SimpylFold'
+if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
 " Plug 'vim-scripts/matchit.zip'
   "this just points to a VimScript location; but have since edited this plugin
@@ -1750,8 +1750,9 @@ nnoremap <Leader>q :s/\(^ *\)\@<! \{2,}/ /g<CR>
 nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
   "replace consecutive newlines with single newline
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
-nnoremap <expr> <Leader>x ':%s/\s\+$//gc<CR>'
-  "replace trailing whitespace
+nnoremap <Leader>x :%s/\s\+$//g<CR>
+vnoremap <Leader>x :s/\s\+$//g<CR>
+  "replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
   "replace commented lines
