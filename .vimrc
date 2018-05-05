@@ -158,6 +158,7 @@ au CmdwinLeave * setlocal laststatus=2
   "don't diable q; have that remapped to show window
 " noremap `` @@
 " noremap , @1
+noremap ` <Nop>
 noremap " :echo "Setting mark q."<CR>mq
 noremap ' `q
 map s <Nop>
@@ -335,9 +336,9 @@ endif
 augroup SECTION2
 augroup END
 let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
+let g:compatible_neocomplete=has("lua") "try alternative completion library
 let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && 
       \ str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))) "need str2num
-let g:compatible_neocomplete=has("lua") "try alternative completion library
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
 " set shell=/bin/bash "will not work with e.g. brew-installed shell

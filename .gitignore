@@ -10,6 +10,9 @@
 .jupyter/custom
   # because we want jupyterthemes to control this behavior completely; don't need
   # to sync this folder
+port
+  # store the currently active port for local port-forwarding as a single line
+  # in the file 'port' inside dotfiles directory
 
 # VIM extras #
 ##############
