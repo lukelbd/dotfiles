@@ -320,9 +320,9 @@ function identical() { diff -sq $@ | grep identical; }
   # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
-function listjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
+function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
   # list jobs by name
-function killjobs() { [ -z "$1" ] && echo "ERROR: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
+function killjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
   # kill jobs by name
 function gif2png() { for f in "$@"; do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"; done; }
   # often needed because LaTeX can't read gif files
@@ -410,7 +410,7 @@ function jupytertheme() {
     # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
     # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
   themes=($(jt -l)) themes=(${themes[@]:2}) # possible themes
-  [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "ERROR: Theme $1 is invalid; choose from ${themes[@]}." && return 1
+  [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "Error: Theme $1 is invalid; choose from ${themes[@]}." && return 1
   [ ! -z $1 ] && local args+="-t $1 " || local args+="-t ${defaults[0]} " # default
   [ ! -z $2 ] && local args+="-f $2 " || local args+="-f ${defaults[1]} " # best are cousine, office
   jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 $args
@@ -428,7 +428,7 @@ function notebook() {
       gauss)  jupyterport=20001;;
       euclid) jupyterport=20002;;
       monde)  jupyterport=20003;;
-      *)      echo "ERROR: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
+      *)      echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
     esac
   fi
   # Create the notebook
@@ -440,7 +440,7 @@ function notebook() {
 alias connections="ps aux | grep -v grep | grep ssh"
 # Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
-  [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
+  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
   local hostname=${1##*@} # the host we connect to, minus username
   if [ ! -z $2 ]; then
     jupyterconnect=$2 # override with user input
@@ -448,12 +448,12 @@ function connect() { # connect to remove notebook on port
       gauss)  jupyterconnect=20001;;
       euclid) jupyterconnect=20002;;
       monde)  jupyterconnect=20003;;
-      *)      echo "ERROR: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
+      *)      echo "Error: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
     esac
   fi
   # Establish the connection
   echo "Connecting to $hostname over port $jupyterconnect."
-  echo "WARNING: Keep this window open to use your remote jupyter notebook!"
+  echo "Warning: Keep this window open to use your remote jupyter notebook!"
   \ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $hostname
       # the -f command sets this port-forwarding to the background for the duration of the
       # ssh command to follow; but the -N command says we don't need to issue a command,
@@ -467,15 +467,15 @@ function disconnect() {
   elif [ ! -z $jupyterconnect ]; then
     local jupyterdisconnect=$jupyterconnect
   else
-    echo "ERROR: Must specify a port or make sure port is available from variable \"jupyterconnect\"."
+    echo "Error: Must specify a port or make sure port is available from variable \"jupyterconnect\"."
     return 1
   fi
   # Disable the connection
   # lsof -t -i tcp:$jupyterdisconnect | xargs kill # this can accidentally kill Chrome instance
   local ports=($(lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs))
-  [ -z $ports ] && echo "ERROR: Connection over port \"${jupyterdisconnect}\" not found." && return 1
+  [ -z $ports ] && echo "Error: Connection over port \"${jupyterdisconnect}\" not found." && return 1
   kill ${ports[@]} # kill the SSH processes
-  [ $? == 0 ] && unset jupyterconnect || echo "ERROR: Could not disconnect from port \"${jupyterdisconnect}\"."
+  [ $? == 0 ] && unset jupyterconnect || echo "Error: Could not disconnect from port \"${jupyterdisconnect}\"."
   echo "Connection over port ${jupyterdisconnect} removed."
 }
 
@@ -492,7 +492,7 @@ function disconnect() {
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
 # Set the iTerm2 window title; doesn't work
-# function iterm() { title="$*"; echo -ne "\033]0;"$title"\007"; } # name terminal title (also, Cmd-I from iterm2)
+function iterm() { title="$*"; echo -ne "\033]0;"$title"\007"; } # name terminal title (also, Cmd-I from iterm2)
 # [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
 # iterm "$title" # create title
 
@@ -521,7 +521,7 @@ function figuresync() {
   #   See: https://stackoverflow.com/a/26891150/4970632
   # * Takes server argument..
   extramessage="$2" # may be empty
-  [ -z "$1" ] && echo "ERROR: Hostname argument required." && return 1
+  [ -z "$1" ] && echo "Error: Hostname argument required." && return 1
   local localdir="$HOME/Google Drive/Tau" # local working directory
   local server="$1" # server
   case $server in
@@ -569,59 +569,60 @@ function figuresync() {
 #     checking, still get this warning message every time.
 alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
 function ssh_wrapper() {
-  [ $# -lt 1 ] && echo "ERROR: Need at least 1 argument." && return 1
-  port=10000 # starting port
+  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
+  local port=10000 # starting port
   local listen=22 # default sshd listening port; see the link above
   local args=($@) # all arguments
   [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
-  while netstat -an | grep "$port" | grep -i listen &>/dev/null; do
-    echo "WARNING: Port $port unavailable." # warning message
-    port=$(($port + 1)) # generate new port
+  # while netstat -an | grep "$port" | grep -i listen &>/dev/null; do # check for localhost availability; wrong!
+  while \ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host
+    echo "Warning: Port $port unavailable." # warning message
+    local port=$(($port + 1)) # generate new port
   done
   # \ssh -o StrictHostKeyChecking=no \
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -t -R localhost:$port:localhost:$listen ${args[@]} \
-    "export port=$port && echo Port number: $port && /bin/bash -i" # -t says to stay interactive
+    -t -R $port:localhost:$listen ${args[@]} \
+    "echo $port >~/port && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
-  [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments." && return 1
-  local p=$port # default port
-  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
+  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
+  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat ~/port) # port from most recent login
+  local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
   local dest="${dest/#$HOME/~}"  # restore expanded tilde
   local dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   local dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file on this server to home server at: $dest..."
-  scp -o StrictHostKeyChecking=no -P$p ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
+  scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
-  [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments." && return 1
-  local p=$port # default port
+  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
+  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat ~/port) # port from most recent login
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
   local file="${file/#$HOME/~}"  # restore expanded tilde
   local file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   local file="${file//\ /\\\ }"  # escape whitespace manually
   echo "Copying $file from home server to this server at: $dest..."
-  scp -o StrictHostKeyChecking=no -P$p ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
+  scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
 # Copy <file> on this server to another server, preserving full path but
 # RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
 # each and then subfolders with same experiment name
 function ccp() {
-  [ $# -lt 2 ] && echo "ERROR: Need at least 2 arguments. Final argument is server name." && return 1
-  local p=$port # default port
+  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments. Final argument is server name." && return 1
+  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat ~/port) # port from most recent login
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local p=${args[0]} && local args=(${args[@]:1})
-  [ -z $p ] && echo "ERROR: Port unavailable." && return 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local server=${@:(-1):1} # the last one
   local file=${@:(-2):1} # the 2nd to last
   if [[ "${file:0:1}" != "/" ]]; then
@@ -631,7 +632,7 @@ function ccp() {
   local destfile=${destfile//\/Dropbox\//\/} # bunch of symlinked stuff in here
   local destfile=${destfile//$HOME/\~} # get error when doing this... for some reason
   echo "Copying $file to $destfile from $HOSTNAME to $server..."
-  scp -o StrictHostKeyChecking=no -P$p ${args[@]} "$file" "$server":"$destfile"
+  scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" "$server":"$destfile"
     # note $file CANNOT contain the literal/escaped tilde; will not be expanded
     # by scp if quoted, but still need quotes in case name has spaces
 }
@@ -799,7 +800,7 @@ function extract() {
 function unannotate() {
   local original=$1
   local final=${original%.pdf}_unannotated.pdf
-  [ ${original##*.} != "pdf" ] && echo "ERROR: Must input PDF file." && return 1
+  [ ${original##*.} != "pdf" ] && echo "Error: Must input PDF file." && return 1
   pdftk $original output uncompressed.pdf uncompress
   LANG=C sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
   pdftk stripped.pdf output $final compress
