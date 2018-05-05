@@ -30,7 +30,7 @@ cd = os.getcwd()
 home = os.path.expanduser('~')
 hostname = socket.gethostname().split('.')[0]
 # Without redirection
-if len(sys.argv)>1:
+if len(sys.argv)>1 and sys.argv[-1] not in cd:
     os.chdir(sys.argv[-1].replace("~", os.environ["HOME"])) # move to this directory
     print(f'Moved to directory {sys.argv[-1].replace("~", os.environ["HOME"])}.')
 if get_ipython() is not None:
