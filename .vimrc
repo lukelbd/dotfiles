@@ -158,6 +158,7 @@ au CmdwinLeave * setlocal laststatus=2
   "don't diable q; have that remapped to show window
 " noremap `` @@
 " noremap , @1
+noremap ` <Nop>
 noremap " :echo "Setting mark q."<CR>mq
 noremap ' `q
 map s <Nop>
@@ -244,6 +245,8 @@ nnoremap D D
   "same behavior; NOTE use 'cc' instead to substitute whole line
 nnoremap S s
   "restore use of substitute 's' key; then use s<stuff> for spellcheck
+nnoremap vv ^v$gE
+  "select the current 'line' of text; super handy
 "NEAT IDEA FOR INSERT MODE REMAP; PUT CLOSING BRACES ON NEXT LINE
 "Adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
@@ -335,9 +338,9 @@ endif
 augroup SECTION2
 augroup END
 let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
+let g:compatible_neocomplete=has("lua") "try alternative completion library
 let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && 
       \ str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))) "need str2num
-let g:compatible_neocomplete=has("lua") "try alternative completion library
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
 " set shell=/bin/bash "will not work with e.g. brew-installed shell
@@ -351,7 +354,7 @@ call plug#begin('~/.vim/plugged')
 " Plug 'vim-scripts/EnhancedJumps'
   "provides commands for only jumping in the current file
   "actually seems to be BROKEN; forget it
-Plug 'tmhedberg/SimpylFold'
+if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
 " Plug 'vim-scripts/matchit.zip'
   "this just points to a VimScript location; but have since edited this plugin
@@ -364,7 +367,7 @@ Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-obsession'
   "for session-saving functionality; mapped in my .bashrc vims to vim -S session.vim
   "and exiting vim saves the session there
-Plug 'tpope/vim-fugitive'
+" Plug 'tpope/vim-fugitive'
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'lifepillar/vim-mucomplete' "broken
 " Plug 'Valloric/YouCompleteMe' "broken
@@ -1750,8 +1753,9 @@ nnoremap <Leader>q :s/\(^ *\)\@<! \{2,}/ /g<CR>
 nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
   "replace consecutive newlines with single newline
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
-nnoremap <expr> <Leader>x ':%s/\s\+$//gc<CR>'
-  "replace trailing whitespace
+nnoremap <Leader>x :%s/\s\+$//g<CR>
+vnoremap <Leader>x :s/\s\+$//g<CR>
+  "replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
   "replace commented lines
