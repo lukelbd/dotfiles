@@ -1540,16 +1540,21 @@ if has_key(g:plugs, "tabular")
   vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
   nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
     "arbitrary character
-  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-    "by comment character; ^ is start of line, . is any char, .* is any number, \\zs
-    "is start match here (must escape backslash), then search for the comment
   vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
   nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-    "by comment character, but instead don't ignore comments on their own line
+    "by comment character; ^ is start of line, . is any char, .* is any number, \zs
+    "is start match here (must escape backslash), then search for the comment
+  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
+  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
+    "by comment character; but this time, ignore comment-only lines (must be non-comment non-whitespace character)
   nnoremap -, :Tabularize /,\zs/l0r1<CR>
   vnoremap -, :Tabularize /,\zs/l0r1<CR>
     "suitable for diag_table's in models
+  vnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s<CR>
+  nnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s<CR>
+    "see :help non-greedy to see what braces do; it is like *, except instead of matching
+    "as many as possible, can match as few as possible in some range; with braces, a minus
+    "will mean non-greedy and a non-minus will mean greedy
   vnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   nnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
     "check out documentation on \@<! atom; difference between that and \@! is that \@<!
@@ -1561,10 +1566,10 @@ if has_key(g:plugs, "tabular")
   "the c/d/e/f will be pushed past the comment since the b and everything that follows
   "are considered part of the same delimeted field. just make sure lines with comments
   "are longer than the lines we actually want to align
-  vnoremap -- :Tabularize /^[^=]*\zs=<CR>
-  nnoremap -- :Tabularize /^[^=]*\zs=<CR>
-  vnoremap -= :Tabularize /^[^=]*\zs=\zs<CR>
-  nnoremap -= :Tabularize /^[^=]*\zs=\zs<CR>
+  vnoremap -= :Tabularize /^[^=]*\zs=<CR>
+  nnoremap -= :Tabularize /^[^=]*\zs=<CR>
+  vnoremap -+ :Tabularize /^[^=]*\zs=\zs<CR>
+  nnoremap -+ :Tabularize /^[^=]*\zs=\zs<CR>
     "align assignments, and keep equals signs on the left; only first equals sign
   vnoremap -d :Tabularize /:\zs<CR>
   nnoremap -d :Tabularize /:\zs<CR>
