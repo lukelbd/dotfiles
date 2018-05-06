@@ -12,6 +12,9 @@
   # to sync this folder
 .ipython/profile_default
   # don't sync this crap
+port
+  # store the currently active port for local port-forwarding as a single line
+  # in the file 'port' inside dotfiles directory
 
 # VIM extras #
 ##############
