@@ -245,6 +245,8 @@ nnoremap D D
   "same behavior; NOTE use 'cc' instead to substitute whole line
 nnoremap S s
   "restore use of substitute 's' key; then use s<stuff> for spellcheck
+nnoremap vv ^v$gE
+  "select the current 'line' of text; super handy
 "NEAT IDEA FOR INSERT MODE REMAP; PUT CLOSING BRACES ON NEXT LINE
 "Adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
