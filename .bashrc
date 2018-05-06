@@ -596,7 +596,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   local dest="${dest/#$HOME/~}"  # restore expanded tilde
   local dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   local dest="${dest//\ /\\\ }"  # escape whitespace manually
-  echo "Copying $file on this server to home server at: $dest..."
+  echo "(Port $port) Copying $file on this server to home server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
@@ -611,7 +611,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   local file="${file/#$HOME/~}"  # restore expanded tilde
   local file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
   local file="${file//\ /\\\ }"  # escape whitespace manually
-  echo "Copying $file from home server to this server at: $dest..."
+  echo "(Port $port) Copying $file from home server to this server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
 # Copy <file> on this server to another server, preserving full path but
@@ -631,7 +631,7 @@ function ccp() {
   fi
   local destfile=${destfile//\/Dropbox\//\/} # bunch of symlinked stuff in here
   local destfile=${destfile//$HOME/\~} # get error when doing this... for some reason
-  echo "Copying $file to $destfile from $HOSTNAME to $server..."
+  echo "(Port $port) Copying $file to $destfile from $HOSTNAME to $server..."
   scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" "$server":"$destfile"
     # note $file CANNOT contain the literal/escaped tilde; will not be expanded
     # by scp if quoted, but still need quotes in case name has spaces
