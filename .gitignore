@@ -10,6 +10,8 @@
 .jupyter/custom
   # because we want jupyterthemes to control this behavior completely; don't need
   # to sync this folder
+.ipython/profile_default
+  # don't sync this crap
 
 # VIM extras #
 ##############
