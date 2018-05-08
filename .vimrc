@@ -1550,8 +1550,8 @@ if has_key(g:plugs, "tabular")
   nnoremap -, :Tabularize /,\zs/l0r1<CR>
   vnoremap -, :Tabularize /,\zs/l0r1<CR>
     "suitable for diag_table's in models
-  vnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s<CR>
-  nnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s<CR>
+  vnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
+  nnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
     "see :help non-greedy to see what braces do; it is like *, except instead of matching
     "as many as possible, can match as few as possible in some range; with braces, a minus
     "will mean non-greedy and a non-minus will mean greedy
@@ -1561,8 +1561,6 @@ if has_key(g:plugs, "tabular")
     "checks whether something doesn't match *anywhere before* what follows
     "also the \S has to come before the \(\) atom instead of after for some reason
   "TODO: Note the above still has limitations due to Tabularize behavior; if have
-  "  a b c d e f
-  "  a b # a comment
   "the c/d/e/f will be pushed past the comment since the b and everything that follows
   "are considered part of the same delimeted field. just make sure lines with comments
   "are longer than the lines we actually want to align
