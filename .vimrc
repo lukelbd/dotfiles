@@ -1007,6 +1007,7 @@ function! s:fortranmacros()
 endfunction
 autocmd FileType fortran call s:fortranmacros()
 "Also fix coloring issues; see :help fortran
+let fortran_have_tabs=1
 let fortran_fold=1
 let fortran_free_source=1
 let fortran_more_precise=1
@@ -1540,12 +1541,12 @@ if has_key(g:plugs, "tabular")
   vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
   nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
     "arbitrary character
-  vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-  nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
+  vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
     "by comment character; ^ is start of line, . is any char, .* is any number, \zs
     "is start match here (must escape backslash), then search for the comment
-  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
+  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
     "by comment character; but this time, ignore comment-only lines (must be non-comment non-whitespace character)
   nnoremap -, :Tabularize /,\zs/l0r1<CR>
   vnoremap -, :Tabularize /,\zs/l0r1<CR>
