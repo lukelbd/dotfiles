@@ -33,14 +33,32 @@
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
 
-# Bindings
+# Bindings and tab completion
 # The lines within single quotes can also be put inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
 bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fail
   # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
-bind 'set completion-ignore-case on'
+bind 'set completion-ignore-case off' # don't want dat
 bind 'set disable-completion off'
 bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
+# Use "complete" command for setup
+# -d filters to only directories
+# -f filters to only files
+# -X filters based on EXTENDED GLOBBING pattern (search that)
+complete -d cd # complete changes behavior of "Tab" after command; cd
+  # shows only DIRECTORIES now
+complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
+  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
+complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
+complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
+complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
+complete -f -X '!*.@(tex|py)' -o plusdirs latex
+complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
+complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
+complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
+# Some shells disable tab-completion of dangerous commands; re-enable
+complete -f -o plusdirs mv
+complete -f -o plusdirs rm
 
 # Wrappers
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
@@ -264,6 +282,12 @@ elif [ "$HOSTNAME" = "olbers" ]; then
 fi
 [ ! -z $MATLABPATH ] && alias matlab="$MATLABPATH -nodesktop -nosplash -r \"run('~/startup.m')\""
 
+# JULIA options
+# First simple alias for installing stuff with julia
+function add() {
+  julia -e "Pkg.add(\"$1\")" # install julia package, easy peasy
+}
+
 ################################################################################
 # General utilties, and colorizing them
 ################################################################################
@@ -299,12 +323,10 @@ alias gf="grep -rn ." # grep files; input string then directory location, n says
 alias ff="find . -name" # find files; input a quoted glob pattern
 alias dd="diff --brief --strip-trailing-cr -r" # difference directories; input two directory names
 
-# Simple option overrides
+# Various workflow tools
 alias grep="grep --color=auto" # show color
 alias type="type -a" # show all instances of path/function/variable/file
 alias which="which -a" # same
-
-# More complex aliases and functions
 alias shameonme="touch -mt"
   # changes the last modified date on a file to specified YYYYMMDDhhmm format
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
@@ -324,17 +346,42 @@ function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." &&
   # list jobs by name
 function killjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
   # kill jobs by name
-function gif2png() { for f in "$@"; do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"; done; }
-  # often needed because LaTeX can't read gif files
-function pdf2tiff() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && convert -flatten -units PixelsPerInch -density 1200 $f ${f%.pdf}.tiff; done; }
-function pdf2png() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && convert -flatten -units PixelsPerInch -density 1200 $f ${f%.pdf}.png; done; }
-function pdf2eps() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"; done; }
-  # flatten gets rid of transparency/renders it against white background, and the units/density specify
-  # a 300dpi resulting .tiff file; another option is "-background white -alpha remove", try this
-  # the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text
-# function pdf2flat() { for f in "$@"; do [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && convert -flatten $f ${f%.pdf}-flat.pdf; done; }
-  # imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
-  # cannot flatten with this approach
+
+# Utilities for converting figures between different types
+# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
+#   a <N>dpi resulting bitmap file.
+# * Another option is "-background white -alpha remove", try this.
+# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
+# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
+#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
+function gif2png() {
+  for f in "$@";
+    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
+  done
+} # often needed because LaTeX can't read gif files
+function pdf2png() {
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
+  done
+} # sometimes need bitmap yo
+function pdf2tiff() {
+  resolution=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
+  done
+} # alternative for converting to bitmap
+function pdf2eps() {
+  args=("$@")
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
+      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
+  done
+}
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -522,13 +569,16 @@ function figuresync() {
   # * Takes server argument..
   extramessage="$2" # may be empty
   [ -z "$1" ] && echo "Error: Hostname argument required." && return 1
-  local localdir="$HOME/Google Drive/Tau" # local working directory
   local server="$1" # server
-  case $server in
-    *monde.atmos.colostate.edu)  remotedir="/home/ldavis/working" ;;
-    *euclid.atmos.colostate.edu) remotedir="/birner-home/ldavis/working" ;;
-    *) echo "Hostname \"$server\" is not valid." && return 1;;
-  esac
+  local localdir="$(pwd)"
+  local localdir="${localdir##*/}"
+  if [ "$localdir" == "Tau" ]; then # special handling
+    [[ "$server" =~ euclid ]] && local remotedir=/birner-home/ldavis || local remotedir=/home/ldavis
+    local remotedir=$remotedir/working
+  else # default handling
+    local remotedir="/home/ldavis/$localdir"
+  fi
+  echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
   \ssh $server 'cd '"$remotedir"'; git status -s; sleep 2
     mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
     ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
@@ -545,7 +595,8 @@ function figuresync() {
     fi'
   if [ $? -eq 0 ]; then # non-zero exit code
     echo "Pulling changes to macbook."
-    cd "$localdir" && git pull # attempt pull
+    git fetch && git merge -m "Syncing with macbook." # assume in correct directory already
+    # cd "$localdir" && git pull # attempt pull
   fi
 # Method using read command
 #   local commands # create local commands variable; https://stackoverflow.com/a/23991919/4970632
@@ -878,28 +929,6 @@ function sdsync() {
   # Record in Playlist when last sync occurred
   date +%s >> "$locloc/sdlog"
 }
-
-################################################################################
-# Tab completion
-################################################################################
-# Use "complete" command for setup
-# -d filters to only directories
-# -f filters to only files
-# -X filters based on EXTENDED GLOBBING pattern (search that)
-complete -d cd # complete changes behavior of "Tab" after command; cd
-  # shows only DIRECTORIES now
-complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
-  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
-complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
-complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-complete -f -X '!*.@(tex|py)' -o plusdirs latex
-complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
-complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
-complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-# Some shells disable tab-completion of dangerous commands; re-enable
-complete -f -o plusdirs mv
-complete -f -o plusdirs rm
 
 ################################################################################
 # Message
