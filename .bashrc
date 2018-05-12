@@ -907,24 +907,26 @@ complete -f -o plusdirs rm
 # entering password once) or configure with http (stores information in plaintext
 # but only ever have to do this once)
 ################################################################################
+# Options for ensuring git credentials (https connection) is set up; now use SSH id, so forget it
 # $macos || { \ssh -oBatchMode=yes -T git@github.com true &>/dev/null; [ $? == 255 ] && eval $(ssh-agent -s) && ssh-add && echo "Added SSH key for github."; }
 # $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && \ssh -T git@github.com; }
-$macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
-$macos && { grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'; }
-$macos && { [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash; }
-$macos && fortune | lolcat || { curl https://icanhazdadjoke.com/; echo; }
+# $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
+# Overcomplicated MacOS options
 # $macos && fortune | lolcat || echo "Shell configured and namespace populated."
 # $macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
+# alias hack="cmatrix" # hackerlolz
 # alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
-# alias hack="cmatrix"
-# hash powerline-shell 2>/dev/null && { # ooglay so forget it
-#   function _update_ps1() {
-#     PS1="$(powerline-shell $?)"
-#     }
-#   if [ "$TERM" != "linux" ]; then
-#     PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
-#   fi
+# hash powerline-shell 2>/dev/null && { # powerline shell; is ooglay so forget it
+#   function _update_ps1() { PS1="$(powerline-shell $?)"; }
+#   [ "$TERM" != "linux" ] && PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 #   }
+# Messages
+$macos && { # first the MacOS options
+  grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
+    sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
+  [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
+  fortune # fun message
+  } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
 
 ################################################################################
 # Notes
