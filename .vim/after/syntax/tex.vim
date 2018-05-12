@@ -8,7 +8,6 @@
 " Maintainer: Karl Yngve Lervåg
 " Email:      karl.yngve@gmail.com
 "
-
 if !exists('b:current_syntax')
   let b:current_syntax = 'tex'
 elseif b:current_syntax !=# 'tex'

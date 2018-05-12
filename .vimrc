@@ -1006,6 +1006,7 @@ function! s:fortranmacros()
 endfunction
 autocmd FileType fortran call s:fortranmacros()
 "Also fix coloring issues; see :help fortran
+let fortran_have_tabs=1
 let fortran_fold=1
 let fortran_free_source=1
 let fortran_more_precise=1
@@ -1568,31 +1569,34 @@ if has_key(g:plugs, "tabular")
   vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
   nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
     "arbitrary character
-  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-    "by comment character; ^ is start of line, . is any char, .* is any number, \\zs
+  vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+    "by comment character; ^ is start of line, . is any char, .* is any number, \zs
     "is start match here (must escape backslash), then search for the comment
-  vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-  nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'<CR>'
-    "by comment character, but instead don't ignore comments on their own line
+  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+    "by comment character; but this time, ignore comment-only lines (must be non-comment non-whitespace character)
   nnoremap -, :Tabularize /,\zs/l0r1<CR>
   vnoremap -, :Tabularize /,\zs/l0r1<CR>
     "suitable for diag_table's in models
+  vnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
+  nnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
+    "see :help non-greedy to see what braces do; it is like *, except instead of matching
+    "as many as possible, can match as few as possible in some range; with braces, a minus
+    "will mean non-greedy and a non-minus will mean greedy
   vnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   nnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
     "check out documentation on \@<! atom; difference between that and \@! is that \@<!
     "checks whether something doesn't match *anywhere before* what follows
     "also the \S has to come before the \(\) atom instead of after for some reason
   "TODO: Note the above still has limitations due to Tabularize behavior; if have
-  "  a b c d e f
-  "  a b # a comment
   "the c/d/e/f will be pushed past the comment since the b and everything that follows
   "are considered part of the same delimeted field. just make sure lines with comments
   "are longer than the lines we actually want to align
-  vnoremap -- :Tabularize /^[^=]*\zs=<CR>
-  nnoremap -- :Tabularize /^[^=]*\zs=<CR>
-  vnoremap -= :Tabularize /^[^=]*\zs=\zs<CR>
-  nnoremap -= :Tabularize /^[^=]*\zs=\zs<CR>
+  vnoremap -= :Tabularize /^[^=]*\zs=<CR>
+  nnoremap -= :Tabularize /^[^=]*\zs=<CR>
+  vnoremap -+ :Tabularize /^[^=]*\zs=\zs<CR>
+  nnoremap -+ :Tabularize /^[^=]*\zs=\zs<CR>
     "align assignments, and keep equals signs on the left; only first equals sign
   vnoremap -d :Tabularize /:\zs<CR>
   nnoremap -d :Tabularize /:\zs<CR>
