@@ -348,53 +348,52 @@ let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) &
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
+"Appearence; use my own customzied statusline/tagbar stuff though, and it's way better
 " Plug 'vim-airline/vim-airline'
 " Plug 'itchyny/lightline.vim'
-" also consider vim-buftabline to use buffers instead
-" Plug 'vim-scripts/EnhancedJumps'
-  "provides commands for only jumping in the current file
-  "actually seems to be BROKEN; forget it
+"Python wrappers
+" if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
+" Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
+" Plug 'hdima/python-syntax' "this failed for me; had to manually add syntax file
+" Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
+" Plug 'ivanov/vim-ipython' "same problem as python-mode
+"Julia support and syntax highlighting
+Plug 'JuliaEditorSupport/julia-vim'
+"Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
 " Plug 'vim-scripts/matchit.zip'
-  "this just points to a VimScript location; but have since edited this plugin
-  "to not modify jumplist; so forget it
+"Navigating between files and inside file; enhancedjumps seemed broken to me
 Plug 'scrooloose/nerdtree'
-" Plug 'ctrlpvim/ctrlp.vim'
+if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'jistr/vim-nerdtree-tabs'
+" Plug 'ctrlpvim/ctrlp.vim'
+" Plug 'vim-scripts/EnhancedJumps'
+"Commenting and syntax checking
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
+"Sessions and swap files
+"Mapped in my .bashrc vims to vim -S .session.vim and exiting vim saves the session there
 Plug 'tpope/vim-obsession'
-  "for session-saving functionality; mapped in my .bashrc vims to vim -S session.vim
-  "and exiting vim saves the session there
+Plug 'gioele/vim-autoswap' "deals with swap files automatically
+"Git wrapper
 " Plug 'tpope/vim-fugitive'
-if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
+"Completion engines
 " Plug 'lifepillar/vim-mucomplete' "broken
 " Plug 'Valloric/YouCompleteMe' "broken
 " Plug 'ajh17/VimCompletesMe' "no auto-popup feature
-if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 " if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif
-" if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
-" Plug 'vim-scripts/Toggle' "modified this myself
+if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
+"Simple stuff for enhancing delimiter management
 Plug 'tpope/vim-surround'
+Plug 'raimondi/delimitmate'
+Plug 'godlygeek/tabular'
+"Calculators and number stuff
+Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
+" Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins disabled
-" Plug 'Tumbler/highlightMarks' "modified this myself
-Plug 'godlygeek/tabular'
-Plug 'raimondi/delimitmate'
-Plug 'gioele/vim-autoswap' "deals with swap files automatically
-Plug 'triglav/vim-visual-increment' "visual incrementing
-"The conda plugin is for changing anconda VIRTUALENV; probably don't need it
-" Plug 'cjrh/vim-conda'
-"Had issues with python plugins before; brew upgrading VIM fixed them magically
-"Note you must choose between jedi-vim and python-mode; cannot use both! See github
-" Plug 'ivanov/vim-ipython'
-" Plug 'hdima/python-syntax' "does not seem to work
-  "instead this function is put manually in syntax folder; vim-plug failed
-" Plug 'klen/python-mode' "must make VIM compiled with anaconda for this to work
-  "otherwise get weird errors; same with vim conda and vim ipython
-call plug#end()
-  "the plug#end also declares filetype syntax and indent on
+call plug#end() "the plug#end also declares filetype syntax and indent on
 
 "-------------------------------------------------------------------------------
 "JUMPS
@@ -944,8 +943,8 @@ function! s:pymacros()
   "Simple remaps
   nnoremap <buffer> <Leader>q o"""<CR>"""<Esc><Up>o
   "Maps that call shell commands
-  noremap <buffer> <expr> QD ":!clear; set -x; pydoc "
-        \.input("Enter python documentation keyword: ")."<CR>"
+  " noremap <buffer> <expr> QD ":!clear; set -x; pydoc "
+  "       \.input("Enter python documentation keyword: ")."<CR>"
   noremap <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>"
   inoremap <buffer> <expr> <C-x> "<Esc>:w<CR>:!clear; set -x; "
@@ -1086,22 +1085,51 @@ if has_key(g:plugs, "vim-visual-increment")
 endif
 
 "-------------------------------------------------------------------------------
+"JULIA SUPPORT
+augroup julia
+augroup END
+"jula custom here
+
+"-------------------------------------------------------------------------------
 "CODI (MATHEMATICAL NOTEPAD)
 augroup codi
 augroup END
 if has_key(g:plugs, "codi.vim")
-  nnoremap <silent> <expr> <Leader>m ':Codi '.&ft.'<CR>'
+  nnoremap <C-p> <Nop>
+  nnoremap <C-n> <Nop>
+    "C-p already mapped to paste in insert mode; want these to do nothing
+  nnoremap <C-o> :CodiUpdate<CR>
+  inoremap <C-o> <Esc>:CodiUpdate<CR>a
+    "update manually commands; o stands for codi
+  nnoremap <silent> <expr> <Leader>o ':Codi!! '.&ft.'<CR>'
     "turns current file into calculator; m stands for math
-  nnoremap <silent> <expr> <Leader>M ':tabe '.input('Enter calculator name: ').'.py<CR>:Codi python<CR>'
-    "turns
+  nnoremap <silent> <expr> <Leader>O ':tabe '.input('Enter python calculator name: ').'.py<CR>:Codi python<CR>'
+    "creates new calculator file, adds .py extension
+  let g:codi#interpreters = {
+       \ 'python': {
+           \ 'bin': '/usr/bin/python',
+           \ 'prompt': '^\(>>>\|\.\.\.\) ',
+           \ },
+       \ } "see issue here: https://github.com/metakirby5/codi.vim/issues/85
+    "use builtin python2.7 on macbook to avoid creating history files
+     " \ 'bin': '/usr/bin/python',
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
   let g:codi#width = 20
+    "simple window configuration
+  let g:codi#autocmd = "None"
+    "CursorHold sometimes caused errors/CPU spikes; this is weird because actually
+    "shouldn't, get flickering cursor and codi still running even after 250ms; maybe some other option conflicts
+  let g:codi#sync = 0
+    "probably easier
+  let g:codi#log = "codi.log"
+    "log everything, becuase you *will* have issues
 endif
 
 "-------------------------------------------------------------------------------
 "HOWMUCH (SUMMING TABLE ELEMENTS)
-"NO LONGER CONTROLLED BY PLUGIN MANAGER
+"NO LONGER CONTROLLED BY PLUGIN MANAGER; USE REMAPS
+"<Leader>s and <Leader>S TO SUM EQUATIONS IN SINGLE COLUMN
 augroup howmuch
 augroup END
 let g:HowMuch_auto_engines=['py', 'bc'] "python engine uses from math import *
