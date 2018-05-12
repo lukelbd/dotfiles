@@ -527,7 +527,7 @@ function disconnect() {
 }
 
 ################################################################################
-# Session management
+# Session management and Github stuff
 # Note: enabling files with spaces is tricky, need: https://stackoverflow.com/a/20364170/4970632
 # 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
 # destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
@@ -538,6 +538,31 @@ function disconnect() {
 #   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
+# Check git remote on current folder, make sure it points to SSH/HTTPS depending
+# on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
+# SSH key or password/username can only be stored in plaintext in home directory)
+gitmessage=$(git remote -v 2>/dev/null)
+if [ ! -z "$gitmessage" ]; then
+  if [[ "$gitmessage" =~ "https" ]] && ! $macos; then # ssh node for Linux
+    echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
+  elif [[ "$gitmessage" =~ "git@github" ]] && $macos; then # url for Mac
+    echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
+  fi
+fi
+
+# Trigger ssh-agent if not already running, and add Github private key
+# Make sure to make private key passwordless, for easy login; all I want here
+# is to avoid storing plaintext username/password in ~/.git-credentials, but free private key is fine
+if ! $macos && [ -z "$ssh_agent" ]; then
+  if [ -e "$HOME/.ssh/id_rsa_github" ]; then
+    echo "Adding Github private SSH key."
+    eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
+    ssh_agent=$! # save PID
+    ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
+  else echo "Warning: Github private SSH key \"~/.ssh/id_rsa_github\" is not available."
+  fi
+fi
+
 # Set the iTerm2 window title; doesn't work
 function iterm() { title="$*"; echo -ne "\033]0;"$title"\007"; } # name terminal title (also, Cmd-I from iterm2)
 # [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
