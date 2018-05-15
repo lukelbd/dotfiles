@@ -553,20 +553,26 @@ fi
 # Trigger ssh-agent if not already running, and add Github private key
 # Make sure to make private key passwordless, for easy login; all I want here
 # is to avoid storing plaintext username/password in ~/.git-credentials, but free private key is fine
-if ! $macos && [ -z "$ssh_agent" ]; then
+# See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
+# Also look into more complex approach: https://stackoverflow.com/a/18915067/4970632
+# The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
+if ! $macos && [ -z "$SSH_AUTH_SOCK" ]; then
   if [ -e "$HOME/.ssh/id_rsa_github" ]; then
     echo "Adding Github private SSH key."
     eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
-    ssh_agent=$! # save PID
+    # ssh_agent=$! # save PID
     ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
   else echo "Warning: Github private SSH key \"~/.ssh/id_rsa_github\" is not available."
   fi
 fi
 
-# Set the iTerm2 window title; doesn't work
-function iterm() { title="$*"; echo -ne "\033]0;"$title"\007"; } # name terminal title (also, Cmd-I from iterm2)
+# Set the iTerm2 window title
 # [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
 # iterm "$title" # create title
+function iterm() { # Cmd-I from iterm2 also works
+  title="$*" # title, multiple words
+  echo -ne "\033]0;"$title"\007" # magnets, how do they work?
+}
 
 # Declare some names for active servers
 # ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
@@ -965,7 +971,6 @@ function sdsync() {
 # but only ever have to do this once)
 ################################################################################
 # Options for ensuring git credentials (https connection) is set up; now use SSH id, so forget it
-# $macos || { \ssh -oBatchMode=yes -T git@github.com true &>/dev/null; [ $? == 255 ] && eval $(ssh-agent -s) && ssh-add && echo "Added SSH key for github."; }
 # $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && \ssh -T git@github.com; }
 # $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
 # Overcomplicated MacOS options
