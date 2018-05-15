@@ -604,7 +604,10 @@ function figuresync() {
     local remotedir="/home/ldavis/$localdir"
   fi
   echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
-  \ssh $server 'cd '"$remotedir"'; git status -s; sleep 2
+      eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
+      ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
+    \ssh $server 'eval "$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
+    cd '"$remotedir"'; git status -s; sleep 1
     mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
     ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
     space1="" space2="" message="" # initialize message
@@ -848,19 +851,19 @@ function extract() {
       # to a function; so, need to cat all input arguments with @ into list
     if [ -f "$name" ] ; then
       case "$name" in
-        *.tar.bz2)   tar xvjf "$name"    ;;
-        *.tar.xz)    tar xf "$name"      ;;
-        *.tar.gz)    tar xvzf "$name"    ;;
-        *.bz2)       bunzip2 "$name"     ;;
-        *.rar)       unrar x "$name"     ;;
-        *.gz)        gunzip "$name"      ;;
-        *.tar)       tar xvf "$name"     ;;
-        *.tbz2)      tar xvjf "$name"    ;;
-        *.tgz)       tar xvzf "$name"    ;;
-        *.zip)       unzip "$name"       ;;
-        *.Z)         uncompress "$name"  ;;
-        *.7z)        7z x "$name"        ;;
-        *)           echo "Don't know how to extract '$name'..." ;;
+        *.tar.bz2) tar xvjf "$name"    ;;
+        *.tar.xz)  tar xf "$name"      ;;
+        *.tar.gz)  tar xvzf "$name"    ;;
+        *.bz2)     bunzip2 "$name"     ;;
+        *.rar)     unrar x "$name"     ;;
+        *.gz)      gunzip "$name"      ;;
+        *.tar)     tar xvf "$name"     ;;
+        *.tbz2)    tar xvjf "$name"    ;;
+        *.tgz)     tar xvzf "$name"    ;;
+        *.zip)     unzip "$name"       ;;
+        *.Z)       uncompress "$name"  ;;
+        *.7z)      7z x "$name"        ;;
+        *)         echo "Don't know how to extract '$name'..." ;;
       esac
       echo "'$name' was extracted."
     else

@@ -708,8 +708,8 @@ function! s:texmacros()
   call s:delims('C', '\citet{', '}', 1) "second most common one
     "other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Shortcut for graphics
-  call s:delims('g', '\includegraphics[width=\textwidth]{', '}', 1)
-  call s:delims('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1) "center across margins
+  call s:delims('g', '\includegraphics{', '}', 1)
+  call s:delims('G', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
   " call s:delims('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "Comma-prefixed delimiters without newlines
   "Generally are more closely-related to the begin-end latex environments
@@ -738,10 +738,10 @@ function! s:texmacros()
   call s:delimscr('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
-  call s:delimscr('I', '\begin{enumerate}[label=\roman*.]', '\end{enumerate}')
+  call s:delimscr('I', '\begin{description}', '\end{description}')
+    "d is now open
   call s:delimscr('n', '\begin{enumerate}', '\end{enumerate}')
   call s:delimscr('N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
-  call s:delimscr('d', '\begin{description}', '\end{description}')
   call s:delimscr('t', '\begin{tabular}', '\end{tabular}')
   call s:delimscr('e', '\begin{equation*}', '\end{equation*}')
   call s:delimscr('a', '\begin{align*}', '\end{align*}')
