@@ -1702,6 +1702,11 @@ au InsertLeave * set ignorecase
 nnoremap <silent> * :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:let v:searchforward=1<CR>
 nnoremap <silent> # :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:let v:searchforward=0<CR>
 " nnoremap <silent> # :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winrestview(b:position)<CR>
+"Option to delete current search
+nnoremap <silent> d/ :s/<C-r>//<CR>
+nnoremap <silent> d? :s/<C-r>//<CR>
+  "note that omitting the g means only *first* occurence is replaced
+  "if use %, would replace first occurence on every line
 "------------------------------------------------------------------------------
 "SPECIAL SEARCHING
 "FIND AND REPLACE STUFF
