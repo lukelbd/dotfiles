@@ -6,12 +6,12 @@
 # amend = !git commit --amend -m \"$@\"
 [alias]
 	update = !git stash clear; git stash; git merge $@; git stash pop
-	graph = !git log --graph --abbrev-commit --date=relative --decorate --oneline --all $@
-	twig = !git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@
-	tree = !git log --graph --abbrev-commit --date=relative --branches --name-status --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' $@
-	leaf = !git show-branch --topo-order $@
-	wtf = !git-wtf $@
-	stat = !git diff --stat $@
+	graph = !git log --graph --abbrev-commit --date=relative --decorate --oneline --all $@ 2>/dev/null
+	twig = !git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null
+	tree = !git log --graph --abbrev-commit --date=relative --branches --name-status --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' $@ 2>/dev/null
+	leaf = !git show-branch --topo-order $@ 2>/dev/null
+	wtf = !git-wtf $@ 2>/dev/null
+	stat = !git diff --stat $@ 2>/dev/null
 [push]
 	default = upstream
 [color]

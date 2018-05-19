@@ -68,7 +68,7 @@
         "s": "jupyter-notebook:save-notebook",
         "q": "jupyter-notebook:interrupt-kernel",
         "shift-q": "jupyter-notebook:confirm-restart-kernel",
-        "cmd-c": "jupyter-notebook:split-cell-at-cursor",
+        "cmd-k": "jupyter-notebook:split-cell-at-cursor",
         "u": "jupyter-notebook:undo-cell-deletion",
         "/": "jupyter-notebook:find-and-replace",
         ":": "jupyter-notebook:show-command-palette",
@@ -82,10 +82,11 @@
         "shift-t": "jupyter-notebook:toggle-cell-output-scrolled",
         "t": "jupyter-notebook:toggle-cell-output-collapsed",
         "shift-o": "jupyter-notebook:insert-cell-above",
-        "o": "jupyter-notebook:insert-cell-below"
+        "o": "jupyter-notebook:insert-cell-below",
+        "shift-r": "jupyter-notebook:reconnect-kernel"
       }
     }
   },
   "comment_uncomment_indent": true,
-  "comment_uncomment_keybinding": "alt-c"
+  "comment_uncomment_keybinding": "cmd-j"
 }
