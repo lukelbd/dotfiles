@@ -731,8 +731,16 @@ function ccp() {
 # Next need way to get word count
 function wordcount() {
   file="$1"
-  cat "$file" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
-    | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | wc -w
+  # This worked for certain templates:
+  # detexed="$(cat "$file" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
+  #   | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | grep -v .pdf | grep -v 'fig[0-9]' \
+  #   | grep -v 'empty' | grep -v '^\s*$')"
+  # Provide -e flag to ignore certain environments (e.g. abstract environment)
+  # This worked for BAMS template:
+  detexed="$(cat "$file" | \
+    detex -e align,equation | grep -v .pdf | grep -v 'fig[0-9]')"
+  echo "$detexed" # echo result
+  echo "$detexed" | wc -w # get word count
     # * prints word count between end of abstract and start of methods
     # * explicitly delete begin/end environments because detex won't pick them up
     #   and use the equals sign to exclud equations
