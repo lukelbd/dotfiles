@@ -1594,12 +1594,15 @@ if has_key(g:plugs, "tabular")
     "by comment character; but this time, ignore comment-only lines (must be non-comment non-whitespace character)
   nnoremap -, :Tabularize /,\zs/l0r1<CR>
   vnoremap -, :Tabularize /,\zs/l0r1<CR>
-    "suitable for diag_table's in models
+    "by commas; suitable for diag_table's in models; does not ignore comment characters
   vnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
   nnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
     "see :help non-greedy to see what braces do; it is like *, except instead of matching
-    "as many as possible, can match as few as possible in some range; with braces, a minus
-    "will mean non-greedy and a non-minus will mean greedy
+    "as many as possible, can match as few as possible in some range; with braces, a minus will mean non-greedy
+  " nnoremap <expr> Tab/^\S*\s\+\zs/r1l0l0
+  vnoremap <expr> -r ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /r1l0l0<CR>'
+  nnoremap <expr> -r ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /r1l0l0<CR>'
+    "right-align by spaces, but ignoring any commented lines
   vnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   nnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
     "check out documentation on \@<! atom; difference between that and \@! is that \@<!
