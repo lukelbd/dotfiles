@@ -203,9 +203,9 @@ vnoremap P "_dP
   "same for entering insert mode
   "don't do this because is awkward, and makes <C-v>I not work anymore
 noremap H g^
-noremap L g$geE
+noremap L g$ge
   "shortcuts for 'go to first char' and 'go to eol'
-  "make these work for VISUAL movement
+  "works in both line-wrapped situations and unwrapped situations
 noremap m ge
 noremap M gE
   "navigate by words
@@ -294,10 +294,17 @@ set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
 "LINE NUMBERING / NUMBERS IN TEXT
 "Numbering
 set number norelativenumber
+set numberwidth=5
+  "by default, make wide enough for single space plus 4-digit numbers
+  "eliminates annoying effect when editing file and it goes over 1000 lines
 "Basic maps
 noremap <Leader>1 :setlocal number!<CR>
 noremap <Leader>2 :setlocal relativenumber!<CR>
   "PREVIOUSLY had some NumberToggle algorithm; not necessary I think
+"Options; actually forget this, made traversing lines werid
+" set cpoptions+=n
+  "now continuation lines run into number column; easier to verify at a glance whether a zero-column
+  "character is actually the start of the line, or just a line continuation
 "Incrementing numbers (C-x, C-a originally)
 nnoremap <Leader>0 <C-x>
 nnoremap <Leader>9 <C-a>h
@@ -747,7 +754,12 @@ function! s:texmacros()
   call s:delimscr('a', '\begin{align*}', '\end{align*}')
   call s:delimscr('E', '\begin{equation}', '\end{equation}')
   call s:delimscr('A', '\begin{align}', '\end{align}')
+  call s:delimscr('v', '\begin{verbatim}', '\end{verbatim}')
+  call s:delimscr('V', '\begin{verbatim}', '\end{verbatim}')
   call s:delimscr('s', '\begin{frame}', '\end{frame}')
+  call s:delimscr('S', '\begin{frame}[fragile]', '\end{frame}')
+    "fragile option makes verbatim possible; see: https://tex.stackexchange.com/q/136240/73149
+    "but note that fragile make compiling way slower
   call s:delimscr('m', '\begin{minipage}{\linewidth}', '\end{minipage}')
   call s:delimscr('f', '\begin{figure}', '\end{figure}')
   call s:delimscr('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
@@ -1781,7 +1793,7 @@ nnoremap <Leader>D :<C-r>=<sid>scopesearch(1)<CR>///gIc<Left><Left><Left><Left><
 " au FileType bib nnoremap <buffer> <Leader>X :g/^\s*\(abstract\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=/d<CR>
 " nnoremap <Leader>x :g//d<Left><Left>
 nnoremap <Leader>q :s/\(^ *\)\@<! \{2,}/ /g<CR>
-  "replace consecutive spaces on current line
+  "replace consecutive spaces on current line with one space
 nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
   "replace consecutive newlines with single newline
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
@@ -1793,6 +1805,8 @@ nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
   "replace commented lines
 function! s:cutmaps()
   nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  nnoremap <buffer> <Leader>- :%s/–/--/gc<CR>
+    "replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
 endfunction
 au FileType bib,tex call s:cutmaps()
   "some bibtex lines
