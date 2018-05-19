@@ -39,18 +39,21 @@ if get_ipython() is not None:
     get_ipython().magic("reload_ext autoreload") # reload instead of load, to avoid annoying message
     get_ipython().magic("autoreload 2") # turn on expensive autoreloading
     # Notebook configuration
-    get_ipython().magic("autosave 60") # autosave every 120 seconds
+    get_ipython().magic("matplotlib inline") # change print_figure_kwargs to see edges
+        # initialize with default 'inline' settings; then modify them
+        # with the various config options; that was probably my problem before
+    get_ipython().magic("autosave 60") # autosave every minute
     get_ipython().magic("config InlineBackend.close_figures = True")
         # so don't have memory issues/have to keep re-closing them
-    get_ipython().magic("config InlineBackend.figure_formats = ['retina','svg']")
+    get_ipython().magic("config InlineBackend.figure_formats = ['retina']")
+    # get_ipython().magic("config InlineBackend.figure_formats = ['retina','svg']")
         # retina probably more space efficient (high-res bitmap), but svg is prettiest
         # and is only one preserving vector graphics
-    get_ipython().magic("config InlineBackend.rc = {'figure.dpi':70, 'savefig.dpi':70}") # 80 or 100 is apporpriate
+    get_ipython().magic("config InlineBackend.rc = {'figure.dpi':90, 'savefig.dpi':90}") # 90 was *best*, sizes matched SVG sizes
         # by default several rcParams are reset when printing to cell output; for
         # retina (which is hi-res bitmap) we just want to set the DPI to something reasonable
     get_ipython().magic("config InlineBackend.print_figure_kwargs = {'bbox_inches':None}") #bbox_inches=\'tight\', pad_inches=0.1)')
         # optionally keep figures tight around edges
-    get_ipython().magic("matplotlib inline") # change print_figure_kwargs to  see edges
 print("Notebook is configured.")
 # Re-directing stdout
 # _ = io.StringIO()
