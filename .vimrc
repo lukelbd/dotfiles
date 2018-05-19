@@ -358,6 +358,8 @@ call plug#begin('~/.vim/plugged')
 " Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython' "same problem as python-mode
 "Julia support and syntax highlighting
+Plug 'tpope/vim-repeat'
+  "make mappings repeatable
 Plug 'JuliaEditorSupport/julia-vim'
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
@@ -433,21 +435,22 @@ endif
 
 "-------------------------------------------------------------------------------
 "AIRLINE
-" augroup airline
-" augroup END
+"* Decided this plugin was done and wrote my own pretty tabline/statusline plugins
+"* I don't like having everything look the exact same between server; just want to use the
+"  terminal colorscheme and let colors do their thing
+"* Good lightline styles: nord, PaperColor and PaperColor_dark (fave), OldHope,
+"  jellybeans, and Tomorrow_Night, Tomorrow_Night_Eighties
 if has_key(g:plugs, "vim-airline")
   let g:airline#extensions#tabline#enabled = 1
   let g:airline#extensions#tabline#formatter = 'default'
 endif
 if has_key(g:plugs, "lightline.vim")
   let g:lightline = { 'colorscheme': 'powerline' }
-    " good ones: nord, PaperColor and PaperColor_dark (fave), OldHope, jellybeans,
-    " and Tomorrow_Night, Tomorrow_Night_Eighties
 endif
 
 "-------------------------------------------------------------------------------
 "DELIMITMATE (auto-generate closing delimiters)
-augroup delimit
+augroup delimitmate
 augroup END
 "Re-declare and overwrite an important remap
 "Actually works without this line; perhaps delimitmate detects existing
@@ -474,9 +477,12 @@ endif
 
 "-------------------------------------------------------------------------------
 "SURROUND (place delimiters around stuff)
+"I used this function as inspiration for my ;-style mappings
+"For example, instead of ysiwb (ys=command prefix, iw=movement, b=delimit specifier)
+"we just call ;b -- easy peasy!
 augroup surround
 augroup END
-" see documentation in ~/.vim/doc for details, but the gist is:
+" See documentation in ~/.vim/doc for details, but the gist is:
 " cs<delim><newdelim> to e.g. change surrounding { into (
 " ds<delim> to e.g. delete the surrounding {
 " ys<movement/inner something/block indicator><newdelim> to e.g. add quotes
@@ -486,7 +492,7 @@ augroup END
 " yS<movement><newdelim> puts text on line of its own, and auto-indents
 "     according to indent settings
 " S<newdelim>, VISUAL MODE remap to place surroundings
-"     ...if your <newdelim> is something like <a>, then by default the first one
+"     if your <newdelim> is something like <a>, then by default the first one
 "     will be <a> and the closing one </a>, for HTML useage
 " t,< will generically refer to ANY HTML-environment
 " ], [ are different; the first adds no space, the second *does* add space
@@ -497,9 +503,9 @@ augroup END
 "Make cc behavior more intuitively for visual selection
 "Just like change line in normal mode
 vnoremap cc s
-"Helper function for building my own
+"Alias the ds[, ds(, etc. behavior for new keys
+"Function simply matches these builtin VIM methods with a new delimiter-identifier
 function! s:surround(original,new)
-  "Function simply matches these builtin VIM methods with a new delimiter-identifier
   exe 'nnoremap da'.a:original.' da'.a:new
   exe 'nnoremap di'.a:original.' di'.a:new
   exe 'nnoremap ca'.a:original.' ca'.a:new
@@ -509,9 +515,23 @@ function! s:surround(original,new)
   exe 'nnoremap <silent> va'.a:original.' :let b:v_mode="v"<CR>va'.a:new
   exe 'nnoremap <silent> vi'.a:original.' :let b:v_mode="v"<CR>vi'.a:new
 endfunction
+for s in ["r[", "a<"]
+  call s:surround(s[0], s[1]) "most simple ones
+endfor
+"Quick function selection for stuff formatted like function(text)
+"For functions the select/delete 'inner' stuff is already satisfied
+nnoremap daf mzF(bdt(lda(`z
+nnoremap dsf mzF(bdt(xf)x`z
+nnoremap caf F(bdt(lca(
+nnoremap <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
+nnoremap yaf mzF(bvf(%y`z
+nnoremap <silent> vaf F(bvf(%
+nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
+  "for selecting text in-between commented out lines
+"Mimick the ysiwb syntax (i.e. adding delimiters to current word) for new delimiters
+"Function for adding ;-prefixed fancy delimiters, especially useful in LaTeX
+"First extra argument is whether map is buffer-local, second is optional override
 function! s:delims(map,left,right,...)
-  "Function for adding ;-prefixed fancy delimiters, especially useful in LaTeX
-  "First extra argument is whether map is buffer-local, second is optional override
   let a:offset = 0
   let a:prefix = ';'
   let a:extra = (a:0==2) ? a:2 : 0
@@ -524,31 +544,23 @@ function! s:delims(map,left,right,...)
     let a:offset += 1
   endif
   let a:buffer = (a:0==1 || a:0==2) ? "<buffer>" : ""
+  if !has_key(g:plugs, "vim-surround") "fancy repeatable maps
+    "Simple map, but repitition will fail
+    exe 'nnoremap '.a:buffer.' '.a:prefix.a:map.' mzlbi'.a:left.'<Esc>hea'.a:right.'<Esc>`z'
+  else
+    "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
+    "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
+    exe 'nnoremap <silent> '.a:buffer.' <Plug>n'.a:prefix.a:map.' mzlbi'.a:left.'<Esc>hea'.a:right.'<Esc>`z'
+      \.':call repeat#set("\<Plug>n'.a:prefix.a:map.'",v:count)<CR>'
+    exe 'nmap '.a:prefix.a:map.' <Plug>n'.a:prefix.a:map
+  endif
   exe 'inoremap '.a:buffer.' '.a:prefix.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-a:offset)
-  exe 'nnoremap '.a:buffer.' '.a:prefix.a:map.' mzlbi'.a:left.'<Esc>hea'.a:right.'<Esc>`z'
   exe 'vnoremap '.a:buffer.' '.a:prefix.a:map.' <Esc>`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-a:offset)
 endfunction
 function! s:delimscr(map,left,right,...)
   exe 'inoremap <buffer> ,'.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
   exe 'vnoremap <buffer> ,'.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
 endfunction
-"Capitalization stuff in familiar syntax
-noremap ;; ;
-nnoremap ~ ~h
-nnoremap ;u guiw
-vnoremap ;u gu
-nnoremap ;U gUiw
-vnoremap ;U gU
-"Quick function selection for stuff formatted like function(text)
-"For functions the select/delete 'inner' stuff is already satisfied
-nnoremap daf mzF(bdt(lda(`z
-nnoremap dsf mzF(bdt(xf)x`z
-nnoremap caf F(bdt(lca(
-nnoremap <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
-nnoremap yaf mzF(bvf(%y`z
-nnoremap <silent> vaf F(bvf(%
-"For selecting text in-between commented out lines
-nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
 "More advanced 'delimiters' and aliases for creating delimiters
 call s:delims('p', 'print(', ')')
 call s:delims('b', '(', ')')
@@ -561,15 +573,19 @@ call s:delims('$', '$', '$')
 call s:delims('*', '*', '*')
 call s:delims('`', '`', '`')
 call s:delims('~', '“', '”')
-"Match the VIM builtins like di[ etc. to SURROUND syntax used for csr etc.
-for s in ["r[", "a<"] "most simple ones
-  call s:surround(s[0], s[1])
-endfor
+"Capitalization stuff in familiar syntax
+nnoremap ~ ~h
+nnoremap ;u guiw
+vnoremap ;u gu
+nnoremap ;U gUiw
+vnoremap ;U gU
+"Repair semicolon
+inoremap ;; ;
 
 "-------------------------------------------------------------------------------
 "LATEX MACROS, lots of insert-mode stuff
-"IDEA STEMMED FROM THE ABOVE: MAKE SHORTCUTS TO ys<stuff> WITH FEWER KEYSTROKES
-"ANYWAY THE ORIGINAL PNEUMONIC FOR SURROUND.VIM "ys" KIND OF SUCKS
+"Idea stemmed from the above: make shortcuts to ys<stuff> with fewer keystrokes
+"Anyway the original pneumonic for surround.vim "ys" kind of sucks
 augroup latex
 augroup END
 "Cannot use C-m or C-i, as the former produces an Enter and
@@ -1701,12 +1717,22 @@ au InsertLeave * set ignorecase
 "Optional idea here to make # search by character
 nnoremap <silent> * :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:let v:searchforward=1<CR>
 nnoremap <silent> # :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:let v:searchforward=0<CR>
+  "note the @/ sets the 'last search' register to this string value
 " nnoremap <silent> # :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winrestview(b:position)<CR>
 "Option to delete current search
-nnoremap <silent> d/ :s/<C-r>//<CR>
-nnoremap <silent> d? :s/<C-r>//<CR>
-  "note that omitting the g means only *first* occurence is replaced
-  "if use %, would replace first occurence on every line
+" * For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
+" * Note that omitting the g means only *first* occurence is replaced
+"   if use %, would replace first occurence on every line
+" * Options for accessing register in vimscript, where we can't immitate user <C-r> keystroke combination:
+"     exe 's/'.@/.'//' OR exe 's/'.getreg('/').'//'
+if has_key(g:plugs, "vim-repeat")
+  "Note the second one has to allow recursion; we look up the named mapping
+  nnoremap <Plug>deletehl :s/<C-r>//<CR>:call repeat#set("\<Plug>deletehl",v:count)<CR>
+  nmap d/ <Plug>deletehl
+else
+  nnoremap d/ :s/<C-r>//<CR>
+  nnoremap d? :s/<C-r>//<CR>
+endif
 "------------------------------------------------------------------------------
 "SPECIAL SEARCHING
 "FIND AND REPLACE STUFF
@@ -1893,10 +1919,11 @@ noremap <Tab>M <C-w>_
 " noremap <Tab><Down> <C-w>j
 " noremap <Tab><Up> <C-w>k
 " noremap <Tab><Right> <C-w>l
-" noremap <Tab>J <C-w>j
-" noremap <Tab>K <C-w>k
-" noremap <Tab>H <C-w>h
-" noremap <Tab>L <C-w>l
+noremap <Tab>J <C-w>j
+noremap <Tab>K <C-w>k
+noremap <Tab>H <C-w>h
+noremap <Tab>L <C-w>l
+  "window motion; makes sense so why not
 nnoremap <Tab>, <C-w><C-p>
   "switch to last window
 noremap <Tab>t <C-w>t
