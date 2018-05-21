@@ -589,6 +589,7 @@ vnoremap ;u gu
 nnoremap ;U gUiw
 vnoremap ;U gU
 nnoremap ;; ~h
+vnoremap ;; ~
   "not currently used in normal mode, and fits better mnemonically
   "move to right preserves original cursor location
 "Repair semicolon in insert mode
@@ -787,6 +788,7 @@ function! s:texmacros()
   call s:delimscr('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
   call s:delimscr('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
   "Single-character maps
+  "THIS NEEDS WORK; right now maybe just too confusing
   inoremap <expr> <buffer> .m '\mathrm{'.nr2char(getchar()).'}'
   inoremap <expr> <buffer> .M '\mathbf{'.nr2char(getchar()).'}'
   inoremap <expr> <buffer> .h '\hat{'.nr2char(getchar()).'}'
@@ -1754,7 +1756,7 @@ augroup END
 " * Below is copied from: https://stackoverflow.com/a/597932/4970632
 " * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
 "   renaming, and do it by confirming every single instance
-function! s:scopesearch(replace)
+function! g:scopesearch(replace) "global one for testing
   let saveview=winsaveview()
   keepjumps normal [[
     "allow recursion here
@@ -1772,6 +1774,40 @@ function! s:scopesearch(replace)
     endif
   else
     return '\b' "backspace, because we failed, so forget the range limitation
+  endif
+endfunction
+function! s:scopesearch(replace)
+  let a:start=line('.')
+  let saveview=winsaveview()
+  "Loop through possible jumping commands
+  "In future, consider detecting separately for python indentation level
+  "Could just search until we encounter text at wrong indentation
+  " for a:endjump in ['normal ][', 'normal ]]k', 'normal G', 'call search('^\S')']
+  for a:endjump in ['normal ][', 'normal ]]k', 'call search("^\\S")']
+    " echom 'Trying '.a:endjump
+    keepjumps normal [[
+    let a:first=line('.')
+    exe 'keepjumps '.a:endjump
+    let a:last=line('.')
+    " echom a:first.' to '.a:last | sleep 1
+    if a:first<a:last | break | endif
+    exe 'normal '.a:start.'g'
+    "return to initial state at the end, important
+  endfor
+  "Return stuff or whatever
+  call winrestview(saveview)
+  if a:first<a:last
+    echom "Scopesearch selected lines ".a:first." to ".a:last."."
+    if !a:replace
+      return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
+        "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
+    else
+      return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
+    endif
+  else
+    echom "Warning: Scopesearch failed to find function range (first line ".a:first." >= second line ".a:last.")."
+    sleep 1
+    return "" "empty string; will not limit scope anymore
   endif
 endfunction
 "###############################################################################
@@ -1824,6 +1860,10 @@ function! ReplaceOccurence()
 endfunction
 "###############################################################################
 "AWESOME REFACTORING STUFF I MADE MYSELF
+"Remap ? for function-wide searching; follows convention of */# and &/@
+"The \(\) makes text after the scope-atoms a bit more readable
+nnoremap <silent> <expr> ? '/<C-r>=<sid>scopesearch(0)<CR>\(\)'.nr2char(getchar())
+" nnoremap <silent> <expr> ? '/'.<sid>scopesearch(0).nr2char(getchar())
 "Keep */# case-sensitive while '/' and '?' are smartcase case-insensitive
 nnoremap <silent> * :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
 nnoremap <silent> & :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
@@ -1888,7 +1928,7 @@ else "with these ones, cursor will remain on word just replaced
   nnoremap d/ /<C-r>/<CR>``dgn
 endif
 "Search all capital words
-nnoremap <Leader>z /\<[A-Z]\+\><CR>
+nnoremap cz /\<[A-Z]\+\><CR>
 "Colon search replacements -- not as nice as the above ones, which stay in normal mode
 " * Consider opinion guy who made above maps expressed in this thread:
 " https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
@@ -1957,13 +1997,13 @@ noremap <Tab>6 6gt
 noremap <Tab>7 7gt
 noremap <Tab>8 8gt
 noremap <Tab>9 9gt
-noremap <Tab>h gT
-noremap <Tab>l gt
+noremap <Tab>, gT
+noremap <Tab>. gt
 noremap <Tab>o :tabe 
 noremap <expr> <Tab>O ":argadd ".input('Enter filename or glob pattern: ')."<CR>:tab all<CR>"
   "this lets us open several files in glob pattern (e.g. all python files)
   "must be executed RIGHT AFTER OPENING VIM; other stuff
-noremap <silent> <Tab>. :execute "tabn ".g:LastTab<CR>
+noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
   "return to previous tab
 "###############################################################################
 "FUNCTION -- MOVE CURRENT TAB TO THE EXACT PLACE OF TAB NO. X
@@ -1986,12 +2026,17 @@ noremap <silent> <expr> <Tab>m ":call <sid>tabmove(".eval(input('Move tab: '))."
 "WINDOW MANAGEMENT
 noremap <Tab> <Nop>
 noremap <Tab><Tab> <Nop>
-noremap <Tab>q <C-w>o
+" noremap <Tab>q <C-w>o
+" noremap <Tab>q gT
+" noremap <Tab>w gt
+  "these are super close, and memorable, so why not!
 " noremap <Tab><Tab>q <C-w>o
   "close all but current window
 "Splitting -- make :sp and :vsp split to right and bottom
 set splitright
 set splitbelow
+noremap <Tab>- :split 
+noremap <Tab>\| :vsplit 
 "Size-changing remaps
 " noremap <Tab>J :exe 'resize '.(winheight(0)*3/2)<CR>
 " noremap <Tab>K :exe 'resize '.(winheight(0)*2/3)<CR>
@@ -2011,12 +2056,12 @@ noremap <Tab>M <C-w>_
 " noremap <Tab><Down> <C-w>j
 " noremap <Tab><Up> <C-w>k
 " noremap <Tab><Right> <C-w>l
-noremap <Tab>J <C-w>j
-noremap <Tab>K <C-w>k
-noremap <Tab>H <C-w>h
-noremap <Tab>L <C-w>l
+noremap <Tab>j <C-w>j
+noremap <Tab>k <C-w>k
+noremap <Tab>h <C-w>h
+noremap <Tab>l <C-w>l
   "window motion; makes sense so why not
-nnoremap <Tab>, <C-w><C-p>
+nnoremap <Tab>' <C-w><C-p>
   "switch to last window
 noremap <Tab>t <C-w>t
   "put current window into tab

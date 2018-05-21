@@ -38,9 +38,9 @@
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 function help() {
   if builtin help $1 &>/dev/null; then
-    builtin help $1 | less
+    builtin help $1 2>&1 | less
   elif $1 --help &>/dev/null; then
-    $1 --help | less
+    $1 --help 2>&1 | less # combine output streams or can get weird error
   else
     echo "No help information for \"$1\"."
   fi
@@ -318,9 +318,9 @@ else
 fi
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-alias lx="ls $lscolor -AF -lsa | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
-alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
-alias ld="find . -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh" # directory sizes
+alias lx="ls $lscolor -AFl | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
+alias lsd="ls -d *" # keep it simple
+function lld() { [ -z $1 ] && dir="." || dir="$1"; find "$1" -maxdepth 1 -mindepth 1 -type d -exec du -hs hi{} \; | $sortcmd -sh; } # directory sizes
 alias df="df -h" # disk useage
 alias cd="cd -P" # -P follows physical location
 alias ps="ps" # processes in this shell
@@ -771,14 +771,14 @@ alias ncdump="ncdump -h" # almost always want this; access old versions in funct
 function ncinfo() { # only get text between variables: and linebreak before global attributes
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' # trims first and last lines; do not need these
+  \ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
 function ncvarsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | grep -A 100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+  \ncdump -h "$1" | grep -A 100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -789,7 +789,7 @@ function ncdimsinfo() { # get information for just variables (no dimension/globa
     # bother parsing that information
   [ -z "$1" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | grep -B 100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t
+  \ncdump -h "$1" | grep -B 100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -826,7 +826,7 @@ function ncvarinfo() { # as above but just for one variable
   [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
   [ -z "$2" ] && { echo "Must declare file name."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  \ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
+  \ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -838,7 +838,7 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $macos && reverse="tail -r" || reverse="tac"
   # \ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
-  \ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse
+  \ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse | less
     # shhh... just let it happen baby
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
@@ -850,7 +850,7 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
   local args=($@)
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
-  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
     # this procedure is ideal for "sanity checks" of data; just test one
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
@@ -862,7 +862,7 @@ function ncvardatafull() { # as above but show everything
   local args=($@)
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
-  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2"
+  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
   # 2>/dev/null
 }
 # Extract generalized files
