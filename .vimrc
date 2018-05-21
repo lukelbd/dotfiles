@@ -1754,7 +1754,7 @@ augroup END
 " * Below is copied from: https://stackoverflow.com/a/597932/4970632
 " * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
 "   renaming, and do it by confirming every single instance
-function! s:scopesearch(replace)
+function! g:scopesearch(replace) "global one for testing
   let saveview=winsaveview()
   keepjumps normal [[
     "allow recursion here
@@ -1772,6 +1772,36 @@ function! s:scopesearch(replace)
     endif
   else
     return "\b" "backspace, because we failed, so forget the range limitation
+  endif
+endfunction
+function! s:scopesearch(replace)
+  let a:start=line('.')
+  let saveview=winsaveview()
+  "Loop through possible jumping commands
+  "In future, consider detecting separately for python indentation level
+  "Could just search until we encounter text at wrong indentation
+  for a:endjump in ["][", "]]k", "G"]
+    " echo "Trying ".a:endjump | sleep 1 "for debuggin
+    keepjumps normal [[
+    let a:first=line('.')
+    exe 'keepjumps normal '.a:endjump
+    let a:last=line('.')
+    if a:first<a:last | break | endif
+    exe 'normal '.a:start.'g'
+      "return to initial state at the end, important
+  endfor
+  "Return stuff or whatever
+  call winrestview(saveview)
+  if a:first<a:last
+    if !a:replace
+      return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
+        "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
+    else
+      return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
+    endif
+  else
+    echom "Warning: Scopesearch failed to find function range. First line: ".a:first." Second line: ".a:last
+    return "" "empty string; will not limit scope anymore
   endif
 endfunction
 "###############################################################################
@@ -1888,7 +1918,7 @@ else "with these ones, cursor will remain on word just replaced
   nnoremap d/ /<C-r>/<CR>``dgn
 endif
 "Search all capital words
-nnoremap <Leader>z /\<[A-Z]\+\><CR>
+nnoremap cz /\<[A-Z]\+\><CR>
 "Colon search replacements -- not as nice as the above ones, which stay in normal mode
 " * Consider opinion guy who made above maps expressed in this thread:
 " https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
