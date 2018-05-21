@@ -44,7 +44,7 @@ cat "$filename" | grep -v '^ *%' | egrep '\\bibliography{.*}|\\printbibliography
 [[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]] && dfilename="${filename%.tex}changes.tex" || dfilename="" # keep empty
 # Change compile options
 cat "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null \
-  && latex=latex && dfilename="" && htmlcompile=false # beamer options
+  && latex=pdflatex && dfilename="" && htmlcompile=false # beamer options
 # cat "$filename" | grep '\\usepackage{.*fontspec.*}' &>/dev/null \
 cat "$filename" | grep 'fontspec' &>/dev/null \
   && latex=xelatex && dfilename="" && htmlcompile=false
@@ -94,9 +94,10 @@ function latexfind() {
 
 # Automatically detect custom .cls file and copy it over
 # Will ignore commented out lines; see https://unix.stackexchange.com/a/157607/112647
-class=($(cat "$filename" | grep -o '^[^%]*' | grep '^.*\\documentclass' |
-  cut -s -d'{' -f2 | cut -s -d'}' -f1 ))
-[ ${#class[@]} -gt 1 ] && echo "ERROR: Ambiguous document class." && exit 1
+# Also ignore documentclass calls within verbatim commands; or just enforce starts at 0 position
+class=($(cat "$filename" | grep -o '^[^%]*' | grep '^\\documentclass' |
+          cut -s -d'{' -f2 | cut -s -d'}' -f1 ))
+[ ${#class[@]} -gt 1 ] && echo "ERROR: Ambiguous document class: \"${class[@]}\"." && exit 1
 latexfind $class cls
 
 # As above but for the RequirePackage lines in the .cls file
