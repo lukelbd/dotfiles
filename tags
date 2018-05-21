@@ -1,0 +1,137 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Figure	../pyfuncs/plot.py	/^class Figure(mfigure.Figure):$/;"	c
+Formatter	../pyfuncs/plot.py	/^def Formatter(sigfig=3, tickrange=None):$/;"	f
+FracFormatter	../pyfuncs/plot.py	/^def FracFormatter(fact=np.pi, symbol=r'\\pi'):$/;"	f
+Fraction	../pyfuncs/plot.py	/^from fractions import Fraction$/;"	i
+LatFormatter	../pyfuncs/plot.py	/^def LatFormatter(sigfig=0, sine=False, cardinal=True):$/;"	f
+LonFormatter	../pyfuncs/plot.py	/^def LonFormatter(sigfig=0, cardinal=True):$/;"	f
+MethodType	../pyfuncs/plot.py	/^from types import MethodType$/;"	i
+MidpointNorm	../pyfuncs/plot.py	/^class MidpointNorm(mcolors.Normalize):$/;"	c
+Norm	../pyfuncs/plot.py	/^class Norm(mcolors.Normalize):$/;"	c
+Settings	../pyfuncs/plot.py	/^import copy # for copying Settings$/;"	i
+WarpNorm	../pyfuncs/plot.py	/^class WarpNorm(mcolors.Normalize):$/;"	c
+__call__	../pyfuncs/plot.py	/^    def __call__(self, value, clip=None):$/;"	m	class:MidpointNorm	file:
+__call__	../pyfuncs/plot.py	/^    def __call__(self, value, clip=None):$/;"	m	class:Norm	file:
+__call__	../pyfuncs/plot.py	/^    def __call__(self, value, clip=None):$/;"	m	class:WarpNorm	file:
+__init__	../pyfuncs/plot.py	/^    def __init__(self, *args, **kwargs):$/;"	m	class:Figure
+__init__	../pyfuncs/plot.py	/^    def __init__(self, exp=0, extend='neither', midpoint=None, vmin=None, vmax=None, clip=None):$/;"	m	class:WarpNorm
+__init__	../pyfuncs/plot.py	/^    def __init__(self, levels, midpoint=None, clip=False, **kwargs):$/;"	m	class:Norm
+__init__	../pyfuncs/plot.py	/^    def __init__(self, vmin=None, vmax=None, midpoint=None, clip=False):$/;"	m	class:MidpointNorm
+_announcement	../pyfuncs/plot.py	/^_announcement = False$/;"	v
+_autolocate	../pyfuncs/plot.py	/^def _autolocate(min_, max_, base=5):$/;"	f
+_bar	../pyfuncs/plot.py	/^def _bar(self, *args, **kwargs): # bar plot with different color options$/;"	f
+_basemap_fix	../pyfuncs/plot.py	/^def _basemap_fix(m, lon, lat):$/;"	f
+_box	../pyfuncs/plot.py	/^    pass$/;"	f
+_cformat	../pyfuncs/plot.py	/^def _cformat(self, mappable, cgrid=False, clocator=None, cminorlocator=None,$/;"	f
+_contour	../pyfuncs/plot.py	/^def _contour(self, x, y, Z, **kwargs):$/;"	f
+_contour_basemap	../pyfuncs/plot.py	/^def _contour_basemap(self, lon, lat, Z, **kwargs):$/;"	f
+_contour_fix	../pyfuncs/plot.py	/^def _contour_fix(c, linewidth=0.2):$/;"	f
+_contourcheck	../pyfuncs/plot.py	/^def _contourcheck(x, y, Z):$/;"	f
+_contourf	../pyfuncs/plot.py	/^def _contourf(self, x, y, Z, **kwargs):$/;"	f
+_contourf_basemap	../pyfuncs/plot.py	/^def _contourf_basemap(self, lon, lat, Z, **kwargs):$/;"	f
+_contourflevels	../pyfuncs/plot.py	/^def _contourflevels(kwargs):$/;"	f
+_format	../pyfuncs/plot.py	/^def _format(self,$/;"	f
+_graticule_fix	../pyfuncs/plot.py	/^def _graticule_fix(x, y):$/;"	f
+_histogram	../pyfuncs/plot.py	/^def _histogram(self, *args, **kwargs): # histogram$/;"	f
+_lformat	../pyfuncs/plot.py	/^def _lformat(self, handles=None, align=None, handlefix=False, **kwargs): #, settings=None): # can be updated$/;"	f
+_opencolors	../pyfuncs/plot.py	/^_opencolors = { "gray":   ["#f8f9fa", "#f1f3f5", "#e9ecef", "#dee2e6", "#ced4da", "#adb5bd", "#868e96", "#495057", "#343a40", "#212529"],$/;"	v
+_pcolor	../pyfuncs/plot.py	/^def _pcolor(self, x, y, Z, **kwargs):$/;"	f
+_pcolor_basemap	../pyfuncs/plot.py	/^def _pcolor_basemap(self, lon, lat, Z, **kwargs):$/;"	f
+_pcolor_fix	../pyfuncs/plot.py	/^def _pcolor_fix(p, linewidth=0.2):$/;"	f
+_pcolorcheck	../pyfuncs/plot.py	/^def _pcolorcheck(x, y, Z):$/;"	f
+_pcolorlevels	../pyfuncs/plot.py	/^def _pcolorlevels(kwargs):$/;"	f
+_pcolormesh	../pyfuncs/plot.py	/^def _pcolormesh(self, x, y, Z, **kwargs):$/;"	f
+_pcolormesh_basemap	../pyfuncs/plot.py	/^def _pcolormesh_basemap(self, lon, lat, Z, **kwargs):$/;"	f
+_plot_basemap	../pyfuncs/plot.py	/^def _plot_basemap(self, *args, **kwargs):$/;"	f
+_quiver	../pyfuncs/plot.py	/^def _quiver(self, x, y, Z, **kwargs): # quiver plot$/;"	f
+_scatter_basemap	../pyfuncs/plot.py	/^def _scatter_basemap(self, *args, **kwargs):$/;"	f
+_seam_fix	../pyfuncs/plot.py	/^def _seam_fix(basemap, lon, lat, data, globe=True):$/;"	f
+_setup	../pyfuncs/plot.py	/^    def _setup(self):$/;"	f	function:subplots
+_text	../pyfuncs/plot.py	/^def _text(self, x, y, text, transform='axes', fancy=False, black=True, edgewidth=2, **kwarg):$/;"	f
+_twinx	../pyfuncs/plot.py	/^    def _twinx(self, **kwargs):$/;"	f	function:subplots
+_twiny	../pyfuncs/plot.py	/^    def _twiny(self, **kwargs):$/;"	f	function:subplots
+_violin	../pyfuncs/plot.py	/^def _violin(self, *args, **kwargs): # violin plot$/;"	f
+add	../pyfuncs/plot.py	/^    def add(category, kwargs): # pass$/;"	f	function:globals
+arange	../pyfuncs/plot.py	/^def arange(min_, *args):$/;"	f
+ascii_lowercase	../pyfuncs/plot.py	/^from string import ascii_lowercase$/;"	i
+autolevels	../pyfuncs/plot.py	/^def autolevels(min_, max_, N=50):$/;"	f
+c	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+cartopy	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+cartopy	../pyfuncs/plot.py	/^    import cartopy.feature as cfeature$/;"	i
+cartopy	../pyfuncs/plot.py	/^    import cartopy.mpl.geoaxes as cgeoaxes$/;"	i
+ccrs	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+cfeature	../pyfuncs/plot.py	/^    import cartopy.feature as cfeature$/;"	i
+cgeoaxes	../pyfuncs/plot.py	/^    import cartopy.mpl.geoaxes as cgeoaxes$/;"	i
+close	../pyfuncs/plot.py	/^def close():$/;"	f
+cmapcolors	../pyfuncs/plot.py	/^def cmapcolors(name, N=None, vmin=None, vmax=None, left=False, centered=False):$/;"	f
+cmapfactory	../pyfuncs/plot.py	/^def cmapfactory(levels, colors, extend='neither'):$/;"	f
+cmapshow	../pyfuncs/plot.py	/^def cmapshow(N=11, ignore=['Miscellaneous','Sequential2','Diverging2']):$/;"	f
+colors	../pyfuncs/plot.py	/^colors = {**mcolors.XKCD_COLORS, **mcolors.OPEN_COLORS} # initialize the color dictionary$/;"	v
+colorshow	../pyfuncs/plot.py	/^def colorshow(string=None, ncols=4, nbreak=12, minsat=0.1,$/;"	f
+copy	../pyfuncs/plot.py	/^import copy # for copying Settings$/;"	i
+copying	../pyfuncs/plot.py	/^import copy # for copying Settings$/;"	i
+course	../pyfuncs/plot.py	/^import numpy as np # of course$/;"	i
+crs	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+cycler	../pyfuncs/plot.py	/^from cycler import cycler$/;"	i
+cycles	../pyfuncs/plot.py	/^cycles = {'default':['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'], # default V2 matplotlib$/;"	v
+cycles	../pyfuncs/plot.py	/^cycles = {**cycles, **{_cycle.lower():cmapcolors(_cycle) for _cycle in$/;"	v
+cycleshow	../pyfuncs/plot.py	/^def cycleshow():$/;"	f
+f	../pyfuncs/plot.py	/^    def f(n, loc, fact=fact, symbol=symbol): # must accept location argument$/;"	f	function:FracFormatter
+f	../pyfuncs/plot.py	/^    def f(value, location, cardinal=cardinal, sigfig=sigfig):$/;"	f	function:LonFormatter
+f	../pyfuncs/plot.py	/^    def f(value, location, sigfig=sigfig, tickrange=tickrange):$/;"	f	function:Formatter
+f	../pyfuncs/plot.py	/^    def f(value, location, sine=sine, cardinal=cardinal, sigfig=sigfig):$/;"	f	function:LatFormatter
+figures	../pyfuncs/plot.py	/^import os # need for saving figures$/;"	i
+fonts	../pyfuncs/plot.py	/^fonts = [font.split('\/')[-1].split('.')[0] for font in # system fonts$/;"	v
+fonts	../pyfuncs/plot.py	/^fonts = sorted(set(fonts)) # unique ones only$/;"	v
+for	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+for	../pyfuncs/plot.py	/^import copy # for copying Settings$/;"	i
+for	../pyfuncs/plot.py	/^import os # need for saving figures$/;"	i
+glob	../pyfuncs/plot.py	/^from glob import glob$/;"	i
+globals	../pyfuncs/plot.py	/^def globals(*args, **kwargs):$/;"	f
+is	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+leading	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.colors as mcolors$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.container as mcontainer$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.dates as mdates$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.figure as mfigure$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.font_manager as mfonts$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.gridspec as mgridspec$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.patheffects as mpatheffects$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.pyplot as plt$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.text as mtext$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.ticker as mticker$/;"	i
+matplotlib	../pyfuncs/plot.py	/^import matplotlib.transforms as mtransforms$/;"	i
+mbasemap	../pyfuncs/plot.py	/^    import mpl_toolkits.basemap as mbasemap$/;"	i
+mcolors	../pyfuncs/plot.py	/^import matplotlib.colors as mcolors$/;"	i
+mcontainer	../pyfuncs/plot.py	/^import matplotlib.container as mcontainer$/;"	i
+mdates	../pyfuncs/plot.py	/^import matplotlib.dates as mdates$/;"	i
+mfigure	../pyfuncs/plot.py	/^import matplotlib.figure as mfigure$/;"	i
+mfonts	../pyfuncs/plot.py	/^import matplotlib.font_manager as mfonts$/;"	i
+mgridspec	../pyfuncs/plot.py	/^import matplotlib.gridspec as mgridspec$/;"	i
+mpatheffects	../pyfuncs/plot.py	/^import matplotlib.patheffects as mpatheffects$/;"	i
+mpl	../pyfuncs/plot.py	/^    import cartopy.mpl.geoaxes as cgeoaxes$/;"	i
+mpl	../pyfuncs/plot.py	/^import matplotlib as mpl$/;"	i
+mpl_toolkits	../pyfuncs/plot.py	/^    import mpl_toolkits.basemap as mbasemap$/;"	i
+mtext	../pyfuncs/plot.py	/^import matplotlib.text as mtext$/;"	i
+mticker	../pyfuncs/plot.py	/^import matplotlib.ticker as mticker$/;"	i
+mtransforms	../pyfuncs/plot.py	/^import matplotlib.transforms as mtransforms$/;"	i
+need	../pyfuncs/plot.py	/^import os # need for saving figures$/;"	i
+np	../pyfuncs/plot.py	/^import numpy as np # of course$/;"	i
+of	../pyfuncs/plot.py	/^import numpy as np # of course$/;"	i
+os	../pyfuncs/plot.py	/^import os # need for saving figures$/;"	i
+panelfactory	../pyfuncs/plot.py	/^    def panelfactory(subspec, whichpanels=whichpanels,$/;"	f	function:subplots
+plt	../pyfuncs/plot.py	/^import matplotlib.pyplot as plt$/;"	i
+round_	../pyfuncs/plot.py	/^    def round_(x, base=5): return base*round(float(x)\/base)$/;"	f	function:autolevels
+save	../pyfuncs/plot.py	/^    def save(self, filename, squeeze=None, tight=None, pad=0.05, silent=False): #, desktop=True):$/;"	m	class:Figure
+saving	../pyfuncs/plot.py	/^import os # need for saving figures$/;"	i
+shade	../pyfuncs/plot.py	/^def shade(color, value=1, saturation=1):$/;"	f
+stands	../pyfuncs/plot.py	/^    import cartopy.crs as ccrs # crs stands for "coordinate reference system", leading c is "cartopy"$/;"	i
+subplots	../pyfuncs/plot.py	/^def subplots(array=None, nrows=1, ncols=1, emptycols=None, emptyrows=None, silent=False,$/;"	f
+testplot	../pyfuncs/plot.py	/^    def testplot(ax,cycle):$/;"	f	function:cycleshow
+time	../pyfuncs/plot.py	/^import time$/;"	i
+warp	../pyfuncs/plot.py	/^        def warp(x, exp, exp_max=4):$/;"	f	function:WarpNorm.__call__

@@ -33,33 +33,6 @@
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
 
-# Bindings and tab completion
-# The lines within single quotes can also be put inside .inputrc
-# bind '"\C-i":glob-expand-word' # expansion but not completion
-bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fail
-  # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
-bind 'set completion-ignore-case off' # don't want dat
-bind 'set disable-completion off'
-bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
-# Use "complete" command for setup
-# -d filters to only directories
-# -f filters to only files
-# -X filters based on EXTENDED GLOBBING pattern (search that)
-complete -d cd # complete changes behavior of "Tab" after command; cd
-  # shows only DIRECTORIES now
-complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
-  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
-complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
-complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-complete -f -X '!*.@(tex|py)' -o plusdirs latex
-complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
-complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
-complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-# Some shells disable tab-completion of dangerous commands; re-enable
-complete -f -o plusdirs mv
-complete -f -o plusdirs rm
-
 # Wrappers
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
@@ -93,37 +66,71 @@ function man() { # always show useful information when man is called
   fi
 }
 
-# Options
+# Tab completion behavior
+# TODO: Appears to have been disabled with the \C-i remap below
+# Or possibly due to other stuff
+# -d filters to only directories
+# -f filters to only files
+# -X filters based on EXTENDED GLOBBING pattern (search that)
+complete -d cd # complete changes behavior of "Tab" after command; cd
+  # shows only DIRECTORIES now
+complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
+  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
+complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
+complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
+complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
+complete -f -X '!*.@(tex|py)' -o plusdirs latex
+complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
+complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
+complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
+# Some shells disable tab-completion of dangerous commands; re-enable
+complete -f -o plusdirs mv
+complete -f -o plusdirs rm
+
+# Readline settings
+# Equivalent to putting lines in single quotes inside .inputrc
+# bind '"\C-i":glob-expand-word' # expansion but not completion
+bind 'set disable-completion off' # ensure on
+bind 'set completion-ignore-case on' # want dat
+bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
+  # one tab-press instead of two, and the leading part of filename becomes empty
+bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fail
+  # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
+bind -r '\C-s' # remove C-s binding to enable C-s in Vim (normally caught by terminal as start/stop signal)
+stty -ixon # disable start/stop output control; note for putty, have to edit STTY value and set ixon to zero in term options
+
+# Shell Options
+# Check out 'shopt -p' to see possibly interesting shell options
+# Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
 set +H
   # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
 shopt -s checkwinsize # allow window resizing
-shopt -u nullglob # turn off nullglob; so e.g. no expansion of ?, *, attempted if no matches
+shopt -u failglob # turn off failglob; so no error message if expansion is empty
+shopt -u nullglob # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
 shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
 shopt -s dotglob # include dot patterns in glob matches
+shopt -s dirspell # attempt spelling correction of dirname
+shopt -s nocaseglob # case insensitive
+shopt -s globstar # **/ matches all subdirectories, searches recursively
+# shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
 [ -z $TMUX ] && shopt -s failglob # raise error when a glob match fails
   # this caused problems with completion of wildcards in tmux sessions
 
 # Prompt
+# Keep things minimal; just make prompt boldface so its a bit more identifiable
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
-# e.g. [[:space:]_-]) = whitespace, underscore, OR dash
-
-# nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 
 # Editor stuff
 # Use this for watching log files
 alias vi="vim -u NONE -c \"syntax on | filetype plugin on | filetype indent on\""
-alias watch="less +F" # actually already is a watch command
-# Thought about wrapping vim alias in function "tmux set-option mode-mouse off" but realized
-# this option would become GLOBAL to other panes, which don't necessarily want
 alias vims="vim -S .session.vim" # for working with obsession
-export EDITOR=vim # default editor
+alias watch="less +F" # actually already is a watch command
+export EDITOR=vi # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
-bind -r '\C-s' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
-stty -ixon # for putty, have to edit STTY value and set ixon to zero in term options
 
 ################################################################################
 # Magic changing stderr color
@@ -610,9 +617,9 @@ function figuresync() {
     local remotedir="/home/ldavis/$localdir"
   fi
   echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
-      eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
-      ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
-    \ssh $server 'eval "$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
+  eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
+  ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
+  \ssh $server 'eval "$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
     cd '"$remotedir"'; git status -s; sleep 1
     mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
     ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
