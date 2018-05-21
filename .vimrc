@@ -1756,26 +1756,6 @@ augroup END
 " * Below is copied from: https://stackoverflow.com/a/597932/4970632
 " * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
 "   renaming, and do it by confirming every single instance
-function! g:scopesearch(replace) "global one for testing
-  let saveview=winsaveview()
-  keepjumps normal [[
-    "allow recursion here
-    "also assumes we did the match below
-  let a:first=line('.')
-  keepjumps normal ][
-  let a:last=line('.')
-  call winrestview(saveview)
-  if a:first<a:last
-    if a:replace
-      return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
-    else
-      return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
-      "%% is literal % character; check out %l atom documentation
-    endif
-  else
-    return '\b' "backspace, because we failed, so forget the range limitation
-  endif
-endfunction
 function! s:scopesearch(replace)
   let a:start=line('.')
   let saveview=winsaveview()
@@ -1806,7 +1786,6 @@ function! s:scopesearch(replace)
     endif
   else
     echom "Warning: Scopesearch failed to find function range (first line ".a:first." >= second line ".a:last.")."
-    sleep 1
     return "" "empty string; will not limit scope anymore
   endif
 endfunction
