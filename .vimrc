@@ -1768,10 +1768,10 @@ function! s:scopesearch(replace)
       return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
     else
       return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
-        "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
+      "%% is literal % character; check out %l atom documentation
     endif
   else
-    return "\b" "backspace, because we failed, so forget the range limitation
+    return '\b' "backspace, because we failed, so forget the range limitation
   endif
 endfunction
 "###############################################################################
