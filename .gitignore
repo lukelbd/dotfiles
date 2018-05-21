@@ -1,5 +1,7 @@
 # Specifically for this repository #
 ####################################
+empty*
+  # practice files
 .vim/plugged
   # have issues with plugin directory if don't do this; may have to do with this directory
   # being git clones of other directories, and hard to sync objects in .git
