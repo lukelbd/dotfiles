@@ -589,6 +589,7 @@ vnoremap ;u gu
 nnoremap ;U gUiw
 vnoremap ;U gU
 nnoremap ;; ~h
+vnoremap ;; ~
   "not currently used in normal mode, and fits better mnemonically
   "move to right preserves original cursor location
 "Repair semicolon in insert mode
@@ -1996,13 +1997,13 @@ noremap <Tab>6 6gt
 noremap <Tab>7 7gt
 noremap <Tab>8 8gt
 noremap <Tab>9 9gt
-noremap <Tab>h gT
-noremap <Tab>l gt
+noremap <Tab>, gT
+noremap <Tab>. gt
 noremap <Tab>o :tabe 
 noremap <expr> <Tab>O ":argadd ".input('Enter filename or glob pattern: ')."<CR>:tab all<CR>"
   "this lets us open several files in glob pattern (e.g. all python files)
   "must be executed RIGHT AFTER OPENING VIM; other stuff
-noremap <silent> <Tab>. :execute "tabn ".g:LastTab<CR>
+noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
   "return to previous tab
 "###############################################################################
 "FUNCTION -- MOVE CURRENT TAB TO THE EXACT PLACE OF TAB NO. X
@@ -2025,12 +2026,17 @@ noremap <silent> <expr> <Tab>m ":call <sid>tabmove(".eval(input('Move tab: '))."
 "WINDOW MANAGEMENT
 noremap <Tab> <Nop>
 noremap <Tab><Tab> <Nop>
-noremap <Tab>q <C-w>o
+" noremap <Tab>q <C-w>o
+" noremap <Tab>q gT
+" noremap <Tab>w gt
+  "these are super close, and memorable, so why not!
 " noremap <Tab><Tab>q <C-w>o
   "close all but current window
 "Splitting -- make :sp and :vsp split to right and bottom
 set splitright
 set splitbelow
+noremap <Tab>- :split 
+noremap <Tab>\| :vsplit 
 "Size-changing remaps
 " noremap <Tab>J :exe 'resize '.(winheight(0)*3/2)<CR>
 " noremap <Tab>K :exe 'resize '.(winheight(0)*2/3)<CR>
@@ -2050,12 +2056,12 @@ noremap <Tab>M <C-w>_
 " noremap <Tab><Down> <C-w>j
 " noremap <Tab><Up> <C-w>k
 " noremap <Tab><Right> <C-w>l
-noremap <Tab>J <C-w>j
-noremap <Tab>K <C-w>k
-noremap <Tab>H <C-w>h
-noremap <Tab>L <C-w>l
+noremap <Tab>j <C-w>j
+noremap <Tab>k <C-w>k
+noremap <Tab>h <C-w>h
+noremap <Tab>l <C-w>l
   "window motion; makes sense so why not
-nnoremap <Tab>, <C-w><C-p>
+nnoremap <Tab>' <C-w><C-p>
   "switch to last window
 noremap <Tab>t <C-w>t
   "put current window into tab
