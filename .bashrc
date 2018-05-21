@@ -318,9 +318,9 @@ else
 fi
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-alias lx="ls $lscolor -AF -lsa | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
-alias lf="ls -1 | sed -e \"s/\..*$//\"" # shows filenames without extensions
-alias ld="find . -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh" # directory sizes
+alias lx="ls $lscolor -AFl | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
+alias lsd="ls -d *" # keep it simple
+function lld() { [ -z $1 ] && dir="." || dir="$1"; find "$1" -maxdepth 1 -mindepth 1 -type d -exec du -hs hi{} \; | $sortcmd -sh; } # directory sizes
 alias df="df -h" # disk useage
 alias cd="cd -P" # -P follows physical location
 alias ps="ps" # processes in this shell
