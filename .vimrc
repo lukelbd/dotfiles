@@ -787,6 +787,7 @@ function! s:texmacros()
   call s:delimscr('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
   call s:delimscr('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
   "Single-character maps
+  "THIS NEEDS WORK; right now maybe just too confusing
   inoremap <expr> <buffer> .m '\mathrm{'.nr2char(getchar()).'}'
   inoremap <expr> <buffer> .M '\mathbf{'.nr2char(getchar()).'}'
   inoremap <expr> <buffer> .h '\hat{'.nr2char(getchar()).'}'
@@ -1780,19 +1781,22 @@ function! s:scopesearch(replace)
   "Loop through possible jumping commands
   "In future, consider detecting separately for python indentation level
   "Could just search until we encounter text at wrong indentation
-  for a:endjump in ["][", "]]k", "G"]
-    " echo "Trying ".a:endjump | sleep 1 "for debuggin
+  " for a:endjump in ['normal ][', 'normal ]]k', 'normal G', 'call search('^\S')']
+  for a:endjump in ['normal ][', 'normal ]]k', 'call search("^\\S")']
+    " echom 'Trying '.a:endjump
     keepjumps normal [[
     let a:first=line('.')
-    exe 'keepjumps normal '.a:endjump
+    exe 'keepjumps '.a:endjump
     let a:last=line('.')
+    " echom a:first.' to '.a:last | sleep 1
     if a:first<a:last | break | endif
     exe 'normal '.a:start.'g'
-      "return to initial state at the end, important
+    "return to initial state at the end, important
   endfor
   "Return stuff or whatever
   call winrestview(saveview)
   if a:first<a:last
+    echom "Scopesearch selected lines ".a:first." to ".a:last."."
     if !a:replace
       return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
         "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
@@ -1800,7 +1804,8 @@ function! s:scopesearch(replace)
       return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
     endif
   else
-    echom "Warning: Scopesearch failed to find function range. First line: ".a:first." Second line: ".a:last
+    echom "Warning: Scopesearch failed to find function range (first line ".a:first." >= second line ".a:last.")."
+    sleep 1
     return "" "empty string; will not limit scope anymore
   endif
 endfunction
@@ -1854,6 +1859,10 @@ function! ReplaceOccurence()
 endfunction
 "###############################################################################
 "AWESOME REFACTORING STUFF I MADE MYSELF
+"Remap ? for function-wide searching; follows convention of */# and &/@
+"The \(\) makes text after the scope-atoms a bit more readable
+nnoremap <silent> <expr> ? '/<C-r>=<sid>scopesearch(0)<CR>\(\)'.nr2char(getchar())
+" nnoremap <silent> <expr> ? '/'.<sid>scopesearch(0).nr2char(getchar())
 "Keep */# case-sensitive while '/' and '?' are smartcase case-insensitive
 nnoremap <silent> * :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
 nnoremap <silent> & :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
