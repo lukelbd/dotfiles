@@ -141,7 +141,7 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 alias vi="vim -u NONE -c \"syntax on | filetype plugin on | filetype indent on\""
 alias vims="vim -S .session.vim" # for working with obsession
 alias watch="less +F" # actually already is a watch command
-export EDITOR=vi # default editor, nice and simple
+export EDITOR=vim # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 
 ################################################################################
