@@ -347,6 +347,8 @@ call plug#begin('~/.vim/plugged')
 "Appearence; use my own customzied statusline/tagbar stuff though, and it's way better
 " Plug 'vim-airline/vim-airline'
 " Plug 'itchyny/lightline.vim'
+"Proper syntax highlighting for .tmux.conf and .tmux files
+Plug 'tmux-plugins/vim-tmux'
 "Python wrappers
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
@@ -372,7 +374,9 @@ Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 "Sessions and swap files
 "Mapped in my .bashrc vims to vim -S .session.vim and exiting vim saves the session there
+"NOTE: Apparently obsession causes all folds to be closed
 Plug 'tpope/vim-obsession'
+" set viewoptions=options,cursor "tried to see if this would stop vim -S from closing folds
 Plug 'gioele/vim-autoswap' "deals with swap files automatically
 "Git wrapper
 " Plug 'tpope/vim-fugitive'
@@ -495,7 +499,7 @@ augroup END
 " b, B, r, a correspond to ), }, ], > (second 2 should be memorized, first 2
 "     are just like vim)
 " p is a Vim-paragraph (block between blank lines)
-"Alias the ds[, ds(, etc. behavior for new keys
+"Alias the BUILTIN ds[, ds(, etc. behavior for NEW KEY-CONVENTIONS introduced by SURROUND
 "Function simply matches these builtin VIM methods with a new delimiter-identifier
 function! s:surround(original,new)
   exe 'nnoremap da'.a:original.' da'.a:new
@@ -507,9 +511,20 @@ function! s:surround(original,new)
   exe 'nnoremap <silent> va'.a:original.' :let b:v_mode="v"<CR>va'.a:new
   exe 'nnoremap <silent> vi'.a:original.' :let b:v_mode="v"<CR>vi'.a:new
 endfunction
-for s in ["r[", "a<"]
+for s in ['r[', 'a<', 'c{']
   call s:surround(s[0], s[1]) "most simple ones
 endfor
+"Alias all SURROUND curly-bracket commands with c
+nmap dsc dsB
+  "delete curlies
+nmap cscb csBb
+nmap cscr csBr
+nmap csca csBa
+  "to curlies
+nmap csbc csbB
+nmap csrc csbB
+nmap csac csbB
+  "from curlies
 "Quick function selection for stuff formatted like function(text)
 "For functions the select/delete 'inner' stuff is already satisfied
 nnoremap daf mzF(bdt(lda(`z
@@ -525,11 +540,12 @@ nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<E
 "to prefix with ';' and ','; see below for details
 function! s:delims(map,left,right,bmap,WORD)
   if a:bmap | let a:buffer=" <buffer> " | else | let a:buffer="" | endif
+  if a:WORD | let a:lword="B" | let a:rword="E" | else | let a:lword="b" | let a:rword="e" | endif "highlight word or WORD
   if a:right =~ "|" | let a:offset=1 | else | let a:offset=0 | endif
     "need special consideration when doing | maps, but not sure why
   if !has_key(g:plugs, "vim-surround") "fancy repeatable maps
     "Simple map, but repitition will fail
-    exe 'nnoremap '.a:buffer.' '.a:map.' mzlbi'.a:left.'<Esc>hea'.a:right.'<Esc>`z'
+    exe 'nnoremap '.a:buffer.' '.a:map.' mzl'.a:lword.'i'.a:left.'<Esc>h'.a:rword.'a'.a:right.'<Esc>`z'
   else
     "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
     "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
@@ -539,16 +555,16 @@ function! s:delims(map,left,right,bmap,WORD)
     "  especially when matchit regexes try to highlight unmatched braces. Considered
     "  changing :noautocmd but that can't be done for a remap; see :help <mod>
     "* For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
-    "  Here's a simpler example:
-    "    nnoremap <Plug>deletehl :s/<C-r>//<CR>:call repeat#set("\<Plug>deletehl",v:count)<CR>
-    "    nmap d/ <Plug>deletehl
     exe 'nnoremap <silent> '.a:buffer.' <Plug>n'.a:map.' :setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'mzlbi'.a:left.'<Esc>hea'.a:right.'<Esc>`z:call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>:setlocal eventignore=<CR>'
+      \.'mzl'.a:lword.'i'.a:left.'<Esc>h'.a:rword.'a'.a:right.'<Esc>`z'
+      \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>:setlocal eventignore=<CR>'
     exe 'nmap '.a:map.' <Plug>n'.a:map
   endif
-  exe 'vnoremap <silent> '.a:buffer.' '.a:map.' <Esc>:setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-    \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-a:offset).':setlocal eventignore=<CR>'
-  exe 'inoremap '.a:buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-a:offset)
+  if !a:WORD "don't map if a WORD map; they are identical
+    exe 'vnoremap <silent> '.a:buffer.' '.a:map.' <Esc>:setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+      \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-a:offset).':setlocal eventignore=<CR>'
+    exe 'inoremap '.a:buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-a:offset)
+  endif
 endfunction
 function! s:delimscr(map,left,right)
   exe 'inoremap <silent> <buffer> ,'.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
@@ -566,11 +582,15 @@ endfunction
 "5. Whether the normal-mode map is for WORD instead of word
 "   In this last case, only the normal-mode map is defined.
 call s:delims(';p', 'print(', ')', 0, 0)
-call s:delims(';P', 'print(', ')', 0, 0)
+call s:delims(';P', 'print(', ')', 0, 1)
 call s:delims(';b', '(', ')', 0, 0)
+call s:delims(';B', '(', ')', 0, 1)
 call s:delims(';c', '{', '}', 0, 0)
+call s:delims(';C', '{', '}', 0, 1)
 call s:delims(';r', '[', ']', 0, 0)
+call s:delims(';R', '[', ']', 0, 1)
 call s:delims(';a', '<', '>', 0, 0)
+call s:delims(';A', '<', '>', 0, 1)
 call s:delims(";'", "'", "'", 0, 0)
 call s:delims(';"', '"', '"', 0, 0)
 call s:delims(';$', '$', '$', 0, 0)
@@ -956,28 +976,65 @@ nnoremap sr zug
 "CUSTOM PYTHON MACROS
 augroup python
 augroup END
-"Experimental feature
-function! s:dconvert()
-  " See: http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
+"Experimental feature that converts dict() to {}-style dictionary
+function! s:dictconvert() "For searches with :normal command, see:
+  "http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
+  let saveview=winsaveview()
   let a:line=line('.')
-  exe "normal! /=\<CR>"
+  normal! 0
+  call search('=')
   while line('.')==a:line
-    "note the h after <Esc> only works if you have turned on the InsertLeave autocmd
-    "that preserves the cursor position
-    exe "normal! r:bi'\<Esc>hea'\<Esc>"
-    exe "normal! /=\<CR>"
+    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
   endwhile
-  exe "normal! \<C-o>"
+  call winrestview(saveview)
+  "return to original location
+  "column first, then go to line; if column no longer exists, we just are at end-of-line
 endfunction
-nnoremap <Leader>d :call <sid>dconvert()<CR>
+function! s:Dictconvert()
+  let saveview=winsaveview()
+  let a:estatus=search('dict(', 'be') "search moving Backwards, and fall on End of match
+  if !a:estatus
+    echom "Error: The cursor is not within a python dictionary."
+    call winrestview(saveview) | return
+  endif
+  "Find the matching bracket for dict() instance
+  let a:start=[line('.'), col('.')] "save the starting line
+  normal %
+  " echo 'Start: '.saveview['lnum'].','.saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
+  if line('.')<saveview['lnum'] || (line('.')==saveview['lnum'] && col('.')<saveview['col'])
+    echom "Error: The cursor is not within a python dictionary."
+    call winrestview(saveview) | return
+  endif
+  let a:end=[line('.'), col('.')] "save the ending line
+  call cursor(a:start[0], a:start[1]) "return to starting point of dictionary
+  exe 's/dict(/(' | normal lcsbB
+  call search('=')
+  while line('.')<a:end[0] || (line('.')==a:end[0] && col('.')<=a:end[1])
+    "note the h after <Esc> only works if have the InsertLeave autocmd that preserves the cursor position
+    "the h ensures single-character variables aren't skipped over
+    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
+  endwhile
+  call winrestview(saveview)
+  "return to original location; another option is cursor() function, but slightly more limited functionality
+  "column first, then go to line; if column no longer exists, we just are at end-of-line
+endfunction
+if has_key(g:plugs, "vim-repeat") "mnemonic is 'change this stuff to dictionary'
+  nnoremap <silent> <Plug>pydict :call <sid>dictconvert()<CR>:call repeat#set("\<Plug>pydict")<CR>
+  nnoremap <silent> <Plug>Pydict :call <sid>Dictconvert()<CR>:call repeat#set("\<Plug>Pydict")<CR>
+  nmap cd <Plug>pydict
+  nmap cD <Plug>Pydict
+else
+  nnoremap cd :call <sid>dictconvert()<CR>
+  nnoremap cD :call <sid>Dictconvert()<CR>
+endif
 "Macros for compiling code
 function! s:pymacros()
   "Simple shifting
   setlocal tabstop=4
   setlocal softtabstop=4
   setlocal shiftwidth=4
-  "Simple remaps
-  nnoremap <buffer> <Leader>q o"""<CR>"""<Esc><Up>o
+  "Simple remaps; fit with NerdComment syntax
+  nnoremap <buffer> cq o"""<CR>"""<Esc><Up>o
   "Maps that call shell commands
   " noremap <buffer> <expr> QD ":!clear; set -x; pydoc "
   "       \.input("Enter python documentation keyword: ")."<CR>"
@@ -986,13 +1043,15 @@ function! s:pymacros()
   inoremap <buffer> <expr> <C-x> "<Esc>:w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>a"
 endfunction
-"Toggle mappings with autocmds...or disable because they suck for now
 autocmd FileType python call s:pymacros()
-"Skeleton-code templates...decided that's unnecessary for python
-" autocmd BufNewFile *.py 0r ~/skeleton.py
+"Python-syntax; these should be provided with VIM by default
+let g:python_highlight_all=1
+
 "###############################################################################
-"MACROS FROM JEDI-VIM
-"See: https://github.com/davidhalter/jedi-vim
+"PYTHON CONFIGURATION FOR EXTERNAL PLUGINS
+augroup altpython
+augroup END
+"Jedi-vim stuff; see: https://github.com/davidhalter/jedi-vim
 if has_key(g:plugs, "jedi-vim")
   " let g:jedi#force_py_version=3
   let g:jedi#auto_vim_configuration = 0
@@ -1011,14 +1070,10 @@ if has_key(g:plugs, "jedi-vim")
   autocmd FileType python setlocal completeopt-=preview
     "disables docstring popup window
 endif
-"###############################################################################
-"VIM python-mode
+"Vim python-mode stuff
 if has_key(g:plugs, "python-mode")
   let g:pymode_python='python3'
 endif
-"###############################################################################
-"PYTHON-SYNTAX; these should be provided with VIM by default
-au FileType python let g:python_highlight_all=1
 
 "###############################################################################
 "C MACROS
@@ -1057,29 +1112,17 @@ au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
   "can put other stuff here; right now this is just for the NCL dict for NCL
 
 "###############################################################################
-"SHELL MACROS
-"MANPAGES of stuff
-" augroup shell
-" augroup END
-" noremap <expr> QM ":silent !clear; man "
-"     \.input('Search manpages: ')."<CR>:redraw!<CR>"
-" "--help info; pipe output into less for better interaction
-" noremap <expr> QH ":!clear; "
-"     \.input('Show --help info: ')." --help \| less<CR>:redraw!<CR>"
-
-"###############################################################################
 "DISABLE LINE NUMBERS AND SPECIAL CHARACTERS IN SPECIAL WINDOWS; ENABLE q-QUITTING
 "AND SOME HELP SETTINGS
 augroup help
 augroup END
-noremap Q :vert help 
-" function! s:helpclick()
-"   "If LeftClick did not remove us from help-menu, then jump to tag
-"   if &ft=="help"
-"     normal! <C-]>
-"       "weirdly :normal causes error< and :normal! does nothing
-"   endif
-" endfunction
+noremap QQ :vert help 
+noremap  <expr> QM ':!search='.input('Get man info: ').'; '
+  \.'if command man $search &>/dev/null; then man $search; fi<CR>:redraw!<CR>'
+"--help info; pipe output into less for better interaction
+noremap <expr> QH ':!search='.input('Get help info: ').'; '
+  \.'if builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
+  \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 function! s:helpsetup()
   if len(tabpagebuflist())==1 | q | endif "exit from help window, if it is only one left
   wincmd L "moves current window to be at far-right; 'wincmd' executes Ctrl+W functions
@@ -1088,7 +1131,7 @@ function! s:helpsetup()
   nnoremap <buffer> <CR> <C-]>
   if g:has_nowait
     nnoremap <nowait> <buffer> [ :pop<CR>
-    " nnoremap <buffer> <nowait> <LeftMouse> <LeftMouse>:call <sid>helpclick()<CR>
+    " nnoremap <nowait> <buffer> <LeftMouse> <LeftMouse><C-]>
   endif
   setlocal nolist
   setlocal nonumber
@@ -1274,9 +1317,9 @@ augroup END
 "'I' toggle hidden file display, '?' toggle help
 "Remap NerdTree command
 if has_key(g:plugs, "nerdtree")
-  " noremap <Tab>j :NERDTreeFind<CR>
-  noremap <Tab>j :NERDTree %<CR>
-  noremap <Tab>J :NERDTreeTabsToggle<CR>
+  " noremap <Tab>n :NERDTreeFind<CR>
+  noremap <Tab>n :NERDTree %<CR>
+  noremap <Tab>N :NERDTreeTabsToggle<CR>
   let g:NERDTreeWinPos="right"
   let g:NERDTreeWinSize=20 "instead of 31 default
   let g:NERDTreeShowHidden=1
@@ -1297,7 +1340,7 @@ if has_key(g:plugs, "nerdtree")
     " normal! <C-w>r
     setlocal nolist
     nmap <buffer>  <Tab><Tab> :let g:PreTab=tabpagenr()<CR>T:exe 'tabn '.g:PreTab<CR>
-    noremap <buffer> <Tab>j :NERDTreeClose<CR>
+    noremap <buffer> <Tab>n :NERDTreeClose<CR>
   endfunction
   autocmd FileType nerdtree call s:nerdtreesetup()
 endif
@@ -1525,7 +1568,7 @@ if has_key(g:plugs, "tagbar")
       nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     endif
   endfunction
-  nnoremap <silent> <Tab>k :call <sid>tagbarsetup()<CR>
+  nnoremap <silent> <Tab>t :call <sid>tagbarsetup()<CR>
   nmap <expr> <Space><Space> ":TagbarOpen<CR><Tab>L/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     "be careful -- need to use default window-switching shortcut here!
   "Switch updatetime (necessary for Tagbar highlights to follow cursor)
@@ -1832,7 +1875,7 @@ function! ReplaceOccurence()
   call winrestview(winview)
   "If we are on top of an occurence, replace it
   if l:lnum_cur >= l:lnum1 && l:lnum_cur <= l:lnum2 && l:col_cur >= l:col1 && l:col_cur <= l:col2
-    exe "normal! cgn\<c-a>\<esc>"
+    exe "normal! cgn\<C-a>\<Esc>"
   endif
   call feedkeys("n")
   call repeat#set("\<Plug>ReplaceOccurences")
@@ -2042,9 +2085,9 @@ noremap <Tab>l <C-w>l
   "window motion; makes sense so why not
 nnoremap <Tab>' <C-w><C-p>
   "switch to last window
-noremap <Tab>t <C-w>t
+" noremap <Tab>t <C-w>t
   "put current window into tab
-noremap <Tab>n <C-w>w
+" noremap <Tab>n <C-w>w
 " noremap <Tab><Tab>. <C-w>w
   "next; this may be most useful one
   "just USE THIS instead of switching windows directionally
@@ -2129,15 +2172,19 @@ nnoremap <C-c> :call <sid>copytoggle()<CR>
 augroup folds
 augroup END
 "SimpylFold settings
+let g:SimpylFold_docstring_preview=1
 let g:SimpylFold_fold_docstring=0
 let g:SimpylFold_fold_import=0
 let g:SimpylFold_fold_docstrings=0
 let g:SimpylFold_fold_imports=0
 "Basic settings
+" set nofoldenable
 set foldmethod=expr
 set foldlevelstart=20
-set nofoldenable
-au BufRead * setlocal foldmethod=expr nofoldenable
+" set nofoldenable
+" au FileType * set nofoldenable
+" au FileType python normal! zR
+" au BufReadPost * setlocal nofoldenable
   "options syntax, indent, manual (e.g. entering zf), marker
   "for some reason re-starting VIM session sets fold methods to manual; use
   "this to change it back
