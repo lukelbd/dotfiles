@@ -50,8 +50,8 @@ fi
 function help() {
   if builtin help $1 &>/dev/null; then
     builtin help $1 2>&1 | less
-  # elif [ ! -z "$($1 --help 2>&1)" ]; then
-  elif $1 --help &>/dev/null; then # sometimes prints stuff and returns non-zero exit code
+  # elif [ ! -z "$($1 --help 2>&1)" ]; then # sometimes prints stuff and returns non-zero exit code, but usually text is in stderr
+  elif $1 --help &>/dev/null; then
     $1 --help 2>&1 | less # combine output streams or can get weird error
   else
     echo "No help information for \"$1\"."
