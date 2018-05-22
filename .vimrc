@@ -156,11 +156,8 @@ au CmdwinLeave * setlocal laststatus=2
   "new macro toggle; almost always just use one at a time
   "press ~ again to quit; 1, 2, etc. do nothing in normal mode. clever, huh?
   "don't diable q; have that remapped to show window
-" noremap `` @@
-" noremap , @1
-" noremap ` <Nop>
-noremap <silent> ` mzo<Esc>`z
-noremap <silent> ~ mzo<Esc>`z
+noremap <silent> <Leader>o mzo<Esc>`z
+noremap <silent> <Leader>O mzO<Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
 noremap " :echo "Setting mark q."<CR>mq
@@ -193,31 +190,36 @@ nnoremap O Ox<BS>
 nnoremap A g$a
 nnoremap I g^i
   "same for entering insert mode
-noremap H g^
-noremap L g$ge
-  "shortcuts for 'go to first char' and 'go to eol'
-  "works in both line-wrapped situations and unwrapped situations
 noremap m ge
 noremap M gE
-  "navigate by words
+  "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
 "Basic wrap-mode navigation, always move visually
 "Still might occasionally want to navigate by lines though
 noremap k gk
 noremap j gj
-" noremap  <Up>    <Nop>
-" noremap  <Down>  <Nop>
-" noremap  <Home>  <Nop>
-" noremap  <End>   <Nop>
-" inoremap <Up>    <Nop>
-" inoremap <Down>  <Nop>
-" inoremap <Home>  <Nop>
-" inoremap <End>   <Nop>
-" inoremap <Left>  <Nop>
-" inoremap <Right> <Nop>
-  "consider disabling arrow keys
-" noremap <Right> ;
-" noremap <Left> ,
-"   "or new use for them; this way can still use f,t repitition
+noremap gj j
+noremap gk k
+  "way more common to want to move up visual lines for me
+noremap ^ g^
+noremap $ g$
+noremap 0 g0
+noremap g^ ^
+noremap g$ $
+noremap g0 0
+  "shortcuts for 'go to first char' and 'go to eol' 
+  "works in both line-wrapped situations and unwrapped situations
+for s:map in ['noremap', 'inoremap'] "disable typical navigation keys
+  for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
+    exe s:map.' '.s:motion.' <Nop>'
+  endfor
+endfor
+"Overhauling t/T/f/F/,/; behavior
+noremap ` ;
+noremap ~ ,
+" noremap t <Nop>
+" noremap T <Nop>
+" noremap f <Nop>
+" noremap F <Nop>
 "Better join behavior -- before 2J joined this line and next, now it
 "means 'join the two lines below'; more intuitive. uses if statement
 "in <expr> remap, and v:count the user input count
@@ -252,6 +254,8 @@ nnoremap <Backspace> <Nop>
   "also prevent Ctrl+c rining the bell
 "###############################################################################
 "VISUAL MODE BEHAVIOR
+"Highlighting
+noremap <silent> <C-o> :noh<CR>
 "Cursor movement/scrolling while preserving highlights
 "Needed command-line ways to enter visual mode; see answer: https://vi.stackexchange.com/a/3701/8084
 "Why do this? Because had trouble storing <C-v> as variable, then issuing it as command
@@ -269,10 +273,7 @@ nnoremap <silent> <C-v> :let b:v_mode='VisualBlock'<CR>mV<C-v>
 vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:'.b:v_mode.'<CR>`N'
 vnoremap <CR> <Esc>
 "###############################################################################
-"HIGHLIGHTING/SPECIAL CHARACTER MANAGEMENT
-"highlight toggle
-noremap <Leader>n :noh<CR>
-  "o for 'highlight off'
+"SPECIAL CHARACTER MANAGEMENT
 "show whitespace chars, newlines, and define characters used
 nnoremap <Leader>l :setlocal list!<CR>
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
@@ -1112,26 +1113,42 @@ au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
   "can put other stuff here; right now this is just for the NCL dict for NCL
 
 "###############################################################################
-"DISABLE LINE NUMBERS AND SPECIAL CHARACTERS IN SPECIAL WINDOWS; ENABLE q-QUITTING
-"AND SOME HELP SETTINGS
+"Help window settings, and special settings for mini popup windows where we don't
+"want to see line numbers or special characters a la :set list. Also enable
+"quitting these windows with single 'q' press
 augroup help
 augroup END
-noremap QQ :vert help 
-noremap  <expr> QM ':!search='.input('Get man info: ').'; '
+"First free up 'q' key, so no more macros
+"This disables creating macros for all keys a-z, A-Z, and 0-9
+"Actually don't need this if just use the bottom remap
+" if g:has_nowait "if we do *not* have <nowait>, then this breaks the single-keystroke 'q' maps
+"   for c in range(0, 9) | exe 'nnoremap q'.c.' <Nop>' | endfor
+"   for c in range(char2nr('A'), char2nr('Z'))
+"     exe 'nnoremap q'.nr2char(c).' <Nop>'
+"     exe 'nnoremap q'.nr2char(c+32).' <Nop>'
+"   endfor
+" endif
+"Enable shortcut so that recordings are taken by just toggling a key on-off
+au BufEnter * let b:recording=0
+noremap <silent> <expr> q b:recording ? 'q:let b:recording=0<CR>' : 'qq:let b:recording=1<CR>'
+"Next set the help-menu remaps
+"The defalt 'fart' search= assignments are to avoid passing empty strings
+noremap <Leader>v :vert help 
+noremap  <expr> <Leader>m ':!clear<CR>:!search='.input('Get man info: ').'; [ -z $search ] && search=fart; '
   \.'if command man $search &>/dev/null; then man $search; fi<CR>:redraw!<CR>'
 "--help info; pipe output into less for better interaction
-noremap <expr> QH ':!search='.input('Get help info: ').'; '
+noremap <expr> <Leader>h ':!clear<CR>:!search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
   \.'if builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 function! s:helpsetup()
   if len(tabpagebuflist())==1 | q | endif "exit from help window, if it is only one left
   wincmd L "moves current window to be at far-right; 'wincmd' executes Ctrl+W functions
   vertical resize 79
-  noremap <buffer> q :q<CR>
+  nnoremap <buffer> q :q<CR>
   nnoremap <buffer> <CR> <C-]>
-  if g:has_nowait
-    nnoremap <nowait> <buffer> [ :pop<CR>
-    " nnoremap <nowait> <buffer> <LeftMouse> <LeftMouse><C-]>
+  " nnoremap <nowait> <buffer> <LeftMouse> <LeftMouse><C-]>
+  if g:has_nowait | nnoremap <nowait> <buffer> [ :pop<CR>
+  else | nnoremap <buffer> [[ :pop<CR>
   endif
   setlocal nolist
   setlocal nonumber
@@ -1176,14 +1193,23 @@ augroup END
 if has_key(g:plugs, "codi.vim")
   nnoremap <C-p> <Nop>
   nnoremap <C-n> <Nop>
-    "C-p already mapped to paste in insert mode; want these to do nothing
-  nnoremap <C-o> :CodiUpdate<CR>
-  inoremap <C-o> <Esc>:CodiUpdate<CR>a
+    "these are identical to j/k
+  nnoremap <C-n> :CodiUpdate<CR>
+  inoremap <C-n> <Esc>:CodiUpdate<CR>a
     "update manually commands; o stands for codi
-  nnoremap <silent> <expr> <Leader>o ':Codi!! '.&ft.'<CR>'
-    "turns current file into calculator; m stands for math
-  nnoremap <silent> <expr> <Leader>O ':tabe '.input('Enter python calculator name: ').'.py<CR>:Codi python<CR>'
+  function! s:newcodi(name)
+    if a:name=~".py"
+      echom "Error: Please don't add the .py."
+    elseif !len(a:name)
+      echom "Error: Name is empty."
+    else
+      exec "tabe ".a:name.".py"
+    endif
+  endfunction
+  nnoremap <silent> <expr> <Leader>n ':call <sid>newcodi("'.input('Enter .py calculator name: ').'")<CR>'
     "creates new calculator file, adds .py extension
+  nnoremap <silent> <expr> <Leader>N ':Codi!! '.&ft.'<CR>'
+    "turns current file into calculator; m stands for math
   let g:codi#interpreters = {
        \ 'python': {
            \ 'bin': '/usr/bin/python',
@@ -1318,8 +1344,8 @@ augroup END
 "Remap NerdTree command
 if has_key(g:plugs, "nerdtree")
   " noremap <Tab>n :NERDTreeFind<CR>
-  noremap <Tab>n :NERDTree %<CR>
-  noremap <Tab>N :NERDTreeTabsToggle<CR>
+  noremap <Leader>j :NERDTree %<CR>
+  noremap <Leader>J :NERDTreeTabsToggle<CR>
   let g:NERDTreeWinPos="right"
   let g:NERDTreeWinSize=20 "instead of 31 default
   let g:NERDTreeShowHidden=1
@@ -1568,8 +1594,8 @@ if has_key(g:plugs, "tagbar")
       nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     endif
   endfunction
-  nnoremap <silent> <Tab>t :call <sid>tagbarsetup()<CR>
-  nmap <expr> <Space><Space> ":TagbarOpen<CR><Tab>L/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
+  nnoremap <silent> <Leader>k :call <sid>tagbarsetup()<CR>
+  nmap <expr> <Leader><Space> ":TagbarOpen<CR><Tab>L/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     "be careful -- need to use default window-switching shortcut here!
   "Switch updatetime (necessary for Tagbar highlights to follow cursor)
   set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
@@ -1844,7 +1870,11 @@ au InsertLeave * set ignorecase
 nnoremap <silent> ! :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winrestview(b:position)<CR>
 "###############################################################################
 "MAGICAL FUNCTION; performs n.n.n. style replacement in one keystroke
-"Copied from: https://www.reddit.com/r/vim/comments/2p6jqr/quick_replace_useful_refactoring_and_editing_tool/
+"Also we overhaul the &, @, and # keys
+" * Inpsired from: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
+" * By default & repeats last :s command
+" * Use <C-r>=expand('<cword>')<CR> instead of <C-r><C-w> to avoid errors on empty lines
+" * gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
 let g:should_inject_replace_occurences = 0
 function! MoveToNext()
   if g:should_inject_replace_occurences
@@ -1856,12 +1886,26 @@ endfunction
 augroup auto_move_to_next
   autocmd! InsertLeave * :call MoveToNext()
 augroup END
+"Remaps using black magic
+nmap <silent> c* :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+      \:let g:should_inject_replace_occurences=1<CR>cgn
+nmap <silent> c& :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+      \:let g:should_inject_replace_occurences=1<CR>cgn
+nmap <silent> c# :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+      \:let g:should_inject_replace_occurences=1<CR>cgn
+nmap <silent> c@ :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+      \:let g:should_inject_replace_occurences=1<CR>cgn
 nmap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
-nmap <silent> <Leader>* :let @/='\C\<'.expand('<cword>').'\>'<CR>:set hlsearch<CR>:let g:should_inject_replace_occurences=1<CR>cgn
-vmap <silent> <Leader>* :<C-u>let old_reg=getreg('"')<Bar>let old_regtype=getregtype('"')<CR>gvy
-      \ :let @/ = substitute(escape(@",'/\.*$^~['),'\_s\+','\\_s\\+','g')<CR>:set hlsearch<CR>
-      \ :let g:should_inject_replace_occurences=1<CR>gV
-      \ :call setreg('"', old_reg, old_regtype)<CR>cgn
+" vmap <silent> <Leader>* :<C-u>let old_reg=getreg('"')<Bar>let old_regtype=getregtype('"')<CR>gvy
+"       \:let @/=substitute(escape(@",'/\.*$^~['),'\_s\+','\\_s\\+','g')<CR>:set hlsearch<CR>
+"       \:let g:should_inject_replace_occurences=1<CR>gV
+"       \:call setreg('"', old_reg, old_regtype)<CR>cgn
+  "this last one might be broken; seems messed up
+"Original remaps, which don't move onto next highlight automatically
+" nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
+" nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
+" nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
+" nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
 function! ReplaceOccurence()
   "Check if we are on top of an occurence
   let l:winview = winsaveview()
@@ -1912,23 +1956,7 @@ nnoremap vn gn
 "   if use %, would replace first occurence on every line
 " * Options for accessing register in vimscript, where we can't immitate user <C-r> keystroke combination:
 "     exe 's/'.@/.'//' OR exe 's/'.getreg('/').'//'
-"2) Replace current word, then hit dot to repeat on subsequent instance
-"Should use THIS instead of ciw then dot-n-dot-n et cetera
-" * From thread: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
-" * By default & repeats last :s command
-" * Use <C-r>=expand('<cword>')<CR> instead of <C-r><C-w> to avoid errors on empty lines
-" * gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
-" nnoremap c@ ?<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgN
-" nnoremap c# ?\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgN
-" nnoremap q gn "temporary to understand stuff
-nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
-nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
 if 1 && has_key(g:plugs, "vim-repeat")
-  " nnoremap <Plug>search2 ?<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgNn:call repeat#set("\<Plug>search2",v:count)<CR>
-  " nnoremap <Plug>search4 ?\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgNn:call repeat#set("\<Plug>search4",v:count)<CR>
-  " nnoremap <Plug>search6 ?<C-r>/<CR>``dgNn:call repeat#set("\<Plug>search6",v:count)<CR>
   nnoremap <Plug>search1 /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgnn:call repeat#set("\<Plug>search1",v:count)<CR>
   nnoremap <Plug>search2 /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgnn:call repeat#set("\<Plug>search2",v:count)<CR>
   nnoremap <Plug>search3 /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgnn:call repeat#set("\<Plug>search3",v:count)<CR>
@@ -1965,7 +1993,7 @@ nnoremap cz /\<[A-Z]\+\><CR>
 "SPECIAL DELETION TOOLS
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
 "Replace consecutive spaces on current line with one space
-nnoremap <Leader>q :s/\(^ *\)\@<! \{2,}/ /g<CR>
+nnoremap <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>
 "Replace consecutive newlines with single newline
 nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
@@ -1981,6 +2009,9 @@ function! s:cutmaps()
   nnoremap <buffer> <Leader>- :%s/–/--/gc<CR>
 endfunction
 au FileType bib,tex call s:cutmaps() "some bibtex lines
+" 2
+" 3
+" 4
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
@@ -1992,8 +2023,8 @@ augroup END
 "<C-^> (not avilable for custom remap, since ^ is not alphabetical)
 set iminsert=0
 for c in range(char2nr('A'), char2nr('Z'))
-  execute 'lnoremap ' . nr2char(c+32) . ' ' . nr2char(c)
-  execute 'lnoremap ' . nr2char(c) . ' ' . nr2char(c+32)
+  exe 'lnoremap '.nr2char(c+32).' '.nr2char(c)
+  exe 'lnoremap '.nr2char(c).' '.nr2char(c+32)
 endfor
 inoremap <C-z> <C-^>
 cnoremap <C-z> <C-^>
@@ -2058,21 +2089,19 @@ noremap <Tab><Tab> <Nop>
 set splitright
 set splitbelow
 noremap <Tab>- :split 
-noremap <Tab>\| :vsplit 
+noremap <Tab>\ :vsplit 
 "Size-changing remaps
-" noremap <Tab>J :exe 'resize '.(winheight(0)*3/2)<CR>
-" noremap <Tab>K :exe 'resize '.(winheight(0)*2/3)<CR>
-" noremap <Tab>H :exe 'vertical resize '.(winwidth(0)*3/2)<CR>
-" noremap <Tab>L :exe 'vertical resize '.(winwidth(0)*2/3)<CR>
-noremap <Tab><Down> :exe 'resize '.(winheight(0)*3/2)<CR>
-noremap <Tab><Up> :exe 'resize '.(winheight(0)*2/3)<CR>
-noremap <Tab><Left> :exe 'vertical resize '.(winwidth(0)*3/2)<CR>
-noremap <Tab><Right> :exe 'vertical resize '.(winwidth(0)*2/3)<CR>
-noremap <Tab>= <C-w>=
-" noremap <Tab><Tab>= <C-w>=
-  "set all windows to equal size
-noremap <Tab>M <C-w>_
-  "maximize window
+" noremap <silent> <Tab>J :exe 'resize '.(winheight(0)*3/2)<CR>
+" noremap <silent> <Tab>K :exe 'resize '.(winheight(0)*2/3)<CR>
+" noremap <silent> <Tab>H :exe 'vertical resize '.(winwidth(0)*3/2)<CR>
+" noremap <silent> <Tab>L :exe 'vertical resize '.(winwidth(0)*2/3)<CR>
+noremap <silent> <Tab><Down> :exe 'resize '.(winheight(0)*5/4)<CR>
+noremap <silent> <Tab><Up> :exe 'resize '.(winheight(0)*4/5)<CR>
+noremap <silent> <Tab><Left> :exe 'vertical resize '.(winwidth(0)*5/4)<CR>
+noremap <silent> <Tab><Right> :exe 'vertical resize '.(winwidth(0)*4/5)<CR>
+noremap <silent> <Tab>= <C-w>=
+noremap <silent> <Tab>0 :vertical resize 80<CR>
+  "think of the 0 as 'original size', like cmd-0 on macbook
 "Window selection
 " noremap <Tab><Left> <C-w>h
 " noremap <Tab><Down> <C-w>j
@@ -2085,8 +2114,6 @@ noremap <Tab>l <C-w>l
   "window motion; makes sense so why not
 nnoremap <Tab>' <C-w><C-p>
   "switch to last window
-" noremap <Tab>t <C-w>t
-  "put current window into tab
 " noremap <Tab>n <C-w>w
 " noremap <Tab><Tab>. <C-w>w
   "next; this may be most useful one
@@ -2099,33 +2126,11 @@ augroup END
 "###############################################################################
 "PASTE STUFF
 "Pastemode for pasting from clipboard; so no weird indents
-"also still want to be able to insert LITERAL CHACTERS with C-v
-"...first, declare it
-"...and that's ALL WE WILL DO; had resorted before to this complicated stuff
-"just so we could simultaneously toggle pasting with c-v and still use c-v
-"for literal characters; just plain dumb
+"Also still want to be able to insert LITERAL CHACTERS with C-v
 au InsertEnter * set pastetoggle=<C-v> "need to use this, because mappings don't work
-    "when pastemode is toggled; might be able to remap <set paste>, but cannot return
-    "to <set nopaste>
+  "when pastemode is toggled; might be able to remap <set paste>, but cannot have mapping for <set nopaste>
 au InsertLeave * set pastetoggle=
 au InsertLeave * set nopaste "if pastemode was toggled, turn off
-" "...next initialize
-" set pastetoggle=<C-p>
-" let g:paste=1
-" "...and set up toggle
-" function! s:pastetoggle()
-"   if g:paste==1
-"     let g:paste=0
-"     set pastetoggle=
-"     echom 'Pasting disabled.'
-"   else
-"     let g:paste=1
-"     set pastetoggle=<C-v>
-"     echom 'Pasting enabled.'
-"   endif
-" endfunction
-" nnoremap <C-p> :call <sid>pastetoggle()<CR>
-" inoremap <C-p> <C-o>:call <sid>pastetoggle()<CR>
 "###############################################################################
 "COPY STUFF
 "Copymode to eliminate special chars during copy
@@ -2168,8 +2173,8 @@ nnoremap <C-c> :call <sid>copytoggle()<CR>
   "yank because from Vim, we yank; but remember, c-v is still pastemode
 
 "###############################################################################
-"FOLDING STUFF
-augroup folds
+"FOLDING STUFF AND Z-PREFIXED COMMANDS
+augroup z
 augroup END
 "SimpylFold settings
 let g:SimpylFold_docstring_preview=1
@@ -2181,40 +2186,32 @@ let g:SimpylFold_fold_imports=0
 " set nofoldenable
 set foldmethod=expr
 set foldlevelstart=20
-" set nofoldenable
-" au FileType * set nofoldenable
-" au FileType python normal! zR
-" au BufReadPost * setlocal nofoldenable
-  "options syntax, indent, manual (e.g. entering zf), marker
-  "for some reason re-starting VIM session sets fold methods to manual; use
-  "this to change it back
-" au BufRead * setlocal nofoldenable
-"   "disable/open all folds; do this by default when opening file
-"   "need to use an autocmd because otherwise setting nofoldenable will only work
-"   "on the PARTICULAR TAB on which we open up VIM
 "More options
-set foldopen=tag,mark
-  "options for opening folds on cursor movement; disallow block,
-  "i.e. percent motion, horizontal motion, insert, jump
-set foldnestmax=10
-  "avoids weird things
 " set foldlevel=2
-"   "by default only 2nd-level folds are collapsed
+set foldnestmax=10 "avoids weird things
+set foldopen=tag,mark "options for opening folds on cursor movement; disallow block
+  "i.e. percent motion, horizontal motion, insert, jump
 "Some maps
 nnoremap z. za
   "toggle fold at cursor
-nnoremap zD zd
-  "'delete fold at cursor'
-nnoremap zm <Nop>
-nnoremap zr <Nop>
-  "almost never need to use this
-au BufRead * nnoremap <buffer> zC zM
-au BufRead * nnoremap <buffer> zO zR
-  "better pneumonics for these
-  "means we open/close everything, seriously
-"Changing fold level (increase, reduce)
-" nnoremap zl :let b:position=winsaveview()<CR>zm:call winrestview(b:winfold)<CR>
-" nnoremap zh :let b:position=winsaveview()<CR>zr:call winrestview(b:winfold)<CR>
+nnoremap zD zE
+  "delete all folds; delete fold at cursor is zd
+nnoremap zm zM
+nnoremap zr zR
+  "never need the lower-case versions really; but often want to open/close everything
+nnoremap zO zR
+nnoremap zC zM
+  "open and close all folds; to open/close under cursor, use zo/zc
+nnoremap zh zH
+nnoremap zl zL
+  "found the normal h/l weren't enough; H/L are just stronger
+  "also zk and zj move up betwen folds
+nnoremap zm z.
+  "middle of screen
+" nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
+" nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
+"   "change fold levels, and make sure return to same place
+"   "never really use this feature so forget it
 
 "###############################################################################
 "SINGLE-KEYSTROKE MOTION BETWEEN FUNCTIONS
@@ -2227,9 +2224,10 @@ if g:has_nowait
   nnoremap <nowait> = ==
 endif
 "Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
-"Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff>
-"may get re-mapped
-if 1
+"Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff> may get re-mapped
+"DON'T DO THIS, THEY WERE RIGHT! NOT WORTH IT! START TO LOSE KEYBOARD-SPACE BECAUSE HAVE TO
+"REMAP OTHER KEYS TO SOME OF THE LOST g<key> FUNCTIONS!
+if 0
   nnoremap <silent> <nowait> g gg
   vnoremap <silent> <nowait> g gg
   function! s:gmaps()

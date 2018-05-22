@@ -138,11 +138,22 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 
 # Editor stuff
 # Use this for watching log files
-alias vi="vim -u NONE -c \"syntax on | filetype plugin on | filetype indent on\""
-alias vims="vim -S .session.vim" # for working with obsession
 alias watch="less +F" # actually already is a watch command
 export EDITOR=vim # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
+# VIM command to keep track of session -- need to 'source' the sessionfile, which is
+# just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
+# re-closing every time we start a session
+function vims() {
+  local sessionfile=".session.vim"
+  if [ -r $sessionfile ]; then # restoring old one
+    # this command append zR to the line after every instance of zt
+    # zt always comes after fold commands; check out: cat $sessionfile | grep -n -E 'fold|zt'
+    # sed -i "/zt/a zR" $sessionfile # overwrite in-place
+    sed -i "/zt/a setlocal nofoldenable" $sessionfile
+  fi; vim -S $sessionfile # for working with obsession
+    # then the session file will get overwritten
+}
 
 ################################################################################
 # Magic changing stderr color
