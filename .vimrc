@@ -160,6 +160,9 @@ noremap <silent> ` mzo<Esc>`z
 noremap <silent> ~ mzO<Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
+noremap <silent> su mzkddp`z
+noremap <silent> sd jmzkddp`zj
+  "swap with row above, and swap with row below; awesome mnemonic, right?
 noremap " :echo "Setting mark q."<CR>mq
 noremap ' `q
 map @ <Nop>
@@ -974,8 +977,9 @@ endfunction
 nnoremap sN [s
 nnoremap sn ]s
 "Get suggestions, or choose first suggestion without looking
+"Use these conventions cause why not
+nnoremap s, z=
 nnoremap s. z=1<CR><CR>
-nnoremap sd z=
 "Add/remove from dictionary
 nnoremap sa zg
 nnoremap sr zug
@@ -2228,15 +2232,19 @@ augroup END
 "Special maps because why not; try them out
 nnoremap <C-r> :so ~/.vimrc<CR>
 nnoremap <C-p> :redraw!<CR>
-"First the simple ones -- indentation commands allow prefixing with *number*,
-"but find that behavior weird/mnemonically confusing ('why is 3>> indent 3 lines
-"*below*, and not indent 3 levels, for example?). So we also fix that.
+"First the simple ones.
+"* Indentation commands allow prefixing with *number*, but find that behavior
+"  weird/mnemonically confusing ('why is 3>> indent 3 lines *below*, and not indent
+"  3 levels?). So we fix dat yo.
 "* Note the <Esc> is needed first because it cancels application of the number operator
 "  to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
   nnoremap <expr> <nowait> > v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
-  nnoremap <nowait> < <<
+  nnoremap <expr> <nowait> < v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
   nnoremap <nowait> = ==
+else
+  nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
+  nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
 "Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
 "Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff> may get re-mapped
