@@ -2225,8 +2225,16 @@ nnoremap zm z.
 "Single-keystroke indent, dedent, fix indentation
 augroup onekeystroke
 augroup END
+"Special maps because why not; try them out
+nnoremap <C-r> :so ~/.vimrc<CR>
+nnoremap <C-p> :redraw!<CR>
+"First the simple ones -- indentation commands allow prefixing with *number*,
+"but find that behavior weird/mnemonically confusing ('why is 3>> indent 3 lines
+"*below*, and not indent 3 levels, for example?). So we also fix that.
+"* Note the <Esc> is needed first because it cancels application of the number operator
+"  to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
-  nnoremap <nowait> > >>
+  nnoremap <expr> <nowait> > v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
   nnoremap <nowait> < <<
   nnoremap <nowait> = ==
 endif
@@ -2234,33 +2242,25 @@ endif
 "Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff> may get re-mapped
 "DON'T DO THIS, THEY WERE RIGHT! NOT WORTH IT! START TO LOSE KEYBOARD-SPACE BECAUSE HAVE TO
 "REMAP OTHER KEYS TO SOME OF THE LOST g<key> FUNCTIONS!
-if 0
-  nnoremap <silent> <nowait> g gg
-  vnoremap <silent> <nowait> g gg
-  function! s:gmaps()
-    " nmap <silent> <buffer> <nowait> g :<C-u>exe 'normal '.v:count.'gg'<CR>
-    nmap <silent> <buffer> <nowait> g gg
-    vmap <silent> <buffer> <nowait> g gg
-      "don't know why this works, but it does; just using nnoremap above fails
-      "and trying the <C-u> exe thing results in 'command too recursive'
-  endfunction
-  autocmd FileType * call s:gmaps()
-  "And restore some useful 'g' commands
-  noremap <Leader>i gi
-  noremap <Leader>v gv
-   "return to last insert location and visual location
-endif
+" nnoremap <silent> <nowait> g gg
+" vnoremap <silent> <nowait> g gg
+" function! s:gmaps()
+"   " nmap <silent> <buffer> <nowait> g :<C-u>exe 'normal '.v:count.'gg'<CR>
+"   nmap <silent> <buffer> <nowait> g gg
+"   vmap <silent> <buffer> <nowait> g gg
+"     "don't know why this works, but it does; just using nnoremap above fails
+"     "and trying the <C-u> exe thing results in 'command too recursive'
+" endfunction
+" autocmd FileType * call s:gmaps()
 "Decided to disable the rest because sometimes find myself wanting to use other
 "g-prefix commands and can make use of more complex [[ and ]] funcs
-if 1
-  nnoremap <silent> <nowait> [ [[
-  nnoremap <silent> <nowait> ] ]]
-  function! s:bracketmaps()
-    if &ft!="help" "want to use [ for something else then
+function! s:bracketmaps()
+  if &ft!="help" "want to use [ for something else then
     nmap <silent> <buffer> <nowait> [ :exe 'normal '.v:count.'[['<CR>
     nmap <silent> <buffer> <nowait> ] :exe 'normal '.v:count.']]'<CR>
-    endif
-  endfunction
+  endif
+endfunction
+if g:has_nowait "options is present in this version of VIM
   autocmd FileType * call s:bracketmaps()
 endif
 
