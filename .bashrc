@@ -13,6 +13,17 @@
 [[ $- != *i* ]] && return
 
 ################################################################################
+# Detect args
+################################################################################
+quick=false # default
+if [[ ! -z "$1" ]]; then
+  case "$1" in
+    '-q') echo "Enabling quick-mode." && quick=true ;;
+    *) echo "Error: Uknown argument \"$1\"." && return ;;
+  esac
+fi
+
+################################################################################
 # SHELL INTEGRATION; iTerm2 feature only
 ################################################################################
 # printf "Enabling shell integration... "
@@ -39,7 +50,8 @@
 function help() {
   if builtin help $1 &>/dev/null; then
     builtin help $1 2>&1 | less
-  elif $1 --help &>/dev/null; then
+  # elif [ ! -z "$($1 --help 2>&1)" ]; then
+  elif $1 --help &>/dev/null; then # sometimes prints stuff and returns non-zero exit code
     $1 --help 2>&1 | less # combine output streams or can get weird error
   else
     echo "No help information for \"$1\"."
@@ -58,11 +70,11 @@ function man() { # always show useful information when man is called
     echo "Searching for stuff in ${search}."
     LESS=-p"^ *${1}.*\[.*$" command man $search
     # LESS=-p"^ *$1 \[.*$" command man $search
-  elif ! command man $1 &>/dev/null; then
-    echo "No man entry for \"$1\"."
-  else
+  elif command man $1 &>/dev/null; then
     echo "Item has own man page."
     command man $1
+  else
+    echo "No man entry for \"$1\"."
   fi
 }
 
@@ -316,37 +328,58 @@ else
   export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
   lscolor='--color=always' && sortcmd='sort'
 fi
+alias cd="cd -P" # -P follows physical location
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-alias lx="ls $lscolor -AFl | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
-alias lsd="ls -d *" # keep it simple
-function lld() { [ -z $1 ] && dir="." || dir="$1"; find "$1" -maxdepth 1 -mindepth 1 -type d -exec du -hs hi{} \; | $sortcmd -sh; } # directory sizes
+alias xs="ls $lscolor -AFl | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
+alias fs="ls $lscolor -AF | grep -v '/$'" # just files
+alias fl="ls $lscolor -AFhl | grep -v '/$'" # just files, with details
+alias pt="top" # mnemonically similar to 'ps'; table of processes, total
+alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
 alias df="df -h" # disk useage
-alias cd="cd -P" # -P follows physical location
-alias ps="ps" # processes in this shell
-alias pt="top" # table of processes, total
-alias pc="mpstat -P ALL 1" # list individual core usage
-alias gf="grep -rn ." # grep files; input string then directory location, n says to show line number
-alias ff="find . -name" # find files; input a quoted glob pattern
-alias dd="diff --brief --strip-trailing-cr -r" # difference directories; input two directory names
+alias tt="type -a" # show all instances of path/function/variable/file
+alias ww="which -a" # same
+function ds() { # directory ls
+  [ -z $1 ] && dir="" || dir="$1/"
+  dir="${dir//\/\//\/}"
+  \ls $lscolor -A -d $dir*/
+}
+function dl() { # directory sizes
+  [ -z $1 ] && dir="." || dir="$1"
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
+}
+function gg() { # grep files; input string then directory location, n says to show line number
+  [ $# -eq 0 ] && echo "Error: Need at least one arg."
+  [ -z $2 ] && dir="." || dir="$2"
+  grep "$1" -rn "$dir"
+}
+function ff() { # find files; input a quoted glob pattern or a string
+  [ -z $2 ] && dir="." || dir="$2"
+  find "$dir" -name "$1"
+}
+function dd() { # difference directories; input two directory names
+  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
+  diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
+    | egrep '(Only in.*:|Files | and | differ | identical)'
+}
+function di() { # identical files in two directories
+  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
+  diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
+    | egrep '(Only in.*:|Files | and | differ | identical)'
+}
+
+
+# Globally override default settins
+alias grep="grep --color=auto" # always show color
+alias egrep="egrep --color=auto" # always show color
+# hash colordiff 2>/dev/null && alias diff="colordiff"
+#   # prettier differencing; use this if it exists; or just highlight with grep
 
 # Various workflow tools
-alias grep="grep --color=auto" # show color
-alias type="type -a" # show all instances of path/function/variable/file
-alias which="which -a" # same
-alias shameonme="touch -mt"
-  # changes the last modified date on a file to specified YYYYMMDDhhmm format
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
   # prints the keybindings
 alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
   # prints out release info
-hash colordiff 2>/dev/null && alias diff="colordiff"
-  # prettier differencing; use this if it exists
-alias difference="diff --brief -x \".*\" -r"
-  # difference subdirectories; easier to remember this
-  # also ignore hidden files
-function identical() { diff -sq $@ | grep identical; }
-  # identical files in two directories
 function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
 function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
