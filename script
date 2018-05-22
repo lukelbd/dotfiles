@@ -1,3 +1,0 @@
-tell application "iTerm2"
-  get profile name of current session of current window
-end tell
