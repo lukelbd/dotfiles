@@ -1,3 +1,34 @@
 #!/usr/bin/env bash
-echo "Argument1: $1"
-echo "Argument2: $2"
+# Function that mimicks the superior screen window-swapping behavior for tmux
+# This function is super cool yo
+# echo "Current window: $1"
+# echo "Destination window: $2"
+maxwin="$(tmux list-windows | cut -d: -f1 | sort -nr | head -n1)"
+minwin="$(tmux list-windows | cut -d: -f1 | sort -n | head -n1)"
+# Error checking
+if [[ -z $2 ]]; then
+  echo "Error: No window specified."
+elif [[ ! $2 =~ ^-?[0-9]+$ ]]; then
+  echo "Error: Bad window number specified."
+# Bigger than everything; slide it to the far right, then renumber
+elif [[ $2 -gt $maxwin ]]; then
+  i=0 # intialize
+  tmux move-window -t:$(($maxwin+1))
+  winlist="$(tmux list-windows | cut -d: -f1 | xargs)"
+  for n in $winlist; do
+    i=$(($i+1)) # increment
+    tmux move-window -s:$n -t:$i
+  done
+# Smaller than everything; slide it to the far left, then renumber
+elif [[ $2 -lt $minwin ]]; then
+  tmux move-window -t:0
+  winlist=($(tmux list-windows | cut -d: -f1 | xargs | rev))
+  i=${#winlist[@]} # initialize; start at highest indexed window
+  for n in ${winlist[@]}; do
+    tmux move-window -s:$n -t:$i
+    i=$(($i-1)) # decrement
+  done
+# In-between; just a simple swap
+else
+  tmux swap-window -t:$2
+fi
