@@ -255,7 +255,7 @@ nnoremap <Backspace> <Nop>
 "###############################################################################
 "VISUAL MODE BEHAVIOR
 "Highlighting
-noremap <silent> <C-o> :noh<CR>
+noremap <silent> <Leader>i :noh<CR>
 "Cursor movement/scrolling while preserving highlights
 "Needed command-line ways to enter visual mode; see answer: https://vi.stackexchange.com/a/3701/8084
 "Why do this? Because had trouble storing <C-v> as variable, then issuing it as command
@@ -1763,8 +1763,11 @@ nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
 au FileType help nnoremap <buffer> <C-s> <Nop>
 nnoremap <silent> <C-q> :try \| tabclose \| catch \| qa \| endtry<CR>
+nnoremap <silent> <Tab>q :try \| tabclose \| catch \| qa \| endtry<CR>
 nnoremap <silent> <C-a> :qa<CR>
+nnoremap <silent> <Tab>a :qa<CR>
 nnoremap <silent> <C-w> :q<CR>
+nnoremap <silent> <Tab>w :q<CR>
 " nnoremap <C-q> :silent! tabclose<CR>
 "make tabclose silent, so no error raised if last tab present
 "so we have close current window, close tab, and close everything
@@ -1887,13 +1890,13 @@ augroup auto_move_to_next
   autocmd! InsertLeave * :call MoveToNext()
 augroup END
 "Remaps using black magic
-nmap <silent> c* :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
       \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> c& :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
       \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> c# :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+nmap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
       \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> c@ :let @/='\C\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+nmap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
       \:let g:should_inject_replace_occurences=1<CR>cgn
 nmap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
 " vmap <silent> <Leader>* :<C-u>let old_reg=getreg('"')<Bar>let old_regtype=getregtype('"')<CR>gvy
