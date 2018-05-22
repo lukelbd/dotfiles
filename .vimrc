@@ -156,8 +156,8 @@ au CmdwinLeave * setlocal laststatus=2
   "new macro toggle; almost always just use one at a time
   "press ~ again to quit; 1, 2, etc. do nothing in normal mode. clever, huh?
   "don't diable q; have that remapped to show window
-noremap <silent> <Leader>o mzo<Esc>`z
-noremap <silent> <Leader>O mzO<Esc>`z
+noremap <silent> ` mzo<Esc>`z
+noremap <silent> ~ mzO<Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
 noremap " :echo "Setting mark q."<CR>mq
@@ -213,9 +213,14 @@ for s:map in ['noremap', 'inoremap'] "disable typical navigation keys
     exe s:map.' '.s:motion.' <Nop>'
   endfor
 endfor
+"Disabling dumb extra scroll commands
+nnoremap <C-p> <Nop>
+nnoremap <C-n> <Nop>
+  "these are identical to j/k
 "Overhauling t/T/f/F/,/; behavior
-noremap ` ;
-noremap ~ ,
+"Never really want to use them more than once
+noremap ; <Nop>
+noremap , <Nop>
 " noremap t <Nop>
 " noremap T <Nop>
 " noremap f <Nop>
@@ -255,7 +260,9 @@ nnoremap <Backspace> <Nop>
 "###############################################################################
 "VISUAL MODE BEHAVIOR
 "Highlighting
-noremap <silent> <Leader>i :noh<CR>
+"Figured it out finally!!! This actually makes sense - they're next to eachother on keyboard!
+noremap <silent> <Leader>i :set hlsearch<CR>
+noremap <silent> <Leader>o :noh<CR>
 "Cursor movement/scrolling while preserving highlights
 "Needed command-line ways to enter visual mode; see answer: https://vi.stackexchange.com/a/3701/8084
 "Why do this? Because had trouble storing <C-v> as variable, then issuing it as command
@@ -1191,9 +1198,6 @@ augroup END
 augroup codi
 augroup END
 if has_key(g:plugs, "codi.vim")
-  nnoremap <C-p> <Nop>
-  nnoremap <C-n> <Nop>
-    "these are identical to j/k
   nnoremap <C-n> :CodiUpdate<CR>
   inoremap <C-n> <Esc>:CodiUpdate<CR>a
     "update manually commands; o stands for codi
