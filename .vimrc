@@ -187,27 +187,6 @@ nnoremap o ox<BS>
 nnoremap O Ox<BS>
   "pressing enter on empty line preserves leading whitespace (HACKY)
   "works because Vim doesn't remove spaces when text has been inserted
-nnoremap A g$a
-nnoremap I g^i
-  "same for entering insert mode
-noremap m ge
-noremap M gE
-  "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
-"Basic wrap-mode navigation, always move visually
-"Still might occasionally want to navigate by lines though
-noremap k gk
-noremap j gj
-noremap gj j
-noremap gk k
-  "way more common to want to move up visual lines for me
-noremap ^ g^
-noremap $ g$
-noremap 0 g0
-noremap g^ ^
-noremap g$ $
-noremap g0 0
-  "shortcuts for 'go to first char' and 'go to eol' 
-  "works in both line-wrapped situations and unwrapped situations
 for s:map in ['noremap', 'inoremap'] "disable typical navigation keys
   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
     exe s:map.' '.s:motion.' <Nop>'
@@ -228,8 +207,9 @@ noremap , <Nop>
 "Better join behavior -- before 2J joined this line and next, now it
 "means 'join the two lines below'; more intuitive. uses if statement
 "in <expr> remap, and v:count the user input count
-nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
-nnoremap <expr> K v:count > 1 ? 'JdwJdw' : 'Jdw'
+nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
+nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
+" nnoremap <expr> K v:count > 1 ? 'JdwJdw' : 'Jdw'
   "also remap K because not yet used; like J but adds no space
   "note gJ was insufficient because retains leading whitespace from next line
   "recall that the 'v' prefix indicated a VIM read-only builtin variable
@@ -611,15 +591,6 @@ nnoremap ;f lbmzi(<Esc>hea)<Esc>`zi
 nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
   "specual function that inserts brackets, then
   "puts your cursor in insert mode at the start so you can make a function call
-"Capitalization stuff in familiar syntax
-nnoremap ;u guiw
-vnoremap ;u gu
-nnoremap ;U gUiw
-vnoremap ;U gU
-nnoremap ;; ~h
-vnoremap ;; ~
-  "not currently used in normal mode, and fits better mnemonically
-  "move to right preserves original cursor location
 "Repair semicolon in insert mode
 inoremap ;; ;
 
@@ -1348,8 +1319,9 @@ augroup END
 "Remap NerdTree command
 if has_key(g:plugs, "nerdtree")
   " noremap <Tab>n :NERDTreeFind<CR>
-  noremap <Leader>j :NERDTree %<CR>
-  noremap <Leader>J :NERDTreeTabsToggle<CR>
+  " f stands for files here
+  noremap <Leader>f :NERDTree %<CR>
+  noremap <Leader>F :NERDTreeTabsToggle<CR>
   let g:NERDTreeWinPos="right"
   let g:NERDTreeWinSize=20 "instead of 31 default
   let g:NERDTreeShowHidden=1
@@ -1683,10 +1655,7 @@ function! s:autowrap()
 endfunction
 autocmd BufEnter * call s:autowrap()
 "Declare mapping, to toggle on and off
-" noremap <silent> <Leader>w :call <sid>wraptoggle(-1)<CR>
-"Create word counting map instead
-nnoremap <Leader>w g<C-g>
-vnoremap <Leader>w g<C-g>
+noremap <silent> gw :call <sid>wraptoggle(-1)<CR>
 
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
@@ -1767,11 +1736,8 @@ nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
 au FileType help nnoremap <buffer> <C-s> <Nop>
 nnoremap <silent> <C-q> :try \| tabclose \| catch \| qa \| endtry<CR>
-nnoremap <silent> <Tab>q :try \| tabclose \| catch \| qa \| endtry<CR>
 nnoremap <silent> <C-a> :qa<CR>
-nnoremap <silent> <Tab>a :qa<CR>
 nnoremap <silent> <C-w> :q<CR>
-nnoremap <silent> <Tab>w :q<CR>
 " nnoremap <C-q> :silent! tabclose<CR>
 "make tabclose silent, so no error raised if last tab present
 "so we have close current window, close tab, and close everything
@@ -1950,12 +1916,6 @@ nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze
 "   which matches an EOL (from preceding line or this line) *or* whitespace
 " * Use ':let @/=STUFF<CR>' instead of '/<C-r>=STUFF<CR><CR>' because this prevents
 "   cursor from jumping around right away, which is more betterer
-"Restore some important functionality
-"Makes mnemonic sense, also would never ever want to 'select
-"all the text up to the next match', which is current meaning of vn/vN
-"The below will enter visual mode on the next/previous match
-nnoremap vN gN
-nnoremap vn gn
 "Next there are a few mnemonically similar maps
 "1) Delete currently highlighted text
 " * For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
@@ -2060,9 +2020,6 @@ noremap <Tab>9 9gt
 noremap <Tab>, gT
 noremap <Tab>. gt
 noremap <Tab>o :tabe 
-noremap <expr> <Tab>O ":argadd ".input('Enter filename or glob pattern: ')."<CR>:tab all<CR>"
-  "this lets us open several files in glob pattern (e.g. all python files)
-  "must be executed RIGHT AFTER OPENING VIM; other stuff
 noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
   "return to previous tab
 "###############################################################################
@@ -2199,13 +2156,13 @@ set foldnestmax=10 "avoids weird things
 set foldopen=tag,mark "options for opening folds on cursor movement; disallow block
   "i.e. percent motion, horizontal motion, insert, jump
 "Some maps
-nnoremap z. za
-  "toggle fold at cursor
+"Note there is also z. for <center screen>
 nnoremap zD zE
   "delete all folds; delete fold at cursor is zd
-nnoremap zm zM
-nnoremap zr zR
-  "never need the lower-case versions really; but often want to open/close everything
+nnoremap z- zM
+nnoremap z= zR
+  "never need the lower-case versions (which globally change fold levels), but
+  "often want to open/close everything; map to plus/minus
 nnoremap zO zR
 nnoremap zC zM
   "open and close all folds; to open/close under cursor, use zo/zc
@@ -2213,8 +2170,14 @@ nnoremap zh zH
 nnoremap zl zL
   "found the normal h/l weren't enough; H/L are just stronger
   "also zk and zj move up betwen folds
-nnoremap zm z.
-  "middle of screen
+  "also zs and ze position cursor at end/start
+nnoremap zu H
+nnoremap zd L
+nnoremap zm M
+  "these are natural companions to zt/zb/z. keys which reposition the screen
+silent! unmap zuz
+  "to prevent delay; this is associated with FastFold or something
+  "go up or down page
 " nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
 " nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
 "   "change fold levels, and make sure return to same place
@@ -2223,18 +2186,54 @@ nnoremap zm z.
 "###############################################################################
 "SINGLE-KEYSTROKE MOTION BETWEEN FUNCTIONS
 "Single-keystroke indent, dedent, fix indentation
-augroup onekeystroke
+augroup g
 augroup END
-"Special maps because why not; try them out
-nnoremap <C-r> :so ~/.vimrc<CR>
-nnoremap <C-p> :redraw!<CR>
+"Don't know why these are here but just go with it bro
+nnoremap <Leader>r :so ~/.vimrc<CR>
+nnoremap <Leader>p :redraw!<CR>
+"Complete overview of g commands here; change behavior a bit to
+"be more mnemonically sensible and make wrapped-line editing easier, but is great
+nnoremap gu guiw
+vnoremap gu gu
+nnoremap gU gUiw
+vnoremap gU gU
+nnoremap g. ~h
+vnoremap g. ~
+  "capitalization stuff with g, a bit refined
+  "not currently used in normal mode, and fits better mnemonically
+noremap m ge
+noremap M gE
+  "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
+"Basic wrap-mode navigation, always move visually
+"Still might occasionally want to navigate by lines though
+noremap k gk
+noremap j gj
+noremap gj j
+noremap gk k
+  "way more common to want to move up visual lines for me
+noremap ^ g^
+noremap $ g$
+noremap 0 g0
+noremap g^ ^
+noremap g$ $
+noremap g0 0
+  "shortcuts for 'go to first char' and 'go to eol' 
+  "works in both line-wrapped situations and unwrapped situations
+nnoremap A g$a
+nnoremap I g^i
+nnoremap gA A
+nnoremap gI I
+  "similar to above
+noremap g: q:
+noremap g/ q/
+  "display previous command with this
 "First the simple ones -- indentation commands allow prefixing with *number*,
 "but find that behavior weird/mnemonically confusing ('why is 3>> indent 3 lines
 "*below*, and not indent 3 levels, for example?). So we also fix that.
 "* Note the <Esc> is needed first because it cancels application of the number operator
 "  to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
-  nnoremap <expr> <nowait> > v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
+  nnoremap <expr> <nowait> > v:count>1 ? '<Esc>'.repeat('>>',v:count) : '>>'
   nnoremap <nowait> < <<
   nnoremap <nowait> = ==
 endif
