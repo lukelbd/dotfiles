@@ -1110,16 +1110,16 @@ augroup END
 "     exe 'nnoremap q'.nr2char(c+32).' <Nop>'
 "   endfor
 " endif
-"Enable shortcut so that recordings are taken by just toggling a key on-off
+"Enable shortcut so that recordings are taken by just toggling 'q' on-off
 au BufEnter * let b:recording=0
 noremap <silent> <expr> q b:recording ? 'q:let b:recording=0<CR>' : 'qq:let b:recording=1<CR>'
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
-noremap <Leader>v :vert help 
+noremap <Leader>h :vert help 
 noremap  <expr> <Leader>m ':!clear<CR>:!search='.input('Get man info: ').'; [ -z $search ] && search=fart; '
   \.'if command man $search &>/dev/null; then man $search; fi<CR>:redraw!<CR>'
 "--help info; pipe output into less for better interaction
-noremap <expr> <Leader>h ':!clear<CR>:!search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
+noremap <expr> <Leader>e ':!clear<CR>:!search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
   \.'if builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 function! s:helpsetup()
@@ -1340,13 +1340,13 @@ if has_key(g:plugs, "nerdtree")
   endfor
   "Close nerdtree if last in tab
   autocmd BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-  "Setup maps
+  "Custom nerdtree maps here
   "See this thread for ideas: https://superuser.com/q/195022/506762
   function! s:nerdtreesetup()
     " normal! <C-w>r
     setlocal nolist
-    nmap <buffer>  <Tab><Tab> :let g:PreTab=tabpagenr()<CR>T:exe 'tabn '.g:PreTab<CR>
-    noremap <buffer> <Tab>n :NERDTreeClose<CR>
+    nmap <buffer> <Tab><Tab> :let g:PreTab=tabpagenr()<CR>T:exe 'tabn '.g:PreTab<CR>
+    noremap <buffer> <Leader>f :NERDTreeClose<CR>
   endfunction
   autocmd FileType nerdtree call s:nerdtreesetup()
 endif
@@ -1574,7 +1574,7 @@ if has_key(g:plugs, "tagbar")
       nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     endif
   endfunction
-  nnoremap <silent> <Leader>k :call <sid>tagbarsetup()<CR>
+  nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
   nmap <expr> <Leader><Space> ":TagbarOpen<CR><Tab>L/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     "be careful -- need to use default window-switching shortcut here!
   "Switch updatetime (necessary for Tagbar highlights to follow cursor)
@@ -1620,6 +1620,7 @@ endif
 augroup wrap
 augroup END
 "Buffer amount on either side
+"Can change this variable globally if want
 let g:scrolloff=4
 "Function
 function! s:wraptoggle(function_mode)
@@ -1658,8 +1659,6 @@ function! s:autowrap()
   endif
 endfunction
 autocmd BufEnter * call s:autowrap()
-"Declare mapping, to toggle on and off
-noremap <silent> gw :call <sid>wraptoggle(-1)<CR>
 
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
@@ -2006,11 +2005,12 @@ autocmd InsertLeave,CmdwinLeave * set iminsert=0
 "don't think any other mapping type has anything like lmap; iminsert is unique
 
 "###############################################################################
-"TAB NAVIGATION
+"SPECIAL TAB NAVIGATION
 augroup tabs
 augroup END
-let g:LastTab=1
-au TabLeave * let g:LastTab=tabpagenr()
+"Disable some stuff for vimrc
+au BufEnter * if expand("%:t")==".vimrc" | setlocal eventignore=CursorMoved,CursorMovedI,TextChanged,TextChangedI
+      \| else | setlocal eventignore= | endif
 "Basic switching, and shortcut for 'last active tab'
 noremap <Tab>1 1gt
 noremap <Tab>2 2gt
@@ -2024,6 +2024,8 @@ noremap <Tab>9 9gt
 noremap <Tab>, gT
 noremap <Tab>. gt
 noremap <Tab>o :tabe 
+let g:LastTab=1
+au TabLeave * let g:LastTab=tabpagenr()
 noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
   "return to previous tab
 "###############################################################################
@@ -2043,6 +2045,8 @@ function! s:tabmove(n)
 endfunction
 " noremap <silent> <expr> <Tab>m ":tabm ".eval(input('Move tab: ')-1)."<CR>"
 noremap <silent> <expr> <Tab>m ":call <sid>tabmove(".eval(input('Move tab: ')).")<CR>"
+noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
+noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "###############################################################################
 "WINDOW MANAGEMENT
 noremap <Tab> <Nop>
@@ -2058,18 +2062,6 @@ set splitright
 set splitbelow
 noremap <Tab>- :split 
 noremap <Tab>\ :vsplit 
-"Size-changing remaps
-" noremap <silent> <Tab>J :exe 'resize '.(winheight(0)*3/2)<CR>
-" noremap <silent> <Tab>K :exe 'resize '.(winheight(0)*2/3)<CR>
-" noremap <silent> <Tab>H :exe 'vertical resize '.(winwidth(0)*3/2)<CR>
-" noremap <silent> <Tab>L :exe 'vertical resize '.(winwidth(0)*2/3)<CR>
-noremap <silent> <Tab><Down> :exe 'resize '.(winheight(0)*5/4)<CR>
-noremap <silent> <Tab><Up> :exe 'resize '.(winheight(0)*4/5)<CR>
-noremap <silent> <Tab><Left> :exe 'vertical resize '.(winwidth(0)*5/4)<CR>
-noremap <silent> <Tab><Right> :exe 'vertical resize '.(winwidth(0)*4/5)<CR>
-noremap <silent> <Tab>= <C-w>=
-noremap <silent> <Tab>0 :vertical resize 80<CR>
-  "think of the 0 as 'original size', like cmd-0 on macbook
 "Window selection
 " noremap <Tab><Left> <C-w>h
 " noremap <Tab><Down> <C-w>j
@@ -2163,18 +2155,28 @@ set foldopen=tag,mark "options for opening folds on cursor movement; disallow bl
 "Note there is also z. for <center screen>
 nnoremap zD zE
   "delete all folds; delete fold at cursor is zd
-nnoremap z- zM
-nnoremap z= zR
+nnoremap z> zM
+nnoremap z< zR
   "never need the lower-case versions (which globally change fold levels), but
-  "often want to open/close everything; map to plus/minus
+  "often want to open/close everything; this mnemonically makes sense because
+  "folding is sort-of like indenting really
 nnoremap zO zR
 nnoremap zC zM
   "open and close all folds; to open/close under cursor, use zo/zc
 nnoremap zh zH
 nnoremap zl zL
   "found the normal h/l weren't enough; H/L are just stronger
-  "also zk and zj move up betwen folds
+  "also zk and zj move up between folds
   "also zs and ze position cursor at end/start
+noremap <silent> z_ :exe 'resize '.(winheight(0)*5/4)<CR>
+noremap <silent> z+ :exe 'resize '.(winheight(0)*4/5)<CR>
+noremap <silent> z= :exe 'vertical resize '.(winwidth(0)*5/4)<CR>
+noremap <silent> z- :exe 'vertical resize '.(winwidth(0)*4/5)<CR>
+noremap <silent> z0 :vertical resize 80<CR>
+" noremap <silent> z= <C-w>=
+  "and the z-prefix is a natural companion to the resizing commands
+  "the Tab commands should just sort and navigate between panes
+  "think of the 0 as 'original size', like cmd-0 on macbook
 nnoremap zu H
 nnoremap zd L
 nnoremap zm M
@@ -2294,22 +2296,22 @@ highlight SignColumn cterm=None ctermbg=Black
 "sign place 1 name=hold line=1
 "###############################################################################
 "COLOR HIGHLIGHTING
-"NO LONGER SHOULD LOOK IN THE DEFAULT matchit, BECAUSE NOW DOWNLOAD WITH VIM-PLUG
 "Highlight group under cursor
 nnoremap <Leader>c :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name")
   \.'> trans<' . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
   \.synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"<CR>
-"Syntax highlighting
 nnoremap <expr> <Leader>C ":source $VIMRUNTIME/syntax/colortest.vim<CR>"
   \.":setlocal nolist<CR>:setlocal nonumber<CR>:noremap <buffer> q :q\<CR\><CR>"
   "could not get this to work without making the whole thing an <expr>, then escaping the CR in the subsequent map
-"Below has been giving me really weird errors but is more accurate
-" nnoremap <Leader>5 :source $VIMRUNTIME/syntax/hitest.vim<CR>
-" nnoremap <Leader>7 :split $VIMRUNTIME/pack/dist/opt/matchit/plugin/matchit.vim<CR>
-" "Get current plugin file
-" nnoremap <Leader>8 :execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'<CR>
-" "Get scriptnames
-" nnoremap <Leader>4 :scriptnames<CR>
+"Get current plugin file
+"Remember :scriptnames lists all loaded files
+nnoremap <Leader>p :execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'<CR>
+
+"###############################################################################
+"DELIMITER MATCHING/HIGHLIGHTING FUNCTIONS
+"First unload the default one
+"Don't do that actually vimrc is fine
+" let loaded_matchparen=1
 
 "###############################################################################
 "###############################################################################
