@@ -25,18 +25,27 @@ function Renumber() {
   if [[ "${winlist[@]}" == "$(seq 1 ${#winlist[@]} | xargs)" ]]; then
     return # windows already sorted
   fi
-  # First gotta push everything out of the way to a big number
-  # to make sure we don't move-window to an occupied number
+  # More efficient renumbering
   cwindow=$(tmux display -p "#I") # old current window
   cwindow=$(($(echo ${winlist[@]/$cwindow/:} | cut -d: -f1 | wc -w) + 1)) # current window after reorder
-  maxwin=$(tmux list-windows | cut -d: -f1 | sort -nr | head -n1) # max window
   i=0; for n in ${winlist[@]}; do
     i=$(($i+1)) # increment
-    tmux move-window -s:$n -t:$(($maxwin+$i)) # send there first
+    if [ $n -gt $i ]; then
+      # Message $n $i
+      tmux move-window -s:$n -t:$i
+    elif [ $n -lt $i ]; then
+      echo "Error: Cannot re-number windows."; exit
+    fi
   done
-  for n in $(seq $maxwin $(($maxwin+$i))); do
-    tmux move-window -s:$n -t:$(($n-$maxwin))
-  done
+  # # First push everything out of the way to a big number
+  # maxwin=$(tmux list-windows | cut -d: -f1 | sort -nr | head -n1) # max window
+  # i=0; for n in ${winlist[@]}; do
+  #   i=$(($i+1)) # increment
+  #   tmux move-window -s:$n -t:$(($maxwin+$i)) # send there first
+  # done
+  # for n in $(seq $maxwin $(($maxwin+$i))); do
+  #   tmux move-window -s:$n -t:$(($n-$maxwin))
+  # done
   tmux select-window -t:$cwindow # new window is index of that array
 }
 
@@ -69,9 +78,11 @@ else
   $smaller && dest=$(($dest+1)) # will be decremented when we renumber below
   winlist=($(tmux list-windows | cut -d: -f1 | xargs | rev))
   for n in ${winlist[@]}; do
+    # Message $n $(($n+1))
     tmux move-window -s:$n -t:$(($n+1))
     [ $n -eq $dest ] && break # we just moved our destination number out of the way
   done
+  # Message 0 $dest
   tmux move-window -s:0 -t:$dest # and place it in the hole
   tmux select-window -t:$dest # make sure it's selected yo
 fi
