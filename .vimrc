@@ -2230,8 +2230,8 @@ nnoremap zm z.
 augroup onekeystroke
 augroup END
 "Special maps because why not; try them out
-nnoremap <C-r> :so ~/.vimrc<CR>
-nnoremap <C-p> :redraw!<CR>
+nnoremap <Leader>r :so ~/.vimrc<CR>
+nnoremap <Leader>d :redraw!<CR>
 "First the simple ones.
 "* Indentation commands allow prefixing with *number*, but find that behavior
 "  weird/mnemonically confusing ('why is 3>> indent 3 lines *below*, and not indent
