@@ -1343,10 +1343,10 @@ if has_key(g:plugs, "nerdtree")
   "Custom nerdtree maps here
   "See this thread for ideas: https://superuser.com/q/195022/506762
   function! s:nerdtreesetup()
-    " normal! <C-w>r
     setlocal nolist
-    nmap <buffer> <Tab><Tab> :let g:PreTab=tabpagenr()<CR>T:exe 'tabn '.g:PreTab<CR>
     noremap <buffer> <Leader>f :NERDTreeClose<CR>
+    if g:has_nowait | nmap <buffer> <nowait> d D | endif
+      "prevents attempts to change it; this descends into directory
   endfunction
   autocmd FileType nerdtree call s:nerdtreesetup()
 endif
@@ -1735,6 +1735,7 @@ augroup END
 "BUFFER WRITING/SAVING
 augroup saving
 augroup END
+nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
 au FileType help nnoremap <buffer> <C-s> <Nop>
@@ -1979,9 +1980,6 @@ function! s:cutmaps()
   nnoremap <buffer> <Leader>- :%s/–/--/gc<CR>
 endfunction
 au FileType bib,tex call s:cutmaps() "some bibtex lines
-" 2
-" 3
-" 4
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
@@ -2023,7 +2021,6 @@ noremap <Tab>8 8gt
 noremap <Tab>9 9gt
 noremap <Tab>, gT
 noremap <Tab>. gt
-noremap <Tab>o :tabe 
 let g:LastTab=1
 au TabLeave * let g:LastTab=tabpagenr()
 noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
