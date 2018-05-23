@@ -160,6 +160,9 @@ noremap <silent> ` mzo<Esc>`z
 noremap <silent> ~ mzO<Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
+noremap <silent> su mzkddp`z
+noremap <silent> sd jmzkddp`zj
+  "swap with row above, and swap with row below; awesome mnemonic, right?
 noremap " :echo "Setting mark q."<CR>mq
 noremap ' `q
 map @ <Nop>
@@ -945,8 +948,9 @@ endfunction
 nnoremap sN [s
 nnoremap sn ]s
 "Get suggestions, or choose first suggestion without looking
+"Use these conventions cause why not
+nnoremap s, z=
 nnoremap s. z=1<CR><CR>
-nnoremap sd z=
 "Add/remove from dictionary
 nnoremap sa zg
 nnoremap sr zug
@@ -2190,7 +2194,7 @@ augroup g
 augroup END
 "Don't know why these are here but just go with it bro
 nnoremap <Leader>r :so ~/.vimrc<CR>
-nnoremap <Leader>p :redraw!<CR>
+nnoremap <Leader>d :redraw!<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
 nnoremap gu guiw
@@ -2236,6 +2240,9 @@ if g:has_nowait
   nnoremap <expr> <nowait> > v:count>1 ? '<Esc>'.repeat('>>',v:count) : '>>'
   nnoremap <nowait> < <<
   nnoremap <nowait> = ==
+else
+  nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
+  nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
 "Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
 "Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff> may get re-mapped
