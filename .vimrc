@@ -2180,6 +2180,8 @@ nnoremap zu H
 nnoremap zd L
 nnoremap zm M
   "these are natural companions to zt/zb/z. keys which reposition the screen
+nnoremap z. mzz.`z
+  "for some reason z. moves the cursor. dumb.
 silent! unmap zuz
   "to prevent delay; this is associated with FastFold or something
   "go up or down page
