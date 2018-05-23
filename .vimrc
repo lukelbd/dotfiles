@@ -1622,9 +1622,8 @@ augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
 let g:scrolloff=4
-"Function
+"Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
 function! s:wraptoggle(function_mode)
-    "RECALL <buffer> makes these mappings local
   if a:function_mode==1
     let a:toggle=1
   elseif a:function_mode==0
@@ -1636,17 +1635,47 @@ function! s:wraptoggle(function_mode)
   endif
   if a:toggle==1
     let b:wrap_mode=1
-    "visual/display-based motion across wrapped lines
+    "Display options that make more sense with wrapped lines
     setlocal wrap
     setlocal scrolloff=0
     setlocal colorcolumn=0
+    "Basic wrap-mode navigation, always move visually
+    "Still might occasionally want to navigate by lines though, so remap those to g
+    noremap <buffer> k gk
+    noremap <buffer> j gj
+    noremap <buffer> ^ g^
+    noremap <buffer> $ g$
+    noremap <buffer> 0 g0
+    nnoremap <buffer> A g$a
+    nnoremap <buffer> I g^i
+    noremap <buffer> gj j
+    noremap <buffer> gk k
+    noremap <buffer> g^ ^
+    noremap <buffer> g$ $
+    noremap <buffer> g0 0
+    nnoremap <buffer> gA A
+    nnoremap <buffer> gI I
   else
     let b:wrap_mode=0
-    "disable visual/display-based motion
+    "Disable previous options
     setlocal nowrap
     execute 'setlocal scrolloff='.g:scrolloff
     execute 'setlocal colorcolumn=81,121'
-    " execute 'setlocal colorcolumn=81,'.join(range(120,999),",")
+    "Disable previous maps
+    silent! unmap k
+    silent! unmap j
+    silent! unmap ^
+    silent! unmap $
+    silent! unmap 0
+    silent! unmap A
+    silent! unmap I
+    silent! unmap gj
+    silent! unmap gk
+    silent! unmap g^
+    silent! unmap g$
+    silent! unmap g0
+    silent! unmap gA
+    silent! unmap gI
   endif
 endfunction
 "Wrapper function; for some infuriating reason, setlocal scrolloff sets
@@ -2041,15 +2070,17 @@ function! s:tabmove(n)
   endif
 endfunction
 " noremap <silent> <expr> <Tab>m ":tabm ".eval(input('Move tab: ')-1)."<CR>"
-noremap <Tab>o <Nop>
-  "so don't do it accidentally
 noremap <silent> <expr> <Tab>m ":call <sid>tabmove(".eval(input('Move tab: ')).")<CR>"
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "###############################################################################
 "WINDOW MANAGEMENT
 noremap <Tab> <Nop>
+  "single tab press does nothing
 noremap <Tab><Tab> <Nop>
+  "neither does double
+noremap <Tab>o :echo 'Use Ctrl+O to open a new file.'<CR>
+  "so don't do it accidentally
 " noremap <Tab>q <C-w>o
 " noremap <Tab>q gT
 " noremap <Tab>w gt
@@ -2178,9 +2209,9 @@ noremap <silent> z0 :vertical resize 80<CR>
   "think of the 0 as 'original size', like cmd-0 on macbook
 nnoremap zu H
 nnoremap zd L
-nnoremap zm M
+nnoremap z. M
   "these are natural companions to zt/zb/z. keys which reposition the screen
-nnoremap z. mzz.`z
+nnoremap zm mzz.`z
   "for some reason z. moves the cursor. dumb.
 silent! unmap zuz
   "to prevent delay; this is associated with FastFold or something
@@ -2211,26 +2242,6 @@ vnoremap g. ~
 noremap m ge
 noremap M gE
   "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
-"Basic wrap-mode navigation, always move visually
-"Still might occasionally want to navigate by lines though
-noremap k gk
-noremap j gj
-noremap gj j
-noremap gk k
-  "way more common to want to move up visual lines for me
-noremap ^ g^
-noremap $ g$
-noremap 0 g0
-noremap g^ ^
-noremap g$ $
-noremap g0 0
-  "shortcuts for 'go to first char' and 'go to eol' 
-  "works in both line-wrapped situations and unwrapped situations
-nnoremap A g$a
-nnoremap I g^i
-nnoremap gA A
-nnoremap gI I
-  "similar to above
 noremap g: q:
 noremap g/ q/
   "display previous command with this
