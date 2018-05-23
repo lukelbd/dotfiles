@@ -1355,6 +1355,9 @@ endif
 "NERDCommenter (comment out stuff)
 augroup nerdcomment
 augroup END
+"First some default settings
+"See help fo-table for what these mean; this disables auto-wrapping lines
+set formatoptions=lro
 "Note the default mappings, all prefixed by <Leader> (but we disable them)
 " -cc comments line or selection
 " -cn forces nesting (seems to be default though; maybe sometimes, is ignored)
@@ -1396,13 +1399,19 @@ if has_key(g:plugs, "nerdcommenter")
     "Declare helper functions, and figure out initial settings
     "For new-style section header, just add another constructer-function
     function! s:bar(char)
-      return "'mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>`z'"
+      return "'mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>`z'"
     endfunction
     function! s:section(char)
-      return "'mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
-        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>"
-        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
-        \."<Up>$a<Space><Esc>'"
+      "New version, inserts above and uses auto-comment continuation
+      return "'mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+        \."O<Esc>"
+        \."O<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+        \."<Down>$a<Space><Esc>'"
+      "Original version, inserts below
+      " return "'mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+      "   \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>"
+      "   \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+      "   \."<Up>$a<Space><Esc>'"
     endfunction
     if &ft=="vim" | let a:fatchar="#" "literally says 'type a '#' character while in insert mode'
     else | let a:fatchar="'.b:NERDCommenterDelims['left'].'"
@@ -1426,6 +1435,9 @@ if has_key(g:plugs, "nerdcommenter")
       exe 'nnoremap <buffer> <expr> c\ '.s:section("-")
       exe 'nnoremap <buffer> <expr> c\| '.s:section(a:fatchar)
     endif
+    "Disable accidental key presses
+    silent! noremap c= <Nop>
+    silent! noremap c+ <Nop>
   endfunction
   au FileType * call s:commentheaders()
   "More basic NerdComment maps, just for toggling comments and stuff
