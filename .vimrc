@@ -2168,8 +2168,8 @@ nnoremap zl zL
   "found the normal h/l weren't enough; H/L are just stronger
   "also zk and zj move up between folds
   "also zs and ze position cursor at end/start
-noremap <silent> z_ :exe 'resize '.(winheight(0)*5/4)<CR>
-noremap <silent> z+ :exe 'resize '.(winheight(0)*4/5)<CR>
+noremap <silent> z+ :exe 'resize '.(winheight(0)*5/4)<CR>
+noremap <silent> z_ :exe 'resize '.(winheight(0)*4/5)<CR>
 noremap <silent> z= :exe 'vertical resize '.(winwidth(0)*5/4)<CR>
 noremap <silent> z- :exe 'vertical resize '.(winwidth(0)*4/5)<CR>
 noremap <silent> z0 :vertical resize 80<CR>
