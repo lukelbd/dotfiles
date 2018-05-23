@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # This function does what seemingly should be doable in tmux
 # with a simple command -p; for some reason had issues
-pane1=$1 # source
-pane2=$2 # dest
+pane1=$(tmux display -p "#P") # source
+pane2=$1 # dest
 window=$(tmux display -p "#I")
 tmux swap-pane -s:${window}.${pane1} -t:${window}.${pane2}
 tmux select-pane -t:${window}.${pane2}
