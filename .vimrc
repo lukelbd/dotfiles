@@ -539,7 +539,7 @@ nnoremap caf F(bdt(lca(
 nnoremap <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
 nnoremap yaf mzF(bvf(%y`z
 nnoremap <silent> vaf F(bvf(%
-nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
+nnoremap <expr> vc "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
   "for selecting text in-between commented out lines
 "Mimick the ysiwb command (i.e. adding delimiters to current word) for new delimiters
 "The following functions create arbitrary delimtier maps; current convention is
@@ -1626,8 +1626,6 @@ if has_key(g:plugs, "tagbar")
         wincmd h
         wincmd x
       endif
-      "The remap to travel to tag on typing
-      nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     endif
     "Enforce size no matter what
     vertical resize 20

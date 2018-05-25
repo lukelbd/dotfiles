@@ -896,7 +896,7 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
 }
-function ncvardatafull() { # as above but show everything
+function ncvartable() { # as above but show everything
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   local args=($@)
