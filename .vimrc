@@ -1544,6 +1544,7 @@ endif
 
 "###############################################################################
 "CTAGS (requires 'brew install ctags-exuberant')
+"In future should remap <Space><Space> to this
 augroup ctags
 augroup END
 "Future should use ***ctags** auto-loading, then jump between definitions.
@@ -1552,11 +1553,14 @@ augroup END
 "   isn't too big a deal though, because ctags is very quick.
 " * Execute lines below only if ctags present
 if str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-  function! s:compare(i1, i2) "default sorting is always alphabetical, with coercion; must use this!
+  function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
      return a:i1 - a:i2
   endfunc
   function! s:ctags()
+    let b:ctags=[] "default values
     let b:ctaglines=[]
+    let a:ignoretypes=["tagbar","nerdtree","vim"]
+    if index(a:ignoretypes, &ft)!=-1 | return 0 | endif
     let b:ctags=split(escape(system("ctags -f - ".expand("%")
           \." | grep -E $'\tf\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '*'), '\n')
     if len(b:ctags)==0 | return 0 | endif
@@ -1566,9 +1570,7 @@ if str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
         call extend(b:ctaglines, [a:ctagline])
       endif
     endfor
-    if len(b:ctaglines)!=len(b:ctags)
-      echom "Warning: Some ctags were not found."
-    endif
+    if len(b:ctaglines)!=len(b:ctags) | echom "Warning: Some ctags were not found." | endif
     let b:ctaglines=sort(b:ctaglines, "s:compare")
   endfunction
   nnoremap <silent> <Leader>c :call <sid>ctags()<CR>:echo "Tags updated."<CR>
