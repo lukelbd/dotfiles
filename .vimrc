@@ -155,8 +155,11 @@ au CmdwinLeave * setlocal laststatus=2
 " * See help fo-table for what these mean; this disables auto-wrapping lines.
 " * The o and r options continue comment lines.
 " * The n recognized numbered lists.
-" * Note in the documentation, formatoptions is *local to buffer*.
+" * Note in the documentation, formatoptions is *local to buffer*. Also note we have
+"   to set it explicitly outside of FileType command or will be reset to defaults
+"   every time vimrc loaded.
 let g:formatoptions="lro"
+exe 'setlocal formatoptions='.g:formatoptions
 au FileType * exe 'setlocal formatoptions='.g:formatoptions
 function! s:toggleformatopt()
   if len(&formatoptions)==0
@@ -339,7 +342,7 @@ augroup END
 let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
 let g:compatible_neocomplete=has("lua") "try alternative completion library
 let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && 
-      \ str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))) "need str2num
+  \ str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))) "need str2num
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
 " set shell=/bin/bash "will not work with e.g. brew-installed shell
@@ -973,31 +976,31 @@ augroup END
 "Experimental feature that converts dict() to {}-style dictionary
 function! s:dictconvert() "For searches with :normal command, see:
   "http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
-  let saveview=winsaveview()
+  let a:saveview=winsaveview()
   let a:line=line('.')
   normal! 0
   call search('=')
   while line('.')==a:line
     exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
   endwhile
-  call winrestview(saveview)
+  call winrestview(a:saveview)
   "return to original location
   "column first, then go to line; if column no longer exists, we just are at end-of-line
 endfunction
 function! s:Dictconvert()
-  let saveview=winsaveview()
+  let a:saveview=winsaveview()
   let a:estatus=search('dict(', 'be') "search moving Backwards, and fall on End of match
   if !a:estatus
     echom "Error: The cursor is not within a python dictionary."
-    call winrestview(saveview) | return
+    call winrestview(a:saveview) | return
   endif
   "Find the matching bracket for dict() instance
   let a:start=[line('.'), col('.')] "save the starting line
   normal %
-  " echo 'Start: '.saveview['lnum'].','.saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
-  if line('.')<saveview['lnum'] || (line('.')==saveview['lnum'] && col('.')<saveview['col'])
+  " echo 'Start: '.a:saveview['lnum'].','.a:saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
+  if line('.')<a:saveview['lnum'] || (line('.')==a:saveview['lnum'] && col('.')<a:saveview['col'])
     echom "Error: The cursor is not within a python dictionary."
-    call winrestview(saveview) | return
+    call winrestview(a:saveview) | return
   endif
   let a:end=[line('.'), col('.')] "save the ending line
   call cursor(a:start[0], a:start[1]) "return to starting point of dictionary
@@ -1008,7 +1011,7 @@ function! s:Dictconvert()
     "the h ensures single-character variables aren't skipped over
     exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
   endwhile
-  call winrestview(saveview)
+  call winrestview(a:saveview)
   "return to original location; another option is cursor() function, but slightly more limited functionality
   "column first, then go to line; if column no longer exists, we just are at end-of-line
 endfunction
@@ -1540,6 +1543,39 @@ if has_key(g:plugs, "syntastic")
 endif
 
 "###############################################################################
+"CTAGS (requires 'brew install ctags-exuberant')
+augroup ctags
+augroup END
+"Future should use ***ctags** auto-loading, then jump between definitions.
+" * Note that, unfortunately, tagbar doesn't have useful interface to access
+"   the ctags file generated already, so have to generate/parse our own; this
+"   isn't too big a deal though, because ctags is very quick.
+" * Execute lines below only if ctags present
+if str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
+  function! s:compare(i1, i2) "default sorting is always alphabetical, with coercion; must use this!
+     return a:i1 - a:i2
+  endfunc
+  function! s:ctags()
+    let b:ctaglines=[]
+    let b:ctags=split(escape(system("ctags -f - ".expand("%")
+          \." | grep -E $'\tf\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '*'), '\n')
+    if len(b:ctags)==0 | return 0 | endif
+    for ct in b:ctags
+      let a:ctagline=search(ct,'n')
+      if a:ctagline!=0
+        call extend(b:ctaglines, [a:ctagline])
+      endif
+    endfor
+    if len(b:ctaglines)!=len(b:ctags)
+      echom "Warning: Some ctags were not found."
+    endif
+    let b:ctaglines=sort(b:ctaglines, "s:compare")
+  endfunction
+  nnoremap <silent> <Leader>c :call <sid>ctags()<CR>:echo "Tags updated."<CR>
+  au FileType * call s:ctags()
+endif
+
+"###############################################################################
 "TAGBAR (requires 'brew install ctags-exuberant')
 augroup tagbar
 augroup END
@@ -1838,21 +1874,14 @@ cnoremap <expr> <C-u> <sid>enterpardir()
 "SEARCHING AND FIND-REPLACE STUFF
 augroup searching
 augroup END
-"Searching within scope of current function or environment
-" * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
-" * Below is copied from: https://stackoverflow.com/a/597932/4970632
-" * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
-"   renaming, and do it by confirming every single instance
-function! s:scopesearch(replace)
+"Old function
+"Loops through possible jumping commands; and is kind of dumb
+function! s:oldscopesearch(replace)
   let a:start=line('.')
-  let saveview=winsaveview()
-  "Loop through possible jumping commands
-  "In future, consider detecting separately for python indentation level
-  "Could just search until we encounter text at wrong indentation
-  " for a:endjump in ['normal ][', 'normal ]]k', 'normal G', 'call search('^\S')']
-  for a:endjump in ['normal ][', 'normal ]]k', 'call search("^\\S")']
+  let a:saveview=winsaveview()
+  for a:endjump in ['normal ]]k', 'call search("^\\S")']
     " echom 'Trying '.a:endjump
-    keepjumps normal [[
+    keepjumps normal j[[
     let a:first=line('.')
     exe 'keepjumps '.a:endjump
     let a:last=line('.')
@@ -1861,8 +1890,7 @@ function! s:scopesearch(replace)
     exe 'normal '.a:start.'g'
     "return to initial state at the end, important
   endfor
-  "Return stuff or whatever
-  call winrestview(saveview)
+  call winrestview(a:saveview)
   if a:first<a:last
     echom "Scopesearch selected lines ".a:first." to ".a:last."."
     if !a:replace
@@ -1875,6 +1903,36 @@ function! s:scopesearch(replace)
     echom "Warning: Scopesearch failed to find function range (first line ".a:first." >= second line ".a:last.")."
     return "" "empty string; will not limit scope anymore
   endif
+endfunction
+"Searching within scope of current function or environment
+" * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
+" * Below is copied from: https://stackoverflow.com/a/597932/4970632
+" * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
+"   renaming, and do it by confirming every single instance
+function! s:scopesearch(replace)
+  "Test out scopesearch
+  if len(b:ctaglines)==0
+    echo "Warning: Tags unavailable, so cannot limit search to functino range."
+    return ""
+  endif
+  let a:start=line('.')
+  let a:saveview=winsaveview()
+  call winrestview(a:saveview)
+  let a:ctaglines=extend(b:ctaglines,[line('$')])
+  "Return values
+  "%% is literal % character
+  "Check out %l atom documentation; note it last atom selects *above* that line (so increment by one)
+  "and first atom selects *below* that line (so decrement by 1)
+  for i in range(0,len(a:ctaglines)-2)
+    if a:ctaglines[i]<=a:start && a:ctaglines[i+1]>a:start "must be line above start of next function
+      echom "Scopesearch selected lines ".a:ctaglines[i]." to ".(a:ctaglines[i+1]-1)."."
+      if a:replace | return printf('%d,%ds', a:ctaglines[i]-1, a:ctaglines[i+1]) "range for :line1,line2s command
+      else | return printf('\%%>%dl\%%<%dl', a:ctaglines[i]-1, a:ctaglines[i+1])
+      endif
+    endif
+  endfor
+  echom "Warning: Scopesearch failed to find function range."
+  return "" "empty string; will not limit scope anymore
 endfunction
 "###############################################################################
 "BASICS; (showmode shows mode at bottom [default I think, but include it],
@@ -1905,10 +1963,10 @@ augroup auto_move_to_next
   autocmd! InsertLeave * :call MoveToNext()
 augroup END
 "Remaps using black magic
-nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-      \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-      \:let g:should_inject_replace_occurences=1<CR>cgn
+" nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+"       \:let g:should_inject_replace_occurences=1<CR>cgn
+" nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+"       \:let g:should_inject_replace_occurences=1<CR>cgn
 nmap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
       \:let g:should_inject_replace_occurences=1<CR>cgn
 nmap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
@@ -1920,8 +1978,8 @@ nmap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
 "       \:call setreg('"', old_reg, old_regtype)<CR>cgn
   "this last one might be broken; seems messed up
 "Original remaps, which don't move onto next highlight automatically
-" nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-" nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
+nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
+nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
 " nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
 " nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
 function! ReplaceOccurence()
@@ -2263,8 +2321,8 @@ noremap g/ q/
 "* Note the <Esc> is needed first because it cancels application of the number operator
 "  to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
-  nnoremap <expr> <nowait> > v:count>1 ? '<Esc>'.repeat('>>',v:count) : '>>'
-  nnoremap <nowait> < <<
+  nnoremap <expr> <nowait> > v:count > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
+  nnoremap <expr> <nowait> < v:count > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
   nnoremap <nowait> = ==
 else
   nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
@@ -2286,15 +2344,15 @@ endif
 " autocmd FileType * call s:gmaps()
 "Decided to disable the rest because sometimes find myself wanting to use other
 "g-prefix commands and can make use of more complex [[ and ]] funcs
-function! s:bracketmaps()
-  if &ft!="help" "want to use [ for something else then
-    nmap <silent> <buffer> <nowait> [ :exe 'normal '.v:count.'[['<CR>
-    nmap <silent> <buffer> <nowait> ] :exe 'normal '.v:count.']]'<CR>
-  endif
-endfunction
-if g:has_nowait "options is present in this version of VIM
-  autocmd FileType * call s:bracketmaps()
-endif
+" function! s:bracketmaps()
+"   if &ft!="help" "want to use [ for something else then
+"     nmap <silent> <buffer> <nowait> [ :exe 'normal '.v:count.'[['<CR>
+"     nmap <silent> <buffer> <nowait> ] :exe 'normal '.v:count.']]'<CR>
+"   endif
+" endfunction
+" if g:has_nowait "options is present in this version of VIM
+"   autocmd FileType * call s:bracketmaps()
+" endif
 
 "###############################################################################
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
@@ -2321,15 +2379,22 @@ highlight SignColumn cterm=None ctermbg=Black
 "###############################################################################
 "COLOR HIGHLIGHTING
 "Highlight group under cursor
-nnoremap <Leader>c :echo "hi<" . synIDattr(synID(line("."),col("."),1),"name")
-  \.'> trans<' . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
-  \.synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"<CR>
-nnoremap <expr> <Leader>C ":source $VIMRUNTIME/syntax/colortest.vim<CR>"
+"Never really use these so forget it
+function! Group()
+  echo "hi<" . synIDattr(synID(line("."),col("."),1),"name")
+    \.'> trans<' . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
+    \.synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"
+endfunction
+function! Colors()
+  exe "source $VIMRUNTIME/syntax/colortest.vim<CR>"
   \.":setlocal nolist<CR>:setlocal nonumber<CR>:noremap <buffer> q :q\<CR\><CR>"
   "could not get this to work without making the whole thing an <expr>, then escaping the CR in the subsequent map
+endfunction
 "Get current plugin file
 "Remember :scriptnames lists all loaded files
-nnoremap <Leader>p :execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'<CR>
+function! Plugin()
+  execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
+endfunction
 
 "###############################################################################
 "DELIMITER MATCHING/HIGHLIGHTING FUNCTIONS
