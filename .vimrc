@@ -1912,7 +1912,7 @@ endfunction
 function! s:scopesearch(replace)
   "Test out scopesearch
   if len(b:ctaglines)==0
-    echo "Warning: Tags unavailable, so cannot limit search to function range."
+    echo "Warning: Tags unavailable, so cannot limit search scope."
     return ""
   endif
   let a:start=line('.')
@@ -1931,7 +1931,7 @@ function! s:scopesearch(replace)
       endif
     endif
   endfor
-  echom "Warning: Scopesearch failed to find function range."
+  echom "Warning: Scopesearch failed to limit search scope."
   return "" "empty string; will not limit scope anymore
 endfunction
 "###############################################################################
