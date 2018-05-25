@@ -48,57 +48,24 @@ if (line('.')!=1 && a:mode==1) || (line('.')!=line('$') && a:mode==0)
 endif
 endfunction
 "-------------------------------------------------------------------------------
-"Create some realted maps
-" noremap <C-j> <Nop>
-" noremap <C-k> <Nop>
-" noremap <C-h> <Nop>
-" noremap <C-l> <Nop>
-noremap <C-g> z.
-noremap <C-b> <Nop>
-  "this helps with TMUX; default way to enter TMUX command mode is with
-  "C-b so this way we can always do it
-"-------------------------------------------------------------------------------
 "Create normal mode maps
-"Changed back to normal C-u and C-d; should do this because various terminal viewers
-"e.g. less use the u/d keys for scrolling, should get used to it
 nnoremap <silent> <C-f> :call <sid>scroll(winheight(0)/4,0,1)<CR>
-nnoremap <silent> <C-d> :call <sid>scroll(winheight(0)/2,0,1)<CR>
+nnoremap <silent> <C-d> :call <sid>scroll(winheight(0)/3,0,1)<CR>
 nnoremap <silent> <C-y> :call <sid>scroll(winheight(0)/4,1,1)<CR>
-nnoremap <silent> <C-u> :call <sid>scroll(winheight(0)/2,1,1)<CR>
-" noremap <silent> <C-h> :call <sid>scroll(winheight(0)/4,0,1)<CR>
-" noremap <silent> <C-j> :call <sid>scroll(winheight(0)/2,0,1)<CR>
-" noremap <silent> <C-l> :call <sid>scroll(winheight(0)/4,1,1)<CR>
-" noremap <silent> <C-k> :call <sid>scroll(winheight(0)/2,1,1)<CR>
-" noremap <C-f> [[
-" noremap <C-g> ]]
+nnoremap <silent> <C-u> :call <sid>scroll(winheight(0)/3,1,1)<CR>
 "noremap <silent> <C-b> :call <sid>scroll(winheight(0),1,1)<CR>
 "noremap <silent> <C-f> :call <sid>scroll(winheight(0),0,1)<CR>
+"-------------------------------------------------------------------------------
+"Visual mode scrolling
+vnoremap <silent> <expr> <C-f> eval(winheight(0)/4).'<C-e>'.eval(winheight(0)/4).'gj'
+vnoremap <silent> <expr> <C-d> eval(winheight(0)/2).'<C-e>'.eval(winheight(0)/3).'gj'
+vnoremap <silent> <expr> <C-y> eval(winheight(0)/4).'<C-y>'.eval(winheight(0)/4).'gk'
+vnoremap <silent> <expr> <C-u> eval(winheight(0)/2).'<C-y>'.eval(winheight(0)/3).'gk'
 "-------------------------------------------------------------------------------
 "Mouse remaps; they break things and default scrolling is fine so forget it
 " nnoremap <silent> <ScrollWheelUp> :call <sid>scroll(winheight(0)/12+1,1)<CR>
 " nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(winheight(0)/12+1,0)<CR>
 " nnoremap <silent> <ScrollWheelUp> :call <sid>scroll(1,1,0)<CR>:redraw<CR>
 " nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(1,0,0)<CR>:redraw<CR>
-  "these commands break things and default scrolling is just fine
-"-------------------------------------------------------------------------------
-"And visual mode scrolling; never really use with wrapping toggled, so
-"will use standard <C-e> <C-y> scrolling here
-vnoremap <silent> <expr> <C-f> eval(winheight(0)/4).'<C-e>'.eval(winheight(0)/4).'gj'
-vnoremap <silent> <expr> <C-d> eval(winheight(0)/2).'<C-e>'.eval(winheight(0)/2).'gj'
-vnoremap <silent> <expr> <C-y> eval(winheight(0)/4).'<C-y>'.eval(winheight(0)/4).'gk'
-vnoremap <silent> <expr> <C-u> eval(winheight(0)/2).'<C-y>'.eval(winheight(0)/2).'gk'
-" vnoremap <expr> <C-h> eval(winheight(0)/4).'<C-e>'.eval(winheight(0)/4).'gj'
-" vnoremap <expr> <C-j> eval(winheight(0)/2).'<C-e>'.eval(winheight(0)/2).'gj'
-" vnoremap <expr> <C-l> eval(winheight(0)/4).'<C-y>'.eval(winheight(0)/4).'gk'
-" vnoremap <expr> <C-k> eval(winheight(0)/2).'<C-y>'.eval(winheight(0)/2).'gk'
-" vnoremap <expr> <C-f> eval(winheight(0)).'<C-e>'.eval(winheight(0)).'gj'
-" vnoremap <expr> <C-b> eval(winheight(0)).'<C-y>'.eval(winheight(0)).'gk'
-" vnoremap <C-f> [[
-" vnoremap <C-g> ]]
 " vnoremap <silent> <ScrollWheelDown> <C-e>gj
 " vnoremap <silent> <ScrollWheelUp> <C-y>gk
-"So don't confuse myself, make sure <C-d> and <C-u> then don't work
-" noremap <C-d> <Nop>
-" noremap <C-u> <Nop>
-" vnoremap <C-d> <Nop>
-" vnoremap <C-u> <Nop>

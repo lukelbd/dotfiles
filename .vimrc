@@ -16,10 +16,12 @@ set nocompatible
   "always use the vim default where vi and vim differ; for example, if you
   "put this too late, whichwrap will be resset
 "###############################################################################
-"LEADER -- most important line
+"Most important lines
 let mapleader = "\<Space>"
 noremap <Space> <Nop>
 noremap <CR> <Nop>
+noremap <C-b> <Nop>
+  "for TMUX; preserve that shortcut
 "###############################################################################
 "STANDARDIZE COLORS -- need to make sure background set to dark, and should be good to go
 "See solution: https://unix.stackexchange.com/a/414395/112647
@@ -89,6 +91,7 @@ function! s:outofdelim(n) "get us out of delimiter cursos is inside
   endfor
 endfunction
 "MAPS IN CONTEXT OF POPUP MENU
+" * Will count number of tabs in popup menu so our position is always known
 au BufEnter * let b:tabcount=0
 au InsertEnter * let b:tabcount=0
 function! s:tabincrease() "use this inside <expr> remaps
@@ -112,13 +115,13 @@ inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofd
 inoremap <expr> <C-u> neocomplete#undo_completion()
 inoremap <expr> <C-c> pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
 inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
-inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
 inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>".<sid>tabreset() : "\<BS>"
 inoremap <expr> <Tab> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
 inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
-inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+" inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+"Old mappings
 " inoremap <expr> <Space> pumvisible() ? "\<C-e>\<Space>" : "\<Space>"
 " inoremap <expr> <CR> pumvisible() ? "\<C-e>\<CR>" : "\<CR>"
 " inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>" : "\<BS>"
@@ -148,16 +151,22 @@ au CmdwinLeave * setlocal laststatus=2
   "commandline-window settings; when we are inside of q:, q/, and q?
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
-" noremap q <Nop>
-  "to prevent accidentally starting recordings
-  "thought this would require the <nowait> but it doesn't; see https://stackoverflow.com/a/28501574/4970632
-" noremap ~ q1
-" noremap qq qQ
-  "new macro toggle; almost always just use one at a time
-  "press ~ again to quit; 1, 2, etc. do nothing in normal mode. clever, huh?
-  "don't diable q; have that remapped to show window
-noremap <silent> ` mzo<Esc>`z
-noremap <silent> ~ mzO<Esc>`z
+"First need helper function to toggle formatoptions (controls whether comment-char inserted on newline)
+" * See help fo-table for what these mean; this disables auto-wrapping lines.
+" * The o and r options continue comment lines.
+" * The n recognized numbered lists.
+" * Note in the documentation, formatoptions is *local to buffer*.
+let g:formatoptions="lro"
+au FileType * exe 'setlocal formatoptions='.g:formatoptions
+function! s:toggleformatopt()
+  if len(&formatoptions)==0
+    exe 'setlocal formatoptions='.g:formatoptions
+  else
+    setlocal formatoptions=
+  endif
+endfunction
+noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
+noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
 noremap <silent> su mzkddp`z
@@ -223,13 +232,16 @@ nnoremap D D
   "also make v$ no longer include the end-of-line character
 noremap S <Nop>
 noremap ss s
-  "will use single-s map for spellcheck-related commands
+  "willuse single-s map for spellcheck-related commands
   "restore use of substitute 's' key; then use s<stuff> for spellcheck
 nnoremap vv ^v$gE
-vnoremap cc s
-vnoremap c<CR> s
   "select the current 'line' of text; super handy
-  "also replace the currently highlighted text
+vnoremap cc Vs
+nnoremap cl mza<CR><Esc>`z
+vnoremap c<CR> s
+  "replace the currently highlighted text
+  "also cl 'splits' the line at cursor; should always use ss instead of cl
+  "to replace a single character and enter insert mode, so cl-key combo is free
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
@@ -335,6 +347,9 @@ let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) &
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
+"Automatic list numbering
+let g:bullets_enabled_file_types = ['vim', 'markdown', 'text', 'gitcommit', 'scratch']
+Plug 'dkarter/bullets.vim'
 "Appearence; use my own customzied statusline/tagbar stuff though, and it's way better
 " Plug 'vim-airline/vim-airline'
 " Plug 'itchyny/lightline.vim'
@@ -395,18 +410,15 @@ augroup END
 "VIM documentation says a "jump" is one of the following commands:
 "The G ? and n commands will be especially useful to jump back from
 " "'", "`", "G", "/", "?", "n",
-" "N", "%", "(", ")", "[[", "]]", "{", "}", ":s", ":tag", "L", "M", "H" and
+" "N", "%", "(", ")", "[[", "]]", "{", "}", ":s", ":tag", "L", "M", "H"
 "First some simple maps for navigating jumplist
 "The l/h navigate jumplist (e.g. undoing an 'n' or 'N' keystroke), the j/k just
 "navigate the changelist (i.e. where text last modified)
-noremap <C-l> <Tab>
-noremap <C-h> <C-o>
+if has_key(g:plugs, "EnhancedJumps") | let g:jumpprefix='g' | else | let g:jumpprefix='' | endif
+noremap <expr> <C-l> g:jumpprefix.'<C-i>'
+noremap <expr> <C-h> g:jumpprefix.'<C-o>'
 noremap <C-j> g;
 noremap <C-k> g,
-if has_key(g:plugs, "EnhancedJumps")
-  map <C-o> g<C-o>
-  map <C-i> g<C-i>
-endif
 
 "###############################################################################
 "SESSION MANAGEMENT
@@ -588,11 +600,10 @@ call s:delims(';$', '$', '$', 0, 0)
 call s:delims(';*', '*', '*', 0, 0)
 call s:delims(';`', '`', '`', 0, 0)
 call s:delims(';~', '“', '”', 0, 0)
+vnoremap ;f <Esc>`>a)<Esc>`<i(<Esc>hi
 nnoremap ;f lbmzi(<Esc>hea)<Esc>`zi
-  "special function that inserts brackets, then
-  "puts your cursor in insert mode at the start so you can make a function call
 nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
-  "specual function that inserts brackets, then
+  "special function that inserts brackets, then
   "puts your cursor in insert mode at the start so you can make a function call
 "Repair semicolon in insert mode
 inoremap ;; ;
@@ -1355,9 +1366,6 @@ endif
 "NERDCommenter (comment out stuff)
 augroup nerdcomment
 augroup END
-"First some default settings
-"See help fo-table for what these mean; this disables auto-wrapping lines
-set formatoptions=lro
 "Note the default mappings, all prefixed by <Leader> (but we disable them)
 " -cc comments line or selection
 " -cn forces nesting (seems to be default though; maybe sometimes, is ignored)
@@ -1398,20 +1406,17 @@ if has_key(g:plugs, "nerdcommenter")
   function! s:commentheaders()
     "Declare helper functions, and figure out initial settings
     "For new-style section header, just add another constructer-function
-    function! s:bar(char)
-      return "'mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>`z'"
+    function! s:bar(char) "inserts above by default; most common use
+      return "':call <sid>toggleformatopt()<CR>"
+        \."mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>`z"
+        \.":call <sid>toggleformatopt()<CR>'"
     endfunction
-    function! s:section(char)
-      "New version, inserts above and uses auto-comment continuation
-      return "'mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
-        \."O<Esc>"
-        \."O<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
-        \."<Down>$a<Space><Esc>'"
-      "Original version, inserts below
-      " return "'mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
-      "   \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>"
-      "   \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
-      "   \."<Up>$a<Space><Esc>'"
+    function! s:section(char) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
+      return "':call <sid>toggleformatopt()<CR>"
+        \."mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>"
+        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+        \."<Up>$a<Space><Esc>:call <sid>toggleformatopt()<CR>'"
     endfunction
     if &ft=="vim" | let a:fatchar="#" "literally says 'type a '#' character while in insert mode'
     else | let a:fatchar="'.b:NERDCommenterDelims['left'].'"
@@ -1420,7 +1425,8 @@ if has_key(g:plugs, "nerdcommenter")
     endif
     "Declare remaps; section-header types will be dependent on filetype, e.g.
     "if comment character is not 'fat' enough, does not make good section header character
-    if has_key(g:plugs, "vim-repeat")
+    "Also temporarily disable/re-enable formatoptions here
+    if 1 && has_key(g:plugs, "vim-repeat")
       exe 'nnoremap <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
       exe 'nnoremap <buffer> <expr> <Plug>fancy2 '.s:bar(a:fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
       exe 'nnoremap <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
@@ -1585,10 +1591,11 @@ if has_key(g:plugs, "tagbar")
       "The remap to travel to tag on typing
       nmap <expr> <buffer> <Space><Space> "/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
     endif
+    "Enforce size no matter what
+    vertical resize 20
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
-  nmap <expr> <Leader><Space> ":TagbarOpen<CR><Tab>L/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
-    "be careful -- need to use default window-switching shortcut here!
+  nmap <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
   "Switch updatetime (necessary for Tagbar highlights to follow cursor)
   set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
   "Note the default mappings:
@@ -1618,13 +1625,6 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_singleclick=0 "one click select 
     "(don't use this; inconsistent with help menu and makes it impossible to switch windows by clicking)
   let g:tagbar_width=25 "better default
-  " au FileType python :TagbarOpen | :syntax on
-  " au BufEnter * nested :call tagbar#autoopen(0)
-  " au BufEnter python nested :TagbarOpen
-  " au VimEnter * nested :TagbarOpen
-  " au BufRead python normal }
-  "the vertical line, because it wasn't used and tagbar makes a 'panel'
-  "...no, instead } because it shows up on right
 endif
 
 "###############################################################################
@@ -2210,10 +2210,10 @@ nnoremap zl zL
   "found the normal h/l weren't enough; H/L are just stronger
   "also zk and zj move up between folds
   "also zs and ze position cursor at end/start
-noremap <silent> z+ :exe 'resize '.(winheight(0)*5/4)<CR>
-noremap <silent> z_ :exe 'resize '.(winheight(0)*4/5)<CR>
-noremap <silent> z= :exe 'vertical resize '.(winwidth(0)*5/4)<CR>
-noremap <silent> z- :exe 'vertical resize '.(winwidth(0)*4/5)<CR>
+noremap <silent> z+ :exe 'resize '.(winheight(0)+3)<CR>
+noremap <silent> z_ :exe 'resize '.(winheight(0)-3)<CR>
+noremap <silent> z= :exe 'vertical resize '.(winwidth(0)+5)<CR>
+noremap <silent> z- :exe 'vertical resize '.(winwidth(0)-5)<CR>
 noremap <silent> z0 :vertical resize 80<CR>
 " noremap <silent> z= <C-w>=
   "and the z-prefix is a natural companion to the resizing commands
