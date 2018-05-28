@@ -17,33 +17,33 @@ function! s:get_match_lines(line) abort
   "input argument line is the *original* line
   "(1) the % operator keeps us on the same line, or
   "(2) the % operator doesn't return us to the same line after some nubmer of jumps
-  let a:tolerance=5 "keep it small so don't get slowdowns
-  let a:badbreak=1
-  let a:linebefore=-1
+  let tolerance=5 "keep it small so don't get slowdowns
+  let badbreak=1
+  let linebefore=-1
   let lines = []
   let b:xyz = [] "FOR TESTING
-  for a:jumpcommand in ["%", "%^"] "try both, depends which is more suitable
+  for jumpcommand in ["%", "%^"] "try both, depends which is more suitable
     execute "keepjumps normal! ".a:line."gg"
-    " if a:jumpcommand=="%^" | echo "Trying alternate method." | endif
-    while a:tolerance && a:linebefore != line('.')
+    " if jumpcommand=="%^" | echo "Trying alternate method." | endif
+    while tolerance && linebefore != line('.')
       "Do *not* use normal!; need filetype specific maps of %
-      let a:linebefore=line('.')
-      let a:tolerance-=1
-      execute "keepjumps normal ".a:jumpcommand
+      let linebefore=line('.')
+      let tolerance-=1
+      execute "keepjumps normal ".jumpcommand
       if line('.')==a:line "note that the current line number is never added to the `lines` list.
-        let a:badbreak=0
+        let badbreak=0
         break
       endif
       call add(lines, line('.'))
     endwhile
-    if a:badbreak==0
+    if badbreak==0
       break "otherwise try again with the new jumpcommand
     endif
   endfor
   "Return to original line no matter what, return list of lines to highlight
   "Documentation says keepjumps exe 'command' fails; must use exe 'keepjumps command'
   execute "keepjumps normal! ".a:line."gg"
-  if a:badbreak
+  if badbreak
     " echohl WarningMsg | echo "Failed to find match for line ".line('.')."." | echohl None
       "better then echoerr because does not pause screen; see help info for echohl
     echo "Failed to find match for line ".line('.')."."
