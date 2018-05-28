@@ -44,7 +44,7 @@ set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
 "First some functions and autocmds
 set whichwrap=[,],<,>,h,l
   "let h, l move past end of line (<> = left/right insert, [] = left/right normal mode)
-function! s:escape() "preserve cursor column, UNLESS we were on the newline/final char
+function! s:escape() "preserve cursor column, UNLESS we were on the newline or final char
   if col('.')+1!=col('$') && col('.')!=1
     normal l
   endif
@@ -1561,27 +1561,29 @@ if g:has_ctags
   function! s:ctags()
     let ctags=[] "default values
     let ctaglines=[]
-    let ignoretypes=["tagbar","nerdtree","vim"]
+    let ignoretypes=["tagbar","nerdtree"]
     if index(ignoretypes, &ft)!=-1
       let b:ctags=[]
       let b:ctaglines=[]
       return
     endif
-    let ctags=split(escape(system("ctags -f - ".expand("%")
-          \." | grep -E $'\tf\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '*'), '\n')
+    if expand("%:t")==".vimrc"
+      let type="a" "list only augroups
+    else
+      let type="f" "list functions
+    endif
+    let ctags=split(escape(system("ctags --langmap=vim:+.vimrc -f - ".expand("%")
+          \." | grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '*'), '\n')
     if len(ctags)==0 | return 0 | endif
     for ctag in ctags
-      let ctagline=search(ctag,'n')
+      let ctagline=search(escape(ctag,'/'),'n')
       if ctagline!=0
         call extend(ctaglines, [ctagline])
+      else
+        echo "Warning: Search pattern ".ctag." not found."
+        call extend(ctaglines, [0])
       endif
     endfor
-    if len(ctaglines)!=len(ctags)
-      echom "Warning: Some ctags were not found."
-      let b:ctags=[]
-      let b:ctaglines=sort(ctaglines)
-      return
-    endif
     let b:ctags=[]
     let b:ctaglines=copy(ctaglines) "vim is object-oriented, like python
     call sort(b:ctaglines, "s:compare")
@@ -1609,14 +1611,7 @@ if g:has_ctags
     echo "Warning: Ctag regex not found."
   endfunction
   nnoremap <silent> <expr> <Leader><Space> ':call <sid>ctagjump("'.input('Enter ctag regex: ').'")<CR>'
-  "Ugly version that required tagbar to be open
-  "Now only use this for special vim file
-  function! s:oldjump()
-    if &ft=="vim"
-      nmap <buffer> <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Enter ctag regex: ")."<CR>:noh<CR><CR>"
-    endif
-  endfunction
-  au FileType * call s:oldjump()
+  " nmap <buffer> <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Enter ctag regex: ")."<CR>:noh<CR><CR>"
 endif
 
 "###############################################################################
@@ -1671,9 +1666,10 @@ if has_key(g:plugs, "tagbar")
         wincmd h
         wincmd x
       endif
+      "Do this if just opend it up
+      vertical resize 15
+      wincmd p
     endif
-    "Enforce size no matter what
-    vertical resize 20
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
   "Switch updatetime (necessary for Tagbar highlights to follow cursor)
