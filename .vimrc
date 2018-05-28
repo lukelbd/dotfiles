@@ -339,10 +339,10 @@ endif
 "###############################################################################
 augroup SECTION2
 augroup END
+let g:has_ctags=str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
 let g:compatible_neocomplete=has("lua") "try alternative completion library
-let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && 
-  \ str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))) "need str2num
+let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
 " set shell=/bin/bash "will not work with e.g. brew-installed shell
@@ -1552,7 +1552,7 @@ augroup END
 "   the ctags file generated already, so have to generate/parse our own; this
 "   isn't too big a deal though, because ctags is very quick.
 " * Execute lines below only if ctags present
-if str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
+if g:has_ctags
   function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
      return a:i1 - a:i2
   endfunc
@@ -1735,7 +1735,9 @@ function! s:autowrap()
     call s:wraptoggle(0)
   endif
 endfunction
-autocmd BufEnter * call s:autowrap()
+"For some reason both of these are necessary; fuck it
+au VimEnter * call s:autowrap()
+au BufEnter * call s:autowrap()
 
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
@@ -1874,66 +1876,70 @@ cnoremap <expr> <C-u> <sid>enterpardir()
 "SEARCHING AND FIND-REPLACE STUFF
 augroup searching
 augroup END
-"Old function
-"Loops through possible jumping commands; and is kind of dumb
-function! s:oldscopesearch(replace)
-  let a:start=line('.')
-  let a:saveview=winsaveview()
-  for a:endjump in ['normal ]]k', 'call search("^\\S")']
-    " echom 'Trying '.a:endjump
-    keepjumps normal j[[
-    let a:first=line('.')
-    exe 'keepjumps '.a:endjump
-    let a:last=line('.')
-    " echom a:first.' to '.a:last | sleep 1
-    if a:first<a:last | break | endif
-    exe 'normal '.a:start.'g'
-    "return to initial state at the end, important
-  endfor
-  call winrestview(a:saveview)
-  if a:first<a:last
-    echom "Scopesearch selected lines ".a:first." to ".a:last."."
-    if !a:replace
-      return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
-        "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
-    else
-      return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
+if g:has_ctags
+  "Searching within scope of current function or environment
+  " * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
+  " * Below is copied from: https://stackoverflow.com/a/597932/4970632
+  " * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
+  "   renaming, and do it by confirming every single instance
+  function! s:scopesearch(replace)
+    "Test out scopesearch
+    if len(b:ctaglines)==0
+      echo "Warning: Tags unavailable, so cannot limit search scope."
+      return ""
     endif
-  else
-    echom "Warning: Scopesearch failed to find function range (first line ".a:first." >= second line ".a:last.")."
-    return "" "empty string; will not limit scope anymore
-  endif
-endfunction
-"Searching within scope of current function or environment
-" * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
-" * Below is copied from: https://stackoverflow.com/a/597932/4970632
-" * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
-"   renaming, and do it by confirming every single instance
-function! s:scopesearch(replace)
-  "Test out scopesearch
-  if len(b:ctaglines)==0
-    echo "Warning: Tags unavailable, so cannot limit search scope."
-    return ""
-  endif
-  let a:start=line('.')
-  let a:saveview=winsaveview()
-  call winrestview(a:saveview)
-  let a:ctaglines=extend(b:ctaglines,[line('$')])
-  "Return values
-  "%% is literal % character
-  "Check out %l atom documentation; note it last atom selects *above* that line (so increment by one)
-  "and first atom selects *below* that line (so decrement by 1)
-  for i in range(0,len(a:ctaglines)-2)
-    if a:ctaglines[i]<=a:start && a:ctaglines[i+1]>a:start "must be line above start of next function
-      echom "Scopesearch selected lines ".a:ctaglines[i]." to ".(a:ctaglines[i+1]-1)."."
-      if a:replace | return printf('%d,%ds', a:ctaglines[i]-1, a:ctaglines[i+1]) "range for :line1,line2s command
-      else | return printf('\%%>%dl\%%<%dl', a:ctaglines[i]-1, a:ctaglines[i+1])
+    let a:start=line('.')
+    let a:saveview=winsaveview()
+    call winrestview(a:saveview)
+    let a:ctaglines=extend(b:ctaglines,[line('$')])
+    "Return values
+    "%% is literal % character
+    "Check out %l atom documentation; note it last atom selects *above* that line (so increment by one)
+    "and first atom selects *below* that line (so decrement by 1)
+    for i in range(0,len(a:ctaglines)-2)
+      if a:ctaglines[i]<=a:start && a:ctaglines[i+1]>a:start "must be line above start of next function
+        echom "Scopesearch selected lines ".a:ctaglines[i]." to ".(a:ctaglines[i+1]-1)."."
+        if a:replace | return printf('%d,%ds', a:ctaglines[i]-1, a:ctaglines[i+1]) "range for :line1,line2s command
+        else | return printf('\%%>%dl\%%<%dl', a:ctaglines[i]-1, a:ctaglines[i+1])
+        endif
       endif
+    endfor
+    echom "Warning: Scopesearch failed to limit search scope."
+    return "" "empty string; will not limit scope anymore
+  endfunction
+else
+  "Much less reliable
+  "Loop loop through possible jumping commands; the bracket commands
+  "are generally declared with FileType regex searches, not ctags
+  function! s:scopesearch(replace)
+    let a:start=line('.')
+    let a:saveview=winsaveview()
+    for a:endjump in ['normal ]]k', 'call search("^\\S")']
+      " echom 'Trying '.a:endjump
+      keepjumps normal j[[
+      let a:first=line('.')
+      exe 'keepjumps '.a:endjump
+      let a:last=line('.')
+      " echom a:first.' to '.a:last | sleep 1
+      if a:first<a:last | break | endif
+      exe 'normal '.a:start.'g'
+      "return to initial state at the end, important
+    endfor
+    call winrestview(a:saveview)
+    if a:first<a:last
+      echom "Scopesearch selected lines ".a:first." to ".a:last."."
+      if !a:replace
+        return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
+          "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
+      else
+        return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
+      endif
+    else
+      echom "Warning: Scopesearch failed to find function range (first line ".a:first." >= second line ".a:last.")."
+      return "" "empty string; will not limit scope anymore
     endif
-  endfor
-  echom "Warning: Scopesearch failed to limit search scope."
-  return "" "empty string; will not limit scope anymore
-endfunction
+  endfunction
+endif
 "###############################################################################
 "BASICS; (showmode shows mode at bottom [default I think, but include it],
 "incsearch moves to word as you begin searching with '/' or '?')
@@ -2128,19 +2134,19 @@ noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
 "FUNCTION -- MOVE CURRENT TAB TO THE EXACT PLACE OF TAB NO. X
 "this is not default behavior
 function! s:tabmove(n)
-  echo 'Moving tab...'
-  if a:n==tabpagenr()
+  if a:n==tabpagenr() || a:n==0
     return
-  elseif a:n>tabpagenr() && version[0]>7
-      "may be version dependent behavior of tabmove... on my version 8 seems to
-      "always position to left, but on Gauss server, different
+  elseif a:n>tabpagenr() && version[0]>7 "may be version dependent behavior of tabmove;
+    "on my version 8 seems to always position to left, but on Gauss server, different
+    echo 'Moving tab...'
     execute 'tabmove '.a:n
   else
+    echo 'Moving tab...'
     execute 'tabmove '.eval(a:n-1)
   endif
 endfunction
 " noremap <silent> <expr> <Tab>m ":tabm ".eval(input('Move tab: ')-1)."<CR>"
-noremap <silent> <expr> <Tab>m ":call <sid>tabmove(".eval(input('Move tab: ')).")<CR>"
+noremap <silent> <expr> <Tab>m ":silent! call <sid>tabmove(".input('Move tab: ').")<CR>"
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "###############################################################################
@@ -2251,8 +2257,7 @@ set foldlevelstart=20
 set foldnestmax=10 "avoids weird things
 set foldopen=tag,mark "options for opening folds on cursor movement; disallow block
   "i.e. percent motion, horizontal motion, insert, jump
-"Some maps
-"Note there is also z. for <center screen>
+"Folding maps
 nnoremap zD zE
   "delete all folds; delete fold at cursor is zd
 nnoremap z> zM
@@ -2268,21 +2273,27 @@ nnoremap zl zL
   "found the normal h/l weren't enough; H/L are just stronger
   "also zk and zj move up between folds
   "also zs and ze position cursor at end/start
-noremap <silent> z+ :exe 'resize '.(winheight(0)+3)<CR>
-noremap <silent> z_ :exe 'resize '.(winheight(0)-3)<CR>
-noremap <silent> z= :exe 'vertical resize '.(winwidth(0)+5)<CR>
-noremap <silent> z- :exe 'vertical resize '.(winwidth(0)-5)<CR>
-noremap <silent> z0 :vertical resize 80<CR>
-" noremap <silent> z= <C-w>=
+"Overhaul z-remaps for controlling window state; make them Tab-prexied
+"maps, because I *hate* inconsistency; want all window-related maps to have same prefix
+noremap <silent> <Tab>9 :exe 'resize '.(winheight(0)-3)<CR>
+noremap <silent> <Tab>0 :exe 'resize '.(winheight(0)+3)<CR>
+noremap <silent> <Tab>( :exe 'resize '.(winheight(0)-5)<CR>
+noremap <silent> <Tab>) :exe 'resize '.(winheight(0)+5)<CR>
+noremap <silent> <Tab>[ :exe 'vertical resize '.(winwidth(0)-5)<CR>
+noremap <silent> <Tab>] :exe 'vertical resize '.(winwidth(0)+5)<CR>
+noremap <silent> <Tab>{ :exe 'vertical resize '.(winwidth(0)-10)<CR>
+noremap <silent> <Tab>} :exe 'vertical resize '.(winwidth(0)+10)<CR>
+noremap <silent> <Tab>= :vertical resize 80<CR>
   "and the z-prefix is a natural companion to the resizing commands
   "the Tab commands should just sort and navigate between panes
   "think of the 0 as 'original size', like cmd-0 on macbook
-nnoremap zu H
-nnoremap zd L
-nnoremap z. M
-  "these are natural companions to zt/zb/z. keys which reposition the screen
-nnoremap zm mzz.`z
-  "for some reason z. moves the cursor. dumb.
+nnoremap <Tab>u zt
+nnoremap <Tab>o zb
+nnoremap <Tab>i mzz.`z
+nnoremap <Tab>q H
+nnoremap <Tab>w M
+nnoremap <Tab>e L
+  "movement remaps
 silent! unmap zuz
   "to prevent delay; this is associated with FastFold or something
   "go up or down page
@@ -2386,8 +2397,10 @@ function! Group()
     \.synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"
 endfunction
 function! Colors()
-  exe "source $VIMRUNTIME/syntax/colortest.vim<CR>"
-  \.":setlocal nolist<CR>:setlocal nonumber<CR>:noremap <buffer> q :q\<CR\><CR>"
+  source $VIMRUNTIME/syntax/colortest.vim
+  setlocal nolist
+  setlocal nonumber
+  noremap <buffer> q :q<CR>
   "could not get this to work without making the whole thing an <expr>, then escaping the CR in the subsequent map
 endfunction
 "Get current plugin file
@@ -2395,6 +2408,10 @@ endfunction
 function! Plugin()
   execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
 endfunction
+"Commands; these just substitute stuff entered in command-mode with following text
+command! Group call Group()
+command! Colors call Colors()
+command! Plugin call Plugin()
 
 "###############################################################################
 "DELIMITER MATCHING/HIGHLIGHTING FUNCTIONS
@@ -2408,11 +2425,10 @@ endfunction
 "###############################################################################
 "###############################################################################
 "silent! !echo 'Custom vimrc loaded.'
-" au BufRead * clearjumps "forget the jumplist
-  "do this so that we don't have stuff in plugin files and the vimrc populating
-  "the jumplist when starting for the very first time
+" au BufRead * clearjumps
 au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
-  "older versions of VIM have no clearjumps command, so this is a hack
+  "don't want stuff from plugin files and the vimrc populating jumplist after statrup
+  "older versions of VIM have no 'clearjumps' command, so this is a hack
   "see this post: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 noh "run this at startup
-echo 'Custom vimrc loaded.'
+echom 'Custom vimrc loaded.'
