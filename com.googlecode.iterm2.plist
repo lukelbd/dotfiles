@@ -31759,27 +31759,27 @@
 	<false/>
 	<key>GlobalKeyMap</key>
 	<dict>
-		<key>0x20-0x80000</key>
-		<dict>
-			<key>Action</key>
-			<integer>38</integer>
-			<key>Text</key>
-			<string>cd -\r</string>
-		</dict>
-		<key>0x2c-0x80000</key>
+		<key>0x27-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>30</integer>
 			<key>Text</key>
 			<string></string>
 		</dict>
-		<key>0x2e-0x100000</key>
+		<key>0x2d-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>25</integer>
 			<key>Text</key>
-			<string>Open Command History…
-Open Command History…</string>
+			<string>Split Horizontally with Current Profile
+Split Horizontally with Current Profile</string>
+		</dict>
+		<key>0x2e-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>11</integer>
+			<key>Text</key>
+			<string>0x0C 0x10 0x0d</string>
 		</dict>
 		<key>0x2f-0x100000</key>
 		<dict>
@@ -31796,6 +31796,14 @@ Open Recent Directories…</string>
 			<key>Text</key>
 			<string></string>
 		</dict>
+		<key>0x3b-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Open Command History…
+Open Command History…</string>
+		</dict>
 		<key>0x3d-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -31803,19 +31811,19 @@ Open Recent Directories…</string>
 			<key>Text</key>
 			<string>&lt;-</string>
 		</dict>
-		<key>0x47-0x120000</key>
-		<dict>
-			<key>Action</key>
-			<integer>38</integer>
-			<key>Text</key>
-			<string>git commit -am "" &amp;&amp; git push\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D</string>
-		</dict>
-		<key>0x48-0x120000</key>
+		<key>0x46-0x120000</key>
 		<dict>
 			<key>Action</key>
 			<integer>38</integer>
 			<key>Text</key>
 			<string>git commit -m "" &amp;&amp; git push\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D</string>
+		</dict>
+		<key>0x47-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>38</integer>
+			<key>Text</key>
+			<string>git add --all &amp;&amp; git commit -m "" &amp;&amp; git push\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D\e[D</string>
 		</dict>
 		<key>0x50-0x120000</key>
 		<dict>
@@ -31831,6 +31839,13 @@ Open Recent Directories…</string>
 			<key>Text</key>
 			<string>Restart Session</string>
 		</dict>
+		<key>0x55-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>12</integer>
+			<key>Text</key>
+			<string>git pull</string>
+		</dict>
 		<key>0x5b-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -31841,46 +31856,52 @@ Open Recent Directories…</string>
 		<key>0x5c-0x100000</key>
 		<dict>
 			<key>Action</key>
-			<integer>11</integer>
+			<integer>25</integer>
 			<key>Text</key>
-			<string>0x0C 0x10 0x0d</string>
+			<string>Split Vertically with Current Profile
+Split Vertically with Current Profile</string>
 		</dict>
-		<key>0x67-0x100000</key>
-		<dict>
-			<key>Action</key>
-			<integer>12</integer>
-			<key>Text</key>
-			<string>git commit -am ""\e[D</string>
-		</dict>
-		<key>0x68-0x100000</key>
+		<key>0x66-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>38</integer>
 			<key>Text</key>
 			<string>git commit -m ""\e[D</string>
 		</dict>
+		<key>0x67-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>12</integer>
+			<key>Text</key>
+			<string>git add --all &amp;&amp; git commit -m ""\e[D</string>
+		</dict>
+		<key>0x68-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>18</integer>
+			<key>Text</key>
+			<string></string>
+		</dict>
 		<key>0x6a-0x100000</key>
 		<dict>
 			<key>Action</key>
-			<integer>25</integer>
+			<integer>21</integer>
 			<key>Text</key>
-			<string>Split Horizontally with Current Profile
-Split Horizontally with Current Profile</string>
+			<string></string>
 		</dict>
 		<key>0x6b-0x100000</key>
 		<dict>
 			<key>Action</key>
-			<integer>25</integer>
+			<integer>20</integer>
 			<key>Text</key>
-			<string>Split Vertically with Current Profile
-Split Vertically with Current Profile</string>
+			<string></string>
 		</dict>
 		<key>0x6c-0x100000</key>
 		<dict>
 			<key>Action</key>
-			<integer>38</integer>
+			<integer>19</integer>
 			<key>Text</key>
-			<string>ls\r</string>
+			<string></string>
 		</dict>
 		<key>0x6d-0x100000</key>
 		<dict>
@@ -31919,6 +31940,13 @@ Close Terminal Window</string>
 			<integer>38</integer>
 			<key>Text</key>
 			<string>clear\r</string>
+		</dict>
+		<key>0x75-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>12</integer>
+			<key>Text</key>
+			<string>git push</string>
 		</dict>
 		<key>0x76-0x100000</key>
 		<dict>
@@ -31965,19 +31993,19 @@ Close</string>
 			<key>Text</key>
 			<string>0x17</string>
 		</dict>
-		<key>0xd-0x40000</key>
+		<key>0xd-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>42</integer>
 			<key>Text</key>
-			<string>{"ConvertUnicodePunctuation":true,"WaitForPrompts":false,"Substitution":"","EscapeForShell":true,"Base64":false,"TabStopSize":4,"Delay":0.01,"RemoveNewlines":true,"Regex":"","ConvertNewlines":false,"TabTransform":0,"BracketAllowed":true,"UseRegexSubstitution":false,"ChunkSize":1024,"RemoveControls":true}</string>
+			<string>{"ConvertUnicodePunctuation":true,"WaitForPrompts":false,"Substitution":"[ -d \"$1\" ] &amp;&amp; cd \"$1\"\\rpwd\\r","EscapeForShell":true,"Base64":false,"TabStopSize":4,"Delay":0.01,"RemoveNewlines":true,"Regex":"^(.*)$","ConvertNewlines":true,"TabTransform":1,"BracketAllowed":true,"UseRegexSubstitution":true,"ChunkSize":1024,"RemoveControls":true}</string>
 		</dict>
 		<key>0xd-0x80000</key>
 		<dict>
 			<key>Action</key>
 			<integer>42</integer>
 			<key>Text</key>
-			<string>{"ConvertUnicodePunctuation":true,"WaitForPrompts":false,"Substitution":"[ -d \"$1\" ] &amp;&amp; cd \"$1\"\\rpwd\\r","EscapeForShell":true,"Base64":false,"TabStopSize":4,"Delay":0.01,"RemoveNewlines":true,"Regex":"^(.*)$","ConvertNewlines":true,"TabTransform":1,"BracketAllowed":true,"UseRegexSubstitution":true,"ChunkSize":1024,"RemoveControls":true}</string>
+			<string>{"ConvertUnicodePunctuation":true,"WaitForPrompts":false,"Substitution":"","EscapeForShell":true,"Base64":false,"TabStopSize":4,"Delay":0.01,"RemoveNewlines":true,"Regex":"","ConvertNewlines":false,"TabTransform":0,"BracketAllowed":true,"UseRegexSubstitution":false,"ChunkSize":1024,"RemoveControls":true}</string>
 		</dict>
 		<key>0xf700-0x280000</key>
 		<dict>
@@ -32122,19 +32150,19 @@ Close</string>
 	<key>NSWindow Frame ProfilesPanel</key>
 	<string>326 450 735 382 0 0 1440 877 </string>
 	<key>NSWindow Frame SUUpdateAlert</key>
-	<string>430 363 620 392 0 0 1440 877 </string>
+	<string>429 363 620 392 0 0 1440 877 </string>
 	<key>NSWindow Frame SessionsPreferences</key>
-	<string>518 328 606 469 0 0 1440 877 </string>
+	<string>518 409 599 388 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>320 313 796 473 0 0 1440 877 </string>
+	<string>320 398 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>39 0 1401 877 0 0 1440 877 </string>
+	<string>127 45 1249 762 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
-	<string>388 352 570 426 0 0 1440 877 </string>
+	<string>308 227 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
-	<string>39 451 570 426 0 0 1440 877 </string>
+	<string>75 451 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 3</key>
 	<string>757 377 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 4</key>
@@ -32167,6 +32195,8 @@ Close</string>
 			<key>AWDS Window Option</key>
 			<string>Yes</string>
 			<key>Allow Title Reporting</key>
+			<true/>
+			<key>Allow Title Setting</key>
 			<true/>
 			<key>Ambiguous Double Width</key>
 			<false/>
@@ -32331,13 +32361,13 @@ Close</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.9635392427444458</real>
+				<real>0.978546142578125</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.86361867189407349</real>
+				<real>0.9160001608632562</real>
 				<key>Red Component</key>
-				<real>0.60226881504058838</real>
+				<real>0.74124093865975738</real>
 			</dict>
 			<key>Ansi 7 Color</key>
 			<dict>
@@ -44109,7 +44139,7 @@ Close</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2018-03-25T03:58:08Z</date>
+	<date>2018-05-20T00:36:01Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>ShowBookmarkName</key>

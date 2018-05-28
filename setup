@@ -3,6 +3,8 @@
 # setup
 # This script creates symlinks from $HOME to the committed files in $HOME/dotfiles
 ################################################################################
+# Files to be ignored
+fignore=(README.md setup nbsetup macsetup notebook.json .gitignore karabiner)
 
 # Some syncing notes; use the following to reset if stuff changed:
 # git fetch --all
@@ -27,7 +29,6 @@ echo "Creating \"$storage\" for backup of any existing dotfiles..."
 # Move existing stuff to storage, then create symlinks 
 # Only move if the item itself is not a symlink
 root="$HOME" # default location for real dotfiles
-fignore=(README.md setup nbsetup macsetup notebook.json .gitignore)
 for file in ${files[@]}; do # iterate through files
   # if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
   if [[ ! " ${fignore[@]} " =~ " $file " ]]; then
