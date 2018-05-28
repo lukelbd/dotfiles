@@ -1603,6 +1603,7 @@ if g:has_ctags
       if string =~? a:regex "ignores case
         ":<number><CR> travels to that line number
         exe b:ctaglines[i]
+        return
       endif
     endfor
     echo "Warning: Ctag regex not found."
