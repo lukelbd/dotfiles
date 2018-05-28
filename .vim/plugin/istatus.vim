@@ -15,7 +15,7 @@ au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
 " Show whether in pastemode
 function! PrintMode()
   " Dictionary
-  let a:currentmode={
+  let currentmode={
     \ 'n'  : 'Normal', 'no' : 'N-Operator Pending',
     \ 'v'  : 'Visual', 'V'  : 'V-Line', '' : 'V-Block', 's'  : 'Select', 'S'  : 'S-Line', '' : 'S-Block',
     \ 'i'  : 'Insert', 'R'  : 'Replace', 'Rv' : 'V-Replace',
@@ -23,13 +23,13 @@ function! PrintMode()
     \ 'cv' : 'Vim Ex', 'ce' : 'Ex',
     \ 'rm' : 'More', 'r?' : 'Confirm', '!'  : 'Shell',
     \}
-  " let a:print=toupper(a:currentmode[mode()])
-  let a:print=a:currentmode[mode()]
+  " let print=toupper(currentmode[mode()])
+  let print=currentmode[mode()]
   if &paste
-    " let a:print.=':PASTE'
-    let a:print.=':Paste'
+    " let print.=':PASTE'
+    let print.=':Paste'
   endif
-  return a:print
+  return print
 endfunction
 "Caps lock (are language maps enabled?)
 function! CapsLock()
@@ -44,20 +44,20 @@ endfunction
 " https://github.com/blueyed/dotfiles/blob/master/vimrc#L396
 function! ShortenFilename() "{{{
   "Necessary args
-  let a:bufname=@%
-  let a:maxlen=20
+  let bufname=@%
+  let maxlen=20
   "Body
   let maxlen_of_parts = 7 " including slash/dot
   let maxlen_of_subparts = 5 " split at dot/hypen/underscore; including split
   let s:PS = exists('+shellslash') ? (&shellslash ? '/' : '\') : "/"
-  let parts = split(a:bufname, '\ze['.escape(s:PS, '\').']')
+  let parts = split(bufname, '\ze['.escape(s:PS, '\').']')
   let i = 0
   let n = len(parts)
   let wholepath = '' " used for symlink check
   while i < n
     let wholepath .= parts[i]
     " Shorten part, if necessary:
-    if i<n-1 && len(a:bufname) > a:maxlen && len(parts[i]) > maxlen_of_parts
+    if i<n-1 && len(bufname) > maxlen && len(parts[i]) > maxlen_of_parts
     " Let's see if there are dots or hyphens to truncate at, e.g.
     " 'vim-pkg-debian' => 'v-p-d…'
     let w = split(parts[i], '\ze[._-]')
@@ -122,9 +122,9 @@ function! PrintLanguage()
   endif
 endfunction
 "Set statusline
-let &stl=''        " Clear statusline for when vimrc is loaded
 " let &stl.='%{ShortenFilename()}'.     " Current buffer's file name
 "       \ ' [%{&ft!=""?&ft.":":"unknown:"}%{FileSize()}]'. " Output buffer's file size
+let &stl=''        " Clear statusline for when vimrc is loaded
 let &stl.='%{ShortenFilename()}'     " Current buffer's file name
 let &stl.=' [%{&ft!=""?&ft.":":"unknown:"}%{FileSize()}]' " Output buffer's file size
 let &stl.=' [%{PrintMode()}]' " Normal/insert mode

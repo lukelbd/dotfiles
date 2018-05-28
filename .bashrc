@@ -389,7 +389,7 @@ function join() { local IFS="$1"; shift; echo "$*"; }
   # join array elements by some separator
 function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
   # list jobs by name
-function killjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
+function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; for str in $@; do echo "Killing $str jobs..."; kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null; done; }
   # kill jobs by name
 
 # Globally override default settings
@@ -816,14 +816,14 @@ alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local
 #     so just don't install it
 alias ncdump="ncdump -h" # almost always want this; access old versions in functions with backslash
 function ncinfo() { # only get text between variables: and linebreak before global attributes
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
 function ncvarsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | grep -A 100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
@@ -834,7 +834,7 @@ function ncvarsinfo() { # get information for just variables (no dimension/globa
 function ncdimsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | grep -B 100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
     # the space makes sure it isn't another variable that has trailing-substring
@@ -843,19 +843,19 @@ function ncdimsinfo() { # get information for just variables (no dimension/globa
     # -B means prinx x PRECEDING lines starting from LAST match
 }
 function nclist() { # only get text between variables: and linebreak before global attributes
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncdimlist() { # get list of dimensions
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
@@ -870,8 +870,7 @@ function ncvarlist() { # only get text between variables: and linebreak before g
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
 function ncvarinfo() { # as above but just for one variable
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   \ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
     # the space makes sure it isn't another variable that has trailing-substring
@@ -880,8 +879,7 @@ function ncvarinfo() { # as above but just for one variable
     # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $macos && reverse="tail -r" || reverse="tac"
   # \ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
@@ -891,9 +889,7 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
 function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
-  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   local args=($@)
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
@@ -902,9 +898,8 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
 }
-function ncvardatafull() { # as above but show everything
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+function ncvartable() { # as above but show everything
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   local args=($@)
   local args=(${args[@]:2}) # extra arguments
