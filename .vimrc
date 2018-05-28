@@ -1,14 +1,13 @@
 ".vimrc
 "###############################################################################
-" MOST IMPORTANT STUFF
-" NOTE VIM SHOULD BE brew install'd WITHOUT YOUR ANACONDA TOOLS IN THE PATH; USE
-" PATH="<original locations>" brew install ... AND EVERYTHING WORKS
-" NOTE when you're creating a remap, `<CR>` is like literally pressing the Enter key,
-" `\<CR>` is when you want to return a string whose result is like literally pressing
-" the enter key e.g. in an <expr>, and `\<CR\>` is always a literal string containing `<CR>`.
+" * Tab-prefix
+" * Note vim should be brew install'd without your anaconda tools in the path; use
+"   PATH="<original locations>" brew install
+" * Note when you're creating a remap, `<CR>` is like literally pressing the Enter key,
+"   while `\<CR>` inside a double-quote string is that literal keypress
 "###############################################################################
 "BUTT-TONS OF CHANGES
-augroup SECTION1 "a comment
+augroup 0
 augroup END
 "###############################################################################
 "NOCOMPATIBLE -- changes other stuff, so must be first
@@ -17,7 +16,7 @@ set nocompatible
   "put this too late, whichwrap will be resset
 "###############################################################################
 "Most important lines
-let mapleader = "\<Space>"
+let mapleader="\<Space>"
 noremap <Space> <Nop>
 noremap <CR> <Nop>
 noremap <C-b> <Nop>
@@ -78,14 +77,14 @@ inoremap <C-p> <C-r>"
 " * Use my own instead of delimitmate defaults because e.g. <c-g>g only works
 "   if no text between delimiters.
 function! s:outofdelim(n) "get us out of delimiter cursos is inside
-  for a:i in range(a:n)
-    let a:pcol=col('.')
-    let a:pline=line('.')
+  for i in range(a:n)
+    let pcol=col('.')
+    let pline=line('.')
     keepjumps normal! %
-    if a:pcol!=col('.') || a:pline!=line('.')
+    if pcol!=col('.') || pline!=line('.')
       keepjumps normal! %
     endif "only do the above if % moved the cursor
-    if a:i+1!=a:n && col('.')+1!=col('$')
+    if i+1!=a:n && col('.')+1!=col('$')
       normal! l
     endif
   endfor
@@ -337,7 +336,7 @@ endif
 " COMPLICATED FUNCTIONS, MAPPINGS, FILETYPE MAPPINGS
 "###############################################################################
 "###############################################################################
-augroup SECTION2
+augroup 1
 augroup END
 let g:has_ctags=str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
@@ -544,14 +543,14 @@ nnoremap <expr> vc "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Es
 "Mimick the ysiwb command (i.e. adding delimiters to current word) for new delimiters
 "The following functions create arbitrary delimtier maps; current convention is
 "to prefix with ';' and ','; see below for details
-function! s:delims(map,left,right,bmap,WORD)
-  if a:bmap | let a:buffer=" <buffer> " | else | let a:buffer="" | endif
-  if a:WORD | let a:lword="B" | let a:rword="E" | else | let a:lword="b" | let a:rword="e" | endif "highlight word or WORD
-  if a:right =~ "|" | let a:offset=1 | else | let a:offset=0 | endif
+function! s:delims(map,left,right,buffer,bigword)
+  if a:bigword | let leftjump="B" | let rightjump="E" | else | let leftjump="b" | let rightjump="e" | endif "highlight word or WORD
+  if a:buffer | let buffer=" <buffer> " | else | let buffer="" | endif
+  if a:right =~ "|" | let offset=1 | else | let offset=0 | endif
     "need special consideration when doing | maps, but not sure why
   if !has_key(g:plugs, "vim-surround") "fancy repeatable maps
     "Simple map, but repitition will fail
-    exe 'nnoremap '.a:buffer.' '.a:map.' mzl'.a:lword.'i'.a:left.'<Esc>h'.a:rword.'a'.a:right.'<Esc>`z'
+    exe 'nnoremap '.buffer.' '.a:map.' mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
   else
     "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
     "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
@@ -561,15 +560,15 @@ function! s:delims(map,left,right,bmap,WORD)
     "  especially when matchit regexes try to highlight unmatched braces. Considered
     "  changing :noautocmd but that can't be done for a remap; see :help <mod>
     "* For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
-    exe 'nnoremap <silent> '.a:buffer.' <Plug>n'.a:map.' :setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'mzl'.a:lword.'i'.a:left.'<Esc>h'.a:rword.'a'.a:right.'<Esc>`z'
+    exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' :setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+      \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
       \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>:setlocal eventignore=<CR>'
     exe 'nmap '.a:map.' <Plug>n'.a:map
   endif
-  if !a:WORD "don't map if a WORD map; they are identical
-    exe 'vnoremap <silent> '.a:buffer.' '.a:map.' <Esc>:setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-a:offset).':setlocal eventignore=<CR>'
-    exe 'inoremap '.a:buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-a:offset)
+  if !a:bigword "don't map if a WORD map; they are identical
+    exe 'vnoremap <silent> '.buffer.' '.a:map.' <Esc>:setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+      \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-offset).':setlocal eventignore=<CR>'
+    exe 'inoremap '.buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-offset)
   endif
 endfunction
 function! s:delimscr(map,left,right)
@@ -976,42 +975,42 @@ augroup END
 "Experimental feature that converts dict() to {}-style dictionary
 function! s:dictconvert() "For searches with :normal command, see:
   "http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
-  let a:saveview=winsaveview()
-  let a:line=line('.')
+  let saveview=winsaveview()
+  let line=line('.')
   normal! 0
   call search('=')
-  while line('.')==a:line
+  while line('.')==line
     exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
   endwhile
-  call winrestview(a:saveview)
+  call winrestview(saveview)
   "return to original location
   "column first, then go to line; if column no longer exists, we just are at end-of-line
 endfunction
 function! s:Dictconvert()
-  let a:saveview=winsaveview()
-  let a:estatus=search('dict(', 'be') "search moving Backwards, and fall on End of match
-  if !a:estatus
+  let saveview=winsaveview()
+  let estatus=search('dict(', 'be') "search moving Backwards, and fall on End of match
+  if !estatus
     echom "Error: The cursor is not within a python dictionary."
-    call winrestview(a:saveview) | return
+    call winrestview(saveview) | return
   endif
   "Find the matching bracket for dict() instance
-  let a:start=[line('.'), col('.')] "save the starting line
+  let start=[line('.'), col('.')] "save the starting line
   normal %
-  " echo 'Start: '.a:saveview['lnum'].','.a:saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
-  if line('.')<a:saveview['lnum'] || (line('.')==a:saveview['lnum'] && col('.')<a:saveview['col'])
+  " echo 'Start: '.saveview['lnum'].','.saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
+  if line('.')<saveview['lnum'] || (line('.')==saveview['lnum'] && col('.')<saveview['col'])
     echom "Error: The cursor is not within a python dictionary."
-    call winrestview(a:saveview) | return
+    call winrestview(saveview) | return
   endif
-  let a:end=[line('.'), col('.')] "save the ending line
-  call cursor(a:start[0], a:start[1]) "return to starting point of dictionary
+  let end=[line('.'), col('.')] "save the ending line
+  call cursor(start[0], start[1]) "return to starting point of dictionary
   exe 's/dict(/(' | normal lcsbB
   call search('=')
-  while line('.')<a:end[0] || (line('.')==a:end[0] && col('.')<=a:end[1])
+  while line('.')<end[0] || (line('.')==end[0] && col('.')<=end[1])
     "note the h after <Esc> only works if have the InsertLeave autocmd that preserves the cursor position
     "the h ensures single-character variables aren't skipped over
     exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
   endwhile
-  call winrestview(a:saveview)
+  call winrestview(saveview)
   "return to original location; another option is cursor() function, but slightly more limited functionality
   "column first, then go to line; if column no longer exists, we just are at end-of-line
 endfunction
@@ -1421,8 +1420,8 @@ if has_key(g:plugs, "nerdcommenter")
         \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
         \."<Up>$a<Space><Esc>:call <sid>toggleformatopt()<CR>'"
     endfunction
-    if &ft=="vim" | let a:fatchar="#" "literally says 'type a '#' character while in insert mode'
-    else | let a:fatchar="'.b:NERDCommenterDelims['left'].'"
+    if &ft=="vim" | let fatchar="#" "literally says 'type a '#' character while in insert mode'
+    else | let fatchar="'.b:NERDCommenterDelims['left'].'"
         "will be evaluated when <expr> is evaluted (we are catting to <expr> string)
         "will *not* evaluate on :exec command declaring initial map
     endif
@@ -1431,18 +1430,18 @@ if has_key(g:plugs, "nerdcommenter")
     "Also temporarily disable/re-enable formatoptions here
     if 1 && has_key(g:plugs, "vim-repeat")
       exe 'nnoremap <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
-      exe 'nnoremap <buffer> <expr> <Plug>fancy2 '.s:bar(a:fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
+      exe 'nnoremap <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
       exe 'nnoremap <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
-      exe 'nnoremap <buffer> <expr> <Plug>fancy4 '.s:section(a:fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
+      exe 'nnoremap <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
       nmap c- <Plug>fancy1
       nmap c_ <Plug>fancy2
       nmap c\ <Plug>fancy3
       nmap c\| <Plug>fancy4
     else
       exe 'nnoremap <buffer> <expr> c- '.s:bar("-")
-      exe 'nnoremap <buffer> <expr> c_ '.s:bar(a:fatchar)
+      exe 'nnoremap <buffer> <expr> c_ '.s:bar(fatchar)
       exe 'nnoremap <buffer> <expr> c\ '.s:section("-")
-      exe 'nnoremap <buffer> <expr> c\| '.s:section(a:fatchar)
+      exe 'nnoremap <buffer> <expr> c\| '.s:section(fatchar)
     endif
     "Disable accidental key presses
     silent! noremap c= <Nop>
@@ -1548,33 +1547,75 @@ endif
 augroup ctags
 augroup END
 "Future should use ***ctags** auto-loading, then jump between definitions.
+" * Execute lines below only if ctags present
 " * Note that, unfortunately, tagbar doesn't have useful interface to access
 "   the ctags file generated already, so have to generate/parse our own; this
 "   isn't too big a deal though, because ctags is very quick.
-" * Execute lines below only if ctags present
+" * By default ctags are sorted alphabetically; below we put the line numbers
+"   and regexes in separate lists, and sort by line number.
 if g:has_ctags
+  "Function for declaring ctag lines and ctag regex strings, in line number order
   function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
      return a:i1 - a:i2
   endfunc
   function! s:ctags()
-    let b:ctags=[] "default values
-    let b:ctaglines=[]
-    let a:ignoretypes=["tagbar","nerdtree","vim"]
-    if index(a:ignoretypes, &ft)!=-1 | return 0 | endif
-    let b:ctags=split(escape(system("ctags -f - ".expand("%")
+    let ctags=[] "default values
+    let ctaglines=[]
+    let ignoretypes=["tagbar","nerdtree","vim"]
+    if index(ignoretypes, &ft)!=-1
+      let b:ctags=[]
+      let b:ctaglines=[]
+      return
+    endif
+    let ctags=split(escape(system("ctags -f - ".expand("%")
           \." | grep -E $'\tf\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '*'), '\n')
-    if len(b:ctags)==0 | return 0 | endif
-    for ct in b:ctags
-      let a:ctagline=search(ct,'n')
-      if a:ctagline!=0
-        call extend(b:ctaglines, [a:ctagline])
+    if len(ctags)==0 | return 0 | endif
+    for ctag in ctags
+      let ctagline=search(ctag,'n')
+      if ctagline!=0
+        call extend(ctaglines, [ctagline])
       endif
     endfor
-    if len(b:ctaglines)!=len(b:ctags) | echom "Warning: Some ctags were not found." | endif
-    let b:ctaglines=sort(b:ctaglines, "s:compare")
+    if len(ctaglines)!=len(ctags)
+      echom "Warning: Some ctags were not found."
+      let b:ctags=[]
+      let b:ctaglines=sort(ctaglines)
+      return
+    endif
+    let b:ctags=[]
+    let b:ctaglines=copy(ctaglines) "vim is object-oriented, like python
+    call sort(b:ctaglines, "s:compare")
+    for i in range(len(b:ctaglines))
+      let index=index(ctaglines, b:ctaglines[i])
+      call extend(b:ctags, [ctags[index(ctaglines, b:ctaglines[i])]])
+    endfor
   endfunction
-  nnoremap <silent> <Leader>c :call <sid>ctags()<CR>:echo "Tags updated."<CR>
   au FileType * call s:ctags()
+  nnoremap <silent> <Leader>c :call <sid>ctags()<CR>:echo "Tags updated."<CR>
+  "Function for jumping between regexes in the ctag search strings
+  function! s:ctagjump(regex)
+    if !exists("b:ctags") || len(b:ctags)==0
+      echom "Warning: Ctags unavailable."
+      return
+    endif
+    for i in range(len(b:ctags))
+      let string=b:ctags[i][1:-2] "ignore leading ^ and trailing $
+      if string =~? a:regex "ignores case
+        ":<number><CR> travels to that line number
+        exe b:ctaglines[i]
+      endif
+    endfor
+    echo "Warning: Ctag regex not found."
+  endfunction
+  nnoremap <silent> <expr> <Leader><Space> ':call <sid>ctagjump("'.input('Enter ctag regex: ').'")<CR>'
+  "Ugly version that required tagbar to be open
+  "Now only use this for special vim file
+  function! s:oldjump()
+    if &ft=="vim"
+      nmap <buffer> <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Enter ctag regex: ")."<CR>:noh<CR><CR>"
+    endif
+  endfunction
+  au FileType * call s:oldjump()
 endif
 
 "###############################################################################
@@ -1584,12 +1625,15 @@ augroup END
 "Neat idea for function; just call this whenever Tagbar is toggled
 "Can put other things in here too; the buffer remaps can be declared
 "in separate FileType autocmds but this is nice too
-" * Note LEADER does not work as first key for the Tagbar Space-Space remap;
-"   since it already has a single-space-press command. Need to declare 'Leader' specifically.
-" * Best approach for this situation; make GLOBAL remap, but allow overriding
-"   buffer-specific remap. Seems to be cleanest way.
 " * Note I tried doing the below with autocmd FileType tagbar but didn't really work
 "   perhaps because we need other FileType cmds to act first.
+" * Note the default mappings:
+"   -p jumps to tag under cursor, in code window, but remain in tagbar
+"   -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
+"   -C-n and C-p browses by top-level tags
+"   - +,- open and close folds under cursor
+"   -o toggles the fold under cursor, or current one
+"   -q quits the window
 if has_key(g:plugs, "tagbar")
   function! s:tagbarsetup()
     "Helper function
@@ -1631,16 +1675,8 @@ if has_key(g:plugs, "tagbar")
     vertical resize 20
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
-  nmap <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Travel to this tagname regex: ")."<CR>:noh<CR><CR>"
   "Switch updatetime (necessary for Tagbar highlights to follow cursor)
   set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
-  "Note the default mappings:
-  " -p jumps to tag under cursor, in code window, but remain in tagbar
-  " -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
-  " -C-n and C-p browses by top-level tags
-  " - +,- open and close folds under cursor
-  " -o toggles the fold under cursor, or current one
-  " -q quits the window
   "Some settings
   " let g:tagbar_iconchars = ['▸', '▾'] "prettier
   let g:tagbar_silent=1 "no information echoed
@@ -1673,15 +1709,15 @@ let g:scrolloff=4
 "Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
 function! s:wraptoggle(function_mode)
   if a:function_mode==1
-    let a:toggle=1
+    let toggle=1
   elseif a:function_mode==0
-    let a:toggle=0
+    let toggle=0
   elseif exists('b:wrap_mode')
-    let a:toggle=1-b:wrap_mode
+    let toggle=1-b:wrap_mode
   else
-    let a:toggle=1
+    let toggle=1
   endif
-  if a:toggle==1
+  if toggle==1
     let b:wrap_mode=1
     "Display options that make more sense with wrapped lines
     setlocal wrap
@@ -1808,7 +1844,7 @@ let g:tex_comment_nospell=1
 " GENERAL STUFF, BASIC REMAPS
 "###############################################################################
 "###############################################################################
-augroup SECTION3
+augroup 2
 augroup END
 "###############################################################################
 "BUFFER WRITING/SAVING
@@ -1888,19 +1924,19 @@ if g:has_ctags
       echo "Warning: Tags unavailable, so cannot limit search scope."
       return ""
     endif
-    let a:start=line('.')
-    let a:saveview=winsaveview()
-    call winrestview(a:saveview)
-    let a:ctaglines=extend(b:ctaglines,[line('$')])
+    let start=line('.')
+    let saveview=winsaveview()
+    call winrestview(saveview)
+    let ctaglines=extend(b:ctaglines,[line('$')])
     "Return values
     "%% is literal % character
     "Check out %l atom documentation; note it last atom selects *above* that line (so increment by one)
     "and first atom selects *below* that line (so decrement by 1)
-    for i in range(0,len(a:ctaglines)-2)
-      if a:ctaglines[i]<=a:start && a:ctaglines[i+1]>a:start "must be line above start of next function
-        echom "Scopesearch selected lines ".a:ctaglines[i]." to ".(a:ctaglines[i+1]-1)."."
-        if a:replace | return printf('%d,%ds', a:ctaglines[i]-1, a:ctaglines[i+1]) "range for :line1,line2s command
-        else | return printf('\%%>%dl\%%<%dl', a:ctaglines[i]-1, a:ctaglines[i+1])
+    for i in range(0,len(ctaglines)-2)
+      if ctaglines[i]<=start && ctaglines[i+1]>start "must be line above start of next function
+        echom "Scopesearch selected lines ".ctaglines[i]." to ".(ctaglines[i+1]-1)."."
+        if a:replace | return printf('%d,%ds', ctaglines[i]-1, ctaglines[i+1]) "range for :line1,line2s command
+        else | return printf('\%%>%dl\%%<%dl', ctaglines[i]-1, ctaglines[i+1])
         endif
       endif
     endfor
@@ -1912,30 +1948,30 @@ else
   "Loop loop through possible jumping commands; the bracket commands
   "are generally declared with FileType regex searches, not ctags
   function! s:scopesearch(replace)
-    let a:start=line('.')
-    let a:saveview=winsaveview()
-    for a:endjump in ['normal ]]k', 'call search("^\\S")']
-      " echom 'Trying '.a:endjump
+    let start=line('.')
+    let saveview=winsaveview()
+    for endjump in ['normal ]]k', 'call search("^\\S")']
+      " echom 'Trying '.endjump
       keepjumps normal j[[
-      let a:first=line('.')
-      exe 'keepjumps '.a:endjump
-      let a:last=line('.')
-      " echom a:first.' to '.a:last | sleep 1
-      if a:first<a:last | break | endif
-      exe 'normal '.a:start.'g'
+      let first=line('.')
+      exe 'keepjumps '.endjump
+      let last=line('.')
+      " echom first.' to '.last | sleep 1
+      if first<last | break | endif
+      exe 'normal '.start.'g'
       "return to initial state at the end, important
     endfor
-    call winrestview(a:saveview)
-    if a:first<a:last
-      echom "Scopesearch selected lines ".a:first." to ".a:last."."
+    call winrestview(saveview)
+    if first<last
+      echom "Scopesearch selected lines ".first." to ".last."."
       if !a:replace
-        return printf('\%%>%dl\%%<%dl', a:first-1, a:last+1)
+        return printf('\%%>%dl\%%<%dl', first-1, last+1)
           "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
       else
-        return printf('%d,%ds', a:first-1, a:last+1) "simply the range for a :search and replace command
+        return printf('%d,%ds', first-1, last+1) "simply the range for a :search and replace command
       endif
     else
-      echom "Warning: Scopesearch failed to find function range (first line ".a:first." >= second line ".a:last.")."
+      echom "Warning: Scopesearch failed to find function range (first line ".first." >= second line ".last.")."
       return "" "empty string; will not limit scope anymore
     endif
   endfunction
@@ -1969,23 +2005,21 @@ augroup auto_move_to_next
   autocmd! InsertLeave * :call MoveToNext()
 augroup END
 "Remaps using black magic
-" nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-"       \:let g:should_inject_replace_occurences=1<CR>cgn
-" nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-"       \:let g:should_inject_replace_occurences=1<CR>cgn
+"First one just uses last search, the other ones use word under cursor
+nmap <silent> c/ :set hlsearch<CR>
+      \:let g:should_inject_replace_occurences=1<CR>cgn
 nmap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
       \:let g:should_inject_replace_occurences=1<CR>cgn
 nmap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
       \:let g:should_inject_replace_occurences=1<CR>cgn
 nmap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
-" vmap <silent> <Leader>* :<C-u>let old_reg=getreg('"')<Bar>let old_regtype=getregtype('"')<CR>gvy
-"       \:let @/=substitute(escape(@",'/\.*$^~['),'\_s\+','\\_s\\+','g')<CR>:set hlsearch<CR>
-"       \:let g:should_inject_replace_occurences=1<CR>gV
-"       \:call setreg('"', old_reg, old_regtype)<CR>cgn
-  "this last one might be broken; seems messed up
+nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+      \:let g:should_inject_replace_occurences=1<CR>cgn
+nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+      \:let g:should_inject_replace_occurences=1<CR>cgn
 "Original remaps, which don't move onto next highlight automatically
-nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
+" nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
+" nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
 " nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
 " nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
 function! ReplaceOccurence()
@@ -2037,7 +2071,7 @@ if 1 && has_key(g:plugs, "vim-repeat")
   nnoremap <Plug>search2 /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgnn:call repeat#set("\<Plug>search2",v:count)<CR>
   nnoremap <Plug>search3 /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgnn:call repeat#set("\<Plug>search3",v:count)<CR>
   nnoremap <Plug>search4 /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgnn:call repeat#set("\<Plug>search4",v:count)<CR>
-  nnoremap <Plug>search5 /<C-r>/<CR>``dgnn:call repeat#set("\<Plug>search5",v:count)<CR>
+  nnoremap <Plug>search5 :set hlsearch<CR>dgnn:call repeat#set("\<Plug>search5",v:count)<CR>
   nmap d# <Plug>search1
   nmap d@ <Plug>search2
   nmap d* <Plug>search3
@@ -2051,7 +2085,7 @@ else "with these ones, cursor will remain on word just replaced
   nnoremap d@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
   nnoremap d* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
   nnoremap d& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
-  nnoremap d/ /<C-r>/<CR>``dgn
+  nnoremap d/ :set hlsearch<CR>dgn
 endif
 "Search all capital words
 nnoremap cz /\<[A-Z]\+\><CR>
@@ -2113,7 +2147,7 @@ augroup tabs
 augroup END
 "Disable some stuff for vimrc
 au BufEnter * if expand("%:t")==".vimrc" | setlocal eventignore=CursorMoved,CursorMovedI,TextChanged,TextChangedI
-      \| else | setlocal eventignore= | endif
+    \| else | setlocal eventignore= | endif
 "Basic switching, and shortcut for 'last active tab'
 noremap <Tab>1 1gt
 noremap <Tab>2 2gt
@@ -2268,11 +2302,6 @@ nnoremap z< zR
 nnoremap zO zR
 nnoremap zC zM
   "open and close all folds; to open/close under cursor, use zo/zc
-nnoremap zh zH
-nnoremap zl zL
-  "found the normal h/l weren't enough; H/L are just stronger
-  "also zk and zj move up between folds
-  "also zs and ze position cursor at end/start
 "Overhaul z-remaps for controlling window state; make them Tab-prexied
 "maps, because I *hate* inconsistency; want all window-related maps to have same prefix
 noremap <silent> <Tab>9 :exe 'resize '.(winheight(0)-3)<CR>
@@ -2293,6 +2322,8 @@ nnoremap <Tab>i mzz.`z
 nnoremap <Tab>q H
 nnoremap <Tab>w M
 nnoremap <Tab>e L
+nnoremap <Tab>y zH
+nnoremap <Tab>p zL
   "movement remaps
 silent! unmap zuz
   "to prevent delay; this is associated with FastFold or something
