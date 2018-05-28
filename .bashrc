@@ -380,13 +380,6 @@ function di() { # identical files in two directories
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
 
-
-# Globally override default settins
-alias grep="grep --color=auto" # always show color
-alias egrep="egrep --color=auto" # always show color
-# hash colordiff 2>/dev/null && alias diff="colordiff"
-#   # prettier differencing; use this if it exists; or just highlight with grep
-
 # Various workflow tools
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
   # prints the keybindings
@@ -399,41 +392,11 @@ function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." &&
 function killjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
   # kill jobs by name
 
-# Utilities for converting figures between different types
-# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
-#   a <N>dpi resulting bitmap file.
-# * Another option is "-background white -alpha remove", try this.
-# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
-# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
-#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
-function gif2png() {
-  for f in "$@";
-    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
-  done
-} # often needed because LaTeX can't read gif files
-function pdf2png() {
-  density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
-  done
-} # sometimes need bitmap yo
-function pdf2tiff() {
-  resolution=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
-  done
-} # alternative for converting to bitmap
-function pdf2eps() {
-  args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
-      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
-  done
-}
+# Globally override default settings
+alias grep="grep --color=auto" # always show color
+alias egrep="egrep --color=auto" # always show color
+# hash colordiff 2>/dev/null && alias diff="colordiff"
+#   # prettier differencing; use this if it exists; or just highlight with grep
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -477,6 +440,45 @@ function colorize() {
   "$@" # need to quote it, might need to escape stuff
   # Restore settings
   echo -e "\033]50;SetProfile=$oldprofile\a"
+}
+
+
+################################################################################
+# Utilities for converting figures between different types
+################################################################################
+# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
+#   a <N>dpi resulting bitmap file.
+# * Another option is "-background white -alpha remove", try this.
+# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
+# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
+#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
+function gif2png() {
+  for f in "$@";
+    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
+  done
+} # often needed because LaTeX can't read gif files
+function pdf2png() {
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
+  done
+} # sometimes need bitmap yo
+function pdf2tiff() {
+  resolution=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
+  done
+} # alternative for converting to bitmap
+function pdf2eps() {
+  args=("$@")
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
+      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
+  done
 }
 
 ################################################################################
