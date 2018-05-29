@@ -343,14 +343,37 @@ fi
 alias cd="cd -P" # -P follows physical location
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-alias xs="ls $lscolor -AFl | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
-alias fs="ls $lscolor -AF | grep -v '/$'" # just files
-alias fl="ls $lscolor -AFhl | grep -v '/$'" # just files, with details
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
 alias df="df -h" # disk useage
 alias tt="type -a" # show all instances of path/function/variable/file
 alias ww="which -a" # same
+function xs() {
+  [ -z $1 ] && dir="." || dir="$1/"
+  ls $lscolor -AF "$dir" | grep -E "\-(([rw\-]{2})x){1,3}" # executables only
+}
+function xl() {
+  [ -z $1 ] && dir="." || dir="$1/"
+  ls $lscolor -AFhl "$dir" | grep -E "\-(([rw\-]{2})x){1,3}" # executables only
+}
+function gg() { # grep files; input string then directory location, n says to show line number
+  [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
+  [ -z $2 ] && dir="." || dir="$2"
+  grep "$1" -rn "$dir"
+}
+function fs() { # file-ls
+  [ -z $1 ] && dir="." || dir="$1/"
+  ls $lscolor -AF "$dir" | grep -v '/$' # just files
+}
+function fl() { # file-detailed ls
+  [ -z $1 ] && dir="." || dir="$1/"
+  ls $lscolor -AFhl "$dir" | grep -v '/$' # just files, with details
+}
+function ff() { # file-finder; input a quoted glob pattern or a string
+  [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
+  [ -z $2 ] && dir="." || dir="$2"
+  find "$dir" -name "$1"
+}
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
@@ -359,15 +382,6 @@ function ds() { # directory ls
 function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
-}
-function gg() { # grep files; input string then directory location, n says to show line number
-  [ $# -eq 0 ] && echo "Error: Need at least one arg."
-  [ -z $2 ] && dir="." || dir="$2"
-  grep "$1" -rn "$dir"
-}
-function ff() { # find files; input a quoted glob pattern or a string
-  [ -z $2 ] && dir="." || dir="$2"
-  find "$dir" -name "$1"
 }
 function dd() { # difference directories; input two directory names
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
@@ -379,6 +393,13 @@ function di() { # identical files in two directories
   diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
+alias functions="declare -F"
+
+# Globally override default settins
+alias grep="grep --color=auto" # always show color
+alias egrep="egrep --color=auto" # always show color
+# hash colordiff 2>/dev/null && alias diff="colordiff"
+#   # prettier differencing; use this if it exists; or just highlight with grep
 
 # Various workflow tools
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
