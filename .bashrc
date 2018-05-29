@@ -350,11 +350,11 @@ alias tt="type -a" # show all instances of path/function/variable/file
 alias ww="which -a" # same
 function xs() {
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -AF "$dir" | grep -E "\-(([rw\-]{2})x){1,3}" # executables only
+  ls $lscolor -1 -AF "$dir" | command grep -E "\*$" # executables only
 }
 function xl() {
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -AFhl "$dir" | grep -E "\-(([rw\-]{2})x){1,3}" # executables only
+  ls $lscolor -AFhl "$dir" | command grep -E "\-(([rw\-]{2})x){1,3}" # executables only
 }
 function gg() { # grep files; input string then directory location, n says to show line number
   [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
@@ -363,11 +363,11 @@ function gg() { # grep files; input string then directory location, n says to sh
 }
 function fs() { # file-ls
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -AF "$dir" | grep -v '/$' # just files
+  ls $lscolor -AF "$dir" | command grep -v '/$' # just files
 }
 function fl() { # file-detailed ls
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -AFhl "$dir" | grep -v '/$' # just files, with details
+  ls $lscolor -AFhl "$dir" | command grep -v '/$' # just files, with details
 }
 function ff() { # file-finder; input a quoted glob pattern or a string
   [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
