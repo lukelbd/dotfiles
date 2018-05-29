@@ -350,11 +350,11 @@ alias tt="type -a" # show all instances of path/function/variable/file
 alias ww="which -a" # same
 function xs() {
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -1 -AF "$dir" | command grep -E "\*$" # executables only
+  command ls $lscolor -1 -AF "$dir" | command grep -E "\*$" # executables only
 }
 function xl() {
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -AFhl "$dir" | command grep -E "\-(([rw\-]{2})x){1,3}" # executables only
+  command ls $lscolor -AFhl "$dir" | command grep -E "\-(([rw\-]{2})x){1,3}" # executables only
 }
 function gg() { # grep files; input string then directory location, n says to show line number
   [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
@@ -363,11 +363,11 @@ function gg() { # grep files; input string then directory location, n says to sh
 }
 function fs() { # file-ls
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -AF "$dir" | command grep -v '/$' # just files
+  command ls $lscolor -AF "$dir" | command grep -v '/$' # just files
 }
 function fl() { # file-detailed ls
   [ -z $1 ] && dir="." || dir="$1/"
-  ls $lscolor -AFhl "$dir" | command grep -v '/$' # just files, with details
+  command ls $lscolor -AFhl "$dir" | command grep -v '/$' # just files, with details
 }
 function ff() { # file-finder; input a quoted glob pattern or a string
   [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
@@ -377,7 +377,7 @@ function ff() { # file-finder; input a quoted glob pattern or a string
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
-  \ls $lscolor -A -d $dir*/
+  command ls $lscolor -A -d $dir*/
 }
 function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
@@ -385,12 +385,12 @@ function dl() { # directory sizes
 }
 function dd() { # difference directories; input two directory names
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
+  command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
 function di() { # identical files in two directories
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
+  command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
 alias functions="declare -F"
