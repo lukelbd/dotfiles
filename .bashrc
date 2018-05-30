@@ -340,7 +340,6 @@ else
   export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
   lscolor='--color=always' && sortcmd='sort'
 fi
-alias cd="cd -P" # -P follows physical location
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
