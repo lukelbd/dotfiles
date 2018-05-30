@@ -1572,11 +1572,12 @@ if g:has_ctags
     else
       let type="f" "list functions
     endif
-    let ctags=split(escape(system("ctags --langmap=vim:+.vimrc -f - ".expand("%")
-          \." | grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '*'), '\n')
+    let ctags=split(system("ctags --langmap=vim:+.vimrc,sh:+.bashrc -f - "
+          \.expand("%")." | grep -E $'\t"
+          \.type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
     if len(ctags)==0 | return 0 | endif
-    for ctag in ctags
-      let ctagline=search(escape(ctag,'/'),'n')
+    for ctag in ctags "ignore last char; is either '$' or '\' if line too long
+      let ctagline=search('^'.escape(ctag[1:-2],'$/*[]'),'n')
       if ctagline!=0
         call extend(ctaglines, [ctagline])
       else
