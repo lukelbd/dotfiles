@@ -254,6 +254,7 @@ nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
   "turns off common things in normal mode
   "also prevent Ctrl+c rining the bell
+nnoremap <Leader>a VggG
 "###############################################################################
 "VISUAL MODE BEHAVIOR
 "Highlighting
@@ -329,6 +330,15 @@ if exists("&t_EI")
   else
     let &t_EI = "\e[2 q"
   endif
+endif
+"###############################################################################
+"GUI OPTIONS
+if has("gui_running")
+  set guicursor+=a:blinkon0 "disable blinking for GUI version
+  set guioptions= "show no scrollbars
+  set number
+  set relativenumber
+  colorscheme slate "no longer controlled through terminal colors
 endif
 
 "###############################################################################
@@ -1816,6 +1826,7 @@ if has_key(g:plugs, "tabular")
   nnoremap -d :Tabularize /:\zs<CR>
     "align colon table, and keeps colon on the left; the zs means start match **after** colon
 endif
+
 "###############################################################################
 "FTPLUGINS
 augroup ftplugin
@@ -1833,6 +1844,37 @@ let g:tex_comment_nospell=1
 "Loads default $VIMRUNTIME syntax highlighting and indent if
 "1) we haven't already loaded an available non-default file using ftplugin or
 "2) there is no alternative file loaded by the ftplugin function
+
+"###############################################################################
+"OVERRIDING FTPLUGINS WITH CTAGS MAPS
+if g:has_ctags
+  "Function for jumping between subsequent ctags with [[ and ]]
+  function! s:ctagbracket(foreward, n)
+    echom "Jumping to next tag."
+    if a:n==0 | let a:njumps = 1 | else | let a:njumps = a:n | endif
+    for i in range(a:njumps)
+      let lnum=line('.')
+      for i in range(len(b:ctaglines)-1)
+        if a:foreward
+          let test = eval(lnum>=b:ctaglines[i] && lnum<b:ctaglines[i+1])
+        else
+          let test = eval(lnum>b:ctaglines[i] && lnum<=b:ctaglines[i+1])
+        endif
+        if test
+          if a:foreward | let i = i+1 | else | let i = i | endif
+          break
+        endif
+        if i==len(b:ctaglines)-1
+          if a:foreward | let i = 0 | else | let i = -1 | endif "means we gotta jump to the first one
+        endif
+      endfor
+      exe b:ctaglines[i]
+    endfor
+  endfunction
+  au FileType * nnoremap <expr> <buffer> <silent> [[ '<Esc>:call <sid>ctagbracket(0,'.v:count.')<CR>'
+  au FileType * nnoremap <expr> <buffer> <silent> ]] '<Esc>:call <sid>ctagbracket(1,'.v:count.')<CR>'
+  "this will make sure we override any ftplugin maps; also we allow using number operator
+endif
 
 "###############################################################################
 "###############################################################################

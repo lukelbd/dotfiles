@@ -397,8 +397,7 @@ alias functions="declare -F"
 # Globally override default settins
 alias grep="grep --color=auto" # always show color
 alias egrep="egrep --color=auto" # always show color
-# hash colordiff 2>/dev/null && alias diff="colordiff"
-#   # prettier differencing; use this if it exists; or just highlight with grep
+hash colordiff 2>/dev/null && alias diff="colordiff" # prettier differencing; use this if it exists; or just highlight with grep
 
 # Various workflow tools
 alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
@@ -411,12 +410,8 @@ function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." &&
   # list jobs by name
 function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; for str in $@; do echo "Killing $str jobs..."; kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null; done; }
   # kill jobs by name
-
-# Globally override default settings
-alias grep="grep --color=auto" # always show color
-alias egrep="egrep --color=auto" # always show color
-# hash colordiff 2>/dev/null && alias diff="colordiff"
-#   # prettier differencing; use this if it exists; or just highlight with grep
+alias eject="diskutil unmount"
+  # eject disk
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -988,6 +983,7 @@ function sdsync() {
   # Can change this, but default will be to sync playlist
   sdcard="NO NAME" # edit when get new card
   sdloc="/Volumes/$sdcard/Playlist" # sd data
+  [ ! -d "$sdloc" ] && echo "Error: SD card not found." && return 1
   locloc="$HOME/Playlist" # local data
   echo "SD Location: $sdloc"
   echo "Local location: $locloc"
