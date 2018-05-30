@@ -1559,23 +1559,21 @@ if g:has_ctags
      return a:i1 - a:i2
   endfunc
   function! s:ctags()
+    let b:ctags=[] "return these empty values upon error
+    let b:ctaglines=[]
     let ctags=[] "default values
     let ctaglines=[]
     let ignoretypes=["tagbar","nerdtree"]
-    if index(ignoretypes, &ft)!=-1
-      let b:ctags=[]
-      let b:ctaglines=[]
-      return
-    endif
+    if index(ignoretypes, &ft)!=-1 | return | endif
     if expand("%:t")==".vimrc"
       let type="a" "list only augroups
     else
       let type="f" "list functions
     endif
     let ctags=split(system("ctags --langmap=vim:+.vimrc,sh:+.bashrc -f - "
-          \.expand("%")." | grep -E $'\t"
+          \.expand("%")." 2>/dev/null | grep -E $'\t"
           \.type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
-    if len(ctags)==0 | return 0 | endif
+    if len(ctags)==0 | return | endif
     for ctag in ctags "ignore last char; is either '$' or '\' if line too long
       let ctagline=search('^'.escape(ctag[1:-2],'$/*[]'),'n')
       if ctagline!=0
@@ -1585,7 +1583,6 @@ if g:has_ctags
         call extend(ctaglines, [0])
       endif
     endfor
-    let b:ctags=[]
     let b:ctaglines=copy(ctaglines) "vim is object-oriented, like python
     call sort(b:ctaglines, "s:compare")
     for i in range(len(b:ctaglines))
