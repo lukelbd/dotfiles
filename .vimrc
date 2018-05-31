@@ -183,8 +183,6 @@ map @ <Nop>
 noremap , @q
   "new macro useage; almost always just use one at a time
   "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
-nnoremap <C-r> :redraw<CR>
-  "refresh screen; because C-r has a better pneumonic, and I map <C-r> to U for REDO
 nnoremap U <C-r>
   "redo map to capital U; means we cannot 'undo line', but who cares
 nnoremap \ :echo "Enabling throwaway register."<CR>"_
@@ -1086,6 +1084,15 @@ endfunction
 autocmd FileType c call s:cmacros()
 
 "###############################################################################
+"JULIA MACROS
+augroup julia
+augroup END
+function! s:jmacros()
+  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; julia ".shellescape(@%)."<CR>"
+endfunction
+autocmd FileType julia call s:jmacros()
+
+"###############################################################################
 "FORTRAN MACROS
 augroup fortran
 augroup END
@@ -1168,12 +1175,6 @@ if has_key(g:plugs, "vim-visual-increment")
   nnoremap + <C-a>
   nnoremap _ <C-x>
 endif
-
-"###############################################################################
-"JULIA SUPPORT
-augroup julia
-augroup END
-"jula custom here
 
 "###############################################################################
 "CODI (MATHEMATICAL NOTEPAD)
