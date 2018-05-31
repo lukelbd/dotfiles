@@ -174,6 +174,9 @@ noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>togglefo
 noremap <silent> su mzkddp`z
 noremap <silent> sd jmzkddp`zj
   "swap with row above, and swap with row below; awesome mnemonic, right?
+noremap ; <Nop>
+noremap , <Nop>
+  "never really want to use f/t commands more than once
 noremap " :echo "Setting mark q."<CR>mq
 noremap ' `q
 map @ <Nop>
@@ -210,14 +213,6 @@ endfor
 nnoremap <C-p> <Nop>
 nnoremap <C-n> <Nop>
   "these are identical to j/k
-"Overhauling t/T/f/F/,/; behavior
-"Never really want to use them more than once
-noremap ; <Nop>
-noremap , <Nop>
-" noremap t <Nop>
-" noremap T <Nop>
-" noremap f <Nop>
-" noremap F <Nop>
 "Better join behavior -- before 2J joined this line and next, now it
 "means 'join the two lines below'; more intuitive. uses if statement
 "in <expr> remap, and v:count the user input count
@@ -426,7 +421,7 @@ augroup END
 "First some simple maps for navigating jumplist
 "The l/h navigate jumplist (e.g. undoing an 'n' or 'N' keystroke), the j/k just
 "navigate the changelist (i.e. where text last modified)
-if has_key(g:plugs, "EnhancedJumps") | let g:jumpprefix='g' | else | let g:jumpprefix='' | endif
+let g:jumpprefix=(has_key(g:plugs, "EnhancedJumps") ? 'g' : '')
 noremap <expr> <C-l> g:jumpprefix.'<C-i>'
 noremap <expr> <C-h> g:jumpprefix.'<C-o>'
 noremap <C-j> g;
@@ -554,10 +549,10 @@ nnoremap <expr> vc "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Es
 "The following functions create arbitrary delimtier maps; current convention is
 "to prefix with ';' and ','; see below for details
 function! s:delims(map,left,right,buffer,bigword)
-  if a:bigword | let leftjump="B" | let rightjump="E" | else | let leftjump="b" | let rightjump="e" | endif "highlight word or WORD
-  if a:buffer | let buffer=" <buffer> " | else | let buffer="" | endif
-  if a:right =~ "|" | let offset=1 | else | let offset=0 | endif
-    "need special consideration when doing | maps, but not sure why
+  let leftjump=(a:bigword ? "B" : "b")
+  let rightjump=(a:bigword ? "E" : "e")
+  let buffer=(a:buffer ? " <buffer> " : "")
+  let offset=(a:right=~"|" ? 1 : 0) "need special consideration when doing | maps, but not sure why
   if !has_key(g:plugs, "vim-surround") "fancy repeatable maps
     "Simple map, but repitition will fail
     exe 'nnoremap '.buffer.' '.a:map.' mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
@@ -1042,11 +1037,9 @@ function! s:pymacros()
   "Simple remaps; fit with NerdComment syntax
   nnoremap <buffer> cq o"""<CR>"""<Esc><Up>o
   "Maps that call shell commands
-  " noremap <buffer> <expr> QD ":!clear; set -x; pydoc "
-  "       \.input("Enter python documentation keyword: ")."<CR>"
-  noremap <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
+  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>"
-  inoremap <buffer> <expr> <C-x> "<Esc>:w<CR>:!clear; set -x; "
+  inoremap <silent> <buffer> <expr> <C-x> "<Esc>:w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>a"
 endfunction
 autocmd FileType python call s:pymacros()
@@ -1087,8 +1080,8 @@ augroup c
 augroup END
 function! s:cmacros()
   "Will compile code, then run it and show user the output
-  noremap  <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
-        \."gcc ".shellescape(@%)." -o ".expand('%:r')."; ./".expand('%:r')."<CR>"
+  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
+        \."gcc ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
 endfunction
 autocmd FileType c call s:cmacros()
 
@@ -1098,8 +1091,8 @@ augroup fortran
 augroup END
 function! s:fortranmacros()
   "Will compile code, then run it and show user the output
-  noremap  <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
-        \."gfortran ".shellescape(@%)." -o ".expand('%:r')."; ./".expand('%:r')."<CR>"
+  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
+        \."gfortran ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
 endfunction
 autocmd FileType fortran call s:fortranmacros()
 "Also fix coloring issues; see :help fortran
@@ -1123,26 +1116,17 @@ au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
 "quitting these windows with single 'q' press
 augroup help
 augroup END
-"First free up 'q' key, so no more macros
-"This disables creating macros for all keys a-z, A-Z, and 0-9
-"Actually don't need this if just use the bottom remap
-" if g:has_nowait "if we do *not* have <nowait>, then this breaks the single-keystroke 'q' maps
-"   for c in range(0, 9) | exe 'nnoremap q'.c.' <Nop>' | endfor
-"   for c in range(char2nr('A'), char2nr('Z'))
-"     exe 'nnoremap q'.nr2char(c).' <Nop>'
-"     exe 'nnoremap q'.nr2char(c+32).' <Nop>'
-"   endfor
-" endif
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
+"The escapes prevent a weird error where sometimes q triggers command-history window
 au BufEnter * let b:recording=0
-noremap <silent> <expr> q b:recording ? 'q:let b:recording=0<CR>' : 'qq:let b:recording=1<CR>'
+noremap <silent> <expr> q b:recording ? 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
 noremap <Leader>h :vert help 
-noremap  <expr> <Leader>m ':!clear<CR>:!search='.input('Get man info: ').'; [ -z $search ] && search=fart; '
+noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; [ -z $search ] && search=fart; '
   \.'if command man $search &>/dev/null; then man $search; fi<CR>:redraw!<CR>'
 "--help info; pipe output into less for better interaction
-noremap <expr> <Leader>e ':!clear<CR>:!search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
+noremap <silent> <expr> <Leader>e ':!clear; search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
   \.'if builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 function! s:helpsetup()
@@ -1568,22 +1552,39 @@ if g:has_ctags
   function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
      return a:i1 - a:i2
   endfunc
-  function! s:ctags()
+  function! s:ctags(command)
     let b:ctags=[] "return these empty values upon error
     let b:ctaglines=[]
-    let ctags=[] "default values
-    let ctaglines=[]
     let ignoretypes=["tagbar","nerdtree"]
     if index(ignoretypes, &ft)!=-1 | return | endif
+    "Determine types of ctags we want to store
     if expand("%:t")==".vimrc"
       let type="a" "list only augroups
+    elseif &ft=="tex"
+      let type="[bs]" "b is for subsection, s is for section
+    elseif &ft=="python"
+      let type="[fcm]" "functions, classes, and modules
     else
-      let type="f" "list functions
+      let type="f" "default just functions; note Vimscript makes c 'command!'
     endif
-    let ctags=split(system("ctags --langmap=vim:+.vimrc,sh:+.bashrc -f - "
-          \.expand("%")." 2>/dev/null | grep -E $'\t"
-          \.type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
+    "Ctags doesn't recognize python2/python3 shebangs by default
+    if getline(1)=~"#!.*python[23]" | let force="--language=python"
+    else | let force=""
+    endif
+    "Call ctags function
+    "Add the sed line to include all items, not just top-level items
+    " \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
+    if a:command "just return command
+      "if table wasn't produced and this is just stderr text then don't tabulate (-s)
+      return "ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." "
+        \."| cut -s -d$'\t' -f1,3-" "ignore filename field, delimit by literal tabs
+    else "save then sort
+      let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
+        \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
+    endif
     if len(ctags)==0 | return | endif
+    "Determine ctag lines
+    let ctaglines=[]
     for ctag in ctags "ignore last char; is either '$' or '\' if line too long
       let ctagline=search('^'.escape(ctag[1:-2],'$/*[]'),'n')
       if ctagline!=0
@@ -1593,6 +1594,7 @@ if g:has_ctags
         call extend(ctaglines, [0])
       endif
     endfor
+    "Sort everything by line number
     let b:ctaglines=copy(ctaglines) "vim is object-oriented, like python
     call sort(b:ctaglines, "s:compare")
     for i in range(len(b:ctaglines))
@@ -1600,8 +1602,9 @@ if g:has_ctags
       call extend(b:ctags, [ctags[index(ctaglines, b:ctaglines[i])]])
     endfor
   endfunction
-  au FileType * call s:ctags()
-  nnoremap <silent> <Leader>c :call <sid>ctags()<CR>:echo "Tags updated."<CR>
+  au FileType * call s:ctags(0)
+  nnoremap <silent> <Leader>c :call <sid>ctags(0)<CR>:echom "Tags updated."<CR>
+  nnoremap <silent> <expr> <Leader>C ':!clear; '.<sid>ctags(1).' \| less<CR>:redraw!<CR>'
   "Function for jumping between regexes in the ctag search strings
   function! s:ctagjump(regex)
     if !exists("b:ctags") || len(b:ctags)==0
@@ -1850,29 +1853,43 @@ let g:tex_comment_nospell=1
 if g:has_ctags
   "Function for jumping between subsequent ctags with [[ and ]]
   function! s:ctagbracket(foreward, n)
-    echom "Jumping to next tag."
-    if a:n==0 | let a:njumps = 1 | else | let a:njumps = a:n | endif
+    if &ft=="help" | return | endif
+    if len(b:ctaglines)==0 | echom "Warning: No ctags found." | return | endif
+    let a:njumps=(a:n==0 ? 1 : a:n)
     for i in range(a:njumps)
       let lnum=line('.')
-      for i in range(len(b:ctaglines)-1)
-        if a:foreward
-          let test = eval(lnum>=b:ctaglines[i] && lnum<b:ctaglines[i+1])
-        else
-          let test = eval(lnum>b:ctaglines[i] && lnum<=b:ctaglines[i+1])
-        endif
-        if test
-          if a:foreward | let i = i+1 | else | let i = i | endif
-          break
-        endif
-        if i==len(b:ctaglines)-1
-          if a:foreward | let i = 0 | else | let i = -1 | endif "means we gotta jump to the first one
-        endif
-      endfor
+      "Edge cases; at bottom or top of document
+      if lnum<b:ctaglines[0] || lnum>b:ctaglines[-1]
+        let i=(a:foreward ? 0 : -1)
+      "Extra case not handled in main loop
+      elseif lnum==b:ctaglines[-1]
+        let i=(a:foreward ? 0 : -2)
+      "Main loop
+      else
+        for i in range(len(b:ctaglines)-1)
+          if lnum==b:ctaglines[i]
+            let i=(a:foreward ? i+1 : i-1) | break
+          elseif lnum>b:ctaglines[i] && lnum<b:ctaglines[i+1]
+            let i=(a:foreward ? i+1 : i) | break
+          endif
+          if i==len(b:ctaglines)-1 | echom "Error: Bracket jump failed." | endif
+        endfor
+      endif
       exe b:ctaglines[i]
     endfor
   endfunction
-  au FileType * nnoremap <expr> <buffer> <silent> [[ '<Esc>:call <sid>ctagbracket(0,'.v:count.')<CR>'
-  au FileType * nnoremap <expr> <buffer> <silent> ]] '<Esc>:call <sid>ctagbracket(1,'.v:count.')<CR>'
+  function! s:ctagbracketmaps()
+    if &ft!="help" "use bracket for jumpint to last position here
+      if g:has_nowait
+        nnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>:call <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
+        nnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>:call <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
+      else
+        nnoremap <expr> <buffer> <silent> [[ '<Esc>:call <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
+        nnoremap <expr> <buffer> <silent> ]] '<Esc>:call <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
+      endif
+    endif
+  endfunction
+  au FileType * call <sid>ctagbracketmaps()
   "this will make sure we override any ftplugin maps; also we allow using number operator
 endif
 
@@ -2030,59 +2047,61 @@ nnoremap <silent> ! :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winres
 " * By default & repeats last :s command
 " * Use <C-r>=expand('<cword>')<CR> instead of <C-r><C-w> to avoid errors on empty lines
 " * gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
-let g:should_inject_replace_occurences = 0
-function! MoveToNext()
-  if g:should_inject_replace_occurences
+if has_key(g:plugs, "vim-repeat")
+  let g:should_inject_replace_occurences=0
+  function! MoveToNext()
+    if g:should_inject_replace_occurences
+      call feedkeys("n")
+      call repeat#set("\<Plug>ReplaceOccurences")
+    endif
+    let g:should_inject_replace_occurences=0
+  endfunction
+  au! InsertLeave * call MoveToNext()
+  "Remaps using black magic
+  "First one just uses last search, the other ones use word under cursor
+  nmap <silent> c/ :set hlsearch<CR>
+        \:let g:should_inject_replace_occurences=1<CR>cgn
+  nmap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+        \:let g:should_inject_replace_occurences=1<CR>cgn
+  nmap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+        \:let g:should_inject_replace_occurences=1<CR>cgn
+  nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+        \:let g:should_inject_replace_occurences=1<CR>cgn
+  nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+        \:let g:should_inject_replace_occurences=1<CR>cgn
+  nmap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
+  "Original remaps, which don't move onto next highlight automatically
+  " nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
+  " nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
+  " nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
+  " nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
+  function! ReplaceOccurence()
+    "Check if we are on top of an occurence
+    "'[ and '] are first/last characters of previously yanked or changed text
+    "Ctrl-a in insert mode types the same text as when you were last in insert mode; see :help i_
+    let winview = winsaveview()
+    let save_reg = getreg('"')
+    let save_regmode = getregtype('"')
+    let [lnum_cur, col_cur] = getpos(".")[1:2] 
+    normal! ygn
+    let [lnum1, col1] = getpos("'[")[1:2]
+    let [lnum2, col2] = getpos("']")[1:2]
+    call setreg('"', save_reg, save_regmode)
+    call winrestview(winview)
+    "If we are on top of an occurence, replace it
+    if lnum_cur>=lnum1 && lnum_cur<=lnum2 && col_cur>=col1 && col_cur<=col2
+      exe "normal! cgn\<C-a>\<Esc>"
+    endif
     call feedkeys("n")
     call repeat#set("\<Plug>ReplaceOccurences")
-  endif
-  let g:should_inject_replace_occurences = 0
-endfunction
-augroup auto_move_to_next
-  autocmd! InsertLeave * :call MoveToNext()
-augroup END
-"Remaps using black magic
-"First one just uses last search, the other ones use word under cursor
-nmap <silent> c/ :set hlsearch<CR>
-      \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-      \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-      \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
-nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-      \:let g:should_inject_replace_occurences=1<CR>cgn
-nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-      \:let g:should_inject_replace_occurences=1<CR>cgn
-"Original remaps, which don't move onto next highlight automatically
-" nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-" nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
-" nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-" nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
-function! ReplaceOccurence()
-  "Check if we are on top of an occurence
-  let l:winview = winsaveview()
-  let l:save_reg = getreg('"')
-  let l:save_regmode = getregtype('"')
-  let [l:lnum_cur, l:col_cur] = getpos(".")[1:2] 
-  normal! ygn
-  let [l:lnum1, l:col1] = getpos("'[")[1:2]
-  let [l:lnum2, l:col2] = getpos("']")[1:2]
-  call setreg('"', l:save_reg, l:save_regmode)
-  call winrestview(winview)
-  "If we are on top of an occurence, replace it
-  if l:lnum_cur >= l:lnum1 && l:lnum_cur <= l:lnum2 && l:col_cur >= l:col1 && l:col_cur <= l:col2
-    exe "normal! cgn\<C-a>\<Esc>"
-  endif
-  call feedkeys("n")
-  call repeat#set("\<Plug>ReplaceOccurences")
-endfunction
+  endfunction
+endif
 "###############################################################################
 "AWESOME REFACTORING STUFF I MADE MYSELF
 "Remap ? for function-wide searching; follows convention of */# and &/@
 "The \(\) makes text after the scope-atoms a bit more readable
-nnoremap <silent> <expr> ? '/<C-r>=<sid>scopesearch(0)<CR>\(\)'.nr2char(getchar())
-" nnoremap <silent> <expr> ? '/'.<sid>scopesearch(0).nr2char(getchar())
+"Also note the <silent> will prevent beginning the search until another key is pressed
+nnoremap <silent> ? /<C-r>=<sid>scopesearch(0)<CR>\(\)
 "Keep */# case-sensitive while '/' and '?' are smartcase case-insensitive
 nnoremap <silent> * :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
 nnoremap <silent> & :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
@@ -2115,9 +2134,6 @@ if 1 && has_key(g:plugs, "vim-repeat")
   nmap d& <Plug>search4
   nmap d/ <Plug>search5
 else "with these ones, cursor will remain on word just replaced
-  " nnoremap d@ ?<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgN
-  " nnoremap d# ?\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgN
-  " nnoremap d? ?<C-r>/<CR>``dgN
   nnoremap d# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
   nnoremap d@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
   nnoremap d* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
@@ -2127,15 +2143,13 @@ endif
 "Search all capital words
 nnoremap cz /\<[A-Z]\+\><CR>
 "Colon search replacements -- not as nice as the above ones, which stay in normal mode
-" * Consider opinion guy who made above maps expressed in this thread:
-" https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
-" "Replace current word with <this string>
+"See that reddit thread for why normal-mode is better
 " nnoremap <Leader>r :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
 " nnoremap <Leader>R :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
 "   "the <C-r> means paste from the expression register i.e. result of following expr
-" "Delete <this string>
 " nnoremap <Leader>d :%s///gIc<Left><Left><Left><Left><Left>
 " nnoremap <Leader>D :<C-r>=<sid>scopesearch(1)<CR>///gIc<Left><Left><Left><Left><Left>
+"   "these ones delete stuff
 "###############################################################################
 "SPECIAL DELETION TOOLS
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
@@ -2391,8 +2405,8 @@ vnoremap g. ~
 noremap m ge
 noremap M gE
   "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
-noremap g: q:
-noremap g/ q/
+noremap <silent> g: q::set nonumber norelativenumber syntax=on<CR>
+noremap <silent> g/ q/:set nonumber norelativenumber<CR>
   "display previous command with this
 "First the simple ones -- indentation commands allow prefixing with *number*,
 "but find that behavior weird/mnemonically confusing ('why is 3>> indent 3 lines
@@ -2421,17 +2435,6 @@ endif
 "     "and trying the <C-u> exe thing results in 'command too recursive'
 " endfunction
 " autocmd FileType * call s:gmaps()
-"Decided to disable the rest because sometimes find myself wanting to use other
-"g-prefix commands and can make use of more complex [[ and ]] funcs
-" function! s:bracketmaps()
-"   if &ft!="help" "want to use [ for something else then
-"     nmap <silent> <buffer> <nowait> [ :exe 'normal '.v:count.'[['<CR>
-"     nmap <silent> <buffer> <nowait> ] :exe 'normal '.v:count.']]'<CR>
-"   endif
-" endfunction
-" if g:has_nowait "options is present in this version of VIM
-"   autocmd FileType * call s:bracketmaps()
-" endif
 
 "###############################################################################
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
