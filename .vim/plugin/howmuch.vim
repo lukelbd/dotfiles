@@ -76,10 +76,10 @@ vnoremap <silent><unique> <Plug>PyCalcAppendWithEqAndSum   :call HowMuch#HowMuch
 "===========================================================
 " custom mappings
 if !hasmapto('<Plug>AutoCalcAppendWithEqAndSum','v')
-  vmap <Leader>S <Plug>AutoCalcAppendWithEqAndSum
+  vmap <Leader>+ <Plug>AutoCalcAppendWithEqAndSum
 endif
 if !hasmapto('<Plug>AutoCalcReplaceWithSum','v')
-  vmap <Leader>s <Plug>AutoCalcReplaceWithSum
+  vmap <Leader>= <Plug>AutoCalcReplaceWithSum
 endif
 " vmap <Leader><Leader>s <Plug>AutoCalcReplace
 " vmap <Leader>? <Plug>AutoCalcAppend
