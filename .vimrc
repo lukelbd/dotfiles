@@ -20,6 +20,13 @@ let mapleader="\<Space>"
 noremap <Space> <Nop>
 noremap <CR> <Nop>
 noremap <C-b> <Nop>
+noremap Q <Nop>
+noremap K <Nop>
+"the above 2 enter weird modes I don't understand...
+noremap <C-z> <Nop>
+noremap Z <Nop>
+"disable c-z and Z for exiting vim
+set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 "for TMUX; preserve that shortcut
 "###############################################################################
 "STANDARDIZE COLORS -- need to make sure background set to dark, and should be good to go
@@ -307,16 +314,6 @@ if has("gui_running")
   colorscheme slate "no longer controlled through terminal colors
 endif
 "###############################################################################
-"DISABLE ANNOYING SPECIAL MODES/DANGEROUS ACTIONS
-noremap K <Nop>
-noremap Q <Nop>
-  "the above 2 enter weird modes I don't understand...
-noremap <C-z> <Nop>
-noremap Z <Nop>
-  "disable c-z and Z for exiting vim
-set slm=
-  "disable 'select mode' slm, allow only visual mode for that stuff
-"###############################################################################
 "CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
 function! s:commandline_check()
   nnoremap <buffer> <silent> q :q<CR>
@@ -330,6 +327,7 @@ au CmdwinLeave * setlocal laststatus=2
   "commandline-window settings; when we are inside of q:, q/, and q?
 "###############################################################################
 "SIGN COLUMN
+silent! set signcolumn=no
 nnoremap <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
 
 "###############################################################################
@@ -359,8 +357,10 @@ Plug 'tpope/vim-repeat'
 "Appearence; use my own customzied statusline/tagbar stuff though, and it's way better
 " Plug 'vim-airline/vim-airline'
 " Plug 'itchyny/lightline.vim'
-"Proper syntax highlighting for .tmux.conf and .tmux files; simple as that
+"Proper syntax highlighting for a few different things
+"Right now .tmux.conf and .tmux files, and markdown files
 Plug 'tmux-plugins/vim-tmux'
+Plug 'plasticboy/vim-markdown'
 "Python wrappers
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
@@ -467,6 +467,16 @@ if has_key(g:plugs, "vim-gitgutter")
   "d is for 'delete' change
   nmap <silent> <C-e> :GitGutterPrevHunk<CR>
   nmap <silent> <C-r> :GitGutterNextHunk<CR>
+endif
+
+"###############################################################################
+"MARKDOWN
+augroup markdown
+augroup END
+if has_key(g:plugs, "vim-markdown")
+  set conceallevel=2 "conceals e.g. hyperlinks
+  let g:tex_conceal="" "disable math conceal
+  let g:vim_markdown_math=1 "turn on $$ math
 endif
 
 "###############################################################################
@@ -899,13 +909,13 @@ function! s:texmacros()
   "-use set -x to ECHO LAST COMMAND
   "-use c-x for compile/run, and c-w for creating Word document
   noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
-        \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>
-  noremap <silent> <buffer> <C-w> :w<CR>:exec("!clear; set -x; "
-        \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>
+      \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>
+  noremap <silent> <buffer> <C-b> :w<CR>:exec("!clear; set -x; "
+      \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>
   inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
-        \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>a
-  inoremap <silent> <buffer> <C-w> <Esc>:w<CR>:exec("!clear; set -x; "
-        \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>a
+      \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>a
+  inoremap <silent> <buffer> <C-b> <Esc>:w<CR>:exec("!clear; set -x; "
+      \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>a
 endfunction
 "Function for loading templates
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
@@ -1054,36 +1064,32 @@ function! s:pymacros()
         \."python ".shellescape(@%)."<CR>a"
 endfunction
 autocmd FileType python call s:pymacros()
-"Python-syntax; these should be provided with VIM by default
+"Builtin python ftplugin syntax option; these should be provided with VIM by default
 let g:python_highlight_all=1
-
-"###############################################################################
-"PYTHON CONFIGURATION FOR EXTERNAL PLUGINS
-augroup altpython
-augroup END
+"Configuration for external plugins
 "Jedi-vim stuff; see: https://github.com/davidhalter/jedi-vim
-if has_key(g:plugs, "jedi-vim")
-  " let g:jedi#force_py_version=3
-  let g:jedi#auto_vim_configuration = 0
-    " set these myself instead
-  let g:jedi#rename_command = ""
-    "jedi-vim recommended way of disabling commands
-    "note jedi auto-renaming sketchy, sometimes fails good example is try renaming 'debug'
-    "in metadata function; jedi skips f-strings, skips its re-assignment in for loop,
-    "skips where it appeared as default kwarg in function
-  let g:jedi#usages_command = "QJ"
-    "open up list of places where variable appears; then can 'goto'
-  let g:jedi#goto_assignments_command = "QK"
-    "goto location where definition/class defined
-  let g:jedi#documentation_command = "QW"
-    "use 'W' for 'what is this?'
-  autocmd FileType python setlocal completeopt-=preview
-    "disables docstring popup window
-endif
-"Vim python-mode stuff
-if has_key(g:plugs, "python-mode")
-  let g:pymode_python='python3'
-endif
+" if has_key(g:plugs, "jedi-vim")
+"   " let g:jedi#force_py_version=3
+"   let g:jedi#auto_vim_configuration = 0
+"     " set these myself instead
+"   let g:jedi#rename_command = ""
+"     "jedi-vim recommended way of disabling commands
+"     "note jedi auto-renaming sketchy, sometimes fails good example is try renaming 'debug'
+"     "in metadata function; jedi skips f-strings, skips its re-assignment in for loop,
+"     "skips where it appeared as default kwarg in function
+"   let g:jedi#usages_command = "QJ"
+"     "open up list of places where variable appears; then can 'goto'
+"   let g:jedi#goto_assignments_command = "QK"
+"     "goto location where definition/class defined
+"   let g:jedi#documentation_command = "QW"
+"     "use 'W' for 'what is this?'
+"   autocmd FileType python setlocal completeopt-=preview
+"     "disables docstring popup window
+" endif
+" "Vim python-mode stuff
+" if has_key(g:plugs, "python-mode")
+"   let g:pymode_python='python3'
+" endif
 
 "###############################################################################
 "C MACROS
@@ -1129,6 +1135,17 @@ augroup END
 " au BufRead,BufNewFile *.ncl set dictionary=~/.vim/words/ncl.dic
 au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
   "can put other stuff here; right now this is just for the NCL dict for NCL
+
+"###############################################################################
+"MARKDOWN MACROS
+function! s:markdownmacros()
+  "Open in viewer
+  inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
+    \."open -a 'Marked 2' ".shellescape(@%))<CR>a
+  nnoremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
+    \."open -a 'Marked 2' ".shellescape(@%))<CR><CR>
+endfunction
+au FileType markdown call s:markdownmacros()
 
 "###############################################################################
 "Help window settings, and special settings for mini popup windows where we don't
@@ -1323,22 +1340,92 @@ highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
 "   "definitions
 
 "###############################################################################
-"CURRENT DIRECTORY
-"First of all match VIM 'current directory' to the file current directory; allows
-"us e.g. to use git commands on files on the fly
-" autocmd BufEnter * lcd %:p:h "messes up session restore
+"EVENTS MANAGEMENT
+"Need to make this mini-function for ctrlp plugin
+" * Note storage variable g:eidefault must be *global* because otherwise
+"   the ctrlp plugin can't see it.
+augroup events
+augroup END
+function! s:eioff()
+  set eventignore=
+  silent! hi MatchParen ctermfg=Yellow ctermbg=Blue
+endfunction
+function! s:eion()
+  set eventignore=CursorHold,CursorHoldI,CursorMoved,CursorMovedI,TextChanged,TextChangedI
+  silent! hi clear MatchParen "clear MatchLine from match.vim plugin, if it exists
+endfunction
+function! s:eimap()
+  nnoremap <silent> <buffer> <Esc> :q<CR>:EIoff<CR>
+  nnoremap <silent> <buffer> <C-c> :q<CR>:EIoff<CR>
+endfunction
+command! EIon call s:eion()
+command! EIoff call s:eioff()
+command! EImap call s:eimap()
 
 "###############################################################################
 "CTRLP PLUGIN
 "Make opening in new tab default behavior; see: https://github.com/kien/ctrlp.vim/issues/160
+"Also scan dotfiles/directories, but *ignore* vim-plug directory tree and possibly others
+"Encountered weird issue due to interactions of CursorMoved maps; here's my saga:
+" * Calling :noautocmd CtrlP does not fix the problem either; what the fuck.
+" * Note ctrlp 'enter' and 'exit' functions seem to have no effect
+"   on eventignore. Has to be set manually before entering the buffer.
+" * Note only CursorMoved autocommands are still triggered when entering
+"   ctrlp window; the BufEnter stuff is sucessfully ignored, so you can't
+"   create a BufEnter command expecting it to execute when we exit the ctrlp buffer.
+" * Creating a CursorHold autocmd also seems to break ctrlp; so can't make
+"   one that resets the eventignore options.
+" * Amazingly a nnoremap works because we enter the ctrlp buffer in 'normal mode',
+"   but all keys are mapped to print their actual values; so a nnoremap of some
+"   :command actually works.
+" * Frustratingly it seems impossible to declare mappings this way, however; it
+"   will fail if you try e.g. nnoremap <C-p> :Ctrlp<CR>:nnoremap <buffer> <Esc> <Stuff><CR>
+"   But we can call a function that declares this mapping. And *that* fixes the problem!
 augroup ctrlp
 augroup END
 if has_key(g:plugs, "ctrlp.vim")
-  " let g:ctrlp_map='<Leader>p'
-  let g:ctrlp_map='<C-p>'
-  let g:ctrlp_prompt_mappings={
+  " let g:ctrlp_buffer_func={'enter':'EIon', 'exit':'EIoff'} "fails
+  " nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
+  nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:EImap<CR>
+  let g:ctrlp_map=''
+  let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
+  let g:ctrlp_show_hidden=1
+  let g:ctrlp_by_filename=0
+  let g:ctrlp_prompt_mappings = {
+    \ 'PrtBS()':              ['<bs>', '<c-]>'],
+    \ 'PrtDelete()':          ['<del>'],
+    \ 'PrtDeleteWord()':      ['<c-w>'],
+    \ 'PrtClear()':           ['<c-u>'],
+    \ 'PrtSelectMove("j")':   ['<c-j>', '<down>'],
+    \ 'PrtSelectMove("k")':   ['<c-k>', '<up>'],
+    \ 'PrtSelectMove("t")':   ['<Home>', '<kHome>'],
+    \ 'PrtSelectMove("b")':   ['<End>', '<kEnd>'],
+    \ 'PrtSelectMove("u")':   ['<PageUp>', '<kPageUp>'],
+    \ 'PrtSelectMove("d")':   ['<PageDown>', '<kPageDown>'],
+    \ 'PrtHistory(-1)':       ['<c-n>'],
+    \ 'PrtHistory(1)':        ['<c-p>'],
+    \ 'AcceptSelection("h")': ['<c-x>', '<c-cr>', '<c-s>'],
     \ 'AcceptSelection("e")': ['<c-t>'],
     \ 'AcceptSelection("t")': ['<cr>', '<2-LeftMouse>'],
+    \ 'AcceptSelection("v")': ['<c-v>', '<RightMouse>'],
+    \ 'ToggleFocus()':        ['<s-tab>'],
+    \ 'ToggleRegex()':        ['<c-r>'],
+    \ 'ToggleByFname()':      ['<c-d>'],
+    \ 'ToggleType(1)':        ['<c-f>', '<c-up>'],
+    \ 'ToggleType(-1)':       ['<c-b>', '<c-down>'],
+    \ 'PrtExpandDir()':       ['<tab>'],
+    \ 'PrtInsert("c")':       ['<MiddleMouse>', '<insert>'],
+    \ 'PrtInsert()':          ['<c-\>'],
+    \ 'PrtCurStart()':        ['<c-a>'],
+    \ 'PrtCurEnd()':          ['<c-e>'],
+    \ 'PrtCurLeft()':         ['<c-h>', '<left>', '<c-^>'],
+    \ 'PrtCurRight()':        ['<c-l>', '<right>'],
+    \ 'PrtClearCache()':      ['<F5>'],
+    \ 'PrtDeleteEnt()':       ['<F7>'],
+    \ 'CreateNewFile()':      ['<c-y>'],
+    \ 'MarkToOpen()':         ['<c-z>'],
+    \ 'OpenMulti()':          ['<c-o>'],
+    \ 'PrtExit()':            ['<esc>', '<c-c>', '<c-g>'],
     \ }
 endif
 
@@ -2199,9 +2286,6 @@ autocmd InsertLeave,CmdwinLeave * set iminsert=0
 "SPECIAL TAB NAVIGATION
 augroup tabs
 augroup END
-"Disable some stuff for vimrc
-au BufEnter * if expand("%:t")==".vimrc" | setlocal eventignore=CursorMoved,CursorMovedI,TextChanged,TextChangedI
-    \| else | setlocal eventignore= | endif
 "Basic switching, and shortcut for 'last active tab'
 noremap <Tab>1 1gt
 noremap <Tab>2 2gt
