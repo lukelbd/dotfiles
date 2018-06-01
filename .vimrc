@@ -330,10 +330,7 @@ au CmdwinLeave * setlocal laststatus=2
   "commandline-window settings; when we are inside of q:, q/, and q?
 "###############################################################################
 "SIGN COLUMN
-if has("signs")
-  set signcolumn=no
-  nnoremap <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
-endif
+nnoremap <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
 
 "###############################################################################
 "###############################################################################
@@ -468,8 +465,8 @@ if has_key(g:plugs, "vim-gitgutter")
   nmap <Leader>g :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nmap <Leader>G :GitGutterUndoHunk<CR>
   "d is for 'delete' change
-  nmap <silent> <C-o> :GitGutterPrevHunk<CR>
-  nmap <silent> <C-p> :GitGutterNextHunk<CR>
+  nmap <silent> <C-e> :GitGutterPrevHunk<CR>
+  nmap <silent> <C-r> :GitGutterNextHunk<CR>
 endif
 
 "###############################################################################
@@ -1337,7 +1334,8 @@ highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
 augroup ctrlp
 augroup END
 if has_key(g:plugs, "ctrlp.vim")
-  let g:ctrlp_map='<Leader>p'
+  " let g:ctrlp_map='<Leader>p'
+  let g:ctrlp_map='<C-p>'
   let g:ctrlp_prompt_mappings={
     \ 'AcceptSelection("e")': ['<c-t>'],
     \ 'AcceptSelection("t")': ['<cr>', '<2-LeftMouse>'],
@@ -1909,7 +1907,7 @@ augroup END
 "BUFFER WRITING/SAVING
 augroup saving
 augroup END
-nnoremap <C-e> :tabe 
+nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
 au FileType help nnoremap <buffer> <C-s> <Nop>
