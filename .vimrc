@@ -20,7 +20,7 @@ let mapleader="\<Space>"
 noremap <Space> <Nop>
 noremap <CR> <Nop>
 noremap <C-b> <Nop>
-  "for TMUX; preserve that shortcut
+"for TMUX; preserve that shortcut
 "###############################################################################
 "STANDARDIZE COLORS -- need to make sure background set to dark, and should be good to go
 "See solution: https://unix.stackexchange.com/a/414395/112647
@@ -31,14 +31,6 @@ set background=dark
 set nobackup
 set noswapfile
 set noundofile
-"###############################################################################
-"TAB COMPLETION OPENING NEW FILES
-set wildignore=
-set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod
-set wildignore+=*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4
-set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
-  "never want to open these in VIM; includes GUI-only filetypes
-  "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
 "###############################################################################
 "ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
 "First some functions and autocmds
@@ -56,23 +48,6 @@ augroup EscapeFix
   "the function explicitly in commands that bounce from insert to normal mode
 augroup END
 "###############################################################################
-"MOUSE SETTINGS
-set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
-if has('ttymouse') | set ttymouse=sgr | else | set ttymouse=xterm2 | endif
- "fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
-"###############################################################################
-"INSERT MODE REMAPS
-"SIMPLE ONES
-inoremap <C-l> <Esc>$a
-inoremap <C-h> <Esc>^i
-inoremap <C-p> <C-r>"
-" inoremap CC <Esc>C
-" inoremap II <Esc>I
-" inoremap AA <Esc>A
-" inoremap OO <Esc>O
-" inoremap SS <Esc>S
-" inoremap DD <Esc>dd
-" inoremap UU <Esc>u
 "FUNCTION FOR ESCAPING CURRENT DELIMITER
 " * Use my own instead of delimitmate defaults because e.g. <c-g>g only works
 "   if no text between delimiters.
@@ -89,6 +64,7 @@ function! s:outofdelim(n) "get us out of delimiter cursos is inside
     endif
   endfor
 endfunction
+"###############################################################################
 "MAPS IN CONTEXT OF POPUP MENU
 " * Will count number of tabs in popup menu so our position is always known
 au BufEnter * let b:tabcount=0
@@ -108,9 +84,9 @@ endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Want to prevent automatic use of CR for confirming entry
 inoremap <expr> jk pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(1)\<CR>a" :
-      \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
+  \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
 inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" :
-      \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
+  \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
 inoremap <expr> <C-u> neocomplete#undo_completion()
 inoremap <expr> <C-c> pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
 inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
@@ -127,27 +103,6 @@ inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<
 " inoremap <expr> kj pumvisible() ? "\<C-y>" : "kj"
 " inoremap <expr> <C-j> pumvisible() ? "\<Down>" : ""
 " inoremap <expr> <C-k> pumvisible() ? "\<Up>" : ""
-"###############################################################################
-"DISABLE ANNOYING SPECIAL MODES/DANGEROUS ACTIONS
-noremap K <Nop>
-noremap Q <Nop>
-  "the above 2 enter weird modes I don't understand...
-noremap <C-z> <Nop>
-noremap Z <Nop>
-  "disable c-z and Z for exiting vim
-set slm=
-  "disable 'select mode' slm, allow only visual mode for that stuff
-"###############################################################################
-"CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
-function! s:commandline_check()
-  nnoremap <buffer> <silent> q :q<CR>
-  setlocal nonumber
-  setlocal nolist
-  setlocal laststatus=0 "turns off statusline
-endfunction
-au CmdwinEnter * call s:commandline_check()
-au CmdwinLeave * setlocal laststatus=2
-  "commandline-window settings; when we are inside of q:, q/, and q?
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 "First need helper function to toggle formatoptions (controls whether comment-char inserted on newline)
@@ -177,7 +132,7 @@ noremap <silent> sd jmzkddp`zj
 noremap ; <Nop>
 noremap , <Nop>
   "never really want to use f/t commands more than once
-noremap " :echo "Setting mark q."<CR>mq
+noremap " :echo "Setting mark."<CR>mq
 noremap ' `q
 map @ <Nop>
 noremap , @q
@@ -271,6 +226,20 @@ nnoremap <silent> <C-v> :let b:v_mode='VisualBlock'<CR>mV<C-v>
 vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:'.b:v_mode.'<CR>`N'
 vnoremap <CR> <Esc>
 "###############################################################################
+"INSERT MODE REMAPS
+"SIMPLE ONES
+inoremap <C-l> <Esc>$a
+inoremap <C-h> <Esc>^i
+inoremap <C-p> <C-r>"
+"###############################################################################
+"TAB COMPLETION OPENING NEW FILES
+set wildignore=
+set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod
+set wildignore+=*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4
+set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
+  "never want to open these in VIM; includes GUI-only filetypes
+  "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
+"###############################################################################
 "SPECIAL CHARACTER MANAGEMENT
 "show whitespace chars, newlines, and define characters used
 nnoremap <Leader>l :setlocal list!<CR>
@@ -299,10 +268,14 @@ nnoremap <Leader>9 <C-a>h
   "for some reasons <C-a> by itself moves cursor to right; have to adjust
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
-" Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
-" Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
-" The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
-" Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
+"First mouse stuff
+set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
+if has('ttymouse') | set ttymouse=sgr | else | set ttymouse=xterm2 | endif
+"Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
+"fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
+" * Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
+"   The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
+" * Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
 if exists("&t_SI")
   if exists('$TMUX')
     let &t_SI = "\ePtmux;\e\e[6 q\e\\"
@@ -333,6 +306,34 @@ if has("gui_running")
   set relativenumber
   colorscheme slate "no longer controlled through terminal colors
 endif
+"###############################################################################
+"DISABLE ANNOYING SPECIAL MODES/DANGEROUS ACTIONS
+noremap K <Nop>
+noremap Q <Nop>
+  "the above 2 enter weird modes I don't understand...
+noremap <C-z> <Nop>
+noremap Z <Nop>
+  "disable c-z and Z for exiting vim
+set slm=
+  "disable 'select mode' slm, allow only visual mode for that stuff
+"###############################################################################
+"CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
+function! s:commandline_check()
+  nnoremap <buffer> <silent> q :q<CR>
+  setlocal norelativenumber
+  setlocal nonumber
+  setlocal nolist
+  setlocal laststatus=0 "turns off statusline
+endfunction
+au CmdwinEnter * call s:commandline_check()
+au CmdwinLeave * setlocal laststatus=2
+  "commandline-window settings; when we are inside of q:, q/, and q?
+"###############################################################################
+"SIGN COLUMN
+if has("signs")
+  set signcolumn=no
+  nnoremap <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
+endif
 
 "###############################################################################
 "###############################################################################
@@ -341,6 +342,7 @@ endif
 "###############################################################################
 augroup 1
 augroup END
+let g:has_signs=has("signs") "for git gutter and syntastic maybe
 let g:has_ctags=str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
 let g:compatible_neocomplete=has("lua") "try alternative completion library
@@ -352,13 +354,15 @@ let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) &
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
-"Automatic list numbering
-let g:bullets_enabled_file_types = ['vim', 'markdown', 'text', 'gitcommit', 'scratch']
-Plug 'dkarter/bullets.vim'
+"Make mappings repeatable; critical
+Plug 'tpope/vim-repeat'
+"Automatic list numbering; actually it mysteriously fails so fuck that shit
+" let g:bullets_enabled_file_types = ['vim', 'markdown', 'text', 'gitcommit', 'scratch']
+" Plug 'dkarter/bullets.vim'
 "Appearence; use my own customzied statusline/tagbar stuff though, and it's way better
 " Plug 'vim-airline/vim-airline'
 " Plug 'itchyny/lightline.vim'
-"Proper syntax highlighting for .tmux.conf and .tmux files
+"Proper syntax highlighting for .tmux.conf and .tmux files; simple as that
 Plug 'tmux-plugins/vim-tmux'
 "Python wrappers
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
@@ -367,8 +371,6 @@ Plug 'tmux-plugins/vim-tmux'
 " Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython' "same problem as python-mode
 "Julia support and syntax highlighting
-Plug 'tpope/vim-repeat'
-  "make mappings repeatable
 Plug 'JuliaEditorSupport/julia-vim'
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
@@ -376,9 +378,9 @@ Plug 'Konfekt/FastFold'
 " Plug 'vim-scripts/matchit.zip'
 "Navigating between files and inside file; enhancedjumps seemed broken to me
 Plug 'scrooloose/nerdtree'
+Plug 'ctrlpvim/ctrlp.vim'
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'jistr/vim-nerdtree-tabs'
-" Plug 'ctrlpvim/ctrlp.vim'
 " Plug 'vim-scripts/EnhancedJumps'
 "Commenting and syntax checking
 Plug 'scrooloose/nerdcommenter'
@@ -389,8 +391,9 @@ Plug 'scrooloose/syntastic'
 Plug 'tpope/vim-obsession'
 " set viewoptions=options,cursor "tried to see if this would stop vim -S from closing folds
 Plug 'gioele/vim-autoswap' "deals with swap files automatically
-"Git wrapper
-" Plug 'tpope/vim-fugitive'
+"Git wrappers and differencing tools
+Plug 'tpope/vim-fugitive'
+if g:has_signs | Plug 'airblade/vim-gitgutter' | endif
 "Completion engines
 " Plug 'lifepillar/vim-mucomplete' "broken
 " Plug 'Valloric/YouCompleteMe' "broken
@@ -448,12 +451,25 @@ endif
 "  terminal colorscheme and let colors do their thing
 "* Good lightline styles: nord, PaperColor and PaperColor_dark (fave), OldHope,
 "  jellybeans, and Tomorrow_Night, Tomorrow_Night_Eighties
-if has_key(g:plugs, "vim-airline")
-  let g:airline#extensions#tabline#enabled = 1
-  let g:airline#extensions#tabline#formatter = 'default'
-endif
-if has_key(g:plugs, "lightline.vim")
-  let g:lightline = { 'colorscheme': 'powerline' }
+" if has_key(g:plugs, "vim-airline")
+"   let g:airline#extensions#tabline#enabled = 1
+"   let g:airline#extensions#tabline#formatter = 'default'
+" endif
+" if has_key(g:plugs, "lightline.vim")
+"   let g:lightline = { 'colorscheme': 'powerline' }
+" endif
+
+"###############################################################################
+"GIT GUTTER
+augroup git
+augroup END
+if has_key(g:plugs, "vim-gitgutter")
+  let g:gitgutter_map_keys=0 "disable all maps yo
+  nmap <Leader>g :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  nmap <Leader>G :GitGutterUndoHunk<CR>
+  "d is for 'delete' change
+  nmap <silent> <C-o> :GitGutterPrevHunk<CR>
+  nmap <silent> <C-p> :GitGutterNextHunk<CR>
 endif
 
 "###############################################################################
@@ -1139,8 +1155,8 @@ noremap <silent> <expr> <Leader>e ':!clear; search='.input('Get help info: ').';
 function! s:helpsetup()
   if len(tabpagebuflist())==1 | q | endif "exit from help window, if it is only one left
   wincmd L "moves current window to be at far-right; 'wincmd' executes Ctrl+W functions
-  vertical resize 79
-  nnoremap <buffer> q :q<CR>
+  vertical resize 80
+  nnoremap <silent> <buffer> q :q<CR>
   nnoremap <buffer> <CR> <C-]>
   " nnoremap <nowait> <buffer> <LeftMouse> <LeftMouse><C-]>
   if g:has_nowait | nnoremap <nowait> <buffer> [ :pop<CR>
@@ -1148,6 +1164,7 @@ function! s:helpsetup()
   endif
   setlocal nolist
   setlocal nonumber
+  setlocal norelativenumber
   setlocal nospell
   "better jumping behavior; note these must be C-], not Ctrl-]
 endfunction
@@ -1155,11 +1172,13 @@ au FileType help call s:helpsetup()
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
 function! s:simplesetup()
+  nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist
   setlocal nonumber
+  setlocal norelativenumber
   setlocal nospell
 endfunction
-au FileType gitcommit,rst,qf call s:simplesetup()
+au FileType gitcommit,rst,qf,diff call s:simplesetup()
 
 "###############################################################################
 "VIM visual increment; creating columns of 1/2/3/4 etc.
@@ -1191,6 +1210,7 @@ if has_key(g:plugs, "codi.vim")
       echom "Error: Name is empty."
     else
       exec "tabe ".a:name.".py"
+      exec "Codi!! ".&ft
     endif
   endfunction
   nnoremap <silent> <expr> <Leader>n ':call <sid>newcodi("'.input('Enter .py calculator name: ').'")<CR>'
@@ -1226,9 +1246,6 @@ augroup howmuch
 augroup END
 let g:HowMuch_auto_engines=['py', 'bc'] "python engine uses from math import *
 let g:HowMuch_scale=3 "precision
-" if has_key(g:plugs, "HowMuch")
-"   "default maps are <Leader>?
-" endif
 
 "###############################################################################
 "MUCOMPLETE
@@ -1272,21 +1289,19 @@ if has_key(g:plugs, "neocomplete.vim") "just check if activated
     \ 'scheme' : $HOME.'/.gosh_completions'
         \ }
   "Define keyword.
-  if !exists('g:neocomplete#keyword_patterns')
-    let g:neocomplete#keyword_patterns = {}
-  endif
+  if !exists('g:neocomplete#keyword_patterns') | let g:neocomplete#keyword_patterns = {} | endif
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
+  "Enable omni completion.
+  autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
+  autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+  autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
+  autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
+  autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 endif
 "Highlighting
 highlight Pmenu ctermbg=Black ctermfg=Yellow cterm=None
 highlight PmenuSel ctermbg=Black ctermfg=Black cterm=None
 highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
-"Enable omni completion.
-autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
-autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
-autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
-autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
-autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 " "Complete settings
 " set complete=. "adds dictionary opts
 " "   "default is .,w,b,u,t,i which uses .=current buffer, w=buffers other
@@ -1315,6 +1330,20 @@ autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 "First of all match VIM 'current directory' to the file current directory; allows
 "us e.g. to use git commands on files on the fly
 " autocmd BufEnter * lcd %:p:h "messes up session restore
+
+"###############################################################################
+"CTRLP PLUGIN
+"Make opening in new tab default behavior; see: https://github.com/kien/ctrlp.vim/issues/160
+augroup ctrlp
+augroup END
+if has_key(g:plugs, "ctrlp.vim")
+  let g:ctrlp_map='<Leader>p'
+  let g:ctrlp_prompt_mappings={
+    \ 'AcceptSelection("e")': ['<c-t>'],
+    \ 'AcceptSelection("t")': ['<cr>', '<2-LeftMouse>'],
+    \ }
+endif
+
 "###############################################################################
 "NERDTREE
 augroup nerdtree
@@ -1352,9 +1381,10 @@ if has_key(g:plugs, "nerdtree")
   "See this thread for ideas: https://superuser.com/q/195022/506762
   function! s:nerdtreesetup()
     setlocal nolist
+    exe 'vertical resize '.g:NERDTreeWinSize
     noremap <buffer> <Leader>f :NERDTreeClose<CR>
     if g:has_nowait | nmap <buffer> <nowait> d D | endif
-      "prevents attempts to change it; this descends into directory
+    "prevents attempts to change it; this descends into directory
   endfunction
   autocmd FileType nerdtree call s:nerdtreesetup()
 endif
@@ -1467,10 +1497,6 @@ endif
 augroup syntastic
 augroup END
 if has_key(g:plugs, "syntastic")
-  "Turn off signcolumn (ugly; much better to just HIGHLIGHT LINES IN RED)
-  if exists("&signcolumn")
-    set signcolumn=no
-  endif
   "Commands for circular location-list (error) scrolling
   command! Lnext try | lnext | catch | lfirst | catch | endtry
   command! Lprev try | lprev | catch | llast | catch | endtry
@@ -1478,23 +1504,19 @@ if has_key(g:plugs, "syntastic")
   "Helper function; checks status
   function! s:syntastic_status() 
     if exists("b:syntastic_loclist")
-      if empty(b:syntastic_loclist)
-        return 0
-      else
-        return 1
+      if empty(b:syntastic_loclist) | return 0
+      else | return 1
       endif
-    else
-      return 0
+    else | return 0
     endif
   endfunction
   "Set up custom remaps; there are some letters that i pretty much never use after
   "yanking (y), so can use 'y' for sYntax
   " nnoremap yn :Lnext<CR>
   " nnoremap yN :Lprev<CR>
-  nnoremap yo :noh<CR>:SyntasticCheck<CR>
-  nnoremap yO :SyntasticReset<CR>
-  nnoremap <expr> y. <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":noh<CR>:SyntasticCheck<CR>"
-    "toggle state
+  " nnoremap yO :SyntasticReset<CR>
+  " nnoremap <expr> y. <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":noh<CR>:SyntasticCheck<CR>"
+  nnoremap <expr> yo <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":noh<CR>:SyntasticCheck<CR>"
   nnoremap <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
   nnoremap <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
     "moving between errors
@@ -1584,22 +1606,10 @@ if g:has_ctags
         \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
     endif
     if len(ctags)==0 | return | endif
-    "Determine ctag lines
-    let ctaglines=[]
-    for ctag in ctags "ignore last char; is either '$' or '\' if line too long
-      let ctagline=search('^'.escape(ctag[1:-2],'$/*[]'),'n')
-      if ctagline!=0
-        call extend(ctaglines, [ctagline])
-      else
-        echo "Warning: Search pattern ".ctag." not found."
-        call extend(ctaglines, [0])
-      endif
-    endfor
-    "Sort everything by line number
-    let b:ctaglines=copy(ctaglines) "vim is object-oriented, like python
-    call sort(b:ctaglines, "s:compare")
+    "Get ctag lines and sort them by number
+    let ctaglines=map(copy(ctags), 'search("^".escape(v:val[1:-2],"$/*[]"),"n")')
+    let b:ctaglines=sort(copy(ctaglines), "s:compare") "vim is object-oriented, like python
     for i in range(len(b:ctaglines))
-      let index=index(ctaglines, b:ctaglines[i])
       call extend(b:ctags, [ctags[index(ctaglines, b:ctaglines[i])]])
     endfor
   endfunction
@@ -1654,32 +1664,23 @@ if has_key(g:plugs, "tagbar")
       wincmd h
       wincmd h "move two places in case e.g. have help menu + nerdtree already
     endif
-    TagbarToggle "you just state commands like these
-    "Then some fancy stuff, if the command just activated Tagbar
+    TagbarToggle
     if &ft=="tagbar"
-      "Initial stuff
-      let tabfts=[]
-      let tabnms=[]
-      for b in tabpagebuflist()
-        call add(tabfts, getbufvar(b, "&ft"))
-        call add(tabnms, fnamemodify(bufname(b),":t"))
-      endfor
       "Change the default open stuff for vimrc
-      "Do so by testing names of files in this tab
+      "Make sure normal commands align with maps
+      let tabnms=map(tabpagebuflist(),'fnamemodify(bufname(v:val), ":t")')
       if index(tabnms,".vimrc")!=-1
-        keepjumps silent normal =
-        silent exec "/^\. autocommand groups$"
-        keepjumps normal +
+        silent normal _
+        call search("^\. autocommand groups$")
+        silent normal =
+        noh
       endif
       "Make sure NERDTree is always flushed to the far right
       "Do this by moving TagBar one spot to the left if it is opened
       "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
-      if index(tabfts,"nerdtree")!=-1
-        wincmd h
-        wincmd x
-      endif
-      "Do this if just opend it up
-      vertical resize 15
+      let tabfts=map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
+      if index(tabfts,"nerdtree")!=-1 | wincmd h | wincmd x | endif
+      exe 'vertical resize '.g:tagbar_width
       wincmd p
     endif
   endfunction
@@ -1688,24 +1689,27 @@ if has_key(g:plugs, "tagbar")
   set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
   "Some settings
   " let g:tagbar_iconchars = ['▸', '▾'] "prettier
+  " let g:tagbar_iconchars = ['+', '-'] "simple
   let g:tagbar_silent=1 "no information echoed
   let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
   let g:tagbar_left=0 "open on left; more natural this way
-    "nevermind right is better; left is in the way
-  let g:tagbar_zoomwidth=0 "zoom to width of longest tag, not infinity!
   let g:tagbar_foldlevel=0 "default none
   let g:tagbar_indent=-1 "only one space indent
-  let g:tagbar_autoshowtag=0 "expand when new tags
-    "never opens tag folds automatically
+  let g:tagbar_autoshowtag=0 "do not open tag folds when cursor moves over one
   let g:tagbar_show_linenumbers=0 "don't show line numbers
-  let g:tagbar_autofocus=1 "autojump to window if opened
-    "somewhat annoying but probably want this
+  let g:tagbar_autofocus=1 "don't autojump to window if opened
   let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
   let g:tagbar_case_insensitive=1 "make sorting case insensitive
   let g:tagbar_compact=1 "no header information in panel
-  let g:tagbar_singleclick=0 "one click select 
-    "(don't use this; inconsistent with help menu and makes it impossible to switch windows by clicking)
-  let g:tagbar_width=25 "better default
+  let g:tagbar_singleclick=0 "one click select; annoying
+  let g:tagbar_width=15 "better default
+  let g:tagbar_zoomwidth=15 "don't ever 'zoom' even if text doesn't fit
+  let g:tagbar_expand=0
+  "Custom mappings
+  let g:tagbar_map_closefold="-"
+  let g:tagbar_map_openfold="="
+  let g:tagbar_map_closeallfolds="_"
+  let g:tagbar_map_openallfolds="+"
 endif
 
 "###############################################################################
@@ -1774,7 +1778,7 @@ endfunction
 "Wrapper function; for some infuriating reason, setlocal scrolloff sets
 "the value globally, no matter what; not so for wrap or colorcolumn
 function! s:autowrap()
-  if 'bib,tex,html,xml,text,markdown'=~&ft
+  if ""!=&ft && 'bib,tex,markdown,text'=~&ft
     call s:wraptoggle(1)
   else
     call s:wraptoggle(0)
@@ -1905,7 +1909,7 @@ augroup END
 "BUFFER WRITING/SAVING
 augroup saving
 augroup END
-nnoremap <C-o> :tabe 
+nnoremap <C-e> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
 au FileType help nnoremap <buffer> <C-s> <Nop>
@@ -2356,14 +2360,14 @@ nnoremap zC zM
   "open and close all folds; to open/close under cursor, use zo/zc
 "Overhaul z-remaps for controlling window state; make them Tab-prexied
 "maps, because I *hate* inconsistency; want all window-related maps to have same prefix
-noremap <silent> <Tab>9 :exe 'resize '.(winheight(0)-3)<CR>
-noremap <silent> <Tab>0 :exe 'resize '.(winheight(0)+3)<CR>
-noremap <silent> <Tab>( :exe 'resize '.(winheight(0)-5)<CR>
-noremap <silent> <Tab>) :exe 'resize '.(winheight(0)+5)<CR>
-noremap <silent> <Tab>[ :exe 'vertical resize '.(winwidth(0)-5)<CR>
-noremap <silent> <Tab>] :exe 'vertical resize '.(winwidth(0)+5)<CR>
-noremap <silent> <Tab>{ :exe 'vertical resize '.(winwidth(0)-10)<CR>
-noremap <silent> <Tab>} :exe 'vertical resize '.(winwidth(0)+10)<CR>
+noremap <expr> <silent> <Tab>9 '<Esc>:resize '.(winheight(0)-3*max([1,v:count])).'<CR>'
+noremap <expr> <silent> <Tab>0 '<Esc>:resize '.(winheight(0)+3*max([1,v:count])).'<CR>'
+noremap <expr> <silent> <Tab>( '<Esc>:resize '.(winheight(0)-5*max([1,v:count])).'<CR>'
+noremap <expr> <silent> <Tab>) '<Esc>:resize '.(winheight(0)+5*max([1,v:count])).'<CR>'
+noremap <expr> <silent> <Tab>[ '<Esc>:vertical resize '.(winwidth(0)-5*max([1,v:count])).'<CR>'
+noremap <expr> <silent> <Tab>] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v:count])).'<CR>'
+noremap <expr> <silent> <Tab>{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
+noremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
 noremap <silent> <Tab>= :vertical resize 80<CR>
   "and the z-prefix is a natural companion to the resizing commands
   "the Tab commands should just sort and navigate between panes
@@ -2406,8 +2410,8 @@ vnoremap g. ~
 noremap m ge
 noremap M gE
   "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
-noremap <silent> g: q::set nonumber norelativenumber syntax=on<CR>
-noremap <silent> g/ q/:set nonumber norelativenumber<CR>
+noremap <silent> g: q:
+noremap <silent> g/ q/
   "display previous command with this
 "First the simple ones -- indentation commands allow prefixing with *number*,
 "but find that behavior weird/mnemonically confusing ('why is 3>> indent 3 lines
@@ -2415,12 +2419,12 @@ noremap <silent> g/ q/:set nonumber norelativenumber<CR>
 "* Note the <Esc> is needed first because it cancels application of the number operator
 "  to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
-  nnoremap <expr> <nowait> > v:count > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
-  nnoremap <expr> <nowait> < v:count > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
-  nnoremap <nowait> = ==
+  noremap <expr> <nowait> > v:count > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
+  noremap <expr> <nowait> < v:count > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
+  noremap <nowait> = ==
 else
-  nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
-  nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
+  noremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
+  noremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
 "Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
 "Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff> may get re-mapped
@@ -2442,8 +2446,8 @@ endif
 augroup colors
 augroup END
 "Special characters
-highlight NonText ctermfg=Black cterm=NONE
-highlight SpecialKey ctermfg=Black cterm=NONE
+highlight NonText ctermfg=Black cterm=None
+highlight SpecialKey ctermfg=Black cterm=None
 "Matching parentheses
 highlight Todo ctermfg=None ctermbg=Red
 highlight MatchParen ctermfg=Yellow ctermbg=Blue
@@ -2453,10 +2457,10 @@ highlight MatchParen ctermfg=Yellow ctermbg=Blue
 set cursorline
 highlight CursorLine cterm=None ctermbg=Black
 highlight CursorLineNR cterm=None ctermfg=Yellow ctermbg=Black
-highlight LineNR cterm=None ctermfg=Black ctermbg=NONE
+highlight LineNR cterm=None ctermfg=Black ctermbg=None
 "Column stuff; color 80th column, and after 120
 highlight ColorColumn cterm=None ctermbg=Black
-highlight SignColumn cterm=None ctermbg=Black
+highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 "sign define hold text=\
 "sign place 1 name=hold line=1
 "###############################################################################
