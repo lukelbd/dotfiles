@@ -219,6 +219,10 @@ noremap <silent> <Leader>o :noh<CR>
 command! Visual      normal! v
 command! VisualLine  normal! V
 command! VisualBlock exe "normal! \<C-v>"
+function! Mode()
+  echom 'Mode: '.mode() | return ''
+endfunction
+vnoremap <expr> <Leader><Space> ''.Mode()
 "1) create local variables, mark when entering visual mode
 " nnoremap <silent> v :let b:v_mode='v'<CR>:setlocal mouse+=v<CR>mVv
 " nnoremap <silent> V :let b:v_mode='V'<CR>:setlocal mouse+=v<CR>mVV
