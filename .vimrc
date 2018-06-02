@@ -1366,7 +1366,9 @@ if has_key(g:plugs, "ctrlp.vim")
   " nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
   function! s:ctrlpwrap()
     let dir=input("Enter starting directory: ")
-    if dir!="" | EIon | CtrlP | EImap
+    if dir!="" | EIon
+      exe 'CtrlP '.dir
+      EImap
     else | echom "Cancelling..."
     endif
   endfunction
@@ -1686,7 +1688,7 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_silent=1 "no information echoed
   let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
   let g:tagbar_left=0 "open on left; more natural this way
-  let g:tagbar_foldlevel=0 "default none
+  let g:tagbar_foldlevel=-1 "default none
   let g:tagbar_indent=-1 "only one space indent
   let g:tagbar_autoshowtag=0 "do not open tag folds when cursor moves over one
   let g:tagbar_show_linenumbers=0 "don't show line numbers
@@ -2396,7 +2398,7 @@ function! s:copytoggle()
   endif
 endfunction
 nnoremap <C-c> :call <sid>copytoggle()<CR>
-  "yank because from Vim, we yank; but remember, c-v is still pastemode
+"yank because from Vim, we yank; but remember, c-v is still pastemode
 
 "###############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
@@ -2411,7 +2413,8 @@ let g:SimpylFold_fold_imports=0
 "Basic settings
 " set nofoldenable
 set foldmethod=expr
-set foldlevelstart=20
+set foldlevel=99
+set foldlevelstart=99
 "More options
 " set foldlevel=2
 set foldnestmax=10 "avoids weird things
@@ -2452,8 +2455,8 @@ nnoremap <Tab>y zH
 nnoremap <Tab>p zL
   "movement remaps
 silent! unmap zuz
-  "to prevent delay; this is associated with FastFold or something
-  "go up or down page
+"to prevent delay; this is associated with FastFold or something
+"go up or down page
 " nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
 " nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
 "   "change fold levels, and make sure return to same place
