@@ -1386,7 +1386,8 @@ if has_key(g:plugs, "ctrlp.vim")
     else | echom "Cancelling..."
     endif
   endfunction
-  nnoremap  <silent> <Leader>p :call <sid>ctrlpwrap()<CR>
+  "note next map made useful by making iTerm translate c-[ as F2
+  nnoremap <silent> <F2> :call <sid>ctrlpwrap()<CR>
   nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:EImap<CR>
   let g:ctrlp_map=''
   let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
@@ -1646,82 +1647,6 @@ if has_key(g:plugs, "syntastic")
 endif
 
 "###############################################################################
-"TAGBAR (requires 'brew install ctags-exuberant')
-augroup tagbar
-augroup END
-"Neat idea for function; just call this whenever Tagbar is toggled
-"Can put other things in here too; the buffer remaps can be declared
-"in separate FileType autocmds but this is nice too
-" * Note I tried doing the below with autocmd FileType tagbar but didn't really work
-"   perhaps because we need other FileType cmds to act first.
-" * Note the default mappings:
-"   -p jumps to tag under cursor, in code window, but remain in tagbar
-"   -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
-"   -C-n and C-p browses by top-level tags
-"   - +,- open and close folds under cursor
-"   -o toggles the fold under cursor, or current one
-"   -q quits the window
-if has_key(g:plugs, "tagbar")
-  function! s:tagbarsetup()
-    "Helper function
-    " noremap <buffer> = zo
-      "doesn't work because Tagbar maps = to something else
-    "First toggle the tagbar; issues when toggling from NERDTree so switch
-    "back if cursor is already there. No issues toggline from Help window.
-    "Note toggling tagbar in a help menu appears to be fine
-    if &ft=="nerdtree"
-      wincmd h
-      wincmd h "move two places in case e.g. have help menu + nerdtree already
-    endif
-    TagbarToggle
-    if &ft=="tagbar"
-      "Change the default open stuff for vimrc
-      "Make sure normal commands align with maps
-      let tabnms=map(tabpagebuflist(),'fnamemodify(bufname(v:val), ":t")')
-      if index(tabnms,".vimrc")!=-1
-        silent normal _
-        call search("^\. autocommand groups$")
-        silent normal =
-        noh
-      endif
-      "Make sure NERDTree is always flushed to the far right
-      "Do this by moving TagBar one spot to the left if it is opened
-      "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
-      let tabfts=map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
-      if index(tabfts,"nerdtree")!=-1 | wincmd h | wincmd x | endif
-      exe 'vertical resize '.g:tagbar_width
-      wincmd p
-    endif
-  endfunction
-  nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
-  "Switch updatetime (necessary for Tagbar highlights to follow cursor)
-  set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
-  "Some settings
-  " let g:tagbar_iconchars = ['▸', '▾'] "prettier
-  " let g:tagbar_iconchars = ['+', '-'] "simple
-  let g:tagbar_silent=1 "no information echoed
-  let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
-  let g:tagbar_left=0 "open on left; more natural this way
-  let g:tagbar_foldlevel=-1 "default none
-  let g:tagbar_indent=-1 "only one space indent
-  let g:tagbar_autoshowtag=0 "do not open tag folds when cursor moves over one
-  let g:tagbar_show_linenumbers=0 "don't show line numbers
-  let g:tagbar_autofocus=1 "don't autojump to window if opened
-  let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
-  let g:tagbar_case_insensitive=1 "make sorting case insensitive
-  let g:tagbar_compact=1 "no header information in panel
-  let g:tagbar_singleclick=0 "one click select; annoying
-  let g:tagbar_width=15 "better default
-  let g:tagbar_zoomwidth=15 "don't ever 'zoom' even if text doesn't fit
-  let g:tagbar_expand=0
-  "Custom mappings
-  let g:tagbar_map_closefold="-"
-  let g:tagbar_map_openfold="="
-  let g:tagbar_map_closeallfolds="_"
-  let g:tagbar_map_openallfolds="+"
-endif
-
-"###############################################################################
 "WRAPPING AND LINE BREAKING
 augroup wrap "For some reason both autocommands below are necessary; fuck it
   au!
@@ -1877,7 +1802,7 @@ if g:has_ctags
   "Declare dem tags yo
   augroup ctags
     au!
-    au BufRead * call s:ctags(0)
+    au BufReadPost * call s:ctags(0)
     au FileType * call s:ctagbracketmaps()
   augroup END
   "Function for declaring ctag lines and ctag regex strings, in line number order
@@ -1945,7 +1870,7 @@ if g:has_ctags
   "Next jump between subsequent ctags with [[ and ]]
   function! s:ctagbracket(foreward, n)
     if &ft=="help" | return | endif
-    if len(b:ctaglines)==0 | echom "Warning: No ctags found." | return | endif
+    if !exists("b:ctaglines") || len(b:ctaglines)==0 | echom "Warning: No ctags found." | return | endif
     let a:njumps=(a:n==0 ? 1 : a:n)
     for i in range(a:njumps)
       let lnum=line('.')
@@ -1980,6 +1905,89 @@ if g:has_ctags
       endif
     endif
   endfunction
+endif
+
+"###############################################################################
+"TAGBAR (requires 'brew install ctags-exuberant')
+" * Note tagbar BufReadPost autocommand must come after the c:tags one, or
+"   we end up just generating tags for the Tagbar sidebar buffer.
+" * Note the default mappings:
+"   -p jumps to tag under cursor, in code window, but remain in tagbar
+"   -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
+"   -C-n and C-p browses by top-level tags
+"   - +,- open and close folds under cursor
+"   -o toggles the fold under cursor, or current one
+"   -q quits the window
+if has_key(g:plugs, "tagbar")
+  "Note to have tagbar open automatically FileType did not work; possibly some
+  "conflict with Obsession; instead BufReadPost worked
+  augroup tagbar
+    au!
+    au BufReadPost * nested call s:tagbarmanager()
+  augroup END
+  function! s:tagbarmanager()
+    " if index(['.vimrc','.bashrc'], expand("%:t"))==-1
+    if ".vimrc,.py"=~expand("%:t")
+      call s:tagbarsetup()
+    endif
+  endfunction
+  function! s:tagbarsetup()
+    "Helper function
+    " noremap <buffer> = zo
+      "doesn't work because Tagbar maps = to something else
+    "First toggle the tagbar; issues when toggling from NERDTree so switch
+    "back if cursor is already there. No issues toggline from Help window.
+    "Note toggling tagbar in a help menu appears to be fine
+    if &ft=="nerdtree"
+      wincmd h
+      wincmd h "move two places in case e.g. have help menu + nerdtree already
+    endif
+    TagbarToggle
+    if &ft=="tagbar"
+      "Change the default open stuff for vimrc
+      "Make sure normal commands align with maps
+      let tabnms=map(tabpagebuflist(),'fnamemodify(bufname(v:val), ":t")')
+      if index(tabnms,".vimrc")!=-1
+        silent normal _
+        call search("^\. autocommand groups$")
+        silent normal =
+        noh
+      endif
+      "Make sure NERDTree is always flushed to the far right
+      "Do this by moving TagBar one spot to the left if it is opened
+      "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
+      let tabfts=map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
+      if index(tabfts,"nerdtree")!=-1 | wincmd h | wincmd x | endif
+      exe 'vertical resize '.g:tagbar_width
+      wincmd p
+    endif
+  endfunction
+  nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
+  "Switch updatetime (necessary for Tagbar highlights to follow cursor)
+  set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
+  "Some settings
+  " let g:tagbar_iconchars = ['▸', '▾'] "prettier
+  " let g:tagbar_iconchars = ['+', '-'] "simple
+  let g:tagbar_silent=1 "no information echoed
+  let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
+  let g:tagbar_left=0 "open on left; more natural this way
+  let g:tagbar_foldlevel=-1 "default none
+  let g:tagbar_indent=-1 "only one space indent
+  let g:tagbar_autoshowtag=0 "do not open tag folds when cursor moves over one
+  let g:tagbar_show_linenumbers=0 "don't show line numbers
+  let g:tagbar_autofocus=1 "don't autojump to window if opened
+  let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
+  let g:tagbar_case_insensitive=1 "make sorting case insensitive
+  let g:tagbar_compact=1 "no header information in panel
+  let g:tagbar_singleclick=0 "one click select; annoying
+  let g:tagbar_width=15 "better default
+  let g:tagbar_zoomwidth=15 "don't ever 'zoom' even if text doesn't fit
+  let g:tagbar_expand=0
+  "Custom mappings
+  let g:tagbar_map_closefold="-"
+  let g:tagbar_map_openfold="="
+  let g:tagbar_map_closeallfolds="_"
+  let g:tagbar_map_openallfolds="+"
 endif
 
 "###############################################################################
@@ -2055,16 +2063,15 @@ cnoremap <expr> <C-u> <sid>enterpardir()
 
 "###############################################################################
 "SEARCHING AND FIND-REPLACE STUFF
-"Basics; (showmode shows mode at bottom [default I think, but include it],
-"incsearch moves to word as you begin searching with '/' or '?')
-"Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
-"because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
-augroup searching
+"Basic stuff first
+" * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
+"   because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
+" * Make sure 'noignorecase' turned on when in insert mode, so *autocompletion* respects case.
+augroup searchreplace
   au!
-  au InsertEnter * set noignorecase
-  au InsertLeave * set ignorecase
-  au InsertLeave * noautocmd call MoveToNext()
   au FileType bib,tex call s:cutmaps() "some bibtex lines
+  au InsertEnter * set noignorecase "default ignore case
+  au InsertLeave * set ignorecase | noautocmd call MoveToNext() "magical c* searching function
 augroup END
 set hlsearch incsearch "show match as typed so far, and highlight as you go
 set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
@@ -2075,23 +2082,23 @@ nnoremap <silent> ! :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winres
 "SPECIAL DELETION TOOLS
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
 "Replace consecutive spaces on current line with one space
-nnoremap <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>
+nnoremap <silent> <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Replace consecutive newlines with single newline
-nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
+nnoremap <silent> <Leader>Q :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-nnoremap <Leader>\ :%s/\s\+$//g<CR>
-vnoremap <Leader>\ :s/\s\+$//g<CR>
+nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 "Replace commented lines
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
 function! s:cutmaps()
-  nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-  nnoremap <buffer> <Leader>- :%s/–/--/gc<CR>
+  nnoremap <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  nnoremap <silent> <Leader>- :%s/–/--/gc<CR>
 endfunction
 "###############################################################################
-"MAGICAL SCOPESEARCH FUNCTION
+"SEARCHING/REPLACING/CHANGING IN-BETWEEN TAGS
 if g:has_ctags
   "Searching within scope of current function or environment
   " * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
@@ -2367,8 +2374,8 @@ nnoremap <Tab>' <C-w><C-p>
 "Really really really want to toggle with <C-v> since often hit Ctrl-V, Cmd-V, so
 "makes way more sense, but that makes inserting 'literal chars' impossible
 "Workaround is to map cv to enter insert mode with <C-v>
-nnoremap <silent> cv :setlocal eventignore=InsertEnter<CR>:echom "Ctrl-V pasting disabled for next InsertEnter."<CR>
-nnoremap <silent> cV :setlocal eventignore=<CR>:echom "EventIgnore reset."<CR>
+nnoremap <expr> <silent> cv ":if &eventignore=='' \| setlocal eventignore=InsertEnter \| echom 'Ctrl-V pasting disabled for next InsertEnter.' "
+  \." \| else \| setlocal eventignore= \| echom '' \| endif<CR>"
 augroup copypaste
   au!
   au InsertLeave * set nopaste | setlocal eventignore= "if pastemode was toggled, turn off
