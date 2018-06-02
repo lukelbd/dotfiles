@@ -31759,6 +31759,13 @@
 	<false/>
 	<key>GlobalKeyMap</key>
 	<dict>
+		<key>0x20-0x80000</key>
+		<dict>
+			<key>Action</key>
+			<integer>11</integer>
+			<key>Text</key>
+			<string>0x1b 0x4f 0x50</string>
+		</dict>
 		<key>0x27-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -31869,6 +31876,13 @@ Select Next Tab</string>
 			<key>Text</key>
 			<string>Move Divider Left
 Resize Split Pane.Move Divider Left</string>
+		</dict>
+		<key>0x5b-0x40000</key>
+		<dict>
+			<key>Action</key>
+			<integer>11</integer>
+			<key>Text</key>
+			<string>0x1b 0x4f 0x51</string>
 		</dict>
 		<key>0x5c-0x100000</key>
 		<dict>
@@ -32123,7 +32137,7 @@ Resize Split Pane.Move Divider Down</string>
 	<key>HideTabCloseButton</key>
 	<false/>
 	<key>Hotkey</key>
-	<true/>
+	<false/>
 	<key>HotkeyChar</key>
 	<integer>32</integer>
 	<key>HotkeyCode</key>
