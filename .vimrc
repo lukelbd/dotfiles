@@ -1830,6 +1830,8 @@ endif
 
 "###############################################################################
 "FTPLUGINS
+"Note apparently every BufRead autocmd inside an ftdetect/filename.vim file
+"is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 augroup ftplugin
 augroup END
 "Set default tabbing (then plugins will setlocal these)
