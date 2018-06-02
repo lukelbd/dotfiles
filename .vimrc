@@ -134,8 +134,8 @@ noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>togglefo
 noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
-noremap <silent> su mzkddp`z
-noremap <silent> sd jmzkddp`zj
+noremap <silent> sk mzkddp`z
+noremap <silent> sj jmzkddp`zj
   "swap with row above, and swap with row below; awesome mnemonic, right?
 noremap ; <Nop>
 noremap , <Nop>
@@ -903,10 +903,16 @@ function! s:texmacros()
   inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
       \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>a
   "Commands for counting words
-  noremap <silent> <buffer> <Leader>w :exec("!clear; set -x; "
+  "Note also you have that Cmd-Space map for counting highlighted words
+  "This section is weird; C-@ is same as C-Space (google it), and
+  "S-Space sends hex codes for F1 in iTerm (enter literal characters in Vim and
+  "use ga commands to get the hex codes needed)
+  noremap <silent> <buffer> <C-@> :exec("!clear; set -x; "
       \.'ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null \| wc -w')<CR>
-  noremap <silent> <buffer> <Leader>W :exec("!clear; set -x; open -a 'Skim'; "
-      \.'osascript ~/dotfiles/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf'))<CR>:redraw!<CR>
+  noremap <silent> <buffer> <F1> :exec('!clear; set -x; open -a Skim; '
+      \.'osascript ~/dotfiles/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
+      \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
+      \.'open -a iTerm')<CR>:redraw!<CR>
 endfunction
 "Function for loading templates
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
@@ -1328,12 +1334,12 @@ augroup eventsrestore
   au BufEnter * call s:eioff()
 augroup END
 function! s:eioff()
-  set eventignore=
+  setlocal eventignore=
   silent! hi MatchParen ctermfg=Yellow ctermbg=Blue
   silent! unmap <Esc>
 endfunction
 function! s:eion()
-  set eventignore=CursorHold,CursorHoldI,CursorMoved,CursorMovedI,TextChanged,TextChangedI
+  setlocal eventignore=CursorHold,CursorHoldI,CursorMoved,CursorMovedI,TextChanged,TextChangedI
   silent! hi clear MatchParen "clear MatchLine from match.vim plugin, if it exists
 endfunction
 function! s:eimap()
@@ -2354,11 +2360,16 @@ nnoremap <Tab>' <C-w><C-p>
 "###############################################################################
 "COPY/PASTING CLIPBOARD
 "Pastemode toggling; pretty complicated
+"Really really really want to toggle with <C-v> since often hit Ctrl-V, Cmd-V, so
+"makes way more sense, but that makes inserting 'literal chars' impossible
+"Workaround is to map cv to enter insert mode with <C-v>
+nnoremap <silent> cv :setlocal eventignore=InsertEnter<CR>:echom "Ctrl-v pasting disabled for next InsertEnter."<CR>
 augroup copypaste
   au!
-  au InsertLeave * set nopaste "if pastemode was toggled, turn off
+  au InsertLeave * set nopaste | setlocal eventignore= "if pastemode was toggled, turn off
   au InsertLeave * set pastetoggle=
   au InsertEnter * set pastetoggle=<C-v> "need to use this, because mappings don't work
+  " au InsertEnter * set pastetoggle=
   "when pastemode is toggled; might be able to remap <set paste>, but cannot have mapping for <set nopaste>
 augroup END
 "Copymode to eliminate special chars during copy
