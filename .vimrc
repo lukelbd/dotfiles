@@ -30,6 +30,7 @@ set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
 "see solution: https://unix.stackexchange.com/a/414395/112647
 nnoremap <Leader>. :<Up><CR>
+nnoremap <Leader>/ /<Up><CR>
 "repeat previous command
 "###############################################################################
 "NO MORE SWAP FILES
