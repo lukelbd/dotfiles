@@ -61,12 +61,18 @@ endfunction
 "The highlight group that's used for highlighting matched lines.  By
 function! s:hl_matching_lines() abort
   let b:hl_ranORcleared = 1
-  "Exit early on some files where this fails due to underlying Match_wrapper default
-  "function provided with VIM; currently, some VIMscript files have slow % motion, and
-  "markdown files can be awful
+  "Initial stuff
+  " * Make sure to exit if we are in any visual mode. Here's a great way way
+  "   to see results of mode() with a function:
+  "     function! Mode()
+  "       echom 'Mode: '.mode() | return ''
+  "     endfunction
+  "     vnoremap <expr> <Leader><Space> ''.Mode()
+  " * Exit early on some files where this fails due to underlying Match_wrapper default
+  "   function supplied with Vim. Markdown can be awful.
   " if expand("%:t")==".vimrc" | return | endif
   if &ft == "markdown" | return | endif
-  if mode()=~"[vV]"
+  if mode()=~"[vV]"
     call s:hl_matching_lines_clear()
     return
   endif
