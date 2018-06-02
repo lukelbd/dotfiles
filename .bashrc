@@ -373,6 +373,11 @@ function ff() { # file-finder; input a quoted glob pattern or a string
   [ -z $2 ] && dir="." || dir="$2"
   find "$dir" -name "$1"
 }
+function mm() { # spotlight file-finder; recursively searches everywhere by default
+  # don't type glob patterns but what you would type in the GUI spotlight bar
+  [ $# -eq 0 ] && echo "Error: Need one arg." && return 1
+  mdfind "$1"
+}
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
