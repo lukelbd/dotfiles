@@ -128,7 +128,7 @@ shopt -s nocaseglob # case insensitive
 shopt -s globstar # **/ matches all subdirectories, searches recursively
 # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
 [ -z $TMUX ] && shopt -s failglob # raise error when a glob match fails
-  # this caused problems with completion of wildcards in tmux sessions
+# this caused problems with completion of wildcards in tmux sessions
 
 # Prompt
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
