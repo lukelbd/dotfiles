@@ -1316,28 +1316,6 @@ endif
 highlight Pmenu ctermbg=Black ctermfg=Yellow cterm=None
 highlight PmenuSel ctermbg=Black ctermfg=Black cterm=None
 highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
-" "Complete settings
-" set complete=. "adds dictionary opts
-" "   "default is .,w,b,u,t,i which uses .=current buffer, w=buffers other
-" "   "windows, u=unloaded buffers, t=tags, i=included files
-" set completeopt+=longest
-"^^ longest means Vim doesn't V select first completion item, and just fills
-"in text to 'longest common string'; can also use menuone, show menu always
-" "Fancy popup-window remaps
-" inoremap <expr> <C-n> pumvisible() ? "<C-n>" :
-"   \ '<C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
-"   "keeps menu highlighted so you can press <Enter> to make selection
-"   "(changed <c-n> to <c-p> because want to search backward, not forwards)
-" inoremap <expr> <C-g> pumvisible() ? '<C-n>' :
-"   \ '<C-x><C-o><C-n><C-p><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
-"   "same as above, but OMNICOMPLETION or 'smart completion' -- shows variables
-"   "g for 'get', or something
-" inoremap <expr> <C-f> pumvisible() ? "<C-x><C-f><Down>" :
-"   \ '<C-x><C-f><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
-"   "filenames
-" inoremap <expr> <C-d> pumvisible() ? "<C-x><C-k><Down>" :
-"   \ '<C-x><C-k><C-r>=pumvisible() ? "\<lt>Down>" : ""<CR>'
-"   "definitions
 
 "###############################################################################
 "EVENTS MANAGEMENT
@@ -1361,6 +1339,7 @@ endfunction
 command! EIon call s:eion()
 command! EIoff call s:eioff()
 command! EImap call s:eimap()
+au BufEnter * call s:eioff()
 
 "###############################################################################
 "CTRLP PLUGIN
@@ -1387,6 +1366,7 @@ if has_key(g:plugs, "ctrlp.vim")
   " let g:ctrlp_buffer_func={'enter':'EIon', 'exit':'EIoff'} "fails
   " nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
   nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:EImap<CR>
+  nnoremap <expr> <silent> <Leader>p ':EIon<CR>:CtrlP '.input("Enter starting directory: ").'<CR>:EImap<CR>'
   let g:ctrlp_map=''
   let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
   let g:ctrlp_show_hidden=1
