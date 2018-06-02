@@ -430,14 +430,8 @@ noremap <C-k> g,
 augroup session
 augroup END
 "Remember file position, so come back after opening to same spot
-autocmd BufReadPost *
-   \ if line("'\"") > 0 && line("'\"") <= line("$") |
-   \   exe "normal! g`\"" |
-   \ endif
-"Restore sessions
+autocmd BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
 if has_key(g:plugs, "vim-obsession")
-  " nnoremap <leader>S :ToggleWorkspace<CR>
-  " let g:workspace_session_name = '.session.vim'
   autocmd VimEnter * Obsession .session.vim
 endif
 

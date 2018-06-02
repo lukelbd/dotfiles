@@ -44,7 +44,7 @@ function! Tabline()
       let fname = '·'.fname[offset/2:len(fname)-offset/2].'·' "… use this maybe
       " let fname = fname[:g:charmax].'·'
     endif
-    let tabtext .= (bufname != '' ? '|'. fname . ' ' : '[?] ')
+    let tabtext .= (bufname != '' ? '|'. fname . ' ' : '|? ')
     "Modification marker
     if bufmodified
       let tabtext .= '[+] '
