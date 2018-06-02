@@ -15,7 +15,7 @@ set nocompatible
   "always use the vim default where vi and vim differ; for example, if you
   "put this too late, whichwrap will be resset
 "###############################################################################
-"Most important lines
+"IMPORTANT STUFF
 let mapleader="\<Space>"
 noremap <Space> <Nop>
 noremap <CR> <Nop>
@@ -27,11 +27,10 @@ noremap <C-z> <Nop>
 noremap Z <Nop>
 "disable c-z and Z for exiting vim
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
-"for TMUX; preserve that shortcut
-"###############################################################################
-"STANDARDIZE COLORS -- need to make sure background set to dark, and should be good to go
-"See solution: https://unix.stackexchange.com/a/414395/112647
-set background=dark
+set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
+"see solution: https://unix.stackexchange.com/a/414395/112647
+nnoremap <Leader>. :<Up><CR>
+"repeat previous command
 "###############################################################################
 "NO MORE SWAP FILES
 "THIS IS DANGEROUS BUT I AM CONSTANTLY HITTING <CTRL-S> SO IS USUALLY FINE
@@ -48,11 +47,9 @@ function! s:escape() "preserve cursor column, UNLESS we were on the newline or f
     normal l
   endif
 endfunction
-augroup EscapeFix
-  autocmd!
-  autocmd InsertLeave * call s:escape() "fixes cursor position
-  "this will work every time leave insert mode so eliminates need to call
-  "the function explicitly in commands that bounce from insert to normal mode
+augroup escapefix
+  au!
+  au InsertLeave * call s:escape() "fixes cursor position
 augroup END
 "###############################################################################
 "FUNCTION FOR ESCAPING CURRENT DELIMITER
@@ -74,8 +71,11 @@ endfunction
 "###############################################################################
 "MAPS IN CONTEXT OF POPUP MENU
 " * Will count number of tabs in popup menu so our position is always known
-au BufEnter * let b:tabcount=0
-au InsertEnter * let b:tabcount=0
+augroup popuphelper
+  au!
+  au BufEnter * let b:tabcount=0
+  au InsertEnter * let b:tabcount=0
+augroup END
 function! s:tabincrease() "use this inside <expr> remaps
   let b:tabcount+=1
   return "" "returns empty string so can be used inside <expr>
@@ -103,7 +103,6 @@ inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
 inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
 " inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
-"Old mappings
 " inoremap <expr> <Space> pumvisible() ? "\<C-e>\<Space>" : "\<Space>"
 " inoremap <expr> <CR> pumvisible() ? "\<C-e>\<CR>" : "\<CR>"
 " inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>" : "\<BS>"
@@ -117,16 +116,17 @@ inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<
 " * The o and r options continue comment lines.
 " * The n recognized numbered lists.
 " * Note in the documentation, formatoptions is *local to buffer*. Also note we have
-"   to set it explicitly outside of FileType command or will be reset to defaults
+"   to set it explicitly or will be reset when .vimrc is sourced
 "   every time vimrc loaded.
 let g:formatoptions="lro"
 exe 'setlocal formatoptions='.g:formatoptions
-au FileType * exe 'setlocal formatoptions='.g:formatoptions
+augroup formatopts
+  au!
+  au FileType * exe 'setlocal formatoptions='.g:formatoptions
+augroup END
 function! s:toggleformatopt()
-  if len(&formatoptions)==0
-    exe 'setlocal formatoptions='.g:formatoptions
-  else
-    setlocal formatoptions=
+  if len(&formatoptions)==0 | exe 'setlocal formatoptions='.g:formatoptions
+  else | setlocal formatoptions=
   endif
 endfunction
 noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
@@ -183,17 +183,13 @@ nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
   "note gJ was insufficient because retains leading whitespace from next line
   "recall that the 'v' prefix indicated a VIM read-only builtin variable
 nnoremap Y y$
-nnoremap v$ v$h
 nnoremap D D
   "yank, substitute, delete until end of current line
-  "also make v$ no longer include the end-of-line character
 noremap S <Nop>
 noremap ss s
   "willuse single-s map for spellcheck-related commands
   "restore use of substitute 's' key; then use s<stuff> for spellcheck
-nnoremap vv ^v$gE
-  "select the current 'line' of text; super handy
-vnoremap cc Vs
+vnoremap cc s
 nnoremap cl mza<CR><Esc>`z
 vnoremap c<CR> s
   "replace the currently highlighted text
@@ -221,17 +217,20 @@ noremap <silent> <Leader>o :noh<CR>
 "Why do this? Because had trouble storing <C-v> as variable, then issuing it as command
 command! Visual      normal! v
 command! VisualLine  normal! V
-command! VisualBlock execute "normal! \<C-v>"
+command! VisualBlock exe "normal! \<C-v>"
 "1) create local variables, mark when entering visual mode
 " nnoremap <silent> v :let b:v_mode='v'<CR>:setlocal mouse+=v<CR>mVv
 " nnoremap <silent> V :let b:v_mode='V'<CR>:setlocal mouse+=v<CR>mVV
 nnoremap <silent> v :let b:v_mode='Visual'<CR>mVv
 nnoremap <silent> V :let b:v_mode='VisualLine'<CR>mVV
 nnoremap <silent> <C-v> :let b:v_mode='VisualBlock'<CR>mV<C-v>
+nnoremap <silent> v$ :let b:v_mode="Visual"<CR>v$h
+nnoremap <silent> vv :let b:v_mode="Visual"<CR>^v$gE
+  "select the current 'line' of text, and make v$ no longer include the \n
 "2) using the above, let user click around to move selection
 " vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V'.b:v_mode.'`N'
-vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:'.b:v_mode.'<CR>`N'
-vnoremap <CR> <Esc>
+vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:'.b:v_mode.'<CR>`N'
+vnoremap <CR> <C-c>
 "###############################################################################
 "INSERT MODE REMAPS
 "SIMPLE ONES
@@ -322,13 +321,12 @@ function! s:commandline_check()
   setlocal nolist
   setlocal laststatus=0 "turns off statusline
 endfunction
-au CmdwinEnter * call s:commandline_check()
-au CmdwinLeave * setlocal laststatus=2
+augroup cmdwin
+  au!
+  au CmdwinEnter * call s:commandline_check()
+  au CmdwinLeave * setlocal laststatus=2
+augroup END
   "commandline-window settings; when we are inside of q:, q/, and q?
-"###############################################################################
-"SIGN COLUMN
-silent! set signcolumn=no
-nnoremap <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
 
 "###############################################################################
 "###############################################################################
@@ -428,12 +426,13 @@ noremap <C-k> g,
 "###############################################################################
 "SESSION MANAGEMENT
 augroup session
+  au!
+  au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
+  if has_key(g:plugs, "vim-obsession")
+    au VimEnter * Obsession .session.vim
+  endif
 augroup END
 "Remember file position, so come back after opening to same spot
-autocmd BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
-if has_key(g:plugs, "vim-obsession")
-  autocmd VimEnter * Obsession .session.vim
-endif
 
 "###############################################################################
 "AIRLINE
@@ -455,49 +454,38 @@ endif
 augroup git
 augroup END
 if has_key(g:plugs, "vim-gitgutter")
+  "Create command for toggling on/off; old VIM versions always show signcolumn
+  "if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
+  "In newer versions, have to *also* set the signcolumn option.
+  call gitgutter#disable() | silent! set signcolumn=no
+  nnoremap <expr> <Leader>s g:gitgutter_enabled==0 ? ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>'
+    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>'
+  " nnoremap <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
   let g:gitgutter_map_keys=0 "disable all maps yo
-  nmap <Leader>g :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  nmap <Leader>G :GitGutterUndoHunk<CR>
+  nmap <silent> <Leader>g :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  nmap <silent> <Leader>G :GitGutterUndoHunk<CR>
   "d is for 'delete' change
-  nmap <silent> <C-e> :GitGutterPrevHunk<CR>
-  nmap <silent> <C-r> :GitGutterNextHunk<CR>
-endif
-
-"###############################################################################
-"MARKDOWN
-augroup markdown
-augroup END
-if has_key(g:plugs, "vim-markdown")
-  set conceallevel=2 "conceals e.g. hyperlinks
-  let g:tex_conceal="" "disable math conceal
-  let g:vim_markdown_math=1 "turn on $$ math
+  nmap <silent> <C-r> :GitGutterPrevHunk<CR>
+  nmap <silent> <C-g> :GitGutterNextHunk<CR>
 endif
 
 "###############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
-augroup delimitmate
-augroup END
-"Re-declare and overwrite an important remap
-"Actually works without this line; perhaps delimitmate detects existing
-"remaps and refused to overwrite them
-" inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
-"Set up delimiter paris; delimitMate uses these by default
-"Can set global defaults along with buffer-specific alternatives
 if has_key(g:plugs, "delimitmate")
+  "Set up delimiter paris; delimitMate uses these by default
+  "Can set global defaults along with buffer-specific alternatives
   let g:delimitMate_quotes="\" '"
   let g:delimitMate_matchpairs="(:),{:},[:]"
-    "if this unset looks for VIM &matchpairs variable; generally should be the
-    "same but we just want to make sure
-  au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
+  augroup delimitmate
+    au!
+    au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
     "override for formats that use carats
-  au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
+    au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
     "markdown need backticks for code, and can maybe do LaTeX
-  au FileType tex let b:delimitMate_quotes = "$ |"
-  au FileType tex let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
-    "tex need | for verbatim environments
-  "are different (but single-char) left-right delimiters... note you
-  "CANNOT use 'set matchpairs', or plugin breaks! for some reason...
-  "also, don't use <> because use them as comparison operators too much
+    au FileType tex let b:delimitMate_quotes = "$ |"
+    au FileType tex let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
+    "tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
+  augroup END
 endif
 
 "###############################################################################
@@ -633,11 +621,15 @@ inoremap ;; ;
 "###############################################################################
 "LATEX MACROS, lots of insert-mode stuff
 "Idea stemmed from the above: make shortcuts to ys<stuff> with fewer keystrokes
-"Anyway the original pneumonic for surround.vim "ys" kind of sucks
+"Anyway the original pneumonic for surround.vim 'ys' kind of sucks
+"Toggle the mappings to be declare
 augroup latex
+  au!
+  au FileType tex call s:texmacros()
+  au BufNewFile *.tex call s:textemplates()
+  "no worries since ever TeX file should end in .tex; can't
+  "think of situation where that's not true
 augroup END
-"Cannot use C-m or C-i, as the former produces an Enter and
-"the latter... does something else weird, adds a space
 function! s:texmacros()
   "Convenience, in context of other shortcuts
   inoremap <buffer> .<Space> .<Space>
@@ -931,15 +923,12 @@ function! s:textemplates()
     echo "\nInvalid name."
   endwhile
 endfunction
-"Toggle all these mappings
-autocmd FileType tex call s:texmacros()
-autocmd BufNewFile *.tex call s:textemplates()
-  "no worries since ever TeX file should end in .tex; can't
-  "think of situation where that's not true
 
 "###############################################################################
 "HTML MACROS, lots of insert-mode stuff
 augroup html
+  au!
+  au FileType html call s:htmlmacros()
 augroup END
 function! s:htmlmacros()
   call s:delimscr('h', '<head>', '</head>')
@@ -954,17 +943,16 @@ function! s:htmlmacros()
   call s:delims(',e', '<em>', '</em>', 1, 0)
   call s:delims(',t', '<strong>', '</strong>', 1, 0)
 endfunction
-"Toggle mappings
-autocmd FileType html call s:htmlmacros()
 
 "###############################################################################
-"SPELLCHECK (really is a BUILTIN plugin)
+"SPELLCHECK (really is a BUILTIN plugin, hence why it's in this section)
+"Turn on for certain filetypes
 augroup spell
+  au!
+  au FileType tex,html,xml,text,markdown setlocal spell
 augroup END
 "Off by default
-"Turn on for certain filetypes
 set nospell spelllang=en_us spellcapcheck=
-autocmd FileType tex,html,xml,text,markdown setlocal spell
 "Toggle on and off
 nnoremap so :setlocal spell!<CR>
 nnoremap sl :call <sid>spelltoggle()<CR>
@@ -991,7 +979,11 @@ nnoremap sr zug
 "###############################################################################
 "CUSTOM PYTHON MACROS
 augroup python
+  au!
+  au FileType python call s:pymacros()
 augroup END
+"Builtin python ftplugin syntax option; these should be provided with VIM by default
+let g:python_highlight_all=1
 "Experimental feature that converts dict() to {}-style dictionary
 function! s:dictconvert() "For searches with :normal command, see:
   "http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
@@ -1057,9 +1049,6 @@ function! s:pymacros()
   inoremap <silent> <buffer> <expr> <C-x> "<Esc>:w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>a"
 endfunction
-autocmd FileType python call s:pymacros()
-"Builtin python ftplugin syntax option; these should be provided with VIM by default
-let g:python_highlight_all=1
 "Configuration for external plugins
 "Jedi-vim stuff; see: https://github.com/davidhalter/jedi-vim
 " if has_key(g:plugs, "jedi-vim")
@@ -1088,33 +1077,36 @@ let g:python_highlight_all=1
 "###############################################################################
 "C MACROS
 augroup c
+  au!
+  au FileType c call s:cmacros()
 augroup END
 function! s:cmacros()
   "Will compile code, then run it and show user the output
   nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
         \."gcc ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
 endfunction
-autocmd FileType c call s:cmacros()
 
 "###############################################################################
 "JULIA MACROS
 augroup julia
+  au!
+  au FileType julia call s:jmacros()
 augroup END
 function! s:jmacros()
   nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; julia ".shellescape(@%)."<CR>"
 endfunction
-autocmd FileType julia call s:jmacros()
 
 "###############################################################################
 "FORTRAN MACROS
 augroup fortran
+  au!
+  au FileType fortran call s:fortranmacros()
 augroup END
 function! s:fortranmacros()
   "Will compile code, then run it and show user the output
   nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
         \."gfortran ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
 endfunction
-autocmd FileType fortran call s:fortranmacros()
 "Also fix coloring issues; see :help fortran
 let fortran_have_tabs=1
 let fortran_fold=1
@@ -1124,32 +1116,44 @@ let fortran_more_precise=1
 "###############################################################################
 "NCL COMPLECTION
 augroup ncl
+  au!
+  au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
+  "can put other stuff here; right now this is just for the NCL dict for NCL
 augroup END
 " set complete-=k complete+=k " Add dictionary search (as per dictionary option)
 " au BufRead,BufNewFile *.ncl set dictionary=~/.vim/words/ncl.dic
-au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
-  "can put other stuff here; right now this is just for the NCL dict for NCL
 
 "###############################################################################
 "MARKDOWN MACROS
+augroup markdown
+  au!
+  au FileType markdown call s:markdownmacros()
+augroup END
 function! s:markdownmacros()
-  "Open in viewer
+  "Shortcut to open in viewer
   inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
     \."open -a 'Marked 2' ".shellescape(@%))<CR>a
   nnoremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
     \."open -a 'Marked 2' ".shellescape(@%))<CR><CR>
+  if has_key(g:plugs, "vim-markdown")
+    set conceallevel=2 "conceals e.g. hyperlinks
+    let g:tex_conceal="" "disable math conceal
+    let g:vim_markdown_math=1 "turn on $$ math
+  endif
 endfunction
-au FileType markdown call s:markdownmacros()
 
 "###############################################################################
-"Help window settings, and special settings for mini popup windows where we don't
-"want to see line numbers or special characters a la :set list. Also enable
-"quitting these windows with single 'q' press
+"HELP WINDOW SETTINGS, and special settings for mini popup windows where we don't
+"want to see line numbers or special characters a la :set list.
+"Also enable quitting these windows with single 'q' press
 augroup help
+  au!
+  au BufEnter * let b:recording=0
+  au FileType help call s:helpsetup()
+  au FileType gitcommit,rst,qf,diff call s:simplesetup()
 augroup END
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "The escapes prevent a weird error where sometimes q triggers command-history window
-au BufEnter * let b:recording=0
 noremap <silent> <expr> q b:recording ? 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
@@ -1157,7 +1161,7 @@ noremap <Leader>h :vert help
 noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; [ -z $search ] && search=fart; '
   \.'if command man $search &>/dev/null; then man $search; fi<CR>:redraw!<CR>'
 "--help info; pipe output into less for better interaction
-noremap <silent> <expr> <Leader>e ':!clear; search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
+noremap <silent> <expr> <Leader>H ':!clear; search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
   \.'if builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 function! s:helpsetup()
@@ -1176,17 +1180,16 @@ function! s:helpsetup()
   setlocal nospell
   "better jumping behavior; note these must be C-], not Ctrl-]
 endfunction
-au FileType help call s:helpsetup()
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
 function! s:simplesetup()
+  nnoremap <buffer> <C-s> <Nop>
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist
   setlocal nonumber
   setlocal norelativenumber
   setlocal nospell
 endfunction
-au FileType gitcommit,rst,qf,diff call s:simplesetup()
 
 "###############################################################################
 "VIM visual increment; creating columns of 1/2/3/4 etc.
@@ -1267,17 +1270,22 @@ endif
 
 "###############################################################################
 "NEOCOMPLETE (RECOMMENDED SETTINGS)
-augroup neocomplete
-augroup END
 if has_key(g:plugs, "neocomplete.vim") "just check if activated
+  "Enable omni completion for different filetypes; sooper cool bro
+  augroup neocomplete
+    au!
+    au FileType css setlocal omnifunc=csscomplete#CompleteCSS
+    au FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+    au FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
+    au FileType python setlocal omnifunc=pythoncomplete#Complete
+    au FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
+  augroup END
   "Disable python omnicompletion
   "From the Q+A section
   if !exists('g:neocomplete#sources#omni#input_patterns')
     let g:neocomplete#sources#omni#input_patterns = {}
   endif
   let g:neocomplete#sources#omni#input_patterns.python = ''
-  "###############################################################################
-  "OTHER SETTINGS
   "Important behavior; allows us to use neocomplete without mapping everything to <C-e> stuff
   "Basic behavior
   let g:neocomplete#enable_at_startup = 1
@@ -1299,12 +1307,6 @@ if has_key(g:plugs, "neocomplete.vim") "just check if activated
   "Define keyword.
   if !exists('g:neocomplete#keyword_patterns') | let g:neocomplete#keyword_patterns = {} | endif
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
-  "Enable omni completion.
-  autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
-  autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
-  autocmd FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
-  autocmd FileType python setlocal omnifunc=pythoncomplete#Complete
-  autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
 endif
 "Highlighting
 highlight Pmenu ctermbg=Black ctermfg=Yellow cterm=None
@@ -1316,11 +1318,14 @@ highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
 "Need to make this mini-function for ctrlp plugin
 " * Note storage variable g:eidefault must be *global* because otherwise
 "   the ctrlp plugin can't see it.
-augroup events
+augroup eventsrestore
+  au!
+  au BufEnter * call s:eioff()
 augroup END
 function! s:eioff()
   set eventignore=
   silent! hi MatchParen ctermfg=Yellow ctermbg=Blue
+  silent! unmap <Esc>
 endfunction
 function! s:eion()
   set eventignore=CursorHold,CursorHoldI,CursorMoved,CursorMovedI,TextChanged,TextChangedI
@@ -1333,7 +1338,6 @@ endfunction
 command! EIon call s:eion()
 command! EIoff call s:eioff()
 command! EImap call s:eimap()
-au BufEnter * call s:eioff()
 
 "###############################################################################
 "CTRLP PLUGIN
@@ -1359,8 +1363,14 @@ augroup END
 if has_key(g:plugs, "ctrlp.vim")
   " let g:ctrlp_buffer_func={'enter':'EIon', 'exit':'EIoff'} "fails
   " nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
+  function! s:ctrlpwrap()
+    let dir=input("Enter starting directory: ")
+    if dir!="" | EIon | CtrlP | EImap
+    else | echom "Cancelling..."
+    endif
+  endfunction
+  nnoremap  <silent> <Leader>p :call <sid>ctrlpwrap()<CR>
   nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:EImap<CR>
-  nnoremap <expr> <silent> <Leader>p ':EIon<CR>:CtrlP '.input("Enter starting directory: ").'<CR>:EImap<CR>'
   let g:ctrlp_map=''
   let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
   let g:ctrlp_show_hidden=1
@@ -1405,8 +1415,6 @@ endif
 
 "###############################################################################
 "NERDTREE
-augroup nerdtree
-augroup END
 "Most important commands: 'o' to view contents, 'u' to move up directory,
 "'t' open in new tab, 'T' open in new tab but retain focus, 'i' open file in 
 "split window below, 's' open file in new split window VERTICAL, 'O' recursive open, 
@@ -1418,6 +1426,11 @@ augroup END
 "'I' toggle hidden file display, '?' toggle help
 "Remap NerdTree command
 if has_key(g:plugs, "nerdtree")
+  augroup nerdtree
+    au!
+    au BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+    au FileType nerdtree call s:nerdtreesetup()
+  augroup END
   " noremap <Tab>n :NERDTreeFind<CR>
   " f stands for files here
   noremap <Leader>f :NERDTree %<CR>
@@ -1434,8 +1447,6 @@ if has_key(g:plugs, "nerdtree")
     let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
     let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\$', '')
   endfor
-  "Close nerdtree if last in tab
-  autocmd BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
   "Custom nerdtree maps here
   "See this thread for ideas: https://superuser.com/q/195022/506762
   function! s:nerdtreesetup()
@@ -1445,13 +1456,10 @@ if has_key(g:plugs, "nerdtree")
     if g:has_nowait | nmap <buffer> <nowait> d D | endif
     "prevents attempts to change it; this descends into directory
   endfunction
-  autocmd FileType nerdtree call s:nerdtreesetup()
 endif
 
 "###############################################################################
 "NERDCommenter (comment out stuff)
-augroup nerdcomment
-augroup END
 "Note the default mappings, all prefixed by <Leader> (but we disable them)
 " -cc comments line or selection
 " -cn forces nesting (seems to be default though; maybe sometimes, is ignored)
@@ -1462,13 +1470,17 @@ augroup END
 " -c$ comments to eol
 " -cu uncomments line
 if has_key(g:plugs, "nerdcommenter")
+  "Create fancy shcmany maps, and make commenter work for NCL files
+  augroup nerdcomment
+    au!
+    au FileType * call s:commentheaders()
+  augroup END
   "Disable default mappings (make my own)
   let g:NERDCreateDefaultMappings = 0
   "NCL delimiters
-  au FileType ncl set commentstring=;\ %s
     "don't know why %s is necessary
   "Custom delimiter overwrites (default python includes space for some reason)
-  let g:NERDCustomDelimiters = {'python': {'left': '#'}}
+  let g:NERDCustomDelimiters = {'python': {'left': '#'}, 'ncl': {'left': ';'}}
   "Comments led with spaces
   let g:NERDSpaceDelims = 1
   "Use compact syntax for prettified multi-line comments
@@ -1481,8 +1493,8 @@ if has_key(g:plugs, "nerdcommenter")
   let g:NERDDefaultAlign = 'left'
   let g:NERDCommentWholeLinesInVMode = 1
   "Create python docstring
-  nnoremap c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
-  nnoremap c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
+  nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
+  nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
   "Set up custom remaps
   nnoremap c<CR> <Nop>
   "Declare mapping strings needed to build remaps
@@ -1513,42 +1525,41 @@ if has_key(g:plugs, "nerdcommenter")
     "if comment character is not 'fat' enough, does not make good section header character
     "Also temporarily disable/re-enable formatoptions here
     if 1 && has_key(g:plugs, "vim-repeat")
-      exe 'nnoremap <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
-      exe 'nnoremap <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
-      exe 'nnoremap <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
-      exe 'nnoremap <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
+      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
+      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
+      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
+      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
       nmap c- <Plug>fancy1
       nmap c_ <Plug>fancy2
       nmap c\ <Plug>fancy3
       nmap c\| <Plug>fancy4
     else
-      exe 'nnoremap <buffer> <expr> c- '.s:bar("-")
-      exe 'nnoremap <buffer> <expr> c_ '.s:bar(fatchar)
-      exe 'nnoremap <buffer> <expr> c\ '.s:section("-")
-      exe 'nnoremap <buffer> <expr> c\| '.s:section(fatchar)
+      exe 'nnoremap <silent> <buffer> <expr> c- '.s:bar("-")
+      exe 'nnoremap <silent> <buffer> <expr> c_ '.s:bar(fatchar)
+      exe 'nnoremap <silent> <buffer> <expr> c\ '.s:section("-")
+      exe 'nnoremap <silent> <buffer> <expr> c\| '.s:section(fatchar)
     endif
     "Disable accidental key presses
     silent! noremap c= <Nop>
     silent! noremap c+ <Nop>
   endfunction
-  au FileType * call s:commentheaders()
   "More basic NerdComment maps, just for toggling comments and stuff
   "Easy peasy
   if has_key(g:plugs, "vim-repeat")
-    nnoremap <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
-    nnoremap <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
-    nnoremap <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
+    nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
+    nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
+    nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
     nmap co <Plug>comment1
     nmap cO <Plug>comment2
     nmap c. <Plug>comment3
   else
-    nnoremap co :call NERDComment('n', 'comment')<CR>
-    nnoremap cO :call NERDComment('n', 'uncomment')<CR>
-    nnoremap c. :call NERDComment('n', 'toggle')<CR>
+    nnoremap <silent> co :call NERDComment('n', 'comment')<CR>
+    nnoremap <silent> cO :call NERDComment('n', 'uncomment')<CR>
+    nnoremap <silent> c. :call NERDComment('n', 'toggle')<CR>
   endif
-  vnoremap co :call NERDComment('v', 'comment')<CR>
-  vnoremap cO :call NERDComment('v', 'uncomment')<CR>
-  vnoremap c. :call NERDComment('v', 'toggle')<CR>
+  vnoremap <silent> co :call NERDComment('v', 'comment')<CR>
+  vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
+  vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
 endif
 
 "###############################################################################
@@ -1615,84 +1626,6 @@ if has_key(g:plugs, "syntastic")
   "colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
-endif
-
-"###############################################################################
-"CTAGS (requires 'brew install ctags-exuberant')
-"In future should remap <Space><Space> to this
-augroup ctags
-augroup END
-"Future should use ***ctags** auto-loading, then jump between definitions.
-" * Execute lines below only if ctags present
-" * Note that, unfortunately, tagbar doesn't have useful interface to access
-"   the ctags file generated already, so have to generate/parse our own; this
-"   isn't too big a deal though, because ctags is very quick.
-" * By default ctags are sorted alphabetically; below we put the line numbers
-"   and regexes in separate lists, and sort by line number.
-if g:has_ctags
-  "Function for declaring ctag lines and ctag regex strings, in line number order
-  function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
-     return a:i1 - a:i2
-  endfunc
-  function! s:ctags(command)
-    let b:ctags=[] "return these empty values upon error
-    let b:ctaglines=[]
-    let ignoretypes=["tagbar","nerdtree"]
-    if index(ignoretypes, &ft)!=-1 | return | endif
-    "Determine types of ctags we want to store
-    if expand("%:t")==".vimrc"
-      let type="a" "list only augroups
-    elseif &ft=="tex"
-      let type="[bs]" "b is for subsection, s is for section
-    elseif &ft=="python"
-      let type="[fcm]" "functions, classes, and modules
-    else
-      let type="f" "default just functions; note Vimscript makes c 'command!'
-    endif
-    "Ctags doesn't recognize python2/python3 shebangs by default
-    if getline(1)=~"#!.*python[23]" | let force="--language=python"
-    else | let force=""
-    endif
-    "Call ctags function
-    "Add the sed line to include all items, not just top-level items
-    " \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-    if a:command "just return command
-      "if table wasn't produced and this is just stderr text then don't tabulate (-s)
-      return "ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." "
-        \."| cut -s -d$'\t' -f1,3-" "ignore filename field, delimit by literal tabs
-    else "save then sort
-      let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
-        \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
-    endif
-    if len(ctags)==0 | return | endif
-    "Get ctag lines and sort them by number
-    let ctaglines=map(copy(ctags), 'search("^".escape(v:val[1:-2],"$/*[]"),"n")')
-    let b:ctaglines=sort(copy(ctaglines), "s:compare") "vim is object-oriented, like python
-    for i in range(len(b:ctaglines))
-      call extend(b:ctags, [ctags[index(ctaglines, b:ctaglines[i])]])
-    endfor
-  endfunction
-  au FileType * call s:ctags(0)
-  nnoremap <silent> <Leader>c :call <sid>ctags(0)<CR>:echom "Tags updated."<CR>
-  nnoremap <silent> <expr> <Leader>C ':!clear; '.<sid>ctags(1).' \| less<CR>:redraw!<CR>'
-  "Function for jumping between regexes in the ctag search strings
-  function! s:ctagjump(regex)
-    if !exists("b:ctags") || len(b:ctags)==0
-      echom "Warning: Ctags unavailable."
-      return
-    endif
-    for i in range(len(b:ctags))
-      let string=b:ctags[i][1:-2] "ignore leading ^ and trailing $
-      if string =~? a:regex "ignores case
-        ":<number><CR> travels to that line number
-        exe b:ctaglines[i]
-        return
-      endif
-    endfor
-    echo "Warning: Ctag regex not found."
-  endfunction
-  nnoremap <silent> <expr> <Leader><Space> ':call <sid>ctagjump("'.input('Enter ctag regex: ').'")<CR>'
-  " nmap <buffer> <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Enter ctag regex: ")."<CR>:noh<CR><CR>"
 endif
 
 "###############################################################################
@@ -1773,7 +1706,10 @@ endif
 
 "###############################################################################
 "WRAPPING AND LINE BREAKING
-augroup wrap
+augroup wrap "For some reason both autocommands below are necessary; fuck it
+  au!
+  au VimEnter * call s:autowrap()
+  au BufEnter * call s:autowrap()
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
@@ -1843,9 +1779,6 @@ function! s:autowrap()
     call s:wraptoggle(0)
   endif
 endfunction
-"For some reason both of these are necessary; fuck it
-au VimEnter * call s:autowrap()
-au BufEnter * call s:autowrap()
 
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
@@ -1913,9 +1846,84 @@ let g:tex_comment_nospell=1
 "2) there is no alternative file loaded by the ftplugin function
 
 "###############################################################################
-"OVERRIDING FTPLUGINS WITH CTAGS MAPS
+"CTAGS (requires 'brew install ctags-exuberant')
+"Must come after ftplugin to override bracket maps with my super cool ctag-based one
+" * Execute lines below only if ctags present
+" * Note that, unfortunately, tagbar doesn't have useful interface to access
+"   the ctags file generated already, so have to generate/parse our own; this
+"   isn't too big a deal though, because ctags is very quick.
+" * By default ctags are sorted alphabetically; below we put the line numbers
+"   and regexes in separate lists, and sort by line number.
 if g:has_ctags
-  "Function for jumping between subsequent ctags with [[ and ]]
+  "Declare dem tags yo
+  augroup ctags
+    au!
+    au BufRead * call s:ctags(0)
+    au FileType * call s:ctagbracketmaps()
+  augroup END
+  "Function for declaring ctag lines and ctag regex strings, in line number order
+  function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
+     return a:i1 - a:i2
+  endfunc
+  function! s:ctags(command)
+    let b:ctags=[] "return these empty values upon error
+    let b:ctaglines=[]
+    let ignoretypes=["tagbar","nerdtree"]
+    if index(ignoretypes, &ft)!=-1 | return | endif
+    "Determine types of ctags we want to store
+    if expand("%:t")==".vimrc"
+      let type="a" "list only augroups
+    elseif &ft=="tex"
+      let type="[bs]" "b is for subsection, s is for section
+    elseif &ft=="python"
+      let type="[fcm]" "functions, classes, and modules
+    else
+      let type="f" "default just functions; note Vimscript makes c 'command!'
+    endif
+    "Ctags doesn't recognize python2/python3 shebangs by default
+    if getline(1)=~"#!.*python[23]" | let force="--language=python"
+    else | let force=""
+    endif
+    "Call ctags function
+    "Add the sed line to include all items, not just top-level items
+    " \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
+    if a:command "just return command
+      "if table wasn't produced and this is just stderr text then don't tabulate (-s)
+      return "ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." "
+        \."| cut -s -d$'\t' -f1,3-" "ignore filename field, delimit by literal tabs
+    else "save then sort
+      let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
+        \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
+    endif
+    if len(ctags)==0 | return | endif
+    "Get ctag lines and sort them by number
+    let ctaglines=map(deepcopy(ctags), 'search("^".escape(v:val[1:-2],"$/*[]"),"n")')
+    let b:ctaglines=sort(deepcopy(ctaglines), "s:compare") "vim is object-oriented, like python
+    for i in range(len(b:ctaglines))
+      call extend(b:ctags, [ctags[index(ctaglines, b:ctaglines[i])]])
+    endfor
+  endfunction "note if you use FileType below, it will fail to refresh when re-entering VIM
+  nnoremap <silent> <Leader>c :call <sid>ctags(0)<CR>:echom "Tags updated."<CR>
+  nnoremap <silent> <expr> <Leader>C ':!clear; '.<sid>ctags(1).' \| less<CR>:redraw!<CR>'
+  "Function for jumping between regexes in the ctag search strings
+  function! s:ctagjump(regex)
+    if !exists("b:ctags") || len(b:ctags)==0
+      echom "Warning: Ctags unavailable."
+      return
+    endif
+    for i in range(len(b:ctags))
+      let string=b:ctags[i][1:-2] "ignore leading ^ and trailing $
+      if string =~? a:regex "ignores case
+        ":<number><CR> travels to that line number
+        exe b:ctaglines[i]
+        return
+      endif
+    endfor
+    echo "Warning: Ctag regex not found."
+  endfunction
+  nnoremap <silent> <expr> <Leader><Space> ':call <sid>ctagjump("'.input('Enter ctag regex: ').'")<CR>'
+  " nmap <buffer> <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Enter ctag regex: ")."<CR>:noh<CR><CR>"
+  "Next jump between subsequent ctags with [[ and ]]
   function! s:ctagbracket(foreward, n)
     if &ft=="help" | return | endif
     if len(b:ctaglines)==0 | echom "Warning: No ctags found." | return | endif
@@ -1953,8 +1961,6 @@ if g:has_ctags
       endif
     endif
   endfunction
-  au FileType * call <sid>ctagbracketmaps()
-  "this will make sure we override any ftplugin maps; also we allow using number operator
 endif
 
 "###############################################################################
@@ -1966,14 +1972,14 @@ augroup 2
 augroup END
 "###############################################################################
 "BUFFER WRITING/SAVING
+"Just declare a couple maps here
 augroup saving
 augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
-au FileType help nnoremap <buffer> <C-s> <Nop>
-nnoremap <silent> <C-q> :try \| tabclose \| catch \| qa \| endtry<CR>
-nnoremap <silent> <C-a> :qa<CR>
+nnoremap <silent> <C-q> :try \| tabclose \| silent! tabprevious \| catch \| qa \| endtry<CR>
+nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-w> :q<CR>
 " nnoremap <C-q> :silent! tabclose<CR>
 "make tabclose silent, so no error raised if last tab present
@@ -1982,7 +1988,10 @@ nnoremap <silent> <C-w> :q<CR>
 
 "###############################################################################
 "IMPORTANT STUFF
+"First line disables linebreaking no matter what ftplugin says
 augroup settings
+  au!
+  autocmd BufEnter * set textwidth=0
 augroup END
 "Tabbing
 set expandtab "says to always expand \t to their length in <SPACE>'s!
@@ -1990,9 +1999,8 @@ set autoindent "indents new lines
 set backspace=indent,eol,start "backspace by indent - handy
 nnoremap <Space><Tab> :set expandtab!<CR>
 "Wrapping
-autocmd BufEnter * set textwidth=0 "hate auto-linebreaking, this disables it no matter what ftplugin says
-set textwidth=0 "also disable it to start with... dummy
-set linebreak "breaks lines only in whitespace... makes wrapping acceptable
+set textwidth=0 "also disable it to start with dummy
+set linebreak "breaks lines only in whitespace makes wrapping acceptable
 set wrapmargin=0 "starts wrapping at the edge; >0 leaves empty bufferzone
 set display=lastline "displays as much of wrapped lastline as possible;
 "Global behavior
@@ -2028,8 +2036,43 @@ cnoremap <expr> <C-u> <sid>enterpardir()
 
 "###############################################################################
 "SEARCHING AND FIND-REPLACE STUFF
+"Basics; (showmode shows mode at bottom [default I think, but include it],
+"incsearch moves to word as you begin searching with '/' or '?')
+"Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
+"because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
 augroup searching
+  au!
+  au InsertEnter * set noignorecase
+  au InsertLeave * set ignorecase
+  au InsertLeave * noautocmd call MoveToNext()
+  au FileType bib,tex call s:cutmaps() "some bibtex lines
 augroup END
+set hlsearch incsearch "show match as typed so far, and highlight as you go
+set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
+nnoremap <silent> ! :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winrestview(b:position)<CR>
+"map to search by character; never use default ! map so why not!
+"by default ! waits for a motion, then starts :<range> command
+"###############################################################################
+"SPECIAL DELETION TOOLS
+"see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
+"Replace consecutive spaces on current line with one space
+nnoremap <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>
+"Replace consecutive newlines with single newline
+nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
+"Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
+nnoremap <Leader>x :%s/\s\+$//g<CR>
+vnoremap <Leader>x :s/\s\+$//g<CR>
+"Replace commented lines
+" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+"Replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
+function! s:cutmaps()
+  nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  nnoremap <buffer> <Leader>- :%s/–/--/gc<CR>
+endfunction
+"###############################################################################
+"MAGICAL SCOPESEARCH FUNCTION
 if g:has_ctags
   "Searching within scope of current function or environment
   " * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
@@ -2038,7 +2081,7 @@ if g:has_ctags
   "   renaming, and do it by confirming every single instance
   function! s:scopesearch(replace)
     "Test out scopesearch
-    if len(b:ctaglines)==0
+    if !exists("b:ctaglines") || len(b:ctaglines)==0
       echo "Warning: Tags unavailable, so cannot limit search scope."
       return ""
     endif
@@ -2095,16 +2138,6 @@ else
   endfunction
 endif
 "###############################################################################
-"BASICS; (showmode shows mode at bottom [default I think, but include it],
-"incsearch moves to word as you begin searching with '/' or '?')
-set hlsearch incsearch "show match as typed so far, and highlight as you go
-set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
-au InsertEnter * set noignorecase
-au InsertLeave * set ignorecase
-"Map to search by character; never use default ! map so why not!
-"By default ! waits for a motion, then starts :<range> command
-nnoremap <silent> ! :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winrestview(b:position)<CR>
-"###############################################################################
 "MAGICAL FUNCTION; performs n.n.n. style replacement in one keystroke
 "Also we overhaul the &, @, and # keys
 " * Inpsired from: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
@@ -2120,7 +2153,6 @@ if has_key(g:plugs, "vim-repeat")
     endif
     let g:should_inject_replace_occurences=0
   endfunction
-  au! InsertLeave * call MoveToNext()
   "Remaps using black magic
   "First one just uses last search, the other ones use word under cursor
   nmap <silent> c/ :set hlsearch<CR>
@@ -2214,30 +2246,15 @@ nnoremap cz /\<[A-Z]\+\><CR>
 " nnoremap <Leader>d :%s///gIc<Left><Left><Left><Left><Left>
 " nnoremap <Leader>D :<C-r>=<sid>scopesearch(1)<CR>///gIc<Left><Left><Left><Left><Left>
 "   "these ones delete stuff
-"###############################################################################
-"SPECIAL DELETION TOOLS
-"see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
-"Replace consecutive spaces on current line with one space
-nnoremap <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>
-"Replace consecutive newlines with single newline
-nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
-"Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-nnoremap <Leader>x :%s/\s\+$//g<CR>
-vnoremap <Leader>x :s/\s\+$//g<CR>
-"Replace commented lines
-" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
-nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
-"Replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
-function! s:cutmaps()
-  nnoremap <buffer> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-  nnoremap <buffer> <Leader>- :%s/–/--/gc<CR>
-endfunction
-au FileType bib,tex call s:cutmaps() "some bibtex lines
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
+"The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
+"that would cancel command-line queries (or I'd have to scroll up to resume them)
+"don't think any other mapping type has anything like lmap; iminsert is unique
 augroup capslock
+  au!
+  autocmd InsertLeave,CmdwinLeave * set iminsert=0
 augroup END
 "lmap == insert mode, command line (:), and regexp searches (/)
 "See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>; instead uses
@@ -2251,14 +2268,13 @@ endfor
 inoremap <C-z> <C-^>
 cnoremap <C-z> <C-^>
   "can't lnoremap the above, because iminsert is turning it on and off
-autocmd InsertLeave,CmdwinLeave * set iminsert=0
-"the above is confusing, but better than an autocmd that lmaps and lunmaps;
-"that would cancel command-line queries (or I'd have to scroll up to resume them)
-"don't think any other mapping type has anything like lmap; iminsert is unique
 
 "###############################################################################
 "SPECIAL TAB NAVIGATION
+"Remember previous tab
 augroup tabs
+  au!
+  au TabLeave * let g:LastTab=tabpagenr()
 augroup END
 "Basic switching, and shortcut for 'last active tab'
 noremap <Tab>1 1gt
@@ -2273,7 +2289,6 @@ noremap <Tab>9 9gt
 noremap <Tab>, gT
 noremap <Tab>. gt
 let g:LastTab=1
-au TabLeave * let g:LastTab=tabpagenr()
 noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
   "return to previous tab
 "###############################################################################
@@ -2333,18 +2348,14 @@ nnoremap <Tab>' <C-w><C-p>
 
 "###############################################################################
 "COPY/PASTING CLIPBOARD
+"Pastemode toggling; pretty complicated
 augroup copypaste
-augroup END
-"###############################################################################
-"PASTE STUFF
-"Pastemode for pasting from clipboard; so no weird indents
-"Also still want to be able to insert LITERAL CHACTERS with C-v
-au InsertEnter * set pastetoggle=<C-v> "need to use this, because mappings don't work
+  au!
+  au InsertLeave * set nopaste "if pastemode was toggled, turn off
+  au InsertLeave * set pastetoggle=
+  au InsertEnter * set pastetoggle=<C-v> "need to use this, because mappings don't work
   "when pastemode is toggled; might be able to remap <set paste>, but cannot have mapping for <set nopaste>
-au InsertLeave * set pastetoggle=
-au InsertLeave * set nopaste "if pastemode was toggled, turn off
-"###############################################################################
-"COPY STUFF
+augroup END
 "Copymode to eliminate special chars during copy
 function! s:copytoggle()
   if exists("b:prevlist") && exists("b:prevnum") && exists("b:prevrelnum") && exists("b:prevscrolloff")
@@ -2451,14 +2462,16 @@ silent! unmap zuz
 augroup g
 augroup END
 "Don't know why these are here but just go with it bro
-nnoremap <Leader>r :so ~/.vimrc<CR>
-nnoremap <Leader>d :redraw!<CR>
+nnoremap <silent> <Leader>S :so ~/.vimrc<CR>:echom "Refreshed .vimrc."<CR>
+nnoremap <silent> <Leader>r :redraw!<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
 nnoremap gu guiw
 vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
+nnoremap gt gu~h
+vnoremap gt gu~h
 nnoremap g. ~h
 vnoremap g. ~
   "capitalization stuff with g, a bit refined
@@ -2472,15 +2485,16 @@ noremap <silent> g/ q/
 "First the simple ones -- indentation commands allow prefixing with *number*,
 "but find that behavior weird/mnemonically confusing ('why is 3>> indent 3 lines
 "*below*, and not indent 3 levels, for example?). So we also fix that.
-"* Note the <Esc> is needed first because it cancels application of the number operator
-"  to what follows; we want to use that number operator for our own purposes
+" * Below is meant to mimick visual-mode > and < behavior.
+" * Note the <Esc> is needed first because it cancels application of the number operator
+"   to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
-  noremap <expr> <nowait> > v:count > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
-  noremap <expr> <nowait> < v:count > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
-  noremap <nowait> = ==
+  nnoremap <expr> <nowait> > v:count > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
+  nnoremap <expr> <nowait> < v:count > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
+  nnoremap <nowait> = ==
 else
-  noremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
-  noremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
+  nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
+  nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
 "Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
 "Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff> may get re-mapped
@@ -2556,11 +2570,15 @@ command! Plugin call Plugin()
 "EXIT
 "###############################################################################
 "###############################################################################
-"silent! !echo 'Custom vimrc loaded.'
-" au BufRead * clearjumps
-au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
-  "don't want stuff from plugin files and the vimrc populating jumplist after statrup
-  "older versions of VIM have no 'clearjumps' command, so this is a hack
-  "see this post: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
-noh "run this at startup
+"Don't want stuff from plugin files and the vimrc populating jumplist after statrup
+"Simple way would be to use au BufRead * clearjumps
+"But older versions of VIM have no 'clearjumps' command, so this is a hack
+"see this post: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
+augroup clearjumps
+  au!
+  if exists(":clearjumps") | au BufRead * clearjumps "see help info on exists()
+  else | au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
+  endif
+augroup END
+noh "turn off highlighting at startup
 echom 'Custom vimrc loaded.'

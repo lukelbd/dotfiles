@@ -46,7 +46,7 @@ function! s:get_match_lines(line) abort
   if badbreak
     " echohl WarningMsg | echo "Failed to find match for line ".line('.')."." | echohl None
       "better then echoerr because does not pause screen; see help info for echohl
-    echo "Failed to find match for line ".line('.')."."
+    echom "Failed to find match for line ".line('.')."."
     return [] "make above echo, not echom; probably slows shit down adding to messages list
   else
     return lines
@@ -91,7 +91,7 @@ function! s:hl_matching_lines() abort
     " keepjumps let lines = s:get_match_lines(view.lnum)
   endif
   if len(lines)
-    "Add the *current* line to the list; ouutput of line-matching function doesn't do this
+    "Add the *current* line to the list; output of line-matching function doesn't do this
     call add(lines, view.lnum)
     if exists('*matchaddpos')
       "If matchaddpos() is availble, use it to highlight the lines since it's
@@ -110,17 +110,16 @@ function! s:hl_matching_lines() abort
 endfunction
 " default, it will be the same as the `MatchParen` group.
 highlight link MatchLine MatchParen
-augroup matching_lines
+augroup matchlines
   autocmd!
   " Highlight lines as the cursor moves.
-  autocmd CursorMoved * keepjumps call s:hl_matching_lines()
+  autocmd CursorMoved * call s:hl_matching_lines()
   " Remove the highlight while in insert mode.
   autocmd InsertEnter * call s:hl_matching_lines_clear()
   " Remove the highlight after TextChanged.
   if v:version>703
-    " 703 versions seem to fail here
     autocmd TextChanged,TextChangedI * call s:hl_matching_lines_clear()
-  endif
+  endif " 703 versions seem to fail here
 augroup END
 " Shortcut -- 'm' for 'match'
 "Pretty much never use this, because i like CursorMoved behavior
