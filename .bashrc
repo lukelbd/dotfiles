@@ -153,7 +153,7 @@ function vims() {
     $macos && sed=gsed || sed=sed # only GNU sed works here
     $sed -i "/zt/a setlocal nofoldenable" $sessionfile
   fi; vim -S $sessionfile # for working with obsession
-    # then the session file will get overwritten
+  # then the session file will get overwritten
 }
 
 ################################################################################
