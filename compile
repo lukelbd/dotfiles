@@ -37,16 +37,16 @@ filestem="${filename%.tex}" # simple
 
 # Parse raw file to get some options
 # First if GIF/animation in file, need to change from Skim to compatible viewer
-cat "$filename" | grep -v '^ *%' | grep '\\animategraphics' &>/dev/null && viewer="Adobe Acrobat Reader DC" || viewer="Skim"
+cat "$filename" | grep -o '^[^%]*' | grep '\\animategraphics' &>/dev/null && viewer="Adobe Acrobat Reader DC" || viewer="Skim"
 # Next detect if bibliography is present
-cat "$filename" | grep -v '^ *%' | egrep '\\bibliography{.*}|\\printbibliography' &>/dev/null && bibliography=true || bibliography=false
+cat "$filename" | grep -o '^[^%]*' | egrep '\\bibliography{.*}|\\printbibliography' &>/dev/null && bibliography=true || bibliography=false
 # Finally detect if we want to run latexdiff on this file
 [[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]] && dfilename="${filename%.tex}changes.tex" || dfilename="" # keep empty
 # Change compile options
 cat "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null \
   && latex=pdflatex && dfilename="" && htmlcompile=false # beamer options
 # cat "$filename" | grep '\\usepackage{.*fontspec.*}' &>/dev/null \
-cat "$filename" | grep 'fontspec' &>/dev/null \
+cat "$filename" | grep -o '^[^%]*' | grep 'fontspec' &>/dev/null \
   && latex=xelatex && dfilename="" && htmlcompile=false
 
 ################################################################################

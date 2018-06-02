@@ -7,7 +7,7 @@
 "   while `\<CR>` inside a double-quote string is that literal keypress
 "###############################################################################
 "BUTT-TONS OF CHANGES
-augroup 0
+augroup _0
 augroup END
 "###############################################################################
 "NOCOMPATIBLE -- changes other stuff, so must be first
@@ -334,7 +334,7 @@ augroup END
 " COMPLICATED FUNCTIONS, MAPPINGS, FILETYPE MAPPINGS
 "###############################################################################
 "###############################################################################
-augroup 1
+augroup _1
 augroup END
 let g:has_signs=has("signs") "for git gutter and syntastic maybe
 let g:has_ctags=str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
@@ -360,6 +360,7 @@ Plug 'tpope/vim-repeat'
 "Right now .tmux.conf and .tmux files, and markdown files
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
+Plug 'vim-scripts/applescript.vim'
 "Python wrappers
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
@@ -458,7 +459,7 @@ if has_key(g:plugs, "vim-gitgutter")
   "Create command for toggling on/off; old VIM versions always show signcolumn
   "if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
   "In newer versions, have to *also* set the signcolumn option.
-  call gitgutter#disable() | silent! set signcolumn=no
+  " call gitgutter#disable() | silent! set signcolumn=no
   nnoremap <silent> <expr> <Leader>s g:gitgutter_enabled==0 ? ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>'
     \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>'
   " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
@@ -895,14 +896,17 @@ function! s:texmacros()
   "-use clear, because want to clean up previous output first
   "-use set -x to ECHO LAST COMMAND
   "-use c-x for compile/run, and c-w for creating Word document
+  noremap <silent> <buffer> <Leader>x :w<CR>:exec("!clear; set -x; "
+      \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>
   noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
       \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>
-  noremap <silent> <buffer> <C-b> :w<CR>:exec("!clear; set -x; "
-      \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>
   inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
       \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>a
-  inoremap <silent> <buffer> <C-b> <Esc>:w<CR>:exec("!clear; set -x; "
-      \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>a
+  "Commands for counting words
+  noremap <silent> <buffer> <Leader>w :exec("!clear; set -x; "
+      \.'ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null \| wc -w')<CR>
+  noremap <silent> <buffer> <Leader>W :exec("!clear; set -x; open -a 'Skim'; "
+      \.'osascript ~/dotfiles/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf'))<CR>:redraw!<CR>
 endfunction
 "Function for loading templates
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
@@ -1973,7 +1977,7 @@ endif
 " GENERAL STUFF, BASIC REMAPS
 "###############################################################################
 "###############################################################################
-augroup 2
+augroup _2
 augroup END
 "###############################################################################
 "BUFFER WRITING/SAVING
@@ -2065,11 +2069,11 @@ nnoremap <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>
 "Replace consecutive newlines with single newline
 nnoremap <Leader>Q :%s/\(\n\n\)\n\+/\1/gc<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-nnoremap <Leader>x :%s/\s\+$//g<CR>
-vnoremap <Leader>x :s/\s\+$//g<CR>
+nnoremap <Leader>\ :%s/\s\+$//g<CR>
+vnoremap <Leader>\ :s/\s\+$//g<CR>
 "Replace commented lines
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
-nnoremap <expr> <Leader>X ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
 function! s:cutmaps()
@@ -2296,9 +2300,20 @@ noremap <Tab>. gt
 let g:LastTab=1
 noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
   "return to previous tab
-"###############################################################################
-"FUNCTION -- MOVE CURRENT TAB TO THE EXACT PLACE OF TAB NO. X
-"this is not default behavior
+"Moving around
+nnoremap <Tab>u zt
+nnoremap <Tab>o zb
+nnoremap <Tab>i mzz.`z
+nnoremap <Tab>q H
+nnoremap <Tab>w M
+nnoremap <Tab>e L
+nnoremap <Tab>y zH
+nnoremap <Tab>p zL
+"Fix
+noremap <Tab> <Nop>
+noremap <Tab><Tab> <Nop>
+"Function: move current tab to the exact place of tab no. x
+"This is not default behavior
 function! s:tabmove(n)
   if a:n==tabpagenr() || a:n==0
     return
@@ -2311,24 +2326,9 @@ function! s:tabmove(n)
     execute 'tabmove '.eval(a:n-1)
   endif
 endfunction
-" noremap <silent> <expr> <Tab>m ":tabm ".eval(input('Move tab: ')-1)."<CR>"
 noremap <silent> <expr> <Tab>m ":silent! call <sid>tabmove(".input('Move tab: ').")<CR>"
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
-"###############################################################################
-"WINDOW MANAGEMENT
-noremap <Tab> <Nop>
-  "single tab press does nothing
-noremap <Tab><Tab> <Nop>
-  "neither does double
-noremap <Tab>o :echo 'Use Ctrl+O to open a new file.'<CR>
-  "so don't do it accidentally
-" noremap <Tab>q <C-w>o
-" noremap <Tab>q gT
-" noremap <Tab>w gt
-  "these are super close, and memorable, so why not!
-" noremap <Tab><Tab>q <C-w>o
-  "close all but current window
 "Splitting -- make :sp and :vsp split to right and bottom
 set splitright
 set splitbelow
@@ -2445,22 +2445,12 @@ noremap <silent> <Tab>= :vertical resize 80<CR>
   "and the z-prefix is a natural companion to the resizing commands
   "the Tab commands should just sort and navigate between panes
   "think of the 0 as 'original size', like cmd-0 on macbook
-nnoremap <Tab>u zt
-nnoremap <Tab>o zb
-nnoremap <Tab>i mzz.`z
-nnoremap <Tab>q H
-nnoremap <Tab>w M
-nnoremap <Tab>e L
-nnoremap <Tab>y zH
-nnoremap <Tab>p zL
-  "movement remaps
 silent! unmap zuz
-"to prevent delay; this is associated with FastFold or something
-"go up or down page
+  "to prevent delay; this is associated with FastFold or something
 " nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
 " nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
-"   "change fold levels, and make sure return to same place
-"   "never really use this feature so forget it
+  "change fold levels, and make sure return to same place
+  "never really use this feature so forget it
 
 "###############################################################################
 "SINGLE-KEYSTROKE MOTION BETWEEN FUNCTIONS
