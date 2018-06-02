@@ -66,7 +66,7 @@ function! s:hl_matching_lines() abort
   "markdown files can be awful
   " if expand("%:t")==".vimrc" | return | endif
   if &ft == "markdown" | return | endif
-  if mode()=="v"
+  if mode()=~"[vV]"
     call s:hl_matching_lines_clear()
     return
   endif

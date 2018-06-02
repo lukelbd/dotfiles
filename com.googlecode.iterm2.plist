@@ -31789,28 +31789,12 @@ Split Horizontally with Current Profile</string>
 			<string>Open Recent Directories…
 Open Recent Directories…</string>
 		</dict>
-		<key>0x30-0x100000</key>
-		<dict>
-			<key>Action</key>
-			<integer>25</integer>
-			<key>Text</key>
-			<string>Move Divider Down
-Resize Split Pane.Move Divider Down</string>
-		</dict>
 		<key>0x31-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>15</integer>
 			<key>Text</key>
 			<string></string>
-		</dict>
-		<key>0x39-0x100000</key>
-		<dict>
-			<key>Action</key>
-			<integer>25</integer>
-			<key>Text</key>
-			<string>Move Divider Up
-Resize Split Pane.Move Divider Up</string>
 		</dict>
 		<key>0x3b-0x100000</key>
 		<dict>
@@ -31820,12 +31804,28 @@ Resize Split Pane.Move Divider Up</string>
 			<string>Open Command History…
 Open Command History…</string>
 		</dict>
+		<key>0x3c-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Select Previous Tab
+Select Previous Tab</string>
+		</dict>
 		<key>0x3d-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>12</integer>
 			<key>Text</key>
 			<string>&lt;-</string>
+		</dict>
+		<key>0x3e-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Select Next Tab
+Select Next Tab</string>
 		</dict>
 		<key>0x46-0x120000</key>
 		<dict>
@@ -32011,6 +32011,22 @@ Close</string>
 			<key>Text</key>
 			<string>0x1f</string>
 		</dict>
+		<key>0x7b-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Move Divider Up
+Resize Split Pane.Move Divider Up</string>
+		</dict>
+		<key>0x7d-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Move Divider Down
+Resize Split Pane.Move Divider Down</string>
+		</dict>
 		<key>0x7f-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -32166,15 +32182,6 @@ Close</string>
 		<key>TB Is Shown</key>
 		<integer>1</integer>
 	</dict>
-	<key>NSUserKeyEquivalents</key>
-	<dict>
-		<key>Close All</key>
-		<string>@$w</string>
-		<key>Close Terminal Window</key>
-		<string>@$q</string>
-		<key>Quit iTerm2</key>
-		<string>@~q</string>
-	</dict>
 	<key>NSWindow Frame NSColorPanel</key>
 	<string>357 309 228 297 0 0 1440 877 </string>
 	<key>NSWindow Frame NSFontPanel</key>
@@ -32182,7 +32189,7 @@ Close</string>
 	<key>NSWindow Frame ProfilesPanel</key>
 	<string>326 450 735 382 0 0 1440 877 </string>
 	<key>NSWindow Frame SUUpdateAlert</key>
-	<string>428 363 620 392 0 0 1440 877 </string>
+	<string>427 363 620 392 0 0 1440 877 </string>
 	<key>NSWindow Frame SessionsPreferences</key>
 	<string>518 409 599 388 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
@@ -44171,7 +44178,7 @@ Close</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2018-05-30T22:47:11Z</date>
+	<date>2018-06-02T00:41:40Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>ShowBookmarkName</key>
