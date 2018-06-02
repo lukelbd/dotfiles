@@ -459,9 +459,9 @@ if has_key(g:plugs, "vim-gitgutter")
   "if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
   "In newer versions, have to *also* set the signcolumn option.
   call gitgutter#disable() | silent! set signcolumn=no
-  nnoremap <expr> <Leader>s g:gitgutter_enabled==0 ? ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>'
+  nnoremap <silent> <expr> <Leader>s g:gitgutter_enabled==0 ? ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>'
     \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>'
-  " nnoremap <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
+  " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
   let g:gitgutter_map_keys=0 "disable all maps yo
   nmap <silent> <Leader>g :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nmap <silent> <Leader>G :GitGutterUndoHunk<CR>
