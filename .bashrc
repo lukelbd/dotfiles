@@ -145,15 +145,18 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 # just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
 # re-closing every time we start a session
 function vims() {
+  # First modify the Obsession-generated session file
   local sessionfile=".session.vim"
   if [ -r $sessionfile ]; then # restoring old one
     # this command append zR to the line after every instance of zt
-    # zt always comes after fold commands; check out: cat $sessionfile | grep -n -E 'fold|zt'
-    # sed -i "/zt/a zR" $sessionfile # overwrite in-place
+    # append lines after every instance of zt (after fold commands are executed);
+    # check out: cat $sessionfile | grep -n -E 'fold|zt'
     $macos && sed=gsed || sed=sed # only GNU sed works here
     $sed -i "/zt/a setlocal nofoldenable" $sessionfile
-  fi; vim -S $sessionfile # for working with obsession
-  # then the session file will get overwritten
+  fi
+  # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
+  # tracking in the current session file
+  vim -S $sessionfile # for working with obsession
 }
 
 ################################################################################
@@ -320,20 +323,16 @@ function add() {
 }
 
 ################################################################################
-# General utilties, and colorizing them
+# General utilties
 ################################################################################
-# Simple/quick aliases, often just change default behavior
-# * See the README; found the default LSCOLOR for mac, and roughly converted it
-#   to be identical in SSH sessions
-# * Run "dircolors" to output commands to set up current default LS_COLORS on
-#   Linux macthine. The default Mac LSCOLORS can be found in easy google search.
-# * The commented-out export gives ls styles of Linux default, excluding filetype-specific ones
-# * This page: https://geoff.greer.fm/lscolors/ gives easy conversion from BSD to
-#   the Linux color string.
+# Listing files
+# * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
+# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones;
+#   we instead use the Mac default dircolors, and convert to Linux colors. Default mac
+#   colors were found with simple google search.
 if $macos; then
   export LSCOLORS='exfxcxdxbxegedabagacad'
   lscolor='-G' && sortcmd='gsort' # GNU utilities, different from mac versions
-    # macOS has a BSD ls version with different "show color" specifier
 else
 #   export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:'\
 # 'or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
@@ -342,24 +341,6 @@ else
 fi
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-alias pt="top" # mnemonically similar to 'ps'; table of processes, total
-alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
-alias df="df -h" # disk useage
-alias tt="type -a" # show all instances of path/function/variable/file
-alias ww="which -a" # same
-function xs() {
-  [ -z $1 ] && dir="." || dir="$1/"
-  command ls $lscolor -1 -AF "$dir" | command grep -E "\*$" # executables only
-}
-function xl() {
-  [ -z $1 ] && dir="." || dir="$1/"
-  command ls $lscolor -AFhl "$dir" | command grep -E "\-(([rw\-]{2})x){1,3}" # executables only
-}
-function gg() { # grep files; input string then directory location, n says to show line number
-  [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
-  [ -z $2 ] && dir="." || dir="$2"
-  grep "$1" -rn "$dir"
-}
 function fs() { # file-ls
   [ -z $1 ] && dir="." || dir="$1/"
   command ls $lscolor -AF "$dir" | command grep -v '/$' # just files
@@ -373,11 +354,32 @@ function ff() { # file-finder; input a quoted glob pattern or a string
   [ -z $2 ] && dir="." || dir="$2"
   find "$dir" -name "$1"
 }
-function mm() { # spotlight file-finder; recursively searches everywhere by default
-  # don't type glob patterns but what you would type in the GUI spotlight bar
-  [ $# -eq 0 ] && echo "Error: Need one arg." && return 1
-  mdfind "$1"
-}
+
+# Grepping and diffing; enable colors
+alias grep="grep --color=auto" # always show color
+alias egrep="egrep --color=auto" # always show color
+hash colordiff 2>/dev/null && alias diff="colordiff" # prettier differencing; use this if it exists; or just highlight with grep
+
+# Controlling and viewing running processes
+alias pt="top" # mnemonically similar to 'ps'; table of processes, total
+alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
+function listjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
+  # list jobs by name
+function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; for str in $@; do echo "Killing $str jobs..."; kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null; done; }
+  # kill jobs by name
+
+# Scripting utilities
+function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
+
+# Meta tools
+alias aliases="alias" # without argument, lists all of them
+alias functions="declare -F"
+alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort" # print keybindings
+alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
+
+# Information on directories
+alias df="df -h" # disk useage
+alias eject="diskutil unmount" # eject disk on macOS
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
@@ -397,26 +399,6 @@ function di() { # identical files in two directories
   command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
-alias functions="declare -F"
-
-# Globally override default settins
-alias grep="grep --color=auto" # always show color
-alias egrep="egrep --color=auto" # always show color
-hash colordiff 2>/dev/null && alias diff="colordiff" # prettier differencing; use this if it exists; or just highlight with grep
-
-# Various workflow tools
-alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
-  # prints the keybindings
-alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
-  # prints out release info
-function join() { local IFS="$1"; shift; echo "$*"; }
-  # join array elements by some separator
-function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
-  # list jobs by name
-function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; for str in $@; do echo "Killing $str jobs..."; kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null; done; }
-  # kill jobs by name
-alias eject="diskutil unmount"
-  # eject disk
 
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -461,7 +443,6 @@ function colorize() {
   # Restore settings
   echo -e "\033]50;SetProfile=$oldprofile\a"
 }
-
 
 ################################################################################
 # Utilities for converting figures between different types

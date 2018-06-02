@@ -191,7 +191,7 @@ noremap ss s
   "willuse single-s map for spellcheck-related commands
   "restore use of substitute 's' key; then use s<stuff> for spellcheck
 vnoremap cc s
-nnoremap cl mza<CR><Esc>`z
+nnoremap c` mza<CR><Esc>`z
 vnoremap c<CR> s
   "replace the currently highlighted text
   "also cl 'splits' the line at cursor; should always use ss instead of cl
@@ -468,8 +468,8 @@ if has_key(g:plugs, "vim-gitgutter")
     \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>'
   " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
   let g:gitgutter_map_keys=0 "disable all maps yo
-  nmap <silent> <Leader>g :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  nmap <silent> <Leader>G :GitGutterUndoHunk<CR>
+  nmap <silent> <Leader>G :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  nmap <silent> <Leader>g :GitGutterUndoHunk<CR>
   "d is for 'delete' change
   nmap <silent> <C-r> :GitGutterPrevHunk<CR>
   nmap <silent> <C-g> :GitGutterNextHunk<CR>
@@ -1927,14 +1927,11 @@ if has_key(g:plugs, "tagbar")
   augroup END
   function! s:tagbarmanager()
     " if index(['.vimrc','.bashrc'], expand("%:t"))==-1
-    if ".vimrc,.py"=~expand("%:t")
+    if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
       call s:tagbarsetup()
     endif
   endfunction
   function! s:tagbarsetup()
-    "Helper function
-    " noremap <buffer> = zo
-      "doesn't work because Tagbar maps = to something else
     "First toggle the tagbar; issues when toggling from NERDTree so switch
     "back if cursor is already there. No issues toggline from Help window.
     "Note toggling tagbar in a help menu appears to be fine
