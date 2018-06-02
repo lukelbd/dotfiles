@@ -2367,7 +2367,8 @@ nnoremap <Tab>' <C-w><C-p>
 "Really really really want to toggle with <C-v> since often hit Ctrl-V, Cmd-V, so
 "makes way more sense, but that makes inserting 'literal chars' impossible
 "Workaround is to map cv to enter insert mode with <C-v>
-nnoremap <silent> cv :setlocal eventignore=InsertEnter<CR>:echom "Ctrl-v pasting disabled for next InsertEnter."<CR>
+nnoremap <silent> cv :setlocal eventignore=InsertEnter<CR>:echom "Ctrl-V pasting disabled for next InsertEnter."<CR>
+nnoremap <silent> cV :setlocal eventignore=<CR>:echom "EventIgnore reset."<CR>
 augroup copypaste
   au!
   au InsertLeave * set nopaste | setlocal eventignore= "if pastemode was toggled, turn off
