@@ -100,6 +100,7 @@ complete -f -o plusdirs mv
 complete -f -o plusdirs rm
 
 # Readline settings
+# Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
 bind 'set disable-completion off' # ensure on
@@ -119,16 +120,14 @@ set +H
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
 shopt -s checkwinsize # allow window resizing
-shopt -u failglob # turn off failglob; so no error message if expansion is empty
 shopt -u nullglob # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
 shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
 shopt -s dotglob # include dot patterns in glob matches
 shopt -s dirspell # attempt spelling correction of dirname
 shopt -s nocaseglob # case insensitive
 shopt -s globstar # **/ matches all subdirectories, searches recursively
+shopt -u failglob # turn off failglob; so no error message if expansion is empty
 # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
-[ -z $TMUX ] && shopt -s failglob # raise error when a glob match fails
-# this caused problems with completion of wildcards in tmux sessions
 
 # Prompt
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
@@ -326,6 +325,8 @@ function add() {
 # General utilties
 ################################################################################
 # Listing files
+# * To recursively search for string inside file, use grep -rn <string> <dir> (same as grep <string> <file>);
+#   to search filenames, use find <dir> -name <string> (weird find syntax).
 # * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
 # * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones;
 #   we instead use the Mac default dircolors, and convert to Linux colors. Default mac
@@ -341,19 +342,6 @@ else
 fi
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-function fs() { # file-ls
-  [ -z $1 ] && dir="." || dir="$1/"
-  command ls $lscolor -AF "$dir" | command grep -v '/$' # just files
-}
-function fl() { # file-detailed ls
-  [ -z $1 ] && dir="." || dir="$1/"
-  command ls $lscolor -AFhl "$dir" | command grep -v '/$' # just files, with details
-}
-function ff() { # file-finder; input a quoted glob pattern or a string
-  [ $# -eq 0 ] && echo "Error: Need at least one arg." && return 1
-  [ -z $2 ] && dir="." || dir="$2"
-  find "$dir" -name "$1"
-}
 
 # Grepping and diffing; enable colors
 alias grep="grep --color=auto" # always show color
