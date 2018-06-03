@@ -32,12 +32,11 @@ set background=dark "standardize colors -- need to make sure background set to d
 nnoremap <Leader>. :<Up><CR>
 nnoremap <Leader>/ /<Up><CR>
 "repeat previous command
-"###############################################################################
-"NO MORE SWAP FILES
-"THIS IS DANGEROUS BUT I AM CONSTANTLY HITTING <CTRL-S> SO IS USUALLY FINE
-set nobackup
-set noswapfile
-set noundofile
+set updatetime=1000 "used for CursorHold autocmds
+set nobackup noswapfile noundofile "no more swap files; constantly hitting C-s so it's safe
+set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
+"other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
+set number relativenumber numberwidth=4
 "###############################################################################
 "ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
 "First some functions and autocmds
@@ -70,8 +69,12 @@ function! s:outofdelim(n) "get us out of delimiter cursos is inside
   endfor
 endfunction
 "###############################################################################
-"MAPS IN CONTEXT OF POPUP MENU
-" * Will count number of tabs in popup menu so our position is always known
+"INSERT MODE MAPS, IN CONTEXT OF POPUP MENU
+"Simple maps first
+inoremap <C-l> <Esc>$a
+inoremap <C-h> <Esc>^i
+inoremap <C-p> <C-r>"
+" Next popup manageer; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
   au BufEnter * let b:tabcount=0
@@ -237,47 +240,6 @@ nnoremap <silent> vv :let b:v_mode="Visual"<CR>^v$gE
 vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:'.b:v_mode.'<CR>`N'
 vnoremap <CR> <C-c>
 "###############################################################################
-"INSERT MODE REMAPS
-"SIMPLE ONES
-inoremap <C-l> <Esc>$a
-inoremap <C-h> <Esc>^i
-inoremap <C-p> <C-r>"
-"###############################################################################
-"TAB COMPLETION OPENING NEW FILES
-set wildignore=
-set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod
-set wildignore+=*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4
-set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
-  "never want to open these in VIM; includes GUI-only filetypes
-  "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
-"###############################################################################
-"SPECIAL CHARACTER MANAGEMENT
-"show whitespace chars, newlines, and define characters used
-nnoremap <Leader>l :setlocal list!<CR>
-set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
-" set listchars=tab:▸\ ,eol:↘,trail:·
-"other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
-"browse Unicode tables for more
-"###############################################################################
-"LINE NUMBERING / NUMBERS IN TEXT
-"Numbering
-set number norelativenumber
-set numberwidth=5
-  "by default, make wide enough for single space plus 4-digit numbers
-  "eliminates annoying effect when editing file and it goes over 1000 lines
-"Basic maps
-set relativenumber
-noremap <Leader>1 :setlocal number!<CR>
-noremap <Leader>2 :setlocal relativenumber!<CR>
-"Re-enable Vi-compatible options; actually forget this, made traversing lines werid
-" set cpoptions+=n
-  "now continuation lines run into number column; easier to verify at a glance whether a zero-column
-  "character is actually the start of the line, or just a line continuation
-"Incrementing numbers (C-x, C-a originally)
-nnoremap <Leader>0 <C-x>
-nnoremap <Leader>9 <C-a>h
-  "for some reasons <C-a> by itself moves cursor to right; have to adjust
-"###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff
 set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
@@ -312,9 +274,7 @@ endif
 "GUI OPTIONS
 if has("gui_running")
   set guicursor+=a:blinkon0 "disable blinking for GUI version
-  set guioptions= "show no scrollbars
-  set number
-  set relativenumber
+  set number relativenumber guioptions= "no scrollbars
   colorscheme slate "no longer controlled through terminal colors
 endif
 "###############################################################################
@@ -329,6 +289,14 @@ augroup cmdwin
   au CmdwinLeave * setlocal laststatus=2
 augroup END
   "commandline-window settings; when we are inside of q:, q/, and q?
+"###############################################################################
+"TAB COMPLETION OPENING NEW FILES
+set wildignore=
+set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod
+set wildignore+=*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4
+set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
+  "never want to open these in VIM; includes GUI-only filetypes
+  "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
 
 "###############################################################################
 "###############################################################################
@@ -1050,9 +1018,7 @@ endif
 "Macros for compiling code
 function! s:pymacros()
   "Simple shifting
-  setlocal tabstop=4
-  setlocal softtabstop=4
-  setlocal shiftwidth=4
+  setlocal tabstop=4 softtabstop=4 shiftwidth=4
   "Simple remaps; fit with NerdComment syntax
   nnoremap <buffer> cq o"""<CR>"""<Esc><Up>o
   "Maps that call shell commands
@@ -1582,57 +1548,38 @@ if has_key(g:plugs, "syntastic")
     "the capital L are circular versions
   "Helper function; checks status
   function! s:syntastic_status() 
-    if exists("b:syntastic_loclist")
-      if empty(b:syntastic_loclist) | return 0
-      else | return 1
-      endif
+    if exists("b:syntastic_loclist") && !empty(b:syntastic_loclist) | return 1
     else | return 0
     endif
   endfunction
-  "Set up custom remaps; there are some letters that i pretty much never use after
-  "yanking (y), so can use 'y' for sYntax
-  " nnoremap yn :Lnext<CR>
-  " nnoremap yN :Lprev<CR>
-  " nnoremap yO :SyntasticReset<CR>
-  " nnoremap <expr> y. <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":noh<CR>:SyntasticCheck<CR>"
-  nnoremap <expr> yo <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":noh<CR>:SyntasticCheck<CR>"
+  function! s:syntastic_setup()
+    let nbufs=len(tabpagebuflist())
+    noh | w | noautocmd SyntasticCheck
+    if len(tabpagebuflist())>nbufs
+      wincmd j | set syntax=on | call s:simplesetup() | wincmd k
+    else | echom "No errors found, or no checkers available."
+    endif
+  endfunction
+  "Set up custom remaps; use y for sYntastic
+  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":call <sid>syntastic_setup()<CR>"
   nnoremap <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
   nnoremap <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
-    "moving between errors
   "Disable auto checking (passive mode means it only checks when we call it)
-  let g:syntastic_mode_map = {'mode': 'passive', 'active_filetypes': [],'passive_filetypes': []}
-  " au BufEnter * let b:syntastic_mode='passive'
-  " let g:syntastic_stl_format = "[%E{Err: %fe #%e}%B{, }%W{Warn: %fw #%w}]"
+  let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
   let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
-  " nnoremap y. :SyntasticToggleMode<CR>
-  "And options, statusline management
-  set statusline+=%#warningmsg#
-  set statusline+=%{SyntasticStatuslineFlag()}
-  set statusline+=%*
   "Other defaults
-  let g:syntastic_always_populate_loc_list = 1
-    "necessary, or get errors
-  let g:syntastic_auto_loc_list = 1
-    "creates window; if 0, does not create window
+  let g:syntastic_always_populate_loc_list = 1 "necessary, or get errors
+  let g:syntastic_auto_loc_list = 1 "creates window; if 0, does not create window
   let g:syntastic_loc_list_height = 5
-  let g:syntastic_mode = 'passive'
-    "opens little panel
+  let g:syntastic_mode = 'passive' "opens little panel
   let g:syntastic_check_on_open = 0
   let g:syntastic_check_on_wq = 0
   "Choose syntax checkers
-  "and pylint location, add checker
   let g:syntastic_tex_checkers=['lacheck']
-  " let g:syntastic_python_checkers=['pyflakes', 'pylint', 'pep8']
-  " let g:syntastic_python_checkers=['pyflakes', 'pylint']
-  let g:syntastic_python_checkers=['pyflakes']
-    "PYLINT IS VERY SLOW! pyflakes is supposed to be light by comparison
+  let g:syntastic_python_checkers=['pyflakes'] "pylint very slow; pyflakes light by comparison
   let g:syntastic_fortran_checkers=['gfortran']
   let g:syntastic_vim_checkers=['vimlint']
-  "overwrite locations
-  " let g:syntastic_python_pylint_exec=$HOME.'/anaconda3/bin/pylint'
-  " let g:syntastic_python_pyflakes_exec=$HOME.'/anaconda3/bin/pyflakes'
-  " let g:syntastic_python_pep8_exec=$HOME.'/anaconda3/bin/pep8'
-  "colors
+  "Colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
@@ -1918,7 +1865,8 @@ if has_key(g:plugs, "tagbar")
   augroup END
   function! s:tagbarmanager()
     " if index(['.vimrc','.bashrc'], expand("%:t"))==-1
-    if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
+    " if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
+    if ".vimrc"=~expand("%:t") || (".py,.jl,.m"=~expand("%:e") && expand("%:e")!="")
       call s:tagbarsetup()
     endif
   endfunction
@@ -1951,9 +1899,7 @@ if has_key(g:plugs, "tagbar")
     endif
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
-  "Switch updatetime (necessary for Tagbar highlights to follow cursor)
-  set updatetime=250 "good default; see https://github.com/airblade/vim-gitgutter#when-are-the-signs-updated
-  "Some settings
+  "Global settings
   " let g:tagbar_iconchars = ['▸', '▾'] "prettier
   " let g:tagbar_iconchars = ['+', '-'] "simple
   let g:tagbar_silent=1 "no information echoed
