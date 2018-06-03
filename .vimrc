@@ -1545,23 +1545,24 @@ if has_key(g:plugs, "syntastic")
   "Commands for circular location-list (error) scrolling
   command! Lnext try | lnext | catch | lfirst | catch | endtry
   command! Lprev try | lprev | catch | llast | catch | endtry
-    "the capital L are circular versions
-  "Helper function; checks status
-  function! s:syntastic_status() 
-    if exists("b:syntastic_loclist") && !empty(b:syntastic_loclist) | return 1
-    else | return 0
-    endif
+  "Helper function
+  "Need to run Syntatsic with noautocmd to prevent weird conflict with tabbar,
+  "but that means have to change some settings manually
+  "Uses 'simplesetup' function (disables line numbers and stuff)
+  function! s:syntastic_status()
+    return (exists("b:syntastic_on") && b:syntastic_on)
   endfunction
   function! s:syntastic_setup()
     let nbufs=len(tabpagebuflist())
     noh | w | noautocmd SyntasticCheck
     if len(tabpagebuflist())>nbufs
-      wincmd j | set syntax=on | call s:simplesetup() | wincmd k
-    else | echom "No errors found, or no checkers available."
+      wincmd j | set syntax=on | call s:simplesetup() | wincmd k | let b:syntastic_on=1
+    else | echom "No errors found, or no checkers available." | let b:syntastic_on=0
     endif
   endfunction
-  "Set up custom remaps; use y for sYntastic
-  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":SyntasticReset<CR>" : ":call <sid>syntastic_setup()<CR>"
+  "Set up custom remaps
+  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":SyntasticReset<CR>:let b:syntastic_on=0<CR>"
+    \ : ":call <sid>syntastic_setup()<CR>"
   nnoremap <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
   nnoremap <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
   "Disable auto checking (passive mode means it only checks when we call it)
