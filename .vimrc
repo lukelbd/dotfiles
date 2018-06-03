@@ -321,10 +321,7 @@ endif
 "CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
 function! s:commandline_check()
   nnoremap <buffer> <silent> q :q<CR>
-  setlocal norelativenumber
-  setlocal nonumber
-  setlocal nolist
-  setlocal laststatus=0 "turns off statusline
+  setlocal nonumber norelativenumber nolist laststatus=0
 endfunction
 augroup cmdwin
   au!
@@ -1189,10 +1186,7 @@ function! s:helpsetup()
   if g:has_nowait | nnoremap <nowait> <buffer> [ :pop<CR>
   else | nnoremap <buffer> [[ :pop<CR>
   endif
-  setlocal nolist
-  setlocal nonumber
-  setlocal norelativenumber
-  setlocal nospell
+  setlocal nolist nonumber norelativenumber nospell
   "better jumping behavior; note these must be C-], not Ctrl-]
 endfunction
 "The doc pages appear in rst files, so turn off extra chars for them
@@ -1200,10 +1194,7 @@ endfunction
 function! s:simplesetup()
   nnoremap <buffer> <C-s> <Nop>
   nnoremap <silent> <buffer> q :q<CR>
-  setlocal nolist
-  setlocal nonumber
-  setlocal norelativenumber
-  setlocal nospell
+  setlocal nolist nonumber norelativenumber nospell
 endfunction
 
 "###############################################################################
@@ -2382,39 +2373,21 @@ augroup copypaste
   "when pastemode is toggled; might be able to remap <set paste>, but cannot have mapping for <set nopaste>
 augroup END
 "Copymode to eliminate special chars during copy
+"See :help &l:; this gives the local value of setting
 function! s:copytoggle()
-  if exists("b:prevlist") && exists("b:prevnum") && exists("b:prevrelnum") && exists("b:prevscrolloff")
-      "then we disabled all the 'extra' terminal characters, and want
-      "to restore previous settings
-    if b:prevlist != &list
-      setlocal list!
-    endif
-    if b:prevnum != &number
-      setlocal number!
-    endif
-    if b:prevrelnum != &relativenumber
-      setlocal relativenumber!
-    endif
-    if b:prevscrolloff != &scrolloff
-      execute 'setlocal scrolloff='.b:prevscrolloff
-    endif
-    unlet b:prevnum
-    unlet b:prevlist
-    unlet b:prevrelnum
-    unlet b:prevscrolloff
-    echo "Copy mode enabled."
-  else
-    let b:prevlist = &list
-    let b:prevnum = &number
-    let b:prevrelnum = &relativenumber
-    let b:prevscrolloff = &scrolloff
-    setlocal nolist
-    setlocal nonumber
-    setlocal norelativenumber
-    setlocal scrolloff=0
-      "need this too, because if relativenumber can be on with number off
-      "(with current line marked '0') endif
+  let copyprops=["number", "list", "relativenumber", "scrolloff"]
+  if exists("b:number") "want to restore a bunch of settings
+    for prop in copyprops
+      exe "let &l:".prop."=b:".prop
+      exe "unlet b:".prop
+    endfor
     echo "Copy mode disabled."
+  else
+    for prop in copyprops "save current settings to buffer variable
+      exe "let b:".prop."=&l:".prop
+      exe "let &l:".prop."=0"
+    endfor
+    echo "Copy mode enabled."
   endif
 endfunction
 nnoremap <C-c> :call <sid>copytoggle()<CR>
@@ -2560,8 +2533,7 @@ function! Group()
 endfunction
 function! Colors()
   source $VIMRUNTIME/syntax/colortest.vim
-  setlocal nolist
-  setlocal nonumber
+  setlocal nolist nonumber norelativenumber
   noremap <buffer> q :q<CR>
   "could not get this to work without making the whole thing an <expr>, then escaping the CR in the subsequent map
 endfunction
@@ -2597,4 +2569,5 @@ augroup clearjumps
   endif
 augroup END
 noh "turn off highlighting at startup
-echom 'Custom vimrc loaded.'
+" suspend
+" echom 'Custom vimrc loaded.'
