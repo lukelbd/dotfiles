@@ -140,9 +140,12 @@ noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>togglefo
 noremap <silent> sk mzkddp`z
 noremap <silent> sj jmzkddp`zj
   "swap with row above, and swap with row below; awesome mnemonic, right?
+noremap <silent> sl xph
+noremap <silent> sh Xp
+  "useful for typos
 noremap ; <Nop>
 noremap , <Nop>
-  "never really want to use f/t commands more than once
+  "never really want to use f/t commands more than once; remap these later on
 noremap " :echo "Setting mark."<CR>mq
 noremap ' `q
 map @ <Nop>
@@ -935,7 +938,7 @@ augroup END
 set nospell spelllang=en_us spellcapcheck=
 "Toggle on and off
 nnoremap so :setlocal spell!<CR>
-nnoremap sl :call <sid>spelltoggle()<CR>
+nnoremap su :call <sid>spelltoggle()<CR>
 function! s:spelltoggle()
   if &spelllang=='en_us'
     set spelllang=en_gb
@@ -1546,7 +1549,7 @@ if has_key(g:plugs, "syntastic")
   command! Lnext try | lnext | catch | lfirst | catch | endtry
   command! Lprev try | lprev | catch | llast | catch | endtry
   "Helper function
-  "Need to run Syntatsic with noautocmd to prevent weird conflict with tabbar,
+  "Need to run Syntastic with noautocmd to prevent weird conflict with tabbar,
   "but that means have to change some settings manually
   "Uses 'simplesetup' function (disables line numbers and stuff)
   function! s:syntastic_status()
