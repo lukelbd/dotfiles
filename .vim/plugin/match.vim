@@ -104,8 +104,7 @@ function! s:hl_matching_lines() abort
       "faster than using a pattern in matchadd().
       call matchaddpos('MatchLine', lines, 0, 12345)
     else
-      "Highlight the matching lines using the \%l atom.  The `MatchLine`
-      "highlight group is used.
+      "Highlight the matching lines using the \%l atom.
       call matchadd('MatchLine', join(map(lines, '''\%''.v:val.''l'''), '\|'), 0, 12345)
     endif
   endif

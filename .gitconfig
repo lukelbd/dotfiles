@@ -5,11 +5,10 @@
 # want to git fetch and git merge changes to a different file.
 # amend = !git commit --amend -m \"$@\"
 [alias]
-	update = !git stash clear; git stash; git merge $@; git stash pop
-	graph = !git log --graph --abbrev-commit --date=relative --decorate --oneline --all $@ 2>/dev/null
-	twig = !git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null
+	update = "!git stash clear; git stash; git merge $@; git stash pop"
 	tree = !git log --graph --abbrev-commit --date=relative --branches --name-status --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' $@ 2>/dev/null
-	leaf = !git show-branch --topo-order $@ 2>/dev/null
+	twig = !git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null
+	leaf = !git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $@ 2>/dev/null
 	wtf = !git-wtf $@ 2>/dev/null
 	stat = !git diff --stat $@ 2>/dev/null
 [push]
@@ -18,3 +17,5 @@
 	ui = on
 [credential]
 	helper = store
+[user]
+	email = lukelbd@gmail.com
