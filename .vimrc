@@ -893,8 +893,8 @@ function! s:textemplates()
   let names=[]
   for template in templates
     call add(names, '"'.fnamemodify(template, ":t:r").'"')
-      "expand does not work, for some reason... because expand is used with one argument
-      "with a globalfilename, e.g. % (current file)... fnamemodify is for strings
+    "expand does not work, for some reason... because expand is used with one argument
+    "with a globalfilename, e.g. % (current file)... fnamemodify is for strings
   endfor
   while 1
     echo "Current templates available: ".join(names, ", ")."."
@@ -1566,8 +1566,8 @@ if has_key(g:plugs, "syntastic")
   "Set up custom remaps
   nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":SyntasticReset<CR>:let b:syntastic_on=0<CR>"
     \ : ":call <sid>syntastic_setup()<CR>"
-  nnoremap <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
-  nnoremap <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
+  nnoremap <silent> <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
+  nnoremap <silent> <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
   let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
