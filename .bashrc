@@ -357,6 +357,7 @@ function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." 
   # kill jobs by name
 
 # Scripting utilities
+alias tac="gtac" # use dis
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 
 # Meta tools

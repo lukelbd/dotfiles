@@ -71,10 +71,8 @@ endfunction
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU
 "Simple maps first
-inoremap <C-l> <Esc>$a
-inoremap <C-h> <Esc>^i
 inoremap <C-p> <C-r>"
-" Next popup manageer; will count number of tabs in popup menu so our position is always known
+"Next popup manageer; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
   au BufEnter * let b:tabcount=0
@@ -320,6 +318,8 @@ let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) &
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
+"Thesaurus; appears broken
+" Plug 'beloglazov/vim-online-thesaurus'
 "Make mappings repeatable; critical
 Plug 'tpope/vim-repeat'
 "Automatic list numbering; actually it mysteriously fails so fuck that shit
@@ -958,6 +958,14 @@ nnoremap s. z=1<CR><CR>
 "Add/remove from dictionary
 nnoremap sa zg
 nnoremap sr zug
+"Thesaurus stuff
+"Plugin appears broken
+"Use e key cause it's not used yet
+" if has_key(g:plugs, "vim-online-thesaurus")
+"   let g:online_thesaurus_map_keys = 0
+"   inoremap <C-e> <Esc>:OnlineThesaurusCurrentWord<CR>
+"   " help
+" endif
 
 "###############################################################################
 "CUSTOM PYTHON MACROS
@@ -1559,7 +1567,9 @@ if has_key(g:plugs, "syntastic")
     let nbufs=len(tabpagebuflist())
     noh | w | noautocmd SyntasticCheck
     if len(tabpagebuflist())>nbufs
-      wincmd j | set syntax=on | call s:simplesetup() | wincmd k | let b:syntastic_on=1
+      wincmd j | set syntax=on
+      call s:simplesetup()
+      wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
     else | echom "No errors found, or no checkers available." | let b:syntastic_on=0
     endif
   endfunction
@@ -1578,6 +1588,9 @@ if has_key(g:plugs, "syntastic")
   let g:syntastic_mode = 'passive' "opens little panel
   let g:syntastic_check_on_open = 0
   let g:syntastic_check_on_wq = 0
+  let g:syntastic_enable_signs = 1 "disable useless signs
+  let g:syntastic_enable_highlighting = 1
+  let g:syntastic_auto_jump = 0 "disable jumping to errors
   "Choose syntax checkers
   let g:syntastic_tex_checkers=['lacheck']
   let g:syntastic_python_checkers=['pyflakes'] "pylint very slow; pyflakes light by comparison
@@ -2033,7 +2046,10 @@ nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
 "Replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
 function! s:cutmaps()
   nnoremap <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-  nnoremap <silent> <Leader>- :%s/–/--/gc<CR>
+  nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+  nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+  nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+  nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 endfunction
 "###############################################################################
 "SEARCHING/REPLACING/CHANGING IN-BETWEEN TAGS
