@@ -32205,13 +32205,13 @@ Resize Split Pane.Move Divider Down</string>
 	<key>NSWindow Frame SUUpdateAlert</key>
 	<string>427 363 620 392 0 0 1440 877 </string>
 	<key>NSWindow Frame SessionsPreferences</key>
-	<string>518 409 599 388 0 0 1440 877 </string>
+	<string>518 328 606 469 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>320 398 796 473 0 0 1440 877 </string>
+	<string>320 359 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>38 0 696 877 0 0 1440 877 </string>
+	<string>113 297 689 458 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
 	<string>364 83 850 554 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
@@ -32258,13 +32258,13 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.21863695979118347</real>
+				<real>0.392892025411129</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.22749149799346924</real>
+				<real>0.440673828125</real>
 				<key>Red Component</key>
-				<real>0.21832640469074249</real>
+				<real>0.4368665043452028</real>
 			</dict>
 			<key>Ansi 1 Color</key>
 			<dict>
@@ -32440,13 +32440,13 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.36861896514892578</real>
+				<real>0.57920813793316483</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.36888664960861206</real>
+				<real>0.616607666015625</real>
 				<key>Red Component</key>
-				<real>0.35616457462310791</real>
+				<real>0.61365501162264025</real>
 			</dict>
 			<key>Ansi 9 Color</key>
 			<dict>
@@ -32470,13 +32470,13 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.10990479588508606</real>
+				<real>0.16153621487319469</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.12680962681770325</real>
+				<real>0.19561767578125</real>
 				<key>Red Component</key>
-				<real>0.12536604702472687</real>
+				<real>0.19366650933256735</real>
 			</dict>
 			<key>Background Image Location</key>
 			<string></string>
@@ -32611,7 +32611,7 @@ Resize Split Pane.Move Divider Down</string>
 				<real>0.21952933073043823</real>
 			</dict>
 			<key>Minimum Contrast</key>
-			<real>0.185546875</real>
+			<real>0.20562203322784811</real>
 			<key>Mouse Reporting</key>
 			<true/>
 			<key>Name</key>
@@ -44192,7 +44192,7 @@ Resize Split Pane.Move Divider Down</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2018-06-02T00:41:40Z</date>
+	<date>2018-06-03T07:06:23Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>ShowBookmarkName</key>

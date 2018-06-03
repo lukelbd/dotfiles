@@ -318,6 +318,8 @@ let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) &
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
+"Colors
+Plug 'altercation/vim-colors-solarized'
 "Thesaurus; appears broken
 " Plug 'beloglazov/vim-online-thesaurus'
 "Make mappings repeatable; critical
@@ -1684,44 +1686,39 @@ augroup END
 if has_key(g:plugs, "tabular")
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns
   "first character after matching preceding character
-  vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
-  nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'<CR>'
+  vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'/l0c1<CR>'
+  nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'/l0c1<CR>'
     "arbitrary character
+  nnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+    "by commas; suitable for diag_table's in models; does not ignore comment characters
+  vnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+    "see :help non-greedy to see what braces do; it is like *, except instead of matching
+    "as many as possible, can match as few as possible in some range;
+    "with braces, a minus will mean non-greedy
+  vnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  nnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+    "right-align by spaces, considering comments as one 'field'; other words are
+    "aligned by space; very hard to ignore comment-only lines here, because we specify text
+    "before the first 'field' (i.e. an entire non-matching lines) will get right-aligned
+  vnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  nnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+    "check out documentation on \@<! atom; difference between that and \@! is that \@<!
+    "checks whether something doesn't match *anywhere before* what follows
+    "also the \S has to come before the \(\) atom instead of after for some reason
   vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
     "by comment character; ^ is start of line, . is any char, .* is any number, \zs
     "is start match here (must escape backslash), then search for the comment
   vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-    "by comment character; but this time, ignore comment-only lines (must be non-comment non-whitespace character)
-  nnoremap -, :Tabularize /,\zs/l0r1<CR>
-  vnoremap -, :Tabularize /,\zs/l0r1<CR>
-    "by commas; suitable for diag_table's in models; does not ignore comment characters
-  vnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
-  nnoremap  -- :Tabularize /^\s*\S\{-1,}\zs\s/l0<CR>
-    "see :help non-greedy to see what braces do; it is like *, except instead of matching
-    "as many as possible, can match as few as possible in some range; with braces, a minus will mean non-greedy
-  " nnoremap <expr> Tab/^\S*\s\+\zs/r1l0l0
-  vnoremap <expr> -r ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /r1l0l0<CR>'
-  nnoremap <expr> -r ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /r1l0l0<CR>'
-    "right-align by spaces, but ignoring any commented lines
-  vnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-  nnoremap <expr> -<Space> ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-    "check out documentation on \@<! atom; difference between that and \@! is that \@<!
-    "checks whether something doesn't match *anywhere before* what follows
-    "also the \S has to come before the \(\) atom instead of after for some reason
-  "TODO: Note the above still has limitations due to Tabularize behavior; if have
-  "the c/d/e/f will be pushed past the comment since the b and everything that follows
-  "are considered part of the same delimeted field. just make sure lines with comments
-  "are longer than the lines we actually want to align
-  vnoremap -= :Tabularize /^[^=]*\zs=<CR>
-  nnoremap -= :Tabularize /^[^=]*\zs=<CR>
-  vnoremap -+ :Tabularize /^[^=]*\zs=\zs<CR>
-  nnoremap -+ :Tabularize /^[^=]*\zs=\zs<CR>
-    "align assignments, and keep equals signs on the left; only first equals sign
-  vnoremap -d :Tabularize /:\zs<CR>
-  nnoremap -d :Tabularize /:\zs<CR>
-    "align colon table, and keeps colon on the left; the zs means start match **after** colon
+    "by comment character, but this time ignore comment-only lines
+  vnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
+  nnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
+  vnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
+  nnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
+    "align by the first equals sign either keeping it fo the left or not
 endif
 
 "###############################################################################
@@ -1758,6 +1755,7 @@ if g:has_ctags
   augroup ctags
     au!
     au BufReadPost * call s:ctags(0)
+    au BufWritePost * call s:ctags(0)
     au FileType * call s:ctagbracketmaps()
   augroup END
   "Function for declaring ctag lines and ctag regex strings, in line number order
@@ -2471,6 +2469,7 @@ endif
 augroup colors
 augroup END
 "Special characters
+highlight Comment ctermfg=Black cterm=None
 highlight NonText ctermfg=Black cterm=None
 highlight SpecialKey ctermfg=Black cterm=None
 "Matching parentheses
