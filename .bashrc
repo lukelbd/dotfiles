@@ -156,7 +156,7 @@ function vim() {
     $sed -i "/zt/a setlocal nofoldenable" $sessionfile
     command vim -S $sessionfile # for working with obsession
   else
-    command vim $@ # when loading specific files
+    command vim -p $@ # when loading specific files; also open them in separate tabs
   fi
 }
 

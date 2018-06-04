@@ -406,13 +406,15 @@ noremap <C-k> g,
 "SESSION MANAGEMENT
 "First, jump to mark '"' without changing the jumplist (:help g`)
 "Mark '"' is the cursor position when last exiting the current buffer
-"Also use CursorHold command to automatically write current file
+"CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
 augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
     au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .session.vim
-    au InsertLeave,CursorHold * w
+    let g:autosave="InsertLeave"
+    if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
+    exe "au ".g:autosave." * w"
   endif
 augroup END
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
