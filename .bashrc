@@ -143,19 +143,21 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 # VIM command to keep track of session -- need to 'source' the sessionfile, which is
 # just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
 # re-closing every time we start a session
-function vims() {
+function vim() {
   # First modify the Obsession-generated session file
-  local sessionfile=".session.vim"
-  if [ -r $sessionfile ]; then # restoring old one
-    # this command append zR to the line after every instance of zt
-    # append lines after every instance of zt (after fold commands are executed);
-    # check out: cat $sessionfile | grep -n -E 'fold|zt'
-    $macos && sed=gsed || sed=sed # only GNU sed works here
-    $sed -i "/zt/a setlocal nofoldenable" $sessionfile
-  fi
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  vim -S $sessionfile # for working with obsession
+  local sessionfile=".session.vim"
+  if [ -z "$@" ] && [ -r "$sessionfile" ]; then
+    # Unfold stuff after entering each buffer; for some reason folds are otherwise
+    # re-closed upon openening each file
+    # Check out: cat $sessionfile | grep -n -E 'fold|zt'
+    $macos && sed=gsed || sed=sed # only GNU sed works here
+    $sed -i "/zt/a setlocal nofoldenable" $sessionfile
+    command vim -S $sessionfile # for working with obsession
+  else
+    command vim $@ # when loading specific files
+  fi
 }
 
 ################################################################################
