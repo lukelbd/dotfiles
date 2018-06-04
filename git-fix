@@ -1,5 +1,5 @@
 #!/bin/bash
-git filter-branch --env-filter '
+git filter-branch -f --env-filter '
 CORRECT_NAME="Luke Davis"
 CORRECT_EMAIL="lukelbd@gmail.com"
 if [ "$GIT_COMMITTER_EMAIL" != "$CORRECT_EMAIL" ]
