@@ -2420,14 +2420,23 @@ nnoremap <silent> <Leader>S :so ~/.vimrc<CR>:echom "Refreshed .vimrc."<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
+noremap gt <Nop>
+noremap gT <Nop>
+  "undo these maps to avoid confusion
 nnoremap gu guiw
 vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
-nnoremap gt gu~h
-vnoremap gt gu~h
-nnoremap g. ~h
 vnoremap g. ~
+if has_key(g:plugs, "vim-repeat") "mnemonic is 'change this stuff to dictionary'
+  nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
+  nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
+  nmap g. <Plug>cap1
+  nmap gt <Plug>cap2
+else
+  nnoremap g. ~h
+  nnoremap gt mzguiw~h`z
+endif
   "capitalization stuff with g, a bit refined
   "not currently used in normal mode, and fits better mnemonically
 noremap m ge
