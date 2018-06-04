@@ -1702,7 +1702,7 @@ if has_key(g:plugs, "tabular")
   nnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
     "right-align by spaces, considering comments as one 'field'; other words are
     "aligned by space; very hard to ignore comment-only lines here, because we specify text
-    "before the first 'field' (i.e. an entire non-matching lines) will get right-aligned
+    "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
   vnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   nnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
     "check out documentation on \@<! atom; difference between that and \@! is that \@<!
