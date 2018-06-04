@@ -1138,7 +1138,8 @@ augroup help
   au!
   au BufEnter * let b:recording=0
   au FileType help call s:helpsetup()
-  au FileType gitcommit,rst,qf,diff call s:simplesetup()
+  au FileType rst,qf,diff call s:simplesetup(1)
+  au FileType gitcommit call s:simplesetup(0)
 augroup END
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "The escapes prevent a weird error where sometimes q triggers command-history window
@@ -1167,8 +1168,10 @@ function! s:helpsetup()
 endfunction
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
-function! s:simplesetup()
-  nnoremap <buffer> <C-s> <Nop>
+function! s:simplesetup(nosave)
+  if a:nosave
+    nnoremap <buffer> <C-s> <Nop>
+  endif
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell
 endfunction
@@ -1567,7 +1570,7 @@ if has_key(g:plugs, "syntastic")
     noh | w | noautocmd SyntasticCheck
     if len(tabpagebuflist())>nbufs
       wincmd j | set syntax=on
-      call s:simplesetup()
+      call s:simplesetup(1)
       wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
     else | echom "No errors found, or no checkers available." | let b:syntastic_on=0
     endif
