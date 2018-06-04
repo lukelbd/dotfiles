@@ -37,7 +37,10 @@ set nobackup noswapfile noundofile "no more swap files; constantly hitting C-s s
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
 "other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
 set number numberwidth=4
-set relativenumber "older versions can't combine number with relativenumber
+set relativenumber
+"older versions can't combine number with relativenumber
+let g:loaded_matchparen=0
+"disable builtin, because we modified that shit yo
 "###############################################################################
 "ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
 "First some functions and autocmds
