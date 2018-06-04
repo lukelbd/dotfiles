@@ -43,7 +43,7 @@
 		<string>echo cd /Users/ldavis/youtubetag/.old; echo pwd</string>
 	</array>
 	<key>CopySelection</key>
-	<false/>
+	<true/>
 	<key>Custom Color Presets</key>
 	<dict>
 		<key>3024 Day</key>
@@ -31759,6 +31759,13 @@
 	<false/>
 	<key>GlobalKeyMap</key>
 	<dict>
+		<key>0x20-0x80000</key>
+		<dict>
+			<key>Action</key>
+			<integer>11</integer>
+			<key>Text</key>
+			<string>0x1b 0x4f 0x50</string>
+		</dict>
 		<key>0x27-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -31789,28 +31796,12 @@ Split Horizontally with Current Profile</string>
 			<string>Open Recent Directories…
 Open Recent Directories…</string>
 		</dict>
-		<key>0x30-0x100000</key>
-		<dict>
-			<key>Action</key>
-			<integer>25</integer>
-			<key>Text</key>
-			<string>Move Divider Down
-Resize Split Pane.Move Divider Down</string>
-		</dict>
 		<key>0x31-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>15</integer>
 			<key>Text</key>
 			<string></string>
-		</dict>
-		<key>0x39-0x100000</key>
-		<dict>
-			<key>Action</key>
-			<integer>25</integer>
-			<key>Text</key>
-			<string>Move Divider Up
-Resize Split Pane.Move Divider Up</string>
 		</dict>
 		<key>0x3b-0x100000</key>
 		<dict>
@@ -31820,12 +31811,28 @@ Resize Split Pane.Move Divider Up</string>
 			<string>Open Command History…
 Open Command History…</string>
 		</dict>
+		<key>0x3c-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Select Previous Tab
+Select Previous Tab</string>
+		</dict>
 		<key>0x3d-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>12</integer>
 			<key>Text</key>
 			<string>&lt;-</string>
+		</dict>
+		<key>0x3e-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Select Next Tab
+Select Next Tab</string>
 		</dict>
 		<key>0x46-0x120000</key>
 		<dict>
@@ -31869,6 +31876,13 @@ Open Command History…</string>
 			<key>Text</key>
 			<string>Move Divider Left
 Resize Split Pane.Move Divider Left</string>
+		</dict>
+		<key>0x5b-0x40000</key>
+		<dict>
+			<key>Action</key>
+			<integer>11</integer>
+			<key>Text</key>
+			<string>0x1b 0x4f 0x51</string>
 		</dict>
 		<key>0x5c-0x100000</key>
 		<dict>
@@ -32011,6 +32025,22 @@ Close</string>
 			<key>Text</key>
 			<string>0x1f</string>
 		</dict>
+		<key>0x7b-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Move Divider Up
+Resize Split Pane.Move Divider Up</string>
+		</dict>
+		<key>0x7d-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Move Divider Down
+Resize Split Pane.Move Divider Down</string>
+		</dict>
 		<key>0x7f-0x100000</key>
 		<dict>
 			<key>Action</key>
@@ -32107,7 +32137,7 @@ Close</string>
 	<key>HideTabCloseButton</key>
 	<false/>
 	<key>Hotkey</key>
-	<true/>
+	<false/>
 	<key>HotkeyChar</key>
 	<integer>32</integer>
 	<key>HotkeyCode</key>
@@ -32166,15 +32196,6 @@ Close</string>
 		<key>TB Is Shown</key>
 		<integer>1</integer>
 	</dict>
-	<key>NSUserKeyEquivalents</key>
-	<dict>
-		<key>Close All</key>
-		<string>@$w</string>
-		<key>Close Terminal Window</key>
-		<string>@$q</string>
-		<key>Quit iTerm2</key>
-		<string>@~q</string>
-	</dict>
 	<key>NSWindow Frame NSColorPanel</key>
 	<string>357 309 228 297 0 0 1440 877 </string>
 	<key>NSWindow Frame NSFontPanel</key>
@@ -32182,15 +32203,15 @@ Close</string>
 	<key>NSWindow Frame ProfilesPanel</key>
 	<string>326 450 735 382 0 0 1440 877 </string>
 	<key>NSWindow Frame SUUpdateAlert</key>
-	<string>428 363 620 392 0 0 1440 877 </string>
+	<string>427 363 620 392 0 0 1440 877 </string>
 	<key>NSWindow Frame SessionsPreferences</key>
-	<string>518 409 599 388 0 0 1440 877 </string>
+	<string>518 328 606 469 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>320 398 796 473 0 0 1440 877 </string>
+	<string>320 359 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>38 0 696 877 0 0 1440 877 </string>
+	<string>113 297 689 458 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
 	<string>364 83 850 554 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
@@ -32237,26 +32258,26 @@ Close</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.21863695979118347</real>
+				<real>0.43168452847748995</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.22749149799346924</real>
+				<real>0.477386474609375</real>
 				<key>Red Component</key>
-				<real>0.21832640469074249</real>
+				<real>0.47374488862758013</real>
 			</dict>
 			<key>Ansi 1 Color</key>
 			<dict>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.0</real>
+				<real>0.018765938468277454</real>
 				<key>Color Space</key>
 				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.13281797450634386</real>
+				<real>0.15044977704886911</real>
 				<key>Red Component</key>
-				<real>0.90196078431372551</real>
+				<real>0.91302490234375</real>
 			</dict>
 			<key>Ansi 10 Color</key>
 			<dict>
@@ -32302,13 +32323,13 @@ Close</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.37384766340255737</real>
+				<real>0.44951533259884513</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.0</real>
+				<real>0.17646340280771255</real>
 				<key>Red Component</key>
-				<real>0.98536413908004761</real>
+				<real>0.99072265625</real>
 			</dict>
 			<key>Ansi 14 Color</key>
 			<dict>
@@ -32419,13 +32440,13 @@ Close</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.36861896514892578</real>
+				<real>0.57920813793316483</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.36888664960861206</real>
+				<real>0.616607666015625</real>
 				<key>Red Component</key>
-				<real>0.35616457462310791</real>
+				<real>0.61365501162264025</real>
 			</dict>
 			<key>Ansi 9 Color</key>
 			<dict>
@@ -32436,7 +32457,7 @@ Close</string>
 				<key>Color Space</key>
 				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.14725471038892057</real>
+				<real>0.14725470542907715</real>
 				<key>Red Component</key>
 				<real>1</real>
 			</dict>
@@ -32449,13 +32470,13 @@ Close</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.10990479588508606</real>
+				<real>0.16153621487319469</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.12680962681770325</real>
+				<real>0.19561767578125</real>
 				<key>Red Component</key>
-				<real>0.12536604702472687</real>
+				<real>0.19366650933256735</real>
 			</dict>
 			<key>Background Image Location</key>
 			<string></string>
@@ -32590,7 +32611,7 @@ Close</string>
 				<real>0.21952933073043823</real>
 			</dict>
 			<key>Minimum Contrast</key>
-			<real>0.185546875</real>
+			<real>0.20562203322784811</real>
 			<key>Mouse Reporting</key>
 			<true/>
 			<key>Name</key>
@@ -44171,7 +44192,7 @@ Close</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2018-05-30T22:47:11Z</date>
+	<date>2018-06-03T07:06:23Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>ShowBookmarkName</key>

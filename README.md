@@ -8,10 +8,7 @@ Don't really use any `.ipython` settings as they are enabled by cell magic on st
 And don't really need `.jupyter` for enabling themes because can just enable on them on startup every time with an alias to `jt`. However we do want stuff stored in `nbconfig/notebook.json` (these are all the keyboard shortcuts and extension options).
 
 ## Jupyter Customization
-
-Need to understand what each section in `~/.jupyter` does.
-
-* Every file has its own metadata; it will start with settings from files in `~/.jupyter` directory, then if settings changed with GUI, they may or may not be saved globally and re-loaded next. This is the annoying part.
+* Every jupyter notebook has its own metadata; it will start with settings from files in `~/.jupyter` directory, then if settings changed with GUI, they may or may not be saved globally and re-loaded next. This is the annoying part.
 * The `jupyter_nbconvert_config.json` controls settings for exporting the notebook to other formats. Not relevant.
 * The `jupyter_notebook_config.json` enables the nbextensions tab.
 * The `nbconfig/tree.json` controls the tree tab (not relevant), and the `nbconfig/common.json` controls hiding of incompatible extensions (not relevant).
