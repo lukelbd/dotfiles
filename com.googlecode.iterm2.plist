@@ -32207,7 +32207,7 @@ Resize Split Pane.Move Divider Down</string>
 	<key>NSWindow Frame SessionsPreferences</key>
 	<string>518 328 606 469 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>320 359 796 473 0 0 1440 877 </string>
+	<string>467 345 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
@@ -32611,7 +32611,7 @@ Resize Split Pane.Move Divider Down</string>
 				<real>0.21952933073043823</real>
 			</dict>
 			<key>Minimum Contrast</key>
-			<real>0.20562203322784811</real>
+			<real>0.17058939873417722</real>
 			<key>Mouse Reporting</key>
 			<true/>
 			<key>Name</key>
@@ -35421,13 +35421,13 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.365753173828125</real>
+				<real>0.490692138671875</real>
 				<key>Color Space</key>
 				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.35089298406397518</real>
+				<real>0.46106252820997384</real>
 				<key>Red Component</key>
-				<real>0.31576459994539618</real>
+				<real>0.39102029800415039</real>
 			</dict>
 			<key>Ansi 1 Color</key>
 			<dict>
