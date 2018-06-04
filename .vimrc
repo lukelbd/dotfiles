@@ -473,6 +473,8 @@ if has_key(g:plugs, "delimitmate")
     au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
     "override for formats that use carats
     au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
+    "vim needs to disable matching ", or everything is super slow
+    au FileType vim let b:delimitMate_quotes = "'"
     "markdown need backticks for code, and can maybe do LaTeX
     au FileType tex let b:delimitMate_quotes = "$ |"
     au FileType tex let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
@@ -1512,14 +1514,14 @@ if has_key(g:plugs, "nerdcommenter")
     "For new-style section header, just add another constructer-function
     function! s:bar(char) "inserts above by default; most common use
       return "':call <sid>toggleformatopt()<CR>"
-        \."mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>`z"
+        \."mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(78-col('.')+1).'a".a:char."<Esc>a'.b:NERDCommenterDelims['left'].'<Esc>`z"
         \.":call <sid>toggleformatopt()<CR>'"
     endfunction
     function! s:section(char) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
       return "':call <sid>toggleformatopt()<CR>"
-        \."mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+        \."mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(78-col('.')+1).'a".a:char."<Esc>a'.b:NERDCommenterDelims['left'].'<Esc>"
         \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>"
-        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(79-col('.')+1).'a".a:char."<Esc>"
+        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(78-col('.')+1).'a".a:char."<Esc>a'.b:NERDCommenterDelims['left'].'<Esc>"
         \."<Up>$a<Space><Esc>:call <sid>toggleformatopt()<CR>'"
     endfunction
     if &ft=="vim" | let fatchar="#" "literally says 'type a '#' character while in insert mode'
@@ -1976,10 +1978,7 @@ nnoremap <silent> <C-s> :w!<CR>
 nnoremap <silent> <C-q> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-w> :q<CR>
-" nnoremap <C-q> :silent! tabclose<CR>
-"make tabclose silent, so no error raised if last tab present
 "so we have close current window, close tab, and close everything
-"but make sure q always closes everything in a tab
 
 "###############################################################################
 "IMPORTANT STUFF
