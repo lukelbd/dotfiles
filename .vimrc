@@ -36,7 +36,8 @@ set updatetime=1000 "used for CursorHold autocmds
 set nobackup noswapfile noundofile "no more swap files; constantly hitting C-s so it's safe
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
 "other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
-set number relativenumber numberwidth=4
+set number numberwidth=4
+set relativenumber "older versions can't combine number with relativenumber
 "###############################################################################
 "ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
 "First some functions and autocmds
@@ -311,6 +312,7 @@ let g:has_ctags=str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
 let g:compatible_neocomplete=has("lua") "try alternative completion library
 let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
+let g:compatible_workspace=(v:version>=800) "needs Git 8.0
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
 " set shell=/bin/bash "will not work with e.g. brew-installed shell
@@ -358,10 +360,11 @@ Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 "Sessions and swap files
 "Mapped in my .bashrc vims to vim -S .session.vim and exiting vim saves the session there
+"Also vim-obsession more compatible with older versions
 "NOTE: Apparently obsession causes all folds to be closed
 Plug 'tpope/vim-obsession'
-" set viewoptions=options,cursor "tried to see if this would stop vim -S from closing folds
-Plug 'gioele/vim-autoswap' "deals with swap files automatically
+" if g:compatible_workspace | Plug 'thaerkh/vim-workspace' | endif
+" Plug 'gioele/vim-autoswap' "deals with swap files automatically; no longer use them so unnecessary
 "Git wrappers and differencing tools
 Plug 'tpope/vim-fugitive'
 if g:has_signs | Plug 'airblade/vim-gitgutter' | endif
@@ -401,13 +404,24 @@ noremap <C-k> g,
 
 "###############################################################################
 "SESSION MANAGEMENT
+"First, jump to mark '"' without changing the jumplist (:help g`)
+"Mark '"' is the cursor position when last exiting the current buffer
+"Also use CursorHold command to automatically write current file
 augroup session
   au!
-  au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
-  if has_key(g:plugs, "vim-obsession")
+  if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
+    au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .session.vim
+    au InsertLeave,CursorHold * w
   endif
 augroup END
+if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
+  let g:workspace_session_name = '.session.vim'
+  let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
+  let g:workspace_persist_undo_history = 0 "don't need to save undo history
+  let g:workspace_autosave_untrailspaces = 0 "sometimes we WANT trailing spaces!
+  let g:workspace_autosave_ignore = ['gitcommit', 'rst', 'qf', 'diff', 'help'] "don't autosave these
+endif
 "Remember file position, so come back after opening to same spot
 
 "###############################################################################
@@ -1312,8 +1326,10 @@ function! s:eioff()
   silent! hi MatchParen ctermfg=Yellow ctermbg=Blue
   silent! unmap <Esc>
 endfunction
-function! s:eion()
-  setlocal eventignore=CursorHold,CursorHoldI,CursorMoved,CursorMovedI,TextChanged,TextChangedI
+function! s:eion() "set autocommands to ignore, in consideration of older versions without TextChanged
+  let events="CursorHold,CursorHoldI,CursorMoved,CursorMovedI"
+  if exists("##TextChanged") | let events.=",TextChanged,TextChangedI" | endif
+  exe "setlocal eventignore=".events
   silent! hi clear MatchParen "clear MatchLine from match.vim plugin, if it exists
 endfunction
 function! s:eimap()
