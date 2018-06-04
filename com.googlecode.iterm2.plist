@@ -43,7 +43,7 @@
 		<string>echo cd /Users/ldavis/youtubetag/.old; echo pwd</string>
 	</array>
 	<key>CopySelection</key>
-	<false/>
+	<true/>
 	<key>Custom Color Presets</key>
 	<dict>
 		<key>3024 Day</key>
@@ -32258,26 +32258,26 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.392892025411129</real>
+				<real>0.43168452847748995</real>
 				<key>Color Space</key>
 				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.440673828125</real>
+				<real>0.477386474609375</real>
 				<key>Red Component</key>
-				<real>0.4368665043452028</real>
+				<real>0.47374488862758013</real>
 			</dict>
 			<key>Ansi 1 Color</key>
 			<dict>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.0</real>
+				<real>0.018765938468277454</real>
 				<key>Color Space</key>
 				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.13281797450634386</real>
+				<real>0.15044977704886911</real>
 				<key>Red Component</key>
-				<real>0.90196078431372551</real>
+				<real>0.91302490234375</real>
 			</dict>
 			<key>Ansi 10 Color</key>
 			<dict>
@@ -32323,13 +32323,13 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.37384766340255737</real>
+				<real>0.44951533259884513</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.0</real>
+				<real>0.17646340280771255</real>
 				<key>Red Component</key>
-				<real>0.98536413908004761</real>
+				<real>0.99072265625</real>
 			</dict>
 			<key>Ansi 14 Color</key>
 			<dict>
@@ -32457,7 +32457,7 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Color Space</key>
 				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.14725471038892057</real>
+				<real>0.14725470542907715</real>
 				<key>Red Component</key>
 				<real>1</real>
 			</dict>

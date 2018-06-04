@@ -950,9 +950,6 @@ function! s:spelltoggle()
     echo 'Current language: US english'
   endif
 endfunction
-"navigate between words with [s and ]s (seems ok to me)
-nnoremap sN [s
-nnoremap sn ]s
 "Get suggestions, or choose first suggestion without looking
 "Use these conventions cause why not
 nnoremap s, z=
@@ -1578,8 +1575,9 @@ if has_key(g:plugs, "syntastic")
   "Set up custom remaps
   nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":SyntasticReset<CR>:let b:syntastic_on=0<CR>"
     \ : ":call <sid>syntastic_setup()<CR>"
-  nnoremap <silent> <expr> n <sid>syntastic_status() ? ":Lnext<CR>" : "n"
-  nnoremap <silent> <expr> N <sid>syntastic_status() ? ":Lprev<CR>" : "N"
+  nnoremap <silent> <expr> sn <sid>syntastic_status() ? ":Lnext<CR>" : "[s"
+  nnoremap <silent> <expr> sN <sid>syntastic_status() ? ":Lprev<CR>" : "]s"
+    "use sn/sN to nagivate between syntastic errors, or between spelling errors when syntastic off
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
   let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
