@@ -61,22 +61,25 @@ endfunction
 "The highlight group that's used for highlighting matched lines.  By
 function! s:hl_matching_lines() abort
   let b:hl_ranORcleared = 1
-  "Initial stuff
-  " * Make sure to exit if we are in any visual mode. Here's a great way way
-  "   to see results of mode() with a function:
-  "     function! Mode()
-  "       echom 'Mode: '.mode() | return ''
-  "     endfunction
-  "     vnoremap <expr> <Leader><Space> ''.Mode()
-  " * Exit early on some files where this fails due to underlying Match_wrapper default
-  "   function supplied with Vim. Markdown can be awful.
-  " if expand("%:t")==".vimrc" | return | endif
+  "Exit certain filetypes or filenames
   if &ft == "markdown" | return | endif
+  "Make sure to exit if we are in any visual mode. Here's a great way way
+  "to see results of mode() with a function:
+  "  function! Mode()
+  "    echom 'Mode: '.mode() | return ''
+  "  endfunction
+  "  vnoremap <expr> <Leader><Space> ''.Mode()
   if mode()=~"[vV]"
     call s:hl_matching_lines_clear()
     return
   endif
-  if exists('b:hl_last_line') && b:hl_last_line == line('.') "do not re-run if cursor on same line
+  "Do not attempt matches when in comments; avoids detecting commented keywords
+  if synIDattr(synIDtrans(synID(line("."),col("."),1)),"name")=~?"comment"
+    call s:hl_matching_lines_clear()
+    return
+  endif
+  "Do not re-run if cursor on same line
+  if exists('b:hl_last_line') && b:hl_last_line == line('.')
     return
   endif
   let b:hl_last_line = line('.')
