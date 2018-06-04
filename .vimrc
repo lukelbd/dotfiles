@@ -1973,7 +1973,7 @@ augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
-nnoremap <silent> <C-q> :try \| tabclose \| silent! tabprevious \| catch \| qa \| endtry<CR>
+nnoremap <silent> <C-q> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-w> :q<CR>
 " nnoremap <C-q> :silent! tabclose<CR>

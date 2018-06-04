@@ -148,7 +148,7 @@ function vim() {
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
   local sessionfile=".session.vim"
-  if [ -z "$@" ] && [ -r "$sessionfile" ]; then
+  if [[ -z "$@" ]] && [[ -r "$sessionfile" ]]; then
     # Unfold stuff after entering each buffer; for some reason folds are otherwise
     # re-closed upon openening each file
     # Check out: cat $sessionfile | grep -n -E 'fold|zt'
