@@ -74,7 +74,13 @@ function! s:hl_matching_lines() abort
     return
   endif
   "Do not attempt matches when in comments; avoids detecting commented keywords
-  if synIDattr(synIDtrans(synID(line("."),col("."),1)),"name")=~?"comment"
+  if synIDattr(synIDtrans(synID(line("."),col("."),1)),"name")==?"comment"
+    call s:hl_matching_lines_clear()
+    return
+  endif
+  "Disable when on top of vim maps
+  if &ft=="vim" && ("\n".getline('.')=~'\_s\([a-z]\?map\|[a-z]\=noremap\)')
+    echom "No line highlighting."
     call s:hl_matching_lines_clear()
     return
   endif
