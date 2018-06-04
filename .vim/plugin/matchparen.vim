@@ -34,7 +34,7 @@ function! s:Highlight_Matching_Pair()
   endif
 
   " Disable in visual mode (custom)
-  if mode()=~"[vV]"
+  if mode()=~"[ivV]"
     return
   endif
 
@@ -46,7 +46,6 @@ function! s:Highlight_Matching_Pair()
   " Disable when on top of vim maps (custom)
   " Note cannot nest the matching groups atom \(
   if &ft=="vim" && ("\n".getline('.')=~'\_s\([a-z]\?map\|[a-z]\=noremap\)')
-    echom "No paren highlighting."
     return
   endif
 

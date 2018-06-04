@@ -69,7 +69,7 @@ function! s:hl_matching_lines() abort
   "    echom 'Mode: '.mode() | return ''
   "  endfunction
   "  vnoremap <expr> <Leader><Space> ''.Mode()
-  if mode()=~"[vV]"
+  if mode()=~"[ivV]"
     call s:hl_matching_lines_clear()
     return
   endif
@@ -80,7 +80,6 @@ function! s:hl_matching_lines() abort
   endif
   "Disable when on top of vim maps
   if &ft=="vim" && ("\n".getline('.')=~'\_s\([a-z]\?map\|[a-z]\=noremap\)')
-    echom "No line highlighting."
     call s:hl_matching_lines_clear()
     return
   endif
