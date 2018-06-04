@@ -100,6 +100,7 @@ complete -f -o plusdirs mv
 complete -f -o plusdirs rm
 
 # Readline settings
+# Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
 bind 'set disable-completion off' # ensure on
@@ -119,16 +120,14 @@ set +H
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
 shopt -s checkwinsize # allow window resizing
-shopt -u failglob # turn off failglob; so no error message if expansion is empty
 shopt -u nullglob # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
 shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
 shopt -s dotglob # include dot patterns in glob matches
 shopt -s dirspell # attempt spelling correction of dirname
 shopt -s nocaseglob # case insensitive
 shopt -s globstar # **/ matches all subdirectories, searches recursively
+shopt -u failglob # turn off failglob; so no error message if expansion is empty
 # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
-[ -z $TMUX ] && shopt -s failglob # raise error when a glob match fails
-  # this caused problems with completion of wildcards in tmux sessions
 
 # Prompt
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
@@ -145,15 +144,18 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 # just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
 # re-closing every time we start a session
 function vims() {
+  # First modify the Obsession-generated session file
   local sessionfile=".session.vim"
   if [ -r $sessionfile ]; then # restoring old one
     # this command append zR to the line after every instance of zt
-    # zt always comes after fold commands; check out: cat $sessionfile | grep -n -E 'fold|zt'
-    # sed -i "/zt/a zR" $sessionfile # overwrite in-place
+    # append lines after every instance of zt (after fold commands are executed);
+    # check out: cat $sessionfile | grep -n -E 'fold|zt'
     $macos && sed=gsed || sed=sed # only GNU sed works here
     $sed -i "/zt/a setlocal nofoldenable" $sessionfile
-  fi; vim -S $sessionfile # for working with obsession
-    # then the session file will get overwritten
+  fi
+  # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
+  # tracking in the current session file
+  vim -S $sessionfile # for working with obsession
 }
 
 ################################################################################
@@ -320,119 +322,71 @@ function add() {
 }
 
 ################################################################################
-# General utilties, and colorizing them
+# General utilties
 ################################################################################
-# Simple/quick aliases, often just change default behavior
-# * See the README; found the default LSCOLOR for mac, and roughly converted it
-#   to be identical in SSH sessions
-# * Run "dircolors" to output commands to set up current default LS_COLORS on
-#   Linux macthine. The default Mac LSCOLORS can be found in easy google search.
-# * The commented-out export gives ls styles of Linux default, excluding filetype-specific ones
-# * This page: https://geoff.greer.fm/lscolors/ gives easy conversion from BSD to
-#   the Linux color string.
+# Listing files
+# * To recursively search for string inside file, use grep -rn <string> <dir> (same as grep <string> <file>);
+#   to search filenames, use find <dir> -name <string> (weird find syntax).
+# * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
+# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones;
+#   we instead use the Mac default dircolors, and convert to Linux colors. Default mac
+#   colors were found with simple google search.
 if $macos; then
   export LSCOLORS='exfxcxdxbxegedabagacad'
   lscolor='-G' && sortcmd='gsort' # GNU utilities, different from mac versions
-    # macOS has a BSD ls version with different "show color" specifier
 else
 #   export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:'\
 # 'or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
   export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
   lscolor='--color=always' && sortcmd='sort'
 fi
-alias cd="cd -P" # -P follows physical location
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
-alias xs="ls $lscolor -AFl | grep -E \"\-(([rw\-]{2})x){1,3}\"" # executables only
-alias fs="ls $lscolor -AF | grep -v '/$'" # just files
-alias fl="ls $lscolor -AFhl | grep -v '/$'" # just files, with details
+
+# Grepping and diffing; enable colors
+alias grep="grep --color=auto" # always show color
+alias egrep="egrep --color=auto" # always show color
+hash colordiff 2>/dev/null && alias diff="colordiff" # prettier differencing; use this if it exists; or just highlight with grep
+
+# Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
+function listjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
+  # list jobs by name
+function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; for str in $@; do echo "Killing $str jobs..."; kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null; done; }
+  # kill jobs by name
+
+# Scripting utilities
+alias tac="gtac" # use dis
+function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
+
+# Meta tools
+alias aliases="alias" # without argument, lists all of them
+alias functions="declare -F"
+alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort" # print keybindings
+alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
+
+# Information on directories
 alias df="df -h" # disk useage
-alias tt="type -a" # show all instances of path/function/variable/file
-alias ww="which -a" # same
+alias eject="diskutil unmount" # eject disk on macOS
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
-  \ls $lscolor -A -d $dir*/
+  command ls $lscolor -A -d $dir*/
 }
 function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
 }
-function gg() { # grep files; input string then directory location, n says to show line number
-  [ $# -eq 0 ] && echo "Error: Need at least one arg."
-  [ -z $2 ] && dir="." || dir="$2"
-  grep "$1" -rn "$dir"
-}
-function ff() { # find files; input a quoted glob pattern or a string
-  [ -z $2 ] && dir="." || dir="$2"
-  find "$dir" -name "$1"
-}
 function dd() { # difference directories; input two directory names
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
+  command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
 function di() { # identical files in two directories
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
+  command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ | identical)'
-}
-
-
-# Globally override default settins
-alias grep="grep --color=auto" # always show color
-alias egrep="egrep --color=auto" # always show color
-# hash colordiff 2>/dev/null && alias diff="colordiff"
-#   # prettier differencing; use this if it exists; or just highlight with grep
-
-# Various workflow tools
-alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort"
-  # prints the keybindings
-alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
-  # prints out release info
-function join() { local IFS="$1"; shift; echo "$*"; }
-  # join array elements by some separator
-function listjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
-  # list jobs by name
-function killjobs() { [ -z "$1" ] && echo "Error: Must specify grep pattern." && return 1; kill $(ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs); }
-  # kill jobs by name
-
-# Utilities for converting figures between different types
-# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
-#   a <N>dpi resulting bitmap file.
-# * Another option is "-background white -alpha remove", try this.
-# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
-# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
-#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
-function gif2png() {
-  for f in "$@";
-    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
-  done
-} # often needed because LaTeX can't read gif files
-function pdf2png() {
-  density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
-  done
-} # sometimes need bitmap yo
-function pdf2tiff() {
-  resolution=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
-  done
-} # alternative for converting to bitmap
-function pdf2eps() {
-  args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
-      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
-  done
 }
 
 # Standardize less/man/etc. colors
@@ -477,6 +431,44 @@ function colorize() {
   "$@" # need to quote it, might need to escape stuff
   # Restore settings
   echo -e "\033]50;SetProfile=$oldprofile\a"
+}
+
+################################################################################
+# Utilities for converting figures between different types
+################################################################################
+# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
+#   a <N>dpi resulting bitmap file.
+# * Another option is "-background white -alpha remove", try this.
+# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
+# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
+#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
+function gif2png() {
+  for f in "$@";
+    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
+  done
+} # often needed because LaTeX can't read gif files
+function pdf2png() {
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
+  done
+} # sometimes need bitmap yo
+function pdf2tiff() {
+  resolution=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
+  done
+} # alternative for converting to bitmap
+function pdf2eps() {
+  args=("$@")
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
+      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
+  done
 }
 
 ################################################################################
@@ -814,14 +806,14 @@ alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local
 #     so just don't install it
 alias ncdump="ncdump -h" # almost always want this; access old versions in functions with backslash
 function ncinfo() { # only get text between variables: and linebreak before global attributes
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
 function ncvarsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | grep -A 100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
@@ -832,7 +824,7 @@ function ncvarsinfo() { # get information for just variables (no dimension/globa
 function ncdimsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | grep -B 100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
     # the space makes sure it isn't another variable that has trailing-substring
@@ -841,19 +833,19 @@ function ncdimsinfo() { # get information for just variables (no dimension/globa
     # -B means prinx x PRECEDING lines starting from LAST match
 }
 function nclist() { # only get text between variables: and linebreak before global attributes
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncdimlist() { # get list of dimensions
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   \ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
-  [ -z "$1" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
@@ -868,8 +860,7 @@ function ncvarlist() { # only get text between variables: and linebreak before g
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
 function ncvarinfo() { # as above but just for one variable
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   \ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
     # the space makes sure it isn't another variable that has trailing-substring
@@ -878,8 +869,7 @@ function ncvarinfo() { # as above but just for one variable
     # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $macos && reverse="tail -r" || reverse="tac"
   # \ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
@@ -889,9 +879,7 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
 function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
-  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   local args=($@)
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
@@ -900,9 +888,8 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
     # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
     # and the column command re-aligns columns
 }
-function ncvardatafull() { # as above but show everything
-  [ -z "$1" ] && { echo "Must declare variable name."; return 1; }
-  [ -z "$2" ] && { echo "Must declare file name."; return 1; }
+function ncvartable() { # as above but show everything
+  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   local args=($@)
   local args=(${args[@]:2}) # extra arguments
@@ -971,6 +958,7 @@ function sdsync() {
   # Can change this, but default will be to sync playlist
   sdcard="NO NAME" # edit when get new card
   sdloc="/Volumes/$sdcard/Playlist" # sd data
+  [ ! -d "$sdloc" ] && echo "Error: SD card not found." && return 1
   locloc="$HOME/Playlist" # local data
   echo "SD Location: $sdloc"
   echo "Local location: $locloc"

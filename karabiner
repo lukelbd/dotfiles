@@ -1,0 +1,8 @@
+#!/bin/bash
+# This file installs karabiner complex modifications
+# GUI instructions: Go to "Complex Modifications" in Karabiner prefs and "Add Rule"
+complex=$HOME/.config/karabiner/assets/complex_modifications/
+for file in modifications/*.json; do
+  echo "Copying ${file}..."
+  cp $file $complex/${file##*/}
+done
