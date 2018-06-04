@@ -31862,6 +31862,13 @@ Select Next Tab</string>
 			<key>Text</key>
 			<string>Restart Session</string>
 		</dict>
+		<key>0x53-0x120000</key>
+		<dict>
+			<key>Action</key>
+			<integer>38</integer>
+			<key>Text</key>
+			<string>. ~/.bashrc\r</string>
+		</dict>
 		<key>0x55-0x120000</key>
 		<dict>
 			<key>Action</key>
@@ -31985,7 +31992,7 @@ Close Terminal Window</string>
 			<key>Action</key>
 			<integer>38</integer>
 			<key>Text</key>
-			<string>. ~/.bashrc\r</string>
+			<string>git status\r</string>
 		</dict>
 		<key>0x75-0x100000</key>
 		<dict>
@@ -32647,13 +32654,13 @@ Resize Split Pane.Move Divider Down</string>
 				<key>Alpha Component</key>
 				<real>1</real>
 				<key>Blue Component</key>
-				<real>0.12549813091754913</real>
+				<real>0.45770263671875</real>
 				<key>Color Space</key>
-				<string>Calibrated</string>
+				<string>sRGB</string>
 				<key>Green Component</key>
-				<real>0.12552264332771301</real>
+				<real>0.45770263671875</real>
 				<key>Red Component</key>
-				<real>0.12429957091808319</real>
+				<real>0.4430851498618722</real>
 			</dict>
 			<key>Selection Color</key>
 			<dict>
@@ -44192,7 +44199,7 @@ Resize Split Pane.Move Divider Down</string>
 	<key>SUHasLaunchedBefore</key>
 	<true/>
 	<key>SULastCheckTime</key>
-	<date>2018-06-03T07:06:23Z</date>
+	<date>2018-06-04T19:16:45Z</date>
 	<key>SUSendProfileInfo</key>
 	<false/>
 	<key>ShowBookmarkName</key>
