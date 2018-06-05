@@ -31773,7 +31773,7 @@
 			<key>Text</key>
 			<string></string>
 		</dict>
-		<key>0x2d-0x100000</key>
+		<key>0x2d-0x40000</key>
 		<dict>
 			<key>Action</key>
 			<integer>25</integer>
@@ -31796,12 +31796,28 @@ Split Horizontally with Current Profile</string>
 			<string>Open Recent Directories…
 Open Recent Directories…</string>
 		</dict>
+		<key>0x30-0x40000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Move Divider Up
+Resize Split Pane.Move Divider Up</string>
+		</dict>
 		<key>0x31-0x100000</key>
 		<dict>
 			<key>Action</key>
 			<integer>15</integer>
 			<key>Text</key>
 			<string></string>
+		</dict>
+		<key>0x39-0x40000</key>
+		<dict>
+			<key>Action</key>
+			<integer>25</integer>
+			<key>Text</key>
+			<string>Move Divider Down
+Resize Split Pane.Move Divider Down</string>
 		</dict>
 		<key>0x3b-0x100000</key>
 		<dict>
@@ -31876,7 +31892,7 @@ Select Next Tab</string>
 			<key>Text</key>
 			<string>git pull</string>
 		</dict>
-		<key>0x5b-0x100000</key>
+		<key>0x5b-0x40000</key>
 		<dict>
 			<key>Action</key>
 			<integer>25</integer>
@@ -31884,14 +31900,7 @@ Select Next Tab</string>
 			<string>Move Divider Left
 Resize Split Pane.Move Divider Left</string>
 		</dict>
-		<key>0x5b-0x40000</key>
-		<dict>
-			<key>Action</key>
-			<integer>11</integer>
-			<key>Text</key>
-			<string>0x1b 0x4f 0x51</string>
-		</dict>
-		<key>0x5c-0x100000</key>
+		<key>0x5c-0x40000</key>
 		<dict>
 			<key>Action</key>
 			<integer>25</integer>
@@ -31899,13 +31908,20 @@ Resize Split Pane.Move Divider Left</string>
 			<string>Split Vertically with Current Profile
 Split Vertically with Current Profile</string>
 		</dict>
-		<key>0x5d-0x100000</key>
+		<key>0x5d-0x40000</key>
 		<dict>
 			<key>Action</key>
 			<integer>25</integer>
 			<key>Text</key>
 			<string>Move Divider Right
 Resize Split Pane.Move Divider Right</string>
+		</dict>
+		<key>0x64-0x100000</key>
+		<dict>
+			<key>Action</key>
+			<integer>38</integer>
+			<key>Text</key>
+			<string>git diff </string>
 		</dict>
 		<key>0x66-0x100000</key>
 		<dict>
@@ -31927,6 +31943,13 @@ Resize Split Pane.Move Divider Right</string>
 			<integer>18</integer>
 			<key>Text</key>
 			<string></string>
+		</dict>
+		<key>0x69-0x40000</key>
+		<dict>
+			<key>Action</key>
+			<integer>11</integer>
+			<key>Text</key>
+			<string>0x1b 0x4f 0x51</string>
 		</dict>
 		<key>0x6a-0x100000</key>
 		<dict>
@@ -32031,22 +32054,6 @@ Close</string>
 			<integer>11</integer>
 			<key>Text</key>
 			<string>0x1f</string>
-		</dict>
-		<key>0x7b-0x120000</key>
-		<dict>
-			<key>Action</key>
-			<integer>25</integer>
-			<key>Text</key>
-			<string>Move Divider Up
-Resize Split Pane.Move Divider Up</string>
-		</dict>
-		<key>0x7d-0x120000</key>
-		<dict>
-			<key>Action</key>
-			<integer>25</integer>
-			<key>Text</key>
-			<string>Move Divider Down
-Resize Split Pane.Move Divider Down</string>
 		</dict>
 		<key>0x7f-0x100000</key>
 		<dict>
@@ -32218,7 +32225,7 @@ Resize Split Pane.Move Divider Down</string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>113 297 689 458 0 0 1440 877 </string>
+	<string>113 329 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
 	<string>364 83 850 554 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
