@@ -39,7 +39,7 @@ function! s:Highlight_Matching_Pair()
   endif
 
   " Disable if inside comment (custom)
-  if synIDattr(synIDtrans(synID(line("."),col("."),1)),"name")==?"comment"
+  if synIDattr(synIDtrans(synID(line("."),col("."),1)),"name")=~?'\(comment\|constant\)'
     return
   endif
 

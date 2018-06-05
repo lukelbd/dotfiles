@@ -74,9 +74,14 @@ function! s:outofdelim(n) "get us out of delimiter cursos is inside
 endfunction
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU
+augroup insertenter
+  au!
+  au InsertEnter * let b:insertenter=[line('.'), col('.')]
+augroup END
 "Simple maps first
+inoremap <expr> <C-u> '<Esc>u:call cursor('.b:insertenter[0].','.b:insertenter[1].')<CR>a'
 inoremap <C-p> <C-r>"
-"Next popup manageer; will count number of tabs in popup menu so our position is always known
+"Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
   au BufEnter * let b:tabcount=0
@@ -100,7 +105,6 @@ inoremap <expr> jk pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofd
   \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
 inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" :
   \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
-inoremap <expr> <C-u> neocomplete#undo_completion()
 inoremap <expr> <C-c> pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
 inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
 inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>".<sid>tabreset() : "\<BS>"
@@ -137,6 +141,7 @@ function! s:toggleformatopt()
 endfunction
 noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
 noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
+noremap <silent> cl mzi<CR><Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
 noremap <silent> sk mzkddp`z
@@ -535,16 +540,16 @@ nmap csbc csbB
 nmap csrc csbB
 nmap csac csbB
   "from curlies
-"Quick function selection for stuff formatted like function(text)
-"For functions the select/delete 'inner' stuff is already satisfied
-nnoremap daf mzF(bdt(lda(`z
-nnoremap dsf mzF(bdt(xf)x`z
-nnoremap caf F(bdt(lca(
-nnoremap <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
-nnoremap yaf mzF(bvf(%y`z
+"Similar idea for functions, i.e. text formatted like foo(bar)
+"Mimick builtin Vim syntax, and the Surround plugin with dsf
+nnoremap <silent> daf mzF(bdt(lda(`z
+nnoremap <silent> caf F(bdt(lca(
+nnoremap <silent> yaf mzF(bvf(%y`z
 nnoremap <silent> vaf F(bvf(%
+nnoremap <silent> dsf mzF(bdt(xf)x`z
+nnoremap <silent> <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
+"Selecting text in-between commented out lines
 nnoremap <expr> vc "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
-  "for selecting text in-between commented out lines
 "Mimick the ysiwb command (i.e. adding delimiters to current word) for new delimiters
 "The following functions create arbitrary delimtier maps; current convention is
 "to prefix with ';' and ','; see below for details
@@ -628,7 +633,7 @@ augroup latex
   "think of situation where that's not true
 augroup END
 function! s:texmacros()
-  "Convenience, in context of other shortcuts
+  "Repair stuff otherwise broken by this plugin
   inoremap <buffer> .<Space> .<Space>
   inoremap <buffer> ,<Space> ,<Space>
   inoremap <buffer> .. .
@@ -665,6 +670,16 @@ function! s:texmacros()
   nnoremap <buffer> cil ciB
   nnoremap <buffer> yil yiB
   nnoremap <buffer> vil viB
+  "Fix for $$, since Vim won't do any ca$ va$ et cetera commands on them
+  "Surround syntax will already work, i.e. ds$ works fine
+  nnoremap <buffer> da$ F$df$
+  nnoremap <buffer> ca$ F$cf$
+  nnoremap <buffer> ya$ F$yf$
+  nnoremap <buffer> va$ F$vf$
+  nnoremap <buffer> di$ T$dt$
+  nnoremap <buffer> ci$ T$ct$
+  nnoremap <buffer> yi$ T$yt$
+  nnoremap <buffer> vi$ T$vt$
   "The below maps had to be done without marks at all, because need recursive map
   "to match '%' pairs but also disabled 'marking' functionality in this script
   nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
@@ -716,7 +731,8 @@ function! s:texmacros()
   call s:delims(';i', '\textit{',     '}', 1, 0)
   call s:delims(';t', '\textbf{',     '}', 1, 0) "now use ;i for various cite commands
   call s:delims(';y', '\texttt{',     '}', 1, 0) "typewriter text
-  call s:delims(';l', '\underline{',  '}', 1, 0) "l for line
+  call s:delims(';u', '\underline{',  '}', 1, 0) "u for under
+  call s:delims(';l', '\linespread{',  '}', 1, 0) "u for under
   call s:delims(';m', '\mathrm{',     '}', 1, 0)
   call s:delims(';n', '\mathbf{',     '}', 1, 0)
   call s:delims(';M', '\mathcal{',    '}', 1, 0)
@@ -768,19 +784,29 @@ function! s:texmacros()
   " call s:delims('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "Comma-prefixed delimiters without newlines
   "Generally are more closely-related to the begin-end latex environments
-  call s:delims(',1', '{\tiny ',         '}', 1, 0)
-  call s:delims(',2', '{\scriptsize ',   '}', 1, 0)
-  call s:delims(',3', '{\footnotesize ', '}', 1, 0)
-  call s:delims(',4', '{\small ',        '}', 1, 0)
-  call s:delims(',5', '{\normalsize ',   '}', 1, 0)
-  call s:delims(',6', '{\large ',        '}', 1, 0)
-  call s:delims(',7', '{\Large ',        '}', 1, 0)
-  call s:delims(',8', '{\LARGE ',        '}', 1, 0)
-  call s:delims(',9', '{\huge ',         '}', 1, 0)
-  call s:delims(',0', '{\Huge ',         '}', 1, 0)
+  inoremap <buffer> ,1 \tiny 
+  inoremap <buffer> ,2 \scriptsize 
+  inoremap <buffer> ,3 \footnotesize 
+  inoremap <buffer> ,4 \small 
+  inoremap <buffer> ,5 \normalsize 
+  inoremap <buffer> ,6 \large 
+  inoremap <buffer> ,7 \Large 
+  inoremap <buffer> ,8 \LARGE 
+  inoremap <buffer> ,9 \huge 
+  inoremap <buffer> ,0 \Huge 
+  call s:delims(',!', '{\tiny ',         '}', 1, 0)
+  call s:delims(',@', '{\scriptsize ',   '}', 1, 0)
+  call s:delims(',#', '{\footnotesize ', '}', 1, 0)
+  call s:delims(',$', '{\small ',        '}', 1, 0)
+  call s:delims(',%', '{\normalsize ',   '}', 1, 0)
+  call s:delims(',^', '{\large ',        '}', 1, 0)
+  call s:delims(',&', '{\Large ',        '}', 1, 0)
+  call s:delims(',*', '{\LARGE ',        '}', 1, 0)
+  call s:delims(',(', '{\huge ',         '}', 1, 0)
+  call s:delims(',)', '{\Huge ',         '}', 1, 0)
   call s:delims(',{', '\left\{\begin{matrix}[ll]', '\end{matrix}\right.', 1, 0)
-  call s:delims(',P', '\begin{pmatrix}',           '\end{pmatrix}',       1, 0)
-  call s:delims(',B', '\begin{bmatrix}',           '\end{bmatrix}',       1, 0)
+  call s:delims(',m', '\begin{pmatrix}',           '\end{pmatrix}',       1, 0)
+  call s:delims(',M', '\begin{bmatrix}',           '\end{bmatrix}',       1, 0)
   "Versions of the above, but this time puting them on own lines
   " call s:delimscr('P', '\begin{pmatrix}', '\end{pmatrix}')
   " call s:delimscr('B', '\begin{bmatrix}', '\end{bmatrix}')
@@ -807,7 +833,7 @@ function! s:texmacros()
   call s:delimscr('S', '\begin{frame}[fragile]', '\end{frame}')
     "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
     "note that fragile make compiling way slower
-  call s:delimscr('m', '\begin{minipage}{\linewidth}', '\end{minipage}')
+  call s:delimscr('p', '\begin{minipage}{\linewidth}', '\end{minipage}')
   call s:delimscr('f', '\begin{figure}', '\end{figure}')
   call s:delimscr('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
   call s:delimscr('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
@@ -869,7 +895,7 @@ function! s:texmacros()
   inoremap <buffer> .1 \partial 
   inoremap <buffer> .2 \mathrm{d}
   inoremap <buffer> .3 \mathrm{D}
-    "3 levels of differentiation; each one stronger
+  "3 levels of differentiation; each one stronger
   inoremap <buffer> .4 \sum 
   inoremap <buffer> .5 \prod 
   inoremap <buffer> .6 \int 
