@@ -2,50 +2,60 @@
 " STATUSLINE MODIFICATION
 "------------------------------------------------------------------------------
 "Alway show
+let g:nostatus="tagbar,nerdtree"
 set laststatus=2
 "Command line below statusline
 set showcmd
 set noshowmode
 "Colors
+"Also tried to set statusline to empty
 highlight StatusLine ctermbg=Black ctermfg=White cterm=None
 augroup statusline
   au!
   au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
   au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
+  " au BufEnter * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
+  " au BufReadPost * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
+  " au FileType tagbar,nerdtree let &stl=' ' "don't work
+  " au BufEnter *[Tt]agbar*,*[Nn][Ee][Rr][Dd]*[Tt]ree* let &l:stl=' ' "empty returns default; use non-empty
 augroup END
   "more visible insert mode
-" Define all the different modes
-" Show whether in pastemode
+"Define all the different modes
+"Show whether in pastemode
 function! PrintMode()
-  " Dictionary
+  "Dictionary
+  if g:nostatus=~?&ft | return '' | endif
   let currentmode={
-    \ 'n'  : 'Normal', 'no' : 'N-Operator Pending',
-    \ 'v'  : 'Visual', 'V'  : 'V-Line', '' : 'V-Block', 's'  : 'Select', 'S'  : 'S-Line', '' : 'S-Block',
-    \ 'i'  : 'Insert', 'R'  : 'Replace', 'Rv' : 'V-Replace',
-    \ 'c'  : 'Command', 'r'  : 'Prompt',
-    \ 'cv' : 'Vim Ex', 'ce' : 'Ex',
-    \ 'rm' : 'More', 'r?' : 'Confirm', '!'  : 'Shell',
+    \ 'n':  'Normal',  'no': 'N-Operator Pending',
+    \ 'v':  'Visual',  'V' : 'V-Line',  '': 'V-Block',
+    \ 's':  'Select',  'S' : 'S-Line',  '': 'S-Block',
+    \ 'i':  'Insert',  'R' : 'Replace', 'Rv': 'V-Replace',
+    \ 'c':  'Command', 'r' : 'Prompt',
+    \ 'cv': 'Vim Ex',  'ce': 'Ex',
+    \ 'rm': 'More',    'r?': 'Confirm', '!' : 'shell',
     \}
   " let print=toupper(currentmode[mode()])
-  let print=currentmode[mode()]
+  let l:string=currentmode[mode()]
   if &paste
-    " let print.=':PASTE'
-    let print.=':Paste'
+    let l:string.=':Paste'
   endif
-  return print
+  return '  ['.l:string.']'
+  " return ' ['.string.']'
 endfunction
 "Caps lock (are language maps enabled?)
 function! CapsLock()
+  if g:nostatus=~?&ft | return '' | endif
   if &iminsert "iminsert is the option that enables/disables language remaps (lnoremap)
       "and if it is on, we turn on the caps-lock remaps
-    return '[CapsLock]'
+    return '  [CapsLock]'
   else
     return ''
   endif
 endfunction
-" Shorten a given filename by truncating path segments.
-" https://github.com/blueyed/dotfiles/blob/master/vimrc#L396
+"Shorten a given filename by truncating path segments.
+"https://github.com/blueyed/dotfiles/blob/master/vimrc#L396
 function! ShortenFilename() "{{{
+  if g:nostatus=~?&ft | return '' | endif
   "Necessary args
   let bufname=@%
   let maxlen=20
@@ -90,8 +100,12 @@ function! ShortenFilename() "{{{
   let r = join(parts, '')
   return r
 endfunction "}}}
-" Find out current buffer's size and output it.
-function! FileSize() "{{{
+"Find out current buffer's size and output it.
+function! FileInfo() "{{{
+  if g:nostatus=~?&ft | return '' | endif
+  if &ft=="" | let l:string="unknown:"
+  else | let l:string=&ft.":"
+  endif
   let bytes = getfsize(expand('%:p'))
   if (bytes >= 1024)
     let kbytes = bytes / 1024
@@ -100,43 +114,91 @@ function! FileSize() "{{{
     let mbytes = kbytes / 1000
   endif
   if bytes <= 0
-    return 'null'
+    let l:string.='null'
   endif
   if (exists('mbytes'))
-    return mbytes . 'MB'
+    let l:string.=(mbytes.'MB')
   elseif (exists('kbytes'))
-    return kbytes . 'KB'
+    let l:string.=(kbytes.'KB')
   else
-    return bytes . 'B'
+    let l:string.=(bytes.'B')
   endif
+  return '  ['.l:string.']'
 endfunction "}}}
 "Whether UK english (e.g. Nature), or U.S. english
 function! PrintLanguage()
+  if g:nostatus=~?&ft | return '' | endif
   if &spell
     if &spelllang=='en_us'
-      return '[US]'
+      return '  [US]'
     elseif &spelllang=='en_gb'
-      return '[UK]'
+      return '  [UK]'
     else
-      return '[??]'
+      return '  [??]'
     endif
   else
     return ''
   endif
 endfunction
-"Set statusline
-" let &stl.='%{ShortenFilename()}'.     " Current buffer's file name
-"       \ ' [%{&ft!=""?&ft.":":"unknown:"}%{FileSize()}]'. " Output buffer's file size
-let &stl=''        " Clear statusline for when vimrc is loaded
-let &stl.='%{ShortenFilename()}'     " Current buffer's file name
-let &stl.=' [%{&ft!=""?&ft.":":"unknown:"}%{FileSize()}]' " Output buffer's file size
-let &stl.=' [%{PrintMode()}]' " Normal/insert mode
-let &stl.=' %{ObsessionStatus()}' " Whether obsession if functioning
-let &stl.=' %m'     " Show modified status of buffer
-let &stl.='%{PrintLanguage()}' " Show language setting: UK english or US enlish
-let &stl.='%= '     " Right side of statusline, and perserve space between sides
-let &stl.='%{CapsLock()}'    " check if language maps enabled
-" let &stl.='%{fugitive#statusline()}'
-let &stl.=' [%l/%L]'   " Cursor's current line, total lines
-let &stl.=' (%p%%)' " Percentage through file in lines, as in <c-g>
+"Git stuff
+function! Git()
+  if g:nostatus=~?&ft | return '' | endif
+  if exists('*fugitive#head') && fugitive#head()!=''
+    let status=fugitive#head() 
+    return '  ['.toupper(status[0]).tolower(status[1:]).']'
+  else
+    return ''
+  endif
+endfunction
+"Location
+function! Location()
+  if g:nostatus=~?&ft | return '' | endif
+  return '  ['.line('.').'/'.line('$').'] ('.(100*line('.')/line('$')).')' "current line and percentage
+endfunction
+"Tag
+function! Tag()
+  if g:nostatus=~?&ft | return '' | endif
+  if exists('*tagbar#currenttag')
+    return tagbar#currenttag('  [%s]','')
+  else
+    return ''
+  endif
+endfunction
+"Current tag using my own function
+"Consider modifying this
+" function! CurrentTag()
+"   let a:njumps=(a:n==0 ? 1 : a:n)
+"   for i in range(a:njumps)
+"     let lnum=line('.')
+"     "Edge cases; at bottom or top of document
+"     if lnum<b:ctaglines[0] || lnum>b:ctaglines[-1]
+"       let i=(a:foreward ? 0 : -1)
+"     "Extra case not handled in main loop
+"     elseif lnum==b:ctaglines[-1]
+"       let i=(a:foreward ? 0 : -2)
+"     "Main loop
+"     else
+"       for i in range(len(b:ctaglines)-1)
+"         if lnum==b:ctaglines[i]
+"           let i=(a:foreward ? i+1 : i-1) | break
+"         elseif lnum>b:ctaglines[i] && lnum<b:ctaglines[i+1]
+"           let i=(a:foreward ? i+1 : i) | break
+"         endif
+"         if i==len(b:ctaglines)-1 | echom "Error: Bracket jump failed." | endif
+"       endfor
+"     endif
+"     exe b:ctaglines[i]
+"   endfor
+" endfunction
+let &stl=''                      " Clear statusline for when vimrc is loaded
+let &stl.='%{ShortenFilename()}' " Current buffer's file name
+let &stl.='%{FileInfo()}'        " Output buffer's file size
+let &stl.='%{PrintMode()}'       " Normal/insert mode
+let &stl.='%{Git()}'             " Fugitive branch
+let &stl.='%{PrintLanguage()}'   " Show language setting: UK english or US enlish
+let &stl.='%{CapsLock()}'        " Check if language maps enabled
+let &stl.='%='                   " Right side of statusline, and perserve space between sides
+let &stl.='%{Tag()}'
+let &stl.='%{Location()}'        " Cursor's current line, total lines, and percentage
+" let &stl.=' %{ObsessionStatus()}' "useless
 

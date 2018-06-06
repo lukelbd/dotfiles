@@ -17,12 +17,12 @@ function! s:get_match_lines(line) abort
   "input argument line is the *original* line
   "(1) the % operator keeps us on the same line, or
   "(2) the % operator doesn't return us to the same line after some nubmer of jumps
-  let tolerance=5 "keep it small so don't get slowdowns
+  let tolerance=10 "keep it small so don't get slowdowns
   let badbreak=1
   let linebefore=-1
   let lines = []
   let b:xyz = [] "FOR TESTING
-  for jumpcommand in ["%", "%^"] "try both, depends which is more suitable
+  for jumpcommand in ['%', '%^'] "try both, depends which is more suitable
     execute "keepjumps normal! ".a:line."gg"
     " if jumpcommand=="%^" | echo "Trying alternate method." | endif
     while tolerance && linebefore != line('.')

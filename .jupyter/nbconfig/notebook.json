@@ -88,5 +88,5 @@
     }
   },
   "comment_uncomment_indent": true,
-  "comment_uncomment_keybinding": "cmd-j"
+  "comment_uncomment_keybinding": "ctrl-c"
 }
