@@ -221,7 +221,6 @@ nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
   "turns off common things in normal mode
   "also prevent Ctrl+c rining the bell
-nnoremap <Leader>a VggG
 "###############################################################################
 "VISUAL MODE BEHAVIOR
 "Highlighting
@@ -2474,6 +2473,14 @@ nnoremap <silent> <Leader>r :redraw!<CR>
 noremap gt <Nop>
 noremap gT <Nop>
   "undo these maps to avoid confusion
+nnoremap ga ggVG
+vnoremap ga <Esc>ggVG
+nnoremap gx ga
+  "ga mapped to 'select all', and gx mapped to 'get the ASCII/hex value'
+noremap gf <c-w>gf
+noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
+  \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
+  "default 'open file under cursor' to open in new tab; change for normal and vidual
 nnoremap gu guiw
 vnoremap gu gu
 nnoremap gU gUiw
