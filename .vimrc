@@ -415,6 +415,30 @@ noremap <C-k> g,
 "First, jump to mark '"' without changing the jumplist (:help g`)
 "Mark '"' is the cursor position when last exiting the current buffer
 "CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
+function! s:autosave_toggle(on)
+  if a:on "in future consider using this to disable autosave for large files
+    if exists('b:autosave_on') && b:autosave_on=1
+      return "already on
+    endif
+    let b:autosave_on=1
+    echom 'Enabling autosave.'
+    augroup autosave
+      au! * <buffer>
+      let g:autosave="InsertLeave"
+      if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
+      exe "au ".g:autosave." <buffer> * w"
+    augroup END
+  else
+    if !exists('b:autosave_on') || b:autosave_on=0
+      return "already off
+    endif
+    let b:autosave_on=0
+    echom 'Disabling autosave.'
+    augroup autosave
+      au! * <buffer>
+    augroup END
+  endif
+endfunction
 augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
@@ -1468,10 +1492,9 @@ if has_key(g:plugs, "nerdtree")
     au BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
     au FileType nerdtree call s:nerdtreesetup()
   augroup END
-  " noremap <Tab>n :NERDTreeFind<CR>
   " f stands for files here
+  " noremap <Leader>f :NERDTreeFind<CR>
   noremap <Leader>f :NERDTree %<CR>
-  noremap <Leader>F :NERDTreeTabsToggle<CR>
   let g:NERDTreeWinPos="right"
   let g:NERDTreeWinSize=20 "instead of 31 default
   let g:NERDTreeShowHidden=1
@@ -1742,6 +1765,12 @@ if has_key(g:plugs, "tabular")
   nnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
     "by commas; suitable for diag_table's in models; does not ignore comment characters
+  nnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+    "dictionary, colon on right
+  nnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+    "dictionary, colon on left
   vnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   nnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
     "see :help non-greedy to see what braces do; it is like *, except instead of matching
@@ -2224,13 +2253,13 @@ endif
 "Also note the <silent> will prevent beginning the search until another key is pressed
 nnoremap <silent> ? /<C-r>=<sid>scopesearch(0)<CR>\(\)
 "Keep */# case-sensitive while '/' and '?' are smartcase case-insensitive
-nnoremap <silent> * :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-nnoremap <silent> & :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+nnoremap <silent> * :let @/='\<'.expand('<cword>').'\>\C'<CR>lb:set hlsearch<CR>
+nnoremap <silent> & :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
 "Equivalent of * and # (each one key to left), but limited to function scope
 " nnoremap <silent> & /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``
 " nnoremap <silent> @ /<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\C<CR>``
-nnoremap <silent> # :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+nnoremap <silent> # :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>lB:set hlsearch<CR>
+nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
   "note the @/ sets the 'last search' register to this string value
 " * Also expand functionality to <cWORD>s -- do this by using \_s
 "   which matches an EOL (from preceding line or this line) *or* whitespace
