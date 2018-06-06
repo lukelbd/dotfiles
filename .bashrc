@@ -360,6 +360,7 @@ function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." 
 
 # Scripting utilities
 alias tac="gtac" # use dis
+function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 
 # Meta tools
