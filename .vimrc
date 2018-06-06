@@ -203,6 +203,8 @@ noremap S <Nop>
 noremap ss s
   "willuse single-s map for spellcheck-related commands
   "restore use of substitute 's' key; then use s<stuff> for spellcheck
+nnoremap cc cc
+  "for some fucking reason this is necessary or there is a cursor delay when hitting cc
 vnoremap cc s
 nnoremap c` mza<CR><Esc>`z
 vnoremap c<CR> s
@@ -219,7 +221,6 @@ nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
   "turns off common things in normal mode
   "also prevent Ctrl+c rining the bell
-nnoremap <Leader>a VggG
 "###############################################################################
 "VISUAL MODE BEHAVIOR
 "Highlighting
@@ -607,6 +608,7 @@ function! s:delims(map,left,right,buffer,bigword)
 endfunction
 function! s:delimscr(map,left,right)
   exe 'inoremap <silent> <buffer> ,'.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
+  exe 'nnoremap <silent> <buffer> ,'.a:map.' mzO'.a:left.'<Esc><Down>o'.a:right.'<Esc>`z=='
   exe 'vnoremap <silent> <buffer> ,'.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
     "don't gotta worry about repeat command here, because cannot do that in visual
     "or insert mode; doesn't make sense anyway because we rarely have to do something like
@@ -796,6 +798,7 @@ function! s:texmacros()
   call s:delims(';!', '\tag{',     '}', 1, 0) "change the default 1-2-3 ordering; common to use *
   call s:delims(';z', '\note{',    '}', 1, 0) "notes are for beamer presentations, appear in separate slide
   call s:delims(';a', '\caption{', '}', 1, 0) "amazingly a not used yet
+  call s:delims(';A', '\captionof{figure}{', '}', 1, 0) "alternative
   call s:delims(';*', '\cite{',    '}', 1, 0) "most common
   call s:delims(';&', '\citet{',   '}', 1, 0) "second most common one
   call s:delims(';@', '\citep{',   '}', 1, 0) "second most common one
@@ -840,6 +843,7 @@ function! s:texmacros()
   "  with default single column; see: https://tex.stackexchange.com/a/366422/73149
   "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
   call s:delimscr(';', '\begin{center}', '\end{center}') "because ; was available
+  call s:delimscr(':', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
   call s:delimscr('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
@@ -1024,7 +1028,7 @@ endfunction
 "Get suggestions, or choose first suggestion without looking
 "Use these conventions cause why not
 nnoremap s, z=
-nnoremap s. z=1<CR><CR>
+nnoremap s. z=1<CR><CR><CR>
 "Add/remove from dictionary
 nnoremap sa zg
 nnoremap sr zug
@@ -2498,6 +2502,14 @@ nnoremap <silent> <Leader>r :redraw!<CR>
 noremap gt <Nop>
 noremap gT <Nop>
   "undo these maps to avoid confusion
+nnoremap ga ggVG
+vnoremap ga <Esc>ggVG
+nnoremap gx ga
+  "ga mapped to 'select all', and gx mapped to 'get the ASCII/hex value'
+noremap gf <c-w>gf
+noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
+  \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
+  "default 'open file under cursor' to open in new tab; change for normal and vidual
 nnoremap gu guiw
 vnoremap gu gu
 nnoremap gU gUiw
