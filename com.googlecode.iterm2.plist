@@ -32224,15 +32224,15 @@ Close</string>
 	<key>NSWindow Frame SUUpdateAlert</key>
 	<string>427 363 620 392 0 0 1440 877 </string>
 	<key>NSWindow Frame SessionsPreferences</key>
-	<string>694 386 606 469 0 0 1440 877 </string>
+	<string>694 336 599 519 0 0 1440 877 </string>
 	<key>NSWindow Frame SharedPreferences</key>
-	<string>142 264 796 473 0 0 1440 877 </string>
+	<string>142 225 796 473 0 0 1440 877 </string>
 	<key>NSWindow Frame UKCrashReporter</key>
 	<string>99 293 592 584 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 0</key>
-	<string>113 217 759 538 0 0 1440 877 </string>
+	<string>344 312 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 1</key>
-	<string>364 83 850 554 0 0 1440 877 </string>
+	<string>364 211 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 2</key>
 	<string>75 451 570 426 0 0 1440 877 </string>
 	<key>NSWindow Frame iTerm Window 3</key>
@@ -32692,9 +32692,9 @@ Close</string>
 				<key>action</key>
 				<string>best editor</string>
 				<key>editor</key>
-				<string>com.sublimetext.3</string>
+				<string>org.vim.MacVim</string>
 				<key>text</key>
-				<string>echo echo \1</string>
+				<string>\1</string>
 			</dict>
 			<key>Send Code When Idle</key>
 			<false/>
@@ -32779,7 +32779,7 @@ Close</string>
 							<key>parameter</key>
 							<string>open -a Chromium \0</string>
 							<key>title</key>
-							<string>Chromium Open</string>
+							<string>sdadfdasfsafas</string>
 						</dict>
 					</array>
 					<key>notes</key>
@@ -36497,6 +36497,8 @@ Close</string>
 					<string>@selector\([^)]+\)</string>
 				</dict>
 				<dict>
+					<key>actions</key>
+					<array/>
 					<key>notes</key>
 					<string>email address</string>
 					<key>precision</key>
@@ -36509,7 +36511,7 @@ Close</string>
 					<array>
 						<dict>
 							<key>action</key>
-							<integer>2</integer>
+							<integer>5</integer>
 							<key>parameter</key>
 							<string>open -a Chromium \0</string>
 							<key>title</key>

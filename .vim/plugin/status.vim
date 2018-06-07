@@ -59,6 +59,10 @@ function! ShortenFilename() "{{{
   "Necessary args
   let bufname=@%
   let maxlen=20
+  "Replace home directory
+  if bufname=~$HOME
+    let bufname='~'.split(bufname,$HOME)[-1]
+  endif
   "Body
   let maxlen_of_parts = 7 " including slash/dot
   let maxlen_of_subparts = 5 " split at dot/hypen/underscore; including split
@@ -157,12 +161,13 @@ function! Location()
 endfunction
 "Tag
 function! Tag()
+  let maxlen=10 "can change this
   if g:nostatus=~?&ft | return '' | endif
-  if exists('*tagbar#currenttag')
-    return tagbar#currenttag('  [%s]','')
-  else
-    return ''
-  endif
+  if !exists('*tagbar#currenttag') | return '' | endif
+  let string=tagbar#currenttag('%s','')
+  if string=='' | return '' | endif
+  if len(string)>=maxlen | let string=string[:maxlen-1].'···' | endif
+  return '  ['.string.']'
 endfunction
 "Current tag using my own function
 "Consider modifying this
