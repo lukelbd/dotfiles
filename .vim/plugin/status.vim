@@ -157,7 +157,7 @@ endfunction
 "Location
 function! Location()
   if g:nostatus=~?&ft | return '' | endif
-  return '  ['.line('.').'/'.line('$').'] ('.(100*line('.')/line('$')).')' "current line and percentage
+  return '  ['.line('.').'/'.line('$').'] ('.(100*line('.')/line('$')).'%)' "current line and percentage
 endfunction
 "Tag
 function! Tag()
