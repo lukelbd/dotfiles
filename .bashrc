@@ -165,6 +165,7 @@ function vim() {
   else
     command vim -p $@ # when loading specific files; also open them in separate tabs
   fi
+  clear # clear screen after exit
 }
 
 ################################################################################
@@ -492,8 +493,8 @@ basic="import numpy as np; from datetime import datetime; from datetime import d
 magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autoreload 2'); "
 plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
 pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
+alias iworkspace="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
 alias ipython="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-alias pypython="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
 alias perl="colorize perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
 alias R="colorize R"
 
