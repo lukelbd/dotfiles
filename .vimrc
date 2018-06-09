@@ -44,16 +44,11 @@ let g:loaded_matchparen=0
 "###############################################################################
 "ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
 "First some functions and autocmds
+"Let h, l move past end of line (<> = left/right insert, [] = left/right normal mode)
 set whichwrap=[,],<,>,h,l
-  "let h, l move past end of line (<> = left/right insert, [] = left/right normal mode)
-function! s:escape() "preserve cursor column, UNLESS we were on the newline or final char
-  if col('.')+1!=col('$') && col('.')!=1
-    normal l
-  endif
-endfunction
 augroup escapefix
   au!
-  au InsertLeave * call s:escape() "fixes cursor position
+  au InsertLeave * normal! `^
 augroup END
 "###############################################################################
 "FUNCTION FOR ESCAPING CURRENT DELIMITER
@@ -145,8 +140,11 @@ noremap <silent> cl mzi<CR><Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
 noremap <silent> sk mzkddp`z
+noremap <silent> ck mzkddp`z
 noremap <silent> sj jmzkddp`zj
+noremap <silent> cj jmzkddp`zj
   "swap with row above, and swap with row below; awesome mnemonic, right?
+  "use same syntax for c/s because almost *never* want to change up/down
 noremap <silent> sl xph
 noremap <silent> sh Xp
   "useful for typos
@@ -1879,11 +1877,13 @@ if g:has_ctags
     endif
     if len(ctags)==0 | return | endif
     "Get ctag lines and sort them by number
+    " echom join(ctags,',')
     let ctaglines=map(deepcopy(ctags), 'search("^".escape(v:val[1:-2],"$/*[]"),"n")')
+    " echom join(ctags,',')
+    " echom join(ctaglines,',')
     let b:ctaglines=sort(deepcopy(ctaglines), "s:compare") "vim is object-oriented, like python
-    for i in range(len(b:ctaglines))
-      call extend(b:ctags, [ctags[index(ctaglines, b:ctaglines[i])]])
-    endfor
+    " echom join(ctaglines,',')
+    let b:ctags=map(range(len(b:ctaglines)), 'ctags[index(ctaglines, b:ctaglines[v:val])]')
   endfunction "note if you use FileType below, it will fail to refresh when re-entering VIM
   nnoremap <silent> <Leader>c :call <sid>ctags(0)<CR>:echom "Tags updated."<CR>
   nnoremap <silent> <expr> <Leader>C ':!clear; '.<sid>ctags(1).' \| less<CR>:redraw!<CR>'
@@ -1929,17 +1929,21 @@ if g:has_ctags
           if i==len(b:ctaglines)-1 | echom "Error: Bracket jump failed." | endif
         endfor
       endif
-      exe b:ctaglines[i]
+      return b:ctaglines[i] "just return the line number
     endfor
   endfunction
   function! s:ctagbracketmaps()
     if &ft!="help" "use bracket for jumpint to last position here
       if g:has_nowait
-        nnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>:call <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
-        nnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>:call <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
+        nnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>:exe <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
+        nnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>:exe <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
+        vnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>gv'.<sid>ctagbracket(0,'.v:count.').'ggk<CR>'
+        vnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>gv'.<sid>ctagbracket(1,'.v:count.').'ggk<CR>'
       else
-        nnoremap <expr> <buffer> <silent> [[ '<Esc>:call <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
-        nnoremap <expr> <buffer> <silent> ]] '<Esc>:call <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
+        nnoremap <expr> <buffer> <silent> [[ '<Esc>:exe <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
+        nnoremap <expr> <buffer> <silent> ]] '<Esc>:exe <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
+        vnoremap <expr> <buffer> <silent> [[ '<Esc>gv'.<sid>ctagbracket(0,'.v:count.').'ggk<CR>'
+        vnoremap <expr> <buffer> <silent> ]] '<Esc>gv'.<sid>ctagbracket(1,'.v:count.').'ggk<CR>'
       endif
     endif
   endfunction
@@ -1957,18 +1961,19 @@ endif
 "   -o toggles the fold under cursor, or current one
 "   -q quits the window
 if has_key(g:plugs, "tagbar")
+  "Call Tagbar automatically
   "Note to have tagbar open automatically FileType did not work; possibly some
   "conflict with Obsession; instead BufReadPost worked
   augroup tagbar
     au!
-    au BufReadPost * nested call s:tagbarmanager()
+    au BufReadPost * call s:tagbarmanager()
   augroup END
   function! s:tagbarmanager()
     " if index(['.vimrc','.bashrc'], expand("%:t"))==-1
     " if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
-    if ".vimrc"=~expand("%:t") || (".py,.jl,.m"=~expand("%:e") && expand("%:e")!="")
-      call s:tagbarsetup()
-    endif
+    " if ".vimrc"=~expand("%:t") || (".py,.jl,.m"=~expand("%:e") && expand("%:e")!="")
+    "   call s:tagbarsetup()
+    " endif
   endfunction
   function! s:tagbarsetup()
     "First toggle the tagbar; issues when toggling from NERDTree so switch
@@ -2043,10 +2048,9 @@ nnoremap <silent> <C-q> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silen
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-w> :q<CR>
 "so we have close current window, close tab, and close everything
-
 "###############################################################################
 "IMPORTANT STUFF
-"First line disables linebreaking no matter what ftplugin says
+"First line disables linebreaking no matter what ftplugin says, got damnit
 augroup settings
   au!
   autocmd BufEnter * set textwidth=0
@@ -2056,6 +2060,18 @@ set expandtab "says to always expand \t to their length in <SPACE>'s!
 set autoindent "indents new lines
 set backspace=indent,eol,start "backspace by indent - handy
 nnoremap <Space><Tab> :set expandtab!<CR>
+"VIM configures backspace-delete by tabs
+"We implement our own function to forewards-delete by tabs
+function! s:foreward_delete()
+  "Return 'literal' delete keypresses using backslash in double quotes
+  let line=getline('.')
+  if line[col('.')-1:col('.')-1+&tabstop-1]==repeat(" ",&tabstop)
+    return repeat("\<Delete>",&tabstop)
+  else
+    return "\<Delete>"
+  endif
+endfunction
+inoremap <silent> <expr> <Delete> <sid>foreward_delete()
 "Wrapping
 set textwidth=0 "also disable it to start with dummy
 set linebreak "breaks lines only in whitespace makes wrapping acceptable
@@ -2504,6 +2520,18 @@ nnoremap <silent> <Leader>r :redraw!<CR>
 noremap gt <Nop>
 noremap gT <Nop>
   "undo these maps to avoid confusion
+function! s:commentjump(backwards) "jump to next comment
+  let flag='Wn' "don't wrap around EOF, and don't jump yet
+  if a:backwards | let flag.='b' | normal! k
+  endif
+  let line=search('^\s*'.b:NERDCommenterDelims['left'],flag)
+  if line==0 | echom "No more comments."
+  else | exe line
+  endif
+endfunction
+nnoremap <silent> gc :call <sid>commentjump(0)<CR>
+nnoremap <silent> gC :call <sid>commentjump(1)<CR>
+  "jumping between comments; pretty neat huh?
 nnoremap ga ggVG
 vnoremap ga <Esc>ggVG
 nnoremap gx ga
