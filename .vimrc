@@ -331,6 +331,8 @@ augroup END
 call plug#begin('~/.vim/plugged')
 "Colors
 Plug 'altercation/vim-colors-solarized'
+"Superman man pages
+Plug 'jez/vim-superman'
 "Thesaurus; appears broken
 " Plug 'beloglazov/vim-online-thesaurus'
 "Make mappings repeatable; critical
@@ -856,7 +858,7 @@ function! s:texmacros()
   call s:delimscr('E', '\begin{equation}', '\end{equation}')
   call s:delimscr('A', '\begin{align}', '\end{align}')
   call s:delimscr('v', '\begin{verbatim}', '\end{verbatim}')
-  call s:delimscr('V', '\begin{verbatim}', '\end{verbatim}')
+  call s:delimscr('V', '\begin{center}\begin{code}', '\end{code}\end{center}')
   call s:delimscr('s', '\begin{frame}', '\end{frame}')
   call s:delimscr('S', '\begin{frame}[fragile]', '\end{frame}')
     "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
@@ -1209,11 +1211,11 @@ endfunction
 "HELP WINDOW SETTINGS, and special settings for mini popup windows where we don't
 "want to see line numbers or special characters a la :set list.
 "Also enable quitting these windows with single 'q' press
-augroup help
+augroup simple
   au!
   au BufEnter * let b:recording=0
   au FileType help call s:helpsetup()
-  au FileType rst,qf,diff call s:simplesetup(1)
+  au FileType rst,qf,diff,man call s:simplesetup(1)
   au FileType gitcommit call s:simplesetup(0)
 augroup END
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off

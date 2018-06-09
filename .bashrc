@@ -77,6 +77,13 @@ function man() { # always show useful information when man is called
     echo "No man entry for \"$1\"."
   fi
 }
+function vam() { # man pages in VIM with cool syntax highlighting
+  command vim -c "SuperMan $*"
+  if [ "$?" != "0" ]; then
+    echo "No manual entry for $*"
+  fi
+}
+
 
 # Tab completion behavior
 # TODO: Appears to have been disabled with the \C-i remap below
