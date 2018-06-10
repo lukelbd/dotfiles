@@ -416,38 +416,38 @@ noremap <C-k> g,
 "First, jump to mark '"' without changing the jumplist (:help g`)
 "Mark '"' is the cursor position when last exiting the current buffer
 "CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
-function! s:autosave_toggle(on)
-  if a:on "in future consider using this to disable autosave for large files
-    if exists('b:autosave_on') && b:autosave_on=1
-      return "already on
-    endif
-    let b:autosave_on=1
-    echom 'Enabling autosave.'
-    augroup autosave
-      au! * <buffer>
-      let g:autosave="InsertLeave"
-      if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
-      exe "au ".g:autosave." <buffer> * w"
-    augroup END
-  else
-    if !exists('b:autosave_on') || b:autosave_on=0
-      return "already off
-    endif
-    let b:autosave_on=0
-    echom 'Disabling autosave.'
-    augroup autosave
-      au! * <buffer>
-    augroup END
-  endif
-endfunction
+" function! s:autosave_toggle(on)
+"   if a:on "in future consider using this to disable autosave for large files
+"     if exists('b:autosave_on') && b:autosave_on=1
+"       return "already on
+"     endif
+"     let b:autosave_on=1
+"     echom 'Enabling autosave.'
+"     augroup autosave
+"       au! * <buffer>
+"       let g:autosave="InsertLeave"
+"       if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
+"       exe "au ".g:autosave." <buffer> * w"
+"     augroup END
+"   else
+"     if !exists('b:autosave_on') || b:autosave_on=0
+"       return "already off
+"     endif
+"     let b:autosave_on=0
+"     echom 'Disabling autosave.'
+"     augroup autosave
+"       au! * <buffer>
+"     augroup END
+"   endif
+" endfunction
 augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
     au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .session.vim
-    let g:autosave="InsertLeave"
-    if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
-    exe "au ".g:autosave." * w"
+    let autosave="InsertLeave"
+    if exists("##TextChanged") | let autosave.=",TextChanged" | endif
+    exe "au ".autosave." * w"
   endif
 augroup END
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
@@ -476,6 +476,7 @@ endif
 
 "###############################################################################
 "GIT GUTTER
+"TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
 augroup END
 if has_key(g:plugs, "vim-gitgutter")
@@ -606,7 +607,8 @@ function! s:delims(map,left,right,buffer,bigword)
     exe 'inoremap '.buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-offset)
   endif
 endfunction
-function! s:delimscr(map,left,right)
+"Next, similar to above, but always place stuff on newlines
+function! s:environs(map,left,right)
   exe 'inoremap <silent> <buffer> ,'.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
   exe 'nnoremap <silent> <buffer> ,'.a:map.' mzO'.a:left.'<Esc><Down>o'.a:right.'<Esc>`z=='
   exe 'vnoremap <silent> <buffer> ,'.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
@@ -644,7 +646,9 @@ nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
   "special function that inserts brackets, then
   "puts your cursor in insert mode at the start so you can make a function call
 "Repair semicolon in insert mode
+"Also offer 'cancelling' completion with Escape
 inoremap ;; ;
+inoremap ;<Esc> <Nop>
 
 "###############################################################################
 "LATEX MACROS, lots of insert-mode stuff
@@ -659,9 +663,10 @@ augroup latex
   "think of situation where that's not true
 augroup END
 function! s:texmacros()
-  "Repair stuff otherwise broken by this plugin
-  inoremap <buffer> .<Space> .<Space>
-  inoremap <buffer> ,<Space> ,<Space>
+  "Repair comma-macros, and period/comma in insert mode
+  "Offer 'cancelling' completion with escape
+  inoremap <buffer> .<Esc> <Nop>
+  inoremap <buffer> ,<Esc> <Nop>
   inoremap <buffer> .. .
   inoremap <buffer> ,, ,
   nnoremap <buffer> ,, @q
@@ -835,36 +840,38 @@ function! s:texmacros()
   call s:delims(',m', '\begin{pmatrix}',           '\end{pmatrix}',       1, 0)
   call s:delims(',M', '\begin{bmatrix}',           '\end{bmatrix}',       1, 0)
   "Versions of the above, but this time puting them on own lines
-  " call s:delimscr('P', '\begin{pmatrix}', '\end{pmatrix}')
-  " call s:delimscr('B', '\begin{bmatrix}', '\end{bmatrix}')
+  " call s:environs('P', '\begin{pmatrix}', '\end{pmatrix}')
+  " call s:environs('B', '\begin{bmatrix}', '\end{bmatrix}')
   "Comma-prefixed delimiters with newlines; these have separate special function because
   "it does not make sense to have normal-mode maps for multiline begin/end environments
   "* The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
   "  with default single column; see: https://tex.stackexchange.com/a/366422/73149
   "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
-  call s:delimscr(';', '\begin{center}', '\end{center}') "because ; was available
-  call s:delimscr(':', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  call s:delimscr('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
-  call s:delimscr('C', '\begin{column}{.5\textwidth}', '\end{column}')
-  call s:delimscr('i', '\begin{itemize}', '\end{itemize}')
-  call s:delimscr('I', '\begin{description}', '\end{description}') "d is now open
-  call s:delimscr('n', '\begin{enumerate}', '\end{enumerate}')
-  call s:delimscr('N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
-  call s:delimscr('t', '\begin{tabular}', '\end{tabular}')
-  call s:delimscr('e', '\begin{equation*}', '\end{equation*}')
-  call s:delimscr('a', '\begin{align*}', '\end{align*}')
-  call s:delimscr('E', '\begin{equation}', '\end{equation}')
-  call s:delimscr('A', '\begin{align}', '\end{align}')
-  call s:delimscr('v', '\begin{verbatim}', '\end{verbatim}')
-  call s:delimscr('V', '\begin{center}\begin{code}', '\end{code}\end{center}')
-  call s:delimscr('s', '\begin{frame}', '\end{frame}')
-  call s:delimscr('S', '\begin{frame}[fragile]', '\end{frame}')
+  call s:environs(';', '\begin{center}', '\end{center}') "because ; was available
+  call s:environs(':', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
+  call s:environs('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+  call s:environs('C', '\begin{column}{.5\textwidth}', '\end{column}')
+  call s:environs('i', '\begin{itemize}', '\end{itemize}')
+  call s:environs('I', '\begin{description}', '\end{description}') "d is now open
+  call s:environs('n', '\begin{enumerate}', '\end{enumerate}')
+  call s:environs('N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
+  call s:environs('t', '\begin{tabular}', '\end{tabular}')
+  call s:environs('e', '\begin{equation*}', '\end{equation*}')
+  call s:environs('a', '\begin{align*}', '\end{align*}')
+  call s:environs('E', '\begin{equation}', '\end{equation}')
+  call s:environs('A', '\begin{align}', '\end{align}')
+  call s:environs('b', '\begin{block}{}', '\end{block}')
+  call s:environs('B', '\begin{alertblock}{}', '\end{alertblock}')
+  call s:environs('v', '\begin{verbatim}', '\end{verbatim}')
+  call s:environs('V', '\begin{code}', '\end{code}')
+  call s:environs('s', '\begin{frame}', '\end{frame}')
+  call s:environs('S', '\begin{frame}[fragile]', '\end{frame}')
     "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
     "note that fragile make compiling way slower
-  call s:delimscr('p', '\begin{minipage}{\linewidth}', '\end{minipage}')
-  call s:delimscr('f', '\begin{figure}', '\end{figure}')
-  call s:delimscr('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
-  call s:delimscr('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
+  call s:environs('p', '\begin{minipage}{\linewidth}', '\end{minipage}')
+  call s:environs('f', '\begin{figure}', '\end{figure}')
+  call s:environs('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
+  call s:environs('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
   "Single-character maps
   "THIS NEEDS WORK; right now maybe just too confusing
   inoremap <expr> <buffer> .m '\mathrm{'.nr2char(getchar()).'}'
@@ -2661,5 +2668,6 @@ augroup clearjumps
   endif
 augroup END
 noh "turn off highlighting at startup
+redraw "weird issue sometimes where statusbar disappears
 " suspend
 " echom 'Custom vimrc loaded.'
