@@ -4,7 +4,8 @@
 # This script creates symlinks from $HOME to the committed files in $HOME/dotfiles
 ################################################################################
 # Files to be ignored
-fignore=(README.md setup nbsetup macsetup notebook.json .gitignore karabiner)
+# Just a few of them yo; want to symlink everything else
+fignore=(README.md setup cleanup .gitignore)
 
 # Some syncing notes; use the following to reset if stuff changed:
 # git fetch --all

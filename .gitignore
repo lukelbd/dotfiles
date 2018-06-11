@@ -2,6 +2,10 @@
 ####################################
 empty*
   # practice files
+.log*
+  # random log files
+tags
+  # ctags-generated files
 .vim/plugged
   # have issues with plugin directory if don't do this; may have to do with this directory
   # being git clones of other directories, and hard to sync objects in .git
@@ -17,6 +21,9 @@ empty*
 port
   # store the currently active port for local port-forwarding as a single line
   # in the file 'port' inside dotfiles directory
+learning
+originals
+  # originals are copies of previous versions
 
 # VIM extras #
 ##############
@@ -43,8 +50,6 @@ port
 ###########
 old
 trash
-learning
-originals
 copies
 __trash__
 __pycache__
@@ -73,7 +78,6 @@ __pycache__
 
 # Logs and databases #
 ######################
-*.log
 *.sql
 *.sqlite
 
