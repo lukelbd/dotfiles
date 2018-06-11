@@ -273,8 +273,12 @@ else
     source set_pgi.sh # is in /usr/local/bin
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
+  ;; midway*)
+    # Just source the original bashrc
+    export PATH=""
+    source /etc/bashrc
   # OTHER OPTIONS
-  ;; *) echo "\"HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
+  ;; *) echo "\"$HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
   ;; esac
 fi
 
