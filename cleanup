@@ -4,9 +4,9 @@ shopt -s dotglob # show hidden files as well
 for f in ~/*; do
   if [ -L "$f" ]; then
     if [[ "$(readlink "$f")" =~ "dotfiles" ]]; then
-      echo "$f is a dotfile symlink!"
-      # sleep 1
-      # rm "$f"
+      # echo "Actual filename \"$f\"."
+      echo "Removing dotfile symlink \"$f\"."
+      rm "$f"
     fi
   fi
 done
