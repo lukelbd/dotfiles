@@ -953,11 +953,11 @@ function! s:texmacros()
   "-use set -x to ECHO LAST COMMAND
   "-use c-x for compile/run, and c-w for creating Word document
   noremap <silent> <buffer> <Leader>x :w<CR>:exec("!clear; set -x; "
-      \.'~/dotfiles/compile '.shellescape(@%).' true')<CR>
+      \.'~/bin/compile '.shellescape(@%).' true')<CR>
   noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
-      \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>
+      \.'~/bin/compile '.shellescape(@%).' false')<CR>
   inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
-      \.'~/dotfiles/compile '.shellescape(@%).' false')<CR>a
+      \.'~/bin/compile '.shellescape(@%).' false')<CR>a
   "Commands for counting words
   "Note also you have that Cmd-Space map for counting highlighted words
   "This section is weird; C-@ is same as C-Space (google it), and
@@ -966,7 +966,7 @@ function! s:texmacros()
   noremap <silent> <buffer> <C-@> :exec("!clear; set -x; "
       \.'ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null \| wc -w')<CR>
   noremap <silent> <buffer> <F1> :exec('!clear; set -x; open -a Skim; '
-      \.'osascript ~/dotfiles/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
+      \.'osascript ~/bin/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
       \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
       \.'open -a iTerm')<CR>:redraw!<CR>
 endfunction

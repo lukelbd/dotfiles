@@ -28,7 +28,8 @@ fi
 ################################################################################
 # printf "Enabling shell integration... "
 # echo "Enabling shell integration."
-[ -e "${HOME}/.iterm2_shell_integration.bash" ] && . "${HOME}/.iterm2_shell_integration.bash"
+[ -e "${HOME}/macbook/iterm2_shell_integration.bash" ] && \
+  . "${HOME}/macbook/iterm2_shell_integration.bash"
 # echo "Done."
 
 ################################################################################
@@ -283,8 +284,10 @@ alias brew="PATH=$SIMPLEPATH brew"
 # brew conflicts with anaconda (try "brew doctor" to see); keep those out of path
 # isn't this insanely fucking clever? yay me.
 
-# EXECUTABLES IN HOME DIRECTORY
-export PATH="$HOME:$PATH"
+# EXECUTABLES IN 'bin' FOLDER IN HOME DIRECTORY
+# NO LONGER WILL KEEP RANDOM EXECUTABLES LOOSE IN HOMRE DIRECTORY; PUT
+# EVERYTHING HERE
+export PATH="$HOME/bin:$PATH"
 
 # ISCA modeling stuff
 if [[ "$HOSTNAME" == "monde" ]]; then # so far only set up there
@@ -310,6 +313,8 @@ elif [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
 fi
 
 # ANACONDA options
+# Include modules (i.e. folders with python files) located in the
+# home directory
 export PATH="$HOME/anaconda3/bin:$PATH"
 export PYTHONPATH="$HOME" # so can import packages in home directory
 if [ "$HOSTNAME" == "euclid" ]; then
@@ -638,6 +643,7 @@ monde='ldavis@monde.atmos.colostate.edu'
 euclid='ldavis@euclid.atmos.colostate.edu'
 olbers='ldavis@olbers.atmos.colostate.edu'
 zephyr='lukelbd@zephyr.meteo.mcgill.ca'
+chicago='t-9841aa@midway2.rcc.uchicago.edu' # pass: orkalluctudg
 archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
 ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
 # archive='/media/archives/reanalyses/era_interim/'
