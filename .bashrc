@@ -43,6 +43,14 @@ esac
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
 
+# Set the "scratch" variable
+case $HOSTNAME in
+  midway*)
+    echo "Setting scratch location."
+    scratch=/scratch/midway2/t-9841aa/
+  ;; 
+esac
+
 # Reset all aliases
 unalias -a
 
@@ -650,7 +658,7 @@ monde='ldavis@monde.atmos.colostate.edu'
 euclid='ldavis@euclid.atmos.colostate.edu'
 olbers='ldavis@olbers.atmos.colostate.edu'
 zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-chicago='t-9841aa@midway2.rcc.uchicago.edu' # pass: orkalluctudg
+chicago='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
 archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
 ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
 # archive='/media/archives/reanalyses/era_interim/'
