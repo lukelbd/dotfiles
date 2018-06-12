@@ -36,11 +36,21 @@ fi
 # Shell stuff
 # Custom key bindings and interaction
 ################################################################################
-# Check if we are on MacOS
+# Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
+
+# Loading default bashrc; *must* happen before everything else or may get unexpected
+# behavior! For example, due to my overriding behavior of grep/man/help commands, and
+# the system default bashrc running those commands with my unexpected overrides
+case $HOSTNAME in
+  midway*)
+    echo "Loading system default bashrc."
+    source /etc/bashrc
+    ;;
+  *) echo "Not loading system default bashrc. Make sure your \$PATH is set properly!" ;;
+esac
 # Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
-# [ -f /etc/profile ] && . /etc/profile
-# ...this itself should also run /etc/bashrc
+# [ -f /etc/profile ] && . /etc/profile # this itself should also run /etc/bashrc
 # Linux loading; make sure default bashrc is loaded first, if exists
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
@@ -78,13 +88,12 @@ function man() { # always show useful information when man is called
     echo "No man entry for \"$1\"."
   fi
 }
-function vam() { # man pages in VIM with cool syntax highlighting
-  command vim -c "SuperMan $*"
-  if [ "$?" != "0" ]; then
-    echo "No manual entry for $*"
-  fi
-}
-
+# function superman() { # man pages in VIM with cool syntax highlighting
+#   command vim -c "SuperMan $*"
+#   if [ "$?" != "0" ]; then
+#     echo "No manual entry for $*"
+#   fi
+# }
 
 # Tab completion behavior
 # TODO: Appears to have been disabled with the \C-i remap below
@@ -123,6 +132,8 @@ stty -ixon # disable start/stop output control; note for putty, have to edit STT
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
+# set -ex
+  # exit this script when encounter error, and print each command; useful for debugging
 set +H
   # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
@@ -232,6 +243,7 @@ else
   # OLBERS OPTIONS
   olbers)
     # Add netcdf4 executables to path, for ncdump
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
     export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
     # And HDF5 utilities (not needed now, but maybe someday)
@@ -245,6 +257,7 @@ else
   # GAUSS OPTIONS
   ;; gauss)
     # Basics
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH=""
     export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
     # Add all other utilities to path
@@ -258,6 +271,7 @@ else
   # EUCLID OPTIONS
   ;; euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH=""
     export PATH="/usr/local/bin:/usr/bin:/bin$PATH"
     # PGI utilites, plus Matlab
@@ -267,18 +281,16 @@ else
   # MONDE OPTIONS
   ;; monde*)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH=""
     export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
     # PGI utilites, plus Matlab
     source set_pgi.sh # is in /usr/local/bin
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-  ;; midway*)
-    # Just source the original bashrc
-    export PATH=""
-    source /etc/bashrc
-  # OTHER OPTIONS
-  ;; *) echo "\"$HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
+  # OTHERWISE
+  # No message necessary here; only display message when actually doing something
+  ;; *) # echo "\"$HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
   ;; esac
 fi
 
@@ -703,7 +715,7 @@ function figuresync() {
 # commands go here
 # EOF
 #   \ssh $server "$commands"
-# Method using multiline string 
+# Method using multiline string
 # \ssh $server "command 1
 #   command 2
 #   command 3"
