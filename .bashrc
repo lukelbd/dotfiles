@@ -43,16 +43,6 @@ esac
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
 
-# Supercomputer setup
-case $HOSTNAME in
-  midway*)
-    echo "Setting scratch directory."
-    scratch=/scratch/midway2/t-9841aa/
-    module load Anaconda2
-    source activate /project2/rossby/.conda
-  ;; 
-esac
-
 # Reset all aliases
 unalias -a
 
@@ -223,6 +213,7 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 
 ################################################################################
 # PATH management
+# Also do module load operations, source activate operations for supercomputers.
 ################################################################################
 if $macos; then
   # MAC OPTIONS
@@ -291,6 +282,11 @@ else
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
   # OTHERWISE
   # No message necessary here; only display message when actually doing something
+  ;; midway2*)
+    # Module load and stuff
+    echo "Running module load commands and activating conda environment.."
+    module load Anaconda2
+    source activate /project2/rossby/group07/.conda
   ;; *) # echo "\"$HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
   ;; esac
 fi
