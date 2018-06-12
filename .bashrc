@@ -43,11 +43,13 @@ esac
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
 
-# Set the "scratch" variable
+# Supercomputer setup
 case $HOSTNAME in
   midway*)
-    echo "Setting scratch location."
+    echo "Setting scratch directory."
     scratch=/scratch/midway2/t-9841aa/
+    module load Anaconda2
+    source activate /project2/rossby/.conda
   ;; 
 esac
 
@@ -567,9 +569,10 @@ function connect() { # connect to remove notebook on port
   if [ ! -z $2 ]; then
     jupyterconnect=$2 # override with user input
   else case ${hostname%%.*} in
-      gauss)  jupyterconnect=20001;;
-      euclid) jupyterconnect=20002;;
-      monde)  jupyterconnect=20003;;
+      gauss)    jupyterconnect=20001;;
+      euclid)   jupyterconnect=20002;;
+      monde)    jupyterconnect=20003;;
+      midway2*) jupyterconnect=20004;;
       *)      echo "Error: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
     esac
   fi
