@@ -13,17 +13,6 @@
 [[ $- != *i* ]] && return
 
 ################################################################################
-# Detect args
-################################################################################
-quick=false # default
-if [[ ! -z "$1" ]]; then
-  case "$1" in
-    '-q') echo "Enabling quick-mode." && quick=true ;;
-    *) echo "Error: Uknown argument \"$1\"." && return ;;
-  esac
-fi
-
-################################################################################
 # SHELL INTEGRATION; iTerm2 feature only
 ################################################################################
 # printf "Enabling shell integration... "
@@ -39,13 +28,15 @@ fi
 # Check if we are on MacOS
 [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
 # Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
-# [ -f /etc/profile ] && . /etc/profile
-# ...this itself should also run /etc/bashrc
+# [ -f /etc/profile ] && . /etc/profile # this itself should also run /etc/bashrc
 # Linux loading; make sure default bashrc is loaded first, if exists
 # [ -f /etc/bashrc ] && . /etc/bashrc
 # [ -f /etc/profile ] && . /etc/profile
 
-# Wrappers
+# Reset all aliases
+unalias -a
+
+# Help page wrappers
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 function help() {
@@ -137,12 +128,6 @@ shopt -s globstar # **/ matches all subdirectories, searches recursively
 shopt -u failglob # turn off failglob; so no error message if expansion is empty
 # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
 
-# Prompt
-# Keep things minimal; just make prompt boldface so its a bit more identifiable
-export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
-  # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
-  # see: https://unix.stackexchange.com/a/124408/112647
-
 # Editor stuff
 # Use this for watching log files
 alias watch="less +F" # actually already is a watch command
@@ -168,6 +153,12 @@ function vim() {
   fi
   clear # clear screen after exit
 }
+
+# Prompt
+# Keep things minimal; just make prompt boldface so its a bit more identifiable
+export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+  # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
+  # see: https://unix.stackexchange.com/a/124408/112647
 
 ################################################################################
 # Magic changing stderr color
@@ -825,18 +816,25 @@ alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
-alias ncdump="ncdump -h" # almost always want this; access old versions in functions with backslash
+function ncdump() { # almost always want this; access old versions in functions with backslash
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
+  command ncdump -h "$@" | less
+}
+function ncglobal() { # show just the global attributes
+  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
+  command ncdump -h "$@" | grep -A100 ^// | less
+}
 function ncinfo() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
+  command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
 function ncvarsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | grep -A 100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
+  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
@@ -847,22 +845,20 @@ function ncdimsinfo() { # get information for just variables (no dimension/globa
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | grep -B 100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
+  command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
-    # -A means print x TRAILING lines starting from FIRST match
-    # -B means prinx x PRECEDING lines starting from LAST match
 }
 function nclist() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
+  command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncdimlist() { # get list of dimensions
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  \ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
+  command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 function ncvarlist() { # only get text between variables: and linebreak before global attributes
@@ -883,18 +879,16 @@ function ncvarlist() { # only get text between variables: and linebreak before g
 function ncvarinfo() { # as above but just for one variable
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  \ncdump -h "$2" | grep -A 100 "[[:space:]]$1(" | grep -B 100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
+  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
-    # -A means print x TRAILING lines starting from FIRST match
-    # -B means prinx x PRECEDING lines starting from LAST match
 }
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $macos && reverse="tail -r" || reverse="tac"
-  # \ncdump -v "$1" "$2" | grep -A 100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
-  \ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B 100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse | less
+  # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
+  command ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse | less
     # shhh... just let it happen baby
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
