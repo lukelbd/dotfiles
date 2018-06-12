@@ -17,9 +17,8 @@
 ################################################################################
 # printf "Enabling shell integration... "
 # echo "Enabling shell integration."
-[ -e "${HOME}/macbook/iterm2_shell_integration.bash" ] && \
-  . "${HOME}/macbook/iterm2_shell_integration.bash"
-# echo "Done."
+[ -e "${HOME}/.iterm2_shell_integration.bash" ] && \
+  { . "${HOME}/.iterm2_shell_integration.bash"; echo "Enabled shell integration."; }
 
 ################################################################################
 # Shell stuff
