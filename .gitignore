@@ -2,7 +2,7 @@
 ####################################
 empty*
   # practice files
-.log*
+*.log
   # random log files
 tags
   # ctags-generated files
