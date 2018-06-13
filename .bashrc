@@ -149,7 +149,7 @@ alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
 export PYTHONPATH="$HOME"
 # Anaconda options
-if [ -e "$HOME/anaconda/bin" ]; then
+if [[ -e "$HOME/anaconda3/bin" || -e "$HOME/miniconda3/bin" ]]; then
   echo "Adding anaconda to path."
   export PATH="$HOME/anaconda3/bin:$PATH"
 fi
@@ -341,6 +341,7 @@ else
 fi
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
+! $macos && alias cd="cd -P" # don't want this on my mac temporarily
 
 # Grepping and diffing; enable colors
 alias grep="grep --color=auto" # always show color
@@ -496,16 +497,16 @@ alias R="cmdcolor R"
 #   and you can right-click refresh for a hard reset, cache reset
 alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
 jupyterready=false # theme is not initially setup because takes a long time
-function jupytertheme() {
+function jt() {
   local args="" # initialize empty variable
   local defaults=(gruvboxd cousine) # chesterish is best; monokai has green/pink theme;
     # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
     # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  themes=($(jt -l)) themes=(${themes[@]:2}) # possible themes
+  themes=($(command jt -l)) themes=(${themes[@]:2}) # possible themes
   [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "Error: Theme $1 is invalid; choose from ${themes[@]}." && return 1
   [ ! -z $1 ] && local args+="-t $1 " || local args+="-t ${defaults[0]} " # default
   [ ! -z $2 ] && local args+="-f $2 " || local args+="-f ${defaults[1]} " # best are cousine, office
-  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 $args
+  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 $args
 }
 function notebook() {
   # Set the jupyter theme
