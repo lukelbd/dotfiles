@@ -21,30 +21,138 @@
   { . "${HOME}/.iterm2_shell_integration.bash"; echo "Enabled shell integration."; }
 
 ################################################################################
-# Shell stuff
-# Custom key bindings and interaction
+# INITIAL STUFF, DEFAULT CONFIG AND PATH MANAGEMENT
+# CUSTOM KEY BINDINGS AND INTERACTION
 ################################################################################
+# Reset all aliases
+unalias -a
+
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
 
-# Loading default bashrc; *must* happen before everything else or may get unexpected
+# First, the path management
+# If loading default bashrc, *must* happen before everything else or may get unexpected
 # behavior! For example, due to my overriding behavior of grep/man/help commands, and
 # the system default bashrc running those commands with my unexpected overrides
-case $HOSTNAME in
-  midway*)
+if $macos; then
+  # Mac options
+  # Defaults... but will reset them
+  eval `/usr/libexec/path_helper -s`
+  # Basics
+  export PATH=""
+  export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+  # LaTeX and X11
+  export PATH="/opt/X11/bin:/Library/TeX/texbin:$PATH"
+  # Macports
+  export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
+  # Homebrew
+  export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
+  # PGI compilers
+  export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
+  # Youtube tool
+  export PATH="$HOME/youtubetag:$PATH"
+  # Matlab
+  export PATH="/Applications/MATLAB_R2014a.app/bin:$PATH"
+  # NCL NCAR command language (had trouble getting it to work on Mac with conda,
+  # but on Linux distributions seems to work fine inside anaconda)
+  alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
+  export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
+  export NCARG_ROOT="$HOME/ncl" # critically necessary to run NCL
+    # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends
+    # up in above path after brew install gcc49... and must install this rather than gcc, which
+    # loads libgfortran.3.dylib and yields gcc version 7
+  # Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
+  # [ -f /etc/profile ] && . /etc/profile # this itself should also run /etc/bashrc
+else
+  # Linux options
+  case $HOSTNAME in
+  # Olbers options
+  olbers)
+    # Add netcdf4 executables to path, for ncdump
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
+    export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
+    export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
+    # HDF5 utilities (not needed now, but maybe someday)
+    export PATH="/usr/local/hdf5/bin:$PATH"
+    # MPICH utilities
+    export PATH="/usr/local/mpich3/bin:$PATH"
+    # PGI utilities
+    export PATH="/opt/pgi/linux86-64/2017/bin:$PATH"
+    # Matlab
+    export PATH="/opt/Mathworks/R2016a/bin:$PATH"
+    # And edit library path
+    export LD_LIBRARY_PATH=/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib
+  # Gauss options
+  ;; gauss)
+    # Basics
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
+    export PATH=""
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    # Add all other utilities to path
+    export PATH="/usr/local/netcdf4-pgi/bin:$PATH"
+    export PATH="/usr/local/hdf5-pgi/bin:$PATH"
+    export PATH="/usr/local/mpich3-pgi/bin:$PATH"
+    # PGI utilities, plus Matlab
+    export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
+    # edit the library path
+    export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
+  # Euclid options
+  ;; euclid)
+    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
+    export PATH=""
+    export PATH="/usr/local/bin:/usr/bin:/bin$PATH"
+    # PGI utilites, plus Matlab
+    export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
+    # And edit the library path
+    export LD_LIBRARY_PATH="/usr/local/lib"
+  # Monde options
+  ;; monde*)
+    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
+    export PATH=""
+    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
+    # PGI utilites, plus Matlab
+    source set_pgi.sh # is in /usr/local/bin
+    # And edit the library path
+    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
+    # ISCA modeling stuff
+    export GFDL_BASE=$HOME/isca
+    export GFDL_ENV=monde # "environment" configuration for emps-gv4
+    export GFDL_WORK=/mdata1/ldavis/isca_work # temporary working directory used in running the model
+    export GFDL_DATA=/mdata1/ldavis/isca_data # directory for storing model output
+    # The Euclid/Gauss servers do not have NCL, so need to use conda
+    # Monde has NCL installed already
+    export NCARG_ROOT="/usr/local" # use the version located here
+  # Chicago options
+  ;; midway2*)
+    # Default bashrc setup
     echo "Loading system default bashrc."
     source /etc/bashrc
-    ;;
-  *) echo "Not loading system default bashrc. Make sure your \$PATH is set properly!" ;;
-esac
-# Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
-# [ -f /etc/profile ] && . /etc/profile # this itself should also run /etc/bashrc
-# Linux loading; make sure default bashrc is loaded first, if exists
-# [ -f /etc/bashrc ] && . /etc/bashrc
-# [ -f /etc/profile ] && . /etc/profile
-
-# Reset all aliases
-unalias -a
+    # Module load and stuff
+    echo "Running module load commands and ensuring conda environment is activated."
+    module load Anaconda2
+    [ ! -z "$CONDA_PREFIX" ] && source activate /project2/rossby/group07/.conda
+  # Otherwise
+  ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
+  ;; esac
+  # Consider loading defaults
+  # [ -f /etc/bashrc ] && . /etc/bashrc
+  # [ -f /etc/profile ] && . /etc/profile
+fi
+# Access custom executables
+# No longer will keep random executables loose in homre directory; put everything here
+export PATH="$HOME/bin:$PATH"
+# Homebrew; save path before adding anaconda
+# Brew conflicts with anaconda (try "brew doctor" to see)
+alias brew="PATH=$PATH brew"
+# Include modules (i.e. folders with python files) located in the home directory
+export PYTHONPATH="$HOME"
+# Anaconda options
+if [ -e "$HOME/anaconda/bin" ]; then
+  echo "Adding anaconda to path."
+  export PATH="$HOME/anaconda3/bin:$PATH"
+fi
 
 # Help page wrappers
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
@@ -142,8 +250,6 @@ shopt -u failglob # turn off failglob; so no error message if expansion is empty
 # Editor stuff
 # Use this for watching log files
 alias watch="less +F" # actually already is a watch command
-export EDITOR=vim # default editor, nice and simple
-export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 # VIM command to keep track of session -- need to 'source' the sessionfile, which is
 # just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
 # re-closing every time we start a session
@@ -164,6 +270,9 @@ function vim() {
   fi
   clear # clear screen after exit
 }
+# Environment variables
+export EDITOR=vim # default editor, nice and simple
+export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 
 # Prompt
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
@@ -210,144 +319,6 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 #   node rhino ncl matlab # misc languages; javascript, NCL, matlab
 #   cdo conda pip easy_install python ipython jupyter notebook) # python stuff
 #   # interactive stuff gets SUPER WONKY if you try to redirect it with this script
-
-################################################################################
-# PATH management
-# Also do module load operations, source activate operations for supercomputers.
-################################################################################
-if $macos; then
-  # MAC OPTIONS
-  # Defaults... but will reset them
-  eval `/usr/libexec/path_helper -s`
-  # Basics
-  export PATH=""
-  export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-  # LaTeX and X11
-  export PATH="/opt/X11/bin:/Library/TeX/texbin:$PATH"
-  # Macports
-  export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
-  # Homebrew
-  export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
-  # PGI compilers
-  export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
-else
-  case $HOSTNAME in
-  # OLBERS OPTIONS
-  olbers)
-    # Add netcdf4 executables to path, for ncdump
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
-    export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
-    export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
-    # And HDF5 utilities (not needed now, but maybe someday)
-    export PATH="/usr/local/hdf5/bin:$PATH"
-    # And MPICH utilities
-    export PATH="/usr/local/mpich3/bin:$PATH"
-    # And PGI utilities
-    export PATH="/opt/pgi/linux86-64/2017/bin:$PATH"
-    # And edit library path
-    export LD_LIBRARY_PATH=/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib
-  # GAUSS OPTIONS
-  ;; gauss)
-    # Basics
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
-    export PATH=""
-    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
-    # Add all other utilities to path
-    export PATH="/usr/local/netcdf4-pgi/bin:$PATH"
-    export PATH="/usr/local/hdf5-pgi/bin:$PATH"
-    export PATH="/usr/local/mpich3-pgi/bin:$PATH"
-    # And PGI utilities, plus Matlab
-    export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
-    # And edit the library path
-    export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
-  # EUCLID OPTIONS
-  ;; euclid)
-    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
-    export PATH=""
-    export PATH="/usr/local/bin:/usr/bin:/bin$PATH"
-    # PGI utilites, plus Matlab
-    export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
-    # And edit the library path
-    export LD_LIBRARY_PATH="/usr/local/lib"
-  # MONDE OPTIONS
-  ;; monde*)
-    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
-    export PATH=""
-    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
-    # PGI utilites, plus Matlab
-    source set_pgi.sh # is in /usr/local/bin
-    # And edit the library path
-    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-  # OTHERWISE
-  # No message necessary here; only display message when actually doing something
-  ;; midway2*)
-    # Module load and stuff
-    echo "Running module load commands and ensuring conda environment is activated."
-    module load Anaconda2
-    [ ! -z "$CONDA_PREFIX" ] && source activate /project2/rossby/group07/.conda
-  ;; *) # echo "\"$HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
-  ;; esac
-fi
-
-# SAVE SIMPLE PATH FOR HOMEBREW
-export SIMPLEPATH=$PATH
-alias brew="PATH=$SIMPLEPATH brew"
-# brew conflicts with anaconda (try "brew doctor" to see); keep those out of path
-# isn't this insanely fucking clever? yay me.
-
-# EXECUTABLES IN 'bin' FOLDER IN HOME DIRECTORY
-# NO LONGER WILL KEEP RANDOM EXECUTABLES LOOSE IN HOMRE DIRECTORY; PUT
-# EVERYTHING HERE
-export PATH="$HOME/bin:$PATH"
-
-# ISCA modeling stuff
-if [[ "$HOSTNAME" == "monde" ]]; then # so far only set up there
-  export GFDL_BASE=$HOME/isca
-  export GFDL_ENV=monde # "environment" configuration for emps-gv4
-  export GFDL_WORK=/mdata1/ldavis/isca_work # temporary working directory used in running the model
-  export GFDL_DATA=/mdata1/ldavis/isca_data # directory for storing model output
-fi
-
-# NCL NCAR command language (had trouble getting it to work on Mac with conda,
-# but on Linux distributions seems to work fine inside anaconda)
-# The Euclid/Gauss servers do not have NCL, so need to use conda
-if $macos; then
-  alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
-  export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
-  export NCARG_ROOT="$HOME/ncl" # critically necessary to run NCL
-    # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends
-    # up in above path after brew install gcc49... and must install this rather than gcc, which
-    # loads libgfortran.3.dylib and yields gcc version 7
-elif [[ "$HOSTNAME" =~ "monde" ]]; then # is actually monde.atmos.colostate.edu
-  export NCARG_ROOT="/usr/local"
-    # need this to function
-fi
-
-# ANACONDA options
-# Include modules (i.e. folders with python files) located in the
-# home directory
-export PATH="$HOME/anaconda3/bin:$PATH"
-export PYTHONPATH="$HOME" # so can import packages in home directory
-if [ "$HOSTNAME" == "euclid" ]; then
-  # Home directory not backed up, should be thought of as scratch
-  export PYTHONPATH="$HOME:/birner-home/ldavis"
-fi
-
-# MATLAB options
-if $macos; then
-  MATLABPATH='/Applications/MATLAB_R2014a.app/bin/matlab'
-elif [ "$HOSTNAME" = "olbers" ]; then
-  MATLABPATH='/opt/Mathworks/R2016a/bin/matlab'
-fi
-[ ! -z $MATLABPATH ] && alias matlab="$MATLABPATH -nodesktop -nosplash -r \"run('~/startup.m')\""
-
-# JULIA options
-# First simple alias for installing stuff with julia
-function add() {
-  julia -e "Pkg.add(\"$1\")" # install julia package, easy peasy
-}
 
 ################################################################################
 # General utilties
@@ -418,6 +389,29 @@ function di() { # identical files in two directories
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
 
+# Tool for changing iTerm2 profile before command executed, and returning
+# after executed (e.g. interactive prompts)
+function cmdcolor() {
+  # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
+  # Or that's dumb and just use ITERM_PROFILE
+  newprofile=Argonaut
+  oldprofile=$ITERM_PROFILE
+  # Restore the current settings if the user ctrl-c's out of the command
+  trap ctrl_c INT
+  function ctrl_c() {
+    echo -e "\033]50;SetProfile=$oldprofile\a"
+    exit
+  }
+  # Set profile; if you want you can allow profile as $1, then call shift,
+  # and now the remaining command arguments are $@
+  echo -e "\033]50;SetProfile=$newprofile\a"
+  # Note, can use 'command' to avoid function/alias lookup
+  # See: https://stackoverflow.com/a/6365872/4970632
+  "$@" # need to quote it, might need to escape stuff
+  # Restore settings
+  echo -e "\033]50;SetProfile=$oldprofile\a"
+}
+
 # Standardize less/man/etc. colors
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
 export LESS="--RAW-CONTROL-CHARS"
@@ -438,29 +432,6 @@ if hash tput 2>/dev/null; then
   export LESS_TERMCAP_ZO=$(tput ssupm)
   export LESS_TERMCAP_ZW=$(tput rsupm)
 fi
-
-# Tool for changing iTerm2 profile before command executed, and returning
-# after executed (e.g. interactive prompts)
-function colorize() {
-  # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
-  # Or that's dumb and just use ITERM_PROFILE
-  newprofile=FrontEndDelight
-  oldprofile=$ITERM_PROFILE
-  # Restore the current settings if the user ctrl-c's out of the command
-  trap ctrl_c INT
-  function ctrl_c() {
-    echo -e "\033]50;SetProfile=$oldprofile\a"
-    exit
-  }
-  # Set profile; if you want you can allow profile as $1, then call shift,
-  # and now the remaining command arguments are $@
-  echo -e "\033]50;SetProfile=$newprofile\a"
-  # Note, can use 'command' to avoid function/alias lookup
-  # See: https://stackoverflow.com/a/6365872/4970632
-  "$@" # need to quote it, might need to escape stuff
-  # Restore settings
-  echo -e "\033]50;SetProfile=$oldprofile\a"
-}
 
 ################################################################################
 # Utilities for converting figures between different types
@@ -511,10 +482,11 @@ basic="import numpy as np; from datetime import datetime; from datetime import d
 magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autoreload 2'); "
 plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
 pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
-alias iworkspace="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="colorize ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-alias perl="colorize perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
-alias R="colorize R"
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
+alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
+alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
+alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
+alias R="cmdcolor R"
 
 # Jupyter notebook aliases
 # * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
