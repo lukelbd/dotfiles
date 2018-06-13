@@ -284,9 +284,9 @@ else
   # No message necessary here; only display message when actually doing something
   ;; midway2*)
     # Module load and stuff
-    echo "Running module load commands and activating conda environment.."
+    echo "Running module load commands and ensuring conda environment is activated."
     module load Anaconda2
-    source activate /project2/rossby/group07/.conda
+    [ ! -z "$CONDA_PREFIX" ] && source activate /project2/rossby/group07/.conda
   ;; *) # echo "\"$HOSTNAME\" does not have custom PATH and LD_LIBRARY_PATH settings. You may want to edit your \".bashrc\"."
   ;; esac
 fi
