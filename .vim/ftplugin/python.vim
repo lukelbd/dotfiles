@@ -23,6 +23,9 @@ if exists("s:loaded_functions") || &cp
 endif
 let s:loaded_functions = 1
 
+" Indentation
+setlocal tabstop=4 softtabstop=4 shiftwidth=4
+
 " One problem with matching in Python is that so many parts are optional.
 " I deal with this by matching on any known key words at the start of the
 " line, if they have the same indent.
