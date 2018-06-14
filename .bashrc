@@ -30,10 +30,17 @@ unalias -a
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
 
+# Prompt
+# Keep things minimal; just make prompt boldface so its a bit more identifiable
+export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+  # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
+  # see: https://unix.stackexchange.com/a/124408/112647
+
 # First, the path management
 # If loading default bashrc, *must* happen before everything else or may get unexpected
 # behavior! For example, due to my overriding behavior of grep/man/help commands, and
 # the system default bashrc running those commands with my unexpected overrides
+export PYTHONPATH="" # this one needs to be re-initialized
 if $macos; then
   # Mac options
   # Defaults... but will reset them
@@ -70,6 +77,7 @@ else
   olbers)
     # Add netcdf4 executables to path, for ncdump
     echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
+    export PATH="/usr/local/bin:/usr/bin:/bin"
     export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
     export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
     # HDF5 utilities (not needed now, but maybe someday)
@@ -86,8 +94,7 @@ else
   ;; gauss)
     # Basics
     echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
-    export PATH=""
-    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    export PATH="/usr/local/bin:/usr/bin:/bin"
     # Add all other utilities to path
     export PATH="/usr/local/netcdf4-pgi/bin:$PATH"
     export PATH="/usr/local/hdf5-pgi/bin:$PATH"
@@ -100,8 +107,7 @@ else
   ;; euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
-    export PATH=""
-    export PATH="/usr/local/bin:/usr/bin:/bin$PATH"
+    export PATH="/usr/local/bin:/usr/bin:/bin"
     # PGI utilites, plus Matlab
     export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
     # And edit the library path
@@ -110,8 +116,7 @@ else
   ;; monde*)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
-    export PATH=""
-    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin$PATH"
+    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
     # PGI utilites, plus Matlab
     source set_pgi.sh # is in /usr/local/bin
     # And edit the library path
@@ -128,11 +133,17 @@ else
   ;; midway2*)
     # Default bashrc setup
     echo "Loading system default bashrc."
+    export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
     source /etc/bashrc
+    # Add stuff to pythonpath
+    export PYTHONPATH="$HOME/project-midway2:$PYTHONPATH"
     # Module load and stuff
-    echo "Running module load commands and ensuring conda environment is activated."
-    module load Anaconda2
-    [ ! -z "$CONDA_PREFIX" ] && source activate /project2/rossby/group07/.conda
+    echo "Running module load commands."
+    module load Anaconda3
+    [[ -z "$CONDA_PREFIX" || true ]] && {
+      echo "Activating conda environment."
+      source activate /project2/rossby/group07/.conda
+      }
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -147,7 +158,7 @@ export PATH="$HOME/bin:$PATH"
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
-export PYTHONPATH="$HOME"
+export PYTHONPATH="$HOME:$PYTHONPATH"
 # Anaconda options
 if [[ -e "$HOME/anaconda3/bin" || -e "$HOME/miniconda3/bin" ]]; then
   echo "Adding anaconda to path."
@@ -273,12 +284,6 @@ function vim() {
 # Environment variables
 export EDITOR=vim # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
-
-# Prompt
-# Keep things minimal; just make prompt boldface so its a bit more identifiable
-export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
-  # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
-  # see: https://unix.stackexchange.com/a/124408/112647
 
 ################################################################################
 # Magic changing stderr color
@@ -476,7 +481,6 @@ function pdf2eps() {
 # Python workspace setup
 ################################################################################
 # Interactive shell utilities
-# Colorize them
 # io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
 io="import pandas as pd; import xarray as xr; "
 basic="import numpy as np; from datetime import datetime; from datetime import date; "
@@ -484,10 +488,16 @@ magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autorelo
 plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
 pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
 alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
-alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
-alias R="cmdcolor R"
+# With new shell color
+# alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
+# alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
+# alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
+# alias R="cmdcolor R"
+# Without new shell color
+unalias R 2>/dev/null
+alias iworkspace="ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
+alias ipython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
+alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
 
 # Jupyter notebook aliases
 # * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
@@ -534,6 +544,7 @@ alias connections="ps aux | grep -v grep | grep ssh"
 # Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
+  local user=${1%%@*}
   local hostname=${1##*@} # the host we connect to, minus username
   if [ ! -z $2 ]; then
     jupyterconnect=$2 # override with user input
@@ -548,7 +559,7 @@ function connect() { # connect to remove notebook on port
   # Establish the connection
   echo "Connecting to $hostname over port $jupyterconnect."
   echo "Warning: Keep this window open to use your remote jupyter notebook!"
-  \ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $hostname
+  \ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $user@$hostname
       # the -f command sets this port-forwarding to the background for the duration of the
       # ssh command to follow; but the -N command says we don't need to issue a command,
       # the port will just remain forwarded indefinitely
