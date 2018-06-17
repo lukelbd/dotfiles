@@ -130,16 +130,20 @@ else
     # Monde has NCL installed already
     export NCARG_ROOT="/usr/local" # use the version located here
   # Chicago options
-  ;; midway2*)
+  ;; midway*)
     # Default bashrc setup
     echo "Loading system default bashrc."
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
     source /etc/bashrc
+    # Begin interactive node
+    # Only lasts 2 hours, so forget it
+    # echo "Entering interactive node."
+    # sinteractive
     # Add stuff to pythonpath
     export PYTHONPATH="$HOME/project-midway2:$PYTHONPATH"
     # Module load and stuff
     echo "Running module load commands."
-    module load Anaconda3
+    module load Anaconda2
     [[ -z "$CONDA_PREFIX" || true ]] && {
       echo "Activating conda environment."
       source activate /project2/rossby/group07/.conda
@@ -527,10 +531,11 @@ function notebook() {
   if [ ! -z $1 ]; then
     jupyterremote=$1 # override with user input
   else case ${HOSTNAME%%.*} in
-      uriah)  jupyterport=20000;;
-      gauss)  jupyterport=20001;;
-      euclid) jupyterport=20002;;
-      monde)  jupyterport=20003;;
+      uriah)    jupyterport=20000;;
+      gauss)    jupyterport=20001;;
+      euclid)   jupyterport=20002;;
+      monde)    jupyterport=20003;;
+      midway*) jupyterport=20004;;
       *)      echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
     esac
   fi
@@ -552,8 +557,8 @@ function connect() { # connect to remove notebook on port
       gauss)    jupyterconnect=20001;;
       euclid)   jupyterconnect=20002;;
       monde)    jupyterconnect=20003;;
-      midway2*) jupyterconnect=20004;;
-      *)      echo "Error: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
+      midway*) jupyterconnect=20004;;
+      *)        echo "Error: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
     esac
   fi
   # Establish the connection
