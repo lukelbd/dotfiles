@@ -841,7 +841,7 @@ function! s:texmacros()
   call s:delims(',*', '{\LARGE ',        '}', 1, 0)
   call s:delims(',(', '{\huge ',         '}', 1, 0)
   call s:delims(',)', '{\Huge ',         '}', 1, 0)
-  call s:delims(',{', '\left\{\begin{matrix}[ll]', '\end{matrix}\right.', 1, 0)
+  call s:delims(',{', '\left\{\begin{array}{ll}', '\end{array}\right.', 1, 0)
   call s:delims(',m', '\begin{pmatrix}',           '\end{pmatrix}',       1, 0)
   call s:delims(',M', '\begin{bmatrix}',           '\end{bmatrix}',       1, 0)
   "Versions of the above, but this time puting them on own lines
@@ -1021,14 +1021,33 @@ endfunction
 "Turn on for certain filetypes
 augroup spell
   au!
-  au FileType tex,html,xml,text,markdown setlocal spell
+  au FileType tex,html,xml,text,markdown call s:spelltoggle(1)
 augroup END
 "Off by default
 set nospell spelllang=en_us spellcapcheck=
 "Toggle on and off
-nnoremap so :setlocal spell!<CR>
-nnoremap su :call <sid>spelltoggle()<CR>
-function! s:spelltoggle()
+"Also toggle UK/US languages
+nnoremap <silent> so :call <sid>spelltoggle()<CR>
+nnoremap <silent> su :call <sid>langtoggle()<CR>
+function! s:spelltoggle(...)
+  if a:0>0
+    let toggle=a:1
+  else
+    let toggle=(exists("b:spellstatus") ? 1-b:spellstatus : 1)
+  endif
+  if toggle
+    setlocal spell
+    nnoremap <buffer> sn ]S
+    nnoremap <buffer> sN [S
+    let b:spellstatus=1
+  else
+    setlocal nospell
+    nnoremap <buffer> sn <Nop>
+    nnoremap <buffer> sN <Nop>
+    let b:spellstatus=0
+  endif
+endfunction
+function! s:langtoggle()
   if &spelllang=='en_us'
     set spelllang=en_gb
     echo 'Current language: UK english'
@@ -1653,7 +1672,10 @@ if has_key(g:plugs, "syntastic")
   function! s:syntastic_status()
     return (exists("b:syntastic_on") && b:syntastic_on)
   endfunction
-  function! s:syntastic_setup()
+  function! s:syntastic_enable()
+    nnoremap <buffer> <silent> sn :Lnext<CR>
+    nnoremap <buffer> <silent> sN :Lprev<CR>
+      "use sn/sN to nagivate between syntastic errors, or between spelling errors when syntastic off
     let nbufs=len(tabpagebuflist())
     noh | w | noautocmd SyntasticCheck
     if len(tabpagebuflist())>nbufs
@@ -1663,12 +1685,15 @@ if has_key(g:plugs, "syntastic")
     else | echom "No errors found, or no checkers available." | let b:syntastic_on=0
     endif
   endfunction
+  function! s:syntastic_disable()
+    SyntasticReset
+    let b:syntastic_on=0<CR>
+    nnoremap <buffer> <silent> sn <Nop>
+    nnoremap <buffer> <silent> sN <Nop>
+  endfunction
   "Set up custom remaps
-  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":SyntasticReset<CR>:let b:syntastic_on=0<CR>"
-    \ : ":call <sid>syntastic_setup()<CR>"
-  nnoremap <silent> <expr> sn <sid>syntastic_status() ? ":Lnext<CR>" : "[s"
-  nnoremap <silent> <expr> sN <sid>syntastic_status() ? ":Lprev<CR>" : "]s"
-    "use sn/sN to nagivate between syntastic errors, or between spelling errors when syntastic off
+  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":call <sid>syntastic_disable()<CR>"
+    \ : ":call <sid>syntastic_enable()<CR>"
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
   let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
