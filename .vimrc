@@ -148,6 +148,10 @@ noremap <silent> cj jmzkddp`zj
 noremap <silent> sl xph
 noremap <silent> sh Xp
   "useful for typos
+nnoremap dl 0d$
+  "delete entire line; never should use dl anyway, use x instead
+  "must be normal mode map, or get delay; remember map includes some kind of
+  "operator-pending mode (i.e. waiting for a motion)
 noremap ; <Nop>
 noremap , <Nop>
   "never really want to use f/t commands more than once; remap these later on
@@ -346,14 +350,15 @@ Plug 'tpope/vim-repeat'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
+Plug 'anntzer/vim-cython'
+"Julia support and syntax highlighting
+Plug 'JuliaEditorSupport/julia-vim'
 "Python wrappers
 " if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
 " Plug 'hdima/python-syntax' "this failed for me; had to manually add syntax file
 " Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython' "same problem as python-mode
-"Julia support and syntax highlighting
-Plug 'JuliaEditorSupport/julia-vim'
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
@@ -1570,7 +1575,7 @@ if has_key(g:plugs, "nerdcommenter")
   "NCL delimiters
     "don't know why %s is necessary
   "Custom delimiter overwrites (default python includes space for some reason)
-  let g:NERDCustomDelimiters = {'python': {'left': '#'}, 'ncl': {'left': ';'}}
+  let g:NERDCustomDelimiters = {'python': {'left': '#'}, 'cython': {'left': '#'}, 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}}
   "Comments led with spaces
   let g:NERDSpaceDelims = 1
   "Use compact syntax for prettified multi-line comments
@@ -1898,13 +1903,16 @@ if g:has_ctags
     endif
     "Call ctags function
     "Add the sed line to include all items, not just top-level items
+    "Currently is added
     " \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
     if a:command "just return command
       "if table wasn't produced and this is just stderr text then don't tabulate (-s)
       return "ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." "
+        \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
         \."| cut -s -d$'\t' -f1,3-" "ignore filename field, delimit by literal tabs
     else "save then sort
       let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
+        \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
         \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
     endif
     if len(ctags)==0 | return | endif
