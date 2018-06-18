@@ -1,14 +1,8 @@
-## Personal bash_profile, run for login shells (when user logs in).
-## On most Linux/Unix machines, this means bash_profile is bypassed and
-## only .bashrc run if they have already logged into a desktop to open a
-## terminal; however macOS "runs a login shell every time". 
-## See:
-## http://apple.stackexchange.com/questions/51036/what-is-the-difference-between-bash-profile-and-bashrc
-
-# Load .bashrc
+# Dummy file; keep startup preferences in .bashrc
+# * On most Linux/Unix machines, bashrc is bypassed, and only runs if they
+#   are logged into a desktop already, then open up a terminal.
+# * macOS "runs a login shell every time", so bash_profile always runs. See:
+#   http://apple.stackexchange.com/questions/51036/what-is-the-difference-between-bash-profile-and-bashrc
 if [ -f $HOME/.bashrc ]; then
   . ~/.bashrc
 fi
-
-# And that's it. This will keep startup properties
-# in ONE FILE, loaded no matter what
