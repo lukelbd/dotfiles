@@ -2551,6 +2551,8 @@ nnoremap ga ggVG
 vnoremap ga <Esc>ggVG
 nnoremap gx ga
   "ga mapped to 'select all', and gx mapped to 'get the ASCII/hex value'
+nnoremap GG G
+  "analogue to gg; also opens up 'G' as a prefix
 noremap gf <c-w>gf
 noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
   \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
