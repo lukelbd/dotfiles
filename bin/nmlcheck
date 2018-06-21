@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+file="$1"
+nml="$2"
+# Get fortran file
+if [ -z "$file" ]; then
+  echo "Error: Must supply fortran file for searching."
+  exit 1
+elif [ ! -r "$file" ]; then
+  echo "Error: File \"$file\" not found."
+  exit 1
+fi
+# Get namelist file
+if [ -z "$2" ]; then
+  echo "Using first file in directory that ends with \"nml\"."
+  nmls=(*nml)
+  if [ -z "${nmls[@]}" ]; then
+    echo "Error: No namelist file found."
+    exit 1
+  fi
+  nml="${nmls[@]}"
+fi
+if [ ! -r "$nml" ]; then
+  echo "Error: Namelist file \"$nml\" not found."
+  exit 1
+fi
+# Run script
+nvars=($(cat "$nml" | sed 's/!.*//g' | sed 's/&.*//g' | sed 's/=.*//g' \
+  | tr -d '/,' | xargs))
+fvars=($(cat "$file" | grep -A8 '^\s*namelist' | sed 's/.*\///g' \
+  | tr -d ',&' | xargs))
+echo "Namelist params: ${nvars[@]}."
+echo "File params: ${nvars[@]}."
+for nvar in ${nvars[@]}; do
+  if [[ ! " ${fvars[@]} " =~ " $nvar " ]]; then
+    echo "Namelist file parameter \"$nvar\" not in namelist call."
+    exit 1
+  fi
+done
+for fvar in ${fvars[@]}; do
+  if [[ ! " ${nvars[@]} " =~ " $fvar " ]]; then
+    echo "Parameter from namelist call \"$fvar\" not in namelist file."
+    exit 1
+  fi
+done
+echo "Namelist file and namelist call have identical variables."
+
