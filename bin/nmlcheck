@@ -2,45 +2,32 @@
 file="$1"
 nml="$2"
 # Get fortran file
-if [ -z "$file" ]; then
-  echo "Error: Must supply fortran file for searching."
-  exit 1
-elif [ ! -r "$file" ]; then
-  echo "Error: File \"$file\" not found."
-  exit 1
-fi
+[ -z "$file" ] && echo "Error: Must supply fortran file for searching." && exit 1
+[ ! -r "$file" ] && echo "Error: File \"$file\" not found." && exit 1
 # Get namelist file
 if [ -z "$2" ]; then
   echo "Using first file in directory that ends with \"nml\"."
   nmls=(*nml)
-  if [ -z "${nmls[@]}" ]; then
-    echo "Error: No namelist file found."
-    exit 1
-  fi
+  [ -z "${nmls[@]}" ] && echo "Error: No namelist file found." && exit 1
   nml="${nmls[@]}"
 fi
-if [ ! -r "$nml" ]; then
-  echo "Error: Namelist file \"$nml\" not found."
-  exit 1
-fi
-# Run script
-nvars=($(cat "$nml" | sed 's/!.*//g' | sed 's/&.*//g' | sed 's/=.*//g' \
-  | tr -d '/,' | xargs))
-fvars=($(cat "$file" | grep -A8 '^\s*namelist' | sed 's/.*\///g' \
-  | tr -d ',&' | xargs))
+[ ! -r "$nml" ] && echo "Error: Namelist file \"$nml\" not found." && exit 1
+# Parse files with super clever regexes
+# nvars=($(cat "$nml" | sed 's/!.*//g' | sed 's/&.*//g' | sed 's/=.*//g' | tr -d '/,' | xargs))
+nvars=($(cat "$nml" | grep -o '^[^!]*' | cut -d'=' -f1 -s | xargs))
+fvars=($(cat "$file" | grep -A20 '^\s*namelist' \
+  | sed '/[^&]\s*$/q' | sed 's/.*\///g' | tr -d ',&' | xargs))
 echo "Namelist params: ${nvars[@]}."
 echo "File params: ${nvars[@]}."
+# Compare contents of two arrays
+flag=0
 for nvar in ${nvars[@]}; do
-  if [[ ! " ${fvars[@]} " =~ " $nvar " ]]; then
-    echo "Namelist file parameter \"$nvar\" not in namelist call."
-    exit 1
-  fi
+  [[ ! " ${fvars[@]} " =~ " $nvar " ]] && \
+    echo "Namelist file parameter \"$nvar\" not in namelist call." && flag=1
 done
 for fvar in ${fvars[@]}; do
-  if [[ ! " ${nvars[@]} " =~ " $fvar " ]]; then
-    echo "Parameter from namelist call \"$fvar\" not in namelist file."
-    exit 1
-  fi
+  [[ ! " ${nvars[@]} " =~ " $fvar " ]] && \
+    echo "Parameter from namelist call \"$fvar\" not in namelist file." && flag=1
 done
-echo "Namelist file and namelist call have identical variables."
+[ $flag -eq 0 ] && echo "Namelist file and namelist call have identical variables."
 
