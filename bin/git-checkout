@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Get Vim processes
+[ -z $USER ] && echo "Error: \$USER variable empty."
+if ! which pwdx &>/dev/null; then
+  echo "Error: pwdx command unavailable."
+  exit 1
+fi
+if ! git rev-parse --git-dir &>/dev/null; then
+  echo "Error: not in git repository."
+  exit 1
+fi
+gitdir="$(git rev-parse --git-dir)"
+gitdir="$(readlink -f "$gitdir")"
+pids=$(ps -u $USER | grep vim | cut -d' ' -f1 | xargs)
+# Get working directory of processes
+numprocesses=0
+for pid in ${pids[@]}; do
+  if [[ "$(pwdx $pid)" =~ "$gitdir" ]]; then
+    numprocesses=$(($numprocesses+1))
+  fi
+done
+# Action
+if [ $numprocesses -gt 0 ]; then
+  echo "Error: $numprocesses vim sessions running in git repository."
+  exit
+else
+  echo "No vim sessions running. Proceeding with checkout."
+  git checkout $args
+fi

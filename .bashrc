@@ -143,6 +143,9 @@ else
     export PYTHONPATH="$HOME/project-midway2:$PYTHONPATH"
     # Module load and stuff
     echo "Running module load commands."
+    module purge 2>/dev/null
+    module load intel/16.0
+    module load mkl/11.3
     module load Anaconda2
     [[ -z "$CONDA_PREFIX" || true ]] && {
       echo "Activating conda environment."
@@ -369,6 +372,7 @@ function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." 
 alias tac="gtac" # use dis
 function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
+function empty() { for i in {1..100}; do echo; done; }
 
 # Meta tools
 alias aliases="alias" # without argument, lists all of them
@@ -818,6 +822,12 @@ alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local
 ################################################################################
 # Dataset utilities
 ################################################################################
+# Fortran tools
+function namelist() {
+  [ -z "$1" ] && local file="input.nml" || local file="$1"
+  echo "Params in current namelist:"
+  cat "$file" | cut -d= -f1 -s | grep -v '!' | xargs
+}
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
 #   * note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
