@@ -51,7 +51,8 @@ augroup escapefix
   au InsertLeave * normal! `^
 augroup END
 "###############################################################################
-"FUNCTION FOR ESCAPING CURRENT DELIMITER
+"USEFUL TOOLS THAT REQUIRE THEIR OWN FUNCTIONS
+"Function for escaping current delimiter
 " * Use my own instead of delimitmate defaults because e.g. <c-g>g only works
 "   if no text between delimiters.
 function! s:outofdelim(n) "get us out of delimiter cursos is inside
@@ -67,6 +68,19 @@ function! s:outofdelim(n) "get us out of delimiter cursos is inside
     endif
   endfor
 endfunction
+"Function for counting word under cursor
+"Fails for mysterious reason
+"See: https://stackoverflow.com/questions/1781329/count-the-number-of-occurrences-of-a-string-using-sed
+" function! s:countcword(word)
+"   redir => cnt
+"     silent exe '%s/'.a:word.'//gn'
+"   redir END
+"   let res = strpart(cnt, 0, stridx(cnt, " "))
+"   return res
+" endfunction
+" nnoremap <expr> <Leader>w 'mz:let b:count=<sid>countcword("'.expand('<cword>').'")<CR>`z'
+"Try again with grep; way easier
+nnoremap <silent> <expr> <Leader>w ':let b:count=system("grep -c \"\\b'.expand('<cword>').'\\b\" '.expand('%').'")<CR>:echo b:count[:-2]<CR>'
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU
 augroup insertenter
@@ -503,11 +517,11 @@ if has_key(g:plugs, "vim-gitgutter")
     \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:silent! let b:gitgutter_enabled=1<CR>'
     \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:silent! let b:gitgutter_enabled=0<CR>'
   " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
-  nmap <silent> <Leader>G :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  nmap <silent> <Leader>g :GitGutterUndoHunk<CR>
+  nmap <silent> Gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  nmap <silent> Gu :GitGutterUndoHunk<CR>
   "d is for 'delete' change
-  nmap <silent> <C-r> :GitGutterPrevHunk<CR>
-  nmap <silent> <C-g> :GitGutterNextHunk<CR>
+  nmap <silent> Gp :GitGutterPrevHunk<CR>
+  nmap <silent> Gn :GitGutterNextHunk<CR>
 endif
 
 "###############################################################################
@@ -987,9 +1001,9 @@ function! s:texmacros()
   "-use c-x for compile/run, and c-w for creating Word document
   noremap <silent> <buffer> <Leader>x :w<CR>:exec("!clear; set -x; "
       \.'~/bin/compile '.shellescape(@%).' true')<CR>
-  noremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
+  noremap <silent> <buffer> <C-b> :w<CR>:exec("!clear; set -x; "
       \.'~/bin/compile '.shellescape(@%).' false')<CR>
-  inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
+  inoremap <silent> <buffer> <C-b> <Esc>:w<CR>:exec("!clear; set -x; "
       \.'~/bin/compile '.shellescape(@%).' false')<CR>a
   "This section is weird; C-@ is same as C-Space (google it), and
   "S-Space sends hex codes for F1 in iTerm (enter literal characters in Vim and
@@ -1167,9 +1181,9 @@ function! s:pymacros()
   "Simple remaps; fit with NerdComment syntax
   nnoremap <buffer> cq o"""<CR>"""<Esc><Up>o
   "Maps that call shell commands
-  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
+  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>"
-  inoremap <silent> <buffer> <expr> <C-x> "<Esc>:w<CR>:!clear; set -x; "
+  inoremap <silent> <buffer> <expr> <C-b> "<Esc>:w<CR>:!clear; set -x; "
         \."python ".shellescape(@%)."<CR>a"
 endfunction
 "Configuration for external plugins
@@ -1205,7 +1219,7 @@ augroup c
 augroup END
 function! s:cmacros()
   "Will compile code, then run it and show user the output
-  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
+  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
         \."gcc ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
 endfunction
 
@@ -1216,7 +1230,7 @@ augroup julia
   au FileType julia call s:jmacros()
 augroup END
 function! s:jmacros()
-  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; julia ".shellescape(@%)."<CR>"
+  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; julia ".shellescape(@%)."<CR>"
 endfunction
 
 "###############################################################################
@@ -1227,12 +1241,16 @@ augroup fortran
 augroup END
 function! s:fortranmacros()
   "Will compile code, then run it and show user the output
-  nnoremap <silent> <buffer> <expr> <C-x> ":w<CR>:!clear; set -x; "
-        \."gfortran ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
+  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
+        \."gfortran ".shellescape(@%)." -o ".expand('%:r')." && ./".expand('%:r')."<CR>"
 endfunction
-"Also fix coloring issues; see :help fortran
-let fortran_have_tabs=1
+"Some global variables that make automatic indentation better
+"See this helpful thread: https://stackoverflow.com/a/17619568/4970632
+"See $VIMRUNTIME/indent/fortran.vim for setting the relevant global variables
+let fortran_do_enddo=1 "otherwise do/enddo loops aren't indented!
+let fortran_indent_more=1 "more better indenting
 let fortran_fold=1
+let fortran_have_tabs=1
 let fortran_free_source=1
 let fortran_more_precise=1
 
@@ -1254,9 +1272,9 @@ augroup markdown
 augroup END
 function! s:markdownmacros()
   "Shortcut to open in viewer
-  inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
+  inoremap <silent> <buffer> <C-b> <Esc>:w<CR>:exec("!clear; set -x; "
     \."open -a 'Marked 2' ".shellescape(@%))<CR>a
-  nnoremap <silent> <buffer> <C-x> :w<CR>:exec("!clear; set -x; "
+  nnoremap <silent> <buffer> <C-b> :w<CR>:exec("!clear; set -x; "
     \."open -a 'Marked 2' ".shellescape(@%))<CR><CR>
   if has_key(g:plugs, "vim-markdown")
     set conceallevel=2 "conceals e.g. hyperlinks
@@ -1716,13 +1734,13 @@ if has_key(g:plugs, "syntastic")
   endfunction
   function! s:syntastic_disable()
     SyntasticReset
-    let b:syntastic_on=0<CR>
+    let b:syntastic_on=0
     nnoremap <buffer> <silent> sn <Nop>
     nnoremap <buffer> <silent> sN <Nop>
   endfunction
   "Set up custom remaps
-  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ":call <sid>syntastic_disable()<CR>"
-    \ : ":call <sid>syntastic_enable()<CR>"
+  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ':call <sid>syntastic_disable()<CR>'
+    \ : ':call <sid>syntastic_enable()<CR>'
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
   let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
@@ -2609,6 +2627,8 @@ nnoremap ga ggVG
 vnoremap ga <Esc>ggVG
 nnoremap gx ga
   "ga mapped to 'select all', and gx mapped to 'get the ASCII/hex value'
+nnoremap GG G
+  "analogue to gg; also opens up 'G' as a prefix
 noremap gf <c-w>gf
 noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
   \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
