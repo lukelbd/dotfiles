@@ -96,6 +96,12 @@ function! s:tabreset() "use this inside <expr> remaps
 endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Want to prevent automatic use of CR for confirming entry
+"First, commands that 'get cursor outside' of arbitrary delimiters
+inoremap jj j
+inoremap kk k
+inoremap kj <Nop>
+inoremap KJ <Nop>
+"
 inoremap <expr> jk pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(1)\<CR>a" :
   \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
 inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" :
@@ -483,16 +489,20 @@ endif
 "GIT GUTTER
 "TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
+  au FileType * let b:gitgutter_enabled=0
 augroup END
 if has_key(g:plugs, "vim-gitgutter")
   "Create command for toggling on/off; old VIM versions always show signcolumn
   "if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
   "In newer versions, have to *also* set the signcolumn option.
   " call gitgutter#disable() | silent! set signcolumn=no
-  nnoremap <silent> <expr> <Leader>s g:gitgutter_enabled==0 ? ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>'
-    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>'
-  " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
+  set signcolumn=no "status tracker does not remember whether signcolumn was turned on anyway
   let g:gitgutter_map_keys=0 "disable all maps yo
+  let g:gitgutter_enabled=0 "whether enabled at *startup*
+  nnoremap <silent> <expr> <Leader>s b:gitgutter_enabled==0 ? 
+    \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:silent! let b:gitgutter_enabled=1<CR>'
+    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:silent! let b:gitgutter_enabled=0<CR>'
+  " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
   nmap <silent> <Leader>G :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nmap <silent> <Leader>g :GitGutterUndoHunk<CR>
   "d is for 'delete' change
@@ -589,26 +599,40 @@ function! s:delims(map,left,right,buffer,bigword)
   let rightjump=(a:bigword ? "E" : "e")
   let buffer=(a:buffer ? " <buffer> " : "")
   let offset=(a:right=~"|" ? 1 : 0) "need special consideration when doing | maps, but not sure why
+  "Normal mode maps
   if !has_key(g:plugs, "vim-surround") "fancy repeatable maps
     "Simple map, but repitition will fail
-    exe 'nnoremap '.buffer.' '.a:map.' mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
+    exe 'nnoremap '.buffer.' '.a:map.' '
+      \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
+      \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+      \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
+      \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
   else
     "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
     "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
-    "* Warning: it seems (the) movements within this remap can trigger MatchParen action,
-    "  due to its CursorMovedI autocmd perhaps.
-    "* Added eventignore manipulation because it makes things considerably faster
-    "  especially when matchit regexes try to highlight unmatched braces. Considered
-    "  changing :noautocmd but that can't be done for a remap; see :help <mod>
-    "* For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
-    exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' :setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
-      \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>:setlocal eventignore=<CR>'
+    " * Warning: it seems (the) movements within this remap can trigger MatchParen action,
+    "   due to its CursorMovedI autocmd perhaps.
+    " * Added eventignore manipulation because it makes things considerably faster
+    "   especially when matchit regexes try to highlight unmatched braces. Considered
+    "   changing :noautocmd but that can't be done for a remap; see :help <mod>
+    " * For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
+    " * Will retain cursor position, but adjusted to right by length of left delimiter.
+    exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' '
+      \.':setlocal noautoindent<CR>'
+      \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+      \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'.len(a:left).'l'
+      \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>'
+      \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
     exe 'nmap '.a:map.' <Plug>n'.a:map
   endif
   if !a:bigword "don't map if a WORD map; they are identical
-    exe 'vnoremap <silent> '.buffer.' '.a:map.' <Esc>:setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-offset).':setlocal eventignore=<CR>'
+    "Visual map
+    exe 'vnoremap <silent> '.buffer.' '.a:map.' <Esc>'
+      \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
+      \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+      \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-offset)
+      \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
+    "Insert map
     exe 'inoremap '.buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-offset)
   endif
 endfunction
@@ -854,7 +878,9 @@ function! s:texmacros()
   "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
   call s:environs(';', '\begin{center}', '\end{center}') "because ; was available
   call s:environs(':', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  call s:environs('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+  call s:environs('c', '\begin{columns}[c]', '\end{columns}')
+  " call s:environs('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+    "not sure what these args are for; c will vertically center
   call s:environs('C', '\begin{column}{.5\textwidth}', '\end{column}')
   call s:environs('i', '\begin{itemize}', '\end{itemize}')
   call s:environs('I', '\begin{description}', '\end{description}') "d is now open
@@ -873,10 +899,12 @@ function! s:texmacros()
   call s:environs('S', '\begin{frame}[fragile]', '\end{frame}')
     "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
     "note that fragile make compiling way slower
+  call s:environs('w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}')
+    "white frame
   call s:environs('p', '\begin{minipage}{\linewidth}', '\end{minipage}')
   call s:environs('f', '\begin{figure}', '\end{figure}')
   call s:environs('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
-  call s:environs('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
+  call s:environs('W', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
   "Single-character maps
   "THIS NEEDS WORK; right now maybe just too confusing
   inoremap <expr> <buffer> .m '\mathrm{'.nr2char(getchar()).'}'
@@ -963,11 +991,12 @@ function! s:texmacros()
       \.'~/bin/compile '.shellescape(@%).' false')<CR>
   inoremap <silent> <buffer> <C-x> <Esc>:w<CR>:exec("!clear; set -x; "
       \.'~/bin/compile '.shellescape(@%).' false')<CR>a
-  "Commands for counting words
-  "Note also you have that Cmd-Space map for counting highlighted words
   "This section is weird; C-@ is same as C-Space (google it), and
   "S-Space sends hex codes for F1 in iTerm (enter literal characters in Vim and
   "use ga commands to get the hex codes needed)
+  "Why do this? Because want to keep these maps consistent with system map to count
+  "highlighted text; and mapping that command to some W-combo is dangerous; may
+  "accidentally close a window
   noremap <silent> <buffer> <C-@> :exec("!clear; set -x; "
       \.'ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null \| wc -w')<CR>
   noremap <silent> <buffer> <F1> :exec('!clear; set -x; open -a Skim; '
@@ -2084,10 +2113,14 @@ augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
-nnoremap <silent> <C-q> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
+nnoremap <silent> <C-w> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
 nnoremap <silent> <C-a> :qa<CR> 
-nnoremap <silent> <C-w> :q<CR>
+nnoremap <silent> <C-q> :q<CR>
 "so we have close current window, close tab, and close everything
+silent! tnoremap <silent> <C-t> <C-w>:q!<CR>
+silent! nnoremap <Leader>T :terminal<CR>
+" silent! tnoremap <silent> <Esc> <C-\><C-n>
+"exit terminal mode, if exists; or enter terminal normal mode
 "###############################################################################
 "IMPORTANT STUFF
 "First line disables linebreaking no matter what ftplugin says, got damnit
@@ -2181,11 +2214,11 @@ nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
 function! s:cutmaps()
-  nnoremap <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-  nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-  nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-  nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-  nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+  nnoremap <buffer> <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  nnoremap <buffer> <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+  nnoremap <buffer> <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+  nnoremap <buffer> <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+  nnoremap <buffer> <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 endfunction
 "###############################################################################
 "SEARCHING/REPLACING/CHANGING IN-BETWEEN TAGS
@@ -2654,6 +2687,7 @@ highlight ColorColumn cterm=None ctermbg=Black
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 "sign define hold text=\
 "sign place 1 name=hold line=1
+highlight Terminal ctermbg=Black
 "###############################################################################
 "COLOR HIGHLIGHTING
 "Highlight group under cursor
