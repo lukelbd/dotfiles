@@ -146,11 +146,14 @@ else
     module purge 2>/dev/null
     module load intel/16.0
     module load mkl/11.3
-    module load Anaconda2
-    [[ -z "$CONDA_PREFIX" || true ]] && {
-      echo "Activating conda environment."
-      source activate /project2/rossby/group07/.conda
-      }
+    # In future, use my own environment
+    # hello
+    # Idea to share conda environment, but really not necessary
+    # module load Anaconda2
+    # [[ -z "$CONDA_PREFIX" ]] && {
+    #   echo "Activating conda environment."
+    #   source activate /project2/rossby/group07/.conda
+    #   }
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -486,6 +489,12 @@ function pdf2eps() {
 }
 
 ################################################################################
+# Supercomputer tools 
+################################################################################
+alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
+alias suser="squeue -u $USER"
+
+################################################################################
 # Python workspace setup
 ################################################################################
 # Interactive shell utilities
@@ -539,7 +548,7 @@ function notebook() {
       gauss)    jupyterport=20001;;
       euclid)   jupyterport=20002;;
       monde)    jupyterport=20003;;
-      midway*) jupyterport=20004;;
+      midway*)  jupyterport=20004;;
       *)      echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
     esac
   fi
@@ -558,9 +567,9 @@ function connect() { # connect to remove notebook on port
   if [ ! -z $2 ]; then
     jupyterconnect=$2 # override with user input
   else case ${hostname%%.*} in
-      gauss)    jupyterconnect=20001;;
-      euclid)   jupyterconnect=20002;;
-      monde)    jupyterconnect=20003;;
+      gauss)   jupyterconnect=20001;;
+      euclid)  jupyterconnect=20002;;
+      monde)   jupyterconnect=20003;;
       midway*) jupyterconnect=20004;;
       *)        echo "Error: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
     esac
