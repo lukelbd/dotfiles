@@ -2,7 +2,7 @@
 file="$1"
 nml="$2"
 # Get fortran file
-[ -z "$file" ] && echo "Error: Must supply fortran file for searching." && exit 1
+[ -z "$file" ]   && echo "Error: Must supply fortran file for searching." && exit 1
 [ ! -r "$file" ] && echo "Error: File \"$file\" not found." && exit 1
 # Get namelist file
 if [ -z "$2" ]; then
