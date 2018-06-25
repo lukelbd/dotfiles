@@ -162,6 +162,7 @@ noremap <silent> cj jmzkddp`zj
 noremap <silent> sl xph
 noremap <silent> sh Xp
   "useful for typos
+nnoremap dh <Nop>
 nnoremap dl 0d$
   "delete entire line; never should use dl anyway, use x instead
   "must be normal mode map, or get delay; remember map includes some kind of
