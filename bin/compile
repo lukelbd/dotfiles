@@ -7,6 +7,10 @@
 #   the same folder; useful because may want to keep the same .bib file
 #   for every version of the manuscript. If you have more than one .bib file
 #   the function will fail.
+# * Why this instead of latexmk? It adds a few features, and also had issues with
+#   latexmk where would always end up with random extra files being created. Only
+#   way to consistently remove those temporary files was to query files present in
+#   folder before/after compiling step; delete the new ones. This is better!
 shopt -s nullglob # glob-expand into zero entries
 latex=pdflatex # by default use pdflatex
 bibtex=bibtex # for compiling bibliographies

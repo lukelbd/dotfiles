@@ -1,0 +1,41 @@
+# Template .gitignore for new repos #
+#####################################
+.[sS]ession.*
+.*.sw[a-z]
+  # vim session files and swap files
+*.tmp
+.nfs*
+  # .nfs files appear on Linux servers sometimes
+*.pyc
+__pycache__
+  # python files
+*.log
+*.tmp
+example.*
+empty.*
+  # common temporary files
+old
+trash
+garbage
+  # common directory names for garbage
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+  # compiled source code
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+  # compressed files
+.DS_Store
+.DS_Store?
+.Trashes
+._*
+  # os-generated files
