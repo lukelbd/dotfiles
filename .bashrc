@@ -182,8 +182,8 @@ function help() {
   if builtin help $1 &>/dev/null; then
     builtin help $1 2>&1 | less
   # elif [ ! -z "$($1 --help 2>&1)" ]; then # sometimes prints stuff and returns non-zero exit code, but usually text is in stderr
-  elif $1 --help &>/dev/null; then
-    $1 --help 2>&1 | less # combine output streams or can get weird error
+  elif command $1 --help &>/dev/null; then
+    command $1 --help 2>&1 | less # combine output streams or can get weird error
   else
     echo "No help information for \"$1\"."
   fi
@@ -536,24 +536,42 @@ alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
 #   and you can right-click refresh for a hard reset, cache reset
-alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
-jupyterready=false # theme is not initially setup because takes a long time
+# alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
+jupyter_ready=false # theme is not initially setup because takes a long time
 function jt() {
-  local args="" # initialize empty variable
-  local defaults=(gruvboxd cousine) # chesterish is best; monokai has green/pink theme;
-    # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
-    # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  themes=($(command jt -l)) themes=(${themes[@]:2}) # possible themes
-  [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "Error: Theme $1 is invalid; choose from ${themes[@]}." && return 1
-  [ ! -z $1 ] && local args+="-t $1 " || local args+="-t ${defaults[0]} " # default
-  [ ! -z $2 ] && local args+="-f $2 " || local args+="-f ${defaults[1]} " # best are cousine, office
-  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 $args
+  # Choose default themes and font
+  # chesterish is best; monokai has green/pink theme;
+  # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
+  # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
+  if [ $# -lt 1 ]; then 
+    echo "Choosing jupytertheme automatically based on hostname."
+    case $HOSTNAME in
+      uriah*)  jupyter_theme=solarizedl;;
+      gauss)   jupyter_theme=gruvboxd;;
+      euclid)  jupyter_theme=gruvboxd;;
+      monde)   jupyter_theme=onedork;;
+      midway*) jupyter_theme=onedork;;
+      *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
+    esac
+  else jupyter_theme="$1"
+  fi
+  if [ $# -lt 2 ]; then
+    export jupyter_font="cousine" # look up available ones online
+  else
+    export jupyter_font="$2"
+  fi
+  # Make sure theme is valid
+  themes=($(command jt -l | tail +2))
+  [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
+    echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
+  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
+    -t $jupyter_theme -f $jupyter_font
 }
 function notebook() {
   # Set the jupyter theme
   echo "Configuring jupyter notebook theme."
-  ! $jupyterready && $jupytertheme # make it callable from command line
-  jupyterready=true # this value is available for rest of session
+  ! $jupyter_ready && jt # trigger default theme
+  jupyter_ready=true # this value is available for rest of session
   # Test the hostname and get unique port we have picked
   if [ ! -z $1 ]; then
     jupyterremote=$1 # override with user input

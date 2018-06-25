@@ -225,13 +225,13 @@ endif
 "###############################################################################
 "Magical function; performs n.n.n. style replacement in one keystroke
 "Requires the below augroup for some reason
+"Inpsired from: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
 "##############################################################################"
 augroup refactor_tool
   au!
   au InsertLeave * noautocmd call MoveToNext() "magical c* searching function
 augroup END
 "Also we overhaul the &, @, and # keys
-" * Inpsired from: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
 " * By default & repeats last :s command
 " * Use <C-r>=expand('<cword>')<CR> instead of <C-r><C-w> to avoid errors on empty lines
 " * gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
