@@ -82,7 +82,7 @@ endfunction
 "Try again with grep; way easier
 nnoremap <silent> <expr> <Leader>w ':let b:count=system("grep -c \"\\b'.expand('<cword>').'\\b\" '.expand('%').'")<CR>:echo b:count[:-2]<CR>'
 "###############################################################################
-"INSERT MODE MAPS, IN CONTEXT OF POPUP MENU
+"INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
 augroup insertenter
   au!
   au InsertEnter * let b:insertenter=[line('.'), col('.')]
@@ -110,26 +110,26 @@ function! s:tabreset() "use this inside <expr> remaps
 endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Want to prevent automatic use of CR for confirming entry
-inoremap <expr> jk pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(1)\<CR>a" :
-  \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
-inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" :
-  \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
 inoremap <expr> <C-c> pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
 inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
 inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>".<sid>tabreset() : "\<BS>"
 inoremap <expr> <Tab> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
+inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
 inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
-" inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
-" inoremap <expr> <Space> pumvisible() ? "\<C-e>\<Space>" : "\<Space>"
-" inoremap <expr> <CR> pumvisible() ? "\<C-e>\<CR>" : "\<CR>"
-" inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>" : "\<BS>"
-" inoremap <expr> kj pumvisible() ? "\<C-y>" : "kj"
-" inoremap <expr> <C-j> pumvisible() ? "\<Down>" : ""
-" inoremap <expr> <C-k> pumvisible() ? "\<Up>" : ""
+"Now the commands that 'get cursor outside' of arbitrary delimiters
+inoremap <expr> jk pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(1)\<CR>a" :
+  \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
+inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" :
+  \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
+inoremap jj j
+inoremap kk k
+inoremap kj <Nop>
+inoremap KJ <Nop>
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+"MOSTLY NORMAL MODE MAPS
 "First need helper function to toggle formatoptions (controls whether comment-char inserted on newline)
 " * See help fo-table for what these mean; this disables auto-wrapping lines.
 " * The o and r options continue comment lines.
@@ -150,18 +150,29 @@ function! s:toggleformatopt()
 endfunction
 noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
 noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
-noremap <silent> cl mzi<CR><Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
+noremap <silent> cl mzi<CR><Esc>`z
+  "mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
+  "use ss/substitute instead of cl if you want to enter insert mode
+" noremap <silent> sk mzkddp`z
 noremap <silent> sk mzkddp`z
-noremap <silent> ck mzkddp`z
+" noremap <silent> sj jmzkddp`zj
 noremap <silent> sj jmzkddp`zj
-noremap <silent> cj jmzkddp`zj
   "swap with row above, and swap with row below; awesome mnemonic, right?
   "use same syntax for c/s because almost *never* want to change up/down
 noremap <silent> sl xph
 noremap <silent> sh Xp
   "useful for typos
+noremap <C-l> <C-i>
+noremap <C-h> <C-o>
+noremap <C-j> g;
+noremap <C-k> g,
+  "navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
+noremap <silent> <expr> q b:recording ?
+  \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
+  "enable shortcut so that recordings are taken by just toggling 'q' on-off
+  "the escapes prevent a weird error where sometimes q triggers command-history window
 nnoremap dh <Nop>
 nnoremap dl 0d$
   "delete entire line; never should use dl anyway, use x instead
@@ -360,12 +371,21 @@ Plug 'tpope/vim-repeat'
 "Appearence; use my own customzied statusline/tagbar stuff though, and it's way better
 " Plug 'vim-airline/vim-airline'
 " Plug 'itchyny/lightline.vim'
+"* Decided this plugin was done and wrote my own pretty tabline/statusline plugins
+"* I don't like having everything look the exact same between server; just want
+"  to use the terminal colorscheme and let colors do their thing
+"* Good lightline styles: nord, PaperColor and PaperColor_dark (fave), OldHope,
+"  jellybeans, and Tomorrow_Night, Tomorrow_Night_Eighties
 "Proper syntax highlighting for a few different things
 "Right now .tmux.conf and .tmux files, and markdown files
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
+"TeX utilities; better syntax highlighting, better indentation,
+"and some useful remaps
+" Plug 'lervag/vimtex'
+" Plug 'chrisbra/vim-tex-indent'
 "Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
 "Python wrappers
@@ -415,51 +435,34 @@ Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins 
 call plug#end() "the plug#end also declares filetype syntax and indent on
 
 "###############################################################################
-"JUMPS
-augroup jumps
-augroup END
-"VIM documentation says a "jump" is one of the following commands:
-"The G ? and n commands will be especially useful to jump back from
-" "'", "`", "G", "/", "?", "n",
-" "N", "%", "(", ")", "[[", "]]", "{", "}", ":s", ":tag", "L", "M", "H"
-"First some simple maps for navigating jumplist
-"The l/h navigate jumplist (e.g. undoing an 'n' or 'N' keystroke), the j/k just
-"navigate the changelist (i.e. where text last modified)
-let g:jumpprefix=(has_key(g:plugs, "EnhancedJumps") ? 'g' : '')
-noremap <expr> <C-l> g:jumpprefix.'<C-i>'
-noremap <expr> <C-h> g:jumpprefix.'<C-o>'
-noremap <C-j> g;
-noremap <C-k> g,
-
-"###############################################################################
 "SESSION MANAGEMENT
 "First, jump to mark '"' without changing the jumplist (:help g`)
 "Mark '"' is the cursor position when last exiting the current buffer
 "CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
-" function! s:autosave_toggle(on)
-"   if a:on "in future consider using this to disable autosave for large files
-"     if exists('b:autosave_on') && b:autosave_on=1
-"       return "already on
-"     endif
-"     let b:autosave_on=1
-"     echom 'Enabling autosave.'
-"     augroup autosave
-"       au! * <buffer>
-"       let g:autosave="InsertLeave"
-"       if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
-"       exe "au ".g:autosave." <buffer> * w"
-"     augroup END
-"   else
-"     if !exists('b:autosave_on') || b:autosave_on=0
-"       return "already off
-"     endif
-"     let b:autosave_on=0
-"     echom 'Disabling autosave.'
-"     augroup autosave
-"       au! * <buffer>
-"     augroup END
-"   endif
-" endfunction
+function! s:autosave_toggle(on)
+  if a:on "in future consider using this to disable autosave for large files
+    if exists('b:autosave_on') && b:autosave_on=1
+      return "already on
+    endif
+    let b:autosave_on=1
+    echom 'Enabling autosave.'
+    augroup autosave
+      au! * <buffer>
+      let g:autosave="InsertLeave"
+      if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
+      exe "au ".g:autosave." <buffer> * w"
+    augroup END
+  else
+    if !exists('b:autosave_on') || b:autosave_on=0
+      return "already off
+    endif
+    let b:autosave_on=0
+    echom 'Disabling autosave.'
+    augroup autosave
+      au! * <buffer>
+    augroup END
+  endif
+endfunction
 augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
@@ -480,34 +483,23 @@ endif
 "Remember file position, so come back after opening to same spot
 
 "###############################################################################
-"AIRLINE
-"* Decided this plugin was done and wrote my own pretty tabline/statusline plugins
-"* I don't like having everything look the exact same between server; just want to use the
-"  terminal colorscheme and let colors do their thing
-"* Good lightline styles: nord, PaperColor and PaperColor_dark (fave), OldHope,
-"  jellybeans, and Tomorrow_Night, Tomorrow_Night_Eighties
-" if has_key(g:plugs, "vim-airline")
-"   let g:airline#extensions#tabline#enabled = 1
-"   let g:airline#extensions#tabline#formatter = 'default'
-" endif
-" if has_key(g:plugs, "lightline.vim")
-"   let g:lightline = { 'colorscheme': 'powerline' }
-" endif
-
-"###############################################################################
 "GIT GUTTER
 "TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
+  au FileType * let b:gitgutter_enabled=0
 augroup END
 if has_key(g:plugs, "vim-gitgutter")
   "Create command for toggling on/off; old VIM versions always show signcolumn
   "if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
   "In newer versions, have to *also* set the signcolumn option.
   " call gitgutter#disable() | silent! set signcolumn=no
-  nnoremap <silent> <expr> <Leader>s g:gitgutter_enabled==0 ? ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>'
-    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>'
-  " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
+  set signcolumn=no "status tracker does not remember whether signcolumn was turned on anyway
   let g:gitgutter_map_keys=0 "disable all maps yo
+  let g:gitgutter_enabled=0 "whether enabled at *startup*
+  nnoremap <silent> <expr> <Leader>s b:gitgutter_enabled==0 ? 
+    \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:silent! let b:gitgutter_enabled=1<CR>'
+    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:silent! let b:gitgutter_enabled=0<CR>'
+  " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
   nmap <silent> Gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nmap <silent> Gu :GitGutterUndoHunk<CR>
   "d is for 'delete' change
@@ -530,506 +522,10 @@ if has_key(g:plugs, "delimitmate")
     "vim needs to disable matching ", or everything is super slow
     au FileType vim let b:delimitMate_quotes = "'"
     "markdown need backticks for code, and can maybe do LaTeX
-    au FileType tex let b:delimitMate_quotes = "$ |"
-    au FileType tex let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
+    au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
     "tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
   augroup END
 endif
-
-"###############################################################################
-"SURROUND (place delimiters around stuff)
-"I used this function as inspiration for my ;-style mappings
-"For example, instead of ysiwb (ys=command prefix, iw=movement, b=delimit specifier)
-"we just call ;b -- easy peasy!
-augroup surround
-augroup END
-" See documentation in ~/.vim/doc for details, but the gist is:
-" cs<delim><newdelim> to e.g. change surrounding { into (
-" ds<delim> to e.g. delete the surrounding {
-" ys<movement/inner something/block indicator><newdelim> to e.g. add quotes
-"     around word iw, add parentheses between cursor and W movement, etc.
-" yss is special case (should be memorized; ys"special"); performs for entire
-"     line, ignoring leading/trailing whitespace
-" yS<movement><newdelim> puts text on line of its own, and auto-indents
-"     according to indent settings
-" S<newdelim>, VISUAL MODE remap to place surroundings
-"     if your <newdelim> is something like <a>, then by default the first one
-"     will be <a> and the closing one </a>, for HTML useage
-" t,< will generically refer to ANY HTML-environment
-" ], [ are different; the first adds no space, the second *does* add space
-" b, B, r, a correspond to ), }, ], > (second 2 should be memorized, first 2
-"     are just like vim)
-" p is a Vim-paragraph (block between blank lines)
-"Alias the BUILTIN ds[, ds(, etc. behavior for NEW KEY-CONVENTIONS introduced by SURROUND
-"Function simply matches these builtin VIM methods with a new delimiter-identifier
-function! s:surround(original,new)
-  exe 'nnoremap da'.a:original.' da'.a:new
-  exe 'nnoremap di'.a:original.' di'.a:new
-  exe 'nnoremap ca'.a:original.' ca'.a:new
-  exe 'nnoremap ci'.a:original.' ci'.a:new
-  exe 'nnoremap ya'.a:original.' ya'.a:new
-  exe 'nnoremap yi'.a:original.' yi'.a:new
-  exe 'nnoremap <silent> va'.a:original.' :let b:v_mode="v"<CR>va'.a:new
-  exe 'nnoremap <silent> vi'.a:original.' :let b:v_mode="v"<CR>vi'.a:new
-endfunction
-for s in ['r[', 'a<', 'c{']
-  call s:surround(s[0], s[1]) "most simple ones
-endfor
-"Alias all SURROUND curly-bracket commands with c
-nmap dsc dsB
-  "delete curlies
-nmap cscb csBb
-nmap cscr csBr
-nmap csca csBa
-  "to curlies
-nmap csbc csbB
-nmap csrc csbB
-nmap csac csbB
-  "from curlies
-"Similar idea for functions, i.e. text formatted like foo(bar)
-"Mimick builtin Vim syntax, and the Surround plugin with dsf
-nnoremap <silent> daf mzF(bdt(lda(`z
-nnoremap <silent> caf F(bdt(lca(
-nnoremap <silent> yaf mzF(bvf(%y`z
-nnoremap <silent> vaf F(bvf(%
-nnoremap <silent> dsf mzF(bdt(xf)x`z
-nnoremap <silent> <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
-"Selecting text in-between commented out lines
-nnoremap <expr> vc "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
-"Mimick the ysiwb command (i.e. adding delimiters to current word) for new delimiters
-"The following functions create arbitrary delimtier maps; current convention is
-"to prefix with ';' and ','; see below for details
-function! s:delims(map,left,right,buffer,bigword)
-  let leftjump=(a:bigword ? "B" : "b")
-  let rightjump=(a:bigword ? "E" : "e")
-  let buffer=(a:buffer ? " <buffer> " : "")
-  let offset=(a:right=~"|" ? 1 : 0) "need special consideration when doing | maps, but not sure why
-  if !has_key(g:plugs, "vim-surround") "fancy repeatable maps
-    "Simple map, but repitition will fail
-    exe 'nnoremap '.buffer.' '.a:map.' mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
-  else
-    "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
-    "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
-    "* Warning: it seems (the) movements within this remap can trigger MatchParen action,
-    "  due to its CursorMovedI autocmd perhaps.
-    "* Added eventignore manipulation because it makes things considerably faster
-    "  especially when matchit regexes try to highlight unmatched braces. Considered
-    "  changing :noautocmd but that can't be done for a remap; see :help <mod>
-    "* For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
-    exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' :setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
-      \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>:setlocal eventignore=<CR>'
-    exe 'nmap '.a:map.' <Plug>n'.a:map
-  endif
-  if !a:bigword "don't map if a WORD map; they are identical
-    exe 'vnoremap <silent> '.buffer.' '.a:map.' <Esc>:setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-offset).':setlocal eventignore=<CR>'
-    exe 'inoremap '.buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-offset)
-  endif
-endfunction
-"Next, similar to above, but always place stuff on newlines
-function! s:environs(map,left,right)
-  exe 'inoremap <silent> <buffer> ,'.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
-  exe 'nnoremap <silent> <buffer> ,'.a:map.' mzO'.a:left.'<Esc><Down>o'.a:right.'<Esc>`z=='
-  exe 'vnoremap <silent> <buffer> ,'.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
-    "don't gotta worry about repeat command here, because cannot do that in visual
-    "or insert mode; doesn't make sense anyway because we rarely have to do something like
-    "100 times in insert mode/visual mode repeatedly, but often have to do so in normal mode
-endfunction
-"More advanced 'delimiters' and aliases for creating delimiters
-"Arguments are as follows:
-"1. Shortcut key
-"2. Left-hand delimiter
-"3. Right-hand delimiter
-"4. Whether the map is buffer-local
-"5. Whether the normal-mode map is for WORD instead of word
-"   In this last case, only the normal-mode map is defined.
-call s:delims(';p', 'print(', ')', 0, 0)
-call s:delims(';P', 'print(', ')', 0, 1)
-call s:delims(';b', '(', ')', 0, 0)
-call s:delims(';B', '(', ')', 0, 1)
-call s:delims(';c', '{', '}', 0, 0)
-call s:delims(';C', '{', '}', 0, 1)
-call s:delims(';r', '[', ']', 0, 0)
-call s:delims(';R', '[', ']', 0, 1)
-call s:delims(';a', '<', '>', 0, 0)
-call s:delims(';A', '<', '>', 0, 1)
-call s:delims(";'", "'", "'", 0, 0)
-call s:delims(';"', '"', '"', 0, 0)
-call s:delims(';$', '$', '$', 0, 0)
-call s:delims(';*', '*', '*', 0, 0)
-call s:delims(';`', '`', '`', 0, 0)
-call s:delims(';~', '“', '”', 0, 0)
-vnoremap ;f <Esc>`>a)<Esc>`<i(<Esc>hi
-nnoremap ;f lbmzi(<Esc>hea)<Esc>`zi
-nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
-  "special function that inserts brackets, then
-  "puts your cursor in insert mode at the start so you can make a function call
-"Repair semicolon in insert mode
-"Also offer 'cancelling' completion with Escape
-inoremap ;; ;
-inoremap ;<Esc> <Nop>
-
-"###############################################################################
-"LATEX MACROS, lots of insert-mode stuff
-"Idea stemmed from the above: make shortcuts to ys<stuff> with fewer keystrokes
-"Anyway the original pneumonic for surround.vim 'ys' kind of sucks
-"Toggle the mappings to be declare
-augroup latex
-  au!
-  au FileType tex call s:texmacros()
-  au BufNewFile *.tex call s:textemplates()
-  "no worries since ever TeX file should end in .tex; can't
-  "think of situation where that's not true
-augroup END
-function! s:texmacros()
-  "Repair comma-macros, and period/comma in insert mode
-  "Offer 'cancelling' completion with escape
-  inoremap <buffer> .<Esc> <Nop>
-  inoremap <buffer> ,<Esc> <Nop>
-  inoremap <buffer> .. .
-  inoremap <buffer> ,, ,
-  nnoremap <buffer> ,, @q
-    "special exception; otherwise my 'macro repitition' shortcut fails in LaTeX documents
-  "Quick way of declaring \latex{} commands
-  vnoremap <buffer> <expr> ;. '<Esc>mz`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`z'
-  nnoremap <buffer> <expr> ;. 'mzviw<Esc>`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`z'
-  inoremap <buffer> <expr> ;. '\'.input('Enter \<name>{}-style environment name: ').'{}<Left>'
-  "Quick way of declaring begin-end environments
-  "1) start newline and enter \begin{}, then exit, then input new environment name inside, then exit
-  "2) paste name (line looks like \begin{name}name)
-  "3) wrap pasted name in \end{}
-  "4) place newlines in appropriate positions -- for the visual remap, adding new lines
-  "   messes up the < and > marks, so need to do that at end
-  nnoremap <buffer> <expr> ,. 'A<CR>\begin{}<Esc>i'.input('Enter begin-end environment name: ').'<Esc>'
-        \.'$".pF}a\end{<Esc>A}<Esc>F}a<CR><Esc><Up>A<CR>'
-  " vnoremap <buffer> <expr> ,. '<Esc>mz`>a\end{'.input('Enter begin-end-style environment name: ').'}<Esc>yiB'
-  "       \.'F\i<CR><Esc>==`<i\begin{}<Esc>"aPf}a<CR><Esc><Up>V/\\end{<CR>==:noh<CR>`z'
-  vnoremap <buffer> <expr> ,. '<Esc>mz`>a<CR>\end{}<Esc>i'.input('Enter begin-end-style environment name: ').'<Esc>=='
-        \.'`<i\begin{<C-r>.}<CR><Esc><Up>==`z'
-        " \.'F\i<CR><Esc>==`<i\begin{}<Esc>"aPf}a<CR><Esc><Up>V/\\end{<CR>==:noh<CR>`z'
-  inoremap <buffer> <expr> ,. '<CR>\begin{}<Esc>i'.input('Enter begin-end environment name: ').'<Esc>'
-        \.'$".pF}a\end{<Esc>A}<Esc>F}a<CR><Esc><Up>A<CR>'
-  "Apply 'inner'/'outer'/'surround' syntax to \command{text} and \begin{env}text\end{env}
-  nmap <buffer> dsl F{F\dt{dsB
-  nnoremap <buffer> <expr> csl 'mzF{F\lct{'.input('Enter new \<name>{}-style environment name: ').'<Esc>`z'
-  nnoremap <buffer> dal F{F\dt{daB
-  nnoremap <buffer> cal F{F\dt{caB
-  nnoremap <buffer> yal F{F\vf{%y
-  nnoremap <buffer> val F{F\vf{%
-  nnoremap <buffer> dil diB
-  nnoremap <buffer> cil ciB
-  nnoremap <buffer> yil yiB
-  nnoremap <buffer> vil viB
-  "Fix for $$, since Vim won't do any ca$ va$ et cetera commands on them
-  "Surround syntax will already work, i.e. ds$ works fine
-  nnoremap <buffer> da$ F$df$
-  nnoremap <buffer> ca$ F$cf$
-  nnoremap <buffer> ya$ F$yf$
-  nnoremap <buffer> va$ F$vf$
-  nnoremap <buffer> di$ T$dt$
-  nnoremap <buffer> ci$ T$ct$
-  nnoremap <buffer> yi$ T$yt$
-  nnoremap <buffer> vi$ T$vt$
-  "The below maps had to be done without marks at all, because need recursive map
-  "to match '%' pairs but also disabled 'marking' functionality in this script
-  nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
-  nmap <silent> <buffer> diL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>d
-  nmap <silent> <buffer> ciL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>cc
-  nmap <silent> <buffer> vaL /\\end{<CR>:noh<CR>V^%
-  nmap <silent> <buffer> daL /\\end{<CR>:noh<CR>V^%d
-  nmap <silent> <buffer> caL /\\end{<CR>:noh<CR>V^%cc
-  nmap <silent> <buffer> dsL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>dp<Up>V<Up>d
-  nmap <silent> <buffer> <expr> csL '/\\end{<CR>:noh<CR>APLACEHOLDER<Esc>^%f{<Right>ciB'
-    \.input('Enter new begin-end environment name: ').'<Esc>/PLACEHOLDER<CR>:noh<CR>A {<C-r>.}<Esc>2F{dt{'
-  " nnoremap <buffer> dsL ?begin<CR>hdf}/end<CR>hdf}
-  " nnoremap <buffer> <expr> csL 'mz?\\begin{<CR>t}ciB'.input('Enter new begin-end environment name: ')
-  "   \.'<Esc>/\\end{<CR>t}diB".P`z:noh<CR>'
-  " nnoremap <buffer> viL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$
-  " nnoremap <buffer> diL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$d
-  " nnoremap <buffer> ciL ?\\begin{<CR><Down>0v/\\end{<CR><Up>$d<Up>$<CR>
-  " nnoremap <buffer> vaL ?\\begin{<CR>0v/\\end<CR>$
-  " nnoremap <buffer> daL ?\\begin{<CR>0v/\\end<CR>$d
-  " nnoremap <buffer> caL ?\\begin{<CR>0v/\\end<CR>$s
-  "Same, but for special Latex quotes
-  nnoremap <buffer> dsq f'xF`x
-  nnoremap <buffer> daq F`df'
-  nnoremap <buffer> diq T`dt'
-  nnoremap <buffer> caq F`cf'
-  nnoremap <buffer> ciq T`ct'
-  nnoremap <buffer> yaq F`yf'
-  nnoremap <buffer> yiq T`yt'
-  nnoremap <buffer> vaq F`vf'
-  nnoremap <buffer> viq T`vt'
-  nnoremap <buffer> dsQ 2f'F'2x2F`2x
-  nnoremap <buffer> daQ 2F`d2f'
-  nnoremap <buffer> diQ T`dt'
-  nnoremap <buffer> caQ 2F`c2f'
-  nnoremap <buffer> ciQ T`ct'
-  nnoremap <buffer> yaQ 2F`y2f'
-  nnoremap <buffer> yiQ T`yt'
-  nnoremap <buffer> vaQ 2F`v2f'
-  nnoremap <buffer> viQ T`vt'
-  "Delimiters (advanced)/quick environments
-  "First the delimiters without newlines
-  " call s:delims('\|', '\left\\|', '\right\\|', 1)
-  call s:delims(';\|', '\left\|',      '\right\|', 1, 0)
-  call s:delims(';{',  '\left\{',      '\right\}', 1, 0)
-  call s:delims(';(',  '\left(',       '\right)',  1, 0)
-  call s:delims(';[',  '\left[',       '\right]',  1, 0)
-  call s:delims(';<',  '\left<',       '\right>',  1, 0)
-  call s:delims(';o', '{\color{red}', '}', 1, 0)
-  call s:delims(';i', '\textit{',     '}', 1, 0)
-  call s:delims(';t', '\textbf{',     '}', 1, 0) "now use ;i for various cite commands
-  call s:delims(';y', '\texttt{',     '}', 1, 0) "typewriter text
-  call s:delims(';u', '\underline{',  '}', 1, 0) "u for under
-  call s:delims(';l', '\linespread{',  '}', 1, 0) "u for under
-  call s:delims(';m', '\mathrm{',     '}', 1, 0)
-  call s:delims(';n', '\mathbf{',     '}', 1, 0)
-  call s:delims(';M', '\mathcal{',    '}', 1, 0)
-  call s:delims(';N', '\mathbb{',     '}', 1, 0)
-  call s:delims(';v', '\vec{',        '}', 1, 0)
-  call s:delims(';V', '\verb$',       '$', 1, 0) "verbatim
-  call s:delims(';d', '\dot{',        '}', 1, 0)
-  call s:delims(';D', '\ddot{',       '}', 1, 0)
-  call s:delims(';h', '\hat{',        '}', 1, 0)
-  call s:delims(';`', '\tilde{',      '}', 1, 0)
-  call s:delims(';-', '\overline{',   '}', 1, 0)
-  call s:delims(';\', '\cancelto{}{', '}', 1, 0)
-  call s:delims(';x', '\boxed{',      '}', 1, 0)
-  call s:delims(';X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1, 0)
-    "the second one allows stuff to extend into margins, possibly
-  call s:delims(';/', '\sqrt{',     '}',  1, 0)
-  call s:delims(';q', '`',          "'",  1, 0)
-  call s:delims(';Q', '``',         "''", 1, 0)
-  call s:delims(';$', '$',          '$',  1, 0)
-  call s:delims(';e', '\times10^{', '}',  1, 0)
-  call s:delims(';k', '^{',         '}',  1, 0)
-  call s:delims(';j', '_{',         '}',  1, 0)
-  call s:delims(';K', '\overset{}{', '}', 1, 0)
-  call s:delims(';J', '\underset{}{',     '}',   1, 0)
-  call s:delims(';f', '\dfrac{',          '}{}', 1, 0)
-  call s:delims(';0', '\frametitle{',     '}',   1, 0)
-  call s:delims(';1', '\section{',        '}',   1, 0)
-  call s:delims(';2', '\subsection{',     '}',   1, 0)
-  call s:delims(';3', '\subsubsection{',  '}',   1, 0)
-  call s:delims(';4', '\section*{',       '}',   1, 0)
-  call s:delims(';5', '\subsection*{',    '}',   1, 0)
-  call s:delims(';6', '\subsubsection*{', '}',   1, 0)
-  "Shortcuts for citations and such
-  call s:delims(';7', '\ref{',     '}', 1, 0) "just the number
-  call s:delims(';8', '\autoref{', '}', 1, 0) "name and number; autoref is part of hyperref package
-  call s:delims(';9', '\label{',   '}', 1, 0) "declare labels that ref and autoref point to
-  call s:delims(';!', '\tag{',     '}', 1, 0) "change the default 1-2-3 ordering; common to use *
-  call s:delims(';z', '\note{',    '}', 1, 0) "notes are for beamer presentations, appear in separate slide
-  call s:delims(';a', '\caption{', '}', 1, 0) "amazingly a not used yet
-  call s:delims(';A', '\captionof{figure}{', '}', 1, 0) "alternative
-  call s:delims(';*', '\cite{',    '}', 1, 0) "most common
-  call s:delims(';&', '\citet{',   '}', 1, 0) "second most common one
-  call s:delims(';@', '\citep{',   '}', 1, 0) "second most common one
-  call s:delims(';#', '\citenum{', '}', 1, 0) "most common
-    "other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
-    "have been rethinking this
-  "Shortcuts for graphics
-  call s:delims(';g', '\includegraphics{', '}', 1, 0)
-  call s:delims(';G', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1, 0) "center across margins
-  " call s:delims('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
-  "Comma-prefixed delimiters without newlines
-  "Generally are more closely-related to the begin-end latex environments
-  inoremap <buffer> ,1 \tiny 
-  inoremap <buffer> ,2 \scriptsize 
-  inoremap <buffer> ,3 \footnotesize 
-  inoremap <buffer> ,4 \small 
-  inoremap <buffer> ,5 \normalsize 
-  inoremap <buffer> ,6 \large 
-  inoremap <buffer> ,7 \Large 
-  inoremap <buffer> ,8 \LARGE 
-  inoremap <buffer> ,9 \huge 
-  inoremap <buffer> ,0 \Huge 
-  call s:delims(',!', '{\tiny ',         '}', 1, 0)
-  call s:delims(',@', '{\scriptsize ',   '}', 1, 0)
-  call s:delims(',#', '{\footnotesize ', '}', 1, 0)
-  call s:delims(',$', '{\small ',        '}', 1, 0)
-  call s:delims(',%', '{\normalsize ',   '}', 1, 0)
-  call s:delims(',^', '{\large ',        '}', 1, 0)
-  call s:delims(',&', '{\Large ',        '}', 1, 0)
-  call s:delims(',*', '{\LARGE ',        '}', 1, 0)
-  call s:delims(',(', '{\huge ',         '}', 1, 0)
-  call s:delims(',)', '{\Huge ',         '}', 1, 0)
-  call s:delims(',{', '\left\{\begin{array}{ll}', '\end{array}\right.', 1, 0)
-  call s:delims(',m', '\begin{pmatrix}',           '\end{pmatrix}',       1, 0)
-  call s:delims(',M', '\begin{bmatrix}',           '\end{bmatrix}',       1, 0)
-  "Versions of the above, but this time puting them on own lines
-  " call s:environs('P', '\begin{pmatrix}', '\end{pmatrix}')
-  " call s:environs('B', '\begin{bmatrix}', '\end{bmatrix}')
-  "Comma-prefixed delimiters with newlines; these have separate special function because
-  "it does not make sense to have normal-mode maps for multiline begin/end environments
-  "* The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
-  "  with default single column; see: https://tex.stackexchange.com/a/366422/73149
-  "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
-  call s:environs(';', '\begin{center}', '\end{center}') "because ; was available
-  call s:environs(':', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  call s:environs('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
-  call s:environs('C', '\begin{column}{.5\textwidth}', '\end{column}')
-  call s:environs('i', '\begin{itemize}', '\end{itemize}')
-  call s:environs('I', '\begin{description}', '\end{description}') "d is now open
-  call s:environs('n', '\begin{enumerate}', '\end{enumerate}')
-  call s:environs('N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
-  call s:environs('t', '\begin{tabular}', '\end{tabular}')
-  call s:environs('e', '\begin{equation*}', '\end{equation*}')
-  call s:environs('a', '\begin{align*}', '\end{align*}')
-  call s:environs('E', '\begin{equation}', '\end{equation}')
-  call s:environs('A', '\begin{align}', '\end{align}')
-  call s:environs('b', '\begin{block}{}', '\end{block}')
-  call s:environs('B', '\begin{alertblock}{}', '\end{alertblock}')
-  call s:environs('v', '\begin{verbatim}', '\end{verbatim}')
-  call s:environs('V', '\begin{code}', '\end{code}')
-  call s:environs('s', '\begin{frame}', '\end{frame}')
-  call s:environs('S', '\begin{frame}[fragile]', '\end{frame}')
-    "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
-    "note that fragile make compiling way slower
-  call s:environs('p', '\begin{minipage}{\linewidth}', '\end{minipage}')
-  call s:environs('f', '\begin{figure}', '\end{figure}')
-  call s:environs('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
-  call s:environs('w', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
-  "Single-character maps
-  "THIS NEEDS WORK; right now maybe just too confusing
-  inoremap <expr> <buffer> .m '\mathrm{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .M '\mathbf{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .h '\hat{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .v '\vec{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .` '\tilde{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .= '\overline{'.nr2char(getchar()).'}'
-  " inoremap <expr> <buffer> .M '\mathcal{'.nr2char(getchar()).'}'
-  " inoremap <expr> <buffer> .N '\mathbb{'.nr2char(getchar()).'}'
-  "Arrows
-  inoremap <buffer> ., \pause
-  inoremap <buffer> ., \pause
-  inoremap <buffer> ., \pause
-  inoremap <buffer> ., \pause
-  "Misc symbotls
-  inoremap <buffer> ., \pause
-  inoremap <buffer> .i \item 
-  "Math symbols
-  inoremap <buffer> .a \alpha 
-  inoremap <buffer> .b \beta 
-  inoremap <buffer> .c \xi 
-  inoremap <buffer> .C \Xi 
-    "weird curly one
-    "the upper case looks like 3 lines
-  inoremap <buffer> .x \chi 
-    "looks like an x so want to use this map
-    "pronounced 'zi', the 'i' in 'tide'
-  inoremap <buffer> .d \delta 
-  inoremap <buffer> .D \Delta 
-  inoremap <buffer> .f \phi 
-  inoremap <buffer> .F \Phi 
-  inoremap <buffer> .g \gamma 
-  inoremap <buffer> .G \Gamma 
-  " inoremap <buffer> .k \kappa
-  inoremap <buffer> .l \lambda 
-  inoremap <buffer> .L \Lambda 
-  inoremap <buffer> .u \mu 
-  inoremap <buffer> .n \nabla 
-  inoremap <buffer> .N \nu 
-  inoremap <buffer> .e \epsilon 
-  inoremap <buffer> .E \eta 
-  inoremap <buffer> .p \pi 
-  inoremap <buffer> .P \Pi 
-  inoremap <buffer> .q \theta 
-  inoremap <buffer> .Q \Theta 
-  inoremap <buffer> .r \rho 
-  inoremap <buffer> .s \sigma 
-  inoremap <buffer> .S \Sigma 
-  inoremap <buffer> .t \tau 
-  inoremap <buffer> .y \psi 
-  inoremap <buffer> .Y \Psi 
-  inoremap <buffer> .w \omega 
-  inoremap <buffer> .W \Omega 
-  inoremap <buffer> .z \zeta 
-  inoremap <buffer> .1 \partial 
-  inoremap <buffer> .2 \mathrm{d}
-  inoremap <buffer> .3 \mathrm{D}
-  "3 levels of differentiation; each one stronger
-  inoremap <buffer> .4 \sum 
-  inoremap <buffer> .5 \prod 
-  inoremap <buffer> .6 \int 
-  inoremap <buffer> .7 \iint 
-  inoremap <buffer> .8 \oint 
-  inoremap <buffer> .9 \oiint 
-  inoremap <buffer> .x \times 
-  inoremap <buffer> .o \cdot 
-  inoremap <buffer> .O \circ 
-  inoremap <buffer> .- {-}
-  inoremap <buffer> .+ {+}
-  inoremap <buffer> .~ {\sim}
-  inoremap <buffer> .k ^
-  inoremap <buffer> .j _
-  inoremap <buffer> ., \,
-  inoremap <buffer> ._ {\centering\noindent\rule{\paperwidth/2}{0.7pt}}
-    "centerline (can modify this; \rule is simple enough to understand)
-  "Commands for compiling latex
-  "-use clear, because want to clean up previous output first
-  "-use set -x to ECHO LAST COMMAND
-  "-use c-x for compile/run, and c-w for creating Word document
-  noremap <silent> <buffer> <Leader>x :w<CR>:exec("!clear; set -x; "
-      \.'~/bin/compile '.shellescape(@%).' true')<CR>
-  noremap <silent> <buffer> <C-b> :w<CR>:exec("!clear; set -x; "
-      \.'~/bin/compile '.shellescape(@%).' false')<CR>
-  inoremap <silent> <buffer> <C-b> <Esc>:w<CR>:exec("!clear; set -x; "
-      \.'~/bin/compile '.shellescape(@%).' false')<CR>a
-  "Commands for counting words
-  "Note also you have that Cmd-Space map for counting highlighted words
-  "This section is weird; C-@ is same as C-Space (google it), and
-  "S-Space sends hex codes for F1 in iTerm (enter literal characters in Vim and
-  "use ga commands to get the hex codes needed)
-  noremap <silent> <buffer> <C-@> :exec("!clear; set -x; "
-      \.'ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null \| wc -w')<CR>
-  noremap <silent> <buffer> <F1> :exec('!clear; set -x; open -a Skim; '
-      \.'osascript ~/bin/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
-      \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
-      \.'open -a iTerm')<CR>:redraw!<CR>
-endfunction
-"Function for loading templates
-"See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
-function! s:textemplates()
-  let templates=split(globpath('~/latex/', '*.tex'),"\n")
-  let names=[]
-  for template in templates
-    call add(names, '"'.fnamemodify(template, ":t:r").'"')
-    "expand does not work, for some reason... because expand is used with one argument
-    "with a globalfilename, e.g. % (current file)... fnamemodify is for strings
-  endfor
-  while 1
-    echo "Current templates available: ".join(names, ", ")."."
-    let template=expand("~")."/latex/".input("Enter choice: ").".tex"
-    if filereadable(template)
-      execute "0r ".template
-      break
-    endif
-    echo "\nInvalid name."
-  endwhile
-endfunction
-
-"###############################################################################
-"HTML MACROS, lots of insert-mode stuff
-augroup html
-  au!
-  au FileType html call s:htmlmacros()
-augroup END
-function! s:htmlmacros()
-  call s:delimscr('h', '<head>', '</head>')
-  call s:delimscr('b', '<body>', '</body>')
-  call s:delimscr('t', '<title>', '</title>')
-  call s:delimscr('p', '<p>', '</p>')
-  call s:delimscr('1', '<h1>', '</h1>')
-  call s:delimscr('2', '<h2>', '</h2>')
-  call s:delimscr('3', '<h3>', '</h3>')
-  call s:delimscr('4', '<h4>', '</h4>')
-  call s:delimscr('5', '<h5>', '</h5>')
-  call s:delims(',e', '<em>', '</em>', 1, 0)
-  call s:delims(',t', '<strong>', '</strong>', 1, 0)
-endfunction
 
 "###############################################################################
 "SPELLCHECK (really is a BUILTIN plugin, hence why it's in this section)
@@ -1088,174 +584,6 @@ nnoremap sr zug
 " endif
 
 "###############################################################################
-"CUSTOM PYTHON MACROS
-augroup python
-  au!
-  au FileType python call s:pymacros()
-augroup END
-"Builtin python ftplugin syntax option; these should be provided with VIM by default
-let g:python_highlight_all=1
-"Experimental feature that converts dict() to {}-style dictionary
-function! s:dictconvert() "For searches with :normal command, see:
-  "http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
-  let saveview=winsaveview()
-  let line=line('.')
-  normal! 0
-  call search('=')
-  while line('.')==line
-    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
-  endwhile
-  call winrestview(saveview)
-  "return to original location
-  "column first, then go to line; if column no longer exists, we just are at end-of-line
-endfunction
-function! s:Dictconvert()
-  let saveview=winsaveview()
-  let estatus=search('dict(', 'be') "search moving Backwards, and fall on End of match
-  if !estatus
-    echom "Error: The cursor is not within a python dictionary."
-    call winrestview(saveview) | return
-  endif
-  "Find the matching bracket for dict() instance
-  let start=[line('.'), col('.')] "save the starting line
-  normal %
-  " echo 'Start: '.saveview['lnum'].','.saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
-  if line('.')<saveview['lnum'] || (line('.')==saveview['lnum'] && col('.')<saveview['col'])
-    echom "Error: The cursor is not within a python dictionary."
-    call winrestview(saveview) | return
-  endif
-  let end=[line('.'), col('.')] "save the ending line
-  call cursor(start[0], start[1]) "return to starting point of dictionary
-  exe 's/dict(/(' | normal lcsbB
-  call search('=')
-  while line('.')<end[0] || (line('.')==end[0] && col('.')<=end[1])
-    "note the h after <Esc> only works if have the InsertLeave autocmd that preserves the cursor position
-    "the h ensures single-character variables aren't skipped over
-    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
-  endwhile
-  call winrestview(saveview)
-  "return to original location; another option is cursor() function, but slightly more limited functionality
-  "column first, then go to line; if column no longer exists, we just are at end-of-line
-endfunction
-if has_key(g:plugs, "vim-repeat") "mnemonic is 'change this stuff to dictionary'
-  nnoremap <silent> <Plug>pydict :call <sid>dictconvert()<CR>:call repeat#set("\<Plug>pydict")<CR>
-  nnoremap <silent> <Plug>Pydict :call <sid>Dictconvert()<CR>:call repeat#set("\<Plug>Pydict")<CR>
-  nmap cd <Plug>pydict
-  nmap cD <Plug>Pydict
-else
-  nnoremap cd :call <sid>dictconvert()<CR>
-  nnoremap cD :call <sid>Dictconvert()<CR>
-endif
-"Macros for compiling code
-function! s:pymacros()
-  "Simple shifting
-  setlocal tabstop=4 softtabstop=4 shiftwidth=4
-  "Simple remaps; fit with NerdComment syntax
-  nnoremap <buffer> cq o"""<CR>"""<Esc><Up>o
-  "Maps that call shell commands
-  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
-        \."python ".shellescape(@%)."<CR>"
-  inoremap <silent> <buffer> <expr> <C-b> "<Esc>:w<CR>:!clear; set -x; "
-        \."python ".shellescape(@%)."<CR>a"
-endfunction
-"Configuration for external plugins
-"Jedi-vim stuff; see: https://github.com/davidhalter/jedi-vim
-" if has_key(g:plugs, "jedi-vim")
-"   " let g:jedi#force_py_version=3
-"   let g:jedi#auto_vim_configuration = 0
-"     " set these myself instead
-"   let g:jedi#rename_command = ""
-"     "jedi-vim recommended way of disabling commands
-"     "note jedi auto-renaming sketchy, sometimes fails good example is try renaming 'debug'
-"     "in metadata function; jedi skips f-strings, skips its re-assignment in for loop,
-"     "skips where it appeared as default kwarg in function
-"   let g:jedi#usages_command = "QJ"
-"     "open up list of places where variable appears; then can 'goto'
-"   let g:jedi#goto_assignments_command = "QK"
-"     "goto location where definition/class defined
-"   let g:jedi#documentation_command = "QW"
-"     "use 'W' for 'what is this?'
-"   autocmd FileType python setlocal completeopt-=preview
-"     "disables docstring popup window
-" endif
-" "Vim python-mode stuff
-" if has_key(g:plugs, "python-mode")
-"   let g:pymode_python='python3'
-" endif
-
-"###############################################################################
-"C MACROS
-augroup c
-  au!
-  au FileType c call s:cmacros()
-augroup END
-function! s:cmacros()
-  "Will compile code, then run it and show user the output
-  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
-        \."gcc ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
-endfunction
-
-"###############################################################################
-"JULIA MACROS
-augroup julia
-  au!
-  au FileType julia call s:jmacros()
-augroup END
-function! s:jmacros()
-  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; julia ".shellescape(@%)."<CR>"
-endfunction
-
-"###############################################################################
-"FORTRAN MACROS
-augroup fortran
-  au!
-  au FileType fortran call s:fortranmacros()
-augroup END
-function! s:fortranmacros()
-  "Will compile code, then run it and show user the output
-  nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
-        \."gfortran ".shellescape(@%)." -o ".expand('%:r')." && ./".expand('%:r')."<CR>"
-endfunction
-"Some global variables that make automatic indentation better
-"See this helpful thread: https://stackoverflow.com/a/17619568/4970632
-"See $VIMRUNTIME/indent/fortran.vim for setting the relevant global variables
-let fortran_do_enddo=1 "otherwise do/enddo loops aren't indented!
-let fortran_indent_more=1 "more better indenting
-let fortran_fold=1
-let fortran_have_tabs=1
-let fortran_free_source=1
-let fortran_more_precise=1
-
-"###############################################################################
-"NCL COMPLECTION
-augroup ncl
-  au!
-  au FileType * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
-  "can put other stuff here; right now this is just for the NCL dict for NCL
-augroup END
-" set complete-=k complete+=k " Add dictionary search (as per dictionary option)
-" au BufRead,BufNewFile *.ncl set dictionary=~/.vim/words/ncl.dic
-
-"###############################################################################
-"MARKDOWN MACROS
-augroup markdown
-  au!
-  au FileType markdown call s:markdownmacros()
-augroup END
-function! s:markdownmacros()
-  "Shortcut to open in viewer
-  inoremap <silent> <buffer> <C-b> <Esc>:w<CR>:exec("!clear; set -x; "
-    \."open -a 'Marked 2' ".shellescape(@%))<CR>a
-  nnoremap <silent> <buffer> <C-b> :w<CR>:exec("!clear; set -x; "
-    \."open -a 'Marked 2' ".shellescape(@%))<CR><CR>
-  if has_key(g:plugs, "vim-markdown")
-    set conceallevel=2 "conceals e.g. hyperlinks
-    let g:tex_conceal="" "disable math conceal
-    let g:vim_markdown_math=1 "turn on $$ math
-  endif
-endfunction
-
-"###############################################################################
 "HELP WINDOW SETTINGS, and special settings for mini popup windows where we don't
 "want to see line numbers or special characters a la :set list.
 "Also enable quitting these windows with single 'q' press
@@ -1266,9 +594,6 @@ augroup simple
   au FileType rst,qf,diff,man call s:simplesetup(1)
   au FileType gitcommit call s:simplesetup(0)
 augroup END
-"Enable shortcut so that recordings are taken by just toggling 'q' on-off
-"The escapes prevent a weird error where sometimes q triggers command-history window
-noremap <silent> <expr> q b:recording ? 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
 noremap <Leader>h :vert help 
@@ -1358,15 +683,6 @@ if has_key(g:plugs, "codi.vim")
   let g:codi#log = "codi.log"
     "log everything, becuase you *will* have issues
 endif
-
-"###############################################################################
-"HOWMUCH (SUMMING TABLE ELEMENTS)
-"NO LONGER CONTROLLED BY PLUGIN MANAGER; USE REMAPS
-"<Leader>s and <Leader>S TO SUM EQUATIONS IN SINGLE COLUMN
-augroup howmuch
-augroup END
-let g:HowMuch_auto_engines=['py', 'bc'] "python engine uses from math import *
-let g:HowMuch_scale=3 "precision
 
 "###############################################################################
 "MUCOMPLETE
@@ -1589,22 +905,15 @@ if has_key(g:plugs, "nerdcommenter")
     au!
     au FileType * call s:commentheaders()
   augroup END
-  "Disable default mappings (make my own)
-  let g:NERDCreateDefaultMappings = 0
-  "NCL delimiters
-    "don't know why %s is necessary
   "Custom delimiter overwrites (default python includes space for some reason)
-  let g:NERDCustomDelimiters = {'python': {'left': '#'}, 'cython': {'left': '#'}, 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}}
-  "Comments led with spaces
-  let g:NERDSpaceDelims = 1
-  "Use compact syntax for prettified multi-line comments
-  let g:NERDCompactSexyComs = 1
-  "Trailing whitespace deletion
-  let g:NERDTrimTrailingWhitespace=1
-  "Allow commenting and inverting empty lines (useful when commenting a region)
-  let g:NERDCommentEmptyLines = 1
-  "Align line-wise comment delimiters flush left instead of following code indentation
-  let g:NERDDefaultAlign = 'left'
+  let g:NERDCustomDelimiters = {'python': {'left': '#'}, 'cython': {'left': '#'},
+    \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}}
+  let g:NERDCreateDefaultMappings = 0 " disable default mappings (make my own)
+  let g:NERDSpaceDelims = 1           " comments led with spaces
+  let g:NERDCompactSexyComs = 1       " use compact syntax for prettified multi-line comments
+  let g:NERDTrimTrailingWhitespace=1  " trailing whitespace deletion
+  let g:NERDCommentEmptyLines = 1     " allow commenting and inverting empty lines (useful when commenting a region)
+  let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 1
   "Create python docstring
   nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
@@ -1736,6 +1045,24 @@ if has_key(g:plugs, "syntastic")
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
 
+"##############################################################################"
+"VIMTEX SETTINGS AND STUFF
+augroup vimtex
+augroup END
+if has_key(g:plugs, 'vimtex')
+  "Turn off annoying warning; see: https://github.com/lervag/vimtex/issues/507
+  let g:vimtex_compiler_latexmk = {'callback' : 0}
+  let g:vimtex_mappings_enable = 0
+  "See here for viewer configuration: https://github.com/lervag/vimtex/issues/175
+  " let g:vimtex_view_general_viewer = 'open'
+  " let g:vimtex_view_general_options = '-a Skim'
+  let g:vimtex_view_view_method = 'skim'
+  "Try again
+  let g:vimtex_view_general_viewer = '/Applications/Skim.app/Contents/SharedSupport/displayline'
+  let g:vimtex_view_general_options = '-r @line @pdf @tex'
+  let g:vimtex_fold_enabled = 0 "So large files can open more easily
+endif
+
 "###############################################################################
 "WRAPPING AND LINE BREAKING
 augroup wrap "For some reason both autocommands below are necessary; fuck it
@@ -1748,14 +1075,10 @@ augroup END
 let g:scrolloff=4
 "Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
 function! s:wraptoggle(function_mode)
-  if a:function_mode==1
-    let toggle=1
-  elseif a:function_mode==0
-    let toggle=0
-  elseif exists('b:wrap_mode')
-    let toggle=1-b:wrap_mode
-  else
-    let toggle=1
+  if a:function_mode==1 | let toggle=1
+  elseif a:function_mode==0 | let toggle=0
+  elseif exists('b:wrap_mode') | let toggle=1-b:wrap_mode
+  else | let toggle=1
   endif
   if toggle==1
     let b:wrap_mode=1
@@ -1819,45 +1142,46 @@ augroup END
 if has_key(g:plugs, "tabular")
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns
   "first character after matching preceding character
+  "Arbitrary character
   vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'/l0c1<CR>'
   nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'/l0c1<CR>'
-    "arbitrary character
+  "By commas; suitable for diag_table's in models; does not ignore comment characters
   nnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-    "by commas; suitable for diag_table's in models; does not ignore comment characters
+  "Dictionary, colon on right
   nnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
   vnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
-    "dictionary, colon on right
+  "Dictionary, colon on left
   nnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-    "dictionary, colon on left
+  "See :help non-greedy to see what braces do; it is like *, except instead of matching
+  "as many as possible, can match as few as possible in some range;
+  "with braces, a minus will mean non-greedy
   vnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   nnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-    "see :help non-greedy to see what braces do; it is like *, except instead of matching
-    "as many as possible, can match as few as possible in some range;
-    "with braces, a minus will mean non-greedy
+  "Right-align by spaces, considering comments as one 'field'; other words are
+  "aligned by space; very hard to ignore comment-only lines here, because we specify text
+  "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
   vnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   nnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
-    "right-align by spaces, considering comments as one 'field'; other words are
-    "aligned by space; very hard to ignore comment-only lines here, because we specify text
-    "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
+  "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
+  "checks whether something doesn't match *anywhere before* what follows
+  "Also the \S has to come before the \(\) atom instead of after for some reason
   vnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   nnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-    "check out documentation on \@<! atom; difference between that and \@! is that \@<!
-    "checks whether something doesn't match *anywhere before* what follows
-    "also the \S has to come before the \(\) atom instead of after for some reason
+  "By comment character; ^ is start of line, . is any char, .* is any number, \zs
+  "is start match here (must escape backslash), then search for the comment
   vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-    "by comment character; ^ is start of line, . is any char, .* is any number, \zs
-    "is start match here (must escape backslash), then search for the comment
+  "By comment character, but this time ignore comment-only lines
   vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-    "by comment character, but this time ignore comment-only lines
+  "Align by the first equals sign either keeping it to the left or not
+  "The eaiser to type one (-=) puts equals signs in one column
   vnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
   nnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
   vnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
   nnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
-    "align by the first equals sign either keeping it fo the left or not
 endif
 
 "###############################################################################
@@ -1881,134 +1205,6 @@ let g:tex_comment_nospell=1
 "2) there is no alternative file loaded by the ftplugin function
 
 "###############################################################################
-"CTAGS (requires 'brew install ctags-exuberant')
-"Must come after ftplugin to override bracket maps with my super cool ctag-based one
-" * Execute lines below only if ctags present
-" * Note that, unfortunately, tagbar doesn't have useful interface to access
-"   the ctags file generated already, so have to generate/parse our own; this
-"   isn't too big a deal though, because ctags is very quick.
-" * By default ctags are sorted alphabetically; below we put the line numbers
-"   and regexes in separate lists, and sort by line number.
-if g:has_ctags
-  "Declare dem tags yo
-  augroup ctags
-    au!
-    au BufReadPost * call s:ctags(0)
-    au BufWritePost * call s:ctags(0)
-    au FileType * call s:ctagbracketmaps()
-  augroup END
-  "Function for declaring ctag lines and ctag regex strings, in line number order
-  function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
-     return a:i1 - a:i2
-  endfunc
-  function! s:ctags(command)
-    let b:ctags=[] "return these empty values upon error
-    let b:ctaglines=[]
-    let ignoretypes=["tagbar","nerdtree"]
-    if index(ignoretypes, &ft)!=-1 | return | endif
-    "Determine types of ctags we want to store
-    if expand("%:t")==".vimrc"
-      let type="a" "list only augroups
-    elseif &ft=="tex"
-      let type="[bs]" "b is for subsection, s is for section
-    elseif &ft=="python"
-      let type="[fcm]" "functions, classes, and modules
-    else
-      let type="f" "default just functions; note Vimscript makes c 'command!'
-    endif
-    "Ctags doesn't recognize python2/python3 shebangs by default
-    if getline(1)=~"#!.*python[23]" | let force="--language=python"
-    else | let force=""
-    endif
-    "Call ctags function
-    "Add the sed line to include all items, not just top-level items
-    "Currently is added
-    " \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-    if a:command "just return command
-      "if table wasn't produced and this is just stderr text then don't tabulate (-s)
-      return "ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." "
-        \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-        \."| cut -s -d$'\t' -f1,3-" "ignore filename field, delimit by literal tabs
-    else "save then sort
-      let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
-        \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-        \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
-    endif
-    if len(ctags)==0 | return | endif
-    "Get ctag lines and sort them by number
-    " echom join(ctags,',')
-    let ctaglines=map(deepcopy(ctags), 'search("^".escape(v:val[1:-2],"$/*[]"),"n")')
-    " echom join(ctags,',')
-    " echom join(ctaglines,',')
-    let b:ctaglines=sort(deepcopy(ctaglines), "s:compare") "vim is object-oriented, like python
-    " echom join(ctaglines,',')
-    let b:ctags=map(range(len(b:ctaglines)), 'ctags[index(ctaglines, b:ctaglines[v:val])]')
-  endfunction "note if you use FileType below, it will fail to refresh when re-entering VIM
-  nnoremap <silent> <Leader>c :call <sid>ctags(0)<CR>:echom "Tags updated."<CR>
-  nnoremap <silent> <expr> <Leader>C ':!clear; '.<sid>ctags(1).' \| less<CR>:redraw!<CR>'
-  "Function for jumping between regexes in the ctag search strings
-  function! s:ctagjump(regex)
-    if !exists("b:ctags") || len(b:ctags)==0
-      echom "Warning: Ctags unavailable."
-      return
-    endif
-    for i in range(len(b:ctags))
-      let string=b:ctags[i][1:-2] "ignore leading ^ and trailing $
-      if string =~? a:regex "ignores case
-        ":<number><CR> travels to that line number
-        exe b:ctaglines[i]
-        return
-      endif
-    endfor
-    echo "Warning: Ctag regex not found."
-  endfunction
-  nnoremap <silent> <expr> <Leader><Space> ':call <sid>ctagjump("'.input('Enter ctag regex: ').'")<CR>'
-  " nmap <buffer> <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Enter ctag regex: ")."<CR>:noh<CR><CR>"
-  "Next jump between subsequent ctags with [[ and ]]
-  function! s:ctagbracket(foreward, n)
-    if &ft=="help" | return | endif
-    if !exists("b:ctaglines") || len(b:ctaglines)==0 | echom "Warning: No ctags found." | return | endif
-    let a:njumps=(a:n==0 ? 1 : a:n)
-    for i in range(a:njumps)
-      let lnum=line('.')
-      "Edge cases; at bottom or top of document
-      if lnum<b:ctaglines[0] || lnum>b:ctaglines[-1]
-        let i=(a:foreward ? 0 : -1)
-      "Extra case not handled in main loop
-      elseif lnum==b:ctaglines[-1]
-        let i=(a:foreward ? 0 : -2)
-      "Main loop
-      else
-        for i in range(len(b:ctaglines)-1)
-          if lnum==b:ctaglines[i]
-            let i=(a:foreward ? i+1 : i-1) | break
-          elseif lnum>b:ctaglines[i] && lnum<b:ctaglines[i+1]
-            let i=(a:foreward ? i+1 : i) | break
-          endif
-          if i==len(b:ctaglines)-1 | echom "Error: Bracket jump failed." | endif
-        endfor
-      endif
-      return b:ctaglines[i] "just return the line number
-    endfor
-  endfunction
-  function! s:ctagbracketmaps()
-    if &ft!="help" "use bracket for jumpint to last position here
-      if g:has_nowait
-        nnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>:exe <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
-        nnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>:exe <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
-        vnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>gv'.<sid>ctagbracket(0,'.v:count.').'ggk<CR>'
-        vnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>gv'.<sid>ctagbracket(1,'.v:count.').'ggk<CR>'
-      else
-        nnoremap <expr> <buffer> <silent> [[ '<Esc>:exe <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
-        nnoremap <expr> <buffer> <silent> ]] '<Esc>:exe <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
-        vnoremap <expr> <buffer> <silent> [[ '<Esc>gv'.<sid>ctagbracket(0,'.v:count.').'ggk<CR>'
-        vnoremap <expr> <buffer> <silent> ]] '<Esc>gv'.<sid>ctagbracket(1,'.v:count.').'ggk<CR>'
-      endif
-    endif
-  endfunction
-endif
-
-"###############################################################################
 "TAGBAR (requires 'brew install ctags-exuberant')
 " * Note tagbar BufReadPost autocommand must come after the c:tags one, or
 "   we end up just generating tags for the Tagbar sidebar buffer.
@@ -2020,20 +1216,22 @@ endif
 "   -o toggles the fold under cursor, or current one
 "   -q quits the window
 if has_key(g:plugs, "tagbar")
-  "Call Tagbar automatically
   "Note to have tagbar open automatically FileType did not work; possibly some
   "conflict with Obsession; instead BufReadPost worked
+  " augroup tagbar
+  "   au!
+  "   au BufReadPost * call s:tagbarmanager()
+  " augroup END
+  " function! s:tagbarmanager()
+  "   if index(['.vimrc','.bashrc'], expand("%:t"))==-1
+  "   if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
+  "   if ".vimrc"=~expand("%:t") || (".py,.jl,.m"=~expand("%:e") && expand("%:e")!="")
+  "     call s:tagbarsetup()
+  "   endif
+  " endfunction
+  "Setting up Tagbar with a custom configuration
   augroup tagbar
-    au!
-    au BufReadPost * call s:tagbarmanager()
   augroup END
-  function! s:tagbarmanager()
-    " if index(['.vimrc','.bashrc'], expand("%:t"))==-1
-    " if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
-    " if ".vimrc"=~expand("%:t") || (".py,.jl,.m"=~expand("%:e") && expand("%:e")!="")
-    "   call s:tagbarsetup()
-    " endif
-  endfunction
   function! s:tagbarsetup()
     "First toggle the tagbar; issues when toggling from NERDTree so switch
     "back if cursor is already there. No issues toggline from Help window.
@@ -2081,7 +1279,6 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_width=15 "better default
   let g:tagbar_zoomwidth=15 "don't ever 'zoom' even if text doesn't fit
   let g:tagbar_expand=0
-  "Custom mappings
   let g:tagbar_map_closefold="-"
   let g:tagbar_map_openfold="="
   let g:tagbar_map_closeallfolds="_"
@@ -2103,10 +1300,14 @@ augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
-nnoremap <silent> <C-q> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
+nnoremap <silent> <C-w> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
 nnoremap <silent> <C-a> :qa<CR> 
-nnoremap <silent> <C-w> :q<CR>
+nnoremap <silent> <C-q> :q<CR>
 "so we have close current window, close tab, and close everything
+silent! tnoremap <silent> <C-t> <C-w>:q!<CR>
+silent! nnoremap <Leader>T :terminal<CR>
+" silent! tnoremap <silent> <Esc> <C-\><C-n>
+"exit terminal mode, if exists; or enter terminal normal mode
 "###############################################################################
 "IMPORTANT STUFF
 "First line disables linebreaking no matter what ftplugin says, got damnit
@@ -2168,243 +1369,6 @@ cnoremap <expr> <C-u> <sid>enterpardir()
   "you press <C-j> without completion options while inside ../, the .. will be deleted
 
 "###############################################################################
-"SEARCHING AND FIND-REPLACE STUFF
-"Basic stuff first
-" * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
-"   because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
-" * Make sure 'noignorecase' turned on when in insert mode, so *autocompletion* respects case.
-augroup searchreplace
-  au!
-  au FileType bib,tex call s:cutmaps() "some bibtex lines
-  au InsertEnter * set noignorecase "default ignore case
-  au InsertLeave * set ignorecase | noautocmd call MoveToNext() "magical c* searching function
-augroup END
-set hlsearch incsearch "show match as typed so far, and highlight as you go
-set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
-nnoremap <silent> ! :let b:position=winsaveview()<CR>xhp/<C-R>-<CR>N:call winrestview(b:position)<CR>
-"map to search by character; never use default ! map so why not!
-"by default ! waits for a motion, then starts :<range> command
-"###############################################################################
-"SPECIAL DELETION TOOLS
-"see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
-"Replace consecutive spaces on current line with one space
-nnoremap <silent> <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
-"Replace consecutive newlines with single newline
-nnoremap <silent> <Leader>Q :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-"Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-"Replace commented lines
-" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
-nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
-"Replace useless BibTex entries; replace long dash unicode with --, which will be rendered to long dash
-function! s:cutmaps()
-  nnoremap <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-  nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-  nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-  nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-  nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
-endfunction
-"###############################################################################
-"SEARCHING/REPLACING/CHANGING IN-BETWEEN TAGS
-if g:has_ctags
-  "Searching within scope of current function or environment
-  " * Search func idea came from: http://vim.wikia.com/wiki/Search_in_current_function
-  " * Below is copied from: https://stackoverflow.com/a/597932/4970632
-  " * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
-  "   renaming, and do it by confirming every single instance
-  function! s:scopesearch(replace)
-    "Test out scopesearch
-    if !exists("b:ctaglines") || len(b:ctaglines)==0
-      echo "Warning: Tags unavailable, so cannot limit search scope."
-      return ""
-    endif
-    let start=line('.')
-    let saveview=winsaveview()
-    call winrestview(saveview)
-    let ctaglines=extend(b:ctaglines,[line('$')])
-    "Return values
-    "%% is literal % character
-    "Check out %l atom documentation; note it last atom selects *above* that line (so increment by one)
-    "and first atom selects *below* that line (so decrement by 1)
-    for i in range(0,len(ctaglines)-2)
-      if ctaglines[i]<=start && ctaglines[i+1]>start "must be line above start of next function
-        echom "Scopesearch selected lines ".ctaglines[i]." to ".(ctaglines[i+1]-1)."."
-        if a:replace | return printf('%d,%ds', ctaglines[i]-1, ctaglines[i+1]) "range for :line1,line2s command
-        else | return printf('\%%>%dl\%%<%dl', ctaglines[i]-1, ctaglines[i+1])
-        endif
-      endif
-    endfor
-    echom "Warning: Scopesearch failed to limit search scope."
-    return "" "empty string; will not limit scope anymore
-  endfunction
-else
-  "Much less reliable
-  "Loop loop through possible jumping commands; the bracket commands
-  "are generally declared with FileType regex searches, not ctags
-  function! s:scopesearch(replace)
-    let start=line('.')
-    let saveview=winsaveview()
-    for endjump in ['normal ]]k', 'call search("^\\S")']
-      " echom 'Trying '.endjump
-      keepjumps normal j[[
-      let first=line('.')
-      exe 'keepjumps '.endjump
-      let last=line('.')
-      " echom first.' to '.last | sleep 1
-      if first<last | break | endif
-      exe 'normal '.start.'g'
-      "return to initial state at the end, important
-    endfor
-    call winrestview(saveview)
-    if first<last
-      echom "Scopesearch selected lines ".first." to ".last."."
-      if !a:replace
-        return printf('\%%>%dl\%%<%dl', first-1, last+1)
-          "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
-      else
-        return printf('%d,%ds', first-1, last+1) "simply the range for a :search and replace command
-      endif
-    else
-      echom "Warning: Scopesearch failed to find function range (first line ".first." >= second line ".last.")."
-      return "" "empty string; will not limit scope anymore
-    endif
-  endfunction
-endif
-"###############################################################################
-"MAGICAL FUNCTION; performs n.n.n. style replacement in one keystroke
-"Also we overhaul the &, @, and # keys
-" * Inpsired from: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
-" * By default & repeats last :s command
-" * Use <C-r>=expand('<cword>')<CR> instead of <C-r><C-w> to avoid errors on empty lines
-" * gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
-if has_key(g:plugs, "vim-repeat")
-  let g:should_inject_replace_occurences=0
-  function! MoveToNext()
-    if g:should_inject_replace_occurences
-      call feedkeys("n")
-      call repeat#set("\<Plug>ReplaceOccurences")
-    endif
-    let g:should_inject_replace_occurences=0
-  endfunction
-  "Remaps using black magic
-  "First one just uses last search, the other ones use word under cursor
-  nmap <silent> c/ :set hlsearch<CR>
-        \:let g:should_inject_replace_occurences=1<CR>cgn
-  nmap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-        \:let g:should_inject_replace_occurences=1<CR>cgn
-  nmap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-        \:let g:should_inject_replace_occurences=1<CR>cgn
-  nmap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-        \:let g:should_inject_replace_occurences=1<CR>cgn
-  nmap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-        \:let g:should_inject_replace_occurences=1<CR>cgn
-  nmap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
-  "Original remaps, which don't move onto next highlight automatically
-  " nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-  " nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
-  " nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-  " nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
-  function! ReplaceOccurence()
-    "Check if we are on top of an occurence
-    "'[ and '] are first/last characters of previously yanked or changed text
-    "Ctrl-a in insert mode types the same text as when you were last in insert mode; see :help i_
-    let winview = winsaveview()
-    let save_reg = getreg('"')
-    let save_regmode = getregtype('"')
-    let [lnum_cur, col_cur] = getpos(".")[1:2] 
-    normal! ygn
-    let [lnum1, col1] = getpos("'[")[1:2]
-    let [lnum2, col2] = getpos("']")[1:2]
-    call setreg('"', save_reg, save_regmode)
-    call winrestview(winview)
-    "If we are on top of an occurence, replace it
-    if lnum_cur>=lnum1 && lnum_cur<=lnum2 && col_cur>=col1 && col_cur<=col2
-      exe "normal! cgn\<C-a>\<Esc>"
-    endif
-    call feedkeys("n")
-    call repeat#set("\<Plug>ReplaceOccurences")
-  endfunction
-endif
-"###############################################################################
-"AWESOME REFACTORING STUFF I MADE MYSELF
-"Remap ? for function-wide searching; follows convention of */# and &/@
-"The \(\) makes text after the scope-atoms a bit more readable
-"Also note the <silent> will prevent beginning the search until another key is pressed
-nnoremap <silent> ? /<C-r>=<sid>scopesearch(0)<CR>\(\)
-"Keep */# case-sensitive while '/' and '?' are smartcase case-insensitive
-nnoremap <silent> * :let @/='\<'.expand('<cword>').'\>\C'<CR>lb:set hlsearch<CR>
-nnoremap <silent> & :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
-"Equivalent of * and # (each one key to left), but limited to function scope
-" nnoremap <silent> & /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``
-" nnoremap <silent> @ /<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\C<CR>``
-nnoremap <silent> # :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>lB:set hlsearch<CR>
-nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
-  "note the @/ sets the 'last search' register to this string value
-" * Also expand functionality to <cWORD>s -- do this by using \_s
-"   which matches an EOL (from preceding line or this line) *or* whitespace
-" * Use ':let @/=STUFF<CR>' instead of '/<C-r>=STUFF<CR><CR>' because this prevents
-"   cursor from jumping around right away, which is more betterer
-"Next there are a few mnemonically similar maps
-"1) Delete currently highlighted text
-" * For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
-" * Note that omitting the g means only *first* occurence is replaced
-"   if use %, would replace first occurence on every line
-" * Options for accessing register in vimscript, where we can't immitate user <C-r> keystroke combination:
-"     exe 's/'.@/.'//' OR exe 's/'.getreg('/').'//'
-if 1 && has_key(g:plugs, "vim-repeat")
-  nnoremap <Plug>search1 /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgnn:call repeat#set("\<Plug>search1",v:count)<CR>
-  nnoremap <Plug>search2 /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgnn:call repeat#set("\<Plug>search2",v:count)<CR>
-  nnoremap <Plug>search3 /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgnn:call repeat#set("\<Plug>search3",v:count)<CR>
-  nnoremap <Plug>search4 /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgnn:call repeat#set("\<Plug>search4",v:count)<CR>
-  nnoremap <Plug>search5 :set hlsearch<CR>dgnn:call repeat#set("\<Plug>search5",v:count)<CR>
-  nmap d# <Plug>search1
-  nmap d@ <Plug>search2
-  nmap d* <Plug>search3
-  nmap d& <Plug>search4
-  nmap d/ <Plug>search5
-else "with these ones, cursor will remain on word just replaced
-  nnoremap d# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
-  nnoremap d@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
-  nnoremap d* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
-  nnoremap d& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
-  nnoremap d/ :set hlsearch<CR>dgn
-endif
-"Search all capital words
-nnoremap cz /\<[A-Z]\+\><CR>
-"Colon search replacements -- not as nice as the above ones, which stay in normal mode
-"See that reddit thread for why normal-mode is better
-" nnoremap <Leader>r :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-" nnoremap <Leader>R :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-"   "the <C-r> means paste from the expression register i.e. result of following expr
-" nnoremap <Leader>d :%s///gIc<Left><Left><Left><Left><Left>
-" nnoremap <Leader>D :<C-r>=<sid>scopesearch(1)<CR>///gIc<Left><Left><Left><Left><Left>
-"   "these ones delete stuff
-
-"###############################################################################
-"CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
-"The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
-"that would cancel command-line queries (or I'd have to scroll up to resume them)
-"don't think any other mapping type has anything like lmap; iminsert is unique
-augroup capslock
-  au!
-  autocmd InsertLeave,CmdwinLeave * set iminsert=0
-augroup END
-"lmap == insert mode, command line (:), and regexp searches (/)
-"See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>; instead uses
-"iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1 via
-"<C-^> (not avilable for custom remap, since ^ is not alphabetical)
-set iminsert=0
-for c in range(char2nr('A'), char2nr('Z'))
-  exe 'lnoremap '.nr2char(c+32).' '.nr2char(c)
-  exe 'lnoremap '.nr2char(c).' '.nr2char(c+32)
-endfor
-inoremap <C-z> <C-^>
-cnoremap <C-z> <C-^>
-  "can't lnoremap the above, because iminsert is turning it on and off
-
-"###############################################################################
 "SPECIAL TAB NAVIGATION
 "Remember previous tab
 augroup tabs
@@ -2435,7 +1399,7 @@ nnoremap <Tab>w M
 nnoremap <Tab>e L
 nnoremap <Tab>y zH
 nnoremap <Tab>p zL
-"Fix
+"Fix tab maps otherwise
 noremap <Tab> <Nop>
 noremap <Tab><Tab> <Nop>
 "Function: move current tab to the exact place of tab no. x
@@ -2515,15 +1479,74 @@ nnoremap <C-c> :call <sid>copytoggle()<CR>
 "yank because from Vim, we yank; but remember, c-v is still pastemode
 
 "###############################################################################
+"SEARCHING AND FIND-REPLACE STUFF
+"Basic stuff first
+" * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
+"   because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
+" * Make sure 'noignorecase' turned on when in insert mode, so *autocompletion* respects case.
+augroup searchreplace
+  au!
+  au InsertEnter * set noignorecase "default ignore case
+  au InsertLeave * set ignorecase
+augroup END
+set hlsearch incsearch "show match as typed so far, and highlight as you go
+set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
+
+"###############################################################################
+"DELETING STUFF TOOLS
+"see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
+"Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
+nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+"Replace commented lines
+" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+"Replace consecutive spaces on current line with one space
+nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+"Replace consecutive newlines with single newline
+nnoremap <silent> <Leader>~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+"Fix unicode quotes and dashes
+nnoremap <buffer> <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+nnoremap <buffer> <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <buffer> <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <buffer> <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+"Replace useless BibTex entries
+nnoremap <buffer> <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+
+"###############################################################################
+"CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
+"The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
+"that would cancel command-line queries (or I'd have to scroll up to resume them)
+"don't think any other mapping type has anything like lmap; iminsert is unique
+augroup capslock
+  au!
+  autocmd InsertLeave,CmdwinLeave * set iminsert=0
+augroup END
+"lmap == insert mode, command line (:), and regexp searches (/)
+"See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>; instead uses
+"iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1 via
+"<C-^> (not avilable for custom remap, since ^ is not alphabetical)
+set iminsert=0
+for c in range(char2nr('A'), char2nr('Z'))
+  exe 'lnoremap '.nr2char(c+32).' '.nr2char(c)
+  exe 'lnoremap '.nr2char(c).' '.nr2char(c+32)
+endfor
+inoremap <C-z> <C-^>
+cnoremap <C-z> <C-^>
+  "can't lnoremap the above, because iminsert is turning it on and off
+
+
+"###############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
 augroup z
 augroup END
 "SimpylFold settings
 let g:SimpylFold_docstring_preview=1
-let g:SimpylFold_fold_docstring=0
 let g:SimpylFold_fold_import=0
-let g:SimpylFold_fold_docstrings=0
 let g:SimpylFold_fold_imports=0
+let g:SimpylFold_fold_docstring=0
+let g:SimpylFold_fold_docstrings=0
 "Basic settings
 " set nofoldenable
 set foldmethod=expr
@@ -2675,6 +1698,7 @@ highlight ColorColumn cterm=None ctermbg=Black
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 "sign define hold text=\
 "sign place 1 name=hold line=1
+highlight Terminal ctermbg=Black
 "###############################################################################
 "COLOR HIGHLIGHTING
 "Highlight group under cursor
@@ -2699,12 +1723,6 @@ endfunction
 command! Group call Group()
 command! Colors call Colors()
 command! Plugin call Plugin()
-
-"###############################################################################
-"DELIMITER MATCHING/HIGHLIGHTING FUNCTIONS
-"First unload the default one
-"Don't do that actually vimrc is fine
-" let loaded_matchparen=1
 
 "###############################################################################
 "###############################################################################

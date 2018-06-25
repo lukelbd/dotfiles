@@ -7,6 +7,10 @@
 #   the same folder; useful because may want to keep the same .bib file
 #   for every version of the manuscript. If you have more than one .bib file
 #   the function will fail.
+# * Why this instead of latexmk? It adds a few features, and also had issues with
+#   latexmk where would always end up with random extra files being created. Only
+#   way to consistently remove those temporary files was to query files present in
+#   folder before/after compiling step; delete the new ones. This is better!
 shopt -s nullglob # glob-expand into zero entries
 latex=pdflatex # by default use pdflatex
 bibtex=bibtex # for compiling bibliographies
@@ -42,11 +46,12 @@ cat "$filename" | grep -o '^[^%]*' | grep '\\animategraphics' &>/dev/null && vie
 cat "$filename" | grep -o '^[^%]*' | egrep '\\bibliography{.*}|\\printbibliography|\\nobibliography{.*}' &>/dev/null && bibliography=true || bibliography=false
 # Finally detect if we want to run latexdiff on this file
 [[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]] && dfilename="${filename%.tex}changes.tex" || dfilename="" # keep empty
-# Change compile options
+# Special options for beamer
 cat "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null \
   && latex=pdflatex && dfilename="" && htmlcompile=false # beamer options
-# cat "$filename" | grep '\\usepackage{.*fontspec.*}' &>/dev/null \
-cat "$filename" | grep -o '^[^%]*' | grep 'fontspec' &>/dev/null \
+# Automatically choose from xelatex and pdflatex; just need xelatex for
+# tex files that load fontspec, or use modules that themselves load fontspec
+cat "$filename" | grep -o '^[^%]*' | egrep 'fontspec|xltxtra' &>/dev/null \
   && latex=xelatex && dfilename="" && htmlcompile=false
 
 ################################################################################

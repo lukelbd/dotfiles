@@ -483,8 +483,22 @@ function pdf2tiff() {
 function pdf2eps() {
   args=("$@")
   for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && \
       pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
+  done
+}
+function flatten() {
+  # this page is helpful:
+  # https://unix.stackexchange.com/a/358157/112647
+  # 1. pdftk keeps vector graphics
+  # 2. convert just converts to bitmap and eliminates transparency
+  # 3. pdf2ps piping retains quality
+  args=("$@")
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
+      pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
+      # convert "$f" "${f}_flat.pdf"
+      # pdftk "$f" output "${f}_flat.pdf" flatten
   done
 }
 

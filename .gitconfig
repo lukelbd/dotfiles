@@ -1,29 +1,54 @@
+#------------------------------------------------------------------------------;
 # Configuration file. The push-default allows "git push" to go to origin-master.
 # See this link+comments for some ideas: https://coderwall.com/p/euwpig/a-better-git-log
+# For escaping stuff see: https://stackoverflow.com/a/16136745/4970632
+# and note semicolons must always be escaped.
 # Also this thread: https://stackoverflow.com/q/2421011/4970632
-# * The 'update' command can be used e.g. if have untracked changes on one branch, but
+#------------------------------------------------------------------------------;
+# New commands:
+# 'wtf':
+#   calls the git-wtf command copied from somewhere; it actually queries the
+#   remote server to test whether we are synced
+#   also prints current branch and remote branch, with extra info
+# 'amend':
+#   consider adding back; was !git commit --amend -m \"$@\"
+# 'update':
+#   use e.g. if have untracked changes on one branch, but
 #   want to git fetch and git merge changes to a different file.
-# * Try: amend = !git commit --amend -m \"$@\"
-# * The git get command fetches all branches, even ones that don't yet exist on
+# 'get':
+#   fetch all branches, even ones that don't yet exist on
 #   local (normally those are ignored with git fetch --all); see
 #   https://stackoverflow.com/a/10312587/4970632
-# * For escaping stuff, see: https://stackoverflow.com/a/16136745/4970632
+# 'ignore':
+#   stop tracking every single regex pattern in your .gitignore
+# 'status':
+#   now show in short format, without help information, and with branch info
+# 'fix':
+#   fix user/email information through every commit in repository
+#------------------------------------------------------------------------------;
 [alias]
+	status = !git status -sb $@
+	stat   = !git diff --stat $@
+	wtf    = !git-wtf $@
+	fix    = !git-fix $@
+	root   = !git rev-parse --show-toplevel
 	update = "!git stash clear; git stash; git merge $@; git stash pop"
-	tree = !git log --graph --abbrev-commit --date=relative --branches --name-status \
+	tree   = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
 		--pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) \
-		%C(bold blue)<%an>%Creset' $@ 2>/dev/null
-	twig = !git log --graph --abbrev-commit --date=relative --branches --name-status \
-		--oneline --decorate --color $@ 2>/dev/null
-	leaf = !git log --graph --abbrev-commit --date=relative --branches --oneline \
-		--decorate --color $@ 2>/dev/null
-	stat = !git diff --stat $@ 2>/dev/null
-	wtf = !git-wtf $@ 2>/dev/null
-	get = !"git branch -r | grep -v '\\->' | while read remote; do \
+		%C(bold blue)<%an>%Creset' $@ 2>/dev/null"
+	twig = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
+		--oneline --decorate --color $@ 2>/dev/null"
+	leaf = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
+		--decorate --color $@ 2>/dev/null"
+	get  = "!git branch -r | grep -v '\\->' | while read remote; do \
 		if ! git branch -l | grep \"${remote#origin/}\" &>/dev/null; \
 		then git branch --track \"${remote#origin/}\" \"$remote\"; \
 		else echo \"${remote#origin/}\" exists; \
 		fi; done"
+	ignore = "!root=$(git rev-parse --show-toplevel); if [ -n \"$root\" ]; \
+		then cat $root/.gitignore | grep -v '#' | grep -v '^\\s*$' | sed 's/\\*\\*\\///g' | while read pattern; \
+		do find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm --cached --ignore-unmatch; \
+		done; fi"
 [push]
 	default = upstream
 [color]
