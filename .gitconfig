@@ -49,6 +49,13 @@
 		then cat $root/.gitignore | grep -v '#' | grep -v '^\\s*$' | sed 's/\\*\\*\\///g' | while read pattern; \
 		do find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm --cached --ignore-unmatch; \
 		done; fi"
+[status]
+	branch = true
+	short = true
+[branch]
+	verbose = true
+[remote]
+	verbose = true
 [push]
 	default = upstream
 [color]
