@@ -1,6 +1,75 @@
+"------------------------------------------------------------------------------"
+"Various settings and macros for python files
+"Includes a couple nice features for converting {'a':1} to a=1 
+"easily; can do this line by line, or for a whole dictionary.
+"------------------------------------------------------------------------------"
+"Builtin python ftplugin syntax option; these should be provided with VIM by default
+let g:python_highlight_all=1
+"Experimental feature that converts dict() to {}-style dictionary
+function! s:dictconvert() "For searches with :normal command, see:
+  "http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
+  let saveview=winsaveview()
+  let line=line('.')
+  normal! 0
+  call search('=')
+  while line('.')==line
+    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
+  endwhile
+  call winrestview(saveview)
+  "return to original location
+  "column first, then go to line; if column no longer exists, we just are at end-of-line
+endfunction
+function! s:Dictconvert()
+  let saveview=winsaveview()
+  let estatus=search('dict(', 'be') "search moving Backwards, and fall on End of match
+  if !estatus
+    echom "Error: The cursor is not within a python dictionary."
+    call winrestview(saveview) | return
+  endif
+  "Find the matching bracket for dict() instance
+  let start=[line('.'), col('.')] "save the starting line
+  normal %
+  " echo 'Start: '.saveview['lnum'].','.saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
+  if line('.')<saveview['lnum'] || (line('.')==saveview['lnum'] && col('.')<saveview['col'])
+    echom "Error: The cursor is not within a python dictionary."
+    call winrestview(saveview) | return
+  endif
+  let end=[line('.'), col('.')] "save the ending line
+  call cursor(start[0], start[1]) "return to starting point of dictionary
+  exe 's/dict(/(' | normal lcsbB
+  call search('=')
+  while line('.')<end[0] || (line('.')==end[0] && col('.')<=end[1])
+    "note the h after <Esc> only works if have the InsertLeave autocmd that preserves the cursor position
+    "the h ensures single-character variables aren't skipped over
+    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
+  endwhile
+  call winrestview(saveview)
+  "return to original location; another option is cursor() function, but slightly more limited functionality
+  "column first, then go to line; if column no longer exists, we just are at end-of-line
+endfunction
+if has_key(g:plugs, "vim-repeat") "mnemonic is 'change this stuff to dictionary'
+  nnoremap <silent> <Plug>pydict :call <sid>dictconvert()<CR>:call repeat#set("\<Plug>pydict")<CR>
+  nnoremap <silent> <Plug>Pydict :call <sid>Dictconvert()<CR>:call repeat#set("\<Plug>Pydict")<CR>
+  nmap cd <Plug>pydict
+  nmap cD <Plug>Pydict
+else
+  nnoremap cd :call <sid>dictconvert()<CR>
+  nnoremap cD :call <sid>Dictconvert()<CR>
+endif
+"Tab settings; normally keep it to just 2 spaces
+setlocal tabstop=4 softtabstop=4 shiftwidth=4
+"Simple remaps; fit with NerdComment syntax
+nnoremap <buffer> cq o"""<CR>"""<Esc><Up>o
+"Maps that call shell commands
+nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
+      \."python ".shellescape(@%)."<CR>"
+inoremap <silent> <buffer> <expr> <C-b> "<Esc>:w<CR>:!clear; set -x; "
+      \."python ".shellescape(@%)."<CR>a"
+
 "------------------------------------------------------------------------------
-" MATCHING PAIRS IN PYTHON; DEFAULT MATCHIT PLUGIN FAILS COMPLETELY
-" TODO: FIGURE OUT WHERE THE HELL I DOWNLOADED THIS FROM
+" Matching pairs in python; default matchit plugin fails completely, so below
+" defines useful PyMatch function
+" TODO: Figure out where the hell I downloaded this from.
 "------------------------------------------------------------------------------
 " % for if -> elif -> else -> if, g% for else -> elif -> if -> else
 nnoremap <buffer> <silent> %  :<C-U>call <SID>PyMatch('%','n') <CR>
@@ -16,20 +85,16 @@ onoremap <buffer> <silent> [% v:<C-U>call <SID>PyMatch('[%', 'o') <CR>
 nnoremap <buffer> <silent> ]% :<C-U>call <SID>PyMatch(']%',  'n') <CR>
 vnoremap <buffer> <silent> ]% :<C-U>call <SID>PyMatch(']%','v') <CR>m'gv``
 onoremap <buffer> <silent> ]% v:<C-U>call <SID>PyMatch(']%',  'o') <CR>
-
 " The rest of the file needs to be :sourced only once per session.
 if exists("s:loaded_functions") || &cp
   finish
 endif
 let s:loaded_functions = 1
 
-" Indentation
-setlocal tabstop=4 softtabstop=4 shiftwidth=4
-
+"------------------------------------------------------------------------------"
 " One problem with matching in Python is that so many parts are optional.
 " I deal with this by matching on any known key words at the start of the
 " line, if they have the same indent.
-"
 " Recognize try, except, finally and if, elif, else .
 " keywords that start a block:
 let s:ini1 = 'try\|if'
@@ -43,7 +108,6 @@ let s:tail2 = 'break\|continue'
 " all keywords:
 let s:all1 = s:ini1 . '\|' . s:tail1
 let s:all2 = s:ini2 . '\|' . s:tail2
-
 fun! s:PyMatch(type, mode) range
   " I have to do this before the :keepjumps normal gv...
   let cnt = v:count1
@@ -185,6 +249,7 @@ let next = s:EndOfBlock(next)
 
 endfun
 
+"------------------------------------------------------------------------------"
 " Return the line number of the next non-comment, or 0 if there is none.
 " Start at the current line unless the optional second argument is given.
 " The direction is specified by a:inc (normally +1 or -1 ;
@@ -204,6 +269,7 @@ fun! s:NonComment(inc, ...)
   return 0  " If the while loop finishes, we fell off the end of the file.
 endfun
 
+"------------------------------------------------------------------------------"
 " Return the line number of the top of the block containing Line a:start .
 " For most lines, this is the first previous line with smaller indent.
 " For lines starting with "except", "finally", "elif", or "else", this is the
@@ -226,6 +292,7 @@ fun! s:StartOfBlock(start)
   return a:start
 endfun
 
+"------------------------------------------------------------------------------"
 " Return the line number of the end of the block containing Line a:start .
 " For most lines, this is the line before the next line with smaller indent.
 " For lines that begin a block, go to the end of that block, with special
@@ -249,6 +316,7 @@ fun! s:EndOfBlock(start)
   return currline
 endfun
 
+"------------------------------------------------------------------------------"
 " Restore options and do some special handling for Operator-pending mode.
 " The optional argument is the tail of the matching group.
 fun! s:CleanUp(options, mode, ...)
@@ -272,7 +340,5 @@ fun! s:CleanUp(options, mode, ...)
   endif " a:mode != "o"
   return 0
 endfun
-
 "let &cpo = s:save_cpo
-
 " vim:sts=2:sw=2:ff=unix:

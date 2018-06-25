@@ -1,11 +1,15 @@
 # Specifically for this repository #
 ####################################
-empty*
+empty.*
   # practice files
+!latex/empty.tex
+  # except this one
 *.log
   # random log files
 tags
   # ctags-generated files
+!.vim/doc/tags
+  # put this one back
 .vim/plugged
   # have issues with plugin directory if don't do this; may have to do with this directory
   # being git clones of other directories, and hard to sync objects in .git
@@ -18,18 +22,15 @@ tags
   # to sync this folder
 .ipython/profile_default
   # don't sync this crap
-port
-  # store the currently active port for local port-forwarding as a single line
-  # in the file 'port' inside dotfiles directory
 learning
 originals
   # originals are copies of previous versions
 
-# VIM extras #
+# vim extras #
 ##############
 .session.*
 .*.sw[a-z]
-  # VERY IMPORTANT, need to install manually with :PlugInstall
+  # very important, need to install manually with :pluginstall
   # on every server, otherwise everything fails
 
 # R history #
@@ -51,7 +52,6 @@ originals
 old
 trash
 copies
-__trash__
 __pycache__
 
 # Compiled source #
