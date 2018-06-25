@@ -168,7 +168,8 @@ export PATH="$HOME/bin:$PATH"
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
-export PYTHONPATH="$HOME:$PYTHONPATH"
+# Also include python scripts in bin
+export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 # Anaconda options
 if [[ -e "$HOME/anaconda3/bin" || -e "$HOME/miniconda3/bin" ]]; then
   echo "Adding anaconda to path."
