@@ -16,6 +16,9 @@
 "   This made sense for my workflow because I never really want the backward
 "   search from '#', access my macros with the comma key instead of @, and the
 "   & key goes pretty much untouched.
+" * For c* and c# map origin, see:
+"   https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
+"   https://www.reddit.com/r/vim/comments/2p6jqr/quick_replace_useful_refactoring_and_editing_tool/
 "###############################################################################
 "Check ctags is present first
 "###############################################################################
@@ -327,10 +330,8 @@ else "with these ones, cursor will remain on word just replaced
   nnoremap d@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
   nnoremap d* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
   nnoremap d& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
-  nnoremap d/ :set hlsearch<CR>dgn
+  nnoremap d/ :set hlsearch<CR>dng
 endif
-"Search all capital words
-nnoremap cz /\<[A-Z]\+\><CR>
 "Colon search replacements -- not as nice as the above ones, which stay in normal mode
 "See that reddit thread for why normal-mode is better
 " nnoremap <Leader>r :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>

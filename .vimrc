@@ -152,17 +152,17 @@ noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>togglefo
 noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
-noremap <silent> cl mzi<CR><Esc>`z
+noremap <silent> cL mzi<CR><Esc>`z
   "mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
   "use ss/substitute instead of cl if you want to enter insert mode
 " noremap <silent> sk mzkddp`z
-noremap <silent> sk mzkddp`z
+noremap <silent> ck mzkddp`z
 " noremap <silent> sj jmzkddp`zj
-noremap <silent> sj jmzkddp`zj
+noremap <silent> cj jmzkddp`zj
   "swap with row above, and swap with row below; awesome mnemonic, right?
   "use same syntax for c/s because almost *never* want to change up/down
-noremap <silent> sl xph
-noremap <silent> sh Xp
+noremap <silent> cl xph
+noremap <silent> ch Xp
   "useful for typos
 noremap <C-l> <C-i>
 noremap <C-h> <C-o>
@@ -173,6 +173,7 @@ noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
   "enable shortcut so that recordings are taken by just toggling 'q' on-off
   "the escapes prevent a weird error where sometimes q triggers command-history window
+nnoremap dh <Nop>
 nnoremap dl 0d$
   "delete entire line; never should use dl anyway, use x instead
   "must be normal mode map, or get delay; remember map includes some kind of
@@ -182,6 +183,7 @@ noremap , <Nop>
   "never really want to use f/t commands more than once; remap these later on
 noremap " :echo "Setting mark."<CR>mq
 noremap ' `q
+  "easy mark usage
 map @ <Nop>
 noremap , @q
   "new macro useage; almost always just use one at a time
@@ -226,18 +228,11 @@ nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
 nnoremap Y y$
 nnoremap D D
   "yank, substitute, delete until end of current line
-noremap S <Nop>
-noremap ss s
-  "willuse single-s map for spellcheck-related commands
-  "restore use of substitute 's' key; then use s<stuff> for spellcheck
 nnoremap cc cc
   "for some fucking reason this is necessary or there is a cursor delay when hitting cc
 vnoremap cc s
-nnoremap c` mza<CR><Esc>`z
 vnoremap c<CR> s
   "replace the currently highlighted text
-  "also cl 'splits' the line at cursor; should always use ss instead of cl
-  "to replace a single character and enter insert mode, so cl-key combo is free
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
@@ -288,24 +283,18 @@ if has('ttymouse') | set ttymouse=sgr | else | set ttymouse=xterm2 | endif
 "   The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
 " * Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
 if exists("&t_SI")
-  if exists('$TMUX')
-    let &t_SI = "\ePtmux;\e\e[6 q\e\\"
-  else
-    let &t_SI = "\e[6 q"
+  if exists('$TMUX') | let &t_SI = "\ePtmux;\e\e[6 q\e\\"
+  else | let &t_SI = "\e[6 q"
   endif
 endif
 if exists("&t_SR")
-  if exists('$TMUX')
-    let &t_SR = "\ePtmux;\e\e[4 q\e\\"
-  else
-    let &t_SR = "\e[4 q"
+  if exists('$TMUX') | let &t_SR = "\ePtmux;\e\e[4 q\e\\"
+  else | let &t_SR = "\e[4 q"
   endif
 endif
 if exists("&t_EI")
-  if exists('$TMUX')
-    let &t_EI = "\ePtmux;\e\e[2 q\e\\"
-  else
-    let &t_EI = "\e[2 q"
+  if exists('$TMUX') | let &t_EI = "\ePtmux;\e\e[2 q\e\\"
+  else | let &t_EI = "\e[2 q"
   endif
 endif
 "###############################################################################
@@ -425,13 +414,43 @@ if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 "Simple stuff for enhancing delimiter management
 Plug 'tpope/vim-surround'
 Plug 'raimondi/delimitmate'
+"Aligning things and stuff
+"Alternative to tabular is: https://github.com/tommcdo/vim-lion
+"But in defense tabular is *super* flexible
 Plug 'godlygeek/tabular'
 "Calculators and number stuff
+"No longer use codi, because had endless problems with it, and this cool 'Numi'
+"desktop calculator will suffice
 Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins disabled
+" Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins disabled
+"Single line/multiline transition; make sure comes after surround
+"Hardly ever need this
+" Plug 'AndrewRadev/splitjoin.vim'
+" let g:splitjoin_split_mapping = 'cS' | let g:splitjoin_join_mapping  = 'cJ'
+"Multiple cursors is awesome
+"Article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
+" Plug 'terryma/vim-multiple-cursors'
+"Sneak plugin; see the link for helpful discussion:
+"https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+Plug 'justinmk/vim-sneak'
+map s <Plug>Sneak_s
+map S <Plug>Sneak_S
+map f <Plug>Sneak_f
+map F <Plug>Sneak_F
+map t <Plug>Sneak_t
+map T <Plug>Sneak_T
+map L <Plug>Sneak_;
+map H <Plug>Sneak_,
+"End of plugins
 call plug#end() "the plug#end also declares filetype syntax and indent on
+  "note apparently every BufRead autocmd inside an ftdetect/filename.vim file
+  "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
+"Declare default tabbing options
+set tabstop=2
+set shiftwidth=2
+set softtabstop=2
 
 "###############################################################################
 "SESSION MANAGEMENT
@@ -490,14 +509,14 @@ augroup END
 if has_key(g:plugs, "vim-gitgutter")
   "Create command for toggling on/off; old VIM versions always show signcolumn
   "if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
-  "In newer versions, have to *also* set the signcolumn option.
   " call gitgutter#disable() | silent! set signcolumn=no
-  set signcolumn=no "status tracker does not remember whether signcolumn was turned on anyway
+  "In newer versions, have to *also* set the signcolumn option.
+  silent! set signcolumn=no "silent ignores errors if not option
   let g:gitgutter_map_keys=0 "disable all maps yo
   let g:gitgutter_enabled=0 "whether enabled at *startup*
   nnoremap <silent> <expr> <Leader>s b:gitgutter_enabled==0 ? 
-    \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:silent! let b:gitgutter_enabled=1<CR>'
-    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:silent! let b:gitgutter_enabled=0<CR>'
+    \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:let b:gitgutter_enabled=1<CR>'
+    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:let b:gitgutter_enabled=0<CR>'
   " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
   nmap <silent> Gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nmap <silent> Gu :GitGutterUndoHunk<CR>
@@ -531,14 +550,14 @@ endif
 "Turn on for certain filetypes
 augroup spell
   au!
-  au FileType tex,html,xml,text,markdown call s:spelltoggle(1)
+  au FileType tex,html,markdown call s:spelltoggle(1)
 augroup END
 "Off by default
 set nospell spelllang=en_us spellcapcheck=
 "Toggle on and off
 "Also toggle UK/US languages
-nnoremap <silent> so :call <sid>spelltoggle()<CR>
-nnoremap <silent> su :call <sid>langtoggle()<CR>
+nnoremap <silent> yo :call <sid>spelltoggle()<CR>
+nnoremap <silent> yl :call <sid>langtoggle()<CR>
 function! s:spelltoggle(...)
   if a:0>0
     let toggle=a:1
@@ -547,13 +566,13 @@ function! s:spelltoggle(...)
   endif
   if toggle
     setlocal spell
-    nnoremap <buffer> sn ]S
-    nnoremap <buffer> sN [S
+    nnoremap <buffer> yn ]S
+    nnoremap <buffer> yN [S
     let b:spellstatus=1
   else
     setlocal nospell
-    nnoremap <buffer> sn <Nop>
-    nnoremap <buffer> sN <Nop>
+    nnoremap <buffer> yn <Nop>
+    nnoremap <buffer> yN <Nop>
     let b:spellstatus=0
   endif
 endfunction
@@ -568,11 +587,11 @@ function! s:langtoggle()
 endfunction
 "Get suggestions, or choose first suggestion without looking
 "Use these conventions cause why not
-nnoremap s, z=
-nnoremap s. z=1<CR><CR><CR>
+nnoremap y, z=
+nnoremap y. z=1<CR><CR><CR>
 "Add/remove from dictionary
-nnoremap sa zg
-nnoremap sr zug
+nnoremap ya zg
+nnoremap yr zug
 "Thesaurus stuff
 "Plugin appears broken
 "Use e key cause it's not used yet
@@ -642,6 +661,7 @@ endif
 
 "###############################################################################
 "CODI (MATHEMATICAL NOTEPAD)
+"Now should just use 'Numi' instead; had too many issues with this
 augroup codi
 augroup END
 if has_key(g:plugs, "codi.vim")
@@ -672,15 +692,12 @@ if has_key(g:plugs, "codi.vim")
      " \ 'bin': '/usr/bin/python',
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
-  let g:codi#width = 20
-    "simple window configuration
+  let g:codi#width = 20 "simple window configuration
+  "CursorHold sometimes caused errors/CPU spikes; this is weird because actually
+  "shouldn't, get flickering cursor and codi still running even after 250ms; maybe some other option conflicts
   let g:codi#autocmd = "None"
-    "CursorHold sometimes caused errors/CPU spikes; this is weird because actually
-    "shouldn't, get flickering cursor and codi still running even after 250ms; maybe some other option conflicts
-  let g:codi#sync = 0
-    "probably easier
-  let g:codi#log = "codi.log"
-    "log everything, becuase you *will* have issues
+  let g:codi#sync = 0 "probably easier
+  let g:codi#log = "codi.log" "log everything, becuase you *will* have issues
 endif
 
 "###############################################################################
@@ -1000,8 +1017,8 @@ if has_key(g:plugs, "syntastic")
     return (exists("b:syntastic_on") && b:syntastic_on)
   endfunction
   function! s:syntastic_enable()
-    nnoremap <buffer> <silent> sn :Lnext<CR>
-    nnoremap <buffer> <silent> sN :Lprev<CR>
+    nnoremap <buffer> <silent> yn :Lnext<CR>
+    nnoremap <buffer> <silent> yN :Lprev<CR>
       "use sn/sN to nagivate between syntastic errors, or between spelling errors when syntastic off
     let nbufs=len(tabpagebuflist())
     noh | w | noautocmd SyntasticCheck
@@ -1015,11 +1032,11 @@ if has_key(g:plugs, "syntastic")
   function! s:syntastic_disable()
     SyntasticReset
     let b:syntastic_on=0
-    nnoremap <buffer> <silent> sn <Nop>
-    nnoremap <buffer> <silent> sN <Nop>
+    nnoremap <buffer> <silent> yn <Nop>
+    nnoremap <buffer> <silent> yN <Nop>
   endfunction
   "Set up custom remaps
-  nnoremap <silent> <expr> sy <sid>syntastic_status() ? ':call <sid>syntastic_disable()<CR>'
+  nnoremap <silent> <expr> yx <sid>syntastic_status() ? ':call <sid>syntastic_disable()<CR>'
     \ : ':call <sid>syntastic_enable()<CR>'
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
@@ -1182,26 +1199,6 @@ if has_key(g:plugs, "tabular")
   vnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
   nnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
 endif
-
-"###############################################################################
-"FTPLUGINS
-"Note apparently every BufRead autocmd inside an ftdetect/filename.vim file
-"is automatically made part of the 'filetypedetect' augroup; that's why it exists!
-augroup ftplugin
-augroup END
-"Set default tabbing (then plugins will setlocal these)
-set tabstop=2
-set shiftwidth=2
-set softtabstop=2
-"Load ftplugin and syntax files
-filetype plugin on
-syntax on
-filetype indent on
-"Disable latex spellchecking in comments (works for default syntax file)
-let g:tex_comment_nospell=1
-"Loads default $VIMRUNTIME syntax highlighting and indent if
-"1) we haven't already loaded an available non-default file using ftplugin or
-"2) there is no alternative file loaded by the ftplugin function
 
 "###############################################################################
 "TAGBAR (requires 'brew install ctags-exuberant')

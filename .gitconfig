@@ -52,6 +52,10 @@
 [status]
 	branch = true
 	short = true
+[branch]
+	verbose = true
+[remote]
+	verbose = true
 [push]
 	default = upstream
 [color]

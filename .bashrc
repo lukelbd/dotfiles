@@ -511,6 +511,8 @@ alias suser="squeue -u $USER"
 ################################################################################
 # Python workspace setup
 ################################################################################
+# For profiling scripts
+alias profile="python -m cProfile -s time"
 # Interactive shell utilities
 # io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
 io="import pandas as pd; import xarray as xr; "
