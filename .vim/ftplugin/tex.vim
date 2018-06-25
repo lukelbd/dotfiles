@@ -1,10 +1,13 @@
 "------------------------------------------------------------------------------"
-"LaTeX Templates
+"LaTeX specific settings
+"Not much in here so far
+"------------------------------------------------------------------------------"
+"Disable latex spellchecking in comments (works for default syntax file)
+let g:tex_comment_nospell=1
+"------------------------------------------------------------------------------"
 "Prompt user to choose from a list of templates (located in ~/latex folder)
 "when creating a new LaTeX file
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
-"So far no other features here
-"------------------------------------------------------------------------------"
 augroup tex_templates
   au!
   au BufNewFile *.tex call s:textemplates()
