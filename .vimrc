@@ -129,6 +129,7 @@ inoremap kj <Nop>
 inoremap KJ <Nop>
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+"MOSTLY NORMAL MODE MAPS
 "First need helper function to toggle formatoptions (controls whether comment-char inserted on newline)
 " * See help fo-table for what these mean; this disables auto-wrapping lines.
 " * The o and r options continue comment lines.
@@ -149,18 +150,29 @@ function! s:toggleformatopt()
 endfunction
 noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
 noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
-noremap <silent> cl mzi<CR><Esc>`z
   "these keys aren't used currently, and are in a really good spot,
   "so why not? fits mnemonically that insert above is Shift+<key for insert below>
+noremap <silent> cl mzi<CR><Esc>`z
+  "mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
+  "use ss/substitute instead of cl if you want to enter insert mode
+" noremap <silent> sk mzkddp`z
 noremap <silent> sk mzkddp`z
-noremap <silent> ck mzkddp`z
+" noremap <silent> sj jmzkddp`zj
 noremap <silent> sj jmzkddp`zj
-noremap <silent> cj jmzkddp`zj
   "swap with row above, and swap with row below; awesome mnemonic, right?
   "use same syntax for c/s because almost *never* want to change up/down
 noremap <silent> sl xph
 noremap <silent> sh Xp
   "useful for typos
+noremap <C-l> <C-i>
+noremap <C-h> <C-o>
+noremap <C-j> g;
+noremap <C-k> g,
+  "navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
+noremap <silent> <expr> q b:recording ?
+  \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
+  "enable shortcut so that recordings are taken by just toggling 'q' on-off
+  "the escapes prevent a weird error where sometimes q triggers command-history window
 nnoremap dl 0d$
   "delete entire line; never should use dl anyway, use x instead
   "must be normal mode map, or get delay; remember map includes some kind of
@@ -369,6 +381,10 @@ Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
+"TeX utilities; better syntax highlighting, better indentation,
+"and some useful remaps
+" Plug 'lervag/vimtex'
+" Plug 'chrisbra/vim-tex-indent'
 "Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
 "Python wrappers
@@ -416,23 +432,6 @@ Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins disabled
 call plug#end() "the plug#end also declares filetype syntax and indent on
-
-"###############################################################################
-"JUMPS
-augroup jumps
-augroup END
-"VIM documentation says a "jump" is one of the following commands:
-"The G ? and n commands will be especially useful to jump back from
-" "'", "`", "G", "/", "?", "n",
-" "N", "%", "(", ")", "[[", "]]", "{", "}", ":s", ":tag", "L", "M", "H"
-"First some simple maps for navigating jumplist
-"The l/h navigate jumplist (e.g. undoing an 'n' or 'N' keystroke), the j/k just
-"navigate the changelist (i.e. where text last modified)
-let g:jumpprefix=(has_key(g:plugs, "EnhancedJumps") ? 'g' : '')
-noremap <expr> <C-l> g:jumpprefix.'<C-i>'
-noremap <expr> <C-h> g:jumpprefix.'<C-o>'
-noremap <C-j> g;
-noremap <C-k> g,
 
 "###############################################################################
 "SESSION MANAGEMENT
@@ -594,9 +593,6 @@ augroup simple
   au FileType rst,qf,diff,man call s:simplesetup(1)
   au FileType gitcommit call s:simplesetup(0)
 augroup END
-"Enable shortcut so that recordings are taken by just toggling 'q' on-off
-"The escapes prevent a weird error where sometimes q triggers command-history window
-noremap <silent> <expr> q b:recording ? 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
 noremap <Leader>h :vert help 
@@ -686,15 +682,6 @@ if has_key(g:plugs, "codi.vim")
   let g:codi#log = "codi.log"
     "log everything, becuase you *will* have issues
 endif
-
-"###############################################################################
-"HOWMUCH (SUMMING TABLE ELEMENTS)
-"NO LONGER CONTROLLED BY PLUGIN MANAGER; USE REMAPS
-"<Leader>s and <Leader>S TO SUM EQUATIONS IN SINGLE COLUMN
-augroup howmuch
-augroup END
-let g:HowMuch_auto_engines=['py', 'bc'] "python engine uses from math import *
-let g:HowMuch_scale=3 "precision
 
 "###############################################################################
 "MUCOMPLETE
@@ -919,7 +906,7 @@ if has_key(g:plugs, "nerdcommenter")
   augroup END
   "Custom delimiter overwrites (default python includes space for some reason)
   let g:NERDCustomDelimiters = {'python': {'left': '#'}, 'cython': {'left': '#'},
-    'pyrex': {'left': '#'}, 'ncl': {'left': ';'}}
+    \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}}
   let g:NERDCreateDefaultMappings = 0 " disable default mappings (make my own)
   let g:NERDSpaceDelims = 1           " comments led with spaces
   let g:NERDCompactSexyComs = 1       " use compact syntax for prettified multi-line comments
@@ -1055,6 +1042,24 @@ if has_key(g:plugs, "syntastic")
   "Colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
+endif
+
+"##############################################################################"
+"VIMTEX SETTINGS AND STUFF
+augroup vimtex
+augroup END
+if has_key(g:plugs, 'vimtex')
+  "Turn off annoying warning; see: https://github.com/lervag/vimtex/issues/507
+  let g:vimtex_compiler_latexmk = {'callback' : 0}
+  let g:vimtex_mappings_enable = 0
+  "See here for viewer configuration: https://github.com/lervag/vimtex/issues/175
+  " let g:vimtex_view_general_viewer = 'open'
+  " let g:vimtex_view_general_options = '-a Skim'
+  let g:vimtex_view_view_method = 'skim'
+  "Try again
+  let g:vimtex_view_general_viewer = '/Applications/Skim.app/Contents/SharedSupport/displayline'
+  let g:vimtex_view_general_options = '-r @line @pdf @tex'
+  let g:vimtex_fold_enabled = 0 "So large files can open more easily
 endif
 
 "###############################################################################
@@ -1393,7 +1398,7 @@ nnoremap <Tab>w M
 nnoremap <Tab>e L
 nnoremap <Tab>y zH
 nnoremap <Tab>p zL
-"Fix
+"Fix tab maps otherwise
 noremap <Tab> <Nop>
 noremap <Tab><Tab> <Nop>
 "Function: move current tab to the exact place of tab no. x
@@ -1489,10 +1494,6 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 "###############################################################################
 "DELETING STUFF TOOLS
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
-"Replace consecutive spaces on current line with one space
-nnoremap <silent> <Leader>q :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
-"Replace consecutive newlines with single newline
-nnoremap <silent> <Leader>Q :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
@@ -1500,6 +1501,10 @@ vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+"Replace consecutive spaces on current line with one space
+nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+"Replace consecutive newlines with single newline
+nnoremap <silent> <Leader>~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Fix unicode quotes and dashes
 nnoremap <buffer> <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
 nnoremap <buffer> <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
@@ -1537,10 +1542,10 @@ augroup z
 augroup END
 "SimpylFold settings
 let g:SimpylFold_docstring_preview=1
-let g:SimpylFold_fold_docstring=0
 let g:SimpylFold_fold_import=0
-let g:SimpylFold_fold_docstrings=0
 let g:SimpylFold_fold_imports=0
+let g:SimpylFold_fold_docstring=0
+let g:SimpylFold_fold_docstrings=0
 "Basic settings
 " set nofoldenable
 set foldmethod=expr
@@ -1717,12 +1722,6 @@ endfunction
 command! Group call Group()
 command! Colors call Colors()
 command! Plugin call Plugin()
-
-"###############################################################################
-"DELIMITER MATCHING/HIGHLIGHTING FUNCTIONS
-"First unload the default one
-"Don't do that actually vimrc is fine
-" let loaded_matchparen=1
 
 "###############################################################################
 "###############################################################################
