@@ -4,6 +4,18 @@
 # Check out what is in the system defaults before using this, make sure your $PATH is populated.
 # To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
+# A few notes:
+#  * Prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
+#    if aliased or some 'exit' is in $PATH
+#     C-d/'exit' -- IF AVAILABLE, exit SSH session
+#     ~./~C-z -- Exit SSH session
+#     ~& -- Puts SSH into background
+#     ~# -- Gives list of forwarded connections in this session
+#     ~? -- Gives list of these commands
+#  * Extended globbing explanations, see:
+#     http://mywiki.wooledge.org/glob
+#  * Use '<package_manager> list' for MOST PACKAGE MANAGERS to see what is installed
+#     e.g. brew list, conda list, pip list
 ################################################################################
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message:
@@ -167,7 +179,8 @@ export PATH="$HOME/bin:$PATH"
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
-export PYTHONPATH="$HOME:$PYTHONPATH"
+# Also include python scripts in bin
+export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 # Anaconda options
 if [[ -e "$HOME/anaconda3/bin" || -e "$HOME/miniconda3/bin" ]]; then
   echo "Adding anaconda to path."
@@ -181,8 +194,8 @@ function help() {
   if builtin help $1 &>/dev/null; then
     builtin help $1 2>&1 | less
   # elif [ ! -z "$($1 --help 2>&1)" ]; then # sometimes prints stuff and returns non-zero exit code, but usually text is in stderr
-  elif $1 --help &>/dev/null; then
-    $1 --help 2>&1 | less # combine output streams or can get weird error
+  elif command $1 --help &>/dev/null; then
+    command $1 --help 2>&1 | less # combine output streams or can get weird error
   else
     echo "No help information for \"$1\"."
   fi
@@ -253,8 +266,11 @@ stty -ixon # disable start/stop output control; note for putty, have to edit STT
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
 # set -ex
   # exit this script when encounter error, and print each command; useful for debugging
+set -o posix
 set +H
   # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
+function env() { set; }
+  # just prints all shell variables
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
 shopt -s checkwinsize # allow window resizing
@@ -537,24 +553,42 @@ alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
 #   and you can right-click refresh for a hard reset, cache reset
-alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
-jupyterready=false # theme is not initially setup because takes a long time
+# alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
+jupyter_ready=false # theme is not initially setup because takes a long time
 function jt() {
-  local args="" # initialize empty variable
-  local defaults=(gruvboxd cousine) # chesterish is best; monokai has green/pink theme;
-    # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
-    # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  themes=($(command jt -l)) themes=(${themes[@]:2}) # possible themes
-  [ ! -z $1 ] && [[ ! " ${themes[@]} " =~ " $1 " ]] && echo "Error: Theme $1 is invalid; choose from ${themes[@]}." && return 1
-  [ ! -z $1 ] && local args+="-t $1 " || local args+="-t ${defaults[0]} " # default
-  [ ! -z $2 ] && local args+="-f $2 " || local args+="-f ${defaults[1]} " # best are cousine, office
-  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 $args
+  # Choose default themes and font
+  # chesterish is best; monokai has green/pink theme;
+  # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
+  # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
+  if [ $# -lt 1 ]; then 
+    echo "Choosing jupytertheme automatically based on hostname."
+    case $HOSTNAME in
+      uriah*)  jupyter_theme=solarizedl;;
+      gauss)   jupyter_theme=gruvboxd;;
+      euclid)  jupyter_theme=gruvboxd;;
+      monde)   jupyter_theme=onedork;;
+      midway*) jupyter_theme=onedork;;
+      *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
+    esac
+  else jupyter_theme="$1"
+  fi
+  if [ $# -lt 2 ]; then
+    export jupyter_font="cousine" # look up available ones online
+  else
+    export jupyter_font="$2"
+  fi
+  # Make sure theme is valid
+  themes=($(command jt -l | tail +2))
+  [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
+    echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
+  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
+    -t $jupyter_theme -f $jupyter_font
 }
 function notebook() {
   # Set the jupyter theme
   echo "Configuring jupyter notebook theme."
-  ! $jupyterready && $jupytertheme # make it callable from command line
-  jupyterready=true # this value is available for rest of session
+  ! $jupyter_ready && jt # trigger default theme
+  jupyter_ready=true # this value is available for rest of session
   # Test the hostname and get unique port we have picked
   if [ ! -z $1 ]; then
     jupyterremote=$1 # override with user input
@@ -618,7 +652,72 @@ function disconnect() {
 }
 
 ################################################################################
-# Session management and Github stuff
+# iTerm2 title and other stuff
+################################################################################
+# Set the iTerm2 window title; see https://superuser.com/a/560393/506762
+# 1. First was idea to make title match the working directory; but fails/not useful
+# when inside tmux sessions
+# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
+# 2. Finally had idea to investigate environment variables -- terms out that
+# TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
+# grep that, then if the title is not already set AND we are on pane zero, request title.
+################################################################################
+# First function that sets title
+titlefile=~/.title
+function title() { # Cmd-I from iterm2 also works
+  ! $macos && echo "Error: Can only set title from mac." && return 1
+  [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
+  local winnum="${TERM_SESSION_ID%%t*}"
+  local winnum="${winnum#w}"
+  if [ -n "$1" ]; then title="$1"
+  else read -p "Enter title for this window: " title
+  fi
+  [ -z "$title" ] && title="window $winnum"
+  echo -ne "\033]0;"$title"\007" # magnets, how do they work?
+  [ ! -e "$titlefile" ] && touch "$titlefile"
+  # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
+  # GNU syntax is "sed -i <pattern> <file>", which is annoying.
+  gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
+  echo "$winnum: $title" >>$titlefile # add to file
+}
+# Prompt user input potentially, but try to load from file
+function title_update() {
+  # Check file availability
+  if [ ! -r "$titlefile" ]; then
+    if ! $macos; then
+      echo "Error: Title file not available." && return 1
+    else
+      title
+    fi
+  fi
+  # Read from file
+  if $macos; then
+    local winnum="${TERM_SESSION_ID%%t*}"
+    local winnum="${winnum#w}"
+    title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
+  else
+    title="$(cat $titlefile)" # only text in file
+  fi
+  # Make decision
+  if [ -z "$title" ]; then title # reset title
+  else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
+  fi
+}
+# New window; might have closed one and opened another, so declare new title
+function sanitize() {
+  local param="$1"
+  local param="${param//;;/;}"
+  local param="${param//; ;/;}"
+  local param="${param//;  ;/;}"
+  echo "$param" # ugly as fuck
+}
+$macos && [ -n "$TERM_SESSION_ID" ] && \
+  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
+[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
+  export PROMPT_COMMAND="$(sanitize "$PROMPT_COMMAND; title_update")"
+
+################################################################################
+# SSH, session management, and Github stuff
 # Note: enabling files with spaces is tricky, need: https://stackoverflow.com/a/20364170/4970632
 # 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
 # destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
@@ -629,6 +728,21 @@ function disconnect() {
 #   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
+# Declare some names for active servers
+# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+work='ldavis@10.83.16.91' # for scp'ing into my Mac
+home='ldavis@10.253.201.216'
+gauss='ldavis@gauss.atmos.colostate.edu'
+monde='ldavis@monde.atmos.colostate.edu'
+euclid='ldavis@euclid.atmos.colostate.edu'
+olbers='ldavis@olbers.atmos.colostate.edu'
+zephyr='lukelbd@zephyr.meteo.mcgill.ca'
+chicago='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
+archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
+ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
+
+# archive='/media/archives/reanalyses/era_interim/'
+# olbers='ldavis@129.82.49.159'
 # Check git remote on current folder, make sure it points to SSH/HTTPS depending
 # on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
 # SSH key or password/username can only be stored in plaintext in home directory)
@@ -656,29 +770,6 @@ if ! $macos && [ -z "$SSH_AUTH_SOCK" ]; then
   else echo "Warning: Github private SSH key \"~/.ssh/id_rsa_github\" is not available."
   fi
 fi
-
-# Set the iTerm2 window title
-# [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
-# iterm "$title" # create title
-function iterm() { # Cmd-I from iterm2 also works
-  title="$*" # title, multiple words
-  echo -ne "\033]0;"$title"\007" # magnets, how do they work?
-}
-
-# Declare some names for active servers
-# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-work='ldavis@10.83.16.91' # for scp'ing into my Mac
-home='ldavis@10.253.201.216'
-gauss='ldavis@gauss.atmos.colostate.edu'
-monde='ldavis@monde.atmos.colostate.edu'
-euclid='ldavis@euclid.atmos.colostate.edu'
-olbers='ldavis@olbers.atmos.colostate.edu'
-zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-chicago='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
-archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
-ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
-# archive='/media/archives/reanalyses/era_interim/'
-# olbers='ldavis@129.82.49.159'
 
 # Functions for executing stuff on remote servers
 # Note git pull will fail if the merge is anything other than
@@ -744,7 +835,20 @@ function figuresync() {
 #   * Note this has nice side-effect of eliminating annoying "banner message"
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
+portfile=~/.port # file storing port number
 alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
+function expanduser() { # turn tilde into $HOME
+  local param="$*"
+  param="${param/#~/$HOME}"  # restore expanded tilde
+  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
+  echo $param
+}
+function compressuser() { # turn $HOME into tilde
+  local param="$*"
+  param="${param/#$HOME/~}"
+  param="${param/#$HOME/\~}"
+  echo $param
+}
 function ssh_wrapper() {
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
   local port=10000 # starting port
@@ -757,21 +861,22 @@ function ssh_wrapper() {
     local port=$(($port + 1)) # generate new port
   done
   # \ssh -o StrictHostKeyChecking=no \
+  local portwrite="$(compressuser $portfile)"
+  local titlewrite="$(compressuser $titlefile)"
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >~/port && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portwrite; echo $title >$titlewrite; " \
+    "echo \"Port number: ${port}.\"; /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat ~/port) # port from most recent login
+  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat $portfile) # port from most recent login
   local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local file="${@:(-2):1}" # second to last
-  local dest="${@:(-1)}"   # last value
-  local dest="${dest/#$HOME/~}"  # restore expanded tilde
-  local dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  local dest="$(compressuser ${@:(-1)})" # last value
   local dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file on this server to home server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
@@ -779,39 +884,15 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat ~/port) # port from most recent login
+  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat $portfile) # port from most recent login
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
-  local file="${file/#$HOME/~}"  # restore expanded tilde
-  local file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  local file="$(compressuser ${@:(-2):1})" # second to last
   local file="${file//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
-}
-# Copy <file> on this server to another server, preserving full path but
-# RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
-# each and then subfolders with same experiment name
-function ccp() {
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments. Final argument is server name." && return 1
-  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat ~/port) # port from most recent login
-  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local server=${@:(-1):1} # the last one
-  local file=${@:(-2):1} # the 2nd to last
-  if [[ "${file:0:1}" != "/" ]]; then
-    local destfile="$(pwd -P)/$file"
-  else local destfile="$file"
-  fi
-  local destfile=${destfile//\/Dropbox\//\/} # bunch of symlinked stuff in here
-  local destfile=${destfile//$HOME/\~} # get error when doing this... for some reason
-  echo "(Port $port) Copying $file to $destfile from $HOSTNAME to $server..."
-  scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" "$server":"$destfile"
-    # note $file CANNOT contain the literal/escaped tilde; will not be expanded
-    # by scp if quoted, but still need quotes in case name has spaces
 }
 
 ################################################################################
@@ -1095,105 +1176,3 @@ $macos && { # first the MacOS options
   fortune # fun message
   } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
 
-################################################################################
-# Notes
-################################################################################
-# BASH NOTES:
-#  -prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
-#   if aliased or some 'exit' is in $PATH
-#     C-d/'exit' -- IF AVAILABLE, exit SSH session
-#     ~./~C-z -- Exit SSH session
-#     ~& -- Puts SSH into background
-#     ~# -- Gives list of forwarded connections in this session
-#     ~? -- Gives list of these commands
-#  -extended globbing explanations, see:
-#     http://mywiki.wooledge.org/glob
-#  -use '<package_manager> list' for MOST PACKAGE MANAGERS to see what is installed
-#     e.g. brew list, conda list, pip list
-#  -use unalias <alias> to remove alias name, and use
-#       unset <function> to remove function name OR variable
-#  -use type <name> for GENERAL variable/alias/function/file/path
-#       whereis <name> for FILE/PATH location. alias with -a to show all opts
-#
-# PYTHON NOTES: python often has many different installations; we try to clear
-# pip, easy_install, ipython (python 2.x in /usr/local/bin package management)
-# some of that up here; use 'type ipython', 'type python', 'type pip', etc.
-# to figure out where the command-line python stuff is; and ONCE INSIDE python,
-# type 'import sys; sys.path' to see where PACKAGES are located on OS, and their
-# priority. Each python might have a different sys.path. sys.path is populated
-# by the WORKING DIRECTORY, followed by DIRECTORIES IN $PYTHONPATH (if any),
-# followed by INSTALLATION-DEPENDENT DEFAULTS controlled by site.py file (this
-# should be in every directory that has python). for any package, check out
-# <pckg_nm>.__file__ to find its location
-# * Currently have python in the following directories:
-#     /usr/bin (system default; v2.7.10)
-#     /usr/local/bin (Homebrew location; v2.7.13)
-#       pip ALSO HERE, since it is not included by default; Homebrew installed
-#     /opt/local/bin (Macports location; v2.7.12)
-#       here it is ONLY IN python2.7 version; nothing with just "python"
-#     ~/anaconda/bin (Anaconda location; v3.5.2)
-#       pip will GET PUT HERE if you conda install it
-# * Using pip install seems to BY DEFAULT go to a site-packages folder (rest of
-#       sys.path is included by default, maybe standard library); the locations
-#       of each for each distribution are...
-#     /usr/bin --> /Library/Python/2.7/site-packages
-#       ...maybe goes here with easy_install.sh?
-#     /usr/local/bin --> /usr/local/lib/python2.7/site-packages
-#       ...which is where HOMEBREW-DOWNLOADED PIP INSTALLS STUFF
-#     /opt/local/bin --> none, evidently
-#       ...maybe just leave this installation, can't be invoked
-#     ~/anaconda/bin --> ~/anaconda/lib/python3.5/site-packages
-#       ...where conda install puts stuff
-# * Conda NEEDS PIP to operate (under the hood), but we never want to use it
-#       ourselves; should alias pip to original Homebrew version.
-#       then...
-#         -use pip to install/update python 2.x packages
-#         -use conda to install/update python 3.x packages in ~/anaconda/bin
-# * Various versions are required for various things, so can't delete any of
-#   these, but better to modify LOCAL VERSION OF PYTHON2.X (in /usr/local/bin)
-#   than SYSTEM-WIDE version; otherwise need sudo pip, which is bad practice
-# * So use the /usr/local/bin 'pip', 'python', and 'ipython', and run
-#   pip install <pckg_name> with SHEBANG AT THE TOP '#!/usr/local/bin/python
-#   (this is important because BY DEFAULT, even with brew install, it sometimes
-#   uses #!/usr/bin/python -- pip IS NOT PYTHON SPECIFIC; just installs packages
-#   according to WHICHEVER PYTHON THE SHEBANG POINTS TO)
-# * Also if NON-EMPTY, /usr/local/bin python or ipython will add to their
-#   paths 'Users/ldavis/Library/Python/2.7/lib/python/site-packages'... weird!
-#   installation goes there when using 'pip install --user' option
-#
-# IPYTHON NOTES: for...
-#   -ipython, use %matplotlib qt5 or --matplotlib=qt5;
-#   -qtconsole, use %matplotlib qt5 or --matplotlib=;
-#   -notebook, use %matplotlib notebook in the relavent cell
-#   -qt5 better than osx, because gives "save as" options (filetype).
-#
-# TABLE OF RESULTS:
-#  FOR IPYTHON TERMINAL:
-#  GUI SPEC:
-#    --gui=qt, %matplotlib qt: after trying to declare figure, get "missing 1 requiredositional argument: 'figure'" (um... what?)
-#  --gui=qt, --matplotlib=qt: get "no module named PyQt4"
-#  --gui=qt, %matplotlib qt5: success; different window format than osx, with save dialogue offering filetype choice
-#  --gui=qt, --matplotlib=qt5: success; same as above
-#  --gui=qt, %matplotlib osx: success; windowops up as separate application
-#  --gui=qt, --matplotlib=osx: QApplication window NEVER STARTS; fig appears asopup/part of terminal application, does not have its own "window"
-#  NO GUI SPEC:
-#  --matplotlib=qt5 OR %matplotlib qt5: success
-#  --matplotlib=qt OR%matplotlib qt: get "no module named PyQt4"
-#  --matplotlib=osx OR %matplotlib osx: QApplication window NEVER STARTS; fig appears as temporaryopup
-#  FOR JUPYTER QTCONSOLE using jupyter qtconsole -- (args follow)
-# GUI SPEC:
-#    --gui=qt, %matplotlib qt5: get "RuntimeError: Cannot activate multiple GUI eventloops"
-#    --gui=qt, --matplotlib=qt5: works, creates QApplication window for figures (seriously... WHAT? then why the hell doesn't %matplotlib qt5 work?)
-#    --gui=qt, --matplotlib=inline OR %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non-GUI backend,"
-#  --gui=qt, %matplotlib osx: get "RuntimeError: Cannot activate multiple GUI eventloops"
-#  --gui=qt, --matplotlib=osx: works, but NO QApplication window; just a window-lessopup
-#  NO GUI SPEC:
-#  --matplotlib=qt5 OR %matplotlib qt5: same as above, works
-#  --matplotlib=osx OR %matplotlib osx: same as above, NO QApplication
-#  --matplotlib=inline OR %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non-GUI backend,"
-#  --matplotlib=qt: get "Eventloop or matplotlib integration failed. Is matplotlib installed?"
-#  %matplotlib qt: get "no module named PyQt4"
-#  ...if behavior different from listed above,erhaps order of loading modules in -r file causes this
-#  FOR JUPYTER NOTEBOOK (no command-line options for notebook server, must specify in notebook cells)
-#    %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non- GUI backend,"
-#  %matplotlib notebook: works fine
