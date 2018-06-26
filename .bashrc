@@ -4,6 +4,18 @@
 # Check out what is in the system defaults before using this, make sure your $PATH is populated.
 # To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
+# A few notes:
+#  * Prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
+#    if aliased or some 'exit' is in $PATH
+#     C-d/'exit' -- IF AVAILABLE, exit SSH session
+#     ~./~C-z -- Exit SSH session
+#     ~& -- Puts SSH into background
+#     ~# -- Gives list of forwarded connections in this session
+#     ~? -- Gives list of these commands
+#  * Extended globbing explanations, see:
+#     http://mywiki.wooledge.org/glob
+#  * Use '<package_manager> list' for MOST PACKAGE MANAGERS to see what is installed
+#     e.g. brew list, conda list, pip list
 ################################################################################
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message:
@@ -641,7 +653,44 @@ function disconnect() {
 }
 
 ################################################################################
-# Session management and Github stuff
+# iTerm2 title and other stuff
+################################################################################
+# Set the iTerm2 window title; see https://superuser.com/a/560393/506762
+# 1. First was idea to make title match the working directory; but fails/not useful
+# when inside tmux sessions
+# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
+# 2. Finally had idea to investigate environment variables -- terms out that
+# TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
+# grep that, then if the title is not already set AND we are on pane zero, request title.
+# Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
+# GNU syntax is "sed -i <pattern> <file>", which is annoying.
+titlefile="$HOME/.title"
+function title() { # Cmd-I from iterm2 also works
+  read -p "Enter title for this window: " title
+  [ -z "$title" ] && title="window $winnum"
+  echo -ne "\033]0;"$title"\007" # magnets, how do they work?
+  [ ! -e "$titlefile" ] && touch "$titlefile"
+  gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
+  echo "$winnum: $title" >>$titlefile # add to file
+}
+if [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
+  # Initialize title
+  winnum="${TERM_SESSION_ID%%t*}"
+  winnum="${winnum#w}"
+  if [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ]; then
+    # New window; might have closed one and opened another, so declare new title
+    title # call
+  else
+    # Query title stored in titlefile
+    title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
+    if [ -z "$title" ]; then title # reset title
+    else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
+    fi
+  fi
+fi
+
+################################################################################
+# SSH, session management, and Github stuff
 # Note: enabling files with spaces is tricky, need: https://stackoverflow.com/a/20364170/4970632
 # 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
 # destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
@@ -652,6 +701,21 @@ function disconnect() {
 #   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
+# Declare some names for active servers
+# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
+work='ldavis@10.83.16.91' # for scp'ing into my Mac
+home='ldavis@10.253.201.216'
+gauss='ldavis@gauss.atmos.colostate.edu'
+monde='ldavis@monde.atmos.colostate.edu'
+euclid='ldavis@euclid.atmos.colostate.edu'
+olbers='ldavis@olbers.atmos.colostate.edu'
+zephyr='lukelbd@zephyr.meteo.mcgill.ca'
+chicago='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
+archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
+ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
+
+# archive='/media/archives/reanalyses/era_interim/'
+# olbers='ldavis@129.82.49.159'
 # Check git remote on current folder, make sure it points to SSH/HTTPS depending
 # on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
 # SSH key or password/username can only be stored in plaintext in home directory)
@@ -679,62 +743,6 @@ if ! $macos && [ -z "$SSH_AUTH_SOCK" ]; then
   else echo "Warning: Github private SSH key \"~/.ssh/id_rsa_github\" is not available."
   fi
 fi
-
-# Set the iTerm2 window title
-# See this thread for helpful discussion: https://superuser.com/a/560393/506762
-#------------------------------------------------------------------------------#
-# 1. First was idea to make title match the working directory; but fails/not useful
-# when inside tmux sessions
-# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
-#------------------------------------------------------------------------------#
-# 2. Finally had idea to investigate environment variables -- terms out that
-# TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
-# grep that, then if the title is not already set AND we are on pane zero, request title.
-# Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
-# GNU syntax is "sed -i <pattern> <file>", which is annoying.
-titlefile="$HOME/.title"
-function title() { # Cmd-I from iterm2 also works
-  title="$*" # title, multiple words
-  echo -ne "\033]0;"$title"\007" # magnets, how do they work?
-}
-if [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
-  # Initialize title
-  winnum="${TERM_SESSION_ID%%t*}"
-  winnum="${winnum#w}"
-  if [ -n "$title" ]; then true # do nothing
-  elif [[ "$TERM_SESSION_ID" =~ w?t?p0: ]]; then
-    read -p "Enter title for this window: " title
-    [ -z "$title" ] && title="window $winnum"
-    title "$title"
-    [ ! -e "$titlefile" ] && touch "$titlefile"
-    gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
-    echo "$winnum: $title" >>$titlefile # add to file
-  else
-    # Use window specific title; will parse a simple file
-    if ! grep "^$winnum:.*$" $titlefile &>/dev/null; then
-      echo "Warning: Window title is unavailable."
-    else
-      echo "Using existing window title."
-      title="$(cat $titlefile | grep "^$winnum:.*$" | cut -d: -f2-)"
-      title $title # declare window title for this pane
-    fi
-  fi
-fi
-
-# Declare some names for active servers
-# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-work='ldavis@10.83.16.91' # for scp'ing into my Mac
-home='ldavis@10.253.201.216'
-gauss='ldavis@gauss.atmos.colostate.edu'
-monde='ldavis@monde.atmos.colostate.edu'
-euclid='ldavis@euclid.atmos.colostate.edu'
-olbers='ldavis@olbers.atmos.colostate.edu'
-zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-chicago='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
-archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
-ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
-# archive='/media/archives/reanalyses/era_interim/'
-# olbers='ldavis@129.82.49.159'
 
 # Functions for executing stuff on remote servers
 # Note git pull will fail if the merge is anything other than
@@ -1139,105 +1147,3 @@ $macos && { # first the MacOS options
   fortune # fun message
   } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
 
-################################################################################
-# Notes
-################################################################################
-# BASH NOTES:
-#  -prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
-#   if aliased or some 'exit' is in $PATH
-#     C-d/'exit' -- IF AVAILABLE, exit SSH session
-#     ~./~C-z -- Exit SSH session
-#     ~& -- Puts SSH into background
-#     ~# -- Gives list of forwarded connections in this session
-#     ~? -- Gives list of these commands
-#  -extended globbing explanations, see:
-#     http://mywiki.wooledge.org/glob
-#  -use '<package_manager> list' for MOST PACKAGE MANAGERS to see what is installed
-#     e.g. brew list, conda list, pip list
-#  -use unalias <alias> to remove alias name, and use
-#       unset <function> to remove function name OR variable
-#  -use type <name> for GENERAL variable/alias/function/file/path
-#       whereis <name> for FILE/PATH location. alias with -a to show all opts
-#
-# PYTHON NOTES: python often has many different installations; we try to clear
-# pip, easy_install, ipython (python 2.x in /usr/local/bin package management)
-# some of that up here; use 'type ipython', 'type python', 'type pip', etc.
-# to figure out where the command-line python stuff is; and ONCE INSIDE python,
-# type 'import sys; sys.path' to see where PACKAGES are located on OS, and their
-# priority. Each python might have a different sys.path. sys.path is populated
-# by the WORKING DIRECTORY, followed by DIRECTORIES IN $PYTHONPATH (if any),
-# followed by INSTALLATION-DEPENDENT DEFAULTS controlled by site.py file (this
-# should be in every directory that has python). for any package, check out
-# <pckg_nm>.__file__ to find its location
-# * Currently have python in the following directories:
-#     /usr/bin (system default; v2.7.10)
-#     /usr/local/bin (Homebrew location; v2.7.13)
-#       pip ALSO HERE, since it is not included by default; Homebrew installed
-#     /opt/local/bin (Macports location; v2.7.12)
-#       here it is ONLY IN python2.7 version; nothing with just "python"
-#     ~/anaconda/bin (Anaconda location; v3.5.2)
-#       pip will GET PUT HERE if you conda install it
-# * Using pip install seems to BY DEFAULT go to a site-packages folder (rest of
-#       sys.path is included by default, maybe standard library); the locations
-#       of each for each distribution are...
-#     /usr/bin --> /Library/Python/2.7/site-packages
-#       ...maybe goes here with easy_install.sh?
-#     /usr/local/bin --> /usr/local/lib/python2.7/site-packages
-#       ...which is where HOMEBREW-DOWNLOADED PIP INSTALLS STUFF
-#     /opt/local/bin --> none, evidently
-#       ...maybe just leave this installation, can't be invoked
-#     ~/anaconda/bin --> ~/anaconda/lib/python3.5/site-packages
-#       ...where conda install puts stuff
-# * Conda NEEDS PIP to operate (under the hood), but we never want to use it
-#       ourselves; should alias pip to original Homebrew version.
-#       then...
-#         -use pip to install/update python 2.x packages
-#         -use conda to install/update python 3.x packages in ~/anaconda/bin
-# * Various versions are required for various things, so can't delete any of
-#   these, but better to modify LOCAL VERSION OF PYTHON2.X (in /usr/local/bin)
-#   than SYSTEM-WIDE version; otherwise need sudo pip, which is bad practice
-# * So use the /usr/local/bin 'pip', 'python', and 'ipython', and run
-#   pip install <pckg_name> with SHEBANG AT THE TOP '#!/usr/local/bin/python
-#   (this is important because BY DEFAULT, even with brew install, it sometimes
-#   uses #!/usr/bin/python -- pip IS NOT PYTHON SPECIFIC; just installs packages
-#   according to WHICHEVER PYTHON THE SHEBANG POINTS TO)
-# * Also if NON-EMPTY, /usr/local/bin python or ipython will add to their
-#   paths 'Users/ldavis/Library/Python/2.7/lib/python/site-packages'... weird!
-#   installation goes there when using 'pip install --user' option
-#
-# IPYTHON NOTES: for...
-#   -ipython, use %matplotlib qt5 or --matplotlib=qt5;
-#   -qtconsole, use %matplotlib qt5 or --matplotlib=;
-#   -notebook, use %matplotlib notebook in the relavent cell
-#   -qt5 better than osx, because gives "save as" options (filetype).
-#
-# TABLE OF RESULTS:
-#  FOR IPYTHON TERMINAL:
-#  GUI SPEC:
-#    --gui=qt, %matplotlib qt: after trying to declare figure, get "missing 1 requiredositional argument: 'figure'" (um... what?)
-#  --gui=qt, --matplotlib=qt: get "no module named PyQt4"
-#  --gui=qt, %matplotlib qt5: success; different window format than osx, with save dialogue offering filetype choice
-#  --gui=qt, --matplotlib=qt5: success; same as above
-#  --gui=qt, %matplotlib osx: success; windowops up as separate application
-#  --gui=qt, --matplotlib=osx: QApplication window NEVER STARTS; fig appears asopup/part of terminal application, does not have its own "window"
-#  NO GUI SPEC:
-#  --matplotlib=qt5 OR %matplotlib qt5: success
-#  --matplotlib=qt OR%matplotlib qt: get "no module named PyQt4"
-#  --matplotlib=osx OR %matplotlib osx: QApplication window NEVER STARTS; fig appears as temporaryopup
-#  FOR JUPYTER QTCONSOLE using jupyter qtconsole -- (args follow)
-# GUI SPEC:
-#    --gui=qt, %matplotlib qt5: get "RuntimeError: Cannot activate multiple GUI eventloops"
-#    --gui=qt, --matplotlib=qt5: works, creates QApplication window for figures (seriously... WHAT? then why the hell doesn't %matplotlib qt5 work?)
-#    --gui=qt, --matplotlib=inline OR %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non-GUI backend,"
-#  --gui=qt, %matplotlib osx: get "RuntimeError: Cannot activate multiple GUI eventloops"
-#  --gui=qt, --matplotlib=osx: works, but NO QApplication window; just a window-lessopup
-#  NO GUI SPEC:
-#  --matplotlib=qt5 OR %matplotlib qt5: same as above, works
-#  --matplotlib=osx OR %matplotlib osx: same as above, NO QApplication
-#  --matplotlib=inline OR %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non-GUI backend,"
-#  --matplotlib=qt: get "Eventloop or matplotlib integration failed. Is matplotlib installed?"
-#  %matplotlib qt: get "no module named PyQt4"
-#  ...if behavior different from listed above,erhaps order of loading modules in -r file causes this
-#  FOR JUPYTER NOTEBOOK (no command-line options for notebook server, must specify in notebook cells)
-#    %matplotlib inline: after trying to uselt.show(), get "matplotlib is currently using a non- GUI backend,"
-#  %matplotlib notebook: works fine
