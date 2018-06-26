@@ -3,23 +3,38 @@
 Script to set up magic commands and other notebook properties.
 Just call this in the first cell with "run pyfuncs/notebook". And voila!
 Call with optional directory argument to make that the new working directory.
-Function suppresses output by default: see https://stackoverflow.com/a/40984270/4970632
 
-Some notes on jupyter configuration:
-    * in .jupyter, the jupyter_nbconvert_config.json sets up locations of stuff; templates
-        for nbextensions and formatting files for markdown/code cells.
-    * in .jupyter, the jupyter_notebook_config.json installs the configurator extension
-        for managing extra plugins.
-    * in .jupyter, not sure yet how to successfully use jupyter_console_config.py and
-        jupyter_notebook_config.py; couldn't get it to do what this function does on startup.
-    * in .jupyter/custom, current_theme.txt lists the current jupyterthemes theme, custom.css
-        contains CSS formatting for it, and fonts should contain font files -- note that there
-        are not font files on my Mac, even though jupyterthemes works; sometimes may be empty
-    * in .jupyter/nbconfig, tree.json loads the extra tab for the NBconfigurator, and 
-        common.json gives option to hide incompatible plugs, and notebook.json contains all
-        the new settings; just copy it over to current notebook to update
+Notes on python figures:
+  * Can use InlineBackend rc configuration to make inline figure properties
+    different from figure.<subproperty> settings in rcParams.
+  * Problem is, whenever rcParams are reset/pyfuncs module is reloaded, the previous
+    InlineBackend properties disappear.
+  * It is *also* necessary to maintain separate savefig options, including 'transparent'
+    and 'facecolor' -- cannot just set these to use the figure properties.
+    If transparent set to False, saved figure will have no transparency *even if* the
+    default figure.facecolor has zero alpha. Will *only* be transparent if alpha explicitly
+    changed by user command. Try playing with settings in plot.globals to see.
+  * In conclusion: Best workflow is probably to set InlineBackend settings to empty, but
+    control figure settings separate from savefig settings. Also need to test: if
+    transparent=True but patches were set to have zero transparency manually, will they
+    be made re-transparent when figure is saved?
 
+Notes on jupyter configuration:
+  * In .jupyter, the jupyter_nbconvert_config.json sets up locations of stuff; templates
+      for nbextensions and formatting files for markdown/code cells.
+  * In .jupyter, the jupyter_notebook_config.json installs the configurator extension
+      for managing extra plugins.
+  * In .jupyter, not sure yet how to successfully use jupyter_console_config.py and
+      jupyter_notebook_config.py; couldn't get it to do what this function does on startup.
+  * In .jupyter/custom, current_theme.txt lists the current jupyterthemes theme, custom.css
+      contains CSS formatting for it, and fonts should contain font files -- note that there
+      are not font files on my Mac, even though jupyterthemes works; sometimes may be empty
+  * In .jupyter/nbconfig, tree.json loads the extra tab for the NBconfigurator, and 
+      common.json gives option to hide incompatible plugs, and notebook.json contains all
+      the new settings; just copy it over to current notebook to update
 """
+# Imports
+import matplotlib as mpl
 from IPython import get_ipython
 from IPython.utils.path import filefind
 from IPython.core.magic import line_magic, Magics, magics_class, register_line_magic
@@ -31,6 +46,19 @@ import socket
 cd = os.getcwd()
 home = os.path.expanduser('~')
 hostname = socket.gethostname().split('.')[0]
+autosave = 30
+
+# Make sure we are in session
+ipython = get_ipython() # save session
+if ipython is None:
+    print("Warning: IPython kernel not found. This script must be run interactively with %run magic.")
+    exit()
+
+# Close figures if they exist
+# if mpl.pyplot.get_fignums():
+#     print("Closing existing figures.")
+#     mpl.pyplot.close()
+
 # Without redirection
 if len(sys.argv)>1 and sys.argv[-1] not in cd:
     print(f'Moving to directory {sys.argv[-1].replace("~", os.environ["HOME"])}.')
@@ -38,7 +66,7 @@ if len(sys.argv)>1 and sys.argv[-1] not in cd:
 
 # Declare new magic command
 # See: https://gist.github.com/gauteh/2f8f49f082f1d09b3db0
-print('Declaring new magic commands.')
+print('Adding custom magic commands.')
 _custom_paths = []
 # def find_in_syspath(filename):
 #   return filefind(filename, sys.path)
@@ -61,57 +89,32 @@ def addpath(line):
 del addpath
 
 # Run magic commands
-ipython = get_ipython() # save session
-if ipython is not None:
-    print("Running magic commands.")
-    # General behavior
+# Reloading modules, so can easily edit/run imported functions
+if 'autoreload' not in ipython.magics_manager.magics['line']:
+    # Only do this if not already loaded -- otherwise will get *recursive* 
+    # reloading, even with unload_ext command!
+    print("Enabling autoreload.")
     ipython.magic("reload_ext autoreload") # reload instead of load, to avoid annoying message
     ipython.magic("autoreload 2") # turn on expensive autoreloading
-    _ = io.StringIO() # message has a bunch of unnecessary newlines; will modify it
-    with redirect_stdout(_):
-        ipython.magic("autosave 60") # autosave every minute
-    print(_.getvalue().strip()) # strip newlines
-    # Plotting stuff
-    # Initialize with default 'inline' settings; then modify them
-    # with the various config options; that was probably my problem before
-    ipython.magic("matplotlib inline") # change print_figure_kwargs to see edges
-    # So don't have memory issues/have to keep re-closing them
-    # Retina probably more space efficient (high-res bitmap), but svg is prettiest
-    # and is only one preserving vector graphics
-    ipython.magic("config InlineBackend.close_figures = True")
-    ipython.magic("config InlineBackend.figure_formats = ['retina']")
-    # ipython.magic("config InlineBackend.figure_formats = ['retina','svg']")
-    # By default several rcParams are reset when printing to cell output; for
-    # retina (which is hi-res bitmap) we just want to set the DPI to something reasonable
-    ipython.magic("config InlineBackend.rc = {'figure.dpi':90, 'savefig.dpi':90, "
-        "'figure.facecolor':(0.95,0.95,0.95,1)}") # 90 was *best*, sizes matched SVG sizes
-    ipython.magic("config InlineBackend.print_figure_kwargs = {'bbox_inches':None}") #bbox_inches=\'tight\', pad_inches=0.1)')
-        # optionally keep figures tight around edges
-# Re-directing stdout
-# _ = io.StringIO()
-# with redirect_stdout(_):
-#     if len(sys.argv)>1:
-#         os.chdir(sys.argv[-1].replace("~", os.environ["HOME"])) # move to this directory
-#         print(f'Moved to directory {sys.argv[-1].replace("~", os.environ["HOME"])}.')
-#     if ipython is not None:
-#         # Basic configuration
-#         # ipy.core.display.display(ipy.core.display.HTML(html_format))
-#         ipython.magic("reload_ext autoreload") # reload instead of load, to avoid annoying message
-#         ipython.magic("autoreload 2") # turn on expensive autoreloading
-#         # Notebook configuration
-#         ipython.magic("autosave 60") # autosave every 120 seconds
-#         ipython.magic("config InlineBackend.close_figures = True")
-#             # so don't have memory issues/have to keep re-closing them
-#         ipython.magic("config InlineBackend.figure_formats = ['retina']")
-#             # retina probably more space efficient (high-res bitmap), but svg is prettiest
-#             # and is only one preserving vector graphics
-#         ipython.magic("config InlineBackend.rc = {'figure.dpi':70, 'savefig.dpi':70}") # 80 or 100 is apporpriate
-#             # by default several rcParams are reset when printing to cell output; for
-#             # retina (which is hi-res bitmap) we just want to set the DPI to something reasonable
-#         ipython.magic("config InlineBackend.print_figure_kwargs = {'bbox_inches':None}") #bbox_inches=\'tight\', pad_inches=0.1)')
-#             # optionally keep figures tight around edges
-#         ipython.magic("matplotlib inline") # change print_figure_kwargs to  see edges
-# _ = _.getvalue().split('\n')
-# if _[0].startswith("Moved to directory"):
-#     print(_[0].strip()) # and strip any whitespace
-# print("Notebook is configured.")
+# Autosaving
+_ = io.StringIO() # message has a bunch of unnecessary newlines; will modify it
+with redirect_stdout(_):
+    ipython.magic(f"autosave {autosave:d}") # autosave every minute
+print(f"Autosaving every {autosave:d} seconds.")
+# Plotting stuff
+# Initialize with default 'inline' settings; then modify them
+# with the various config options; that was probably my problem before
+print("Configuring inline plotting.")
+ipython.magic("matplotlib inline") # change print_figure_kwargs to see edges
+# So don't have memory issues/have to keep re-closing them
+ipython.magic("config InlineBackend.close_figures = True")
+# Retina probably more space efficient (high-res bitmap), but svg is prettiest
+# and is only one preserving vector graphics
+ipython.magic("config InlineBackend.figure_formats = ['retina']")
+# ipython.magic("config InlineBackend.figure_formats = ['retina','svg']")
+# By default several rcParams are reset when printing to cell output; for
+# retina (which is hi-res bitmap) we just want to set the DPI to something reasonable
+ipython.magic("config InlineBackend.rc = {}")
+# Optionally keep figures tight around edges
+# TODO: Can this also be set with an .rc setting?
+ipython.magic("config InlineBackend.print_figure_kwargs = {'bbox_inches':None}") #bbox_inches=\'tight\', pad_inches=0.1)')

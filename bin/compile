@@ -18,15 +18,15 @@ templates="$HOME/latex" # location of LaTeX templates and style files
 filename="$1" # the current file
 htmlcompile="$2" # option
 if [ -z "$filename" ]; then
-  echo "ERROR: Must call compile-script with filename."
+  echo "Error: Must call compile-script with filename."
   exit 1
 fi
 if [ -z "$htmlcompile" ]; then
-  echo "ERROR: Must call compile-script with true/false compile option for HTML version."
+  echo "Error: Must call compile-script with true/false compile option for HTML version."
   exit 1
 fi
 if [ ! -r "$filename" ]; then
-  echo "ERROR: File \"$filename\" does not exist."
+  echo "Error: File \"$filename\" does not exist."
   exit 1
 fi
 
@@ -34,7 +34,7 @@ fi
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   directory="${filename%/*}" # trim shortest pattern matching <stuff>/*, keep "stuff"
   filename="${filename##*/}" # trim longest pattern matching */<stuff>, keep "stuff"
-  [ ! -d "$directory" ] && echo "ERROR: Directory $directory does not exist." && exit 1
+  [ ! -d "$directory" ] && echo "Error: Directory $directory does not exist." && exit 1
   cd "$directory" # move there
 fi
 filestem="${filename%.tex}" # simple
@@ -103,7 +103,7 @@ function latexfind() {
 # Also ignore documentclass calls within verbatim commands; or just enforce starts at 0 position
 class=($(cat "$filename" | grep -o '^[^%]*' | grep '^\\documentclass' |
           cut -s -d'{' -f2 | cut -s -d'}' -f1 ))
-[ ${#class[@]} -gt 1 ] && echo "ERROR: Ambiguous document class: \"${class[@]}\"." && exit 1
+[ ${#class[@]} -gt 1 ] && echo "Error: Ambiguous document class: \"${class[@]}\"." && exit 1
 echo "Finding class file..."
 latexfind $class cls
 
@@ -118,7 +118,7 @@ latexfind $class cls
 # * Note this is *incomplete*, as it cannot handle multi-line requirepackage
 #   commands which happens sometimes.
 classfile=$(kpsewhich ${class}.cls)
-[ -z $classfile ] && echo "ERROR: Could not find class file ${class}.cls" && exit 1
+[ -z $classfile ] && echo "Error: Could not find class file ${class}.cls" && exit 1
 rpackages=($(cat "$classfile" | grep -o '^[^%]*' | grep '^.*\\RequirePackage' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
@@ -198,7 +198,7 @@ $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
   # by the second sed line (blank\nmessage\nline#) and inserts '--' between groups of matches
   # sed -E uses extended regular expressions, not basic; allows or operator, like egrep
 if [ ! -r "$filestem.pdf" ]; then
-  echo "ERROR: PDF not produced." && cleanup
+  echo "Error: PDF not produced." && cleanup
   exit 1
 fi
 
@@ -215,7 +215,7 @@ if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
       # come BEFORE current one in alphanumeric sorting
   done
   # Create difference file if earlier version exists
-  if [ "$index" -eq 0 ]; then echo "WARNING: Cannot find previous version of this file."
+  if [ "$index" -eq 0 ]; then echo "Warning: Cannot find previous version of this file."
   else # Tests index just before we broke from loop
     # Create difference texfile
     pfilename="${pfiles[$(($index - 1))]}" # previous index
@@ -223,7 +223,7 @@ if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
     [ -e "$dfilename" ] && rm "$dfilename"
     latexdiff "$pfilename" "$filename" > "$dfilename"
     if [ ! -r $dfilename ]; then
-      echo "ERROR: Difference file not produed." && cleanup
+      echo "Error: Difference file not produed." && cleanup
       exit 1
     fi
     # Compile difference
@@ -237,7 +237,7 @@ if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
     $latex -draftmode $flags "$dfilestem" &>/dev/null
     $latex $flags "$dfilestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
     if [ ! -r "$dfilestem.pdf" ]; then
-      echo "ERROR: Difference PDF not produced." && cleanup
+      echo "Error: Difference PDF not produced." && cleanup
       exit 1
     fi
   fi
@@ -250,14 +250,14 @@ if $htmlcompile; then
   echo "Creating HTML file with htlatex."
   htlatex "$filename" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
   if [ ! -r "$filestem.html" ]; then
-    echo "ERROR: Conversion to HTML failed." && cleanup
+    echo "Error: Conversion to HTML failed." && cleanup
     exit 1
   fi
   mv "$filestem.html" "$filestem.doc"
   # echo "Creating RTF file with latex2rtf."
   # latex2rtf "$filename" # | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
   # if [ ! -r "$filestem.rtf" ]; then
-  #   echo "ERROR: Conversion to RTF failed." && cleanup
+  #   echo "Error: Conversion to RTF failed." && cleanup
   #   exit 1
   # fi
 fi
@@ -266,7 +266,7 @@ fi
 cleanup # delete new files
 [ ! -z "$dfilestem" ] && open -a "$viewer" "$dfilestem.pdf" # open this first; make sure to test dfilestem
 open -a "$viewer" "$filestem.pdf" # open this next
-[ -z $TERM_PROGRAM ] && echo "ERROR: Could not find terminal from which this command executed." && exit 1
+[ -z $TERM_PROGRAM ] && echo "Error: Could not find terminal from which this command executed." && exit 1
 [ $TERM_PROGRAM = "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
 open -a $terminal # bring terminal back into focus
 

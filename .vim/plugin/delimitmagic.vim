@@ -101,9 +101,8 @@ function! s:delims(map,left,right,buffer,bigword)
     "   changing :noautocmd but that can't be done for a remap; see :help <mod>
     " * For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
     " * Will retain cursor position, but adjusted to right by length of left delimiter.
-    " 
     exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' '
-      \.':setlocal noautoindent<CR>'
+      \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
       \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
       \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'.len(a:left).'l'
       \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>'
