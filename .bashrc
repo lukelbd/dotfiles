@@ -800,8 +800,20 @@ function figuresync() {
 #   * Note this has nice side-effect of eliminating annoying "banner message"
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
-portfile="~/.port" # file storing port number
+portfile=~/.port # file storing port number
 alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
+function expanduser() { # turn tilde into $HOME
+  local param="$*"
+  param="${param/#~/$HOME}"  # restore expanded tilde
+  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
+  echo $param
+}
+function compressuser() { # turn $HOME into tilde
+  local param="$*"
+  param="${param/#$HOME/~}"
+  param="${param/#$HOME/\~}"
+  echo $param
+}
 function ssh_wrapper() {
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
   local port=10000 # starting port
@@ -814,9 +826,10 @@ function ssh_wrapper() {
     local port=$(($port + 1)) # generate new port
   done
   # \ssh -o StrictHostKeyChecking=no \
+  local portwrite="$(compressuser $portfile)"
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portfile && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portwrite && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
@@ -826,9 +839,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local file="${@:(-2):1}" # second to last
-  local dest="${@:(-1)}"   # last value
-  local dest="${dest/#$HOME/~}"  # restore expanded tilde
-  local dest="${dest/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  local dest="$(compressuser ${@:(-1)})" # last value
   local dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file on this server to home server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
@@ -840,35 +851,11 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   local port=$(cat $portfile) # port from most recent login
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local file="${@:(-2):1}" # second to last
   local dest="${@:(-1)}"   # last value
-  local file="${file/#$HOME/~}"  # restore expanded tilde
-  local file="${file/#$HOME/\~}" # if previous one failed/was re-expanded, need to escape the tilde
+  local file="$(compressuser ${@:(-2):1})" # second to last
   local file="${file//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
   scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
-}
-# Copy <file> on this server to another server, preserving full path but
-# RELATIVE TO HOME DIRECTORY; so, for example, from Guass to Home, have "data" folder on
-# each and then subfolders with same experiment name
-function ccp() {
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments. Final argument is server name." && return 1
-  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat $portfile) # port from most recent login
-  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local server=${@:(-1):1} # the last one
-  local file=${@:(-2):1} # the 2nd to last
-  if [[ "${file:0:1}" != "/" ]]; then
-    local destfile="$(pwd -P)/$file"
-  else local destfile="$file"
-  fi
-  local destfile=${destfile//\/Dropbox\//\/} # bunch of symlinked stuff in here
-  local destfile=${destfile//$HOME/\~} # get error when doing this... for some reason
-  echo "(Port $port) Copying $file to $destfile from $HOSTNAME to $server..."
-  scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" "$server":"$destfile"
-    # note $file CANNOT contain the literal/escaped tilde; will not be expanded
-    # by scp if quoted, but still need quotes in case name has spaces
 }
 
 ################################################################################
