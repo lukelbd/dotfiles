@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# This just sends pane to another window
+window1=$(tmux display -p "#I") # source
+window2=$1 # dest
+pane=$(tmux display -p "#P")
+echo $window1
+echo $window2
+echo $pane
+tmux swap-pane -s:${window1}.${pane} -t:${window2}
+tmux select-pane -t:${window2}

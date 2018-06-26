@@ -1335,10 +1335,11 @@ augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
-nnoremap <silent> <C-w> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
 nnoremap <silent> <C-a> :qa<CR> 
-nnoremap <silent> <C-q> :q<CR>
+nnoremap <silent> <C-q> :let g:tabpagenr=tabpagenr('$')<CR>:q<CR>:if g:tabpagenr!=tabpagenr('$') \| silent! tabp \| endif<CR>
+nnoremap <silent> <C-w> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabp \| endif<CR>
 "so we have close current window, close tab, and close everything
+"also will move to tab on the *left* if an action closed a tab
 silent! tnoremap <silent> <C-t> <C-w>:q!<CR>
 silent! nnoremap <Leader>T :terminal<CR>
 " silent! tnoremap <silent> <Esc> <C-\><C-n>
