@@ -664,7 +664,7 @@ function disconnect() {
 # grep that, then if the title is not already set AND we are on pane zero, request title.
 # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
 # GNU syntax is "sed -i <pattern> <file>", which is annoying.
-titlefile="$HOME/.title"
+titlefile=~/.title
 function title() { # Cmd-I from iterm2 also works
   read -p "Enter title for this window: " title
   [ -z "$title" ] && title="window $winnum"
@@ -673,24 +673,26 @@ function title() { # Cmd-I from iterm2 also works
   gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
   echo "$winnum: $title" >>$titlefile # add to file
 }
-if [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
-  if $macos; then
-    # Initialize title
-    winnum="${TERM_SESSION_ID%%t*}"
-    winnum="${winnum#w}"
-    if [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ]; then
-      # New window; might have closed one and opened another, so declare new title
-      title # call
-    else
-      # Query title stored in titlefile
-      title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
-      if [ -z "$title" ]; then title # reset title
-      else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
-      fi
+if $macos && [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
+  # Initialize title
+  winnum="${TERM_SESSION_ID%%t*}"
+  winnum="${winnum#w}"
+  if [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ]; then
+    # New window; might have closed one and opened another, so declare new title
+    title # call
+  else
+    # Query title stored in titlefile
+    title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
+    if [ -z "$title" ]; then title # reset title
+    else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
     fi
-  elif [ -n "$(cat $titlefile)" ]; then
-    # Assert title
-    echo -ne "\033]0;"$(cat $titlefile)"\007" # re-assert existing title, in case changed
+  fi
+elif ! $macos; then
+  # When using shell integration, but don't want to fucking reset title
+  # according to profile name -- want to make my own title!
+  if [ -r "$titlefile" ] && [ -n "$(cat $titlefile)" ]; then
+    echo "Preserving iTerm title."
+    echo -ne "\033]0;"$(cat $titlefile)"\007" # yeah buddy
   fi
 fi
 
@@ -840,9 +842,10 @@ function ssh_wrapper() {
   done
   # \ssh -o StrictHostKeyChecking=no \
   local portwrite="$(compressuser $portfile)"
+  local titlewrite="$(compressuser $titlefile)"
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite && echo $title >$titlefile && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portwrite && echo $title >$titlewrite && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
