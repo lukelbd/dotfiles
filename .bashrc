@@ -662,39 +662,50 @@ function disconnect() {
 # 2. Finally had idea to investigate environment variables -- terms out that
 # TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
 # grep that, then if the title is not already set AND we are on pane zero, request title.
-# Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
-# GNU syntax is "sed -i <pattern> <file>", which is annoying.
+# First some helper functions
 titlefile=~/.title
 function title() { # Cmd-I from iterm2 also works
-  read -p "Enter title for this window: " title
+  ! $macos && echo "Error: Can only set title from mac." && return 1
+  [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
+  local winnum="${TERM_SESSION_ID%%t*}"
+  local winnum="${winnum#w}"
+  if [ -n "$1" ]; then title="$1"
+  else read -p "Enter title for this window: " title
+  fi
   [ -z "$title" ] && title="window $winnum"
   echo -ne "\033]0;"$title"\007" # magnets, how do they work?
   [ ! -e "$titlefile" ] && touch "$titlefile"
+  # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
+  # GNU syntax is "sed -i <pattern> <file>", which is annoying.
   gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
   echo "$winnum: $title" >>$titlefile # add to file
 }
-if $macos && [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
-  # Initialize title
-  winnum="${TERM_SESSION_ID%%t*}"
-  winnum="${winnum#w}"
-  if [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ]; then
-    # New window; might have closed one and opened another, so declare new title
-    title # call
-  else
-    # Query title stored in titlefile
+function title_update() {
+  # Prompt user input potentially
+  [ ! -r "$titlefile" ] && echo "Error: Title file not available." && return 1
+  if $macos; then
+    local winnum="${TERM_SESSION_ID%%t*}"
+    local winnum="${winnum#w}"
     title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
-    if [ -z "$title" ]; then title # reset title
-    else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
-    fi
+  else
+    title="$(cat $titlefile)" # only text in file
   fi
-elif ! $macos; then
-  # When using shell integration, but don't want to fucking reset title
-  # according to profile name -- want to make my own title!
-  if [ -r "$titlefile" ] && [ -n "$(cat $titlefile)" ]; then
-    echo "Preserving iTerm title."
-    echo -ne "\033]0;"$(cat $titlefile)"\007" # yeah buddy
+  if [ -z "$title" ]; then title # reset title
+  else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
   fi
-fi
+}
+# New window; might have closed one and opened another, so declare new title
+function promptfix() {
+  local param="$1"
+  local param="${param//;;/;}"
+  local param="${param//; ;/;}"
+  local param="${param//;  ;/;}"
+  echo "$param"
+}
+$macos && [ -n "$TERM_SESSION_ID" ] && \
+  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
+[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
+  export PROMPT_COMMAND="$(promptfix "$PROMPT_COMMAND; title_update")"
 
 ################################################################################
 # SSH, session management, and Github stuff
@@ -845,7 +856,8 @@ function ssh_wrapper() {
   local titlewrite="$(compressuser $titlefile)"
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite && echo $title >$titlewrite && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portwrite; echo $title >$titlewrite; chmod 444 $portwrite; chmod 444 $titlewrite; " \
+    "echo \"Port number: ${port}.\"; /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
