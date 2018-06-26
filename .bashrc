@@ -800,7 +800,7 @@ function figuresync() {
 #   * Note this has nice side-effect of eliminating annoying "banner message"
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
-portfile="$HOME/.port" # file storing port number
+portfile="~/.port" # file storing port number
 alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
 function ssh_wrapper() {
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
