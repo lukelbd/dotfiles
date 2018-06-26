@@ -674,22 +674,24 @@ function title() { # Cmd-I from iterm2 also works
   echo "$winnum: $title" >>$titlefile # add to file
 }
 if [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
-  # Initialize title
-  winnum="${TERM_SESSION_ID%%t*}"
-  winnum="${winnum#w}"
-  if [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ]; then
-    # New window; might have closed one and opened another, so declare new title
-    title # call
-  else
-    # Query title stored in titlefile
-    title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
-    if [ -z "$title" ]; then title # reset title
-    else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
+  if $macos; then
+    # Initialize title
+    winnum="${TERM_SESSION_ID%%t*}"
+    winnum="${winnum#w}"
+    if [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ]; then
+      # New window; might have closed one and opened another, so declare new title
+      title # call
+    else
+      # Query title stored in titlefile
+      title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
+      if [ -z "$title" ]; then title # reset title
+      else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
+      fi
     fi
+  elif [ -n "$(cat $titlefile)" ]; then
+    # Assert title
+    echo -ne "\033]0;"$(cat $titlefile)"\007" # re-assert existing title, in case changed
   fi
-elif [ -n "$title" ]; then
-  # Assert title
-  echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
 fi
 
 ################################################################################
@@ -840,7 +842,7 @@ function ssh_wrapper() {
   local portwrite="$(compressuser $portfile)"
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite && title=$title && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portwrite && echo $title >$titlefile && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
