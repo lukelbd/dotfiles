@@ -439,14 +439,6 @@ Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
 "Sneak plugin; see the link for helpful discussion:
 "https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 Plug 'justinmk/vim-sneak'
-map s <Plug>Sneak_s
-map S <Plug>Sneak_S
-map f <Plug>Sneak_f
-map F <Plug>Sneak_F
-map t <Plug>Sneak_t
-map T <Plug>Sneak_T
-map L <Plug>Sneak_;
-map H <Plug>Sneak_,
 "End of plugins
 call plug#end() "the plug#end also declares filetype syntax and indent on
   "note apparently every BufRead autocmd inside an ftdetect/filename.vim file
@@ -556,11 +548,24 @@ if has_key(g:plugs, "vim-gitgutter")
     \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:let b:gitgutter_enabled=1<CR>'
     \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:let b:gitgutter_enabled=0<CR>'
   " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
-  nmap <silent> Gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  nmap <silent> Gu :GitGutterUndoHunk<CR>
+  nmap <silent> gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  nmap <silent> gd :GitGutterUndoHunk<CR>
   "d is for 'delete' change
-  nmap <silent> Gp :GitGutterPrevHunk<CR>
-  nmap <silent> Gn :GitGutterNextHunk<CR>
+  nmap <silent> gN :GitGutterPrevHunk<CR>
+  nmap <silent> gn :GitGutterNextHunk<CR>
+endif
+
+"##############################################################################"
+"VIM SNEAK
+if has_key(g:plugs, "vim-sneak")
+  map s <Plug>Sneak_s
+  map S <Plug>Sneak_S
+  map f <Plug>Sneak_f
+  map F <Plug>Sneak_F
+  map t <Plug>Sneak_t
+  map T <Plug>Sneak_T
+  map L <Plug>Sneak_;
+  map H <Plug>Sneak_,
 endif
 
 "###############################################################################
@@ -1335,10 +1340,12 @@ augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 "use force write, in case old version exists
-nnoremap <silent> <C-w> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabprevious \| endif<CR>
 nnoremap <silent> <C-a> :qa<CR> 
-nnoremap <silent> <C-q> :q<CR>
+nnoremap <silent> <C-q> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>
+      \:q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
+nnoremap <silent> <C-w> :if tabpagenr('$')==1 \| qa \| else \| tabclose \| silent! tabp \| endif<CR>
 "so we have close current window, close tab, and close everything
+"also will move to tab on the *left* if an action closed a tab
 silent! tnoremap <silent> <C-t> <C-w>:q!<CR>
 silent! nnoremap <Leader>T :terminal<CR>
 " silent! tnoremap <silent> <Esc> <C-\><C-n>
@@ -1547,7 +1554,7 @@ nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echo
 nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 "Replace useless BibTex entries
-nnoremap <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+nnoremap <silent> <Leader>B :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE

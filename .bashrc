@@ -564,9 +564,9 @@ function jt() {
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
       uriah*)  jupyter_theme=solarizedl;;
-      gauss)   jupyter_theme=gruvboxd;;
-      euclid)  jupyter_theme=gruvboxd;;
-      monde)   jupyter_theme=onedork;;
+      gauss*)   jupyter_theme=gruvboxd;;
+      euclid*)  jupyter_theme=gruvboxd;;
+      monde*)   jupyter_theme=onedork;;
       midway*) jupyter_theme=onedork;;
       *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
     esac
@@ -578,7 +578,8 @@ function jt() {
     export jupyter_font="$2"
   fi
   # Make sure theme is valid
-  themes=($(command jt -l | tail +2))
+  # mkadf
+  themes=($(command jt -l | sed '1d'))
   [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
     echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
   command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
@@ -664,57 +665,45 @@ function disconnect() {
 ################################################################################
 # First function that sets title
 titlefile=~/.title
+winnum="${TERM_SESSION_ID%%t*}"
+winnum="${winnum#w}"
 function title() { # Cmd-I from iterm2 also works
   ! $macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
-  local winnum="${TERM_SESSION_ID%%t*}"
-  local winnum="${winnum#w}"
   if [ -n "$1" ]; then title="$1"
   else read -p "Enter title for this window: " title
   fi
   [ -z "$title" ] && title="window $winnum"
-  echo -ne "\033]0;"$title"\007" # magnets, how do they work?
-  [ ! -e "$titlefile" ] && touch "$titlefile"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
   # GNU syntax is "sed -i <pattern> <file>", which is annoying.
+  [ ! -e "$titlefile" ] && touch "$titlefile"
   gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
   echo "$winnum: $title" >>$titlefile # add to file
+  title_update # update
 }
 # Prompt user input potentially, but try to load from file
 function title_update() {
   # Check file availability
-  if [ ! -r "$titlefile" ]; then
-    if ! $macos; then
-      echo "Error: Title file not available." && return 1
-    else
-      title
-    fi
-  fi
+  [ ! -r "$titlefile" ] && {
+    if ! $macos; then echo "Error: Title file not available." && return 1
+    else title
+    fi; }
   # Read from file
   if $macos; then
-    local winnum="${TERM_SESSION_ID%%t*}"
-    local winnum="${winnum#w}"
     title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
-  else
-    title="$(cat $titlefile)" # only text in file
+  else title="$(cat $titlefile)" # only text in file
   fi
-  # Make decision
+  # Update or re-declare
+  title="$(echo "$title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
   if [ -z "$title" ]; then title # reset title
   else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
   fi
 }
 # New window; might have closed one and opened another, so declare new title
-function sanitize() {
-  local param="$1"
-  local param="${param//;;/;}"
-  local param="${param//; ;/;}"
-  local param="${param//;  ;/;}"
-  echo "$param" # ugly as fuck
-}
+[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
+  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; title_update" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
 $macos && [ -n "$TERM_SESSION_ID" ] && \
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
-[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
-  export PROMPT_COMMAND="$(sanitize "$PROMPT_COMMAND; title_update")"
 
 ################################################################################
 # SSH, session management, and Github stuff
