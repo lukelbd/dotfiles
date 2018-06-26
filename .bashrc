@@ -147,13 +147,12 @@ else
     module load intel/16.0
     module load mkl/11.3
     # In future, use my own environment
-    # hello
     # Idea to share conda environment, but really not necessary
-    # module load Anaconda2
-    # [[ -z "$CONDA_PREFIX" ]] && {
-    #   echo "Activating conda environment."
-    #   source activate /project2/rossby/group07/.conda
-    #   }
+    module load Anaconda3
+    [[ -z "$CONDA_PREFIX" ]] && {
+      echo "Activating conda environment."
+      source activate /project2/rossby/group07/.conda
+      }
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
