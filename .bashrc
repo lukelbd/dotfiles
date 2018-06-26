@@ -692,7 +692,8 @@ elif ! $macos; then
   # according to profile name -- want to make my own title!
   if [ -r "$titlefile" ] && [ -n "$(cat $titlefile)" ]; then
     echo "Preserving iTerm title."
-    echo -ne "\033]0;"$(cat $titlefile)"\007" # yeah buddy
+    export PROMPT_COMMAND='echo -ne "\033]0;$(cat $titlefile)\007"'
+    # echo -ne "\033]0;"$(cat $titlefile)"\007" # yeah buddy
   fi
 fi
 
