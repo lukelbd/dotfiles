@@ -662,7 +662,8 @@ function disconnect() {
 # 2. Finally had idea to investigate environment variables -- terms out that
 # TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
 # grep that, then if the title is not already set AND we are on pane zero, request title.
-# First some helper functions
+################################################################################
+# First function that sets title
 titlefile=~/.title
 function title() { # Cmd-I from iterm2 also works
   ! $macos && echo "Error: Can only set title from mac." && return 1
@@ -680,9 +681,17 @@ function title() { # Cmd-I from iterm2 also works
   gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
   echo "$winnum: $title" >>$titlefile # add to file
 }
+# Prompt user input potentially, but try to load from file
 function title_update() {
-  # Prompt user input potentially
-  [ ! -r "$titlefile" ] && echo "Error: Title file not available." && return 1
+  # Check file availability
+  if [ ! -r "$titlefile" ]; then
+    if ! $macos; then
+      echo "Error: Title file not available." && return 1
+    else
+      title
+    fi
+  fi
+  # Read from file
   if $macos; then
     local winnum="${TERM_SESSION_ID%%t*}"
     local winnum="${winnum#w}"
@@ -690,22 +699,23 @@ function title_update() {
   else
     title="$(cat $titlefile)" # only text in file
   fi
+  # Make decision
   if [ -z "$title" ]; then title # reset title
   else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
   fi
 }
 # New window; might have closed one and opened another, so declare new title
-function promptfix() {
+function sanitize() {
   local param="$1"
   local param="${param//;;/;}"
   local param="${param//; ;/;}"
   local param="${param//;  ;/;}"
-  echo "$param"
+  echo "$param" # ugly as fuck
 }
 $macos && [ -n "$TERM_SESSION_ID" ] && \
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
-  export PROMPT_COMMAND="$(promptfix "$PROMPT_COMMAND; title_update")"
+  export PROMPT_COMMAND="$(sanitize "$PROMPT_COMMAND; title_update")"
 
 ################################################################################
 # SSH, session management, and Github stuff
