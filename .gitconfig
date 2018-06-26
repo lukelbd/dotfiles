@@ -47,7 +47,7 @@
 		fi; done"
 	ignore = "!root=$(git rev-parse --show-toplevel); if [ -n \"$root\" ]; \
 		then cat $root/.gitignore | grep -v '#' | grep -v '^\\s*$' | sed 's/\\*\\*\\///g' | while read pattern; \
-		do find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm --cached --ignore-unmatch -- 2>/dev/null; \
+		do find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
 		done; fi"
 [status]
 	branch = true
