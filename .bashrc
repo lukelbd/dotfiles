@@ -701,7 +701,7 @@ function title_update() {
 }
 # New window; might have closed one and opened another, so declare new title
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
-  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; title_update" | sed 's/;[ \t]*;/;/g')"
+  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; title_update" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
 $macos && [ -n "$TERM_SESSION_ID" ] && \
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
 
