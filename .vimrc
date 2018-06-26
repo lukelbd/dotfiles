@@ -370,6 +370,10 @@ Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
+"Colorize Hex strings
+"Note this option is ***incompatible*** with iTerm minimum contrast above 0
+"Actually tried with minimum contrast zero and colors *still* messed up; forget it
+" Plug 'lilydjwg/colorizer'
 "TeX utilities; better syntax highlighting, better indentation,
 "and some useful remaps
 " Plug 'lervag/vimtex'
@@ -457,6 +461,16 @@ set softtabstop=2
 "First, jump to mark '"' without changing the jumplist (:help g`)
 "Mark '"' is the cursor position when last exiting the current buffer
 "CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
+augroup session
+  au!
+  if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
+    au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
+    au VimEnter * Obsession .session.vim
+    let autosave="InsertLeave"
+    if exists("##TextChanged") | let autosave.=",TextChanged" | endif
+    exe "au ".autosave." * w"
+  endif
+augroup END
 function! s:autosave_toggle(on)
   if a:on "in future consider using this to disable autosave for large files
     if exists('b:autosave_on') && b:autosave_on=1
@@ -481,16 +495,6 @@ function! s:autosave_toggle(on)
     augroup END
   endif
 endfunction
-augroup session
-  au!
-  if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
-    au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
-    au VimEnter * Obsession .session.vim
-    let autosave="InsertLeave"
-    if exists("##TextChanged") | let autosave.=",TextChanged" | endif
-    exe "au ".autosave." * w"
-  endif
-augroup END
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
   let g:workspace_session_name = '.session.vim'
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
@@ -499,6 +503,40 @@ if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically sav
   let g:workspace_autosave_ignore = ['gitcommit', 'rst', 'qf', 'diff', 'help'] "don't autosave these
 endif
 "Remember file position, so come back after opening to same spot
+
+"##############################################################################"
+"TEMPLATES
+"***NOTE*** BufNewFile events don't work inside ftplugin, because by the time
+"vim has reached that file, the BufNewFiel event is no longer valid!
+"Prompt user to choose from a list of templates (located in ~/latex folder)
+"when creating a new LaTeX file.
+"See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
+augroup templates
+  au!
+  au BufNewFile *.tex call TeXTemplates()
+augroup END
+function! TeXTemplates()
+  let templates=split(globpath('~/latex/', '*.tex'),"\n")
+  let names=[]
+  for template in templates
+    call add(names, '"'.fnamemodify(template, ":t:r").'"')
+    "expand does not work, for some reason... because expand is used with one argument
+    "with a globalfilename, e.g. % (current file)... fnamemodify is for strings
+  endfor
+  while 1
+    echo "Current templates available: ".join(names, ", ")."."
+    let template=expand("~")."/latex/".input("Enter choice: ").".tex"
+    if filereadable(template)
+      execute "0r ".template
+      break
+    endif
+    echo "\nInvalid name."
+  endwhile
+endfunction
+command! TeXTemplates call TeXTemplates()
+
+"##############################################################################"
+"SNIPPETS
 
 "###############################################################################
 "GIT GUTTER
@@ -702,6 +740,7 @@ endif
 
 "###############################################################################
 "MUCOMPLETE
+"Compact alternative to neocomplete; try it again
 augroup mucomplete
 augroup END
 if has_key(g:plugs, "vim-mucomplete") "just check if activated
@@ -1503,12 +1542,12 @@ nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consec
 "Replace consecutive newlines with single newline
 nnoremap <silent> <Leader>~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Fix unicode quotes and dashes
-nnoremap <buffer> <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <buffer> <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <buffer> <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-nnoremap <buffer> <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 "Replace useless BibTex entries
-nnoremap <buffer> <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+nnoremap <silent> <Leader>b :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
@@ -1683,8 +1722,9 @@ highlight SpecialKey ctermfg=Black cterm=None
 highlight Todo ctermfg=None ctermbg=Red
 highlight MatchParen ctermfg=Yellow ctermbg=Blue
 "Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
-  "background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
-  "gray, and 'ANSI black bold' to black).
+"background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
+"gray, and 'ANSI black bold' to black).
+"Note 'lightgray' is just normal white
 set cursorline
 highlight CursorLine cterm=None ctermbg=Black
 highlight CursorLineNR cterm=None ctermfg=Yellow ctermbg=Black

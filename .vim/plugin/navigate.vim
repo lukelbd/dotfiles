@@ -228,6 +228,7 @@ endif
 "###############################################################################
 "Magical function; performs n.n.n. style replacement in one keystroke
 "Requires the below augroup for some reason
+"Inpsired from: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
 "##############################################################################"
 augroup refactor_tool
   au!
