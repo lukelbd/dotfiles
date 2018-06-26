@@ -255,8 +255,11 @@ stty -ixon # disable start/stop output control; note for putty, have to edit STT
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
 # set -ex
   # exit this script when encounter error, and print each command; useful for debugging
+set -o posix
 set +H
   # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
+function env() { set; }
+  # just prints all shell variables
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
 shopt -s checkwinsize # allow window resizing
@@ -679,13 +682,44 @@ fi
 
 # Set the iTerm2 window title
 # See this thread for helpful discussion: https://superuser.com/a/560393/506762
-# [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
-# iterm "$title" # create title
-export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
-function iterm() { # Cmd-I from iterm2 also works
+#------------------------------------------------------------------------------#
+# 1. First was idea to make title match the working directory; but fails/not useful
+# when inside tmux sessions
+# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
+#------------------------------------------------------------------------------#
+# 2. Finally had idea to investigate environment variables -- terms out that
+# TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
+# grep that, then if the title is not already set AND we are on pane zero, request title.
+# Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
+# GNU syntax is "sed -i <pattern> <file>", which is annoying.
+titlefile="$HOME/.title"
+function title() { # Cmd-I from iterm2 also works
   title="$*" # title, multiple words
   echo -ne "\033]0;"$title"\007" # magnets, how do they work?
 }
+if [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
+  # Initialize title
+  winnum="${TERM_SESSION_ID%%t*}"
+  winnum="${winnum#w}"
+  if [ -n "$title" ]; then true # do nothing
+  elif [[ "$TERM_SESSION_ID" =~ w?t?p0: ]]; then
+    read -p "Enter title for this window: " title
+    [ -z "$title" ] && title="window $winnum"
+    title "$title"
+    [ ! -e "$titlefile" ] && touch "$titlefile"
+    gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
+    echo "$winnum: $title" >>$titlefile # add to file
+  else
+    # Use window specific title; will parse a simple file
+    if ! grep "^$winnum:.*$" $titlefile &>/dev/null; then
+      echo "Warning: Window title is unavailable."
+    else
+      echo "Using existing window title."
+      title="$(cat $titlefile | grep "^$winnum:.*$" | cut -d: -f2-)"
+      title $title # declare window title for this pane
+    fi
+  fi
+fi
 
 # Declare some names for active servers
 # ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
@@ -766,6 +800,7 @@ function figuresync() {
 #   * Note this has nice side-effect of eliminating annoying "banner message"
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
+portfile="$HOME/.port" # file storing port number
 alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
 function ssh_wrapper() {
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
@@ -781,13 +816,13 @@ function ssh_wrapper() {
   # \ssh -o StrictHostKeyChecking=no \
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >~/port && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portfile && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat ~/port) # port from most recent login
+  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat $portfile) # port from most recent login
   local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local file="${@:(-2):1}" # second to last
@@ -801,8 +836,8 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat ~/port) # port from most recent login
+  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat $portfile) # port from most recent login
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local file="${@:(-2):1}" # second to last
@@ -818,8 +853,8 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
 # each and then subfolders with same experiment name
 function ccp() {
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments. Final argument is server name." && return 1
-  [ ! -r ~/port ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat ~/port) # port from most recent login
+  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat $portfile) # port from most recent login
   local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
   [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
   local server=${@:(-1):1} # the last one
