@@ -866,7 +866,7 @@ function ssh_wrapper() {
   local titlewrite="$(compressuser $titlefile)"
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite; echo $title >$titlewrite; chmod 444 $portwrite; chmod 444 $titlewrite; " \
+    "echo $port >$portwrite; echo $title >$titlewrite; " \
     "echo \"Port number: ${port}.\"; /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
