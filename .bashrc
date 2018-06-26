@@ -687,6 +687,9 @@ if [ -n "$TERM_SESSION_ID" ]; then # we are in an iTerm session
     else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
     fi
   fi
+elif [ -n "$title" ]; then
+  # Assert title
+  echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
 fi
 
 ################################################################################
@@ -837,7 +840,7 @@ function ssh_wrapper() {
   local portwrite="$(compressuser $portfile)"
   \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portwrite && title=$title && echo \"Port number: ${port}\". && /bin/bash -i" # -t says to stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
