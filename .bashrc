@@ -565,9 +565,9 @@ function jt() {
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
       uriah*)  jupyter_theme=solarizedl;;
-      gauss)   jupyter_theme=gruvboxd;;
-      euclid)  jupyter_theme=gruvboxd;;
-      monde)   jupyter_theme=onedork;;
+      gauss*)   jupyter_theme=gruvboxd;;
+      euclid*)  jupyter_theme=gruvboxd;;
+      monde*)   jupyter_theme=onedork;;
       midway*) jupyter_theme=onedork;;
       *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
     esac
@@ -579,7 +579,8 @@ function jt() {
     export jupyter_font="$2"
   fi
   # Make sure theme is valid
-  themes=($(command jt -l | tail +2))
+  # mkadf
+  themes=($(command jt -l | sed '1d'))
   [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
     echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
   command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
