@@ -678,8 +678,10 @@ if ! $macos && [ -z "$SSH_AUTH_SOCK" ]; then
 fi
 
 # Set the iTerm2 window title
+# See this thread for helpful discussion: https://superuser.com/a/560393/506762
 # [ -z $title ] && read -p "Enter iTerm2 title: " title # only if prompted
 # iterm "$title" # create title
+export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
 function iterm() { # Cmd-I from iterm2 also works
   title="$*" # title, multiple words
   echo -ne "\033]0;"$title"\007" # magnets, how do they work?
