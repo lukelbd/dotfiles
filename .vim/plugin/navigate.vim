@@ -233,7 +233,7 @@ endif
 augroup refactor_tool
   au!
   au InsertLeave * noautocmd call MoveToNext() "magical c* searching function
-augroup END
+augroup EN##D
 "Also we overhaul the &, @, and # keys
 " * By default & repeats last :s command
 " * Use <C-r>=expand('<cword>')<CR> instead of <C-r><C-w> to avoid errors on empty lines
