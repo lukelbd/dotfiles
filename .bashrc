@@ -370,6 +370,7 @@ else
   export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
   lscolor='--color=always' && sortcmd='sort'
 fi
+ignore="--ignore "
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 ! $macos && alias cd="cd -P" # don't want this on my mac temporarily
@@ -859,6 +860,7 @@ function ssh_wrapper() {
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
+  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
   [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
   local port=$(cat $portfile) # port from most recent login
@@ -872,6 +874,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
+  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
   [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
   local port=$(cat $portfile) # port from most recent login
@@ -911,6 +914,7 @@ function wordcount() {
 }
 # Our presentation software; install with commented line below from: http://pygobject.readthedocs.io/en/latest/getting_started.html
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
+# Other tools: "impressive", and "presentation"; both should be in $HOME/bin
 alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
 ################################################################################
