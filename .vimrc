@@ -1203,8 +1203,8 @@ if has_key(g:plugs, "tabular")
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns
   "first character after matching preceding character
   "Arbitrary character
-  vnoremap <expr> -t ':Tabularize /'.input('Align character: ').'/l0c1<CR>'
-  nnoremap <expr> -t ':Tabularize /'.input('Align character: ').'/l0c1<CR>'
+  vnoremap <expr> -<Space> ':Tabularize /'.input('Align character: ').'/l1c1<CR>'
+  nnoremap <expr> -<Space> ':Tabularize /'.input('Align character: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
   nnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
@@ -1232,9 +1232,6 @@ if has_key(g:plugs, "tabular")
   "As above, but include comments
   vnoremap <expr> -_ ':Tabularize /\S\zs\ /l0<CR>'
   nnoremap <expr> -_ ':Tabularize /\S\zs\ /l0<CR>'
-  "Keep accidentally trying this keystroke, but it is unused
-  nnoremap  -<Space> <Nop>
-  vnoremap  -<Space> <Nop>
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
   vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
