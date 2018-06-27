@@ -33,21 +33,21 @@
   { . "${HOME}/.iterm2_shell_integration.bash"; echo "Enabled shell integration."; }
 
 ################################################################################
-# INITIAL STUFF, DEFAULT CONFIG AND PATH MANAGEMENT
-# CUSTOM KEY BINDINGS AND INTERACTION
+# PROMPT
 ################################################################################
-# Reset all aliases
-unalias -a
-
-# Flag for if in MacOs
-[[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
-
-# Prompt
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
 
+################################################################################
+# SETTINGS FOR PARTICULAR MACHINES
+# CUSTOM KEY BINDINGS AND INTERACTION
+################################################################################
+# Reset all aliases
+unalias -a
+# Flag for if in MacOs
+[[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
 # First, the path management
 # If loading default bashrc, *must* happen before everything else or may get unexpected
 # behavior! For example, due to my overriding behavior of grep/man/help commands, and
@@ -188,7 +188,10 @@ if [[ -e "$HOME/anaconda3/bin" || -e "$HOME/miniconda3/bin" ]]; then
   export PATH="$HOME/anaconda3/bin:$PATH"
 fi
 
-# Help page wrappers
+################################################################################
+# WRAPPERS FOR COMMON FUNCTIONS
+################################################################################
+# Help page wrapper
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 function help() {
@@ -201,6 +204,7 @@ function help() {
     echo "No help information for \"$1\"."
   fi
 }
+# Man page wrapper
 function man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
@@ -221,13 +225,66 @@ function man() { # always show useful information when man is called
     echo "No man entry for \"$1\"."
   fi
 }
-# function superman() { # man pages in VIM with cool syntax highlighting
-#   command vim -c "SuperMan $*"
-#   if [ "$?" != "0" ]; then
-#     echo "No manual entry for $*"
-#   fi
-# }
+# Editor stuff
+# VIM command to keep track of session -- need to 'source' the sessionfile, which is
+# just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
+# re-closing every time we start a session
+function vim() {
+  # First modify the Obsession-generated session file
+  # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
+  # tracking in the current session file
+  local sessionfile=".session.vim"
+  if [[ -z "$@" ]] && [[ -r "$sessionfile" ]]; then
+    # Unfold stuff after entering each buffer; for some reason folds are otherwise
+    # re-closed upon openening each file
+    # Check out: cat $sessionfile | grep -n -E 'fold|zt'
+    $macos && sed=gsed || sed=sed # only GNU sed works here
+    $sed -i "/zt/a setlocal nofoldenable" $sessionfile
+    command vim -S $sessionfile # for working with obsession
+  else
+    command vim -p $@ # when loading specific files; also open them in separate tabs
+  fi
+  clear # clear screen after exit
+}
+# Open wrapper
+function open() {
+  # Parse input
+  local app=
+  unset files
+  local files=()
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -a|--application) local app="$2"; shift; shift; ;;
+      -*) echo "Error: Unknown flag $1." && return 1 ;;
+      *) local files+=($1); shift; ;;
+    esac
+  done
+  echo ${files[@]}
+  for file in "${files[@]}"; do
+    # echo $file
+    local iapp="$app"
+    if [ -z "$iapp" ]; then
+      case "$file" in
+        *.html) local app="Chromium.app" ;;
+        *.txt)  local app="TextEdit.app" ;;
+        *.md)   local app="Marked 2.app" ;;
+        *) echo "File type unknown for file: \"$file\"." && return 1 ;;
+      esac
+    fi
+    echo "Opening file \"$file\"."
+    # continue
+    command open -a "$app" $file
+  done
+}
+# Environment variables
+export EDITOR=vim # default editor, nice and simple
+export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
+# Use this for watching log files
+alias watch="tail -f" # actually already is a watch command
 
+################################################################################
+# SHELL BEHAVIOR, KEY BINDINGS
+################################################################################
 # Tab completion behavior
 # TODO: Appears to have been disabled with the \C-i remap below
 # Or possibly due to other stuff
@@ -283,33 +340,6 @@ shopt -s nocaseglob # case insensitive
 shopt -s globstar # **/ matches all subdirectories, searches recursively
 shopt -u failglob # turn off failglob; so no error message if expansion is empty
 # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
-
-# Editor stuff
-# Use this for watching log files
-alias watch="less +F" # actually already is a watch command
-# VIM command to keep track of session -- need to 'source' the sessionfile, which is
-# just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
-# re-closing every time we start a session
-function vim() {
-  # First modify the Obsession-generated session file
-  # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
-  # tracking in the current session file
-  local sessionfile=".session.vim"
-  if [[ -z "$@" ]] && [[ -r "$sessionfile" ]]; then
-    # Unfold stuff after entering each buffer; for some reason folds are otherwise
-    # re-closed upon openening each file
-    # Check out: cat $sessionfile | grep -n -E 'fold|zt'
-    $macos && sed=gsed || sed=sed # only GNU sed works here
-    $sed -i "/zt/a setlocal nofoldenable" $sessionfile
-    command vim -S $sessionfile # for working with obsession
-  else
-    command vim -p $@ # when loading specific files; also open them in separate tabs
-  fi
-  clear # clear screen after exit
-}
-# Environment variables
-export EDITOR=vim # default editor, nice and simple
-export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 
 ################################################################################
 # Magic changing stderr color
