@@ -377,7 +377,10 @@ alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 # Grepping and diffing; enable colors
 alias grep="grep --color=auto" # always show color
 alias egrep="egrep --color=auto" # always show color
-hash colordiff 2>/dev/null && alias diff="colordiff" # prettier differencing; use this if it exists; or just highlight with grep
+# Make Perl color wrapper default; also allow color difference with git
+# Note to recursively compare directories, use --name-status
+hash colordiff 2>/dev/null && alias diff="command colordiff"
+hash git 2>/dev/null && alias delta="git diff --no-index --color"
 
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
