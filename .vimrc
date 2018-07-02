@@ -320,12 +320,20 @@ set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
 "###############################################################################
 augroup _1
 augroup END
-let g:has_signs=has("signs") "for git gutter and syntastic maybe
-let g:has_ctags=str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
-let g:compatible_neocomplete=has("lua") "try alternative completion library
-let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
-let g:compatible_workspace=(v:version>=800) "needs Git 8.0
+"Requirements flag, and load repeat.vim right away because want to know if it exists
+"and its functions are available
+runtime autoload/repeat.vim "if file not found, echos nothing
+let g:has_signs              = has("signs") "for git gutter and syntastic maybe
+let g:has_ctags              = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
+let g:has_repeat             = exists("*repeat#set") "start checks for function existence
+let g:has_nowait             = (v:version>703 || v:version==703 && has("patch1261"))
+let g:compatible_neocomplete = has("lua") "try alternative completion library
+let g:compatible_tagbar      = ((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
+let g:compatible_workspace   = (v:version>=800) "needs Git 8.0
+if !g:has_repeat
+  echom "Warning: vim-repeat unavailable, some features will be unavailable."
+  sleep 1
+endif
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
 " set shell=/bin/bash "will not work with e.g. brew-installed shell
@@ -340,7 +348,8 @@ Plug 'jez/vim-superman'
 "Thesaurus; appears broken
 " Plug 'beloglazov/vim-online-thesaurus'
 "Make mappings repeatable; critical
-Plug 'tpope/vim-repeat'
+"Now we edit our own version in .vim/plugin/autoload
+" Plug 'tpope/vim-repeat'
 "Automatic list numbering; actually it mysteriously fails so fuck that shit
 " let g:bullets_enabled_file_types = ['vim', 'markdown', 'text', 'gitcommit', 'scratch']
 " Plug 'dkarter/bullets.vim'
@@ -435,54 +444,45 @@ call plug#end() "the plug#end also declares filetype syntax and indent on
 set tabstop=2
 set shiftwidth=2
 set softtabstop=2
-"Warnings of some plugins unavailable
-if !has_key(g:plugs, "vim-repeat")
-  echom "Warning: vim-repeat unavailable, some features will be unavailable."
-  sleep 1
-endif
 
 "###############################################################################
 "SESSION MANAGEMENT
 "First, jump to mark '"' without changing the jumplist (:help g`)
 "Mark '"' is the cursor position when last exiting the current buffer
 "CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
-"TODO: Figure out why autosave interferes with refactoring tools!
-"Perhaps only use CursorHold? InsertLeave breaks c* commands, TextChanged breaks d* commands.
-"The simple autosave method au CursorHold * w also breaks stuff.
 augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
     au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .session.vim
-    " let s:autosave="InsertLeave" | if exists("##TextChanged") | let s:autosave.=",TextChanged" | endif
-    " exe "au ".s:autosave." * w"
-    " au ".s:autosave." * w"
   endif
+  let s:autosave="InsertLeave" | if exists("##TextChanged") | let s:autosave.=",TextChanged" | endif
+  " exe "au ".s:autosave." * w"
 augroup END
-function! s:autosave_toggle(on)
-  if a:on "in future consider using this to disable autosave for large files
-    if exists('b:autosave_on') && b:autosave_on=1
-      return "already on
-    endif
-    let b:autosave_on=1
-    echom 'Enabling autosave.'
-    augroup autosave
-      au! * <buffer>
-      let g:autosave="InsertLeave"
-      if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
-      exe "au ".g:autosave." <buffer> * w"
-    augroup END
-  else
-    if !exists('b:autosave_on') || b:autosave_on=0
-      return "already off
-    endif
-    let b:autosave_on=0
-    echom 'Disabling autosave.'
-    augroup autosave
-      au! * <buffer>
-    augroup END
-  endif
-endfunction
+" function! s:autosave_toggle(on)
+"   if a:on "in future consider using this to disable autosave for large files
+"     if exists('b:autosave_on') && b:autosave_on=1
+"       return "already on
+"     endif
+"     let b:autosave_on=1
+"     echom 'Enabling autosave.'
+"     augroup autosave
+"       au! * <buffer>
+"       let g:autosave="InsertLeave"
+"       if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
+"       exe "au ".g:autosave." <buffer> * w"
+"     augroup END
+"   else
+"     if !exists('b:autosave_on') || b:autosave_on=0
+"       return "already off
+"     endif
+"     let b:autosave_on=0
+"     echom 'Disabling autosave.'
+"     augroup autosave
+"       au! * <buffer>
+"     augroup END
+"   endif
+" endfunction
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
   let g:workspace_session_name = '.session.vim'
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
@@ -1004,39 +1004,34 @@ if has_key(g:plugs, "nerdcommenter")
     "Declare remaps; section-header types will be dependent on filetype, e.g.
     "if comment character is not 'fat' enough, does not make good section header character
     "Also temporarily disable/re-enable formatoptions here
-    if 1 && has_key(g:plugs, "vim-repeat")
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
-      nmap c- <Plug>fancy1
-      nmap c_ <Plug>fancy2
-      nmap c\ <Plug>fancy3
-      nmap c\| <Plug>fancy4
-    else
-      exe 'nnoremap <silent> <buffer> <expr> c- '.s:bar("-")
-      exe 'nnoremap <silent> <buffer> <expr> c_ '.s:bar(fatchar)
-      exe 'nnoremap <silent> <buffer> <expr> c\ '.s:section("-")
-      exe 'nnoremap <silent> <buffer> <expr> c\| '.s:section(fatchar)
-    endif
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
+    nmap c- <Plug>fancy1
+    nmap c_ <Plug>fancy2
+    nmap c\ <Plug>fancy3
+    nmap c\| <Plug>fancy4
+    " exe 'nnoremap <silent> <buffer> <expr> c- '.s:bar("-")
+    " exe 'nnoremap <silent> <buffer> <expr> c_ '.s:bar(fatchar)
+    " exe 'nnoremap <silent> <buffer> <expr> c\ '.s:section("-")
+    " exe 'nnoremap <silent> <buffer> <expr> c\| '.s:section(fatchar)
     "Disable accidental key presses
     silent! noremap c= <Nop>
     silent! noremap c+ <Nop>
   endfunction
   "More basic NerdComment maps, just for toggling comments and stuff
   "Easy peasy
-  if has_key(g:plugs, "vim-repeat")
-    nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
-    nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
-    nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
-    nmap co <Plug>comment1
-    nmap cO <Plug>comment2
-    nmap c. <Plug>comment3
-  else
-    nnoremap <silent> co :call NERDComment('n', 'comment')<CR>
-    nnoremap <silent> cO :call NERDComment('n', 'uncomment')<CR>
-    nnoremap <silent> c. :call NERDComment('n', 'toggle')<CR>
-  endif
+  " if g:has_repeat
+  nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
+  nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
+  nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
+  nmap co <Plug>comment1
+  nmap cO <Plug>comment2
+  nmap c. <Plug>comment3
+  " nnoremap <silent> co :call NERDComment('n', 'comment')<CR>
+  " nnoremap <silent> cO :call NERDComment('n', 'uncomment')<CR>
+  " nnoremap <silent> c. :call NERDComment('n', 'toggle')<CR>
   vnoremap <silent> co :call NERDComment('v', 'comment')<CR>
   vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
   vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
@@ -1378,6 +1373,7 @@ augroup saving
 augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
+nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if tabpagenr('$')==1
@@ -1727,17 +1723,14 @@ vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
 vnoremap g. ~
-if has_key(g:plugs, "vim-repeat") "mnemonic is 'change this stuff to dictionary'
-  nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-  nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-  nmap g. <Plug>cap1
-  nmap gt <Plug>cap2
-else
-  nnoremap g. ~h
-  nnoremap gt mzguiw~h`z
-endif
+nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
+nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
+nmap g. <Plug>cap1
+nmap gt <Plug>cap2
   "capitalization stuff with g, a bit refined
   "not currently used in normal mode, and fits better mnemonically
+" nnoremap g. ~h
+" nnoremap gt mzguiw~h`z
 noremap m ge
 noremap M gE
   "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
