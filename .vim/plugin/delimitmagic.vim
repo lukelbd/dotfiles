@@ -44,8 +44,8 @@ function! s:surround(original,new)
   exe 'nnoremap ci'.a:original.' ci'.a:new
   exe 'nnoremap ya'.a:original.' ya'.a:new
   exe 'nnoremap yi'.a:original.' yi'.a:new
-  exe 'nnoremap <silent> va'.a:original.' :let b:v_mode="v"<CR>va'.a:new
-  exe 'nnoremap <silent> vi'.a:original.' :let b:v_mode="v"<CR>vi'.a:new
+  exe 'nnoremap <silent> va'.a:original.' mVva'.a:new
+  exe 'nnoremap <silent> vi'.a:original.' mVvi'.a:new
 endfunction
 for s in ['r[', 'a<', 'c{']
   call s:surround(s[0], s[1]) "most simple ones
@@ -66,11 +66,11 @@ nmap csac csbB
 nnoremap <silent> daf mzF(bdt(lda(`z
 nnoremap <silent> caf F(bdt(lca(
 nnoremap <silent> yaf mzF(bvf(%y`z
-nnoremap <silent> vaf F(bvf(%
+nnoremap <silent> vaf F(bmVvf(%
 nnoremap <silent> dsf mzF(bdt(xf)x`z
 nnoremap <silent> <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
 "Selecting text in-between commented out lines
-nnoremap <expr> vc "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
+nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$mVvN<Down>0<Esc>:noh<CR>gv"
 
 "##############################################################################"
 " Define a totally new syntax based on semicolon, instead of that funky
@@ -152,7 +152,7 @@ call s:delims(';"', '"', '"', 0, 0)
 call s:delims(';$', '$', '$', 0, 0)
 call s:delims(';*', '*', '*', 0, 0)
 call s:delims(';`', '`', '`', 0, 0)
-call s:delims(';~', '“', '”', 0, 0)
+call s:delims(';\', '\"', '\"', 0, 0)
 vnoremap ;f <Esc>`>a)<Esc>`<i(<Esc>hi
 nnoremap ;f lbmzi(<Esc>hea)<Esc>`zi
 nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
@@ -161,7 +161,8 @@ nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
 "Repair semicolon in insert mode
 "Also offer 'cancelling' completion with Escape
 inoremap ;; ;
-inoremap ;<Esc> <Nop>
+inoremap ;: ;;
+inoremap ;<Esc> ;<Esc>
 
 "###############################################################################
 " Now apply the above concepts to LaTeX in particular

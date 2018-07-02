@@ -166,7 +166,7 @@ if g:has_ctags
   " * Below is copied from: https://stackoverflow.com/a/597932/4970632
   " * Note jedi-vim 'variable rename' is sketchy and fails; should do my own
   "   renaming, and do it by confirming every single instance
-  function! s:scopesearch(replace)
+  function! s:scopesearch(command)
     "Test out scopesearch
     if !exists("b:ctaglines") || len(b:ctaglines)==0
       echo "Warning: Tags unavailable, so cannot limit search scope."
@@ -183,7 +183,7 @@ if g:has_ctags
     for i in range(0,len(ctaglines)-2)
       if ctaglines[i]<=start && ctaglines[i+1]>start "must be line above start of next function
         echom "Scopesearch selected lines ".ctaglines[i]." to ".(ctaglines[i+1]-1)."."
-        if a:replace | return printf('%d,%ds', ctaglines[i]-1, ctaglines[i+1]) "range for :line1,line2s command
+        if a:command | return printf('%d,%ds', ctaglines[i]-1, ctaglines[i+1]) "range for :line1,line2s command
         else | return printf('\%%>%dl\%%<%dl', ctaglines[i]-1, ctaglines[i+1])
         endif
       endif
@@ -195,7 +195,7 @@ else
   "Much less reliable
   "Loop loop through possible jumping commands; the bracket commands
   "are generally declared with FileType regex searches, not ctags
-  function! s:scopesearch(replace)
+  function! s:scopesearch(command)
     let start=line('.')
     let saveview=winsaveview()
     for endjump in ['normal ]]k', 'call search("^\\S")']
@@ -212,7 +212,7 @@ else
     call winrestview(saveview)
     if first<last
       echom "Scopesearch selected lines ".first." to ".last."."
-      if !a:replace
+      if !a:command
         return printf('\%%>%dl\%%<%dl', first-1, last+1)
           "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
       else
@@ -228,11 +228,12 @@ endif
 "###############################################################################
 "Magical function; performs n.n.n. style replacement in one keystroke
 "Requires the below augroup for some reason
-"Inpsired from: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
+"Script found here: https://www.reddit.com/r/vim/comments/2p6jqr/quick_replace_useful_refactoring_and_editing_tool/
+"Script referenced here: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
 "##############################################################################"
 augroup refactor_tool
   au!
-  au InsertLeave * noautocmd call MoveToNext() "magical c* searching function
+  au InsertLeave * call MoveToNext() "magical c* searching function
 augroup END
 "Also we overhaul the &, @, and # keys
 " * By default & repeats last :s command
@@ -242,7 +243,7 @@ if has_key(g:plugs, "vim-repeat")
   let g:should_inject_replace_occurences=0
   function! MoveToNext()
     if g:should_inject_replace_occurences
-      call feedkeys("n")
+      call feedkeys("n", "n") "the second n ignores mappings
       call repeat#set("\<Plug>ReplaceOccurences")
     endif
     let g:should_inject_replace_occurences=0
@@ -334,9 +335,9 @@ else "with these ones, cursor will remain on word just replaced
 endif
 "Colon search replacements -- not as nice as the above ones, which stay in normal mode
 "See that reddit thread for why normal-mode is better
-" nnoremap <Leader>r :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
-" nnoremap <Leader>R :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
+nnoremap sr :%s/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
+nnoremap sR :<C-r>=<sid>scopesearch(1)<CR>/\<<C-r><C-w>\>//gIc<Left><Left><Left><Left>
 "   "the <C-r> means paste from the expression register i.e. result of following expr
-" nnoremap <Leader>d :%s///gIc<Left><Left><Left><Left><Left>
-" nnoremap <Leader>D :<C-r>=<sid>scopesearch(1)<CR>///gIc<Left><Left><Left><Left><Left>
-"   "these ones delete stuff
+nnoremap <Leader>d :%s///gIc<Left><Left><Left><Left><Left>
+nnoremap <Leader>D :<C-r>=<sid>scopesearch(1)<CR>///gIc<Left><Left><Left><Left><Left>
+  "these ones delete stuff
