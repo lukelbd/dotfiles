@@ -25,26 +25,6 @@
 [[ $- != *i* ]] && return
 
 ################################################################################
-# SHELL INTEGRATION; iTerm2 feature only
-################################################################################
-# printf "Enabling shell integration... "
-# echo "Enabling shell integration."
-if [ -f ~/.iterm2_shell_integration.bash ]; then
-   source ~/.iterm2_shell_integration.bash
-   echo "Enabled shell integration."
-fi
-
-
-################################################################################
-# FZF FUZZY FILE COMPLETION TOOL
-################################################################################
-# Run installation script; similar to the above one
-if [ -f ~/.fzf.bash ]; then
-  source ~/.fzf.bash
-  echo "Enabled fuzzy file completion."
-fi
-
-################################################################################
 # PROMPT
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
@@ -1214,4 +1194,24 @@ $macos && { # first the MacOS options
   [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
   fortune # fun message
   } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
+
+################################################################################
+# SHELL INTEGRATION; iTerm2 feature only
+################################################################################
+# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
+# They are super annoying and useless
+if [ -f ~/.iterm2_shell_integration.bash ]; then
+   source ~/.iterm2_shell_integration.bash
+   echo "Enabled shell integration."
+fi
+
+
+################################################################################
+# FZF FUZZY FILE COMPLETION TOOL
+################################################################################
+# Run installation script; similar to the above one
+if [ -f ~/.fzf.bash ]; then
+  source ~/.fzf.bash
+  echo "Enabled fuzzy file completion."
+fi
 
