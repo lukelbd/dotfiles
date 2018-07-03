@@ -29,8 +29,20 @@
 ################################################################################
 # printf "Enabling shell integration... "
 # echo "Enabling shell integration."
-[ -e "${HOME}/.iterm2_shell_integration.bash" ] && \
-  { . "${HOME}/.iterm2_shell_integration.bash"; echo "Enabled shell integration."; }
+if [ -f ~/.iterm2_shell_integration.bash ]; then
+   source ~/.iterm2_shell_integration.bash
+   echo "Enabled shell integration."
+fi
+
+
+################################################################################
+# FZF FUZZY FILE COMPLETION TOOL
+################################################################################
+# Run installation script; similar to the above one
+if [ -f ~/.fzf.bash ]; then
+  source ~/.fzf.bash
+  echo "Enabled fuzzy file completion."
+fi
 
 ################################################################################
 # PROMPT
