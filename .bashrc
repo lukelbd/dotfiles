@@ -325,13 +325,14 @@ function env() { set; }
 unset USERNAME # forum quote: "if you use the sudo command, sudo typically
   # sets USER to root and USERNAME to the user who invoked the sudo command"
 shopt -s checkwinsize # allow window resizing
-shopt -u nullglob # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
-shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-shopt -s dotglob # include dot patterns in glob matches
-shopt -s dirspell # attempt spelling correction of dirname
-shopt -s nocaseglob # case insensitive
-shopt -s globstar # **/ matches all subdirectories, searches recursively
-shopt -u failglob # turn off failglob; so no error message if expansion is empty
+shopt -u nullglob     # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+shopt -u extglob      # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+shopt -s dotglob      # include dot patterns in glob matches
+shopt -s direxpand 2>/dev/null # include dot patterns in glob matches; relatively new
+shopt -s dirspell     # attempt spelling correction of dirname
+shopt -s nocaseglob   # case insensitive
+shopt -s globstar     # **/ matches all subdirectories, searches recursively
+shopt -u failglob     # turn off failglob; so no error message if expansion is empty
 # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
 
 ################################################################################
