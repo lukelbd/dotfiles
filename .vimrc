@@ -261,6 +261,9 @@ vnoremap <CR> <C-c>
 "Some other useful visual mode maps; note, will not
 nnoremap <silent> v$ v$h
 nnoremap <silent> vv ^v$gE
+nnoremap <silent> v/ hn:noh<CR>gn
+  "makes way more sense to me
+  "also prevent highlighting selection under cursor, unless on first character
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff
