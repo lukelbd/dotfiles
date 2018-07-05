@@ -310,14 +310,15 @@ bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fai
   # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
 bind -r '\C-s' # remove C-s binding to enable C-s in Vim (normally caught by terminal as start/stop signal)
 stty -ixon # disable start/stop output control; note for putty, have to edit STTY value and set ixon to zero in term options
+alias bindings="bind -p | grep -F '\C'"
 
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
 # set -ex
   # exit this script when encounter error, and print each command; useful for debugging
-set -o posix
 set +H
+set -o posix
   # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
 function env() { set; }
   # just prints all shell variables
@@ -422,7 +423,7 @@ function empty() { for i in {1..100}; do echo; done; }
 # Meta tools
 alias aliases="alias" # without argument, lists all of them
 alias functions="declare -F"
-alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort" # print keybindings
+alias bindings="bind -p | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
 alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
 
 # Information on directories

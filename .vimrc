@@ -249,29 +249,18 @@ nnoremap <Backspace> <Nop>
 "Figured it out finally!!! This actually makes sense - they're next to eachother on keyboard!
 noremap <silent> <Leader>i :set hlsearch<CR>
 noremap <silent> <Leader>o :noh<CR>
-"Cursor movement/scrolling while preserving highlights
-"Needed command-line ways to enter visual mode; see answer: https://vi.stackexchange.com/a/3701/8084
-"Why do this? Because had trouble storing <C-v> as variable, then issuing it as command
-command! Visual      normal! v
-command! VisualLine  normal! V
-command! VisualBlock exe "normal! \<C-v>"
-function! Mode()
-  echom 'Mode: '.mode() | return ''
-endfunction
-vnoremap <expr> <Leader><Space> ''.Mode()
-"1) create local variables, mark when entering visual mode
-" nnoremap <silent> v :let b:v_mode='v'<CR>:setlocal mouse+=v<CR>mVv
-" nnoremap <silent> V :let b:v_mode='V'<CR>:setlocal mouse+=v<CR>mVV
-nnoremap <silent> v :let b:v_mode='Visual'<CR>mVv
-nnoremap <silent> V :let b:v_mode='VisualLine'<CR>mVV
-nnoremap <silent> <C-v> :let b:v_mode='VisualBlock'<CR>mV<C-v>
-nnoremap <silent> v$ :let b:v_mode="Visual"<CR>v$h
-nnoremap <silent> vv :let b:v_mode="Visual"<CR>^v$gE
-  "select the current 'line' of text, and make v$ no longer include the \n
-"2) using the above, let user click around to move selection
-" vnoremap <expr> <LeftMouse> '<Esc><LeftMouse>mN`V'.b:v_mode.'`N'
-vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:'.b:v_mode.'<CR>`N'
+"Enable left mouse click in visual mode to extend selection; normally this is impossible
+"Note we can't use `< and `> because those refer to start and end of last visual selection,
+"while we actually want the place where we *last exited* visual mode, like '^ for insert mode
+nnoremap v mVv
+nnoremap V mVV
+nnoremap <C-v> mV<C-v>
+vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:exe "normal! '.visualmode().'"<CR>`N'
+" vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`VmV'.visualmode().'<CR>`N' "dunno why this fails
 vnoremap <CR> <C-c>
+"Some other useful visual mode maps; note, will not
+nnoremap <silent> v$ v$h
+nnoremap <silent> vv ^v$gE
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff
@@ -332,12 +321,20 @@ set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
 "###############################################################################
 augroup _1
 augroup END
-let g:has_signs=has("signs") "for git gutter and syntastic maybe
-let g:has_ctags=str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-let g:has_nowait=(v:version>703 || v:version==703 && has("patch1261"))
-let g:compatible_neocomplete=has("lua") "try alternative completion library
-let g:compatible_tagbar=((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
-let g:compatible_workspace=(v:version>=800) "needs Git 8.0
+"Requirements flag, and load repeat.vim right away because want to know if it exists
+"and its functions are available
+runtime autoload/repeat.vim "if file not found, echos nothing
+let g:has_signs              = has("signs") "for git gutter and syntastic maybe
+let g:has_ctags              = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
+let g:has_repeat             = exists("*repeat#set") "start checks for function existence
+let g:has_nowait             = (v:version>703 || v:version==703 && has("patch1261"))
+let g:compatible_neocomplete = has("lua") "try alternative completion library
+let g:compatible_tagbar      = ((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
+let g:compatible_workspace   = (v:version>=800) "needs Git 8.0
+if !g:has_repeat
+  echom "Warning: vim-repeat unavailable, some features will be unavailable."
+  sleep 1
+endif
 "WEIRD FIX
 "see: https://github.com/kien/ctrlp.vim/issues/566
 " set shell=/bin/bash "will not work with e.g. brew-installed shell
@@ -352,7 +349,8 @@ Plug 'jez/vim-superman'
 "Thesaurus; appears broken
 " Plug 'beloglazov/vim-online-thesaurus'
 "Make mappings repeatable; critical
-Plug 'tpope/vim-repeat'
+"Now we edit our own version in .vim/plugin/autoload
+" Plug 'tpope/vim-repeat'
 "Automatic list numbering; actually it mysteriously fails so fuck that shit
 " let g:bullets_enabled_file_types = ['vim', 'markdown', 'text', 'gitcommit', 'scratch']
 " Plug 'dkarter/bullets.vim'
@@ -458,35 +456,34 @@ augroup session
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
     au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .session.vim
-    let autosave="InsertLeave"
-    if exists("##TextChanged") | let autosave.=",TextChanged" | endif
-    exe "au ".autosave." * w"
   endif
+  let s:autosave="InsertLeave" | if exists("##TextChanged") | let s:autosave.=",TextChanged" | endif
+  " exe "au ".s:autosave." * w"
 augroup END
-function! s:autosave_toggle(on)
-  if a:on "in future consider using this to disable autosave for large files
-    if exists('b:autosave_on') && b:autosave_on=1
-      return "already on
-    endif
-    let b:autosave_on=1
-    echom 'Enabling autosave.'
-    augroup autosave
-      au! * <buffer>
-      let g:autosave="InsertLeave"
-      if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
-      exe "au ".g:autosave." <buffer> * w"
-    augroup END
-  else
-    if !exists('b:autosave_on') || b:autosave_on=0
-      return "already off
-    endif
-    let b:autosave_on=0
-    echom 'Disabling autosave.'
-    augroup autosave
-      au! * <buffer>
-    augroup END
-  endif
-endfunction
+" function! s:autosave_toggle(on)
+"   if a:on "in future consider using this to disable autosave for large files
+"     if exists('b:autosave_on') && b:autosave_on=1
+"       return "already on
+"     endif
+"     let b:autosave_on=1
+"     echom 'Enabling autosave.'
+"     augroup autosave
+"       au! * <buffer>
+"       let g:autosave="InsertLeave"
+"       if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
+"       exe "au ".g:autosave." <buffer> * w"
+"     augroup END
+"   else
+"     if !exists('b:autosave_on') || b:autosave_on=0
+"       return "already off
+"     endif
+"     let b:autosave_on=0
+"     echom 'Disabling autosave.'
+"     augroup autosave
+"       au! * <buffer>
+"     augroup END
+"   endif
+" endfunction
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
   let g:workspace_session_name = '.session.vim'
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
@@ -557,6 +554,7 @@ endif
 
 "##############################################################################"
 "VIM SNEAK
+"Just configure the maps here
 if has_key(g:plugs, "vim-sneak")
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
@@ -602,7 +600,7 @@ set nospell spelllang=en_us spellcapcheck=
 nnoremap <silent> yo :call <sid>spelltoggle()<CR>
 nnoremap <silent> yl :call <sid>langtoggle()<CR>
 function! s:spelltoggle(...)
-  if a:0>0
+  if a:0
     let toggle=a:1
   else
     let toggle=(exists("b:spellstatus") ? 1-b:spellstatus : 1)
@@ -823,9 +821,9 @@ function! s:eimap()
   nnoremap <silent> <buffer> <Esc> :q<CR>:EIoff<CR>
   nnoremap <silent> <buffer> <C-c> :q<CR>:EIoff<CR>
 endfunction
-command! EIon call s:eion()
-command! EIoff call s:eioff()
-command! EImap call s:eimap()
+command! EIon  call <sid>eion()
+command! EIoff call <sid>eioff()
+command! EImap call <sid>eimap()
 
 "###############################################################################
 "CTRLP PLUGIN
@@ -1007,39 +1005,34 @@ if has_key(g:plugs, "nerdcommenter")
     "Declare remaps; section-header types will be dependent on filetype, e.g.
     "if comment character is not 'fat' enough, does not make good section header character
     "Also temporarily disable/re-enable formatoptions here
-    if 1 && has_key(g:plugs, "vim-repeat")
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
-      exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
-      nmap c- <Plug>fancy1
-      nmap c_ <Plug>fancy2
-      nmap c\ <Plug>fancy3
-      nmap c\| <Plug>fancy4
-    else
-      exe 'nnoremap <silent> <buffer> <expr> c- '.s:bar("-")
-      exe 'nnoremap <silent> <buffer> <expr> c_ '.s:bar(fatchar)
-      exe 'nnoremap <silent> <buffer> <expr> c\ '.s:section("-")
-      exe 'nnoremap <silent> <buffer> <expr> c\| '.s:section(fatchar)
-    endif
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
+    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
+    nmap c- <Plug>fancy1
+    nmap c_ <Plug>fancy2
+    nmap c\ <Plug>fancy3
+    nmap c\| <Plug>fancy4
+    " exe 'nnoremap <silent> <buffer> <expr> c- '.s:bar("-")
+    " exe 'nnoremap <silent> <buffer> <expr> c_ '.s:bar(fatchar)
+    " exe 'nnoremap <silent> <buffer> <expr> c\ '.s:section("-")
+    " exe 'nnoremap <silent> <buffer> <expr> c\| '.s:section(fatchar)
     "Disable accidental key presses
     silent! noremap c= <Nop>
     silent! noremap c+ <Nop>
   endfunction
   "More basic NerdComment maps, just for toggling comments and stuff
   "Easy peasy
-  if has_key(g:plugs, "vim-repeat")
-    nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
-    nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
-    nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
-    nmap co <Plug>comment1
-    nmap cO <Plug>comment2
-    nmap c. <Plug>comment3
-  else
-    nnoremap <silent> co :call NERDComment('n', 'comment')<CR>
-    nnoremap <silent> cO :call NERDComment('n', 'uncomment')<CR>
-    nnoremap <silent> c. :call NERDComment('n', 'toggle')<CR>
-  endif
+  " if g:has_repeat
+  nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
+  nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
+  nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
+  nmap co <Plug>comment1
+  nmap cO <Plug>comment2
+  nmap c. <Plug>comment3
+  " nnoremap <silent> co :call NERDComment('n', 'comment')<CR>
+  " nnoremap <silent> cO :call NERDComment('n', 'uncomment')<CR>
+  " nnoremap <silent> c. :call NERDComment('n', 'toggle')<CR>
   vnoremap <silent> co :call NERDComment('v', 'comment')<CR>
   vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
   vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
@@ -1052,7 +1045,7 @@ augroup END
 if has_key(g:plugs, "syntastic")
   "Commands for circular location-list (error) scrolling
   command! Lnext try | lnext | catch | lfirst | catch | endtry
-  command! Lprev try | lprev | catch | llast | catch | endtry
+  command! Lprev try | lprev | catch | llast  | catch | endtry
   "Helper function
   "Need to run Syntastic with noautocmd to prevent weird conflict with tabbar,
   "but that means have to change some settings manually
@@ -1200,51 +1193,90 @@ endfunction
 augroup tabular
 augroup END
 if has_key(g:plugs, "tabular")
-  "NOTE: e.g. for aligning text after colons, input character :\zs; aligns
-  "first character after matching preceding character
-  "Arbitrary character
-  vnoremap <expr> -<Space> ':Tabularize /'.input('Align character: ').'/l1c1<CR>'
-  nnoremap <expr> -<Space> ':Tabularize /'.input('Align character: ').'/l1c1<CR>'
+  "Command for tabuarizing, but ignoring lines without delimiters
+  function! s:table(arg) range
+    "Remove the lines without matching regexes
+    "* See: https://stackoverflow.com/a/40662545/4970632 for ideas
+    "* One idea: try using :global/regex/# command inside a redir to direct the resulting
+    "  message to a variable; will print lines with line numbers and newlines.
+    "* Another idea: use :call search(...,line('.')), :delete, and exe <line> to successively move between
+    "  lines, but better to use builtin vim text processing lines and not move the cursor.
+    let dlines = [] "note we **cannot** use dictionary, because subsequent lines without matches will overwrite each other
+    let firstline = a:firstline
+    let lastline  = a:lastline  "no longer read-only
+    let searchline = a:firstline
+    let regex = split(a:arg, '/')[0] "regex is first part; other arguments are afterward
+    while searchline <= lastline
+      if getline(searchline) !~# regex "if return value is zero, delete this line
+        "Delete <range> line; range is the line number
+        let lastline -= 1 "after deletion, the 'last line' of selection has changed
+        let dlines += [[searchline, getline(searchline)]]
+        exe searchline.'d'
+      else "leave it alone, increment search
+        let searchline += 1
+      endif
+    endwhile
+    "Execute tabularize function
+    exe firstline.','.lastline.'Tabularize '.a:arg
+    "Add back the lines that were deleted
+    for pair in reverse(dlines) "insert line of text below where deletion occurred (line '0' adds to first line)
+      call append(pair[0]-1, pair[1])
+    endfor
+  endfunction
+  "Command
+  "* By default, :Tabularize command provided *without range* will select the
+  "  contiguous lines that contain specified delimiter; so this function only makes
+  "  sense when applied for a visual range! So we don't need to worry about using Tabularize's
+  "  automatic range selection/implementing it in this special command
+  "* Note odd concept (see :help args) that -nargs=1 will pass subsequent text, including
+  "  whitespace, as single argument, but -nargs=*, et cetera, will aceept multiple arguments delimited by whitespace
+  "* Be careful -- make sure to pass <args> in singly quoted string!
+	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
+  "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
+  "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
+  nnoremap <silent> <expr> -<Space> ':silent! Tabularize /'.input('Align character: ').'/l1c1<CR>'
+  vnoremap <silent> <expr> -<Space> "<Esc>:silent! '<,'>Table /".input('Align character: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
   nnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> -, ':Table /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
   nnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> -d ':Table /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
   nnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> -D ':Table /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
-  vnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   nnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> -l ':Table /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  vnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   nnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> -r ':Table /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
-  vnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   nnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> -- ':Table /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
-  vnoremap <expr> -_ ':Tabularize /\S\zs\ /l0<CR>'
   nnoremap <expr> -_ ':Tabularize /\S\zs\ /l0<CR>'
+  vnoremap <expr> -_ ':Table /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
-  vnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> -C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
-  vnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  nnoremap <expr> -c ':Tabularize /^\s*\S.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  "Enforces that
+  vnoremap <expr> -c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> -c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
-  vnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
   nnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
-  vnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
+  vnoremap -= :Table /^[^=]*\zs=/l1c1<CR>
   nnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
+  vnoremap -+ :Table /^[^=]*=\zs/l0c1<CR>
 endif
 
 "###############################################################################
@@ -1342,6 +1374,7 @@ augroup saving
 augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
+nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if tabpagenr('$')==1
@@ -1493,7 +1526,7 @@ nnoremap <Tab>' <C-w><C-p>
 "Really really really want to toggle with <C-v> since often hit Ctrl-V, Cmd-V, so
 "makes way more sense, but that makes inserting 'literal chars' impossible
 "Workaround is to map cv to enter insert mode with <C-v>
-nnoremap <expr> <silent> cv ":if &eventignore=='' \| setlocal eventignore=InsertEnter \| echom 'Ctrl-V pasting disabled for next InsertEnter.' "
+nnoremap <expr> <silent> <Leader>v ":if &eventignore=='' \| setlocal eventignore=InsertEnter \| echom 'Ctrl-V pasting disabled for next InsertEnter.' "
   \." \| else \| setlocal eventignore= \| echom '' \| endif<CR>"
 augroup copypaste
   au!
@@ -1505,24 +1538,33 @@ augroup copypaste
 augroup END
 "Copymode to eliminate special chars during copy
 "See :help &l:; this gives the local value of setting
-function! s:copytoggle()
-  let copyprops=["number", "list", "relativenumber", "scrolloff"]
-  if exists("b:number") "want to restore a bunch of settings
-    for prop in copyprops
-      exe "let &l:".prop."=b:".prop
-      exe "unlet b:".prop
-    endfor
-    echo "Copy mode disabled."
+function! s:copytoggle(...)
+  if a:0
+    let toggle = a:1
   else
-    for prop in copyprops "save current settings to buffer variable
-      exe "let b:".prop."=&l:".prop
+    let toggle = !exists("b:number")
+  endif
+  let copyprops=["number", "list", "relativenumber", "scrolloff"]
+  if toggle "save current settings to buffer variable
+    for prop in copyprops
+      if !exists("b:".prop) "do not overwrite previously saved settings
+        exe "let b:".prop."=&l:".prop
+      endif
       exe "let &l:".prop."=0"
     endfor
     echo "Copy mode enabled."
+  else "want to restore a bunch of settings
+    for prop in copyprops
+      exe "silent! let &l:".prop."=b:".prop
+      exe "silent! unlet b:".prop
+    endfor
+    echo "Copy mode disabled."
   endif
 endfunction
 nnoremap <C-c> :call <sid>copytoggle()<CR>
+command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 "yank because from Vim, we yank; but remember, c-v is still pastemode
+"-nargs=? means 0 or 1
 
 "###############################################################################
 "SEARCHING AND FIND-REPLACE STUFF
@@ -1544,10 +1586,9 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-"Replace commented lines
-" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
-nnoremap <expr> <Leader>\| ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+"Delete empty lines
+nnoremap <silent> <Leader>\| :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+vnoremap <silent> <Leader>\| :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 "Replace consecutive spaces on current line with one space
 nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Replace consecutive newlines with single newline
@@ -1557,8 +1598,12 @@ nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom
 nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
 nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+"Replace commented lines
+nnoremap <expr> <Leader>x ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace useless BibTex entries
-nnoremap <silent> <Leader>B :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+nnoremap <silent> <Leader>X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
@@ -1641,7 +1686,7 @@ silent! unmap zuz
 augroup g
 augroup END
 "Don't know why these are here but just go with it bro
-nnoremap <silent> <Leader>S :so ~/.vimrc<CR>:echom "Refreshed .vimrc."<CR>
+nnoremap <silent> <Leader>S :w<CR>:so ~/.vimrc<CR>:echom "Refreshed .vimrc."<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
@@ -1653,13 +1698,17 @@ function! s:commentjump(backwards) "jump to next comment
   if a:backwards | let flag.='b' | normal! k
   endif
   let line=search('^\s*'.b:NERDCommenterDelims['left'],flag)
+  exe 'normal! 'mode()
   if line==0 | echom "No more comments."
   else | exe line
   endif
+  return ''
 endfunction
-nnoremap <silent> gc :call <sid>commentjump(0)<CR>
-nnoremap <silent> gC :call <sid>commentjump(1)<CR>
+noremap <expr> <silent> gc ''.<sid>commentjump(0)
+noremap <expr> <silent> gC ''.<sid>commentjump(1)
   "jumping between comments; pretty neat huh?
+  "the gc 'does' nothing (maps gc/gC to empty string), but function will move cursor
+  "in whatever mode you want
 nnoremap ga ggVG
 vnoremap ga <Esc>ggVG
 nnoremap gx ga
@@ -1675,17 +1724,14 @@ vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
 vnoremap g. ~
-if has_key(g:plugs, "vim-repeat") "mnemonic is 'change this stuff to dictionary'
-  nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-  nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-  nmap g. <Plug>cap1
-  nmap gt <Plug>cap2
-else
-  nnoremap g. ~h
-  nnoremap gt mzguiw~h`z
-endif
+nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
+nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
+nmap g. <Plug>cap1
+nmap gt <Plug>cap2
   "capitalization stuff with g, a bit refined
   "not currently used in normal mode, and fits better mnemonically
+" nnoremap g. ~h
+" nnoremap gt mzguiw~h`z
 noremap m ge
 noremap M gE
   "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
@@ -1750,12 +1796,12 @@ highlight Terminal ctermbg=Black
 "COLOR HIGHLIGHTING
 "Highlight group under cursor
 "Never really use these so forget it
-function! Group()
+function! s:group()
   echo "hi<" . synIDattr(synID(line("."),col("."),1),"name")
     \.'> trans<' . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
     \.synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"
 endfunction
-function! Colors()
+function! s:colors()
   source $VIMRUNTIME/syntax/colortest.vim
   setlocal nolist nonumber norelativenumber
   noremap <buffer> q :q<CR>
@@ -1763,19 +1809,20 @@ function! Colors()
 endfunction
 "Get current plugin file
 "Remember :scriptnames lists all loaded files
-function! Plugin()
+function! s:plugin()
   execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
 endfunction
 "Commands; these just substitute stuff entered in command-mode with following text
-command! Group call Group()
-command! Colors call Colors()
-command! Plugin call Plugin()
+command! Group  call <sid>group()
+command! Colors call <sid>colors()
+command! Plugin call <sid>plugin()
 
 "###############################################################################
 "###############################################################################
 "EXIT
 "###############################################################################
 "###############################################################################
+"Clear past jumps
 "Don't want stuff from plugin files and the vimrc populating jumplist after statrup
 "Simple way would be to use au BufRead * clearjumps
 "But older versions of VIM have no 'clearjumps' command, so this is a hack
@@ -1786,7 +1833,14 @@ augroup clearjumps
   else | au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
   endif
 augroup END
+"Clear writeable registers
+"On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
+"See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
+"For some reason the setreg function fails
+command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
+WipeReg
+" command! WipeReg let regs='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-"' | let i=0 | while i<strlen(regs) | exec 'let @'.regs[i].'=""' | let i=i+1 | endwhile | unlet regs
 noh "turn off highlighting at startup
-redraw "weird issue sometimes where statusbar disappears
+redraw! "weird issue sometimes where statusbar disappears
 " suspend
 " echom 'Custom vimrc loaded.'

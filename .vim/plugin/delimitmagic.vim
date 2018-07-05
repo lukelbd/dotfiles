@@ -44,8 +44,8 @@ function! s:surround(original,new)
   exe 'nnoremap ci'.a:original.' ci'.a:new
   exe 'nnoremap ya'.a:original.' ya'.a:new
   exe 'nnoremap yi'.a:original.' yi'.a:new
-  exe 'nnoremap <silent> va'.a:original.' :let b:v_mode="v"<CR>va'.a:new
-  exe 'nnoremap <silent> vi'.a:original.' :let b:v_mode="v"<CR>vi'.a:new
+  exe 'nnoremap <silent> va'.a:original.' mVva'.a:new
+  exe 'nnoremap <silent> vi'.a:original.' mVvi'.a:new
 endfunction
 for s in ['r[', 'a<', 'c{']
   call s:surround(s[0], s[1]) "most simple ones
@@ -66,11 +66,11 @@ nmap csac csbB
 nnoremap <silent> daf mzF(bdt(lda(`z
 nnoremap <silent> caf F(bdt(lca(
 nnoremap <silent> yaf mzF(bvf(%y`z
-nnoremap <silent> vaf F(bvf(%
+nnoremap <silent> vaf F(bmVvf(%
 nnoremap <silent> dsf mzF(bdt(xf)x`z
 nnoremap <silent> <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
 "Selecting text in-between commented out lines
-nnoremap <expr> vc "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$vN<Down>0<Esc>:noh<CR>gv"
+nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$mVvN<Down>0<Esc>:noh<CR>gv"
 
 "##############################################################################"
 " Define a totally new syntax based on semicolon, instead of that funky
@@ -85,30 +85,27 @@ function! s:delims(map,left,right,buffer,bigword)
   let buffer=(a:buffer ? " <buffer> " : "")
   let offset=(a:right=~"|" ? 1 : 0) "need special consideration when doing | maps, but not sure why
   "Normal mode maps
-  if !has_key(g:plugs, "vim-repeat") "can't to repeatable maps
-    exe 'nnoremap '.buffer.' '.a:map.' '
-      \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
-      \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
-      \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
-  else
-    "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
-    "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
-    " * Warning: it seems (the) movements within this remap can trigger MatchParen action,
-    "   due to its CursorMovedI autocmd perhaps.
-    " * Added eventignore manipulation because it makes things considerably faster
-    "   especially when matchit regexes try to highlight unmatched braces. Considered
-    "   changing :noautocmd but that can't be done for a remap; see :help <mod>
-    " * For repeat.vim useage with <Plug> named plugin syntax, see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
-    " * Will retain cursor position, but adjusted to right by length of left delimiter.
-    exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' '
-      \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
-      \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'.len(a:left).'l'
-      \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>'
-      \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
-    exe 'nmap '.a:map.' <Plug>n'.a:map
-  endif
+  "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
+  "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
+  " * Warning: it seems (the) movements within this remap can trigger MatchParen action,
+  "   due to its CursorMovedI autocmd perhaps.
+  " * Added eventignore manipulation because it makes things considerably faster
+  "   especially when matchit regexes try to highlight unmatched braces. Considered
+  "   changing :noautocmd but that can't be done for a remap; see :help <mod>
+  " * Will retain cursor position, but adjusted to right by length of left delimiter.
+  exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' '
+    \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
+    \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+    \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'.len(a:left).'l'
+    \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>'
+    \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
+  exe 'nmap '.a:map.' <Plug>n'.a:map
+  "Non-repeatable map
+  " exe 'nnoremap '.buffer.' '.a:map.' '
+  "   \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
+  "   \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
+  "   \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
+  "   \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
   if !a:bigword "don't map if a WORD map; they are identical
     "Visual map
     exe 'vnoremap <silent> '.buffer.' '.a:map.' <Esc>'
@@ -152,7 +149,7 @@ call s:delims(';"', '"', '"', 0, 0)
 call s:delims(';$', '$', '$', 0, 0)
 call s:delims(';*', '*', '*', 0, 0)
 call s:delims(';`', '`', '`', 0, 0)
-call s:delims(';~', '“', '”', 0, 0)
+call s:delims(';\', '\"', '\"', 0, 0)
 vnoremap ;f <Esc>`>a)<Esc>`<i(<Esc>hi
 nnoremap ;f lbmzi(<Esc>hea)<Esc>`zi
 nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
@@ -161,7 +158,8 @@ nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
 "Repair semicolon in insert mode
 "Also offer 'cancelling' completion with Escape
 inoremap ;; ;
-inoremap ;<Esc> <Nop>
+inoremap ;: ;;
+inoremap ;<Esc> ;<Esc>
 
 "###############################################################################
 " Now apply the above concepts to LaTeX in particular
