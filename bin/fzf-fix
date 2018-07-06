@@ -15,7 +15,16 @@ for ext in zsh bash; do
   file=$HOME/.fzf/shell/completion.$ext
   if ! grep "FZF_COMPLETION_COMMAND_OPTS" $file &>/dev/null; then
     echo "Fixing completion commands."
-    gsed -i --follow-symlinks 's/command find.*$/&\n    \$FZF_COMPLETION_COMMAND_OPTS \\/g' $file
+    gsed -i --follow-symlinks 's/a_cmds=.*$/&\n  \$FZF_COMPLETION_FILE_COMMANDS/g' $file
+  fi
+  if ! grep "FZF_COMPLETION_FILE_COMMANDS" $file &>/dev/null; then
+    echo "Adding completion commands."
+    gsed -i --follow-symlinks 's/a_cmds=.*$/&\n  \$FZF_COMPLETION_FILE_COMMANDS/g' $file
+  fi
+  if ! grep " # _fzf_defc" $file &>/dev/null; then
+    echo "Changing default path completion behavior."
+    gsed -i --follow-symlinks 's/^\( *\)_fzf_defc \(.* _fzf_path_completion\)/\1# _fzf_defc \2/' $file # not global
+    gsed -i --follow-symlinks 's/^\(.*\)# \(.* _fzf_path_completion\) .*$/&\n  \1\2 "-o nospace -o dirnames"/g' $file
   fi
 
   # Use environment variables instead of absolute path, so portable across systems
