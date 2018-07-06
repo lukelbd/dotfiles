@@ -416,15 +416,22 @@ if [ -f ~/.fzf.bash ]; then
   # See man page for --bind information
   # Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
   # key bindings will enabled multiple selection
-  _opts='--layout=reverse-list --bind=tab:down,shift-tab:up'
+  # Also very important, bind slash to accept, so now the behavior is very similar
+  # to behavior of normal bash shell completion
+  _opts='--exit-0 --select-1 --height=15% --layout=reverse-list --bind=tab:down,shift-tab:up,/:accept'
   # Do not descent into subdirectories by default
   _command='find . -maxdepth 1'
-  # Apply settings
-  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
+  # Comamnds
+  # export FZF_COMPLETION_TRIGGER='**' # tab triggers completion
+  # export FZF_COMPLETION_COMMAND_OPTS=''
+  export FZF_COMPLETION_TRIGGER=''
   export FZF_COMPLETION_COMMAND_OPTS="${_command#find . }" # made this one myself!
+  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir"
+  export FZF_COMPLETION_FILE_COMMANDS="ll" # add commands here
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
   export FZF_ALT_C_COMMAND="$_command"
+  # Options
   export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
   export FZF_DEFAULT_OPTS="$_opts"
   export FZF_CTRL_T_OPTS="$_opts"

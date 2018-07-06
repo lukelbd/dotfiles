@@ -1,5 +1,7 @@
 # Specifically for this repository #
 ####################################
+bin/cdo
+  # compiled stuff; add to this list
 empty.*
   # practice files
 !latex/empty.tex
