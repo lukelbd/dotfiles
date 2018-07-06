@@ -183,6 +183,10 @@ fi
 ################################################################################
 # WRAPPERS FOR COMMON FUNCTIONS
 ################################################################################
+# Append prompt command
+function prompt_append() { # input argument should be new command
+  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
+}
 # Help page wrapper
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
@@ -234,7 +238,7 @@ function vim() {
     $sed -i "/zt/a setlocal nofoldenable" $sessionfile
     command vim -S $sessionfile # for working with obsession
   else
-    command vim -p $@ # when loading specific files; also open them in separate tabs
+    command vim -p "$@" # when loading specific files; also open them in separate tabs
   fi
   clear # clear screen after exit
 }
@@ -283,57 +287,173 @@ alias watch="tail -f" # actually already is a watch command
 # -d filters to only directories
 # -f filters to only files
 # -X filters based on EXTENDED GLOBBING pattern (search that)
-complete -d cd # complete changes behavior of "Tab" after command; cd
-  # shows only DIRECTORIES now
-complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
-  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
-complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
-complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-complete -f -X '!*.@(tex|py)' -o plusdirs latex
-complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
-complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
-complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-# Some shells disable tab-completion of dangerous commands; re-enable
-complete -f -o plusdirs mv
-complete -f -o plusdirs rm
+# complete -d cd # complete changes behavior of "Tab" after command; cd
+#   # shows only DIRECTORIES now
+# complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
+#   # files (-f), removes (-X) entries satsifying glob string "NOT <stuff>.pdf"
+# complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
+# complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
+# complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
+# complete -f -X '!*.@(tex|py)' -o plusdirs latex
+# complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
+# complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
+# complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
+# # Some shells disable tab-completion of dangerous commands; re-enable
+# complete -f -o plusdirs mv
+# complete -f -o plusdirs rm
 
-# Readline settings
+# Readline/inputrc settings
 # Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
-bind 'set disable-completion off' # ensure on
+bind -r '"\C-i"'
+bind -r '"\C-d"'
+bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
+bind 'set disable-completion off'    # ensure on
 bind 'set completion-ignore-case on' # want dat
-bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
-  # one tab-press instead of two, and the leading part of filename becomes empty
-bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fail
-  # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
-bind -r '\C-s' # remove C-s binding to enable C-s in Vim (normally caught by terminal as start/stop signal)
-stty -ixon # disable start/stop output control; note for putty, have to edit STTY value and set ixon to zero in term options
-alias bindings="bind -p | grep -F '\C'"
+bind 'set completion-map-case on'    # treat hyphens and underscores as same
+bind 'set show-all-if-ambiguous on'  # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+bind "set menu-complete-display-prefix on" # show string typed so far as 'member' while cycling through completion options
+bind 'set completion-display-width 1' # easier to read
+bind 'set bell-style visible'    # only let readlinke/shell do visual bell; use 'none' to disable totally
+bind '"\C-i": menu-complete'     # this will not pollute scroll history; better
+bind '"\e-1\C-i": menu-complete' # this will not pollute scroll history; better
+bind '"\e[Z": "\e-1\C-i"'        # shift tab to go backwards
+# bind '"\C-i":glob-complete-word' # fix error where nothing is globbed
+bind '"\C-l": forward-char'
+bind '"\C-s": beginning-of-line' # match vim motions
+bind '"\C-e": end-of-line' # match vim motions
+bind '"\C-h": backward-char' # match vim motions
+bind '"\C-w": forward-word'  # requires
+bind '"\C-b": backward-word' # by default c-b moves back one word, and deletes it
+bind '"\C-k": menu-complete' # scroll through complete options
+bind '"\C-j": menu-complete-backward'
+stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
+stty stop undef   # no more ctrl-s
+stty eof undef    # no more ctrl-d
+# function bind() {
+#   if [ $# -eq 0 ]; then
+#     command bind -p | grep -F '\C'
+#   else
+#     echo "bind $@"
+#     command bind "$@"
+#   fi
+# }
 
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
-# set -ex
-  # exit this script when encounter error, and print each command; useful for debugging
-set +H
-set -o posix
-  # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
-function env() { set; }
-  # just prints all shell variables
-unset USERNAME # forum quote: "if you use the sudo command, sudo typically
-  # sets USER to root and USERNAME to the user who invoked the sudo command"
-shopt -s checkwinsize # allow window resizing
-shopt -u nullglob     # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
-shopt -u extglob      # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-shopt -s dotglob      # include dot patterns in glob matches
-shopt -s direxpand 2>/dev/null # include dot patterns in glob matches; relatively new
-shopt -s dirspell     # attempt spelling correction of dirname
-shopt -s nocaseglob   # case insensitive
-shopt -s globstar     # **/ matches all subdirectories, searches recursively
-shopt -u failglob     # turn off failglob; so no error message if expansion is empty
-# shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
+function opts() {
+  # Turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
+  set +H
+  # No more control-d closing terminal
+  set -o ignoreeof
+  # Disable start/stop output control
+  stty -ixon # note for putty, have to edit STTY value and set ixon to zero in term options
+  # Exit this script when encounter error, and print each command; useful for debugging
+  # set -ex
+  # Various shell options
+  shopt -s cmdhist                 # save multi-line commands as one command in shell history
+  shopt -s checkwinsize            # allow window resizing
+  shopt -u nullglob                # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+  shopt -u extglob                 # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -s dotglob                 # include dot patterns in glob matches
+  shopt -s direxpand               # include dot patterns in glob matches; relatively new
+  shopt -s dirspell                # attempt spelling correction of dirname
+  shopt -s cdspell                 # spelling errors during cd arguments
+  shopt -s cdable_vars             # cd into shell variable directories, no $ necessary
+  shopt -s nocaseglob              # case insensitive
+  shopt -s autocd                  # typing naked directory name will cd into it
+  shopt -s no_empty_cmd_completion # no more completion in empty terminal!
+  shopt -s histappend              # append to the history file, don't overwrite it
+  shopt -s cmdhist                 # save multi-line commands as one command
+  shopt -s globstar                # **/ matches all subdirectories, searches recursively
+  shopt -u failglob                # turn off failglob; so no error message if expansion is empty
+  # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
+  export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear:cd:echo:source:." # don't record some commands
+  export PROMPT_DIRTRIM=2 # trim long paths in prompt
+  export HISTSIZE=50000
+  export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
+  export HISTCONTROL="erasedups:ignoreboth" # avoid duplicate entries
+}
+opts 2>/dev/null # ignore if option unavailable
+
+################################################################################
+# Aliases/functions for printing out information
+################################################################################
+# The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
+# The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
+alias bindings="{ bind -X; bind -p; bind -s; } | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+alias bindings_stty="stty -e"                # bindings
+alias functions="declare -F | cut -d' ' -f3" # show current shell functions
+alias inputrc_funcs="bind -l"                # the functions, for example 'forward-char'
+alias inputrc_ops="bind -v"                  # the 'set' options, and their values
+function env() { set; } # just prints all shell variables
+function cdo() {
+  if [ "$1" == "commands" ]; then
+    command cdo --operators | sed 's/[ \t]*(.*|.*)$//g'
+  else
+    command cdo "$@" # preserves spaces in filenames, e.g.
+  fi
+}
+
+################################################################################
+# SHELL INTEGRATION; iTerm2 feature only
+################################################################################
+# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
+# They are super annoying and useless
+if [ -f ~/.iterm2_shell_integration.bash ]; then
+   source ~/.iterm2_shell_integration.bash
+   echo "Enabled shell integration."
+fi
+
+
+################################################################################
+# FZF FUZZY FILE COMPLETION TOOL
+################################################################################
+# Run installation script; similar to the above one
+if [ -f ~/.fzf.bash ]; then
+  # See man page for --bind information
+  # Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
+  # key bindings will enabled multiple selection
+  _opts='--layout=reverse-list --bind=tab:down,shift-tab:up'
+  # Do not descent into subdirectories by default
+  _command='find . -maxdepth 1'
+  # Apply settings
+  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
+  export FZF_COMPLETION_COMMAND_OPTS="${_command#find . }" # made this one myself!
+  export FZF_DEFAULT_COMMAND="$_command"
+  export FZF_CTRL_T_COMMAND="$_command"
+  export FZF_ALT_C_COMMAND="$_command"
+  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
+  export FZF_DEFAULT_OPTS="$_opts"
+  export FZF_CTRL_T_OPTS="$_opts"
+  export FZF_ALT_C_OPTS="$_opts"
+  # Source file
+  source ~/.fzf.bash
+  # Create custom bindings
+  # Use below to bind ctrl t command
+  # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
+  # Next bind alt c command to ctrl f
+  bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
+  # Specific completion options
+  _fzf_complete_git() {
+     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
+     git commands # should be an alias that lists commands
+    )
+  }
+  _fzf_complete_cdo() {
+     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
+     cdo commands | cut -d' ' -f1 # should be an alias that lists commands
+    )
+  }
+  # Apply them as completion commands
+  for _command in cdo git; do
+    complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+  done
+  # Finished
+  echo "Enabled fuzzy file completion."
+fi
 
 ################################################################################
 # Magic changing stderr color
@@ -421,15 +541,10 @@ function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculato
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 function empty() { for i in {1..100}; do echo; done; }
 
-# Meta tools
-alias aliases="alias" # without argument, lists all of them
-alias functions="declare -F"
-alias bindings="bind -p | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
-alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
-
 # Information on directories
 alias df="df -h" # disk useage
 alias eject="diskutil unmount" # eject disk on macOS
+! $macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
@@ -729,10 +844,8 @@ function title_update() {
   fi
 }
 # New window; might have closed one and opened another, so declare new title
-[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
-  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; title_update" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
-$macos && [ -n "$TERM_SESSION_ID" ] && \
-  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
+[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
+$macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
 
 ################################################################################
 # SSH, session management, and Github stuff
@@ -1039,7 +1152,7 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
 }
 function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  local args=($@)
+  local args=("$@")
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
@@ -1050,7 +1163,7 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
 function ncvartable() { # as above but show everything
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  local args=($@)
+  local args=("$@")
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
@@ -1196,24 +1309,4 @@ $macos && { # first the MacOS options
   [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
   fortune # fun message
   } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
-
-################################################################################
-# SHELL INTEGRATION; iTerm2 feature only
-################################################################################
-# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-# They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ]; then
-   source ~/.iterm2_shell_integration.bash
-   echo "Enabled shell integration."
-fi
-
-
-################################################################################
-# FZF FUZZY FILE COMPLETION TOOL
-################################################################################
-# Run installation script; similar to the above one
-if [ -f ~/.fzf.bash ]; then
-  source ~/.fzf.bash
-  echo "Enabled fuzzy file completion."
-fi
 

@@ -23,6 +23,8 @@ noremap <C-b> <Nop>
 noremap Q <Nop>
 noremap K <Nop>
 "the above 2 enter weird modes I don't understand...
+cnoremap <C-k> <Up>
+cnoremap <C-j> <Down>
 noremap <C-z> <Nop>
 noremap Z <Nop>
 "disable c-z and Z for exiting vim
