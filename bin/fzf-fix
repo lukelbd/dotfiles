@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Fixes simple error with key bindings script
+for ext in zsh bash; do
+  # Fix annoying issue with invalid bash functino name; cannot contain dashes
+  file=$HOME/.fzf/shell/key-bindings.$ext
+  [ ! -r $file ] && echo "Error: You appear not to have installed fzf yet." && exit 1
+  old_string=fzf-file-widget
+  new_string=__fzf_file_widget
+  echo "Fixing widget name."
+  count=$(grep -o $old_string $file | wc -l | xargs)
+  echo "Number of occurences: $count"
+  gsed -i --follow-symlinks "s/$old_string/$new_string/g" $file
+
+  # Fix completion script, to accept my options
+  file=$HOME/.fzf/shell/completion.$ext
+  if ! grep "FZF_COMPLETION_COMMAND_OPTS" $file &>/dev/null; then
+    echo "Fixing completion commands."
+    gsed -i --follow-symlinks 's/command find.*$/&\n    \$FZF_COMPLETION_COMMAND_OPTS \\/g' $file
+  fi
+
+  # Use environment variables instead of absolute path, so portable across systems
+  file=$HOME/.fzf.$ext
+  echo "Fixing directories."
+  count=$(grep -o dotfiles $file | wc -l | xargs)
+  echo "Number of occurences: $count"
+  gsed -i --follow-symlinks 's|/Users/ldavis|$HOME|g' $file
+  gsed -i --follow-symlinks 's|/home/ldavis|$HOME|g' $file
+  gsed -i --follow-symlinks 's|dotfiles/||g' $file
+done
