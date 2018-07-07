@@ -48,7 +48,7 @@ export PYTHONPATH="" # this one needs to be re-initialized
 if $macos; then
   # Mac options
   # Defaults... but will reset them
-  eval `/usr/libexec/path_helper -s`
+  # eval `/usr/libexec/path_helper -s`
   # Basics
   export PATH=""
   export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
@@ -281,31 +281,11 @@ alias watch="tail -f" # actually already is a watch command
 ################################################################################
 # SHELL BEHAVIOR, KEY BINDINGS
 ################################################################################
-# Tab completion behavior
-# TODO: Appears to have been disabled with the \C-i remap below
-# Or possibly due to other stuff
-# -d filters to only directories
-# -f filters to only files
-# -X filters based on EXTENDED GLOBBING pattern (search that)
-# complete -d cd # complete changes behavior of "Tab" after command; cd
-#   # shows only DIRECTORIES now
-# complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
-#   # files (-f), removes (-X) entries satsifying glob string "NOT <stuff>.pdf"
-# complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-# complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
-# complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-# complete -f -X '!*.@(tex|py)' -o plusdirs latex
-# complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
-# complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
-# complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-# # Some shells disable tab-completion of dangerous commands; re-enable
-# complete -f -o plusdirs mv
-# complete -f -o plusdirs rm
-
 # Readline/inputrc settings
 # Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
+complete -r # remove completions
 bind -r '"\C-i"'
 bind -r '"\C-d"'
 bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
@@ -317,7 +297,7 @@ bind "set menu-complete-display-prefix on" # show string typed so far as 'member
 bind 'set completion-display-width 1' # easier to read
 bind 'set bell-style visible'    # only let readlinke/shell do visual bell; use 'none' to disable totally
 bind '"\C-i": menu-complete'     # this will not pollute scroll history; better
-bind '"\e-1\C-i": menu-complete' # this will not pollute scroll history; better
+bind '"\e-1\C-i": menu-complete-backward' # this will not pollute scroll history; better
 bind '"\e[Z": "\e-1\C-i"'        # shift tab to go backwards
 # bind '"\C-i":glob-complete-word' # fix error where nothing is globbed
 bind '"\C-l": forward-char'
@@ -370,7 +350,7 @@ function opts() {
   shopt -s globstar                # **/ matches all subdirectories, searches recursively
   shopt -u failglob                # turn off failglob; so no error message if expansion is empty
   # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
-  export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear:cd:echo:source:." # don't record some commands
+  export HISTIGNORE="&:[ ]*:exit:ls *:ll *:cd *:source *:. *:bg *:fg *:history:clear" # don't record some commands
   export PROMPT_DIRTRIM=2 # trim long paths in prompt
   export HISTSIZE=50000
   export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
@@ -396,71 +376,6 @@ function cdo() {
     command cdo "$@" # preserves spaces in filenames, e.g.
   fi
 }
-
-################################################################################
-# SHELL INTEGRATION; iTerm2 feature only
-################################################################################
-# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-# They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ]; then
-   source ~/.iterm2_shell_integration.bash
-   echo "Enabled shell integration."
-fi
-
-
-################################################################################
-# FZF FUZZY FILE COMPLETION TOOL
-################################################################################
-# Run installation script; similar to the above one
-if [ -f ~/.fzf.bash ]; then
-  # See man page for --bind information
-  # Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
-  # key bindings will enabled multiple selection
-  # Also very important, bind slash to accept, so now the behavior is very similar
-  # to behavior of normal bash shell completion
-  _opts='--exit-0 --select-1 --height=15% --layout=reverse-list --bind=tab:down,shift-tab:up,/:accept'
-  # Do not descent into subdirectories by default
-  _command='find . -maxdepth 1'
-  # Comamnds
-  # export FZF_COMPLETION_TRIGGER='**' # tab triggers completion
-  # export FZF_COMPLETION_COMMAND_OPTS=''
-  export FZF_COMPLETION_TRIGGER=''
-  export FZF_COMPLETION_COMMAND_OPTS="${_command#find . }" # made this one myself!
-  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir"
-  export FZF_COMPLETION_FILE_COMMANDS="ll" # add commands here
-  export FZF_DEFAULT_COMMAND="$_command"
-  export FZF_CTRL_T_COMMAND="$_command"
-  export FZF_ALT_C_COMMAND="$_command"
-  # Options
-  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
-  export FZF_DEFAULT_OPTS="$_opts"
-  export FZF_CTRL_T_OPTS="$_opts"
-  export FZF_ALT_C_OPTS="$_opts"
-  # Source file
-  source ~/.fzf.bash
-  # Create custom bindings
-  # Use below to bind ctrl t command
-  # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
-  # Next bind alt c command to ctrl f
-  bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
-  # Specific completion options
-  _fzf_complete_git() {
-     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
-     git commands # should be an alias that lists commands
-    )
-  }
-  _fzf_complete_cdo() {
-     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
-     cdo commands | cut -d' ' -f1 # should be an alias that lists commands
-    )
-  }
-  # Apply them as completion commands
-  for _command in cdo git; do
-    complete -F _fzf_complete_$_command -o default -o bashdefault $_command
-  done
-  # Finished
-  echo "Enabled fuzzy file completion."
-fi
 
 ################################################################################
 # Magic changing stderr color
@@ -506,22 +421,22 @@ fi
 # General utilties
 ################################################################################
 # Listing files
-# * To recursively search for string inside file, use grep -rn <string> <dir> (same as grep <string> <file>);
-#   to search filenames, use find <dir> -name <string> (weird find syntax).
 # * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
-# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones;
-#   we instead use the Mac default dircolors, and convert to Linux colors. Default mac
-#   colors were found with simple google search.
+# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones.
+# * We use the Mac default 'dircolors', and convert them to Linux colors.
+#   Default mac colors were found with simple google search.
+# * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
+#   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
+_mac_colors=false # use mac default, or Linux default?
 if $macos; then
-  export LSCOLORS='exfxcxdxbxegedabagacad'
+  $_mac_colors && export LSCOLORS='exfxcxdxbxegedabagacad' \
+    || export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
   lscolor='-G' && sortcmd='gsort' # GNU utilities, different from mac versions
 else
-#   export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:'\
-# 'or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
-  export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
+  $_mac_colors && export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
+    || export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
   lscolor='--color=always' && sortcmd='sort'
 fi
-ignore="--ignore "
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 ! $macos && alias cd="cd -P" # don't want this on my mac temporarily
@@ -537,10 +452,17 @@ hash git 2>/dev/null && alias delta="git diff --no-index --color"
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
-function listjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
-  # list jobs by name
-function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; for str in $@; do echo "Killing $str jobs..."; kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null; done; }
-  # kill jobs by name
+function listjobs() {
+  # [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1
+  ps | grep "$1" | grep -v PID | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs
+} # list jobs by name
+function killjobs() {
+  [ $# -eq 0 ] && echo "Error: Must specify grep pattern(s)." && return 1
+  for str in $@; do
+    echo "Killing $str jobs..."
+    kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null
+  done
+} # kill jobs by name
 
 # Scripting utilities
 alias tac="gtac" # use dis
@@ -561,12 +483,12 @@ function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
 }
-function dd() { # difference directories; input two directory names
+function diff_dir() { # difference directories; input two directory names
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and | differ | identical)'
 }
-function di() { # identical files in two directories
+function diff_files() { # identical files in two directories
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ | identical)'
@@ -601,8 +523,7 @@ export LESS="--RAW-CONTROL-CHARS"
 [ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
   export LESS_TERMCAP_mb=$(tput setaf 2) # 2=green
-  export LESS_TERMCAP_md=$(tput setaf 6) # cyan
-    # took off "bold" for these; was too light
+  export LESS_TERMCAP_md=$(tput setaf 6) # cyan; took off "bold" for these; was too light
   export LESS_TERMCAP_me=$(tput sgr0)
   export LESS_TERMCAP_so=$(tput bold; tput setaf 3; tput setab 4) # yellow on blue
   export LESS_TERMCAP_se=$(tput rmso; tput sgr0)
@@ -694,9 +615,11 @@ alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
 # alias R="cmdcolor R"
 # Without new shell color
 unalias R 2>/dev/null
-alias iworkspace="ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
 alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
+alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$io$basic$magic$plots$pyfuncs\""
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
 
 # Jupyter notebook aliases
 # * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
@@ -1207,6 +1130,15 @@ function extract() {
 ################################################################################
 # Utilities handling media and PDF files
 ################################################################################
+# Fun stuff
+alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
+alias weather="curl wttr.in/Fort\ Collins" # list weather information
+
+# Opening commands for some GUI apps
+alias edit='\open -a TextEdit'
+alias html='\open -a Google\ Chrome'
+alias pdf='\open -a Skim'
+
 # Extracting PDF annotations
 function unannotate() {
   local original=$1
@@ -1217,15 +1149,6 @@ function unannotate() {
   pdftk stripped.pdf output $final compress
   rm uncompressed.pdf stripped.pdf
 }
-
-# Opening commands for some GUI apps
-alias edit='\open -a TextEdit'
-alias html='\open -a Google\ Chrome'
-alias pdf='\open -a Skim'
-
-# Fun stuff
-alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
-alias weather="curl wttr.in/Fort\ Collins" # list weather information
 
 # Sync a local directory with files on SD card
 # This function will only modify files on the SD card, never the local directory
@@ -1290,6 +1213,102 @@ function sdsync() {
   # Record in Playlist when last sync occurred
   date +%s >> "$locloc/sdlog"
 }
+
+################################################################################
+# SHELL INTEGRATION; iTerm2 feature only
+################################################################################
+# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
+# They are super annoying and useless
+if [ -f ~/.iterm2_shell_integration.bash ]; then
+   source ~/.iterm2_shell_integration.bash
+   echo "Enabled shell integration."
+fi
+
+################################################################################
+# FZF FUZZY FILE COMPLETION TOOL
+# FZF INSTALLED AS SUBMODULE, AND HAVE MADE MY OWN EDITS; JUST USE GIT TO SYNC
+# ANY NEW UPDATES
+################################################################################
+# Run installation script; similar to the above one
+if [ -f ~/.fzf.bash ]; then
+  # See man page for --bind information
+  # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
+  #   key bindings will enabled multiple selection
+  # * Also very important, bind slash to accept, so now the behavior is very similar
+  #   to behavior of normal bash shell completion
+  # * Inline info puts the number line thing on same line as text. More compact.
+  _opts=' --select-1 --exit-0 --inline-info --height=6 --layout=default --bind=tab:accept,shift-tab:cancel,/:accept'
+  # Custom options
+  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
+  export FZF_COMPLETION_COMMAND_OPTS=" -maxdepth 1 "
+  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
+  export FZF_COMPLETION_FILE_COMMANDS="" # add commands here
+  # The builtin options next
+  _command='' # from now on, enable recursion, and use backslash prefix to trigger it
+  # _command='find . -maxdepth 1'
+  export FZF_DEFAULT_COMMAND="$_command"
+  export FZF_CTRL_T_COMMAND="$_command"
+  export FZF_ALT_C_COMMAND="$_command"
+  # Options
+  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
+  export FZF_DEFAULT_OPTS="$_opts"
+  export FZF_CTRL_T_OPTS="$_opts"
+  export FZF_ALT_C_OPTS="$_opts"
+  # Source file
+  complete -r # reset first
+  source ~/.fzf.bash
+  #----------------------------------------------------------------------------#
+  # Create custom bindings
+  # Use below to bind ctrl t command
+  # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
+  # Next bind alt c command to ctrl f
+  # Also bind generic file finder to tab keyt c
+  bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
+  # Add a few basic completion options
+  # First set the default ones
+  _complete_path=$(complete | grep 'rm$' | sed 's/complete//;s/rm//')
+  complete -E # when line empty, perform no complection (options empty)
+  # complete -D $_complete_path # ideal, but this seems to break stuff
+  #----------------------------------------------------------------------------#
+  # Generate list of all executables, and use fzf path completion by default
+  # for almost all of them
+  # WARNING: BOLD MOVE COTTON.
+  echo "Setting up completion."
+  _ignore="^\\($(echo "echo \\[ \\[\\[ cdo git fzf $FZF_COMPLETION_DIR_COMMANDS" | sed 's/ /\\|/g')\\)$"
+  if [ ! -r "$HOME/.commands" ]; then
+    echo "Recording available commands."
+    compgen -c | grep -v $_ignore >$HOME/.commands # will include aliases and functions
+  fi
+  complete $_complete_path $(cat $HOME/.commands | xargs)
+  #----------------------------------------------------------------------------#
+  # Old commands for filtering completion options; now it seems the -X filter
+  # is ignored, as the function supplies all completion options
+  # complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
+  # complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
+  # complete -f -X '!*.pdf' skim              # changes behavior of my alias "skim"; shows only
+  # complete -f -X '!*.tex' -o plusdirs latex
+  # complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
+  # complete -f -o plusdirs mv # some shells disable tab-completion of dangerous commands; re-enable
+  # complete -f -o plusdirs rm
+  # Specific completion options
+  _fzf_complete_git() {
+     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
+     git commands # should be an alias that lists commands
+    )
+  }
+  _fzf_complete_cdo() {
+     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
+     cdo commands | cut -d' ' -f1 # should be an alias that lists commands
+    )
+  }
+  # Apply them as completion commands
+  for _command in cdo git; do
+    complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+  done
+  #----------------------------------------------------------------------------#
+  # Finished
+  echo "Enabled fuzzy file completion."
+fi
 
 ################################################################################
 # Message

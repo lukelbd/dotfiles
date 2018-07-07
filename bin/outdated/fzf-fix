@@ -13,12 +13,8 @@ for ext in zsh bash; do
 
   # Fix completion script, to accept my options
   file=$HOME/.fzf/shell/completion.$ext
-  if ! grep "FZF_COMPLETION_COMMAND_OPTS" $file &>/dev/null; then
-    echo "Fixing completion commands."
-    gsed -i --follow-symlinks 's/a_cmds=.*$/&\n  \$FZF_COMPLETION_FILE_COMMANDS/g' $file
-  fi
   if ! grep "FZF_COMPLETION_FILE_COMMANDS" $file &>/dev/null; then
-    echo "Adding completion commands."
+    echo "Adding 'find' completion options."
     gsed -i --follow-symlinks 's/a_cmds=.*$/&\n  \$FZF_COMPLETION_FILE_COMMANDS/g' $file
   fi
   if ! grep " # _fzf_defc" $file &>/dev/null; then

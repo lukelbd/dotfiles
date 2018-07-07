@@ -5,6 +5,11 @@
 "   PATH="<original locations>" brew install
 " * Note when you're creating a remap, `<CR>` is like literally pressing the Enter key,
 "   while `\<CR>` inside a double-quote string is that literal keypress
+" * Currently have iTerm map some ctrl+key combinations that would otherwise
+"   be impossible to the F1, F2 keys. Currently they are:
+"     F1: Ctrl-,
+"     F2: Ctrl-.
+"     F3: Ctrl-i
 "###############################################################################
 "BUTT-TONS OF CHANGES
 augroup _0
@@ -254,11 +259,11 @@ noremap <silent> <Leader>o :noh<CR>
 "Enable left mouse click in visual mode to extend selection; normally this is impossible
 "Note we can't use `< and `> because those refer to start and end of last visual selection,
 "while we actually want the place where we *last exited* visual mode, like '^ for insert mode
-nnoremap v mVv
-nnoremap V mVV
-nnoremap <C-v> mV<C-v>
-vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:exe "normal! '.visualmode().'"<CR>`N'
-" vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`VmV'.visualmode().'<CR>`N' "dunno why this fails
+nnoremap v myv
+nnoremap V myV
+nnoremap <C-v> my<C-v>
+vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
+" vnoremap <silent> <LeftMouse> <Esc>:echo 'Mode: '.visualmode() \| sleep 200 m<CR><LeftMouse>mx`y:exe 'normal! '.visualmode()<CR>`x
 vnoremap <CR> <C-c>
 "Some other useful visual mode maps; note, will not
 nnoremap <silent> v$ v$h
@@ -560,15 +565,21 @@ endif
 "##############################################################################"
 "VIM SNEAK
 "Just configure the maps here
+"Also disable highlighting when doing sneak operations, because
+"want to same the use highlight group
+augroup sneak
+augroup END
 if has_key(g:plugs, "vim-sneak")
+  "F and T move
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
   map f <Plug>Sneak_f
   map F <Plug>Sneak_F
   map t <Plug>Sneak_t
   map T <Plug>Sneak_T
-  map L <Plug>Sneak_;
-  map H <Plug>Sneak_,
+  "Map ctrl , and ctrl ; to F1 and F2
+  map <F1> <Plug>Sneak_,
+  map <F2> <Plug>Sneak_;
 endif
 
 "###############################################################################
@@ -682,13 +693,18 @@ function! s:helpsetup()
 endfunction
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
-function! s:simplesetup(nosave)
-  if a:nosave
+function! s:simplesetup(...)
+  let nosave = 1 "default true
+  if a:0 "override
+    let nosave = a:1
+  endif
+  if nosave
     nnoremap <buffer> <C-s> <Nop>
   endif
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell
 endfunction
+command! -nargs=? Simple call <sid>simplesetup(<args>)
 
 "###############################################################################
 "VIM visual increment; creating columns of 1/2/3/4 etc.
@@ -813,7 +829,7 @@ augroup eventsrestore
 augroup END
 function! s:eioff()
   setlocal eventignore=
-  silent! hi MatchParen ctermfg=Yellow ctermbg=Blue
+  silent! hi MatchParen ctermfg=None ctermbg=Blue
   silent! unmap <Esc>
 endfunction
 function! s:eion() "set autocommands to ignore, in consideration of older versions without TextChanged
@@ -862,8 +878,8 @@ if has_key(g:plugs, "ctrlp.vim")
     else | echom "Cancelling..."
     endif
   endfunction
-  "note next map made useful by making iTerm translate c-[ as F2
-  nnoremap <silent> <F2> :call <sid>ctrlpwrap()<CR>
+  "Make sure to map Ctrl i to F3 in iTerm
+  nnoremap <silent> <F3> :call <sid>ctrlpwrap()<CR>
   nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:EImap<CR>
   let g:ctrlp_map=''
   let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
@@ -1379,6 +1395,7 @@ augroup saving
 augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
+nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-b to compile instead."<CR>
 nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 
@@ -1691,7 +1708,7 @@ silent! unmap zuz
 augroup g
 augroup END
 "Don't know why these are here but just go with it bro
-nnoremap <silent> <Leader>S :w<CR>:so ~/.vimrc<CR>:echom "Refreshed .vimrc."<CR>
+nnoremap <silent> <Leader>S :w \| filetype detect \| so ~/.vimrc<CR>:echom "Refreshed .vimrc and re-loaded syntax."<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
@@ -1714,8 +1731,8 @@ noremap <expr> <silent> gC ''.<sid>commentjump(1)
   "jumping between comments; pretty neat huh?
   "the gc 'does' nothing (maps gc/gC to empty string), but function will move cursor
   "in whatever mode you want
-nnoremap ga ggVG
-vnoremap ga <Esc>ggVG
+nnoremap gG ggVG
+vnoremap gG <Esc>ggVG
 nnoremap gx ga
   "ga mapped to 'select all', and gx mapped to 'get the ASCII/hex value'
 nnoremap GG G
@@ -1774,53 +1791,105 @@ endif
 
 "###############################################################################
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
-augroup colors
+"See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
+"for every file; we add our own custom highlighting for vim comments
+"Email:
+"For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
+"Will also enforce shebang always has the same color, because it's annoying otherwise
+set cursorline
+augroup syntax
+  au!
+  " au Syntax *.tex syn match Ignore '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
+  " au Syntax *.tex call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
+  au BufRead * set concealcursor=ncv conceallevel=2 "conceal stuff when in normal/command mode; only reveal when insert/visual
+  au Syntax * syn match Todo '\<\%(WARNING\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment
+          \ | syn match Special '^\%1l#!.*$'
 augroup END
+"Create dummy group -- will be transparent, but use to add @Nospell
+highlight Dummy ctermbg=None ctermfg=None
+"Magenta is uncommon color, so change this
+"Note if Sneak undefined, this won't raise error; vim thinkgs maybe we will define it later
+highlight Sneak ctermbg=DarkMagenta ctermfg=None
+"And search/highlight stuff; by default foreground is black, make it transparent
+highlight Search ctermbg=Magenta ctermfg=None
+"Fundamental changes, move control from LightColor to Color and DarkColor, because
+"ANSI has no control over light ones it seems.
+"Generally 'Light' is NormalColor and 'Normal' is DarkColor
+highlight Type ctermbg=None ctermfg=DarkGreen
+highlight Constant ctermbg=None ctermfg=Red
+highlight Special ctermbg=None ctermfg=DarkRed
+highlight Indentifier cterm=Bold ctermbg=None ctermfg=Cyan
+highlight PreProc ctermbg=None ctermfg=DarkCyan
+"Make Conceal highlighting group ***transparent***, so that when you
+"set the conceallevel to 0, concealed elements revert to their original highlighting.
+highlight Conceal ctermbg=None ctermfg=None
 "Special characters
 highlight Comment ctermfg=Black cterm=None
 highlight NonText ctermfg=Black cterm=None
 highlight SpecialKey ctermfg=Black cterm=None
 "Matching parentheses
 highlight Todo ctermfg=None ctermbg=Red
-highlight MatchParen ctermfg=Yellow ctermbg=Blue
+highlight MatchParen ctermfg=None ctermbg=Blue
 "Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
 "background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
 "gray, and 'ANSI black bold' to black).
 "Note 'lightgray' is just normal white
-set cursorline
+highlight LineNR cterm=None ctermfg=Black ctermbg=None
 highlight CursorLine cterm=None ctermbg=Black
 highlight CursorLineNR cterm=None ctermfg=Yellow ctermbg=Black
-highlight LineNR cterm=None ctermfg=Black ctermbg=None
 "Column stuff; color 80th column, and after 120
 highlight ColorColumn cterm=None ctermbg=Black
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
-"sign define hold text=\
-"sign place 1 name=hold line=1
+"Make sure terminal is black, for versions with :terminal command
 highlight Terminal ctermbg=Black
 "###############################################################################
 "COLOR HIGHLIGHTING
 "Highlight group under cursor
-"Never really use these so forget it
 function! s:group()
-  echo "hi<" . synIDattr(synID(line("."),col("."),1),"name")
-    \.'> trans<' . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
-    \.synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"
+  echo "actual <".synIDattr(synID(line("."),col("."),1),"name")."> "
+    \."appears <".synIDattr(synID(line("."),col("."),0),"name")."> "
+    \."group <".synIDattr(synIDtrans(synID(line("."),col("."),1)),"name").">"
 endfunction
-function! s:colors()
-  source $VIMRUNTIME/syntax/colortest.vim
-  setlocal nolist nonumber norelativenumber
-  noremap <buffer> q :q<CR>
-  "could not get this to work without making the whole thing an <expr>, then escaping the CR in the subsequent map
+command! Group call <sid>group()
+"The :syntax commands within that group
+function! s:syntax(name)
+  if a:name
+    exe "verb syntax list ".a:name
+  else
+    " echo "Name: ".synIDattr(synID(line("."),col("."),0),"name") | sleep 500 m
+    exe "verb syntax list ".synIDattr(synID(line("."),col("."),0),"name")
+  endif
 endfunction
+command! -nargs=? Syntax call <sid>syntax('<args>')
+"Toggle conceal
+function! s:concealtoggle(...)
+  let conceal_on=1
+  if a:0
+    let conceal_on=a:1
+  endif
+  exe 'set conceallevel='.(conceal_on ? 2 : 0)
+endfunction
+command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 "Get current plugin file
 "Remember :scriptnames lists all loaded files
-function! s:plugin()
+function! s:ftplugin()
+  "Enable 'simple' mode
   execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
+  silent Simple
 endfunction
-"Commands; these just substitute stuff entered in command-mode with following text
-command! Group  call <sid>group()
+function! s:ftsyntax()
+  execute 'split $VIMRUNTIME/syntax/'.&filetype.'.vim'
+  silent Simple
+endfunction
+command! PluginFile call <sid>ftplugin()
+command! SyntaxFile call <sid>ftsyntax()
+"Window displaying all colors
+function! s:colors()
+  source $VIMRUNTIME/syntax/colortest.vim
+  silent Simple
+endfunction
 command! Colors call <sid>colors()
-command! Plugin call <sid>plugin()
+command! GroupColors vert help group-name
 
 "###############################################################################
 "###############################################################################
