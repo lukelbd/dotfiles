@@ -7,16 +7,18 @@ use 5.010;
 use strict;
 use warnings;
 
+# // checks for definedness, sort of like || checks for success
+# this statement dies with the message below if no argument provided, and no env available
 my $LS_COLORS = $ARGV[0] // $ENV{LS_COLORS}
  // die "Please supply a colour spec to translate\n";
 
-say 'export LSCOLOR="', xlate_colour( $LS_COLORS ), '"';
+say 'export LSCOLOR="', xlate_colour( $LS_COLORS ), '"'; # say adds a newline vs print
 
 sub xlate_colour {
-  my $linux = shift;
-  my ( $bold, $fg, $bg );
+  my $linux = shift;       # return the position 1 argument, and shift args like the shell 'shift'
+  my ( $bold, $fg, $bg );  # initialize empty
 
-  my @attr = ( 'x' ) x 22;
+  my @attr = ( 'x' ) x 22; # 'x' operator analagous to vimscript '.' for concatenation; does list repeitiion
 
   my %bsd = (
     'di' => 0,     # directory
@@ -31,6 +33,11 @@ sub xlate_colour {
     'st' => 9,     # directory writable to others, with sticky bit
     'do' => 10,    # directory writable to others, without sticky bit
   );
+  
+=begin comment
+  hello world
+  this is a comment
+=cut
 
   my %ansi = (
     #  Text attributes

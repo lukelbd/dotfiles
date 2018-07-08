@@ -1,27 +1,62 @@
+<<<<<<< tex.backup.vim
 " DONWLOADED: 2018-07-08
 " OUT OF DATE WITH TEX.VIM, MAYBE CAN DO GIT MERGE
+=======
+" DONWLOADED: 2018-02-20
+>>>>>>> tex.vim
 " vimtex - LaTeX plugin for Vim
 "
 " Maintainer: Karl Yngve Lervåg
 " Email:      karl.yngve@gmail.com
 "
+<<<<<<< tex.backup.vim
 
 if !get(g:, 'vimtex_syntax_enabled', 1)
   finish
 endif
 
+=======
+>>>>>>> tex.vim
 if !exists('b:current_syntax')
   let b:current_syntax = 'tex'
 elseif b:current_syntax !=# 'tex'
   finish
 endif
 
+<<<<<<< tex.backup.vim
+=======
+"------------------------------------------------------------------------------"
+"Custom syntax commands
+"Disable spellcheck within *yellow-highlighted curly brace commands*, but does
+"*not* disable spellcheck within environments like textbf and naked braces {}
+"Just copied the :SyntaxFile line, but removed 'transparent' flag
+syn region texMatcherNM matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]" end="}" 
+    \ contains=@texMatchNMGroup,texError,@NoSpell "this is exact copy of :SyntaxFile line, but removes 'transparent' flag
+"Conceal backslash commands; only matchadd works for some reason
+" * WARNING: This will make highlight searches really weird if you make the 'priority' (arg 3)
+"   higher than the :hlsearch priority (0); see manual. Default is 10.
+" * ID of -1 (arg 4) means 'assign no id in particular; whatever is available'
+" * The regex ignores comments (preceding % sign) and newline command \\
+"   Also ignores the situation \command1\command2, which would otherwise
+"   be unreadable and is common in macros
+call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
+"For some reason this one fails
+" * See: https://vi.stackexchange.com/q/5696/8084
+" * Appears that wherever the backslash is concealed, this one 'overwrites' existing
+"   match.
+" syn match Statement '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
+
+"------------------------------------------------------------------------------"
+>>>>>>> tex.vim
 " Perform spell checking when there is no syntax
 " - This will enable spell checking e.g. in toplevel of included files
 syntax spell toplevel
 
+<<<<<<< tex.backup.vim
 scriptencoding utf-8
 
+=======
+>>>>>>> tex.vim
 " {{{1 Improve handling of newcommand and newenvironment commands
 
 " Allow arguments in newenvironments
@@ -361,12 +396,16 @@ let b:current_syntax = 'tex'
 " }}}1
 " {{{1 Nested syntax highlighting for asymptote
 
+<<<<<<< tex.backup.vim
 syntax cluster texDocGroup add=texZoneAsymptote
 
+=======
+>>>>>>> tex.vim
 let s:asypath = globpath(&runtimepath, 'syntax/asy.vim')
 if !empty(s:asypath)
   unlet b:current_syntax
   syntax include @ASYMPTOTE syntax/asy.vim
+<<<<<<< tex.backup.vim
   syntax region texZoneAsymptote
         \ start='\\begin{asy\z(def\)\?}'rs=s
         \ end='\\end{asy\z1}'re=e
@@ -381,6 +420,22 @@ else
         \ keepend
         \ contains=texBeginEnd
   highlight def link texZoneAsymptote texZone
+=======
+  syntax cluster texDocGroup add=texZoneAsymptote
+  syntax region texZoneAsymptote
+        \ start='\\begin{asy}'rs=s
+        \ end='\\end{asy}'re=e
+        \ keepend
+        \ transparent
+        \ contains=texBeginEnd,texBeginEndModifier,@ASYMPTOTE
+  syntax region texZoneAsymptote
+        \ start='\\begin{asydef}'rs=s
+        \ end='\\end{asydef}'re=e
+        \ keepend
+        \ transparent
+        \ contains=texBeginEnd,texBeginEndModifier,@ASYMPTOTE
+  let b:current_syntax = 'tex'
+>>>>>>> tex.vim
 endif
 
 " }}}1
@@ -394,6 +449,7 @@ syntax region texZoneMinted
       \ keepend
       \ contains=texMinted
 
+<<<<<<< tex.backup.vim
 " Highlight "unknown" statements
 syntax region texMintArgUnknown matchgroup=Delimiter
       \ start='{'
@@ -409,13 +465,19 @@ syntax region texMintZoneUnknown matchgroup=Delimiter
       \ end='}'
       \ contained
 
+=======
+>>>>>>> tex.vim
 " Next add nested syntax support for desired languages
 for s:entry in get(g:, 'vimtex_syntax_minted', [])
   let s:lang = s:entry.lang
   let s:syntax = get(s:entry, 'syntax', s:lang)
 
+<<<<<<< tex.backup.vim
   let s:cap_name = toupper(s:lang[0]) . s:lang[1:]
   let s:group_name = 'texZoneMinted' . s:cap_name
+=======
+  let s:group_name = 'texZoneMinted' . toupper(s:lang[0]) . s:lang[1:]
+>>>>>>> tex.vim
   execute 'syntax cluster texFoldGroup add=' . s:group_name
 
   unlet b:current_syntax
@@ -426,6 +488,7 @@ for s:entry in get(g:, 'vimtex_syntax_minted', [])
           \ 'remove=' . join(s:entry.ignore, ',')
   endif
 
+<<<<<<< tex.backup.vim
   " Add statement variants
   " - \mint[]{lang}|...|
   " - \mint[]{lang}{...}
@@ -448,6 +511,8 @@ for s:entry in get(g:, 'vimtex_syntax_minted', [])
         \ 'contains=@' . toupper(s:lang)
 
   " Add main minted environment
+=======
+>>>>>>> tex.vim
   execute 'syntax region' s:group_name
         \ 'start="\\begin{minted}\_[^}]\{-}{' . s:lang . '}"rs=s'
         \ 'end="\\end{minted}"re=e'
@@ -455,7 +520,13 @@ for s:entry in get(g:, 'vimtex_syntax_minted', [])
         \ 'transparent'
         \ 'contains=texMinted,@' . toupper(s:lang)
 
+<<<<<<< tex.backup.vim
   " Support for custom environment names
+=======
+  "
+  " Support for custom environment names
+  "
+>>>>>>> tex.vim
   for s:env in get(s:entry, 'environments', [])
     execute 'syntax region' s:group_name
           \ 'start="\\begin{' . s:env . '}"rs=s'
@@ -475,6 +546,7 @@ for s:entry in get(g:, 'vimtex_syntax_minted', [])
           \ '"\\begin{' . s:env . '\*}\s*{\_.\{-}}"'
           \ 'contains=texBeginEnd,texDelimiter'
   endfor
+<<<<<<< tex.backup.vim
 
   " Support for custom commands
   for s:cmd in sort(get(s:entry, 'commands', []))
@@ -494,13 +566,21 @@ syntax region texMintOptArg matchgroup=Delimiter
       \ contained
       \ nextgroup=texMintArg.*
 
+=======
+endfor
+let b:current_syntax = 'tex'
+
+>>>>>>> tex.vim
 syntax match texMinted '\\begin{minted}\_[^}]\{-}{\w\+}'
       \ contains=texBeginEnd,texMintedName
 syntax match texMinted '\\end{minted}'
       \ contains=texBeginEnd
 syntax match texMintedName '{\w\+}' contained
 
+<<<<<<< tex.backup.vim
 highlight link texMintZoneUnknown texZone
+=======
+>>>>>>> tex.vim
 highlight link texMintedName texBeginEndName
 
 " }}}1

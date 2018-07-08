@@ -190,12 +190,16 @@ function prompt_append() { # input argument should be new command
 # Help page wrapper
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
+# Don't want to use aliases, e.g. because ncl requires DYLD_LIBRARY_PATH to open
+# so we alias that as command prefix (don't want to change global path cause it
+# messes other shit up, maybe homebrew)
 function help() {
+  [ -z $1 ] && echo "Requires one argument." && return 1
   if builtin help $1 &>/dev/null; then
     builtin help $1 2>&1 | less
   # elif [ ! -z "$($1 --help 2>&1)" ]; then # sometimes prints stuff and returns non-zero exit code, but usually text is in stderr
-  elif command $1 --help &>/dev/null; then
-    command $1 --help 2>&1 | less # combine output streams or can get weird error
+  elif eval "$env $1 --help" &>/dev/null; then
+    eval "$env $1 --help" 2>&1 | less # combine output streams or can get weird error
   else
     echo "No help information for \"$1\"."
   fi
@@ -206,6 +210,7 @@ function man() { # always show useful information when man is called
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+  [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
     if $macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
       [ $1 == "builtin" ] && local search=$1 || local search=bash
@@ -363,7 +368,7 @@ opts 2>/dev/null # ignore if option unavailable
 ################################################################################
 # The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
-alias bindings="{ bind -X; bind -p; bind -s; } | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
 alias bindings_stty="stty -e"                # bindings
 alias functions="declare -F | cut -d' ' -f3" # show current shell functions
 alias inputrc_funcs="bind -l"                # the functions, for example 'forward-char'
@@ -441,13 +446,26 @@ alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from file
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 ! $macos && alias cd="cd -P" # don't want this on my mac temporarily
 
+# Information on directories
+alias df="df -h" # disk useage
+alias eject="diskutil unmount" # eject disk on macOS
+! $macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
+function ds() { # directory ls
+  [ -z $1 ] && dir="" || dir="$1/"
+  dir="${dir//\/\//\/}"
+  command ls $lscolor -A -d $dir*/
+}
+function dl() { # directory sizes
+  [ -z $1 ] && dir="." || dir="$1"
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
+}
+
 # Grepping and diffing; enable colors
 alias grep="grep --color=auto" # always show color
 alias egrep="egrep --color=auto" # always show color
 # Make Perl color wrapper default; also allow color difference with git
 # Note to recursively compare directories, use --name-status
 hash colordiff 2>/dev/null && alias diff="command colordiff"
-hash git 2>/dev/null && alias delta="git diff --no-index --color"
 
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
@@ -470,30 +488,48 @@ function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculato
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 function empty() { for i in {1..100}; do echo; done; }
 
-# Information on directories
-alias df="df -h" # disk useage
-alias eject="diskutil unmount" # eject disk on macOS
-! $macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
-function ds() { # directory ls
-  [ -z $1 ] && dir="" || dir="$1/"
-  dir="${dir//\/\//\/}"
-  command ls $lscolor -A -d $dir*/
+# Differencing stuff, similar git commands stuff
+# First use git as the difference engine; disable color
+# Color not useful anyway; is just bold white, and we delete those lines
+function discrep() {
+  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
+  git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
+    | egrep '(files|differ)' # add to these
 }
-function dl() { # directory sizes
-  [ -z $1 ] && dir="." || dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
-}
-function diff_dir() { # difference directories; input two directory names
+# Next use builtin diff command as engine
+# *Different* files
+# The last grep command is to highlight important parts
+function delta() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
-    | egrep '(Only in.*:|Files | and | differ | identical)'
+    | egrep '(Only in.*:|Files | and |differ| identical)'
 }
-function diff_files() { # identical files in two directories
+# *Identical* files in two directories
+function idelta() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
-    | egrep '(Only in.*:|Files | and | differ | identical)'
+    | egrep '(Only in.*:|Files | and | differ| identical)'
+}
+# Merge fileA and fileB into merge.{ext}
+# See this answer: https://stackoverflow.com/a/9123563/4970632
+function merge() {
+  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
+  [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
+  [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
+  local ext=.${1##*.}
+  [ $ext == "." ] && local ext="" # no extension
+  touch tmp$ext # use empty file as the 'root' of the merge
+  cp $1 backup$ext
+  git merge-file $1 tmp$ext $2 # will write to file 1
+  mv $1 merge$ext
+  mv backup$ext $1
+  rm tmp$ext
+  echo "Files merged into \"merge$ext\"."
 }
 
+################################################################################
+# More Colors
+################################################################################
 # Tool for changing iTerm2 profile before command executed, and returning
 # after executed (e.g. interactive prompts)
 function cmdcolor() {
@@ -600,7 +636,7 @@ alias suser="squeue -u $USER"
 ################################################################################
 # For profiling scripts
 alias profile="python -m cProfile -s time"
-# Interactive shell utilities
+# Python shell utilities
 # io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
 io="import pandas as pd; import xarray as xr; "
 basic="import numpy as np; from datetime import datetime; from datetime import date; "
@@ -608,20 +644,52 @@ magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autorelo
 plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
 pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
 alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
+# Other shell utilities
+# Simple thing for R
+# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
+# * The ---always-readline prevents prompt from switching to the default prompt, but
+#   also seems to disable ctrl-d for exiting.
+alias r="R"   # because why not?
+alias ir="iR" # again, why not?
+function iR() {
+  echo 'This is an Interactive R shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  R -q --no-save # keep it simple stupid
+  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
+}
+# NCL -- and a couple other things
+# Binding thing doesn't work (cause it's not passed to shell), but was neat idea
+function incl() {
+  # local binding_old="$(bind -Xps | grep C-d)" # print every kind of binding; flags are different kinds
+  echo "This is an Interactive NCL shell."
+  ncl -Q -n
+  # bind '"\C-d":"exit()\C-m"'
+  # bind "$binding_old" # spaces gotta be escaped
+}
+# Perl -- hard to understand, but here it goes:
+# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
+# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
+#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
+#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
+#   for success, and if not, prints the error message. This is a build-your-own eval.
+function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+  echo 'This is an Interactive Perl shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
+}
+alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$io$basic$magic$plots$pyfuncs\""
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
 # With new shell color
 # alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
 # alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
 # alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
 # alias R="cmdcolor R"
-# Without new shell color
-unalias R 2>/dev/null
-alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
-alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
 
-# Jupyter notebook aliases
+################################################################################
+# NOTEBOOK STUFF
+################################################################################
 # * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
 # * IMPORTANT note: to uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
@@ -1244,8 +1312,7 @@ if [ -f ~/.fzf.bash ]; then
   export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
   export FZF_COMPLETION_FILE_COMMANDS="" # add commands here
   # The builtin options next
-  _command='' # from now on, enable recursion, and use backslash prefix to trigger it
-  # _command='find . -maxdepth 1'
+  _command='' # use find . -maxdepth 1 search non recursively
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
   export FZF_ALT_C_COMMAND="$_command"
