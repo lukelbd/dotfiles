@@ -21,6 +21,10 @@
 #   https://stackoverflow.com/a/10312587/4970632
 # 'ignore':
 #   stop tracking every single regex pattern in your .gitignore
+#   to ignore all subdirectories in another directory, use subdir/*/
+#   the find command must be different in this case; mindepth of 1 excludes
+#   the root directory (i.e. the subfolder itself), and maxdepth prevents any
+#   unnecessary recursion
 # 'status':
 #   now show in short format, without help information, and with branch info
 # 'fix':
@@ -48,8 +52,11 @@
 		fi; done"
 	ignore = "!root=$(git rev-parse --show-toplevel); if [ -n \"$root\" ]; \
 		then cat $root/.gitignore | grep -v '#' | grep -v '^\\s*$' | sed 's/\\*\\*\\///g' | while read pattern; \
-		do find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
-		done; fi"
+		do echo \"$pattern\"; \
+		if [[ \"$pattern\" =~ \"/*/\" ]]; then \
+		find \"$root/${pattern%/*/}\" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
+		else find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
+		fi; done; fi"
 [status]
 	branch = true
 	short = true

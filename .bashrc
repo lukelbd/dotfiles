@@ -355,7 +355,7 @@ function opts() {
   shopt -s globstar                # **/ matches all subdirectories, searches recursively
   shopt -u failglob                # turn off failglob; so no error message if expansion is empty
   # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
-  export HISTIGNORE="&:[ ]*:exit:ls *:ll *:cd *:source *:. *:bg *:fg *:history:clear" # don't record some commands
+  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:source *:. *:bg *:fg *:history *:clear *" # don't record some commands
   export PROMPT_DIRTRIM=2 # trim long paths in prompt
   export HISTSIZE=50000
   export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
