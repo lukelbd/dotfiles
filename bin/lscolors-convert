@@ -1,0 +1,108 @@
+#!/usr/bin/env perl
+# From this page:
+# https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
+
+use 5.010;
+
+use strict;
+use warnings;
+
+# // checks for definedness, sort of like || checks for success
+# this statement dies with the message below if no argument provided, and no env available
+my $LS_COLORS = $ARGV[0] // $ENV{LS_COLORS}
+ // die "Please supply a colour spec to translate\n";
+
+say 'export LSCOLOR="', xlate_colour( $LS_COLORS ), '"'; # say adds a newline vs print
+
+sub xlate_colour {
+  my $linux = shift;       # return the position 1 argument, and shift args like the shell 'shift'
+  my ( $bold, $fg, $bg );  # initialize empty
+
+  my @attr = ( 'x' ) x 22; # 'x' operator analagous to vimscript '.' for concatenation; does list repeitiion
+
+  my %bsd = (
+    'di' => 0,     # directory
+    'ln' => 1,     # symbolic link
+    'so' => 2,     # socket
+    'pi' => 3,     # pipe
+    'ex' => 4,     # executable
+    'bd' => 5,     # block special
+    'cd' => 6,     # character special
+    'sg' => 7,     # executable with setuid bit set
+    'su' => 8,     # executable with setgid bit set
+    'st' => 9,     # directory writable to others, with sticky bit
+    'do' => 10,    # directory writable to others, without sticky bit
+  );
+  
+=begin comment
+  hello world
+  this is a comment
+=cut
+
+  my %ansi = (
+    #  Text attributes
+    0 => sub { $bold = 0 },
+    1 => sub { $bold = 1 },
+    4 => sub { },
+    5 => sub { },
+    7 => sub { },
+    8 => sub { },
+
+    #  Foreground colors
+    30 => sub { $fg = 'a' },
+    31 => sub { $fg = 'b' },
+    32 => sub { $fg = 'c' },
+    33 => sub { $fg = 'd' },
+    34 => sub { $fg = 'e' },
+    35 => sub { $fg = 'f' },
+    36 => sub { $fg = 'g' },
+    37 => sub { $fg = 'h' },
+
+    #  Background colors
+    40 => sub { $bg = 'a' },
+    41 => sub { $bg = 'b' },
+    42 => sub { $bg = 'c' },
+    43 => sub { $bg = 'd' },
+    44 => sub { $bg = 'e' },
+    45 => sub { $bg = 'f' },
+    46 => sub { $bg = 'g' },
+    47 => sub { $bg = 'h' },
+  );
+
+  my %unkkey = ();
+  my %unkcol = ();
+
+  my $setcol = sub {
+    my ( $pos, $col ) = @_;
+    $attr[$pos] = $bold ? uc $col : lc $col
+     if defined $col;
+  };
+
+  for my $term ( split /:/, $linux ) {
+    if ( $term =~ /^(.+?)=(.*)$/ ) {
+      my ( $key, @cols ) = ( $1, split /;/, $2 );
+      if ( defined( my $pos = $bsd{$key} ) ) {
+        ( $bold, $fg, $bg ) = ();
+        for my $c ( @cols ) {
+          if ( defined( my $act = $ansi{ $c + 0 } ) ) {
+            $act->();
+          }
+          else {
+            $unkcol{$c}++;
+          }
+        }
+        $setcol->( $pos * 2,     $fg );
+        $setcol->( $pos * 2 + 1, $bg );
+      }
+      else {
+        $unkkey{$key}++;
+      }
+    }
+    else {
+      print "Unknown term: $term\n";
+    }
+  }
+  return join '', @attr;
+}
+
+# vim:ts=2:sw=2:sts=2:et:ft=perl

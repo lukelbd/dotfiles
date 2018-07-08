@@ -25,3 +25,4 @@ for icofile in ${icofiles[@]##*/}; do
     cp $tmp/$icofile $icodir/$icofile # move that shit over
   fi
 done
+rm -r $tmp # empty it out

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+[ -z "$1" ] && dir="." || dir="$1"
+echo "DIRECTORY: $dir"
+sleep 3 # give user time to abort
+for f in "$dir/"*.md; do
+  echo "FILE: $f"
+  sleep 1 # again give them time
+  # Preview the fix
+  # cat "$f" | grep '#\w' | sed 's/#\([a-zA-Z0-9]\)/# \1/g'
+  # Actually apply the fix; edit in-place; this works on macOS
+  sed -i '' 's/#\([a-zA-Z0-9]\)/# \1/g' "$f"
+done

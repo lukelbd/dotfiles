@@ -5,7 +5,7 @@
 ################################################################################
 # Files to be ignored
 # Just a few of them yo; want to symlink everything else
-fignore=(README.md setup cleanup .gitignore)
+fignore=(README.md setup cleanup .gitignore colors learning macbook originals)
 
 # Some syncing notes; use the following to reset if stuff changed:
 # git fetch --all

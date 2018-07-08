@@ -5,6 +5,11 @@
 "   PATH="<original locations>" brew install
 " * Note when you're creating a remap, `<CR>` is like literally pressing the Enter key,
 "   while `\<CR>` inside a double-quote string is that literal keypress
+" * Currently have iTerm map some ctrl+key combinations that would otherwise
+"   be impossible to the F1, F2 keys. Currently they are:
+"     F1: Ctrl-,
+"     F2: Ctrl-.
+"     F3: Ctrl-i
 "###############################################################################
 "BUTT-TONS OF CHANGES
 augroup _0
@@ -17,12 +22,14 @@ set nocompatible
 "###############################################################################
 "IMPORTANT STUFF
 let mapleader="\<Space>"
-noremap <Space> <Nop>
 noremap <CR> <Nop>
+noremap <Space> <Nop>
 noremap <C-b> <Nop>
 noremap Q <Nop>
 noremap K <Nop>
 "the above 2 enter weird modes I don't understand...
+cnoremap <C-k> <Up>
+cnoremap <C-j> <Down>
 noremap <C-z> <Nop>
 noremap Z <Nop>
 "disable c-z and Z for exiting vim
@@ -252,14 +259,18 @@ noremap <silent> <Leader>o :noh<CR>
 "Enable left mouse click in visual mode to extend selection; normally this is impossible
 "Note we can't use `< and `> because those refer to start and end of last visual selection,
 "while we actually want the place where we *last exited* visual mode, like '^ for insert mode
-nnoremap v mVv
-nnoremap V mVV
-nnoremap <C-v> mV<C-v>
-vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`V:exe "normal! '.visualmode().'"<CR>`N'
-" vnoremap <silent> <expr> <LeftMouse> '<Esc><LeftMouse>mN`VmV'.visualmode().'<CR>`N' "dunno why this fails
+nnoremap v myv
+nnoremap V myV
+nnoremap <C-v> my<C-v>
+vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
+" vnoremap <silent> <LeftMouse> <Esc>:echo 'Mode: '.visualmode() \| sleep 200 m<CR><LeftMouse>mx`y:exe 'normal! '.visualmode()<CR>`x
 vnoremap <CR> <C-c>
-nnoremap <silent> v$ mVv$h
-nnoremap <silent> vv ^mVv$gE
+"Some other useful visual mode maps; note, will not
+nnoremap <silent> v$ v$h
+nnoremap <silent> vv ^v$gE
+nnoremap <silent> v/ hn:noh<CR>gn
+  "makes way more sense to me
+  "also prevent highlighting selection under cursor, unless on first character
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff
@@ -320,6 +331,10 @@ set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
 "###############################################################################
 augroup _1
 augroup END
+"Tabs default
+set tabstop=2
+set shiftwidth=2
+set softtabstop=2
 "Requirements flag, and load repeat.vim right away because want to know if it exists
 "and its functions are available
 runtime autoload/repeat.vim "if file not found, echos nothing
@@ -341,6 +356,11 @@ endif
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
+"Indent line
+"WARNING: Right now *totally* fucks up stuff search mode, and cursorline overlaps. So not good.
+"Requires changing Conceal group color, but doing that also messes up latex conceal
+"backslashes (which we need to stay transparent); so forget it probably
+" Plug 'yggdroot/indentline'
 "Colors
 Plug 'altercation/vim-colors-solarized'
 "Superman man pages
@@ -440,10 +460,6 @@ Plug 'justinmk/vim-sneak'
 call plug#end() "the plug#end also declares filetype syntax and indent on
   "note apparently every BufRead autocmd inside an ftdetect/filename.vim file
   "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
-"Declare default tabbing options
-set tabstop=2
-set shiftwidth=2
-set softtabstop=2
 
 "###############################################################################
 "SESSION MANAGEMENT
@@ -501,19 +517,23 @@ endif
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
 augroup templates
   au!
-  au BufNewFile *.tex call TeXTemplates()
+  au BufNewFile *.tex call <sid>textemplates()
 augroup END
-function! TeXTemplates()
-  let templates=split(globpath('~/latex/', '*.tex'),"\n")
-  let names=[]
-  for template in templates
-    call add(names, '"'.fnamemodify(template, ":t:r").'"')
-    "expand does not work, for some reason... because expand is used with one argument
-    "with a globalfilename, e.g. % (current file)... fnamemodify is for strings
-  endfor
+function! s:textemplates()
+  function! TeXTemplates(A,L,P)
+    let templates=split(globpath('~/latex/', '*.tex'),"\n")
+    let names=[]
+    for template in templates
+      let name=fnamemodify(template, ":t:r")
+      if name =~? '^'.a:A "if what user typed so far matches name
+        call add(names, fnamemodify(template, ":t:r"))
+      endif
+    endfor
+    return names
+  endfunction
+  " echo 'Current templates available: '.join(names, ', ').'.'
   while 1
-    echo "Current templates available: ".join(names, ", ")."."
-    let template=expand("~")."/latex/".input("Enter choice: ").".tex"
+    let template=expand("~")."/latex/".input("Template (tab to reveal options): ", "", "customlist,TeXTemplates").".tex"
     if filereadable(template)
       execute "0r ".template
       break
@@ -521,7 +541,6 @@ function! TeXTemplates()
     echo "\nInvalid name."
   endwhile
 endfunction
-command! TeXTemplates call TeXTemplates()
 
 "##############################################################################"
 "SNIPPETS
@@ -554,15 +573,21 @@ endif
 "##############################################################################"
 "VIM SNEAK
 "Just configure the maps here
+"Also disable highlighting when doing sneak operations, because
+"want to same the use highlight group
+augroup sneak
+augroup END
 if has_key(g:plugs, "vim-sneak")
+  "F and T move
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
   map f <Plug>Sneak_f
   map F <Plug>Sneak_F
   map t <Plug>Sneak_t
   map T <Plug>Sneak_T
-  map L <Plug>Sneak_;
-  map H <Plug>Sneak_,
+  "Map ctrl , and ctrl ; to F1 and F2
+  map <F1> <Plug>Sneak_,
+  map <F2> <Plug>Sneak_;
 endif
 
 "###############################################################################
@@ -649,17 +674,18 @@ augroup simple
   au!
   au BufEnter * let b:recording=0
   au FileType help call s:helpsetup()
-  au FileType rst,qf,diff,man call s:simplesetup(1)
-  au FileType gitcommit call s:simplesetup(0)
+  au FileType rst,qf,diff,man Simple 1
+  au FileType gitcommit Simple 0
 augroup END
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
+"TODO If you're an insane person could also generate autocompletion for these ones, but nah
 noremap <Leader>h :vert help 
-noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; [ -z $search ] && search=fart; '
-  \.'if command man $search &>/dev/null; then man $search; fi<CR>:redraw!<CR>'
+noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; '
+  \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 "--help info; pipe output into less for better interaction
-noremap <silent> <expr> <Leader>H ':!clear; search='.input('Get help info: ').'; [ -z $search ] && search=fart; '
-  \.'if builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
+noremap <silent> <expr> <Leader>H ':!clear; search='.input('Get help info: ').'; '
+  \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 function! s:helpsetup()
   if len(tabpagebuflist())==1 | q | endif "exit from help window, if it is only one left
@@ -676,13 +702,18 @@ function! s:helpsetup()
 endfunction
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
-function! s:simplesetup(nosave)
-  if a:nosave
+function! s:simplesetup(...)
+  let nosave = 1 "default true
+  if a:0 "override
+    let nosave = a:1
+  endif
+  if nosave
     nnoremap <buffer> <C-s> <Nop>
   endif
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell
 endfunction
+command! -nargs=? Simple call <sid>simplesetup(<args>)
 
 "###############################################################################
 "VIM visual increment; creating columns of 1/2/3/4 etc.
@@ -718,18 +749,18 @@ if has_key(g:plugs, "codi.vim")
       exec "Codi!! ".&ft
     endif
   endfunction
-  nnoremap <silent> <expr> <Leader>n ':call <sid>newcodi("'.input('Enter .py calculator name: ').'")<CR>'
-    "creates new calculator file, adds .py extension
-  nnoremap <silent> <expr> <Leader>N ':Codi!! '.&ft.'<CR>'
-    "turns current file into calculator; m stands for math
+  "Create new calculator file, adds .py extension
+  nnoremap <silent> <Leader>n :call <sid>newcodi(input('Calculator name: ('.getcwd().')', '', 'file'))<CR>
+  "Turn current file into calculator; m stands for math
+  nnoremap <silent> <Leader>N :Codi!! &ft<CR>
+  "Use builtin python2.7 on macbook to avoid creating history files
+  " \ 'bin': '/usr/bin/python',
   let g:codi#interpreters = {
        \ 'python': {
            \ 'bin': '/usr/bin/python',
            \ 'prompt': '^\(>>>\|\.\.\.\) ',
            \ },
        \ } "see issue here: https://github.com/metakirby5/codi.vim/issues/85
-    "use builtin python2.7 on macbook to avoid creating history files
-     " \ 'bin': '/usr/bin/python',
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
   let g:codi#width = 20 "simple window configuration
@@ -796,6 +827,15 @@ highlight Pmenu ctermbg=Black ctermfg=Yellow cterm=None
 highlight PmenuSel ctermbg=Black ctermfg=Black cterm=None
 highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
 
+"##############################################################################"
+"INDENTLINE
+if has_key(g:plugs, 'indentline.vim')
+  let g:indentLine_char='¦' "¦│┆
+  let g:indentLine_setColors=0
+  let g:indentLine_setConceal=0
+  let g:indentLine_fileTypeExclude = ['rst', 'qf', 'diff', 'man', 'help', 'gitcommit', 'tex']
+endif
+
 "###############################################################################
 "EVENTS MANAGEMENT
 "Need to make this mini-function for ctrlp plugin
@@ -807,7 +847,7 @@ augroup eventsrestore
 augroup END
 function! s:eioff()
   setlocal eventignore=
-  silent! hi MatchParen ctermfg=Yellow ctermbg=Blue
+  silent! hi MatchParen ctermfg=None ctermbg=Blue
   silent! unmap <Esc>
 endfunction
 function! s:eion() "set autocommands to ignore, in consideration of older versions without TextChanged
@@ -817,12 +857,12 @@ function! s:eion() "set autocommands to ignore, in consideration of older versio
   silent! hi clear MatchParen "clear MatchLine from match.vim plugin, if it exists
 endfunction
 function! s:eimap()
-  nnoremap <silent> <buffer> <Esc> :q<CR>:EIoff<CR>
-  nnoremap <silent> <buffer> <C-c> :q<CR>:EIoff<CR>
+  nnoremap <silent> <buffer> <Esc> :q<CR>:EIOff<CR>
+  nnoremap <silent> <buffer> <C-c> :q<CR>:EIOff<CR>
 endfunction
-command! EIon  call <sid>eion()
-command! EIoff call <sid>eioff()
-command! EImap call <sid>eimap()
+command! EIOn  call <sid>eion()
+command! EIOff call <sid>eioff()
+command! EIMap call <sid>eimap()
 
 "###############################################################################
 "CTRLP PLUGIN
@@ -846,19 +886,20 @@ command! EImap call <sid>eimap()
 augroup ctrlp
 augroup END
 if has_key(g:plugs, "ctrlp.vim")
-  " let g:ctrlp_buffer_func={'enter':'EIon', 'exit':'EIoff'} "fails
-  " nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
+  " let g:ctrlp_buffer_func={'enter':'EIOn', 'exit':'EIoff'} "fails
+  " nnoremap <silent> <C-p> :EIOn<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
   function! s:ctrlpwrap()
-    let dir=input("Enter starting directory: ")
-    if dir!="" | EIon
+    let dir=input("Directory for Ctrl-P (".getcwd()."): ", "", "dir")
+    if dir!="" | EIOn
       exe 'CtrlP '.dir
-      EImap
+      EIMap
     else | echom "Cancelling..."
     endif
   endfunction
-  "note next map made useful by making iTerm translate c-[ as F2
-  nnoremap <silent> <F2> :call <sid>ctrlpwrap()<CR>
-  nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:EImap<CR>
+  "Make sure to map Ctrl i to F3 in iTerm
+  nnoremap <silent> <C-p> :call <sid>ctrlpwrap()<CR>
+  " nnoremap <silent> <F3> :call <sid>ctrlpwrap()<CR>
+  " nnoremap <silent> <C-p> :EIOn<CR>:CtrlP<CR>:EIMap<CR>
   let g:ctrlp_map='' "disable default map; will use my special map
   let g:ctrlp_max_depth=5 "honestly, rarely need many
   let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
@@ -900,6 +941,27 @@ if has_key(g:plugs, "ctrlp.vim")
     \ 'OpenMulti()':          ['<c-o>'],
     \ 'PrtExit()':            ['<esc>', '<c-c>', '<c-g>'],
     \ }
+endif
+
+"##############################################################################"
+"FZF completion
+"Maybe not necessary anymore because Ctrl-P access got way better
+"Vim documentation is incomplete; also see readme file: https://github.com/junegunn/fzf/blob/master/README-VIM.md
+"The ctrl-i map below prevents tab from doing anything
+"Also in iterm ctrl-i keypress translates to F3, so use that below
+" Plug 'junegunn/fzf.vim'
+" if has_key(g:plugs, 'fzf.vim')
+if !empty(glob("~/.fzf"))
+  let g:fzf_layout = {'down': '~20%'} "make window smaller
+  let g:fzf_action = {
+  \ 'ctrl-i': 'silent!',
+  \ 'ctrl-m': 'tab split',
+  \ 'ctrl-t': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit' }
+  set rtp+=~/.fzf
+  helptags ~/.fzf/doc "have to update tags after change runtimepath; normally vim-plug does this
+  noremap <F3> :exe 'FZF '.input("Directory for FZF (".getcwd()."): ", "", "dir")<CR>
 endif
 
 "###############################################################################
@@ -1061,7 +1123,7 @@ if has_key(g:plugs, "syntastic")
     noh | w | noautocmd SyntasticCheck
     if len(tabpagebuflist())>nbufs
       wincmd j | set syntax=on
-      call s:simplesetup(1)
+      Simple
       wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
     else | echom "No errors found, or no checkers available." | let b:syntastic_on=0
     endif
@@ -1374,6 +1436,7 @@ augroup saving
 augroup END
 nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
+nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-b to compile instead."<CR>
 nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 
@@ -1495,7 +1558,10 @@ function! s:tabmove(n)
     execute 'tabmove '.eval(a:n-1)
   endif
 endfunction
-noremap <silent> <expr> <Tab>m ":silent! call <sid>tabmove(".input('Move tab: ').")<CR>"
+function! s:tablist(A,L,P)
+  return map(range(1,tabpagenr('$')),'string(v:val)')
+endfunction
+noremap <silent> <Tab>m :silent! call <sid>tabmove(input('Move tab: ', '', 'customlist,<sid>tablist'))<CR>
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "Splitting -- make :sp and :vsp split to right and bottom
@@ -1681,18 +1747,19 @@ silent! unmap zuz
   "never really use this feature so forget it
 
 "###############################################################################
+"g CONFIGURATION
 "SINGLE-KEYSTROKE MOTION BETWEEN FUNCTIONS
 "Single-keystroke indent, dedent, fix indentation
 augroup g
 augroup END
 "Don't know why these are here but just go with it bro
-nnoremap <silent> <Leader>S :w<CR>:so ~/.vimrc<CR>:echom "Refreshed .vimrc."<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
+nnoremap <silent> <Leader>S :w \| filetype detect \| so ~/.vimrc<CR>:echom "Refreshed .vimrc and re-loaded syntax."<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
+"Undo these maps to avoid confusion
 noremap gt <Nop>
 noremap gT <Nop>
-  "undo these maps to avoid confusion
 function! s:commentjump(backwards) "jump to next comment
   let flag='Wn' "don't wrap around EOF, and don't jump yet
   if a:backwards | let flag.='b' | normal! k
@@ -1704,21 +1771,22 @@ function! s:commentjump(backwards) "jump to next comment
   endif
   return ''
 endfunction
+"Jumping between comments; pretty neat huh?
+"the gc 'does' nothing (maps gc/gC to empty string), but function will move cursor
+"in whatever mode you want
 noremap <expr> <silent> gc ''.<sid>commentjump(0)
 noremap <expr> <silent> gC ''.<sid>commentjump(1)
-  "jumping between comments; pretty neat huh?
-  "the gc 'does' nothing (maps gc/gC to empty string), but function will move cursor
-  "in whatever mode you want
-nnoremap ga ggVG
-vnoremap ga <Esc>ggVG
-nnoremap gx ga
-  "ga mapped to 'select all', and gx mapped to 'get the ASCII/hex value'
+"Select all maps
+nnoremap gG ggVG
+vnoremap gG <Esc>ggVG
+"Analogue to gg; also opens up 'G' as a prefix
 nnoremap GG G
-  "analogue to gg; also opens up 'G' as a prefix
+"Default 'open file under cursor' to open in new tab; change for normal and vidual
 noremap gf <c-w>gf
 noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
   \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
-  "default 'open file under cursor' to open in new tab; change for normal and vidual
+"Capitalization stuff with g, a bit refined
+"not currently used in normal mode, and fits better mnemonically
 nnoremap gu guiw
 vnoremap gu gu
 nnoremap gU gUiw
@@ -1728,20 +1796,23 @@ nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap g. <Plug>cap1
 nmap gt <Plug>cap2
-  "capitalization stuff with g, a bit refined
-  "not currently used in normal mode, and fits better mnemonically
 " nnoremap g. ~h
 " nnoremap gt mzguiw~h`z
+"Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
-  "freed up m keys, and ge/gE belong as single-keystroke words along with e/E, w/W, and b/B
-noremap <silent> g: q:
-noremap <silent> g/ q/
-  "display previous command with this
-"First the simple ones -- indentation commands allow prefixing with *number*,
-"but find that behavior weird/mnemonically confusing ('why is 3>> indent 3 lines
-"*below*, and not indent 3 levels, for example?). So we also fix that.
-" * Below is meant to mimick visual-mode > and < behavior.
+"Repeat last command
+noremap <silent> g; :<Up><CR>
+"Enter command window, execute stuff with enter key; that is the default but we want
+"enter to not move cursor ordinarily, so have to unmap it after entering window.
+"Oddly writing a function that declares maps, and calling it after using q:, did
+"not work, and making all of the map commands one line with \| did not work. Only the below works.
+noremap <silent> g: q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
+  \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
+noremap <silent> g/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
+  \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
+"Now remap indentation commands. Why is this here? Just go with it.
+" * Meant to mimick visual-mode > and < behavior.
 " * Note the <Esc> is needed first because it cancels application of the number operator
 "   to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
@@ -1769,53 +1840,106 @@ endif
 
 "###############################################################################
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
-augroup colors
+"See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
+"for every file; we add our own custom highlighting for vim comments
+"For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
+"Will also enforce shebang always has the same color, because it's annoying otherwise
+"And generally only want 'conceal' characters invisible for latex; otherwise we
+"probably want them to look like comment characters
+set cursorline
+augroup syntax
+  au!
+  " au Syntax *.tex syn match Ignore '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
+  " au Syntax *.tex call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
+  au BufRead * set concealcursor=ncv conceallevel=2 "conceal stuff when in normal/command mode; only reveal when insert/visual
+  au Syntax * if &ft!="vim" | syn match Todo '\<\%(WARNING\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment | syn match Special '^\%1l#!.*$' | endif
+  " au BufEnter * if &ft=="tex" | hi Conceal ctermbg=None ctermfg=None | else | hi Conceal ctermbg=None ctermfg=Black | endif
 augroup END
+"Create dummy group -- will be transparent, but use to add @Nospell
+highlight Dummy ctermbg=None ctermfg=None
+"Magenta is uncommon color, so change this
+"Note if Sneak undefined, this won't raise error; vim thinkgs maybe we will define it later
+highlight Sneak ctermbg=DarkMagenta ctermfg=None
+"And search/highlight stuff; by default foreground is black, make it transparent
+highlight Search ctermbg=Magenta ctermfg=None
+"Fundamental changes, move control from LightColor to Color and DarkColor, because
+"ANSI has no control over light ones it seems.
+"Generally 'Light' is NormalColor and 'Normal' is DarkColor
+highlight Type ctermbg=None ctermfg=DarkGreen
+highlight Constant ctermbg=None ctermfg=Red
+highlight Special ctermbg=None ctermfg=DarkRed
+highlight Indentifier cterm=Bold ctermbg=None ctermfg=Cyan
+highlight PreProc ctermbg=None ctermfg=DarkCyan
+"Make Conceal highlighting group ***transparent***, so that when you
+"set the conceallevel to 0, concealed elements revert to their original highlighting.
+highlight Conceal ctermbg=None ctermfg=None
 "Special characters
 highlight Comment ctermfg=Black cterm=None
 highlight NonText ctermfg=Black cterm=None
 highlight SpecialKey ctermfg=Black cterm=None
 "Matching parentheses
 highlight Todo ctermfg=None ctermbg=Red
-highlight MatchParen ctermfg=Yellow ctermbg=Blue
+highlight MatchParen ctermfg=None ctermbg=Blue
 "Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
 "background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
 "gray, and 'ANSI black bold' to black).
 "Note 'lightgray' is just normal white
-set cursorline
+highlight LineNR cterm=None ctermfg=Black ctermbg=None
 highlight CursorLine cterm=None ctermbg=Black
 highlight CursorLineNR cterm=None ctermfg=Yellow ctermbg=Black
-highlight LineNR cterm=None ctermfg=Black ctermbg=None
 "Column stuff; color 80th column, and after 120
 highlight ColorColumn cterm=None ctermbg=Black
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
-"sign define hold text=\
-"sign place 1 name=hold line=1
+"Make sure terminal is black, for versions with :terminal command
 highlight Terminal ctermbg=Black
 "###############################################################################
 "COLOR HIGHLIGHTING
 "Highlight group under cursor
-"Never really use these so forget it
 function! s:group()
-  echo "hi<" . synIDattr(synID(line("."),col("."),1),"name")
-    \.'> trans<' . synIDattr(synID(line("."),col("."),0),"name") . "> lo<"
-    \.synIDattr(synIDtrans(synID(line("."),col("."),1)),"name") . ">"
+  echo "actual <".synIDattr(synID(line("."),col("."),1),"name")."> "
+    \."appears <".synIDattr(synID(line("."),col("."),0),"name")."> "
+    \."group <".synIDattr(synIDtrans(synID(line("."),col("."),1)),"name").">"
 endfunction
-function! s:colors()
-  source $VIMRUNTIME/syntax/colortest.vim
-  setlocal nolist nonumber norelativenumber
-  noremap <buffer> q :q<CR>
-  "could not get this to work without making the whole thing an <expr>, then escaping the CR in the subsequent map
+command! Group call <sid>group()
+"The :syntax commands within that group
+function! s:syntax(name)
+  if a:name
+    exe "verb syntax list ".a:name
+  else
+    " echo "Name: ".synIDattr(synID(line("."),col("."),0),"name") | sleep 500 m
+    exe "verb syntax list ".synIDattr(synID(line("."),col("."),0),"name")
+  endif
 endfunction
+command! -nargs=? Syntax call <sid>syntax('<args>')
+"Toggle conceal
+function! s:concealtoggle(...)
+  let conceal_on=1
+  if a:0
+    let conceal_on=a:1
+  endif
+  exe 'set conceallevel='.(conceal_on ? 2 : 0)
+endfunction
+command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 "Get current plugin file
 "Remember :scriptnames lists all loaded files
-function! s:plugin()
+function! s:ftplugin()
+  "Enable 'simple' mode
   execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
+  silent Simple
 endfunction
-"Commands; these just substitute stuff entered in command-mode with following text
-command! Group  call <sid>group()
+function! s:ftsyntax()
+  execute 'split $VIMRUNTIME/syntax/'.&filetype.'.vim'
+  silent Simple
+endfunction
+command! PluginFile call <sid>ftplugin()
+command! SyntaxFile call <sid>ftsyntax()
+"Window displaying all colors
+function! s:colors()
+  source $VIMRUNTIME/syntax/colortest.vim
+  silent Simple
+endfunction
 command! Colors call <sid>colors()
-command! Plugin call <sid>plugin()
+command! GroupColors vert help group-name
 
 "###############################################################################
 "###############################################################################
