@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""
+Outputs NetCDF dimensions, variables and their attribute information.
+The information is similar to that of NCAR's ncdump utility.
+ncdump requires a valid instance of Dataset.
+
+Parameters...
+filename (positional): a netCDF file name, to be loaded by nc4
+"""
+import sys
+import netCDF4 as nc4
+from pprint import pprint # for printing vectors
+
+# Parse argv
+if len(sys.argv)!=2: # script itself, and input filename
+    print('Please call with a valid filename.')
+    exit() # valid command when calling as script
+filename = sys.argv[-1]
+
+# Definition
+def print_attr(key):
+    try: 
+        print("\t\ttype:",repr(file.variables[key].dtype))
+        for ncattr in file.variables[key].ncattrs():
+            print('\t\t%s:' % ncattr,repr(file.variables[key].getncattr(ncattr)))
+    except KeyError:
+       print("\t\tWARNING: %s does not contain variable attributes" % key)
+
+# Load global attributes, dim info, var info (inside with statement, so it closes afterward)
+with nc4.Dataset(filename, mode='r') as file:
+    nc_attrs = file.ncattrs()
+    nc_dims = [dim for dim in file.dimensions]  # list of nc dimensions
+    nc_vars = [var for var in file.variables]  # list of nc variables
+    # Print info
+    print("NetCDF Global Attributes:")
+    for nc_attr in nc_attrs:
+        print('\t%s:' % nc_attr, repr(file.getncattr(nc_attr)))
+    print("NetCDF dimension information:")
+    for dim in nc_dims:
+        print("\tName:", dim )
+        print("\t\tsize:", len(file.dimensions[dim]))
+        print_attr(dim)
+    print("NetCDF variable information:")
+    for var in nc_vars:
+        if var not in nc_dims:
+            print('\tName:', var)
+            print("\t\tdimensions:", file.variables[var].dimensions)
+            print("\t\tsize:", file.variables[var].size)
+            print_attr(var)

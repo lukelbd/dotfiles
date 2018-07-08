@@ -68,8 +68,17 @@ nnoremap <silent> caf F(bdt(lca(
 nnoremap <silent> yaf mzF(bvf(%y`z
 nnoremap <silent> vaf F(bmVvf(%
 nnoremap <silent> dsf mzF(bdt(xf)x`z
-nnoremap <silent> <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
+nnoremap <silent> csf F(hciw
+"And now for lines; already exists for paragraphs
+"If on first character of sentence, want to count that as 'current' sentence, so move to right
+"Kind of need to use selections always here
+nnoremap <silent> dal l(v)hd
+nnoremap <silent> cal l(v)hs
+nnoremap <silent> yal l(v)hy
+nnoremap <silent> val l(v)h
+" nnoremap <silent> <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
 "Selecting text in-between commented out lines
+"Maybe add other special ideas
 nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$mVvN<Down>0<Esc>:noh<CR>gv"
 
 "##############################################################################"
@@ -259,13 +268,14 @@ function! s:texmacros()
   call s:delims(';o', '{\color{red}', '}', 1, 0)
   call s:delims(';i', '\textit{',     '}', 1, 0)
   call s:delims(';t', '\textbf{',     '}', 1, 0) "now use ;i for various cite commands
-  call s:delims(';y', '\texttt{',     '}', 1, 0) "typewriter text
   call s:delims(';u', '\underline{',  '}', 1, 0) "u for under
   call s:delims(';l', '\linespread{',  '}', 1, 0) "u for under
   call s:delims(';m', '\mathrm{',     '}', 1, 0)
   call s:delims(';n', '\mathbf{',     '}', 1, 0)
   call s:delims(';M', '\mathcal{',    '}', 1, 0)
   call s:delims(';N', '\mathbb{',     '}', 1, 0)
+  call s:delims(';y', '\texttt{',     '}', 1, 0) "typewriter text
+  call s:delims(';Y', '\pyth$',       '$', 1, 0) "python verbatim
   call s:delims(';v', '\vec{',        '}', 1, 0)
   call s:delims(';V', '\verb$',       '$', 1, 0) "verbatim
   call s:delims(';d', '\dot{',        '}', 1, 0)
@@ -348,6 +358,7 @@ function! s:texmacros()
   call s:environs(';', '\begin{center}', '\end{center}') "because ; was available
   call s:environs(':', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
   call s:environs('c', '\begin{columns}[c]', '\end{columns}')
+  call s:environs('y', '\begin{python}', '\end{python}')
   " call s:environs('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
     "not sure what these args are for; c will vertically center
   call s:environs('C', '\begin{column}{.5\textwidth}', '\end{column}')
@@ -483,15 +494,15 @@ augroup html_delimit
   au FileType html call s:htmlmacros()
 augroup END
 function! s:htmlmacros()
-  call s:delimscr('h', '<head>', '</head>')
-  call s:delimscr('b', '<body>', '</body>')
-  call s:delimscr('t', '<title>', '</title>')
-  call s:delimscr('p', '<p>', '</p>')
-  call s:delimscr('1', '<h1>', '</h1>')
-  call s:delimscr('2', '<h2>', '</h2>')
-  call s:delimscr('3', '<h3>', '</h3>')
-  call s:delimscr('4', '<h4>', '</h4>')
-  call s:delimscr('5', '<h5>', '</h5>')
+  call s:environs('h', '<head>', '</head>')
+  call s:environs('b', '<body>', '</body>')
+  call s:environs('t', '<title>', '</title>')
+  call s:environs('p', '<p>', '</p>')
+  call s:environs('1', '<h1>', '</h1>')
+  call s:environs('2', '<h2>', '</h2>')
+  call s:environs('3', '<h3>', '</h3>')
+  call s:environs('4', '<h4>', '</h4>')
+  call s:environs('5', '<h5>', '</h5>')
   call s:delims(',e', '<em>', '</em>', 1, 0)
   call s:delims(',t', '<strong>', '</strong>', 1, 0)
 endfunction

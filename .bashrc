@@ -25,29 +25,21 @@
 [[ $- != *i* ]] && return
 
 ################################################################################
-# SHELL INTEGRATION; iTerm2 feature only
+# PROMPT
 ################################################################################
-# printf "Enabling shell integration... "
-# echo "Enabling shell integration."
-[ -e "${HOME}/.iterm2_shell_integration.bash" ] && \
-  { . "${HOME}/.iterm2_shell_integration.bash"; echo "Enabled shell integration."; }
-
-################################################################################
-# INITIAL STUFF, DEFAULT CONFIG AND PATH MANAGEMENT
-# CUSTOM KEY BINDINGS AND INTERACTION
-################################################################################
-# Reset all aliases
-unalias -a
-
-# Flag for if in MacOs
-[[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
-
-# Prompt
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
 
+################################################################################
+# SETTINGS FOR PARTICULAR MACHINES
+# CUSTOM KEY BINDINGS AND INTERACTION
+################################################################################
+# Reset all aliases
+unalias -a
+# Flag for if in MacOs
+[[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
 # First, the path management
 # If loading default bashrc, *must* happen before everything else or may get unexpected
 # behavior! For example, due to my overriding behavior of grep/man/help commands, and
@@ -56,7 +48,7 @@ export PYTHONPATH="" # this one needs to be re-initialized
 if $macos; then
   # Mac options
   # Defaults... but will reset them
-  eval `/usr/libexec/path_helper -s`
+  # eval `/usr/libexec/path_helper -s`
   # Basics
   export PATH=""
   export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
@@ -188,24 +180,37 @@ if [[ -e "$HOME/anaconda3/bin" || -e "$HOME/miniconda3/bin" ]]; then
   export PATH="$HOME/anaconda3/bin:$PATH"
 fi
 
-# Help page wrappers
+################################################################################
+# WRAPPERS FOR COMMON FUNCTIONS
+################################################################################
+# Append prompt command
+function prompt_append() { # input argument should be new command
+  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
+}
+# Help page wrapper
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
+# Don't want to use aliases, e.g. because ncl requires DYLD_LIBRARY_PATH to open
+# so we alias that as command prefix (don't want to change global path cause it
+# messes other shit up, maybe homebrew)
 function help() {
+  [ -z $1 ] && echo "Requires one argument." && return 1
   if builtin help $1 &>/dev/null; then
     builtin help $1 2>&1 | less
   # elif [ ! -z "$($1 --help 2>&1)" ]; then # sometimes prints stuff and returns non-zero exit code, but usually text is in stderr
-  elif command $1 --help &>/dev/null; then
-    command $1 --help 2>&1 | less # combine output streams or can get weird error
+  elif eval "$env $1 --help" &>/dev/null; then
+    eval "$env $1 --help" 2>&1 | less # combine output streams or can get weird error
   else
     echo "No help information for \"$1\"."
   fi
 }
+# Man page wrapper
 function man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+  [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
     if $macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
       [ $1 == "builtin" ] && local search=$1 || local search=bash
@@ -221,72 +226,7 @@ function man() { # always show useful information when man is called
     echo "No man entry for \"$1\"."
   fi
 }
-# function superman() { # man pages in VIM with cool syntax highlighting
-#   command vim -c "SuperMan $*"
-#   if [ "$?" != "0" ]; then
-#     echo "No manual entry for $*"
-#   fi
-# }
-
-# Tab completion behavior
-# TODO: Appears to have been disabled with the \C-i remap below
-# Or possibly due to other stuff
-# -d filters to only directories
-# -f filters to only files
-# -X filters based on EXTENDED GLOBBING pattern (search that)
-complete -d cd # complete changes behavior of "Tab" after command; cd
-  # shows only DIRECTORIES now
-complete -f -X '!*.pdf' -o plusdirs skim  # changes behavior of my alias "skim"; shows only
-  # FILES (-f), REMOVES (-X) entries satsifying glob string "NOT <stuff>.pdf"
-complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-complete -f -X '!*.@(avi|mov|mp4)' -o plusdirs vlc # for movies; require one of these
-complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-complete -f -X '!*.@(tex|py)' -o plusdirs latex
-complete -f -X '!*.m' -o plusdirs matlab # for matlab help documentation
-complete -f -X '!*.nc' -o plusdirs ncdump # for matlab help documentation
-complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-# Some shells disable tab-completion of dangerous commands; re-enable
-complete -f -o plusdirs mv
-complete -f -o plusdirs rm
-
-# Readline settings
-# Use Ctrl-R to search previous commands
-# Equivalent to putting lines in single quotes inside .inputrc
-# bind '"\C-i":glob-expand-word' # expansion but not completion
-bind 'set disable-completion off' # ensure on
-bind 'set completion-ignore-case on' # want dat
-bind 'set show-all-if-ambiguous on' # from this: https://unix.stackexchange.com/a/76625/112647
-  # one tab-press instead of two, and the leading part of filename becomes empty
-bind '"\C-i":glob-complete-word' # this FIXES error where commands sometimes fail
-  # to glob in TMUX session (only happened on monde); I AM A FUCKING GOD
-bind -r '\C-s' # remove C-s binding to enable C-s in Vim (normally caught by terminal as start/stop signal)
-stty -ixon # disable start/stop output control; note for putty, have to edit STTY value and set ixon to zero in term options
-
-# Shell Options
-# Check out 'shopt -p' to see possibly interesting shell options
-# Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
-# set -ex
-  # exit this script when encounter error, and print each command; useful for debugging
-set -o posix
-set +H
-  # turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
-function env() { set; }
-  # just prints all shell variables
-unset USERNAME # forum quote: "if you use the sudo command, sudo typically
-  # sets USER to root and USERNAME to the user who invoked the sudo command"
-shopt -s checkwinsize # allow window resizing
-shopt -u nullglob # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
-shopt -u extglob # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-shopt -s dotglob # include dot patterns in glob matches
-shopt -s dirspell # attempt spelling correction of dirname
-shopt -s nocaseglob # case insensitive
-shopt -s globstar # **/ matches all subdirectories, searches recursively
-shopt -u failglob # turn off failglob; so no error message if expansion is empty
-# shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
-
 # Editor stuff
-# Use this for watching log files
-alias watch="less +F" # actually already is a watch command
 # VIM command to keep track of session -- need to 'source' the sessionfile, which is
 # just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
 # re-closing every time we start a session
@@ -303,13 +243,144 @@ function vim() {
     $sed -i "/zt/a setlocal nofoldenable" $sessionfile
     command vim -S $sessionfile # for working with obsession
   else
-    command vim -p $@ # when loading specific files; also open them in separate tabs
+    command vim -p "$@" # when loading specific files; also open them in separate tabs
   fi
   clear # clear screen after exit
+}
+# Open wrapper
+function open() {
+  # Parse input
+  local app=
+  unset files
+  local files=()
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -a|--application) local app="$2"; shift; shift; ;;
+      -*) echo "Error: Unknown flag $1." && return 1 ;;
+      *) local files+=($1); shift; ;;
+    esac
+  done
+  echo ${files[@]}
+  for file in "${files[@]}"; do
+    # echo $file
+    local iapp="$app"
+    if [ -z "$iapp" ]; then
+      case "$file" in
+        *.html) local app="Chromium.app" ;;
+        *.txt)  local app="TextEdit.app" ;;
+        *.md)   local app="Marked 2.app" ;;
+        *) echo "File type unknown for file: \"$file\"." && return 1 ;;
+      esac
+    fi
+    echo "Opening file \"$file\"."
+    # continue
+    command open -a "$app" $file
+  done
 }
 # Environment variables
 export EDITOR=vim # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
+# Use this for watching log files
+alias watch="tail -f" # actually already is a watch command
+
+################################################################################
+# SHELL BEHAVIOR, KEY BINDINGS
+################################################################################
+# Readline/inputrc settings
+# Use Ctrl-R to search previous commands
+# Equivalent to putting lines in single quotes inside .inputrc
+# bind '"\C-i":glob-expand-word' # expansion but not completion
+complete -r # remove completions
+bind -r '"\C-i"'
+bind -r '"\C-d"'
+bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
+bind 'set disable-completion off'    # ensure on
+bind 'set completion-ignore-case on' # want dat
+bind 'set completion-map-case on'    # treat hyphens and underscores as same
+bind 'set show-all-if-ambiguous on'  # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+bind "set menu-complete-display-prefix on" # show string typed so far as 'member' while cycling through completion options
+bind 'set completion-display-width 1' # easier to read
+bind 'set bell-style visible'    # only let readlinke/shell do visual bell; use 'none' to disable totally
+bind '"\C-i": menu-complete'     # this will not pollute scroll history; better
+bind '"\e-1\C-i": menu-complete-backward' # this will not pollute scroll history; better
+bind '"\e[Z": "\e-1\C-i"'        # shift tab to go backwards
+# bind '"\C-i":glob-complete-word' # fix error where nothing is globbed
+bind '"\C-l": forward-char'
+bind '"\C-s": beginning-of-line' # match vim motions
+bind '"\C-e": end-of-line' # match vim motions
+bind '"\C-h": backward-char' # match vim motions
+bind '"\C-w": forward-word'  # requires
+bind '"\C-b": backward-word' # by default c-b moves back one word, and deletes it
+bind '"\C-k": menu-complete' # scroll through complete options
+bind '"\C-j": menu-complete-backward'
+stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
+stty stop undef   # no more ctrl-s
+stty eof undef    # no more ctrl-d
+# function bind() {
+#   if [ $# -eq 0 ]; then
+#     command bind -p | grep -F '\C'
+#   else
+#     echo "bind $@"
+#     command bind "$@"
+#   fi
+# }
+
+# Shell Options
+# Check out 'shopt -p' to see possibly interesting shell options
+# Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
+function opts() {
+  # Turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
+  set +H
+  # No more control-d closing terminal
+  set -o ignoreeof
+  # Disable start/stop output control
+  stty -ixon # note for putty, have to edit STTY value and set ixon to zero in term options
+  # Exit this script when encounter error, and print each command; useful for debugging
+  # set -ex
+  # Various shell options
+  shopt -s cmdhist                 # save multi-line commands as one command in shell history
+  shopt -s checkwinsize            # allow window resizing
+  shopt -u nullglob                # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+  shopt -u extglob                 # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -s dotglob                 # include dot patterns in glob matches
+  shopt -s direxpand               # include dot patterns in glob matches; relatively new
+  shopt -s dirspell                # attempt spelling correction of dirname
+  shopt -s cdspell                 # spelling errors during cd arguments
+  shopt -s cdable_vars             # cd into shell variable directories, no $ necessary
+  shopt -s nocaseglob              # case insensitive
+  shopt -s autocd                  # typing naked directory name will cd into it
+  shopt -s no_empty_cmd_completion # no more completion in empty terminal!
+  shopt -s histappend              # append to the history file, don't overwrite it
+  shopt -s cmdhist                 # save multi-line commands as one command
+  shopt -s globstar                # **/ matches all subdirectories, searches recursively
+  shopt -u failglob                # turn off failglob; so no error message if expansion is empty
+  # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
+  export HISTIGNORE="&:[ ]*:exit:ls *:ll *:cd *:source *:. *:bg *:fg *:history:clear" # don't record some commands
+  export PROMPT_DIRTRIM=2 # trim long paths in prompt
+  export HISTSIZE=50000
+  export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
+  export HISTCONTROL="erasedups:ignoreboth" # avoid duplicate entries
+}
+opts 2>/dev/null # ignore if option unavailable
+
+################################################################################
+# Aliases/functions for printing out information
+################################################################################
+# The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
+# The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
+alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+alias bindings_stty="stty -e"                # bindings
+alias functions="declare -F | cut -d' ' -f3" # show current shell functions
+alias inputrc_funcs="bind -l"                # the functions, for example 'forward-char'
+alias inputrc_ops="bind -v"                  # the 'set' options, and their values
+function env() { set; } # just prints all shell variables
+function cdo() {
+  if [ "$1" == "commands" ]; then
+    command cdo --operators | sed 's/[ \t]*(.*|.*)$//g'
+  else
+    command cdo "$@" # preserves spaces in filenames, e.g.
+  fi
+}
 
 ################################################################################
 # Magic changing stderr color
@@ -355,56 +426,30 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 # General utilties
 ################################################################################
 # Listing files
-# * To recursively search for string inside file, use grep -rn <string> <dir> (same as grep <string> <file>);
-#   to search filenames, use find <dir> -name <string> (weird find syntax).
 # * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
-# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones;
-#   we instead use the Mac default dircolors, and convert to Linux colors. Default mac
-#   colors were found with simple google search.
+# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones.
+# * We use the Mac default 'dircolors', and convert them to Linux colors.
+#   Default mac colors were found with simple google search.
+# * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
+#   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
+_mac_colors=false # use mac default, or Linux default?
 if $macos; then
-  export LSCOLORS='exfxcxdxbxegedabagacad'
+  $_mac_colors && export LSCOLORS='exfxcxdxbxegedabagacad' \
+    || export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
   lscolor='-G' && sortcmd='gsort' # GNU utilities, different from mac versions
 else
-#   export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:'\
-# 'or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
-  export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43'
+  $_mac_colors && export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
+    || export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
   lscolor='--color=always' && sortcmd='sort'
 fi
 alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
 ! $macos && alias cd="cd -P" # don't want this on my mac temporarily
 
-# Grepping and diffing; enable colors
-alias grep="grep --color=auto" # always show color
-alias egrep="egrep --color=auto" # always show color
-# Make Perl color wrapper default; also allow color difference with git
-# Note to recursively compare directories, use --name-status
-hash colordiff 2>/dev/null && alias diff="command colordiff"
-hash git 2>/dev/null && alias delta="git diff --no-index --color"
-
-# Controlling and viewing running processes
-alias pt="top" # mnemonically similar to 'ps'; table of processes, total
-alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
-function listjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; ps | grep "$1" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs; }
-  # list jobs by name
-function killjobs() { [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1; for str in $@; do echo "Killing $str jobs..."; kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null; done; }
-  # kill jobs by name
-
-# Scripting utilities
-alias tac="gtac" # use dis
-function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
-function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
-function empty() { for i in {1..100}; do echo; done; }
-
-# Meta tools
-alias aliases="alias" # without argument, lists all of them
-alias functions="declare -F"
-alias bindings="bind -p | egrep '\\\\e|\\\\C' | grep -v 'do-lowercase-version' | sort" # print keybindings
-alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
-
 # Information on directories
 alias df="df -h" # disk useage
 alias eject="diskutil unmount" # eject disk on macOS
+! $macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
@@ -414,17 +459,77 @@ function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
 }
-function dd() { # difference directories; input two directory names
+
+# Grepping and diffing; enable colors
+alias grep="grep --color=auto" # always show color
+alias egrep="egrep --color=auto" # always show color
+# Make Perl color wrapper default; also allow color difference with git
+# Note to recursively compare directories, use --name-status
+hash colordiff 2>/dev/null && alias diff="command colordiff"
+
+# Controlling and viewing running processes
+alias pt="top" # mnemonically similar to 'ps'; table of processes, total
+alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
+function listjobs() {
+  # [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1
+  ps | grep "$1" | grep -v PID | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs
+} # list jobs by name
+function killjobs() {
+  [ $# -eq 0 ] && echo "Error: Must specify grep pattern(s)." && return 1
+  for str in $@; do
+    echo "Killing $str jobs..."
+    kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null
+  done
+} # kill jobs by name
+
+# Scripting utilities
+alias tac="gtac" # use dis
+function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
+function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
+function empty() { for i in {1..100}; do echo; done; }
+
+# Differencing stuff, similar git commands stuff
+# First use git as the difference engine; disable color
+# Color not useful anyway; is just bold white, and we delete those lines
+function discrep() {
+  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
+  git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
+    | egrep '(files|differ)' # add to these
+}
+# Next use builtin diff command as engine
+# *Different* files
+# The last grep command is to highlight important parts
+function delta() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
-    | egrep '(Only in.*:|Files | and | differ | identical)'
+    | egrep '(Only in.*:|Files | and |differ| identical)'
 }
-function di() { # identical files in two directories
+# *Identical* files in two directories
+function idelta() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
-    | egrep '(Only in.*:|Files | and | differ | identical)'
+    | egrep '(Only in.*:|Files | and | differ| identical)'
+}
+# Merge fileA and fileB into merge.{ext}
+# See this answer: https://stackoverflow.com/a/9123563/4970632
+function merge() {
+  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
+  [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
+  [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
+  local ext=.${1##*.}
+  [ $ext == "." ] && local ext="" # no extension
+  touch tmp$ext # use empty file as the 'root' of the merge
+  cp $1 backup$ext
+  git merge-file $1 tmp$ext $2 # will write to file 1
+  mv $1 merge$ext
+  mv backup$ext $1
+  rm tmp$ext
+  echo "Files merged into \"merge$ext\"."
 }
 
+################################################################################
+# More Colors
+################################################################################
 # Tool for changing iTerm2 profile before command executed, and returning
 # after executed (e.g. interactive prompts)
 function cmdcolor() {
@@ -454,8 +559,7 @@ export LESS="--RAW-CONTROL-CHARS"
 [ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
   export LESS_TERMCAP_mb=$(tput setaf 2) # 2=green
-  export LESS_TERMCAP_md=$(tput setaf 6) # cyan
-    # took off "bold" for these; was too light
+  export LESS_TERMCAP_md=$(tput setaf 6) # cyan; took off "bold" for these; was too light
   export LESS_TERMCAP_me=$(tput sgr0)
   export LESS_TERMCAP_so=$(tput bold; tput setaf 3; tput setab 4) # yellow on blue
   export LESS_TERMCAP_se=$(tput rmso; tput sgr0)
@@ -532,7 +636,7 @@ alias suser="squeue -u $USER"
 ################################################################################
 # For profiling scripts
 alias profile="python -m cProfile -s time"
-# Interactive shell utilities
+# Python shell utilities
 # io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
 io="import pandas as pd; import xarray as xr; "
 basic="import numpy as np; from datetime import datetime; from datetime import date; "
@@ -540,18 +644,52 @@ magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autorelo
 plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
 pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
 alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
+# Other shell utilities
+# Simple thing for R
+# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
+# * The ---always-readline prevents prompt from switching to the default prompt, but
+#   also seems to disable ctrl-d for exiting.
+alias r="R"   # because why not?
+alias ir="iR" # again, why not?
+function iR() {
+  echo 'This is an Interactive R shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  R -q --no-save # keep it simple stupid
+  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
+}
+# NCL -- and a couple other things
+# Binding thing doesn't work (cause it's not passed to shell), but was neat idea
+function incl() {
+  # local binding_old="$(bind -Xps | grep C-d)" # print every kind of binding; flags are different kinds
+  echo "This is an Interactive NCL shell."
+  ncl -Q -n
+  # bind '"\C-d":"exit()\C-m"'
+  # bind "$binding_old" # spaces gotta be escaped
+}
+# Perl -- hard to understand, but here it goes:
+# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
+# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
+#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
+#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
+#   for success, and if not, prints the error message. This is a build-your-own eval.
+function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+  echo 'This is an Interactive Perl shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
+}
+alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$io$basic$magic$plots$pyfuncs\""
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
 # With new shell color
 # alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
 # alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
 # alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
 # alias R="cmdcolor R"
-# Without new shell color
-unalias R 2>/dev/null
-alias iworkspace="ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-alias perl="perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
 
-# Jupyter notebook aliases
+################################################################################
+# NOTEBOOK STUFF
+################################################################################
 # * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
 # * IMPORTANT note: to uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
@@ -704,10 +842,8 @@ function title_update() {
   fi
 }
 # New window; might have closed one and opened another, so declare new title
-[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && \
-  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; title_update" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
-$macos && [ -n "$TERM_SESSION_ID" ] && \
-  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
+[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
+$macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
 
 ################################################################################
 # SSH, session management, and Github stuff
@@ -863,6 +999,7 @@ function ssh_wrapper() {
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
+  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
   [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
   local port=$(cat $portfile) # port from most recent login
@@ -876,6 +1013,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
+  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
   [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
   local port=$(cat $portfile) # port from most recent login
@@ -915,6 +1053,7 @@ function wordcount() {
 }
 # Our presentation software; install with commented line below from: http://pygobject.readthedocs.io/en/latest/getting_started.html
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
+# Other tools: "impressive", and "presentation"; both should be in $HOME/bin
 alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
 ################################################################################
@@ -1011,7 +1150,7 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
 }
 function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  local args=($@)
+  local args=("$@")
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
@@ -1022,7 +1161,7 @@ function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
 function ncvartable() { # as above but show everything
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  local args=($@)
+  local args=("$@")
   local args=(${args[@]:2}) # extra arguments
   echo ${args[@]}
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
@@ -1059,6 +1198,15 @@ function extract() {
 ################################################################################
 # Utilities handling media and PDF files
 ################################################################################
+# Fun stuff
+alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
+alias weather="curl wttr.in/Fort\ Collins" # list weather information
+
+# Opening commands for some GUI apps
+alias edit='\open -a TextEdit'
+alias html='\open -a Google\ Chrome'
+alias pdf='\open -a Skim'
+
 # Extracting PDF annotations
 function unannotate() {
   local original=$1
@@ -1069,15 +1217,6 @@ function unannotate() {
   pdftk stripped.pdf output $final compress
   rm uncompressed.pdf stripped.pdf
 }
-
-# Opening commands for some GUI apps
-alias edit='\open -a TextEdit'
-alias html='\open -a Google\ Chrome'
-alias pdf='\open -a Skim'
-
-# Fun stuff
-alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
-alias weather="curl wttr.in/Fort\ Collins" # list weather information
 
 # Sync a local directory with files on SD card
 # This function will only modify files on the SD card, never the local directory
@@ -1142,6 +1281,101 @@ function sdsync() {
   # Record in Playlist when last sync occurred
   date +%s >> "$locloc/sdlog"
 }
+
+################################################################################
+# SHELL INTEGRATION; iTerm2 feature only
+################################################################################
+# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
+# They are super annoying and useless
+if [ -f ~/.iterm2_shell_integration.bash ]; then
+   source ~/.iterm2_shell_integration.bash
+   echo "Enabled shell integration."
+fi
+
+################################################################################
+# FZF FUZZY FILE COMPLETION TOOL
+# FZF INSTALLED AS SUBMODULE, AND HAVE MADE MY OWN EDITS; JUST USE GIT TO SYNC
+# ANY NEW UPDATES
+################################################################################
+# Run installation script; similar to the above one
+if [ -f ~/.fzf.bash ]; then
+  # See man page for --bind information
+  # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
+  #   key bindings will enabled multiple selection
+  # * Also very important, bind slash to accept, so now the behavior is very similar
+  #   to behavior of normal bash shell completion
+  # * Inline info puts the number line thing on same line as text. More compact.
+  _opts=' --select-1 --exit-0 --inline-info --height=6 --layout=default --bind=tab:accept,shift-tab:cancel,/:accept'
+  # Custom options
+  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
+  export FZF_COMPLETION_COMMAND_OPTS=" -maxdepth 1 "
+  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
+  export FZF_COMPLETION_FILE_COMMANDS="" # add commands here
+  # The builtin options next
+  _command='' # use find . -maxdepth 1 search non recursively
+  export FZF_DEFAULT_COMMAND="$_command"
+  export FZF_CTRL_T_COMMAND="$_command"
+  export FZF_ALT_C_COMMAND="$_command"
+  # Options
+  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
+  export FZF_DEFAULT_OPTS="$_opts"
+  export FZF_CTRL_T_OPTS="$_opts"
+  export FZF_ALT_C_OPTS="$_opts"
+  # Source file
+  complete -r # reset first
+  source ~/.fzf.bash
+  #----------------------------------------------------------------------------#
+  # Create custom bindings
+  # Use below to bind ctrl t command
+  # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
+  # Next bind alt c command to ctrl f
+  # Also bind generic file finder to tab keyt c
+  bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
+  # Add a few basic completion options
+  # First set the default ones
+  _complete_path=$(complete | grep 'rm$' | sed 's/complete//;s/rm//')
+  complete -E # when line empty, perform no complection (options empty)
+  # complete -D $_complete_path # ideal, but this seems to break stuff
+  #----------------------------------------------------------------------------#
+  # Generate list of all executables, and use fzf path completion by default
+  # for almost all of them
+  # WARNING: BOLD MOVE COTTON.
+  echo "Setting up completion."
+  _ignore="^\\($(echo "echo \\[ \\[\\[ cdo git fzf $FZF_COMPLETION_DIR_COMMANDS" | sed 's/ /\\|/g')\\)$"
+  if [ ! -r "$HOME/.commands" ]; then
+    echo "Recording available commands."
+    compgen -c | grep -v $_ignore >$HOME/.commands # will include aliases and functions
+  fi
+  complete $_complete_path $(cat $HOME/.commands | xargs)
+  #----------------------------------------------------------------------------#
+  # Old commands for filtering completion options; now it seems the -X filter
+  # is ignored, as the function supplies all completion options
+  # complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
+  # complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
+  # complete -f -X '!*.pdf' skim              # changes behavior of my alias "skim"; shows only
+  # complete -f -X '!*.tex' -o plusdirs latex
+  # complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
+  # complete -f -o plusdirs mv # some shells disable tab-completion of dangerous commands; re-enable
+  # complete -f -o plusdirs rm
+  # Specific completion options
+  _fzf_complete_git() {
+     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
+     git commands # should be an alias that lists commands
+    )
+  }
+  _fzf_complete_cdo() {
+     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
+     cdo commands | cut -d' ' -f1 # should be an alias that lists commands
+    )
+  }
+  # Apply them as completion commands
+  for _command in cdo git; do
+    complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+  done
+  #----------------------------------------------------------------------------#
+  # Finished
+  echo "Enabled fuzzy file completion."
+fi
 
 ################################################################################
 # Message

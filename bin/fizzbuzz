@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+import sys
+defs = {3:'fizz', 5:'buzz', 7:'bash', 9:'blorp', 12:'blop'}
+n = 100 if len(sys.argv)==1 else int(sys.argv[1])
+for i in range(0,n):
+    out = ""
+    for num,word in defs.items():
+        if i%num==0:
+            out += word
+    if not out:
+        print(i)
+    else:
+        print(out)
+
