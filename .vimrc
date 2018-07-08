@@ -859,7 +859,8 @@ if has_key(g:plugs, "ctrlp.vim")
   "note next map made useful by making iTerm translate c-[ as F2
   nnoremap <silent> <F2> :call <sid>ctrlpwrap()<CR>
   nnoremap <silent> <C-p> :EIon<CR>:CtrlP<CR>:EImap<CR>
-  let g:ctrlp_map=''
+  let g:ctrlp_map='' "disable default map; will use my special map
+  let g:ctrlp_max_depth=5 "honestly, rarely need many
   let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
   let g:ctrlp_show_hidden=1
   let g:ctrlp_by_filename=0
