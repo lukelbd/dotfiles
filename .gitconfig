@@ -22,7 +22,9 @@
 # 'ignore':
 #   stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
-#   the find command must be different in this case; 
+#   the find command must be different in this case; mindepth of 1 excludes
+#   the root directory (i.e. the subfolder itself), and maxdepth prevents any
+#   unnecessary recursion
 # 'status':
 #   now show in short format, without help information, and with branch info
 # 'fix':
