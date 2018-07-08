@@ -57,6 +57,14 @@ augroup escapefix
   au!
   au InsertLeave * normal! `^
 augroup END
+"##############################################################################"
+"ALWAYS NAVIGATE BY word, GOT DAMNIT
+"See: https://superuser.com/a/1150645/506762
+"Some plugins make periods part of 'word' motions, which sucks balls
+augroup keywordfix
+  au!
+  au BufEnter * set iskeyword=65-90,95,97-122,48-57 "the same: a-z,_,A-Z,0-9
+augroup END
 "###############################################################################
 "USEFUL TOOLS THAT REQUIRE THEIR OWN FUNCTIONS
 "Function for escaping current delimiter
