@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Simple script; pass this a string and it will create a confirm prompt, waiting
+# for user to answer and returning corresponding exit code
+# If called interactively (e.g. the script is sourced), make sure to 'return', not 'exit'
+[[ $- == *i* ]] && action="return" || action="exit"
+[[ -z "$@" ]] && prompt="Confirm" || prompt="$@"
+while true; do
+  read -r -p "$prompt ([y]/n) " response
+  if [ ! -z "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
+    echo "Invalid response."
+    continue # invalid, so try again
+  fi
+  if [[ "$response" =~ ^[Nn]$ ]]; then # answer is either yes, no, or blank (i.e. yes)
+    $action 1 # 'bad' exit, i.e. no
+  else
+    $action 0 # 'good' exit, i.e. yes
+  fi
+done

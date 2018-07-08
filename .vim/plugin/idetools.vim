@@ -48,7 +48,11 @@ augroup END
 function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!
    return a:i1 - a:i2
 endfunc
-function! s:ctags(command)
+function! s:ctags(...)
+  let dry_run=0
+  if a:0
+    let dry_run=a:1
+  endif
   let b:ctags=[] "return these empty values upon error
   let b:ctaglines=[]
   let ignoretypes=["tagbar","nerdtree"]
@@ -73,16 +77,15 @@ function! s:ctags(command)
   "Add the sed line to include all items, not just top-level items
   "Currently is added
   " \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-  if a:command "just return command
+  if dry_run "just return command
     "if table wasn't produced and this is just stderr text then don't tabulate (-s)
     return "ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." "
       \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
       \."| cut -s -d$'\t' -f1,3-" "ignore filename field, delimit by literal tabs
-  else "save then sort
-    let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
-      \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-      \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
   endif
+  let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
+    \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
+    \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
   if len(ctags)==0 | return | endif
   "Get ctag lines and sort them by number
   " echom join(ctags,',')
@@ -112,8 +115,17 @@ function! s:ctagjump(regex)
   endfor
   echo "Warning: Ctag regex not found."
 endfunction
-nnoremap <silent> <expr> <Leader><Space> ':call <sid>ctagjump("'.input('Enter ctag regex: ').'")<CR>'
-" nnmap <buffer> <expr> <Leader><Space> ":TagbarOpen<CR>:wincmd l<CR>/".input("Enter ctag regex: ")."<CR>:noh<CR><CR>"
+function! s:ctaglist(A,B,C)
+  let choices=[]
+  for ctag in b:ctags
+    if ctag[1:-2] =~# a:A "regex matching case
+      call add(choices, ctag[1:-2]) "ignore leading ^/$
+    endif
+  endfor
+  return choices "super simple
+endfunction
+nnoremap <silent> <Leader><Space> :call <sid>ctags(0)<CR>:call <sid>ctagjump(input('Enter ctag (tab to reveal options): ', '', 'customlist,<sid>ctaglist'))<CR>
+" nnmap <buffer> <Leader><Space> :TagbarOpen<CR>:wincmd l<CR>:call search(input('Enter ctag regex: '))<CR>:noh<CR>
 "------------------------------------------------------------------------------"
 "Next jump between subsequent ctags with [[ and ]]
 function! s:ctagbracket(foreward, n)
