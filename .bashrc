@@ -432,18 +432,24 @@ function cdo() {
 #   Default mac colors were found with simple google search.
 # * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
 #   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
-_mac_colors=false # use mac default, or Linux default?
 if $macos; then
-  $_mac_colors && export LSCOLORS='exfxcxdxbxegedabagacad' \
-    || export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
-  lscolor='-G' && sortcmd='gsort' # GNU utilities, different from mac versions
+  _ls_command=gls
+  _dc_command=gdircolors
+  _sort_command=gsort
 else
-  $_mac_colors && export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
-    || export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
-  lscolor='--color=always' && sortcmd='sort'
+  _ls_command=ls
+  _dc_command=dircolors
+  _sort_command=sort
 fi
-alias ls="ls $lscolor -AF"   # ls useful (F differentiates directories from files)
-alias ll="ls $lscolor -AFhl" # ls "list", just include details and file sizes
+# Default mac colors
+# LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
+# LSCOLORS='exfxcxdxbxegedabagacad' \
+# Default linux colors
+# LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
+# export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
+# Apply ls
+alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
+alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 ! $macos && alias cd="cd -P" # don't want this on my mac temporarily
 
 # Information on directories
@@ -453,11 +459,11 @@ alias eject="diskutil unmount" # eject disk on macOS
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
-  command ls $lscolor -A -d $dir*/
+  command $_ls_command --color=always -A -d $dir*/
 }
 function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $sortcmd -sh
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $_sort_command -sh
 }
 
 # Grepping and diffing; enable colors
@@ -1199,7 +1205,7 @@ function extract() {
 # Utilities handling media and PDF files
 ################################################################################
 # Fun stuff
-alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $sortcmd -sn | $sortcmd -sn -r -k 2,1"
+alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $_sort_command -sn | $_sort_command -sn -r -k 2,1"
 alias weather="curl wttr.in/Fort\ Collins" # list weather information
 
 # Opening commands for some GUI apps
