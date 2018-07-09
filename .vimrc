@@ -1768,22 +1768,26 @@ nnoremap <silent> <Leader>S :w \| filetype detect \| so ~/.vimrc<CR>:echom "Refr
 "Undo these maps to avoid confusion
 noremap gt <Nop>
 noremap gT <Nop>
-function! s:commentjump(backwards) "jump to next comment
-  let flag='Wn' "don't wrap around EOF, and don't jump yet
-  if a:backwards | let flag.='b' | normal! k
-  endif
-  let line=search('^\s*'.b:NERDCommenterDelims['left'],flag)
-  exe 'normal! 'mode()
-  if line==0 | echom "No more comments."
-  else | exe line
-  endif
-  return ''
-endfunction
 "Jumping between comments; pretty neat huh?
-"the gc 'does' nothing (maps gc/gC to empty string), but function will move cursor
-"in whatever mode you want
-noremap <expr> <silent> gc ''.<sid>commentjump(0)
-noremap <expr> <silent> gC ''.<sid>commentjump(1)
+"Moves cursor in whatever mode you want
+"Also, jump between empty lines
+function! s:smartjump(regex,backwards) "jump to next comment
+  let startline=line('.')
+  let flag=(a:backwards ? 'Wnb' : 'Wn') "don't wrap around EOF, and don't jump yet
+  let offset=(a:backwards ? 1 : -1) "actually want to jump to line *just before* comment
+  let commentline=search(a:regex,flag)
+  if getline('.') =~# a:regex
+    return startline
+  elseif commentline==0
+    return startline "don't move
+  else
+    return commentline+offset
+  endif
+endfunction
+noremap <expr> <silent> gc <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],0).'gg'
+noremap <expr> <silent> gC <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],1).'gg'
+noremap <expr> <silent> ge <sid>smartjump('^\s*$',0).'gg'
+noremap <expr> <silent> gE <sid>smartjump('^\s*$',1).'gg'
 "Select all maps
 nnoremap gG ggVG
 vnoremap gG <Esc>ggVG
