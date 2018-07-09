@@ -445,8 +445,13 @@ fi
 # LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
 # LSCOLORS='exfxcxdxbxegedabagacad' \
 # Default linux colors
-# LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
-# export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
+export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
+export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
+# Custom linux colors
+if [ -r "$HOME/.dircolors.ansi" ]; then
+  echo FART
+  eval "$($_dc_command $HOME/.dircolors.ansi)"
+fi
 # Apply ls
 alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
