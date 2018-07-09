@@ -185,14 +185,18 @@ ORPHAN  05;37;41
 # ... and the files that orphaned symlinks point to (blinking white on red)
 MISSING 05;37;41
 
-# files with execute permission
-EXEC 01;31  # Unix
-.cmd 01;31  # Win
-.exe 01;31  # Win
-.com 01;31  # Win
-.bat 01;31  # Win
-.reg 01;31  # Win
-.app 01;31  # OSX
+### Compiled binary stuff
+EXEC 01;35  # Unix
+.cmd 01;35  # Win
+.exe 01;35  # Win
+.com 01;35  # Win
+.bat 01;35  # Win
+.reg 01;35  # Win
+.app 01;35  # OSX
+.o   01;35
+.out 01;35
+.exe 01;35
+.x   01;35
 
 #############################################################################
 ### By extension
@@ -200,12 +204,23 @@ EXEC 01;31  # Unix
 # to colorize below. Put the extension, a space, and the color init string.
 # (and any comments you want to add after a '#')
 
-### Text formats
+### Text files and readmes and stuff
+.txt    34
+.org    34
+.md     34
+.htm    34
+.html   34
+.shtml  34
+.haml   34
+.css    34
+.sass   34
+.scss   34
+.less   34
+.man    34
+.tex    34
+
+### Code files
 # Text that we can edit with a regular editor
-.txt    31
-.org    31
-.md     31
-.mkd    31
 .ncl    31
 .nco    31
 .f77    31
@@ -237,41 +252,19 @@ EXEC 01;31  # Unix
 .pl     31
 .pm     31
 .py     31
+.pyc    31
+.pyx    31
 .rb     31
 .hs     31
 .php    31
-.htm    31
-.html   31
-.shtml  31
 .erb    31
-.haml   31
-.xml    31
-.rdf    31
-.css    31
-.sass   31
-.scss   31
-.less   31
 .js     31
 .coffee 31
-.man    31
-.0      31
-.1      31
-.2      31
-.3      31
-.4      31
-.5      31
-.6      31
-.7      31
-.8      31
-.9      31
 .l      31
 .n      31
 .p      31
 .pod    31
-.tex    31
 .go     31
-.sql    31
-.csv    31
 .sv     31
 .svh    31
 .v      31
@@ -379,33 +372,34 @@ EXEC 01;31  # Unix
 .psd  31
 
 # Archives, compressed
-.7z   1;35
-.apk  1;35
-.arj  1;35
-.bin  1;35
-.bz   1;35
-.bz2  1;35
-.cab  1;35  # Win
-.deb  1;35
-.dmg  1;35  # OSX
-.gem  1;35
-.gz   1;35
-.iso  1;35
-.jar  1;35
-.msi  1;35  # Win
-.rar  1;35
-.rpm  1;35
-.tar  1;35
-.tbz  1;35
-.tbz2 1;35
-.tgz  1;35
-.tx   1;35
-.war  1;35
-.xpi  1;35
-.xz   1;35
-.z    1;35
-.Z    1;35
-.zip  1;35
+# Bright cyan, like directories are bright blue
+.7z   1;36
+.apk  1;36
+.arj  1;36
+.bin  1;36
+.bz   1;36
+.bz2  1;36
+.cab  1;36  # Win
+.deb  1;36
+.dmg  1;36  # OSX
+.gem  1;36
+.gz   1;36
+.iso  1;36
+.jar  1;36
+.msi  1;36  # Win
+.rar  1;36
+.rpm  1;36
+.tar  1;36
+.tbz  1;36
+.tbz2 1;36
+.tgz  1;36
+.tx   1;36
+.war  1;36
+.xpi  1;36
+.xz   1;36
+.z    1;36
+.Z    1;36
+.zip  1;36
 
 # For testing
 .ANSI-30-black 30
@@ -438,14 +432,28 @@ EXEC 01;31  # Unix
 *~   01;00
 *# 01;00
 
-# Instead use it for data files, looks good
-.nc  36
-.grb 36
-.npz 36
-.npy 36
-.csv 36
-# .nc  1;35
-# .grb 1;35
-# .npz 1;35
-# .npy 1;35
+# Database files
+.nc    36
+.ascii 36
+.shp   36
+.grb   36
+.grib  36
+.df    36
+.hdf   36
+.h4    36
+.hdf4  36
+.h5    36
+.hdf5  36
+.npz   36
+.npy   36
+.pkl   36
+.csv   36
+.data  36
+.tbl   36
+.table 36
+.rdf   36
+.json  36
+.xml   36
+.sql   36
+.mkd   36
 
