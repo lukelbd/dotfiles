@@ -163,7 +163,7 @@ NORMAL 00
 # normal file
 FILE 00
 # directory
-DIR 36
+DIR 01;34
 # XX2, XX3, XX6, and XX7 directories
 OTHER_WRITABLE 34;47
 # symbolic link
@@ -202,167 +202,161 @@ EXEC 01;31  # Unix
 
 ### Text formats
 # Text that we can edit with a regular editor
-.txt 32
-.org 32
-.md  32
-.mkd 32
-
-# Unknown extensions for weird scientists
-.ncl 32
-.nco 32
-.f77 32
-.f90 32
-.f03 32
-.f08 32
-.f   32
-.F77 32
-.F90 32
-.F03 32
-.F08 32
-.F   32
-
-# Source text
-.h      32
-.hpp    32
-.c      32
-.C      32
-.cc     32
-.cpp    32
-.cxx    32
-.objc   32
-.cl     32
-.sh     32
-.bash   32
-.csh    32
-.zsh    32
-.el     32
-.vim    32
-.java   32
-.pl     32
-.pm     32
-.py     32
-.rb     32
-.hs     32
-.php    32
-.htm    32
-.html   32
-.shtml  32
-.erb    32
-.haml   32
-.xml    32
-.rdf    32
-.css    32
-.sass   32
-.scss   32
-.less   32
-.js     32
-.coffee 32
-.man    32
-.0      32
-.1      32
-.2      32
-.3      32
-.4      32
-.5      32
-.6      32
-.7      32
-.8      32
-.9      32
-.l      32
-.n      32
-.p      32
-.pod    32
-.tex    32
-.go     32
-.sql    32
-.csv    32
-.sv     32
-.svh    32
-.v      32
-.vh     32
-.vhd    32
+.txt    31
+.org    31
+.md     31
+.mkd    31
+.ncl    31
+.nco    31
+.f77    31
+.f90    31
+.f03    31
+.f08    31
+.f      31
+.F77    31
+.F90    31
+.F03    31
+.F08    31
+.F      31
+.h      31
+.hpp    31
+.c      31
+.C      31
+.cc     31
+.cpp    31
+.cxx    31
+.objc   31
+.cl     31
+.sh     31
+.bash   31
+.csh    31
+.zsh    31
+.el     31
+.vim    31
+.java   31
+.pl     31
+.pm     31
+.py     31
+.rb     31
+.hs     31
+.php    31
+.htm    31
+.html   31
+.shtml  31
+.erb    31
+.haml   31
+.xml    31
+.rdf    31
+.css    31
+.sass   31
+.scss   31
+.less   31
+.js     31
+.coffee 31
+.man    31
+.0      31
+.1      31
+.2      31
+.3      31
+.4      31
+.5      31
+.6      31
+.7      31
+.8      31
+.9      31
+.l      31
+.n      31
+.p      31
+.pod    31
+.tex    31
+.go     31
+.sql    31
+.csv    31
+.sv     31
+.svh    31
+.v      31
+.vh     31
+.vhd    31
 
 ### Multimedia formats
 # Image
-.bmp  01;33
-.cgm  01;33
-.dl   01;33
-.dvi  01;33
-.emf  01;33
-.eps  01;33
-.gif  01;33
-.jpeg 01;33
-.jpg  01;33
-.JPG  01;33
-.mng  01;33
-.pbm  01;33
-.pcx  01;33
-.pdf  01;33
-.pgm  01;33
-.png  01;33
-.PNG  01;33
-.ppm  01;33
-.pps  01;33
-.ppsx 01;33
-.ps   01;33
-.svg  01;33
-.svgz 01;33
-.tga  01;33
-.tif  01;33
-.tiff 01;33
-.xbm  01;33
-.xcf  01;33
-.xpm  01;33
-.xwd  01;33
-.xwd  01;33
-.yuv  01;33
-
+.bmp  33
+.cgm  33
+.dl   33
+.dvi  33
+.emf  33
+.eps  33
+.gif  33
+.jpeg 33
+.jpg  33
+.JPG  33
+.mng  33
+.pbm  33
+.pcx  33
+.pdf  33
+.pgm  33
+.png  33
+.PNG  33
+.ppm  33
+.pps  33
+.ppsx 33
+.ps   33
+.svg  33
+.svgz 33
+.tga  33
+.tif  33
+.tiff 33
+.xbm  33
+.xcf  33
+.xpm  33
+.xwd  33
+.xwd  33
+.yuv  33
 # Audio
-.aac  01;33
-.au   01;33
-.flac 01;33
-.m4a  01;33
-.mid  01;33
-.midi 01;33
-.mka  01;33
-.mp3  01;33
-.mpa  01;33
-.mpeg 01;33
-.mpg  01;33
-.ogg  01;33
-.opus 01;33
-.ra   01;33
-.wav  01;33
-
+.aac  33
+.au   33
+.flac 33
+.m4a  33
+.mid  33
+.midi 33
+.mka  33
+.mp3  33
+.mpa  33
+.mpeg 33
+.mpg  33
+.ogg  33
+.opus 33
+.ra   33
+.wav  33
 # Video
-.anx  01;33
-.asf  01;33
-.avi  01;33
-.axv  01;33
-.flc  01;33
-.fli  01;33
-.flv  01;33
-.gl   01;33
-.m2v  01;33
-.m4v  01;33
-.mkv  01;33
-.mov  01;33
-.MOV  01;33
-.mp4  01;33
-.mp4v 01;33
-.mpeg 01;33
-.mpg  01;33
-.nuv  01;33
-.ogm  01;33
-.ogv  01;33
-.ogx  01;33
-.qt   01;33
-.rm   01;33
-.rmvb 01;33
-.swf  01;33
-.vob  01;33
-.webm 01;33
-.wmv  01;33
+.anx  33
+.asf  33
+.avi  33
+.axv  33
+.flc  33
+.fli  33
+.flv  33
+.gl   33
+.m2v  33
+.m4v  33
+.mkv  33
+.mov  33
+.MOV  33
+.mp4  33
+.mp4v 33
+.mpeg 33
+.mpg  33
+.nuv  33
+.ogm  33
+.ogv  33
+.ogx  33
+.qt   33
+.rm   33
+.rmvb 33
+.swf  33
+.vob  33
+.webm 33
+.wmv  33
 
 ### Misc
 # Binary document formats and multimedia source
@@ -433,13 +427,9 @@ EXEC 01;31  # Unix
 
 #############################################################################
 # Your customizations
-
-# Unimportant text files
+# Unimportant text files; enforce white
 # For universal scheme, use brightgreen 01;32
 # For optimal on light bg (but too prominent on dark bg), use white 01;34
-#.log 01;32
-#*~ 01;32
-#*# 01;32
 # .log 01;34
 # *~   01;34
 # *# 01;34
@@ -448,58 +438,14 @@ EXEC 01;31  # Unix
 *~   01;00
 *# 01;00
 
-# Unimportant non-text files
-# For universal scheme, use brightcyan 01;36
-# For optimal on dark bg (but too prominent on light bg), change to 01;33
-# This is stupid because why in the fuck would you highlight 'unimportant' files?
-# .bak 01;36
-# .BAK 01;36
-# .old 01;36
-# .OLD 01;36
-# .org_archive 01;36
-# .off 01;36
-# .OFF 01;36
-# .dist 01;36
-# .DIST 01;36
-# .orig 01;36
-# .ORIG 01;36
-# .swp 01;36
-# .swo 01;36
-# *,v 01;36
-#.bak 01;33
-#.BAK 01;33
-#.old 01;33
-#.OLD 01;33
-#.org_archive 01;33
-#.off 01;33
-#.OFF 01;33
-#.dist 01;33
-#.DIST 01;33
-#.orig 01;33
-#.ORIG 01;33
-#.swp 01;33
-#.swo 01;33
-#*,v 01;33
-
 # Instead use it for data files, looks good
-.nc  01;36
-.grb 01;36
-.npz 01;36
-.npy 01;36
-.csv 01;36
+.nc  36
+.grb 36
+.npz 36
+.npy 36
+.csv 36
 # .nc  1;35
 # .grb 1;35
 # .npz 1;35
 # .npy 1;35
-
-# The brightmagenta (Solarized: purple) color is free for you to use for your
-# custom file type
-.gpg    34
-.gpg    34
-.pgp    34
-.asc    34
-.3des   34
-.aes    34
-.enc    34
-.sqlite 34
 
