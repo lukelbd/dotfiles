@@ -194,14 +194,14 @@ function prompt_append() { # input argument should be new command
 # so we alias that as command prefix (don't want to change global path cause it
 # messes other shit up, maybe homebrew)
 function help() {
-  [ -z $1 ] && echo "Requires one argument." && return 1
-  if builtin help $1 &>/dev/null; then
-    builtin help $1 2>&1 | less
-  # elif [ ! -z "$($1 --help 2>&1)" ]; then # sometimes prints stuff and returns non-zero exit code, but usually text is in stderr
-  elif eval "$env $1 --help" &>/dev/null; then
-    eval "$env $1 --help" 2>&1 | less # combine output streams or can get weird error
+  local arg="$@"
+  [ -z "$arg" ] && echo "Requires argument." && return 1
+  if builtin help "$arg" &>/dev/null; then
+    builtin help "$arg" 2>&1 | less
+  elif $arg --help &>/dev/null; then
+    $arg --help 2>&1 | less # combine output streams or can get weird error
   else
-    echo "No help information for \"$1\"."
+    echo "No help information for \"$arg\"."
   fi
 }
 # Man page wrapper
@@ -210,6 +210,8 @@ function man() { # always show useful information when man is called
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+  local arg="$@"
+  [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
   [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
     if $macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
@@ -374,13 +376,6 @@ alias functions="declare -F | cut -d' ' -f3" # show current shell functions
 alias inputrc_funcs="bind -l"                # the functions, for example 'forward-char'
 alias inputrc_ops="bind -v"                  # the 'set' options, and their values
 function env() { set; } # just prints all shell variables
-function cdo() {
-  if [ "$1" == "commands" ]; then
-    command cdo --operators | sed 's/[ \t]*(.*|.*)$//g'
-  else
-    command cdo "$@" # preserves spaces in filenames, e.g.
-  fi
-}
 
 ################################################################################
 # Magic changing stderr color
@@ -1375,19 +1370,24 @@ if [ -f ~/.fzf.bash ]; then
   # complete -f -o plusdirs mv # some shells disable tab-completion of dangerous commands; re-enable
   # complete -f -o plusdirs rm
   # Specific completion options
-  _fzf_complete_git() {
-     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
-     git commands # should be an alias that lists commands
+  _opts_custom="$(echo $_opts | sed 's/--select-1//g')"
+  _fzf_complete_git() { # git commands be an alias that lists commands
+    _fzf_complete "$_opts_custom" "$@" < <(
+    git commands
     )
   }
   _fzf_complete_cdo() {
-     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
-     cdo commands | cut -d' ' -f1 # should be an alias that lists commands
+    _fzf_complete "$_opts_custom" "$@" < <(
+    cdo --operators
     )
+  }
+  _fzf_complete_cdo_post() { # must be used with pipe
+    cat /dev/stdin | cut -d' ' -f1
   }
   # Apply them as completion commands
   for _command in cdo git; do
-    complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+    # complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+    complete -F _fzf_complete_$_command $_command
   done
   #----------------------------------------------------------------------------#
   # Finished

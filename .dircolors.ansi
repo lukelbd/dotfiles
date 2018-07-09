@@ -32,15 +32,13 @@
 #   And blue is kept for custom use of this scheme's user.
 # - See table below to see the assignments.
 
-
 # Installation instructions:
 # This file goes in the /etc directory, and must be world readable.
 # You can copy this file to .dir_colors in your $HOME directory to override
 # the system defaults.
 
 # COLOR needs one of these arguments: 'tty' colorizes output to ttys, but not
-# pipes. 'all' adds color characters to all output. 'none' shuts colorization
-# off.
+# pipes. 'all' adds color characters to all output. 'none' shuts colorization off.
 COLOR tty
 
 # Below, there should be one TERM entry for each termtype that is colorizable
@@ -156,36 +154,26 @@ EIGHTBIT 1
 #   01;37 bright white    base3      bg in SolLight
 #   05;37;41                         unclear in Putty dark
 
-
 ### By file type
-# global default
+# Global default
 NORMAL 00
-# normal file
+# Normal file
 FILE 00
-# directory
+# Directory
 DIR 01;34
 # XX2, XX3, XX6, and XX7 directories
 OTHER_WRITABLE 34;47
-# symbolic link
+# Symbolic link
 LINK 35
 
-# pipe, socket, block device, character device (blue bg)
+# Pipe, socket, block device, character device (blue bg)
 FIFO 30;44
 SOCK 35;44
 DOOR 35;44 # Solaris 2.5 and later
 BLK  33;44
 CHR  37;44
 
-
-#############################################################################
-### By file attributes
-# Orphaned symlinks (blinking white on red)
-# Blink may or may not work (works on iTerm dark or light, and Putty dark)
-ORPHAN  05;37;41
-# ... and the files that orphaned symlinks point to (blinking white on red)
-MISSING 05;37;41
-
-### Compiled binary stuff
+# Compiled binary stuff
 EXEC 01;35  # Unix
 .cmd 01;35  # Win
 .exe 01;35  # Win
@@ -197,6 +185,12 @@ EXEC 01;35  # Unix
 .out 01;35
 .exe 01;35
 .x   01;35
+
+# Orphaned symlinks (blinking white on red)
+# Blink may or may not work (works on iTerm dark or light, and Putty dark)
+ORPHAN  05;37;41
+# And the files that orphaned symlinks point to (blinking white on red)
+MISSING 05;37;41
 
 #############################################################################
 ### By extension
@@ -398,36 +392,9 @@ EXEC 01;35  # Unix
 .Z    1;36
 .zip  1;36
 
-# For testing
-.ANSI-30-black 30
-.ANSI-01;30-brblack 01;30
-.ANSI-31-red 31
-.ANSI-01;31-brred 01;31
-.ANSI-32-green 32
-.ANSI-01;32-brgreen 01;32
-.ANSI-33-yellow 33
-.ANSI-01;33-bryellow 01;33
-.ANSI-34-blue 34
-.ANSI-01;34-brblue 01;34
-.ANSI-35-magenta 35
-.ANSI-01;35-brmagenta 01;35
-.ANSI-36-cyan 36
-.ANSI-01;36-brcyan 01;36
-.ANSI-37-white 37
-.ANSI-01;37-brwhite 01;37
-
-#############################################################################
-# Your customizations
-# Unimportant text files; enforce white
-# For universal scheme, use brightgreen 01;32
-# For optimal on light bg (but too prominent on dark bg), use white 01;34
-# .log 01;34
-# *~   01;34
-# *# 01;34
-.session.vim 01;00
-.log 01;00
-*~   01;00
-*# 01;00
+# Log files and session files; bright white
+.session.vim 01;37
+.log         01;37
 
 # Database files
 .nc    36
