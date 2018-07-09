@@ -1294,8 +1294,7 @@ fi
 
 ################################################################################
 # FZF FUZZY FILE COMPLETION TOOL
-# FZF INSTALLED AS SUBMODULE, AND HAVE MADE MY OWN EDITS; JUST USE GIT TO SYNC
-# ANY NEW UPDATES
+# See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
 if [ -f ~/.fzf.bash ]; then
@@ -1305,7 +1304,12 @@ if [ -f ~/.fzf.bash ]; then
   # * Also very important, bind slash to accept, so now the behavior is very similar
   #   to behavior of normal bash shell completion
   # * Inline info puts the number line thing on same line as text. More compact.
-  _opts=' --select-1 --exit-0 --inline-info --height=6 --layout=default --bind=tab:accept,shift-tab:cancel,/:accept'
+  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
+  #   Also see manual; here, '-1' is terminald default, not '0'
+  _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
+    --ansi --color=bg:-1,bg+:-1
+    --layout=default --bind=tab:accept,shift-tab:cancel,/:accept' | tr '\n' ' ')
+    # --ansi --color=bw
   # Custom options
   export FZF_COMPLETION_TRIGGER='' # tab triggers completion
   export FZF_COMPLETION_COMMAND_OPTS=" -maxdepth 1 "
@@ -1316,7 +1320,7 @@ if [ -f ~/.fzf.bash ]; then
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
   export FZF_ALT_C_COMMAND="$_command"
-  # Options
+  # Options, same every time
   export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
   export FZF_DEFAULT_OPTS="$_opts"
   export FZF_CTRL_T_OPTS="$_opts"
