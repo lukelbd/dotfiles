@@ -449,7 +449,6 @@ export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
 export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
 # Custom linux colors
 if [ -r "$HOME/.dircolors.ansi" ]; then
-  echo FART
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
 # Apply ls
@@ -525,10 +524,12 @@ function idelta() {
 # See this answer: https://stackoverflow.com/a/9123563/4970632
 function merge() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
   [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
-  local ext=.${1##*.}
-  [ $ext == "." ] && local ext="" # no extension
+  local ext="" # no extension
+  if [[ ${1##*/} =~ '.' || ${2##*/} =~ '.' ]]; then
+    [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
+    local ext=.${1##*.}
+  fi
   touch tmp$ext # use empty file as the 'root' of the merge
   cp $1 backup$ext
   git merge-file $1 tmp$ext $2 # will write to file 1
@@ -1352,6 +1353,7 @@ if [ -f ~/.fzf.bash ]; then
   complete -E # when line empty, perform no complection (options empty)
   # complete -D $_complete_path # ideal, but this seems to break stuff
   #----------------------------------------------------------------------------#
+  # To re-generate, just delete the .commands file and source this file
   # Generate list of all executables, and use fzf path completion by default
   # for almost all of them
   # WARNING: BOLD MOVE COTTON.
