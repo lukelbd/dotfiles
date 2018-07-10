@@ -215,9 +215,9 @@ MISSING 05;37;41
 .rtf    33
 
 ### Code files
-# Text that we can edit with a regular editor
 .ncl    31
 .nco    31
+.nml    31
 .f77    31
 .f90    31
 .f03    31
