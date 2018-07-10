@@ -74,6 +74,8 @@
 	ui = on
 [credential]
 	helper = store
+[push]
+	default = upstream
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com

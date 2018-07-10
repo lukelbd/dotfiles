@@ -28,6 +28,7 @@
 # PROMPT
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
+unset PROMPT_COMMAND # don't enable this by default
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
@@ -1314,8 +1315,9 @@ if [ -f ~/.fzf.bash ]; then
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual; here, '-1' is terminald default, not '0'
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
-    --ansi --color=bg:-1,bg+:-1
-    --layout=default --bind=tab:accept,shift-tab:cancel,/:accept' | tr '\n' ' ')
+    --ansi --color=bg:-1,bg+:-1 --layout=default
+    --bind=ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:toggle+down,ctrl-u:toggle+up,tab:accept,shift-tab:cancel,/:accept' \
+    | tr '\n' ' ')
     # --ansi --color=bw
   # Custom options
   export FZF_COMPLETION_TRIGGER='' # tab triggers completion
