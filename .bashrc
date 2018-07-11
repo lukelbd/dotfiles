@@ -294,24 +294,25 @@ complete -r # remove completions
 bind -r '"\C-i"'
 bind -r '"\C-d"'
 bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
-bind 'set disable-completion off'    # ensure on
-bind 'set completion-ignore-case on' # want dat
-bind 'set completion-map-case on'    # treat hyphens and underscores as same
-bind 'set show-all-if-ambiguous on'  # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+bind 'set disable-completion off'          # ensure on
+bind 'set completion-ignore-case on'       # want dat
+bind 'set completion-map-case on'          # treat hyphens and underscores as same
+bind 'set show-all-if-ambiguous on'        # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
 bind "set menu-complete-display-prefix on" # show string typed so far as 'member' while cycling through completion options
-bind 'set completion-display-width 1' # easier to read
-bind 'set bell-style visible'    # only let readlinke/shell do visual bell; use 'none' to disable totally
-bind '"\C-i": menu-complete'     # this will not pollute scroll history; better
-bind '"\e-1\C-i": menu-complete-backward' # this will not pollute scroll history; better
-bind '"\e[Z": "\e-1\C-i"'        # shift tab to go backwards
-# bind '"\C-i":glob-complete-word' # fix error where nothing is globbed
+bind 'set completion-display-width 1'      # easier to read
+bind 'set bell-style visible'              # only let readlinke/shell do visual bell; use 'none' to disable totally
+bind 'set skip-completed-text on'          # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
+bind 'set visible-stats on'                # extra information, e.g. whether something is executable with *
+bind '"\C-i": menu-complete'               # this will not pollute scroll history; better
+bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
+bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
 bind '"\C-l": forward-char'
 bind '"\C-s": beginning-of-line' # match vim motions
-bind '"\C-e": end-of-line' # match vim motions
-bind '"\C-h": backward-char' # match vim motions
-bind '"\C-w": forward-word'  # requires
-bind '"\C-b": backward-word' # by default c-b moves back one word, and deletes it
-bind '"\C-k": menu-complete' # scroll through complete options
+bind '"\C-e": end-of-line'       # match vim motions
+bind '"\C-h": backward-char'     # match vim motions
+bind '"\C-w": forward-word'      # requires
+bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
+bind '"\C-k": menu-complete'     # scroll through complete options
 bind '"\C-j": menu-complete-backward'
 stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
 stty stop undef   # no more ctrl-s
@@ -342,8 +343,8 @@ function opts() {
   shopt -s checkwinsize            # allow window resizing
   shopt -u nullglob                # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
   shopt -u extglob                 # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -s dotglob                 # include dot patterns in glob matches
-  shopt -s direxpand               # include dot patterns in glob matches; relatively new
+  shopt -u dotglob                 # include dot patterns in glob matches
+  shopt -s direxpand               # expand dirs
   shopt -s dirspell                # attempt spelling correction of dirname
   shopt -s cdspell                 # spelling errors during cd arguments
   shopt -s cdable_vars             # cd into shell variable directories, no $ necessary
@@ -1310,42 +1311,11 @@ fi
 ################################################################################
 # Run installation script; similar to the above one
 if [ -f ~/.fzf.bash ]; then
-  # See man page for --bind information
-  # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
-  #   key bindings will enabled multiple selection
-  # * Also very important, bind slash to accept, so now the behavior is very similar
-  #   to behavior of normal bash shell completion
-  # * Inline info puts the number line thing on same line as text. More compact.
-  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-  #   Also see manual; here, '-1' is terminald default, not '0'
-  _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
-    --ansi --color=bg:-1,bg+:-1
-    --layout=default --bind=tab:accept,shift-tab:cancel,/:accept' | tr '\n' ' ')
-    # --ansi --color=bw
-  # Custom options
-  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
-  export FZF_COMPLETION_COMMAND_OPTS=" -maxdepth 1 "
-  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
-  export FZF_COMPLETION_FILE_COMMANDS="" # add commands here
-  # The builtin options next
-  _command='' # use find . -maxdepth 1 search non recursively
-  export FZF_DEFAULT_COMMAND="$_command"
-  export FZF_CTRL_T_COMMAND="$_command"
-  export FZF_ALT_C_COMMAND="$_command"
-  # Options, same every time
-  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
-  export FZF_DEFAULT_OPTS="$_opts"
-  export FZF_CTRL_T_OPTS="$_opts"
-  export FZF_ALT_C_OPTS="$_opts"
-  # Source file
-  complete -r # reset first
-  source ~/.fzf.bash
   #----------------------------------------------------------------------------#
   # Create custom bindings
   # Use below to bind ctrl t command
   # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
-  # Next bind alt c command to ctrl f
-  # Also bind generic file finder to tab keyt c
+  # Bind alt c command to ctrl f (i.e. the 'enter folder' command)
   bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
   # Add a few basic completion options
   # First set the default ones
@@ -1363,7 +1333,38 @@ if [ -f ~/.fzf.bash ]; then
     echo "Recording available commands."
     compgen -c | grep -v $_ignore >$HOME/.commands # will include aliases and functions
   fi
-  complete $_complete_path $(cat $HOME/.commands | xargs)
+  export FZF_COMPLETION_FILE_COMMANDS=$(cat $HOME/.commands | xargs) # pass to the script
+  # complete $_complete_path $(cat $HOME/.commands | xargs)          # create them yourself
+  #----------------------------------------------------------------------------#
+  # See man page for --bind information
+  # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
+  #   key bindings will enabled multiple selection
+  # * Also very important, bind slash to accept, so now the behavior is very similar
+  #   to behavior of normal bash shell completion
+  # * Inline info puts the number line thing on same line as text. More compact.
+  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
+  #   Also see manual; here, '-1' is terminald default, not '0'
+  _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
+    --ansi --color=bg:-1,bg+:-1
+    --layout=default --bind=tab:accept,shift-tab:cancel,/:accept' | tr '\n' ' ')
+    # --ansi --color=bw
+  # Custom options
+  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
+  export FZF_COMPLETION_COMMAND_OPTS=" -maxdepth 1 "
+  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
+  # The builtin options next
+  _command='' # use find . -maxdepth 1 search non recursively
+  export FZF_DEFAULT_COMMAND="$_command"
+  export FZF_CTRL_T_COMMAND="$_command"
+  export FZF_ALT_C_COMMAND="$_command"
+  # Options, same every time
+  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
+  export FZF_DEFAULT_OPTS="$_opts"
+  export FZF_CTRL_T_OPTS="$_opts"
+  export FZF_ALT_C_OPTS="$_opts"
+  # Source file
+  complete -r # reset first
+  source ~/.fzf.bash
   #----------------------------------------------------------------------------#
   # Old commands for filtering completion options; now it seems the -X filter
   # is ignored, as the function supplies all completion options
