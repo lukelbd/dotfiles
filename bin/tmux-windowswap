@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # Function that mimicks the superior screen window-swapping behavior for tmux
 # This function is super cool yo
-# echo "Current window: $1"
-# echo "Destination window: $2"
 dest=$1 # destination
 dest=$(($dest)) # allow passing e.g. 2+1 or 3-1; evaluate math here! neat!
 iwindow=$(tmux display -p "#I") # initial number
@@ -15,6 +13,8 @@ elif [[ ! $dest =~ ^-?[0-9]+$ ]]; then
   echo "Error: Bad window number specified." && exit
 fi
 
+#------------------------------------------------------------------------------#
+# Helper functions
 function Message() {
   echo "Current state: $(tmux list-windows | cut -d: -f1 | xargs). Moving $1 to $2."
 }
@@ -49,8 +49,7 @@ function Renumber() {
   tmux select-window -t:$cwindow # new window is index of that array
 }
 
-# # Ensure our starting point aint fucked up
-# Renumber
+#------------------------------------------------------------------------------#
 # Bigger than everything; slide it to the far right, then renumber
 if [[ $dest -ge $maxwin ]]; then
   tmux move-window -t:$(($maxwin+1))
@@ -59,6 +58,7 @@ if [[ $dest -ge $maxwin ]]; then
     i=$(($i+1)) # increment
     tmux move-window -s:$n -t:$i
   done
+#------------------------------------------------------------------------------#
 # Smaller than everything; slide it to the far left, then renumber
 elif [[ $dest -lt $minwin ]]; then
   tmux move-window -t:0
@@ -67,6 +67,7 @@ elif [[ $dest -lt $minwin ]]; then
     tmux move-window -s:$n -t:$i
     i=$(($i-1)) # decrement
   done
+#------------------------------------------------------------------------------#
 # In-between
 else
   # Simple swap
@@ -86,6 +87,7 @@ else
   tmux move-window -s:0 -t:$dest # and place it in the hole
   tmux select-window -t:$dest # make sure it's selected yo
 fi
+#------------------------------------------------------------------------------#
 # Next ensure the numbers aren't all fucked up
 Renumber
 
