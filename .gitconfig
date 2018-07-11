@@ -5,6 +5,10 @@
 # and note semicolons must always be escaped.
 # Also this thread: https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------;
+# NOTE that some older versions of git won't accept the flags below the [status],
+# [branch], et cetera blocks below. In that case, use the alternately named aliases
+# defined above.
+#------------------------------------------------------------------------------;
 # New commands:
 # 'wtf':
 #   calls the git-wtf command copied from somewhere; it actually queries the
@@ -21,17 +25,24 @@
 #   https://stackoverflow.com/a/10312587/4970632
 # 'ignore':
 #   stop tracking every single regex pattern in your .gitignore
+#   to ignore all subdirectories in another directory, use subdir/*/
+#   the find command must be different in this case; mindepth of 1 excludes
+#   the root directory (i.e. the subfolder itself), and maxdepth prevents any
+#   unnecessary recursion
 # 'status':
 #   now show in short format, without help information, and with branch info
 # 'fix':
 #   fix user/email information through every commit in repository
 #------------------------------------------------------------------------------;
 [alias]
-	status = !git status -sb $@
+	short  = !git status --short --branch $@
+	remotes = !git remote --verbose $@
+	branches = !git branch --verbose $@
 	stat   = !git diff --stat $@
 	wtf    = !git-wtf $@
 	fix    = !git-fix $@
 	root   = !git rev-parse --show-toplevel
+	commands = "!git help -a | grep \"^  [a-z]\" | tr ' ' '\\n' | grep -v \"^$\" | sort"
 	update = "!git stash clear; git stash; git merge $@; git stash pop"
 	tree   = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
 		--pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) \
@@ -47,8 +58,11 @@
 		fi; done"
 	ignore = "!root=$(git rev-parse --show-toplevel); if [ -n \"$root\" ]; \
 		then cat $root/.gitignore | grep -v '#' | grep -v '^\\s*$' | sed 's/\\*\\*\\///g' | while read pattern; \
-		do find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
-		done; fi"
+		do echo \"$pattern\"; \
+		if [[ \"$pattern\" =~ \"/*/\" ]]; then \
+		find \"$root/${pattern%/*/}\" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
+		else find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
+		fi; done; fi"
 [status]
 	branch = true
 	short = true
@@ -56,12 +70,12 @@
 	verbose = true
 [remote]
 	verbose = true
-[push]
-	default = upstream
 [color]
 	ui = on
 [credential]
 	helper = store
+[push]
+	default = upstream
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com
