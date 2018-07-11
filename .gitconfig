@@ -5,6 +5,10 @@
 # and note semicolons must always be escaped.
 # Also this thread: https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------;
+# NOTE that some older versions of git won't accept the flags below the [status],
+# [branch], et cetera blocks below. In that case, use the alternately named aliases
+# defined above.
+#------------------------------------------------------------------------------;
 # New commands:
 # 'wtf':
 #   calls the git-wtf command copied from somewhere; it actually queries the
@@ -31,7 +35,9 @@
 #   fix user/email information through every commit in repository
 #------------------------------------------------------------------------------;
 [alias]
-	status = !git status -sb $@
+	short  = !git status --short --branch $@
+	remotes = !git remote --verbose $@
+	branches = !git branch --verbose $@
 	stat   = !git diff --stat $@
 	wtf    = !git-wtf $@
 	fix    = !git-fix $@
@@ -64,12 +70,12 @@
 	verbose = true
 [remote]
 	verbose = true
-[push]
-	default = upstream
 [color]
 	ui = on
 [credential]
 	helper = store
+[push]
+	default = upstream
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com
