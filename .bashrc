@@ -28,6 +28,7 @@
 # PROMPT
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
+unset PROMPT_COMMAND # don't enable this by default
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
@@ -151,13 +152,12 @@ else
     module load intel/16.0
     module load mkl/11.3
     # In future, use my own environment
-    # hello
     # Idea to share conda environment, but really not necessary
-    # module load Anaconda2
-    # [[ -z "$CONDA_PREFIX" ]] && {
-    #   echo "Activating conda environment."
-    #   source activate /project2/rossby/group07/.conda
-    #   }
+    module load Anaconda3
+    [[ -z "$CONDA_PREFIX" ]] && {
+      echo "Activating conda environment."
+      source activate /project2/rossby/group07/.conda
+      }
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -194,14 +194,14 @@ function prompt_append() { # input argument should be new command
 # so we alias that as command prefix (don't want to change global path cause it
 # messes other shit up, maybe homebrew)
 function help() {
-  [ -z $1 ] && echo "Requires one argument." && return 1
-  if builtin help $1 &>/dev/null; then
-    builtin help $1 2>&1 | less
-  # elif [ ! -z "$($1 --help 2>&1)" ]; then # sometimes prints stuff and returns non-zero exit code, but usually text is in stderr
-  elif eval "$env $1 --help" &>/dev/null; then
-    eval "$env $1 --help" 2>&1 | less # combine output streams or can get weird error
+  local arg="$@"
+  [ -z "$arg" ] && echo "Requires argument." && return 1
+  if builtin help "$arg" &>/dev/null; then
+    builtin help "$arg" 2>&1 | less
+  elif $arg --help &>/dev/null; then
+    $arg --help 2>&1 | less # combine output streams or can get weird error
   else
-    echo "No help information for \"$1\"."
+    echo "No help information for \"$arg\"."
   fi
 }
 # Man page wrapper
@@ -210,6 +210,8 @@ function man() { # always show useful information when man is called
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+  local arg="$@"
+  [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
   [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
     if $macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
@@ -375,13 +377,6 @@ alias functions="declare -F | cut -d' ' -f3" # show current shell functions
 alias inputrc_funcs="bind -l"                # the functions, for example 'forward-char'
 alias inputrc_ops="bind -v"                  # the 'set' options, and their values
 function env() { set; } # just prints all shell variables
-function cdo() {
-  if [ "$1" == "commands" ]; then
-    command cdo --operators | sed 's/[ \t]*(.*|.*)$//g'
-  else
-    command cdo "$@" # preserves spaces in filenames, e.g.
-  fi
-}
 
 ################################################################################
 # Magic changing stderr color
@@ -1345,8 +1340,9 @@ if [ -f ~/.fzf.bash ]; then
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual; here, '-1' is terminald default, not '0'
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
-    --ansi --color=bg:-1,bg+:-1
-    --layout=default --bind=tab:accept,shift-tab:cancel,/:accept' | tr '\n' ' ')
+    --ansi --color=bg:-1,bg+:-1 --layout=default
+    --bind=ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:toggle+down,ctrl-u:toggle+up,tab:accept,shift-tab:cancel,/:accept' \
+    | tr '\n' ' ')
     # --ansi --color=bw
   # Custom options
   export FZF_COMPLETION_TRIGGER='' # tab triggers completion
@@ -1376,19 +1372,24 @@ if [ -f ~/.fzf.bash ]; then
   # complete -f -o plusdirs mv # some shells disable tab-completion of dangerous commands; re-enable
   # complete -f -o plusdirs rm
   # Specific completion options
-  _fzf_complete_git() {
-     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
-     git commands # should be an alias that lists commands
+  _opts_custom="$(echo $_opts | sed 's/--select-1//g')"
+  _fzf_complete_git() { # git commands be an alias that lists commands
+    _fzf_complete "$_opts_custom" "$@" < <(
+    git commands
     )
   }
   _fzf_complete_cdo() {
-     _fzf_complete "$FZF_COMPLETION_OPTS" "$@" < <(
-     cdo commands | cut -d' ' -f1 # should be an alias that lists commands
+    _fzf_complete "$_opts_custom" "$@" < <(
+    cdo --operators
     )
+  }
+  _fzf_complete_cdo_post() { # must be used with pipe
+    cat /dev/stdin | cut -d' ' -f1
   }
   # Apply them as completion commands
   for _command in cdo git; do
-    complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+    # complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+    complete -F _fzf_complete_$_command $_command
   done
   #----------------------------------------------------------------------------#
   # Finished

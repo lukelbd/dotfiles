@@ -1538,7 +1538,7 @@ noremap <Tab>9 9gt
 noremap <Tab>, gT
 noremap <Tab>. gt
 let g:LastTab=1
-noremap <silent> <Tab>; :execute "tabn ".g:LastTab<CR>
+noremap <silent> <Tab>' :execute "tabn ".g:LastTab<CR>
   "return to previous tab
 "Moving around
 nnoremap <Tab>u zt
@@ -1587,7 +1587,7 @@ noremap <Tab>k <C-w>k
 noremap <Tab>h <C-w>h
 noremap <Tab>l <C-w>l
   "window motion; makes sense so why not
-nnoremap <Tab>' <C-w><C-p>
+nnoremap <Tab>; <C-w><C-p>
   "switch to last window
 " noremap <Tab>n <C-w>w
 " noremap <Tab><Tab>. <C-w>w
@@ -1866,7 +1866,11 @@ augroup syntax
   au BufRead * set concealcursor=ncv conceallevel=2 "conceal stuff when in normal/command mode; only reveal when insert/visual
   au Syntax * if &ft!="vim" | syn match Todo '\<\%(WARNING\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment | syn match Special '^\%1l#!.*$' | endif
   " au BufEnter * if &ft=="tex" | hi Conceal ctermbg=None ctermfg=None | else | hi Conceal ctermbg=None ctermfg=Black | endif
+  au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
+  au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
 augroup END
+"Status line
+highlight StatusLine ctermbg=Black ctermfg=White cterm=None
 "Create dummy group -- will be transparent, but use to add @Nospell
 highlight Dummy ctermbg=None ctermfg=None
 "Magenta is uncommon color, so change this
@@ -1900,7 +1904,7 @@ highlight LineNR cterm=None ctermfg=Black ctermbg=None
 highlight CursorLine cterm=None ctermbg=Black
 highlight CursorLineNR cterm=None ctermfg=Yellow ctermbg=Black
 "Column stuff; color 80th column, and after 120
-highlight ColorColumn cterm=None ctermbg=Black
+highlight ColorColumn cterm=None ctermbg=Gray
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 "Make sure terminal is black, for versions with :terminal command
 highlight Terminal ctermbg=Black

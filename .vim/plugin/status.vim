@@ -7,19 +7,10 @@ set laststatus=2
 "Command line below statusline
 set showcmd
 set noshowmode
-"Colors
-"Also tried to set statusline to empty
-highlight StatusLine ctermbg=Black ctermfg=White cterm=None
-augroup statusline
-  au!
-  au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
-  au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
-  " au BufEnter * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
-  " au BufReadPost * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
-  " au FileType tagbar,nerdtree let &stl=' ' "don't work
-  " au BufEnter *[Tt]agbar*,*[Nn][Ee][Rr][Dd]*[Tt]ree* let &l:stl=' ' "empty returns default; use non-empty
-augroup END
-  "more visible insert mode
+" au BufEnter * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
+" au BufReadPost * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
+" au FileType tagbar,nerdtree let &stl=' ' "don't work
+" au BufEnter *[Tt]agbar*,*[Nn][Ee][Rr][Dd]*[Tt]ree* let &l:stl=' ' "empty returns default; use non-empty
 "Define all the different modes
 "Show whether in pastemode
 function! PrintMode()
