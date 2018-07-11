@@ -23,6 +23,7 @@
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 ################################################################################
 [[ $- != *i* ]] && return
+[ ! -z $TEST ] && unset PROMPT_COMMAND && return # optionally invoke shell with TEST=1 bash -i
 
 ################################################################################
 # PROMPT
@@ -250,6 +251,7 @@ function vim() {
   clear # clear screen after exit
 }
 # Open wrapper
+# Opens files based on name
 function open() {
   # Parse input
   local app=
@@ -300,11 +302,14 @@ bind 'set disable-completion off'          # ensure on
 bind 'set completion-ignore-case on'       # want dat
 bind 'set completion-map-case on'          # treat hyphens and underscores as same
 bind 'set show-all-if-ambiguous on'        # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
-bind "set menu-complete-display-prefix on" # show string typed so far as 'member' while cycling through completion options
+bind 'set menu-complete-display-prefix on' # show string typed so far as 'member' while cycling through completion options
 bind 'set completion-display-width 1'      # easier to read
 bind 'set bell-style visible'              # only let readlinke/shell do visual bell; use 'none' to disable totally
 bind 'set skip-completed-text on'          # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
-bind 'set visible-stats on'                # extra information, e.g. whether something is executable with *
+bind 'set visible-stats off'               # extra information, e.g. whether something is executable with *
+bind 'set page-completions off'            # no more --more-- pager when list too big
+bind 'set completion-query-items 0'        # never ask for user confirmation if there's too much stuff
+bind 'set mark-symlinked-directories on'   # add trailing slash to directory symlink
 bind '"\C-i": menu-complete'               # this will not pollute scroll history; better
 bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
 bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
@@ -316,6 +321,8 @@ bind '"\C-w": forward-word'      # requires
 bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
 bind '"\C-k": menu-complete'     # scroll through complete options
 bind '"\C-j": menu-complete-backward'
+bind '"\C-p": previous-history'     # scroll through complete options
+bind '"\C-n": next-history'
 stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
 stty stop undef   # no more ctrl-s
 stty eof undef    # no more ctrl-d
@@ -371,11 +378,12 @@ opts 2>/dev/null # ignore if option unavailable
 ################################################################################
 # The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
-alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
 alias bindings_stty="stty -e"                # bindings
-alias functions="declare -F | cut -d' ' -f3" # show current shell functions
-alias inputrc_funcs="bind -l"                # the functions, for example 'forward-char'
-alias inputrc_ops="bind -v"                  # the 'set' options, and their values
+alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+alias aliases="compgen -a"
+alias functions="compgen -A function" # show current shell functions
+alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
+alias inputrc_ops="bind -v"           # the 'set' options, and their values
 function env() { set; } # just prints all shell variables
 
 ################################################################################
@@ -431,11 +439,9 @@ function env() { set; } # just prints all shell variables
 if $macos; then
   _ls_command=gls
   _dc_command=gdircolors
-  _sort_command=gsort
 else
   _ls_command=ls
   _dc_command=dircolors
-  _sort_command=sort
 fi
 # Default mac colors
 # LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
@@ -450,7 +456,10 @@ fi
 # Apply ls
 alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
-! $macos && alias cd="cd -P" # don't want this on my mac temporarily
+alias cd="cd -P" # don't want this on my mac temporarily
+# Other stuff
+$macos && alias sed="gsed"
+$macos && alias sort="gsort"
 
 # Information on directories
 alias df="df -h" # disk useage
@@ -463,7 +472,7 @@ function ds() { # directory ls
 }
 function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $_sort_command -sh
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
 
 # Grepping and diffing; enable colors
@@ -1207,12 +1216,11 @@ function extract() {
 # Utilities handling media and PDF files
 ################################################################################
 # Fun stuff
-alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $_sort_command -sn | $_sort_command -sn -r -k 2,1"
-alias weather="curl wttr.in/Fort\ Collins" # list weather information
-
-# Opening commands for some GUI apps
+alias forecast="curl wttr.in/Fort\ Collins" # list weather information
+alias songs="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
 alias edit='\open -a TextEdit'
 alias html='\open -a Google\ Chrome'
+alias image='\open -a Preview'
 alias pdf='\open -a Skim'
 
 # Extracting PDF annotations
@@ -1322,14 +1330,14 @@ if [ -f ~/.fzf.bash ]; then
   # Generate list of all executables, and use fzf path completion by default
   # for almost all of them
   # WARNING: BOLD MOVE COTTON.
-  echo "Setting up completion."
-  _ignore="^\\($(echo "echo \\[ \\[\\[ cdo git fzf $FZF_COMPLETION_DIR_COMMANDS" | sed 's/ /\\|/g')\\)$"
+  _ignore="{ } \\[ \\[\\[ echo type which cdo git fzf $FZF_COMPLETION_DIR_COMMANDS"
+  _ignore="^\\($(echo "$_ignore" | sed 's/ /\\|/g')\\)$"
   if [ ! -r "$HOME/.commands" ]; then
     echo "Recording available commands."
-    compgen -c | grep -v $_ignore >$HOME/.commands # will include aliases and functions
+    compgen -c >$HOME/.commands # will include aliases and functions
   fi
-  export FZF_COMPLETION_FILE_COMMANDS=$(cat $HOME/.commands | xargs) # pass to the script
-  # complete $_complete_path $(cat $HOME/.commands | xargs)          # create them yourself
+  export FZF_COMPLETION_FILE_COMMANDS=$(cat $HOME/.commands | grep -v $_ignore | xargs)
+  # complete $_complete_path $(cat $HOME/.commands | grep -v $_ignore | xargs)
   #----------------------------------------------------------------------------#
   # See man page for --bind information
   # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
@@ -1338,58 +1346,69 @@ if [ -f ~/.fzf.bash ]; then
   #   to behavior of normal bash shell completion
   # * Inline info puts the number line thing on same line as text. More compact.
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-  #   Also see manual; here, '-1' is terminald default, not '0'
+  #   Also see manual; here, '-1' is terminal default, not '0'
+  # Custom options
+  export FZF_COMPLETION_FIND_IGNORE=".DS_Store .session.vim __pycache__ .ipynb_checkpoints"
+  export FZF_COMPLETION_FIND_OPTS=" -maxdepth 1 "
+  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
+  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
+  # The builtin options # --ansi --color=bw
+  _command='' # use find . -maxdepth 1 search non recursively
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
     --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:toggle+down,ctrl-u:toggle+up,tab:accept,shift-tab:cancel,/:accept' \
+    --bind=ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:down+toggle,ctrl-u:up+toggle,tab:abort,shift-tab:abort,/:accept' \
     | tr '\n' ' ')
-    # --ansi --color=bw
-  # Custom options
-  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
-  export FZF_COMPLETION_COMMAND_OPTS=" -maxdepth 1 "
-  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
-  # The builtin options next
-  _command='' # use find . -maxdepth 1 search non recursively
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
   export FZF_ALT_C_COMMAND="$_command"
-  # Options, same every time
   export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
   export FZF_DEFAULT_OPTS="$_opts"
   export FZF_CTRL_T_OPTS="$_opts"
   export FZF_ALT_C_OPTS="$_opts"
+  #----------------------------------------------------------------------------#
   # Source file
   complete -r # reset first
   source ~/.fzf.bash
   #----------------------------------------------------------------------------#
-  # Old commands for filtering completion options; now it seems the -X filter
-  # is ignored, as the function supplies all completion options
-  # complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-  # complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-  # complete -f -X '!*.pdf' skim              # changes behavior of my alias "skim"; shows only
-  # complete -f -X '!*.tex' -o plusdirs latex
-  # complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-  # complete -f -o plusdirs mv # some shells disable tab-completion of dangerous commands; re-enable
-  # complete -f -o plusdirs rm
-  # Specific completion options
-  _opts_custom="$(echo $_opts | sed 's/--select-1//g')"
-  _fzf_complete_git() { # git commands be an alias that lists commands
-    _fzf_complete "$_opts_custom" "$@" < <(
-    git commands
-    )
-  }
-  _fzf_complete_cdo() {
-    _fzf_complete "$_opts_custom" "$@" < <(
-    cdo --operators
-    )
-  }
-  _fzf_complete_cdo_post() { # must be used with pipe
-    cat /dev/stdin | cut -d' ' -f1
-  }
-  # Apply them as completion commands
-  for _command in cdo git; do
-    # complete -F _fzf_complete_$_command -o default -o bashdefault $_command
+  # Non-path completion: subcommands, shell commands, etc.
+  for _command in type which alias unalias function git cdo; do
+    # Post-processing commands *must* have name <name_of_complete_function>_post
+    case $_command in
+      help|man|type|which) _generator="cat \$HOME/.commands | grep -v '[!.:]'" ;; # faster than loading every time
+      unalias|alias)       _generator="compgen -a" ;;
+      function)            _generator="compgen -A function" ;;
+      git)                 _generator="git commands" ;;
+      cdo)                 _generator="cdo --operators"
+     _fzf_complete_cdo_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
+    esac
+    # Create functions, and declare completions
+    eval "_fzf_complete_$_command() {
+          _fzf_complete \$FZF_COMPLETION_OPTS \"\$@\" < <( $_generator )
+          }"
     complete -F _fzf_complete_$_command $_command
+  done
+  #----------------------------------------------------------------------------#
+  # Path completion with special filter; just supply path_completion with our own compgen
+  # i.e. completion generator. Accepts function 
+  # For info see: https://unix.stackexchange.com/a/15309/112647
+  # Note that 'and' has higher precedence over 'or'
+  _fzf_find_prefix='-name .git -prune -o -name .svn -prune -o ( -type d -o -type f -o -type l )'
+  for _command in pdf image html; do
+    case $_command in
+      image) _filter="\\( -iname \\*.jpg -o -iname \\*.png -o -iname \\*.gif -o -iname \\*.svg -o -iname \\*.eps -o -iname \\*.pdf \\)" ;;
+      html)  _filter="-iname \\*.html" ;;
+      pdf)   _filter="-name \\*.pdf" ;;
+    esac
+    eval "_fzf_compgen_$_command() {
+      command find -L \"\$1\" \
+        \$FZF_COMPLETION_FIND_OPTS \
+        -name .git -prune -o -name .svn -prune -o \\( -type d -o -type f -o -type l \\) \
+        -a $_filter -a -not -path \"\$1\" -print 2> /dev/null | sed 's@^\\./@@'
+    }"
+    eval "_fzf_complete_$_command() {
+          __fzf_generic_path_completion _fzf_compgen_$_command \"-m\" \"\$@\"
+          }"
+    complete -o nospace -F _fzf_complete_$_command $_command
   done
   #----------------------------------------------------------------------------#
   # Finished
