@@ -32,8 +32,8 @@ noremap Z <Nop>
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
 "Repeat previous command
-nnoremap <Leader>. :<Up><CR>
-nnoremap <Leader>/ /<Up><CR>
+nnoremap <Leader>: :<Up><CR>
+nnoremap <Leader>? /<Up><CR>
 set updatetime=1000 "used for CursorHold autocmds
 set nobackup noswapfile noundofile "no more swap files; constantly hitting C-s so it's safe
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
@@ -1848,9 +1848,9 @@ noremap <silent> g; :<Up><CR>
 "enter to not move cursor ordinarily, so have to unmap it after entering window.
 "Oddly writing a function that declares maps, and calling it after using q:, did
 "not work, and making all of the map commands one line with \| did not work. Only the below works.
-noremap <silent> g: q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
+noremap <silent> <Leader>; q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
   \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
-noremap <silent> g/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
+noremap <silent> <Leader>/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
   \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
 "Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
