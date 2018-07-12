@@ -6,10 +6,15 @@
 " augroup END
 "------------------------------------------------------------------------------"
 "Compile code, then run it and show user the output
-" function! s:fortranmacros()
-nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
-  \."gfortran ".shellescape(@%)." -o ".expand('%:r')." && ./".expand('%:r')."<CR>"
-" endfunction
+function! s:fortranrun()
+  w
+  let f90_path=shellescape(@%)
+  let exe_path=shellescape(expand('%:p:r'))
+  exe '!clear; set -x; gfortran '.f90_path.' -o '.exe_path
+    \.' && '.exe_path.' && rm '.exe_path
+  return
+endfunction
+nnoremap <silent> <buffer> <C-b> :call <sid>fortranrun()<CR>
 "------------------------------------------------------------------------------"
 "These mostly make automatic indentation better
 "See this helpful thread: https://stackoverflow.com/a/17619568/4970632
