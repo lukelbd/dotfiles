@@ -249,8 +249,8 @@ MISSING 05;37;41
 .v      31
 .vh     31
 .vhd    31
-
 ### Text files and readmes and stuff
+.tex    33
 .txt    33
 .org    33
 .md     33
@@ -263,7 +263,6 @@ MISSING 05;37;41
 .scss   33
 .less   33
 .man    33
-.tex    33
 .rtf    33
 
 ### Documents requiring GUI

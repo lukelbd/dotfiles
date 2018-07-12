@@ -913,7 +913,7 @@ if has_key(g:plugs, "ctrlp.vim")
       exe 'CtrlP '.dir
       EIMap
     else
-      echom "Cancelling."
+      echom "Cancelled."
     endif
   endfunction
   "Make sure to map Ctrl i to F3 in iTerm
@@ -988,7 +988,7 @@ if !empty(glob("~/.fzf"))
     if result!=""
       exe 'FZF '.result
     else
-      echo "Cancelling."
+      echom "Cancelled."
     endif
   endfunction
   noremap <F3> :call <sid>fzf()<CR>
@@ -1531,7 +1531,7 @@ function! s:wildstab()
   call feedkeys("\<S-Tab>", 't') | return ''
 endfunction
 "Use ctrl-, and ctrl-. to navigate (mapped with iterm2)
-cnoremap <expr> <sid>wildstab()
+cnoremap <expr> <F1> <sid>wildstab()
 cnoremap <expr> <F2> <sid>wildtab()
 cnoremap <C-h>   <Left>
 cnoremap <C-l>   <Right>
@@ -1599,18 +1599,27 @@ noremap <silent> <Tab>m :silent! call <sid>tabmove(input('Move tab: ', '', 'cust
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "Next a function for completing stuff, *including* hidden files god damnit
-function! s:allfiles(A,L,P)
-  let path=(len(a:A)>0 ? a:A : '')
-  let result=split(glob(path.'*'),'\n') + split(glob(path.'.*'),'\n')
-  let final=[]
-  for string in result "ignore 'this directory' and 'parent directory'
-    if string !~ '^\(.*/\)\?\.\{1,2}$'
-      call extend(final, [string])
-    endif
-  endfor
-  return final
+"Note allfiles function seems to have to be in local scope; otherwise can't find s:allfiles or <sid>allfiles
+function! s:openwrapper()
+  function! l:allfiles(A,L,P)
+    let path=(len(a:A)>0 ? a:A : '')
+    let result=split(glob(path.'*'),'\n') + split(glob(path.'.*'),'\n')
+    let final=[]
+    for string in result "ignore 'this directory' and 'parent directory'
+      if string !~ '^\(.*/\)\?\.\{1,2}$'
+        call extend(final, [substitute((isdirectory(string) ? string.'/' : string ), '/\+', '/', 'g')])
+      endif
+    endfor
+    return final
+  endfunction
+  let response=input('Open tab ('.getcwd().'): ', '', 'customlist,l:allfiles')
+  if response!=''
+    exe 'tabe '.response
+  else
+    echom "Cancelled."
+  endif
 endfunction
-nnoremap <C-o> :exe 'tabe '.input('Open tab ('.getcwd().'): ', '', 'customlist,<sid>allfiles')<CR>
+nnoremap <silent> <C-o> :call <sid>openwrapper()<CR>
 "Splitting -- make :sp and :vsp split to right and bottom
 set splitright
 set splitbelow
@@ -1776,12 +1785,12 @@ noremap <silent> <Tab>= :vertical resize 80<CR>
   "and the z-prefix is a natural companion to the resizing commands
   "the Tab commands should just sort and navigate between panes
   "think of the 0 as 'original size', like cmd-0 on macbook
+"To prevent delay; this is associated with FastFold or something
 silent! unmap zuz
-  "to prevent delay; this is associated with FastFold or something
+"Change fold levels, and make sure return to same place
+"Never really use this feature so forget it
 " nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
 " nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
-  "change fold levels, and make sure return to same place
-  "never really use this feature so forget it
 
 "###############################################################################
 "g CONFIGURATION
