@@ -319,9 +319,12 @@ bind '"\C-e": end-of-line'       # match vim motions
 bind '"\C-h": backward-char'     # match vim motions
 bind '"\C-w": forward-word'      # requires
 bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
-bind '"\C-k": menu-complete'     # scroll through complete options
-bind '"\C-j": menu-complete-backward'
-bind '"\C-p": previous-history'     # scroll through complete options
+bind '"\eOP": menu-complete'          # history
+bind '"\eOQ": menu-complete-backward' # history
+bind '"\C-j": next-history'
+bind '"\C-k": previous-history'  # history
+bind '"\C-j": next-history'
+bind '"\C-p": previous-history'  # history
 bind '"\C-n": next-history'
 stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
 stty stop undef   # no more ctrl-s
@@ -1356,7 +1359,7 @@ if [ -f ~/.fzf.bash ]; then
   _command='' # use find . -maxdepth 1 search non recursively
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
     --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:down+toggle,ctrl-u:up+toggle,tab:abort,shift-tab:abort,/:accept' \
+    --bind=f1:up,f2:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:down+toggle,ctrl-u:up+toggle,tab:abort,shift-tab:abort,/:accept' \
     | tr '\n' ' ')
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
@@ -1371,9 +1374,10 @@ if [ -f ~/.fzf.bash ]; then
   source ~/.fzf.bash
   #----------------------------------------------------------------------------#
   # Non-path completion: subcommands, shell commands, etc.
-  for _command in type which alias unalias function git cdo; do
+  for _command in shopt help man type which alias unalias function git cdo; do
     # Post-processing commands *must* have name <name_of_complete_function>_post
     case $_command in
+      shopt) _generator="shopt | cut -d' ' -f1 | cut -d$'\\t' -f1" ;;
       help|man|type|which) _generator="cat \$HOME/.commands | grep -v '[!.:]'" ;; # faster than loading every time
       unalias|alias)       _generator="compgen -a" ;;
       function)            _generator="compgen -A function" ;;

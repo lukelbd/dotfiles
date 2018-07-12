@@ -11,43 +11,39 @@
 "     F2: Ctrl-.
 "     F3: Ctrl-i
 "###############################################################################
-"BUTT-TONS OF CHANGES
-augroup _0
-augroup END
-"###############################################################################
-"NOCOMPATIBLE -- changes other stuff, so must be first
-set nocompatible
-  "always use the vim default where vi and vim differ; for example, if you
-  "put this too late, whichwrap will be resset
-"###############################################################################
 "IMPORTANT STUFF
+"Says to always use the vim default where vi and vim differ; for example, if you
+"put this too late, whichwrap will be reset
+set nocompatible
 let mapleader="\<Space>"
+"Misc stuff
 noremap <CR> <Nop>
 noremap <Space> <Nop>
 noremap <C-b> <Nop>
+"The above 2 enter weird modes I don't understand...
 noremap Q <Nop>
 noremap K <Nop>
-"the above 2 enter weird modes I don't understand...
 cnoremap <C-k> <Up>
 cnoremap <C-j> <Down>
+"Disable c-z and Z for exiting vim
 noremap <C-z> <Nop>
 noremap Z <Nop>
-"disable c-z and Z for exiting vim
+"See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
-"see solution: https://unix.stackexchange.com/a/414395/112647
+"Repeat previous command
 nnoremap <Leader>. :<Up><CR>
 nnoremap <Leader>/ /<Up><CR>
-"repeat previous command
 set updatetime=1000 "used for CursorHold autocmds
 set nobackup noswapfile noundofile "no more swap files; constantly hitting C-s so it's safe
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
 "other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
+"Older versions can't combine number with relativenumber
 set number numberwidth=4
 set relativenumber
-"older versions can't combine number with relativenumber
+"Disable builtin, because we modified that shit yo
 let g:loaded_matchparen=0
-"disable builtin, because we modified that shit yo
+
 "###############################################################################
 "ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
 "First some functions and autocmds
@@ -57,6 +53,7 @@ augroup escapefix
   au!
   au InsertLeave * normal! `^
 augroup END
+
 "##############################################################################"
 "ALWAYS NAVIGATE BY word, GOT DAMNIT
 "See: https://superuser.com/a/1150645/506762
@@ -65,6 +62,7 @@ augroup keywordfix
   au!
   au BufEnter * set iskeyword=65-90,95,97-122,48-57 "the same: a-z,_,A-Z,0-9
 augroup END
+
 "###############################################################################
 "USEFUL TOOLS THAT REQUIRE THEIR OWN FUNCTIONS
 "Function for escaping current delimiter
@@ -96,6 +94,7 @@ endfunction
 " nnoremap <expr> <Leader>w 'mz:let b:count=<sid>countcword("'.expand('<cword>').'")<CR>`z'
 "Try again with grep; way easier
 nnoremap <silent> <expr> <Leader>w ':let b:count=system("grep -c \"\\b'.expand('<cword>').'\\b\" '.expand('%').'")<CR>:echo b:count[:-2]<CR>'
+
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
 augroup insertenter
@@ -146,10 +145,12 @@ inoremap jj j
 inoremap kk k
 inoremap kj <Nop>
 inoremap KJ <Nop>
+
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 "MOSTLY NORMAL MODE MAPS
-"First need helper function to toggle formatoptions (controls whether comment-char inserted on newline)
+"First need helper function to toggle formatoptions (controls whether comment-char 
+"inserted on newline)
 " * See help fo-table for what these mean; this disables auto-wrapping lines.
 " * The o and r options continue comment lines.
 " * The n recognized numbered lists.
@@ -167,65 +168,68 @@ function! s:toggleformatopt()
   else | setlocal formatoptions=
   endif
 endfunction
-noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
-noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
-  "these keys aren't used currently, and are in a really good spot,
-  "so why not? fits mnemonically that insert above is Shift+<key for insert below>
+"These keys aren't used currently, and are in a really good spot,
+"so why not? Fits mnemonically that insert above is Shift+<key for insert below>
+" noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
+" noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
+noremap <silent> ` :call append(line('.'),'')<CR>
+noremap <silent> ~ :call append(line('.')-1,'')<CR>
+"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
+"use ss/substitute instead of cl if you want to enter insert mode
 noremap <silent> cL mzi<CR><Esc>`z
-  "mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
-  "use ss/substitute instead of cl if you want to enter insert mode
+"Swap with row above, and swap with row below; awesome mnemonic, right?
+"use same syntax for c/s because almost *never* want to change up/down
 " noremap <silent> sk mzkddp`z
 noremap <silent> ck mzkddp`z
 " noremap <silent> sj jmzkddp`zj
 noremap <silent> cj jmzkddp`zj
-  "swap with row above, and swap with row below; awesome mnemonic, right?
-  "use same syntax for c/s because almost *never* want to change up/down
+"Useful for typos
 noremap <silent> cl xph
 noremap <silent> ch Xp
-  "useful for typos
+"Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 noremap <C-l> <C-i>
 noremap <C-h> <C-o>
+"Enable shortcut so that recordings are taken by just toggling 'q' on-off
+"the escapes prevent a weird error where sometimes q triggers command-history window
 noremap <C-j> g;
 noremap <C-k> g,
-  "navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
-  "enable shortcut so that recordings are taken by just toggling 'q' on-off
-  "the escapes prevent a weird error where sometimes q triggers command-history window
+"Delete entire line; never should use dl anyway, use x instead
+"must be normal mode map, or get delay; remember map includes some kind of
+"operator-pending mode (i.e. waiting for a motion)
 nnoremap dh <Nop>
 nnoremap dl 0d$
-  "delete entire line; never should use dl anyway, use x instead
-  "must be normal mode map, or get delay; remember map includes some kind of
-  "operator-pending mode (i.e. waiting for a motion)
+"Never really want to use f/t commands more than once; remap these later on
 noremap ; <Nop>
 noremap , <Nop>
-  "never really want to use f/t commands more than once; remap these later on
+"Easy mark usage
 noremap " :echo "Setting mark."<CR>mq
 noremap ' `q
-  "easy mark usage
+"New macro useage; almost always just use one at a time
+"also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
 map @ <Nop>
 noremap , @q
-  "new macro useage; almost always just use one at a time
-  "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
+"Redo map to capital U; means we cannot 'undo line', but who cares
 nnoremap U <C-r>
-  "redo map to capital U; means we cannot 'undo line', but who cares
+"Use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
+"THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
 nnoremap \ :echo "Enabling throwaway register."<CR>"_
 vnoremap \ <Esc>:echo "Enabling throwaway register." <BAR> sleep 200m<CR>gv"_
 nnoremap <expr> \| has("clipboard") ? ':echo "Enabling system clipboard."<CR>"*' : ':echo "VIM not compiled with +clipboard."<CR>'
 vnoremap <expr> \| has("clipboard") ? '<Esc>:echo "Enabling system clipboard." <BAR> sleep 200m<CR>gv"*' : ':echo "VIM not compiled with +clipboard."<CR>'
-  "use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
-  "THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
+"Don't save single-character deletions to any register
 nnoremap x "_x
 nnoremap X "_X
-  "don't save single-character deletions to any register
+"Default behavior replaces selection with register after p, but puts
+"deleted text in register; correct this behavior
 vnoremap p "_dP
 vnoremap P "_dP
-  "default behavior replaces selection with register after p, but puts
-  "deleted text in register; correct this behavior
+"Pressing enter on empty line preserves leading whitespace (HACKY)
+"works because Vim doesn't remove spaces when text has been inserted
 nnoremap o ox<BS>
 nnoremap O Ox<BS>
-  "pressing enter on empty line preserves leading whitespace (HACKY)
-  "works because Vim doesn't remove spaces when text has been inserted
+"Disable arrow keys because you're better than that
 for s:map in ['noremap', 'inoremap'] "disable typical navigation keys
   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
     exe s:map.' '.s:motion.' <Nop>'
@@ -234,34 +238,31 @@ endfor
 "Disabling dumb extra scroll commands
 nnoremap <C-p> <Nop>
 nnoremap <C-n> <Nop>
-  "these are identical to j/k
 "Better join behavior -- before 2J joined this line and next, now it
 "means 'join the two lines below'; more intuitive. uses if statement
 "in <expr> remap, and v:count the user input count
 nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
 nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
 " nnoremap <expr> K v:count > 1 ? 'JdwJdw' : 'Jdw'
-  "also remap K because not yet used; like J but adds no space
-  "note gJ was insufficient because retains leading whitespace from next line
-  "recall that the 'v' prefix indicated a VIM read-only builtin variable
+"Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
-  "yank, substitute, delete until end of current line
+"For some fucking reason this is necessary or there is a cursor delay when hitting cc
 nnoremap cc cc
-  "for some fucking reason this is necessary or there is a cursor delay when hitting cc
+"Replace the currently highlighted text
 vnoremap cc s
 vnoremap c<CR> s
-  "replace the currently highlighted text
+"**Neat idea for insert mode remap**; put closing braces on next line
+"adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
-  "**nead idea for insert mode remap**; put closing braces on next line
-  "adapted from: https://blog.nickpierson.name/colemak-vim/
+"Turn off common things in normal mode
+"also prevent Ctrl+c rining the bell
 nnoremap <C-c> <Nop>
 nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
-  "turns off common things in normal mode
-  "also prevent Ctrl+c rining the bell
+
 "###############################################################################
 "VISUAL MODE BEHAVIOR
 "Highlighting
@@ -277,17 +278,21 @@ nnoremap <C-v> my<C-v>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 " vnoremap <silent> <LeftMouse> <Esc>:echo 'Mode: '.visualmode() \| sleep 200 m<CR><LeftMouse>mx`y:exe 'normal! '.visualmode()<CR>`x
 vnoremap <CR> <C-c>
-"Some other useful visual mode maps; note, will not
+"Some other useful visual mode maps
+"Also prevent highlighting selection under cursor, unless on first character
 nnoremap <silent> v$ v$h
 nnoremap <silent> vv ^v$gE
 nnoremap <silent> v/ hn:noh<CR>gn
-  "makes way more sense to me
-  "also prevent highlighting selection under cursor, unless on first character
+
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff
 set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
-if has('ttymouse') | set ttymouse=sgr | else | set ttymouse=xterm2 | endif
+if has('ttymouse')
+  set ttymouse=sgr
+else
+  set ttymouse=xterm2
+endif
 "Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
 "fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
 " * Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
@@ -308,6 +313,7 @@ if exists("&t_EI")
   else | let &t_EI = "\e[2 q"
   endif
 endif
+
 "###############################################################################
 "GUI OPTIONS
 if has("gui_running")
@@ -315,6 +321,7 @@ if has("gui_running")
   set number relativenumber guioptions= "no scrollbars
   colorscheme slate "no longer controlled through terminal colors
 endif
+
 "###############################################################################
 "CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
 function! s:commandline_check()
@@ -327,6 +334,7 @@ augroup cmdwin
   au CmdwinLeave * setlocal laststatus=2
 augroup END
   "commandline-window settings; when we are inside of q:, q/, and q?
+
 "###############################################################################
 "TAB COMPLETION OPENING NEW FILES
 let &wildignore="*.pdf,*.doc,*.docs,*.page,*.pages,"
@@ -335,20 +343,20 @@ let &wildignore="*.pdf,*.doc,*.docs,*.page,*.pages,"
   \."*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,"
   "never want to open these in VIM; includes GUI-only filetypes
   "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
+
 "###############################################################################
 "###############################################################################
 " COMPLICATED FUNCTIONS, MAPPINGS, FILETYPE MAPPINGS
 "###############################################################################
 "###############################################################################
-augroup _1
-augroup END
-"Tabs default
+"INITIAL STUFF
+"Default tabs
 set tabstop=2
 set shiftwidth=2
 set softtabstop=2
 "Requirements flag, and load repeat.vim right away because want to know if it exists
 "and its functions are available
-runtime autoload/repeat.vim "if file not found, echos nothing
+exe 'runtime autoload/repeat.vim'
 let g:has_signs              = has("signs") "for git gutter and syntastic maybe
 let g:has_ctags              = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_repeat             = exists("*repeat#set") "start checks for function existence
@@ -360,9 +368,8 @@ if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
 endif
-"WEIRD FIX
-"see: https://github.com/kien/ctrlp.vim/issues/566
-" set shell=/bin/bash "will not work with e.g. brew-installed shell
+
+"##############################################################################"
 "VIM-PLUG PLUGINS
 augroup plug
 augroup END
@@ -471,6 +478,7 @@ Plug 'justinmk/vim-sneak'
 call plug#end() "the plug#end also declares filetype syntax and indent on
   "note apparently every BufRead autocmd inside an ftdetect/filename.vim file
   "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
+
 "###############################################################################
 "SESSION MANAGEMENT
 "First, jump to mark '"' without changing the jumplist (:help g`)
@@ -517,6 +525,7 @@ if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically sav
   let g:workspace_autosave_ignore = ['gitcommit', 'rst', 'qf', 'diff', 'help'] "don't autosave these
 endif
 "Remember file position, so come back after opening to same spot
+
 "##############################################################################"
 "TEMPLATES
 "***NOTE*** BufNewFile events don't work inside ftplugin, because by the time
@@ -550,8 +559,10 @@ function! s:textemplates()
     echo "\nInvalid name."
   endwhile
 endfunction
+
 "##############################################################################"
 "SNIPPETS
+
 "###############################################################################
 "GIT GUTTER
 "TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
@@ -576,6 +587,7 @@ if has_key(g:plugs, "vim-gitgutter")
   nmap <silent> gN :GitGutterPrevHunk<CR>
   nmap <silent> gn :GitGutterNextHunk<CR>
 endif
+
 "##############################################################################"
 "VIM SNEAK
 "Just configure the maps here
@@ -595,6 +607,7 @@ if has_key(g:plugs, "vim-sneak")
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
 endif
+
 "###############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
 if has_key(g:plugs, "delimitmate")
@@ -614,6 +627,7 @@ if has_key(g:plugs, "delimitmate")
     "tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
   augroup END
 endif
+
 "###############################################################################
 "SPELLCHECK (really is a BUILTIN plugin, hence why it's in this section)
 "Turn on for certain filetypes
@@ -669,6 +683,7 @@ nnoremap yr zug
 "   inoremap <C-e> <Esc>:OnlineThesaurusCurrentWord<CR>
 "   " help
 " endif
+
 "###############################################################################
 "HELP WINDOW SETTINGS, and special settings for mini popup windows where we don't
 "want to see line numbers or special characters a la :set list.
@@ -717,8 +732,9 @@ function! s:simplesetup(...)
   setlocal nolist nonumber norelativenumber nospell
 endfunction
 command! -nargs=? Simple call <sid>simplesetup(<args>)
+
 "###############################################################################
-"VIM visual increment; creating columns of 1/2/3/4 etc.
+"VIM VISUAL INCREMENT; creating columns of 1/2/3/4 etc.
 "Disable all remaps
 augroup increment
 augroup END
@@ -731,6 +747,7 @@ if has_key(g:plugs, "vim-visual-increment")
   nnoremap + <C-a>
   nnoremap _ <C-x>
 endif
+
 "###############################################################################
 "CODI (MATHEMATICAL NOTEPAD)
 "Now should just use 'Numi' instead; had too many issues with this
@@ -771,6 +788,7 @@ if has_key(g:plugs, "codi.vim")
   let g:codi#sync = 0 "probably easier
   let g:codi#log = "codi.log" "log everything, becuase you *will* have issues
 endif
+
 "###############################################################################
 "MUCOMPLETE
 "Compact alternative to neocomplete; try it again
@@ -781,6 +799,7 @@ if has_key(g:plugs, "vim-mucomplete") "just check if activated
   let g:mucomplete#no_mappings = 1
   let g:mucomplete#no_popup_mappings = 1
 endif
+
 "###############################################################################
 "NEOCOMPLETE (RECOMMENDED SETTINGS)
 if has_key(g:plugs, "neocomplete.vim") "just check if activated
@@ -825,6 +844,7 @@ endif
 highlight Pmenu ctermbg=Black ctermfg=Yellow cterm=None
 highlight PmenuSel ctermbg=Black ctermfg=Black cterm=None
 highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
+
 "##############################################################################"
 "INDENTLINE
 if has_key(g:plugs, 'indentline.vim')
@@ -833,6 +853,7 @@ if has_key(g:plugs, 'indentline.vim')
   let g:indentLine_setConceal=0
   let g:indentLine_fileTypeExclude = ['rst', 'qf', 'diff', 'man', 'help', 'gitcommit', 'tex']
 endif
+
 "###############################################################################
 "EVENTS MANAGEMENT
 "Need to make this mini-function for ctrlp plugin
@@ -860,6 +881,7 @@ endfunction
 command! EIOn  call <sid>eion()
 command! EIOff call <sid>eioff()
 command! EIMap call <sid>eimap()
+
 "###############################################################################
 "CTRLP PLUGIN
 "Make opening in new tab default behavior; see: https://github.com/kien/ctrlp.vim/issues/160
@@ -886,10 +908,12 @@ if has_key(g:plugs, "ctrlp.vim")
   " nnoremap <silent> <C-p> :EIOn<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
   function! s:ctrlpwrap()
     let dir=input("Directory for Ctrl-P (".getcwd()."): ", "", "dir")
-    if dir!="" | EIOn
+    if dir!=""
+      EIOn
       exe 'CtrlP '.dir
       EIMap
-    else | echom "Cancelling..."
+    else
+      echom "Cancelling."
     endif
   endfunction
   "Make sure to map Ctrl i to F3 in iTerm
@@ -938,14 +962,17 @@ if has_key(g:plugs, "ctrlp.vim")
     \ 'PrtExit()':            ['<esc>', '<c-c>', '<c-g>'],
     \ }
 endif
+
 "##############################################################################"
-"FZF completion
+"FZF COMPLETION
 "Maybe not necessary anymore because Ctrl-P access got way better
 "Vim documentation is incomplete; also see readme file: https://github.com/junegunn/fzf/blob/master/README-VIM.md
 "The ctrl-i map below prevents tab from doing anything
 "Also in iterm ctrl-i keypress translates to F3, so use that below
 " Plug 'junegunn/fzf.vim'
 " if has_key(g:plugs, 'fzf.vim')
+augroup fzf
+augroup END
 if !empty(glob("~/.fzf"))
   let g:fzf_layout = {'down': '~20%'} "make window smaller
   let g:fzf_action = {
@@ -956,8 +983,17 @@ if !empty(glob("~/.fzf"))
   \ 'ctrl-v': 'vsplit' }
   set rtp+=~/.fzf
   helptags ~/.fzf/doc "have to update tags after change runtimepath; normally vim-plug does this
-  noremap <F3> :exe 'FZF '.input("Directory for FZF (".getcwd()."): ", "", "dir")<CR>
+  function! s:fzf()
+    let result=input("Directory for FZF (".getcwd()."): ", "", "dir")
+    if result!=""
+      exe 'FZF '.result
+    else
+      echo "Cancelling."
+    endif
+  endfunction
+  noremap <F3> :call <sid>fzf()<CR>
 endif
+
 "###############################################################################
 "NERDTREE
 "Most important commands: 'o' to view contents, 'u' to move up directory,
@@ -1001,6 +1037,7 @@ if has_key(g:plugs, "nerdtree")
     "prevents attempts to change it; this descends into directory
   endfunction
 endif
+
 "###############################################################################
 "NERDCommenter (comment out stuff)
 "Note the default mappings, all prefixed by <Leader> (but we disable them)
@@ -1092,6 +1129,7 @@ if has_key(g:plugs, "nerdcommenter")
   vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
   vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
 endif
+
 "###############################################################################
 "SYNTASTIC (syntax checking for code)
 augroup syntastic
@@ -1151,6 +1189,7 @@ if has_key(g:plugs, "syntastic")
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
+
 "##############################################################################"
 "VIMTEX SETTINGS AND STUFF
 augroup vimtex
@@ -1168,6 +1207,7 @@ if has_key(g:plugs, 'vimtex')
   let g:vimtex_view_general_options = '-r @line @pdf @tex'
   let g:vimtex_fold_enabled = 0 "So large files can open more easily
 endif
+
 "###############################################################################
 "WRAPPING AND LINE BREAKING
 augroup wrap "For some reason both autocommands below are necessary; fuck it
@@ -1239,6 +1279,7 @@ function! s:autowrap()
     call s:wraptoggle(0)
   endif
 endfunction
+
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
 augroup tabular
@@ -1329,6 +1370,7 @@ if has_key(g:plugs, "tabular")
   nnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
   vnoremap -+ :Table /^[^=]*=\zs/l0c1<CR>
 endif
+
 "###############################################################################
 "TAGBAR (requires 'brew install ctags-exuberant')
 " * Note tagbar BufReadPost autocommand must come after the c:tags one, or
@@ -1409,13 +1451,11 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_map_closeallfolds="_"
   let g:tagbar_map_openallfolds="+"
 endif
+
 "###############################################################################
 "###############################################################################
 " GENERAL STUFF, BASIC REMAPS
 "###############################################################################
-"###############################################################################
-augroup _2
-augroup END
 "###############################################################################
 "BUFFER WRITING/SAVING
 "Just declare a couple maps here
@@ -1437,6 +1477,7 @@ silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 silent! nnoremap <Leader>T :terminal<CR>
 " silent! tnoremap <silent> <Esc> <C-\><C-n>
 "exit terminal mode, if exists; or enter terminal normal mode
+
 "###############################################################################
 "IMPORTANT STUFF
 "First line disables linebreaking no matter what ftplugin says, got damnit
@@ -1490,7 +1531,7 @@ function! s:wildstab()
   call feedkeys("\<S-Tab>", 't') | return ''
 endfunction
 "Use ctrl-, and ctrl-. to navigate (mapped with iterm2)
-cnoremap <expr> <F1> <sid>wildstab()
+cnoremap <expr> <sid>wildstab()
 cnoremap <expr> <F2> <sid>wildtab()
 cnoremap <C-h>   <Left>
 cnoremap <C-l>   <Right>
@@ -1502,6 +1543,7 @@ cnoremap <Down>  <Nop>
 cnoremap <Up>    <Nop>
 cnoremap <Left>  <Nop>
 cnoremap <Right> <Nop>
+
 "###############################################################################
 "SPECIAL TAB NAVIGATION
 "Remember previous tab
@@ -1581,6 +1623,7 @@ noremap <Tab>h <C-w>h
 noremap <Tab>l <C-w>l
 "Switch to last window
 nnoremap <Tab>; <C-w><C-p>
+
 "###############################################################################
 "COPY/PASTING CLIPBOARD
 "Pastemode toggling; pretty complicated
@@ -1626,6 +1669,7 @@ nnoremap <C-c> :call <sid>copytoggle()<CR>
 command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 "yank because from Vim, we yank; but remember, c-v is still pastemode
 "-nargs=? means 0 or 1
+
 "###############################################################################
 "SEARCHING AND FIND-REPLACE STUFF
 "Basic stuff first
@@ -1639,6 +1683,7 @@ augroup searchreplace
 augroup END
 set hlsearch incsearch "show match as typed so far, and highlight as you go
 set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
+
 "###############################################################################
 "DELETING STUFF TOOLS
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
@@ -1663,6 +1708,7 @@ nnoremap <expr> <Leader>x ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
 "Replace useless BibTex entries
 nnoremap <silent> <Leader>X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
 "The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
@@ -1684,6 +1730,7 @@ endfor
 inoremap <C-z> <C-^>
 cnoremap <C-z> <C-^>
   "can't lnoremap the above, because iminsert is turning it on and off
+
 "###############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
 augroup z
@@ -1735,6 +1782,7 @@ silent! unmap zuz
 " nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
   "change fold levels, and make sure return to same place
   "never really use this feature so forget it
+
 "###############################################################################
 "g CONFIGURATION
 "SINGLE-KEYSTROKE MOTION BETWEEN FUNCTIONS
@@ -1830,6 +1878,7 @@ endif
 "     "and trying the <C-u> exe thing results in 'command too recursive'
 " endfunction
 " autocmd FileType * call s:gmaps()
+
 "###############################################################################
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
 "See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
@@ -1888,6 +1937,7 @@ highlight ColorColumn cterm=None ctermbg=Gray
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 "Make sure terminal is black, for versions with :terminal command
 highlight Terminal ctermbg=Black
+
 "###############################################################################
 "COLOR HIGHLIGHTING
 "Highlight group under cursor
@@ -1936,6 +1986,7 @@ function! s:colors()
 endfunction
 command! Colors call <sid>colors()
 command! GroupColors vert help group-name
+
 "###############################################################################
 "###############################################################################
 "EXIT
