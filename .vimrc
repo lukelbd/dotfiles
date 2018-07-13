@@ -255,6 +255,7 @@ nnoremap cc cc
 "Replace the currently highlighted text
 vnoremap cc s
 vnoremap c<CR> s
+nnoremap c<CR> <Nop>
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
@@ -363,10 +364,11 @@ exe 'runtime autoload/repeat.vim'
 let g:has_signs              = has("signs") "for git gutter and syntastic maybe
 let g:has_ctags              = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_repeat             = exists("*repeat#set") "start checks for function existence
-let g:has_nowait             = (v:version>703 || v:version==703 && has("patch1261"))
-let g:compatible_neocomplete = has("lua") "try alternative completion library
-let g:compatible_tagbar      = ((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
+let g:has_nowait             = (v:version>=704 || v:version==703 && has("patch1261"))
+let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0
+let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
+let g:compatible_neocomplete = has("lua") "try alternative completion library
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
@@ -468,7 +470,7 @@ Plug 'godlygeek/tabular'
 Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-" Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins disabled
+if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif "CODI appears to be broken, tried with other plugins disabled
 "Single line/multiline transition; make sure comes after surround
 "Hardly ever need this
 " Plug 'AndrewRadev/splitjoin.vim'
@@ -800,21 +802,19 @@ endif
 augroup codi
 augroup END
 if has_key(g:plugs, "codi.vim")
+  "Update manually commands; o stands for codi
   nnoremap <C-n> :CodiUpdate<CR>
   inoremap <C-n> <Esc>:CodiUpdate<CR>a
-    "update manually commands; o stands for codi
   function! s:newcodi(name)
-    if a:name=~".py"
-      echom "Error: Please don't add the .py."
-    elseif !len(a:name)
-      echom "Error: Name is empty."
+    if a:name==''
+      echom "Cancelled."
     else
-      exec "tabe ".a:name.".py"
+      exec "tabe ".fnamemodify(a:name,':r').".py"
       exec "Codi!! ".&ft
     endif
   endfunction
   "Create new calculator file, adds .py extension
-  nnoremap <silent> <Leader>n :call <sid>newcodi(input('Calculator name: ('.getcwd().')', '', 'file'))<CR>
+  nnoremap <silent> <Leader>n :call <sid>newcodi(input('Calculator name: ('.getcwd().') ', '', 'file'))<CR>
   "Turn current file into calculator; m stands for math
   nnoremap <silent> <Leader>N :Codi!! &ft<CR>
   "Use builtin python2.7 on macbook to avoid creating history files
@@ -959,7 +959,7 @@ if has_key(g:plugs, "ctrlp.vim")
       exe 'CtrlP '.dir
       EIMap
     else
-      echom "Cancelling."
+      echom "Cancelled."
     endif
   endfunction
   "Make sure to map Ctrl i to F3 in iTerm
@@ -1034,7 +1034,7 @@ if !empty(glob("~/.fzf"))
     if result!=""
       exe 'FZF '.result
     else
-      echo "Cancelling."
+      echom "Cancelled."
     endif
   endfunction
   noremap <F3> :call <sid>fzf()<CR>
@@ -1114,8 +1114,10 @@ if has_key(g:plugs, "nerdcommenter")
   "Create python docstring
   nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
   nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
-  "Set up custom remaps
-  nnoremap c<CR> <Nop>
+  "Add author information (tries to match indentation)
+  nnoremap <silent> <expr> <Leader>a ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
+        \ .' Author: Luke Davis (lukelbd@gmail.com)<Esc>:call <sid>toggleformatopt()<CR>o'
+  " nnoremap <silent> <Leader>a :call append(line('.'), b:NERDCommenterDelims['left'].' Author: Luke Davis')<CR>jA<CR>
   "Declare mapping strings needed to build remaps
   "Then can *delcare mapping for custom keyboard* using exe 'nnoremap <expr> shortcut '.string,
   "and note that the expression is evaluated every time right before the map is executed (i.e. buffer-local comment chars are generated)
@@ -1577,7 +1579,7 @@ function! s:wildstab()
   call feedkeys("\<S-Tab>", 't') | return ''
 endfunction
 "Use ctrl-, and ctrl-. to navigate (mapped with iterm2)
-cnoremap <expr> <sid>wildstab()
+cnoremap <expr> <F1> <sid>wildstab()
 cnoremap <expr> <F2> <sid>wildtab()
 cnoremap <C-h>   <Left>
 cnoremap <C-l>   <Right>
@@ -1645,18 +1647,27 @@ noremap <silent> <Tab>m :silent! call <sid>tabmove(input('Move tab: ', '', 'cust
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "Next a function for completing stuff, *including* hidden files god damnit
-function! s:allfiles(A,L,P)
-  let path=(len(a:A)>0 ? a:A : '')
-  let result=split(glob(path.'*'),'\n') + split(glob(path.'.*'),'\n')
-  let final=[]
-  for string in result "ignore 'this directory' and 'parent directory'
-    if string !~ '^\(.*/\)\?\.\{1,2}$'
-      call extend(final, [string])
-    endif
-  endfor
-  return final
+"Note allfiles function seems to have to be in local scope; otherwise can't find s:allfiles or <sid>allfiles
+function! s:openwrapper()
+  function! l:allfiles(A,L,P)
+    let path=(len(a:A)>0 ? a:A : '')
+    let result=split(glob(path.'*'),'\n') + split(glob(path.'.*'),'\n')
+    let final=[]
+    for string in result "ignore 'this directory' and 'parent directory'
+      if string !~ '^\(.*/\)\?\.\{1,2}$'
+        call extend(final, [substitute((isdirectory(string) ? string.'/' : string ), '/\+', '/', 'g')])
+      endif
+    endfor
+    return final
+  endfunction
+  let response=input('Open tab ('.getcwd().'): ', '', 'customlist,l:allfiles')
+  if response!=''
+    exe 'tabe '.response
+  else
+    echom "Cancelled."
+  endif
 endfunction
-nnoremap <C-o> :exe 'tabe '.input('Open tab ('.getcwd().'): ', '', 'customlist,<sid>allfiles')<CR>
+nnoremap <silent> <C-o> :call <sid>openwrapper()<CR>
 "Splitting -- make :sp and :vsp split to right and bottom
 set splitright
 set splitbelow
@@ -1825,12 +1836,12 @@ noremap <silent> <Tab>= :vertical resize 80<CR>
   "and the z-prefix is a natural companion to the resizing commands
   "the Tab commands should just sort and navigate between panes
   "think of the 0 as 'original size', like cmd-0 on macbook
+"To prevent delay; this is associated with FastFold or something
 silent! unmap zuz
-  "to prevent delay; this is associated with FastFold or something
+"Change fold levels, and make sure return to same place
+"Never really use this feature so forget it
 " nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
 " nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
-  "change fold levels, and make sure return to same place
-  "never really use this feature so forget it
 
 "###############################################################################
 "g CONFIGURATION
