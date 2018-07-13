@@ -381,10 +381,15 @@ opts 2>/dev/null # ignore if option unavailable
 ################################################################################
 # The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
-alias bindings_stty="stty -e"                # bindings
-alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
 alias aliases="compgen -a"
 alias functions="compgen -A function" # show current shell functions
+if $macos; then
+  alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+  alias bindings_stty="stty -e"                # bindings
+else
+  alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+  alias bindings_stty="stty -a"                # bindings
+fi
 alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
 alias inputrc_ops="bind -v"           # the 'set' options, and their values
 function env() { set; } # just prints all shell variables
@@ -479,8 +484,8 @@ function dl() { # directory sizes
 }
 
 # Grepping and diffing; enable colors
-alias grep="grep --color=auto" # always show color
-alias egrep="egrep --color=auto" # always show color
+alias grep="grep --exclude-dir=plugged --exclude-dir=.vim --exclude-dir=.svn --color=auto"
+alias egrep="egrep --exclude-dir=plugged --exclude-dir=.vim --exclude-dir=.svn --color=auto"
 # Make Perl color wrapper default; also allow color difference with git
 # Note to recursively compare directories, use --name-status
 hash colordiff 2>/dev/null && alias diff="command colordiff"
@@ -1356,10 +1361,13 @@ if [ -f ~/.fzf.bash ]; then
   export FZF_COMPLETION_TRIGGER='' # tab triggers completion
   export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
   # The builtin options # --ansi --color=bw
+  # Try to make bindings similar to vim; configure ctrl+, and ctrl+. to trigger completion
+  # and scroll through just like tabs, ctrl+j and ctrl+k reserved for history scrolling, and use
+  # slash, enter, or ctrl-d to accept an answer (d for 'descend')
   _command='' # use find . -maxdepth 1 search non recursively
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
     --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:down+toggle,ctrl-u:up+toggle,tab:abort,shift-tab:abort,/:accept' \
+    --bind=f1:up,f2:down,shift-tab:up,tab:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down+toggle,ctrl-k:up+toggle,ctrl-d:accept,/:accept' \
     | tr '\n' ' ')
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
@@ -1374,11 +1382,13 @@ if [ -f ~/.fzf.bash ]; then
   source ~/.fzf.bash
   #----------------------------------------------------------------------------#
   # Non-path completion: subcommands, shell commands, etc.
-  for _command in shopt help man type which alias unalias function git cdo; do
+  # Feel free to add to this list, it is super cool
+  for _command in shopt help man type which bind alias unalias function git cdo; do
     # Post-processing commands *must* have name <name_of_complete_function>_post
     case $_command in
       shopt) _generator="shopt | cut -d' ' -f1 | cut -d$'\\t' -f1" ;;
       help|man|type|which) _generator="cat \$HOME/.commands | grep -v '[!.:]'" ;; # faster than loading every time
+      bind)                _generator="bind -l" ;;
       unalias|alias)       _generator="compgen -a" ;;
       function)            _generator="compgen -A function" ;;
       git)                 _generator="git commands" ;;
@@ -1392,10 +1402,9 @@ if [ -f ~/.fzf.bash ]; then
     complete -F _fzf_complete_$_command $_command
   done
   #----------------------------------------------------------------------------#
-  # Path completion with special filter; just supply path_completion with our own compgen
-  # i.e. completion generator. Accepts function 
+  # Path completion with file extension filter
   # For info see: https://unix.stackexchange.com/a/15309/112647
-  # Note that 'and' has higher precedence over 'or'
+  # These will wrap around the generic path completion function
   _fzf_find_prefix='-name .git -prune -o -name .svn -prune -o ( -type d -o -type f -o -type l )'
   for _command in pdf image html; do
     case $_command in
