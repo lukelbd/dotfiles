@@ -726,9 +726,9 @@ function jt() {
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
       uriah*)  jupyter_theme=solarizedl;;
-      gauss*)   jupyter_theme=gruvboxd;;
-      euclid*)  jupyter_theme=gruvboxd;;
-      monde*)   jupyter_theme=onedork;;
+      gauss*)  jupyter_theme=gruvboxd;;
+      euclid*) jupyter_theme=gruvboxd;;
+      monde*)  jupyter_theme=onedork;;
       midway*) jupyter_theme=onedork;;
       *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
     esac
@@ -985,7 +985,7 @@ function figuresync() {
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
 portfile=~/.port # file storing port number
-alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
+alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
 function expanduser() { # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
@@ -998,24 +998,24 @@ function compressuser() { # turn $HOME into tilde
   param="${param/#$HOME/\~}"
   echo $param
 }
-function ssh_wrapper() {
+function ssh_fancy() {
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
   local port=10000 # starting port
   local listen=22 # default sshd listening port; see the link above
   local args=($@) # all arguments
   [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
   # while netstat -an | grep "$port" | grep -i listen &>/dev/null; do # check for localhost availability; wrong!
-  while \ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host
+  while command ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host
     echo "Warning: Port $port unavailable." # warning message
     local port=$(($port + 1)) # generate new port
   done
   # \ssh -o StrictHostKeyChecking=no \
   local portwrite="$(compressuser $portfile)"
   local titlewrite="$(compressuser $titlefile)"
-  \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
+  command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite; echo $title >$titlewrite; " \
-    "echo \"Port number: ${port}.\"; /bin/bash -i" # -t says to stay interactive
+    "echo $port >$portwrite; echo $title >$titlewrite; \
+     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
@@ -1029,7 +1029,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   local dest="$(compressuser ${@:(-1)})" # last value
   local dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file on this server to home server at: $dest..."
-  scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
+  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
@@ -1043,7 +1043,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   local file="$(compressuser ${@:(-2):1})" # second to last
   local file="${file//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
+  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
 }
 
 ################################################################################
