@@ -756,28 +756,46 @@ function notebook() {
   # Set the jupyter theme
   echo "Configuring jupyter notebook theme."
   ! $jupyter_ready && jt # trigger default theme
-  jupyter_ready=true # this value is available for rest of session
+  jupyter_ready=true     # this value is available for rest of session
   # Test the hostname and get unique port we have picked
-  # if [ ! -z $1 ]; then
-  #   jupyterremote=$1 # override with user input
-  # else case ${HOSTNAME%%.*} in
-  #     uriah)    jupyterport=20000;;
-  #     gauss)    jupyterport=20001;;
-  #     euclid)   jupyterport=20002;;
-  #     monde)    jupyterport=20003;;
-  #     midway*)  jupyterport=20004;;
-  #     *)      echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
-  #   esac
-  # fi
-  if [ ! -r ~/.port ]; then
-    echo "Error: Port file \"$HOME/.port\" not found."
-  else
-    jupyterport=$(cat ~/.port | xargs)
+  if [ ! -z $1 ]; then
+    jupyterport=$1 # override with user input
+  else case $HOSTNAME in
+      uriah*)  jupyterport=20000 ;;
+      gauss*)  jupyterport=20001 ;;
+      euclid*) jupyterport=20002 ;;
+      monde*)  jupyterport=20003 ;;
+      midway*) jupyterport=20004 ;;
+      *) echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
+    esac
+  fi
+  # Tell local server to connect to this server's port number $jupyterport
+  # in the background
+  if ! $macos; then # need background port forwarding
+    # Establish the connection
+    echo "Connecting macbook to ${HOSTNAME%%@*} over port $jupyterport."
+    if [ ! -r ~/.port ]; then
+      echo "Error: File \"$HOME/.port\" not available. Cannot send command to macbook."
+      return 1
+    elif ! which ip &>/dev/null; then
+      echo "Error: Command \"ip\" not available. Cannot determine this server's address."
+      return 1
+    else
+      # Set up background connection
+      # -f sets port-forwarding to the background
+      # -N says we don't need to issue a command, port will remain forwarded indefinitely
+      # The comment used to retrieve the IP address is copied from the 'address' command
+      command ssh -t -o StrictHostKeyChecking=no -p $(cat ~/.port) $USER@localhost "
+        command ssh -N -f -L localhost:$jupyterport:localhost:$jupyterport \
+          $USER@$(ip route get 1 | awk '{print $NF;exit}')
+        "
+      sleep 5
+    fi
   fi
   # Create the notebook
   echo "Initializing jupyter notebook over port port: $jupyterport."
   jupyter notebook --no-browser --port=$jupyterport --NotebookApp.iopub_data_rate_limit=10000000
-    # need to extend data rate limit when making some plots with lots of stuff
+  # need to extend data rate limit when making some plots with lots of stuff
 }
 # See current ssh connections
 alias connections="ps aux | grep -v grep | grep ssh"
@@ -799,7 +817,7 @@ function connect() { # connect to remove notebook on port
   # Establish the connection
   echo "Connecting to $hostname over port $jupyterconnect."
   echo "Warning: Keep this window open to use your remote jupyter notebook!"
-  \ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $user@$hostname
+  command ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $user@$hostname
       # the -f command sets this port-forwarding to the background for the duration of the
       # ssh command to follow; but the -N command says we don't need to issue a command,
       # the port will just remain forwarded indefinitely
@@ -889,19 +907,25 @@ $macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
 ################################################################################
 # Declare some names for active servers
 # ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-work='ldavis@10.83.16.91' # for scp'ing into my Mac
-home='ldavis@10.253.201.216'
-gauss='ldavis@gauss.atmos.colostate.edu'
-monde='ldavis@monde.atmos.colostate.edu'
-euclid='ldavis@euclid.atmos.colostate.edu'
-olbers='ldavis@olbers.atmos.colostate.edu'
-zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-chicago='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
-archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
-ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
+function hostname() {
+  case "$1" in
+    gauss)   eval "$1=ldavis@gauss.atmos.colostate.edu"         ;;
+    monde)   eval "$1=ldavis@monde.atmos.colostate.edu"         ;;
+    euclid)  eval "$1=ldavis@euclid.atmos.colostate.edu"        ;;
+    olbers)  eval "$1=ldavis@olbers.atmos.colostate.edu"        ;;
+    zephyr)  eval "$1=lukelbd@zephyr.meteo.mcgill.ca"           ;;
+    chicago) eval "$1=t-9841aa@midway2-login1.rcc.uchicago.edu" ;; # pass: orkalluctudg
+    archive) eval "$1=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
+    ldm)     eval "$1=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
+    *) echo "Error: Unknown host key \"$1\"." && return 1
+  esac
+  echo ${!1} # get the variable that this guy points to
+}
+hosts="gauss monde euclid olbers zephyr chicago archive ldm"
+for host in $hosts; do
+  hostname $host >/dev/null # call
+done
 
-# archive='/media/archives/reanalyses/era_interim/'
-# olbers='ldavis@129.82.49.159'
 # Check git remote on current folder, make sure it points to SSH/HTTPS depending
 # on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
 # SSH key or password/username can only be stored in plaintext in home directory)
@@ -941,6 +965,7 @@ function figuresync() {
   #   See: https://stackoverflow.com/a/26891150/4970632
   # * Takes server argument..
   extramessage="$2" # may be empty
+  ! $macos && echo "Error: Function intended to be called from macbook." && return 1
   [ -z "$1" ] && echo "Error: Hostname argument required." && return 1
   local server="$1" # server
   local localdir="$(pwd)"
@@ -952,38 +977,31 @@ function figuresync() {
     local remotedir="/home/ldavis/$localdir"
   fi
   echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
-  eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
-  ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
-  \ssh $server 'eval "$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
-    cd '"$remotedir"'; git status -s; sleep 1
-    mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
-    ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
-    space1="" space2="" message="" # initialize message
-    [ $Nmfiles -eq 1 ] && mfigures="figure" || mfigures="figures"
-    [ $Nofiles -eq 1 ] && ofigures="figure" || ofigures="figures"
-    [ $Nmfiles -ne 0 ] && message+="Modified $Nmfiles $mfigures." && space1=" "
-    [ $Nofiles -ne 0 ] && message+="${space1}Made $Nofiles new $ofigures." && space2=" "
-    [ ! -z "'"$extramessage"'" ] && message+="${space2}'"$extramessage"'"
-    if [ ! -z "$message" ]; then
-      echo "Commiting changes with message: \"$message\""
-      git add --all && git commit -q -m "$message" && git push -q
-    else echo "No new figures." && exit 1
-    fi'
+  # Issue script to server over ssh
+  read -r -d '' commands << EOF
+# List modified and 'other' (untracked) files of pdf type
+# Also have to add github rsa manually because we don't source the bashrc
+eval "\$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
+cd "${remotedir}"; git status -s; sleep 1
+Nmfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
+Nofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
+# Initialize message
+[ \$Nmfiles -ne 0 ]        && message+="Modified \$Nmfiles figure(s)."           && space1=" "
+[ \$Nofiles -ne 0 ]        && message+="\${space1}Made \$Nofiles new figure(s)." && space2=" "
+[ ! -z "${extramessage}" ] && message+="\${space2}${extramessage}"
+if [ ! -z "\$message" ]; then
+  echo "Commiting changes with message: \\"\$message\\""
+  git add --all && git commit -q -m "\$message" && git push -q
+else
+  echo "No new figures." && exit 1
+fi
+EOF
+  command ssh $server "$commands"
+  # Check output, and git fetch if new figures were found
   if [ $? -eq 0 ]; then # non-zero exit code
     echo "Pulling changes to macbook."
     git fetch && git merge -m "Syncing with macbook." # assume in correct directory already
-    # cd "$localdir" && git pull # attempt pull
   fi
-# Method using read command
-#   local commands # create local commands variable; https://stackoverflow.com/a/23991919/4970632
-#   read -r -d '' commands << EOF
-# commands go here
-# EOF
-#   \ssh $server "$commands"
-# Method using multiline string
-# \ssh $server "command 1
-#   command 2
-#   command 3"
 }
 
 # Functions for scp-ing from local to remote, and vice versa
@@ -996,6 +1014,17 @@ function figuresync() {
 #     checking, still get this warning message every time.
 portfile=~/.port # file storing port number
 alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
+function address() {
+  # Get the ip address; several weird options for this
+  if ! $macos; then
+    # See this: https://stackoverflow.com/q/13322485/4970632
+    # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
+    ip route get 1 | awk '{print $NF;exit}'
+  else
+    # See this: https://apple.stackexchange.com/q/20547/214359
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+  fi
+}
 function expanduser() { # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
@@ -1019,7 +1048,6 @@ function ssh_fancy() {
     echo "Warning: Port $port unavailable." # warning message
     local port=$(($port + 1)) # generate new port
   done
-  # \ssh -o StrictHostKeyChecking=no \
   local portwrite="$(compressuser $portfile)"
   local titlewrite="$(compressuser $titlefile)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
@@ -1029,7 +1057,7 @@ function ssh_fancy() {
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
-  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
+  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
   [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
   local port=$(cat $portfile) # port from most recent login
@@ -1039,11 +1067,11 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
   local dest="$(compressuser ${@:(-1)})" # last value
   local dest="${dest//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
+  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ${USER}@localhost:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
-  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
+  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
   [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
   [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
   local port=$(cat $portfile) # port from most recent login
@@ -1053,7 +1081,7 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   local file="$(compressuser ${@:(-2):1})" # second to last
   local file="${file//\ /\\\ }"  # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
+  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} ${USER}@localhost:"$file" "$dest"
 }
 
 ################################################################################
@@ -1440,7 +1468,7 @@ fi
 # but only ever have to do this once)
 ################################################################################
 # Options for ensuring git credentials (https connection) is set up; now use SSH id, so forget it
-# $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && \ssh -T git@github.com; }
+# $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && command ssh -T git@github.com; }
 # $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
 # Overcomplicated MacOS options
 # $macos && fortune | lolcat || echo "Shell configured and namespace populated."
