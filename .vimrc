@@ -179,10 +179,13 @@ noremap <silent> ~ :call append(line('.')-1,'')<CR>
 noremap <silent> cL mzi<CR><Esc>`z
 "Swap with row above, and swap with row below; awesome mnemonic, right?
 "use same syntax for c/s because almost *never* want to change up/down
-" noremap <silent> sk mzkddp`z
-noremap <silent> ck mzkddp`z
-" noremap <silent> sj jmzkddp`zj
-noremap <silent> cj jmzkddp`zj
+"The command-based approach make sthe cursor much less jumpy
+" noremap <silent> ck mzkddp`z
+" noremap <silent> cj jmzkddp`zj
+noremap <silent> ck k:let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>
+noremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>j
 "Useful for typos
 noremap <silent> cl xph
 noremap <silent> ch Xp
@@ -412,7 +415,9 @@ Plug 'anntzer/vim-cython'
 "Actually tried with minimum contrast zero and colors *still* messed up; forget it
 " Plug 'lilydjwg/colorizer'
 "TeX utilities; better syntax highlighting, better indentation,
-"and some useful remaps
+"and some useful remaps. Also zotero integration.
+Plug 'Shougo/unite.vim'
+Plug 'rafaqz/citation.vim'
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
 "Julia support and syntax highlighting
@@ -563,7 +568,48 @@ function! s:textemplates()
 endfunction
 
 "##############################################################################"
+"ZOTERO INTEGRATION
+"Requires pybtex (pip install it) and unite.vim plugin
+augroup unite
+augroup END
+if has_key(g:plugs,'unite.vim') && has_key(g:plugs,'citation.vim')
+  "Settings
+  " let g:citation_vim_mode="bibtex"
+  " let g:citation_vim_bibtex_file="./refs.bib" "by default, make this your filename
+  let g:citation_vim_mode="zotero" "default
+  let g:citation_vim_zotero_path="~/Zotero" "location of sqlite
+  let g:citation_vim_zotero_version=5
+  let g:citation_vim_cache_path='~/.vim/zcache'
+  let g:citation_vim_outer_prefix='\cite{'
+  let g:citation_vim_inner_prefix=''
+  let g:citation_vim_suffix='}'
+  let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors
+  " let g:citation_vim_zotero_path="~/Google Drive"   "alternative
+  "Mappings
+  "We use the y prefix because it's mostly unused so far
+  "yo for toggle spelling, yO for toggle citation
+  nnoremap <silent> yO :<C-u>Unite citation<CR>
+  "Insert citation
+  nnoremap <silent> yc :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
+  "Open file directory
+  nnoremap <silent> yd :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  "Open pdf
+  nnoremap <silent> yp :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
+  "Open url
+  nnoremap <silent> yu :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
+  "View citation info
+  nnoremap <silent> yI :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
+  "Append information
+  nnoremap <silent> yA :<C-u>Unite -default-action=yank citation/title<CR>
+  "Search for word under cursor
+  nnoremap <silent> ys :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
+  "Search for words, input prompt
+  nnoremap <silent> yS :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
+endif
+
+"##############################################################################"
 "SNIPPETS
+"TODO: Add these
 
 "###############################################################################
 "GIT GUTTER
@@ -1698,24 +1744,27 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 "###############################################################################
 "DELETING STUFF TOOLS
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
+"Replace commented lines; very useful when sharing manuscripts
+nnoremap <expr> <Leader>x ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+vnoremap <expr> <Leader>x ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
+"Will probably be necessary after the comment trimming
 nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 "Delete empty lines
 nnoremap <silent> <Leader>\| :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 vnoremap <silent> <Leader>\| :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-"Replace consecutive spaces on current line with one space
-nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Replace consecutive newlines with single newline
 nnoremap <silent> <Leader>~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-"Fix unicode quotes and dashes
+"Replace consecutive spaces on current line with one space
+nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+"Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
 nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
 nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
-"Replace commented lines
-nnoremap <expr> <Leader>x ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace useless BibTex entries
 nnoremap <silent> <Leader>X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 " nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
