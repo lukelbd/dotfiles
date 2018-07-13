@@ -651,198 +651,6 @@ function flatten() {
 }
 
 ################################################################################
-# Supercomputer tools 
-################################################################################
-alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
-alias suser="squeue -u $USER"
-
-################################################################################
-# Python workspace setup
-################################################################################
-# For profiling scripts
-alias profile="python -m cProfile -s time"
-# Python shell utilities
-# io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
-io="import pandas as pd; import xarray as xr; "
-basic="import numpy as np; from datetime import datetime; from datetime import date; "
-magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autoreload 2'); "
-plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
-pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
-# Other shell utilities
-# Simple thing for R
-# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
-# * The ---always-readline prevents prompt from switching to the default prompt, but
-#   also seems to disable ctrl-d for exiting.
-alias r="R"   # because why not?
-alias ir="iR" # again, why not?
-function iR() {
-  echo 'This is an Interactive R shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  R -q --no-save # keep it simple stupid
-  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
-}
-# NCL -- and a couple other things
-# Binding thing doesn't work (cause it's not passed to shell), but was neat idea
-function incl() {
-  # local binding_old="$(bind -Xps | grep C-d)" # print every kind of binding; flags are different kinds
-  echo "This is an Interactive NCL shell."
-  ncl -Q -n
-  # bind '"\C-d":"exit()\C-m"'
-  # bind "$binding_old" # spaces gotta be escaped
-}
-# Perl -- hard to understand, but here it goes:
-# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
-# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
-#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
-#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
-#   for success, and if not, prints the error message. This is a build-your-own eval.
-function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
-  echo 'This is an Interactive Perl shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
-}
-alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
-# With new shell color
-# alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-# alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-# alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
-# alias R="cmdcolor R"
-
-################################################################################
-# NOTEBOOK STUFF
-################################################################################
-# * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
-# * IMPORTANT note: to uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
-#   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
-# * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
-#   and you can right-click refresh for a hard reset, cache reset
-# alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
-jupyter_ready=false # theme is not initially setup because takes a long time
-function jt() {
-  # Choose default themes and font
-  # chesterish is best; monokai has green/pink theme;
-  # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
-  # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  if [ $# -lt 1 ]; then 
-    echo "Choosing jupytertheme automatically based on hostname."
-    case $HOSTNAME in
-      uriah*)  jupyter_theme=solarizedl;;
-      gauss*)  jupyter_theme=gruvboxd;;
-      euclid*) jupyter_theme=gruvboxd;;
-      monde*)  jupyter_theme=onedork;;
-      midway*) jupyter_theme=onedork;;
-      *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
-    esac
-  else jupyter_theme="$1"
-  fi
-  if [ $# -lt 2 ]; then
-    export jupyter_font="cousine" # look up available ones online
-  else
-    export jupyter_font="$2"
-  fi
-  # Make sure theme is valid
-  # mkadf
-  themes=($(command jt -l | sed '1d'))
-  [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
-    echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
-  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
-    -t $jupyter_theme -f $jupyter_font
-}
-function notebook() {
-  # Set the jupyter theme
-  echo "Configuring jupyter notebook theme."
-  ! $jupyter_ready && jt # trigger default theme
-  jupyter_ready=true     # this value is available for rest of session
-  # Test the hostname and get unique port we have picked
-  if [ ! -z $1 ]; then
-    jupyterport=$1 # override with user input
-  else case $HOSTNAME in
-      uriah*)  jupyterport=20000 ;;
-      gauss*)  jupyterport=20001 ;;
-      euclid*) jupyterport=20002 ;;
-      monde*)  jupyterport=20003 ;;
-      midway*) jupyterport=20004 ;;
-      *) echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
-    esac
-  fi
-  # Tell local server to connect to this server's port number $jupyterport
-  # in the background
-  if ! $macos; then # need background port forwarding
-    # Establish the connection
-    if [ ! -r ~/.port ]; then
-      echo "Error: File \"$HOME/.port\" not available. Cannot send command to macbook."
-      return 1
-    elif ! which ip &>/dev/null; then
-      echo "Error: Command \"ip\" not available. Cannot determine this server's address."
-      return 1
-    else
-      # Set up background connection
-      # -f sets port-forwarding to the background
-      # -N says we don't need to issue a command, port will remain forwarded indefinitely
-      # * The embedded ip command prints this server's ip address (since $(hostname) often does
-      #   not include the full URL); see the 'address()' function in this bashrc.
-      # * The -t flag says to open a 'pseudo-tty' and run some command, then exit.
-      #   The command we will run will set up port-forwarding.
-      echo "Connecting macbook to ${HOSTNAME%%@*} over port $jupyterport."
-      command ssh -t -o StrictHostKeyChecking=no -p $(cat ~/.port) $USER@localhost "
-        command ssh -N -f -L localhost:$jupyterport:localhost:$jupyterport \
-          $USER@$(ip route get 1 | awk '{print $NF;exit}')
-        "
-    fi
-  fi
-  # Create the notebook
-  echo "Initializing jupyter notebook over port $jupyterport."
-  jupyter notebook --no-browser --port=$jupyterport --NotebookApp.iopub_data_rate_limit=10000000
-  # need to extend data rate limit when making some plots with lots of stuff
-}
-# Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
-function connect() { # connect to remove notebook on port
-  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
-  local user=${1%%@*}
-  local hostname=${1##*@} # the host we connect to, minus username
-  if [ ! -z $2 ]; then
-    jupyterconnect=$2 # override with user input
-  else case ${hostname%%.*} in
-      gauss)   jupyterconnect=20001;;
-      euclid)  jupyterconnect=20002;;
-      monde)   jupyterconnect=20003;;
-      midway*) jupyterconnect=20004;;
-      *)        echo "Error: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
-    esac
-  fi
-  # Establish the connection
-  echo "Connecting to $hostname over port $jupyterconnect."
-  echo "Warning: Keep this window open to use your remote jupyter notebook!"
-  command ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $user@$hostname
-      # the -f command sets this port-forwarding to the background for the duration of the
-      # ssh command to follow; but the -N command says we don't need to issue a command,
-      # the port will just remain forwarded indefinitely
-}
-# Include option to cancel connection: see: https://stackoverflow.com/a/20240445/4970632
-function disconnect() {
-  # Determine the port to use
-  if [ ! -z $1 ]; then
-    local jupyterdisconnect=$1
-  elif [ ! -z $jupyterconnect ]; then
-    local jupyterdisconnect=$jupyterconnect
-  else
-    echo "Error: Must specify a port or make sure port is available from variable \"jupyterconnect\"."
-    return 1
-  fi
-  # Disable the connection
-  # lsof -t -i tcp:$jupyterdisconnect | xargs kill # this can accidentally kill Chrome instance
-  local ports=($(lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs))
-  [ -z $ports ] && echo "Error: Connection over port \"${jupyterdisconnect}\" not found." && return 1
-  kill ${ports[@]} # kill the SSH processes
-  [ $? == 0 ] && unset jupyterconnect || echo "Error: Could not disconnect from port \"${jupyterdisconnect}\"."
-  echo "Connection over port ${jupyterdisconnect} removed."
-}
-
-################################################################################
 # iTerm2 title and other stuff
 ################################################################################
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762
@@ -926,17 +734,44 @@ for host in $hosts; do
   hostname $host >/dev/null # call
 done
 
-# Check git remote on current folder, make sure it points to SSH/HTTPS depending
-# on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
-# SSH key or password/username can only be stored in plaintext in home directory)
-gitmessage=$(git remote -v 2>/dev/null)
-if [ ! -z "$gitmessage" ]; then
-  if [[ "$gitmessage" =~ "https" ]] && ! $macos; then # ssh node for Linux
-    echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
-  elif [[ "$gitmessage" =~ "git@github" ]] && $macos; then # url for Mac
-    echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
+# Short helper functions
+# See current ssh connections
+alias connections="ps aux | grep -v grep | grep 'ssh '"
+# View address
+function address() {
+  # Get the ip address; several weird options for this
+  if ! $macos; then
+    # See this: https://stackoverflow.com/q/13322485/4970632
+    # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
+    ip route get 1 | awk '{print $NF;exit}'
+  else
+    # See this: https://apple.stackexchange.com/q/20547/214359
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
   fi
-fi
+}
+# String parsing
+function expanduser() { # turn tilde into $HOME
+  local param="$*"
+  param="${param/#~/$HOME}"  # restore expanded tilde
+  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
+  echo $param
+}
+function compressuser() { # turn $HOME into tilde
+  local param="$*"
+  param="${param/#$HOME/~}"
+  param="${param/#$HOME/\~}"
+  echo $param
+}
+# Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
+function disconnect() {
+  local pids port=$1
+  [ $# -ne 1 ] && echo "Error: Function requires exactly 1 arg."
+  # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
+  pids="$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)"
+  [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
+  kill $pids # kill the SSH processes
+  echo "Connection over port $port removed."
+}
 
 # Trigger ssh-agent if not already running, and add Github private key
 # Make sure to make private key passwordless, for easy login; all I want here
@@ -973,34 +808,17 @@ if ! $macos; then # only do this if not on macbook
     initssh
   fi
 fi
-
-# Short helper functions
-# See current ssh connections
-alias connections="ps aux | grep -v grep | grep 'ssh '"
-# View address
-function address() {
-  # Get the ip address; several weird options for this
-  if ! $macos; then
-    # See this: https://stackoverflow.com/q/13322485/4970632
-    # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
-    ip route get 1 | awk '{print $NF;exit}'
-  else
-    # See this: https://apple.stackexchange.com/q/20547/214359
-    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+# Check git remote on current folder, make sure it points to SSH/HTTPS depending
+# on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
+# SSH key or password/username can only be stored in plaintext in home directory)
+gitmessage=$(git remote -v 2>/dev/null)
+if [ ! -z "$gitmessage" ]; then
+  if [[ "$gitmessage" =~ "https" ]] && ! $macos; then # ssh node for Linux
+    echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
+  elif [[ "$gitmessage" =~ "git@github" ]] && $macos; then # url for Mac
+    echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
   fi
-}
-function expanduser() { # turn tilde into $HOME
-  local param="$*"
-  param="${param/#~/$HOME}"  # restore expanded tilde
-  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
-  echo $param
-}
-function compressuser() { # turn $HOME into tilde
-  local param="$*"
-  param="${param/#$HOME/~}"
-  param="${param/#$HOME/\~}"
-  echo $param
-}
+fi
 
 # Functions for scp-ing from local to remote, and vice versa
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
@@ -1060,7 +878,158 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
   command scp -o StrictHostKeyChecking=no -P$port ${args[@]} ${USER}@localhost:"$file" "$dest"
 }
 
-# Functions for executing stuff on remote servers
+################################################################################
+# Supercomputer tools 
+################################################################################
+alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
+alias suser="squeue -u $USER"
+
+################################################################################
+# Python workspace setup
+################################################################################
+# For profiling scripts
+alias profile="python -m cProfile -s time"
+# Python shell utilities
+# io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
+io="import pandas as pd; import xarray as xr; "
+basic="import numpy as np; from datetime import datetime; from datetime import date; "
+magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autoreload 2'); "
+plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
+pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
+# Other shell utilities
+# Simple thing for R
+# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
+# * The ---always-readline prevents prompt from switching to the default prompt, but
+#   also seems to disable ctrl-d for exiting.
+alias r="R"   # because why not?
+alias ir="iR" # again, why not?
+function iR() {
+  echo 'This is an Interactive R shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  R -q --no-save # keep it simple stupid
+  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
+}
+# NCL -- and a couple other things
+# Binding thing doesn't work (cause it's not passed to shell), but was neat idea
+function incl() {
+  # local binding_old="$(bind -Xps | grep C-d)" # print every kind of binding; flags are different kinds
+  echo "This is an Interactive NCL shell."
+  ncl -Q -n
+  # bind '"\C-d":"exit()\C-m"'
+  # bind "$binding_old" # spaces gotta be escaped
+}
+# Perl -- hard to understand, but here it goes:
+# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
+# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
+#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
+#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
+#   for success, and if not, prints the error message. This is a build-your-own eval.
+function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+  echo 'This is an Interactive Perl shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
+}
+alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$io$basic$magic$plots$pyfuncs\""
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
+    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
+# With new shell color
+# alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
+# alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
+# alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
+# alias R="cmdcolor R"
+
+################################################################################
+# Notebook stuff
+################################################################################
+# * To uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
+#   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
+# * If you have issues where themes are just not changing in Chrome, open Developer tab
+#   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
+# Wrapper aroung jupyter theme function, much better
+jupyter_ready=false # theme is not initially setup because takes a long time
+function jt() {
+  # Choose default themes and font
+  # chesterish is best; monokai has green/pink theme;
+  # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
+  # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
+  if [ $# -lt 1 ]; then 
+    echo "Choosing jupytertheme automatically based on hostname."
+    case $HOSTNAME in
+      uriah*)  jupyter_theme=solarizedl;;
+      gauss*)  jupyter_theme=gruvboxd;;
+      euclid*) jupyter_theme=gruvboxd;;
+      monde*)  jupyter_theme=onedork;;
+      midway*) jupyter_theme=onedork;;
+      *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
+    esac
+  else jupyter_theme="$1"
+  fi
+  if [ $# -lt 2 ]; then
+    export jupyter_font="cousine" # look up available ones online
+  else
+    export jupyter_font="$2"
+  fi
+  # Make sure theme is valid
+  # mkadf
+  themes=($(command jt -l | sed '1d'))
+  [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
+    echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
+  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
+    -t $jupyter_theme -f $jupyter_font
+}
+# Fancy wrapper for declaring notebook
+# Will set up necessary port-forwarding connections on local and remote server, so
+# that you can just click the url that pops up
+function notebook() {
+  # Set the jupyter theme
+  echo "Configuring jupyter notebook theme."
+  ! $jupyter_ready && jt # trigger default theme
+  jupyter_ready=true     # this value is available for rest of session
+  # Test the hostname and get unique port we have picked
+  if [ ! -z $1 ]; then
+    jupyterport=$1 # override with user input
+  else case $HOSTNAME in
+      uriah*)  jupyterport=20000 ;;
+      gauss*)  jupyterport=20001 ;;
+      euclid*) jupyterport=20002 ;;
+      monde*)  jupyterport=20003 ;;
+      midway*) jupyterport=20004 ;;
+      *) echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
+    esac
+  fi
+  # Tell local server to connect to this server's port number $jupyterport
+  # in the background
+  if ! $macos; then # need background port forwarding
+    # Establish the connection
+    if [ ! -r ~/.port ]; then
+      echo "Error: File \"$HOME/.port\" not available. Cannot send command to macbook."
+      return 1
+    elif ! which ip &>/dev/null; then
+      echo "Error: Command \"ip\" not available. Cannot determine this server's address."
+      return 1
+    else
+      # Set up background connection
+      # -f sets port-forwarding to the background
+      # -N says we don't need to issue a command, port will remain forwarded indefinitely
+      # * The embedded ip command prints this server's ip address (since $(hostname) often does
+      #   not include the full URL); see the 'address()' function in this bashrc.
+      # * The -t flag says to open a 'pseudo-tty' and run some command, then exit.
+      #   The command we will run will set up port-forwarding.
+      echo "Connecting macbook to ${HOSTNAME%%@*} over port $jupyterport."
+      command ssh -t -o StrictHostKeyChecking=no -p $(cat ~/.port) $USER@localhost "
+        command ssh -N -f -L localhost:$jupyterport:localhost:$jupyterport \
+          $USER@$(ip route get 1 | awk '{print $NF;exit}')
+        "
+    fi
+  fi
+  # Create the notebook
+  echo "Initializing jupyter notebook over port $jupyterport."
+  jupyter notebook --no-browser --port=$jupyterport --NotebookApp.iopub_data_rate_limit=10000000
+  # need to extend data rate limit when making some plots with lots of stuff
+}
+
 # Note git pull will fail if the merge is anything other than
 # a fast-forward merge (e.g. modifying multiple files); otherwise
 # need to commit local changes first
@@ -1109,7 +1078,6 @@ EOF
     git fetch && git merge -m "Syncing with macbook." # assume in correct directory already
   fi
 }
-
 
 ################################################################################
 # LaTeX utilities
