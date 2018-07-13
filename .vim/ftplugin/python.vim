@@ -3,6 +3,8 @@
 "Includes a couple nice features for converting {'a':1} to a=1 
 "easily; can do this line by line, or for a whole dictionary.
 "------------------------------------------------------------------------------"
+"Simple map to run script in shell
+nnoremap <silent> <buffer> <C-b> :w<CR>:exe '!clear; set -x; python '.shellescape(expand('%:p'))<CR>
 "Builtin python ftplugin syntax option; these should be provided with VIM by default
 let g:python_highlight_all=1
 "Experimental feature that converts dict() to {}-style dictionary
@@ -59,12 +61,8 @@ endif
 "Tab settings; normally keep it to just 2 spaces
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
 "Simple remaps; fit with NerdComment syntax
-nnoremap <buffer> cq o"""<CR>"""<Esc><Up>o
-"Maps that call shell commands
-nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
-      \."python ".shellescape(@%)."<CR>"
-inoremap <silent> <buffer> <expr> <C-b> "<Esc>:w<CR>:!clear; set -x; "
-      \."python ".shellescape(@%)."<CR>a"
+nnoremap <buffer> cq o'''<CR>'''<Esc><Up>o
+nnoremap <buffer> cQ o"""<CR>"""<Esc><Up>o
 
 "------------------------------------------------------------------------------
 " Matching pairs in python; default matchit plugin fails completely, so below

@@ -1363,7 +1363,7 @@ if has_key(g:plugs, "tabular")
   vnoremap <expr> -C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
   "Enforces that
-  vnoremap <expr> -c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> -c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   vnoremap <expr> -c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
