@@ -778,6 +778,7 @@ function notebook() {
 alias connections="ps aux | grep -v grep | grep ssh"
 # Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
+  ! $macos && echo "Error: This function should only be run on your macbook."
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
   local user=${1%%@*}
   local hostname=${1##*@} # the host we connect to, minus username
@@ -794,7 +795,7 @@ function connect() { # connect to remove notebook on port
   # Establish the connection
   echo "Connecting to $hostname over port $jupyterconnect."
   echo "Warning: Keep this window open to use your remote jupyter notebook!"
-  \ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $user@$hostname
+  command ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $user@$hostname
       # the -f command sets this port-forwarding to the background for the duration of the
       # ssh command to follow; but the -N command says we don't need to issue a command,
       # the port will just remain forwarded indefinitely
@@ -1006,8 +1007,8 @@ function compressuser() { # turn $HOME into tilde
 function ssh_fancy() {
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
   local port=10000 # starting port
-  local listen=22 # default sshd listening port; see the link above
-  local args=($@) # all arguments
+  local listen=22  # default sshd listening port; see the link above
+  local args=($@)  # all arguments
   [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
   # while netstat -an | grep "$port" | grep -i listen &>/dev/null; do # check for localhost availability; wrong!
   while command ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host

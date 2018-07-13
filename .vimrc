@@ -217,8 +217,8 @@ noremap , @q
 nnoremap U <C-r>
 "Use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
 "THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
-nnoremap \ :echo "Enabling throwaway register."<CR>"_
-vnoremap \ <Esc>:echo "Enabling throwaway register." <BAR> sleep 200m<CR>gv"_
+nnoremap - :echo "Enabling throwaway register."<CR>"_
+vnoremap - <Esc>:echo "Enabling throwaway register." <BAR> sleep 200m<CR>gv"_
 nnoremap <expr> \| has("clipboard") ? ':echo "Enabling system clipboard."<CR>"*' : ':echo "VIM not compiled with +clipboard."<CR>'
 vnoremap <expr> \| has("clipboard") ? '<Esc>:echo "Enabling system clipboard." <BAR> sleep 200m<CR>gv"*' : ':echo "VIM not compiled with +clipboard."<CR>'
 "Don't save single-character deletions to any register
@@ -1260,18 +1260,20 @@ endif
 "WRAPPING AND LINE BREAKING
 augroup wrap "For some reason both autocommands below are necessary; fuck it
   au!
-  au VimEnter * call s:autowrap()
-  au BufEnter * call s:autowrap()
+  au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
+  au BufEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
 let g:scrolloff=4
 "Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
-function! s:wraptoggle(function_mode)
-  if a:function_mode==1 | let toggle=1
-  elseif a:function_mode==0 | let toggle=0
-  elseif exists('b:wrap_mode') | let toggle=1-b:wrap_mode
-  else | let toggle=1
+function! s:wraptoggle(...)
+  if a:0 "if non-zer number of args
+    let toggle=a:1
+  elseif exists('b:wrap_mode')
+    let toggle=1-b:wrap_mode
+  else
+    let toggle=1
   endif
   if toggle==1
     let b:wrap_mode=1
@@ -1318,15 +1320,7 @@ function! s:wraptoggle(function_mode)
     silent! unmap gI
   endif
 endfunction
-"Wrapper function; for some infuriating reason, setlocal scrolloff sets
-"the value globally, no matter what; not so for wrap or colorcolumn
-function! s:autowrap()
-  if ""!=&ft && 'bib,tex,markdown,text'=~&ft
-    call s:wraptoggle(1)
-  else
-    call s:wraptoggle(0)
-  endif
-endfunction
+command! -nargs=? WrapToggle call <sid>wraptoggle(<args>)
 
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
@@ -1374,43 +1368,43 @@ if has_key(g:plugs, "tabular")
 	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> -<Space> ':silent! Tabularize /'.input('Align character: ').'/l1c1<CR>'
-  vnoremap <silent> <expr> -<Space> "<Esc>:silent! '<,'>Table /".input('Align character: ').'/l1c1<CR>'
+  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Align character: ').'/l1c1<CR>'
+  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Align character: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
-  nnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> -, ':Table /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> \, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \, ':Table /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
-  nnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> -d ':Table /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  nnoremap <expr> \d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> \d ':Table /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
-  nnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> -D ':Table /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> \D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \D ':Table /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
-  nnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> -l ':Table /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \l ':Table /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  nnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> -r ':Table /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  nnoremap <expr> \r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> \r ':Table /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
-  nnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> -- ':Table /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  nnoremap <expr> \\ ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> \\ ':Table /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
-  nnoremap <expr> -_ ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> -_ ':Table /\S\zs\ /l0<CR>'
+  nnoremap <expr> \_ ':Tabularize /\S\zs\ /l0<CR>'
+  vnoremap <expr> \_ ':Table /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
-  nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> -C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> \C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
   "Enforces that
-  vnoremap <expr> -c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> -c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
   nnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
@@ -1743,31 +1737,34 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 
 "###############################################################################
 "DELETING STUFF TOOLS
+"Will use the 'g' prefix for these, because why not
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
 "Replace commented lines; very useful when sharing manuscripts
-nnoremap <expr> <Leader>x ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+nnoremap <silent> <expr> gx ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
-vnoremap <expr> <Leader>x ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+vnoremap <silent> <expr> gx ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Will probably be necessary after the comment trimming
-nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+nnoremap <silent> g\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+vnoremap <silent> g\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+"Replace all tabs
+nnoremap <silent> g
 "Delete empty lines
-nnoremap <silent> <Leader>\| :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-vnoremap <silent> <Leader>\| :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+nnoremap <silent> g\| :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+vnoremap <silent> g\| :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 "Replace consecutive newlines with single newline
-nnoremap <silent> <Leader>~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+nnoremap <silent> g~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace consecutive spaces on current line with one space
-nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+nnoremap <silent> g` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
-nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> g' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+nnoremap <silent> g" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> g_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> g- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 "Replace useless BibTex entries
-nnoremap <silent> <Leader>X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+nnoremap <silent> gX :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+" nnoremap <expr> gX ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
