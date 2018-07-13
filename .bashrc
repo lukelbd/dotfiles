@@ -557,6 +557,7 @@ function merge() {
 ################################################################################
 # Tool for changing iTerm2 profile before command executed, and returning
 # after executed (e.g. interactive prompts)
+# Just alias any command with 'cmdcolor' as prefix
 function cmdcolor() {
   # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
   # Or that's dumb and just use ITERM_PROFILE
@@ -887,18 +888,7 @@ alias suser="squeue -u $USER"
 ################################################################################
 # Python workspace setup
 ################################################################################
-# For profiling scripts
-alias profile="python -m cProfile -s time"
-# Python shell utilities
-# io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
-io="import pandas as pd; import xarray as xr; "
-basic="import numpy as np; from datetime import datetime; from datetime import date; "
-magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autoreload 2'); "
-plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
-pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
-# Other shell utilities
-# Simple thing for R
+# R utilities
 # * Calling R with --slave or --interactive makes quiting totally impossible somehow.
 # * The ---always-readline prevents prompt from switching to the default prompt, but
 #   also seems to disable ctrl-d for exiting.
@@ -910,6 +900,8 @@ function iR() {
   R -q --no-save # keep it simple stupid
   # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
 }
+# Matlab -- just a simple alias
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
 # NCL -- and a couple other things
 # Binding thing doesn't work (cause it's not passed to shell), but was neat idea
 function incl() {
@@ -930,15 +922,23 @@ function iperl() { # see this answer: https://stackoverflow.com/a/22840242/49706
   ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
 }
-alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
-# With new shell color
-# alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-# alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-# alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
-# alias R="cmdcolor R"
+# Python wrapper -- load your favorite magics and modules on startup
+# Have to sed trim the leading spaces to avoid indentation errors
+pysimple=$(echo "get_ipython().magic('load_ext autoreload')
+get_ipython().magic('autoreload 2')" | sed 's/^ *//g')
+pycomplex=$(echo "$pysimple
+  from datetime import datetime
+  from datetime import date
+  import numpy as np
+  import pandas as pd
+  import xarray as xr
+  $($macos && echo "import matplotlib as mpl
+                    mpl.use('MacOSX')
+                    import matplotlib.pyplot as plt
+                    from pyfuncs import plot")
+  " | sed 's/^ *//g')
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pysimple\""
+alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
 
 ################################################################################
 # Notebook stuff
