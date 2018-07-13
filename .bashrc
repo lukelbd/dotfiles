@@ -773,7 +773,6 @@ function notebook() {
   # in the background
   if ! $macos; then # need background port forwarding
     # Establish the connection
-    echo "Connecting macbook to ${HOSTNAME%%@*} over port $jupyterport."
     if [ ! -r ~/.port ]; then
       echo "Error: File \"$HOME/.port\" not available. Cannot send command to macbook."
       return 1
@@ -784,21 +783,22 @@ function notebook() {
       # Set up background connection
       # -f sets port-forwarding to the background
       # -N says we don't need to issue a command, port will remain forwarded indefinitely
-      # The comment used to retrieve the IP address is copied from the 'address' command
+      # * The embedded ip command prints this server's ip address (since $(hostname) often does
+      #   not include the full URL); see the 'address()' function in this bashrc.
+      # * The -t flag says to open a 'pseudo-tty' and run some command, then exit.
+      #   The command we will run will set up port-forwarding.
+      echo "Connecting macbook to ${HOSTNAME%%@*} over port $jupyterport."
       command ssh -t -o StrictHostKeyChecking=no -p $(cat ~/.port) $USER@localhost "
         command ssh -N -f -L localhost:$jupyterport:localhost:$jupyterport \
           $USER@$(ip route get 1 | awk '{print $NF;exit}')
         "
-      sleep 5
     fi
   fi
   # Create the notebook
-  echo "Initializing jupyter notebook over port port: $jupyterport."
+  echo "Initializing jupyter notebook over port $jupyterport."
   jupyter notebook --no-browser --port=$jupyterport --NotebookApp.iopub_data_rate_limit=10000000
   # need to extend data rate limit when making some plots with lots of stuff
 }
-# See current ssh connections
-alias connections="ps aux | grep -v grep | grep ssh"
 # Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
 function connect() { # connect to remove notebook on port
   [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
@@ -941,18 +941,124 @@ fi
 # Trigger ssh-agent if not already running, and add Github private key
 # Make sure to make private key passwordless, for easy login; all I want here
 # is to avoid storing plaintext username/password in ~/.git-credentials, but free private key is fine
-# See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
-# Also look into more complex approach: https://stackoverflow.com/a/18915067/4970632
-# The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
-if ! $macos && [ -z "$SSH_AUTH_SOCK" ]; then
-  if [ -e "$HOME/.ssh/id_rsa_github" ]; then
+# * See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
+#   The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
+# * Used to just ssh-add on every login, but that starts fantom ssh-agent processes that persist
+#   when terminal is closed (all the 'eval' does is set environment variables; ssh-agent without
+#   the eval just starts the process in background).
+# * Now we re-use pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
+SSH_ENV="$HOME/.ssh/environment"
+function killssh {
+  # kill $(ps aux | grep ssh-agent | tr -s ' ' | cut -d' ' -f2 | xargs)
+  kill $(ps aux | grep ssh-agent | grep -v grep | awk '{print $2}')
+}
+function initssh {
+  # echo "Initialising new SSH agent..."
+  if [ -f "$HOME/.ssh/id_rsa_github" ]; then
     echo "Adding Github private SSH key."
-    eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
-    # ssh_agent=$! # save PID
-    ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
-  else echo "Warning: Github private SSH key \"~/.ssh/id_rsa_github\" is not available."
+    command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
+    chmod 600 "${SSH_ENV}"
+    source "${SSH_ENV}" >/dev/null
+    command ssh-add "$HOME/.ssh/id_rsa_github" &>/dev/null # add Github private key; assumes public key has been added to profile
+  else
+    echo "Warning: Github private SSH key \"$HOME/.ssh/id_rsa_github\" is not available." && return 1
+  fi
+}
+# Source SSH settings, if applicable
+if ! $macos; then # only do this if not on macbook
+  if [ -f "$SSH_ENV" ]; then
+    . "$SSH_ENV" >/dev/null
+    ps -ef | grep $SSH_AGENT_PID | grep ssh-agent$ >/dev/null || initssh
+  else
+    initssh
   fi
 fi
+
+# Short helper functions
+# See current ssh connections
+alias connections="ps aux | grep -v grep | grep 'ssh '"
+# View address
+function address() {
+  # Get the ip address; several weird options for this
+  if ! $macos; then
+    # See this: https://stackoverflow.com/q/13322485/4970632
+    # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
+    ip route get 1 | awk '{print $NF;exit}'
+  else
+    # See this: https://apple.stackexchange.com/q/20547/214359
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+  fi
+}
+function expanduser() { # turn tilde into $HOME
+  local param="$*"
+  param="${param/#~/$HOME}"  # restore expanded tilde
+  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
+  echo $param
+}
+function compressuser() { # turn $HOME into tilde
+  local param="$*"
+  param="${param/#$HOME/~}"
+  param="${param/#$HOME/\~}"
+  echo $param
+}
+
+# Functions for scp-ing from local to remote, and vice versa
+# For initial idea see: https://stackoverflow.com/a/25486130/4970632
+# For exit on forward see: https://serverfault.com/a/577830/427991
+# For why we alias the function see: https://serverfault.com/a/656535/427991
+# For enter command then remain in shell see: https://serverfault.com/q/79645/427991
+#   * Note this has nice side-effect of eliminating annoying "banner message"
+#   * Why iterate from ports 10000 upward? Because is even though disable host key
+#     checking, still get this warning message every time.
+# Big honking useful wrapper -- will *always* use this to ssh between servers
+portfile=~/.port # file storing port number
+alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
+function ssh_fancy() {
+  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
+  local port=10000 # starting port
+  local listen=22 # default sshd listening port; see the link above
+  local args=($@) # all arguments
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
+  # while netstat -an | grep "$port" | grep -i listen &>/dev/null; do # check for localhost availability; wrong!
+  while command ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host
+    echo "Warning: Port $port unavailable." # warning message
+    local port=$(($port + 1)) # generate new port
+  done
+  local portwrite="$(compressuser $portfile)"
+  local titlewrite="$(compressuser $titlefile)"
+  command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
+    -t -R $port:localhost:$listen ${args[@]} \
+    "echo $port >$portwrite; echo $title >$titlewrite; \
+     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
+}
+# Copy from <this server> to local macbook
+function rlcp() {    # "copy to local (from remote); 'copy there'"
+  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
+  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
+  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat $portfile) # port from most recent login
+  local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
+  local file="${@:(-2):1}" # second to last
+  local dest="$(compressuser ${@:(-1)})" # last value
+  local dest="${dest//\ /\\\ }"  # escape whitespace manually
+  echo "(Port $port) Copying $file on this server to home server at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ${USER}@localhost:"$dest"
+}
+# Copy from local macbook to <this server>
+function lrcp() {    # "copy to remote (from local); 'copy here'"
+  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
+  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
+  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
+  local port=$(cat $portfile) # port from most recent login
+  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
+  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
+  local dest="${@:(-1)}"   # last value
+  local file="$(compressuser ${@:(-2):1})" # second to last
+  local file="${file//\ /\\\ }"  # escape whitespace manually
+  echo "(Port $port) Copying $file from home server to this server at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} ${USER}@localhost:"$file" "$dest"
+}
 
 # Functions for executing stuff on remote servers
 # Note git pull will fail if the merge is anything other than
@@ -1004,85 +1110,6 @@ EOF
   fi
 }
 
-# Functions for scp-ing from local to remote, and vice versa
-# For initial idea see: https://stackoverflow.com/a/25486130/4970632
-# For exit on forward see: https://serverfault.com/a/577830/427991
-# For why we alias the function see: https://serverfault.com/a/656535/427991
-# For enter command then remain in shell see: https://serverfault.com/q/79645/427991
-#   * Note this has nice side-effect of eliminating annoying "banner message"
-#   * Why iterate from ports 10000 upward? Because is even though disable host key
-#     checking, still get this warning message every time.
-portfile=~/.port # file storing port number
-alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
-function address() {
-  # Get the ip address; several weird options for this
-  if ! $macos; then
-    # See this: https://stackoverflow.com/q/13322485/4970632
-    # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
-    ip route get 1 | awk '{print $NF;exit}'
-  else
-    # See this: https://apple.stackexchange.com/q/20547/214359
-    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
-  fi
-}
-function expanduser() { # turn tilde into $HOME
-  local param="$*"
-  param="${param/#~/$HOME}"  # restore expanded tilde
-  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
-  echo $param
-}
-function compressuser() { # turn $HOME into tilde
-  local param="$*"
-  param="${param/#$HOME/~}"
-  param="${param/#$HOME/\~}"
-  echo $param
-}
-function ssh_fancy() {
-  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
-  local port=10000 # starting port
-  local listen=22 # default sshd listening port; see the link above
-  local args=($@) # all arguments
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
-  # while netstat -an | grep "$port" | grep -i listen &>/dev/null; do # check for localhost availability; wrong!
-  while command ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host
-    echo "Warning: Port $port unavailable." # warning message
-    local port=$(($port + 1)) # generate new port
-  done
-  local portwrite="$(compressuser $portfile)"
-  local titlewrite="$(compressuser $titlefile)"
-  command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite; echo $title >$titlewrite; \
-     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
-}
-# Copy from <this server> to local macbook
-function rlcp() {    # "copy to local (from remote); 'copy there'"
-  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat $portfile) # port from most recent login
-  local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local file="${@:(-2):1}" # second to last
-  local dest="$(compressuser ${@:(-1)})" # last value
-  local dest="${dest//\ /\\\ }"  # escape whitespace manually
-  echo "(Port $port) Copying $file on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ${USER}@localhost:"$dest"
-}
-# Copy from local macbook to <this server>
-function lrcp() {    # "copy to remote (from local); 'copy here'"
-  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat $portfile) # port from most recent login
-  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local dest="${@:(-1)}"   # last value
-  local file="$(compressuser ${@:(-2):1})" # second to last
-  local file="${file//\ /\\\ }"  # escape whitespace manually
-  echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} ${USER}@localhost:"$file" "$dest"
-}
 
 ################################################################################
 # LaTeX utilities
