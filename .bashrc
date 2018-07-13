@@ -462,8 +462,8 @@ if [ -r "$HOME/.dircolors.ansi" ]; then
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
 # Apply ls
-alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
-alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
+alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
+alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
 # Other stuff
 $macos && alias sed="gsed"
@@ -758,16 +758,21 @@ function notebook() {
   ! $jupyter_ready && jt # trigger default theme
   jupyter_ready=true # this value is available for rest of session
   # Test the hostname and get unique port we have picked
-  if [ ! -z $1 ]; then
-    jupyterremote=$1 # override with user input
-  else case ${HOSTNAME%%.*} in
-      uriah)    jupyterport=20000;;
-      gauss)    jupyterport=20001;;
-      euclid)   jupyterport=20002;;
-      monde)    jupyterport=20003;;
-      midway*)  jupyterport=20004;;
-      *)      echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
-    esac
+  # if [ ! -z $1 ]; then
+  #   jupyterremote=$1 # override with user input
+  # else case ${HOSTNAME%%.*} in
+  #     uriah)    jupyterport=20000;;
+  #     gauss)    jupyterport=20001;;
+  #     euclid)   jupyterport=20002;;
+  #     monde)    jupyterport=20003;;
+  #     midway*)  jupyterport=20004;;
+  #     *)      echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
+  #   esac
+  # fi
+  if [ ! -r ~/.port ]; then
+    echo "Error: Port file \"$HOME/.port\" not found."
+  else
+    jupyterport=$(cat ~/.port | xargs)
   fi
   # Create the notebook
   echo "Initializing jupyter notebook over port port: $jupyterport."
