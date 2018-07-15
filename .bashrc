@@ -1378,19 +1378,6 @@ function sdsync() {
 # Run installation script; similar to the above one
 if [ -f ~/.fzf.bash ]; then
   #----------------------------------------------------------------------------#
-  # To re-generate, just delete the .commands file and source this file
-  # Generate list of all executables, and use fzf path completion by default
-  # for almost all of them
-  # WARNING: BOLD MOVE COTTON.
-  _ignore="{ } \\[ \\[\\[ echo type which cdo git fzf $FZF_COMPLETION_DIR_COMMANDS"
-  _ignore="^\\($(echo "$_ignore" | sed 's/ /\\|/g')\\)$"
-  if [ ! -r "$HOME/.commands" ]; then
-    echo "Recording available commands."
-    compgen -c >$HOME/.commands # will include aliases and functions
-  fi
-  export FZF_COMPLETION_FILE_COMMANDS=$(cat $HOME/.commands | egrep -v $_ignore | xargs)
-  # complete $_complete_path $(cat $HOME/.commands | grep -v $_ignore | xargs)
-  #----------------------------------------------------------------------------#
   # See man page for --bind information
   # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
   #   key bindings will enabled multiple selection
@@ -1420,6 +1407,19 @@ if [ -f ~/.fzf.bash ]; then
   export FZF_DEFAULT_OPTS="$_opts"
   export FZF_CTRL_T_OPTS="$_opts"
   export FZF_ALT_C_OPTS="$_opts"
+  #----------------------------------------------------------------------------#
+  # To re-generate, just delete the .commands file and source this file
+  # Generate list of all executables, and use fzf path completion by default
+  # for almost all of them
+  # WARNING: BOLD MOVE COTTON.
+  _ignore="{ } \\[ \\[\\[ gecho echo type which cdo git fzf $FZF_COMPLETION_DIR_COMMANDS"
+  _ignore="^\\($(echo "$_ignore" | sed 's/ /\\|/g')\\)$"
+  if [ ! -r "$HOME/.commands" ]; then
+    echo "Recording available commands."
+    compgen -c >$HOME/.commands # will include aliases and functions
+  fi
+  export FZF_COMPLETION_FILE_COMMANDS=$(cat $HOME/.commands | grep -v "$_ignore" 2>/dev/null | xargs)
+  # complete $_complete_path $(cat $HOME/.commands | grep -v $_ignore | xargs)
   #----------------------------------------------------------------------------#
   # Source file
   complete -r # reset first
