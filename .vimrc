@@ -1153,13 +1153,6 @@ if has_key(g:plugs, "nerdcommenter")
     nmap c_ <Plug>fancy2
     nmap c\ <Plug>fancy3
     nmap c\| <Plug>fancy4
-    " exe 'nnoremap <silent> <buffer> <expr> c- '.s:bar("-")
-    " exe 'nnoremap <silent> <buffer> <expr> c_ '.s:bar(fatchar)
-    " exe 'nnoremap <silent> <buffer> <expr> c\ '.s:section("-")
-    " exe 'nnoremap <silent> <buffer> <expr> c\| '.s:section(fatchar)
-    "Disable accidental key presses
-    silent! noremap c= <Nop>
-    silent! noremap c+ <Nop>
   endfunction
   "More basic NerdComment maps, just for toggling comments and stuff
   "Easy peasy
@@ -1403,14 +1396,14 @@ if has_key(g:plugs, "tabular")
   vnoremap <expr> \C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
   "Enforces that
-  vnoremap <expr> \c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> \c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   vnoremap <expr> \c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
-  nnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
-  vnoremap -= :Table /^[^=]*\zs=/l1c1<CR>
-  nnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
-  vnoremap -+ :Table /^[^=]*=\zs/l0c1<CR>
+  nnoremap \= :Tabularize /^[^=]*\zs=/l1c1<CR>
+  vnoremap \= :Table /^[^=]*\zs=/l1c1<CR>
+  nnoremap \+ :Tabularize /^[^=]*=\zs/l0c1<CR>
+  vnoremap \+ :Table /^[^=]*=\zs/l0c1<CR>
 endif
 
 "###############################################################################
@@ -1531,7 +1524,6 @@ augroup END
 set expandtab "says to always expand \t to their length in <SPACE>'s!
 set autoindent "indents new lines
 set backspace=indent,eol,start "backspace by indent - handy
-nnoremap <Space><Tab> :set expandtab!<CR>
 "VIM configures backspace-delete by tabs
 "We implement our own function to forewards-delete by tabs
 function! s:foreward_delete()
@@ -1642,19 +1634,19 @@ noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "Next a function for completing stuff, *including* hidden files god damnit
 "Note allfiles function seems to have to be in local scope; otherwise can't find s:allfiles or <sid>allfiles
+function! AllFiles(A,L,P)
+  let path=(len(a:A)>0 ? a:A : '')
+  let result=split(glob(path.'*'),'\n') + split(glob(path.'.*'),'\n')
+  let final=[]
+  for string in result "ignore 'this directory' and 'parent directory'
+    if string !~ '^\(.*/\)\?\.\{1,2}$'
+      call extend(final, [substitute((isdirectory(string) ? string.'/' : string ), '/\+', '/', 'g')])
+    endif
+  endfor
+  return final
+endfunction
 function! s:openwrapper()
-  function! l:allfiles(A,L,P)
-    let path=(len(a:A)>0 ? a:A : '')
-    let result=split(glob(path.'*'),'\n') + split(glob(path.'.*'),'\n')
-    let final=[]
-    for string in result "ignore 'this directory' and 'parent directory'
-      if string !~ '^\(.*/\)\?\.\{1,2}$'
-        call extend(final, [substitute((isdirectory(string) ? string.'/' : string ), '/\+', '/', 'g')])
-      endif
-    endfor
-    return final
-  endfunction
-  let response=input('Open tab ('.getcwd().'): ', '', 'customlist,l:allfiles')
+  let response=input('Open tab ('.getcwd().'): ', '', 'customlist,AllFiles')
   if response!=''
     exe 'tabe '.response
   else
@@ -1739,31 +1731,35 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 "DELETING STUFF TOOLS
 "Will use the 'g' prefix for these, because why not
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
+augroup delete
+augroup END
 "Replace commented lines; very useful when sharing manuscripts
-nnoremap <silent> <expr> gx ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+nnoremap <silent> <expr> \n ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
-vnoremap <silent> <expr> gx ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+vnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+"Replace consecutive spaces on current line with one space
+nnoremap <silent> \w :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Will probably be necessary after the comment trimming
-nnoremap <silent> g\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-vnoremap <silent> g\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-"Replace all tabs
-nnoremap <silent> g
+nnoremap <silent> \W :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+vnoremap <silent> \W :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 "Delete empty lines
-nnoremap <silent> g\| :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-vnoremap <silent> g\| :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+nnoremap <silent> \E :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+vnoremap <silent> \E :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 "Replace consecutive newlines with single newline
-nnoremap <silent> g~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-"Replace consecutive spaces on current line with one space
-nnoremap <silent> g` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+vnoremap <silent> \e :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+nnoremap <silent> \e :%s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+"Replace all tabs
+vnoremap <expr> <silent> \<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
-nnoremap <silent> g' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> g" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> g_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-nnoremap <silent> g- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> \_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> \- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 "Replace useless BibTex entries
-nnoremap <silent> gX :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+nnoremap <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 " nnoremap <expr> gX ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 
 "###############################################################################
@@ -1996,7 +1992,7 @@ highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 highlight Terminal ctermbg=Black
 
 "###############################################################################
-"COLOR HIGHLIGHTING
+"USEFUL COMMANDS
 "Highlight group under cursor
 function! s:group()
   echo "actual <".synIDattr(synID(line("."),col("."),1),"name")."> "
@@ -2016,9 +2012,10 @@ endfunction
 command! -nargs=? Syntax call <sid>syntax('<args>')
 "Toggle conceal
 function! s:concealtoggle(...)
-  let conceal_on=1
   if a:0
     let conceal_on=a:1
+  else
+    let conceal_on=(&conceallevel ? 0 : 2) "turn off and on
   endif
   exe 'set conceallevel='.(conceal_on ? 2 : 0)
 endfunction
