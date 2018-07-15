@@ -168,7 +168,8 @@ nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
 "Also offer 'cancelling' completion with Escape
 inoremap ;; ;
 inoremap ;: ;;
-inoremap ;<Esc> ;<Esc>
+" inoremap ;<Esc> ;<Esc>
+inoremap ;<Esc> <Nop>
 
 "###############################################################################
 " Now apply the above concepts to LaTeX in particular

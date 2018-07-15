@@ -5,7 +5,7 @@
 "   au FileType fortran call s:fortranmacros()
 " augroup END
 "------------------------------------------------------------------------------"
-"Compile code, then run it and show user the output
+"Compile code, then run it and delete the executable
 function! s:fortranrun()
   w
   let f90_path=shellescape(@%)
@@ -14,7 +14,7 @@ function! s:fortranrun()
     \.' && '.exe_path.' && rm '.exe_path
   return
 endfunction
-nnoremap <silent> <buffer> <C-b> :call <sid>fortranrun()<CR>
+nnoremap <silent> <buffer> <C-b> :w<CR>:call <sid>fortranrun()<CR>
 "------------------------------------------------------------------------------"
 "These mostly make automatic indentation better
 "See this helpful thread: https://stackoverflow.com/a/17619568/4970632

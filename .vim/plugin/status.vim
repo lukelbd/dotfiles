@@ -15,7 +15,9 @@ set noshowmode
 "Show whether in pastemode
 function! PrintMode()
   "Dictionary
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   let currentmode={
     \ 'n':  'Normal',  'no': 'N-Operator Pending',
     \ 'v':  'Visual',  'V' : 'V-Line',  '': 'V-Block',
@@ -35,7 +37,9 @@ function! PrintMode()
 endfunction
 "Caps lock (are language maps enabled?)
 function! CapsLock()
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   if &iminsert "iminsert is the option that enables/disables language remaps (lnoremap)
       "and if it is on, we turn on the caps-lock remaps
     return '  [CapsLock]'
@@ -46,7 +50,9 @@ endfunction
 "Shorten a given filename by truncating path segments.
 "https://github.com/blueyed/dotfiles/blob/master/vimrc#L396
 function! ShortenFilename() "{{{
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   "Necessary args
   let bufname=@%
   let maxlen=20
@@ -97,7 +103,9 @@ function! ShortenFilename() "{{{
 endfunction "}}}
 "Find out current buffer's size and output it.
 function! FileInfo() "{{{
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   if &ft=="" | let l:string="unknown:"
   else | let l:string=&ft.":"
   endif
@@ -122,7 +130,9 @@ function! FileInfo() "{{{
 endfunction "}}}
 "Whether UK english (e.g. Nature), or U.S. english
 function! PrintLanguage()
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   if &spell
     if &spelllang=='en_us'
       return '  [US]'
@@ -137,7 +147,9 @@ function! PrintLanguage()
 endfunction
 "Git stuff
 function! Git()
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   if exists('*fugitive#head') && fugitive#head()!=''
     let status=fugitive#head() 
     return '  ['.toupper(status[0]).tolower(status[1:]).']'
@@ -147,13 +159,17 @@ function! Git()
 endfunction
 "Location
 function! Location()
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   return '  ['.line('.').'/'.line('$').'] ('.(100*line('.')/line('$')).'%)' "current line and percentage
 endfunction
 "Tag
 function! Tag()
   let maxlen=10 "can change this
-  if g:nostatus=~?&ft | return '' | endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   if !exists('*tagbar#currenttag') | return '' | endif
   let string=tagbar#currenttag('%s','')
   if string=='' | return '' | endif
