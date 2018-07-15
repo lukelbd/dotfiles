@@ -28,7 +28,6 @@
 # PROMPT
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
-unset PROMPT_COMMAND # don't enable this by default
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
