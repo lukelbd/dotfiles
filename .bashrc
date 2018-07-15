@@ -663,34 +663,34 @@ function flatten() {
 # grep that, then if the title is not already set AND we are on pane zero, request title.
 ################################################################################
 # First function that sets title
-titlefile=~/.title
-winnum="${TERM_SESSION_ID%%t*}"
-winnum="${winnum#w}"
+_title_file=~/.title
+_win_num="${TERM_SESSION_ID%%t*}"
+_win_num="${_win_num#w}"
 function title() { # Cmd-I from iterm2 also works
   ! $macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
   if [ -n "$1" ]; then title="$1"
   else read -p "Enter title for this window: " title
   fi
-  [ -z "$title" ] && title="window $winnum"
+  [ -z "$title" ] && title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
   # GNU syntax is "sed -i <pattern> <file>", which is annoying.
-  [ ! -e "$titlefile" ] && touch "$titlefile"
-  gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
-  echo "$winnum: $title" >>$titlefile # add to file
+  [ ! -e "$_title_file" ] && touch "$_title_file"
+  gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
+  echo "$_win_num: $title" >>$_title_file # add to file
   title_update # update
 }
 # Prompt user input potentially, but try to load from file
 function title_update() {
   # Check file availability
-  [ ! -r "$titlefile" ] && {
+  [ ! -r "$_title_file" ] && {
     if ! $macos; then echo "Error: Title file not available." && return 1
     else title
     fi; }
   # Read from file
   if $macos; then
-    title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
-  else title="$(cat $titlefile)" # only text in file
+    title="$(cat $_title_file | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
+  else title="$(cat $_title_file)" # only text in file
   fi
   # Update or re-declare
   title="$(echo "$title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
@@ -771,7 +771,7 @@ function disconnect() {
   pids="$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)"
   [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
   kill $pids # kill the SSH processes
-  echo "Connection over port $port removed."
+  echo "Processes $pids killed. Connections over port $port removed."
 }
 
 # Trigger ssh-agent if not already running, and add Github private key
@@ -812,11 +812,11 @@ fi
 # Check git remote on current folder, make sure it points to SSH/HTTPS depending
 # on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
 # SSH key or password/username can only be stored in plaintext in home directory)
-gitmessage=$(git remote -v 2>/dev/null)
-if [ ! -z "$gitmessage" ]; then
-  if [[ "$gitmessage" =~ "https" ]] && ! $macos; then # ssh node for Linux
+_git_message=$(git remote -v 2>/dev/null)
+if [ ! -z "$_git_message" ]; then
+  if [[ "$_git_message" =~ "https" ]] && ! $macos; then # ssh node for Linux
     echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
-  elif [[ "$gitmessage" =~ "git@github" ]] && $macos; then # url for Mac
+  elif [[ "$_git_message" =~ "git@github" ]] && $macos; then # url for Mac
     echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
   fi
 fi
@@ -830,53 +830,52 @@ fi
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
 # Big honking useful wrapper -- will *always* use this to ssh between servers
-portfile=$HOME/.port  # file storing port number
+_port_file=~/.port # file storing port number
 alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
 function ssh_fancy() {
-  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
-  local port=10000 # starting port
-  local listen=22  # default sshd listening port; see the link above
-  local args=($@)  # all arguments
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
-  # while netstat -an | grep "$port" | grep -i listen &>/dev/null; do # check for localhost availability; wrong!
-  while command ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host
-    echo "Warning: Port $port unavailable." # warning message
-    local port=$(($port + 1)) # generate new port
-  done
-  local portwrite="$(compressuser $portfile)"
-  local titlewrite="$(compressuser $titlefile)"
+  local port listen port_write title_write
+  [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
+  listen=22  # default sshd listening port; see the link above
+  port=10000 # starting port
+  port=$(command ssh "$1" "
+    port=$port
+    while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
+      let port=\$port+1
+    done
+    echo \$port
+    ") # find first available port
+  port_write="$(compressuser $_port_file)"
+  title_write="$(compressuser $_title_file)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite; echo $title >$titlewrite; \
+    -t -R $port:localhost:$listen $1 \
+    "echo $port >$port_write; echo $title >$title_write; \
      echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
-  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat $portfile) # port from most recent login
-  local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local file="${@:(-2):1}" # second to last
-  local dest="$(compressuser ${@:(-1)})" # last value
-  local dest="${dest//\ /\\\ }"  # escape whitespace manually
+  local port file dest
+  $macos && echo "Error: Function intended to be called from an ssh session." && return 1
+  [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
+  [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
+  port=$(cat $_port_file) # port from most recent login
+  file="$1"                 # second to last
+  dest="$(compressuser $2)" # last value
+  dest="${dest//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ${USER}@localhost:"$dest"
+  command scp -o StrictHostKeyChecking=no -P$port "$file" ${USER}@localhost:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
-  $macos && echo "Error: Function intended to be used inside remote servers." && return 1
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat $portfile) # port from most recent login
-  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local dest="${@:(-1)}"   # last value
-  local file="$(compressuser ${@:(-2):1})" # second to last
-  local file="${file//\ /\\\ }"  # escape whitespace manually
+  local port file dest
+  $macos && echo "Error: Function intended to be called from an ssh session." && return 1
+  [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
+  [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
+  port=$(cat $_port_file) # port from most recent login
+  dest="$1"                 # last value
+  file="$(compressuser $2)" # second to last
+  file="${file//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${args[@]} ${USER}@localhost:"$file" "$dest"
+  command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
 }
 
 ################################################################################
@@ -886,7 +885,7 @@ alias suser="squeue -u $USER"
 alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
 
 ################################################################################
-# Python workspace setup
+# Setup REPLs
 ################################################################################
 # R utilities
 # * Calling R with --slave or --interactive makes quiting totally impossible somehow.
@@ -903,13 +902,10 @@ function iR() {
 # Matlab -- just a simple alias
 alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
 # NCL -- and a couple other things
-# Binding thing doesn't work (cause it's not passed to shell), but was neat idea
+# Tried temporarily changing bindings, but those are *shell* bindings; not passed to REPL
 function incl() {
-  # local binding_old="$(bind -Xps | grep C-d)" # print every kind of binding; flags are different kinds
   echo "This is an Interactive NCL shell."
   ncl -Q -n
-  # bind '"\C-d":"exit()\C-m"'
-  # bind "$binding_old" # spaces gotta be escaped
 }
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
@@ -922,18 +918,17 @@ function iperl() { # see this answer: https://stackoverflow.com/a/22840242/49706
   ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
 }
-# Python wrapper -- load your favorite magics and modules on startup
+# iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
 pysimple=$(echo "get_ipython().magic('load_ext autoreload')
-get_ipython().magic('autoreload 2')" | sed 's/^ *//g')
+  get_ipython().magic('autoreload 2')" | sed 's/^ *//g')
 pycomplex=$(echo "$pysimple
   from datetime import datetime
   from datetime import date
   import numpy as np
   import pandas as pd
   import xarray as xr
-  $($macos && echo "import matplotlib as mpl
-                    mpl.use('MacOSX')
+  $($macos && echo "import matplotlib as mpl; mpl.use('MacOSX')
                     import matplotlib.pyplot as plt
                     from pyfuncs import plot")
   " | sed 's/^ *//g')
@@ -948,12 +943,13 @@ alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint
 # * If you have issues where themes are just not changing in Chrome, open Developer tab
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
 # Wrapper aroung jupyter theme function, much better
-jupyter_ready=false # theme is not initially setup because takes a long time
+_jt_configured=false # theme is not initially setup because takes a long time
 function jt() {
   # Choose default themes and font
   # chesterish is best; monokai has green/pink theme;
   # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
   # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
+  local jupyter_theme jupyter_font themes
   if [ $# -lt 1 ]; then 
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
@@ -979,55 +975,95 @@ function jt() {
   command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
     -t $jupyter_theme -f $jupyter_font
 }
+
+# This function will establish two-way connection between server and local macbook
+# with the same port number (easier to understand that way).
+# Will be called whenever a notebook is iniated, and can be called to refresh stale connections.
+function connect() {
+  # Error checks and declarations
+  local port candidates
+  $macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
+  [ ! -r $_port_file ] && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
+  ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address." && return 1
+  if [ $# -eq 0 ]; then
+    # Get list of available ports on this machine
+    # Right now we check 20 choices
+    for port in $(seq 20000 20020); do
+      if netstat -an | grep "[:.]$port" &>/dev/null; then
+        let candidates+=($port)
+      fi
+    done
+    # Next run the remote port test, incrementing through *local* candidates
+    # whenever a remote port is unavailable
+    ports=$(command ssh -p $(cat $_port_file) $USER@localhost "$1" "
+      i=0
+      port=${candidates[0]}
+      candidates=(${candidates[@]})
+      while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
+        let i=i+1
+        let port=\${candidates[\$i]}
+      done
+      echo \$port
+      ") # find first available port
+  else
+    # Connect over ports from each argument
+    ports="$@"
+  fi
+  # Error message
+  [ -z $ports ] && echo "Error: No ports found." && return 1
+  # Establish the 2-way connection (macbook's local host, port $port to
+  # remote host's local host, port $port)
+  for port in $ports; do
+    # Message
+    echo "Connecting macbook to ${HOSTNAME%%@*} over port $port."
+    # The ip command prints this server's ip address ($hostname doesn't include full url)
+    # ssh -f (port-forwarding in background) -N (don't issue command)
+    command ssh -t -o StrictHostKeyChecking=no -p $(cat $_port_file) $USER@localhost \
+      "command ssh -N -f -L localhost:$port:localhost:$port \
+        $USER@$(ip route get 1 | awk '{print $NF;exit}') &>/dev/null
+       if [ \$? -eq 0 ]; then
+         echo 'Connection successful.' && exit 1
+       else
+         echo 'Connection failed.' && exit 0
+       fi" 2>/dev/null
+  done
+  _jupyter_port=$port
+}
+
 # Fancy wrapper for declaring notebook
 # Will set up necessary port-forwarding connections on local and remote server, so
 # that you can just click the url that pops up
 function notebook() {
   # Set the jupyter theme
-  echo "Configuring jupyter notebook theme."
-  ! $jupyter_ready && jt # trigger default theme
-  jupyter_ready=true     # this value is available for rest of session
-  # Test the hostname and get unique port we have picked
-  if [ ! -z $1 ]; then
-    jupyterport=$1 # override with user input
-  else case $HOSTNAME in
-      uriah*)  jupyterport=20000 ;;
-      gauss*)  jupyterport=20001 ;;
-      euclid*) jupyterport=20002 ;;
-      monde*)  jupyterport=20003 ;;
-      midway*) jupyterport=20004 ;;
-      *) echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
-    esac
-  fi
-  # Tell local server to connect to this server's port number $jupyterport
-  # in the background
-  if ! $macos; then # need background port forwarding
-    # Establish the connection
-    if [ ! -r ~/.port ]; then
-      echo "Error: File \"$HOME/.port\" not available. Cannot send command to macbook."
-      return 1
-    elif ! which ip &>/dev/null; then
-      echo "Error: Command \"ip\" not available. Cannot determine this server's address."
-      return 1
-    else
-      # Set up background connection
-      # -f sets port-forwarding to the background
-      # -N says we don't need to issue a command, port will remain forwarded indefinitely
-      # * The embedded ip command prints this server's ip address (since $(hostname) often does
-      #   not include the full URL); see the 'address()' function in this bashrc.
-      # * The -t flag says to open a 'pseudo-tty' and run some command, then exit.
-      #   The command we will run will set up port-forwarding.
-      echo "Connecting macbook to ${HOSTNAME%%@*} over port $jupyterport."
-      command ssh -t -o StrictHostKeyChecking=no -p $(cat ~/.port) $USER@localhost "
-        command ssh -N -f -L localhost:$jupyterport:localhost:$jupyterport \
-          $USER@$(ip route get 1 | awk '{print $NF;exit}')
-        "
-    fi
-  fi
+  local port
+  ! $_jt_configured && echo "Configure jupyter notebook theme." \
+    && jt && _jt_configured=true # trigger default theme
   # Create the notebook
-  echo "Initializing jupyter notebook over port $jupyterport."
-  jupyter notebook --no-browser --port=$jupyterport --NotebookApp.iopub_data_rate_limit=10000000
-  # need to extend data rate limit when making some plots with lots of stuff
+  # Need to extend data rate limit when making some plots with lots of stuff
+  if ! $macos; then
+    connect
+    [ $? -ne 0 ] && return 1
+    echo "Initializing jupyter notebook over port $_jupyter_port."
+    port="--port=$_jupyter_port"
+  else
+    echo "Initializing jupyter notebook."
+    port=""
+  fi
+  jupyter notebook --no-browser $port --NotebookApp.iopub_data_rate_limit=10000000
+}
+
+# Refresh stale connections from macbook to server
+# Simply calls the 'connect' function
+function unstale() {
+  local ports
+  $macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
+  ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
+  if [ ! -z $ports ]; then
+    echo "Refreshing jupyter notebook connections over port(s) $ports."
+    connect $ports
+  else
+    echo "No active jupyter notebooks found."
+  fi
 }
 
 # Note git pull will fail if the merge is anything other than
@@ -1039,17 +1075,18 @@ function figuresync() {
   # * The exclude-standard flag excludes ignored files listed with 'other' -o flag
   #   See: https://stackoverflow.com/a/26891150/4970632
   # * Takes server argument..
-  extramessage="$2" # may be empty
+  local server localdir remotedir extramessage
+  [[ $# -ne 1 && $# -ne 2 ]] && echo "Error: This function needs 1-2 arguments."
   ! $macos && echo "Error: Function intended to be called from macbook." && return 1
-  [ -z "$1" ] && echo "Error: Hostname argument required." && return 1
-  local server="$1" # server
-  local localdir="$(pwd)"
-  local localdir="${localdir##*/}"
+  server="$1"       # server
+  extramessage="$2" # may be empty
+  localdir="$(pwd)"
+  localdir="${localdir##*/}"
   if [ "$localdir" == "Tau" ]; then # special handling
     [[ "$server" =~ euclid ]] && local remotedir=/birner-home/ldavis || local remotedir=/home/ldavis
-    local remotedir=$remotedir/working
+    remotedir=$remotedir/working
   else # default handling
-    local remotedir="/home/ldavis/$localdir"
+    remotedir="/home/ldavis/$localdir"
   fi
   echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
   # Issue script to server over ssh
@@ -1058,11 +1095,11 @@ function figuresync() {
 # Also have to add github rsa manually because we don't source the bashrc
 eval "\$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
 cd "${remotedir}"; git status -s; sleep 1
-Nmfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
-Nofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
+mfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
+ofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
 # Initialize message
-[ \$Nmfiles -ne 0 ]        && message+="Modified \$Nmfiles figure(s)."           && space1=" "
-[ \$Nofiles -ne 0 ]        && message+="\${space1}Made \$Nofiles new figure(s)." && space2=" "
+[ \$mfiles -ne 0 ]         && message+="Modified \$mfiles figure(s)."           && space1=" "
+[ \$ofiles -ne 0 ]         && message+="\${space1}Made \$ofiles new figure(s)." && space2=" "
 [ ! -z "${extramessage}" ] && message+="\${space2}${extramessage}"
 if [ ! -z "\$message" ]; then
   echo "Commiting changes with message: \\"\$message\\""
@@ -1335,16 +1372,6 @@ function sdsync() {
 }
 
 ################################################################################
-# SHELL INTEGRATION; iTerm2 feature only
-################################################################################
-# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-# They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ]; then
-   source ~/.iterm2_shell_integration.bash
-   echo "Enabled shell integration."
-fi
-
-################################################################################
 # FZF FUZZY FILE COMPLETION TOOL
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
@@ -1454,6 +1481,16 @@ if [ -f ~/.fzf.bash ]; then
   #----------------------------------------------------------------------------#
   # Finished
   echo "Enabled fuzzy file completion."
+fi
+
+################################################################################
+# SHELL INTEGRATION; iTerm2 feature only
+################################################################################
+# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
+# They are super annoying and useless
+if [ -f ~/.iterm2_shell_integration.bash ]; then
+   source ~/.iterm2_shell_integration.bash
+   echo "Enabled shell integration."
 fi
 
 ################################################################################
