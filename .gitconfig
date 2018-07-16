@@ -35,9 +35,9 @@
 #   fix user/email information through every commit in repository
 #------------------------------------------------------------------------------;
 [alias]
-	short  = !git status --short --branch $@
-	remotes = !git remote --verbose $@
-	branches = !git branch --verbose $@
+	short    = !git status --short --branch $@
+	remotes  = !git remote --verbose $@
+	branches = !git branch --all --verbose $@
 	stat   = !git diff --stat $@
 	wtf    = !git-wtf $@
 	fix    = !git-fix $@
