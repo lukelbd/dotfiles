@@ -39,13 +39,13 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 # Reset all aliases
 unalias -a
 # Flag for if in MacOs
-[[ "$OSTYPE" == "darwin"* ]] && macos=true || macos=false
+[[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
 # First, the path management
 # If loading default bashrc, *must* happen before everything else or may get unexpected
 # behavior! For example, due to my overriding behavior of grep/man/help commands, and
 # the system default bashrc running those commands with my unexpected overrides
 export PYTHONPATH="" # this one needs to be re-initialized
-if $macos; then
+if $_macos; then
   # Mac options
   # Defaults... but will reset them
   # eval `/usr/libexec/path_helper -s`
@@ -213,7 +213,7 @@ function man() { # always show useful information when man is called
   [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
   [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
-    if $macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
+    if $_macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
       [ $1 == "builtin" ] && local search=$1 || local search=bash
     else local search=$1 # linux shows all info necessary, just have to find it
     fi
@@ -241,7 +241,7 @@ function vim() {
     # Unfold stuff after entering each buffer; for some reason folds are otherwise
     # re-closed upon openening each file
     # Check out: cat $sessionfile | grep -n -E 'fold|zt'
-    $macos && sed=gsed || sed=sed # only GNU sed works here
+    $_macos && sed=gsed || sed=sed # only GNU sed works here
     $sed -i "/zt/a setlocal nofoldenable" $sessionfile
     command vim -S $sessionfile # for working with obsession
   else
@@ -293,49 +293,44 @@ alias watch="tail -f" # actually already is a watch command
 # Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
-complete -r # remove completions
-bind -r '"\C-i"'
-bind -r '"\C-d"'
-bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
-bind 'set disable-completion off'          # ensure on
-bind 'set completion-ignore-case on'       # want dat
-bind 'set completion-map-case on'          # treat hyphens and underscores as same
-bind 'set show-all-if-ambiguous on'        # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
-bind 'set menu-complete-display-prefix on' # show string typed so far as 'member' while cycling through completion options
-bind 'set completion-display-width 1'      # easier to read
-bind 'set bell-style visible'              # only let readlinke/shell do visual bell; use 'none' to disable totally
-bind 'set skip-completed-text on'          # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
-bind 'set visible-stats off'               # extra information, e.g. whether something is executable with *
-bind 'set page-completions off'            # no more --more-- pager when list too big
-bind 'set completion-query-items 0'        # never ask for user confirmation if there's too much stuff
-bind 'set mark-symlinked-directories on'   # add trailing slash to directory symlink
-bind '"\C-i": menu-complete'               # this will not pollute scroll history; better
-bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
-bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
-bind '"\C-l": forward-char'
-bind '"\C-s": beginning-of-line' # match vim motions
-bind '"\C-e": end-of-line'       # match vim motions
-bind '"\C-h": backward-char'     # match vim motions
-bind '"\C-w": forward-word'      # requires
-bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
-bind '"\eOP": menu-complete'          # history
-bind '"\eOQ": menu-complete-backward' # history
-bind '"\C-j": next-history'
-bind '"\C-k": previous-history'  # history
-bind '"\C-j": next-history'
-bind '"\C-p": previous-history'  # history
-bind '"\C-n": next-history'
-stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
-stty stop undef   # no more ctrl-s
-stty eof undef    # no more ctrl-d
-# function bind() {
-#   if [ $# -eq 0 ]; then
-#     command bind -p | grep -F '\C'
-#   else
-#     echo "bind $@"
-#     command bind "$@"
-#   fi
-# }
+function binds() {
+  complete -r # remove completions
+  bind -r '"\C-i"'
+  bind -r '"\C-d"'
+  bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
+  bind 'set disable-completion off'          # ensure on
+  bind 'set completion-ignore-case on'       # want dat
+  bind 'set completion-map-case on'          # treat hyphens and underscores as same
+  bind 'set show-all-if-ambiguous on'        # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+  bind 'set menu-complete-display-prefix on' # show string typed so far as 'member' while cycling through completion options
+  bind 'set completion-display-width 1'      # easier to read
+  bind 'set bell-style visible'              # only let readlinke/shell do visual bell; use 'none' to disable totally
+  bind 'set skip-completed-text on'          # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
+  bind 'set visible-stats off'               # extra information, e.g. whether something is executable with *
+  bind 'set page-completions off'            # no more --more-- pager when list too big
+  bind 'set completion-query-items 0'        # never ask for user confirmation if there's too much stuff
+  bind 'set mark-symlinked-directories on'   # add trailing slash to directory symlink
+  bind '"\C-i": menu-complete'               # this will not pollute scroll history; better
+  bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
+  bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
+  bind '"\C-l": forward-char'
+  bind '"\C-s": beginning-of-line' # match vim motions
+  bind '"\C-e": end-of-line'       # match vim motions
+  bind '"\C-h": backward-char'     # match vim motions
+  bind '"\C-w": forward-word'      # requires
+  bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
+  bind '"\eOP": menu-complete'          # history
+  bind '"\eOQ": menu-complete-backward' # history
+  bind '"\C-j": next-history'
+  bind '"\C-k": previous-history'  # history
+  bind '"\C-j": next-history'
+  bind '"\C-p": previous-history'  # history
+  bind '"\C-n": next-history'
+  stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
+  stty stop undef   # no more ctrl-s
+  stty eof undef    # no more ctrl-d
+}
+# binds 2>/dev/null
 
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
@@ -373,7 +368,7 @@ function opts() {
   export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
   export HISTCONTROL="erasedups:ignoreboth" # avoid duplicate entries
 }
-opts 2>/dev/null # ignore if option unavailable
+# opts 2>/dev/null # ignore if option unavailable
 
 ################################################################################
 # Aliases/functions for printing out information
@@ -382,7 +377,7 @@ opts 2>/dev/null # ignore if option unavailable
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
 alias aliases="compgen -a"
 alias functions="compgen -A function" # show current shell functions
-if $macos; then
+if $_macos; then
   alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
   alias bindings_stty="stty -e"                # bindings
 else
@@ -443,7 +438,7 @@ function env() { set; } # just prints all shell variables
 #   Default mac colors were found with simple google search.
 # * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
 #   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
-if $macos; then
+if $_macos; then
   _ls_command=gls
   _dc_command=gdircolors
 else
@@ -465,13 +460,13 @@ alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentia
 alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
 # Other stuff
-$macos && alias sed="gsed"
-$macos && alias sort="gsort"
+$_macos && alias sed="gsed"
+$_macos && alias sort="gsort"
 
 # Information on directories
 alias df="df -h" # disk useage
 alias eject="diskutil unmount" # eject disk on macOS
-! $macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
+! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
@@ -666,40 +661,40 @@ _title_file=~/.title
 _win_num="${TERM_SESSION_ID%%t*}"
 _win_num="${_win_num#w}"
 function title() { # Cmd-I from iterm2 also works
-  ! $macos && echo "Error: Can only set title from mac." && return 1
+  ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
-  if [ -n "$1" ]; then title="$1"
+  if [ -n "$1" ]; then _title="$1"
   else read -p "Enter title for this window: " title
   fi
-  [ -z "$title" ] && title="window $_win_num"
+  [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
   # GNU syntax is "sed -i <pattern> <file>", which is annoying.
   [ ! -e "$_title_file" ] && touch "$_title_file"
   gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
-  echo "$_win_num: $title" >>$_title_file # add to file
+  echo "$_win_num: $_title" >>$_title_file # add to file
   title_update # update
 }
 # Prompt user input potentially, but try to load from file
 function title_update() {
   # Check file availability
   [ ! -r "$_title_file" ] && {
-    if ! $macos; then echo "Error: Title file not available." && return 1
+    if ! $_macos; then echo "Error: Title file not available." && return 1
     else title
     fi; }
   # Read from file
-  if $macos; then
-    title="$(cat $_title_file | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
-  else title="$(cat $_title_file)" # only text in file
+  if $_macos; then
+    _title="$(cat $_title_file | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
+  else _title="$(cat $_title_file)" # only text in file
   fi
   # Update or re-declare
-  title="$(echo "$title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
-  if [ -z "$title" ]; then title # reset title
-  else echo -ne "\033]0;"$title"\007" # re-assert existing title, in case changed
+  _title="$(echo "$_title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
+  if [ -z "$_title" ]; then title # reset title
+  else echo -ne "\033]0;"$_title"\007" # re-assert existing title, in case changed
   fi
 }
 # New window; might have closed one and opened another, so declare new title
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
-$macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
+$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
 
 ################################################################################
 # SSH, session management, and Github stuff
@@ -740,7 +735,7 @@ alias connections="ps aux | grep -v grep | grep 'ssh '"
 # View address
 function address() {
   # Get the ip address; several weird options for this
-  if ! $macos; then
+  if ! $_macos; then
     # See this: https://stackoverflow.com/q/13322485/4970632
     # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
     ip route get 1 | awk '{print $NF;exit}'
@@ -800,7 +795,7 @@ function initssh {
   fi
 }
 # Source SSH settings, if applicable
-if ! $macos; then # only do this if not on macbook
+if ! $_macos; then # only do this if not on macbook
   if [ -f "$SSH_ENV" ]; then
     . "$SSH_ENV" >/dev/null
     ps -ef | grep $SSH_AGENT_PID | grep ssh-agent$ >/dev/null || initssh
@@ -813,9 +808,9 @@ fi
 # SSH key or password/username can only be stored in plaintext in home directory)
 _git_message=$(git remote -v 2>/dev/null)
 if [ ! -z "$_git_message" ]; then
-  if [[ "$_git_message" =~ "https" ]] && ! $macos; then # ssh node for Linux
+  if [[ "$_git_message" =~ "https" ]] && ! $_macos; then # ssh node for Linux
     echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
-  elif [[ "$_git_message" =~ "git@github" ]] && $macos; then # url for Mac
+  elif [[ "$_git_message" =~ "git@github" ]] && $_macos; then # url for Mac
     echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
   fi
 fi
@@ -847,13 +842,13 @@ function ssh_fancy() {
   title_write="$(compressuser $_title_file)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen $1 \
-    "echo $port >$port_write; echo $title >$title_write; \
+    "echo $port >$port_write; echo $_title >$title_write; \
      echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
   local port file dest
-  $macos && echo "Error: Function intended to be called from an ssh session." && return 1
+  $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
   [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
   [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file) # port from most recent login
@@ -866,7 +861,7 @@ function rlcp() {    # "copy to local (from remote); 'copy there'"
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
   local port file dest
-  $macos && echo "Error: Function intended to be called from an ssh session." && return 1
+  $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
   [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
   [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file) # port from most recent login
@@ -927,7 +922,7 @@ pycomplex=$(echo "$pysimple
   import numpy as np
   import pandas as pd
   import xarray as xr
-  $($macos && echo "import matplotlib as mpl; mpl.use('MacOSX')
+  $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX')
                     import matplotlib.pyplot as plt
                     from pyfuncs import plot")
   " | sed 's/^ *//g')
@@ -981,7 +976,7 @@ function jt() {
 function connect() {
   # Error checks and declarations
   local port candidates
-  $macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
+  $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   [ ! -r $_port_file ] && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
   ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address." && return 1
   if [ $# -eq 0 ]; then
@@ -1039,7 +1034,7 @@ function notebook() {
     && jt && _jt_configured=true # trigger default theme
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
-  if ! $macos; then
+  if ! $_macos; then
     connect
     [ $? -ne 0 ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
@@ -1055,7 +1050,7 @@ function notebook() {
 # Simply calls the 'connect' function
 function unstale() {
   local ports
-  $macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
+  $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
   if [ ! -z $ports ]; then
     echo "Refreshing jupyter notebook connections over port(s) $ports."
@@ -1076,7 +1071,7 @@ function figuresync() {
   # * Takes server argument..
   local server localdir remotedir extramessage
   [[ $# -ne 1 && $# -ne 2 ]] && echo "Error: This function needs 1-2 arguments."
-  ! $macos && echo "Error: Function intended to be called from macbook." && return 1
+  ! $_macos && echo "Error: Function intended to be called from macbook." && return 1
   server="$1"       # server
   extramessage="$2" # may be empty
   localdir="$(pwd)"
@@ -1230,7 +1225,7 @@ function ncvarinfo() { # as above but just for one variable
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  $macos && reverse="tail -r" || reverse="tac"
+  $_macos && reverse="tail -r" || reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
   command ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse | less
     # shhh... just let it happen
@@ -1324,7 +1319,7 @@ function sdsync() {
   copied=false # copied anything?
   updated=false # updated anything?
   deleted=false # deleted anything?
-  $macos && date=gdate || date=date
+  $_macos && date=gdate || date=date
   for path in "$locloc/"*.{mp3,m4a,m3u8}; do
     [ ! -r "$path" ] && continue # e.g. if glob failed
     file="${path##*/}"
@@ -1499,11 +1494,11 @@ fi
 # but only ever have to do this once)
 ################################################################################
 # Options for ensuring git credentials (https connection) is set up; now use SSH id, so forget it
-# $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && command ssh -T git@github.com; }
-# $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
+# $_macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && command ssh -T git@github.com; }
+# $_macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
 # Overcomplicated MacOS options
-# $macos && fortune | lolcat || echo "Shell configured and namespace populated."
-# $macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
+# $_macos && fortune | lolcat || echo "Shell configured and namespace populated."
+# $_macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
 # alias hack="cmatrix" # hackerlolz
 # alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
 # hash powerline-shell 2>/dev/null && { # powerline shell; is ooglay so forget it
@@ -1511,7 +1506,7 @@ fi
 #   [ "$TERM" != "linux" ] && PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 #   }
 # Messages
-$macos && { # first the MacOS options
+$_macos && { # first the MacOS options
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
   [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
