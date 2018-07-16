@@ -716,7 +716,7 @@ function address_ssh() {
   hosts=$@
   [ $# -eq 0 ] && hosts=$HOSTNAME
   for host in $hosts; do
-    case "$1" in
+    case "$host" in
       gauss)   eval "$host=ldavis@gauss.atmos.colostate.edu"         ;;
       monde)   eval "$host=ldavis@monde.atmos.colostate.edu"         ;;
       euclid)  eval "$host=ldavis@euclid.atmos.colostate.edu"        ;;
@@ -727,7 +727,7 @@ function address_ssh() {
       ldm)     eval "$host=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
       *) echo "Error: Unknown host key \"$host\"." && return 1
     esac
-    echo ${!1} # get the variable that this guy points to
+    echo ${!host} # get the variable that this guy points to
   done
 }
 hosts="gauss monde euclid olbers zephyr chicago archive ldm"
