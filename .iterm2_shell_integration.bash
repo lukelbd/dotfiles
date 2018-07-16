@@ -83,7 +83,7 @@ __bp_last_argument_prev_command="$_"
 
 # Command to set our preexec trap. It's invoked once via
 # PROMPT_COMMAND and then removed.
-__bp_trap_install_string="trap '__bp_preexec_invoke_exec \"\$_\" ' DEBUG;"
+__bp_trap_install_string="trap '__bp_preexec_invoke_exec \"\$_\"' DEBUG;"
 
 # Remove ignorespace and or replace ignoreboth from HISTCONTROL
 # so we can accurately invoke preexec with a command from our
