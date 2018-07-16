@@ -1353,7 +1353,6 @@ if [ -f ~/.fzf.bash ]; then
   # Generate list of all executables, and use fzf path completion by default
   # for almost all of them
   # WARNING: BOLD MOVE COTTON.
-  echo "Setting up completion."
   _ignore="^\\($(echo "echo \\[ \\[\\[ cdo git fzf $FZF_COMPLETION_DIR_COMMANDS" | sed 's/ /\\|/g')\\)$"
   if [ ! -r "$HOME/.commands" ]; then
     echo "Recording available commands."
