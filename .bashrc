@@ -293,7 +293,7 @@ alias watch="tail -f" # actually already is a watch command
 # Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
-function binds() {
+function _setup_bindings() {
   complete -r # remove completions
   bind -r '"\C-i"'
   bind -r '"\C-d"'
@@ -330,12 +330,12 @@ function binds() {
   stty stop undef   # no more ctrl-s
   stty eof undef    # no more ctrl-d
 }
-# binds 2>/dev/null
+_setup_bindings 2>/dev/null
 
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
-function opts() {
+function _setup_opts() {
   # Turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
   set +H
   # No more control-d closing terminal
@@ -368,7 +368,7 @@ function opts() {
   export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
   export HISTCONTROL="erasedups:ignoreboth" # avoid duplicate entries
 }
-# opts 2>/dev/null # ignore if option unavailable
+_setup_opts 2>/dev/null # ignore if option unavailable
 
 ################################################################################
 # Aliases/functions for printing out information
@@ -709,31 +709,35 @@ $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
 # Declare some names for active servers
+# Will set global variables too
 # ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-function hostname() {
-  case "$1" in
-    gauss)   eval "$1=ldavis@gauss.atmos.colostate.edu"         ;;
-    monde)   eval "$1=ldavis@monde.atmos.colostate.edu"         ;;
-    euclid)  eval "$1=ldavis@euclid.atmos.colostate.edu"        ;;
-    olbers)  eval "$1=ldavis@olbers.atmos.colostate.edu"        ;;
-    zephyr)  eval "$1=lukelbd@zephyr.meteo.mcgill.ca"           ;;
-    chicago) eval "$1=t-9841aa@midway2-login1.rcc.uchicago.edu" ;; # pass: orkalluctudg
-    archive) eval "$1=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
-    ldm)     eval "$1=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
-    *) echo "Error: Unknown host key \"$1\"." && return 1
-  esac
-  echo ${!1} # get the variable that this guy points to
+function address_ssh() {
+  local host hosts
+  hosts=$@
+  [ $# -eq 0 ] && hosts=$HOSTNAME
+  for host in $hosts; do
+    case "$1" in
+      gauss)   eval "$host=ldavis@gauss.atmos.colostate.edu"         ;;
+      monde)   eval "$host=ldavis@monde.atmos.colostate.edu"         ;;
+      euclid)  eval "$host=ldavis@euclid.atmos.colostate.edu"        ;;
+      olbers)  eval "$host=ldavis@olbers.atmos.colostate.edu"        ;;
+      zephyr)  eval "$host=lukelbd@zephyr.meteo.mcgill.ca"           ;;
+      chicago) eval "$host=t-9841aa@midway2-login1.rcc.uchicago.edu" ;; # pass: orkalluctudg
+      archive) eval "$host=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
+      ldm)     eval "$host=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
+      *) echo "Error: Unknown host key \"$host\"." && return 1
+    esac
+    echo ${!1} # get the variable that this guy points to
+  done
 }
 hosts="gauss monde euclid olbers zephyr chicago archive ldm"
-for host in $hosts; do
-  hostname $host >/dev/null # call
-done
+address_ssh $hosts >/dev/null # call
 
 # Short helper functions
 # See current ssh connections
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 # View address
-function address() {
+function address_ip() {
   # Get the ip address; several weird options for this
   if ! $_macos; then
     # See this: https://stackoverflow.com/q/13322485/4970632
