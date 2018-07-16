@@ -198,22 +198,6 @@ MISSING 05;37;41
 # to colorize below. Put the extension, a space, and the color init string.
 # (and any comments you want to add after a '#')
 
-### Text files and readmes and stuff
-.txt    33
-.org    33
-.md     33
-.htm    33
-.html   33
-.shtml  33
-.haml   33
-.css    33
-.sass   33
-.scss   33
-.less   33
-.man    33
-.tex    33
-.rtf    33
-
 ### Code files
 .ncl    31
 .nco    31
@@ -265,6 +249,21 @@ MISSING 05;37;41
 .v      31
 .vh     31
 .vhd    31
+### Text files and readmes and stuff
+.tex    33
+.txt    33
+.org    33
+.md     33
+.htm    33
+.html   33
+.shtml  33
+.haml   33
+.css    33
+.sass   33
+.scss   33
+.less   33
+.man    33
+.rtf    33
 
 ### Documents requiring GUI
 .doc  01;33
@@ -412,8 +411,8 @@ MISSING 05;37;41
 .npy   36
 .pkl   36
 .csv   36
-.xls  31
-.xlsx 31
+.xls   36
+.xlsx  36
 .data  36
 .tbl   36
 .table 36

@@ -24,9 +24,9 @@ let g:HowMuch_auto_engines=['py', 'bc'] "python engine uses from math import *
 let g:HowMuch_scale=3 "precision
 
 "Command to display version number
-if exists("g:loaded_HowMuch") 
-  finish
-endif
+" if exists("g:loaded_HowMuch")
+"   finish
+" endif
 let g:loaded_HowMuch = 1
 let s:version ="1.0.2"
 "command to check version
@@ -68,12 +68,12 @@ vnoremap <silent><unique> <Plug>PyCalcAppendWithEqAndSum   :call HowMuch#HowMuch
 
 "===========================================================
 " custom mappings
-if !hasmapto('<Plug>AutoCalcAppendWithEqAndSum','v')
-  vmap <Leader>+ <Plug>AutoCalcAppendWithEqAndSum
-endif
-if !hasmapto('<Plug>AutoCalcReplaceWithSum','v')
-  vmap <Leader>= <Plug>AutoCalcReplaceWithSum
-endif
+" if !hasmapto('<Plug>AutoCalcAppendWithEqAndSum','v')
+vmap c+ <Plug>AutoCalcAppendWithEqAndSum
+" endif
+" if !hasmapto('<Plug>AutoCalcReplaceWithSum','v')
+vmap c= <Plug>AutoCalcReplaceWithSum
+" endif
 " vmap <Leader><Leader>s <Plug>AutoCalcReplace
 " vmap <Leader>? <Plug>AutoCalcAppend
 " vmap <Leader>?= <Plug>AutoCalcAppendWithEq

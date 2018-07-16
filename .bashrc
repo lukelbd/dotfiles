@@ -28,7 +28,6 @@
 # PROMPT
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
-unset PROMPT_COMMAND # don't enable this by default
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
@@ -238,6 +237,7 @@ function vim() {
   # tracking in the current session file
   local sessionfile=".session.vim"
   if [[ -z "$@" ]] && [[ -r "$sessionfile" ]]; then
+    # NOTE: Crude bugfixes with sed here
     # Unfold stuff after entering each buffer; for some reason folds are otherwise
     # re-closed upon openening each file
     # Check out: cat $sessionfile | grep -n -E 'fold|zt'
@@ -250,6 +250,7 @@ function vim() {
   clear # clear screen after exit
 }
 # Open wrapper
+# Opens files based on name
 function open() {
   # Parse input
   local app=
@@ -296,25 +297,34 @@ complete -r # remove completions
 bind -r '"\C-i"'
 bind -r '"\C-d"'
 bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
-bind 'set disable-completion off'    # ensure on
-bind 'set completion-ignore-case on' # want dat
-bind 'set completion-map-case on'    # treat hyphens and underscores as same
-bind 'set show-all-if-ambiguous on'  # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
-bind "set menu-complete-display-prefix on" # show string typed so far as 'member' while cycling through completion options
-bind 'set completion-display-width 1' # easier to read
-bind 'set bell-style visible'    # only let readlinke/shell do visual bell; use 'none' to disable totally
-bind '"\C-i": menu-complete'     # this will not pollute scroll history; better
-bind '"\e-1\C-i": menu-complete-backward' # this will not pollute scroll history; better
-bind '"\e[Z": "\e-1\C-i"'        # shift tab to go backwards
-# bind '"\C-i":glob-complete-word' # fix error where nothing is globbed
+bind 'set disable-completion off'          # ensure on
+bind 'set completion-ignore-case on'       # want dat
+bind 'set completion-map-case on'          # treat hyphens and underscores as same
+bind 'set show-all-if-ambiguous on'        # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+bind 'set menu-complete-display-prefix on' # show string typed so far as 'member' while cycling through completion options
+bind 'set completion-display-width 1'      # easier to read
+bind 'set bell-style visible'              # only let readlinke/shell do visual bell; use 'none' to disable totally
+bind 'set skip-completed-text on'          # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
+bind 'set visible-stats off'               # extra information, e.g. whether something is executable with *
+bind 'set page-completions off'            # no more --more-- pager when list too big
+bind 'set completion-query-items 0'        # never ask for user confirmation if there's too much stuff
+bind 'set mark-symlinked-directories on'   # add trailing slash to directory symlink
+bind '"\C-i": menu-complete'               # this will not pollute scroll history; better
+bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
+bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
 bind '"\C-l": forward-char'
 bind '"\C-s": beginning-of-line' # match vim motions
-bind '"\C-e": end-of-line' # match vim motions
-bind '"\C-h": backward-char' # match vim motions
-bind '"\C-w": forward-word'  # requires
-bind '"\C-b": backward-word' # by default c-b moves back one word, and deletes it
-bind '"\C-k": menu-complete' # scroll through complete options
-bind '"\C-j": menu-complete-backward'
+bind '"\C-e": end-of-line'       # match vim motions
+bind '"\C-h": backward-char'     # match vim motions
+bind '"\C-w": forward-word'      # requires
+bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
+bind '"\eOP": menu-complete'          # history
+bind '"\eOQ": menu-complete-backward' # history
+bind '"\C-j": next-history'
+bind '"\C-k": previous-history'  # history
+bind '"\C-j": next-history'
+bind '"\C-p": previous-history'  # history
+bind '"\C-n": next-history'
 stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
 stty stop undef   # no more ctrl-s
 stty eof undef    # no more ctrl-d
@@ -344,8 +354,8 @@ function opts() {
   shopt -s checkwinsize            # allow window resizing
   shopt -u nullglob                # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
   shopt -u extglob                 # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -s dotglob                 # include dot patterns in glob matches
-  shopt -s direxpand               # include dot patterns in glob matches; relatively new
+  shopt -u dotglob                 # include dot patterns in glob matches
+  shopt -s direxpand               # expand dirs
   shopt -s dirspell                # attempt spelling correction of dirname
   shopt -s cdspell                 # spelling errors during cd arguments
   shopt -s cdable_vars             # cd into shell variable directories, no $ necessary
@@ -370,11 +380,17 @@ opts 2>/dev/null # ignore if option unavailable
 ################################################################################
 # The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
-alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
-alias bindings_stty="stty -e"                # bindings
-alias functions="declare -F | cut -d' ' -f3" # show current shell functions
-alias inputrc_funcs="bind -l"                # the functions, for example 'forward-char'
-alias inputrc_ops="bind -v"                  # the 'set' options, and their values
+alias aliases="compgen -a"
+alias functions="compgen -A function" # show current shell functions
+if $macos; then
+  alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+  alias bindings_stty="stty -e"                # bindings
+else
+  alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
+  alias bindings_stty="stty -a"                # bindings
+fi
+alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
+alias inputrc_ops="bind -v"           # the 'set' options, and their values
 function env() { set; } # just prints all shell variables
 
 ################################################################################
@@ -430,11 +446,9 @@ function env() { set; } # just prints all shell variables
 if $macos; then
   _ls_command=gls
   _dc_command=gdircolors
-  _sort_command=gsort
 else
   _ls_command=ls
   _dc_command=dircolors
-  _sort_command=sort
 fi
 # Default mac colors
 # LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
@@ -447,9 +461,12 @@ if [ -r "$HOME/.dircolors.ansi" ]; then
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
 # Apply ls
-alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
-alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
-! $macos && alias cd="cd -P" # don't want this on my mac temporarily
+alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
+alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
+alias cd="cd -P" # don't want this on my mac temporarily
+# Other stuff
+$macos && alias sed="gsed"
+$macos && alias sort="gsort"
 
 # Information on directories
 alias df="df -h" # disk useage
@@ -462,12 +479,12 @@ function ds() { # directory ls
 }
 function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | $_sort_command -sh
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
 
 # Grepping and diffing; enable colors
-alias grep="grep --color=auto" # always show color
-alias egrep="egrep --color=auto" # always show color
+alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 # Make Perl color wrapper default; also allow color difference with git
 # Note to recursively compare directories, use --name-status
 hash colordiff 2>/dev/null && alias diff="command colordiff"
@@ -539,6 +556,7 @@ function merge() {
 ################################################################################
 # Tool for changing iTerm2 profile before command executed, and returning
 # after executed (e.g. interactive prompts)
+# Just alias any command with 'cmdcolor' as prefix
 function cmdcolor() {
   # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
   # Or that's dumb and just use ITERM_PROFILE
@@ -633,175 +651,6 @@ function flatten() {
 }
 
 ################################################################################
-# Supercomputer tools 
-################################################################################
-alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
-alias suser="squeue -u $USER"
-
-################################################################################
-# Python workspace setup
-################################################################################
-# For profiling scripts
-alias profile="python -m cProfile -s time"
-# Python shell utilities
-# io="import pandas as pd; import xarray as xr; import netCDF4 as nc4; "
-io="import pandas as pd; import xarray as xr; "
-basic="import numpy as np; from datetime import datetime; from datetime import date; "
-magic="get_ipython().magic('load_ext autoreload'); get_ipython().magic('autoreload 2'); "
-plots=$($macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import matplotlib.pyplot as plt; ") # plots
-pyfuncs=$($macos && echo "import pyfuncs.plots as py; ") # lots of plot-related stuff in here
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
-# Other shell utilities
-# Simple thing for R
-# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
-# * The ---always-readline prevents prompt from switching to the default prompt, but
-#   also seems to disable ctrl-d for exiting.
-alias r="R"   # because why not?
-alias ir="iR" # again, why not?
-function iR() {
-  echo 'This is an Interactive R shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  R -q --no-save # keep it simple stupid
-  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
-}
-# NCL -- and a couple other things
-# Binding thing doesn't work (cause it's not passed to shell), but was neat idea
-function incl() {
-  # local binding_old="$(bind -Xps | grep C-d)" # print every kind of binding; flags are different kinds
-  echo "This is an Interactive NCL shell."
-  ncl -Q -n
-  # bind '"\C-d":"exit()\C-m"'
-  # bind "$binding_old" # spaces gotta be escaped
-}
-# Perl -- hard to understand, but here it goes:
-# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
-# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
-#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
-#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
-#   for success, and if not, prints the error message. This is a build-your-own eval.
-function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
-  echo 'This is an Interactive Perl shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
-}
-alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$io$basic$magic$plots$pyfuncs\""
-alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint \
-    -i -c \"$magic\"" # double quotes necessary, because var contains single quotes
-# With new shell color
-# alias iworkspace="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$io$basic$magic$plots$pyfuncs\""
-# alias ipython="cmdcolor ipython --no-banner --no-confirm-exit --pprint -i -c \"$magic\""
-# alias perl="cmdcolor perl -de1" # pseudo-interactive console; from https://stackoverflow.com/a/73703/4970632
-# alias R="cmdcolor R"
-
-################################################################################
-# NOTEBOOK STUFF
-################################################################################
-# * First will set the jupyter theme. Makes all fonts the same size (10) and makes cells nice and wide (95%)
-# * IMPORTANT note: to uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
-#   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
-# * If you have issues where themes is just not changing in Chrome, open Developer tab with Cmd+Opt+I
-#   and you can right-click refresh for a hard reset, cache reset
-# alias jtheme="jt -cellw 95% -nfs 10 -fs 10 -tfs 10 -ofs 10 -dfs 10 -t grade3"
-jupyter_ready=false # theme is not initially setup because takes a long time
-function jt() {
-  # Choose default themes and font
-  # chesterish is best; monokai has green/pink theme;
-  # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
-  # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  if [ $# -lt 1 ]; then 
-    echo "Choosing jupytertheme automatically based on hostname."
-    case $HOSTNAME in
-      uriah*)  jupyter_theme=solarizedl;;
-      gauss*)   jupyter_theme=gruvboxd;;
-      euclid*)  jupyter_theme=gruvboxd;;
-      monde*)   jupyter_theme=onedork;;
-      midway*) jupyter_theme=onedork;;
-      *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
-    esac
-  else jupyter_theme="$1"
-  fi
-  if [ $# -lt 2 ]; then
-    export jupyter_font="cousine" # look up available ones online
-  else
-    export jupyter_font="$2"
-  fi
-  # Make sure theme is valid
-  # mkadf
-  themes=($(command jt -l | sed '1d'))
-  [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
-    echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
-  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
-    -t $jupyter_theme -f $jupyter_font
-}
-function notebook() {
-  # Set the jupyter theme
-  echo "Configuring jupyter notebook theme."
-  ! $jupyter_ready && jt # trigger default theme
-  jupyter_ready=true # this value is available for rest of session
-  # Test the hostname and get unique port we have picked
-  if [ ! -z $1 ]; then
-    jupyterremote=$1 # override with user input
-  else case ${HOSTNAME%%.*} in
-      uriah)    jupyterport=20000;;
-      gauss)    jupyterport=20001;;
-      euclid)   jupyterport=20002;;
-      monde)    jupyterport=20003;;
-      midway*)  jupyterport=20004;;
-      *)      echo "Error: No jupyterport assigned to hostname \"${HOSTNAME%%.*}\". Edit your .bashrc." && return 1 ;;
-    esac
-  fi
-  # Create the notebook
-  echo "Initializing jupyter notebook over port port: $jupyterport."
-  jupyter notebook --no-browser --port=$jupyterport --NotebookApp.iopub_data_rate_limit=10000000
-    # need to extend data rate limit when making some plots with lots of stuff
-}
-# See current ssh connections
-alias connections="ps aux | grep -v grep | grep ssh"
-# Setup new connection to another server, enables REMOTE NOTEBOOK ACCESS
-function connect() { # connect to remove notebook on port
-  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
-  local user=${1%%@*}
-  local hostname=${1##*@} # the host we connect to, minus username
-  if [ ! -z $2 ]; then
-    jupyterconnect=$2 # override with user input
-  else case ${hostname%%.*} in
-      gauss)   jupyterconnect=20001;;
-      euclid)  jupyterconnect=20002;;
-      monde)   jupyterconnect=20003;;
-      midway*) jupyterconnect=20004;;
-      *)        echo "Error: No jupyterport assigned to hostname \"$hostname\". Edit your .bashrc." && return 1
-    esac
-  fi
-  # Establish the connection
-  echo "Connecting to $hostname over port $jupyterconnect."
-  echo "Warning: Keep this window open to use your remote jupyter notebook!"
-  \ssh -N -f -L localhost:$jupyterconnect:localhost:$jupyterconnect $user@$hostname
-      # the -f command sets this port-forwarding to the background for the duration of the
-      # ssh command to follow; but the -N command says we don't need to issue a command,
-      # the port will just remain forwarded indefinitely
-}
-# Include option to cancel connection: see: https://stackoverflow.com/a/20240445/4970632
-function disconnect() {
-  # Determine the port to use
-  if [ ! -z $1 ]; then
-    local jupyterdisconnect=$1
-  elif [ ! -z $jupyterconnect ]; then
-    local jupyterdisconnect=$jupyterconnect
-  else
-    echo "Error: Must specify a port or make sure port is available from variable \"jupyterconnect\"."
-    return 1
-  fi
-  # Disable the connection
-  # lsof -t -i tcp:$jupyterdisconnect | xargs kill # this can accidentally kill Chrome instance
-  local ports=($(lsof -i tcp:$jupyterdisconnect | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs))
-  [ -z $ports ] && echo "Error: Connection over port \"${jupyterdisconnect}\" not found." && return 1
-  kill ${ports[@]} # kill the SSH processes
-  [ $? == 0 ] && unset jupyterconnect || echo "Error: Could not disconnect from port \"${jupyterdisconnect}\"."
-  echo "Connection over port ${jupyterdisconnect} removed."
-}
-
-################################################################################
 # iTerm2 title and other stuff
 ################################################################################
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762
@@ -813,34 +662,34 @@ function disconnect() {
 # grep that, then if the title is not already set AND we are on pane zero, request title.
 ################################################################################
 # First function that sets title
-titlefile=~/.title
-winnum="${TERM_SESSION_ID%%t*}"
-winnum="${winnum#w}"
+_title_file=~/.title
+_win_num="${TERM_SESSION_ID%%t*}"
+_win_num="${_win_num#w}"
 function title() { # Cmd-I from iterm2 also works
   ! $macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
   if [ -n "$1" ]; then title="$1"
   else read -p "Enter title for this window: " title
   fi
-  [ -z "$title" ] && title="window $winnum"
+  [ -z "$title" ] && title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
   # GNU syntax is "sed -i <pattern> <file>", which is annoying.
-  [ ! -e "$titlefile" ] && touch "$titlefile"
-  gsed -i '/^'$winnum':.*$/d' $titlefile # remove existing title from file
-  echo "$winnum: $title" >>$titlefile # add to file
+  [ ! -e "$_title_file" ] && touch "$_title_file"
+  gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
+  echo "$_win_num: $title" >>$_title_file # add to file
   title_update # update
 }
 # Prompt user input potentially, but try to load from file
 function title_update() {
   # Check file availability
-  [ ! -r "$titlefile" ] && {
+  [ ! -r "$_title_file" ] && {
     if ! $macos; then echo "Error: Title file not available." && return 1
     else title
     fi; }
   # Read from file
   if $macos; then
-    title="$(cat $titlefile | grep "^$winnum:.*$" 2>/dev/null | cut -d: -f2-)"
-  else title="$(cat $titlefile)" # only text in file
+    title="$(cat $_title_file | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
+  else title="$(cat $_title_file)" # only text in file
   fi
   # Update or re-declare
   title="$(echo "$title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
@@ -866,113 +715,41 @@ $macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$title" ] && title
 ################################################################################
 # Declare some names for active servers
 # ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-work='ldavis@10.83.16.91' # for scp'ing into my Mac
-home='ldavis@10.253.201.216'
-gauss='ldavis@gauss.atmos.colostate.edu'
-monde='ldavis@monde.atmos.colostate.edu'
-euclid='ldavis@euclid.atmos.colostate.edu'
-olbers='ldavis@olbers.atmos.colostate.edu'
-zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-chicago='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
-archive='ldm@ldm.atmos.colostate.edu' # atmos-2012
-ldm='ldm@ldm.atmos.colostate.edu' # atmos-2012
-
-# archive='/media/archives/reanalyses/era_interim/'
-# olbers='ldavis@129.82.49.159'
-# Check git remote on current folder, make sure it points to SSH/HTTPS depending
-# on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
-# SSH key or password/username can only be stored in plaintext in home directory)
-gitmessage=$(git remote -v 2>/dev/null)
-if [ ! -z "$gitmessage" ]; then
-  if [[ "$gitmessage" =~ "https" ]] && ! $macos; then # ssh node for Linux
-    echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
-  elif [[ "$gitmessage" =~ "git@github" ]] && $macos; then # url for Mac
-    echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
-  fi
-fi
-
-# Trigger ssh-agent if not already running, and add Github private key
-# Make sure to make private key passwordless, for easy login; all I want here
-# is to avoid storing plaintext username/password in ~/.git-credentials, but free private key is fine
-# See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
-# Also look into more complex approach: https://stackoverflow.com/a/18915067/4970632
-# The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
-if ! $macos && [ -z "$SSH_AUTH_SOCK" ]; then
-  if [ -e "$HOME/.ssh/id_rsa_github" ]; then
-    echo "Adding Github private SSH key."
-    eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
-    # ssh_agent=$! # save PID
-    ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
-  else echo "Warning: Github private SSH key \"~/.ssh/id_rsa_github\" is not available."
-  fi
-fi
-
-# Functions for executing stuff on remote servers
-# Note git pull will fail if the merge is anything other than
-# a fast-forward merge (e.g. modifying multiple files); otherwise
-# need to commit local changes first
-function figuresync() {
-  # For now this function is designed specifically for one project; for
-  # future projects can modify it
-  # * The exclude-standard flag excludes ignored files listed with 'other' -o flag
-  #   See: https://stackoverflow.com/a/26891150/4970632
-  # * Takes server argument..
-  extramessage="$2" # may be empty
-  [ -z "$1" ] && echo "Error: Hostname argument required." && return 1
-  local server="$1" # server
-  local localdir="$(pwd)"
-  local localdir="${localdir##*/}"
-  if [ "$localdir" == "Tau" ]; then # special handling
-    [[ "$server" =~ euclid ]] && local remotedir=/birner-home/ldavis || local remotedir=/home/ldavis
-    local remotedir=$remotedir/working
-  else # default handling
-    local remotedir="/home/ldavis/$localdir"
-  fi
-  echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
-  eval "$(ssh-agent -s)" &>/dev/null # start agent, silently
-  ssh-add ~/.ssh/id_rsa_github &>/dev/null # add Github private key; assumes public key has been added to profile
-  \ssh $server 'eval "$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
-    cd '"$remotedir"'; git status -s; sleep 1
-    mfiles=($(git ls-files -m)); fmfiles=(${mfiles[@]##*.pdf}); Nmfiles=$((${#mfiles[@]}-${#fmfiles[@]}))
-    ofiles=($(git ls-files -o --exclude-standard)); fofiles=(${ofiles[@]##*.pdf}); Nofiles=$((${#ofiles[@]}-${#fofiles[@]}))
-    space1="" space2="" message="" # initialize message
-    [ $Nmfiles -eq 1 ] && mfigures="figure" || mfigures="figures"
-    [ $Nofiles -eq 1 ] && ofigures="figure" || ofigures="figures"
-    [ $Nmfiles -ne 0 ] && message+="Modified $Nmfiles $mfigures." && space1=" "
-    [ $Nofiles -ne 0 ] && message+="${space1}Made $Nofiles new $ofigures." && space2=" "
-    [ ! -z "'"$extramessage"'" ] && message+="${space2}'"$extramessage"'"
-    if [ ! -z "$message" ]; then
-      echo "Commiting changes with message: \"$message\""
-      git add --all && git commit -q -m "$message" && git push -q
-    else echo "No new figures." && exit 1
-    fi'
-  if [ $? -eq 0 ]; then # non-zero exit code
-    echo "Pulling changes to macbook."
-    git fetch && git merge -m "Syncing with macbook." # assume in correct directory already
-    # cd "$localdir" && git pull # attempt pull
-  fi
-# Method using read command
-#   local commands # create local commands variable; https://stackoverflow.com/a/23991919/4970632
-#   read -r -d '' commands << EOF
-# commands go here
-# EOF
-#   \ssh $server "$commands"
-# Method using multiline string
-# \ssh $server "command 1
-#   command 2
-#   command 3"
+function hostname() {
+  case "$1" in
+    gauss)   eval "$1=ldavis@gauss.atmos.colostate.edu"         ;;
+    monde)   eval "$1=ldavis@monde.atmos.colostate.edu"         ;;
+    euclid)  eval "$1=ldavis@euclid.atmos.colostate.edu"        ;;
+    olbers)  eval "$1=ldavis@olbers.atmos.colostate.edu"        ;;
+    zephyr)  eval "$1=lukelbd@zephyr.meteo.mcgill.ca"           ;;
+    chicago) eval "$1=t-9841aa@midway2-login1.rcc.uchicago.edu" ;; # pass: orkalluctudg
+    archive) eval "$1=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
+    ldm)     eval "$1=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
+    *) echo "Error: Unknown host key \"$1\"." && return 1
+  esac
+  echo ${!1} # get the variable that this guy points to
 }
+hosts="gauss monde euclid olbers zephyr chicago archive ldm"
+for host in $hosts; do
+  hostname $host >/dev/null # call
+done
 
-# Functions for scp-ing from local to remote, and vice versa
-# For initial idea see: https://stackoverflow.com/a/25486130/4970632
-# For exit on forward see: https://serverfault.com/a/577830/427991
-# For why we alias the function see: https://serverfault.com/a/656535/427991
-# For enter command then remain in shell see: https://serverfault.com/q/79645/427991
-#   * Note this has nice side-effect of eliminating annoying "banner message"
-#   * Why iterate from ports 10000 upward? Because is even though disable host key
-#     checking, still get this warning message every time.
-portfile=~/.port # file storing port number
-alias ssh="ssh_wrapper" # must be an alias or will fail! for some reason
+# Short helper functions
+# See current ssh connections
+alias connections="ps aux | grep -v grep | grep 'ssh '"
+# View address
+function address() {
+  # Get the ip address; several weird options for this
+  if ! $macos; then
+    # See this: https://stackoverflow.com/q/13322485/4970632
+    # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
+    ip route get 1 | awk '{print $NF;exit}'
+  else
+    # See this: https://apple.stackexchange.com/q/20547/214359
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+  fi
+}
+# String parsing
 function expanduser() { # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
@@ -985,52 +762,357 @@ function compressuser() { # turn $HOME into tilde
   param="${param/#$HOME/\~}"
   echo $param
 }
-function ssh_wrapper() {
-  [ $# -lt 1 ] && echo "Error: Need at least 1 argument." && return 1
-  local port=10000 # starting port
-  local listen=22 # default sshd listening port; see the link above
-  local args=($@) # all arguments
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && port=(${args[0]}) && args=(${args[@]:1}) # override
-  # while netstat -an | grep "$port" | grep -i listen &>/dev/null; do # check for localhost availability; wrong!
-  while \ssh ${args[@]} "netstat -an | grep \":$port\" &>/dev/null && exit 0 || exit 1"; do # check for availability on remote host
-    echo "Warning: Port $port unavailable." # warning message
-    local port=$(($port + 1)) # generate new port
-  done
-  # \ssh -o StrictHostKeyChecking=no \
-  local portwrite="$(compressuser $portfile)"
-  local titlewrite="$(compressuser $titlefile)"
-  \ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -t -R $port:localhost:$listen ${args[@]} \
-    "echo $port >$portwrite; echo $title >$titlewrite; " \
-    "echo \"Port number: ${port}.\"; /bin/bash -i" # -t says to stay interactive
+# Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
+function disconnect() {
+  local pids port=$1
+  [ $# -ne 1 ] && echo "Error: Function requires exactly 1 arg."
+  # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
+  pids="$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)"
+  [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
+  kill $pids # kill the SSH processes
+  echo "Processes $pids killed. Connections over port $port removed."
+}
+
+# Trigger ssh-agent if not already running, and add Github private key
+# Make sure to make private key passwordless, for easy login; all I want here
+# is to avoid storing plaintext username/password in ~/.git-credentials, but free private key is fine
+# * See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
+#   The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
+# * Used to just ssh-add on every login, but that starts fantom ssh-agent processes that persist
+#   when terminal is closed (all the 'eval' does is set environment variables; ssh-agent without
+#   the eval just starts the process in background).
+# * Now we re-use pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
+SSH_ENV="$HOME/.ssh/environment"
+function killssh {
+  # kill $(ps aux | grep ssh-agent | tr -s ' ' | cut -d' ' -f2 | xargs)
+  kill $(ps aux | grep ssh-agent | grep -v grep | awk '{print $2}')
+}
+function initssh {
+  # echo "Initialising new SSH agent..."
+  if [ -f "$HOME/.ssh/id_rsa_github" ]; then
+    echo "Adding Github private SSH key."
+    command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
+    chmod 600 "${SSH_ENV}"
+    source "${SSH_ENV}" >/dev/null
+    command ssh-add "$HOME/.ssh/id_rsa_github" &>/dev/null # add Github private key; assumes public key has been added to profile
+  else
+    echo "Warning: Github private SSH key \"$HOME/.ssh/id_rsa_github\" is not available." && return 1
+  fi
+}
+# Source SSH settings, if applicable
+if ! $macos; then # only do this if not on macbook
+  if [ -f "$SSH_ENV" ]; then
+    . "$SSH_ENV" >/dev/null
+    ps -ef | grep $SSH_AGENT_PID | grep ssh-agent$ >/dev/null || initssh
+  else
+    initssh
+  fi
+fi
+# Check git remote on current folder, make sure it points to SSH/HTTPS depending
+# on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
+# SSH key or password/username can only be stored in plaintext in home directory)
+_git_message=$(git remote -v 2>/dev/null)
+if [ ! -z "$_git_message" ]; then
+  if [[ "$_git_message" =~ "https" ]] && ! $macos; then # ssh node for Linux
+    echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
+  elif [[ "$_git_message" =~ "git@github" ]] && $macos; then # url for Mac
+    echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
+  fi
+fi
+
+# Functions for scp-ing from local to remote, and vice versa
+# For initial idea see: https://stackoverflow.com/a/25486130/4970632
+# For exit on forward see: https://serverfault.com/a/577830/427991
+# For why we alias the function see: https://serverfault.com/a/656535/427991
+# For enter command then remain in shell see: https://serverfault.com/q/79645/427991
+#   * Note this has nice side-effect of eliminating annoying "banner message"
+#   * Why iterate from ports 10000 upward? Because is even though disable host key
+#     checking, still get this warning message every time.
+# Big honking useful wrapper -- will *always* use this to ssh between servers
+_port_file=~/.port # file storing port number
+alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
+function ssh_fancy() {
+  local port listen port_write title_write
+  [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
+  listen=22  # default sshd listening port; see the link above
+  port=10000 # starting port
+  port=$(command ssh "$1" "
+    port=$port
+    while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
+      let port=\$port+1
+    done
+    echo \$port
+    ") # find first available port
+  port_write="$(compressuser $_port_file)"
+  title_write="$(compressuser $_title_file)"
+  command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
+    -t -R $port:localhost:$listen $1 \
+    "echo $port >$port_write; echo $title >$title_write; \
+     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
 # Copy from <this server> to local macbook
 function rlcp() {    # "copy to local (from remote); 'copy there'"
-  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat $portfile) # port from most recent login
-  local args=(${@:1:$#-2}) # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local file="${@:(-2):1}" # second to last
-  local dest="$(compressuser ${@:(-1)})" # last value
-  local dest="${dest//\ /\\\ }"  # escape whitespace manually
+  local port file dest
+  $macos && echo "Error: Function intended to be called from an ssh session." && return 1
+  [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
+  [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
+  port=$(cat $_port_file) # port from most recent login
+  file="$1"                 # second to last
+  dest="$(compressuser $2)" # last value
+  dest="${dest//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file on this server to home server at: $dest..."
-  scp -o StrictHostKeyChecking=no -P$port ${args[@]} "$file" ldavis@127.0.0.1:"$dest"
+  command scp -o StrictHostKeyChecking=no -P$port "$file" ${USER}@localhost:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() {    # "copy to remote (from local); 'copy here'"
-  $macos && echo "Error: This function is intended to be used while SSH'd into remote servers." && return 1
-  [ $# -lt 2 ] && echo "Error: Need at least 2 arguments." && return 1
-  [ ! -r $portfile ] && echo "Error: Port unavailable." && return 1
-  local port=$(cat $portfile) # port from most recent login
-  local args=(${@:1:$#-2})   # $# stores number of args passed to shell, and perform minus 1
-  [[ ${args[0]} =~ ^[0-9]+$ ]] && local port=${args[0]} && local args=(${args[@]:1})
-  local dest="${@:(-1)}"   # last value
-  local file="$(compressuser ${@:(-2):1})" # second to last
-  local file="${file//\ /\\\ }"  # escape whitespace manually
+  local port file dest
+  $macos && echo "Error: Function intended to be called from an ssh session." && return 1
+  [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
+  [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
+  port=$(cat $_port_file) # port from most recent login
+  dest="$1"                 # last value
+  file="$(compressuser $2)" # second to last
+  file="${file//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  scp -o StrictHostKeyChecking=no -P$port ${args[@]} ldavis@127.0.0.1:"$file" "$dest"
+  command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
+}
+
+################################################################################
+# Supercomputer tools 
+################################################################################
+alias suser="squeue -u $USER"
+alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
+
+################################################################################
+# Setup REPLs
+################################################################################
+# R utilities
+# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
+# * The ---always-readline prevents prompt from switching to the default prompt, but
+#   also seems to disable ctrl-d for exiting.
+alias r="R"   # because why not?
+alias ir="iR" # again, why not?
+function iR() {
+  echo 'This is an Interactive R shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  R -q --no-save # keep it simple stupid
+  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
+}
+# Matlab -- just a simple alias
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
+# NCL -- and a couple other things
+# Tried temporarily changing bindings, but those are *shell* bindings; not passed to REPL
+function incl() {
+  echo "This is an Interactive NCL shell."
+  ncl -Q -n
+}
+# Perl -- hard to understand, but here it goes:
+# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
+# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
+#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
+#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
+#   for success, and if not, prints the error message. This is a build-your-own eval.
+function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+  echo 'This is an Interactive Perl shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
+}
+# iPython wrapper -- load your favorite magics and modules on startup
+# Have to sed trim the leading spaces to avoid indentation errors
+pysimple=$(echo "get_ipython().magic('load_ext autoreload')
+  get_ipython().magic('autoreload 2')" | sed 's/^ *//g')
+pycomplex=$(echo "$pysimple
+  from datetime import datetime
+  from datetime import date
+  import numpy as np
+  import pandas as pd
+  import xarray as xr
+  $($macos && echo "import matplotlib as mpl; mpl.use('MacOSX')
+                    import matplotlib.pyplot as plt
+                    from pyfuncs import plot")
+  " | sed 's/^ *//g')
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pysimple\""
+alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
+
+################################################################################
+# Notebook stuff
+################################################################################
+# * To uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
+#   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
+# * If you have issues where themes are just not changing in Chrome, open Developer tab
+#   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
+# Wrapper aroung jupyter theme function, much better
+_jt_configured=false # theme is not initially setup because takes a long time
+function jt() {
+  # Choose default themes and font
+  # chesterish is best; monokai has green/pink theme;
+  # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
+  # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
+  local jupyter_theme jupyter_font themes
+  if [ $# -lt 1 ]; then 
+    echo "Choosing jupytertheme automatically based on hostname."
+    case $HOSTNAME in
+      uriah*)  jupyter_theme=solarizedl;;
+      gauss*)  jupyter_theme=gruvboxd;;
+      euclid*) jupyter_theme=gruvboxd;;
+      monde*)  jupyter_theme=onedork;;
+      midway*) jupyter_theme=onedork;;
+      *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
+    esac
+  else jupyter_theme="$1"
+  fi
+  if [ $# -lt 2 ]; then
+    export jupyter_font="cousine" # look up available ones online
+  else
+    export jupyter_font="$2"
+  fi
+  # Make sure theme is valid
+  # mkadf
+  themes=($(command jt -l | sed '1d'))
+  [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
+    echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
+  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
+    -t $jupyter_theme -f $jupyter_font
+}
+
+# This function will establish two-way connection between server and local macbook
+# with the same port number (easier to understand that way).
+# Will be called whenever a notebook is iniated, and can be called to refresh stale connections.
+function connect() {
+  # Error checks and declarations
+  local port candidates
+  $macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
+  [ ! -r $_port_file ] && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
+  ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address." && return 1
+  if [ $# -eq 0 ]; then
+    # Get list of available ports on this machine
+    # Right now we check 20 choices
+    for port in $(seq 20000 20020); do
+      if netstat -an | grep "[:.]$port" &>/dev/null; then
+        let candidates+=($port)
+      fi
+    done
+    # Next run the remote port test, incrementing through *local* candidates
+    # whenever a remote port is unavailable
+    ports=$(command ssh -p $(cat $_port_file) $USER@localhost "$1" "
+      i=0
+      port=${candidates[0]}
+      candidates=(${candidates[@]})
+      while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
+        let i=i+1
+        let port=\${candidates[\$i]}
+      done
+      echo \$port
+      ") # find first available port
+  else
+    # Connect over ports from each argument
+    ports="$@"
+  fi
+  # Error message
+  [ -z $ports ] && echo "Error: No ports found." && return 1
+  # Establish the 2-way connection (macbook's local host, port $port to
+  # remote host's local host, port $port)
+  for port in $ports; do
+    # Message
+    echo "Connecting macbook to ${HOSTNAME%%@*} over port $port."
+    # The ip command prints this server's ip address ($hostname doesn't include full url)
+    # ssh -f (port-forwarding in background) -N (don't issue command)
+    command ssh -t -o StrictHostKeyChecking=no -p $(cat $_port_file) $USER@localhost \
+      "command ssh -N -f -L localhost:$port:localhost:$port \
+        $USER@$(ip route get 1 | awk '{print $NF;exit}') &>/dev/null
+       if [ \$? -eq 0 ]; then
+         echo 'Connection successful.' && exit 1
+       else
+         echo 'Connection failed.' && exit 0
+       fi" 2>/dev/null
+  done
+  _jupyter_port=$port
+}
+
+# Fancy wrapper for declaring notebook
+# Will set up necessary port-forwarding connections on local and remote server, so
+# that you can just click the url that pops up
+function notebook() {
+  # Set the jupyter theme
+  local port
+  ! $_jt_configured && echo "Configure jupyter notebook theme." \
+    && jt && _jt_configured=true # trigger default theme
+  # Create the notebook
+  # Need to extend data rate limit when making some plots with lots of stuff
+  if ! $macos; then
+    connect
+    [ $? -ne 0 ] && return 1
+    echo "Initializing jupyter notebook over port $_jupyter_port."
+    port="--port=$_jupyter_port"
+  else
+    echo "Initializing jupyter notebook."
+    port=""
+  fi
+  jupyter notebook --no-browser $port --NotebookApp.iopub_data_rate_limit=10000000
+}
+
+# Refresh stale connections from macbook to server
+# Simply calls the 'connect' function
+function unstale() {
+  local ports
+  $macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
+  ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
+  if [ ! -z $ports ]; then
+    echo "Refreshing jupyter notebook connections over port(s) $ports."
+    connect $ports
+  else
+    echo "No active jupyter notebooks found."
+  fi
+}
+
+# Note git pull will fail if the merge is anything other than
+# a fast-forward merge (e.g. modifying multiple files); otherwise
+# need to commit local changes first
+function figuresync() {
+  # For now this function is designed specifically for one project; for
+  # future projects can modify it
+  # * The exclude-standard flag excludes ignored files listed with 'other' -o flag
+  #   See: https://stackoverflow.com/a/26891150/4970632
+  # * Takes server argument..
+  local server localdir remotedir extramessage
+  [[ $# -ne 1 && $# -ne 2 ]] && echo "Error: This function needs 1-2 arguments."
+  ! $macos && echo "Error: Function intended to be called from macbook." && return 1
+  server="$1"       # server
+  extramessage="$2" # may be empty
+  localdir="$(pwd)"
+  localdir="${localdir##*/}"
+  if [ "$localdir" == "Tau" ]; then # special handling
+    [[ "$server" =~ euclid ]] && local remotedir=/birner-home/ldavis || local remotedir=/home/ldavis
+    remotedir=$remotedir/working
+  else # default handling
+    remotedir="/home/ldavis/$localdir"
+  fi
+  echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
+  # Issue script to server over ssh
+  read -r -d '' commands << EOF
+# List modified and 'other' (untracked) files of pdf type
+# Also have to add github rsa manually because we don't source the bashrc
+eval "\$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
+cd "${remotedir}"; git status -s; sleep 1
+mfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
+ofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
+# Initialize message
+[ \$mfiles -ne 0 ]         && message+="Modified \$mfiles figure(s)."           && space1=" "
+[ \$ofiles -ne 0 ]         && message+="\${space1}Made \$ofiles new figure(s)." && space2=" "
+[ ! -z "${extramessage}" ] && message+="\${space2}${extramessage}"
+if [ ! -z "\$message" ]; then
+  echo "Commiting changes with message: \\"\$message\\""
+  git add --all && git commit -q -m "\$message" && git push -q
+else
+  echo "No new figures." && exit 1
+fi
+EOF
+  command ssh $server "$commands"
+  # Check output, and git fetch if new figures were found
+  if [ $? -eq 0 ]; then # non-zero exit code
+    echo "Pulling changes to macbook."
+    git fetch && git merge -m "Syncing with macbook." # assume in correct directory already
+  fi
 }
 
 ################################################################################
@@ -1151,7 +1233,7 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
   $macos && reverse="tail -r" || reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
   command ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse | less
-    # shhh... just let it happen baby
+    # shhh... just let it happen
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
@@ -1206,13 +1288,12 @@ function extract() {
 # Utilities handling media and PDF files
 ################################################################################
 # Fun stuff
-alias music="ls -1 *.{mp3,m4a} | sed -e \"s/\ \-\ .*$//\" | uniq -c | $_sort_command -sn | $_sort_command -sn -r -k 2,1"
-alias weather="curl wttr.in/Fort\ Collins" # list weather information
-
-# Opening commands for some GUI apps
-alias edit='\open -a TextEdit'
-alias html='\open -a Google\ Chrome'
-alias pdf='\open -a Skim'
+alias forecast="curl wttr.in/Fort\ Collins" # list weather information
+alias songs="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
+alias edit='command open -a TextEdit'
+alias html='command open -a Google\ Chrome'
+alias image='command open -a Preview'
+alias pdf='command open -a Skim'
 
 # Extracting PDF annotations
 function unannotate() {
@@ -1290,6 +1371,118 @@ function sdsync() {
 }
 
 ################################################################################
+# FZF FUZZY FILE COMPLETION TOOL
+# See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
+################################################################################
+# Run installation script; similar to the above one
+if [ -f ~/.fzf.bash ]; then
+  #----------------------------------------------------------------------------#
+  # See man page for --bind information
+  # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
+  #   key bindings will enabled multiple selection
+  # * Also very important, bind slash to accept, so now the behavior is very similar
+  #   to behavior of normal bash shell completion
+  # * Inline info puts the number line thing on same line as text. More compact.
+  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
+  #   Also see manual; here, '-1' is terminal default, not '0'
+  # Custom options
+  export FZF_COMPLETION_FIND_IGNORE=".DS_Store .session.vim __pycache__ .ipynb_checkpoints"
+  export FZF_COMPLETION_FIND_OPTS=" -maxdepth 1 "
+  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
+  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
+  # The builtin options # --ansi --color=bw
+  # Try to make bindings similar to vim; configure ctrl+, and ctrl+. to trigger completion
+  # and scroll through just like tabs, ctrl+j and ctrl+k reserved for history scrolling, and use
+  # slash, enter, or ctrl-d to accept an answer (d for 'descend')
+  _command='' # use find . -maxdepth 1 search non recursively
+  _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
+    --ansi --color=bg:-1,bg+:-1 --layout=default
+    --bind=f1:up,f2:down,shift-tab:up,tab:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down+toggle,ctrl-k:up+toggle,ctrl-d:accept,/:accept' \
+    | tr '\n' ' ')
+  export FZF_DEFAULT_COMMAND="$_command"
+  export FZF_CTRL_T_COMMAND="$_command"
+  export FZF_ALT_C_COMMAND="$_command"
+  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
+  export FZF_DEFAULT_OPTS="$_opts"
+  export FZF_CTRL_T_OPTS="$_opts"
+  export FZF_ALT_C_OPTS="$_opts"
+  #----------------------------------------------------------------------------#
+  # To re-generate, just delete the .commands file and source this file
+  # Generate list of all executables, and use fzf path completion by default
+  # for almost all of them
+  # WARNING: BOLD MOVE COTTON.
+  _ignore="{ } \\[ \\[\\[ gecho echo type which cdo git fzf $FZF_COMPLETION_DIR_COMMANDS"
+  _ignore="^\\($(echo "$_ignore" | sed 's/ /\\|/g')\\)$"
+  if [ ! -r "$HOME/.commands" ]; then
+    echo "Recording available commands."
+    compgen -c >$HOME/.commands # will include aliases and functions
+  fi
+  export FZF_COMPLETION_FILE_COMMANDS=$(cat $HOME/.commands | grep -v "$_ignore" 2>/dev/null | xargs)
+  # complete $_complete_path $(cat $HOME/.commands | grep -v $_ignore | xargs)
+  #----------------------------------------------------------------------------#
+  # Source file
+  complete -r # reset first
+  source ~/.fzf.bash
+  #----------------------------------------------------------------------------#
+  # Create custom bindings
+  # Use below to bind ctrl t command
+  # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
+  # Bind alt c command to ctrl f (i.e. the 'enter folder' command)
+  bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
+  # Add a few basic completion options
+  # First set the default ones
+  _complete_path=$(complete | grep 'rm$' | sed 's/complete//;s/rm//')
+  complete -E # when line empty, perform no complection (options empty)
+  # complete -D $_complete_path # ideal, but this seems to break stuff
+  #----------------------------------------------------------------------------#
+  # Non-path completion: subcommands, shell commands, etc.
+  # Feel free to add to this list, it is super cool
+  for _command in shopt help man type which bind alias unalias function git cdo; do
+    # Post-processing commands *must* have name <name_of_complete_function>_post
+    case $_command in
+      shopt) _generator="shopt | cut -d' ' -f1 | cut -d$'\\t' -f1" ;;
+      help|man|type|which) _generator="cat \$HOME/.commands | grep -v '[!.:]'" ;; # faster than loading every time
+      bind)                _generator="bind -l" ;;
+      unalias|alias)       _generator="compgen -a" ;;
+      function)            _generator="compgen -A function" ;;
+      git)                 _generator="git commands" ;;
+      cdo)                 _generator="cdo --operators"
+     _fzf_complete_cdo_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
+    esac
+    # Create functions, and declare completions
+    eval "_fzf_complete_$_command() {
+          _fzf_complete \$FZF_COMPLETION_OPTS \"\$@\" < <( $_generator )
+          }"
+    complete -F _fzf_complete_$_command $_command
+  done
+  #----------------------------------------------------------------------------#
+  # Path completion with file extension filter
+  # For info see: https://unix.stackexchange.com/a/15309/112647
+  # These will wrap around the generic path completion function
+  _fzf_find_prefix='-name .git -prune -o -name .svn -prune -o ( -type d -o -type f -o -type l )'
+  for _command in pdf image html; do
+    case $_command in
+      image) _filter="\\( -iname \\*.jpg -o -iname \\*.png -o -iname \\*.gif -o -iname \\*.svg -o -iname \\*.eps -o -iname \\*.pdf \\)" ;;
+      html)  _filter="-iname \\*.html" ;;
+      pdf)   _filter="-name \\*.pdf" ;;
+    esac
+    eval "_fzf_compgen_$_command() {
+      command find -L \"\$1\" \
+        \$FZF_COMPLETION_FIND_OPTS \
+        -name .git -prune -o -name .svn -prune -o \\( -type d -o -type f -o -type l \\) \
+        -a $_filter -a -not -path \"\$1\" -print 2> /dev/null | sed 's@^\\./@@'
+    }"
+    eval "_fzf_complete_$_command() {
+          __fzf_generic_path_completion _fzf_compgen_$_command \"-m\" \"\$@\"
+          }"
+    complete -o nospace -F _fzf_complete_$_command $_command
+  done
+  #----------------------------------------------------------------------------#
+  # Finished
+  echo "Enabled fuzzy file completion."
+fi
+
+################################################################################
 # SHELL INTEGRATION; iTerm2 feature only
 ################################################################################
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
@@ -1300,108 +1493,13 @@ if [ -f ~/.iterm2_shell_integration.bash ]; then
 fi
 
 ################################################################################
-# FZF FUZZY FILE COMPLETION TOOL
-# See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
-################################################################################
-# Run installation script; similar to the above one
-if [ -f ~/.fzf.bash ]; then
-  # See man page for --bind information
-  # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
-  #   key bindings will enabled multiple selection
-  # * Also very important, bind slash to accept, so now the behavior is very similar
-  #   to behavior of normal bash shell completion
-  # * Inline info puts the number line thing on same line as text. More compact.
-  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-  #   Also see manual; here, '-1' is terminald default, not '0'
-  _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
-    --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-d:toggle+down,ctrl-u:toggle+up,tab:accept,shift-tab:cancel,/:accept' \
-    | tr '\n' ' ')
-    # --ansi --color=bw
-  # Custom options
-  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
-  export FZF_COMPLETION_COMMAND_OPTS=" -maxdepth 1 "
-  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
-  export FZF_COMPLETION_FILE_COMMANDS="" # add commands here
-  # The builtin options next
-  _command='' # use find . -maxdepth 1 search non recursively
-  export FZF_DEFAULT_COMMAND="$_command"
-  export FZF_CTRL_T_COMMAND="$_command"
-  export FZF_ALT_C_COMMAND="$_command"
-  # Options, same every time
-  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
-  export FZF_DEFAULT_OPTS="$_opts"
-  export FZF_CTRL_T_OPTS="$_opts"
-  export FZF_ALT_C_OPTS="$_opts"
-  # Source file
-  complete -r # reset first
-  source ~/.fzf.bash
-  #----------------------------------------------------------------------------#
-  # Create custom bindings
-  # Use below to bind ctrl t command
-  # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
-  # Next bind alt c command to ctrl f
-  # Also bind generic file finder to tab keyt c
-  bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
-  # Add a few basic completion options
-  # First set the default ones
-  _complete_path=$(complete | grep 'rm$' | sed 's/complete//;s/rm//')
-  complete -E # when line empty, perform no complection (options empty)
-  # complete -D $_complete_path # ideal, but this seems to break stuff
-  #----------------------------------------------------------------------------#
-  # To re-generate, just delete the .commands file and source this file
-  # Generate list of all executables, and use fzf path completion by default
-  # for almost all of them
-  # WARNING: BOLD MOVE COTTON.
-  _ignore="^\\($(echo "echo \\[ \\[\\[ cdo git fzf $FZF_COMPLETION_DIR_COMMANDS" | sed 's/ /\\|/g')\\)$"
-  if [ ! -r "$HOME/.commands" ]; then
-    echo "Recording available commands."
-    compgen -c | grep -v $_ignore >$HOME/.commands # will include aliases and functions
-  fi
-  complete $_complete_path $(cat $HOME/.commands | xargs)
-  #----------------------------------------------------------------------------#
-  # Old commands for filtering completion options; now it seems the -X filter
-  # is ignored, as the function supplies all completion options
-  # complete -f -X '*.@(pdf|png|jpg|jpeg|gif|eps|dvi|pdf|ps|svg|nc|aux|hdf|grib)' -o plusdirs vim
-  # complete -f -X '!*.@(jpg|jpeg|png|gif|eps|dvi|pdf|ps|svg)' -o plusdirs preview
-  # complete -f -X '!*.pdf' skim              # changes behavior of my alias "skim"; shows only
-  # complete -f -X '!*.tex' -o plusdirs latex
-  # complete -f -X '!*.html' -o plusdirs html # for opening HTML files in chrome
-  # complete -f -o plusdirs mv # some shells disable tab-completion of dangerous commands; re-enable
-  # complete -f -o plusdirs rm
-  # Specific completion options
-  _opts_custom="$(echo $_opts | sed 's/--select-1//g')"
-  _fzf_complete_git() { # git commands be an alias that lists commands
-    _fzf_complete "$_opts_custom" "$@" < <(
-    git commands
-    )
-  }
-  _fzf_complete_cdo() {
-    _fzf_complete "$_opts_custom" "$@" < <(
-    cdo --operators
-    )
-  }
-  _fzf_complete_cdo_post() { # must be used with pipe
-    cat /dev/stdin | cut -d' ' -f1
-  }
-  # Apply them as completion commands
-  for _command in cdo git; do
-    # complete -F _fzf_complete_$_command -o default -o bashdefault $_command
-    complete -F _fzf_complete_$_command $_command
-  done
-  #----------------------------------------------------------------------------#
-  # Finished
-  echo "Enabled fuzzy file completion."
-fi
-
-################################################################################
 # Message
 # If github push/pulls will require password, configure with SSH (may require
 # entering password once) or configure with http (stores information in plaintext
 # but only ever have to do this once)
 ################################################################################
 # Options for ensuring git credentials (https connection) is set up; now use SSH id, so forget it
-# $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && \ssh -T git@github.com; }
+# $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && command ssh -T git@github.com; }
 # $macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
 # Overcomplicated MacOS options
 # $macos && fortune | lolcat || echo "Shell configured and namespace populated."
