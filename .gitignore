@@ -1,5 +1,7 @@
 # Specifically for this repository #
 ####################################
+.vim/zcache
+  # cache for the zotero integration plugin
 latex/*/
   # ignore subdirectories; those are just sources/backups really
 bin/cdo

@@ -32,20 +32,21 @@ function! s:Highlight_Matching_Pair()
   if pumvisible() || (&t_Co < 8 && !has("gui_running"))
     return
   endif
-
   " Disable in visual mode (custom)
   if mode()=~"[ivV]"
     return
   endif
-
   " Disable if inside comment (custom)
   if synIDattr(synIDtrans(synID(line("."),col("."),1)),"name")=~?'\(comment\|constant\)'
     return
   endif
-
   " Disable when on top of vim maps (custom)
   " Note cannot nest the matching groups atom \(
   if &ft=="vim" && ("\n".getline('.')=~'\_s\([a-z]\?map\|[a-z]\=noremap\)')
+    return
+  endif
+  " Ignore free brackets/parens; fixes horribly annoying issue with bash case/esac
+  if getline('.') =~ '^\([^(]*)\|[^\[]*\]\)'
     return
   endif
 

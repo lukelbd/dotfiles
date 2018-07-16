@@ -11,43 +11,39 @@
 "     F2: Ctrl-.
 "     F3: Ctrl-i
 "###############################################################################
-"BUTT-TONS OF CHANGES
-augroup _0
-augroup END
-"###############################################################################
-"NOCOMPATIBLE -- changes other stuff, so must be first
-set nocompatible
-  "always use the vim default where vi and vim differ; for example, if you
-  "put this too late, whichwrap will be resset
-"###############################################################################
 "IMPORTANT STUFF
+"Says to always use the vim default where vi and vim differ; for example, if you
+"put this too late, whichwrap will be reset
+set nocompatible
 let mapleader="\<Space>"
+"Misc stuff
 noremap <CR> <Nop>
 noremap <Space> <Nop>
 noremap <C-b> <Nop>
+"The above 2 enter weird modes I don't understand...
 noremap Q <Nop>
 noremap K <Nop>
-"the above 2 enter weird modes I don't understand...
 cnoremap <C-k> <Up>
 cnoremap <C-j> <Down>
+"Disable c-z and Z for exiting vim
 noremap <C-z> <Nop>
 noremap Z <Nop>
-"disable c-z and Z for exiting vim
+"See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
-"see solution: https://unix.stackexchange.com/a/414395/112647
-nnoremap <Leader>. :<Up><CR>
-nnoremap <Leader>/ /<Up><CR>
-"repeat previous command
+"Repeat previous command
+nnoremap <Leader>: :<Up><CR>
+nnoremap <Leader>? /<Up><CR>
 set updatetime=1000 "used for CursorHold autocmds
 set nobackup noswapfile noundofile "no more swap files; constantly hitting C-s so it's safe
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
 "other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
+"Older versions can't combine number with relativenumber
 set number numberwidth=4
 set relativenumber
-"older versions can't combine number with relativenumber
+"Disable builtin, because we modified that shit yo
 let g:loaded_matchparen=0
-"disable builtin, because we modified that shit yo
+
 "###############################################################################
 "ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
 "First some functions and autocmds
@@ -57,6 +53,7 @@ augroup escapefix
   au!
   au InsertLeave * normal! `^
 augroup END
+
 "##############################################################################"
 "ALWAYS NAVIGATE BY word, GOT DAMNIT
 "See: https://superuser.com/a/1150645/506762
@@ -65,6 +62,7 @@ augroup keywordfix
   au!
   au BufEnter * set iskeyword=65-90,95,97-122,48-57 "the same: a-z,_,A-Z,0-9
 augroup END
+
 "###############################################################################
 "USEFUL TOOLS THAT REQUIRE THEIR OWN FUNCTIONS
 "Function for escaping current delimiter
@@ -96,6 +94,7 @@ endfunction
 " nnoremap <expr> <Leader>w 'mz:let b:count=<sid>countcword("'.expand('<cword>').'")<CR>`z'
 "Try again with grep; way easier
 nnoremap <silent> <expr> <Leader>w ':let b:count=system("grep -c \"\\b'.expand('<cword>').'\\b\" '.expand('%').'")<CR>:echo b:count[:-2]<CR>'
+
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
 augroup insertenter
@@ -125,11 +124,15 @@ function! s:tabreset() "use this inside <expr> remaps
 endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Want to prevent automatic use of CR for confirming entry
+cnoremap <C-j> <Tab>
+cnoremap <C-k> <S-Tab>
 inoremap <expr> <C-c> pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
 inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
 inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>".<sid>tabreset() : "\<BS>"
 inoremap <expr> <Tab> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
+inoremap <expr> <C-j> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Nop>"
+inoremap <expr> <C-k> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<Nop>"
 inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
 inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
@@ -142,10 +145,12 @@ inoremap jj j
 inoremap kk k
 inoremap kj <Nop>
 inoremap KJ <Nop>
+
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 "MOSTLY NORMAL MODE MAPS
-"First need helper function to toggle formatoptions (controls whether comment-char inserted on newline)
+"First need helper function to toggle formatoptions (controls whether comment-char 
+"inserted on newline)
 " * See help fo-table for what these mean; this disables auto-wrapping lines.
 " * The o and r options continue comment lines.
 " * The n recognized numbered lists.
@@ -163,65 +168,71 @@ function! s:toggleformatopt()
   else | setlocal formatoptions=
   endif
 endfunction
-noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
-noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
-  "these keys aren't used currently, and are in a really good spot,
-  "so why not? fits mnemonically that insert above is Shift+<key for insert below>
+"These keys aren't used currently, and are in a really good spot,
+"so why not? Fits mnemonically that insert above is Shift+<key for insert below>
+" noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
+" noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
+noremap <silent> ` :call append(line('.'),'')<CR>
+noremap <silent> ~ :call append(line('.')-1,'')<CR>
+"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
+"use ss/substitute instead of cl if you want to enter insert mode
 noremap <silent> cL mzi<CR><Esc>`z
-  "mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
-  "use ss/substitute instead of cl if you want to enter insert mode
-" noremap <silent> sk mzkddp`z
-noremap <silent> ck mzkddp`z
-" noremap <silent> sj jmzkddp`zj
-noremap <silent> cj jmzkddp`zj
-  "swap with row above, and swap with row below; awesome mnemonic, right?
-  "use same syntax for c/s because almost *never* want to change up/down
+"Swap with row above, and swap with row below; awesome mnemonic, right?
+"use same syntax for c/s because almost *never* want to change up/down
+"The command-based approach make sthe cursor much less jumpy
+" noremap <silent> ck mzkddp`z
+" noremap <silent> cj jmzkddp`zj
+noremap <silent> ck k:let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>
+noremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>j
+"Useful for typos
 noremap <silent> cl xph
 noremap <silent> ch Xp
-  "useful for typos
+"Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 noremap <C-l> <C-i>
 noremap <C-h> <C-o>
+"Enable shortcut so that recordings are taken by just toggling 'q' on-off
+"the escapes prevent a weird error where sometimes q triggers command-history window
 noremap <C-j> g;
 noremap <C-k> g,
-  "navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
-  "enable shortcut so that recordings are taken by just toggling 'q' on-off
-  "the escapes prevent a weird error where sometimes q triggers command-history window
+"Delete entire line; never should use dl anyway, use x instead
+"must be normal mode map, or get delay; remember map includes some kind of
+"operator-pending mode (i.e. waiting for a motion)
 nnoremap dh <Nop>
 nnoremap dl 0d$
-  "delete entire line; never should use dl anyway, use x instead
-  "must be normal mode map, or get delay; remember map includes some kind of
-  "operator-pending mode (i.e. waiting for a motion)
+"Never really want to use f/t commands more than once; remap these later on
 noremap ; <Nop>
 noremap , <Nop>
-  "never really want to use f/t commands more than once; remap these later on
+"Easy mark usage
 noremap " :echo "Setting mark."<CR>mq
 noremap ' `q
-  "easy mark usage
+"New macro useage; almost always just use one at a time
+"also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
 map @ <Nop>
 noremap , @q
-  "new macro useage; almost always just use one at a time
-  "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
+"Redo map to capital U; means we cannot 'undo line', but who cares
 nnoremap U <C-r>
-  "redo map to capital U; means we cannot 'undo line', but who cares
-nnoremap \ :echo "Enabling throwaway register."<CR>"_
-vnoremap \ <Esc>:echo "Enabling throwaway register." <BAR> sleep 200m<CR>gv"_
+"Use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
+"THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
+nnoremap - :echo "Enabling throwaway register."<CR>"_
+vnoremap - <Esc>:echo "Enabling throwaway register." <BAR> sleep 200m<CR>gv"_
 nnoremap <expr> \| has("clipboard") ? ':echo "Enabling system clipboard."<CR>"*' : ':echo "VIM not compiled with +clipboard."<CR>'
 vnoremap <expr> \| has("clipboard") ? '<Esc>:echo "Enabling system clipboard." <BAR> sleep 200m<CR>gv"*' : ':echo "VIM not compiled with +clipboard."<CR>'
-  "use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
-  "THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
+"Don't save single-character deletions to any register
 nnoremap x "_x
 nnoremap X "_X
-  "don't save single-character deletions to any register
+"Default behavior replaces selection with register after p, but puts
+"deleted text in register; correct this behavior
 vnoremap p "_dP
 vnoremap P "_dP
-  "default behavior replaces selection with register after p, but puts
-  "deleted text in register; correct this behavior
+"Pressing enter on empty line preserves leading whitespace (HACKY)
+"works because Vim doesn't remove spaces when text has been inserted
 nnoremap o ox<BS>
 nnoremap O Ox<BS>
-  "pressing enter on empty line preserves leading whitespace (HACKY)
-  "works because Vim doesn't remove spaces when text has been inserted
+"Disable arrow keys because you're better than that
 for s:map in ['noremap', 'inoremap'] "disable typical navigation keys
   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
     exe s:map.' '.s:motion.' <Nop>'
@@ -230,34 +241,32 @@ endfor
 "Disabling dumb extra scroll commands
 nnoremap <C-p> <Nop>
 nnoremap <C-n> <Nop>
-  "these are identical to j/k
 "Better join behavior -- before 2J joined this line and next, now it
 "means 'join the two lines below'; more intuitive. uses if statement
 "in <expr> remap, and v:count the user input count
 nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
 nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
 " nnoremap <expr> K v:count > 1 ? 'JdwJdw' : 'Jdw'
-  "also remap K because not yet used; like J but adds no space
-  "note gJ was insufficient because retains leading whitespace from next line
-  "recall that the 'v' prefix indicated a VIM read-only builtin variable
+"Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
-  "yank, substitute, delete until end of current line
+"For some fucking reason this is necessary or there is a cursor delay when hitting cc
 nnoremap cc cc
-  "for some fucking reason this is necessary or there is a cursor delay when hitting cc
+"Replace the currently highlighted text
 vnoremap cc s
 vnoremap c<CR> s
-  "replace the currently highlighted text
+nnoremap c<CR> <Nop>
+"**Neat idea for insert mode remap**; put closing braces on next line
+"adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
-  "**nead idea for insert mode remap**; put closing braces on next line
-  "adapted from: https://blog.nickpierson.name/colemak-vim/
+"Turn off common things in normal mode
+"also prevent Ctrl+c rining the bell
 nnoremap <C-c> <Nop>
 nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
-  "turns off common things in normal mode
-  "also prevent Ctrl+c rining the bell
+
 "###############################################################################
 "VISUAL MODE BEHAVIOR
 "Highlighting
@@ -273,17 +282,21 @@ nnoremap <C-v> my<C-v>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 " vnoremap <silent> <LeftMouse> <Esc>:echo 'Mode: '.visualmode() \| sleep 200 m<CR><LeftMouse>mx`y:exe 'normal! '.visualmode()<CR>`x
 vnoremap <CR> <C-c>
-"Some other useful visual mode maps; note, will not
+"Some other useful visual mode maps
+"Also prevent highlighting selection under cursor, unless on first character
 nnoremap <silent> v$ v$h
 nnoremap <silent> vv ^v$gE
 nnoremap <silent> v/ hn:noh<CR>gn
-  "makes way more sense to me
-  "also prevent highlighting selection under cursor, unless on first character
+
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff
 set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
-if has('ttymouse') | set ttymouse=sgr | else | set ttymouse=xterm2 | endif
+if has('ttymouse')
+  set ttymouse=sgr
+else
+  set ttymouse=xterm2
+endif
 "Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
 "fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
 " * Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
@@ -304,6 +317,7 @@ if exists("&t_EI")
   else | let &t_EI = "\e[2 q"
   endif
 endif
+
 "###############################################################################
 "GUI OPTIONS
 if has("gui_running")
@@ -311,6 +325,7 @@ if has("gui_running")
   set number relativenumber guioptions= "no scrollbars
   colorscheme slate "no longer controlled through terminal colors
 endif
+
 "###############################################################################
 "CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
 function! s:commandline_check()
@@ -323,12 +338,13 @@ augroup cmdwin
   au CmdwinLeave * setlocal laststatus=2
 augroup END
   "commandline-window settings; when we are inside of q:, q/, and q?
+
 "###############################################################################
 "TAB COMPLETION OPENING NEW FILES
-set wildignore=
-set wildignore+=*.pdf,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod
-set wildignore+=*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4
-set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
+let &wildignore="*.pdf,*.doc,*.docs,*.page,*.pages,"
+  \."*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,"
+  \."*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,"
+  \."*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,"
   "never want to open these in VIM; includes GUI-only filetypes
   "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
 
@@ -337,29 +353,28 @@ set wildignore+=*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store
 " COMPLICATED FUNCTIONS, MAPPINGS, FILETYPE MAPPINGS
 "###############################################################################
 "###############################################################################
-augroup _1
-augroup END
-"Tabs default
+"INITIAL STUFF
+"Default tabs
 set tabstop=2
 set shiftwidth=2
 set softtabstop=2
 "Requirements flag, and load repeat.vim right away because want to know if it exists
 "and its functions are available
-runtime autoload/repeat.vim "if file not found, echos nothing
+exe 'runtime autoload/repeat.vim'
 let g:has_signs              = has("signs") "for git gutter and syntastic maybe
 let g:has_ctags              = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_repeat             = exists("*repeat#set") "start checks for function existence
-let g:has_nowait             = (v:version>703 || v:version==703 && has("patch1261"))
-let g:compatible_neocomplete = has("lua") "try alternative completion library
-let g:compatible_tagbar      = ((v:version>703 || v:version==703 && has("patch1058")) && g:has_ctags)
+let g:has_nowait             = (v:version>=704 || v:version==703 && has("patch1261"))
+let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0
+let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
+let g:compatible_neocomplete = has("lua") "try alternative completion library
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
 endif
-"WEIRD FIX
-"see: https://github.com/kien/ctrlp.vim/issues/566
-" set shell=/bin/bash "will not work with e.g. brew-installed shell
+
+"##############################################################################"
 "VIM-PLUG PLUGINS
 augroup plug
 augroup END
@@ -400,7 +415,9 @@ Plug 'anntzer/vim-cython'
 "Actually tried with minimum contrast zero and colors *still* messed up; forget it
 " Plug 'lilydjwg/colorizer'
 "TeX utilities; better syntax highlighting, better indentation,
-"and some useful remaps
+"and some useful remaps. Also zotero integration.
+Plug 'Shougo/unite.vim'
+Plug 'rafaqz/citation.vim'
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
 "Julia support and syntax highlighting
@@ -453,7 +470,7 @@ Plug 'godlygeek/tabular'
 Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-" Plug 'metakirby5/codi.vim' "CODI appears to be broken, tried with other plugins disabled
+if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif "CODI appears to be broken, tried with other plugins disabled
 "Single line/multiline transition; make sure comes after surround
 "Hardly ever need this
 " Plug 'AndrewRadev/splitjoin.vim'
@@ -551,7 +568,48 @@ function! s:textemplates()
 endfunction
 
 "##############################################################################"
+"ZOTERO INTEGRATION
+"Requires pybtex (pip install it) and unite.vim plugin
+augroup unite
+augroup END
+if has_key(g:plugs,'unite.vim') && has_key(g:plugs,'citation.vim')
+  "Settings
+  " let g:citation_vim_mode="bibtex"
+  " let g:citation_vim_bibtex_file="./refs.bib" "by default, make this your filename
+  let g:citation_vim_mode="zotero" "default
+  let g:citation_vim_zotero_path="~/Zotero" "location of sqlite
+  let g:citation_vim_zotero_version=5
+  let g:citation_vim_cache_path='~/.vim/zcache'
+  let g:citation_vim_outer_prefix='\cite{'
+  let g:citation_vim_inner_prefix=''
+  let g:citation_vim_suffix='}'
+  let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors
+  " let g:citation_vim_zotero_path="~/Google Drive"   "alternative
+  "Mappings
+  "We use the y prefix because it's mostly unused so far
+  "yo for toggle spelling, yO for toggle citation
+  nnoremap <silent> yO :<C-u>Unite citation<CR>
+  "Insert citation
+  nnoremap <silent> yc :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
+  "Open file directory
+  nnoremap <silent> yd :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  "Open pdf
+  nnoremap <silent> yp :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
+  "Open url
+  nnoremap <silent> yu :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
+  "View citation info
+  nnoremap <silent> yI :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
+  "Append information
+  nnoremap <silent> yA :<C-u>Unite -default-action=yank citation/title<CR>
+  "Search for word under cursor
+  nnoremap <silent> ys :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
+  "Search for words, input prompt
+  nnoremap <silent> yS :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
+endif
+
+"##############################################################################"
 "SNIPPETS
+"TODO: Add these
 
 "###############################################################################
 "GIT GUTTER
@@ -724,7 +782,7 @@ endfunction
 command! -nargs=? Simple call <sid>simplesetup(<args>)
 
 "###############################################################################
-"VIM visual increment; creating columns of 1/2/3/4 etc.
+"VIM VISUAL INCREMENT; creating columns of 1/2/3/4 etc.
 "Disable all remaps
 augroup increment
 augroup END
@@ -744,21 +802,19 @@ endif
 augroup codi
 augroup END
 if has_key(g:plugs, "codi.vim")
+  "Update manually commands; o stands for codi
   nnoremap <C-n> :CodiUpdate<CR>
   inoremap <C-n> <Esc>:CodiUpdate<CR>a
-    "update manually commands; o stands for codi
   function! s:newcodi(name)
-    if a:name=~".py"
-      echom "Error: Please don't add the .py."
-    elseif !len(a:name)
-      echom "Error: Name is empty."
+    if a:name==''
+      echom "Cancelled."
     else
-      exec "tabe ".a:name.".py"
+      exec "tabe ".fnamemodify(a:name,':r').".py"
       exec "Codi!! ".&ft
     endif
   endfunction
   "Create new calculator file, adds .py extension
-  nnoremap <silent> <Leader>n :call <sid>newcodi(input('Calculator name: ('.getcwd().')', '', 'file'))<CR>
+  nnoremap <silent> <Leader>n :call <sid>newcodi(input('Calculator name: ('.getcwd().') ', '', 'file'))<CR>
   "Turn current file into calculator; m stands for math
   nnoremap <silent> <Leader>N :Codi!! &ft<CR>
   "Use builtin python2.7 on macbook to avoid creating history files
@@ -898,10 +954,12 @@ if has_key(g:plugs, "ctrlp.vim")
   " nnoremap <silent> <C-p> :EIOn<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
   function! s:ctrlpwrap()
     let dir=input("Directory for Ctrl-P (".getcwd()."): ", "", "dir")
-    if dir!="" | EIOn
+    if dir!=""
+      EIOn
       exe 'CtrlP '.dir
       EIMap
-    else | echom "Cancelling..."
+    else
+      echom "Cancelled."
     endif
   endfunction
   "Make sure to map Ctrl i to F3 in iTerm
@@ -952,13 +1010,15 @@ if has_key(g:plugs, "ctrlp.vim")
 endif
 
 "##############################################################################"
-"FZF completion
+"FZF COMPLETION
 "Maybe not necessary anymore because Ctrl-P access got way better
 "Vim documentation is incomplete; also see readme file: https://github.com/junegunn/fzf/blob/master/README-VIM.md
 "The ctrl-i map below prevents tab from doing anything
 "Also in iterm ctrl-i keypress translates to F3, so use that below
 " Plug 'junegunn/fzf.vim'
 " if has_key(g:plugs, 'fzf.vim')
+augroup fzf
+augroup END
 if !empty(glob("~/.fzf"))
   let g:fzf_layout = {'down': '~20%'} "make window smaller
   let g:fzf_action = {
@@ -969,7 +1029,15 @@ if !empty(glob("~/.fzf"))
   \ 'ctrl-v': 'vsplit' }
   set rtp+=~/.fzf
   helptags ~/.fzf/doc "have to update tags after change runtimepath; normally vim-plug does this
-  noremap <F3> :exe 'FZF '.input("Directory for FZF (".getcwd()."): ", "", "dir")<CR>
+  function! s:fzf()
+    let result=input("Directory for FZF (".getcwd()."): ", "", "dir")
+    if result!=""
+      exe 'FZF '.result
+    else
+      echom "Cancelled."
+    endif
+  endfunction
+  noremap <F3> :call <sid>fzf()<CR>
 endif
 
 "###############################################################################
@@ -1046,8 +1114,10 @@ if has_key(g:plugs, "nerdcommenter")
   "Create python docstring
   nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
   nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
-  "Set up custom remaps
-  nnoremap c<CR> <Nop>
+  "Add author information (tries to match indentation)
+  nnoremap <silent> <expr> <Leader>a ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
+        \ .' Author: Luke Davis (lukelbd@gmail.com)<Esc>:call <sid>toggleformatopt()<CR>o'
+  " nnoremap <silent> <Leader>a :call append(line('.'), b:NERDCommenterDelims['left'].' Author: Luke Davis')<CR>jA<CR>
   "Declare mapping strings needed to build remaps
   "Then can *delcare mapping for custom keyboard* using exe 'nnoremap <expr> shortcut '.string,
   "and note that the expression is evaluated every time right before the map is executed (i.e. buffer-local comment chars are generated)
@@ -1083,13 +1153,6 @@ if has_key(g:plugs, "nerdcommenter")
     nmap c_ <Plug>fancy2
     nmap c\ <Plug>fancy3
     nmap c\| <Plug>fancy4
-    " exe 'nnoremap <silent> <buffer> <expr> c- '.s:bar("-")
-    " exe 'nnoremap <silent> <buffer> <expr> c_ '.s:bar(fatchar)
-    " exe 'nnoremap <silent> <buffer> <expr> c\ '.s:section("-")
-    " exe 'nnoremap <silent> <buffer> <expr> c\| '.s:section(fatchar)
-    "Disable accidental key presses
-    silent! noremap c= <Nop>
-    silent! noremap c+ <Nop>
   endfunction
   "More basic NerdComment maps, just for toggling comments and stuff
   "Easy peasy
@@ -1190,18 +1253,20 @@ endif
 "WRAPPING AND LINE BREAKING
 augroup wrap "For some reason both autocommands below are necessary; fuck it
   au!
-  au VimEnter * call s:autowrap()
-  au BufEnter * call s:autowrap()
+  au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
+  au BufEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
 let g:scrolloff=4
 "Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
-function! s:wraptoggle(function_mode)
-  if a:function_mode==1 | let toggle=1
-  elseif a:function_mode==0 | let toggle=0
-  elseif exists('b:wrap_mode') | let toggle=1-b:wrap_mode
-  else | let toggle=1
+function! s:wraptoggle(...)
+  if a:0 "if non-zer number of args
+    let toggle=a:1
+  elseif exists('b:wrap_mode')
+    let toggle=1-b:wrap_mode
+  else
+    let toggle=1
   endif
   if toggle==1
     let b:wrap_mode=1
@@ -1248,15 +1313,7 @@ function! s:wraptoggle(function_mode)
     silent! unmap gI
   endif
 endfunction
-"Wrapper function; for some infuriating reason, setlocal scrolloff sets
-"the value globally, no matter what; not so for wrap or colorcolumn
-function! s:autowrap()
-  if ""!=&ft && 'bib,tex,markdown,text'=~&ft
-    call s:wraptoggle(1)
-  else
-    call s:wraptoggle(0)
-  endif
-endfunction
+command! -nargs=? WrapToggle call <sid>wraptoggle(<args>)
 
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
@@ -1304,49 +1361,49 @@ if has_key(g:plugs, "tabular")
 	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> -<Space> ':silent! Tabularize /'.input('Align character: ').'/l1c1<CR>'
-  vnoremap <silent> <expr> -<Space> "<Esc>:silent! '<,'>Table /".input('Align character: ').'/l1c1<CR>'
+  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Align character: ').'/l1c1<CR>'
+  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Align character: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
-  nnoremap <expr> -, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> -, ':Table /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> \, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \, ':Table /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
-  nnoremap <expr> -d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> -d ':Table /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  nnoremap <expr> \d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> \d ':Table /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
-  nnoremap <expr> -D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> -D ':Table /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> \D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \D ':Table /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
-  nnoremap <expr> -l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> -l ':Table /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \l ':Table /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  nnoremap <expr> -r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> -r ':Table /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  nnoremap <expr> \r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> \r ':Table /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
-  nnoremap <expr> -- ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> -- ':Table /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  nnoremap <expr> \\ ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> \\ ':Table /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
-  nnoremap <expr> -_ ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> -_ ':Table /\S\zs\ /l0<CR>'
+  nnoremap <expr> \_ ':Tabularize /\S\zs\ /l0<CR>'
+  vnoremap <expr> \_ ':Table /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
-  nnoremap <expr> -C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> -C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> \C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
   "Enforces that
-  vnoremap <expr> -c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> -c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> \c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
-  nnoremap -= :Tabularize /^[^=]*\zs=/l1c1<CR>
-  vnoremap -= :Table /^[^=]*\zs=/l1c1<CR>
-  nnoremap -+ :Tabularize /^[^=]*=\zs/l0c1<CR>
-  vnoremap -+ :Table /^[^=]*=\zs/l0c1<CR>
+  nnoremap \= :Tabularize /^[^=]*\zs=/l1c1<CR>
+  vnoremap \= :Table /^[^=]*\zs=/l1c1<CR>
+  nnoremap \+ :Tabularize /^[^=]*=\zs/l0c1<CR>
+  vnoremap \+ :Table /^[^=]*=\zs/l0c1<CR>
 endif
 
 "###############################################################################
@@ -1435,14 +1492,10 @@ endif
 " GENERAL STUFF, BASIC REMAPS
 "###############################################################################
 "###############################################################################
-augroup _2
-augroup END
-"###############################################################################
 "BUFFER WRITING/SAVING
 "Just declare a couple maps here
 augroup saving
 augroup END
-nnoremap <C-o> :tabe 
 nnoremap <silent> <C-s> :w!<CR>
 nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-b to compile instead."<CR>
 nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
@@ -1454,10 +1507,12 @@ nnoremap <silent> <C-w> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(t
       \:q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
 "so we have close current window, close tab, and close everything
 "last map has to test wither the :q action closed the entire tab
-silent! tnoremap <silent> <C-t> <C-w>:q!<CR>
+silent! tnoremap <silent> <C-c> <C-w>:q!<CR>
+silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 silent! nnoremap <Leader>T :terminal<CR>
 " silent! tnoremap <silent> <Esc> <C-\><C-n>
 "exit terminal mode, if exists; or enter terminal normal mode
+
 "###############################################################################
 "IMPORTANT STUFF
 "First line disables linebreaking no matter what ftplugin says, got damnit
@@ -1469,7 +1524,6 @@ augroup END
 set expandtab "says to always expand \t to their length in <SPACE>'s!
 set autoindent "indents new lines
 set backspace=indent,eol,start "backspace by indent - handy
-nnoremap <Space><Tab> :set expandtab!<CR>
 "VIM configures backspace-delete by tabs
 "We implement our own function to forewards-delete by tabs
 function! s:foreward_delete()
@@ -1488,9 +1542,9 @@ set linebreak "breaks lines only in whitespace makes wrapping acceptable
 set wrapmargin=0 "starts wrapping at the edge; >0 leaves empty bufferzone
 set display=lastline "displays as much of wrapped lastline as possible;
 "Global behavior
-set nostartofline  "when switching buffers, doesn't move to start of line (weird default)
-set lazyredraw "so maps aren't jumpy
-set virtualedit= "prevent cursor from going where no actual character
+set nostartofline "when switching buffers, doesn't move to start of line (weird default)
+set nolazyredraw  "maybe slower, but looks super cool and pretty and stuff
+set virtualedit=  "prevent cursor from going where no actual character
 set noerrorbells visualbell t_vb=
   "set visualbell ENABLES internal bell; but t_vb= means nothing is shown on the window
 "Multi-key mappings and Multi-character keycodes
@@ -1499,31 +1553,37 @@ set notimeout timeoutlen=0 "so when timeout is disabled, we do this
 set ttimeout ttimeoutlen=0 "no delay after pressing <Esc>
   "the first one says wait forever when doing multi-key mappings
   "the second one says wait 0seconds for multi-key keycodes e.g. <S-Tab>=<Esc>[Z
-"Command-line behavior e.g. when openning new files
-"Also improve wildmenu (command mode file/dir suggestions) behavior
+"Improve wildmenu behavior (command mode file/dir suggestions)
+"From this: https://stackoverflow.com/a/14849216/4970632
 set confirm "require confirmation if you try to quit
 set wildmenu
 set wildmode=longest:list,full
-function! s:entersubdir()
-  call feedkeys("\<Down>", 't')
-  return ''
+function! s:wildtab()
+  call feedkeys("\<Tab>", 't') | return ''
 endfunction
-function! s:enterpardir()
-  call feedkeys("\<Up>", 't')
-  return ''
+function! s:wildstab()
+  call feedkeys("\<S-Tab>", 't') | return ''
 endfunction
-cnoremap <expr> <C-d> <sid>entersubdir()
-cnoremap <expr> <C-u> <sid>enterpardir()
-  "note that <C-k> will ALWAYS trigger moving UP the directory tree while
-  "<C-j> will ALWAYS trigger moving DEEPER INSIDE the directory tree; so if
-  "you press <C-j> without completion options while inside ../, the .. will be deleted
+"Use ctrl-, and ctrl-. to navigate (mapped with iterm2)
+cnoremap <expr> <F1> <sid>wildstab()
+cnoremap <expr> <F2> <sid>wildtab()
+cnoremap <C-h>   <Left>
+cnoremap <C-l>   <Right>
+cnoremap <C-k>   <Up>
+cnoremap <C-j>   <Down>
+cnoremap <C-p>   <Up>
+cnoremap <C-n>   <Down>
+cnoremap <Down>  <Nop>
+cnoremap <Up>    <Nop>
+cnoremap <Left>  <Nop>
+cnoremap <Right> <Nop>
 
 "###############################################################################
 "SPECIAL TAB NAVIGATION
 "Remember previous tab
 augroup tabs
   au!
-  au TabLeave * let g:LastTab=tabpagenr()
+  au TabLeave * let g:lasttab=tabpagenr()
 augroup END
 "Basic switching, and shortcut for 'last active tab'
 noremap <Tab>1 1gt
@@ -1537,8 +1597,8 @@ noremap <Tab>8 8gt
 noremap <Tab>9 9gt
 noremap <Tab>, gT
 noremap <Tab>. gt
-let g:LastTab=1
-noremap <silent> <Tab>' :execute "tabn ".g:LastTab<CR>
+let g:lasttab=1
+noremap <silent> <Tab>' :execute "tabn ".g:lasttab<CR>
   "return to previous tab
 "Moving around
 nnoremap <Tab>u zt
@@ -1552,7 +1612,7 @@ nnoremap <Tab>p zL
 "Fix tab maps otherwise
 noremap <Tab> <Nop>
 noremap <Tab><Tab> <Nop>
-"Function: move current tab to the exact place of tab no. x
+"Move current tab to the exact place of tab no. N
 "This is not default behavior
 function! s:tabmove(n)
   if a:n==tabpagenr() || a:n==0
@@ -1572,27 +1632,40 @@ endfunction
 noremap <silent> <Tab>m :silent! call <sid>tabmove(input('Move tab: ', '', 'customlist,<sid>tablist'))<CR>
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
+"Next a function for completing stuff, *including* hidden files god damnit
+"Note allfiles function seems to have to be in local scope; otherwise can't find s:allfiles or <sid>allfiles
+function! AllFiles(A,L,P)
+  let path=(len(a:A)>0 ? a:A : '')
+  let result=split(glob(path.'*'),'\n') + split(glob(path.'.*'),'\n')
+  let final=[]
+  for string in result "ignore 'this directory' and 'parent directory'
+    if string !~ '^\(.*/\)\?\.\{1,2}$'
+      call extend(final, [substitute((isdirectory(string) ? string.'/' : string ), '/\+', '/', 'g')])
+    endif
+  endfor
+  return final
+endfunction
+function! s:openwrapper()
+  let response=input('Open tab ('.getcwd().'): ', '', 'customlist,AllFiles')
+  if response!=''
+    exe 'tabe '.response
+  else
+    echom "Cancelled."
+  endif
+endfunction
+nnoremap <silent> <C-o> :call <sid>openwrapper()<CR>
 "Splitting -- make :sp and :vsp split to right and bottom
 set splitright
 set splitbelow
 noremap <Tab>- :split 
 noremap <Tab>\ :vsplit 
 "Window selection
-" noremap <Tab><Left> <C-w>h
-" noremap <Tab><Down> <C-w>j
-" noremap <Tab><Up> <C-w>k
-" noremap <Tab><Right> <C-w>l
 noremap <Tab>j <C-w>j
 noremap <Tab>k <C-w>k
 noremap <Tab>h <C-w>h
 noremap <Tab>l <C-w>l
-  "window motion; makes sense so why not
+"Switch to last window
 nnoremap <Tab>; <C-w><C-p>
-  "switch to last window
-" noremap <Tab>n <C-w>w
-" noremap <Tab><Tab>. <C-w>w
-  "next; this may be most useful one
-  "just USE THIS instead of switching windows directionally
 
 "###############################################################################
 "COPY/PASTING CLIPBOARD
@@ -1656,28 +1729,38 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 
 "###############################################################################
 "DELETING STUFF TOOLS
+"Will use the 'g' prefix for these, because why not
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
-"Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-nnoremap <silent> <Leader>\ :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-vnoremap <silent> <Leader>\ :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-"Delete empty lines
-nnoremap <silent> <Leader>\| :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-vnoremap <silent> <Leader>\| :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-"Replace consecutive spaces on current line with one space
-nnoremap <silent> <Leader>` :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
-"Replace consecutive newlines with single newline
-nnoremap <silent> <Leader>~ :%s/\(\n\n\)\n\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-"Fix unicode quotes and dashes
-nnoremap <silent> <Leader>' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> <Leader>" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> <Leader>_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-nnoremap <silent> <Leader>- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
-"Replace commented lines
-nnoremap <expr> <Leader>x ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+augroup delete
+augroup END
+"Replace commented lines; very useful when sharing manuscripts
+nnoremap <silent> <expr> \n ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+vnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+"Replace consecutive spaces on current line with one space
+nnoremap <silent> \w :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+"Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
+"Will probably be necessary after the comment trimming
+nnoremap <silent> \W :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+vnoremap <silent> \W :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+"Delete empty lines
+nnoremap <silent> \E :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+vnoremap <silent> \E :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+"Replace consecutive newlines with single newline
+vnoremap <silent> \e :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+nnoremap <silent> \e :%s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+"Replace all tabs
+vnoremap <expr> <silent> \<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+"Fix unicode quotes and dashes, trailing dashes due to a pdf copy
+nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> \_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> \- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 "Replace useless BibTex entries
-nnoremap <silent> <Leader>X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-" nnoremap <expr> <Leader>X ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+nnoremap <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+" nnoremap <expr> gX ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 
 "###############################################################################
 "CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
@@ -1700,7 +1783,6 @@ endfor
 inoremap <C-z> <C-^>
 cnoremap <C-z> <C-^>
   "can't lnoremap the above, because iminsert is turning it on and off
-
 
 "###############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
@@ -1747,12 +1829,12 @@ noremap <silent> <Tab>= :vertical resize 80<CR>
   "and the z-prefix is a natural companion to the resizing commands
   "the Tab commands should just sort and navigate between panes
   "think of the 0 as 'original size', like cmd-0 on macbook
+"To prevent delay; this is associated with FastFold or something
 silent! unmap zuz
-  "to prevent delay; this is associated with FastFold or something
+"Change fold levels, and make sure return to same place
+"Never really use this feature so forget it
 " nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
 " nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
-  "change fold levels, and make sure return to same place
-  "never really use this feature so forget it
 
 "###############################################################################
 "g CONFIGURATION
@@ -1819,9 +1901,9 @@ noremap <silent> g; :<Up><CR>
 "enter to not move cursor ordinarily, so have to unmap it after entering window.
 "Oddly writing a function that declares maps, and calling it after using q:, did
 "not work, and making all of the map commands one line with \| did not work. Only the below works.
-noremap <silent> g: q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
+noremap <silent> <Leader>; q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
   \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
-noremap <silent> g/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
+noremap <silent> <Leader>/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
   \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
 "Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
@@ -1908,8 +1990,9 @@ highlight ColorColumn cterm=None ctermbg=Gray
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 "Make sure terminal is black, for versions with :terminal command
 highlight Terminal ctermbg=Black
+
 "###############################################################################
-"COLOR HIGHLIGHTING
+"USEFUL COMMANDS
 "Highlight group under cursor
 function! s:group()
   echo "actual <".synIDattr(synID(line("."),col("."),1),"name")."> "
@@ -1929,9 +2012,10 @@ endfunction
 command! -nargs=? Syntax call <sid>syntax('<args>')
 "Toggle conceal
 function! s:concealtoggle(...)
-  let conceal_on=1
   if a:0
     let conceal_on=a:1
+  else
+    let conceal_on=(&conceallevel ? 0 : 2) "turn off and on
   endif
   exe 'set conceallevel='.(conceal_on ? 2 : 0)
 endfunction

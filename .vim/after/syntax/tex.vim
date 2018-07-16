@@ -73,23 +73,25 @@ syn match texBeginEnd "\(\\begin\>\|\\end\>\)\ze{subequations}" nextgroup=texBeg
 
 " {{{1 Italic font, bold font and conceals
 
-if get(g:, 'tex_fast', 'b') =~# 'b'
-  let s:conceal = (has('conceal') && get(g:, 'tex_conceal', 'b') =~# 'b')
-        \ ? 'concealends' : ''
-
-  for [s:style, s:group, s:commands] in [
-        \ ['texItalStyle', 'texItalGroup', ['emph', 'textit']],
-        \ ['texBoldStyle', 'texBoldGroup', ['textbf']],
-        \]
-    for s:cmd in s:commands
-      execute 'syntax region' s:style 'matchgroup=texTypeStyle'
-            \ 'start="\\' . s:cmd . '\s*{" end="}"'
-            \ 'contains=@Spell,@' . s:group
-            \ s:conceal
-    endfor
-    execute 'syntax cluster texMatchGroup add=' . s:style
-  endfor
-endif
+"EDIT: Have disabled this feature, because we turned off the 'make bright colors
+"bold' in iTerm. So is now useless. The loop makes sure textbf highlighting is on.
+" if get(g:, 'tex_fast', 'b') =~# 'b'
+"   let s:conceal = (has('conceal') && get(g:, 'tex_conceal', 'b') =~# 'b')
+"         \ ? 'concealends' : ''
+"
+"   for [s:style, s:group, s:commands] in [
+"         \ ['texItalStyle', 'texItalGroup', ['emph', 'textit']],
+"         \ ['texBoldStyle', 'texBoldGroup', ['textbf']],
+"         \]
+"     for s:cmd in s:commands
+"       execute 'syntax region' s:style 'matchgroup=texTypeStyle'
+"             \ 'start="\\' . s:cmd . '\s*{" end="}"'
+"             \ 'contains=@Spell,@' . s:group
+"             \ s:conceal
+"     endfor
+"     execute 'syntax cluster texMatchGroup add=' . s:style
+"   endfor
+" endif
 
 " }}}1
 " {{{1 Add syntax highlighting for \url, \href, \hyperref
@@ -199,11 +201,12 @@ endif
 
 if exists('b:vimtex.packages.array') && get(g:, 'tex_fast', 'M') =~# 'M'
   syntax clear texMathZoneX
-  if has('conceal') && &enc ==# 'utf-8' && get(g:, 'tex_conceal', 'd') =~# 'd'
-    syntax region texMathZoneX matchgroup=Delimiter start="\([<>]{\)\@<!\$" skip="\%(\\\\\)*\\\$" matchgroup=Delimiter end="\$" end="%stopzone\>" concealends contains=@texMathZoneGroup
-  else
-    syntax region texMathZoneX matchgroup=Delimiter start="\([<>]{\)\@<!\$" skip="\%(\\\\\)*\\\$" matchgroup=Delimiter end="\$" end="%stopzone\>" contains=@texMathZoneGroup
-  endif
+  " NOTE: removed conceal feature for dollar sign delimiters; is just confusing
+  " if has('conceal') && &enc ==# 'utf-8' && get(g:, 'tex_conceal', 'd') =~# 'd'
+  "   syntax region texMathZoneX matchgroup=Delimiter start="\([<>]{\)\@<!\$" skip="\%(\\\\\)*\\\$" matchgroup=Delimiter end="\$" end="%stopzone\>" concealends contains=@texMathZoneGroup
+  " else
+  syntax region texMathZoneX matchgroup=Delimiter start="\([<>]{\)\@<!\$" skip="\%(\\\\\)*\\\$" matchgroup=Delimiter end="\$" end="%stopzone\>" contains=@texMathZoneGroup
+  " endif
 endif
 
 " }}}1

@@ -63,6 +63,7 @@ function! s:hl_matching_lines() abort
   let b:hl_ranORcleared = 1
   "Exit certain filetypes or filenames
   if &ft == "markdown" | return | endif
+
   "Make sure to exit if we are in any visual mode. Here's a great way way
   "to see results of mode() with a function:
   "  function! Mode()
@@ -83,6 +84,12 @@ function! s:hl_matching_lines() abort
     call s:hl_matching_lines_clear()
     return
   endif
+  " Ignore free brackets/parens; fixes horribly annoying issue with bash case/esac
+  if getline('.') =~ '^\([^(]*)\|[^\[]*\]\)'
+    call s:hl_matching_lines_clear()
+    return
+  endif
+
   "Do not re-run if cursor on same line
   if exists('b:hl_last_line') && b:hl_last_line == line('.')
     return
