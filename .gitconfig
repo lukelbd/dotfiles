@@ -33,6 +33,9 @@
 #   now show in short format, without help information, and with branch info
 # 'fix':
 #   fix user/email information through every commit in repository
+# 'tree':  = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
+#   --oneline --decorate --color --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) \
+#   %C(bold blue)<%an>%Creset' $@ 2>/dev/null"
 #------------------------------------------------------------------------------;
 [alias]
 	short    = !git status --short --branch $@
@@ -44,12 +47,9 @@
 	root   = !git rev-parse --show-toplevel
 	commands = "!git help -a | grep \"^  [a-z]\" | tr ' ' '\\n' | grep -v \"^$\" | sort"
 	update = "!git stash clear; git stash; git merge $@; git stash pop"
-	tree   = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
-		--pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) \
-		%C(bold blue)<%an>%Creset' $@ 2>/dev/null"
-	twig = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
+	tree = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
 		--oneline --decorate --color $@ 2>/dev/null"
-	leaf = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
+	twig = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
 		--decorate --color $@ 2>/dev/null"
 	get  = "!git branch -r | grep -v '\\->' | while read remote; do \
 		if ! git branch -l | grep \"${remote#origin/}\" &>/dev/null; \
