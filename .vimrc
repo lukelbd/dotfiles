@@ -143,8 +143,6 @@ inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofd
   \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
 inoremap jj j
 inoremap kk k
-inoremap kj <Nop>
-inoremap KJ <Nop>
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
@@ -250,12 +248,11 @@ nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
 "Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
-"For some fucking reason this is necessary or there is a cursor delay when hitting cc
+"For some reason this is necessary or there is a cursor delay when hitting cc
 nnoremap cc cc
+nnoremap c<CR> s
 "Replace the currently highlighted text
 vnoremap cc s
-vnoremap c<CR> s
-nnoremap c<CR> <Nop>
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
@@ -1115,9 +1112,12 @@ if has_key(g:plugs, "nerdcommenter")
   nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
   nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
   "Add author information (tries to match indentation)
-  nnoremap <silent> <expr> <Leader>a ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
+  nnoremap <silent> <expr> cA ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
         \ .' Author: Luke Davis (lukelbd@gmail.com)<Esc>:call <sid>toggleformatopt()<CR>o'
   " nnoremap <silent> <Leader>a :call append(line('.'), b:NERDCommenterDelims['left'].' Author: Luke Davis')<CR>jA<CR>
+  "Simple option -- 'inline' comment header
+  nnoremap <silent> <expr> cI ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
+        \ .repeat(' ',5).repeat('-',5).'  '.repeat('-',5).'<Esc>5hi'
   "Declare mapping strings needed to build remaps
   "Then can *delcare mapping for custom keyboard* using exe 'nnoremap <expr> shortcut '.string,
   "and note that the expression is evaluated every time right before the map is executed (i.e. buffer-local comment chars are generated)
@@ -1344,7 +1344,11 @@ if has_key(g:plugs, "tabular")
       endif
     endwhile
     "Execute tabularize function
-    exe firstline.','.lastline.'Tabularize '.a:arg
+    if firstline>lastline
+      echom "Warning: No matches in selection."
+    else
+      exe firstline.','.lastline.'Tabularize '.a:arg
+    endif
     "Add back the lines that were deleted
     for pair in reverse(dlines) "insert line of text below where deletion occurred (line '0' adds to first line)
       call append(pair[0]-1, pair[1])
@@ -1361,49 +1365,55 @@ if has_key(g:plugs, "tabular")
 	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Align character: ').'/l1c1<CR>'
-  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Align character: ').'/l1c1<CR>'
+  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Align character(s): ').'/l1c1<CR>'
+  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Align character(s): ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
   nnoremap <expr> \, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \, ':Table /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \, ':Table      /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
   nnoremap <expr> \d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> \d ':Table /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> \d ':Table      /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
   nnoremap <expr> \D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \D ':Table /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \D ':Table      /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
   nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> \l ':Table /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
   nnoremap <expr> \r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> \r ':Table /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> \r ':Table      /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
   nnoremap <expr> \\ ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> \\ ':Table /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> \\ ':Table      /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
   nnoremap <expr> \_ ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> \_ ':Table /\S\zs\ /l0<CR>'
+  vnoremap <expr> \_ ':Table      /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
   nnoremap <expr> \C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> \C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \C ':Table      /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
   "Enforces that
   nnoremap <expr> \c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> \c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \c ':Table      /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
-  nnoremap \= :Tabularize /^[^=]*\zs=/l1c1<CR>
-  vnoremap \= :Table /^[^=]*\zs=/l1c1<CR>
-  nnoremap \+ :Tabularize /^[^=]*=\zs/l0c1<CR>
-  vnoremap \+ :Table /^[^=]*=\zs/l0c1<CR>
+  "This selects the *first* uncommented equals sign that does not belong to
+  "a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
+  nnoremap <expr> \= ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  vnoremap <expr> \= ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  nnoremap <expr> \+ ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  vnoremap <expr> \+ ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  " nnoremap <expr> \= ':Tabularize /^[^=]*\zs=/l1c1<CR>'
+  " vnoremap <expr> \= ':Table      /^[^=]*\zs=/l1c1<CR>'
+  " nnoremap <expr> \+ ':Tabularize /^[^=]*=\zs/l0c1<CR>'
+  " vnoremap <expr> \+ ':Table      /^[^=]*=\zs/l0c1<CR>'
 endif
 
 "###############################################################################
