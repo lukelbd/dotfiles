@@ -589,7 +589,8 @@ if has_key(g:plugs,'unite.vim') && has_key(g:plugs,'citation.vim')
   "Insert citation
   nnoremap <silent> yc :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
   "Open file directory
-  nnoremap <silent> yd :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  nnoremap <silent> yN :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  nnoremap <silent> yn :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
   "Open pdf
   nnoremap <silent> yp :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
   "Open url
@@ -612,7 +613,6 @@ endif
 "GIT GUTTER
 "TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
-  au FileType * let b:gitgutter_enabled=0
 augroup END
 if has_key(g:plugs, "vim-gitgutter")
   "Create command for toggling on/off; old VIM versions always show signcolumn
@@ -622,10 +622,26 @@ if has_key(g:plugs, "vim-gitgutter")
   silent! set signcolumn=no "silent ignores errors if not option
   let g:gitgutter_map_keys=0 "disable all maps yo
   let g:gitgutter_enabled=0 "whether enabled at *startup*
-  nnoremap <silent> <expr> <Leader>s b:gitgutter_enabled==0 ? 
-    \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:let b:gitgutter_enabled=1<CR>'
-    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:let b:gitgutter_enabled=0<CR>'
-  " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
+  function! s:gitguttertoggle(...)
+    "Either listen to input, turn on if switch not declared, or do opposite
+    if a:0
+      let toggle=a:1
+    else
+      let toggle=(exists('b:gitgutter_enabled') ? 1-b:gitgutter_enabled : 1)
+    endif
+    if toggle
+      GitGutterEnable
+      silent! set signcolumn=yes
+      let b:gitgutter_enabled=1
+    else
+      GitGutterDisable
+      silent! set signcolumn=no
+      let b:gitgutter_enabled=0
+    endif
+  endfunction
+  nnoremap <silent> go :call <sid>gitguttertoggle(1)<CR>
+  nnoremap <silent> gO :call <sid>gitguttertoggle(0)<CR>
+  nnoremap <silent> g. :call <sid>gitguttertoggle()<CR>
   nmap <silent> gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nmap <silent> gd :GitGutterUndoHunk<CR>
   "d is for 'delete' change
@@ -684,8 +700,13 @@ augroup END
 set nospell spelllang=en_us spellcapcheck=
 "Toggle on and off
 "Also toggle UK/US languages
-nnoremap <silent> yo :call <sid>spelltoggle()<CR>
-nnoremap <silent> yl :call <sid>langtoggle()<CR>
+nnoremap <silent> yo :call <sid>spelltoggle(1)<CR>
+nnoremap <silent> yO :call <sid>spelltoggle(0)<CR>
+nnoremap <silent> y. :call <sid>spelltoggle()<CR>
+nnoremap <silent> yL :call <sid>langtoggle(1)<CR>
+nnoremap <silent> yl :call <sid>langtoggle(0)<CR>
+nnoremap yD z=
+nnoremap yd z=1<CR><CR><CR>
 function! s:spelltoggle(...)
   if a:0
     let toggle=a:1
@@ -704,8 +725,13 @@ function! s:spelltoggle(...)
     let b:spellstatus=0
   endif
 endfunction
-function! s:langtoggle()
-  if &spelllang=='en_us'
+function! s:langtoggle(...)
+  if a:0
+    let uk=a:1
+  else
+    let uk=(&spelllang == 'en_gb' ? 0 : 1)
+  endif
+  if uk
     set spelllang=en_gb
     echo 'Current language: UK english'
   else
@@ -713,10 +739,6 @@ function! s:langtoggle()
     echo 'Current language: US english'
   endif
 endfunction
-"Get suggestions, or choose first suggestion without looking
-"Use these conventions cause why not
-nnoremap y, z=
-nnoremap y. z=1<CR><CR><CR>
 "Add/remove from dictionary
 nnoremap ya zg
 nnoremap yr zug
@@ -1891,16 +1913,17 @@ noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
   \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
 "Capitalization stuff with g, a bit refined
 "not currently used in normal mode, and fits better mnemonically
+"Mnemonic is l for letter, t for title case
 nnoremap gu guiw
 vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
-vnoremap g. ~
+vnoremap gl ~
 nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-nmap g. <Plug>cap1
+nmap gl <Plug>cap1
 nmap gt <Plug>cap2
-" nnoremap g. ~h
+" nnoremap gl ~h
 " nnoremap gt mzguiw~h`z
 "Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
 noremap m ge
