@@ -196,11 +196,8 @@ noremap <C-j> g;
 noremap <C-k> g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
-"Delete entire line; never should use dl anyway, use x instead
-"must be normal mode map, or get delay; remember map includes some kind of
-"operator-pending mode (i.e. waiting for a motion)
-nnoremap dh <Nop>
-nnoremap dl 0d$
+"Delete entire line, leave behind an empty line
+noremap dL 0d$
 "Never really want to use f/t commands more than once; remap these later on
 noremap ; <Nop>
 noremap , <Nop>

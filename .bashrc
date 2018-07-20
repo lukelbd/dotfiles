@@ -1396,7 +1396,7 @@ if [ -f ~/.fzf.bash ]; then
   _command='' # use find . -maxdepth 1 search non recursively
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
     --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,shift-tab:up,tab:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down+toggle,ctrl-k:up+toggle,ctrl-d:accept,/:accept' \
+    --bind=f1:up,f2:down,shift-tab:up,tab:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up,ctrl-d:accept,/:accept' \
     | tr '\n' ' ')
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
