@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # -- BEGIN ITERM2 CUSTOMIZATIONS --
-if [[ "$TERM" != screen && "$ITERM_SHELL_INTEGRATION_INSTALLED" = "" && "$-" == *i* ]]; then
+if [[ "$ITERM_SHELL_INTEGRATION_INSTALLED" = "" && "$-" == *i* ]]; then
+# if [[ "$TERM" != screen && "$ITERM_SHELL_INTEGRATION_INSTALLED" = "" && "$-" == *i* ]]; then
 ITERM_SHELL_INTEGRATION_INSTALLED=Yes
 # Saved copy of your PS1. This is used to detect if the user changes PS1
 # directly. ITERM_PREV_PS1 will hold the last value that this script set PS1 to

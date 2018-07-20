@@ -181,9 +181,9 @@ EXEC 01;35  # Unix
 .bat 01;35  # Win
 .reg 01;35  # Win
 .app 01;35  # OSX
-.o   01;35
-.out 01;35
 .exe 01;35
+.mod 01;35
+.o   01;35
 .x   01;35
 
 # Orphaned symlinks (blinking white on red)
@@ -201,7 +201,6 @@ MISSING 05;37;41
 ### Code files
 .ncl    31
 .nco    31
-.nml    31
 .f77    31
 .f90    31
 .f03    31
@@ -394,6 +393,7 @@ MISSING 05;37;41
 # Log files and session files; bright white
 .session.vim 01;37
 .log         01;37
+.nml         01;37
 
 # Database files
 .nc    36

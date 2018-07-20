@@ -59,33 +59,35 @@ function! s:ctags(...)
   if index(ignoretypes, &ft)!=-1 | return | endif
   "Determine types of ctags we want to store
   if expand("%:t")==".vimrc"
-    let type="a" "list only augroups
+    "list only augroups
+    let type="a"
   elseif &ft=="vim"
-    let type="[af]" "list only augroups
+    "augroups and functions
+    let type="[af]"
   elseif &ft=="tex"
-    let type="[bs]" "b is for subsection, s is for section
+    "b is for subsection, s is for section
+    let type="[bs]"
   elseif &ft=="python"
-    let type="[fcm]" "functions, classes, and modules
+    "functions, classes, and modules
+    let type="[fcm]"
+  elseif &ft=="fortran"
+    "s is for submodule, m for module, f for function, p for program
+    "ignore variable declarations
+    let type="[smfp]"
   else
-    let type="f" "default just functions; note Vimscript makes c 'command!'
+    "default just functions; note Vimscript makes c 'command!'
+    let type="f"
   endif
   "Ctags doesn't recognize python2/python3 shebangs by default
   if getline(1)=~"#!.*python[23]" | let force="--language=python"
   else | let force=""
   endif
   "Call ctags function
-  "Add the sed line to include all items, not just top-level items
-  "Currently is added
-  " \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-  if dry_run "just return command
-    "if table wasn't produced and this is just stderr text then don't tabulate (-s)
-    return "ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." "
-      \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-      \."| cut -s -d$'\t' -f1,3-" "ignore filename field, delimit by literal tabs
-  endif
-  let ctags=split(system("ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")." 2>/dev/null "
-    \."| sed 's/class:[^ ]*$//g' | sed 's/function:[^ ]*$//g' "
-    \."| grep -E $'\t".type."\t\?$' | cut -d$'\t' -f3 | cut -d'/' -f2"), '\n')
+  "The cut ignores the filename field, and the trailing (optional) hieararchy field
+  let cmd="ctags ".force." --langmap=vim:+.vimrc,sh:+.bashrc -f - ".expand("%")
+      \." 2>/dev/null | cut -d '\t' -f1,3-4 "
+  if dry_run | return cmd | endif
+  let ctags=split(system(cmd." | grep '\t".type."$' | cut -d'/' -f2"), '\n')
   if len(ctags)==0 | return | endif
   "Get ctag lines and sort them by number
   " echom join(ctags,',')
@@ -97,7 +99,10 @@ function! s:ctags(...)
   let b:ctags=map(range(len(b:ctaglines)), 'ctags[index(ctaglines, b:ctaglines[v:val])]')
 endfunction "note if you use FileType below, it will fail to refresh when re-entering VIM
 nnoremap <silent> <Leader>c :call <sid>ctags(0)<CR>:echom "Tags updated."<CR>
-nnoremap <silent> <expr> <Leader>C ':!clear; '.<sid>ctags(1).' \| less<CR>:redraw!<CR>'
+nnoremap <silent> <expr> <Leader>C ":!clear; ".<sid>ctags(1)." \| tr -s ' ' "
+      \." \| tr -s '\t' \| column -t -s '\t' \| less<CR>:redraw!<CR>"
+      " \." \| tr -s '".'\t'."' \| column -t -s '".'\t'."' \| less<CR>:redraw!<CR>"
+" command! Ctags call <sid>ctags(1)
 "------------------------------------------------------------------------------"
 "Function for jumping between regexes in the ctag search strings
 function! s:ctagjump(regex)
@@ -119,7 +124,7 @@ function! s:ctaglist(A,B,C)
   let choices=[]
   for ctag in b:ctags
     if ctag[1:-2] =~# a:A "regex matching case
-      call add(choices, ctag[1:-2]) "ignore leading ^/$
+      call add(choices, substitute(ctag[1:-2], '^\s*\(.\{-}\)\s*$', '\1', '')) "ignore leading ^/$
     endif
   endfor
   return choices "super simple
