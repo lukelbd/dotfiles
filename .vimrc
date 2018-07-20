@@ -143,8 +143,6 @@ inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofd
   \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
 inoremap jj j
 inoremap kk k
-inoremap kj <Nop>
-inoremap KJ <Nop>
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
@@ -250,12 +248,11 @@ nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
 "Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
-"For some fucking reason this is necessary or there is a cursor delay when hitting cc
+"For some reason this is necessary or there is a cursor delay when hitting cc
 nnoremap cc cc
+nnoremap c<CR> s
 "Replace the currently highlighted text
 vnoremap cc s
-vnoremap c<CR> s
-nnoremap c<CR> <Nop>
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
@@ -592,7 +589,8 @@ if has_key(g:plugs,'unite.vim') && has_key(g:plugs,'citation.vim')
   "Insert citation
   nnoremap <silent> yc :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
   "Open file directory
-  nnoremap <silent> yd :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  nnoremap <silent> yN :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  nnoremap <silent> yn :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
   "Open pdf
   nnoremap <silent> yp :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
   "Open url
@@ -615,7 +613,6 @@ endif
 "GIT GUTTER
 "TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
-  au FileType * let b:gitgutter_enabled=0
 augroup END
 if has_key(g:plugs, "vim-gitgutter")
   "Create command for toggling on/off; old VIM versions always show signcolumn
@@ -625,10 +622,26 @@ if has_key(g:plugs, "vim-gitgutter")
   silent! set signcolumn=no "silent ignores errors if not option
   let g:gitgutter_map_keys=0 "disable all maps yo
   let g:gitgutter_enabled=0 "whether enabled at *startup*
-  nnoremap <silent> <expr> <Leader>s b:gitgutter_enabled==0 ? 
-    \  ':GitGutterEnable<CR>:silent! set signcolumn=yes<CR>:let b:gitgutter_enabled=1<CR>'
-    \: ':GitGutterDisable<CR>:silent! set signcolumn=no<CR>:let b:gitgutter_enabled=0<CR>'
-  " nnoremap <silent> <expr> <Leader>s &signcolumn=="no" ? ':set signcolumn=yes<CR>' : ':set signcolumn=no<CR>'
+  function! s:gitguttertoggle(...)
+    "Either listen to input, turn on if switch not declared, or do opposite
+    if a:0
+      let toggle=a:1
+    else
+      let toggle=(exists('b:gitgutter_enabled') ? 1-b:gitgutter_enabled : 1)
+    endif
+    if toggle
+      GitGutterEnable
+      silent! set signcolumn=yes
+      let b:gitgutter_enabled=1
+    else
+      GitGutterDisable
+      silent! set signcolumn=no
+      let b:gitgutter_enabled=0
+    endif
+  endfunction
+  nnoremap <silent> go :call <sid>gitguttertoggle(1)<CR>
+  nnoremap <silent> gO :call <sid>gitguttertoggle(0)<CR>
+  nnoremap <silent> g. :call <sid>gitguttertoggle()<CR>
   nmap <silent> gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nmap <silent> gd :GitGutterUndoHunk<CR>
   "d is for 'delete' change
@@ -687,8 +700,13 @@ augroup END
 set nospell spelllang=en_us spellcapcheck=
 "Toggle on and off
 "Also toggle UK/US languages
-nnoremap <silent> yo :call <sid>spelltoggle()<CR>
-nnoremap <silent> yl :call <sid>langtoggle()<CR>
+nnoremap <silent> yo :call <sid>spelltoggle(1)<CR>
+nnoremap <silent> yO :call <sid>spelltoggle(0)<CR>
+nnoremap <silent> y. :call <sid>spelltoggle()<CR>
+nnoremap <silent> yL :call <sid>langtoggle(1)<CR>
+nnoremap <silent> yl :call <sid>langtoggle(0)<CR>
+nnoremap yD z=
+nnoremap yd z=1<CR><CR><CR>
 function! s:spelltoggle(...)
   if a:0
     let toggle=a:1
@@ -707,8 +725,13 @@ function! s:spelltoggle(...)
     let b:spellstatus=0
   endif
 endfunction
-function! s:langtoggle()
-  if &spelllang=='en_us'
+function! s:langtoggle(...)
+  if a:0
+    let uk=a:1
+  else
+    let uk=(&spelllang == 'en_gb' ? 0 : 1)
+  endif
+  if uk
     set spelllang=en_gb
     echo 'Current language: UK english'
   else
@@ -716,10 +739,6 @@ function! s:langtoggle()
     echo 'Current language: US english'
   endif
 endfunction
-"Get suggestions, or choose first suggestion without looking
-"Use these conventions cause why not
-nnoremap y, z=
-nnoremap y. z=1<CR><CR><CR>
 "Add/remove from dictionary
 nnoremap ya zg
 nnoremap yr zug
@@ -1115,9 +1134,12 @@ if has_key(g:plugs, "nerdcommenter")
   nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
   nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
   "Add author information (tries to match indentation)
-  nnoremap <silent> <expr> <Leader>a ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
+  nnoremap <silent> <expr> cA ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
         \ .' Author: Luke Davis (lukelbd@gmail.com)<Esc>:call <sid>toggleformatopt()<CR>o'
   " nnoremap <silent> <Leader>a :call append(line('.'), b:NERDCommenterDelims['left'].' Author: Luke Davis')<CR>jA<CR>
+  "Simple option -- 'inline' comment header
+  nnoremap <silent> <expr> cI ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
+        \ .repeat(' ',5).repeat('-',5).'  '.repeat('-',5).'<Esc>5hi'
   "Declare mapping strings needed to build remaps
   "Then can *delcare mapping for custom keyboard* using exe 'nnoremap <expr> shortcut '.string,
   "and note that the expression is evaluated every time right before the map is executed (i.e. buffer-local comment chars are generated)
@@ -1344,7 +1366,11 @@ if has_key(g:plugs, "tabular")
       endif
     endwhile
     "Execute tabularize function
-    exe firstline.','.lastline.'Tabularize '.a:arg
+    if firstline>lastline
+      echom "Warning: No matches in selection."
+    else
+      exe firstline.','.lastline.'Tabularize '.a:arg
+    endif
     "Add back the lines that were deleted
     for pair in reverse(dlines) "insert line of text below where deletion occurred (line '0' adds to first line)
       call append(pair[0]-1, pair[1])
@@ -1361,49 +1387,55 @@ if has_key(g:plugs, "tabular")
 	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Align character: ').'/l1c1<CR>'
-  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Align character: ').'/l1c1<CR>'
+  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Align character(s): ').'/l1c1<CR>'
+  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Align character(s): ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
   nnoremap <expr> \, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \, ':Table /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \, ':Table      /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
   nnoremap <expr> \d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> \d ':Table /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> \d ':Table      /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
   nnoremap <expr> \D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \D ':Table /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \D ':Table      /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
   nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> \l ':Table /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
   nnoremap <expr> \r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> \r ':Table /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> \r ':Table      /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
   nnoremap <expr> \\ ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> \\ ':Table /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> \\ ':Table      /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
   nnoremap <expr> \_ ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> \_ ':Table /\S\zs\ /l0<CR>'
+  vnoremap <expr> \_ ':Table      /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
   nnoremap <expr> \C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> \C ':Table /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \C ':Table      /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
   "Enforces that
   nnoremap <expr> \c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> \c ':Table /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> \c ':Table      /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
-  nnoremap \= :Tabularize /^[^=]*\zs=/l1c1<CR>
-  vnoremap \= :Table /^[^=]*\zs=/l1c1<CR>
-  nnoremap \+ :Tabularize /^[^=]*=\zs/l0c1<CR>
-  vnoremap \+ :Table /^[^=]*=\zs/l0c1<CR>
+  "This selects the *first* uncommented equals sign that does not belong to
+  "a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
+  nnoremap <expr> \= ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  vnoremap <expr> \= ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  nnoremap <expr> \+ ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  vnoremap <expr> \+ ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  " nnoremap <expr> \= ':Tabularize /^[^=]*\zs=/l1c1<CR>'
+  " vnoremap <expr> \= ':Table      /^[^=]*\zs=/l1c1<CR>'
+  " nnoremap <expr> \+ ':Tabularize /^[^=]*=\zs/l0c1<CR>'
+  " vnoremap <expr> \+ ':Table      /^[^=]*=\zs/l0c1<CR>'
 endif
 
 "###############################################################################
@@ -1881,16 +1913,17 @@ noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
   \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
 "Capitalization stuff with g, a bit refined
 "not currently used in normal mode, and fits better mnemonically
+"Mnemonic is l for letter, t for title case
 nnoremap gu guiw
 vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
-vnoremap g. ~
+vnoremap gl ~
 nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-nmap g. <Plug>cap1
+nmap gl <Plug>cap1
 nmap gt <Plug>cap2
-" nnoremap g. ~h
+" nnoremap gl ~h
 " nnoremap gt mzguiw~h`z
 "Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
 noremap m ge
