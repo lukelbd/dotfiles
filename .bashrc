@@ -487,6 +487,7 @@ hash colordiff 2>/dev/null && alias diff="command colordiff"
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
+alias restarts="last reboot | less"
 function listjobs() {
   # [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1
   ps | grep "$1" | grep -v PID | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs
