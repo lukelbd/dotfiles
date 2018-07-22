@@ -490,6 +490,7 @@ hash colordiff 2>/dev/null && alias diff="command colordiff"
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
+alias restarts="last reboot | less"
 function listjobs() {
   # [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1
   ps | grep "$1" | grep -v PID | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs
@@ -697,6 +698,7 @@ function title_update() {
 # New window; might have closed one and opened another, so declare new title
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
+title_update # ensure the title is updated
 
 ################################################################################
 # SSH, session management, and Github stuff
@@ -1398,7 +1400,7 @@ if [ -f ~/.fzf.bash ]; then
   _command='' # use find . -maxdepth 1 search non recursively
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
     --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,shift-tab:up,tab:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down+toggle,ctrl-k:up+toggle,ctrl-d:accept,/:accept' \
+    --bind=f1:up,f2:down,shift-tab:up,tab:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up,ctrl-d:accept,/:accept' \
     | tr '\n' ' ')
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
