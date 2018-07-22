@@ -665,7 +665,7 @@ function title() { # Cmd-I from iterm2 also works
   ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
   if [ -n "$1" ]; then _title="$1"
-  else read -p "Enter title for this window: " _title
+  else read -p "Enter title (window $_win_num): " _title
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
@@ -1294,7 +1294,7 @@ alias songs="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | 
 alias edit='command open -a TextEdit'
 alias html='command open -a Google\ Chrome'
 alias image='command open -a Preview'
-alias pdf='command open -a Skim'
+alias pdf='command open -a PDF\ Expert'
 
 # Extracting PDF annotations
 function unannotate() {
