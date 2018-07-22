@@ -196,11 +196,10 @@ noremap <C-j> g;
 noremap <C-k> g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
-"Delete entire line; never should use dl anyway, use x instead
-"must be normal mode map, or get delay; remember map includes some kind of
-"operator-pending mode (i.e. waiting for a motion)
-nnoremap dh <Nop>
-nnoremap dl 0d$
+"Delete entire line, leave behind an empty line
+"Has to be *normal* mode remaps, or will affect operator pending mode; for
+"example if you type 'dd', there will be delay.
+nnoremap dL 0d$
 "Never really want to use f/t commands more than once; remap these later on
 noremap ; <Nop>
 noremap , <Nop>
@@ -1408,16 +1407,16 @@ if has_key(g:plugs, "tabular")
   "Dictionary, colon on left
   nnoremap <expr> \D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> \D ':Table      /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  "See :help non-greedy to see what braces do; it is like *, except instead of matching
-  "as many as possible, can match as few as possible in some range;
-  "with braces, a minus will mean non-greedy
-  nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
   nnoremap <expr> \r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   vnoremap <expr> \r ':Table      /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  "See :help non-greedy to see what braces do; it is like *, except instead of matching
+  "as many as possible, can match as few as possible in some range;
+  "with braces, a minus will mean non-greedy
+  nnoremap <expr> \\| ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \\| ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
