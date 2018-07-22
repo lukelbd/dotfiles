@@ -79,3 +79,5 @@
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com
+[core]
+	mergeoptions = --no-edit

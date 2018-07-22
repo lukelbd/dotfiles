@@ -98,9 +98,15 @@ function! s:ctags(...)
   " echom join(ctaglines,',')
   let b:ctags=map(range(len(b:ctaglines)), 'ctags[index(ctaglines, b:ctaglines[v:val])]')
 endfunction "note if you use FileType below, it will fail to refresh when re-entering VIM
+"Create mappings
+"First one just updates tags
+"Second one returns the ctags command, then does some other fancy stuff and displays
+"it to the user in a temporary pager. The sed line limits the column width to 60 chars.
 nnoremap <silent> <Leader>c :call <sid>ctags(0)<CR>:echom "Tags updated."<CR>
 nnoremap <silent> <expr> <Leader>C ":!clear; ".<sid>ctags(1)." \| tr -s ' ' "
-      \." \| tr -s '\t' \| column -t -s '\t' \| less<CR>:redraw!<CR>"
+      \." \| sed '".'s$/\(.\{0,60\}\).*/;"$/\1.../$'."' "
+      \." \| tr -s '\t' \| column -t -s '\t' "
+      \." \| less<CR>:redraw!<CR>"
       " \." \| tr -s '".'\t'."' \| column -t -s '".'\t'."' \| less<CR>:redraw!<CR>"
 " command! Ctags call <sid>ctags(1)
 "------------------------------------------------------------------------------"
