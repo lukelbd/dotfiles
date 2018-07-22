@@ -153,10 +153,13 @@ else
     # In future, use my own environment
     # Idea to share conda environment, but really not necessary
     module load Anaconda3
-    [[ -z "$CONDA_PREFIX" ]] && {
-      echo "Activating conda environment."
-      source activate /project2/rossby/group07/.conda
-      }
+    # [[ -z "$CONDA_PREFIX" ]] && {
+    #   echo "Activating conda environment."
+    #   source activate /project2/rossby/group07/.conda
+    #   }
+    # Fix prompt
+    # unset PROMPT_COMMAND
+    export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -672,7 +675,6 @@ function title() { # Cmd-I from iterm2 also works
   [ ! -e "$_title_file" ] && touch "$_title_file"
   gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
   echo "$_win_num: $_title" >>$_title_file # add to file
-  title_update # update
 }
 # Prompt user input potentially, but try to load from file
 function title_update() {
@@ -1510,6 +1512,7 @@ fi
 #   [ "$TERM" != "linux" ] && PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 #   }
 # Messages
+title_update # force update in case anything changed it, e.g. shell integration
 $_macos && { # first the MacOS options
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells

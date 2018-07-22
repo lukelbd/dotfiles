@@ -10,5 +10,5 @@ let g:is_bash=1
 "Next, the syntax errors I see that are fixed when scrolling/redrawing are actually
 "officially documented. To fix them, make this bigger. Default is 200. Seems 1000
 "is necessary for bashrc.
-let g:sh_minlines = 1000
+let g:sh_minlines = 2000
 

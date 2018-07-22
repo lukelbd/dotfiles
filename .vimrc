@@ -610,7 +610,7 @@ endif
 "TODO: Add these
 
 "###############################################################################
-"GIT GUTTER
+"GIT GUTTER AND FUGITIVE
 "TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
 augroup END
@@ -647,6 +647,16 @@ if has_key(g:plugs, "vim-gitgutter")
   "d is for 'delete' change
   nmap <silent> gN :GitGutterPrevHunk<CR>
   nmap <silent> gn :GitGutterNextHunk<CR>
+endif
+"Next some fugitive command aliases
+"Just want to eliminate that annoying fucking capital G
+if has_key(g:plugs, "vim-fugitive")
+  for gcommand in ['Git', 'Gcd', 'Glcd', 'Gstatus', 'Gcommit', 'Gmerge', 'Gpull',
+  \ 'Grebase', 'Gpush', 'Gfetch', 'Grename', 'Gdelete', 'Gremove', 'Gblame', 'Gbrowse',
+  \ 'Ggrep', 'Glgrep', 'Glog', 'Gllog', 'Gedit', 'Gsplit', 'Gvsplit', 'Gtabedit', 'Gpedit',
+  \ 'Gread', 'Gwrite', 'Gwq', 'Gdiff', 'Gsdiff', 'Gvdiff', 'Gmove']
+    exe 'cnoreabbrev g'.gcommand[1:].' '.gcommand
+  endfor
 endif
 
 "##############################################################################"
@@ -1771,6 +1781,7 @@ nnoremap <silent> <expr> \n ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
 vnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace consecutive spaces on current line with one space
+vnoremap <silent> \w :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 nnoremap <silent> \w :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Will probably be necessary after the comment trimming
