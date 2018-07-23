@@ -709,48 +709,64 @@ augroup END
 set nospell spelllang=en_us spellcapcheck=
 "Toggle on and off
 "Also toggle UK/US languages
+nnoremap <silent> y. :call <sid>spelltoggle()<CR>
 nnoremap <silent> yo :call <sid>spelltoggle(1)<CR>
 nnoremap <silent> yO :call <sid>spelltoggle(0)<CR>
-nnoremap <silent> y. :call <sid>spelltoggle()<CR>
-nnoremap <silent> yL :call <sid>langtoggle(1)<CR>
-nnoremap <silent> yl :call <sid>langtoggle(0)<CR>
-nnoremap yD z=
-nnoremap yd z=1<CR><CR><CR>
+nnoremap <silent> yK :call <sid>langtoggle(0)<CR>
+nnoremap <silent> yk :call <sid>langtoggle(1)<CR>
+"Spell maps
+nnoremap <Plug>backwardspell :call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
+nnoremap <Plug>forwardspell :call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
+nmap yD <Plug>backwardspell
+nmap yd <Plug>forwardspell
+"Add/remove from dictionary
+nnoremap ya zg
+nnoremap yr zug
+"Functions
+function! s:spellchange(direction)
+  let nospell=0
+  if !&l:spell
+    let nospell=1
+    setlocal spell
+  endif
+  let winview=winsaveview()
+  exe 'normal! '.a:direction.'s'
+  normal! 1z=
+  call winrestview(winview)
+  if nospell
+    setlocal nospell
+  endif
+endfunction
 function! s:spelltoggle(...)
   if a:0
     let toggle=a:1
   else
-    let toggle=(exists("b:spellstatus") ? 1-b:spellstatus : 1)
+    let toggle=1-&l:spell
   endif
   if toggle
     setlocal spell
     nnoremap <buffer> yn ]S
     nnoremap <buffer> yN [S
-    let b:spellstatus=1
   else
     setlocal nospell
     nnoremap <buffer> yn <Nop>
     nnoremap <buffer> yN <Nop>
-    let b:spellstatus=0
   endif
 endfunction
 function! s:langtoggle(...)
   if a:0
     let uk=a:1
   else
-    let uk=(&spelllang == 'en_gb' ? 0 : 1)
+    let uk=(&l:spelllang == 'en_gb' ? 0 : 1)
   endif
   if uk
-    set spelllang=en_gb
+    setlocal spelllang=en_gb
     echo 'Current language: UK english'
   else
-    set spelllang=en_us
+    setlocal spelllang=en_us
     echo 'Current language: US english'
   endif
 endfunction
-"Add/remove from dictionary
-nnoremap ya zg
-nnoremap yr zug
 "Thesaurus stuff
 "Plugin appears broken
 "Use e key cause it's not used yet
@@ -1124,7 +1140,7 @@ endif
 " -c$ comments to eol
 " -cu uncomments line
 if has_key(g:plugs, "nerdcommenter")
-  "Create fancy shcmany maps, and make commenter work for NCL files
+  "Create fancy schmany maps, and make commenter work for NCL files
   augroup nerdcomment
     au!
     au FileType * call s:commentheaders()
@@ -1148,7 +1164,7 @@ if has_key(g:plugs, "nerdcommenter")
   " nnoremap <silent> <Leader>a :call append(line('.'), b:NERDCommenterDelims['left'].' Author: Luke Davis')<CR>jA<CR>
   "Simple option -- 'inline' comment header
   nnoremap <silent> <expr> cI ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
-        \ .repeat(' ',5).repeat('-',5).'  '.repeat('-',5).'<Esc>5hi'
+        \ .repeat(' ',4).repeat('-',4).'  '.repeat('-',4).'<Esc>4hi'
   "Declare mapping strings needed to build remaps
   "Then can *delcare mapping for custom keyboard* using exe 'nnoremap <expr> shortcut '.string,
   "and note that the expression is evaluated every time right before the map is executed (i.e. buffer-local comment chars are generated)
@@ -1396,8 +1412,8 @@ if has_key(g:plugs, "tabular")
 	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Align character(s): ').'/l1c1<CR>'
-  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Align character(s): ').'/l1c1<CR>'
+  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
+  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Alignment regex: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
   nnoremap <expr> \, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> \, ':Table      /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'

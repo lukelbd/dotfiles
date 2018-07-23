@@ -281,14 +281,16 @@ let g:inject_replace_occurences=0
 let g:iterate_occurences=0
 function! MoveToNext()
   if g:iterate_occurences
+    let winview=winsaveview()
     while search(@/, 'n') "while result is non-zero, i.e. matches exist
       exe 'normal .'
     endwhile
     echo "Replaced all occurences."
     let g:iterate_occurences=0
+    call winrestview(winview)
   elseif g:inject_replace_occurences
     " silent! call feedkeys("n")
-    silent! normal n
+    keepjumps silent! normal n
     call repeat#set("\<Plug>ReplaceOccurences")
     "n is not a 'dot' command, so the default last operation was the changing
     "inner word action. calling repeat#set says this plug map will be run when
@@ -319,24 +321,19 @@ function! ReplaceOccurence()
   let save_reg = getreg('"')
   let save_regmode = getregtype('"')
   let [lnum_cur, col_cur] = getpos(".")[1:2] 
-  normal! ygn
+  keepjumps normal! ygn
   let [lnum1, col1] = getpos("'[")[1:2]
   let [lnum2, col2] = getpos("']")[1:2]
   call setreg('"', save_reg, save_regmode)
   call winrestview(winview)
   "If we are on top of an occurence, replace it
   if lnum_cur>=lnum1 && lnum_cur<=lnum2 && col_cur>=col1 && col_cur<=col2
-    exe "silent! normal! cgn\<C-a>\<Esc>"
+    exe "silent! keepjumps normal! cgn\<C-a>\<Esc>"
   endif
   " silent! call feedkeys("n")
   silent! normal n
   call repeat#set("\<Plug>ReplaceOccurences")
 endfunction
-"Below are maps that don't move onto next highlight automatically
-" nnoremap c* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-" nnoremap c& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
-" nnoremap c# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``cgn
-" nnoremap c@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``cgn
 "Remap as above, but for substituting stuff
 "These ones I made all by myself! Added a block to MoveToNext function
 nmap ca/ :let g:iterate_occurences=1<CR>c/
@@ -358,7 +355,7 @@ nmap ca@ :let g:iterate_occurences=1<CR>c@
 "TODO: Fix annoying issue where stuff still gets deleted after no more variables are left
 function! s:delete_next()
   try "note the silent! feature fucks up try catch statements
-    normal! dgnn
+    keepjumps normal! dgnn
     let b:delete_done=0
   catch
     echo "Replaced all occurences."
@@ -374,12 +371,6 @@ nmap d* <Plug>search2
 nmap d& <Plug>search3
 nmap d# <Plug>search4
 nmap d@ <Plug>search5
-"Ones without using repeat#set
-" nnoremap d# /<C-r>=<sid>scopesearch(0)<CR>\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
-" nnoremap d@ /\_s\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
-" nnoremap d* /\<<C-r>=expand('<cword>')<CR>\>\C<CR>``dgn
-" nnoremap d& /\_s\@<=<C-r>=expand('<cWORD>')<CR>\ze\_s\C<CR>``dgn
-" nnoremap d/ :set hlsearch<CR>dng
 "------------------------------------------------------------------------------"
 "Finally, remap as above, but for substituting stuff
 "Want the interactivity of changing text inside the document (rather than
@@ -387,11 +378,13 @@ nmap d@ <Plug>search5
 "if it weren't for this strange function
 function! s:refactor_all(command)
   "Make sure to use existing mappings (i.e. no 'normal!')
+  let winview=winsaveview()
   exe 'normal '.a:command
   while search(@/, 'n') "while result is non-zero, i.e. matches exist
     exe 'normal .'
   endwhile
-  echo "Replaced all occurences."
+  echo "Deleted all occurences."
+  call winrestview(winview)
 endfunction
 "Explicit is better than implicit
 nmap da/ :call <sid>refactor_all('d/')<CR>
