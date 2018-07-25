@@ -1819,11 +1819,11 @@ nnoremap <silent> \w :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive s
 nnoremap <silent> \W :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 vnoremap <silent> \W :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 "Delete empty lines
-nnoremap <silent> \E :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-vnoremap <silent> \E :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+nnoremap <silent> \e :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+vnoremap <silent> \e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 "Replace consecutive newlines with single newline
-vnoremap <silent> \e :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-nnoremap <silent> \e :%s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+vnoremap <silent> \E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+nnoremap <silent> \E :%s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace all tabs
 vnoremap <expr> <silent> \<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
