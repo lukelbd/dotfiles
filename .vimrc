@@ -119,7 +119,7 @@ function! s:outofdelim(n)
   "Get text to right of cursor on current line
   "Note matchstrpos returns the list ["match", idx_start, idx_end]
   let minpos = 0 "minimum match position
-  let string = getline('.')[col('.'):]
+  let string = getline('.')[col('.')-1:]
   let regex  = "[\"')\\]}>]" "list of 'outside' delimiters for jk matching
   for i in range(a:n)
     let result = matchstrpos(string, regex, minpos) "get info on *first* match
@@ -129,10 +129,11 @@ function! s:outofdelim(n)
   if minpos==0
     return ""
   else
-    return repeat("\<Right>", minpos+1)
+    return repeat("\<Right>", minpos)
   endif
 endfunction
 "Apply remaps; also add a couple new ones for convenience
+"this ) is ] hello a } hello test " hello
 inoremap jj j
 inoremap kk k
 inoremap <expr> jk !pumvisible() ? <sid>outofdelim(1)
@@ -1298,6 +1299,7 @@ augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
 let g:scrolloff=4
+let g:colorcolumn=(has('gui_running') ? '0' : '80,120')
 "Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
 function! s:wraptoggle(...)
   if a:0 "if non-zer number of args
@@ -1334,7 +1336,7 @@ function! s:wraptoggle(...)
     "Disable previous options
     setlocal nowrap
     execute 'setlocal scrolloff='.g:scrolloff
-    execute 'setlocal colorcolumn=81,121'
+    execute 'setlocal colorcolumn='.g:colorcolumn
     "Disable previous maps
     silent! unmap k
     silent! unmap j
@@ -1992,7 +1994,6 @@ endif
 "Will also enforce shebang always has the same color, because it's annoying otherwise
 "And generally only want 'conceal' characters invisible for latex; otherwise we
 "probably want them to look like comment characters
-set cursorline
 augroup syntax
   au!
   " au Syntax *.tex syn match Ignore '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
@@ -2039,11 +2040,16 @@ highlight MatchParen ctermfg=None ctermbg=Blue
 "gray, and 'ANSI black bold' to black).
 "Note 'lightgray' is just normal white
 highlight LineNR cterm=None ctermbg=None ctermfg=Black
-highlight CursorLine cterm=None ctermbg=Black
-highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
+if !has('gui_running')
+  set cursorline
+  highlight CursorLine cterm=None ctermbg=Black
+  highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
+endif
 "Column stuff; color 80th column, and after 120
-highlight ColorColumn cterm=None ctermbg=Gray
-highlight SignColumn cterm=None ctermfg=Black ctermbg=None
+if !has('gui_running')
+  highlight ColorColumn cterm=None ctermbg=Gray
+  highlight SignColumn cterm=None ctermfg=Black ctermbg=None
+endif
 "Make sure terminal is black, for versions with :terminal command
 highlight Terminal ctermbg=Black
 
