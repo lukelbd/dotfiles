@@ -1115,15 +1115,14 @@ endif
 " -cy yanks lines before commenting
 " -c$ comments to eol
 " -cu uncomments line
+augroup nerdcomment
+augroup END
 if has_key(g:plugs, "nerdcommenter")
-  "Create fancy schmany maps, and make commenter work for NCL files
-  augroup nerdcomment
-    au!
-    au FileType * call s:commentheaders()
-  augroup END
   "Custom delimiter overwrites (default python includes space for some reason)
-  let g:NERDCustomDelimiters = {'python': {'left': '#'}, 'cython': {'left': '#'},
-    \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}}
+  let g:NERDCustomDelimiters = {
+    \ 'python': {'left': '#'}, 'cython': {'left': '#'},
+    \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}
+    \ }
   let g:NERDCreateDefaultMappings = 0 " disable default mappings (make my own)
   let g:NERDSpaceDelims = 1           " comments led with spaces
   let g:NERDCompactSexyComs = 1       " use compact syntax for prettified multi-line comments
@@ -1131,7 +1130,6 @@ if has_key(g:plugs, "nerdcommenter")
   let g:NERDCommentEmptyLines = 1     " allow commenting and inverting empty lines (useful when commenting a region)
   let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 1
-  "Create python docstring
   nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
   nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
   "Create functions that return fancy comment 'blocks' -- e.g. for denoting
@@ -1203,15 +1201,23 @@ if has_key(g:plugs, "nerdcommenter")
     call search('- \zs', '', line('.')) "search, and stop on this line (should be same one); no flags
     normal! i
   endfunction
+  function! s:docstring(char)
+    let col=s:commentindent()
+    let spaces=(col-1)
+    normal! k
+    call append(line('.'), [repeat(' ',spaces).repeat(a:char,3), repeat(' ',spaces), repeat(' ',spaces).repeat(a:char,3)])
+    normal! jj$
+  endfunction
+  "Python docstring
+  nnoremap c' :call <sid>docstring("'")<CR>A
+  nnoremap c" :call <sid>docstring('"')<CR>A
   "Section headers and dividers
   nnoremap <silent> <Plug>fancy1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>fancy1")<CR>
   nnoremap <silent> <Plug>fancy2 :call <sid>bar()<CR>:call repeat#set("\<Plug>fancy2")<CR>
-  nnoremap <silent> <Plug>fancy3 :call <sid>section('-')<CR>:call repeat#set("\<Plug>fancy3")<CR>
-  nnoremap <silent> <Plug>fancy4 :call <sid>section()<CR>:call repeat#set("\<Plug>fancy4")<CR>
   nmap c- <Plug>fancy1
   nmap c_ <Plug>fancy2
-  nmap c\ <Plug>fancy3
-  nmap c\| <Plug>fancy4
+  nnoremap <silent> c\  :call <sid>section('-')<CR>A
+  nnoremap <silent> c\| :call <sid>section()<CR>A
   "Author information comment
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
   "Create an 'inline' comment header
