@@ -1,16 +1,16 @@
 "------------------------------------------------------------------------------
-" STATUSLINE MODIFICATION
+" Custom statusline modification
 "------------------------------------------------------------------------------
-"Alway show
 let g:nostatus="tagbar,nerdtree"
-set laststatus=2
-"Command line below statusline
-set showcmd
+set laststatus=2 "always show
+set showcmd "command line below statusline
 set noshowmode
 " au BufEnter * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
 " au BufReadPost * let &stl='%{ShortenFilename()}%{FileInfo()}%{PrintMode()}%{Git()}%{PrintLanguage()}%{CapsLock()}%=%{Tag()}%{Location()}'
 " au FileType tagbar,nerdtree let &stl=' ' "don't work
 " au BufEnter *[Tt]agbar*,*[Nn][Ee][Rr][Dd]*[Tt]ree* let &l:stl=' ' "empty returns default; use non-empty
+
+"------------------------------------------------------------------------------"
 "Define all the different modes
 "Show whether in pastemode
 function! PrintMode()
@@ -35,6 +35,8 @@ function! PrintMode()
   return '  ['.l:string.']'
   " return ' ['.string.']'
 endfunction
+
+"------------------------------------------------------------------------------"
 "Caps lock (are language maps enabled?)
 function! CapsLock()
   if &ft && g:nostatus=~?&ft
@@ -47,6 +49,8 @@ function! CapsLock()
     return ''
   endif
 endfunction
+
+"------------------------------------------------------------------------------"
 "Shorten a given filename by truncating path segments.
 "https://github.com/blueyed/dotfiles/blob/master/vimrc#L396
 function! ShortenFilename() "{{{
@@ -101,14 +105,29 @@ function! ShortenFilename() "{{{
   let r = join(parts, '')
   return r
 endfunction "}}}
+
+"##############################################################################"
+"Git branch
+function! Git()
+  if exists('*fugitive#head') && fugitive#head()!=''
+    return '  ('.fugitive#head().')'
+  else
+    return ''
+  endif
+endfunction
+
+"------------------------------------------------------------------------------"
 "Find out current buffer's size and output it.
+"Also add git branch if available
 function! FileInfo() "{{{
   if &ft && g:nostatus=~?&ft
     return ''
   endif
+  "File type
   if &ft=="" | let l:string="unknown:"
   else | let l:string=&ft.":"
   endif
+  "File size
   let bytes = getfsize(expand('%:p'))
   if (bytes >= 1024)
     let kbytes = bytes / 1024
@@ -126,8 +145,13 @@ function! FileInfo() "{{{
   else
     let l:string.=(bytes.'B')
   endif
+  if &ft && g:nostatus=~?&ft
+    return ''
+  endif
   return '  ['.l:string.']'
 endfunction "}}}
+
+"------------------------------------------------------------------------------"
 "Whether UK english (e.g. Nature), or U.S. english
 function! PrintLanguage()
   if &ft && g:nostatus=~?&ft
@@ -145,18 +169,8 @@ function! PrintLanguage()
     return ''
   endif
 endfunction
-"Git stuff
-function! Git()
-  if &ft && g:nostatus=~?&ft
-    return ''
-  endif
-  if exists('*fugitive#head') && fugitive#head()!=''
-    let status=fugitive#head() 
-    return '  ['.toupper(status[0]).tolower(status[1:]).']'
-  else
-    return ''
-  endif
-endfunction
+
+"------------------------------------------------------------------------------"
 "Location
 function! Location()
   if &ft && g:nostatus=~?&ft
@@ -164,7 +178,9 @@ function! Location()
   endif
   return '  ['.line('.').'/'.line('$').'] ('.(100*line('.')/line('$')).'%)' "current line and percentage
 endfunction
-"Tag
+
+"------------------------------------------------------------------------------"
+"Tag using tagbar
 function! Tag()
   let maxlen=10 "can change this
   if &ft && g:nostatus=~?&ft
@@ -176,6 +192,8 @@ function! Tag()
   if len(string)>=maxlen | let string=string[:maxlen-1].'···' | endif
   return '  ['.string.']'
 endfunction
+
+"------------------------------------------------------------------------------"
 "Current tag using my own function
 "Consider modifying this
 " function! CurrentTag()
@@ -202,11 +220,15 @@ endfunction
 "     exe b:ctaglines[i]
 "   endfor
 " endfunction
-let &stl=''                      " Clear statusline for when vimrc is loaded
+
+"------------------------------------------------------------------------------"
+"Build statusline
+"For some reason *cannot* do line contination \.'' stuff
+let &stl=''
 let &stl.='%{ShortenFilename()}' " Current buffer's file name
+let &stl.='%{Git()}'             " Output buffer's file size
 let &stl.='%{FileInfo()}'        " Output buffer's file size
 let &stl.='%{PrintMode()}'       " Normal/insert mode
-let &stl.='%{Git()}'             " Fugitive branch
 let &stl.='%{PrintLanguage()}'   " Show language setting: UK english or US enlish
 let &stl.='%{CapsLock()}'        " Check if language maps enabled
 let &stl.='%='                   " Right side of statusline, and perserve space between sides

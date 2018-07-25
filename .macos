@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-# Macbook defaults
-# Various command-line configurations
-#------------------------------------------------------------------------------#
-# Do not autoconnect to bluetooth devices
-sudo defaults write /Library/Preferences/com.apple.Bluetooth.plist DontPageAudioDevices 1
-#------------------------------------------------------------------------------#
-# More stuff below
-

@@ -262,6 +262,21 @@ nnoremap <silent> # :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR
 nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
   "note the @/ sets the 'last search' register to this string value
 "------------------------------------------------------------------------------"
+"Function for counting word under cursor
+"Fails for mysterious reason
+"See: https://stackoverflow.com/questions/1781329/count-the-number-of-occurrences-of-a-string-using-sed
+" function! s:countcword(word)
+"   redir => cnt
+"     silent exe '%s/'.a:word.'//gn'
+"   redir END
+"   let res = strpart(cnt, 0, stridx(cnt, " "))
+"   return res
+" endfunction
+" nnoremap <expr> <Leader>w 'mz:let b:count=<sid>countcword("'.expand('<cword>').'")<CR>`z'
+"Try again with grep; way easier, but ugly
+nnoremap <silent> <Leader>* :echo system('grep -c "\b'
+  \.expand('<cword>').'\b" '.expand('%').' \| xargs')<CR>
+"------------------------------------------------------------------------------"
 "Remap ? for function-wide searching; follows convention of */# and &/@
 "The \(\) makes text after the scope-atoms a bit more readable
 "Also note the <silent> will prevent beginning the search until another key is pressed
