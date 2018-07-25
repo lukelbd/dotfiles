@@ -77,33 +77,30 @@ augroup insertenter
   au!
   au InsertEnter * let b:insertenter=winsaveview()
 augroup END
-"Undo maps first
-inoremap <expr> <C-u> '<Esc>u:call winrestview(b:insertenter)<CR>a'
+"Simple maps to paste stuff in register and undo stuf
+inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
 inoremap <C-p> <C-r>"
 "Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
-  au InsertEnter * let b:tabcount=0
+  au InsertEnter,InsertLeave * let b:tabcount=0
 augroup END
 function! s:tabincrease() "use this inside <expr> remaps
-  let b:tabcount+=1
-  return "" "returns empty string so can be used inside <expr>
+  let b:tabcount+=1 | return ''
 endfunction
 function! s:tabdecrease()
-  let b:tabcount-=1
-  return ""
+  let b:tabcount-=1 | return ''
 endfunction
 function! s:tabreset()
-  let b:tabcount=0
-  return ""
+  let b:tabcount=0 | return ''
 endfunction
 "Commands that when pressed expand to the default complete menu options:
-"Keystrokes that close popup menu
-inoremap <expr> <C-c> pumvisible()   ? "\<C-e>\<Esc>" : "\<Esc>"
-inoremap <expr> <BS> pumvisible()    ? "\<C-e>\<BS>".<sid>tabreset() : "\<BS>"
-inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
+"Keystrokes that close popup menu (note that insertleave triggers tabreset)
+inoremap <expr> <C-c> pumvisible()   ?                 "\<C-e>\<Esc>" : "\<Esc>"
+inoremap <expr> <BS> pumvisible()    ? <sid>tabreset()."\<C-e>\<BS>"  : "\<BS>"
+inoremap <expr> <Space> pumvisible() ? <sid>tabreset()."\<Space>"     : "\<Space>"
 "Seleting items; use my tabcount tracker to determine if we are 'accepting' something
-inoremap <expr> <CR> pumvisible()    ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+inoremap <expr> <CR> pumvisible()    ? b:tabcount==0 ?  "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
 "Incrementing items in menu
 inoremap <expr> <Tab>   pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
