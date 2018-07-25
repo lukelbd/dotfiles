@@ -7,9 +7,11 @@
 "   while `\<CR>` inside a double-quote string is that literal keypress
 " * Currently have iTerm map some ctrl+key combinations that would otherwise
 "   be impossible to the F1, F2 keys. Currently they are:
-"     F1: Ctrl-,
-"     F2: Ctrl-.
-"     F3: Ctrl-i
+"     F1: 1b 4f 50 (Ctrl-,)
+"     F2: 1b 4f 51 (Ctrl-.)
+"     F3: 1b 4f 52 (Ctrl-i)
+"     F4: 1b 4f 53 (Ctrl-a)
+"     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
 "###############################################################################
 "IMPORTANT STUFF
 "Says to always use the vim default where vi and vim differ; for example, if you
@@ -64,85 +66,81 @@ augroup keywordfix
 augroup END
 
 "###############################################################################
-"USEFUL TOOLS THAT REQUIRE THEIR OWN FUNCTIONS
-"Function for escaping current delimiter
-" * Use my own instead of delimitmate defaults because e.g. <c-g>g only works
-"   if no text between delimiters.
-function! s:outofdelim(n) "get us out of delimiter cursos is inside
-  for i in range(a:n)
-    let pcol=col('.')
-    let pline=line('.')
-    keepjumps normal! %
-    if pcol!=col('.') || pline!=line('.')
-      keepjumps normal! %
-    endif "only do the above if % moved the cursor
-    if i+1!=a:n && col('.')+1!=col('$')
-      normal! l
-    endif
-  endfor
-endfunction
-"Function for counting word under cursor
-"Fails for mysterious reason
-"See: https://stackoverflow.com/questions/1781329/count-the-number-of-occurrences-of-a-string-using-sed
-" function! s:countcword(word)
-"   redir => cnt
-"     silent exe '%s/'.a:word.'//gn'
-"   redir END
-"   let res = strpart(cnt, 0, stridx(cnt, " "))
-"   return res
-" endfunction
-" nnoremap <expr> <Leader>w 'mz:let b:count=<sid>countcword("'.expand('<cword>').'")<CR>`z'
-"Try again with grep; way easier
-nnoremap <silent> <expr> <Leader>w ':let b:count=system("grep -c \"\\b'.expand('<cword>').'\\b\" '.expand('%').'")<CR>:echo b:count[:-2]<CR>'
-
-"###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
+"First add an autocmd for saving where last *entered* insert mode
 augroup insertenter
   au!
-  au InsertEnter * let b:insertenter=[line('.'), col('.')]
+  au InsertEnter * let b:insertenter=winsaveview()
 augroup END
-"Simple maps first
-inoremap <expr> <C-u> '<Esc>u:call cursor('.b:insertenter[0].','.b:insertenter[1].')<CR>a'
+"Undo maps first
+inoremap <expr> <C-u> '<Esc>u:call winrestview(b:insertenter)<CR>a'
 inoremap <C-p> <C-r>"
 "Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
-  au BufEnter * let b:tabcount=0
   au InsertEnter * let b:tabcount=0
 augroup END
 function! s:tabincrease() "use this inside <expr> remaps
   let b:tabcount+=1
   return "" "returns empty string so can be used inside <expr>
 endfunction
-function! s:tabdecrease() "use this inside <expr> remaps
+function! s:tabdecrease()
   let b:tabcount-=1
-  return "" "returns empty string so can be used inside <expr>
+  return ""
 endfunction
-function! s:tabreset() "use this inside <expr> remaps
+function! s:tabreset()
   let b:tabcount=0
-  return "" "returns empty string so can be used inside <expr>
+  return ""
 endfunction
 "Commands that when pressed expand to the default complete menu options:
-"Want to prevent automatic use of CR for confirming entry
-cnoremap <C-j> <Tab>
-cnoremap <C-k> <S-Tab>
-inoremap <expr> <C-c> pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
+"Keystrokes that close popup menu
+inoremap <expr> <C-c> pumvisible()   ? "\<C-e>\<Esc>" : "\<Esc>"
+inoremap <expr> <BS> pumvisible()    ? "\<C-e>\<BS>".<sid>tabreset() : "\<BS>"
 inoremap <expr> <Space> pumvisible() ? "\<Space>".<sid>tabreset() : "\<Space>"
-inoremap <expr> <BS> pumvisible() ? "\<C-e>\<BS>".<sid>tabreset() : "\<BS>"
-inoremap <expr> <Tab> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
+"Seleting items; use my tabcount tracker to determine if we are 'accepting' something
+inoremap <expr> <CR> pumvisible()    ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+"Incrementing items in menu
+inoremap <expr> <Tab>   pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
-inoremap <expr> <C-j> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Nop>"
-inoremap <expr> <C-k> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<Nop>"
-inoremap <expr> <CR> pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+inoremap <expr> <C-j>   pumvisible() ? <sid>tabincrease()."\<C-n>" : ""
+inoremap <expr> <C-k>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : ""
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
-inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
-"Now the commands that 'get cursor outside' of arbitrary delimiters
-inoremap <expr> jk pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(1)\<CR>a" :
-  \ "\<C-y>\<Esc>:call <sid>outofdelim(1)\<CR>a" : "\<Esc>:call <sid>outofdelim(1)\<CR>a"
-inoremap <expr> JK pumvisible() ? b:tabcount==0 ? "\<C-e>\<Esc>:call <sid>outofdelim(10)\<CR>a" :
-  \ "\<C-y>\<Esc>:call <sid>outofdelim(10)\<CR>a" : "\<Esc>:call <sid>outofdelim(10)\<CR>a"
+inoremap <expr> <ScrollWheelUp> pumvisible()   ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
+
+"###############################################################################
+"GET CURSOR OUTSIDE CURRENT DELIMITER
+"Function for escaping current delimiter
+"Just search for braces instead of using percent-mapping, because when
+"in the middle of typing often don't particularly *care* if a bracket is completed/has
+"a pair -- just see a bracket, and want to get out of it.
+"Also percent matching solution would require leaving insert mode, triggering
+"various autocmds, and is much slower/jumpier -- vim script solutions are better!
+function! s:outofdelim(n)
+  "Get text to right of cursor on current line
+  "Note matchstrpos returns the list ["match", idx_start, idx_end]
+  let minpos = 0 "minimum match position
+  let string = getline('.')[col('.'):]
+  let regex  = "[\"')\\]}>]" "list of 'outside' delimiters for jk matching
+  for i in range(a:n)
+    let result = matchstrpos(string, regex, minpos) "get info on *first* match
+    if result[1]==-1 | break | endif
+    let minpos = result[1]+1 "go to next one
+  endfor
+  if minpos==0
+    return ""
+  else
+    return repeat("\<Right>", minpos+1)
+  endif
+endfunction
+"Apply remaps; also add a couple new ones for convenience
 inoremap jj j
 inoremap kk k
+inoremap <expr> jk !pumvisible() ? <sid>outofdelim(1)
+  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
+  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
+inoremap <expr> kj !pumvisible() ? <sid>outofdelim(10)
+  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(10) 
+  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(10)
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
@@ -159,7 +157,7 @@ let g:formatoptions="lro"
 exe 'setlocal formatoptions='.g:formatoptions
 augroup formatopts
   au!
-  au FileType * exe 'setlocal formatoptions='.g:formatoptions
+  au BufRead * exe 'setlocal formatoptions='.g:formatoptions
 augroup END
 function! s:toggleformatopt()
   if len(&formatoptions)==0 | exe 'setlocal formatoptions='.g:formatoptions
@@ -168,8 +166,6 @@ function! s:toggleformatopt()
 endfunction
 "These keys aren't used currently, and are in a really good spot,
 "so why not? Fits mnemonically that insert above is Shift+<key for insert below>
-" noremap <silent> ` :call <sid>toggleformatopt()<CR>mzo<Esc>`z:call <sid>toggleformatopt()<CR>
-" noremap <silent> ~ :call <sid>toggleformatopt()<CR>mzO<Esc>`z:call <sid>toggleformatopt()<CR>
 noremap <silent> ` :call append(line('.'),'')<CR>
 noremap <silent> ~ :call append(line('.')-1,'')<CR>
 "Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
@@ -212,12 +208,10 @@ map @ <Nop>
 noremap , @q
 "Redo map to capital U; means we cannot 'undo line', but who cares
 nnoremap U <C-r>
-"Use BACKSLASH FOR REGISTER KEY (easier to access) and use it to just ACTIVATE
-"THE THROWAWAY REGISTER; THAT IS THE ONLY WAY I USE REGISTERS ANYWAY
-nnoremap - :echo "Enabling throwaway register."<CR>"_
-vnoremap - <Esc>:echo "Enabling throwaway register." <BAR> sleep 200m<CR>gv"_
-nnoremap <expr> \| has("clipboard") ? ':echo "Enabling system clipboard."<CR>"*' : ':echo "VIM not compiled with +clipboard."<CR>'
-vnoremap <expr> \| has("clipboard") ? '<Esc>:echo "Enabling system clipboard." <BAR> sleep 200m<CR>gv"*' : ':echo "VIM not compiled with +clipboard."<CR>'
+"Use - for throwaway register, pipeline for clipboard register
+"Don't try anything fancy here, it's not worth it!
+noremap <silent> - "_
+noremap <silent> \| "*
 "Don't save single-character deletions to any register
 nnoremap x "_x
 nnoremap X "_X
@@ -419,7 +413,7 @@ Plug 'rafaqz/citation.vim'
 "Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
 "Python wrappers
-" if g:compatible_neocomplete | Plug 'davidhalter/jedi-vim' | endif "these need special support
+" Plug 'davidhalter/jedi-vim' "these need special support
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
 " Plug 'hdima/python-syntax' "this failed for me; had to manually add syntax file
 " Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
@@ -448,10 +442,10 @@ Plug 'tpope/vim-obsession'
 Plug 'tpope/vim-fugitive'
 if g:has_signs | Plug 'airblade/vim-gitgutter' | endif
 "Completion engines
-" Plug 'lifepillar/vim-mucomplete' "broken
 " Plug 'Valloric/YouCompleteMe' "broken
 " Plug 'ajh17/VimCompletesMe' "no auto-popup feature
-" if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif
+" Plug 'lifepillar/vim-mucomplete' "broken, seriously, cannot get it to work, don't bother! is slow anyway.
+" if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif "haven't tried it
 if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 "Simple stuff for enhancing delimiter management
 Plug 'tpope/vim-surround'
@@ -881,19 +875,21 @@ endif
 
 "###############################################################################
 "MUCOMPLETE
-"Compact alternative to neocomplete; try it again
+"Compact alternative to neocomplete
+"Consider trying again!
 augroup mucomplete
 augroup END
 if has_key(g:plugs, "vim-mucomplete") "just check if activated
-  let g:mucomplete#enable_auto_at_startup = 1
-  let g:mucomplete#no_mappings = 1
-  let g:mucomplete#no_popup_mappings = 1
+  " let g:mucomplete#enable_auto_at_startup = 1
+  " let g:mucomplete#no_mappings = 1
+  " let g:mucomplete#no_popup_mappings = 1
 endif
 
 "###############################################################################
 "NEOCOMPLETE (RECOMMENDED SETTINGS)
 if has_key(g:plugs, "neocomplete.vim") "just check if activated
   "Enable omni completion for different filetypes; sooper cool bro
+  "Not sure if this works yet
   augroup neocomplete
     au!
     au FileType css setlocal omnifunc=csscomplete#CompleteCSS
@@ -930,10 +926,6 @@ if has_key(g:plugs, "neocomplete.vim") "just check if activated
   if !exists('g:neocomplete#keyword_patterns') | let g:neocomplete#keyword_patterns = {} | endif
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
 endif
-"Highlighting
-highlight Pmenu ctermbg=Black ctermfg=Yellow cterm=None
-highlight PmenuSel ctermbg=Black ctermfg=Black cterm=None
-highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
 
 "##############################################################################"
 "INDENTLINE
@@ -1732,11 +1724,10 @@ nnoremap <Tab>; <C-w><C-p>
 "Workaround is to map cv to enter insert mode with <C-v>
 nnoremap <expr> <silent> <Leader>v ":if &eventignore=='' \| setlocal eventignore=InsertEnter \| echom 'Ctrl-V pasting disabled for next InsertEnter.' "
   \." \| else \| setlocal eventignore= \| echom '' \| endif<CR>"
-augroup copypaste
+augroup copypaste "also clear command line when leaving insert mode, always
   au!
-  au InsertLeave * set nopaste | setlocal eventignore= "if pastemode was toggled, turn off
-  au InsertLeave * set pastetoggle=
   au InsertEnter * set pastetoggle=<C-v> "need to use this, because mappings don't work
+  au InsertLeave * set nopaste | setlocal eventignore= pastetoggle= | echo
   " au InsertEnter * set pastetoggle=
   "when pastemode is toggled; might be able to remap <set paste>, but cannot have mapping for <set nopaste>
 augroup END
@@ -1821,13 +1812,14 @@ nnoremap <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\
 " nnoremap <expr> gX ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 
 "###############################################################################
-"CAPS LOCK WITH C-a IN INSERT/COMMAND MODE
+"CAPS LOCK
 "The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
 "that would cancel command-line queries (or I'd have to scroll up to resume them)
 "don't think any other mapping type has anything like lmap; iminsert is unique
+"yay insert mode WITH CAPS LOCK how cool is that THAT THAT!
 augroup capslock
   au!
-  autocmd InsertLeave,CmdwinLeave * set iminsert=0
+  au InsertLeave,CmdWinLeave * set iminsert=0
 augroup END
 "lmap == insert mode, command line (:), and regexp searches (/)
 "See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>; instead uses
@@ -1838,9 +1830,10 @@ for c in range(char2nr('A'), char2nr('Z'))
   exe 'lnoremap '.nr2char(c+32).' '.nr2char(c)
   exe 'lnoremap '.nr2char(c).' '.nr2char(c+32)
 endfor
-inoremap <C-z> <C-^>
-cnoremap <C-z> <C-^>
-  "can't lnoremap the above, because iminsert is turning it on and off
+"Use vim to remap F5 to something more useful
+inoremap <F5> <C-^>
+cnoremap <F5> <C-^>
+"can't lnoremap the above, because iminsert is turning it on and off
 
 "###############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
@@ -1902,7 +1895,7 @@ augroup g
 augroup END
 "Don't know why these are here but just go with it bro
 nnoremap <silent> <Leader>r :redraw!<CR>
-nnoremap <silent> <Leader>S :w \| filetype detect \| so ~/.vimrc<CR>:echom "Refreshed .vimrc and re-loaded syntax."<CR>
+nnoremap <silent> <Leader>S :filetype detect \| so ~/.vimrc<CR>:echom "Refreshed .vimrc and re-loaded syntax."<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
 "Undo these maps to avoid confusion
@@ -2010,6 +2003,10 @@ augroup syntax
   au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
   au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
 augroup END
+"Popup menu
+highlight Pmenu ctermbg=None ctermfg=White cterm=None
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None
+highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
 "Status line
 highlight StatusLine ctermbg=Black ctermfg=White cterm=None
 "Create dummy group -- will be transparent, but use to add @Nospell
@@ -2041,9 +2038,9 @@ highlight MatchParen ctermfg=None ctermbg=Blue
 "background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
 "gray, and 'ANSI black bold' to black).
 "Note 'lightgray' is just normal white
-highlight LineNR cterm=None ctermfg=Black ctermbg=None
+highlight LineNR cterm=None ctermbg=None ctermfg=Black
 highlight CursorLine cterm=None ctermbg=Black
-highlight CursorLineNR cterm=None ctermfg=Yellow ctermbg=Black
+highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
 "Column stuff; color 80th column, and after 120
 highlight ColorColumn cterm=None ctermbg=Gray
 highlight SignColumn cterm=None ctermfg=Black ctermbg=None
