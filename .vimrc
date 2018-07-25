@@ -107,7 +107,7 @@ inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
 inoremap <expr> <C-j>   pumvisible() ? <sid>tabincrease()."\<C-n>" : ""
 inoremap <expr> <C-k>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : ""
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
-inoremap <expr> <ScrollWheelUp> pumvisible()   ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
+inoremap <expr> <ScrollWheelUp>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
 
 "###############################################################################
 "GET CURSOR OUTSIDE CURRENT DELIMITER
