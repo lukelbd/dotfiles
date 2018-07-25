@@ -45,19 +45,24 @@ set number numberwidth=4
 set relativenumber
 "Disable builtin, because we modified that shit yo
 let g:loaded_matchparen=0
-
-"###############################################################################
-"ESCAPE REPAIR WHEN ENABLING H/L TO CHANGE LINE NUMBER
-"First some functions and autocmds
-"Let h, l move past end of line (<> = left/right insert, [] = left/right normal mode)
+"Format options
+" * See help fo-table for what these mean; the o and r options continue comment lines,
+"   the n recognizes numbered lists. Note formatopsions are buffer-local.
+let g:formatoptions="lro"
+exe 'setlocal formatoptions='.g:formatoptions
+augroup formatopts
+  au!
+  au BufRead * exe 'setlocal formatoptions='.g:formatoptions
+augroup END
+"Escape repair, necessary when we allow h/l to change line number
+"Note for whichwrap, <> = left/right insert, [] = left/right normal mode
+"After escaping, always return to place where last exited
 set whichwrap=[,],<,>,h,l
 augroup escapefix
   au!
   au InsertLeave * normal! `^
 augroup END
-
-"##############################################################################"
-"ALWAYS NAVIGATE BY word, GOT DAMNIT
+"Always navigate by word, god damnit
 "See: https://superuser.com/a/1150645/506762
 "Some plugins make periods part of 'word' motions, which sucks balls
 augroup keywordfix
@@ -146,25 +151,6 @@ inoremap <expr> kj !pumvisible() ? <sid>outofdelim(10)
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 "MOSTLY NORMAL MODE MAPS
-"First need helper function to toggle formatoptions (controls whether comment-char 
-"inserted on newline)
-" * See help fo-table for what these mean; this disables auto-wrapping lines.
-" * The o and r options continue comment lines.
-" * The n recognized numbered lists.
-" * Note in the documentation, formatoptions is *local to buffer*. Also note we have
-"   to set it explicitly or will be reset when .vimrc is sourced
-"   every time vimrc loaded.
-let g:formatoptions="lro"
-exe 'setlocal formatoptions='.g:formatoptions
-augroup formatopts
-  au!
-  au BufRead * exe 'setlocal formatoptions='.g:formatoptions
-augroup END
-function! s:toggleformatopt()
-  if len(&formatoptions)==0 | exe 'setlocal formatoptions='.g:formatoptions
-  else | setlocal formatoptions=
-  endif
-endfunction
 "These keys aren't used currently, and are in a really good spot,
 "so why not? Fits mnemonically that insert above is Shift+<key for insert below>
 noremap <silent> ` :call append(line('.'),'')<CR>
@@ -1151,61 +1137,95 @@ if has_key(g:plugs, "nerdcommenter")
   "Create python docstring
   nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
   nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
-  "Add author information (tries to match indentation)
-  nnoremap <silent> <expr> cA ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
-        \ .' Author: Luke Davis (lukelbd@gmail.com)<Esc>:call <sid>toggleformatopt()<CR>o'
-  " nnoremap <silent> <Leader>a :call append(line('.'), b:NERDCommenterDelims['left'].' Author: Luke Davis')<CR>jA<CR>
-  "Simple option -- 'inline' comment header
-  nnoremap <silent> <expr> cI ':call <sid>toggleformatopt()<CR>A<CR>'.b:NERDCommenterDelims['left']
-        \ .repeat(' ',4).repeat('-',4).'  '.repeat('-',4).'<Esc>4hi'
-  "Declare mapping strings needed to build remaps
-  "Then can *delcare mapping for custom keyboard* using exe 'nnoremap <expr> shortcut '.string,
-  "and note that the expression is evaluated every time right before the map is executed (i.e. buffer-local comment chars are generated)
-  "The below helper functions lets us change the table commands for different filetypes; very handy
-  function! s:commentheaders()
-    "Declare helper functions, and figure out initial settings
-    "For new-style section header, just add another constructer-function
-    function! s:bar(char) "inserts above by default; most common use
-      return "':call <sid>toggleformatopt()<CR>"
-        \."mzO<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(78-col('.')+1).'a".a:char."<Esc>a'.b:NERDCommenterDelims['left'].'<Esc>`z"
-        \.":call <sid>toggleformatopt()<CR>'"
-    endfunction
-    function! s:section(char) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
-      return "':call <sid>toggleformatopt()<CR>"
-        \."mzo<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(78-col('.')+1).'a".a:char."<Esc>a'.b:NERDCommenterDelims['left'].'<Esc>"
-        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>"
-        \."o<Esc>'.col('.').'a<Space><Esc>xA'.b:NERDCommenterDelims['left'].'<Esc>'.eval(78-col('.')+1).'a".a:char."<Esc>a'.b:NERDCommenterDelims['left'].'<Esc>"
-        \."<Up>$a<Space><Esc>:call <sid>toggleformatopt()<CR>'"
-    endfunction
-    if &ft=="vim" | let fatchar="#" "literally says 'type a '#' character while in insert mode'
-    else | let fatchar="'.b:NERDCommenterDelims['left'].'"
-        "will be evaluated when <expr> is evaluted (we are catting to <expr> string)
-        "will *not* evaluate on :exec command declaring initial map
+  "Create functions that return fancy comment 'blocks' -- e.g. for denoting
+  "section changes, for drawing a line across the screen, for writing information
+  "Functions will preserve indentation level of the line where cursor is located
+  function! s:commentfiller()
+    if &ft=="vim"
+      return '#'
+    else
+      return b:NERDCommenterDelims['left']
     endif
-    "Declare remaps; section-header types will be dependent on filetype, e.g.
-    "if comment character is not 'fat' enough, does not make good section header character
-    "Also temporarily disable/re-enable formatoptions here
-    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy1 '.s:bar("-").".'".':call repeat#set("\<Plug>fancy1")<CR>'."'"
-    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy2 '.s:bar(fatchar).".'".':call repeat#set("\<Plug>fancy2")<CR>'."'"
-    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy3 '.s:section("-").".'".':call repeat#set("\<Plug>fancy3")<CR>'."'"
-    exe 'nnoremap <silent> <buffer> <expr> <Plug>fancy4 '.s:section(fatchar).".'".':call repeat#set("\<Plug>fancy4")<CR>'."'"
-    nmap c- <Plug>fancy1
-    nmap c_ <Plug>fancy2
-    nmap c\ <Plug>fancy3
-    nmap c\| <Plug>fancy4
   endfunction
-  "More basic NerdComment maps, just for toggling comments and stuff
-  "Easy peasy
-  " if g:has_repeat
+  function! s:commentindent()
+    let col=matchstrpos(getline('.'), '^\s*\S\zs')[1] "location of first non-whitespace char
+    return (col==-1 ? 1 : col)
+  endfunction
+  function! s:bar(...) "inserts above by default; most common use
+    if a:0 "if non-zero number of args
+      let fill=a:1 "fill character
+    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
+      let fill=s:commentfiller()
+    endif
+    let col=s:commentindent()
+    let nfill=(78-col+1) "dashes
+    let spaces=(col-1)    "leading spaces
+    let cchar=b:NERDCommenterDelims['left']
+    normal! k
+    call append(line('.'), repeat(' ',spaces).cchar.repeat(fill,nfill).cchar)
+    normal! jj
+  endfunction
+  function! s:section(...) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
+    if a:0
+      let fill=a:1 "fill character
+    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
+      let fill=s:commentfiller()
+    endif
+    let col=s:commentindent()
+    let nfill=(78-col+1) "dashes
+    let spaces=(col-1)    "leading spaces
+    let cchar=b:NERDCommenterDelims['left']
+    let lines=[repeat(' ',spaces).cchar.repeat(fill,nfill).cchar,
+             \ repeat(' ',spaces).cchar.' ',
+             \ repeat(' ',spaces).cchar.repeat(fill,nfill).cchar]
+    normal! k
+    call append(line('.'), lines)
+    normal! jj$
+  endfunction
+  function! s:message(...)
+    if a:0
+      let message=' '.a:1
+    else
+      let message=''
+    endif
+    let col=s:commentindent()
+    let spaces=(col-1)    "leading spaces
+    let cchar=b:NERDCommenterDelims['left']
+    normal! k
+    call append(line('.'), repeat(' ',spaces).cchar.message)
+    normal! jj
+  endfunction
+  function! s:inline()
+    let ndash=4
+    let col=s:commentindent()
+    let spaces=(col-1)    "leading spaces
+    let cchar=b:NERDCommenterDelims['left']
+    normal! k
+    call append(line('.'), repeat(' ',spaces).cchar.repeat(' ',ndash).repeat('-',ndash).'  '.repeat('-',ndash))
+    normal! j
+    call search('- \zs', '', line('.')) "search, and stop on this line (should be same one); no flags
+    normal! i
+  endfunction
+  "Section headers and dividers
+  nnoremap <silent> <Plug>fancy1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>fancy1")<CR>
+  nnoremap <silent> <Plug>fancy2 :call <sid>bar()<CR>:call repeat#set("\<Plug>fancy2")<CR>
+  nnoremap <silent> <Plug>fancy3 :call <sid>section('-')<CR>:call repeat#set("\<Plug>fancy3")<CR>
+  nnoremap <silent> <Plug>fancy4 :call <sid>section()<CR>:call repeat#set("\<Plug>fancy4")<CR>
+  nmap c- <Plug>fancy1
+  nmap c_ <Plug>fancy2
+  nmap c\ <Plug>fancy3
+  nmap c\| <Plug>fancy4
+  "Author information comment
+  nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+  "Create an 'inline' comment header
+  nnoremap <silent> cI :call <sid>inline()<CR>i
+  "Basic maps for toggling comments
   nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
   nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
   nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
   nmap co <Plug>comment1
   nmap cO <Plug>comment2
   nmap c. <Plug>comment3
-  " nnoremap <silent> co :call NERDComment('n', 'comment')<CR>
-  " nnoremap <silent> cO :call NERDComment('n', 'uncomment')<CR>
-  " nnoremap <silent> c. :call NERDComment('n', 'toggle')<CR>
   vnoremap <silent> co :call NERDComment('v', 'comment')<CR>
   vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
   vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
