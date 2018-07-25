@@ -698,7 +698,6 @@ function title_update() {
 # New window; might have closed one and opened another, so declare new title
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
-title_update # ensure the title is updated
 
 ################################################################################
 # SSH, session management, and Github stuff
