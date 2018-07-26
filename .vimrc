@@ -1812,12 +1812,12 @@ nnoremap <silent> <expr> \n ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
 vnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
 "Replace consecutive spaces on current line with one space
-vnoremap <silent> \w :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
-nnoremap <silent> \w :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+vnoremap <silent> \W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+nnoremap <silent> \W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Will probably be necessary after the comment trimming
-nnoremap <silent> \W :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-vnoremap <silent> \W :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+nnoremap <silent> \w :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+vnoremap <silent> \w :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 "Delete empty lines
 nnoremap <silent> \e :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 vnoremap <silent> \e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
