@@ -616,14 +616,16 @@ if has_key(g:plugs, "vim-gitgutter")
       let b:gitgutter_enabled=0
     endif
   endfunction
+  "Maps for toggling gitgutter on and off
   nnoremap <silent> go :call <sid>gitguttertoggle(1)<CR>
   nnoremap <silent> gO :call <sid>gitguttertoggle(0)<CR>
   nnoremap <silent> g. :call <sid>gitguttertoggle()<CR>
-  nmap <silent> gw :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  nmap <silent> gd :GitGutterUndoHunk<CR>
-  "d is for 'delete' change
-  nmap <silent> gN :GitGutterPrevHunk<CR>
-  nmap <silent> gn :GitGutterNextHunk<CR>
+  "Maps for showing/disabling changes under cursor
+  nnoremap <silent> gs :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  nnoremap <silent> gS :GitGutterUndoHunk<CR>
+  "Navigating between hunks
+  nnoremap <silent> gN :GitGutterPrevHunk<CR>
+  nnoremap <silent> gn :GitGutterNextHunk<CR>
 endif
 "Next some fugitive command aliases
 "Just want to eliminate that annoying fucking capital G
@@ -1212,14 +1214,16 @@ if has_key(g:plugs, "nerdcommenter")
   nnoremap c' :call <sid>docstring("'")<CR>A
   nnoremap c" :call <sid>docstring('"')<CR>A
   "Section headers and dividers
-  nnoremap <silent> <Plug>fancy1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>fancy1")<CR>
-  nnoremap <silent> <Plug>fancy2 :call <sid>bar()<CR>:call repeat#set("\<Plug>fancy2")<CR>
-  nmap c- <Plug>fancy1
-  nmap c_ <Plug>fancy2
+  nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
+  nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
+  nmap c- <Plug>bar1
+  nmap c_ <Plug>bar2
   nnoremap <silent> c\  :call <sid>section('-')<CR>A
   nnoremap <silent> c\| :call <sid>section()<CR>A
   "Author information comment
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+  "Current date comment; y is for year; note d is reserved for that kwarg-to-dictionary map
+  nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>
   "Create an 'inline' comment header
   nnoremap <silent> cI :call <sid>inline()<CR>i
   "Basic maps for toggling comments
