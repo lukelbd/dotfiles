@@ -26,12 +26,7 @@
 "
 "  On unknown values, nothing happens.
 
-let s:save_cpo = &cpo
-set cpo&vim
-
 "Edited remaps to my liking
-" let map='<C-t>'
-" exe 'inoremap '.map.' <C-o>:call Toggle()<CR>'
 let map='<Leader>b'
 exe 'nnoremap '.map.' :call Toggle()<CR>'
 exe 'vnoremap '.map.' <Esc>:call Toggle()<CR>'
@@ -214,8 +209,5 @@ function! Toggle()
   unlet! s:lineNo
   unlet! s:columnNo
 endfunction
-
-let &cpo = s:save_cpo
-unlet s:save_cpo
 
 " vim:fdm=marker commentstring="%s
