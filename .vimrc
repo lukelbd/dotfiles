@@ -117,21 +117,22 @@ inoremap <expr> <ScrollWheelUp>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : "
 "a pair -- just see a bracket, and want to get out of it.
 "Also percent matching solution would require leaving insert mode, triggering
 "various autocmds, and is much slower/jumpier -- vim script solutions are better!
+"  ( [ [ ( "  "  asdfad) sdf    ]  sdfad   ]  asdfasdf) hello   asdfas) 
 function! s:outofdelim(n)
-  "Get text to right of cursor on current line
-  "Note matchstrpos returns the list ["match", idx_start, idx_end]
-  let minpos = 0 "minimum match position
+  "Note: matchstrpos is relatively new/less portable, e.g. fails on midway
+  "Used to use matchstrpos, now just use match(); much simpler
+  let regex = "[\"')\\]}>]" "list of 'outside' delimiters for jk matching
+  let pos = 0 "minimum match position
   let string = getline('.')[col('.')-1:]
-  let regex  = "[\"')\\]}>]" "list of 'outside' delimiters for jk matching
   for i in range(a:n)
-    let result = matchstrpos(string, regex, minpos) "get info on *first* match
-    if result[1]==-1 | break | endif
-    let minpos = result[1]+1 "go to next one
+    let result = match(string, regex, pos) "get info on *first* match
+    if result==-1 | break | endif
+    let pos = result + 1 "go to next one
   endfor
-  if minpos==0
+  if pos==0 "relative position is zero, i.e. don't move
     return ""
   else
-    return repeat("\<Right>", minpos)
+    return repeat("\<Right>", pos)
   endif
 endfunction
 "Apply remaps; also add a couple new ones for convenience
@@ -1145,7 +1146,7 @@ if has_key(g:plugs, "nerdcommenter")
     endif
   endfunction
   function! s:commentindent()
-    let col=matchstrpos(getline('.'), '^\s*\S\zs')[1] "location of first non-whitespace char
+    let col=match(getline('.'), '^\s*\S\zs') "location of first non-whitespace char
     return (col==-1 ? 1 : col)
   endfunction
   function! s:bar(...) "inserts above by default; most common use
