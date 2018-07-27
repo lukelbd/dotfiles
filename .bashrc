@@ -512,7 +512,7 @@ function empty() { for i in {1..100}; do echo; done; }
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
 # Color not useful anyway; is just bold white, and we delete those lines
-function discrep() {
+function gdiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
     | egrep '(files|differ)' # add to these
@@ -520,13 +520,13 @@ function discrep() {
 # Next use builtin diff command as engine
 # *Different* files
 # The last grep command is to highlight important parts
-function delta() {
+function ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories
-function idelta() {
+function idiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ| identical)'
