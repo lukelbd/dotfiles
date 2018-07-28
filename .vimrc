@@ -1812,10 +1812,10 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 augroup delete
 augroup END
 "Replace commented lines; very useful when sharing manuscripts
-nnoremap <silent> <expr> \n ':%s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+nnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
 vnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//gc<CR>'
+      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
 "Replace consecutive spaces on current line with one space
 vnoremap <silent> \W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 nnoremap <silent> \W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
