@@ -222,6 +222,8 @@ MISSING 05;37;41
 .cl     31
 .sh     31
 .bash   31
+.sbatch 31
+.batch  31
 .csh    31
 .zsh    31
 .el     31
