@@ -215,7 +215,7 @@ function man() { # always show useful information when man is called
   local arg="$@"
   [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
   [ -z $1 ] && echo "Requires one argument." && return 1
-  if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
+  if command man $1 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
     if $_macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
       [ $1 == "builtin" ] && local search=$1 || local search=bash
     else local search=$1 # linux shows all info necessary, just have to find it
@@ -712,29 +712,14 @@ $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
 # Declare some names for active servers
-# Will set global variables too
-# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-function address_ssh() {
-  local host hosts
-  hosts=$@
-  [ $# -eq 0 ] && hosts=$HOSTNAME
-  for host in $hosts; do
-    case "$host" in
-      gauss)   eval "$host=ldavis@gauss.atmos.colostate.edu"         ;;
-      monde)   eval "$host=ldavis@monde.atmos.colostate.edu"         ;;
-      euclid)  eval "$host=ldavis@euclid.atmos.colostate.edu"        ;;
-      olbers)  eval "$host=ldavis@olbers.atmos.colostate.edu"        ;;
-      zephyr)  eval "$host=lukelbd@zephyr.meteo.mcgill.ca"           ;;
-      chicago) eval "$host=t-9841aa@midway2-login1.rcc.uchicago.edu" ;; # pass: orkalluctudg
-      archive) eval "$host=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
-      ldm)     eval "$host=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
-      *) echo "Error: Unknown host key \"$host\"." && return 1
-    esac
-    echo ${!host} # get the variable that this guy points to
-  done
-}
-hosts="gauss monde euclid olbers zephyr chicago archive ldm"
-address_ssh $hosts >/dev/null # call
+gauss="ldavis@gauss.atmos.colostate.edu"
+monde="ldavis@monde.atmos.colostate.edu"
+euclid="ldavis@euclid.atmos.colostate.edu"
+olbers="ldavis@olbers.atmos.colostate.edu"
+zephyr="lukelbd@zephyr.meteo.mcgill.ca"
+midway="t-9841aa@midway2-login1.rcc.uchicago.edu" # pass: orkalluctudg
+archive="ldm@ldm.atmos.colostate.edu"             # atmos-2012
+ldm="ldm@ldm.atmos.colostate.edu"                 # atmos-2012
 
 # Short helper functions
 # See current ssh connections

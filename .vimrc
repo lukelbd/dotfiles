@@ -1156,7 +1156,7 @@ if has_key(g:plugs, "nerdcommenter")
       let fill=s:commentfiller()
     endif
     let col=s:commentindent()
-    let nfill=(78-col+1) "dashes
+    let nfill=(78-col+1)/len(fill) "divide by length of fill character
     let spaces=(col-1)    "leading spaces
     let cchar=b:NERDCommenterDelims['left']
     normal! k
@@ -1170,7 +1170,7 @@ if has_key(g:plugs, "nerdcommenter")
       let fill=s:commentfiller()
     endif
     let col=s:commentindent()
-    let nfill=(78-col+1) "dashes
+    let nfill=(78-col+1)/len(fill) "divide by length of fill character
     let spaces=(col-1)    "leading spaces
     let cchar=b:NERDCommenterDelims['left']
     let lines=[repeat(' ',spaces).cchar.repeat(fill,nfill).cchar,
@@ -2026,7 +2026,7 @@ augroup syntax
   au!
   " au Syntax *.tex syn match Ignore '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
   " au Syntax *.tex call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
-  au BufRead * set concealcursor=ncv conceallevel=2 "conceal stuff when in normal/command mode; only reveal when insert/visual
+  au BufRead * set concealcursor= conceallevel=2
   au Syntax * if &ft!="vim" | syn match Todo '\<\%(WARNING\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment | syn match Special '^\%1l#!.*$' | endif
   " au BufEnter * if &ft=="tex" | hi Conceal ctermbg=None ctermfg=None | else | hi Conceal ctermbg=None ctermfg=Black | endif
   au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
