@@ -509,6 +509,13 @@ endif
 "Remember file position, so come back after opening to same spot
 
 "##############################################################################"
+"DICTIONARY COMPLETION
+"Add dictionary search
+set complete-=k complete+=k " Add dictionary search (as per dictionary option)
+"Make vim look inside ~/.vim/words; currently just ncl is there
+au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
+
+"##############################################################################"
 "TEMPLATES
 "***NOTE*** BufNewFile events don't work inside ftplugin, because by the time
 "vim has reached that file, the BufNewFiel event is no longer valid!
@@ -863,7 +870,7 @@ endif
 "###############################################################################
 "MUCOMPLETE
 "Compact alternative to neocomplete
-"Consider trying again!
+"Just could not get it working, not many people so maybe just broken
 augroup mucomplete
 augroup END
 if has_key(g:plugs, "vim-mucomplete") "just check if activated
@@ -916,6 +923,8 @@ endif
 
 "##############################################################################"
 "INDENTLINE
+"Decided not worth it; need to make them black/pale, but often want conceal
+"characters to have no coloring (i.e. use whatever color is underneath).
 if has_key(g:plugs, 'indentline.vim')
   let g:indentLine_char='¦' "¦│┆
   let g:indentLine_setColors=0
