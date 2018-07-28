@@ -25,8 +25,6 @@ noremap <C-b> <Nop>
 "The above 2 enter weird modes I don't understand...
 noremap Q <Nop>
 noremap K <Nop>
-cnoremap <C-k> <Up>
-cnoremap <C-j> <Down>
 "Disable c-z and Z for exiting vim
 noremap <C-z> <Nop>
 noremap Z <Nop>
@@ -209,11 +207,12 @@ vnoremap P "_dP
 nnoremap o ox<BS>
 nnoremap O Ox<BS>
 "Disable arrow keys because you're better than that
-for s:map in ['noremap', 'inoremap'] "disable typical navigation keys
-  for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
-    exe s:map.' '.s:motion.' <Nop>'
-  endfor
-endfor
+"Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
+" for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
+"   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
+"     exe s:map.' '.s:motion.' <Nop>'
+"   endfor
+" endfor
 "Disabling dumb extra scroll commands
 nnoremap <C-p> <Nop>
 nnoremap <C-n> <Nop>
@@ -1655,16 +1654,6 @@ endfunction
 "Use ctrl-, and ctrl-. to navigate (mapped with iterm2)
 cnoremap <expr> <F1> <sid>wildstab()
 cnoremap <expr> <F2> <sid>wildtab()
-cnoremap <C-h>   <Left>
-cnoremap <C-l>   <Right>
-cnoremap <C-k>   <Up>
-cnoremap <C-j>   <Down>
-cnoremap <C-p>   <Up>
-cnoremap <C-n>   <Down>
-cnoremap <Down>  <Nop>
-cnoremap <Up>    <Nop>
-cnoremap <Left>  <Nop>
-cnoremap <Right> <Nop>
 
 "###############################################################################
 "SPECIAL TAB NAVIGATION
