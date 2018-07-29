@@ -140,21 +140,21 @@ noremap <C-k> g,
 noremap <Down> g;
 noremap <Up> g,
 noremap <silent> <expr> q b:recording ?
-  \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
+  \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Delete entire line, leave behind an empty line
 "Has to be *normal* mode remaps, or will affect operator pending mode; for
 "example if you type 'dd', there will be delay.
 nnoremap dL 0d$
-"Never really want to use f/t commands more than once; remap these later on
-noremap ; <Nop>
-noremap , <Nop>
+"Make goto declarations more similar to ctags commands, which are all leader prefixed
+noremap <Leader>d gd
+noremap <Leader>D gD
 "Easy mark usage
 noremap " :echo "Setting mark."<CR>mq
-noremap ' `q
+noremap ' `a
 "New macro useage; almost always just use one at a time
 "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
 map @ <Nop>
-noremap , @q
+noremap , @a
 "Redo map to capital U; means we cannot 'undo line', but who cares
 nnoremap U <C-r>
 "Use - for throwaway register, pipeline for clipboard register
@@ -533,26 +533,26 @@ if has_key(g:plugs,'unite.vim') && has_key(g:plugs,'citation.vim')
   let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors
   " let g:citation_vim_zotero_path="~/Google Drive"   "alternative
   "Mappings
-  "We use the y prefix because it's mostly unused so far
+  "We use the ; prefix because it's unused so far
   "yo for toggle spelling, yO for toggle citation
-  nnoremap <silent> yO :<C-u>Unite citation<CR>
+  nnoremap <silent> ;O :<C-u>Unite citation<CR>
   "Insert citation
-  nnoremap <silent> yc :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
+  nnoremap <silent> ;c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
   "Open file directory
-  nnoremap <silent> yN :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
-  nnoremap <silent> yn :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  nnoremap <silent> ;N :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+  nnoremap <silent> ;n :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
   "Open pdf
-  nnoremap <silent> yp :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
+  nnoremap <silent> ;p :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
   "Open url
-  nnoremap <silent> yu :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
+  nnoremap <silent> ;u :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
   "View citation info
-  nnoremap <silent> yI :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
+  nnoremap <silent> ;I :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
   "Append information
-  nnoremap <silent> yA :<C-u>Unite -default-action=yank citation/title<CR>
+  nnoremap <silent> ;A :<C-u>Unite -default-action=yank citation/title<CR>
   "Search for word under cursor
-  nnoremap <silent> ys :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
+  nnoremap <silent> ;s :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
   "Search for words, input prompt
-  nnoremap <silent> yS :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
+  nnoremap <silent> ;S :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
 endif
 
 "##############################################################################"
@@ -666,20 +666,20 @@ augroup END
 "Off by default
 set nospell spelllang=en_us spellcapcheck=
 "Toggle on and off
+nnoremap <silent> ;. :call <sid>spelltoggle()<CR>
+nnoremap <silent> ;o :call <sid>spelltoggle(1)<CR>
+nnoremap <silent> ;O :call <sid>spelltoggle(0)<CR>
 "Also toggle UK/US languages
-nnoremap <silent> y. :call <sid>spelltoggle()<CR>
-nnoremap <silent> yo :call <sid>spelltoggle(1)<CR>
-nnoremap <silent> yO :call <sid>spelltoggle(0)<CR>
-nnoremap <silent> yK :call <sid>langtoggle(0)<CR>
-nnoremap <silent> yk :call <sid>langtoggle(1)<CR>
+nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
+nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>
 "Spell maps
 nnoremap <Plug>backwardspell :call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
 nnoremap <Plug>forwardspell :call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
-nmap yD <Plug>backwardspell
-nmap yd <Plug>forwardspell
+nmap ;D <Plug>backwardspell
+nmap ;d <Plug>forwardspell
 "Add/remove from dictionary
-nnoremap ya zg
-nnoremap yr zug
+nnoremap ;a zg
+nnoremap ;r zug
 "Functions
 function! s:spellchange(direction)
   let nospell=0
@@ -1568,13 +1568,15 @@ noremap <Tab>. gt
 let g:lasttab=1
 noremap <silent> <Tab>' :execute "tabn ".g:lasttab<CR>
   "return to previous tab
-"Moving around
+"Moving screen around cursor
 nnoremap <Tab>u zt
 nnoremap <Tab>o zb
 nnoremap <Tab>i mzz.`z
+"Moving cursor around screen
 nnoremap <Tab>q H
 nnoremap <Tab>w M
 nnoremap <Tab>e L
+"Moving screen left/right
 nnoremap <Tab>y zH
 nnoremap <Tab>p zL
 "Fix tab maps otherwise
