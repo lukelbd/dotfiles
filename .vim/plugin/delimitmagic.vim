@@ -1,29 +1,98 @@
 "------------------------------------------------------------------------------"
-"Plugin by Luke Davis <lukelbd@gmail.com>
+" Author: Luke Davis (lukelbd@gmail.com)
+" Date: 2018-07-29
 "------------------------------------------------------------------------------"
-"This plugin is inspired by the 'surround.vim' plugin, just a git more succinct syntax
-"For example, instead of ysiwb (ys=command prefix, iw=movement, b=delimit specifier)
-"we just call ;b -- also is easily extensible to insert mode. But we keep many of
-"the original bindings.
+"This plugin is inspired by the 'surround.vim' plugin.
+"Neat tools for working smoothly with delimited text.
+"Future:
+" * Want to include way to put braces around entire line (ignoring trailing and
+"   leading whitespace) like yss<delimiter>.
+" * Might want to add similar yS and ySS-commands which behave just like
+"   ys and yss, except they put containing text on own line.
+" * There's also the S-map in visual mode, and the t-prefix which lets
+"   you type in an arbitrary tag.
+" * Consider implementing surround feature where ] adds space but [ adds
+"   no space.
+" * Not sure what vs and vS features do. To be figured out.
+" * The broad theme here is that ***IMO the motion-feature offered by surround
+"   plugin is overkill***. Generally there's only a few types of blocks
+"   that we want to surround with delimiters: selections, words WORDs, lines,
+"   and paragraphs (note these would be 'is' and 'ip' in surround).
+"Gameplan:
+" * Just like S activates visual mode surround.vim, could come up with way
+"   to activate it in insert mode. Perhaps yy would work, and fits better
+"   with original mnemonic.
+" * Could instead use ;-letter for the *Greek letter inserts*, then use
+"   sy and sY as analogies for ys and yS.
+" * Could change ysiw to ysw, ysiW to ysW, et cetera. Or... simply conform to
+"   this more flexible syntax, and make , and ; commands accept range indicators
+"   like w, W, l, s, p, et cetera. Perhaps could even make it accept a count,
+"   where we wrap around that number of delimiters (e.g. 1;lb would wrap
+"   this line and the one above, 1;Lb would wrap this line and the one below, or
+"   just have them wrap one line on either side).
+" * Note there is already a Ctrl-S insert mode map to insert delimiters,
+"   so maybe should just expand that in future. Along with a Ctrl-Y map
+"   to insert those ,-prefixed ones.
+"Features:
+" * Changes to surround mnemonics: now use a for <>, r for [], c for {}, and
+"   b for (). Also use ;+key to put braces around words or seletions. Use B, C,
+"   et cetera to put braces around WORDs. This replaces most common use of
+"   ys<motion><delimiter> command.
+" * LaTeX environment mappings: like a hundred different ;-prefixed ,-prefixed
+"   and .-prefixed commands, where the usual syntax is <leader><letter>. Those
+"   punctuation keys were chosen because they are rarely followed immediately
+"   with text. Surround text with {} commands and begin/end statements, and
+"   insert math symbols with the press of a .-shortcut.
+" * HTML tag mappings: similar to the above; put text inside HTML tags.
+"   Still needs to be expanded.
 "------------------------------------------------------------------------------"
-"First some notes about current functionality
-" * See documentation in ~/.vim/doc for details, but the gist is:
-" * cs<delim><newdelim> to e.g. change surrounding { into (
-" * ds<delim> to e.g. delete the surrounding {
-" * ys<movement/inner something/block indicator><newdelim> to e.g. add quotes
-"       around word iw, add parentheses between cursor and W movement, etc.
-" * yss is special case (should be memorized; ys"special"); performs for entire
-"       line, ignoring leading/trailing whitespace
-" * yS<movement><newdelim> puts text on line of its own, and auto-indents
-"       according to indent settings
-" * S<newdelim>, VISUAL MODE remap to place surroundings
-"       if your <newdelim> is something like <a>, then by default the first one
-"       will be <a> and the closing one </a>, for HTML useage
-" * t,< will generically refer to ANY HTML-environment
-" * ], [ are different; the first adds no space, the second *does* add space
-" * b, B, r, a correspond to ), }, ], > (second 2 should be memorized, first 2
-"       are just like vim)
-" * p is a Vim-paragraph (block between blank lines)
+"###############################################################################
+"Get cursor outside current delimiter
+"Similar to the delimitMate <C-g>g insert mode command
+"Pretty darn useful
+"##############################################################################"
+"Function for escaping current delimiter
+"Just search for braces instead of using percent-mapping, because when
+"in the middle of typing often don't particularly *care* if a bracket is completed/has
+"a pair -- just see a bracket, and want to get out of it.
+"Also percent matching solution would require leaving insert mode, triggering
+"various autocmds, and is much slower/jumpier -- vim script solutions are better!
+"  ( [ [ ( "  "  asdfad) sdf    ]  sdfad   ]  asdfasdf) hello   asdfas) 
+function! s:tabreset()
+  let b:tabcount=0 | return ''
+endfunction
+function! s:outofdelim(n)
+  "Note: matchstrpos is relatively new/less portable, e.g. fails on midway
+  "Used to use matchstrpos, now just use match(); much simpler
+  let regex = "[\"')\\]}>]" "list of 'outside' delimiters for jk matching
+  let pos = 0 "minimum match position
+  let string = getline('.')[col('.')-1:]
+  for i in range(a:n)
+    let result = match(string, regex, pos) "get info on *first* match
+    if result==-1 | break | endif
+    let pos = result + 1 "go to next one
+  endfor
+  if mode()!~#'[rRiI]' && pos+col('.')>=col('$')
+    let pos=col('$')-col('.')-1
+  endif
+  if pos==0 "relative position is zero, i.e. don't move
+    return ""
+  else
+    return repeat("\<Right>", pos)
+  endif
+endfunction
+"Apply remaps
+"Mnemonic here is C-o gets us out; currently not used by any other maps!
+"So works perfectly
+noremap <expr> ;o <sid>outofdelim(1)
+noremap <expr> ;O <sid>outofdelim(10)
+inoremap <expr> ;o !pumvisible() ? <sid>outofdelim(1)
+  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
+  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
+inoremap <expr> ;O !pumvisible() ? <sid>outofdelim(10)
+  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(10) 
+  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(10)
+
 "##############################################################################"
 "Expand the functionality of the cs, ds, etc. commands; manipulating
 "surrounding delimiters
@@ -88,49 +157,59 @@ nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$mVvN<Down>0
 "Mimick the ysiwb command (i.e. adding delimiters to current word) for new delimiters
 "The following functions create arbitrary delimtier maps; current convention is
 "to prefix with ';' and ','; see below for details
-function! s:delims(map,left,right,buffer,bigword)
-  let leftjump=(a:bigword ? "B" : "b")
-  let rightjump=(a:bigword ? "E" : "e")
+function! s:surround(left, right, class, pad)
+  "Initial stuff
+  if a:pad==#'n'
+    let pad='\n'
+  else a:pad==#'w'
+    let pad=' '
+  else
+    let pad=''
+  endif
+  if a:class==#'w'
+    let regex='\(\<\w*\%#\w\+\>\|\%#\S\)' "matches word under cursor, or alternatively, single character
+  elseif a:class==#'W'
+    let regex='\(\S*\%#\S\+\)'
+  elseif a:class==#'v'
+    let regex='\(\%V\_.*\%V.\?\)' "matches from *anywhere* inside selection to end of selection
+    " let regex='\(\%'."'".'<\_.*\%'."'".'>.\?\)' "matches inside selection; include multiline selections thanks to ._
+  else
+    echom "Error: Unknown group class \"".a:class."\"" | return
+  endif
+  echo 's/'.regex.'/'.a:left.'\1'.a:right.'/'
+  exe 's/'.regex.'/'.a:left.'\1'.a:right.'/'
+  " let @/='/'.regex
+endfunction
+" hello
+" word
+" goodbye
+function! s:delims(map,left,right,buffer,nclass)
   let buffer=(a:buffer ? " <buffer> " : "")
   let offset=(a:right=~"|" ? 1 : 0) "need special consideration when doing | maps, but not sure why
+  let nclass=(a:nclass ? "W" : "w") "use WORD instead of word for normal map
   "Normal mode maps
   "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
   "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
-  " * Warning: it seems (the) movements within this remap can trigger MatchParen action,
+  " * Warning: it seems the movements within this remap can trigger MatchParen action,
   "   due to its CursorMovedI autocmd perhaps.
   " * Added eventignore manipulation because it makes things considerably faster
   "   especially when matchit regexes try to highlight unmatched braces. Considered
   "   changing :noautocmd but that can't be done for a remap; see :help <mod>
   " * Will retain cursor position, but adjusted to right by length of left delimiter.
-  exe 'nnoremap <silent> '.buffer.' <Plug>n'.a:map.' '
-    \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
-    \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-    \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'.len(a:left).'l'
-    \.':call repeat#set("\<Plug>n'.a:map.'",v:count)<CR>'
-    \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
-  exe 'nmap '.a:map.' <Plug>n'.a:map
-  "Non-repeatable map
-  " exe 'nnoremap '.buffer.' '.a:map.' '
-  "   \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
-  "   \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-  "   \.'mzl'.leftjump.'i'.a:left.'<Esc>h'.rightjump.'a'.a:right.'<Esc>`z'
-  "   \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
-  if !a:bigword "don't map if a WORD map; they are identical
-    "Visual map
-    exe 'vnoremap <silent> '.buffer.' '.a:map.' <Esc>'
-      \.':let b:indentexpr=&l:indentexpr<CR>:setlocal noautoindent indentexpr=<CR>'
-      \.':setlocal eventignore=CursorMoved,CursorMovedI<CR>'
-      \.'`>a'.a:right.'<Esc>`<i'.a:left.'<Esc>'.repeat('<Left>',len(a:left)-1-offset)
-      \.':setlocal autoindent eventignore=<CR>:let &l:indentexpr=b:indentexpr<CR>'
-    "Insert map
-    exe 'inoremap '.buffer.' '.a:map.' '.a:left.a:right.repeat('<Left>',len(a:right)-offset)
-  endif
+  exe "nnoremap <silent> ".buffer." <Plug>n".a:map." "
+    \.":call <sid>surround('".a:left."','".a:right."','".nclass."','')<CR>``"
+    \.":call repeat#set('\\<Plug>n".a:map."',v:count)<CR>"
+  exe "nmap ".a:map." <Plug>n".a:map
+  "Insert map
+  exe "inoremap ".buffer." ".a:map." ".a:left.a:right.repeat("<Left>",len(a:right)-offset)
+  "Visual map
+  exe "vnoremap ".buffer." ".a:map." :<C-u>call <sid>surround('".a:left."','".a:right."','v','')<CR>``"
 endfunction
 "Next, similar to above, but always place stuff on newlines
 function! s:environs(map,left,right)
-  exe 'inoremap <silent> <buffer> ,'.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
-  exe 'nnoremap <silent> <buffer> ,'.a:map.' mzO'.a:left.'<Esc><Down>o'.a:right.'<Esc>`z=='
-  exe 'vnoremap <silent> <buffer> ,'.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
+  exe 'inoremap <silent> <buffer> '.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
+  exe 'nnoremap <silent> <buffer> '.a:map.' mzO'.a:left.'<Esc><Down>o'.a:right.'<Esc>`z=='
+  exe 'vnoremap <silent> <buffer> '.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
     "don't gotta worry about repeat command here, because cannot do that in visual
     "or insert mode; doesn't make sense anyway because we rarely have to do something like
     "100 times in insert mode/visual mode repeatedly, but often have to do so in normal mode
@@ -182,9 +261,7 @@ augroup END
 function! s:texmacros()
   "Repair comma-macros, and period/comma in insert mode
   "Offer 'cancelling' completion with escape
-  inoremap <buffer> .<Esc> <Nop>
   inoremap <buffer> ,<Esc> <Nop>
-  inoremap <buffer> .. .
   inoremap <buffer> ,, ,
   nnoremap <buffer> ,, @q
     "special exception; otherwise my 'macro repitition' shortcut fails in LaTeX documents
@@ -261,32 +338,32 @@ function! s:texmacros()
   "Delimiters (advanced)/quick environments
   "First the delimiters without newlines
   " call s:delims('\|', '\left\\|', '\right\\|', 1)
-  call s:delims(';\|', '\left\|',      '\right\|', 1, 0)
-  call s:delims(';{',  '\left\{',      '\right\}', 1, 0)
-  call s:delims(';(',  '\left(',       '\right)',  1, 0)
-  call s:delims(';[',  '\left[',       '\right]',  1, 0)
-  call s:delims(';<',  '\left<',       '\right>',  1, 0)
-  call s:delims(';o', '{\color{red}', '}', 1, 0)
-  call s:delims(';i', '\textit{',     '}', 1, 0)
-  call s:delims(';t', '\textbf{',     '}', 1, 0) "now use ;i for various cite commands
-  call s:delims(';u', '\underline{',  '}', 1, 0) "u for under
-  call s:delims(';l', '\linespread{',  '}', 1, 0) "u for under
-  call s:delims(';m', '\mathrm{',     '}', 1, 0)
-  call s:delims(';n', '\mathbf{',     '}', 1, 0)
-  call s:delims(';M', '\mathcal{',    '}', 1, 0)
-  call s:delims(';N', '\mathbb{',     '}', 1, 0)
-  call s:delims(';y', '\texttt{',     '}', 1, 0) "typewriter text
-  call s:delims(';Y', '\pyth$',       '$', 1, 0) "python verbatim
-  call s:delims(';v', '\vec{',        '}', 1, 0)
-  call s:delims(';V', '\verb$',       '$', 1, 0) "verbatim
-  call s:delims(';d', '\dot{',        '}', 1, 0)
-  call s:delims(';D', '\ddot{',       '}', 1, 0)
-  call s:delims(';h', '\hat{',        '}', 1, 0)
-  call s:delims(';`', '\tilde{',      '}', 1, 0)
-  call s:delims(';-', '\overline{',   '}', 1, 0)
-  call s:delims(';\', '\cancelto{}{', '}', 1, 0)
-  call s:delims(';x', '\boxed{',      '}', 1, 0)
-  call s:delims(';X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1, 0)
+  call s:delims(';>\|', '\left\|',      '\right\|', 1, 0)
+  call s:delims(';>{',  '\left\{',      '\right\}', 1, 0)
+  call s:delims(';>(',  '\left(',       '\right)',  1, 0)
+  call s:delims(';>[',  '\left[',       '\right]',  1, 0)
+  call s:delims(';><',  '\left<',       '\right>',  1, 0)
+  call s:delims(';>o', '{\color{red}', '}', 1, 0)
+  call s:delims(';>i', '\textit{',     '}', 1, 0)
+  call s:delims(';>t', '\textbf{',     '}', 1, 0) "now use ;i for various cite commands
+  call s:delims(';>u', '\underline{',  '}', 1, 0) "u for under
+  call s:delims(';>l', '\linespread{',  '}', 1, 0) "u for under
+  call s:delims(';>m', '\mathrm{',     '}', 1, 0)
+  call s:delims(';>n', '\mathbf{',     '}', 1, 0)
+  call s:delims(';>M', '\mathcal{',    '}', 1, 0)
+  call s:delims(';>N', '\mathbb{',     '}', 1, 0)
+  call s:delims(';>y', '\texttt{',     '}', 1, 0) "typewriter text
+  call s:delims(';>Y', '\pyth$',       '$', 1, 0) "python verbatim
+  call s:delims(';>v', '\vec{',        '}', 1, 0)
+  call s:delims(';>V', '\verb$',       '$', 1, 0) "verbatim
+  call s:delims(';>d', '\dot{',        '}', 1, 0)
+  call s:delims(';>D', '\ddot{',       '}', 1, 0)
+  call s:delims(';>h', '\hat{',        '}', 1, 0)
+  call s:delims(';>`', '\tilde{',      '}', 1, 0)
+  call s:delims(';>-', '\overline{',   '}', 1, 0)
+  call s:delims(';>\', '\cancelto{}{', '}', 1, 0)
+  call s:delims(';>x', '\boxed{',      '}', 1, 0)
+  call s:delims(';>X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1, 0)
     "the second one allows stuff to extend into margins, possibly
   call s:delims(';/', '\sqrt{',     '}',  1, 0)
   call s:delims(';q', '`',          "'",  1, 0)
@@ -349,141 +426,42 @@ function! s:texmacros()
   call s:delims(',m', '\begin{pmatrix}',           '\end{pmatrix}',       1, 0)
   call s:delims(',M', '\begin{bmatrix}',           '\end{bmatrix}',       1, 0)
   "Versions of the above, but this time puting them on own lines
-  " call s:environs('P', '\begin{pmatrix}', '\end{pmatrix}')
-  " call s:environs('B', '\begin{bmatrix}', '\end{bmatrix}')
+  " call s:environs(',P', '\begin{pmatrix}', '\end{pmatrix}')
+  " call s:environs(',B', '\begin{bmatrix}', '\end{bmatrix}')
   "Comma-prefixed delimiters with newlines; these have separate special function because
   "it does not make sense to have normal-mode maps for multiline begin/end environments
   "* The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
   "  with default single column; see: https://tex.stackexchange.com/a/366422/73149
   "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
-  call s:environs(';', '\begin{center}', '\end{center}') "because ; was available
-  call s:environs(':', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  call s:environs('c', '\begin{columns}[c]', '\end{columns}')
-  call s:environs('y', '\begin{python}', '\end{python}')
+  call s:environs(',;', '\begin{center}', '\end{center}') "because ; was available
+  call s:environs(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
+  call s:environs(',c', '\begin{columns}[c]', '\end{columns}')
+  call s:environs(',y', '\begin{python}', '\end{python}')
   " call s:environs('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
     "not sure what these args are for; c will vertically center
-  call s:environs('C', '\begin{column}{.5\textwidth}', '\end{column}')
-  call s:environs('i', '\begin{itemize}', '\end{itemize}')
-  call s:environs('I', '\begin{description}', '\end{description}') "d is now open
-  call s:environs('n', '\begin{enumerate}', '\end{enumerate}')
-  call s:environs('N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
-  call s:environs('t', '\begin{tabular}', '\end{tabular}')
-  call s:environs('e', '\begin{equation*}', '\end{equation*}')
-  call s:environs('a', '\begin{align*}', '\end{align*}')
-  call s:environs('E', '\begin{equation}', '\end{equation}')
-  call s:environs('A', '\begin{align}', '\end{align}')
-  call s:environs('b', '\begin{block}{}', '\end{block}')
-  call s:environs('B', '\begin{alertblock}{}', '\end{alertblock}')
-  call s:environs('v', '\begin{verbatim}', '\end{verbatim}')
-  call s:environs('V', '\begin{code}', '\end{code}')
-  call s:environs('s', '\begin{frame}', '\end{frame}')
-  call s:environs('S', '\begin{frame}[fragile]', '\end{frame}')
+  call s:environs(',C', '\begin{column}{.5\textwidth}', '\end{column}')
+  call s:environs(',i', '\begin{itemize}', '\end{itemize}')
+  call s:environs(',I', '\begin{description}', '\end{description}') "d is now open
+  call s:environs(',n', '\begin{enumerate}', '\end{enumerate}')
+  call s:environs(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
+  call s:environs(',t', '\begin{tabular}', '\end{tabular}')
+  call s:environs(',e', '\begin{equation*}', '\end{equation*}')
+  call s:environs(',a', '\begin{align*}', '\end{align*}')
+  call s:environs(',E', '\begin{equation}', '\end{equation}')
+  call s:environs(',A', '\begin{align}', '\end{align}')
+  call s:environs(',b', '\begin{block}{}', '\end{block}')
+  call s:environs(',B', '\begin{alertblock}{}', '\end{alertblock}')
+  call s:environs(',v', '\begin{verbatim}', '\end{verbatim}')
+  call s:environs(',V', '\begin{code}', '\end{code}')
+  call s:environs(',s', '\begin{frame}', '\end{frame}')
+  call s:environs(',S', '\begin{frame}[fragile]', '\end{frame}')
     "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
     "note that fragile make compiling way slower
-  call s:environs('w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}')
-    "white frame
-  call s:environs('p', '\begin{minipage}{\linewidth}', '\end{minipage}')
-  call s:environs('f', '\begin{figure}', '\end{figure}')
-  call s:environs('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
-  call s:environs('W', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
-  "Single-character maps
-  "THIS NEEDS WORK; right now maybe just too confusing
-  inoremap <expr> <buffer> .m '\mathrm{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .M '\mathbf{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .h '\hat{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .v '\vec{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .` '\tilde{'.nr2char(getchar()).'}'
-  inoremap <expr> <buffer> .= '\overline{'.nr2char(getchar()).'}'
-  " inoremap <expr> <buffer> .M '\mathcal{'.nr2char(getchar()).'}'
-  " inoremap <expr> <buffer> .N '\mathbb{'.nr2char(getchar()).'}'
-  "Arrows
-  inoremap <buffer> ., \pause
-  inoremap <buffer> ., \pause
-  inoremap <buffer> ., \pause
-  inoremap <buffer> ., \pause
-  "Misc symbotls
-  inoremap <buffer> ., \pause
-  inoremap <buffer> .i \item 
-  "Math symbols
-  inoremap <buffer> .a \alpha 
-  inoremap <buffer> .b \beta 
-  inoremap <buffer> .c \xi 
-  inoremap <buffer> .C \Xi 
-    "weird curly one
-    "the upper case looks like 3 lines
-  inoremap <buffer> .x \chi 
-    "looks like an x so want to use this map
-    "pronounced 'zi', the 'i' in 'tide'
-  inoremap <buffer> .d \delta 
-  inoremap <buffer> .D \Delta 
-  inoremap <buffer> .f \phi 
-  inoremap <buffer> .F \Phi 
-  inoremap <buffer> .g \gamma 
-  inoremap <buffer> .G \Gamma 
-  " inoremap <buffer> .k \kappa
-  inoremap <buffer> .l \lambda 
-  inoremap <buffer> .L \Lambda 
-  inoremap <buffer> .u \mu 
-  inoremap <buffer> .n \nabla 
-  inoremap <buffer> .N \nu 
-  inoremap <buffer> .e \epsilon 
-  inoremap <buffer> .E \eta 
-  inoremap <buffer> .p \pi 
-  inoremap <buffer> .P \Pi 
-  inoremap <buffer> .q \theta 
-  inoremap <buffer> .Q \Theta 
-  inoremap <buffer> .r \rho 
-  inoremap <buffer> .s \sigma 
-  inoremap <buffer> .S \Sigma 
-  inoremap <buffer> .t \tau 
-  inoremap <buffer> .y \psi 
-  inoremap <buffer> .Y \Psi 
-  inoremap <buffer> .w \omega 
-  inoremap <buffer> .W \Omega 
-  inoremap <buffer> .z \zeta 
-  inoremap <buffer> .1 \partial 
-  inoremap <buffer> .2 \mathrm{d}
-  inoremap <buffer> .3 \mathrm{D}
-  "3 levels of differentiation; each one stronger
-  inoremap <buffer> .4 \sum 
-  inoremap <buffer> .5 \prod 
-  inoremap <buffer> .6 \int 
-  inoremap <buffer> .7 \iint 
-  inoremap <buffer> .8 \oint 
-  inoremap <buffer> .9 \oiint 
-  inoremap <buffer> .x \times 
-  inoremap <buffer> .o \cdot 
-  inoremap <buffer> .O \circ 
-  inoremap <buffer> .- {-}
-  inoremap <buffer> .+ {+}
-  inoremap <buffer> .~ {\sim}
-  inoremap <buffer> .k ^
-  inoremap <buffer> .j _
-  inoremap <buffer> ., \,
-  inoremap <buffer> ._ {\centering\noindent\rule{\paperwidth/2}{0.7pt}}
-    "centerline (can modify this; \rule is simple enough to understand)
-  "Commands for compiling latex
-  "-use clear, because want to clean up previous output first
-  "-use set -x to ECHO LAST COMMAND
-  "-use c-x for compile/run, and c-w for creating Word document
-  noremap <silent> <buffer> <Leader>x :w<CR>:exec("!clear; set -x; "
-      \.'~/bin/compile '.shellescape(@%).' true')<CR>
-  noremap <silent> <buffer> <C-b> :w<CR>:exec("!clear; set -x; "
-      \.'~/bin/compile '.shellescape(@%).' false')<CR>
-  inoremap <silent> <buffer> <C-b> <Esc>:w<CR>:exec("!clear; set -x; "
-      \.'~/bin/compile '.shellescape(@%).' false')<CR>a
-  "This section is weird; C-@ is same as C-Space (google it), and
-  "S-Space sends hex codes for F1 in iTerm (enter literal characters in Vim and
-  "use ga commands to get the hex codes needed)
-  "Why do this? Because want to keep these maps consistent with system map to count
-  "highlighted text; and mapping that command to some W-combo is dangerous; may
-  "accidentally close a window
-  noremap <silent> <buffer> <C-@> :exec("!clear; set -x; "
-      \.'ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null \| wc -w')<CR>
-  noremap <silent> <buffer> <F1> :exec('!clear; set -x; open -a Skim; '
-      \.'osascript ~/bin/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
-      \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
-      \.'open -a iTerm')<CR>:redraw!<CR>
+  call s:environs(',w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}') "white frame
+  call s:environs(',p', '\begin{minipage}{\linewidth}', '\end{minipage}')
+  call s:environs(',f', '\begin{figure}', '\end{figure}')
+  call s:environs(',F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
+  call s:environs(',W', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
 endfunction
 
 "###############################################################################
