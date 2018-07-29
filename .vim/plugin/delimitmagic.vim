@@ -46,18 +46,33 @@
 " * HTML tag mappings: similar to the above; put text inside HTML tags.
 "   Still needs to be expanded.
 "------------------------------------------------------------------------------"
-"###############################################################################
+"Expand the functionality of delimitMate and vim-surround
+if !exists("g:plugs")
+  echo "Warning: vim-plugs required to check if dependency plugins are installed."
+  finish
+endif
+if !has_key(g:plugs, "vim-surround")
+  finish
+endif
+if !has_key(g:plugs, "delimitmate")
+  finish
+endif
+
+"------------------------------------------------------------------------------"
 "Get cursor outside current delimiter
-"Similar to the delimitMate <C-g>g insert mode command
-"Pretty darn useful
-"##############################################################################"
-"Function for escaping current delimiter
-"Just search for braces instead of using percent-mapping, because when
-"in the middle of typing often don't particularly *care* if a bracket is completed/has
-"a pair -- just see a bracket, and want to get out of it.
-"Also percent matching solution would require leaving insert mode, triggering
-"various autocmds, and is much slower/jumpier -- vim script solutions are better!
-"  ( [ [ ( "  "  asdfad) sdf    ]  sdfad   ]  asdfasdf) hello   asdfas) 
+"Use alternative mapping from delimitMate default C-g+g
+imap <C-o> <Plug>delimitMateJumpMany
+
+"------------------------------------------------------------------------------"
+"Alternatively use my function for escaping current delimiter
+"Find it's behavior more consistent; sometimes the above will skip consecutive
+"delimiters.
+" * Just search for braces instead of using percent-mapping, because when
+"   in the middle of typing often don't particularly *care* if a bracket is completed/has
+"   a pair -- just see a bracket, and want to get out of it.
+" * Also percent matching solution would require leaving insert mode, triggering
+"   various autocmds, and is much slower/jumpier -- vim script solutions are better!
+" ( [ [ ( "  "  asdfad) sdf    ]  sdfad   ]  asdfasdf) hello   asdfas) 
 function! s:tabreset()
   let b:tabcount=0 | return ''
 endfunction
@@ -83,405 +98,361 @@ function! s:outofdelim(n)
 endfunction
 "Apply remaps
 "Mnemonic here is C-o gets us out; currently not used by any other maps!
-"So works perfectly
-noremap <expr> ;o <sid>outofdelim(1)
-noremap <expr> ;O <sid>outofdelim(10)
-inoremap <expr> ;o !pumvisible() ? <sid>outofdelim(1)
+inoremap <expr> <C-o> !pumvisible() ? <sid>outofdelim(1)
   \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
-inoremap <expr> ;O !pumvisible() ? <sid>outofdelim(10)
-  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(10) 
-  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(10)
 
-"##############################################################################"
-"Expand the functionality of the cs, ds, etc. commands; manipulating
-"surrounding delimiters
-"##############################################################################"
-if !exists("g:plugs")
-  echo "Warning: vim-plugs required to check if dependency plugins are installed."
-  finish
-endif
-if !has_key(g:plugs, "vim-surround")
-  finish
-endif
-"Alias the BUILTIN ds[, ds(, etc. behavior for NEW KEY-CONVENTIONS introduced by SURROUND
-"Function simply matches these builtin VIM methods with a new delimiter-identifier
-function! s:surround(original,new)
-  exe 'nnoremap da'.a:original.' da'.a:new
-  exe 'nnoremap di'.a:original.' di'.a:new
-  exe 'nnoremap ca'.a:original.' ca'.a:new
-  exe 'nnoremap ci'.a:original.' ci'.a:new
-  exe 'nnoremap ya'.a:original.' ya'.a:new
-  exe 'nnoremap yi'.a:original.' yi'.a:new
-  exe 'nnoremap <silent> va'.a:original.' mVva'.a:new
-  exe 'nnoremap <silent> vi'.a:original.' mVvi'.a:new
+"------------------------------------------------------------------------------"
+"Function to alias builtin vim surround blocks
+function! s:alias(original,new,...)
+  if a:0 "just checks for existance of third variable
+    let buffer="<buffer>"
+  else
+    let buffer=""
+  endif
+  exe 'nnoremap '.buffer.' di'.a:original.' di'.a:new
+  exe 'nnoremap '.buffer.' ci'.a:original.' ci'.a:new
+  exe 'nnoremap '.buffer.' yi'.a:original.' yi'.a:new
+  exe 'nnoremap '.buffer.' <silent> vi'.a:original.' mVvi'.a:new
+  exe 'nnoremap '.buffer.' da'.a:original.' da'.a:new
+  exe 'nnoremap '.buffer.' ca'.a:original.' ca'.a:new
+  exe 'nnoremap '.buffer.' ya'.a:original.' ya'.a:new
+  exe 'nnoremap '.buffer.' <silent> va'.a:original.' mVva'.a:new
 endfunction
-for s in ['r[', 'a<', 'c{']
-  call s:surround(s[0], s[1]) "most simple ones
+for pair in ["r[", "a<", "c{"]
+  call s:alias(pair[0], pair[1])
 endfor
-"Alias all SURROUND curly-bracket commands with c
-nmap dsc dsB
-  "delete curlies
-nmap cscb csBb
-nmap cscr csBr
-nmap csca csBa
-  "to curlies
-nmap csbc csbB
-nmap csrc csbB
-nmap csac csbB
-  "from curlies
-"Similar idea for functions, i.e. text formatted like foo(bar)
-"Mimick builtin Vim syntax, and the Surround plugin with dsf
-nnoremap <silent> daf mzF(bdt(lda(`z
-nnoremap <silent> caf F(bdt(lca(
-nnoremap <silent> yaf mzF(bvf(%y`z
+
+"Expand to include 'function' delimiters
+nnoremap dif dib
+nnoremap cif cib
+nnoremap yif yib
+nnoremap <silent> vif vib
+nnoremap daf mzF(bdt(lda(`z
+nnoremap caf F(bdt(lca(
+nnoremap yaf mzF(bvf(%y`z
 nnoremap <silent> vaf F(bmVvf(%
-nnoremap <silent> dsf mzF(bdt(xf)x`z
-nnoremap <silent> csf F(hciw
-"And now for lines; already exists for paragraphs
-"If on first character of sentence, want to count that as 'current' sentence, so move to right
-"Kind of need to use selections always here
-nnoremap <silent> dal l(v)hd
-nnoremap <silent> cal l(v)hs
-nnoremap <silent> yal l(v)hy
-nnoremap <silent> val l(v)h
-" nnoremap <silent> <expr> csf 'mzF(bct('.input('Enter new function name: ').'<Esc>`z'
+
+"Next mimick surround syntax with current line
+"Will make 'a' the whole line excluding newline, and 'i' ignore leading/trailing whitespace 
+nnoremap das 0d$
+nnoremap cas cc
+nnoremap yas 0y$
+nnoremap <silent> vas 0v$   
+nnoremap dis ^v$gEd
+nnoremap cis ^v$gEc
+nnoremap yis ^v$gEy
+nnoremap <silent> vis ^v$gE
+
+"And as we do with surround below, sentences
+"Will make 'a' the whole sentence, and 'i' up to start of next one
+nnoremap da. l(v)hd
+nnoremap ca. l(v)hs
+nnoremap ya. l(v)hy
+nnoremap <silent> va. l(v)h
+nnoremap di. v)hd
+nnoremap ci. v)hs
+nnoremap yi. v)hy
+nnoremap <silent> va. v)h
+
+"------------------------------------------------------------------------------"
+"Miscellaneous stuff
 "Selecting text in-between commented out lines
-"Maybe add other special ideas
 nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$mVvN<Down>0<Esc>:noh<CR>gv"
+"Maybe add other special ideas
 
-"##############################################################################"
-" Define a totally new syntax based on semicolon, instead of that funky
-" ysiwb stuff. Create functions to facilitate making new bindings in this style.
-"##############################################################################"
-"Mimick the ysiwb command (i.e. adding delimiters to current word) for new delimiters
-"The following functions create arbitrary delimtier maps; current convention is
-"to prefix with ';' and ','; see below for details
-function! s:surround(left, right, class, pad)
-  "Initial stuff
-  if a:pad==#'n'
-    let pad='\n'
-  else a:pad==#'w'
-    let pad=' '
-  else
-    let pad=''
-  endif
-  if a:class==#'w'
-    let regex='\(\<\w*\%#\w\+\>\|\%#\S\)' "matches word under cursor, or alternatively, single character
-  elseif a:class==#'W'
-    let regex='\(\S*\%#\S\+\)'
-  elseif a:class==#'v'
-    let regex='\(\%V\_.*\%V.\?\)' "matches from *anywhere* inside selection to end of selection
-    " let regex='\(\%'."'".'<\_.*\%'."'".'>.\?\)' "matches inside selection; include multiline selections thanks to ._
-  else
-    echom "Error: Unknown group class \"".a:class."\"" | return
-  endif
-  echo 's/'.regex.'/'.a:left.'\1'.a:right.'/'
-  exe 's/'.regex.'/'.a:left.'\1'.a:right.'/'
-  " let @/='/'.regex
-endfunction
-" hello
-" word
-" goodbye
-function! s:delims(map,left,right,buffer,nclass)
-  let buffer=(a:buffer ? " <buffer> " : "")
-  let offset=(a:right=~"|" ? 1 : 0) "need special consideration when doing | maps, but not sure why
-  let nclass=(a:nclass ? "W" : "w") "use WORD instead of word for normal map
-  "Normal mode maps
-  "Note that <silent> works, but putting :silent! before call to repeat does not, weirdly
-  "The <Plug> maps are each named <Plug>(prefix)(key), for example <Plug>;b for normal mode bracket map
-  " * Warning: it seems the movements within this remap can trigger MatchParen action,
-  "   due to its CursorMovedI autocmd perhaps.
-  " * Added eventignore manipulation because it makes things considerably faster
-  "   especially when matchit regexes try to highlight unmatched braces. Considered
-  "   changing :noautocmd but that can't be done for a remap; see :help <mod>
-  " * Will retain cursor position, but adjusted to right by length of left delimiter.
-  exe "nnoremap <silent> ".buffer." <Plug>n".a:map." "
-    \.":call <sid>surround('".a:left."','".a:right."','".nclass."','')<CR>``"
-    \.":call repeat#set('\\<Plug>n".a:map."',v:count)<CR>"
-  exe "nmap ".a:map." <Plug>n".a:map
-  "Insert map
-  exe "inoremap ".buffer." ".a:map." ".a:left.a:right.repeat("<Left>",len(a:right)-offset)
-  "Visual map
-  exe "vnoremap ".buffer." ".a:map." :<C-u>call <sid>surround('".a:left."','".a:right."','v','')<CR>``"
-endfunction
-"Next, similar to above, but always place stuff on newlines
-function! s:environs(map,left,right)
-  exe 'inoremap <silent> <buffer> '.a:map.' '.a:left.'<CR>'.a:right.'<Up><End><CR>'
-  exe 'nnoremap <silent> <buffer> '.a:map.' mzO'.a:left.'<Esc><Down>o'.a:right.'<Esc>`z=='
-  exe 'vnoremap <silent> <buffer> '.a:map.' <Esc>`>a<CR>'.a:right.'<Esc>`<i'.a:left.'<CR><Esc><Up><End>'.repeat('<Left>',len(a:left)-1)
-    "don't gotta worry about repeat command here, because cannot do that in visual
-    "or insert mode; doesn't make sense anyway because we rarely have to do something like
-    "100 times in insert mode/visual mode repeatedly, but often have to do so in normal mode
-endfunction
-"More advanced 'delimiters' and aliases for creating delimiters
-"Arguments are as follows:
-"1. Shortcut key
-"2. Left-hand delimiter
-"3. Right-hand delimiter
-"4. Whether the map is buffer-local
-"5. Whether the normal-mode map is for WORD instead of word
-"   In this last case, only the normal-mode map is defined.
-call s:delims(';p', 'print(', ')', 0, 0)
-call s:delims(';P', 'print(', ')', 0, 1)
-call s:delims(';b', '(', ')', 0, 0)
-call s:delims(';B', '(', ')', 0, 1)
-call s:delims(';c', '{', '}', 0, 0)
-call s:delims(';C', '{', '}', 0, 1)
-call s:delims(';r', '[', ']', 0, 0)
-call s:delims(';R', '[', ']', 0, 1)
-call s:delims(';a', '<', '>', 0, 0)
-call s:delims(';A', '<', '>', 0, 1)
-call s:delims(";'", "'", "'", 0, 0)
-call s:delims(';"', '"', '"', 0, 0)
-call s:delims(';$', '$', '$', 0, 0)
-call s:delims(';*', '*', '*', 0, 0)
-call s:delims(';`', '`', '`', 0, 0)
-call s:delims(';\', '\"', '\"', 0, 0)
-vnoremap ;f <Esc>`>a)<Esc>`<i(<Esc>hi
-nnoremap ;f lbmzi(<Esc>hea)<Esc>`zi
-nnoremap ;F lBmzi(<Esc>hEa)<Esc>`zi
-  "special function that inserts brackets, then
-  "puts your cursor in insert mode at the start so you can make a function call
-"Repair semicolon in insert mode
-"Also offer 'cancelling' completion with Escape
-inoremap ;; ;
-inoremap ;: ;;
-" inoremap ;<Esc> ;<Esc>
-inoremap ;<Esc> <Nop>
+"------------------------------------------------------------------------------"
+"Define some new vim-surround targets, usable with ds/cs/ys/yS
+"* Hit ga to get ASCII code (leftmost number; not the HEX code!)
+"* Note that if you just enter some uncoded character, will
+"  use that as a delimiter -- e.g. yss` surrounds with backticks
+"* Note double quotes are required, because surround-vim wants
+"  the literal \r return character.
+"c for curly brace
+let g:surround_99="{\r}"
+"f for functions, with user prompting
+let g:surround_102="\1function: \1(\r)"
+"\ for \" escaped quotes
+let g:surround_92="\\\"\r\\\""
+"p for print
+let g:surround_112="print(\r)"
 
-"###############################################################################
-" Now apply the above concepts to LaTeX in particular
-" This makes writing in LaTeX a ton easier
-"##############################################################################"
+"Important Note: One problem with custom targets is vim-surround
+"can 'put' them, but cannot 'find' them e.g. in a ds<custom-target>
+"or cs<custom-target><other-target> command.
+"Caveat: Surroun *can* detect them if they are single character, so if
+"you have a single-character map, just point the alias to that character.
+" * Have to map those manually it seems, as only ys/yS/y<other-target><custom-target>
+"   command work out of the box
+"Fix curly braces
+nmap dsc dsB
+nmap csc csB
+"Fix escaped quotes
+nmap ds\ /\\"<CR>xxdN
+"Fix functions
+nnoremap dsf mzF(bdt(xf)x`z
+nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
+"Consider adding other stuff
+
+"------------------------------------------------------------------------------"
+"Alias some 'block' definitions for vim-surround replacement commands
+"* Analagous to the yss syntax for current line
+"* Pretty much never ever want to surround based
+"  on result of a movement, so the 'iw' stuff is unnecessary
+nmap ysw ysiw
+nmap ysW ysiW
+nmap ysp ysip
+nmap ys. ysis
+nmap ySw ySiw
+nmap ySW ySiW
+nmap ySp ySip
+nmap yS. ySis
+
+"------------------------------------------------------------------------------"
+"Function for adding single-character delim mappings
+"Also will fix surroun-vim commands
+function! s:target_simple(symbol,start,end,...)
+  if a:0
+    let buffer="<buffer>"
+  else
+    let buffer=""
+  endif
+  "First the builtin ones
+  exe 'nnoremap '.buffer.' da'.a:symbol.' F'.a:start.'df'.a:end
+  exe 'nnoremap '.buffer.' ca'.a:symbol.' F'.a:start.'cf'.a:end
+  exe 'nnoremap '.buffer.' ya'.a:symbol.' F'.a:start.'yf'.a:end
+  exe 'nnoremap <silent> '.buffer.' va'.a:symbol.' F'.a:start.'vf'.a:end
+  exe 'nnoremap '.buffer.' da'.a:symbol.' T'.a:start.'dt'.a:end
+  exe 'nnoremap '.buffer.' ca'.a:symbol.' T'.a:start.'ct'.a:end
+  exe 'nnoremap '.buffer.' ya'.a:symbol.' T'.a:start.'yt'.a:end
+  exe 'nnoremap <silent> '.buffer.' va'.a:symbol.' T'.a:start.'vt'.a:end
+  "Next vim-surround repair
+  "This time we can't assume there is an existing valid target e.g. mapping
+  "c to B, so we have to make these up ourselves
+  if a:symbol==a:start && a:symbol==a:end "nothing needs to be done
+    return
+  elseif a:start==a:end "just point surround to the actual delimiters
+    exe 'nmap '.buffer.' ds'.a:symbol.' ds'.a:start
+    exe 'nmap '.buffer.' cs'.a:symbol.' cs'.a:start
+  else "harder
+  "Warning: Ugly hack! Just change delimiters to (), and execute cs on those
+    exe 'nmap '.buffer.' ds'.a:symbol.' f'.a:end.'xF'.a:start.'x'
+    exe 'nmap '.buffer.' cs'.a:symbol.' f'.a:end.'r)F'.a:start.'r(dsb'
+  endif
+endfunction
+"Add a couple very simple ones
+call s:target_simple('$', '$', '$', 0)
+call s:target_simple('!', '!', '!', 0)
+
+"------------------------------------------------------------------------------"
+"Function for adding fancy multiple character delimiters
+"These will only be 'placed', never detected; for example, will never work in
+"da<target>, ca<target>, cs<target><other>, etc. commands; only should be used for
+"ys<target>, yS<target>, visual-mode S, insert-mode <C-s>, et cetera
+function! s:target_fancy(symbol,start,end,...) "if final argument passed, this is buffer-local
+  if a:0 "surprisingly, below is standard vim script syntax
+    let b:surround_{char2nr(a:symbol)}=a:start."\r".a:end
+  else
+    let g:surround_{char2nr(a:symbol)}=a:start."\r".a:end
+  endif
+endfunction
+
+"------------------------------------------------------------------------------"
+"Apply the above concepts to LaTeX in particular
+"This makes writing in LaTeX a ton easier
 augroup tex_delimit
   au!
-  au FileType tex call s:texmacros()
+  au FileType tex call s:texsurround()
 augroup END
-function! s:texmacros()
-  "Repair comma-macros, and period/comma in insert mode
-  "Offer 'cancelling' completion with escape
-  inoremap <buffer> ,<Esc> <Nop>
-  inoremap <buffer> ,, ,
-  nnoremap <buffer> ,, @q
-    "special exception; otherwise my 'macro repitition' shortcut fails in LaTeX documents
-  "Quick way of declaring \latex{} commands
-  vnoremap <buffer> <expr> ;. '<Esc>mz`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`z'
-  nnoremap <buffer> <expr> ;. 'mzviw<Esc>`>a}<Esc>`<i\'.input('Enter \<name>{}-style environment name: ').'{<Esc>`z'
-  inoremap <buffer> <expr> ;. '\'.input('Enter \<name>{}-style environment name: ').'{}<Left>'
-  "Quick way of declaring begin-end environments
-  "1) start newline and enter \begin{}, then exit, then input new environment name inside, then exit
-  "2) paste name (line looks like \begin{name}name)
-  "3) wrap pasted name in \end{}
-  "4) place newlines in appropriate positions -- for the visual remap, adding new lines
-  "   messes up the < and > marks, so need to do that at end
-  nnoremap <buffer> <expr> ,. 'A<CR>\begin{}<Esc>i'.input('Enter begin-end environment name: ').'<Esc>'
-        \.'$".pF}a\end{<Esc>A}<Esc>F}a<CR><Esc><Up>A<CR>'
-  " vnoremap <buffer> <expr> ,. '<Esc>mz`>a\end{'.input('Enter begin-end-style environment name: ').'}<Esc>yiB'
-  "       \.'F\i<CR><Esc>==`<i\begin{}<Esc>"aPf}a<CR><Esc><Up>V/\\end{<CR>==:noh<CR>`z'
-  vnoremap <buffer> <expr> ,. '<Esc>mz`>a<CR>\end{}<Esc>i'.input('Enter begin-end-style environment name: ').'<Esc>=='
-        \.'`<i\begin{<C-r>.}<CR><Esc><Up>==`z'
-        " \.'F\i<CR><Esc>==`<i\begin{}<Esc>"aPf}a<CR><Esc><Up>V/\\end{<CR>==:noh<CR>`z'
-  inoremap <buffer> <expr> ,. '<CR>\begin{}<Esc>i'.input('Enter begin-end environment name: ').'<Esc>'
-        \.'$".pF}a\end{<Esc>A}<Esc>F}a<CR><Esc><Up>A<CR>'
+function! s:texsurround()
+  "Use 'l' for commands, 'L' for environments
+  "These are special maps that will load prompts; see vim-surround documentation on customization
+  let b:surround_108 = "\1command: \1{\r}"
+  let b:surround_108 = "\\begin{\1\\begin{\1}\r\\end{\1\1}"
+
   "Apply 'inner'/'outer'/'surround' syntax to \command{text} and \begin{env}text\end{env}
-  nmap <buffer> dsl F{F\dt{dsB
-  nnoremap <buffer> <expr> csl 'mzF{F\lct{'.input('Enter new \<name>{}-style environment name: ').'<Esc>`z'
   nnoremap <buffer> dal F{F\dt{daB
   nnoremap <buffer> cal F{F\dt{caB
   nnoremap <buffer> yal F{F\vf{%y
-  nnoremap <buffer> val F{F\vf{%
+  nnoremap <buffer> <silent> val F{F\vf{%
   nnoremap <buffer> dil diB
   nnoremap <buffer> cil ciB
   nnoremap <buffer> yil yiB
-  nnoremap <buffer> vil viB
-  "Fix for $$, since Vim won't do any ca$ va$ et cetera commands on them
-  "Surround syntax will already work, i.e. ds$ works fine
-  nnoremap <buffer> da$ F$df$
-  nnoremap <buffer> ca$ F$cf$
-  nnoremap <buffer> ya$ F$yf$
-  nnoremap <buffer> va$ F$vf$
-  nnoremap <buffer> di$ T$dt$
-  nnoremap <buffer> ci$ T$ct$
-  nnoremap <buffer> yi$ T$yt$
-  nnoremap <buffer> vi$ T$vt$
+  nnoremap <buffer> <silent> vil viB
+
+  "Fix vim-surround for 'l' commands
+  nmap <buffer> dsl F{F\dt{dsB
+  nmap <buffer> <expr> csl 'F{F\lct{'.input('command: ').'<Esc>F\'
+
   "Selecting LaTeX begin/end environments as best we can, using %-jumping 
   "enhanced by an ftplugin if possible.
-  nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
-  nmap <silent> <buffer> diL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>d
-  nmap <silent> <buffer> ciL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>cc
+  nmap <buffer> daL /\\end{<CR>:noh<CR>V^%d
+  nmap <buffer> caL /\\end{<CR>:noh<CR>V^%cc
   nmap <silent> <buffer> vaL /\\end{<CR>:noh<CR>V^%
-  nmap <silent> <buffer> daL /\\end{<CR>:noh<CR>V^%d
-  nmap <silent> <buffer> caL /\\end{<CR>:noh<CR>V^%cc
-  nmap <silent> <buffer> dsL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>dp<Up>V<Up>d
-  nmap <silent> <buffer> <expr> csL '/\\end{<CR>:noh<CR>APLACEHOLDER<Esc>^%f{<Right>ciB'
-    \.input('Enter new begin-end environment name: ').'<Esc>/PLACEHOLDER<CR>:noh<CR>A {<C-r>.}<Esc>2F{dt{'
+  nmap <buffer> diL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>d
+  nmap <buffer> ciL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>cc
+  nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
+
+  "Fix vim-surround for 'L' environments
+  "Ugly hack for the surround one
+  nmap <buffer> dsL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>dp<Up>V<Up>d
+  nmap <buffer> <expr> csL '/\\end{<CR>:noh<CR>A!!!<Esc>^%f{<Right>ciB'
+  \.input('\begin{').'<Esc>/!!!<CR>:noh<CR>A {<C-r>.}<Esc>2F{dt{'
+
   "Next, latex quotes
-  nnoremap <buffer> dsq f'xF`x
+  "The double ones are harder to do
   nnoremap <buffer> daq F`df'
-  nnoremap <buffer> diq T`dt'
   nnoremap <buffer> caq F`cf'
-  nnoremap <buffer> ciq T`ct'
   nnoremap <buffer> yaq F`yf'
+  nnoremap <buffer> <silent> vaq F`vf'
+  nnoremap <buffer> diq T`dt'
+  nnoremap <buffer> ciq T`ct'
   nnoremap <buffer> yiq T`yt'
-  nnoremap <buffer> vaq F`vf'
-  nnoremap <buffer> viq T`vt'
-  nnoremap <buffer> dsQ 2f'F'2x2F`2x
+  nnoremap <buffer> <silent> viq T`vt'
   nnoremap <buffer> daQ 2F`d2f'
-  nnoremap <buffer> diQ T`dt'
   nnoremap <buffer> caQ 2F`c2f'
-  nnoremap <buffer> ciQ T`ct'
   nnoremap <buffer> yaQ 2F`y2f'
+  nnoremap <buffer> <silent> vaQ 2F`v2f'
+  nnoremap <buffer> diQ T`dt'
+  nnoremap <buffer> ciQ T`ct'
   nnoremap <buffer> yiQ T`yt'
-  nnoremap <buffer> vaQ 2F`v2f'
-  nnoremap <buffer> viQ T`vt'
-  "Delimiters (advanced)/quick environments
-  "First the delimiters without newlines
-  " call s:delims('\|', '\left\\|', '\right\\|', 1)
-  call s:delims(';>\|', '\left\|',      '\right\|', 1, 0)
-  call s:delims(';>{',  '\left\{',      '\right\}', 1, 0)
-  call s:delims(';>(',  '\left(',       '\right)',  1, 0)
-  call s:delims(';>[',  '\left[',       '\right]',  1, 0)
-  call s:delims(';><',  '\left<',       '\right>',  1, 0)
-  call s:delims(';>o', '{\color{red}', '}', 1, 0)
-  call s:delims(';>i', '\textit{',     '}', 1, 0)
-  call s:delims(';>t', '\textbf{',     '}', 1, 0) "now use ;i for various cite commands
-  call s:delims(';>u', '\underline{',  '}', 1, 0) "u for under
-  call s:delims(';>l', '\linespread{',  '}', 1, 0) "u for under
-  call s:delims(';>m', '\mathrm{',     '}', 1, 0)
-  call s:delims(';>n', '\mathbf{',     '}', 1, 0)
-  call s:delims(';>M', '\mathcal{',    '}', 1, 0)
-  call s:delims(';>N', '\mathbb{',     '}', 1, 0)
-  call s:delims(';>y', '\texttt{',     '}', 1, 0) "typewriter text
-  call s:delims(';>Y', '\pyth$',       '$', 1, 0) "python verbatim
-  call s:delims(';>v', '\vec{',        '}', 1, 0)
-  call s:delims(';>V', '\verb$',       '$', 1, 0) "verbatim
-  call s:delims(';>d', '\dot{',        '}', 1, 0)
-  call s:delims(';>D', '\ddot{',       '}', 1, 0)
-  call s:delims(';>h', '\hat{',        '}', 1, 0)
-  call s:delims(';>`', '\tilde{',      '}', 1, 0)
-  call s:delims(';>-', '\overline{',   '}', 1, 0)
-  call s:delims(';>\', '\cancelto{}{', '}', 1, 0)
-  call s:delims(';>x', '\boxed{',      '}', 1, 0)
-  call s:delims(';>X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1, 0)
-    "the second one allows stuff to extend into margins, possibly
-  call s:delims(';/', '\sqrt{',     '}',  1, 0)
-  call s:delims(';q', '`',          "'",  1, 0)
-  call s:delims(';Q', '``',         "''", 1, 0)
-  call s:delims(';$', '$',          '$',  1, 0)
-  call s:delims(';e', '\times10^{', '}',  1, 0)
-  call s:delims(';k', '^{',         '}',  1, 0)
-  call s:delims(';j', '_{',         '}',  1, 0)
-  call s:delims(';K', '\overset{}{', '}', 1, 0)
-  call s:delims(';J', '\underset{}{',     '}',   1, 0)
-  call s:delims(';f', '\dfrac{',          '}{}', 1, 0)
-  call s:delims(';0', '\frametitle{',     '}',   1, 0)
-  call s:delims(';1', '\section{',        '}',   1, 0)
-  call s:delims(';2', '\subsection{',     '}',   1, 0)
-  call s:delims(';3', '\subsubsection{',  '}',   1, 0)
-  call s:delims(';4', '\section*{',       '}',   1, 0)
-  call s:delims(';5', '\subsection*{',    '}',   1, 0)
-  call s:delims(';6', '\subsubsection*{', '}',   1, 0)
+  nnoremap <buffer> <silent> viQ T`vt'
+
+  "Vim-surround fixes for them
+  nnoremap <buffer> dsq f'xF`x
+  nnoremap <buffer> dsQ 2f'F'2x2F`2x
+
+  "Next delimiters generally not requiring new lines
+  "Math mode brackets
+  call s:target_fancy('|', '\left\|', '\right\|', 1)
+  call s:target_fancy('{', '\left\{', '\right\}', 1)
+  call s:target_fancy('(', '\left(',  '\right)',  1)
+  call s:target_fancy('[', '\left[',  '\right]',  1)
+  call s:target_fancy('<', '\left<',  '\right>',  1)
+  "Arrays and whatnot; analagous to above, just point to right
+  call s:target_fancy('}', '\left\{\begin{array}{ll}', '\end{array}\right.', 1)
+  call s:target_fancy(')', '\begin{pmatrix}',          '\end{pmatrix}',      1)
+  call s:target_fancy(']', '\begin{bmatrix}',          '\end{bmatrix}',      1)
+  "Font types
+  call s:target_fancy('o', '{\color{red}', '}', 1)
+  call s:target_fancy('i', '\textit{',     '}', 1)
+  call s:target_fancy('t', '\textbf{',     '}', 1) "now use ;i for various cite commands
+  call s:target_fancy('u', '\underline{',  '}', 1) "u for under
+  call s:target_fancy('m', '\mathrm{',     '}', 1)
+  call s:target_fancy('n', '\mathbf{',     '}', 1)
+  call s:target_fancy('M', '\mathcal{',    '}', 1)
+  call s:target_fancy('N', '\mathbb{',     '}', 1)
+  "Paragraph spacing
+  call s:target_fancy('l', '\linespread{',  '}', 1)
+  "Verbatim
+  call s:target_fancy('y', '\texttt{',     '}', 1) "typewriter text
+  call s:target_fancy('Y', '\pyth$',       '$', 1) "python verbatim
+  call s:target_fancy('V', '\verb$',       '$', 1) "verbatim
+  "Math modifiers for symbols
+  call s:target_fancy('v', '\vec{',        '}', 1)
+  call s:target_fancy('d', '\dot{',        '}', 1)
+  call s:target_fancy('D', '\ddot{',       '}', 1)
+  call s:target_fancy('h', '\hat{',        '}', 1)
+  call s:target_fancy('`', '\tilde{',      '}', 1)
+  call s:target_fancy('-', '\overline{',   '}', 1)
+  call s:target_fancy('\', '\cancelto{}{', '}', 1)
+  "Boxes; the second one allows stuff to extend into margins, possibly
+  call s:target_fancy('x', '\boxed{',      '}', 1)
+  call s:target_fancy('X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1)
+  "Quotes
+  call s:target_fancy('q', '`',          "'",  1)
+  call s:target_fancy('Q', '``',         "''", 1)
+  "Simple enivronments, exponents, etc.
+  call s:target_fancy('/', '\sqrt{',       '}',   1)
+  call s:target_fancy('$', '$',            '$',   1)
+  call s:target_fancy('e', '\times10^{',   '}',   1)
+  call s:target_fancy('k', '^{',           '}',   1)
+  call s:target_fancy('j', '_{',           '}',   1)
+  call s:target_fancy('K', '\overset{}{',  '}',   1)
+  call s:target_fancy('J', '\underset{}{', '}',   1)
+  call s:target_fancy('f', '\dfrac{',      '}{}', 1)
+  "Sections and titles
+  call s:target_fancy('0', '\frametitle{',     '}',   1)
+  call s:target_fancy('1', '\section{',        '}',   1)
+  call s:target_fancy('2', '\subsection{',     '}',   1)
+  call s:target_fancy('3', '\subsubsection{',  '}',   1)
+  call s:target_fancy('4', '\section*{',       '}',   1)
+  call s:target_fancy('5', '\subsection*{',    '}',   1)
+  call s:target_fancy('6', '\subsubsection*{', '}',   1)
   "Shortcuts for citations and such
-  call s:delims(';7', '\ref{',     '}', 1, 0) "just the number
-  call s:delims(';8', '\autoref{', '}', 1, 0) "name and number; autoref is part of hyperref package
-  call s:delims(';9', '\label{',   '}', 1, 0) "declare labels that ref and autoref point to
-  call s:delims(';!', '\tag{',     '}', 1, 0) "change the default 1-2-3 ordering; common to use *
-  call s:delims(';z', '\note{',    '}', 1, 0) "notes are for beamer presentations, appear in separate slide
-  call s:delims(';a', '\caption{', '}', 1, 0) "amazingly a not used yet
-  call s:delims(';A', '\captionof{figure}{', '}', 1, 0) "alternative
-  call s:delims(';*', '\cite{',    '}', 1, 0) "most common
-  call s:delims(';&', '\citet{',   '}', 1, 0) "second most common one
-  call s:delims(';@', '\citep{',   '}', 1, 0) "second most common one
-  call s:delims(';#', '\citenum{', '}', 1, 0) "most common
-    "other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
-    "have been rethinking this
+  call s:target_fancy('7', '\ref{',     '}', 1) "just the number
+  call s:target_fancy('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
+  call s:target_fancy('9', '\label{',   '}', 1) "declare labels that ref and autoref point to
+  call s:target_fancy('!', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
+  call s:target_fancy('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
+  call s:target_fancy('a', '\caption{', '}', 1) "amazingly 'a' not used yet
+  call s:target_fancy('A', '\captionof{figure}{', '}', 1) "alternative
+  "Other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
+  "Have been rethinking this
+  call s:target_fancy('*', '\cite{',    '}', 1) "most common
+  call s:target_fancy('&', '\citet{',   '}', 1) "second most common one
+  call s:target_fancy('@', '\citep{',   '}', 1) "second most common one
+  call s:target_fancy('#', '\citenum{', '}', 1) "most common
   "Shortcuts for graphics
-  call s:delims(';g', '\includegraphics{', '}', 1, 0)
-  call s:delims(';G', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1, 0) "center across margins
-  " call s:delims('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
-  "Comma-prefixed delimiters without newlines
-  "Generally are more closely-related to the begin-end latex environments
-  inoremap <buffer> ,1 \tiny 
-  inoremap <buffer> ,2 \scriptsize 
-  inoremap <buffer> ,3 \footnotesize 
-  inoremap <buffer> ,4 \small 
-  inoremap <buffer> ,5 \normalsize 
-  inoremap <buffer> ,6 \large 
-  inoremap <buffer> ,7 \Large 
-  inoremap <buffer> ,8 \LARGE 
-  inoremap <buffer> ,9 \huge 
-  inoremap <buffer> ,0 \Huge 
-  call s:delims(',!', '{\tiny ',         '}', 1, 0)
-  call s:delims(',@', '{\scriptsize ',   '}', 1, 0)
-  call s:delims(',#', '{\footnotesize ', '}', 1, 0)
-  call s:delims(',$', '{\small ',        '}', 1, 0)
-  call s:delims(',%', '{\normalsize ',   '}', 1, 0)
-  call s:delims(',^', '{\large ',        '}', 1, 0)
-  call s:delims(',&', '{\Large ',        '}', 1, 0)
-  call s:delims(',*', '{\LARGE ',        '}', 1, 0)
-  call s:delims(',(', '{\huge ',         '}', 1, 0)
-  call s:delims(',)', '{\Huge ',         '}', 1, 0)
-  call s:delims(',{', '\left\{\begin{array}{ll}', '\end{array}\right.', 1, 0)
-  call s:delims(',m', '\begin{pmatrix}',           '\end{pmatrix}',       1, 0)
-  call s:delims(',M', '\begin{bmatrix}',           '\end{bmatrix}',       1, 0)
-  "Versions of the above, but this time puting them on own lines
-  " call s:environs(',P', '\begin{pmatrix}', '\end{pmatrix}')
-  " call s:environs(',B', '\begin{bmatrix}', '\end{bmatrix}')
-  "Comma-prefixed delimiters with newlines; these have separate special function because
-  "it does not make sense to have normal-mode maps for multiline begin/end environments
-  "* The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
-  "  with default single column; see: https://tex.stackexchange.com/a/366422/73149
-  "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
-  call s:environs(',;', '\begin{center}', '\end{center}') "because ; was available
-  call s:environs(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  call s:environs(',c', '\begin{columns}[c]', '\end{columns}')
-  call s:environs(',y', '\begin{python}', '\end{python}')
-  " call s:environs('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+  call s:target_fancy('g', '\includegraphics{', '}', 1)
+  call s:target_fancy('G', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
+  " call s:target_fancy('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
+
+  " "Versions of the above, but this time puting them on own lines
+  " "Comma-prefixed delimiters with newlines; these have separate special function because
+  " "it does not make sense to have normal-mode maps for multiline begin/end environments
+  " "* The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
+  " "  with default single column; see: https://tex.stackexchange.com/a/366422/73149
+  " "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
+  call s:target_fancy(',;', '\begin{center}',             '\end{center}')               "because ; was available
+  call s:target_fancy(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
+  call s:target_fancy(',c', '\begin{columns}[c]',         '\end{columns}')
+  call s:target_fancy(',y', '\begin{python}',             '\end{python}')
+  " call s:target_fancy('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
     "not sure what these args are for; c will vertically center
-  call s:environs(',C', '\begin{column}{.5\textwidth}', '\end{column}')
-  call s:environs(',i', '\begin{itemize}', '\end{itemize}')
-  call s:environs(',I', '\begin{description}', '\end{description}') "d is now open
-  call s:environs(',n', '\begin{enumerate}', '\end{enumerate}')
-  call s:environs(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
-  call s:environs(',t', '\begin{tabular}', '\end{tabular}')
-  call s:environs(',e', '\begin{equation*}', '\end{equation*}')
-  call s:environs(',a', '\begin{align*}', '\end{align*}')
-  call s:environs(',E', '\begin{equation}', '\end{equation}')
-  call s:environs(',A', '\begin{align}', '\end{align}')
-  call s:environs(',b', '\begin{block}{}', '\end{block}')
-  call s:environs(',B', '\begin{alertblock}{}', '\end{alertblock}')
-  call s:environs(',v', '\begin{verbatim}', '\end{verbatim}')
-  call s:environs(',V', '\begin{code}', '\end{code}')
-  call s:environs(',s', '\begin{frame}', '\end{frame}')
-  call s:environs(',S', '\begin{frame}[fragile]', '\end{frame}')
+  call s:target_fancy(',C', '\begin{column}{.5\textwidth}',     '\end{column}')
+  call s:target_fancy(',i', '\begin{itemize}',                  '\end{itemize}')
+  call s:target_fancy(',I', '\begin{description}',              '\end{description}') "d is now open
+  call s:target_fancy(',n', '\begin{enumerate}',                '\end{enumerate}')
+  call s:target_fancy(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
+  call s:target_fancy(',t', '\begin{tabular}',                  '\end{tabular}')
+  call s:target_fancy(',e', '\begin{equation*}',                '\end{equation*}')
+  call s:target_fancy(',a', '\begin{align*}',                   '\end{align*}')
+  call s:target_fancy(',E', '\begin{equation}',                 '\end{equation}')
+  call s:target_fancy(',A', '\begin{align}',                    '\end{align}')
+  call s:target_fancy(',b', '\begin{block}{}',                  '\end{block}')
+  call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
+  call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')
+  call s:target_fancy(',V', '\begin{code}',                     '\end{code}')
+  call s:target_fancy(',s', '\begin{frame}',                    '\end{frame}')
+  call s:target_fancy(',S', '\begin{frame}[fragile]',           '\end{frame}')
     "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
     "note that fragile make compiling way slower
-  call s:environs(',w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}') "white frame
-  call s:environs(',p', '\begin{minipage}{\linewidth}', '\end{minipage}')
-  call s:environs(',f', '\begin{figure}', '\end{figure}')
-  call s:environs(',F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
-  call s:environs(',W', '\begin{wrapfigure}{r}{.5\textwidth}', '\end{wrapfigure}')
+  call s:target_fancy(',w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}')     "white frame
+  call s:target_fancy(',p', '\begin{minipage}{\linewidth}',           '\end{minipage}')
+  call s:target_fancy(',f', '\begin{figure}',                         '\end{figure}')
+  call s:target_fancy(',F', '\begin{subfigure}{.5\textwidth}',        '\end{subfigure}')
+  call s:target_fancy(',W', '\begin{wrapfigure}{r}{.5\textwidth}',    '\end{wrapfigure}')
 endfunction
 
-"###############################################################################
+"------------------------------------------------------------------------------"
 "HTML macros
 "For now pretty empty, but we should add to this
-"##############################################################################"
 augroup html_delimit
   au!
   au FileType html call s:htmlmacros()
 augroup END
 function! s:htmlmacros()
-  call s:environs('h', '<head>', '</head>')
-  call s:environs('b', '<body>', '</body>')
-  call s:environs('t', '<title>', '</title>')
-  call s:environs('p', '<p>', '</p>')
-  call s:environs('1', '<h1>', '</h1>')
-  call s:environs('2', '<h2>', '</h2>')
-  call s:environs('3', '<h3>', '</h3>')
-  call s:environs('4', '<h4>', '</h4>')
-  call s:environs('5', '<h5>', '</h5>')
-  call s:delims(',e', '<em>', '</em>', 1, 0)
-  call s:delims(',t', '<strong>', '</strong>', 1, 0)
+  call s:target_fancy('h', '<head>',   '</head>',   1)
+  call s:target_fancy('b', '<body>',   '</body>',   1)
+  call s:target_fancy('t', '<title>',  '</title>',  1)
+  call s:target_fancy('e', '<em>',     '</em>',     1)
+  call s:target_fancy('t', '<strong>', '</strong>', 1)
+  call s:target_fancy('p', '<p>',      '</p>',      1)
+  call s:target_fancy('1', '<h1>',     '</h1>',     1)
+  call s:target_fancy('2', '<h2>',     '</h2>',     1)
+  call s:target_fancy('3', '<h3>',     '</h3>',     1)
+  call s:target_fancy('4', '<h4>',     '</h4>',     1)
+  call s:target_fancy('5', '<h5>',     '</h5>',     1)
 endfunction
+
