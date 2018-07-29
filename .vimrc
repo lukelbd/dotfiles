@@ -10,7 +10,7 @@
 "     F1: 1b 4f 50 (Ctrl-,)
 "     F2: 1b 4f 51 (Ctrl-.)
 "     F3: 1b 4f 52 (Ctrl-i)
-"     F4: 1b 4f 53 (Ctrl-a)
+"     F4: 1b 4f 53 (Ctrl-m)
 "     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
 "###############################################################################
 "IMPORTANT STUFF
@@ -21,7 +21,6 @@ let mapleader="\<Space>"
 "Misc stuff
 noremap <CR> <Nop>
 noremap <Space> <Nop>
-noremap <C-b> <Nop>
 "The above 2 enter weird modes I don't understand...
 noremap Q <Nop>
 noremap K <Nop>
@@ -94,55 +93,16 @@ function! s:tabreset()
 endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Keystrokes that close popup menu (note that insertleave triggers tabreset)
-inoremap <expr> <C-c> pumvisible()   ?                 "\<C-e>\<Esc>" : "\<Esc>"
-inoremap <expr> <BS> pumvisible()    ? <sid>tabreset()."\<C-e>\<BS>"  : "\<BS>"
+inoremap <expr> <C-c>   pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
+inoremap <expr> <BS>    pumvisible() ? <sid>tabreset()."\<C-e>\<BS>"  : "\<BS>"
 inoremap <expr> <Space> pumvisible() ? <sid>tabreset()."\<Space>"     : "\<Space>"
 "Seleting items; use my tabcount tracker to determine if we are 'accepting' something
-inoremap <expr> <CR> pumvisible()    ? b:tabcount==0 ?  "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+inoremap <expr> <CR>    pumvisible() ? b:tabcount==0                               ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
 "Incrementing items in menu
-inoremap <expr> <Tab>   pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<Tab>"
-inoremap <expr> <S-Tab> pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<BS>"
 inoremap <expr> <C-j>   pumvisible() ? <sid>tabincrease()."\<C-n>" : ""
 inoremap <expr> <C-k>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : ""
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
 inoremap <expr> <ScrollWheelUp>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
-
-"###############################################################################
-"GET CURSOR OUTSIDE CURRENT DELIMITER
-"Function for escaping current delimiter
-"Just search for braces instead of using percent-mapping, because when
-"in the middle of typing often don't particularly *care* if a bracket is completed/has
-"a pair -- just see a bracket, and want to get out of it.
-"Also percent matching solution would require leaving insert mode, triggering
-"various autocmds, and is much slower/jumpier -- vim script solutions are better!
-"  ( [ [ ( "  "  asdfad) sdf    ]  sdfad   ]  asdfasdf) hello   asdfas) 
-function! s:outofdelim(n)
-  "Note: matchstrpos is relatively new/less portable, e.g. fails on midway
-  "Used to use matchstrpos, now just use match(); much simpler
-  let regex = "[\"')\\]}>]" "list of 'outside' delimiters for jk matching
-  let pos = 0 "minimum match position
-  let string = getline('.')[col('.')-1:]
-  for i in range(a:n)
-    let result = match(string, regex, pos) "get info on *first* match
-    if result==-1 | break | endif
-    let pos = result + 1 "go to next one
-  endfor
-  if pos==0 "relative position is zero, i.e. don't move
-    return ""
-  else
-    return repeat("\<Right>", pos)
-  endif
-endfunction
-"Apply remaps; also add a couple new ones for convenience
-"this ) is ] hello a } hello test " hello
-inoremap jj j
-inoremap kk k
-inoremap <expr> jk !pumvisible() ? <sid>outofdelim(1)
-  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
-  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
-inoremap <expr> kj !pumvisible() ? <sid>outofdelim(10)
-  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(10) 
-  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(10)
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
@@ -199,7 +159,7 @@ noremap , @q
 nnoremap U <C-r>
 "Use - for throwaway register, pipeline for clipboard register
 "Don't try anything fancy here, it's not worth it!
-noremap <silent> - "_
+noremap <silent> _ "_
 noremap <silent> \| "*
 "Don't save single-character deletions to any register
 nnoremap x "_x
@@ -258,10 +218,10 @@ noremap <silent> <Leader>o :noh<CR>
 "while we actually want the place where we *last exited* visual mode, like '^ for insert mode
 nnoremap v myv
 nnoremap V myV
+vnoremap <CR> <C-c>
 nnoremap <C-v> my<C-v>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 " vnoremap <silent> <LeftMouse> <Esc>:echo 'Mode: '.visualmode() \| sleep 200 m<CR><LeftMouse>mx`y:exe 'normal! '.visualmode()<CR>`x
-vnoremap <CR> <C-c>
 "Some other useful visual mode maps
 "Also prevent highlighting selection under cursor, unless on first character
 nnoremap <silent> v$ v$h
@@ -674,10 +634,15 @@ endif
 "###############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
 if has_key(g:plugs, "delimitmate")
+  "Todo: Apparently delimitmate has its own jump command, should start using it.
   "Set up delimiter paris; delimitMate uses these by default
   "Can set global defaults along with buffer-specific alternatives
+  let g:delimitMate_expand_space=1
+  let g:delimitMate_expand_cr=1
+  let g:delimitMate_jump_expansion=1
   let g:delimitMate_quotes="\" '"
   let g:delimitMate_matchpairs="(:),{:},[:]"
+  let g:delimitMate_excluded_regions="String" "by default is disabled inside, don't want that
   augroup delimitmate
     au!
     au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
@@ -1151,8 +1116,8 @@ if has_key(g:plugs, "nerdcommenter")
   "Section headers and dividers
   nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
   nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
-  nmap c- <Plug>bar1
-  nmap c_ <Plug>bar2
+  nmap c- <Plug>bar2
+  nmap c_ <Plug>bar1
   nnoremap <silent> c\  :call <sid>section('-')<CR>A
   nnoremap <silent> c\| :call <sid>section()<CR>A
   "Author information comment
@@ -1661,7 +1626,9 @@ nnoremap <silent> <C-o> :call <sid>openwrapper()<CR>
 set splitright
 set splitbelow
 noremap <Tab>- :split 
+noremap <Tab>_ :split 
 noremap <Tab>\ :vsplit 
+noremap <Tab>\| :vsplit 
 "Window selection
 noremap <Tab>j <C-w>j
 noremap <Tab>k <C-w>k
@@ -1757,10 +1724,11 @@ nnoremap <silent> \E :%s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecu
 vnoremap <expr> <silent> \<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
+"Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
 nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> \_ :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-nnoremap <silent> \- :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> \_ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 "Replace useless BibTex entries
 nnoremap <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 " nnoremap <expr> gX ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
@@ -1784,7 +1752,8 @@ for c in range(char2nr('A'), char2nr('Z'))
   exe 'lnoremap '.nr2char(c+32).' '.nr2char(c)
   exe 'lnoremap '.nr2char(c).' '.nr2char(c+32)
 endfor
-"Use vim to remap F5 to something more useful
+"Use iTerm hex Code map to simulate an F5 press whenever you press some other
+"easier to reach combo. Currently it is <C-/> -- like it a lot!
 inoremap <F5> <C-^>
 cnoremap <F5> <C-^>
 "can't lnoremap the above, because iminsert is turning it on and off
@@ -1908,9 +1877,9 @@ noremap <silent> g; :<Up><CR>
 "Oddly writing a function that declares maps, and calling it after using q:, did
 "not work, and making all of the map commands one line with \| did not work. Only the below works.
 noremap <silent> <Leader>; q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
-  \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
+  \:noremap <lt>buffer <lt>C-z> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-z> <lt>C-c><CR>
 noremap <silent> <Leader>/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
-  \:noremap <lt>buffer <lt>C-b> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-b> <lt>C-c><CR>
+  \:noremap <lt>buffer <lt>C-z> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-z> <lt>C-c><CR>
 "Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
 " * Note the <Esc> is needed first because it cancels application of the number operator

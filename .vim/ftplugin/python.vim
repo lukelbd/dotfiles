@@ -6,7 +6,7 @@
 "Tab settings; normally keep it to just 2 spaces
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
 "Run current script in shell
-nnoremap <silent> <buffer> <C-b> :w<CR>:exe '!clear; set -x; python '.shellescape(expand('%:p'))<CR>
+nnoremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
 "Builtin python ftplugin syntax option; these should be provided with VIM by default
 let g:python_highlight_all=1
 "Convert key=value to 'key':value, and vice versa, on current line or within selection
