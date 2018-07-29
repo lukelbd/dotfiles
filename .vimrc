@@ -167,12 +167,18 @@ noremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), get
 noremap <silent> cl xph
 noremap <silent> ch Xp
 "Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
+"Arrow keys are for macbook mapping
 noremap <C-l> <C-i>
 noremap <C-h> <C-o>
+noremap <Right> <C-i>
+noremap <Left> <C-o>
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "the escapes prevent a weird error where sometimes q triggers command-history window
+"Arrow keys are for macbook mapping
 noremap <C-j> g;
 noremap <C-k> g,
+noremap <Down> g;
+noremap <Up> g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qq<Esc>:let b:recording=1<CR>'
 "Delete entire line, leave behind an empty line
@@ -406,9 +412,9 @@ Plug 'JuliaEditorSupport/julia-vim'
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
 " Plug 'vim-scripts/matchit.zip'
-"Navigating between files and inside file; enhancedjumps seemed broken to me
+"Files and directories
 Plug 'scrooloose/nerdtree'
-Plug 'ctrlpvim/ctrlp.vim'
+" Plug 'ctrlpvim/ctrlp.vim' "forget that shit, fzf is way better yo
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'jistr/vim-nerdtree-tabs'
 " Plug 'vim-scripts/EnhancedJumps'
@@ -959,87 +965,6 @@ command! EIOn  call <sid>eion()
 command! EIOff call <sid>eioff()
 command! EIMap call <sid>eimap()
 
-"###############################################################################
-"CTRLP PLUGIN
-"Make opening in new tab default behavior; see: https://github.com/kien/ctrlp.vim/issues/160
-"Also scan dotfiles/directories, but *ignore* vim-plug directory tree and possibly others
-"Encountered weird issue due to interactions of CursorMoved maps; here's my saga:
-" * Calling :noautocmd CtrlP does not fix the problem either; what the fuck.
-" * Note ctrlp 'enter' and 'exit' functions seem to have no effect
-"   on eventignore. Has to be set manually before entering the buffer.
-" * Note only CursorMoved autocommands are still triggered when entering
-"   ctrlp window; the BufEnter stuff is sucessfully ignored, so you can't
-"   create a BufEnter command expecting it to execute when we exit the ctrlp buffer.
-" * Creating a CursorHold autocmd also seems to break ctrlp; so can't make
-"   one that resets the eventignore options.
-" * Amazingly a nnoremap works because we enter the ctrlp buffer in 'normal mode',
-"   but all keys are mapped to print their actual values; so a nnoremap of some
-"   :command actually works.
-" * Frustratingly it seems impossible to declare mappings this way, however; it
-"   will fail if you try e.g. nnoremap <C-p> :Ctrlp<CR>:nnoremap <buffer> <Esc> <Stuff><CR>
-"   But we can call a function that declares this mapping. And *that* fixes the problem!
-augroup ctrlp
-augroup END
-if has_key(g:plugs, "ctrlp.vim")
-  " let g:ctrlp_buffer_func={'enter':'EIOn', 'exit':'EIoff'} "fails
-  " nnoremap <silent> <C-p> :EIOn<CR>:CtrlP<CR>:echom "Hi"<CR>:nnoremap <buffer> \<Esc\> :q\<CR\>:EIoff\<CR\><CR> "fails
-  function! s:ctrlpwrap()
-    let dir=input("Directory for Ctrl-P (".getcwd()."): ", "", "dir")
-    if dir!=""
-      EIOn
-      exe 'CtrlP '.dir
-      EIMap
-    else
-      echom "Cancelled."
-    endif
-  endfunction
-  "Make sure to map Ctrl i to F3 in iTerm
-  nnoremap <silent> <C-p> :call <sid>ctrlpwrap()<CR>
-  " nnoremap <silent> <F3> :call <sid>ctrlpwrap()<CR>
-  " nnoremap <silent> <C-p> :EIOn<CR>:CtrlP<CR>:EIMap<CR>
-  let g:ctrlp_map='' "disable default map; will use my special map
-  let g:ctrlp_max_depth=5 "honestly, rarely need many
-  let g:ctrlp_custom_ignore = '\v[\/](\.git|\.hg|\.svn|plugged)$'
-  let g:ctrlp_show_hidden=1
-  let g:ctrlp_by_filename=0
-  let g:ctrlp_prompt_mappings = {
-    \ 'PrtBS()':              ['<bs>', '<c-]>'],
-    \ 'PrtDelete()':          ['<del>'],
-    \ 'PrtDeleteWord()':      ['<c-w>'],
-    \ 'PrtClear()':           ['<c-u>'],
-    \ 'PrtSelectMove("j")':   ['<c-j>', '<down>'],
-    \ 'PrtSelectMove("k")':   ['<c-k>', '<up>'],
-    \ 'PrtSelectMove("t")':   ['<Home>', '<kHome>'],
-    \ 'PrtSelectMove("b")':   ['<End>', '<kEnd>'],
-    \ 'PrtSelectMove("u")':   ['<PageUp>', '<kPageUp>'],
-    \ 'PrtSelectMove("d")':   ['<PageDown>', '<kPageDown>'],
-    \ 'PrtHistory(-1)':       ['<c-n>'],
-    \ 'PrtHistory(1)':        ['<c-p>'],
-    \ 'AcceptSelection("h")': ['<c-x>', '<c-cr>', '<c-s>'],
-    \ 'AcceptSelection("e")': ['<c-t>'],
-    \ 'AcceptSelection("t")': ['<cr>', '<2-LeftMouse>'],
-    \ 'AcceptSelection("v")': ['<c-v>', '<RightMouse>'],
-    \ 'ToggleFocus()':        ['<s-tab>'],
-    \ 'ToggleRegex()':        ['<c-r>'],
-    \ 'ToggleByFname()':      ['<c-d>'],
-    \ 'ToggleType(1)':        ['<c-f>', '<c-up>'],
-    \ 'ToggleType(-1)':       ['<c-b>', '<c-down>'],
-    \ 'PrtExpandDir()':       ['<tab>'],
-    \ 'PrtInsert("c")':       ['<MiddleMouse>', '<insert>'],
-    \ 'PrtInsert()':          ['<c-\>'],
-    \ 'PrtCurStart()':        ['<c-a>'],
-    \ 'PrtCurEnd()':          ['<c-e>'],
-    \ 'PrtCurLeft()':         ['<c-h>', '<left>', '<c-^>'],
-    \ 'PrtCurRight()':        ['<c-l>', '<right>'],
-    \ 'PrtClearCache()':      ['<F5>'],
-    \ 'PrtDeleteEnt()':       ['<F7>'],
-    \ 'CreateNewFile()':      ['<c-y>'],
-    \ 'MarkToOpen()':         ['<c-z>'],
-    \ 'OpenMulti()':          ['<c-o>'],
-    \ 'PrtExit()':            ['<esc>', '<c-c>', '<c-g>'],
-    \ }
-endif
-
 "##############################################################################"
 "FZF COMPLETION
 "Maybe not necessary anymore because Ctrl-P access got way better
@@ -1068,7 +993,8 @@ if !empty(glob("~/.fzf"))
       echom "Cancelled."
     endif
   endfunction
-  noremap <F3> :call <sid>fzf()<CR>
+  noremap <F3>  :call <sid>fzf()<CR>
+  noremap <C-p> :FZF<CR>
 endif
 
 "###############################################################################
@@ -1706,7 +1632,7 @@ endfunction
 function! s:tablist(A,L,P)
   return map(range(1,tabpagenr('$')),'string(v:val)')
 endfunction
-noremap <silent> <Tab>m :silent! call <sid>tabmove(input('Move tab: ', '', 'customlist,<sid>tablist'))<CR>
+noremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: ', '', 'customlist,<sid>tablist'))<CR>
 noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "Next a function for completing stuff, *including* hidden files god damnit
