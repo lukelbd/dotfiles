@@ -97,7 +97,8 @@ inoremap <expr> <C-c>   pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
 inoremap <expr> <BS>    pumvisible() ? <sid>tabreset()."\<C-e>\<BS>"  : "\<BS>"
 inoremap <expr> <Space> pumvisible() ? <sid>tabreset()."\<Space>"     : "\<Space>"
 "Seleting items; use my tabcount tracker to determine if we are 'accepting' something
-inoremap <expr> <CR>    pumvisible() ? b:tabcount==0                               ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+"Disable this because it messes up delimitmate!
+inoremap <expr> <CR>  pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
 "Incrementing items in menu
 inoremap <expr> <C-j>   pumvisible() ? <sid>tabincrease()."\<C-n>" : ""
 inoremap <expr> <C-k>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : ""
@@ -149,7 +150,7 @@ nnoremap dL 0d$
 noremap <Leader>d gd
 noremap <Leader>D gD
 "Easy mark usage
-noremap " :echo "Setting mark."<CR>mq
+noremap " :echo "Setting mark."<CR>ma
 noremap ' `a
 "New macro useage; almost always just use one at a time
 "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
@@ -638,8 +639,8 @@ if has_key(g:plugs, "delimitmate")
   "Set up delimiter paris; delimitMate uses these by default
   "Can set global defaults along with buffer-specific alternatives
   let g:delimitMate_expand_space=1
-  let g:delimitMate_expand_cr=1
-  let g:delimitMate_jump_expansion=1
+  let g:delimitMate_expand_cr=2 "expand even if it is not empty!
+  let g:delimitMate_jump_expansion=0
   let g:delimitMate_quotes="\" '"
   let g:delimitMate_matchpairs="(:),{:},[:]"
   let g:delimitMate_excluded_regions="String" "by default is disabled inside, don't want that

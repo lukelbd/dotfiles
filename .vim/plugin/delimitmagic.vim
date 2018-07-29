@@ -4,47 +4,6 @@
 "------------------------------------------------------------------------------"
 "This plugin is inspired by the 'surround.vim' plugin.
 "Neat tools for working smoothly with delimited text.
-"Future:
-" * Want to include way to put braces around entire line (ignoring trailing and
-"   leading whitespace) like yss<delimiter>.
-" * Might want to add similar yS and ySS-commands which behave just like
-"   ys and yss, except they put containing text on own line.
-" * There's also the S-map in visual mode, and the t-prefix which lets
-"   you type in an arbitrary tag.
-" * Consider implementing surround feature where ] adds space but [ adds
-"   no space.
-" * Not sure what vs and vS features do. To be figured out.
-" * The broad theme here is that ***IMO the motion-feature offered by surround
-"   plugin is overkill***. Generally there's only a few types of blocks
-"   that we want to surround with delimiters: selections, words WORDs, lines,
-"   and paragraphs (note these would be 'is' and 'ip' in surround).
-"Gameplan:
-" * Just like S activates visual mode surround.vim, could come up with way
-"   to activate it in insert mode. Perhaps yy would work, and fits better
-"   with original mnemonic.
-" * Could instead use ;-letter for the *Greek letter inserts*, then use
-"   sy and sY as analogies for ys and yS.
-" * Could change ysiw to ysw, ysiW to ysW, et cetera. Or... simply conform to
-"   this more flexible syntax, and make , and ; commands accept range indicators
-"   like w, W, l, s, p, et cetera. Perhaps could even make it accept a count,
-"   where we wrap around that number of delimiters (e.g. 1;lb would wrap
-"   this line and the one above, 1;Lb would wrap this line and the one below, or
-"   just have them wrap one line on either side).
-" * Note there is already a Ctrl-S insert mode map to insert delimiters,
-"   so maybe should just expand that in future. Along with a Ctrl-Y map
-"   to insert those ,-prefixed ones.
-"Features:
-" * Changes to surround mnemonics: now use a for <>, r for [], c for {}, and
-"   b for (). Also use ;+key to put braces around words or seletions. Use B, C,
-"   et cetera to put braces around WORDs. This replaces most common use of
-"   ys<motion><delimiter> command.
-" * LaTeX environment mappings: like a hundred different ;-prefixed ,-prefixed
-"   and .-prefixed commands, where the usual syntax is <leader><letter>. Those
-"   punctuation keys were chosen because they are rarely followed immediately
-"   with text. Surround text with {} commands and begin/end statements, and
-"   insert math symbols with the press of a .-shortcut.
-" * HTML tag mappings: similar to the above; put text inside HTML tags.
-"   Still needs to be expanded.
 "------------------------------------------------------------------------------"
 "Expand the functionality of delimitMate and vim-surround
 if !exists("g:plugs")
@@ -57,6 +16,12 @@ endif
 if !has_key(g:plugs, "delimitmate")
   finish
 endif
+
+"------------------------------------------------------------------------------"
+"Alias to ys command in insert mode
+imap ;; ;
+imap ;<Esc> <Nop>
+imap ; <C-s>
 
 "------------------------------------------------------------------------------"
 "Get cursor outside current delimiter
