@@ -1147,6 +1147,13 @@ function namelist() {
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
+function nchelp() {
+  echo "Available commands:"
+  echo "ncdump ncglobal ncinfo
+        ncvarsinfo ncdimsinfo
+        nclist ncvarlist ncdimslist
+        ncvarinfo ncvardump ncvardata ncvartable" | column -t
+}
 function ncdump() { # almost always want this; access old versions in functions with backslash
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   command ncdump -h "$@" | less
