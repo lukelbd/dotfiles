@@ -12,12 +12,17 @@
 "     F3: 1b 4f 52 (Ctrl-i)
 "     F4: 1b 4f 53 (Ctrl-m)
 "     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
+" * Currently mapping things in consideration of following Karabiner settings:
+"     Map C-j/C-k/C-h/C-l to arrow keys
+"     Swap underscore and backslash, so underscore is easy to reach
 "###############################################################################
 "IMPORTANT STUFF
 "Says to always use the vim default where vi and vim differ; for example, if you
 "put this too late, whichwrap will be reset
 set nocompatible
 let mapleader="\<Space>"
+"File types commonly want to ignore for various utilities
+let g:ignore_types=['gitcommit', 'rst', 'qf', 'diff', 'help', 'tagbar', 'nerdtree']
 "Misc stuff
 noremap <CR> <Nop>
 noremap <Space> <Nop>
@@ -54,6 +59,8 @@ augroup END
 "Escape repair, necessary when we allow h/l to change line number
 "Note for whichwrap, <> = left/right insert, [] = left/right normal mode
 "After escaping, always return to place where last exited
+"Todo: This breaks delimitmate option to create newlines (along with insert
+"mode map of enter below); figure out why and how to fix
 set whichwrap=[,],<,>,h,l
 augroup escapefix
   au!
@@ -64,7 +71,7 @@ augroup END
 "Some plugins make periods part of 'word' motions, which sucks balls
 augroup keywordfix
   au!
-  au BufEnter * set iskeyword=65-90,95,97-122,48-57 "the same: a-z,_,A-Z,0-9
+  au BufEnter * set iskeyword=45,65-90,95,97-122,48-57 "the same: -,a-z,_,A-Z,0-9
 augroup END
 
 "###############################################################################
@@ -80,30 +87,38 @@ inoremap <C-p> <C-r>"
 "Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
-  au InsertEnter,InsertLeave * let b:tabcount=0
+  au InsertLeave,BufEnter * let b:menupos=0
 augroup END
-function! s:tabincrease() "use this inside <expr> remaps
-  let b:tabcount+=1 | return ''
+function! s:tab_increase() "use this inside <expr> remaps
+  let b:menupos+=1 | return ''
 endfunction
-function! s:tabdecrease()
-  let b:tabcount-=1 | return ''
+function! s:tab_decrease()
+  let b:menupos-=1 | return ''
 endfunction
-function! s:tabreset()
-  let b:tabcount=0 | return ''
+function! s:tab_reset()
+  let b:menupos=0 | return ''
 endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Keystrokes that close popup menu (note that insertleave triggers tabreset)
-inoremap <expr> <C-c>   pumvisible() ? "\<C-e>\<Esc>" : "\<Esc>"
-inoremap <expr> <BS>    pumvisible() ? <sid>tabreset()."\<C-e>\<BS>"  : "\<BS>"
-inoremap <expr> <Space> pumvisible() ? <sid>tabreset()."\<Space>"     : "\<Space>"
-"Seleting items; use my tabcount tracker to determine if we are 'accepting' something
-"Disable this because it messes up delimitmate!
-inoremap <expr> <CR>  pumvisible() ? b:tabcount==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tabreset() : "\<CR>"
+inoremap <expr> <BS>    !pumvisible() ? "\<BS>"    : <sid>tab_reset()."\<C-e>\<BS>"
+inoremap <expr> <Space> !pumvisible() ? "\<Space>" : <sid>tab_reset()."\<Space>"
 "Incrementing items in menu
-inoremap <expr> <C-j>   pumvisible() ? <sid>tabincrease()."\<C-n>" : ""
-inoremap <expr> <C-k>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : ""
-inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tabincrease()."\<C-n>" : "\<ScrollWheelDown>"
-inoremap <expr> <ScrollWheelUp>   pumvisible() ? <sid>tabdecrease()."\<C-p>" : "\<ScrollWheelUp>"
+inoremap <expr> <C-j>             !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
+inoremap <expr> <C-k>             !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
+inoremap <expr> <Up>              !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
+inoremap <expr> <Down>            !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
+inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
+inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
+"Always accept, choose default menu item if necessary
+inoremap <expr> <Tab> !pumvisible() ? "\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y> ".<sid>tab_reset() : "\<C-y> ".<sid>tab_reset()
+"Accept only if we have explicitly scrolled down to something
+"Also prevents annoying delay where otherwise, have to press enter twice when popup menu open
+inoremap <expr> <CR>  !pumvisible() ? "\<CR>" : b:menupos==0 ? "\<C-e>\<CR>" : "\<C-y> ".<sid>tab_reset()
+
+"##############################################################################"
+"DYING BREATH
+"See v:dying info
+au VimLeave * if v:dying | echo "\nAAAAaaaarrrggghhhh!!!\n" | endif
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
@@ -129,17 +144,17 @@ noremap <silent> cl xph
 noremap <silent> ch Xp
 "Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 "Arrow keys are for macbook mapping
-noremap <C-l> <C-i>
-noremap <C-h> <C-o>
+noremap <C-l>   <C-i>
+noremap <C-h>   <C-o>
 noremap <Right> <C-i>
-noremap <Left> <C-o>
+noremap <Left>  <C-o>
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "the escapes prevent a weird error where sometimes q triggers command-history window
 "Arrow keys are for macbook mapping
-noremap <C-j> g;
-noremap <C-k> g,
+noremap <C-j>  g;
+noremap <C-k>  g,
 noremap <Down> g;
-noremap <Up> g,
+noremap <Up>   g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Delete entire line, leave behind an empty line
@@ -160,7 +175,7 @@ noremap , @a
 nnoremap U <C-r>
 "Use - for throwaway register, pipeline for clipboard register
 "Don't try anything fancy here, it's not worth it!
-noremap <silent> _ "_
+noremap <silent> - "_
 noremap <silent> \| "*
 "Don't save single-character deletions to any register
 nnoremap x "_x
@@ -184,11 +199,8 @@ nnoremap O Ox<BS>
 nnoremap <C-p> <Nop>
 nnoremap <C-n> <Nop>
 "Better join behavior -- before 2J joined this line and next, now it
-"means 'join the two lines below'; more intuitive. uses if statement
-"in <expr> remap, and v:count the user input count
+"means 'join the two lines below'; more intuitive
 nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
-nnoremap <expr> K v:count>1 ? 'gJgJ' : 'gJ'
-" nnoremap <expr> K v:count > 1 ? 'JdwJdw' : 'Jdw'
 "Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
@@ -225,8 +237,9 @@ vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 " vnoremap <silent> <LeftMouse> <Esc>:echo 'Mode: '.visualmode() \| sleep 200 m<CR><LeftMouse>mx`y:exe 'normal! '.visualmode()<CR>`x
 "Some other useful visual mode maps
 "Also prevent highlighting selection under cursor, unless on first character
-nnoremap <silent> v$ v$h
-nnoremap <silent> vv ^v$gE
+nnoremap v$ v$h
+nnoremap vv ^v$gE
+nnoremap vA ggVG
 nnoremap <silent> v/ hn:noh<CR>gn
 
 "###############################################################################
@@ -320,112 +333,133 @@ endif
 augroup plug
 augroup END
 call plug#begin('~/.vim/plugged')
+"------------------------------------------------------------------------------"
 "Indent line
-"WARNING: Right now *totally* fucks up stuff search mode, and cursorline overlaps. So not good.
+"Warning: Right now *totally* fucks up search mode, and cursorline overlaps. So not good.
 "Requires changing Conceal group color, but doing that also messes up latex conceal
 "backslashes (which we need to stay transparent); so forget it probably
 " Plug 'yggdroot/indentline'
-"Colors
-Plug 'altercation/vim-colors-solarized'
-"Superman man pages
-Plug 'jez/vim-superman'
+"------------------------------------------------------------------------------"
+"Colors (don't need colors)
+" Plug 'altercation/vim-colors-solarized'
+"------------------------------------------------------------------------------"
+"Superman man pages (not really used currently)
+" Plug 'jez/vim-superman'
+"------------------------------------------------------------------------------"
 "Thesaurus; appears broken
 " Plug 'beloglazov/vim-online-thesaurus'
+"------------------------------------------------------------------------------"
 "Make mappings repeatable; critical
 "Now we edit our own version in .vim/plugin/autoload
 " Plug 'tpope/vim-repeat'
+"------------------------------------------------------------------------------"
 "Automatic list numbering; actually it mysteriously fails so fuck that shit
 " let g:bullets_enabled_file_types = ['vim', 'markdown', 'text', 'gitcommit', 'scratch']
 " Plug 'dkarter/bullets.vim'
-"Appearence; use my own customzied statusline/tagbar stuff though, and it's way better
-" Plug 'vim-airline/vim-airline'
-" Plug 'itchyny/lightline.vim'
-"* Decided this plugin was done and wrote my own pretty tabline/statusline plugins
-"* I don't like having everything look the exact same between server; just want
-"  to use the terminal colorscheme and let colors do their thing
-"* Good lightline styles: nord, PaperColor and PaperColor_dark (fave), OldHope,
-"  jellybeans, and Tomorrow_Night, Tomorrow_Night_Eighties
+"------------------------------------------------------------------------------"
 "Proper syntax highlighting for a few different things
 "Right now .tmux.conf and .tmux files, and markdown files
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
+"------------------------------------------------------------------------------"
+"Easy tags, for easy integration
+Plug 'xolox/vim-misc' "depdency for easytags
+Plug 'xolox/vim-easytags'
+"------------------------------------------------------------------------------"
 "Colorize Hex strings
 "Note this option is ***incompatible*** with iTerm minimum contrast above 0
 "Actually tried with minimum contrast zero and colors *still* messed up; forget it
 " Plug 'lilydjwg/colorizer'
+"------------------------------------------------------------------------------"
 "TeX utilities; better syntax highlighting, better indentation,
 "and some useful remaps. Also zotero integration.
 Plug 'Shougo/unite.vim'
 Plug 'rafaqz/citation.vim'
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
+"------------------------------------------------------------------------------"
 "Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
+"------------------------------------------------------------------------------"
 "Python wrappers
 " Plug 'davidhalter/jedi-vim' "these need special support
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
 " Plug 'hdima/python-syntax' "this failed for me; had to manually add syntax file
 " Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython' "same problem as python-mode
+"------------------------------------------------------------------------------"
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
-" Plug 'vim-scripts/matchit.zip'
+" Plug 'vim-scripts/matchit.zip' "now track my own
+"------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'
 " Plug 'ctrlpvim/ctrlp.vim' "forget that shit, fzf is way better yo
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
-" Plug 'jistr/vim-nerdtree-tabs'
+" Plug 'jistr/vim-nerdtree-tabs' "unnecessary
 " Plug 'vim-scripts/EnhancedJumps'
+"------------------------------------------------------------------------------"
 "Commenting and syntax checking
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
+"------------------------------------------------------------------------------"
 "Sessions and swap files
-"Mapped in my .bashrc vims to vim -S .session.vim and exiting vim saves the session there
+"Mapped in my .bashrc vims to vim -S .vimsession and exiting vim saves the session there
 "Also vim-obsession more compatible with older versions
 "NOTE: Apparently obsession causes all folds to be closed
 Plug 'tpope/vim-obsession'
 " if g:compatible_workspace | Plug 'thaerkh/vim-workspace' | endif
 " Plug 'gioele/vim-autoswap' "deals with swap files automatically; no longer use them so unnecessary
+"------------------------------------------------------------------------------"
 "Git wrappers and differencing tools
 Plug 'tpope/vim-fugitive'
 if g:has_signs | Plug 'airblade/vim-gitgutter' | endif
+"------------------------------------------------------------------------------"
 "Completion engines
 " Plug 'Valloric/YouCompleteMe' "broken
 " Plug 'ajh17/VimCompletesMe' "no auto-popup feature
 " Plug 'lifepillar/vim-mucomplete' "broken, seriously, cannot get it to work, don't bother! is slow anyway.
 " if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif "haven't tried it
 if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
+"------------------------------------------------------------------------------"
 "Simple stuff for enhancing delimiter management
 Plug 'tpope/vim-surround'
 Plug 'raimondi/delimitmate'
+"------------------------------------------------------------------------------"
 "Aligning things and stuff
 "Alternative to tabular is: https://github.com/tommcdo/vim-lion
 "But in defense tabular is *super* flexible
 Plug 'godlygeek/tabular'
+"------------------------------------------------------------------------------"
 "Calculators and number stuff
 "No longer use codi, because had endless problems with it, and this cool 'Numi'
 "desktop calculator will suffice
 Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif "CODI appears to be broken, tried with other plugins disabled
+if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
+"------------------------------------------------------------------------------"
 "Single line/multiline transition; make sure comes after surround
 "Hardly ever need this
 " Plug 'AndrewRadev/splitjoin.vim'
 " let g:splitjoin_split_mapping = 'cS' | let g:splitjoin_join_mapping  = 'cJ'
+"------------------------------------------------------------------------------"
 "Multiple cursors is awesome
 "Article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
 " Plug 'terryma/vim-multiple-cursors'
+"------------------------------------------------------------------------------"
 "Sneak plugin; see the link for helpful discussion:
 "https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 Plug 'justinmk/vim-sneak'
+"------------------------------------------------------------------------------"
 "End of plugins
-call plug#end() "the plug#end also declares filetype syntax and indent on
-  "note apparently every BufRead autocmd inside an ftdetect/filename.vim file
-  "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
+"The plug#end also declares filetype syntax and indent on
+"Note apparently every BufRead autocmd inside an ftdetect/filename.vim file
+"is automatically made part of the 'filetypedetect' augroup; that's why it exists!
+call plug#end()
 
 "###############################################################################
 "SESSION MANAGEMENT
@@ -436,41 +470,41 @@ augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
     au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
-    au VimEnter * Obsession .session.vim
+    au VimEnter * Obsession .vimsession
   endif
   let s:autosave="InsertLeave" | if exists("##TextChanged") | let s:autosave.=",TextChanged" | endif
   " exe "au ".s:autosave." * w"
 augroup END
-" function! s:autosave_toggle(on)
-"   if a:on "in future consider using this to disable autosave for large files
-"     if exists('b:autosave_on') && b:autosave_on=1
-"       return "already on
-"     endif
-"     let b:autosave_on=1
-"     echom 'Enabling autosave.'
-"     augroup autosave
-"       au! * <buffer>
-"       let g:autosave="InsertLeave"
-"       if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
-"       exe "au ".g:autosave." <buffer> * w"
-"     augroup END
-"   else
-"     if !exists('b:autosave_on') || b:autosave_on=0
-"       return "already off
-"     endif
-"     let b:autosave_on=0
-"     echom 'Disabling autosave.'
-"     augroup autosave
-"       au! * <buffer>
-"     augroup END
-"   endif
-" endfunction
+function! s:autosave_toggle(on)
+  if a:on "in future consider using this to disable autosave for large files
+    if exists('b:autosave_on') && b:autosave_on=1
+      return "already on
+    endif
+    let b:autosave_on=1
+    echom 'Enabling autosave.'
+    augroup autosave
+      au! * <buffer>
+      let g:autosave="InsertLeave"
+      if exists("##TextChanged") | let g:autosave.=",TextChanged" | endif
+      exe "au ".g:autosave." <buffer> * w"
+    augroup END
+  else
+    if !exists('b:autosave_on') || b:autosave_on=0
+      return "already off
+    endif
+    let b:autosave_on=0
+    echom 'Disabling autosave.'
+    augroup autosave
+      au! * <buffer>
+    augroup END
+  endif
+endfunction
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
-  let g:workspace_session_name = '.session.vim'
+  let g:workspace_session_name = '.vimsession'
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
   let g:workspace_persist_undo_history = 0 "don't need to save undo history
   let g:workspace_autosave_untrailspaces = 0 "sometimes we WANT trailing spaces!
-  let g:workspace_autosave_ignore = ['gitcommit', 'rst', 'qf', 'diff', 'help'] "don't autosave these
+  let g:workspace_autosave_ignore = g:ignore_types "don't autosave these
 endif
 "Remember file position, so come back after opening to same spot
 
@@ -634,6 +668,10 @@ endif
 
 "###############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
+"Note: If enter is mapped delimitmate will turn off its auto expand
+"enter mapping.
+"Warning: My InsertLeave mapping to stop moving the cursor left also fucks
+"up the enter map; consider overwriting function.
 if has_key(g:plugs, "delimitmate")
   "Todo: Apparently delimitmate has its own jump command, should start using it.
   "Set up delimiter paris; delimitMate uses these by default
@@ -742,9 +780,9 @@ endfunction
 augroup simple
   au!
   au BufEnter * let b:recording=0
-  au FileType help call s:helpsetup()
-  au FileType rst,qf,diff,man Simple 1
-  au FileType gitcommit Simple 0
+  au FileType help HelpSetup
+  au FileType rst,qf,diff,man SimpleSetup 1
+  au FileType gitcommit SimpleSetup 0
 augroup END
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
@@ -758,17 +796,21 @@ noremap <silent> <expr> <Leader>H ':!clear; search='.input('Get help info: ').';
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 function! s:helpsetup()
   if len(tabpagebuflist())==1 | q | endif "exit from help window, if it is only one left
+  "Window considerations
   wincmd L "moves current window to be at far-right; 'wincmd' executes Ctrl+W functions
   vertical resize 80
+  "Easy quit
   nnoremap <silent> <buffer> q :q<CR>
+  "Enter to jump to tag under cursor
   nnoremap <buffer> <CR> <C-]>
-  " nnoremap <nowait> <buffer> <LeftMouse> <LeftMouse><C-]>
+  "Use single bracket to go back tag
   if g:has_nowait | nnoremap <nowait> <buffer> [ :pop<CR>
   else | nnoremap <buffer> [[ :pop<CR>
   endif
+  "Better jumping behavior; note these must be C-], not Ctrl-]
   setlocal nolist nonumber norelativenumber nospell
-  "better jumping behavior; note these must be C-], not Ctrl-]
 endfunction
+command! HelpSetup call <sid>helpsetup()
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
 function! s:simplesetup(...)
@@ -782,7 +824,7 @@ function! s:simplesetup(...)
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell
 endfunction
-command! -nargs=? Simple call <sid>simplesetup(<args>)
+command! -nargs=? SimpleSetup call <sid>simplesetup(<args>)
 
 "###############################################################################
 "VIM VISUAL INCREMENT; creating columns of 1/2/3/4 etc.
@@ -794,9 +836,9 @@ if has_key(g:plugs, "vim-visual-increment")
   silent! vunmap <C-a>
   silent! vunmap <C-x>
   vmap + <Plug>VisualIncrement
-  vmap _ <Plug>VisualDecrement
+  vmap \ <Plug>VisualDecrement
   nnoremap + <C-a>
-  nnoremap _ <C-x>
+  nnoremap \ <C-x>
 endif
 
 "###############################################################################
@@ -1162,7 +1204,7 @@ if has_key(g:plugs, "syntastic")
     noh | w | noautocmd SyntasticCheck
     if len(tabpagebuflist())>nbufs
       wincmd j | set syntax=on
-      Simple
+      SimpleSetup
       wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
     else | echom "No errors found, or no checkers available." | let b:syntastic_on=0
     endif
@@ -1334,55 +1376,55 @@ if has_key(g:plugs, "tabular")
 	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
-  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Alignment regex: ').'/l1c1<CR>'
+  nnoremap <silent> <expr> _<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
+  vnoremap <silent> <expr> _<Space> "<Esc>:silent! '<,'>Table /".input('Alignment regex: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
-  nnoremap <expr> \, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \, ':Table      /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> _, ':Tabularize /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> _, ':Table      /,\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
-  nnoremap <expr> \d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> \d ':Table      /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  nnoremap <expr> _d ':Tabularize /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> _d ':Table      /\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
-  nnoremap <expr> \D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \D ':Table      /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> _D ':Tabularize /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> _D ':Table      /:\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs/l0c1<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  nnoremap <expr> \r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> \r ':Table      /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  nnoremap <expr> _r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> _r ':Table      /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
-  nnoremap <expr> \\| ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> \\| ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> _\| ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> _\| ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
-  nnoremap <expr> \\ ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> \\ ':Table      /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  nnoremap <expr> __ ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> __ ':Table      /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
-  nnoremap <expr> \_ ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> \_ ':Table      /\S\zs\ /l0<CR>'
+  nnoremap <expr> _a ':Tabularize /\S\zs\ /l0<CR>'
+  vnoremap <expr> _a ':Table      /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
-  nnoremap <expr> \C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> \C ':Table      /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> _C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> _C ':Table      /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
   "Enforces that
-  nnoremap <expr> \c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> \c ':Table      /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  nnoremap <expr> _c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> _c ':Table      /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
   "This selects the *first* uncommented equals sign that does not belong to
   "a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
-  nnoremap <expr> \= ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  vnoremap <expr> \= ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  nnoremap <expr> \+ ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
-  vnoremap <expr> \+ ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
-  " nnoremap <expr> \= ':Tabularize /^[^=]*\zs=/l1c1<CR>'
-  " vnoremap <expr> \= ':Table      /^[^=]*\zs=/l1c1<CR>'
-  " nnoremap <expr> \+ ':Tabularize /^[^=]*=\zs/l0c1<CR>'
-  " vnoremap <expr> \+ ':Table      /^[^=]*=\zs/l0c1<CR>'
+  nnoremap <expr> _= ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  vnoremap <expr> _= ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  nnoremap <expr> _+ ':Tabularize /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  vnoremap <expr> _+ ':Table      /^[^'.b:NERDCommenterDelims['left'].']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  " nnoremap <expr> _= ':Tabularize /^[^=]*\zs=/l1c1<CR>'
+  " vnoremap <expr> _= ':Table      /^[^=]*\zs=/l1c1<CR>'
+  " nnoremap <expr> _+ ':Tabularize /^[^=]*=\zs/l0c1<CR>'
+  " vnoremap <expr> _+ ':Table      /^[^=]*=\zs/l0c1<CR>'
 endif
 
 "###############################################################################
@@ -1626,11 +1668,12 @@ function! s:openwrapper()
 endfunction
 nnoremap <silent> <C-o> :call <sid>openwrapper()<CR>
 "Splitting -- make :sp and :vsp split to right and bottom
+"Beware if you switched underscore and backslash!
 set splitright
 set splitbelow
 noremap <Tab>- :split 
-noremap <Tab>_ :split 
-noremap <Tab>\ :vsplit 
+noremap <Tab>\ :split 
+noremap <Tab>_ :vsplit 
 noremap <Tab>\| :vsplit 
 "Window selection
 noremap <Tab>j <C-w>j
@@ -1706,34 +1749,34 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 augroup delete
 augroup END
 "Replace commented lines; very useful when sharing manuscripts
-nnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+nnoremap <silent> <expr> _n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
-vnoremap <silent> <expr> \n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+vnoremap <silent> <expr> _n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
 "Replace consecutive spaces on current line with one space
-vnoremap <silent> \W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
-nnoremap <silent> \W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+vnoremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
+nnoremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
 "Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Will probably be necessary after the comment trimming
-nnoremap <silent> \w :%s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-vnoremap <silent> \w :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+nnoremap <silent> _w :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+vnoremap <silent> _w :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
 "Delete empty lines
-nnoremap <silent> \e :%s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-vnoremap <silent> \e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+nnoremap <silent> _e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
+vnoremap <silent> _e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 "Replace consecutive newlines with single newline
-vnoremap <silent> \E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-nnoremap <silent> \E :%s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+vnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
+nnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace all tabs
 vnoremap <expr> <silent> \<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 "Underscore is easiest one to switch if using that Karabiner map
-nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> \_ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
-nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> _' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+nnoremap <silent> _" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> _\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> _- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 "Replace useless BibTex entries
-nnoremap <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+nnoremap <silent> _X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 " nnoremap <expr> gX ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
 
 "###############################################################################
@@ -1829,7 +1872,6 @@ noremap gt <Nop>
 noremap gT <Nop>
 "Jumping between comments; pretty neat huh?
 "Moves cursor in whatever mode you want
-"Also, jump between empty lines
 function! s:smartjump(regex,backwards) "jump to next comment
   let startline=line('.')
   let flag=(a:backwards ? 'Wnb' : 'Wn') "don't wrap around EOF, and don't jump yet
@@ -1847,11 +1889,6 @@ noremap <expr> <silent> gc <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],0
 noremap <expr> <silent> gC <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],1).'gg'
 noremap <expr> <silent> ge <sid>smartjump('^\s*$',0).'gg'
 noremap <expr> <silent> gE <sid>smartjump('^\s*$',1).'gg'
-"Select all maps
-nnoremap gG ggVG
-vnoremap gG <Esc>ggVG
-"Analogue to gg; also opens up 'G' as a prefix
-nnoremap GG G
 "Default 'open file under cursor' to open in new tab; change for normal and vidual
 noremap gf <c-w>gf
 noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
@@ -2011,18 +2048,18 @@ command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 function! s:ftplugin()
   "Enable 'simple' mode
   execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
-  silent Simple
+  silent SimpleSetup
 endfunction
 function! s:ftsyntax()
   execute 'split $VIMRUNTIME/syntax/'.&filetype.'.vim'
-  silent Simple
+  silent SimpleSetup
 endfunction
 command! PluginFile call <sid>ftplugin()
 command! SyntaxFile call <sid>ftsyntax()
 "Window displaying all colors
 function! s:colors()
   source $VIMRUNTIME/syntax/colortest.vim
-  silent Simple
+  silent SimpleSetup
 endfunction
 command! Colors call <sid>colors()
 command! GroupColors vert help group-name

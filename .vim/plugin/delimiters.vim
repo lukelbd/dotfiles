@@ -18,20 +18,8 @@ if !has_key(g:plugs, "delimitmate")
 endif
 
 "------------------------------------------------------------------------------"
-"Alias to ys command in insert mode
-imap ;; ;
-imap ;<Esc> <Nop>
-imap ; <C-s>
-
-"------------------------------------------------------------------------------"
-"Get cursor outside current delimiter
-"Use alternative mapping from delimitMate default C-g+g
-imap <C-o> <Plug>delimitMateJumpMany
-
-"------------------------------------------------------------------------------"
-"Alternatively use my function for escaping current delimiter
-"Find it's behavior more consistent; sometimes the above will skip consecutive
-"delimiters.
+"Simple function for moving outside current delimiter
+"Puts cursor to the right of closing braces and quotes
 " * Just search for braces instead of using percent-mapping, because when
 "   in the middle of typing often don't particularly *care* if a bracket is completed/has
 "   a pair -- just see a bracket, and want to get out of it.
@@ -39,7 +27,7 @@ imap <C-o> <Plug>delimitMateJumpMany
 "   various autocmds, and is much slower/jumpier -- vim script solutions are better!
 " ( [ [ ( "  "  asdfad) sdf    ]  sdfad   ]  asdfasdf) hello   asdfas) 
 function! s:tabreset()
-  let b:tabcount=0 | return ''
+  let b:menupos=0 | return ''
 endfunction
 function! s:outofdelim(n)
   "Note: matchstrpos is relatively new/less portable, e.g. fails on midway
@@ -64,8 +52,16 @@ endfunction
 "Apply remaps
 "Mnemonic here is C-o gets us out; currently not used by any other maps!
 inoremap <expr> <C-o> !pumvisible() ? <sid>outofdelim(1)
-  \ : b:tabcount==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
+  \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
+
+"------------------------------------------------------------------------------"
+"Fancy builtin delimitMate version
+"Get cursor outside of consecutive delimiter, ignoring subgroups
+"and always passing to the right of consecutive braces
+"Also disable <C-n> to avoid confusion; will be using up/down anyway
+imap <C-p> <Plug>delimitMateJumpMany
+imap <C-n> <Nop>
 
 "------------------------------------------------------------------------------"
 "Function to alias builtin vim surround blocks
@@ -127,39 +123,6 @@ nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$mVvN<Down>0
 "Maybe add other special ideas
 
 "------------------------------------------------------------------------------"
-"Define some new vim-surround targets, usable with ds/cs/ys/yS
-"* Hit ga to get ASCII code (leftmost number; not the HEX code!)
-"* Note that if you just enter some uncoded character, will
-"  use that as a delimiter -- e.g. yss` surrounds with backticks
-"* Note double quotes are required, because surround-vim wants
-"  the literal \r return character.
-"c for curly brace
-let g:surround_99="{\r}"
-"f for functions, with user prompting
-let g:surround_102="\1function: \1(\r)"
-"\ for \" escaped quotes
-let g:surround_92="\\\"\r\\\""
-"p for print
-let g:surround_112="print(\r)"
-
-"Important Note: One problem with custom targets is vim-surround
-"can 'put' them, but cannot 'find' them e.g. in a ds<custom-target>
-"or cs<custom-target><other-target> command.
-"Caveat: Surroun *can* detect them if they are single character, so if
-"you have a single-character map, just point the alias to that character.
-" * Have to map those manually it seems, as only ys/yS/y<other-target><custom-target>
-"   command work out of the box
-"Fix curly braces
-nmap dsc dsB
-nmap csc csB
-"Fix escaped quotes
-nmap ds\ /\\"<CR>xxdN
-"Fix functions
-nnoremap dsf mzF(bdt(xf)x`z
-nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
-"Consider adding other stuff
-
-"------------------------------------------------------------------------------"
 "Alias some 'block' definitions for vim-surround replacement commands
 "* Analagous to the yss syntax for current line
 "* Pretty much never ever want to surround based
@@ -174,8 +137,38 @@ nmap ySp ySip
 nmap yS. ySis
 
 "------------------------------------------------------------------------------"
-"Function for adding single-character delim mappings
-"Also will fix surroun-vim commands
+"Define some new vim-surround targets, usable with ds/cs/ys/yS
+"* Hit ga to get ASCII code (leftmost number; not the HEX code!)
+"* Note that if you just enter some uncoded character, will
+"  use that as a delimiter -- e.g. yss` surrounds with backticks
+"* Note double quotes are required, because surround-vim wants
+"  the literal \r return character.
+"c for curly brace
+let g:surround_{char2nr('c')}="{\r}"
+"f for functions, with user prompting
+let g:surround_{char2nr('f')}="\1function: \1(\r)"
+"\ for \" escaped quotes
+let g:surround_{char2nr('\')}="\\\"\r\\\""
+"p for print
+let g:surround_{char2nr('p')}="print(\r)"
+
+"------------------------------------------------------------------------------"
+"Important Note: One problem with custom targets is vim-surround
+"can 'put' them, but cannot 'find' them e.g. in a ds<custom-target>
+"or cs<custom-target><other-target> command.
+"Caveat: Surround *can* detect them if they are single character, so if
+"you have a single-character map, just point the alias to that character.
+"Fix curly braces
+nmap dsc dsB
+nmap csc csB
+"Fix escaped quotes
+nmap ds\ /\\"<CR>xxdN
+"Fix functions
+nnoremap dsf mzF(bdt(xf)x`z
+nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
+
+"Function for adding single-character delim mappings and fixing
+"surround-vim commands as described above automatically
 function! s:target_simple(symbol,start,end,...)
   if a:0
     let buffer="<buffer>"
@@ -403,6 +396,8 @@ endfunction
 "------------------------------------------------------------------------------"
 "HTML macros
 "For now pretty empty, but we should add to this
+"Note that tag delimiters are *built in* to vim-surround
+"Just use the target 't', and prompt will ask for description
 augroup html_delimit
   au!
   au FileType html call s:htmlmacros()

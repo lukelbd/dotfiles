@@ -399,9 +399,9 @@ MISSING 05;37;41
 .zip  1;36
 
 # Log files and session files; bright white
-.session.vim 01;37
-.log         01;37
-.nml         01;37
+.vimsession 01;37
+.log        01;37
+.nml        01;37
 
 # Database files
 .nc    36
