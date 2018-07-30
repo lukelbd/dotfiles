@@ -780,8 +780,7 @@ endfunction
 augroup simple
   au!
   au BufEnter * let b:recording=0
-  au FileType help HelpSetup
-  au FileType rst,qf,diff,man SimpleSetup 1
+  au FileType help,rst,qf,diff,man SimpleSetup 1
   au FileType gitcommit SimpleSetup 0
 augroup END
 "Next set the help-menu remaps
@@ -794,32 +793,18 @@ noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; 
 noremap <silent> <expr> <Leader>H ':!clear; search='.input('Get help info: ').'; '
   \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
-function! s:helpsetup()
-  if len(tabpagebuflist())==1 | q | endif "exit from help window, if it is only one left
-  "Window considerations
-  wincmd L "moves current window to be at far-right; 'wincmd' executes Ctrl+W functions
-  vertical resize 80
-  "Easy quit
-  nnoremap <silent> <buffer> q :q<CR>
-  "Enter to jump to tag under cursor
-  nnoremap <buffer> <CR> <C-]>
-  "Use single bracket to go back tag
-  if g:has_nowait | nnoremap <nowait> <buffer> [ :pop<CR>
-  else | nnoremap <buffer> [[ :pop<CR>
-  endif
-  "Better jumping behavior; note these must be C-], not Ctrl-]
-  setlocal nolist nonumber norelativenumber nospell
-endfunction
-command! HelpSetup call <sid>helpsetup()
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
 function! s:simplesetup(...)
-  let nosave = 1 "default true
-  if a:0 "override
-    let nosave = a:1
+  if len(tabpagebuflist())==1
+    q "exit if only one left
   endif
-  if nosave
+  if (a:0 ? a:1 : 1) "don't save
     nnoremap <buffer> <C-s> <Nop>
+  endif
+  if &ft=="help"
+    wincmd L "moves current window to be at far-right (wincmd executes Ctrl+W maps)
+    vertical resize 80 "always certain size
   endif
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell

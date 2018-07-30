@@ -42,9 +42,9 @@ endif
 "------------------------------------------------------------------------------"
 "First some easytags options
 "Note no matter what, filenames in ctags file will always have absolute path
-set tags=./.vimtags
+set tags=./.vimtags "says to look up until home directory; see: https://stackoverflow.com/questions/5017500/vim-difficulty-setting-up-ctags-source-in-subdirectories-dont-see-tags-file-i
 set cpoptions+=d "says to use the tag file in current directory when we see './' in tags option, instead of in that file's directory
-let g:easytags_file='./.vimtags'
+let g:easytags_file='./.vimtags' "probably better to set myself
 let g:easytags_dynamic_files=2 "says to always put tags file in the current working directory
 let g:easytags_async=1
 let g:easytags_on_cursorhold=0
@@ -191,20 +191,23 @@ function! s:ctagbracket(foreward, n)
     return b:ctaglines[i] "just return the line number
   endfor
 endfunction
+
+"Next bracket maps; first for navigating tag stack, and then for
+"simply scrolling through successive tags in file
 function! s:ctagbracketmaps()
-  if &ft!="help" "use bracket for jumpint to last position here
-    if g:has_nowait
-      nnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>:exe <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
-      nnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>:exe <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
-      vnoremap <nowait> <expr> <buffer> <silent> [ '<Esc>gv'.<sid>ctagbracket(0,'.v:count.').'ggk<CR>'
-      vnoremap <nowait> <expr> <buffer> <silent> ] '<Esc>gv'.<sid>ctagbracket(1,'.v:count.').'ggk<CR>'
-    else
-      nnoremap <expr> <buffer> <silent> [[ '<Esc>:exe <sid>ctagbracket(0,'.v:count.')<CR>:echo "Jumped to previous tag."<CR>'
-      nnoremap <expr> <buffer> <silent> ]] '<Esc>:exe <sid>ctagbracket(1,'.v:count.')<CR>:echo "Jumped to next tag."<CR>'
-      vnoremap <expr> <buffer> <silent> [[ '<Esc>gv'.<sid>ctagbracket(0,'.v:count.').'ggk<CR>'
-      vnoremap <expr> <buffer> <silent> ]] '<Esc>gv'.<sid>ctagbracket(1,'.v:count.').'ggk<CR>'
-    endif
+  "Tag brackets
+  if g:has_nowait
+    noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
+    noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
+  else
+    noremap <expr> <buffer> <silent> [[ <sid>ctagbracket(0,'.v:count.').'gg'
+    noremap <expr> <buffer> <silent> ]] <sid>ctagbracket(1,'.v:count.').'gg'
   endif
+  "Simple map to jump to tag under cursor
+  nnoremap <buffer> <CR> <C-]>
+  "Navigating the tag stack (i.e. history of tag jumps)
+  noremap <buffer> <silent> { :<C-u>pop<CR>
+  noremap <buffer> <silent> } :<C-u>tag<CR>
 endfunction
 
 "------------------------------------------------------------------------------"
