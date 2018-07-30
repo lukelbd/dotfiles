@@ -192,6 +192,15 @@ function! s:ctagbracket(foreward, n)
   endfor
 endfunction
 
+"Simple map to jump to tag under cursor
+"Right now it's pretty unpredictable so just use declaration map
+" nnoremap <buffer> <CR> <C-]>
+nnoremap <CR> gd
+"Navigating the tag stack (i.e. history of tag jumps)
+noremap <silent> { :<C-u>pop<CR>
+noremap <silent> } :<C-u>tag<CR>
+" noremap <expr> <buffer> <silent> { <sid>ctagbracket(0,'.v:count.').'gg'
+" noremap <expr> <buffer> <silent> } <sid>ctagbracket(1,'.v:count.').'gg'
 "Next bracket maps; first for navigating tag stack, and then for
 "simply scrolling through successive tags in file
 function! s:ctagbracketmaps()
@@ -199,15 +208,14 @@ function! s:ctagbracketmaps()
   if g:has_nowait
     noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
     noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
+    " noremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+    " noremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
   else
     noremap <expr> <buffer> <silent> [[ <sid>ctagbracket(0,'.v:count.').'gg'
     noremap <expr> <buffer> <silent> ]] <sid>ctagbracket(1,'.v:count.').'gg'
+    " noremap <nowait> <buffer> <silent> [[ :<C-u>pop<CR>
+    " noremap <nowait> <buffer> <silent> ]] :<C-u>tag<CR>
   endif
-  "Simple map to jump to tag under cursor
-  nnoremap <buffer> <CR> <C-]>
-  "Navigating the tag stack (i.e. history of tag jumps)
-  noremap <buffer> <silent> { :<C-u>pop<CR>
-  noremap <buffer> <silent> } :<C-u>tag<CR>
 endfunction
 
 "------------------------------------------------------------------------------"
