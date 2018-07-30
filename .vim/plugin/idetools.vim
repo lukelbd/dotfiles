@@ -137,6 +137,8 @@ command! ReadTags call <sid>ctagsread()
 "------------------------------------------------------------------------------"
 "Functions for jumping between regexes in the ctag search strings
 "Super useful feature!
+"Check out fzf examples page for how we designed the below function:
+"https://github.com/junegunn/fzf/wiki/Examples-(vim)
 function! s:ctagjump(tag) "just jumps to selection, much simpler
   if exists('b:ctagnames_alph')
     let idx=index(b:ctagnames_alph, a:tag)
@@ -149,7 +151,7 @@ function! s:ctagjump(tag) "just jumps to selection, much simpler
     echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
   endif
 endfunction
-noremap <Leader><Space> :call fzf#run({'source': b:ctagnames_alph, 'sink': funcref('<sid>ctagjump'), 'down': '30%'})<CR>
+noremap <Leader><Space> :call fzf#run({'source': b:ctagnames_alph, 'sink': funcref('<sid>ctagjump'), 'down': '~20%'})<CR>
 
 "------------------------------------------------------------------------------"
 "Next jump between subsequent ctags with [[ and ]]

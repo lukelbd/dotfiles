@@ -981,32 +981,22 @@ command! EIMap call <sid>eimap()
 augroup fzf
 augroup END
 if has_key(g:plugs,'.fzf')
+  "First some basic settings
   let g:fzf_layout = {'down': '~20%'} "make window smaller
-  let g:fzf_action = {
-    \ 'ctrl-i': 'silent!',
-    \ 'ctrl-m': 'tab split',
-    \ 'ctrl-t': 'tab split',
-    \ 'ctrl-x': 'split',
-    \ 'ctrl-v': 'vsplit' }
-  function! s:fzf_init()
-    let result=input("Directory for FZF (".getcwd()."): ", "", "dir")
-    if result!=""
-      exe 'FZF '.result
-    else
-      exe 'FZF .'
-      " echom 'Cancelled.'
-    endif
-  endfunction
-  command! Init call <sid>fzf_init()
-  "Simple mappings to find files recursively from the root directory
-  "F3 is mapped to C-i right now
-  noremap <C-p> :FZF<CR>
-  noremap <F3>  :Init<CR>
+  let g:fzf_action = {'ctrl-i': 'silent!',
+    \ 'ctrl-m': 'tab split', 'ctrl-t': 'tab split',
+    \ 'ctrl-x': 'split', 'ctrl-v': 'vsplit'}
+  "Use ctrl-p because liked that key position; makes sense
+  "Don't press enter because probably want user to be able to pick starting directory
+  noremap <C-p> :FZF 
 endif
 if has_key(g:plugs,'fzf.vim')
   "More neat mappings
   "This one opens up a searchable windows list on pressing ctrl+space
   noremap <C-@> :Windows<CR>
+  "Function for searching git repository; crazy useful
+  "Think i for git
+  noremap <F3> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
 endif
 
 "###############################################################################
