@@ -1,90 +1,79 @@
 "------------------------------------------------------------------------------"
 "Plugin by Luke Davis <lukelbd@gmail.com> 
 "Tries to wrap a few related features into one plugin file,
-"including super cool and useful ***refactoring*** tools:
-" * For repeat.vim usage see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
-" * CTAGS integration -- jumping between successive tags, jumping to a particular
+"including super cool and useful ***refactoring*** tools based on ctags:
+" * Ctags integration -- jumping between successive tags, jumping to a particular
 "   tag based on its regex, searching/replacing text blocks delimited by the
-"   lines on which tags appear (roughly results in function-local search)
+"   lines on which tags appear (roughly results in function-local search).
+" * Made my own implementation instead of using easytags or gutentags, because
+"   (1) find that :tag and :pop are not that useful outside of help menus --
+"   generally only want to edit one file at a time, and the <C-]> is about as
+"   reliable as gd or gD, and (2) now I can filter the most important tags
+"   and make them searchable, without losing the completion popup you'd get
+"   from :tagjump /<Tab>.
 " * General searching/replacing utilities, useful for refactoring. A convervative
 "   approach is taken for the most part -- global searches are not automatic. But
 "   could expand functionality by adding s*, s# maps to go along with c*, c# maps,
 "   which replace every choice without user confirmation. Or C*, C# would work.
 " * Re-define a few of the shift-number row keys to make them a bit more useful:
-"   '*' is the current word, global
-"   '&' is the current WORD, global
-"   '#' is the current word, global
-"   '@' is the current WORD, global
+"     '*' is the current word, global
+"     '&' is the current WORD, global
+"     '#' is the current word, global
+"     '@' is the current WORD, global
 "   This made sense for my workflow because I never really want the backward
 "   search from '#', access my macros with the comma key instead of @, and the
 "   & key goes pretty much untouched.
 " * For c* and c# map origin, see:
 "   https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
 "   https://www.reddit.com/r/vim/comments/2p6jqr/quick_replace_useful_refactoring_and_editing_tool/
-"------------------------------------------------------------------------------"
-"Useful wrapper around easy-tags, and several neat refactoring tools
-"The wrapper adds several features that *filter* tags accordint to a few
-"particular categories
+" * For repeat.vim usage see: http://vimcasts.org/episodes/creating-repeatable-mappings-with-repeat-vim/
 "Todo: Make sure python2 and python3 shebangs work
 "Maybe re-implement: if getline(1)=~"#!.*python[23]" | let force="--language=python"
+"------------------------------------------------------------------------------"
 let g:has_ctags = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-if !exists("g:plugs")
-  echo "Warning: vim-plugs required to check if dependency plugins are installed."
-  finish
-endif
 if !g:has_ctags
   finish
 endif
-if !has_key(g:plugs, "vim-easytags")
-  finish
-endif
-
-"------------------------------------------------------------------------------"
-"First some easytags options
-"Note no matter what, filenames in ctags file will always have absolute path
-set tags=./.vimtags "says to look up until home directory; see: https://stackoverflow.com/questions/5017500/vim-difficulty-setting-up-ctags-source-in-subdirectories-dont-see-tags-file-i
-set cpoptions+=d "says to use the tag file in current directory when we see './' in tags option, instead of in that file's directory
-let g:easytags_file='./.vimtags' "probably better to set myself
-let g:easytags_dynamic_files=2 "says to always put tags file in the current working directory
-let g:easytags_async=1
-let g:easytags_on_cursorhold=0
-let g:easytags_auto_update=1
-let g:easytags_auto_highlight=0
-let g:easytags_autorecurse=0 "the default value
-"For some reason events below are not working!
-let g:easytags_events=['BufRead', 'BufWritePost'] "update tags when you write only; should still be there
-"Inexplicably, if put theese on same line shit breaks, but if put UpdateTags
-"on same line as ReadTags shit works; what the fuck
-"Have to use the function calls and stuff works
 augroup ctags
   au!
-  au BufRead,BufWritePost * call <sid>ctagswrite() | call <sid>ctagsread()
+  au BufRead,BufWritePost * call <sid>ctagsread()
   au BufEnter * call <sid>ctagbracketmaps()
 augroup END
+set tags=./.vimtags "if ever go back to using files, want these settings
+set cpoptions+=d
 
 "------------------------------------------------------------------------------"
+"First list the ctag categories important to you per file
+"Can list particular filenames, or filetypes
+let g:tags_filter={
+  \ ".vimrc" : "a",
+  \ "vim" : "afc",
+  \ "tex" : "bs",
+  \ "python" : "fcm",
+  \ "fortran" : "smfp",
+  \ "default" : "f",
+  \ }
 "Handy autocommands to update and dislay tags
-"The first one is my cutom function
 nnoremap <silent> <Leader>c :DisplayTags<CR>:redraw!<CR>
-nnoremap <silent> <Leader>C :UpdateTags<CR>
-"Quick wrapper around UpdateTags; for some reason update not happening
-"automatically so have to make my own autocommands
-function! s:ctagswrite()
-  if !exists('g:ignore_types') || index(g:ignore_types, &ft)==-1
-    UpdateTags! "ignore errors
-  endif
-endfunction
-command! WriteTags call <sid>ctagswrite()
+nnoremap <silent> <Leader>C :ReadTags<CR>
 "Function for generating list of tags
+"Use line at bottom to ensure always looking at local (this file) tags
 function! s:ctagcmd()
-  return "cat ./.vimtags 2>/dev/null "
-    \." | command grep '^[^\t]*\t".expand('%:p')."' "
-    \." | cut -d '\t' -f1,3-4 | tr -s ' ' "
+  if getline(1)=~'#!.*python[23]'
+    let override='--language=python'
+  else
+    let override=''
+  endif
+  return "ctags --langmap=vim:+.vimrc,sh:+.bashrc ".override
+    \." -f - ".expand('%:p')." | cut -d '\t' -f1,3-4 "
+  " "cat .vimtags |
+  " \." | command grep '^[^\t]*\t".expand('%:p')."' "
 endfunction
 "Nice display of tags; just some additional parsing of the ctagcmd
+"Before had the squeeze spaces thing in ctagcmd, but that breaks regex searching later on!!!
 function! s:ctagdisplay()
   exe "!clear; ".s:ctagcmd()." "
-  \." | sed '".'s$/\(.\{0,60\}\).*/;"$/\1.../$'."' "
+  \." | tr -s ' ' | sed '".'s$/\(.\{0,60\}\).*/;"$/\1.../$'."' "
   \." | tr -s '\t' | column -t -s '\t' | less"
 endfunction
 command! DisplayTags call <sid>ctagdisplay()
@@ -97,72 +86,76 @@ endfunc
 "strings can be easily searched with regex
 function! s:ctagsread()
   "Initialize
-  let b:ctags=[] "return these empty values upon error
-  let b:ctaglines=[]
+  let b:ctagnames_alph=[] "return these empty values upon error
+  let b:ctagnames_file=[]
+  let b:ctaglines_file=[]
+  let b:ctaglines_alph=[]
   if exists('g:ignore_types') && index(g:ignore_types, &ft)!=-1
     return
   endif
   "Determine types of ctags we want to store
-  if expand("%:t")==".vimrc" "list only augroups
-    let type="a"
-  elseif &ft=="vim" "augroups functions and commands
-    let type="[afc]"
-  elseif &ft=="tex" "b is for subsection, s is for section
-    let type="[bs]"
-  elseif &ft=="python" "functions, classes, and modules
-    let type="[fcm]"
-  elseif &ft=="fortran" " s is for submodule, m for module, f for function, p for program; ignore varaible decl
-    let type="[smfp]"
-  else "default is just functions
-    let type="f"
+  if has_key(g:tags_filter,expand('%:t'))
+    let type=g:tags_filter[expand('%:t')]
+  elseif has_key(g:tags_filter,&ft)
+    let type=g:tags_filter[&ft]
+  else
+    let type=g:tags_filter['default']
   endif
-  "Ctags doesn't recognize python2/python3 shebangs by default
-  "Call ctags function
+  let type="[".type."]" "any of these tags
+  "Call ctags function, and figure out the line number of each one
   "The cut ignores the filename field, and the trailing (optional) hieararchy field
   "Note we don't need $'\t' here because the \t in double quotes in vim expands to literal tab
   let ctags=split(system(s:ctagcmd()." | grep '\t".type."$' | cut -d'/' -f2"), '\n')
-  if len(ctags)==0 | return | endif
-  "Get ctag lines and sort them by number
+  if len(ctags)==0
+    return
+  endif
   let ctaglines=map(deepcopy(ctags), 'search("^".escape(v:val[1:-2],"$/*[]"),"n")')
-  let b:ctaglines=sort(deepcopy(ctaglines), "s:compare") "vim vars are passed by reference, so need deep copy
-  let b:ctags=map(range(len(b:ctaglines)), 'ctags[index(ctaglines, b:ctaglines[v:val])]')
+  "Generate user-friendly list
+  "engines and whatnot
+  let ctagsnice=[]
+  let cchar=b:NERDCommenterDelims['left']
+  for ctag in ctags
+    let ctag=ctag[1:-2] "next trim comments, but ignore where backslash right before
+    let commentidx=match(ctag, '^[^'.cchar.']*[^\\]\?\zs'.cchar)
+    if commentidx!=-1
+      let ctag=ctag[:commentidx-1]
+    endif
+    let ctag=substitute(ctag, '\s+', ' ', 'g')
+    let ctag=substitute(ctag, '^\s*', '', 'g')
+    let ctag=substitute(ctag, '\s*$', '', 'g')
+    let ctagsnice+=[ctag]
+  endfor
+  "Sort in order they appear in file
+  let b:ctaglines_file=sort(deepcopy(ctaglines), "s:compare") "vim vars are passed by reference, so need deep copy
+  let b:ctagnames_file=map(range(len(ctaglines)), 'ctagsnice[index(ctaglines, b:ctaglines_file[v:val])]')
+  "Sort alphabetically
+  let b:ctagnames_alph=sort(deepcopy(ctagsnice))
+  let b:ctaglines_alph=map(range(len(ctaglines)), 'ctaglines[index(ctagsnice, b:ctagnames_alph[v:val])]')
 endfunction "note if you use FileType below, it will fail to refresh when re-entering VIM
 command! ReadTags call <sid>ctagsread()
 
 "------------------------------------------------------------------------------"
-"Function for jumping between regexes in the ctag search strings
+"Functions for jumping between regexes in the ctag search strings
 "Super useful feature!
-function! s:ctagjump(regex)
-  if !exists("b:ctags") || len(b:ctags)==0
+function! s:ctagjump(tag) "just jumps to selection, much simpler
+  if exists('b:ctagnames_alph')
+    let idx=index(b:ctagnames_alph, a:tag)
+    if idx!=-1
+      exe b:ctaglines_alph[idx]
+    else
+      echohl WarningMsg | echom "Warning: tag not found." | echohl None
+    endif
+  else
     echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
-    return
   endif
-  for i in range(len(b:ctags))
-    let string=b:ctags[i][1:-2] "ignore leading ^ and trailing $
-    if string =~? a:regex "ignores case
-      ":<number><CR> travels to that line number
-      exe b:ctaglines[i]
-      return
-    endif
-  endfor
-    echohl WarningMsg | echom "Warning: ctag regex not found." | echohl None
 endfunction
-function! s:ctaglist(A,B,C)
-  let choices=[]
-  for ctag in b:ctags
-    if ctag[1:-2] =~# a:A "regex matching case
-      call add(choices, substitute(ctag[1:-2], '^\s*\(.\{-}\)\s*$', '\1', '')) "ignore leading ^/$
-    endif
-  endfor
-  return choices "super simple
-endfunction
-nnoremap <silent> <Leader><Space> :call <sid>ctagjump(input('Enter ctag (tab to reveal options): ', '', 'customlist,<sid>ctaglist'))<CR>
+noremap <Leader><Space> :call fzf#run({'source': b:ctagnames_alph, 'sink': funcref('<sid>ctagjump'), 'down': '30%'})<CR>
 
 "------------------------------------------------------------------------------"
 "Next jump between subsequent ctags with [[ and ]]
 function! s:ctagbracket(foreward, n)
   if &ft=="help" | return | endif
-  if !exists("b:ctaglines") || len(b:ctaglines)==0
+  if !exists("b:ctaglines_file") || len(b:ctaglines_file)==0
     echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
     return
   endif
@@ -170,25 +163,25 @@ function! s:ctagbracket(foreward, n)
   for i in range(a:njumps)
     let lnum=line('.')
     "Edge cases; at bottom or top of document
-    if lnum<b:ctaglines[0] || lnum>b:ctaglines[-1]
+    if lnum<b:ctaglines_file[0] || lnum>b:ctaglines_file[-1]
       let i=(a:foreward ? 0 : -1)
     "Extra case not handled in main loop
-    elseif lnum==b:ctaglines[-1]
+    elseif lnum==b:ctaglines_file[-1]
       let i=(a:foreward ? 0 : -2)
     "Main loop
     else
-      for i in range(len(b:ctaglines)-1)
-        if lnum==b:ctaglines[i]
+      for i in range(len(b:ctaglines_file)-1)
+        if lnum==b:ctaglines_file[i]
           let i=(a:foreward ? i+1 : i-1) | break
-        elseif lnum>b:ctaglines[i] && lnum<b:ctaglines[i+1]
+        elseif lnum>b:ctaglines_file[i] && lnum<b:ctaglines_file[i+1]
           let i=(a:foreward ? i+1 : i) | break
         endif
-        if i==len(b:ctaglines)-1
+        if i==len(b:ctaglines_file)-1
           echohl WarningMsg | "Error: Bracket jump failed." | echohl None
         endif
       endfor
     endif
-    return b:ctaglines[i] "just return the line number
+    return b:ctaglines_file[i] "just return the line number
   endfor
 endfunction
 
@@ -205,6 +198,9 @@ noremap <silent> } :<C-u>tag<CR>
 "simply scrolling through successive tags in file
 function! s:ctagbracketmaps()
   "Tag brackets
+  if exists('g:ignore_types') && index(g:ignore_types, &ft)!=-1
+    return
+  endif
   if g:has_nowait
     noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
     noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
@@ -228,14 +224,12 @@ endfunction
 "   renaming, and do it by confirming every single instance
 function! s:scopesearch(command)
   "Test out scopesearch
-  if !exists("b:ctaglines") || len(b:ctaglines)==0
+  if !exists("b:ctaglines_file") || len(b:ctaglines_file)==0
     echohl WarningMsg | echo "Warning: Tags unavailable, so cannot limit search scope." | echohl None
     return ""
   endif
   let start=line('.')
-  let saveview=winsaveview()
-  call winrestview(saveview)
-  let ctaglines=extend(b:ctaglines,[line('$')])
+  let ctaglines=b:ctaglines_file+[line('$')]
   "Return values
   "%% is literal % character
   "Check out %l atom documentation; note it last atom selects *above* that line (so increment by one)
@@ -251,37 +245,6 @@ function! s:scopesearch(command)
   echohl WarningMsg | echom "Warning: Scopesearch failed to limit search scope." | echohl None
   return "" "empty string; will not limit scope anymore
 endfunction
-" "Much less reliable
-" "Loop loop through possible jumping commands; the bracket commands
-" "are generally declared with FileType regex searches, not ctags
-" function! s:scopesearch(command)
-"   let start=line('.')
-"   let saveview=winsaveview()
-"   for endjump in ['normal ]]k', 'call search("^\\S")']
-"     " echom 'Trying '.endjump
-"     keepjumps normal j[[
-"     let first=line('.')
-"     exe 'keepjumps '.endjump
-"     let last=line('.')
-"     " echom first.' to '.last | sleep 1
-"     if first<last | break | endif
-"     exe 'normal '.start.'g'
-"     "return to initial state at the end, important
-"   endfor
-"   call winrestview(saveview)
-"   if first<last
-"     echom "Scopesearch selected lines ".first." to ".last."."
-"     if !a:command
-"       return printf('\%%>%dl\%%<%dl', first-1, last+1)
-"         "%% is literal % character, and backslashes do nothing in single quote; check out %l atom documentation
-"     else
-"       return printf('%d,%ds', first-1, last+1) "simply the range for a :search and replace command
-"     endif
-"   else
-"     echom "Warning: Scopesearch failed to find function range (first line ".first." >= second line ".last.")."
-"     return "" "empty string; will not limit scope anymore
-"   endif
-" endfunction
 
 "------------------------------------------------------------------------------"
 "Magical refactoring tools

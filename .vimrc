@@ -69,10 +69,11 @@ augroup END
 "Always navigate by word, god damnit
 "See: https://superuser.com/a/1150645/506762
 "Some plugins make periods part of 'word' motions, which sucks balls
-augroup keywordfix
-  au!
-  au BufEnter * set iskeyword=45,65-90,95,97-122,48-57 "the same: -,a-z,_,A-Z,0-9
-augroup END
+" augroup keywordfix
+"   au!
+"   au BufEnter * set iskeyword=45,65-90,95,97-122,48-57 "the same: -,a-z,_,A-Z,0-9
+" augroup END
+" set iskeyword=45,65-90,95,97-122,48-57 "the same: -,a-z,_,A-Z,0-9
 
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
@@ -110,10 +111,10 @@ inoremap <expr> <Down>            !pumvisible() ? "" : <sid>tab_increase()."\<C-
 inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
 "Always accept, choose default menu item if necessary
-inoremap <expr> <Tab> !pumvisible() ? "\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y> ".<sid>tab_reset() : "\<C-y> ".<sid>tab_reset()
+inoremap <expr> <Tab> !pumvisible() ? "\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-y>".<sid>tab_reset()
 "Accept only if we have explicitly scrolled down to something
 "Also prevents annoying delay where otherwise, have to press enter twice when popup menu open
-inoremap <expr> <CR>  !pumvisible() ? "\<CR>" : b:menupos==0 ? "\<C-e>\<CR>" : "\<C-y> ".<sid>tab_reset()
+inoremap <expr> <CR>  !pumvisible() ? "\<CR>" : b:menupos==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tab_reset()
 
 "##############################################################################"
 "DYING BREATH
@@ -231,15 +232,14 @@ noremap <silent> <Leader>o :noh<CR>
 "while we actually want the place where we *last exited* visual mode, like '^ for insert mode
 nnoremap v myv
 nnoremap V myV
-vnoremap <CR> <C-c>
 nnoremap <C-v> my<C-v>
+vnoremap <CR> <C-c>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
-" vnoremap <silent> <LeftMouse> <Esc>:echo 'Mode: '.visualmode() \| sleep 200 m<CR><LeftMouse>mx`y:exe 'normal! '.visualmode()<CR>`x
 "Some other useful visual mode maps
 "Also prevent highlighting selection under cursor, unless on first character
-nnoremap v$ v$h
-nnoremap vv ^v$gE
-nnoremap vA ggVG
+nnoremap v$ myv$h
+nnoremap vv ^myv$gE
+nnoremap vA ggmyVG
 nnoremap <silent> v/ hn:noh<CR>gn
 
 "###############################################################################
@@ -365,8 +365,9 @@ Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
 "------------------------------------------------------------------------------"
 "Easy tags, for easy integration
-Plug 'xolox/vim-misc' "depdency for easytags
-Plug 'xolox/vim-easytags'
+" Plug 'xolox/vim-misc' "depdency for easytags
+" Plug 'xolox/vim-easytags' "kinda old and not that useful honestly
+" Plug 'ludovicchabant/vim-gutentags' "slows shit down like crazy
 "------------------------------------------------------------------------------"
 "Colorize Hex strings
 "Note this option is ***incompatible*** with iTerm minimum contrast above 0
@@ -397,6 +398,9 @@ Plug 'Konfekt/FastFold'
 "------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'
+Plug '~/.fzf' "fzf installation location; will add helptags and runtimepath
+Plug 'junegunn/fzf.vim' "this one depends on the main repo above; includes many other tools
+" Plug 'vim-ctrlspace/vim-ctrlspace' "for navigating buffers and tabs and whatnot
 " Plug 'ctrlpvim/ctrlp.vim' "forget that shit, fzf is way better yo
 if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'jistr/vim-nerdtree-tabs' "unnecessary
@@ -806,6 +810,13 @@ function! s:simplesetup(...)
     wincmd L "moves current window to be at far-right (wincmd executes Ctrl+W maps)
     vertical resize 80 "always certain size
     nnoremap <buffer> <CR> <C-]>
+    if g:has_nowait
+      noremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+      noremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+    else
+      noremap <nowait> <buffer> <silent> [[ :<C-u>pop<CR>
+      noremap <nowait> <buffer> <silent> ]] :<C-u>tag<CR>
+    endif
   endif
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell
@@ -969,26 +980,43 @@ command! EIMap call <sid>eimap()
 " if has_key(g:plugs, 'fzf.vim')
 augroup fzf
 augroup END
-if !empty(glob("~/.fzf"))
+if has_key(g:plugs,'.fzf')
   let g:fzf_layout = {'down': '~20%'} "make window smaller
   let g:fzf_action = {
-  \ 'ctrl-i': 'silent!',
-  \ 'ctrl-m': 'tab split',
-  \ 'ctrl-t': 'tab split',
-  \ 'ctrl-x': 'split',
-  \ 'ctrl-v': 'vsplit' }
-  set rtp+=~/.fzf
-  helptags ~/.fzf/doc "have to update tags after change runtimepath; normally vim-plug does this
-  function! s:fzf()
+    \ 'ctrl-i': 'silent!',
+    \ 'ctrl-m': 'tab split',
+    \ 'ctrl-t': 'tab split',
+    \ 'ctrl-x': 'split',
+    \ 'ctrl-v': 'vsplit' }
+  function! s:fzf_init()
     let result=input("Directory for FZF (".getcwd()."): ", "", "dir")
     if result!=""
       exe 'FZF '.result
     else
-      echom "Cancelled."
+      exe 'FZF .'
+      " echom 'Cancelled.'
     endif
   endfunction
-  noremap <F3>  :call <sid>fzf()<CR>
+  command! Init call <sid>fzf_init()
+  "Simple mappings to find files recursively from the root directory
+  "F3 is mapped to C-i right now
   noremap <C-p> :FZF<CR>
+  noremap <F3>  :Init<CR>
+endif
+if has_key(g:plugs,'fzf.vim')
+  "More neat mappings
+  "This one opens up a searchable windows list on pressing ctrl+space
+  noremap <C-@> :Windows<CR>
+endif
+
+"###############################################################################
+"Ctrl-Space
+"Massive plugin that I might stop using
+"Probably just want to use Unite for some of these features, and
+"use the vim-FZF plugin for fuzzy buffer searching.
+if has_key(g:plugs, 'vim-ctrlspace')
+  set hidden
+  let g:CtrlSpaceUseTabline=0 "want to use my own!
 endif
 
 "###############################################################################
