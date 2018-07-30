@@ -172,7 +172,7 @@ fi
 export PATH="$HOME/bin:$PATH"
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
-alias brew="PATH=$PATH brew"
+alias  brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
@@ -238,7 +238,7 @@ function vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  local sessionfile=".session.vim"
+  local sessionfile=".vimsession"
   if [[ -z "$@" ]] && [[ -r "$sessionfile" ]]; then
     # NOTE: Crude bugfixes with sed here
     # Unfold stuff after entering each buffer; for some reason folds are otherwise
@@ -434,27 +434,29 @@ function env() { set; } # just prints all shell variables
 ################################################################################
 # General utilties
 ################################################################################
-# Listing files
-# * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
-# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones.
-# * We use the Mac default 'dircolors', and convert them to Linux colors.
-#   Default mac colors were found with simple google search.
-# * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
-#   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
+# GNU utilities on macbook
 if $_macos; then
   _ls_command=gls
   _dc_command=gdircolors
+  alias sed=" gsed"
+  alias sort="gsort"
+  alias tac="gtac" # use dis
 else
   _ls_command=ls
   _dc_command=dircolors
 fi
+
 # Default mac colors
+# * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
+# * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
+#   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
+# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones.
 # LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
 # LSCOLORS='exfxcxdxbxegedabagacad' \
 # Default linux colors
-export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
-export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
-# Custom linux colors
+export LSCOLORS='ExGxFxdaCxDADAadhbheFx' # read by mac ls
+export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:' # read by GNU ls
+# Custom linux colors if available (which they should be)
 if [ -r "$HOME/.dircolors.ansi" ]; then
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
@@ -462,9 +464,6 @@ fi
 alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
-# Other stuff
-$_macos && alias sed="gsed"
-$_macos && alias sort="gsort"
 
 # Information on directories
 alias df="df -h" # disk useage
@@ -480,12 +479,14 @@ function dl() { # directory sizes
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
 
+# Ctags alias
+# Also used in .vimrc ctags command
+alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc"
+
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-# Make Perl color wrapper default; also allow color difference with git
-# Note to recursively compare directories, use --name-status
-hash colordiff 2>/dev/null && alias diff="command colordiff"
+hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
@@ -504,7 +505,6 @@ function killjobs() {
 } # kill jobs by name
 
 # Scripting utilities
-alias tac="gtac" # use dis
 function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 function empty() { for i in {1..100}; do echo; done; }
@@ -522,13 +522,13 @@ function gdiff() {
 # The last grep command is to highlight important parts
 function ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
+  command diff -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories
 function idiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
+  command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ| identical)'
 }
 # Merge fileA and fileB into merge.{ext}
@@ -1380,7 +1380,7 @@ if [ -f ~/.fzf.bash ]; then
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual; here, '-1' is terminal default, not '0'
   # Custom options
-  export FZF_COMPLETION_FIND_IGNORE=".DS_Store .session.vim __pycache__ .ipynb_checkpoints"
+  export FZF_COMPLETION_FIND_IGNORE=".DS_Store .vimsession .vim.tags __pycache__ .ipynb_checkpoints"
   export FZF_COMPLETION_FIND_OPTS=" -maxdepth 1 "
   export FZF_COMPLETION_TRIGGER='' # tab triggers completion
   export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything

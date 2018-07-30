@@ -44,19 +44,19 @@ set cpo&vim
 nnoremap <silent> %  :<C-U>call <SID>Match_wrapper('',1,'n') <CR>
 vnoremap <silent> %  :<C-U>call <SID>Match_wrapper('',1,'v') <CR>m'gv``
 onoremap <silent> %  v:<C-U>call <SID>Match_wrapper('',1,'o') <CR>
-nnoremap <silent> \% :<C-U>call <SID>Match_wrapper('',0,'n') <CR>
-vnoremap <silent> \% :<C-U>call <SID>Match_wrapper('',0,'v') <CR>m'gv``
-onoremap <silent> \% v:<C-U>call <SID>Match_wrapper('',0,'o') <CR>
+nnoremap <silent> _% :<C-U>call <SID>Match_wrapper('',0,'n') <CR>
+vnoremap <silent> _% :<C-U>call <SID>Match_wrapper('',0,'v') <CR>m'gv``
+onoremap <silent> _% v:<C-U>call <SID>Match_wrapper('',0,'o') <CR>
 
 " Analogues of [{ and ]} using matching patterns:
 " Jump to next/previous unmatched 'pattern'
 " Find these are pretty much unusable though
-nnoremap <silent> \[ :<C-U>call <SID>MultiMatch("bW", "n") <CR>
-nnoremap <silent> \] :<C-U>call <SID>MultiMatch("W",  "n") <CR>
-vnoremap <silent> \[ :<C-U>call <SID>MultiMatch("bW", "v") <CR>m'gv``
-vnoremap <silent> \] :<C-U>call <SID>MultiMatch("W",  "v") <CR>m'gv``
-onoremap <silent> \[ v:<C-U>call <SID>MultiMatch("bW", "o") <CR>
-onoremap <silent> \] v:<C-U>call <SID>MultiMatch("W",  "o") <CR>
+nnoremap <silent> _[ :<C-U>call <SID>MultiMatch("bW", "n") <CR>
+nnoremap <silent> _] :<C-U>call <SID>MultiMatch("W",  "n") <CR>
+vnoremap <silent> _[ :<C-U>call <SID>MultiMatch("bW", "v") <CR>m'gv``
+vnoremap <silent> _] :<C-U>call <SID>MultiMatch("W",  "v") <CR>m'gv``
+onoremap <silent> _[ v:<C-U>call <SID>MultiMatch("bW", "o") <CR>
+onoremap <silent> _] v:<C-U>call <SID>MultiMatch("W",  "o") <CR>
 
 " This one was weird, 'text object'
 " vmap a% <Esc>\[v\]

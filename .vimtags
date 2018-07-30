@@ -1,0 +1,671 @@
+!_TAG_FILE_SORTED	2	/0=unsorted, 1=sorted, 2=foldcase/
+!	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> ! ylh\/<C-r>=escape(@",'\/\\')<CR><CR>$/;"	m	language:Vim
+"	/Users/ldavis/dotfiles/.vimrc	/^noremap " :echo "Setting mark."<CR>ma$/;"	m	language:Vim
+"turn	/Users/ldavis/dotfiles/.vimrc	/^noh "turn off highlighting at startup$/;"	m	language:Vim
+#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> # :let @\/=<sid>scopesearch(0).'\\<'.expand('<cword>').'\\>\\C'<CR>lB:set hlsearch<CR>$/;"	m	language:Vim
+%	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^nnoremap <silent> %  :<C-U>call <SID>Match_wrapper('',1,'n') <CR>$/;"	m	language:Vim
+%	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^onoremap <silent> %  v:<C-U>call <SID>Match_wrapper('',1,'o') <CR>$/;"	m	language:Vim
+%	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^vnoremap <silent> %  :<C-U>call <SID>Match_wrapper('',1,'v') <CR>m'gv``$/;"	m	language:Vim
+&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> & :let @\/='\\_s\\@<='.expand('<cWORD>').'\\ze\\_s\\C'<CR>lB:set hlsearch<CR>$/;"	m	language:Vim
+'	/Users/ldavis/dotfiles/.vimrc	/^noremap ' `a$/;"	m	language:Vim
+*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> * :let @\/='\\<'.expand('<cword>').'\\>\\C'<CR>lb:set hlsearch<CR>$/;"	m	language:Vim
++	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap + <C-a>$/;"	m	language:Vim
++	/Users/ldavis/dotfiles/.vimrc	/^  vmap + <Plug>VisualIncrement$/;"	m	language:Vim
+,	/Users/ldavis/dotfiles/.vimrc	/^noremap , @a$/;"	m	language:Vim
+-	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> - "_$/;"	m	language:Vim
+;.	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> ;. :call <sid>spelltoggle()<CR>$/;"	m	language:Vim
+;A	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;A :<C-u>Unite -default-action=yank citation\/title<CR>$/;"	m	language:Vim
+;a	/Users/ldavis/dotfiles/.vimrc	/^nnoremap ;a zg$/;"	m	language:Vim
+;c	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation\/key<CR>$/;"	m	language:Vim
+;D	/Users/ldavis/dotfiles/.vimrc	/^nmap ;D <Plug>backwardspell$/;"	m	language:Vim
+;d	/Users/ldavis/dotfiles/.vimrc	/^nmap ;d <Plug>forwardspell$/;"	m	language:Vim
+;I	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;I :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation\/combined<CR>$/;"	m	language:Vim
+;K	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>$/;"	m	language:Vim
+;k	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>$/;"	m	language:Vim
+;N	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;N :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation\/file<CR>$/;"	m	language:Vim
+;n	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;n :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation\/file<CR>$/;"	m	language:Vim
+;O	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;O :<C-u>Unite citation<CR>$/;"	m	language:Vim
+;O	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> ;O :call <sid>spelltoggle(0)<CR>$/;"	m	language:Vim
+;o	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> ;o :call <sid>spelltoggle(1)<CR>$/;"	m	language:Vim
+;p	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;p :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation\/file<CR>$/;"	m	language:Vim
+;r	/Users/ldavis/dotfiles/.vimrc	/^nnoremap ;r zug$/;"	m	language:Vim
+;S	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;S :<C-u>exec "Unite  -default-action=start citation\/key:" . escape(input('Search Key : '),' ')<CR>$/;"	m	language:Vim
+;s	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;s :<C-u>Unite  -default-action=yank  citation\/key:<C-R><C-W><CR>$/;"	m	language:Vim
+;u	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> ;u :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation\/url<CR>$/;"	m	language:Vim
+<<	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'$/;"	m	language:Vim
+<Backspace>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Backspace> <Nop>$/;"	m	language:Vim
+<BS>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <BS>    !pumvisible() ? "\\<BS>"    : <sid>tab_reset()."\\<C-e>\\<BS>"$/;"	m	language:Vim
+<C-a>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <C-a> :qa<CR> $/;"	m	language:Vim
+<C-c>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <C-c> :call <sid>copytoggle()<CR>$/;"	m	language:Vim
+<C-c>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <C-c> <Nop>$/;"	m	language:Vim
+<C-h>	/Users/ldavis/dotfiles/.vimrc	/^noremap <C-h>   <C-o>$/;"	m	language:Vim
+<C-j>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <C-j>             !pumvisible() ? "\\<Down>" : <sid>tab_increase()."\\<C-n>"$/;"	m	language:Vim
+<C-j>	/Users/ldavis/dotfiles/.vimrc	/^noremap <C-j>  g;$/;"	m	language:Vim
+<C-k>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <C-k>             !pumvisible() ? "\\<Up>"   : <sid>tab_decrease()."\\<C-p>"$/;"	m	language:Vim
+<C-k>	/Users/ldavis/dotfiles/.vimrc	/^noremap <C-k>  g,$/;"	m	language:Vim
+<C-l>	/Users/ldavis/dotfiles/.vimrc	/^noremap <C-l>   <C-i>$/;"	m	language:Vim
+<C-n>	/Users/ldavis/dotfiles/.vimrc	/^  inoremap <C-n> <Esc>:CodiUpdate<CR>a$/;"	m	language:Vim
+<C-n>	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <C-n> :CodiUpdate<CR>$/;"	m	language:Vim
+<C-n>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <C-n> <Nop>$/;"	m	language:Vim
+<C-o>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <C-o> :call <sid>openwrapper()<CR>$/;"	m	language:Vim
+<C-p>	/Users/ldavis/dotfiles/.vimrc	/^  noremap <C-p> :FZF<CR>$/;"	m	language:Vim
+<C-p>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <C-p> <C-r>"$/;"	m	language:Vim
+<C-p>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <C-p> <Nop>$/;"	m	language:Vim
+<C-q>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if tabpagenr('$')==1$/;"	m	language:Vim
+<C-r>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <C-r> :if &ft=="vim" \\| so % \\| echom "Sourced file." \\| endif<CR>$/;"	m	language:Vim
+<C-s>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <C-s> :w!<CR>$/;"	m	language:Vim
+<C-u>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a$/;"	m	language:Vim
+<C-v>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <C-v> my<C-v>$/;"	m	language:Vim
+<C-w>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <C-w> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>$/;"	m	language:Vim
+<C-x>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-b to compile instead."<CR>$/;"	m	language:Vim
+<C-z>	/Users/ldavis/dotfiles/.vimrc	/^noremap <C-z> <Nop>$/;"	m	language:Vim
+<CR>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <CR>  !pumvisible() ? "\\<CR>" : b:menupos==0 ? "\\<C-e>\\<CR>" : "\\<C-y> ".<sid>tab_reset()$/;"	m	language:Vim
+<CR>	/Users/ldavis/dotfiles/.vimrc	/^noremap <CR> <Nop>$/;"	m	language:Vim
+<CR>	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <CR> <C-c>$/;"	m	language:Vim
+<Delete>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <silent> <expr> <Delete> <sid>foreward_delete()$/;"	m	language:Vim
+<Delete>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Delete> <Nop>$/;"	m	language:Vim
+<Down>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <Down>            !pumvisible() ? "" : <sid>tab_increase()."\\<C-n>"$/;"	m	language:Vim
+<Down>	/Users/ldavis/dotfiles/.vimrc	/^noremap <Down> g;$/;"	m	language:Vim
+<F1>	/Users/ldavis/dotfiles/.vimrc	/^  map <F1> <Plug>Sneak_,$/;"	m	language:Vim
+<F1>	/Users/ldavis/dotfiles/.vimrc	/^cnoremap <expr> <F1> <sid>wildstab()$/;"	m	language:Vim
+<F2>	/Users/ldavis/dotfiles/.vimrc	/^  map <F2> <Plug>Sneak_;$/;"	m	language:Vim
+<F2>	/Users/ldavis/dotfiles/.vimrc	/^cnoremap <expr> <F2> <sid>wildtab()$/;"	m	language:Vim
+<F3>	/Users/ldavis/dotfiles/.vimrc	/^  noremap <F3>  :call <sid>fzf()<CR>$/;"	m	language:Vim
+<F5>	/Users/ldavis/dotfiles/.vimrc	/^cnoremap <F5> <C-^>$/;"	m	language:Vim
+<F5>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <F5> <C-^>$/;"	m	language:Vim
+<Leader>*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader>* :echo system('grep -c "\\b'$/;"	m	language:Vim
+<Leader>/	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Leader>\/ q\/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>$/;"	m	language:Vim
+<Leader>:	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Leader>: :<Up><CR>$/;"	m	language:Vim
+<Leader>;	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Leader>; q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>$/;"	m	language:Vim
+<Leader><Space>	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader><Space> :call <sid>ctagjump(input('Enter ctag (tab to reveal options): ', '', 'customlist,<sid>ctaglist'))<CR>$/;"	m	language:Vim
+<Leader>?	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Leader>? \/<Up><CR>$/;"	m	language:Vim
+<Leader>c	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader>c :DisplayTags<CR>:redraw!<CR>$/;"	m	language:Vim
+<Leader>C	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader>C :UpdateTags<CR>$/;"	m	language:Vim
+<Leader>d	/Users/ldavis/dotfiles/.vimrc	/^noremap <Leader>d gd$/;"	m	language:Vim
+<Leader>D	/Users/ldavis/dotfiles/.vimrc	/^noremap <Leader>D gD$/;"	m	language:Vim
+<Leader>f	/Users/ldavis/dotfiles/.vimrc	/^  noremap <Leader>f :NERDTree %<CR>$/;"	m	language:Vim
+<Leader>h	/Users/ldavis/dotfiles/.vimrc	/^noremap <Leader>h :vert help $/;"	m	language:Vim
+<Leader>H	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <expr> <Leader>H ':!clear; search='.input('Get help info: ').'; '$/;"	m	language:Vim
+<Leader>i	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Leader>i :set hlsearch<CR>$/;"	m	language:Vim
+<Leader>m	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; '$/;"	m	language:Vim
+<Leader>n	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Leader>n :call <sid>newcodi(input('Calculator name: ('.getcwd().') ', '', 'file'))<CR>$/;"	m	language:Vim
+<Leader>N	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Leader>N :Codi!! &ft<CR>$/;"	m	language:Vim
+<Leader>o	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Leader>o :noh<CR>$/;"	m	language:Vim
+<Leader>r	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <Leader>r :redraw!<CR>$/;"	m	language:Vim
+<Leader>S	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <Leader>S :filetype detect \\| so ~\/.vimrc<CR>:echom "Refreshed .vimrc and re-loaded syntax."<CR>$/;"	m	language:Vim
+<Leader>t	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>$/;"	m	language:Vim
+<Leader>v	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <expr> <silent> <Leader>v ":if &eventignore=='' \\| setlocal eventignore=InsertEnter \\| echom 'Ctrl-V pasting disabled for next InsertEnter.' "$/;"	m	language:Vim
+<Left>	/Users/ldavis/dotfiles/.vimrc	/^noremap <Left>  <C-o>$/;"	m	language:Vim
+<LeftMouse>	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x$/;"	m	language:Vim
+<nowait>	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> <nowait> < v:count > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'$/;"	m	language:Vim
+<nowait>	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> <nowait> > v:count > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'$/;"	m	language:Vim
+<nowait>	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <nowait> = ==$/;"	m	language:Vim
+<Plug>backwardspell	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Plug>backwardspell :call <sid>spellchange('[')<CR>:call repeat#set("\\<Plug>backwardspell")<CR>$/;"	m	language:Vim
+<Plug>bar1	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\\<Plug>bar1")<CR>$/;"	m	language:Vim
+<Plug>bar2	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\\<Plug>bar2")<CR>$/;"	m	language:Vim
+<Plug>cap1	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Plug>cap1 ~h:call repeat#set("\\<Plug>cap1")<CR>$/;"	m	language:Vim
+<Plug>cap2	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\\<Plug>cap2")<CR>$/;"	m	language:Vim
+<Plug>comment1	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\\<Plug>comment1",v:count)<CR>$/;"	m	language:Vim
+<Plug>comment2	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\\<Plug>comment2",v:count)<CR>$/;"	m	language:Vim
+<Plug>comment3	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\\<Plug>comment3",v:count)<CR>$/;"	m	language:Vim
+<Plug>forwardspell	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Plug>forwardspell :call <sid>spellchange(']')<CR>:call repeat#set("\\<Plug>forwardspell")<CR>$/;"	m	language:Vim
+<Plug>ReplaceOccurences	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>$/;"	m	language:Vim
+<Plug>search1	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search1 :set hlsearch<CR>:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search1",v:count)<CR>$/;"	m	language:Vim
+<Plug>search2	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search2 \/\\<<C-r>=expand('<cword>')<CR>\\>\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search2",v:count)<CR>$/;"	m	language:Vim
+<Plug>search3	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search3 \/\\_s\\@<=<C-r>=expand('<cWORD>')<CR>\\ze\\_s\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search3",v:count)<CR>$/;"	m	language:Vim
+<Plug>search4	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search4 \/<C-r>=<sid>scopesearch(0)<CR>\\<<C-r>=expand('<cword>')<CR>\\>\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search4",v:count)<CR>$/;"	m	language:Vim
+<Plug>search5	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search5 \/\\_s\\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\\ze\\_s\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search5",v:count)<CR>$/;"	m	language:Vim
+<Right>	/Users/ldavis/dotfiles/.vimrc	/^noremap <Right> <C-i>$/;"	m	language:Vim
+<ScrollWheelDown>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\\<C-n>"$/;"	m	language:Vim
+<ScrollWheelUp>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\\<C-p>"$/;"	m	language:Vim
+<Space>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <Space> !pumvisible() ? "\\<Space>" : <sid>tab_reset()."\\<Space>"$/;"	m	language:Vim
+<Space>	/Users/ldavis/dotfiles/.vimrc	/^noremap <Space> <Nop>$/;"	m	language:Vim
+<Tab>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <Tab> !pumvisible() ? "\\<Tab>" : b:menupos==0 ? "\\<C-n>\\<C-y> ".<sid>tab_reset() : "\\<C-y> ".<sid>tab_reset()$/;"	m	language:Vim
+<Tab>	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab> <Nop>$/;"	m	language:Vim
+<Tab>'	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Tab>' :execute "tabn ".g:lasttab<CR>$/;"	m	language:Vim
+<Tab>(	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>( '<Esc>:resize '.(winheight(0)-5*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Tab>)	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>) '<Esc>:resize '.(winheight(0)+5*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Tab>,	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>, gT$/;"	m	language:Vim
+<Tab>-	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>- :split $/;"	m	language:Vim
+<Tab>.	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>. gt$/;"	m	language:Vim
+<Tab>0	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>0 '<Esc>:resize '.(winheight(0)+3*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Tab>1	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>1 1gt$/;"	m	language:Vim
+<Tab>2	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>2 2gt$/;"	m	language:Vim
+<Tab>3	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>3 3gt$/;"	m	language:Vim
+<Tab>4	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>4 4gt$/;"	m	language:Vim
+<Tab>5	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>5 5gt$/;"	m	language:Vim
+<Tab>6	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>6 6gt$/;"	m	language:Vim
+<Tab>7	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>7 7gt$/;"	m	language:Vim
+<Tab>8	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>8 8gt$/;"	m	language:Vim
+<Tab>9	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>9 '<Esc>:resize '.(winheight(0)-3*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Tab>9	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>9 9gt$/;"	m	language:Vim
+<Tab>;	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>; <C-w><C-p>$/;"	m	language:Vim
+<Tab><	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>$/;"	m	language:Vim
+<Tab><Tab>	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab><Tab> <Nop>$/;"	m	language:Vim
+<Tab>=	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Tab>= :vertical resize 80<CR>$/;"	m	language:Vim
+<Tab>>	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>$/;"	m	language:Vim
+<Tab>e	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>e L$/;"	m	language:Vim
+<Tab>h	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>h <C-w>h$/;"	m	language:Vim
+<Tab>i	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>i mzz.`z$/;"	m	language:Vim
+<Tab>j	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>j <C-w>j$/;"	m	language:Vim
+<Tab>k	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>k <C-w>k$/;"	m	language:Vim
+<Tab>l	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>l <C-w>l$/;"	m	language:Vim
+<Tab>m	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: ', '', 'customlist,<sid>tablist'))<CR>$/;"	m	language:Vim
+<Tab>o	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>o zb$/;"	m	language:Vim
+<Tab>p	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>p zL$/;"	m	language:Vim
+<Tab>q	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>q H$/;"	m	language:Vim
+<Tab>u	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>u zt$/;"	m	language:Vim
+<Tab>w	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>w M$/;"	m	language:Vim
+<Tab>y	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <Tab>y zH$/;"	m	language:Vim
+<Tab>[	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>[ '<Esc>:vertical resize '.(winwidth(0)-5*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Tab>\	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>\\ :split $/;"	m	language:Vim
+<Tab>\|	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>\\| :vsplit $/;"	m	language:Vim
+<Tab>]	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Tab>_	/Users/ldavis/dotfiles/.vimrc	/^noremap <Tab>_ :vsplit $/;"	m	language:Vim
+<Tab>{	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Tab>}	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'$/;"	m	language:Vim
+<Up>	/Users/ldavis/dotfiles/.vimrc	/^inoremap <expr> <Up>              !pumvisible() ? "" : <sid>tab_decrease()."\\<C-p>"$/;"	m	language:Vim
+<Up>	/Users/ldavis/dotfiles/.vimrc	/^noremap <Up>   g,$/;"	m	language:Vim
+>>	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'$/;"	m	language:Vim
+?	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> ? \/<C-r>=<sid>scopesearch(0)<CR>\\(\\)\\(\\)\\(\\)$/;"	m	language:Vim
+@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> @ :let @\/='\\_s\\@<='.<sid>scopesearch(0).expand('<cWORD>').'\\ze\\_s\\C'<CR>lB:set hlsearch<CR>$/;"	m	language:Vim
+@	/Users/ldavis/dotfiles/.vimrc	/^map @ <Nop>$/;"	m	language:Vim
+address_ip	/Users/ldavis/dotfiles/.bashrc	/^function address_ip() {$/;"	f	language:Sh
+AllFiles	/Users/ldavis/dotfiles/.vimrc	/^function! AllFiles(A,L,P)$/;"	f	language:Vim
+autosave_toggle	/Users/ldavis/dotfiles/.vimrc	/^function! s:autosave_toggle(on)$/;"	f	language:Vim
+bar	/Users/ldavis/dotfiles/.vimrc	/^  function! s:bar(...) "inserts above by default; most common use$/;"	f	language:Vim
+c"	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>$/;"	m	language:Vim
+c"	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap c" :call <sid>docstring('"')<CR>A$/;"	m	language:Vim
+c#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c# :let @\/=<sid>scopesearch(0).'\\<'.expand('<cword>').'\\>\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+c&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c& :let @\/='\\_s\\@<='.expand('<cWORD>').'\\ze\\_s\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+c'	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>$/;"	m	language:Vim
+c'	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap c' :call <sid>docstring("'")<CR>A$/;"	m	language:Vim
+c*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c* :let @\/='\\<'.expand('<cword>').'\\>\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+c-	/Users/ldavis/dotfiles/.vimrc	/^  nmap c- <Plug>bar2$/;"	m	language:Vim
+c.	/Users/ldavis/dotfiles/.vimrc	/^  nmap c. <Plug>comment3$/;"	m	language:Vim
+c.	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>$/;"	m	language:Vim
+c/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c\/ :set hlsearch<CR>$/;"	m	language:Vim
+c<CR>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap c<CR> s$/;"	m	language:Vim
+c@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c@ :let @\/='\\_s\\@<='.<sid>scopesearch(0).expand('<cWORD>').'\\ze\\_s\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+cA	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>$/;"	m	language:Vim
+ca#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca# :let g:iterate_occurences=1<CR>c#$/;"	m	language:Vim
+ca&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca& :let g:iterate_occurences=1<CR>c&$/;"	m	language:Vim
+ca*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca* :let g:iterate_occurences=1<CR>c*$/;"	m	language:Vim
+ca/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca\/ :let g:iterate_occurences=1<CR>c\/$/;"	m	language:Vim
+ca@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca@ :let g:iterate_occurences=1<CR>c@$/;"	m	language:Vim
+calc	/Users/ldavis/dotfiles/.bashrc	/^function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator$/;"	f	language:Sh
+capslock	/Users/ldavis/dotfiles/.vimrc	/^augroup capslock$/;"	a	language:Vim
+cc	/Users/ldavis/dotfiles/.vimrc	/^nnoremap cc cc$/;"	m	language:Vim
+cc	/Users/ldavis/dotfiles/.vimrc	/^vnoremap cc s$/;"	m	language:Vim
+ch	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> ch Xp$/;"	m	language:Vim
+Choose	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:Choose(patterns, string, comma, branch, prefix, suffix, ...)$/;"	f	language:Vim
+cI	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> cI :call <sid>inline()<CR>i$/;"	m	language:Vim
+cj	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> cj :let g:view=winsaveview() \\| d \\| call append(line('.'), getreg('"')[:-2]) $/;"	m	language:Vim
+ck	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> ck k:let g:view=winsaveview() \\| d \\| call append(line('.'), getreg('"')[:-2]) $/;"	m	language:Vim
+cL	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> cL mzi<CR><Esc>`z$/;"	m	language:Vim
+cl	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> cl xph$/;"	m	language:Vim
+CleanUp	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:CleanUp(options, mode, startline, startcol, ...)$/;"	f	language:Vim
+clearjumps	/Users/ldavis/dotfiles/.vimrc	/^augroup clearjumps$/;"	a	language:Vim
+cmdcolor	/Users/ldavis/dotfiles/.bashrc	/^function cmdcolor() {$/;"	f	language:Sh
+cmdwin	/Users/ldavis/dotfiles/.vimrc	/^augroup cmdwin$/;"	a	language:Vim
+co	/Users/ldavis/dotfiles/.vimrc	/^  nmap co <Plug>comment1$/;"	m	language:Vim
+cO	/Users/ldavis/dotfiles/.vimrc	/^  nmap cO <Plug>comment2$/;"	m	language:Vim
+co	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <silent> co :call NERDComment('v', 'comment')<CR>$/;"	m	language:Vim
+cO	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>$/;"	m	language:Vim
+codi	/Users/ldavis/dotfiles/.vimrc	/^augroup codi$/;"	a	language:Vim
+Colors	/Users/ldavis/dotfiles/.vimrc	/^command! Colors call <sid>colors()$/;"	c	language:Vim
+colors	/Users/ldavis/dotfiles/.vimrc	/^function! s:colors()$/;"	f	language:Vim
+commandline_check	/Users/ldavis/dotfiles/.vimrc	/^function! s:commandline_check()$/;"	f	language:Vim
+commentfiller	/Users/ldavis/dotfiles/.vimrc	/^  function! s:commentfiller()$/;"	f	language:Vim
+commentindent	/Users/ldavis/dotfiles/.vimrc	/^  function! s:commentindent()$/;"	f	language:Vim
+compare	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!$/;"	f	language:Vim
+compressuser	/Users/ldavis/dotfiles/.bashrc	/^function compressuser() { # turn $HOME into tilde$/;"	f	language:Sh
+ConcealToggle	/Users/ldavis/dotfiles/.vimrc	/^command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)$/;"	c	language:Vim
+concealtoggle	/Users/ldavis/dotfiles/.vimrc	/^function! s:concealtoggle(...)$/;"	f	language:Vim
+connect	/Users/ldavis/dotfiles/.bashrc	/^function connect() {$/;"	f	language:Sh
+copypaste	/Users/ldavis/dotfiles/.vimrc	/^augroup copypaste "also clear command line when leaving insert mode, always$/;"	a	language:Vim
+CopyToggle	/Users/ldavis/dotfiles/.vimrc	/^command! -nargs=? CopyToggle call <sid>copytoggle(<args>)$/;"	c	language:Vim
+copytoggle	/Users/ldavis/dotfiles/.vimrc	/^function! s:copytoggle(...)$/;"	f	language:Vim
+Count	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:Count(string, pattern, ...)$/;"	f	language:Vim
+ctagbracket	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagbracket(foreward, n)$/;"	f	language:Vim
+ctagbracketmaps	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagbracketmaps()$/;"	f	language:Vim
+ctagcmd	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagcmd()$/;"	f	language:Vim
+ctagdisplay	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagdisplay()$/;"	f	language:Vim
+ctagjump	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagjump(regex)$/;"	f	language:Vim
+ctaglist	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctaglist(A,B,C)$/;"	f	language:Vim
+ctags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^augroup ctags$/;"	a	language:Vim
+ctagsread	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagsread()$/;"	f	language:Vim
+ctagswrite	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagswrite()$/;"	f	language:Vim
+ctrl_c	/Users/ldavis/dotfiles/.bashrc	/^  function ctrl_c() {$/;"	f	language:Sh
+cY	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>$/;"	m	language:Vim
+c\	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> c\\  :call <sid>section('-')<CR>A$/;"	m	language:Vim
+c\|	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> c\\| :call <sid>section()<CR>A$/;"	m	language:Vim
+c_	/Users/ldavis/dotfiles/.vimrc	/^  nmap c_ <Plug>bar1$/;"	m	language:Vim
+D	/Users/ldavis/dotfiles/.vimrc	/^nnoremap D D$/;"	m	language:Vim
+d#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d# <Plug>search4$/;"	m	language:Vim
+d&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d& <Plug>search3$/;"	m	language:Vim
+d*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d* <Plug>search2$/;"	m	language:Vim
+d/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d\/ <Plug>search1$/;"	m	language:Vim
+d@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d@ <Plug>search5$/;"	m	language:Vim
+da#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da# :call <sid>refactor_all('d#')<CR>$/;"	m	language:Vim
+da&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da& :call <sid>refactor_all('d&')<CR>$/;"	m	language:Vim
+da*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da* :call <sid>refactor_all('d*')<CR>$/;"	m	language:Vim
+da/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da\/ :call <sid>refactor_all('d\/')<CR>$/;"	m	language:Vim
+da@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da@ :call <sid>refactor_all('d@')<CR>$/;"	m	language:Vim
+ddiff	/Users/ldavis/dotfiles/.bashrc	/^function ddiff() {$/;"	f	language:Sh
+delete	/Users/ldavis/dotfiles/.vimrc	/^augroup delete$/;"	a	language:Vim
+delete_next	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:delete_next()$/;"	f	language:Vim
+delimitmate	/Users/ldavis/dotfiles/.vimrc	/^  augroup delimitmate$/;"	a	language:Vim
+disconnect	/Users/ldavis/dotfiles/.bashrc	/^function disconnect() {$/;"	f	language:Sh
+DisplayTags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^command! DisplayTags call <sid>ctagdisplay()$/;"	c	language:Vim
+dl	/Users/ldavis/dotfiles/.bashrc	/^function dl() { # directory sizes$/;"	f	language:Sh
+dL	/Users/ldavis/dotfiles/.vimrc	/^nnoremap dL 0d\$$/;"	m	language:Vim
+docstring	/Users/ldavis/dotfiles/.vimrc	/^  function! s:docstring(char)$/;"	f	language:Vim
+ds	/Users/ldavis/dotfiles/.bashrc	/^function ds() { # directory ls$/;"	f	language:Sh
+EIMap	/Users/ldavis/dotfiles/.vimrc	/^command! EIMap call <sid>eimap()$/;"	c	language:Vim
+eimap	/Users/ldavis/dotfiles/.vimrc	/^function! s:eimap()$/;"	f	language:Vim
+EIOff	/Users/ldavis/dotfiles/.vimrc	/^command! EIOff call <sid>eioff()$/;"	c	language:Vim
+eioff	/Users/ldavis/dotfiles/.vimrc	/^function! s:eioff()$/;"	f	language:Vim
+EIOn	/Users/ldavis/dotfiles/.vimrc	/^command! EIOn  call <sid>eion()$/;"	c	language:Vim
+eion	/Users/ldavis/dotfiles/.vimrc	/^function! s:eion() "set autocommands to ignore, in consideration of older versions without TextChanged$/;"	f	language:Vim
+empty	/Users/ldavis/dotfiles/.bashrc	/^function empty() { for i in {1..100}; do echo; done; }$/;"	f	language:Sh
+env	/Users/ldavis/dotfiles/.bashrc	/^function env() { set; } # just prints all shell variables$/;"	f	language:Sh
+escapefix	/Users/ldavis/dotfiles/.vimrc	/^augroup escapefix$/;"	a	language:Vim
+eventsrestore	/Users/ldavis/dotfiles/.vimrc	/^augroup eventsrestore$/;"	a	language:Vim
+expanduser	/Users/ldavis/dotfiles/.bashrc	/^function expanduser() { # turn tilde into $HOME$/;"	f	language:Sh
+extract	/Users/ldavis/dotfiles/.bashrc	/^function extract() {$/;"	f	language:Sh
+f	/Users/ldavis/dotfiles/.vimrc	/^  map f <Plug>Sneak_f$/;"	m	language:Vim
+F	/Users/ldavis/dotfiles/.vimrc	/^  map F <Plug>Sneak_F$/;"	m	language:Vim
+figuresync	/Users/ldavis/dotfiles/.bashrc	/^function figuresync() {$/;"	f	language:Sh
+flatten	/Users/ldavis/dotfiles/.bashrc	/^function flatten() {$/;"	f	language:Sh
+foreward_delete	/Users/ldavis/dotfiles/.vimrc	/^function! s:foreward_delete()$/;"	f	language:Vim
+formatopts	/Users/ldavis/dotfiles/.vimrc	/^augroup formatopts$/;"	a	language:Vim
+ftplugin	/Users/ldavis/dotfiles/.vimrc	/^function! s:ftplugin()$/;"	f	language:Vim
+ftsyntax	/Users/ldavis/dotfiles/.vimrc	/^function! s:ftsyntax()$/;"	f	language:Vim
+fzf	/Users/ldavis/dotfiles/.vimrc	/^  function! s:fzf()$/;"	f	language:Vim
+fzf	/Users/ldavis/dotfiles/.vimrc	/^augroup fzf$/;"	a	language:Vim
+g	/Users/ldavis/dotfiles/.vimrc	/^augroup g$/;"	a	language:Vim
+g.	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> g. :call <sid>gitguttertoggle()<CR>$/;"	m	language:Vim
+g:citation_vim_cache_path	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_cache_path='~\/.vim\/zcache'$/;"	v	language:Vim
+g:citation_vim_et_al_limit	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors$/;"	v	language:Vim
+g:citation_vim_inner_prefix	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_inner_prefix=''$/;"	v	language:Vim
+g:citation_vim_mode	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_mode="zotero" "default$/;"	v	language:Vim
+g:citation_vim_outer_prefix	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_outer_prefix='\\cite{'$/;"	v	language:Vim
+g:citation_vim_suffix	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_suffix='}'$/;"	v	language:Vim
+g:citation_vim_zotero_path	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_zotero_path="~\/Zotero" "location of sqlite$/;"	v	language:Vim
+g:citation_vim_zotero_version	/Users/ldavis/dotfiles/.vimrc	/^  let g:citation_vim_zotero_version=5$/;"	v	language:Vim
+g:codi#autocmd	/Users/ldavis/dotfiles/.vimrc	/^  let g:codi#autocmd = "None"$/;"	v	language:Vim
+g:codi#interpreters	/Users/ldavis/dotfiles/.vimrc	/^  let g:codi#interpreters = {$/;"	v	language:Vim
+g:codi#log	/Users/ldavis/dotfiles/.vimrc	/^  let g:codi#log = "codi.log" "log everything, becuase you *will* have issues$/;"	v	language:Vim
+g:codi#rightalign	/Users/ldavis/dotfiles/.vimrc	/^  let g:codi#rightalign = 0$/;"	v	language:Vim
+g:codi#rightsplit	/Users/ldavis/dotfiles/.vimrc	/^  let g:codi#rightsplit = 0$/;"	v	language:Vim
+g:codi#sync	/Users/ldavis/dotfiles/.vimrc	/^  let g:codi#sync = 0 "probably easier$/;"	v	language:Vim
+g:codi#width	/Users/ldavis/dotfiles/.vimrc	/^  let g:codi#width = 20 "simple window configuration$/;"	v	language:Vim
+g:colorcolumn	/Users/ldavis/dotfiles/.vimrc	/^let g:colorcolumn=(has('gui_running') ? '0' : '80,120')$/;"	v	language:Vim
+g:compatible_codi	/Users/ldavis/dotfiles/.vimrc	/^let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))$/;"	v	language:Vim
+g:compatible_neocomplete	/Users/ldavis/dotfiles/.vimrc	/^let g:compatible_neocomplete = has("lua") "try alternative completion library$/;"	v	language:Vim
+g:compatible_tagbar	/Users/ldavis/dotfiles/.vimrc	/^let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))$/;"	v	language:Vim
+g:compatible_workspace	/Users/ldavis/dotfiles/.vimrc	/^let g:compatible_workspace   = (v:version>=800) "needs Git 8.0$/;"	v	language:Vim
+g:delimitMate_excluded_regions	/Users/ldavis/dotfiles/.vimrc	/^  let g:delimitMate_excluded_regions="String" "by default is disabled inside, don't want that$/;"	v	language:Vim
+g:delimitMate_expand_cr	/Users/ldavis/dotfiles/.vimrc	/^  let g:delimitMate_expand_cr=2 "expand even if it is not empty!$/;"	v	language:Vim
+g:delimitMate_expand_space	/Users/ldavis/dotfiles/.vimrc	/^  let g:delimitMate_expand_space=1$/;"	v	language:Vim
+g:delimitMate_jump_expansion	/Users/ldavis/dotfiles/.vimrc	/^  let g:delimitMate_jump_expansion=0$/;"	v	language:Vim
+g:delimitMate_matchpairs	/Users/ldavis/dotfiles/.vimrc	/^  let g:delimitMate_matchpairs="(:),{:},[:]"$/;"	v	language:Vim
+g:delimitMate_quotes	/Users/ldavis/dotfiles/.vimrc	/^  let g:delimitMate_quotes="\\" '"$/;"	v	language:Vim
+g:easytags_async	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_async=1$/;"	v	language:Vim
+g:easytags_autorecurse	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_autorecurse=0 "the default value$/;"	v	language:Vim
+g:easytags_auto_highlight	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_auto_highlight=0$/;"	v	language:Vim
+g:easytags_auto_update	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_auto_update=1$/;"	v	language:Vim
+g:easytags_dynamic_files	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_dynamic_files=2 "says to always put tags file in the current working directory$/;"	v	language:Vim
+g:easytags_events	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_events=['BufRead', 'BufWritePost'] "update tags when you write only; should still be there$/;"	v	language:Vim
+g:easytags_file	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_file='.\/.vimtags'$/;"	v	language:Vim
+g:easytags_on_cursorhold	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_on_cursorhold=0$/;"	v	language:Vim
+g:formatoptions	/Users/ldavis/dotfiles/.vimrc	/^let g:formatoptions="lro"$/;"	v	language:Vim
+g:fzf_action	/Users/ldavis/dotfiles/.vimrc	/^  let g:fzf_action = {$/;"	v	language:Vim
+g:fzf_layout	/Users/ldavis/dotfiles/.vimrc	/^  let g:fzf_layout = {'down': '~20%'} "make window smaller$/;"	v	language:Vim
+g:gitgutter_enabled	/Users/ldavis/dotfiles/.vimrc	/^  let g:gitgutter_enabled=0 "whether enabled at *startup*$/;"	v	language:Vim
+g:gitgutter_map_keys	/Users/ldavis/dotfiles/.vimrc	/^  let g:gitgutter_map_keys=0 "disable all maps yo$/;"	v	language:Vim
+g:has_ctags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:has_ctags = str2nr(system("type ctags &>\/dev\/null && echo 1 || echo 0"))$/;"	v	language:Vim
+g:has_ctags	/Users/ldavis/dotfiles/.vimrc	/^let g:has_ctags              = str2nr(system("type ctags &>\/dev\/null && echo 1 || echo 0"))$/;"	v	language:Vim
+g:has_nowait	/Users/ldavis/dotfiles/.vimrc	/^let g:has_nowait             = (v:version>=704 || v:version==703 && has("patch1261"))$/;"	v	language:Vim
+g:has_repeat	/Users/ldavis/dotfiles/.vimrc	/^let g:has_repeat             = exists("*repeat#set") "start checks for function existence$/;"	v	language:Vim
+g:has_signs	/Users/ldavis/dotfiles/.vimrc	/^let g:has_signs              = has("signs") "for git gutter and syntastic maybe$/;"	v	language:Vim
+g:ignore_types	/Users/ldavis/dotfiles/.vimrc	/^let g:ignore_types=['gitcommit', 'rst', 'qf', 'diff', 'help', 'tagbar', 'nerdtree']$/;"	v	language:Vim
+g:indentLine_char	/Users/ldavis/dotfiles/.vimrc	/^  let g:indentLine_char='¦' "¦│┆$/;"	v	language:Vim
+g:indentLine_fileTypeExclude	/Users/ldavis/dotfiles/.vimrc	/^  let g:indentLine_fileTypeExclude = ['rst', 'qf', 'diff', 'man', 'help', 'gitcommit', 'tex']$/;"	v	language:Vim
+g:indentLine_setColors	/Users/ldavis/dotfiles/.vimrc	/^  let g:indentLine_setColors=0$/;"	v	language:Vim
+g:indentLine_setConceal	/Users/ldavis/dotfiles/.vimrc	/^  let g:indentLine_setConceal=0$/;"	v	language:Vim
+g:inject_replace_occurences	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:inject_replace_occurences=0$/;"	v	language:Vim
+g:iterate_occurences	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:iterate_occurences=0$/;"	v	language:Vim
+g:lasttab	/Users/ldavis/dotfiles/.vimrc	/^let g:lasttab=1$/;"	v	language:Vim
+g:loaded_matchparen	/Users/ldavis/dotfiles/.vimrc	/^let g:loaded_matchparen=0$/;"	v	language:Vim
+g:neocomplete#auto_completion_start_length	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#auto_completion_start_length = 1$/;"	v	language:Vim
+g:neocomplete#enable_at_startup	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#enable_at_startup = 1$/;"	v	language:Vim
+g:neocomplete#enable_auto_select	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#enable_auto_select = 0$/;"	v	language:Vim
+g:neocomplete#enable_camel_case	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#enable_camel_case = 0$/;"	v	language:Vim
+g:neocomplete#enable_ignore_case	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#enable_ignore_case = 0$/;"	v	language:Vim
+g:neocomplete#enable_smart_case	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#enable_smart_case = 0$/;"	v	language:Vim
+g:neocomplete#keyword_patterns	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#keyword_patterns['default'] = '\\h\\w*'$/;"	v	language:Vim
+g:neocomplete#max_list	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#max_list = 10$/;"	v	language:Vim
+g:neocomplete#sources#dictionary#dictionaries	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#sources#dictionary#dictionaries = {$/;"	v	language:Vim
+g:neocomplete#sources#omni#input_patterns	/Users/ldavis/dotfiles/.vimrc	/^    let g:neocomplete#sources#omni#input_patterns = {}$/;"	v	language:Vim
+g:neocomplete#sources#omni#input_patterns	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#sources#omni#input_patterns.python = ''$/;"	v	language:Vim
+g:neocomplete#sources#syntax#min_keyword_length	/Users/ldavis/dotfiles/.vimrc	/^  let g:neocomplete#sources#syntax#min_keyword_length = 2$/;"	v	language:Vim
+g:NERDCommentEmptyLines	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDCommentEmptyLines = 1     " allow commenting and inverting empty lines (useful when commenting a region)$/;"	v	language:Vim
+g:NERDCommentWholeLinesInVMode	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDCommentWholeLinesInVMode = 1$/;"	v	language:Vim
+g:NERDCompactSexyComs	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDCompactSexyComs = 1       " use compact syntax for prettified multi-line comments$/;"	v	language:Vim
+g:NERDCreateDefaultMappings	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDCreateDefaultMappings = 0 " disable default mappings (make my own)$/;"	v	language:Vim
+g:NERDCustomDelimiters	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDCustomDelimiters = {$/;"	v	language:Vim
+g:NERDDefaultAlign	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation$/;"	v	language:Vim
+g:NERDSpaceDelims	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDSpaceDelims = 1           " comments led with spaces$/;"	v	language:Vim
+g:NERDTreeIgnore	/Users/ldavis/dotfiles/.vimrc	/^    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\\$', '')$/;"	v	language:Vim
+g:NERDTreeIgnore	/Users/ldavis/dotfiles/.vimrc	/^    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\\\.', '')$/;"	v	language:Vim
+g:NERDTreeIgnore	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTreeIgnore=split(&wildignore, ',')$/;"	v	language:Vim
+g:NERDTreeMapChangeRoot	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTreeMapChangeRoot="D" "C was annoying, because VIM will wait for 'CD'$/;"	v	language:Vim
+g:NERDTreeMinimalUI	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTreeMinimalUI=1 "remove annoying ? for help note$/;"	v	language:Vim
+g:NERDTreeShowHidden	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTreeShowHidden=1$/;"	v	language:Vim
+g:NERDTreeSortOrder	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTreeSortOrder=[] "use default sorting$/;"	v	language:Vim
+g:NERDTreeWinPos	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTreeWinPos="right"$/;"	v	language:Vim
+g:NERDTreeWinSize	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTreeWinSize=20 "instead of 31 default$/;"	v	language:Vim
+g:NERDTrimTrailingWhitespace	/Users/ldavis/dotfiles/.vimrc	/^  let g:NERDTrimTrailingWhitespace=1  " trailing whitespace deletion$/;"	v	language:Vim
+g:scrolloff	/Users/ldavis/dotfiles/.vimrc	/^let g:scrolloff=4$/;"	v	language:Vim
+g:SimpylFold_docstring_preview	/Users/ldavis/dotfiles/.vimrc	/^let g:SimpylFold_docstring_preview=1$/;"	v	language:Vim
+g:SimpylFold_fold_docstring	/Users/ldavis/dotfiles/.vimrc	/^let g:SimpylFold_fold_docstring=0$/;"	v	language:Vim
+g:SimpylFold_fold_docstrings	/Users/ldavis/dotfiles/.vimrc	/^let g:SimpylFold_fold_docstrings=0$/;"	v	language:Vim
+g:SimpylFold_fold_import	/Users/ldavis/dotfiles/.vimrc	/^let g:SimpylFold_fold_import=0$/;"	v	language:Vim
+g:SimpylFold_fold_imports	/Users/ldavis/dotfiles/.vimrc	/^let g:SimpylFold_fold_imports=0$/;"	v	language:Vim
+g:syntastic_always_populate_loc_list	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_always_populate_loc_list = 1 "necessary, or get errors$/;"	v	language:Vim
+g:syntastic_auto_jump	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_auto_jump = 0 "disable jumping to errors$/;"	v	language:Vim
+g:syntastic_auto_loc_list	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_auto_loc_list = 1 "creates window; if 0, does not create window$/;"	v	language:Vim
+g:syntastic_check_on_open	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_check_on_open = 0$/;"	v	language:Vim
+g:syntastic_check_on_wq	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_check_on_wq = 0$/;"	v	language:Vim
+g:syntastic_enable_highlighting	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_enable_highlighting = 1$/;"	v	language:Vim
+g:syntastic_enable_signs	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_enable_signs = 1 "disable useless signs$/;"	v	language:Vim
+g:syntastic_fortran_checkers	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_fortran_checkers=['gfortran']$/;"	v	language:Vim
+g:syntastic_loc_list_height	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_loc_list_height = 5$/;"	v	language:Vim
+g:syntastic_mode	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_mode = 'passive' "opens little panel$/;"	v	language:Vim
+g:syntastic_mode_map	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}$/;"	v	language:Vim
+g:syntastic_python_checkers	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_python_checkers=['pyflakes'] "pylint very slow; pyflakes light by comparison$/;"	v	language:Vim
+g:syntastic_stl_format	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_stl_format = "" "disables statusline colors; they were ugly$/;"	v	language:Vim
+g:syntastic_tex_checkers	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_tex_checkers=['lacheck']$/;"	v	language:Vim
+g:syntastic_vim_checkers	/Users/ldavis/dotfiles/.vimrc	/^  let g:syntastic_vim_checkers=['vimlint']$/;"	v	language:Vim
+g:tagbar_autofocus	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_autofocus=1 "don't autojump to window if opened$/;"	v	language:Vim
+g:tagbar_autoshowtag	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_autoshowtag=0 "do not open tag folds when cursor moves over one$/;"	v	language:Vim
+g:tagbar_case_insensitive	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_case_insensitive=1 "make sorting case insensitive$/;"	v	language:Vim
+g:tagbar_compact	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_compact=1 "no header information in panel$/;"	v	language:Vim
+g:tagbar_expand	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_expand=0$/;"	v	language:Vim
+g:tagbar_foldlevel	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_foldlevel=-1 "default none$/;"	v	language:Vim
+g:tagbar_indent	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_indent=-1 "only one space indent$/;"	v	language:Vim
+g:tagbar_left	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_left=0 "open on left; more natural this way$/;"	v	language:Vim
+g:tagbar_map_closeallfolds	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_map_closeallfolds="_"$/;"	v	language:Vim
+g:tagbar_map_closefold	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_map_closefold="-"$/;"	v	language:Vim
+g:tagbar_map_openallfolds	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_map_openallfolds="+"$/;"	v	language:Vim
+g:tagbar_map_openfold	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_map_openfold="="$/;"	v	language:Vim
+g:tagbar_previewwin_pos	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'$/;"	v	language:Vim
+g:tagbar_show_linenumbers	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_show_linenumbers=0 "don't show line numbers$/;"	v	language:Vim
+g:tagbar_silent	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_silent=1 "no information echoed$/;"	v	language:Vim
+g:tagbar_singleclick	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_singleclick=0 "one click select; annoying$/;"	v	language:Vim
+g:tagbar_sort	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes$/;"	v	language:Vim
+g:tagbar_width	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_width=15 "better default$/;"	v	language:Vim
+g:tagbar_zoomwidth	/Users/ldavis/dotfiles/.vimrc	/^  let g:tagbar_zoomwidth=15 "don't ever 'zoom' even if text doesn't fit$/;"	v	language:Vim
+g:vimtex_compiler_latexmk	/Users/ldavis/dotfiles/.vimrc	/^  let g:vimtex_compiler_latexmk = {'callback' : 0}$/;"	v	language:Vim
+g:vimtex_fold_enabled	/Users/ldavis/dotfiles/.vimrc	/^  let g:vimtex_fold_enabled = 0 "So large files can open more easily$/;"	v	language:Vim
+g:vimtex_mappings_enable	/Users/ldavis/dotfiles/.vimrc	/^  let g:vimtex_mappings_enable = 0$/;"	v	language:Vim
+g:vimtex_view_general_options	/Users/ldavis/dotfiles/.vimrc	/^  let g:vimtex_view_general_options = '-r @line @pdf @tex'$/;"	v	language:Vim
+g:vimtex_view_general_viewer	/Users/ldavis/dotfiles/.vimrc	/^  let g:vimtex_view_general_viewer = '\/Applications\/Skim.app\/Contents\/SharedSupport\/displayline'$/;"	v	language:Vim
+g:vimtex_view_view_method	/Users/ldavis/dotfiles/.vimrc	/^  let g:vimtex_view_view_method = 'skim'$/;"	v	language:Vim
+g:workspace_autosave_ignore	/Users/ldavis/dotfiles/.vimrc	/^  let g:workspace_autosave_ignore = g:ignore_types "don't autosave these$/;"	v	language:Vim
+g:workspace_autosave_untrailspaces	/Users/ldavis/dotfiles/.vimrc	/^  let g:workspace_autosave_untrailspaces = 0 "sometimes we WANT trailing spaces!$/;"	v	language:Vim
+g:workspace_persist_undo_history	/Users/ldavis/dotfiles/.vimrc	/^  let g:workspace_persist_undo_history = 0 "don't need to save undo history$/;"	v	language:Vim
+g:workspace_session_disable_on_args	/Users/ldavis/dotfiles/.vimrc	/^  let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions$/;"	v	language:Vim
+g:workspace_session_name	/Users/ldavis/dotfiles/.vimrc	/^  let g:workspace_session_name = '.vimsession'$/;"	v	language:Vim
+g;	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> g; :<Up><CR>$/;"	m	language:Vim
+gc	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> gc <sid>smartjump('^\\s*'.b:NERDCommenterDelims['left'],0).'gg'$/;"	m	language:Vim
+gC	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> gC <sid>smartjump('^\\s*'.b:NERDCommenterDelims['left'],1).'gg'$/;"	m	language:Vim
+gdiff	/Users/ldavis/dotfiles/.bashrc	/^function gdiff() {$/;"	f	language:Sh
+ge	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> ge <sid>smartjump('^\\s*$',0).'gg'$/;"	m	language:Vim
+gE	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> <silent> gE <sid>smartjump('^\\s*$',1).'gg'$/;"	m	language:Vim
+get_ipython	/Users/ldavis/dotfiles/.bashrc	/^  get_ipython().magic('autoreload 2')" | sed 's\/^ *\/\/g')$/;"	f	language:Sh
+gF	/Users/ldavis/dotfiles/.vimrc	/^noremap <expr> gF ":if len(glob('<cfile>'))>0 \\| echom 'File(s) exist.' "$/;"	m	language:Vim
+gf	/Users/ldavis/dotfiles/.vimrc	/^noremap gf <c-w>gf$/;"	m	language:Vim
+gif2png	/Users/ldavis/dotfiles/.bashrc	/^function gif2png() {$/;"	f	language:Sh
+git	/Users/ldavis/dotfiles/.vimrc	/^augroup git$/;"	a	language:Vim
+gitguttertoggle	/Users/ldavis/dotfiles/.vimrc	/^  function! s:gitguttertoggle(...)$/;"	f	language:Vim
+gl	/Users/ldavis/dotfiles/.vimrc	/^nmap gl <Plug>cap1$/;"	m	language:Vim
+gl	/Users/ldavis/dotfiles/.vimrc	/^vnoremap gl ~$/;"	m	language:Vim
+gn	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> gn :GitGutterNextHunk<CR>$/;"	m	language:Vim
+gN	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> gN :GitGutterPrevHunk<CR>$/;"	m	language:Vim
+gO	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> gO :call <sid>gitguttertoggle(0)<CR>$/;"	m	language:Vim
+go	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> go :call <sid>gitguttertoggle(1)<CR>$/;"	m	language:Vim
+Group	/Users/ldavis/dotfiles/.vimrc	/^command! Group call <sid>group()$/;"	c	language:Vim
+group	/Users/ldavis/dotfiles/.vimrc	/^function! s:group()$/;"	f	language:Vim
+GroupColors	/Users/ldavis/dotfiles/.vimrc	/^command! GroupColors vert help group-name$/;"	c	language:Vim
+gs	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> gs :GitGutterPreviewHunk<CR>:wincmd j<CR>$/;"	m	language:Vim
+gS	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> gS :GitGutterUndoHunk<CR>$/;"	m	language:Vim
+gt	/Users/ldavis/dotfiles/.vimrc	/^nmap gt <Plug>cap2$/;"	m	language:Vim
+gt	/Users/ldavis/dotfiles/.vimrc	/^noremap gt <Nop>$/;"	m	language:Vim
+gT	/Users/ldavis/dotfiles/.vimrc	/^noremap gT <Nop>$/;"	m	language:Vim
+gu	/Users/ldavis/dotfiles/.vimrc	/^nnoremap gu guiw$/;"	m	language:Vim
+gU	/Users/ldavis/dotfiles/.vimrc	/^nnoremap gU gUiw$/;"	m	language:Vim
+gu	/Users/ldavis/dotfiles/.vimrc	/^vnoremap gu gu$/;"	m	language:Vim
+gU	/Users/ldavis/dotfiles/.vimrc	/^vnoremap gU gU$/;"	m	language:Vim
+help	/Users/ldavis/dotfiles/.bashrc	/^function help() {$/;"	f	language:Sh
+HelpSetup	/Users/ldavis/dotfiles/.vimrc	/^command! HelpSetup call <sid>helpsetup()$/;"	c	language:Vim
+helpsetup	/Users/ldavis/dotfiles/.vimrc	/^function! s:helpsetup()$/;"	f	language:Vim
+idiff	/Users/ldavis/dotfiles/.bashrc	/^function idiff() {$/;"	f	language:Sh
+incl	/Users/ldavis/dotfiles/.bashrc	/^function incl() {$/;"	f	language:Sh
+increment	/Users/ldavis/dotfiles/.vimrc	/^augroup increment$/;"	a	language:Vim
+initssh	/Users/ldavis/dotfiles/.bashrc	/^function initssh {$/;"	f	language:Sh
+inline	/Users/ldavis/dotfiles/.vimrc	/^  function! s:inline()$/;"	f	language:Vim
+insertenter	/Users/ldavis/dotfiles/.vimrc	/^augroup insertenter$/;"	a	language:Vim
+InsertRefs	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:InsertRefs(groupBR, prefix, group, suffix, matchline)$/;"	f	language:Vim
+iperl	/Users/ldavis/dotfiles/.bashrc	/^function iperl() { # see this answer: https:\/\/stackoverflow.com\/a\/22840242\/4970632$/;"	f	language:Sh
+iR	/Users/ldavis/dotfiles/.bashrc	/^function iR() {$/;"	f	language:Sh
+J	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <expr> J v:count>1 ? 'JJ' : 'J'$/;"	m	language:Vim
+join	/Users/ldavis/dotfiles/.bashrc	/^function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator$/;"	f	language:Sh
+jt	/Users/ldavis/dotfiles/.bashrc	/^function jt() {$/;"	f	language:Sh
+K	/Users/ldavis/dotfiles/.vimrc	/^noremap K <Nop>$/;"	m	language:Vim
+keywordfix	/Users/ldavis/dotfiles/.vimrc	/^augroup keywordfix$/;"	a	language:Vim
+killjobs	/Users/ldavis/dotfiles/.bashrc	/^function killjobs() {$/;"	f	language:Sh
+killssh	/Users/ldavis/dotfiles/.bashrc	/^function killssh {$/;"	f	language:Sh
+langtoggle	/Users/ldavis/dotfiles/.vimrc	/^function! s:langtoggle(...)$/;"	f	language:Vim
+listjobs	/Users/ldavis/dotfiles/.bashrc	/^function listjobs() {$/;"	f	language:Sh
+Lnext	/Users/ldavis/dotfiles/.vimrc	/^  command! Lnext try | lnext | catch | lfirst | catch | endtry$/;"	c	language:Vim
+loaded_matchit	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^let loaded_matchit = 1$/;"	v	language:Vim
+Lprev	/Users/ldavis/dotfiles/.vimrc	/^  command! Lprev try | lprev | catch | llast  | catch | endtry$/;"	c	language:Vim
+lrcp	/Users/ldavis/dotfiles/.bashrc	/^function lrcp() {    # "copy to remote (from local); 'copy here'"$/;"	f	language:Sh
+m	/Users/ldavis/dotfiles/.vimrc	/^noremap m ge$/;"	m	language:Vim
+M	/Users/ldavis/dotfiles/.vimrc	/^noremap M gE$/;"	m	language:Vim
+man	/Users/ldavis/dotfiles/.bashrc	/^function man() { # always show useful information when man is called$/;"	f	language:Sh
+mapleader	/Users/ldavis/dotfiles/.vimrc	/^let mapleader="\\<Space>"$/;"	v	language:Vim
+MatchDebug	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^  command! -nargs=0 MatchDebug call s:Match_debug()$/;"	c	language:Vim
+Match_debug	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:Match_debug()$/;"	f	language:Vim
+Match_wrapper	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^function! s:Match_wrapper(word, forward, mode) range$/;"	f	language:Vim
+merge	/Users/ldavis/dotfiles/.bashrc	/^function merge() {$/;"	f	language:Sh
+message	/Users/ldavis/dotfiles/.vimrc	/^  function! s:message(...)$/;"	f	language:Vim
+MoveToNext	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! MoveToNext()$/;"	f	language:Vim
+mucomplete	/Users/ldavis/dotfiles/.vimrc	/^augroup mucomplete$/;"	a	language:Vim
+MultiMatch	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:MultiMatch(spflag, mode)$/;"	f	language:Vim
+namelist	/Users/ldavis/dotfiles/.bashrc	/^function namelist() {$/;"	f	language:Sh
+ncdimlist	/Users/ldavis/dotfiles/.bashrc	/^function ncdimlist() { # get list of dimensions$/;"	f	language:Sh
+ncdimsinfo	/Users/ldavis/dotfiles/.bashrc	/^function ncdimsinfo() { # get information for just variables (no dimension\/global info)$/;"	f	language:Sh
+ncdump	/Users/ldavis/dotfiles/.bashrc	/^function ncdump() { # almost always want this; access old versions in functions with backslash$/;"	f	language:Sh
+ncglobal	/Users/ldavis/dotfiles/.bashrc	/^function ncglobal() { # show just the global attributes$/;"	f	language:Sh
+nchelp	/Users/ldavis/dotfiles/.bashrc	/^function nchelp() {$/;"	f	language:Sh
+ncinfo	/Users/ldavis/dotfiles/.bashrc	/^function ncinfo() { # only get text between variables: and linebreak before global attributes$/;"	f	language:Sh
+nclist	/Users/ldavis/dotfiles/.bashrc	/^function nclist() { # only get text between variables: and linebreak before global attributes$/;"	f	language:Sh
+ncvardata	/Users/ldavis/dotfiles/.bashrc	/^function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this$/;"	f	language:Sh
+ncvardump	/Users/ldavis/dotfiles/.bashrc	/^function ncvardump() { # dump variable contents (first argument) from file (second argument)$/;"	f	language:Sh
+ncvarinfo	/Users/ldavis/dotfiles/.bashrc	/^function ncvarinfo() { # as above but just for one variable$/;"	f	language:Sh
+ncvarlist	/Users/ldavis/dotfiles/.bashrc	/^function ncvarlist() { # only get text between variables: and linebreak before global attributes$/;"	f	language:Sh
+ncvarsinfo	/Users/ldavis/dotfiles/.bashrc	/^function ncvarsinfo() { # get information for just variables (no dimension\/global info)$/;"	f	language:Sh
+ncvartable	/Users/ldavis/dotfiles/.bashrc	/^function ncvartable() { # as above but show everything$/;"	f	language:Sh
+neocomplete	/Users/ldavis/dotfiles/.vimrc	/^  augroup neocomplete$/;"	a	language:Vim
+nerdcomment	/Users/ldavis/dotfiles/.vimrc	/^augroup nerdcomment$/;"	a	language:Vim
+nerdtree	/Users/ldavis/dotfiles/.vimrc	/^  augroup nerdtree$/;"	a	language:Vim
+nerdtreesetup	/Users/ldavis/dotfiles/.vimrc	/^  function! s:nerdtreesetup()$/;"	f	language:Vim
+newcodi	/Users/ldavis/dotfiles/.vimrc	/^  function! s:newcodi(name)$/;"	f	language:Vim
+notebook	/Users/ldavis/dotfiles/.bashrc	/^function notebook() {$/;"	f	language:Sh
+o	/Users/ldavis/dotfiles/.vimrc	/^nnoremap o ox<BS>$/;"	m	language:Vim
+O	/Users/ldavis/dotfiles/.vimrc	/^nnoremap O Ox<BS>$/;"	m	language:Vim
+open	/Users/ldavis/dotfiles/.bashrc	/^function open() {$/;"	f	language:Sh
+openwrapper	/Users/ldavis/dotfiles/.vimrc	/^function! s:openwrapper()$/;"	f	language:Vim
+p	/Users/ldavis/dotfiles/.vimrc	/^vnoremap p "_dP$/;"	m	language:Vim
+P	/Users/ldavis/dotfiles/.vimrc	/^vnoremap P "_dP$/;"	m	language:Vim
+ParseSkip	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:ParseSkip(str)$/;"	f	language:Vim
+ParseWords	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:ParseWords(groups)$/;"	f	language:Vim
+pdf2eps	/Users/ldavis/dotfiles/.bashrc	/^function pdf2eps() {$/;"	f	language:Sh
+pdf2png	/Users/ldavis/dotfiles/.bashrc	/^function pdf2png() {$/;"	f	language:Sh
+pdf2tiff	/Users/ldavis/dotfiles/.bashrc	/^function pdf2tiff() {$/;"	f	language:Sh
+plug	/Users/ldavis/dotfiles/.vimrc	/^augroup plug$/;"	a	language:Vim
+PluginFile	/Users/ldavis/dotfiles/.vimrc	/^command! PluginFile call <sid>ftplugin()$/;"	c	language:Vim
+popuphelper	/Users/ldavis/dotfiles/.vimrc	/^augroup popuphelper$/;"	a	language:Vim
+prompt_append	/Users/ldavis/dotfiles/.bashrc	/^function prompt_append() { # input argument should be new command$/;"	f	language:Sh
+q	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> <expr> q b:recording ?$/;"	m	language:Vim
+Q	/Users/ldavis/dotfiles/.vimrc	/^noremap Q <Nop>$/;"	m	language:Vim
+ReadTags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^command! ReadTags call <sid>ctagsread()$/;"	c	language:Vim
+Ref	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:Ref(string, d, ...)$/;"	f	language:Vim
+refactor_all	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:refactor_all(command)$/;"	f	language:Vim
+refactor_tool	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^augroup refactor_tool$/;"	a	language:Vim
+ReplaceOccurence	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! ReplaceOccurence()$/;"	f	language:Vim
+Resolve	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:Resolve(source, target, output)$/;"	f	language:Vim
+rlcp	/Users/ldavis/dotfiles/.bashrc	/^function rlcp() {    # "copy to local (from remote); 'copy there'"$/;"	f	language:Sh
+s	/Users/ldavis/dotfiles/.vimrc	/^  map s <Plug>Sneak_s$/;"	m	language:Vim
+S	/Users/ldavis/dotfiles/.vimrc	/^  map S <Plug>Sneak_S$/;"	m	language:Vim
+s:autosave	/Users/ldavis/dotfiles/.vimrc	/^  let s:autosave="InsertLeave" | if exists("##TextChanged") | let s:autosave.=",TextChanged" | endif$/;"	v	language:Vim
+s:last_mps	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^let s:last_mps = ""$/;"	v	language:Vim
+s:last_words	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^let s:last_words = ":"$/;"	v	language:Vim
+s:notslash	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^let s:notslash = '\\\\\\@<!\\%(\\\\\\\\\\)*'$/;"	v	language:Vim
+s:save_cpo	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^let s:save_cpo = &cpo$/;"	v	language:Vim
+saving	/Users/ldavis/dotfiles/.vimrc	/^augroup saving$/;"	a	language:Vim
+scopesearch	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:scopesearch(command)$/;"	f	language:Vim
+sdsync	/Users/ldavis/dotfiles/.bashrc	/^function sdsync() {$/;"	f	language:Sh
+searchreplace	/Users/ldavis/dotfiles/.vimrc	/^augroup searchreplace$/;"	a	language:Vim
+section	/Users/ldavis/dotfiles/.vimrc	/^  function! s:section(...) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'$/;"	f	language:Vim
+session	/Users/ldavis/dotfiles/.vimrc	/^augroup session$/;"	a	language:Vim
+settings	/Users/ldavis/dotfiles/.vimrc	/^augroup settings$/;"	a	language:Vim
+simple	/Users/ldavis/dotfiles/.vimrc	/^augroup simple$/;"	a	language:Vim
+SimpleSetup	/Users/ldavis/dotfiles/.vimrc	/^command! -nargs=? SimpleSetup call <sid>simplesetup(<args>)$/;"	c	language:Vim
+simplesetup	/Users/ldavis/dotfiles/.vimrc	/^function! s:simplesetup(...)$/;"	f	language:Vim
+smartjump	/Users/ldavis/dotfiles/.vimrc	/^function! s:smartjump(regex,backwards) "jump to next comment$/;"	f	language:Vim
+sneak	/Users/ldavis/dotfiles/.vimrc	/^augroup sneak$/;"	a	language:Vim
+spell	/Users/ldavis/dotfiles/.vimrc	/^augroup spell$/;"	a	language:Vim
+spellchange	/Users/ldavis/dotfiles/.vimrc	/^function! s:spellchange(direction)$/;"	f	language:Vim
+spelltoggle	/Users/ldavis/dotfiles/.vimrc	/^function! s:spelltoggle(...)$/;"	f	language:Vim
+ssh_fancy	/Users/ldavis/dotfiles/.bashrc	/^function ssh_fancy() {$/;"	f	language:Sh
+syntastic	/Users/ldavis/dotfiles/.vimrc	/^augroup syntastic$/;"	a	language:Vim
+syntastic_disable	/Users/ldavis/dotfiles/.vimrc	/^  function! s:syntastic_disable()$/;"	f	language:Vim
+syntastic_enable	/Users/ldavis/dotfiles/.vimrc	/^  function! s:syntastic_enable()$/;"	f	language:Vim
+syntastic_status	/Users/ldavis/dotfiles/.vimrc	/^  function! s:syntastic_status()$/;"	f	language:Vim
+syntax	/Users/ldavis/dotfiles/.vimrc	/^augroup syntax$/;"	a	language:Vim
+Syntax	/Users/ldavis/dotfiles/.vimrc	/^command! -nargs=? Syntax call <sid>syntax('<args>')$/;"	c	language:Vim
+syntax	/Users/ldavis/dotfiles/.vimrc	/^function! s:syntax(name)$/;"	f	language:Vim
+SyntaxFile	/Users/ldavis/dotfiles/.vimrc	/^command! SyntaxFile call <sid>ftsyntax()$/;"	c	language:Vim
+t	/Users/ldavis/dotfiles/.vimrc	/^  map t <Plug>Sneak_t$/;"	m	language:Vim
+T	/Users/ldavis/dotfiles/.vimrc	/^  map T <Plug>Sneak_T$/;"	m	language:Vim
+Table	/Users/ldavis/dotfiles/.vimrc	/^	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')$/;"	c	language:Vim
+table	/Users/ldavis/dotfiles/.vimrc	/^  function! s:table(arg) range$/;"	f	language:Vim
+tablist	/Users/ldavis/dotfiles/.vimrc	/^function! s:tablist(A,L,P)$/;"	f	language:Vim
+tabmove	/Users/ldavis/dotfiles/.vimrc	/^function! s:tabmove(n)$/;"	f	language:Vim
+tabs	/Users/ldavis/dotfiles/.vimrc	/^augroup tabs$/;"	a	language:Vim
+tabular	/Users/ldavis/dotfiles/.vimrc	/^augroup tabular$/;"	a	language:Vim
+tab_decrease	/Users/ldavis/dotfiles/.vimrc	/^function! s:tab_decrease()$/;"	f	language:Vim
+tab_increase	/Users/ldavis/dotfiles/.vimrc	/^function! s:tab_increase() "use this inside <expr> remaps$/;"	f	language:Vim
+tab_reset	/Users/ldavis/dotfiles/.vimrc	/^function! s:tab_reset()$/;"	f	language:Vim
+tagbar	/Users/ldavis/dotfiles/.vimrc	/^  augroup tagbar$/;"	a	language:Vim
+tagbarsetup	/Users/ldavis/dotfiles/.vimrc	/^  function! s:tagbarsetup()$/;"	f	language:Vim
+template	/Users/ldavis/dotfiles/.vimrc	/^    let template=expand("~")."\/latex\/".input("Template (tab to reveal options): ", "", "customlist,TeXTemplates").".tex"$/;"	v	language:Vim
+templates	/Users/ldavis/dotfiles/.vimrc	/^augroup templates$/;"	a	language:Vim
+textemplates	/Users/ldavis/dotfiles/.vimrc	/^function! s:textemplates()$/;"	f	language:Vim
+title	/Users/ldavis/dotfiles/.bashrc	/^function title() { # Cmd-I from iterm2 also works$/;"	f	language:Sh
+title_update	/Users/ldavis/dotfiles/.bashrc	/^function title_update() {$/;"	f	language:Sh
+U	/Users/ldavis/dotfiles/.vimrc	/^nnoremap U <C-r>$/;"	m	language:Vim
+unannotate	/Users/ldavis/dotfiles/.bashrc	/^function unannotate() {$/;"	f	language:Sh
+unite	/Users/ldavis/dotfiles/.vimrc	/^augroup unite$/;"	a	language:Vim
+unstale	/Users/ldavis/dotfiles/.bashrc	/^function unstale() {$/;"	f	language:Sh
+v	/Users/ldavis/dotfiles/.vimrc	/^nnoremap v myv$/;"	m	language:Vim
+V	/Users/ldavis/dotfiles/.vimrc	/^nnoremap V myV$/;"	m	language:Vim
+v$	/Users/ldavis/dotfiles/.vimrc	/^nnoremap v$ v$h$/;"	m	language:Vim
+v/	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> v\/ hn:noh<CR>gn$/;"	m	language:Vim
+vA	/Users/ldavis/dotfiles/.vimrc	/^nnoremap vA ggVG$/;"	m	language:Vim
+vim	/Users/ldavis/dotfiles/.bashrc	/^function vim() {$/;"	f	language:Sh
+vimtex	/Users/ldavis/dotfiles/.vimrc	/^augroup vimtex$/;"	a	language:Vim
+vv	/Users/ldavis/dotfiles/.vimrc	/^nnoremap vv ^v$gE$/;"	m	language:Vim
+Wholematch	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^fun! s:Wholematch(string, pat, start)$/;"	f	language:Vim
+wildstab	/Users/ldavis/dotfiles/.vimrc	/^function! s:wildstab()$/;"	f	language:Vim
+wildtab	/Users/ldavis/dotfiles/.vimrc	/^function! s:wildtab()$/;"	f	language:Vim
+WipeReg	/Users/ldavis/dotfiles/.vimrc	/^command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor$/;"	c	language:Vim
+wordcount	/Users/ldavis/dotfiles/.bashrc	/^function wordcount() {$/;"	f	language:Sh
+wrap	/Users/ldavis/dotfiles/.vimrc	/^augroup wrap "For some reason both autocommands below are necessary; fuck it$/;"	a	language:Vim
+WrapToggle	/Users/ldavis/dotfiles/.vimrc	/^command! -nargs=? WrapToggle call <sid>wraptoggle(<args>)$/;"	c	language:Vim
+wraptoggle	/Users/ldavis/dotfiles/.vimrc	/^function! s:wraptoggle(...)$/;"	f	language:Vim
+WriteTags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^command! WriteTags call <sid>ctagswrite()$/;"	c	language:Vim
+x	/Users/ldavis/dotfiles/.vimrc	/^nnoremap x "_x$/;"	m	language:Vim
+X	/Users/ldavis/dotfiles/.vimrc	/^nnoremap X "_X$/;"	m	language:Vim
+Y	/Users/ldavis/dotfiles/.vimrc	/^nnoremap Y y\$$/;"	m	language:Vim
+yx	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <expr> yx <sid>syntastic_status() ? ':call <sid>syntastic_disable()<CR>'$/;"	m	language:Vim
+z	/Users/ldavis/dotfiles/.vimrc	/^augroup z$/;"	a	language:Vim
+Z	/Users/ldavis/dotfiles/.vimrc	/^noremap Z <Nop>$/;"	m	language:Vim
+z<	/Users/ldavis/dotfiles/.vimrc	/^nnoremap z< zR$/;"	m	language:Vim
+z>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap z> zM$/;"	m	language:Vim
+zC	/Users/ldavis/dotfiles/.vimrc	/^nnoremap zC zM$/;"	m	language:Vim
+zD	/Users/ldavis/dotfiles/.vimrc	/^nnoremap zD zE$/;"	m	language:Vim
+zO	/Users/ldavis/dotfiles/.vimrc	/^nnoremap zO zR$/;"	m	language:Vim
+\	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap \\ <C-x>$/;"	m	language:Vim
+\	/Users/ldavis/dotfiles/.vimrc	/^  vmap \\ <Plug>VisualDecrement$/;"	m	language:Vim
+\<Tab>	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <expr> <silent> \\<Tab> ':%s\/\\t\/'.repeat(' ',&tabstop).'\/g<CR>'$/;"	m	language:Vim
+\<Tab>	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <expr> <silent> \\<Tab> ':s\/\\t\/'.repeat(' ',&tabstop).'\/g<CR>'$/;"	m	language:Vim
+\|	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> \\| "*$/;"	m	language:Vim
+_"	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _" :silent! %s\/“\/``\/g<CR>:silent! %s\/”\/'\/g<CR>:echom "Fixed double quotes."<CR>$/;"	m	language:Vim
+_%	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^nnoremap <silent> _% :<C-U>call <SID>Match_wrapper('',0,'n') <CR>$/;"	m	language:Vim
+_%	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^onoremap <silent> _% v:<C-U>call <SID>Match_wrapper('',0,'o') <CR>$/;"	m	language:Vim
+_%	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^vnoremap <silent> _% :<C-U>call <SID>Match_wrapper('',0,'v') <CR>m'gv``$/;"	m	language:Vim
+_'	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _' :silent! %s\/‘\/`\/g<CR>:silent! %s\/’\/'\/g<CR>:echom "Fixed single quotes."<CR>$/;"	m	language:Vim
+_+	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _+ ':Tabularize \/^[^'.b:NERDCommenterDelims['left'].']\\{-}[=<>+\\-%*]\\@<!=\\zs=\\@!\/l0c1<CR>'$/;"	m	language:Vim
+_+	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _+ ':Table      \/^[^'.b:NERDCommenterDelims['left'].']\\{-}[=<>+\\-%*]\\@<!=\\zs=\\@!\/l0c1<CR>'$/;"	m	language:Vim
+_,	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _, ':Tabularize \/,\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\/l0c1<CR>'$/;"	m	language:Vim
+_,	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _, ':Table      \/,\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\/l0c1<CR>'$/;"	m	language:Vim
+_-	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _- :silent! %s\/–\/--\/g<CR>:echom "Fixed long dashes."<CR>$/;"	m	language:Vim
+_<Space>	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <silent> <expr> _<Space> ':silent! Tabularize \/'.input('Alignment regex: ').'\/l1c1<CR>'$/;"	m	language:Vim
+_<Space>	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <silent> <expr> _<Space> "<Esc>:silent! '<,'>Table \/".input('Alignment regex: ').'\/l1c1<CR>'$/;"	m	language:Vim
+_=	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _= ':Tabularize \/^[^'.b:NERDCommenterDelims['left'].']\\{-}[=<>+\\-%*]\\@<!\\zs==\\@!\/l1c1<CR>'$/;"	m	language:Vim
+_=	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _= ':Table      \/^[^'.b:NERDCommenterDelims['left'].']\\{-}[=<>+\\-%*]\\@<!\\zs==\\@!\/l1c1<CR>'$/;"	m	language:Vim
+_a	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _a ':Tabularize \/\\S\\zs\\ \/l0<CR>'$/;"	m	language:Vim
+_a	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _a ':Table      \/\\S\\zs\\ \/l0<CR>'$/;"	m	language:Vim
+_C	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _C ':Tabularize \/^.*\\zs'.b:NERDCommenterDelims['left'].'\/l1<CR>'$/;"	m	language:Vim
+_c	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _c ':Tabularize \/^\\s*[^ \\t'.b:NERDCommenterDelims['left'].'].*\\zs'.b:NERDCommenterDelims['left'].'\/l1<CR>'$/;"	m	language:Vim
+_C	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _C ':Table      \/^.*\\zs'.b:NERDCommenterDelims['left'].'\/l1<CR>'$/;"	m	language:Vim
+_c	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _c ':Table      \/^\\s*[^ \\t'.b:NERDCommenterDelims['left'].'].*\\zs'.b:NERDCommenterDelims['left'].'\/l1<CR>'$/;"	m	language:Vim
+_D	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _D ':Tabularize \/:\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\/l0c1<CR>'$/;"	m	language:Vim
+_d	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _d ':Tabularize \/\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs:\/l0c1<CR>'$/;"	m	language:Vim
+_D	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _D ':Table      \/:\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\/l0c1<CR>'$/;"	m	language:Vim
+_d	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _d ':Table      \/\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs:\/l0c1<CR>'$/;"	m	language:Vim
+_E	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _E :s\/\\(\\n\\s*\\n\\)\\(\\s*\\n\\)\\+\/\\1\/g<CR>:echom "Squeezed consecutive newlines."<CR>$/;"	m	language:Vim
+_e	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _e :s\/^\\s*$\\n\/\/g<CR>:echom "Removed empty lines."<CR>$/;"	m	language:Vim
+_E	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <silent> _E :s\/\\(\\n\\s*\\n\\)\\(\\s*\\n\\)\\+\/\\1\/g<CR>:echom "Squeezed consecutive newlines."<CR>$/;"	m	language:Vim
+_e	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <silent> _e :s\/^\\s*$\\n\/\/g<CR>:echom "Removed empty lines."<CR>$/;"	m	language:Vim
+_fzf_complete_cdo_post	/Users/ldavis/dotfiles/.bashrc	/^     _fzf_complete_cdo_post() { cat \/dev\/stdin | cut -d' ' -f1; } ;;$/;"	f	language:Sh
+_n	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> <expr> _n ':s\/\\(^\\s*'.b:NERDCommenterDelims['left'].'.*$\\n'$/;"	m	language:Vim
+_n	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <silent> <expr> _n ':s\/\\(^\\s*'.b:NERDCommenterDelims['left'].'.*$\\n'$/;"	m	language:Vim
+_r	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _r ':Tabularize \/^\\s*[^\\t '.b:NERDCommenterDelims['left'].']\\+\\zs\\ \/r0l0l0<CR>'$/;"	m	language:Vim
+_r	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _r ':Table      \/^\\s*[^\\t '.b:NERDCommenterDelims['left'].']\\+\\zs\\ \/r0l0l0<CR>'$/;"	m	language:Vim
+_setup_bindings	/Users/ldavis/dotfiles/.bashrc	/^function _setup_bindings() {$/;"	f	language:Sh
+_setup_opts	/Users/ldavis/dotfiles/.bashrc	/^function _setup_opts() {$/;"	f	language:Sh
+_W	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _W :s\/\\(^ \\+\\)\\@<! \\{2,}\/ \/g<CR>:echom "Squeezed consecutive spaces."<CR>$/;"	m	language:Vim
+_w	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _w :s\/\\s\\+$\/\/g<CR>:echom "Trimmed trailing whitespace."<CR>$/;"	m	language:Vim
+_W	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <silent> _W :s\/\\(^ \\+\\)\\@<! \\{2,}\/ \/g<CR>:echom "Squeezed consecutive spaces."<CR>$/;"	m	language:Vim
+_w	/Users/ldavis/dotfiles/.vimrc	/^vnoremap <silent> _w :s\/\\s\\+$\/\/g<CR>:echom "Trimmed trailing whitespace."<CR>$/;"	m	language:Vim
+_X	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _X :%s\/^\\s*\\(abstract\\\\|language\\\\|file\\\\|doi\\\\|url\\\\|urldate\\\\|copyright\\\\|keywords\\\\|annotate\\\\|note\\\\|shorttitle\\)\\s*=.*$\\n\/\/gc<CR>$/;"	m	language:Vim
+_[	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^nnoremap <silent> _[ :<C-U>call <SID>MultiMatch("bW", "n") <CR>$/;"	m	language:Vim
+_[	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^onoremap <silent> _[ v:<C-U>call <SID>MultiMatch("bW", "o") <CR>$/;"	m	language:Vim
+_[	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^vnoremap <silent> _[ :<C-U>call <SID>MultiMatch("bW", "v") <CR>m'gv``$/;"	m	language:Vim
+_\	/Users/ldavis/dotfiles/.vimrc	/^nnoremap <silent> _\\ :silent! %s\/\\(\\w\\)[-–] \/\\1\/g<CR>:echom "Fixed trailing dashes."<CR>$/;"	m	language:Vim
+_\|	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> _\\| ':Tabularize \/^\\s*\\S\\{-1,}\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\\s\/l0<CR>'$/;"	m	language:Vim
+_\|	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> _\\| ':Table      \/^\\s*\\S\\{-1,}\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\\s\/l0<CR>'$/;"	m	language:Vim
+_]	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^nnoremap <silent> _] :<C-U>call <SID>MultiMatch("W",  "n") <CR>$/;"	m	language:Vim
+_]	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^onoremap <silent> _] v:<C-U>call <SID>MultiMatch("W",  "o") <CR>$/;"	m	language:Vim
+_]	/Users/ldavis/dotfiles/.vim/plugin/matchit.vim	/^vnoremap <silent> _] :<C-U>call <SID>MultiMatch("W",  "v") <CR>m'gv``$/;"	m	language:Vim
+__	/Users/ldavis/dotfiles/.vimrc	/^  nnoremap <expr> __ ':Tabularize \/\\S\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\\ \/l0<CR>'$/;"	m	language:Vim
+__	/Users/ldavis/dotfiles/.vimrc	/^  vnoremap <expr> __ ':Table      \/\\S\\('.b:NERDCommenterDelims['left'].'.*\\)\\@<!\\zs\\ \/l0<CR>'$/;"	m	language:Vim
+`	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> ` :call append(line('.'),'')<CR>$/;"	m	language:Vim
+~	/Users/ldavis/dotfiles/.vimrc	/^noremap <silent> ~ :call append(line('.')-1,'')<CR>$/;"	m	language:Vim

@@ -1,0 +1,67 @@
+!_TAG_FILE_SORTED	2	/0=unsorted, 1=sorted, 2=foldcase/
+!	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> ! ylh\/<C-r>=escape(@",'\/\\')<CR><CR>$/;"	m	language:Vim
+#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> # :let @\/=<sid>scopesearch(0).'\\<'.expand('<cword>').'\\>\\C'<CR>lB:set hlsearch<CR>$/;"	m	language:Vim
+&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> & :let @\/='\\_s\\@<='.expand('<cWORD>').'\\ze\\_s\\C'<CR>lB:set hlsearch<CR>$/;"	m	language:Vim
+*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> * :let @\/='\\<'.expand('<cword>').'\\>\\C'<CR>lb:set hlsearch<CR>$/;"	m	language:Vim
+<Leader>*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader>* :echo system('grep -c "\\b'$/;"	m	language:Vim
+<Leader><Space>	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader><Space> :call <sid>ctagjump(input('Enter ctag (tab to reveal options): ', '', 'customlist,<sid>ctaglist'))<CR>$/;"	m	language:Vim
+<Leader>c	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader>c :DisplayTags<CR>:redraw!<CR>$/;"	m	language:Vim
+<Leader>C	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Leader>C :UpdateTags<CR>$/;"	m	language:Vim
+<Plug>ReplaceOccurences	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>$/;"	m	language:Vim
+<Plug>search1	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search1 :set hlsearch<CR>:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search1",v:count)<CR>$/;"	m	language:Vim
+<Plug>search2	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search2 \/\\<<C-r>=expand('<cword>')<CR>\\>\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search2",v:count)<CR>$/;"	m	language:Vim
+<Plug>search3	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search3 \/\\_s\\@<=<C-r>=expand('<cWORD>')<CR>\\ze\\_s\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search3",v:count)<CR>$/;"	m	language:Vim
+<Plug>search4	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search4 \/<C-r>=<sid>scopesearch(0)<CR>\\<<C-r>=expand('<cword>')<CR>\\>\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search4",v:count)<CR>$/;"	m	language:Vim
+<Plug>search5	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> <Plug>search5 \/\\_s\\@<=<C-r>=<sid>scopesearch(0)<CR><C-r>=expand('<cWORD>')<CR>\\ze\\_s\\C<CR>``:call <sid>delete_next()<CR>:call repeat#set("\\<Plug>search5",v:count)<CR>$/;"	m	language:Vim
+?	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> ? \/<C-r>=<sid>scopesearch(0)<CR>\\(\\)\\(\\)\\(\\)$/;"	m	language:Vim
+@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> @ :let @\/='\\_s\\@<='.<sid>scopesearch(0).expand('<cWORD>').'\\ze\\_s\\C'<CR>lB:set hlsearch<CR>$/;"	m	language:Vim
+c#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c# :let @\/=<sid>scopesearch(0).'\\<'.expand('<cword>').'\\>\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+c&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c& :let @\/='\\_s\\@<='.expand('<cWORD>').'\\ze\\_s\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+c*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c* :let @\/='\\<'.expand('<cword>').'\\>\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+c/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c\/ :set hlsearch<CR>$/;"	m	language:Vim
+c@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nnoremap <silent> c@ :let @\/='\\_s\\@<='.<sid>scopesearch(0).expand('<cWORD>').'\\ze\\_s\\C'<CR>:set hlsearch<CR>$/;"	m	language:Vim
+ca#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca# :let g:iterate_occurences=1<CR>c#$/;"	m	language:Vim
+ca&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca& :let g:iterate_occurences=1<CR>c&$/;"	m	language:Vim
+ca*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca* :let g:iterate_occurences=1<CR>c*$/;"	m	language:Vim
+ca/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca\/ :let g:iterate_occurences=1<CR>c\/$/;"	m	language:Vim
+ca@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap ca@ :let g:iterate_occurences=1<CR>c@$/;"	m	language:Vim
+compare	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:compare(i1, i2) "default sorting is always alphabetical, with type coercion; must use this!$/;"	f	language:Vim
+ctagbracket	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagbracket(foreward, n)$/;"	f	language:Vim
+ctagbracketmaps	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagbracketmaps()$/;"	f	language:Vim
+ctagcmd	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagcmd()$/;"	f	language:Vim
+ctagdisplay	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagdisplay()$/;"	f	language:Vim
+ctagjump	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagjump(regex)$/;"	f	language:Vim
+ctaglist	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctaglist(A,B,C)$/;"	f	language:Vim
+ctags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^augroup ctags$/;"	a	language:Vim
+ctagsread	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagsread()$/;"	f	language:Vim
+ctagswrite	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:ctagswrite()$/;"	f	language:Vim
+d#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d# <Plug>search4$/;"	m	language:Vim
+d&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d& <Plug>search3$/;"	m	language:Vim
+d*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d* <Plug>search2$/;"	m	language:Vim
+d/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d\/ <Plug>search1$/;"	m	language:Vim
+d@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap d@ <Plug>search5$/;"	m	language:Vim
+da#	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da# :call <sid>refactor_all('d#')<CR>$/;"	m	language:Vim
+da&	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da& :call <sid>refactor_all('d&')<CR>$/;"	m	language:Vim
+da*	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da* :call <sid>refactor_all('d*')<CR>$/;"	m	language:Vim
+da/	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da\/ :call <sid>refactor_all('d\/')<CR>$/;"	m	language:Vim
+da@	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^nmap da@ :call <sid>refactor_all('d@')<CR>$/;"	m	language:Vim
+delete_next	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:delete_next()$/;"	f	language:Vim
+DisplayTags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^command! DisplayTags call <sid>ctagdisplay()$/;"	c	language:Vim
+g:easytags_async	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_async=1$/;"	v	language:Vim
+g:easytags_autorecurse	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_autorecurse=0 "the default value$/;"	v	language:Vim
+g:easytags_auto_highlight	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_auto_highlight=0$/;"	v	language:Vim
+g:easytags_auto_update	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_auto_update=1$/;"	v	language:Vim
+g:easytags_dynamic_files	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_dynamic_files=2 "says to always put tags file in the current working directory$/;"	v	language:Vim
+g:easytags_events	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_events=['BufRead', 'BufWritePost'] "update tags when you write only; should still be there$/;"	v	language:Vim
+g:easytags_file	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_file='.\/.vimtags'$/;"	v	language:Vim
+g:easytags_on_cursorhold	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:easytags_on_cursorhold=0$/;"	v	language:Vim
+g:has_ctags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:has_ctags = str2nr(system("type ctags &>\/dev\/null && echo 1 || echo 0"))$/;"	v	language:Vim
+g:inject_replace_occurences	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:inject_replace_occurences=0$/;"	v	language:Vim
+g:iterate_occurences	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^let g:iterate_occurences=0$/;"	v	language:Vim
+MoveToNext	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! MoveToNext()$/;"	f	language:Vim
+ReadTags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^command! ReadTags call <sid>ctagsread()$/;"	c	language:Vim
+refactor_all	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:refactor_all(command)$/;"	f	language:Vim
+refactor_tool	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^augroup refactor_tool$/;"	a	language:Vim
+ReplaceOccurence	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! ReplaceOccurence()$/;"	f	language:Vim
+scopesearch	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^function! s:scopesearch(command)$/;"	f	language:Vim
+WriteTags	/Users/ldavis/dotfiles/.vim/plugin/idetools.vim	/^command! WriteTags call <sid>ctagswrite()$/;"	c	language:Vim
