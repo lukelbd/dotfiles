@@ -1,8 +1,10 @@
 # Template .gitignore for new repos #
 #####################################
 .[sS]ession.*
+.vimsession
+.vimtags
 .*.sw[a-z]
-  # vim session files and swap files
+  # vim session files and swap files, from various points in my history
 *.tmp
 .nfs*
   # .nfs files appear on Linux servers sometimes

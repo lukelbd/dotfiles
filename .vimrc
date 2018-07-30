@@ -805,6 +805,7 @@ function! s:simplesetup(...)
   if &ft=="help"
     wincmd L "moves current window to be at far-right (wincmd executes Ctrl+W maps)
     vertical resize 80 "always certain size
+    nnoremap <buffer> <CR> <C-]>
   endif
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell
@@ -1845,7 +1846,7 @@ silent! unmap zuz
 "g CONFIGURATION
 "SINGLE-KEYSTROKE MOTION BETWEEN FUNCTIONS
 "Single-keystroke indent, dedent, fix indentation
-augroup g
+augroup gcommands
 augroup END
 "Don't know why these are here but just go with it bro
 nnoremap <silent> <Leader>r :redraw!<CR>
