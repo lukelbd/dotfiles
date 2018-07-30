@@ -34,7 +34,9 @@ originals
 
 # vim extras #
 ##############
-.session.*
+.session.vim
+.vimsession
+.vimtags
 .*.sw[a-z]
   # very important, need to install manually with :pluginstall
   # on every server, otherwise everything fails

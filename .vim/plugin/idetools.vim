@@ -71,7 +71,7 @@ nnoremap <silent> <Leader>C :UpdateTags<CR>
 "automatically so have to make my own autocommands
 function! s:ctagswrite()
   if !exists('g:ignore_types') || index(g:ignore_types, &ft)==-1
-    UpdateTags
+    UpdateTags! "ignore errors
   endif
 endfunction
 command! WriteTags call <sid>ctagswrite()
