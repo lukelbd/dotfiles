@@ -1953,19 +1953,23 @@ endif
 " autocmd FileType * call s:gmaps()
 
 "###############################################################################
+"Syntax:
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
-"See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
-"for every file; we add our own custom highlighting for vim comments
-"For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
-"Will also enforce shebang always has the same color, because it's annoying otherwise
-"And generally only want 'conceal' characters invisible for latex; otherwise we
-"probably want them to look like comment characters
+"* See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
+"  for every file; we add our own custom highlighting for vim comments
+"* For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
+"* Will also enforce shebang always has the same color, because it's annoying otherwise
+"* And generally only want 'conceal' characters invisible for latex; otherwise we
+"  probably want them to look like comment characters
+"* The url regex was copied from the one used for .tmux.conf
 function! s:keywordsetup()
+   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*Comment
+   hi link customURL Underlined
    if &ft!="vim"
      syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment "comments
      syn match Special '^\%1l#!.*$' "shebangs
    else
-     syn clear vimTodo
+     syn clear vimTodo "vim instead uses the Stuff: syntax
    endif
 endfunction
 augroup syntax
