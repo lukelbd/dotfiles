@@ -1,11 +1,10 @@
 "------------------------------------------------------------------------------"
-"Compiles current file, runs it, then shows user the output
-"------------------------------------------------------------------------------"
-" augroup c
-"   au!
-"   au FileType c call s:cmacros()
-" augroup END
-" function! s:cmacros()
-nnoremap <silent> <buffer> <expr> <C-b> ":w<CR>:!clear; set -x; "
-      \."gcc ".shellescape(@%)." -o ".expand('%:r')." && ".expand('%:r')."<CR>"
-" endfunction
+"Compile code, then run it and delete the executable
+function! s:crun()
+  w
+  let cpp_path=shellescape(@%)
+  let exe_path=shellescape(expand('%:p:r'))
+  exe '!clear; set -x; gcc '.cpp_path.' -o '.exe_path.' && '.exe_path.' && rm '.exe_path
+  return
+endfunction
+nnoremap <silent> <buffer> <C-z> :w<CR>:call <sid>crun()<CR>

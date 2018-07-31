@@ -3,66 +3,70 @@
 "Includes a couple nice features for converting {'a':1} to a=1 
 "easily; can do this line by line, or for a whole dictionary.
 "------------------------------------------------------------------------------"
-"Simple map to run script in shell
-nnoremap <silent> <buffer> <C-b> :w<CR>:exe '!clear; set -x; python '.shellescape(expand('%:p'))<CR>
-"Builtin python ftplugin syntax option; these should be provided with VIM by default
-let g:python_highlight_all=1
-"Experimental feature that converts dict() to {}-style dictionary
-function! s:dictconvert() "For searches with :normal command, see:
-  "http://vim.wikia.com/wiki/Using_normal_command_in_a_script_for_searching
-  let saveview=winsaveview()
-  let line=line('.')
-  normal! 0
-  call search('=')
-  while line('.')==line
-    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
-  endwhile
-  call winrestview(saveview)
-  "return to original location
-  "column first, then go to line; if column no longer exists, we just are at end-of-line
-endfunction
-function! s:Dictconvert()
-  let saveview=winsaveview()
-  let estatus=search('dict(', 'be') "search moving Backwards, and fall on End of match
-  if !estatus
-    echom "Error: The cursor is not within a python dictionary."
-    call winrestview(saveview) | return
-  endif
-  "Find the matching bracket for dict() instance
-  let start=[line('.'), col('.')] "save the starting line
-  normal %
-  " echo 'Start: '.saveview['lnum'].','.saveview['col'].' Now: '.line('.').','.col('.') | sleep 2
-  if line('.')<saveview['lnum'] || (line('.')==saveview['lnum'] && col('.')<saveview['col'])
-    echom "Error: The cursor is not within a python dictionary."
-    call winrestview(saveview) | return
-  endif
-  let end=[line('.'), col('.')] "save the ending line
-  call cursor(start[0], start[1]) "return to starting point of dictionary
-  exe 's/dict(/(' | normal lcsbB
-  call search('=')
-  while line('.')<end[0] || (line('.')==end[0] && col('.')<=end[1])
-    "note the h after <Esc> only works if have the InsertLeave autocmd that preserves the cursor position
-    "the h ensures single-character variables aren't skipped over
-    exe "normal! r:bi'\<Esc>hea'\<Esc>" | call search('=')
-  endwhile
-  call winrestview(saveview)
-  "return to original location; another option is cursor() function, but slightly more limited functionality
-  "column first, then go to line; if column no longer exists, we just are at end-of-line
-endfunction
-if has_key(g:plugs, "vim-repeat") "mnemonic is 'change this stuff to dictionary'
-  nnoremap <silent> <Plug>pydict :call <sid>dictconvert()<CR>:call repeat#set("\<Plug>pydict")<CR>
-  nnoremap <silent> <Plug>Pydict :call <sid>Dictconvert()<CR>:call repeat#set("\<Plug>Pydict")<CR>
-  nmap cd <Plug>pydict
-  nmap cD <Plug>Pydict
-else
-  nnoremap cd :call <sid>dictconvert()<CR>
-  nnoremap cD :call <sid>Dictconvert()<CR>
-endif
 "Tab settings; normally keep it to just 2 spaces
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
-"Simple remaps; fit with NerdComment syntax
-nnoremap <buffer> cq o'''<CR>'''<Esc><Up>o
-nnoremap <buffer> cQ o"""<CR>"""<Esc><Up>o
+"Run current script in shell
+nnoremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
+"Builtin python ftplugin syntax option; these should be provided with VIM by default
+let g:python_highlight_all=1
+"Convert key=value to 'key':value, and vice versa, on current line or within selection
+function! s:kwtrans(mode) range "For searches with :normal command, see:
+  "Will allow for non-line selections
+  "First get columns
+  let winview=winsaveview()
+  if a:firstline==a:lastline
+    let firstcol = 0
+    let lastcol  = col('$')-2 "col('$') is location of newline char, and strings are zero-indexed
+  else
+    let firstcol = col("'<")-1 "cause strings are zero-indexed
+    let lastcol  = col("'>")-1
+  endif
+  let fixed=[]
+  for line in range(a:firstline,a:lastline)
+    "Annoying ugly block for getting visual selection
+    "Want to *ignore* stuff not in selection, but on same line as
+    "the start/end of selection, because it's more flexible
+    let string = getline(line)
+    let prefix = ''
+    let suffix = ''
+    if line==a:firstline && line==a:lastline
+      let prefix = (firstcol>=1 ? string[:firstcol-1] : '') "damn negative indexing makes this complicated
+      let suffix = string[lastcol+1:]
+      let string = string[firstcol:lastcol] "just plain easier
+    elseif line==a:firstline
+      let prefix = (firstcol>=1 ? string[:firstcol-1] : '')
+      let string = string[firstcol:]
+    elseif line==a:lastline
+      let suffix = string[lastcol+1:]
+      let string = string[:lastcol]
+    endif
+    "Double check
+    if len(matchstr(string,':'))>0 && len(matchstr(string,'-'))>0
+      echom "Error: Ambiguous line." | return
+    endif
+    "Next finally start matching shit
+    "Turn colons into equals
+    " echo 'line:'.a:firstline.'-'.a:lastline.' col:'.firstcol.'-'.lastcol.' string:'.string.' prefix:'.prefix.' suffix:'.suffix | sleep 2
+    if a:mode==1 "kwargs to dictionary
+      let string = substitute(string, '\<\ze\w\+\s*=', "'", 'g') "add leading quote first
+      let string = substitute(string, '\>\ze\s*=', "'", 'g')
+      let string = substitute(string, '=', ':', 'g')
+    elseif a:mode==0 "dictionary to kwargs
+      let string = substitute(string, "\\>['\"]".'\ze\s*:', '', 'g') "remove trailing quote first
+      let string = substitute(string, "['\"]\\<".'\ze\w\+\s*:', '', 'g')
+      let string = substitute(string, ':', '=', 'g')
+    endif
+    let fixed  = fixed + [prefix.string.suffix]
+  endfor
+  "Replace lines with fixed text
+  exe a:firstline.','a:lastline.'d'
+  call append(a:firstline-1,fixed)
+  call winrestview(winview)
+endfunction
+noremap <silent> <Plug>kw2dict :call <sid>kwtrans(1)<CR>:call repeat#set("\<Plug>kw2dict")<CR>
+noremap <silent> <Plug>dict2kw :call <sid>kwtrans(0)<CR>:call repeat#set("\<Plug>dict2kw")<CR>
+map cd <Plug>kw2dict
+map cD <Plug>dict2kw
 
 "------------------------------------------------------------------------------
 " Matching pairs in python; default matchit plugin fails completely, so below

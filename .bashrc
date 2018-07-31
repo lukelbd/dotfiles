@@ -153,10 +153,13 @@ else
     # In future, use my own environment
     # Idea to share conda environment, but really not necessary
     module load Anaconda3
-    [[ -z "$CONDA_PREFIX" ]] && {
-      echo "Activating conda environment."
-      source activate /project2/rossby/group07/.conda
-      }
+    # [[ -z "$CONDA_PREFIX" ]] && {
+    #   echo "Activating conda environment."
+    #   source activate /project2/rossby/group07/.conda
+    #   }
+    # Fix prompt
+    # unset PROMPT_COMMAND
+    export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -169,7 +172,7 @@ fi
 export PATH="$HOME/bin:$PATH"
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
-alias brew="PATH=$PATH brew"
+alias  brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
@@ -212,7 +215,7 @@ function man() { # always show useful information when man is called
   local arg="$@"
   [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
   [ -z $1 ] && echo "Requires one argument." && return 1
-  if command man $1 | head -2 | grep "BUILTIN" &>/dev/null; then
+  if command man $1 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
     if $_macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
       [ $1 == "builtin" ] && local search=$1 || local search=bash
     else local search=$1 # linux shows all info necessary, just have to find it
@@ -235,7 +238,7 @@ function vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  local sessionfile=".session.vim"
+  local sessionfile=".vimsession"
   if [[ -z "$@" ]] && [[ -r "$sessionfile" ]]; then
     # NOTE: Crude bugfixes with sed here
     # Unfold stuff after entering each buffer; for some reason folds are otherwise
@@ -431,27 +434,29 @@ function env() { set; } # just prints all shell variables
 ################################################################################
 # General utilties
 ################################################################################
-# Listing files
-# * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
-# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones.
-# * We use the Mac default 'dircolors', and convert them to Linux colors.
-#   Default mac colors were found with simple google search.
-# * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
-#   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
+# GNU utilities on macbook
 if $_macos; then
   _ls_command=gls
   _dc_command=gdircolors
+  alias sed=" gsed"
+  alias sort="gsort"
+  alias tac="gtac" # use dis
 else
   _ls_command=ls
   _dc_command=dircolors
 fi
+
 # Default mac colors
+# * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
+# * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
+#   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
+# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones.
 # LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
 # LSCOLORS='exfxcxdxbxegedabagacad' \
 # Default linux colors
-export LSCOLORS='ExGxFxdaCxDADAadhbheFx'
-export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:'
-# Custom linux colors
+export LSCOLORS='ExGxFxdaCxDADAadhbheFx' # read by mac ls
+export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:' # read by GNU ls
+# Custom linux colors if available (which they should be)
 if [ -r "$HOME/.dircolors.ansi" ]; then
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
@@ -459,9 +464,6 @@ fi
 alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
-# Other stuff
-$_macos && alias sed="gsed"
-$_macos && alias sort="gsort"
 
 # Information on directories
 alias df="df -h" # disk useage
@@ -477,12 +479,14 @@ function dl() { # directory sizes
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
 
+# Ctags alias
+# Also used in .vimrc ctags command
+alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc"
+
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-# Make Perl color wrapper default; also allow color difference with git
-# Note to recursively compare directories, use --name-status
-hash colordiff 2>/dev/null && alias diff="command colordiff"
+hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
@@ -501,7 +505,6 @@ function killjobs() {
 } # kill jobs by name
 
 # Scripting utilities
-alias tac="gtac" # use dis
 function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 function empty() { for i in {1..100}; do echo; done; }
@@ -509,7 +512,7 @@ function empty() { for i in {1..100}; do echo; done; }
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
 # Color not useful anyway; is just bold white, and we delete those lines
-function discrep() {
+function gdiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
     | egrep '(files|differ)' # add to these
@@ -517,15 +520,15 @@ function discrep() {
 # Next use builtin diff command as engine
 # *Different* files
 # The last grep command is to highlight important parts
-function delta() {
+function ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
+  command diff -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories
-function idelta() {
+function idiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -s -x '.session.vim' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
+  command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ| identical)'
 }
 # Merge fileA and fileB into merge.{ext}
@@ -665,7 +668,7 @@ function title() { # Cmd-I from iterm2 also works
   ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
   if [ -n "$1" ]; then _title="$1"
-  else read -p "Enter title for this window: " _title
+  else read -p "Enter title (window $_win_num): " _title
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
@@ -673,7 +676,6 @@ function title() { # Cmd-I from iterm2 also works
   [ ! -e "$_title_file" ] && touch "$_title_file"
   gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
   echo "$_win_num: $_title" >>$_title_file # add to file
-  title_update # update
 }
 # Prompt user input potentially, but try to load from file
 function title_update() {
@@ -710,29 +712,14 @@ $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
 # Declare some names for active servers
-# Will set global variables too
-# ip="$(ifconfig | grep -A 1 'eth0' | tail -1 | cut -d ':' -f 2 | cut -d ' ' -f 1)"
-function address_ssh() {
-  local host hosts
-  hosts=$@
-  [ $# -eq 0 ] && hosts=$HOSTNAME
-  for host in $hosts; do
-    case "$host" in
-      gauss)   eval "$host=ldavis@gauss.atmos.colostate.edu"         ;;
-      monde)   eval "$host=ldavis@monde.atmos.colostate.edu"         ;;
-      euclid)  eval "$host=ldavis@euclid.atmos.colostate.edu"        ;;
-      olbers)  eval "$host=ldavis@olbers.atmos.colostate.edu"        ;;
-      zephyr)  eval "$host=lukelbd@zephyr.meteo.mcgill.ca"           ;;
-      chicago) eval "$host=t-9841aa@midway2-login1.rcc.uchicago.edu" ;; # pass: orkalluctudg
-      archive) eval "$host=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
-      ldm)     eval "$host=ldm@ldm.atmos.colostate.edu"              ;; # atmos-2012
-      *) echo "Error: Unknown host key \"$host\"." && return 1
-    esac
-    echo ${!host} # get the variable that this guy points to
-  done
-}
-hosts="gauss monde euclid olbers zephyr chicago archive ldm"
-address_ssh $hosts >/dev/null # call
+gauss="ldavis@gauss.atmos.colostate.edu"
+monde="ldavis@monde.atmos.colostate.edu"
+euclid="ldavis@euclid.atmos.colostate.edu"
+olbers="ldavis@olbers.atmos.colostate.edu"
+zephyr="lukelbd@zephyr.meteo.mcgill.ca"
+midway="t-9841aa@midway2-login1.rcc.uchicago.edu" # pass: orkalluctudg
+archive="ldm@ldm.atmos.colostate.edu"             # atmos-2012
+ldm="ldm@ldm.atmos.colostate.edu"                 # atmos-2012
 
 # Short helper functions
 # See current ssh connections
@@ -1160,6 +1147,13 @@ function namelist() {
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
+function nchelp() {
+  echo "Available commands:"
+  echo "ncdump ncglobal ncinfo
+        ncvarsinfo ncdimsinfo
+        nclist ncvarlist ncdimslist
+        ncvarinfo ncvardump ncvardata ncvartable" | column -t
+}
 function ncdump() { # almost always want this; access old versions in functions with backslash
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   command ncdump -h "$@" | less
@@ -1293,7 +1287,7 @@ alias songs="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | 
 alias edit='command open -a TextEdit'
 alias html='command open -a Google\ Chrome'
 alias image='command open -a Preview'
-alias pdf='command open -a Skim'
+alias pdf='command open -a PDF\ Expert'
 
 # Extracting PDF annotations
 function unannotate() {
@@ -1386,7 +1380,7 @@ if [ -f ~/.fzf.bash ]; then
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual; here, '-1' is terminal default, not '0'
   # Custom options
-  export FZF_COMPLETION_FIND_IGNORE=".DS_Store .session.vim __pycache__ .ipynb_checkpoints"
+  export FZF_COMPLETION_FIND_IGNORE=".DS_Store .vimsession .vim.tags __pycache__ .ipynb_checkpoints"
   export FZF_COMPLETION_FIND_OPTS=" -maxdepth 1 "
   export FZF_COMPLETION_TRIGGER='' # tab triggers completion
   export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
@@ -1511,6 +1505,7 @@ fi
 #   [ "$TERM" != "linux" ] && PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 #   }
 # Messages
+title_update # force update in case anything changed it, e.g. shell integration
 $_macos && { # first the MacOS options
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
