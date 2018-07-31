@@ -54,6 +54,9 @@ endfunction
 inoremap <expr> <C-o> !pumvisible() ? <sid>outofdelim(1)
   \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
+inoremap kk k
+inoremap jj j
+imap jk <C-o>
 
 "------------------------------------------------------------------------------"
 "Fancy builtin delimitMate version

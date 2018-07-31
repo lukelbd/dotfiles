@@ -790,17 +790,17 @@ augroup END
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
 "Todo: If you're an insane person could also generate autocompletion for these ones, but nah
+noremap <Leader>h :vert help 
 if has_key(g:plugs,'fzf.vim')
-  noremap <Leader>h :Help<CR>
-else
-  noremap <Leader>h :vert help 
+  noremap <Leader>H :Help<CR>
 endif
-noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; '
-  \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 "--help info; pipe output into less for better interaction
-noremap <silent> <expr> <Leader>H ':!clear; search='.input('Get help info: ').'; '
+noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get help info: ').'; '
   \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
+"man pages use capital m
+noremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').'; '
+  \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
 function! s:simplesetup(...)
