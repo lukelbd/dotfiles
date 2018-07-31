@@ -22,7 +22,6 @@
 set nocompatible
 let mapleader="\<Space>"
 "File types commonly want to ignore for various utilities
-let g:ignore_types=['gitcommit', 'rst', 'qf', 'diff', 'help', 'tagbar', 'nerdtree']
 "Misc stuff
 noremap <CR> <Nop>
 noremap <Space> <Nop>
@@ -508,7 +507,7 @@ if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically sav
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
   let g:workspace_persist_undo_history = 0 "don't need to save undo history
   let g:workspace_autosave_untrailspaces = 0 "sometimes we WANT trailing spaces!
-  let g:workspace_autosave_ignore = g:ignore_types "don't autosave these
+  let g:workspace_autosave_ignore = ['help', 'rst', 'qf', 'diff', 'man']
 endif
 "Remember file position, so come back after opening to same spot
 
@@ -1163,8 +1162,8 @@ if has_key(g:plugs, "nerdcommenter")
   "Section headers and dividers
   nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
   nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
-  nmap c- <Plug>bar2
-  nmap c_ <Plug>bar1
+  nmap c- <Plug>bar1
+  nmap c\ <Plug>bar2
   nnoremap <silent> c\  :call <sid>section('-')<CR>A
   nnoremap <silent> c\| :call <sid>section()<CR>A
   "Author information comment
