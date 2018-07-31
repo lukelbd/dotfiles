@@ -106,7 +106,7 @@ function! s:ctagsread()
   let ctags=map(split(system(s:ctagcmd(flags.' -n')." | sed 's/;\"\t/\t/g'"), '\n'), "split(v:val,'\t')")
   let b:ctags_alph=sort(deepcopy(ctags), 's:alphsort')
   let b:ctags_line=sort(deepcopy(ctags), 's:linesort')
-  "Next determine
+  "Next filter the tags sorted by line to include only a few limited categories
   if has_key(g:tags_scope, expand('%:t'))
     let cats=g:tags_scope[expand('%:t')]
   elseif has_key(g:tags_scope,&ft)
@@ -217,11 +217,10 @@ endfunction
 "------------------------------------------------------------------------------"
 "Magical refactoring tools
 "------------------------------------------------------------------------------"
-"Try again with grep; way easier, but ugly
+"Display number of occurrences of word under cursor
 nnoremap <silent> <Leader>* :echo system('grep -c "\b'
   \.expand('<cword>').'\b" '.expand('%').' \| xargs')<CR>
 
-"------------------------------------------------------------------------------"
 "Make */# search global/function-local <cword>, and &/@ the same for <cWORD>s
 "Note by default '&' repeats last :s command
 " * Also give cWORDs their own 'boundaries' -- do this by using \_s
@@ -235,7 +234,6 @@ nnoremap <silent> # :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR
 nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
   "note the @/ sets the 'last search' register to this string value
 
-"------------------------------------------------------------------------------"
 "Remap ? for function-wide searching; follows convention of */# and &/@
 "The \(\) makes text after the scope-atoms a bit more readable
 "Also note the <silent> will prevent beginning the search until another key is pressed
@@ -250,11 +248,13 @@ nnoremap <silent> ! ylh/<C-r>=escape(@",'/\')<CR><CR>
 "Script referenced here: https://www.reddit.com/r/vim/comments/8k4p6v/what_are_your_best_mappings/
 augroup refactor_tool
   au!
-  au InsertLeave * call MoveToNext() "magical c* searching function
+  au InsertLeave * call <sid>move_to_next() "magical c* searching function
 augroup END
+
+"First a function for jumping to next occurence automatically
 let g:inject_replace_occurences=0
 let g:iterate_occurences=0
-function! MoveToNext()
+function! s:move_to_next()
   if g:iterate_occurences
     let winview=winsaveview()
     while search(@/, 'n') "while result is non-zero, i.e. matches exist
@@ -274,24 +274,11 @@ function! MoveToNext()
   endif
   let g:inject_replace_occurences=0
 endfunction
-"Remaps using black magic
-" * First one just uses last search, the other ones use word under cursor
-" * Note gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
-nnoremap <silent> c/ :set hlsearch<CR>
-      \:let g:inject_replace_occurences=1<CR>cgn
-nnoremap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-      \:let g:inject_replace_occurences=1<CR>cgn
-nnoremap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-      \:let g:inject_replace_occurences=1<CR>cgn
-nnoremap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
-      \:let g:inject_replace_occurences=1<CR>cgn
-nnoremap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
-      \:let g:inject_replace_occurences=1<CR>cgn
-nnoremap <silent> <Plug>ReplaceOccurences :call ReplaceOccurence()<CR>
-function! ReplaceOccurence()
-  "Check if we are on top of an occurence
-  "'[ and '] are first/last characters of previously yanked or changed text
-  "Ctrl-a in insert mode types the same text as when you were last in insert mode; see :help i_
+
+"Check if we are on top of an occurence
+"'[ and '] are first/last characters of previously yanked or changed text
+"Ctrl-a in insert mode types the same text as when you were last in insert mode; see :help i_
+function! s:replace_occurence()
   let winview = winsaveview()
   let save_reg = getreg('"')
   let save_regmode = getregtype('"')
@@ -309,8 +296,24 @@ function! ReplaceOccurence()
   silent! normal n
   call repeat#set("\<Plug>ReplaceOccurences")
 endfunction
-"Remap as above, but for substituting stuff
-"These ones I made all by myself! Added a block to MoveToNext function
+
+"Remaps using black magic
+" * First one just uses last search, the other ones use word under cursor
+" * Note gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
+nnoremap <silent> c/ :set hlsearch<CR>
+      \:let g:inject_replace_occurences=1<CR>cgn
+nnoremap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+      \:let g:inject_replace_occurences=1<CR>cgn
+nnoremap <silent> c& :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+      \:let g:inject_replace_occurences=1<CR>cgn
+nnoremap <silent> c# :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
+      \:let g:inject_replace_occurences=1<CR>cgn
+nnoremap <silent> c@ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>:set hlsearch<CR>
+      \:let g:inject_replace_occurences=1<CR>cgn
+nnoremap <silent> <Plug>ReplaceOccurences :call <sid>replace_occurence()<CR>
+
+"Remap as above, but this time replace ***all*** occurrences
+"These ones I made all by myself! Added a block to move_to_next function
 nmap ca/ :let g:iterate_occurences=1<CR>c/
 nmap ca* :let g:iterate_occurences=1<CR>c*
 nmap ca& :let g:iterate_occurences=1<CR>c&
@@ -319,7 +322,8 @@ nmap ca@ :let g:iterate_occurences=1<CR>c@
 
 "------------------------------------------------------------------------------"
 "Next, similar to above, but use these for *deleting* text
-"Don't require that annoying wrapper
+"Doesn't require the fancy wrapper
+"------------------------------------------------------------------------------"
 " * Note that omitting the g means only *first* occurence is replaced
 "   if use %, would replace first occurence on every line
 " * Options for accessing register in vimscript, where we can't immitate user <C-r> keystroke combination:
@@ -328,7 +332,7 @@ nmap ca@ :let g:iterate_occurences=1<CR>c@
 " function! s:plugfactory(plugname, )
 " endfunction
 " command! -nargs=1 PlugFactory call <sid>plugfactory('<args>')
-"TODO: Fix annoying issue where stuff still gets deleted after no more variables are left
+"Todo: Fix annoying issue where stuff still gets deleted after no more variables are left
 function! s:delete_next()
   try "note the silent! feature fucks up try catch statements
     keepjumps normal! dgnn
@@ -348,13 +352,9 @@ nmap d& <Plug>search3
 nmap d# <Plug>search4
 nmap d@ <Plug>search5
 
-"------------------------------------------------------------------------------"
-"Finally, remap as above, but for substituting stuff
-"Want the interactivity of changing text inside the document (rather than
-"command line at the bottom), but that would require weird integration with repeat#set
-"if it weren't for this strange function
-function! s:refactor_all(command)
-  "Make sure to use existing mappings (i.e. no 'normal!')
+"Finally, remap as above, but for deleting everything
+"Make sure to use existing mappings (i.e. no 'normal!')
+function! s:delete_all(command)
   let winview=winsaveview()
   exe 'normal '.a:command
   while search(@/, 'n') "while result is non-zero, i.e. matches exist
@@ -363,10 +363,9 @@ function! s:refactor_all(command)
   echo "Deleted all occurences."
   call winrestview(winview)
 endfunction
-"Explicit is better than implicit
-nmap da/ :call <sid>refactor_all('d/')<CR>
-nmap da* :call <sid>refactor_all('d*')<CR>
-nmap da& :call <sid>refactor_all('d&')<CR>
-nmap da# :call <sid>refactor_all('d#')<CR>
-nmap da@ :call <sid>refactor_all('d@')<CR>
+nmap da/ :call <sid>delete_all('d/')<CR>
+nmap da* :call <sid>delete_all('d*')<CR>
+nmap da& :call <sid>delete_all('d&')<CR>
+nmap da# :call <sid>delete_all('d#')<CR>
+nmap da@ :call <sid>delete_all('d@')<CR>
 
