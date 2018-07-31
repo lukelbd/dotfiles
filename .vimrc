@@ -788,7 +788,7 @@ augroup simple
 augroup END
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
-"TODO If you're an insane person could also generate autocompletion for these ones, but nah
+"Todo: If you're an insane person could also generate autocompletion for these ones, but nah
 noremap <Leader>h :vert help 
 noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; '
   \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
@@ -1958,12 +1958,20 @@ endif
 "Will also enforce shebang always has the same color, because it's annoying otherwise
 "And generally only want 'conceal' characters invisible for latex; otherwise we
 "probably want them to look like comment characters
+function! s:keywordsetup()
+   if &ft!="vim"
+     syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment "comments
+     syn match Special '^\%1l#!.*$' "shebangs
+   else
+     syn clear vimTodo
+   endif
+endfunction
 augroup syntax
   au!
   " au Syntax *.tex syn match Ignore '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
   " au Syntax *.tex call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
-  au BufRead * set concealcursor= conceallevel=2
-  au Syntax * if &ft!="vim" | syn match Todo '\<\%(WARNING\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment | syn match Special '^\%1l#!.*$' | endif
+  au Syntax * call <sid>keywordsetup()
+  au BufRead * set conceallevel=2 concealcursor=
   " au BufEnter * if &ft=="tex" | hi Conceal ctermbg=None ctermfg=None | else | hi Conceal ctermbg=None ctermfg=Black | endif
   au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
   au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
