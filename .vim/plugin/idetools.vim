@@ -174,13 +174,8 @@ function! s:ctagbracketmaps()
   if exists('g:tags_ignore') && index(g:tags_ignore, &ft)!=-1
     return "means this 
   endif
-  if g:has_nowait
-    noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
-    noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
-  else
-    noremap <expr> <buffer> <silent> [[ <sid>ctagbracket(0,'.v:count.').'gg'
-    noremap <expr> <buffer> <silent> ]] <sid>ctagbracket(1,'.v:count.').'gg'
-  endif
+  noremap <expr> <buffer> <silent> [[ <sid>ctagbracket(0,'.v:count.').'gg'
+  noremap <expr> <buffer> <silent> ]] <sid>ctagbracket(1,'.v:count.').'gg'
 endfunction
 
 "------------------------------------------------------------------------------"
