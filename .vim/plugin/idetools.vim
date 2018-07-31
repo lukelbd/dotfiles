@@ -100,8 +100,9 @@ function! s:ctagsread()
   "First get simple list of lists; tag properties sorted alphabetically by
   "identifier, and numerically by line number
   "To filter by category, use: filter(b:ctags, 'v:val[-1]=="<category>"')
+  "First bail out if filetype is bad
   if exists('g:tags_ignore') && index(g:tags_ignore, &ft)!=-1
-    return "variable contining filetypes where we don't want to generate tags
+    return
   endif
   let flags=(getline(1)=~'#!.*python[23]' ? '--language=python' : '')
   let ctags=map(split(system(s:ctagcmd(flags)." | sed 's/;\"\t/\t/g'"), '\n'), "split(v:val,'\t')")
@@ -141,7 +142,7 @@ function! s:ctagbracket(foreward, n)
     echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
     return
   endif
-  let ctaglines=map(b:ctags_scope,'v:val[-2]')
+  let ctaglines=map(deepcopy(b:ctags_scope),'v:val[-2]')
   let njumps=(a:n==0 ? 1 : a:n)
   for i in range(njumps)
     let lnum=line('.')
@@ -172,7 +173,7 @@ endfunction
 nnoremap <CR> gd
 function! s:ctagbracketmaps()
   if exists('g:tags_ignore') && index(g:tags_ignore, &ft)!=-1
-    return "means this 
+    return
   endif
   noremap <expr> <buffer> <silent> [[ <sid>ctagbracket(0,'.v:count.').'gg'
   noremap <expr> <buffer> <silent> ]] <sid>ctagbracket(1,'.v:count.').'gg'

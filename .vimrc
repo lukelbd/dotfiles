@@ -454,6 +454,7 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 "Article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
 " Plug 'terryma/vim-multiple-cursors'
 "------------------------------------------------------------------------------"
+"Better motions
 "Sneak plugin; see the link for helpful discussion:
 "https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 Plug 'justinmk/vim-sneak'
@@ -789,7 +790,11 @@ augroup END
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
 "Todo: If you're an insane person could also generate autocompletion for these ones, but nah
-noremap <Leader>h :vert help 
+if has_key(g:plugs,'fzf.vim')
+  noremap <Leader>h :Help<CR>
+else
+  noremap <Leader>h :vert help 
+endif
 noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get man info: ').'; '
   \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 "--help info; pipe output into less for better interaction
@@ -985,9 +990,6 @@ if has_key(g:plugs,'.fzf')
   let g:fzf_action = {'ctrl-i': 'silent!',
     \ 'ctrl-m': 'tab split', 'ctrl-t': 'tab split',
     \ 'ctrl-x': 'split', 'ctrl-v': 'vsplit'}
-  "Use ctrl-p because liked that key position; makes sense
-  "Don't press enter because probably want user to be able to pick starting directory
-  noremap <C-p> :FZF 
 endif
 if has_key(g:plugs,'fzf.vim')
   "More neat mappings
@@ -995,7 +997,7 @@ if has_key(g:plugs,'fzf.vim')
   noremap <C-@> :Windows<CR>
   "Function for searching git repository; crazy useful
   "Think i for git
-  noremap <F3> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
+  noremap <C-p> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
 endif
 
 "###############################################################################
@@ -1200,8 +1202,8 @@ if has_key(g:plugs, "syntastic")
     return (exists("b:syntastic_on") && b:syntastic_on)
   endfunction
   function! s:syntastic_enable()
-    nnoremap <buffer> <silent> yn :Lnext<CR>
-    nnoremap <buffer> <silent> yN :Lprev<CR>
+    nnoremap <buffer> <silent> ;n :Lnext<CR>
+    nnoremap <buffer> <silent> ;N :Lprev<CR>
       "use sn/sN to nagivate between syntastic errors, or between spelling errors when syntastic off
     let nbufs=len(tabpagebuflist())
     noh | w | noautocmd SyntasticCheck
@@ -1215,11 +1217,11 @@ if has_key(g:plugs, "syntastic")
   function! s:syntastic_disable()
     SyntasticReset
     let b:syntastic_on=0
-    nnoremap <buffer> <silent> yn <Nop>
-    nnoremap <buffer> <silent> yN <Nop>
+    nnoremap <buffer> <silent> ;n <Nop>
+    nnoremap <buffer> <silent> ;N <Nop>
   endfunction
   "Set up custom remaps
-  nnoremap <silent> <expr> yx <sid>syntastic_status() ? ':call <sid>syntastic_disable()<CR>'
+  nnoremap <silent> <expr> ;x <sid>syntastic_status() ? ':call <sid>syntastic_disable()<CR>'
     \ : ':call <sid>syntastic_enable()<CR>'
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
@@ -1662,7 +1664,7 @@ function! AllFiles(A,L,P)
   return final
 endfunction
 function! s:openwrapper()
-  let response=input('Open tab ('.getcwd().'): ', '', 'customlist,AllFiles')
+  let response=input('open ('.getcwd().'): ', '', 'customlist,AllFiles')
   if response!=''
     exe 'tabe '.response
   else
