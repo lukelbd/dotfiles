@@ -104,7 +104,7 @@ function! s:ctagsread()
   if exists('g:tags_ignore') && index(g:tags_ignore, &ft)!=-1
     return
   endif
-  let flags=(getline(1)=~'#!.*python[23]' ? '--language=python' : '')
+  let flags=(getline(1)=~'#!.*python[23]' ? '--language-force=python' : '')
   let ctags=map(split(system(s:ctagcmd(flags)." | sed 's/;\"\t/\t/g'"), '\n'), "split(v:val,'\t')")
   let b:ctags_alph=sort(deepcopy(ctags), 's:alphsort')
   let b:ctags_line=sort(deepcopy(ctags), 's:linesort')
