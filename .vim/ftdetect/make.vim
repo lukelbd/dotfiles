@@ -1,3 +1,2 @@
-"Custom filetype declarations, with auto commands specified in .vim/ftplugin
-"Declaration for Vimscript-type files
-au BufRead,BufNewFile mkmf* set filetype=make
+"Alternative names for makefiles 
+au BufRead,BufNewFile [mM]akefile,*.make,mkmf.* set filetype=make

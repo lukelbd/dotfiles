@@ -5,7 +5,7 @@
 ################################################################################
 # Files to be ignored
 # Just a few of them yo; want to symlink everything else
-fignore=(README.md setup cleanup .gitignore colors learning macbook originals)
+exclude=(README.md setup cleanup .gitignore learning originals)
 
 # Some syncing notes; use the following to reset if stuff changed:
 # git fetch --all
@@ -32,7 +32,7 @@ echo "Creating \"$storage\" for backup of any existing dotfiles..."
 root="$HOME" # default location for real dotfiles
 for file in ${files[@]}; do # iterate through files
   # if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
-  if [[ ! " ${fignore[@]} " =~ " $file " ]]; then
+  if [[ ! " ${exclude[@]} " =~ " $file " ]]; then
     echo "Creating symlink to $file in $HOME/..."
     # Be conservative
     if [ -L $root/$file ]; then

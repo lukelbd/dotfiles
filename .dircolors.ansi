@@ -222,6 +222,8 @@ MISSING 05;37;41
 .cl     31
 .sh     31
 .bash   31
+.sbatch 31
+.batch  31
 .csh    31
 .zsh    31
 .el     31
@@ -248,8 +250,14 @@ MISSING 05;37;41
 .v      31
 .vh     31
 .vhd    31
+.sty    33
+.cls    33
+.bst    33
+.bib    33
+.aux    33
 ### Text files and readmes and stuff
 .tex    33
+.bbl    33
 .txt    33
 .org    33
 .md     33
@@ -282,13 +290,13 @@ MISSING 05;37;41
 .eps  01;33
 .ps   01;33
 .pdf  01;33
+.dvi  01;33
 
 ### Multimedia formats
 # Image
 .bmp  32
 .cgm  32
 .dl   32
-.dvi  32
 .emf  32
 .gif  32
 .jpeg 32
@@ -391,9 +399,9 @@ MISSING 05;37;41
 .zip  1;36
 
 # Log files and session files; bright white
-.session.vim 01;37
-.log         01;37
-.nml         01;37
+.vimsession 01;37
+.log        01;37
+.nml        01;37
 
 # Database files
 .nc    36
