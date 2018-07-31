@@ -971,49 +971,54 @@ function connect() {
   $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   [ ! -r $_port_file ] && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
   ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address." && return 1
+  # Get list of available ports on this machine; currently we check 20 options
   if [ $# -eq 0 ]; then
-    # Get list of available ports on this machine
-    # Right now we check 20 choices
     for port in $(seq 20000 20020); do
-      if netstat -an | grep "[:.]$port" &>/dev/null; then
-        let candidates+=($port)
-      fi
+      ! netstat -an | grep "[:.]$port" &>/dev/null && candidates+=($port)
     done
-    # Next run the remote port test, incrementing through *local* candidates
-    # whenever a remote port is unavailable
-    ports=$(command ssh -p $(cat $_port_file) $USER@localhost "$1" "
-      i=0
-      port=${candidates[0]}
-      candidates=(${candidates[@]})
-      while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
-        let i=i+1
-        let port=\${candidates[\$i]}
-      done
-      echo \$port
-      ") # find first available port
-  else
-    # Connect over ports from each argument
-    ports="$@"
+    [ ${#candidates[@]} -eq 0 ] && echo "Error: No ports available on this machine." && return 1
   fi
-  # Error message
-  [ -z $ports ] && echo "Error: No ports found." && return 1
-  # Establish the 2-way connection (macbook's local host, port $port to
-  # remote host's local host, port $port)
-  for port in $ports; do
-    # Message
-    echo "Connecting macbook to ${HOSTNAME%%@*} over port $port."
-    # The ip command prints this server's ip address ($hostname doesn't include full url)
-    # ssh -f (port-forwarding in background) -N (don't issue command)
-    command ssh -t -o StrictHostKeyChecking=no -p $(cat $_port_file) $USER@localhost \
-      "command ssh -N -f -L localhost:$port:localhost:$port \
-        $USER@$(ip route get 1 | awk '{print $NF;exit}') &>/dev/null
-       if [ \$? -eq 0 ]; then
-         echo 'Connection successful.' && exit 1
-       else
-         echo 'Connection failed.' && exit 0
-       fi" 2>/dev/null
+  # Try to establish the 2-way connections
+  # The ip command prints this server's ip address ($hostname doesn't include full url)
+  # ssh -f (port-forwarding in background) -N (don't issue command)
+  echo "Sending commands to macbook."
+  server=$USER@$(ip route get 1 | awk '{print $NF;exit}')
+  [ $? -ne 0 ] && echo "Error: Could not figure out this server's ip address." && return 1
+  outcome=$(command ssh -t -o StrictHostKeyChecking=no -p $(cat $_port_file) $USER@localhost "
+  # Just try connecting over input ports
+  if [ $# -ne 0 ]; then
+    ports=\"$@\"
+  # Find the first available port by parsing netstat
+  else
+    ports=${candidates[0]}
+    candidates=(${candidates[@]})
+    i=0; while netstat -an | grep \"[:.]\$ports\" &>/dev/null; do
+      let i=i+1
+      ports=\${candidates[\$i]}
+    done
+  fi
+  # Attempt connections over each port in ports list
+  exits=\"\"
+  for port in \$ports; do
+    command ssh -N -f -L localhost:\$port:localhost:\$port $server
+    exits+=\"\$? \"
   done
-  _jupyter_port=$port
+  # Finally print stuff that can be easily parsed; try to avoid newlines
+  printf \"\$ports\" | tr ' ' '-'
+  printf ' '
+  printf \"\$exits\" | tr ' ' '-'
+  " 2>/dev/null)
+  # Parse result
+  ports=($(echo $outcome | cut -d' ' -f1 | tr '-' ' ' | xargs))
+  exits=($(echo $outcome | cut -d' ' -f2 | tr '-' ' ' | xargs))
+  for idx in $(seq 0 $((${#ports[@]}-1))); do
+    if [ ${exits[$idx]} -eq 0 ]; then
+      _jupyter_port=${ports[$idx]}
+      echo "Connection over port ${ports[$idx]} successful."
+    else
+      echo "Connection over port ${ports[$idx]} failed."
+    fi
+  done
 }
 
 # Fancy wrapper for declaring notebook
