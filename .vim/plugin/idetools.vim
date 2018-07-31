@@ -66,18 +66,19 @@ nnoremap <silent> <Leader>c :DisplayTags<CR>:redraw!<CR>
 nnoremap <silent> <Leader>C :ReadTags<CR>
 
 "Function for generating command-line exe that prints taglist to stdout
+"We call ctags in number mode (i.e. return line number instead of search pattern)
 function! s:ctagcmd(...)
   let flags=(a:0 ? a:1 : '') "extra flags
-  return "ctags --langmap=vim:+.vimrc,sh:+.bashrc ".flags." "
+  return "ctags -n --langmap=vim:+.vimrc,sh:+.bashrc ".flags." "
     \."-f - ".expand('%:p')." | cut -d '\t' -f1,3-4 "
   " \." | command grep '^[^\t]*\t".expand('%:p')."' "this filters to only tags from 'this file'
 endfunction
 
-"Miscellaneous tool; just provides a nice display of tags with text
-"from the actual line
+"Miscellaneous tool; just provides a nice display of tags
+"Used to show the regexes instead of -n mode; the below sed was used to parse them nicely
+" | tr -s ' ' | sed '".'s$/\(.\{0,60\}\).*/;"$/\1.../$'."' "
 function! s:ctagsdisplay()
   exe "!clear; ".s:ctagcmd()." "
-  \." | tr -s ' ' | sed '".'s$/\(.\{0,60\}\).*/;"$/\1.../$'."' "
   \." | tr -s '\t' | column -t -s '\t' | less"
 endfunction
 command! DisplayTags call <sid>ctagsdisplay()
@@ -103,7 +104,7 @@ function! s:ctagsread()
     return "variable contining filetypes where we don't want to generate tags
   endif
   let flags=(getline(1)=~'#!.*python[23]' ? '--language=python' : '')
-  let ctags=map(split(system(s:ctagcmd(flags.' -n')." | sed 's/;\"\t/\t/g'"), '\n'), "split(v:val,'\t')")
+  let ctags=map(split(system(s:ctagcmd(flags)." | sed 's/;\"\t/\t/g'"), '\n'), "split(v:val,'\t')")
   let b:ctags_alph=sort(deepcopy(ctags), 's:alphsort')
   let b:ctags_line=sort(deepcopy(ctags), 's:linesort')
   "Next filter the tags sorted by line to include only a few limited categories
