@@ -1,5 +1,5 @@
-"Custom filetype declarations, with auto commands specified in .vim/ftplugin
 "Declaration for Fortran-type files
-" autocmd BufNewFile,BufRead,TabEnter,WinEnter *.f,*.F,*.f[0-9][0-9],*.F[0-9][0-9] set filetype=fortran
-autocmd BufNewFile,BufRead *.f,*.F,*.f[0-9][0-9],*.F[0-9][0-9],*.input,*.nml,*.namelist set filetype=fortran
+"Includes all fortran files, 'include' files (accessed by include "file.inc", for
+"sharing code snippets in different places), and namelist files.
+autocmd BufNewFile,BufRead *.f,*.F,*.[fF][0-9][0-9],*.inc,*.nml set filetype=fortran
 
