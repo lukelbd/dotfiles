@@ -177,9 +177,10 @@ alias  brew="PATH=$PATH brew"
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 # Anaconda options
-if [[ -e "$HOME/anaconda3/bin" || -e "$HOME/miniconda3/bin" ]]; then
-  echo "Adding anaconda to path."
-  export PATH="$HOME/anaconda3/bin:$PATH"
+if [[ -e "$HOME/anaconda3" || -e "$HOME/miniconda3" ]]; then
+  source $HOME/anaconda3/etc/profile.d/conda.sh # set up environment variables
+  conda activate # activate the default environment
+  echo "Enabled conda."
 fi
 
 ################################################################################
@@ -968,9 +969,9 @@ function jt() {
 function connect() {
   # Error checks and declarations
   local port candidates
-  $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
-  [ ! -r $_port_file ] && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
-  ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address." && return 1
+  $_macos                && echo "Error: This function is intended to run inside ssh sessions."                      && return 1
+  [ ! -r $_port_file ]   && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
+  ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address."      && return 1
   # Get list of available ports on this machine; currently we check 20 options
   if [ $# -eq 0 ]; then
     for port in $(seq 20000 20020); do
@@ -1025,10 +1026,10 @@ function connect() {
 # Will set up necessary port-forwarding connections on local and remote server, so
 # that you can just click the url that pops up
 function notebook() {
-  # Set the jupyter theme
+  # Set default jupyter theme
   local port
-  ! $_jt_configured && echo "Configure jupyter notebook theme." \
-    && jt && _jt_configured=true # trigger default theme
+  ! $_jt_configured && \
+    echo "Configure jupyter notebook theme." && jt && _jt_configured=true
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if ! $_macos; then
