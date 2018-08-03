@@ -357,11 +357,13 @@ call plug#begin('~/.vim/plugged')
 " Plug 'dkarter/bullets.vim'
 "------------------------------------------------------------------------------"
 "Proper syntax highlighting for a few different things
-"Right now .tmux.conf and .tmux files, and markdown files
+"Note impsort sorts import statements, and highlights modules with an after/syntax script
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
+" Plug 'tweekmonster/impsort.vim' "this fucking thing has an awful regex, breaks if you use comments, fuck that shit
+" Plug 'hdima/python-syntax' "this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
 "------------------------------------------------------------------------------"
 "Easy tags, for easy integration
 " Plug 'xolox/vim-misc' "depdency for easytags
@@ -386,7 +388,6 @@ Plug 'JuliaEditorSupport/julia-vim'
 "Python wrappers
 " Plug 'davidhalter/jedi-vim' "these need special support
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
-" Plug 'hdima/python-syntax' "this failed for me; had to manually add syntax file
 " Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython' "same problem as python-mode
 "------------------------------------------------------------------------------"
@@ -1166,7 +1167,7 @@ if has_key(g:plugs, "nerdcommenter")
   nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
   nmap c- <Plug>bar1
   nmap c\ <Plug>bar2
-  nnoremap <silent> c\  :call <sid>section('-')<CR>A
+  nnoremap <silent> c_  :call <sid>section('-')<CR>A
   nnoremap <silent> c\| :call <sid>section()<CR>A
   "Author information comment
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
@@ -1982,6 +1983,8 @@ augroup syntax
   au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
   au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
 augroup END
+"Python syntax
+highlight link pythonImportedObject Identifier
 "Popup menu
 highlight Pmenu ctermbg=None ctermfg=White cterm=None
 highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None

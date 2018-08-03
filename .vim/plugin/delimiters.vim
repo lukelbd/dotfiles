@@ -67,6 +67,11 @@ imap <C-p> <Plug>delimitMateJumpMany
 imap <C-n> <Nop>
 
 "------------------------------------------------------------------------------"
+"Remap surround.vim defaults
+"Make the visual-mode map same as insert-mode map; by default it is capital S
+vmap <C-s> <Plug>VSurround
+
+"------------------------------------------------------------------------------"
 "Function to alias builtin vim surround blocks
 function! s:alias(original,new,...)
   if a:0 "just checks for existance of third variable
@@ -83,7 +88,7 @@ function! s:alias(original,new,...)
   exe 'nnoremap '.buffer.' ya'.a:original.' ya'.a:new
   exe 'nnoremap '.buffer.' <silent> va'.a:original.' mVva'.a:new
 endfunction
-for pair in ["r[", "a<", "c{"]
+for pair in ['r[', 'a<', 'c{']
   call s:alias(pair[0], pair[1])
 endfor
 
