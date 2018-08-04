@@ -68,7 +68,7 @@ nnoremap <silent> <Leader>C :ReadTags<CR>
 "Function for generating command-line exe that prints taglist to stdout
 "We call ctags in number mode (i.e. return line number instead of search pattern)
 function! s:ctagcmd(...)
-  let flags=(a:0 ? a:1 : '') "extra flags
+  let flags=(a:0 ? a:1 : '') "extra flags, e.g. force a particular language
   return "ctags -n --fields=sk --langmap=vim:+.vimrc,sh:+.bashrc ".flags." -f - "
         \.expand('%:p')." | cut -d '\t' -f1,3-  | sed 's/;\"\t/\t/g'"
   " ." | cut -d '\t' -f1,3-4 "this removes the scope fields/any extra fields
