@@ -92,7 +92,7 @@ for pair in ['r[', 'a<', 'c{']
   call s:alias(pair[0], pair[1])
 endfor
 
-"Expand to include 'function' delimiters
+"Expand to include 'function' delimiters, i.e. function[...]
 nnoremap dif dib
 nnoremap cif cib
 nnoremap yif yib
@@ -101,6 +101,16 @@ nnoremap daf mzF(bdt(lda(`z
 nnoremap caf F(bdt(lca(
 nnoremap yaf mzF(bvf(%y`z
 nnoremap <silent> vaf F(bmVvf(%
+
+"Expand to include 'array' delimiters, i.e. array[...]
+nnoremap diA dir
+nnoremap ciA cir
+nnoremap yiA yir
+nnoremap <silent> viA vir
+nnoremap daA mzF[bdt[lda[`z
+nnoremap caA F[bdt[lca[
+nnoremap yaA mzF[bvf[%y`z
+nnoremap <silent> vaA F[bmVvf[%
 
 "Next mimick surround syntax with current line
 "Will make 'a' the whole line excluding newline, and 'i' ignore leading/trailing whitespace 
