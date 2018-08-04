@@ -5,7 +5,7 @@ icodir=($base/lib/python*/site-packages/notebook/static/base/images)
 icofiles=($icodir/*.ico)
 [ ! -d "$icodir" ] && echo "Error: Directory not found: \"$icodir\"." && exit 1
 # Override information
-pngdir=~/bin # override
+pngdir=~/bin/favicons # override
 tmp=$pngdir/tmp
 [ ! -d "$tmp" ] && mkdir $tmp
 pngfiles=($pngdir/*.png)
