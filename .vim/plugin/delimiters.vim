@@ -67,6 +67,11 @@ imap <C-p> <Plug>delimitMateJumpMany
 imap <C-n> <Nop>
 
 "------------------------------------------------------------------------------"
+"Remap surround.vim defaults
+"Make the visual-mode map same as insert-mode map; by default it is capital S
+vmap <C-s> <Plug>VSurround
+
+"------------------------------------------------------------------------------"
 "Function to alias builtin vim surround blocks
 function! s:alias(original,new,...)
   if a:0 "just checks for existance of third variable
@@ -83,11 +88,11 @@ function! s:alias(original,new,...)
   exe 'nnoremap '.buffer.' ya'.a:original.' ya'.a:new
   exe 'nnoremap '.buffer.' <silent> va'.a:original.' mVva'.a:new
 endfunction
-for pair in ["r[", "a<", "c{"]
+for pair in ['r[', 'a<', 'c{']
   call s:alias(pair[0], pair[1])
 endfor
 
-"Expand to include 'function' delimiters
+"Expand to include 'function' delimiters, i.e. function[...]
 nnoremap dif dib
 nnoremap cif cib
 nnoremap yif yib
@@ -96,6 +101,16 @@ nnoremap daf mzF(bdt(lda(`z
 nnoremap caf F(bdt(lca(
 nnoremap yaf mzF(bvf(%y`z
 nnoremap <silent> vaf F(bmVvf(%
+
+"Expand to include 'array' delimiters, i.e. array[...]
+nnoremap diA dir
+nnoremap ciA cir
+nnoremap yiA yir
+nnoremap <silent> viA vir
+nnoremap daA mzF[bdt[lda[`z
+nnoremap caA F[bdt[lca[
+nnoremap yaA mzF[bvf[%y`z
+nnoremap <silent> vaA F[bmVvf[%
 
 "Next mimick surround syntax with current line
 "Will make 'a' the whole line excluding newline, and 'i' ignore leading/trailing whitespace 

@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Use this function to check whether your /namelist/ block
+# in a fortran .f90 file **exactly matches** the
+# parameters referenced in some namelist .nml file.
+# First argument is .f90 file, second argument is .nml file.
 file="$1"
 nml="$2"
 # Get fortran file
