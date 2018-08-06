@@ -919,6 +919,7 @@ function jt() {
 function connect() {
   # Error checks and declarations
   local port candidates
+  unset _jupyter_port
   $_macos                && echo "Error: This function is intended to run inside ssh sessions."                      && return 1
   [ ! -r $_port_file ]   && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
   ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address."      && return 1
@@ -984,7 +985,7 @@ function notebook() {
   # Need to extend data rate limit when making some plots with lots of stuff
   if ! $_macos; then
     connect
-    [ $? -ne 0 ] && return 1
+    [ -z "$_jupyter_port" ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
   else
