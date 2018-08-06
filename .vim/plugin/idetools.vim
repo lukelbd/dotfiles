@@ -137,7 +137,7 @@ endfunction
 function! s:ctagjump(ctag) "split by multiple whitespace, get the line number (comes after the colon)
   exe split(a:ctag, '\s\+')[0][:-2]
 endfunction
-noremap <Leader><Space> :call fzf#run({'source': <sid>ctagmenu(b:ctags_alph), 'sink': function('<sid>ctagjump'), 'down': '~20%'})<CR>
+noremap <silent> <Leader><Space> :call fzf#run({'source': <sid>ctagmenu(b:ctags_alph), 'sink': function('<sid>ctagjump'), 'down': '~20%'})<CR>
 
 "------------------------------------------------------------------------------"
 "Next tools for using ctags to approximate variable scope
