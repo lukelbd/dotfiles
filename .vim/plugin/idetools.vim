@@ -70,7 +70,7 @@ nnoremap <silent> <Leader>C :ReadTags<CR>
 function! s:ctagcmd(...)
   let flags=(a:0 ? a:1 : '') "extra flags
   return "ctags -n --langmap=vim:+.vimrc,sh:+.bashrc ".flags." "
-    \."-f - ".expand('%:p')." | cut -d '\t' -f1,3-4 "
+    \."-f - ".shellescape(expand('%:p'))." | cut -d '\t' -f1,3-4 "
   " \." | command grep '^[^\t]*\t".expand('%:p')."' "this filters to only tags from 'this file'
 endfunction
 
@@ -106,8 +106,12 @@ function! s:ctagsread()
   endif
   let flags=(getline(1)=~'#!.*python[23]' ? '--language-force=python' : '')
   let ctags=map(split(system(s:ctagcmd(flags)." | sed 's/;\"\t/\t/g'"), '\n'), "split(v:val,'\t')")
-  let b:ctags_alph=sort(deepcopy(ctags), 's:alphsort')
-  let b:ctags_line=sort(deepcopy(ctags), 's:linesort')
+  if len(ctags)==0 "don't want warning message for files without tags!
+    " echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
+    return
+  endif
+  let b:ctags_alph=sort(deepcopy(ctags), 's:alphsort') "sort numerically by *position 1* in the sub-arrays
+  let b:ctags_line=sort(deepcopy(ctags), 's:linesort') "sort alphabetically by *position 0* in the sub-arrays
   "Next filter the tags sorted by line to include only a few limited categories
   if has_key(g:tags_scope, expand('%:t'))
     let cats=g:tags_scope[expand('%:t')]
