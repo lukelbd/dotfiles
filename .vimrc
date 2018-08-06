@@ -319,8 +319,8 @@ let g:has_ctags              = str2nr(system("type ctags &>/dev/null && echo 1 |
 let g:has_repeat             = exists("*repeat#set") "start checks for function existence
 let g:has_nowait             = (v:version>=704 || v:version==703 && has("patch1261"))
 let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))
-let g:compatible_workspace   = (v:version>=800) "needs Git 8.0
 let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
+let g:compatible_workspace   = (v:version>=800) "needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") "try alternative completion library
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
@@ -717,9 +717,11 @@ nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
 nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>
 "Spell maps
 nnoremap <Plug>backwardspell :call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
-nnoremap <Plug>forwardspell :call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
+nnoremap <Plug>forwardspell  :call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
 nmap ;D <Plug>backwardspell
 nmap ;d <Plug>forwardspell
+"Bring up menu
+nnoremap ;m z=
 "Add/remove from dictionary
 nnoremap ;a zg
 nnoremap ;r zug
@@ -731,6 +733,7 @@ function! s:spellchange(direction)
     setlocal spell
   endif
   let winview=winsaveview()
+  exe 'normal! '.(a:direction==']' ? 'bh' : 'el')
   exe 'normal! '.a:direction.'s'
   normal! 1z=
   call winrestview(winview)
@@ -1930,8 +1933,8 @@ noremap <silent> <Leader>/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><C
 " * Note the <Esc> is needed first because it cancels application of the number operator
 "   to what follows; we want to use that number operator for our own purposes
 if g:has_nowait
-  nnoremap <expr> <nowait> > v:count > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
-  nnoremap <expr> <nowait> < v:count > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
+  nnoremap <expr> <nowait> > (v:count) > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
+  nnoremap <expr> <nowait> < (v:count) > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
   nnoremap <nowait> = ==
 else
   nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
