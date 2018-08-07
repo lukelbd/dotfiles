@@ -983,14 +983,20 @@ function notebook() {
     echo "Configure jupyter notebook theme." && jt && _jt_configured=true
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
-  if ! $_macos; then
+  if [ -n "$1" ]; then
+    echo "Initializing jupyter notebook over port $1."
+    port="--port=$1"
+  elif ! $_macos; then
     connect
     [ -z "$_jupyter_port" ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
   else
-    echo "Initializing jupyter notebook."
-    port=""
+    for port in $(seq 20000 20020); do
+      ! netstat -an | grep "[:.]$port" &>/dev/null && break
+    done
+    echo "Initializing jupyter notebook over port $port."
+    port="--port=$port"
   fi
   jupyter notebook --no-browser $port --NotebookApp.iopub_data_rate_limit=10000000
 }
