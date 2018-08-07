@@ -651,56 +651,6 @@ function flatten() {
 }
 
 ################################################################################
-# iTerm2 title and other stuff
-################################################################################
-# Set the iTerm2 window title; see https://superuser.com/a/560393/506762
-# 1. First was idea to make title match the working directory; but fails/not useful
-# when inside tmux sessions
-# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
-# 2. Finally had idea to investigate environment variables -- terms out that
-# TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
-# grep that, then if the title is not already set AND we are on pane zero, request title.
-################################################################################
-# First function that sets title
-_title_file=~/.title
-_win_num="${TERM_SESSION_ID%%t*}"
-_win_num="${_win_num#w}"
-function title() { # Cmd-I from iterm2 also works
-  ! $_macos && echo "Error: Can only set title from mac." && return 1
-  [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
-  if [ -n "$1" ]; then _title="$1"
-  else read -p "Enter title (window $_win_num): " _title
-  fi
-  [ -z "$_title" ] && _title="window $_win_num"
-  # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
-  # GNU syntax is "sed -i <pattern> <file>", which is annoying.
-  [ ! -e "$_title_file" ] && touch "$_title_file"
-  gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
-  echo "$_win_num: $_title" >>$_title_file # add to file
-}
-# Prompt user input potentially, but try to load from file
-function title_update() {
-  # Check file availability
-  [ ! -r "$_title_file" ] && {
-    if ! $_macos; then echo "Error: Title file not available." && return 1
-    else title
-    fi; }
-  # Read from file
-  if $_macos; then
-    _title="$(cat $_title_file | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
-  else _title="$(cat $_title_file)" # only text in file
-  fi
-  # Update or re-declare
-  _title="$(echo "$_title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
-  if [ -z "$_title" ]; then title # reset title
-  else echo -ne "\033]0;"$_title"\007" # re-assert existing title, in case changed
-  fi
-}
-# New window; might have closed one and opened another, so declare new title
-[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
-$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
-
-################################################################################
 # SSH, session management, and Github stuff
 # Note: enabling files with spaces is tricky, need: https://stackoverflow.com/a/20364170/4970632
 # 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
@@ -1372,7 +1322,7 @@ function sdsync() {
 }
 
 ################################################################################
-# FZF FUZZY FILE COMPLETION TOOL
+# FZF fuzzy file completion tool
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
@@ -1484,7 +1434,7 @@ if [ -f ~/.fzf.bash ]; then
 fi
 
 ################################################################################
-# SHELL INTEGRATION; iTerm2 feature only
+# Shell integration; iTerm2 feature only
 ################################################################################
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
 # They are super annoying and useless
@@ -1492,6 +1442,56 @@ if [ -f ~/.iterm2_shell_integration.bash ]; then
    source ~/.iterm2_shell_integration.bash
    echo "Enabled shell integration."
 fi
+
+################################################################################
+# iTerm2 title management
+################################################################################
+# Set the iTerm2 window title; see https://superuser.com/a/560393/506762
+# 1. First was idea to make title match the working directory; but fails/not useful
+# when inside tmux sessions
+# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
+# 2. Finally had idea to investigate environment variables -- terms out that
+# TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
+# grep that, then if the title is not already set AND we are on pane zero, request title.
+################################################################################
+# First function that sets title
+_title_file=~/.title
+_win_num="${TERM_SESSION_ID%%t*}"
+_win_num="${_win_num#w}"
+function title() { # Cmd-I from iterm2 also works
+  ! $_macos && echo "Error: Can only set title from mac." && return 1
+  [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
+  if [ -n "$1" ]; then _title="$1"
+  else read -p "Enter title (window $_win_num): " _title
+  fi
+  [ -z "$_title" ] && _title="window $_win_num"
+  # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
+  # GNU syntax is "sed -i <pattern> <file>", which is annoying.
+  [ ! -e "$_title_file" ] && touch "$_title_file"
+  gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
+  echo "$_win_num: $_title" >>$_title_file # add to file
+}
+# Prompt user input potentially, but try to load from file
+function title_update() {
+  # Check file availability
+  [ ! -r "$_title_file" ] && {
+    if ! $_macos; then echo "Error: Title file not available." && return 1
+    else title
+    fi; }
+  # Read from file
+  if $_macos; then
+    _title="$(cat $_title_file | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
+  else _title="$(cat $_title_file)" # only text in file
+  fi
+  # Update or re-declare
+  _title="$(echo "$_title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
+  if [ -z "$_title" ]; then title # reset title
+  else echo -ne "\033]0;"$_title"\007" # re-assert existing title, in case changed
+  fi
+}
+# New window; might have closed one and opened another, so declare new title
+[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
+$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
 
 ################################################################################
 # Message

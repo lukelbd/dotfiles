@@ -949,9 +949,8 @@ endif
 
 "###############################################################################
 "EVENTS MANAGEMENT
-"Need to make this mini-function for ctrlp plugin
-" * Note storage variable g:eidefault must be *global* because otherwise
-"   the ctrlp plugin can't see it.
+"Originally created for Ctrl-P plugin, but might consider using
+"in future for other purposes
 augroup eventsrestore
   au!
   au BufEnter * call s:eioff()
@@ -998,7 +997,7 @@ if has_key(g:plugs,'fzf.vim')
   noremap <C-@> :Windows<CR>
   "Function for searching git repository; crazy useful
   "Think i for git
-  noremap <C-p> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
+  noremap <silent> <C-p> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
 endif
 
 "###############################################################################
