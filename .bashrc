@@ -1330,7 +1330,7 @@ function sdsync() {
 }
 
 ################################################################################
-# FZF FUZZY FILE COMPLETION TOOL
+# FZF fuzzy file completion tool
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
@@ -1451,6 +1451,8 @@ if [ -f ~/.iterm2_shell_integration.bash ]; then
    echo "Enabled shell integration."
 fi
 
+################################################################################
+# iTerm2 title management
 ################################################################################
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762
 # 1. First was idea to make title match the working directory; but fails/not useful
