@@ -994,8 +994,8 @@ if has_key(g:plugs,'.fzf')
 endif
 if has_key(g:plugs,'fzf.vim')
   "More neat mappings
-  "This one opens up a searchable windows list on pressing ctrl+space
-  noremap <C-@> :Windows<CR>
+  "This one opens up a searchable windows list
+  noremap <Tab><Tab> :Windows<CR>
   "Function for searching git repository; crazy useful
   "Think i for git
   noremap <C-p> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
@@ -1628,9 +1628,6 @@ nnoremap <Tab>e L
 "Moving screen left/right
 nnoremap <Tab>y zH
 nnoremap <Tab>p zL
-"Fix tab maps otherwise
-noremap <Tab> <Nop>
-noremap <Tab><Tab> <Nop>
 "Move current tab to the exact place of tab no. N
 "This is not default behavior
 function! s:tabmove(n)
