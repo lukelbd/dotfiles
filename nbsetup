@@ -66,7 +66,6 @@ if len(sys.argv)>1 and sys.argv[-1] not in cd:
 
 # Declare new magic command
 # See: https://gist.github.com/gauteh/2f8f49f082f1d09b3db0
-print('Adding custom magic commands.')
 _custom_paths = []
 # def find_in_syspath(filename):
 #   return filefind(filename, sys.path)
@@ -87,15 +86,16 @@ def addpath(line):
   global _custom_paths
   _custom_paths.append(line)
 del addpath
+print('Added custom magic commands.')
 
 # Run magic commands
 # Reloading modules, so can easily edit/run imported functions
 if 'autoreload' not in ipython.magics_manager.magics['line']:
     # Only do this if not already loaded -- otherwise will get *recursive* 
     # reloading, even with unload_ext command!
-    print("Enabling autoreload.")
     ipython.magic("reload_ext autoreload") # reload instead of load, to avoid annoying message
     ipython.magic("autoreload 2") # turn on expensive autoreloading
+    print("Enabled autoreload.")
 # Autosaving
 _ = io.StringIO() # message has a bunch of unnecessary newlines; will modify it
 with redirect_stdout(_):
@@ -104,7 +104,6 @@ print(f"Autosaving every {autosave:d} seconds.")
 # Plotting stuff
 # Initialize with default 'inline' settings; then modify them
 # with the various config options; that was probably my problem before
-print("Configuring inline plotting.")
 ipython.magic("matplotlib inline") # change print_figure_kwargs to see edges
 # So don't have memory issues/have to keep re-closing them
 ipython.magic("config InlineBackend.close_figures = True")
@@ -118,3 +117,4 @@ ipython.magic("config InlineBackend.rc = {}")
 # Optionally keep figures tight around edges
 # TODO: Can this also be set with an .rc setting?
 ipython.magic("config InlineBackend.print_figure_kwargs = {'bbox_inches':None}") #bbox_inches=\'tight\', pad_inches=0.1)')
+print("Configured inline plotting.")

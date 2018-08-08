@@ -952,7 +952,7 @@ function connect() {
   # Attempt connections over each port in ports list
   exits=\"\"
   for port in \$ports; do
-    command ssh -N -f -L localhost:\$port:localhost:\$port $server
+    command ssh -N -f -L localhost:\$port:localhost:\$port $server &>/dev/null
     exits+=\"\$? \"
   done
   # Finally print stuff that can be easily parsed; try to avoid newlines
@@ -1007,7 +1007,7 @@ function unstale() {
   local ports
   $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
-  if [ ! -z $ports ]; then
+  if [ -n "$ports" ]; then
     echo "Refreshing jupyter notebook connections over port(s) $ports."
     connect $ports
   else
