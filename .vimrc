@@ -1215,7 +1215,7 @@ if has_key(g:plugs, "syntastic")
       call extend(checkers, split(split(result[-1], ':')[-1], '\s\+')[:1])
     endif
     if a:0 "just echo the result
-      echo 'Checkers: '.join(checkers, ', ')
+      echo 'Checkers: '.join(checkers[:-2], ', ')
     else
       return checkers
     endif

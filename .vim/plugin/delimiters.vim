@@ -374,44 +374,43 @@ function! s:texsurround()
   call s:target_fancy('g', '\includegraphics{', '}', 1)
   call s:target_fancy('G', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
   " call s:target_fancy('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
-
-  " "Versions of the above, but this time puting them on own lines
-  " "Comma-prefixed delimiters with newlines; these have separate special function because
-  " "it does not make sense to have normal-mode maps for multiline begin/end environments
-  " "* The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
-  " "  with default single column; see: https://tex.stackexchange.com/a/366422/73149
-  " "* Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
-  call s:target_fancy(',;', '\begin{center}',             '\end{center}')               "because ; was available
-  call s:target_fancy(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  call s:target_fancy(',c', '\begin{columns}[c]',         '\end{columns}')
-  call s:target_fancy(',y', '\begin{python}',             '\end{python}')
-  " call s:target_fancy('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
-    "not sure what these args are for; c will vertically center
-  call s:target_fancy(',C', '\begin{column}{.5\textwidth}',     '\end{column}')
-  call s:target_fancy(',i', '\begin{itemize}',                  '\end{itemize}')
-  call s:target_fancy(',I', '\begin{description}',              '\end{description}') "d is now open
-  call s:target_fancy(',n', '\begin{enumerate}',                '\end{enumerate}')
-  call s:target_fancy(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
-  call s:target_fancy(',t', '\begin{tabular}',                  '\end{tabular}')
-  call s:target_fancy(',e', '\begin{equation*}',                '\end{equation*}')
-  call s:target_fancy(',a', '\begin{align*}',                   '\end{align*}')
-  call s:target_fancy(',E', '\begin{equation}',                 '\end{equation}')
-  call s:target_fancy(',A', '\begin{align}',                    '\end{align}')
-  call s:target_fancy(',b', '\begin{block}{}',                  '\end{block}')
-  call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
-  call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')
-  call s:target_fancy(',V', '\begin{code}',                     '\end{code}')
+  "The next enfironments will also insert *newlines*
   "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
   "note that fragile make compiling way slower
   "Slide with 'w'hite frame is the w map
-  call s:target_fancy('s', '\begin{frame}',           '\end{frame}')
-  call s:target_fancy('S', '\begin{frame}[fragile]',  '\end{frame}')
-  call s:target_fancy('w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}')
+  call s:target_fancy('s', "\n".'\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n")
+  call s:target_fancy('S', "\n".'\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n")
+  call s:target_fancy('w', "\n".'{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n")
   "Figure environments, and pages
-  call s:target_fancy('p', '\begin{minipage}{\linewidth}',    '\end{minipage}')
-  call s:target_fancy('f', "\n".'\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n")
-  call s:target_fancy('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
+  call s:target_fancy('p', "\n".'\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n")
+  call s:target_fancy('f', "\n""\n".'\begin{figure}'."\n".'\ce"\n"nterin"\n"g'."\n".'\include"\n"graphics{', "}\n".'\end{figure}'."\n")
+  call s:target_fancy('F', "\n".'\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n")
   " call s:target_fancy(',W', '\begin{wrapfigure}{r}{.5\textwidth}',    '\end{wrapfigure}')
+  "Versions of the above, but this time puting them on own lines
+  "TODO: fix these
+  " * The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
+  "   with default single column; see: https://tex.stackexchange.com/a/366422/73149
+  " * Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
+  " call s:target_fancy(',;', '\begin{center}',             '\end{center}')               "because ; was available
+  " call s:target_fancy(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
+  " call s:target_fancy(',c', '\begin{columns}[c]',         '\end{columns}')
+  " call s:target_fancy(',y', '\begin{python}',             '\end{python}')
+  " " call s:target_fancy('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+  "   "not sure what these args are for; c will vertically center
+  " call s:target_fancy(',C', '\begin{column}{.5\textwidth}',     '\end{column}')
+  " call s:target_fancy(',i', '\begin{itemize}',                  '\end{itemize}')
+  " call s:target_fancy(',I', '\begin{description}',              '\end{description}') "d is now open
+  " call s:target_fancy(',n', '\begin{enumerate}',                '\end{enumerate}')
+  " call s:target_fancy(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
+  " call s:target_fancy(',t', '\begin{tabular}',                  '\end{tabular}')
+  " call s:target_fancy(',e', '\begin{equation*}',                '\end{equation*}')
+  " call s:target_fancy(',a', '\begin{align*}',                   '\end{align*}')
+  " call s:target_fancy(',E', '\begin{equation}',                 '\end{equation}')
+  " call s:target_fancy(',A', '\begin{align}',                    '\end{align}')
+  " call s:target_fancy(',b', '\begin{block}{}',                  '\end{block}')
+  " call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
+  " call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')
+  " call s:target_fancy(',V', '\begin{code}',                     '\end{code}')
 endfunction
 
 "------------------------------------------------------------------------------"
