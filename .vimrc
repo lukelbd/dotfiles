@@ -1195,37 +1195,62 @@ augroup syntastic
 augroup END
 if has_key(g:plugs, "syntastic")
   "Commands for circular location-list (error) scrolling
+  "Also remap the commands
   command! Lnext try | lnext | catch | lfirst | catch | endtry
   command! Lprev try | lprev | catch | llast  | catch | endtry
+  nnoremap <silent> ;n :Lnext<CR>
+  nnoremap <silent> ;N :Lprev<CR>
+  "Determine checkers from annoying human-friendly output; version suitable
+  "for scripting does not seem available. Weirdly need 'silent' to avoid
+  "printint to vim menu. The *last* value in array will be checker.
+  function! s:syntastic_checkers(...)
+    redir => output
+    silent SyntasticInfo
+    redir END
+    let result=split(output, "\n")
+    let checkers=split(split(result[-2], ':')[-1], '\s\+')
+    if checkers[0]=='-'
+      let checkers=[]
+    else
+      call extend(checkers, split(split(result[-1], ':')[-1], '\s\+')[:1])
+    endif
+    if a:0 "just echo the result
+      echo 'Checkers: '.join(checkers, ', ')
+    else
+      return checkers
+    endif
+  endfunction
+  command! SyntasticCheckers call <sid>syntastic_checkers(1)
   "Helper function
   "Need to run Syntastic with noautocmd to prevent weird conflict with tabbar,
   "but that means have to change some settings manually
-  "Uses 'simplesetup' function (disables line numbers and stuff)
   function! s:syntastic_status()
-    return (exists("b:syntastic_on") && b:syntastic_on)
+    return (exists('b:syntastic_on') && b:syntastic_on)
   endfunction
   function! s:syntastic_enable()
-    nnoremap <buffer> <silent> ;n :Lnext<CR>
-    nnoremap <buffer> <silent> ;N :Lprev<CR>
-      "use sn/sN to nagivate between syntastic errors, or between spelling errors when syntastic off
     let nbufs=len(tabpagebuflist())
-    noh | w | noautocmd SyntasticCheck
-    if len(tabpagebuflist())>nbufs
-      wincmd j | set syntax=on
-      SimpleSetup
-      wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
-    else | echom "No errors found, or no checkers available." | let b:syntastic_on=0
+    let checkers=s:syntastic_checkers()
+    if len(checkers)==0
+      echom 'No checkers available.'
+    else "try running the checker, see if anything comes up
+      noautocmd SyntasticCheck
+      if len(tabpagebuflist())>nbufs || s:syntastic_status()
+        wincmd j | set syntax=on
+        SimpleSetup
+        wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
+        echom 'Using checker '.checkers[-1].'.'
+      else
+        echom 'No errors found with checker '.checkers[-1].'.'
+      endif
     endif
   endfunction
   function! s:syntastic_disable()
-    SyntasticReset
     let b:syntastic_on=0
-    nnoremap <buffer> <silent> ;n <Nop>
-    nnoremap <buffer> <silent> ;N <Nop>
+    SyntasticReset
   endfunction
   "Set up custom remaps
-  nnoremap <silent> <expr> ;x <sid>syntastic_status() ? ':call <sid>syntastic_disable()<CR>'
-    \ : ':call <sid>syntastic_enable()<CR>'
+  nnoremap <silent> ;x :call <sid>syntastic_enable()<CR>
+  nnoremap <silent> ;X :call <sid>syntastic_disable()<CR>
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
   let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
