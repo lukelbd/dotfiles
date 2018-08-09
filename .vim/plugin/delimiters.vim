@@ -227,6 +227,7 @@ call s:target_simple('!', '!', '!', 0)
 "ys<target>, yS<target>, visual-mode S, insert-mode <C-s>, et cetera
 function! s:target_fancy(symbol,start,end,...) "if final argument passed, this is buffer-local
   if a:0 "surprisingly, below is standard vim script syntax
+    " silent! unlet g:surround_{char2nr(a:symbol)}
     let b:surround_{char2nr(a:symbol)}=a:start."\r".a:end
   else
     let g:surround_{char2nr(a:symbol)}=a:start."\r".a:end
@@ -331,7 +332,7 @@ function! s:texsurround()
   call s:target_fancy('h', '\hat{',        '}', 1)
   call s:target_fancy('`', '\tilde{',      '}', 1)
   call s:target_fancy('-', '\overline{',   '}', 1)
-  call s:target_fancy('\', '\cancelto{}{', '}', 1)
+  call s:target_fancy('_', '\cancelto{}{', '}', 1)
   "Boxes; the second one allows stuff to extend into margins, possibly
   call s:target_fancy('x', '\boxed{',      '}', 1)
   call s:target_fancy('X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1)
@@ -339,14 +340,14 @@ function! s:texsurround()
   call s:target_fancy('q', '`',          "'",  1)
   call s:target_fancy('Q', '``',         "''", 1)
   "Simple enivronments, exponents, etc.
-  call s:target_fancy('/', '\sqrt{',       '}',   1)
+  call s:target_fancy('\', '\sqrt{',       '}',   1)
   call s:target_fancy('$', '$',            '$',   1)
   call s:target_fancy('e', '\times10^{',   '}',   1)
   call s:target_fancy('k', '^{',           '}',   1)
   call s:target_fancy('j', '_{',           '}',   1)
   call s:target_fancy('K', '\overset{}{',  '}',   1)
   call s:target_fancy('J', '\underset{}{', '}',   1)
-  call s:target_fancy('f', '\dfrac{',      '}{}', 1)
+  call s:target_fancy('/', '\dfrac{',      '}{}', 1)
   "Sections and titles
   call s:target_fancy('0', '\frametitle{',     '}',   1)
   call s:target_fancy('1', '\section{',        '}',   1)
@@ -400,15 +401,17 @@ function! s:texsurround()
   call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
   call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')
   call s:target_fancy(',V', '\begin{code}',                     '\end{code}')
-  call s:target_fancy(',s', '\begin{frame}',                    '\end{frame}')
-  call s:target_fancy(',S', '\begin{frame}[fragile]',           '\end{frame}')
-    "fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
-    "note that fragile make compiling way slower
-  call s:target_fancy(',w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}')     "white frame
-  call s:target_fancy(',p', '\begin{minipage}{\linewidth}',           '\end{minipage}')
-  call s:target_fancy(',f', '\begin{figure}',                         '\end{figure}')
-  call s:target_fancy(',F', '\begin{subfigure}{.5\textwidth}',        '\end{subfigure}')
-  call s:target_fancy(',W', '\begin{wrapfigure}{r}{.5\textwidth}',    '\end{wrapfigure}')
+  "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
+  "note that fragile make compiling way slower
+  "Slide with 'w'hite frame is the w map
+  call s:target_fancy('s', '\begin{frame}',           '\end{frame}')
+  call s:target_fancy('S', '\begin{frame}[fragile]',  '\end{frame}')
+  call s:target_fancy('w', '{\usebackgroundtemplate{}\begin{frame}', '\end{frame}}')
+  "Figure environments, and pages
+  call s:target_fancy('p', '\begin{minipage}{\linewidth}',    '\end{minipage}')
+  call s:target_fancy('f', "\n".'\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n")
+  call s:target_fancy('F', '\begin{subfigure}{.5\textwidth}', '\end{subfigure}')
+  " call s:target_fancy(',W', '\begin{wrapfigure}{r}{.5\textwidth}',    '\end{wrapfigure}')
 endfunction
 
 "------------------------------------------------------------------------------"
