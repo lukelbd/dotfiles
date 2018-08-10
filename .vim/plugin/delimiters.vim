@@ -370,21 +370,19 @@ function! s:texsurround()
   call s:target_fancy('&', '\citet{',   '}', 1) "second most common one
   call s:target_fancy('@', '\citep{',   '}', 1) "second most common one
   call s:target_fancy('#', '\citenum{', '}', 1) "most common
-  "Shortcuts for graphics
-  call s:target_fancy('g', '\includegraphics{', '}', 1)
-  call s:target_fancy('G', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
   " call s:target_fancy('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "The next enfironments will also insert *newlines*
   "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
   "note that fragile make compiling way slower
   "Slide with 'w'hite frame is the w map
-  call s:target_fancy('s', "\n".'\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n")
-  call s:target_fancy('S', "\n".'\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n")
-  call s:target_fancy('w', "\n".'{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n")
+  call s:target_fancy('g', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
+  call s:target_fancy('s', "\n".'\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n", 1)
+  call s:target_fancy('S', "\n".'\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n", 1)
+  call s:target_fancy('w', "\n".'{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n", 1)
   "Figure environments, and pages
-  call s:target_fancy('p', "\n".'\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n")
-  call s:target_fancy('f', "\n""\n".'\begin{figure}'."\n".'\ce"\n"nterin"\n"g'."\n".'\include"\n"graphics{', "}\n".'\end{figure}'."\n")
-  call s:target_fancy('F', "\n".'\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n")
+  call s:target_fancy('p', "\n".'\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
+  call s:target_fancy('f', "\n".'\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
+  call s:target_fancy('F', "\n".'\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
   " call s:target_fancy(',W', '\begin{wrapfigure}{r}{.5\textwidth}',    '\end{wrapfigure}')
   "Versions of the above, but this time puting them on own lines
   "TODO: fix these
