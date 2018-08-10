@@ -313,8 +313,9 @@ function! s:texsurround()
   "Font types
   call s:target_fancy('o', '{\color{red}', '}', 1)
   call s:target_fancy('i', '\textit{',     '}', 1)
-  call s:target_fancy('t', '\textbf{',     '}', 1) "now use ;i for various cite commands
-  call s:target_fancy('u', '\underline{',  '}', 1) "u for under
+  call s:target_fancy('t', '\textbf{',     '}', 1)
+  call s:target_fancy('E', '\emph{'  ,     '}', 1) "use e for times 10 to the whatever
+  call s:target_fancy('u', '\underline{',  '}', 1)
   call s:target_fancy('m', '\mathrm{',     '}', 1)
   call s:target_fancy('n', '\mathbf{',     '}', 1)
   call s:target_fancy('M', '\mathcal{',    '}', 1)
