@@ -1802,7 +1802,7 @@ nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 "Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> _' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> _" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> _" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
 nnoremap <silent> _\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 nnoremap <silent> _- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 "Replace useless BibTex entries
