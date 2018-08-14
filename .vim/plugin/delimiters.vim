@@ -361,14 +361,14 @@ function! s:texsurround()
   call s:target_fancy('7', '\ref{',     '}', 1) "just the number
   call s:target_fancy('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
   call s:target_fancy('9', '\label{',   '}', 1) "declare labels that ref and autoref point to
-  call s:target_fancy('!', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
   call s:target_fancy('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
   call s:target_fancy('a', '\caption{', '}', 1) "amazingly 'a' not used yet
   call s:target_fancy('A', '\captionof{figure}{', '}', 1) "alternative
   "Other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Have been rethinking this
-  call s:target_fancy('*', '\cite{',    '}', 1) "most common
+  call s:target_fancy('!', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
   call s:target_fancy('&', '\citet{',   '}', 1) "second most common one
+  call s:target_fancy('*', '\cite{',    '}', 1) "most common
   call s:target_fancy('@', '\citep{',   '}', 1) "second most common one
   call s:target_fancy('#', '\citenum{', '}', 1) "most common
   " call s:target_fancy('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
@@ -384,7 +384,10 @@ function! s:texsurround()
   call s:target_fancy('p', "\n".'\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
   call s:target_fancy('f', "\n".'\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
   call s:target_fancy('F', "\n".'\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
-  " call s:target_fancy(',W', '\begin{wrapfigure}{r}{.5\textwidth}',    '\end{wrapfigure}')
+  call s:target_fancy('W', "\n".'\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}'."\n")
+  "Equations
+  call s:target_fancy('%', "\n".'\begin{equation*}'."\n", "\n".'\end{equation*}'."\n")
+  call s:target_fancy('^', "\n".'\begin{align*}'."\n", "\n".'\end{align*}'."\n")
   "Versions of the above, but this time puting them on own lines
   "TODO: fix these
   " * The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
@@ -402,10 +405,6 @@ function! s:texsurround()
   " call s:target_fancy(',n', '\begin{enumerate}',                '\end{enumerate}')
   " call s:target_fancy(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
   " call s:target_fancy(',t', '\begin{tabular}',                  '\end{tabular}')
-  " call s:target_fancy(',e', '\begin{equation*}',                '\end{equation*}')
-  " call s:target_fancy(',a', '\begin{align*}',                   '\end{align*}')
-  " call s:target_fancy(',E', '\begin{equation}',                 '\end{equation}')
-  " call s:target_fancy(',A', '\begin{align}',                    '\end{align}')
   " call s:target_fancy(',b', '\begin{block}{}',                  '\end{block}')
   " call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
   " call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')
