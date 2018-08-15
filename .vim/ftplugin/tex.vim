@@ -113,8 +113,11 @@ inoremap <buffer> ;j _
 inoremap <buffer> ;, \,
 "Insert a line (feel free to modify width)
 "Will prompt user for fraction of page
-inoremap <buffer> <expr> ;_ '{\centering\noindent\rule{'
-  \.input('fraction: ').'\paperwidth}{0.7pt}}'
+"Note centering fails inside itemize environments, so use begin/end center instead
+" inoremap <buffer> <expr> ;_ '{\centering\noindent\rule{'
+"   \.input('fraction: ').'\textwidth}{0.7pt}}'
+inoremap <buffer> <expr> ;_ '\begin{center}\noindent\rule{'
+    \.input('fraction: ').'\textwidth}{0.7pt}\end{center}'
 "centerline (can modify this; \rule is simple enough to understand)
 "------------------------------------------------------------------------------"
 "C-@ is same as C-Space (google it)

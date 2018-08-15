@@ -243,8 +243,8 @@ augroup END
 function! s:texsurround()
   "Use 'l' for commands, 'L' for environments
   "These are special maps that will load prompts; see vim-surround documentation on customization
-  let b:surround_108 = "\1command: \1{\r}"
-  let b:surround_108 = "\\begin{\1\\begin{\1}\r\\end{\1\1}"
+  let b:surround_{char2nr('l')} = "\1command: \1{\r}"
+  let b:surround_{char2nr('L')} = "\\begin{\1\\begin{\1}\r\\end{\1\1}"
 
   "Apply 'inner'/'outer'/'surround' syntax to \command{text} and \begin{env}text\end{env}
   nnoremap <buffer> dal F{F\dt{daB
@@ -319,8 +319,6 @@ function! s:texsurround()
   call s:target_fancy('n', '\mathbf{',     '}', 1)
   call s:target_fancy('M', '\mathcal{',    '}', 1)
   call s:target_fancy('N', '\mathbb{',     '}', 1)
-  "Paragraph spacing
-  call s:target_fancy('l', '\linespread{',  '}', 1)
   "Verbatim
   call s:target_fancy('y', '\texttt{',     '}', 1) "typewriter text
   call s:target_fancy('Y', '\pyth$',       '$', 1) "python verbatim
