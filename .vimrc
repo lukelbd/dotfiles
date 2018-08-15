@@ -1931,8 +1931,8 @@ vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
 vnoremap gl ~
-nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
+nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
+nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gl <Plug>cap1
 nmap gt <Plug>cap2
 " nnoremap gl ~h
