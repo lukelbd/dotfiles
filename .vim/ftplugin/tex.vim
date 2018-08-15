@@ -5,10 +5,14 @@
 "------------------------------------------------------------------------------"
 "Disable latex spellchecking in comments (works for default syntax file)
 let g:tex_comment_nospell=1
-"Configure concealment
-" let user determine which classes of concealment will be supported
-"   a=accents/ligatures b=bold/italics d=delimiters m=math symbols  g=Greek  s=superscripts/subscripts
-let g:tex_conceal='amgsS'
+"Restrict concealmeant to just symbols and stuff
+" a=accents/ligatures
+" b=bold/italics
+" d=delimiters (e.g. $$ math mode)
+" m=math symbols
+" g=Greek
+" s=superscripts/subscripts
+let g:tex_conceal='agm'
 " let g:tex_conceal= 'abdmgsS'
 "With foldmethod=syntax, can now fold chapters and stuff
 let g:tex_fold_enable=1
