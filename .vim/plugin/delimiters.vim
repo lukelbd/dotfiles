@@ -1,11 +1,10 @@
 "------------------------------------------------------------------------------"
-" Author: Luke Davis (lukelbd@gmail.com)
-" Date: 2018-07-29
+"Author: Luke Davis (lukelbd@gmail.com)
+"This plugin is a wrapper around the 'surround.vim' plugin.
+"Add new surround.vim delimiters for LaTeX and HTML files, incorporate
+"new delimiters more cleanly with the builtin LaTeX da/di/etc. commands,
+"and provide new tool for jumping outside of delimiters.
 "------------------------------------------------------------------------------"
-"This plugin is inspired by the 'surround.vim' plugin.
-"Neat tools for working smoothly with delimited text.
-"------------------------------------------------------------------------------"
-"Expand the functionality of delimitMate and vim-surround
 if !exists("g:plugs")
   echo "Warning: vim-plugs required to check if dependency plugins are installed."
   finish
@@ -51,12 +50,12 @@ function! s:outofdelim(n)
 endfunction
 "Apply remaps
 "Mnemonic here is C-o gets us out; currently not used by any other maps!
+imap jk <C-o>
 inoremap <expr> <C-o> !pumvisible() ? <sid>outofdelim(1)
   \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
 inoremap kk k
 inoremap jj j
-imap jk <C-o>
 
 "------------------------------------------------------------------------------"
 "Fancy builtin delimitMate version
