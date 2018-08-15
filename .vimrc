@@ -205,10 +205,11 @@ nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
 nnoremap Y y$
 nnoremap D D
 "For some reason this is necessary or there is a cursor delay when hitting cc
-nnoremap cc cc
-nnoremap c<CR> s
+nnoremap cc s
+nnoremap cC cc
 "Replace the currently highlighted text
 vnoremap cc s
+vnoremap cC s
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
