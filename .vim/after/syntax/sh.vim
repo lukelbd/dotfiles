@@ -1,7 +1,24 @@
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"
-" Vim syntax file for completion for Slurm
-"
+" Vim syntax file for completion for Slurm and embedded Awk highlighting
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+" Awk: copied from https://stackoverflow.com/a/13925238/4970632
+" Currently just highlights stuff white; needs work.
+" ===================
+" syn include @AWKScript syntax/awk.vim
+" syn region AWKScriptCode matchgroup=AWKCommand
+"     \ start=+[=\\]\@<!'+ skip=+\\'+ end=+'+ contains=@AWKScript contained
+" " syn region AWKScriptEmbedded matchgroup=AWKCommand
+" "     \ start=+\<g\?awk\>+ skip=+\\$+ end=+[=\\]\@<!'+me=e-1
+" "     \ contains=@shIdList,@shExprList2 nextgroup=AWKScriptCode
+" " syn region AWKScriptEmbedded matchgroup=AWKCommand
+" "     \ start=+\$AWK\>+ skip=+\\$+ end=+[=\\]\@<!'+me=e-1
+" "     \ contains=@shIdList,@shExprList2 containedin=shDerefSimple nextgroup=AWKScriptCode
+" syn region AWKScriptEmbedded matchgroup=AWKCommand
+"     \ start=+\<\(g\?awk\|\$AWK\)\>+ skip=+\\$+ end=+[=\\]\@<!'+me=e-1
+"     \ contains=@shIdList,@shExprList2 nextgroup=AWKScriptCode
+" syn cluster shCommandSubList add=AWKScriptEmbedded
+" hi def link AWKCommand Type
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "  Copyright (C) 2012 Damien François. <damien.francois@uclouvain.Be>
 "  Written by Damien François. <damien.francois@uclouvain.Be>.
@@ -36,14 +53,8 @@
 "  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 "
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-" handling /bin/sh with is_kornshell/is_sh {{{1
-" b:is_sh is set when "#! /bin/sh" is found;
-" However, it often is just a masquerade by bash (typically Linux)
-" or kornshell (typically workstations with Posix "sh").
-" So, when the user sets "is_bash" or "is_kornshell",
-" a b:is_sh is converted into b:is_bash/b:is_kornshell,
-" respectively.
+" Set some variables or something
+" ===================
 if !exists("b:is_kornshell") && !exists("b:is_bash")
   if exists("g:is_posix") && !exists("g:is_kornshell")
    let g:is_kornshell= g:is_posix
@@ -63,7 +74,7 @@ if !exists("b:is_kornshell") && !exists("b:is_bash")
   endif
 endif
 
-" Slurm: {{{1
+" Slurm:
 " ===================
 " Slurm SBATCH comments are one liners beginning with #SBATCH and containing
 " the keyword (i.e.SBATCH), one option (here only options starting with -- are
