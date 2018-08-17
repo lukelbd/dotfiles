@@ -395,7 +395,8 @@ Plug 'JuliaEditorSupport/julia-vim'
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
-" Plug 'vim-scripts/matchit.zip' "now track my own
+Plug 'vim-scripts/matchit.zip'
+Plug 'andymass/vim-matchup' "better matching, see github
 "------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'
