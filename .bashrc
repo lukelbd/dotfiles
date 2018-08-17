@@ -37,6 +37,7 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 # CUSTOM KEY BINDINGS AND INTERACTION
 ################################################################################
 # Reset all aliases
+# Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
@@ -828,33 +829,21 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # * Calling R with --slave or --interactive makes quiting totally impossible somehow.
 # * The ---always-readline prevents prompt from switching to the default prompt, but
 #   also seems to disable ctrl-d for exiting.
-alias r="R"   # because why not?
-alias ir="iR" # again, why not?
-function iR() {
-  echo 'This is an Interactive R shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  R -q --no-save # keep it simple stupid
-  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
-}
-# Matlab -- just a simple alias
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
-# NCL -- and a couple other things
-# Tried temporarily changing bindings, but those are *shell* bindings; not passed to REPL
-function incl() {
-  echo "This is an Interactive NCL shell."
-  ncl -Q -n
-}
-# Perl -- hard to understand, but here it goes:
-# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
-# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
-#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
-#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
-#   for success, and if not, prints the error message. This is a build-your-own eval.
-function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
-  echo 'This is an Interactive Perl shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
-}
+alias r="R -q --no-save"
+alias R="R -q --no-save"
+# alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
+# Matlab, just a simple alias
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/init.m')\""
+# NCL interactive environment
+# Make sure that we encapsulate any other alias; for example, on Macs, will
+# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
+if alias ncl &>/dev/null; then
+  eval "$(alias ncl)' -Q -n'"
+else
+  alias ncl="ncl -Q -n"
+fi
+# Julia, simple alias
+alias julia="julia --banner=no"
 # iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
 pysimple=$(echo "get_ipython().magic('load_ext autoreload')
@@ -871,6 +860,17 @@ pycomplex=$(echo "$pysimple
   " | sed 's/^ *//g')
 alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pysimple\""
 alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
+# Perl -- hard to understand, but here it goes:
+# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
+# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
+#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
+#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
+#   for success, and if not, prints the error message. This is a build-your-own eval.
+function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+  echo 'This is an Interactive Perl shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
+}
 
 ################################################################################
 # Notebook stuff
