@@ -675,7 +675,7 @@ endif
 
 "###############################################################################
 "MATHUP
-if has_key(g:plugs, "andymass/vim-matchup") "better matching, see github
+if has_key(g:plugs, "vim-matchup") "better matching, see github
   let g:matchup_matchparen_enabled = 1
   let g:matchup_transmute_enabled = 1
 endif
