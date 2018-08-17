@@ -674,6 +674,12 @@ if has_key(g:plugs, "vim-sneak")
 endif
 
 "###############################################################################
+"MATHUP
+if has_key(g:plugs, "andymass/vim-matchup") "better matching, see github
+  let g:matchup_matchparen_enabled = 0
+endif
+
+"###############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
 "Note: If enter is mapped delimitmate will turn off its auto expand
 "enter mapping.
