@@ -495,9 +495,8 @@ alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
 alias restarts="last reboot | less"
 function listjobs() {
-  # [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1
   ps | grep "$1" | grep -v PID | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs
-} # list jobs by name
+} # list job pids using ps; alternatively can use naked 'jobs' command
 function killjobs() {
   [ $# -eq 0 ] && echo "Error: Must specify grep pattern(s)." && return 1
   for str in $@; do
@@ -505,6 +504,13 @@ function killjobs() {
     kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 } # kill jobs by name
+function killall() {
+  local count=$(jobs | wc -l | xargs)
+  for i in $(seq 1 $count); do
+    echo "Killing job $i..."
+    eval "kill %$i"
+  done
+} # kill jobs with the percent sign thing
 
 # Scripting utilities
 function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
