@@ -1806,8 +1806,8 @@ vnoremap <silent> _e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 vnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 nnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace all tabs
-vnoremap <expr> <silent> \<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
-nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+vnoremap <expr> <silent> _<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+nnoremap <expr> <silent> _<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 "Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> _' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>

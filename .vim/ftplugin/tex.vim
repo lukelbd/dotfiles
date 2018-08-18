@@ -28,8 +28,8 @@ let g:tex_stylish=1
 "------------------------------------------------------------------------------"
 "Commands for compiling latex
 "Use C-z for compiling normally, and <Leader>z for compiling to word document.
-noremap <silent> <buffer> <C-z> :w<CR>:exec('!clear; set -x; compile '.shellescape(@%).' false')<CR>
-noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; ~/bin/compile '.shellescape(@%).' true')<CR>
+noremap <silent> <buffer> <C-z> :w<CR>:exec('!clear; set -x; document '.shellescape(@%).' false')<CR>
+noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; document '.shellescape(@%).' true')<CR>
 "------------------------------------------------------------------------------"
 "Font sizing
 inoremap <buffer> ;1 \tiny 
