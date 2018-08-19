@@ -19,11 +19,12 @@ latex=pdflatex # by default use pdflatex
 bibtex=bibtex # for compiling bibliographies
 templates="$HOME/latex" # location of LaTeX templates and style files
 filename="$1" # the current file
-htmlcompile="$2" # option
-[ $TERM_PROGRAM = "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
-[ -z "$filename" ]    && echo "Error: Must call compile-script with filename."                                 && exit 1
-[ -z "$htmlcompile" ] && echo "Error: Must call compile-script with true/false option for converting to docx." && exit 1
-[ ! -r "$filename" ]  && echo "Error: File \"$filename\" does not exist."                                      && exit 1
+tex2docx="$2" # option
+[ $TERM_PROGRAM == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
+[ -z "$filename" ]   && echo "Error: Must call compile-script with filename."                                 && exit 1
+[ -z "$tex2docx" ]   && echo "Error: Must call compile-script with true/false option for converting to docx." && exit 1
+[ ! -r "$filename" ] && echo "Error: File \"$filename\" does not exist."                                      && exit 1
+! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils."
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   directory="${filename%/*}" # trim shortest pattern matching <stuff>/*, keep "stuff"
   filename="${filename##*/}" # trim longest pattern matching */<stuff>, keep "stuff"
@@ -33,19 +34,33 @@ fi
 filestem="${filename%.tex}" # simple
 #------------------------------------------------------------------------------#
 # Parse raw file to get some options
+# Function for ignoring comments
+function nocomments() { cat "$1" | grep -o '^[^%]*'; }
 # First if GIF/animation in file, need to change from Skim to compatible viewer
-cat "$filename" | grep -o '^[^%]*' | grep '\\animategraphics' &>/dev/null && viewer="Adobe Acrobat Reader DC" || viewer="Skim"
-# Next detect if bibliography is present
-cat "$filename" | grep -o '^[^%]*' | egrep '\\bibliography{.*}|\\printbibliography|\\nobibliography{.*}' &>/dev/null && bibliography=true || bibliography=false
+nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
+  && viewer="Adobe Acrobat Reader DC" || viewer="Skim"
+# Get actual .bib file or resource; will need it for
+# The -n flag prevents printing every single line after running command
+# nocomments "$filename" | egrep '\\bibliography{.*}|\\printbibliography|\\nobibliography{.*}' &>/dev/null \
+#   && bibliography=true || bibliography=false
+bibfile=$(nocomments "$filename" | gsed -n 's/^[ \t]*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}.*$/\2/p')
+if [ -z "$bibfile" ]; then
+  bibliography=false
+else
+  bibliography=true
+  bibfile="${bibfile%.bib}.bib" # add back extension, if abscent
+  echo "Detected biliography name \"$bibfile\"."
+fi
 # Finally detect if we want to run latexdiff on this file
-[[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]] && dfilename="${filename%.tex}changes.tex" || dfilename="" # keep empty
-# Special options for beamer
-cat "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null \
-  && latex=pdflatex && dfilename="" && htmlcompile=false # beamer options
+[[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]] \
+  && dfilename="${filename%.tex}changes.tex" || dfilename="" # keep empty
+# Some overrides if this is beamer document
+nocomments "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null \
+  && latex=pdflatex && dfilename="" && tex2docx=false # beamer options
 # Automatically choose from xelatex and pdflatex; just need xelatex for
 # tex files that load fontspec, or use modules that themselves load fontspec
-cat "$filename" | grep -o '^[^%]*' | egrep 'fontspec|xltxtra' &>/dev/null \
-  && latex=xelatex && dfilename="" && htmlcompile=false
+nocomments "$filename" | egrep 'fontspec|xltxtra' &>/dev/null \
+  && latex=xelatex && dfilename="" && tex2docx=false
 
 #------------------------------------------------------------------------------#
 # Manage all LaTeX files, and move them around if necessary
@@ -108,10 +123,10 @@ function latexfind() {
 # First the custom .cls files
 # Will ignore commented out lines; see https://unix.stackexchange.com/a/157607/112647
 # Also ignore documentclass calls within verbatim commands; or just enforce starts at 0 position
-class=($(cat "$filename" | grep -o '^[^%]*' | grep '^\\documentclass' |
+class=($(nocomments "$filename" | grep '^\\documentclass' |
           cut -s -d'{' -f2 | cut -s -d'}' -f1 ))
 [ ${#class[@]} -gt 1 ] && echo "Error: Ambiguous document class: \"${class[@]}\"." && exit 1
-echo "Finding class file..."
+echo "Finding class file."
 latexfind $class cls
 # As above but for the RequirePackage lines in the .cls file
 # * Have encountered a RequirePackage inside AtEndOfClass, so we also account for that
@@ -125,26 +140,25 @@ latexfind $class cls
 #   commands which happens sometimes.
 classfile=$(kpsewhich ${class}.cls)
 [ -z $classfile ] && echo "Error: Could not find class file ${class}.cls" && exit 1
-rpackages=($(cat "$classfile" | grep -o '^[^%]*' | grep '^.*\\RequirePackage' \
+rpackages=($(nocomments "$classfile" | grep '^.*\\RequirePackage' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
   | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs)) # | awk '!/\[|\]/'
-echo "Finding sty dependencies of class..."
+echo "Finding sty dependencies of class."
 latexfind ${rpackages[@]} sty
 # As above but for .sty files
 # Will also detect \usepackage{package1,package2} lists
-packages=($(cat "$filename" | grep -o '^[^%]*' |  egrep '^.*\\usepackage|^.*\\templatetype' \
+packages=($(nocomments "$filename" |  egrep '^.*\\usepackage|^.*\\templatetype' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
   | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs))
-echo "Finding preamble sty files..."
+echo "Finding preamble sty files."
 latexfind ${packages[@]} sty
 # As above but for .bst file
-bibstyle=($(cat "$filename" | grep -o '^[^%]*' \
-  | grep '^.*\\bibliographystyle' \
+bibstyle=($(nocomments "$filename" | grep '^.*\\bibliographystyle' \
   | cut -s -d'{' -f2 | cut -s -d'}' -f1))
 if [ ${#bibstyle[@]} -eq 1 ]; then
-  echo "Finding bst file..."
+  echo "Finding bst file."
   latexfind $bibstyle bst
 elif [ ${#bibstyle[@]} -gt 1 ]; then
   echo "More than one bibliographystyle found." && exit 1
@@ -168,98 +182,68 @@ files_old=(*) # glob expansion to every filename
 #   https://unix.stackexchange.com/q/165362/112647
 echo "Compiling with $latex."
 if $bibliography; then
-  echo "Generating aux file..."
+  echo "Generating aux file."
   $latex -draftmode $flags "$filestem" &>/dev/null
-  echo "Generating bibliography..."
+  echo "Generating bibliography."
   $bibtex "$filestem" #&>/dev/null
 fi
-echo "Initial pass..."
+echo "Initial pass."
 $latex -draftmode $flags "$filestem" &>/dev/null
-# $latex $flags "$filestem" 2>&1 | less # simple, use for debuggin
-echo "Final pass..."
+echo "Final pass."
+# This time want to read error messages
+# * Below, the last line matches only triplets created by the second sed line
+#   (blank\nmessage\nline#) and inserts '--' between groups of matches.
+# * Also, sed -E uses extended regular expressions, not basic; allows |
+#   operator, like egrep.
 $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
-  | grep -A2 '^$' | sed '/^$/d' # the last line matches only triplets created
-  # by the second sed line (blank\nmessage\nline#) and inserts '--' between groups of matches
-  # sed -E uses extended regular expressions, not basic; allows or operator, like egrep
-if [ ! -r "$filestem.pdf" ]; then
-  echo "Error: PDF not produced." && cleanup
-  exit 1
-fi
+  | grep -A2 '^$' | sed '/^$/d'
+[ ! -r "$filestem.pdf" ] && echo "Error: PDF not produced." && cleanup
 
 #------------------------------------------------------------------------------#
 # Create the difference-LaTeX file, with track changes
 #------------------------------------------------------------------------------#
 if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
-  echo "The filename contains a date string. Will run latexdiff on the previous version."
   # Check for earlier version
   prefix=${filename%[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex} # parameter expensions are fire yo
   pfiles=($prefix[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex) # sorted manuscript files (glob is sorted by default)
+  # Get the part of list corresponding to files that
+  # come BEFORE current one in alphanumeric sorting
   for index in "${!pfiles[@]}"; do
-    # Get the part of list corresponding to files that
-    # come BEFORE current one in alphanumeric sorting
     [ "${pfiles[$index]}" == "$filename" ] && break
   done
-  # Create difference file if earlier version exists
-  if [ "$index" -eq 0 ]; then echo "Warning: Cannot find previous version of this file."
-  else # Tests index just before we broke from loop
-    # Create difference texfile
-    pfilename="${pfiles[$(($index - 1))]}" # previous index
-    echo "Typesetting difference-PDF from $filename minus $pfilename..." # message
+  if [ "$index" -ne 0 ]; then
+    # Get difference PDF, with changes highlighted
+    pfilename="${pfiles[$(($index-1))]}"
+    echo "Running latexdiff on ${filename##*/} minus ${pfilename##*/}."
     [ -e "$dfilename" ] && rm "$dfilename"
     latexdiff "$pfilename" "$filename" > "$dfilename"
     if [ ! -r $dfilename ]; then
-      echo "Error: Difference file not produed." && cleanup
-      exit 1
-    fi
-    # Compile difference
-    dfilestem="${dfilename%.tex}"
-    if $bibliography; then
-      echo "Preparing bibliography..."
+      echo "Warning: Difference file not produced."
+    else
+      # Finish the the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
+      dfilestem="${dfilename%.tex}"
+      if $bibliography; then
+        $latex -draftmode $flags "$dfilestem" &>/dev/null
+        $bibtex "$dfilestem" #&>/dev/null
+      fi
       $latex -draftmode $flags "$dfilestem" &>/dev/null
-      $bibtex "$dfilestem" #&>/dev/null
-    fi
-    echo "Typesetting PDF from $filename..."
-    $latex -draftmode $flags "$dfilestem" &>/dev/null
-    $latex $flags "$dfilestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
-    if [ ! -r "$dfilestem.pdf" ]; then
-      echo "Error: Difference PDF not produced." && cleanup
-      exit 1
+      $latex $flags "$dfilestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
+      [ ! -r "$dfilestem.pdf" ] && echo "Warning: Difference PDF not produced."
     fi
   fi
 fi
 
 #------------------------------------------------------------------------------#
-# Get docx file that is readable in Word and Pages
+# Convert to docx with pandoc; this will keep figures and format titles and
+# sections with Word styling
 #------------------------------------------------------------------------------#
-if $htmlcompile; then
-  if ! type htlatex &>/dev/null; then
-    echo "Warning: HTLaTeX not found."
-  elif ! type pandoc &>/dev/null; then
-    echo "Warning: Pandoc not found, please install it with Homebrew."
+if $tex2docx; then
+  if ! type pandoc &>/dev/null; then
+    echo "Warning: Pandoc not found. Use brew install pandoc."
   else
-    # First get HTML file
-    # Will filter most messages so more pallatable, only preserve errors and warnings
-    echo "Creating HTML file with htlatex."
-    htlatex "$filename" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
-    if [ ! -r "$filestem.html" ]; then
-      echo "Error: Conversion to HTML failed." && cleanup
-      exit 1
-    fi
-    # Next change encoding to utf-8; can do it with vim
-    # See: https://stackoverflow.com/a/23235290/4970632
-    # vim -c "set fileencoding=utf-8 | wq" "$filestem.html"
-    # Instead do it with iconv, which should come with most UNIX distros and conda
-    # See: https://tex.stackexchange.com/a/200182/73149
-    # Have to specify ASCII (the ISO string) manually for some reason, or it fails
-    echo "Translating HTML file to UTF-8."
-    iconv -f ISO-8859-1 -t UTF-8 "$filestem.html" > "tmp.html" && mv tmp.html "$filestem.html"
-    # Finally convert to docx with pandoc; this will keep figures!
-    # * Note that converting to a .doc extension will just leave the HTML, because
-    #   pure HTML technically is compatible with the .doc extensions specs.
-    # * If you browse the docx file with vim, will show message that we are browsing
-    #   a 'zipfile', and you can descend into different sections.
-    echo "Converting HTML to .docx with pandoc, so can be read in Word and Pages."
-    pandoc -s "$filestem.html" -o "$filestem.docx"
+    echo "Running pandoc to convert tex-->docx."
+    $bibliography && panbib="--bibliography=$bibfile" || panbib=""
+    pandoc --bibliography="$bibfile" --output="$filestem.docx" "$filename"
   fi
 fi
 
@@ -269,6 +253,6 @@ fi
 cleanup
 open -a "$viewer" "$filestem.pdf" # open new pdf
 [ ! -z "$dfilestem" ] && open -a "$viewer" "$dfilestem.pdf" # open difference
-[ -e "$filestem.docx" ] && open -a "pages" "$filestem.docx" # open document
+[ -e "$filestem.docx" ] && open -F -a "pages" "$filestem.docx" # open document
 open -a $terminal # bring terminal back into focus
 
