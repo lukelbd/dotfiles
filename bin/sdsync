@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+#------------------------------------------------------------------------------#
+# Sync a local directory with files on SD card
+# This function will only modify files on the SD card, never the local directory
+# Behavior option: check for modified files?
+# Only problem: file "modified" every time transferred to SD card
+#------------------------------------------------------------------------------#
+shopt -u nullglob # no nullglob
+updateold=true
+# Can change this, but default will be to sync playlist
+sdcard="NO NAME" # edit when get new card
+sdloc="/Volumes/$sdcard/Playlist" # sd data
+[ ! -d "$sdloc" ] && echo "Error: SD card not found." && return 1
+locloc="$HOME/Playlist" # local data
+echo "SD Location: $sdloc"
+echo "Local location: $locloc"
+# Iterate through local files
+copied=false # copied anything?
+updated=false # updated anything?
+deleted=false # deleted anything?
+$_macos && date=gdate || date=date
+for path in "$locloc/"*.{mp3,m4a,m3u8}; do
+  [ ! -r "$path" ] && continue # e.g. if glob failed
+  file="${path##*/}"
+  if [ ! -r "$sdloc/$file" ]; then
+    copied=true # record
+    echo "New local file: $file. Copying to SD..."
+    cp "$path" "$sdloc/$file"
+  elif $updateold; then
+    # This will work, because just record last date that sync occurred
+    [ -r "$locloc/sdlog" ] || touch "$locloc/sdlog" # if doesn't exist, make
+    datec=$(tail -n 1 "$locloc/sdlog") # date copied to SD
+    datem=$($date -r "$path" +%s) # date last modified
+    if [ -z "$datec" ]; then # initializing directory
+      if [ $datem -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changes in last 50 days
+        modified=true
+      else modified=false
+      fi
+    elif [ "$datem" -gt "$datec" ]; then
+      modified=true # modified since last copied
+    else modified=false # not modified since last copied
+    fi
+    $modified && {
+      echo "Modified local file \"$file\" since previous sync."
+      updated=true
+      cp "$path" "$sdloc/$file"
+      }
+  fi
+done
+$copied || echo "No new files found."
+$updated || echo "No recently modified files found."
+# Iterate through remote files
+for path in "$sdloc/"*.{mp3,m4a,m3u8}; do
+  [ ! -r "$path" ] && continue # e.g. if glob failed
+  file="${path##*/}"
+  if [ ! -r "$locloc/$file" ]; then
+    deleted=true # record
+    echo "Deleted local file: $file. Deleting from SD..."
+    rm "$path"
+  fi
+done
+$deleted || echo "No old files deleted."
+# Record in Playlist when last sync occurred
+date +%s >> "$locloc/sdlog"
