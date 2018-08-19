@@ -243,7 +243,7 @@ if $tex2docx; then
   else
     echo "Running pandoc to convert tex-->docx."
     $bibliography && panbib="--bibliography=$bibfile" || panbib=""
-    pandoc --bibliography="$bibfile" --output="$filestem.docx" "$filename"
+    pandoc --dpi=50 --bibliography="$bibfile" --output="$filestem.docx" "$filename"
   fi
 fi
 
