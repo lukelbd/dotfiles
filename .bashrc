@@ -1003,7 +1003,7 @@ function notebook() {
 
 # Refresh stale connections from macbook to server
 # Simply calls the 'connect' function
-function unstale() {
+function reconnect() {
   local ports
   $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
