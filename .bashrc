@@ -1347,16 +1347,32 @@ fi
 # grep that, then if the title is not already set AND we are on pane zero, request title.
 ################################################################################
 # First function that sets title
+# Note, in read, if you specify number of characters, even pressing
+# enter key will be recorded as a result; break loop by checking if it
+# was pressed
 _title_file=~/.title
 _win_num="${TERM_SESSION_ID%%t*}"
 _win_num="${_win_num#w}"
+function read_idle() {
+  # Function to wait for 3 *idle* seconds, until
+  # Other flags will be passed to command
+  local args=("$@")
+  local input=""
+  read "${args[@]}" -t 3 -N 1 char
+  while [ -n "$char" ] && [ "$char" != $'\n' ]; do
+    input+=$char
+    read -t 3 -N 1 char
+  done
+  echo "$input" # a bit different, echo instead of implicitly setting
+}
 function title() { # Cmd-I from iterm2 also works
+  # Record title from user input, or as user argument
   ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
-  if [ -n "$1" ]; then
-    _title="$1"
+  if [ -n "$1" ]; then # warning: $@ is somehow always non-empty!
+    _title="$@"
   else
-    read -t 3 -p "Window title (window $_win_num): " _title
+    _title="$(read_idle -p "Window title (window $_win_num): ")"
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
