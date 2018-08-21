@@ -95,8 +95,8 @@ inoremap <buffer> ;` \partial
 inoremap <buffer> ;~ \mathrm{d} 
 inoremap <buffer> ;! \mathrm{D} 
 "u is for unary
-inoremap <buffer> ;U {-} 
-inoremap <buffer> ;u {+} 
+inoremap <buffer> ;U ${-}$
+inoremap <buffer> ;u ${+}$
 "integration
 inoremap <buffer> ;i \int 
 inoremap <buffer> ;I \iint 

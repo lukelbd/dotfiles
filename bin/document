@@ -204,6 +204,7 @@ $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
 #------------------------------------------------------------------------------#
 if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
   # Check for earlier version
+  texdiff=true
   prefix=${filename%[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex} # parameter expensions are fire yo
   pfiles=($prefix[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex) # sorted manuscript files (glob is sorted by default)
   # Get the part of list corresponding to files that
@@ -218,7 +219,7 @@ if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
     [ -e "$dfilename" ] && rm "$dfilename"
     latexdiff "$pfilename" "$filename" > "$dfilename"
     if [ ! -r $dfilename ]; then
-      echo "Warning: Difference file not produced."
+      echo "Warning: Difference file not produced." && texdiff=false
     else
       # Finish the the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
       dfilestem="${dfilename%.tex}"
@@ -228,9 +229,12 @@ if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
       fi
       $latex -draftmode $flags "$dfilestem" &>/dev/null
       $latex $flags "$dfilestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
-      [ ! -r "$dfilestem.pdf" ] && echo "Warning: Difference PDF not produced."
+      [ ! -r "$dfilestem.pdf" ] && echo "Warning: Difference PDF not produced." && texdiff=false
     fi
   fi
+else
+  # Get difference PDF
+  texdiff=false
 fi
 
 #------------------------------------------------------------------------------#
@@ -243,16 +247,18 @@ if $tex2docx; then
   else
     echo "Running pandoc to convert tex-->docx."
     $bibliography && panbib="--bibliography=$bibfile" || panbib=""
-    pandoc --dpi=50 --bibliography="$bibfile" --output="$filestem.docx" "$filename"
+    echo pandoc --output="$filestem.docx" "$panbib" "$filename"
+    pandoc --output="$filestem.docx" "$panbib" "$filename"
   fi
 fi
 
 #------------------------------------------------------------------------------#
 # Clean things up and open the appropriate apps
 #------------------------------------------------------------------------------#
+echo "Opening files."
 cleanup
+$texdiff  && [ -e "$dfilestem.pdf" ] && open -a "$viewer" "$dfilestem.pdf" # open difference
 open -a "$viewer" "$filestem.pdf" # open new pdf
-[ ! -z "$dfilestem" ] && open -a "$viewer" "$dfilestem.pdf" # open difference
-[ -e "$filestem.docx" ] && open -F -a "pages" "$filestem.docx" # open document
+$tex2docx && [ -e "$filestem.docx" ] && open -a "pages" "$filestem.docx" # open document
 open -a $terminal # bring terminal back into focus
 
