@@ -759,12 +759,12 @@ function! s:spelltoggle(...)
   endif
   if toggle
     setlocal spell
-    nnoremap <buffer> yn ]S
-    nnoremap <buffer> yN [S
+    nnoremap <buffer> ;n ]S
+    nnoremap <buffer> ;N [S
   else
     setlocal nospell
-    nnoremap <buffer> yn <Nop>
-    nnoremap <buffer> yN <Nop>
+    nnoremap <buffer> ;n <Nop>
+    nnoremap <buffer> ;N <Nop>
   endif
 endfunction
 function! s:langtoggle(...)
@@ -1306,7 +1306,7 @@ endif
 augroup wrap "For some reason both autocommands below are necessary; fuck it
   au!
   au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
-  au BufEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
+  au BufRead  * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want

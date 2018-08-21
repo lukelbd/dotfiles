@@ -30,8 +30,7 @@ for path in "$mb_playlist/"*.{mp3,m4a,m3u8}; do
   # Replace old file of same name with modified one
   elif $modified_check; then
     if [ -r "$mb_playlist/sdlog" ]; then
-      echo "Warning: sdlog not found! Cancel sdsync? ([y]/n)"
-      yn # calls another script, asks for yes/no answer
+      yn "Warning: sdlog not found! Cancel sdsync?" # call script to confirm
       [ $? -ne 0 ] && exit 1
       touch "$mb_playlist/sdlog" # if doesn't exist, make
     fi

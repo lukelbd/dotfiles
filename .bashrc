@@ -404,7 +404,7 @@ alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 
 # Information on directories
 alias df="df -h" # disk useage
-alias eject="diskutil unmount" # eject disk on macOS
+alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
 ! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
@@ -698,8 +698,8 @@ pycomplex=$(echo "$pysimple
                     import matplotlib.pyplot as plt
                     from pyfuncs import plot")
   " | sed 's/^ *//g')
+alias iwork="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
 alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pysimple\""
-alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
 # * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
