@@ -1779,9 +1779,9 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 augroup delete
 augroup END
 "Replace commented lines; very useful when sharing manuscripts
-nnoremap <silent> <expr> _n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+nnoremap <silent> <expr> _c ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
-vnoremap <silent> <expr> _n ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+vnoremap <silent> <expr> _c ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
 "Replace consecutive spaces on current line with one space
 vnoremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
