@@ -380,11 +380,13 @@ function! s:texsurround()
   "Figure environments, and pages
   call s:target_fancy('p', "\n".'\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
   call s:target_fancy('f', "\n".'\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
-  call s:target_fancy('F', "\n".'\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
+  call s:target_fancy('f', "\n".'\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}'."\n", 1)
+  " call s:target_fancy('F', "\n".'\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
   call s:target_fancy('W', "\n".'\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}'."\n")
   "Equations
   call s:target_fancy('%', "\n".'\begin{equation*}'."\n", "\n".'\end{equation*}'."\n")
   call s:target_fancy('^', "\n".'\begin{align*}'."\n", "\n".'\end{align*}'."\n")
+  call s:target_fancy('T', "\n".'\begin{tabular}{', "}\n\n".'\end{tabular}'."\n")
   "Versions of the above, but this time puting them on own lines
   "TODO: fix these
   " * The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
@@ -401,7 +403,6 @@ function! s:texsurround()
   " call s:target_fancy(',I', '\begin{description}',              '\end{description}') "d is now open
   " call s:target_fancy(',n', '\begin{enumerate}',                '\end{enumerate}')
   " call s:target_fancy(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
-  " call s:target_fancy(',t', '\begin{tabular}',                  '\end{tabular}')
   " call s:target_fancy(',b', '\begin{block}{}',                  '\end{block}')
   " call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
   " call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')
