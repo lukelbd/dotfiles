@@ -1353,8 +1353,10 @@ _win_num="${_win_num#w}"
 function title() { # Cmd-I from iterm2 also works
   ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
-  if [ -n "$1" ]; then _title="$1"
-  else read -p "Window title (window $_win_num): " _title
+  if [ -n "$1" ]; then
+    _title="$1"
+  else
+    read -t 3 -p "Window title (window $_win_num): " _title
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
