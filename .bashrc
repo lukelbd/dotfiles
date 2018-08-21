@@ -25,7 +25,7 @@
 [[ $- != *i* ]] && return
 
 ################################################################################
-# PROMPT
+# Prompt
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
@@ -33,10 +33,11 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
   # see: https://unix.stackexchange.com/a/124408/112647
 
 ################################################################################
-# SETTINGS FOR PARTICULAR MACHINES
-# CUSTOM KEY BINDINGS AND INTERACTION
+# Settings for particular machines
+# Custom key bindings and interaction
 ################################################################################
 # Reset all aliases
+# Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
@@ -184,7 +185,7 @@ if [[ -e "$HOME/anaconda3" || -e "$HOME/miniconda3" ]]; then
 fi
 
 ################################################################################
-# WRAPPERS FOR COMMON FUNCTIONS
+# Wrappers for common functions
 ################################################################################
 # Append prompt command
 function prompt_append() { # input argument should be new command
@@ -239,56 +240,50 @@ function vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  local sessionfile=".vimsession"
-  if [[ -z "$@" ]] && [[ -r "$sessionfile" ]]; then
-    # NOTE: Crude bugfixes with sed here
+  local session=".vimsession"
+  if [[ -z "$@" ]] && [[ -r "$session" ]]; then
     # Unfold stuff after entering each buffer; for some reason folds are otherwise
     # re-closed upon openening each file
-    # Check out: cat $sessionfile | grep -n -E 'fold|zt'
-    $_macos && sed=gsed || sed=sed # only GNU sed works here
-    $sed -i "/zt/a setlocal nofoldenable" $sessionfile
-    command vim -S $sessionfile # for working with obsession
+    # Check out: cat $session | grep -n -E 'fold|zt'
+    $_macos && _sed='gsed' || _sed='sed' # only GNU sed works here
+    $_sed -i "/zt/a setlocal nofoldenable" $session
+    command vim -S $session # for working with obsession
   else
     command vim -p "$@" # when loading specific files; also open them in separate tabs
   fi
   clear # clear screen after exit
 }
-# Open wrapper
-# Opens files based on name
+# Open files optionally based on name, or revert to default behavior
+# if -a specified
 function open() {
-  # Parse input
-  local app=
-  unset files
-  local files=()
+  local files app app_default
   while [[ $# -gt 0 ]]; do
     case $1 in
-      -a|--application) local app="$2"; shift; shift; ;;
+      -a|--application) app_default="$2"; shift; shift; ;;
       -*) echo "Error: Unknown flag $1." && return 1 ;;
-      *) local files+=($1); shift; ;;
+      *)  files+=($1); shift; ;;
     esac
   done
   echo ${files[@]}
   for file in "${files[@]}"; do
-    # echo $file
-    local iapp="$app"
-    if [ -z "$iapp" ]; then
+    if [ -z "$app_default" ]; then
       case "$file" in
-        *.html) local app="Chromium.app" ;;
-        *.txt)  local app="TextEdit.app" ;;
-        *.md)   local app="Marked 2.app" ;;
-        *) echo "File type unknown for file: \"$file\"." && return 1 ;;
+        *.pdf|*.svg|*.jpg|*.jpeg|*.png) app="Preview.app" ;;
+        *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
+        *.html|*.xml|*.htm) app="Chromium.app" ;;
+        *.md) app="Marked 2.app" ;;
+        *)    app="TextEdit.app" ;;
       esac
+    else
+      app="$app_default"
     fi
     echo "Opening file \"$file\"."
-    # continue
     command open -a "$app" $file
   done
 }
 # Environment variables
-export EDITOR=vim # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
-# Use this for watching log files
-alias watch="tail -f" # actually already is a watch command
+export EDITOR=vim # default editor, nice and simple
 
 ################################################################################
 # SHELL BEHAVIOR, KEY BINDINGS
@@ -366,6 +361,7 @@ function _setup_opts() {
   shopt -s globstar                # **/ matches all subdirectories, searches recursively
   shopt -u failglob                # turn off failglob; so no error message if expansion is empty
   # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
+  # Related environment variables
   export HISTIGNORE="&:[ ]*:return *:exit *:cd *:source *:. *:bg *:fg *:history *:clear *" # don't record some commands
   export PROMPT_DIRTRIM=2 # trim long paths in prompt
   export HISTSIZE=50000
@@ -393,82 +389,22 @@ alias inputrc_ops="bind -v"           # the 'set' options, and their values
 function env() { set; } # just prints all shell variables
 
 ################################################################################
-# Magic changing stderr color
-# Turns out that iTerm2 SHELL INTEGRATION mostly handles the idea behind this;
-# want "bad commands" to be more visible
-################################################################################
-# See comment: https://stackoverflow.com/a/21320645/4970632
-# See exec summary: https://stackoverflow.com/a/18351547/4970632
-# For trap info: https://www.computerhope.com/unix/utrap.htm
-# But unreliable; there is issue with sometimes no newline generated
-
-# Uncomment stuff below to restore
-# export COLOR_RED="$(tput setaf 1)"
-# export COLOR_RESET="$(tput sgr0)"
-# exec 9>&2 # copy error descriptor onto write file descriptor 9
-# exec 8> >( # open this "process substitution" for writing on descriptor 8
-#   # while IFS='' read -r -d $'\0' line || [ -n "$line" ]; do
-#   while IFS='' read -r line || [ -n "$line" ]; do
-#     echo -e "${COLOR_RED}${line}${COLOR_RESET}" # -n is non-empty; this terminates at end
-#   done # "read" reads from standard input (whatever stream fed into this process)
-# )
-# function undirect(){ echo -ne '\0'; exec 2>&9; } # return stream 2 to "dummy stream" 9
-# function undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
-# function redirect(){
-#   local PRG="${BASH_COMMAND%% *}" # ignore flags/arguments
-#   for X in ${STDERR_COLOR_EXCEPTIONS[@]}; do
-#     [ "$X" == "${PRG##*/}" ] && return 1; # trim directories
-#   done # if special program, don't send to coloring stream
-#   exec 2>&8 # send stream 2 to the coloring stream
-# }
-# trap "redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
-# export PROMPT_COMMAND="undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
-# export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # commands
-#   brew
-#   brew\ cask
-#   youtube metadata # some scripts
-#   \\ipython \\jupyter \\python \\matlab # disabled alias versions
-#   node rhino ncl matlab # misc languages; javascript, NCL, matlab
-#   cdo conda pip easy_install python ipython jupyter notebook) # python stuff
-#   # interactive stuff gets SUPER WONKY if you try to redirect it with this script
-
-################################################################################
 # General utilties
 ################################################################################
-# GNU utilities on macbook
-if $_macos; then
-  _ls_command=gls
-  _dc_command=gdircolors
-  alias sed=" gsed"
-  alias sort="gsort"
-  alias tac="gtac" # use dis
-else
-  _ls_command=ls
-  _dc_command=dircolors
-fi
-
-# Default mac colors
-# * This page: https://geoff.greer.fm/lscolors/ converts BSD to Linux ls color string
-# * Use bin perl script lscolors-convert to go other direction -- Linux to BSD.
-#   https://github.com/AndyA/dotfiles/blob/master/bin/ls-colors-linux-to-bsd
-# * The commented-out export is Linux default (run 'dircolors'), excluding filetype-specific ones.
-# LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=34;46:cd=34;43:su=30;41:sg=30;46:tw=30;42:ow=30;43' \
-# LSCOLORS='exfxcxdxbxegedabagacad' \
-# Default linux colors
-export LSCOLORS='ExGxFxdaCxDADAadhbheFx' # read by mac ls
-export LS_COLORS='rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:' # read by GNU ls
-# Custom linux colors if available (which they should be)
+# Configure ls behavior, define colorization using dircolors
 if [ -r "$HOME/.dircolors.ansi" ]; then
+  $_macos && _dc_command=gdircolors || _dc_command=dircolors
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
-# Apply ls
+$_macos && _ls_command='gls' || _ls_command='ls'
 alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
+alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 
 # Information on directories
 alias df="df -h" # disk useage
-alias eject="diskutil unmount" # eject disk on macOS
+alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
 ! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
@@ -480,23 +416,23 @@ function dl() { # directory sizes
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
 
-# Ctags alias
-# Also used in .vimrc ctags command
-alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc"
-
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
+
+# Shell scripting utilities
+function c() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
+function empty() { for i in {1..100}; do echo; done; }
 
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
 alias restarts="last reboot | less"
 function listjobs() {
-  # [[ -z "$@" ]] && echo "Error: Must specify grep pattern." && return 1
   ps | grep "$1" | grep -v PID | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs
-} # list jobs by name
+} # list job pids using ps; alternatively can use naked 'jobs' command
 function killjobs() {
   [ $# -eq 0 ] && echo "Error: Must specify grep pattern(s)." && return 1
   for str in $@; do
@@ -504,11 +440,13 @@ function killjobs() {
     kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 } # kill jobs by name
-
-# Scripting utilities
-function calc() { bc -l <<< "$1"; } # wrapper around bc floating-point calculator
-function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
-function empty() { for i in {1..100}; do echo; done; }
+function killall() {
+  local count=$(jobs | wc -l | xargs)
+  for i in $(seq 1 $count); do
+    echo "Killing job $i..."
+    eval "kill %$i"
+  done
+} # kill jobs with the percent sign thing
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
@@ -532,6 +470,7 @@ function idiff() {
   command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ| identical)'
 }
+
 # Merge fileA and fileB into merge.{ext}
 # See this answer: https://stackoverflow.com/a/9123563/4970632
 function merge() {
@@ -552,103 +491,11 @@ function merge() {
 }
 
 ################################################################################
-# More Colors
+# Supercomputer tools
+# Add to these
 ################################################################################
-# Tool for changing iTerm2 profile before command executed, and returning
-# after executed (e.g. interactive prompts)
-# Just alias any command with 'cmdcolor' as prefix
-function cmdcolor() {
-  # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
-  # Or that's dumb and just use ITERM_PROFILE
-  newprofile=Argonaut
-  oldprofile=$ITERM_PROFILE
-  # Restore the current settings if the user ctrl-c's out of the command
-  trap ctrl_c INT
-  function ctrl_c() {
-    echo -e "\033]50;SetProfile=$oldprofile\a"
-    exit
-  }
-  # Set profile; if you want you can allow profile as $1, then call shift,
-  # and now the remaining command arguments are $@
-  echo -e "\033]50;SetProfile=$newprofile\a"
-  # Note, can use 'command' to avoid function/alias lookup
-  # See: https://stackoverflow.com/a/6365872/4970632
-  "$@" # need to quote it, might need to escape stuff
-  # Restore settings
-  echo -e "\033]50;SetProfile=$oldprofile\a"
-}
-
-# Standardize less/man/etc. colors
-# [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
-export LESS="--RAW-CONTROL-CHARS"
-[ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
-if hash tput 2>/dev/null; then
-  export LESS_TERMCAP_mb=$(tput setaf 2) # 2=green
-  export LESS_TERMCAP_md=$(tput setaf 6) # cyan; took off "bold" for these; was too light
-  export LESS_TERMCAP_me=$(tput sgr0)
-  export LESS_TERMCAP_so=$(tput bold; tput setaf 3; tput setab 4) # yellow on blue
-  export LESS_TERMCAP_se=$(tput rmso; tput sgr0)
-  export LESS_TERMCAP_us=$(tput smul; tput bold; tput setaf 7) # white
-  export LESS_TERMCAP_ue=$(tput rmul; tput sgr0)
-  export LESS_TERMCAP_mr=$(tput rev)
-  export LESS_TERMCAP_mh=$(tput dim)
-  export LESS_TERMCAP_ZN=$(tput ssubm)
-  export LESS_TERMCAP_ZV=$(tput rsubm)
-  export LESS_TERMCAP_ZO=$(tput ssupm)
-  export LESS_TERMCAP_ZW=$(tput rsupm)
-fi
-
-################################################################################
-# Utilities for converting figures between different types
-################################################################################
-# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
-#   a <N>dpi resulting bitmap file.
-# * Another option is "-background white -alpha remove", try this.
-# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
-# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
-#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
-function gif2png() {
-  for f in "$@";
-    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
-  done
-} # often needed because LaTeX can't read gif files
-function pdf2png() {
-  density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
-  done
-} # sometimes need bitmap yo
-function pdf2tiff() {
-  resolution=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
-  done
-} # alternative for converting to bitmap
-function pdf2eps() {
-  args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && \
-      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
-  done
-}
-function flatten() {
-  # this page is helpful:
-  # https://unix.stackexchange.com/a/358157/112647
-  # 1. pdftk keeps vector graphics
-  # 2. convert just converts to bitmap and eliminates transparency
-  # 3. pdf2ps piping retains quality
-  args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
-      pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
-      # convert "$f" "${f}_flat.pdf"
-      # pdftk "$f" output "${f}_flat.pdf" flatten
-  done
-}
+alias suser="squeue -u $USER"
+alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
 
 ################################################################################
 # SSH, session management, and Github stuff
@@ -669,8 +516,8 @@ euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
 midway="t-9841aa@midway2-login1.rcc.uchicago.edu" # pass: orkalluctudg
-archive="ldm@ldm.atmos.colostate.edu"             # atmos-2012
-ldm="ldm@ldm.atmos.colostate.edu"                 # atmos-2012
+archive="ldm@ldm.atmos.colostate.edu"             # user: atmos-2012
+ldm="ldm@ldm.atmos.colostate.edu"                 # user: atmos-2012
 
 # Short helper functions
 # See current ssh connections
@@ -816,45 +663,27 @@ function lrcp() {    # "copy to remote (from local); 'copy here'"
 }
 
 ################################################################################
-# Supercomputer tools 
-################################################################################
-alias suser="squeue -u $USER"
-alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
-
-################################################################################
 # Setup REPLs
 ################################################################################
 # R utilities
 # * Calling R with --slave or --interactive makes quiting totally impossible somehow.
 # * The ---always-readline prevents prompt from switching to the default prompt, but
 #   also seems to disable ctrl-d for exiting.
-alias r="R"   # because why not?
-alias ir="iR" # again, why not?
-function iR() {
-  echo 'This is an Interactive R shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  R -q --no-save # keep it simple stupid
-  # rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save
-}
-# Matlab -- just a simple alias
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/startup.m')\""
-# NCL -- and a couple other things
-# Tried temporarily changing bindings, but those are *shell* bindings; not passed to REPL
-function incl() {
-  echo "This is an Interactive NCL shell."
-  ncl -Q -n
-}
-# Perl -- hard to understand, but here it goes:
-# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
-# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
-#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
-#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
-#   for success, and if not, prints the error message. This is a build-your-own eval.
-function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
-  echo 'This is an Interactive Perl shell.'
-  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
-}
+alias r="R -q --no-save"
+alias R="R -q --no-save"
+# alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
+# Matlab, just a simple alias
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/init.m')\""
+# NCL interactive environment
+# Make sure that we encapsulate any other alias; for example, on Macs, will
+# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
+if alias ncl &>/dev/null; then
+  eval "$(alias ncl)' -Q -n'"
+else
+  alias ncl="ncl -Q -n"
+fi
+# Julia, simple alias
+alias julia="julia --banner=no"
 # iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
 pysimple=$(echo "get_ipython().magic('load_ext autoreload')
@@ -869,8 +698,19 @@ pycomplex=$(echo "$pysimple
                     import matplotlib.pyplot as plt
                     from pyfuncs import plot")
   " | sed 's/^ *//g')
+alias iwork="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
 alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pysimple\""
-alias iworkspace="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
+# Perl -- hard to understand, but here it goes:
+# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
+# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
+#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
+#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
+#   for success, and if not, prints the error message. This is a build-your-own eval.
+function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+  echo 'This is an Interactive Perl shell.'
+  ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
+  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
+}
 
 ################################################################################
 # Notebook stuff
@@ -1068,36 +908,6 @@ EOF
 }
 
 ################################################################################
-# LaTeX utilities
-################################################################################
-# Should have "compile" executable in $HOME directory; generally only use this
-# with the .vimrc remap to <Ctrl+x> (compile, and potentially compile difference)
-# and <Ctrl+w> (for HTML docs)
-# Next need way to get word count
-function wordcount() {
-  file="$1"
-  # This worked for certain templates:
-  # detexed="$(cat "$file" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
-  #   | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | grep -v .pdf | grep -v 'fig[0-9]' \
-  #   | grep -v 'empty' | grep -v '^\s*$')"
-  # Provide -e flag to ignore certain environments (e.g. abstract environment)
-  # This worked for BAMS template:
-  detexed="$(cat "$file" | \
-    detex -e align,equation | grep -v .pdf | grep -v 'fig[0-9]')"
-  echo "$detexed" # echo result
-  echo "$detexed" | wc -w # get word count
-    # * prints word count between end of abstract and start of methods
-    # * explicitly delete begin/end environments because detex won't pick them up
-    #   and use the equals sign to exclud equations
-    # * note citations are left inside, but they are always right next to other
-    #   words/not separated by whitespace so they don't affect wordcounts
-}
-# Our presentation software; install with commented line below from: http://pygobject.readthedocs.io/en/latest/getting_started.html
-# brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
-# Other tools: "impressive", and "presentation"; both should be in $HOME/bin
-alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
-
-################################################################################
 # Dataset utilities
 ################################################################################
 # Fortran tools
@@ -1189,9 +999,9 @@ function ncvarinfo() { # as above but just for one variable
 function ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  $_macos && reverse="tail -r" || reverse="tac"
-  # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $reverse | tail -n +2 | $reverse
-  command ncdump -v "$1" "$2" | $reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $reverse | less
+  $_macos && _reverse="gtac" || _reverse="tac"
+  # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
+  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse | less
     # shhh... just let it happen
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
@@ -1244,17 +1054,135 @@ function extract() {
 }
 
 ################################################################################
-# Utilities handling media and PDF files
+# Fancy Colors
 ################################################################################
-# Fun stuff
-alias forecast="curl wttr.in/Fort\ Collins" # list weather information
-alias songs="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
-alias edit='command open -a TextEdit'
-alias html='command open -a Google\ Chrome'
-alias image='command open -a Preview'
-alias pdf='command open -a PDF\ Expert'
+# Temporarily change iTerm2 profile while REPL or other command is active
+# Alias any command with 'cmdcolor' as prefix
+function cmdcolor() {
+  # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
+  # Or that's dumb and just use ITERM_PROFILE
+  newprofile=Argonaut
+  oldprofile=$ITERM_PROFILE
+  # Restore the current settings if the user ctrl-c's out of the command
+  trap ctrl_c INT
+  function ctrl_c() {
+    echo -e "\033]50;SetProfile=$oldprofile\a"
+    exit
+  }
+  # Set profile; if you want you can allow profile as $1, then call shift,
+  # and now the remaining command arguments are $@
+  echo -e "\033]50;SetProfile=$newprofile\a"
+  # Note, can use 'command' to avoid function/alias lookup
+  # See: https://stackoverflow.com/a/6365872/4970632
+  "$@" # need to quote it, might need to escape stuff
+  # Restore settings
+  echo -e "\033]50;SetProfile=$oldprofile\a"
+}
+# Standardize less/man/etc. colors
+# Used this post from thread: https://unix.stackexchange.com/a/329092/112647
+# [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
+export LESS="--RAW-CONTROL-CHARS"
+[ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
+if hash tput 2>/dev/null; then
+  export LESS_TERMCAP_md=$'\e[1;33m'     # begin blink
+  export LESS_TERMCAP_so=$'\e[01;44;37m' # begin reverse video
+  export LESS_TERMCAP_us=$'\e[01;37m'    # begin underline
+  export LESS_TERMCAP_me=$'\e[0m'        # reset bold/blink
+  export LESS_TERMCAP_se=$'\e[0m'        # reset reverse video
+  export LESS_TERMCAP_ue=$'\e[0m'        # reset underline
+  export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
+fi
+# # Magic changing stderr color
+# # Turns out that iTerm2 SHELL INTEGRATION mostly handles the idea behind this;
+# # want "bad commands" to be more visible
+# # See comment: https://stackoverflow.com/a/21320645/4970632
+# # See exec summary: https://stackoverflow.com/a/18351547/4970632
+# # For trap info: https://www.computerhope.com/unix/utrap.htm
+# # But unreliable; there is issue with sometimes no newline generated
+# # Uncomment stuff below to restore
+# export COLOR_RED="$(tput setaf 1)"
+# export COLOR_RESET="$(tput sgr0)"
+# exec 9>&2 # copy error descriptor onto write file descriptor 9
+# exec 8> >( # open this "process substitution" for writing on descriptor 8
+#   # while IFS='' read -r -d $'\0' line || [ -n "$line" ]; do
+#   while IFS='' read -r line || [ -n "$line" ]; do
+#     echo -e "${COLOR_RED}${line}${COLOR_RESET}" # -n is non-empty; this terminates at end
+#   done # "read" reads from standard input (whatever stream fed into this process)
+# )
+# function undirect(){ echo -ne '\0'; exec 2>&9; } # return stream 2 to "dummy stream" 9
+# function undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
+# function redirect(){
+#   local PRG="${BASH_COMMAND%% *}" # ignore flags/arguments
+#   for X in ${STDERR_COLOR_EXCEPTIONS[@]}; do
+#     [ "$X" == "${PRG##*/}" ] && return 1; # trim directories
+#   done # if special program, don't send to coloring stream
+#   exec 2>&8 # send stream 2 to the coloring stream
+# }
+# trap "redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
+# export PROMPT_COMMAND="undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
+# export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # commands
+#   brew
+#   brew\ cask
+#   youtube metadata # some scripts
+#   \\ipython \\jupyter \\python \\matlab # disabled alias versions
+#   node rhino ncl matlab # misc languages; javascript, NCL, matlab
+#   cdo conda pip easy_install python ipython jupyter notebook) # python stuff
+#   # interactive stuff gets SUPER WONKY if you try to redirect it with this script
 
-# Extracting PDF annotations
+################################################################################
+# Utilities related to preparing PDF documents
+# Converting figures between different types, other pdf tools, word counts
+################################################################################
+# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
+#   a <N>dpi resulting bitmap file.
+# * Another option is "-background white -alpha remove", try this.
+# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
+# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
+#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
+function gif2png() {
+  for f in "$@";
+    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
+  done
+} # often needed because LaTeX can't read gif files
+function pdf2png() {
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
+  done
+} # sometimes need bitmap yo
+function pdf2tiff() {
+  resolution=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
+  done
+} # alternative for converting to bitmap
+function pdf2eps() {
+  args=("$@")
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && \
+      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
+  done
+}
+function flatten() {
+  # this page is helpful:
+  # https://unix.stackexchange.com/a/358157/112647
+  # 1. pdftk keeps vector graphics
+  # 2. convert just converts to bitmap and eliminates transparency
+  # 3. pdf2ps piping retains quality
+  args=("$@")
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
+      pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
+      # convert "$f" "${f}_flat.pdf"
+      # pdftk "$f" output "${f}_flat.pdf" flatten
+  done
+}
+
+# Extract PDF annotations
 function unannotate() {
   local original=$1
   local final=${original%.pdf}_unannotated.pdf
@@ -1265,69 +1193,28 @@ function unannotate() {
   rm uncompressed.pdf stripped.pdf
 }
 
-# Sync a local directory with files on SD card
-# This function will only modify files on the SD card, never the local directory
-function sdsync() {
-  # Behavior option: check for modified files?
-  # Only problem: file "modified" every time transferred to SD card
-  shopt -u nullglob # no nullglob
-  updateold=true
-  # Can change this, but default will be to sync playlist
-  sdcard="NO NAME" # edit when get new card
-  sdloc="/Volumes/$sdcard/Playlist" # sd data
-  [ ! -d "$sdloc" ] && echo "Error: SD card not found." && return 1
-  locloc="$HOME/Playlist" # local data
-  echo "SD Location: $sdloc"
-  echo "Local location: $locloc"
-  # Iterate through local files
-  copied=false # copied anything?
-  updated=false # updated anything?
-  deleted=false # deleted anything?
-  $_macos && date=gdate || date=date
-  for path in "$locloc/"*.{mp3,m4a,m3u8}; do
-    [ ! -r "$path" ] && continue # e.g. if glob failed
-    file="${path##*/}"
-    if [ ! -r "$sdloc/$file" ]; then
-      copied=true # record
-      echo "New local file: $file. Copying to SD..."
-      cp "$path" "$sdloc/$file"
-    elif $updateold; then
-      # This will work, because just record last date that sync occurred
-      [ -r "$locloc/sdlog" ] || touch "$locloc/sdlog" # if doesn't exist, make
-      datec=$(tail -n 1 "$locloc/sdlog") # date copied to SD
-      datem=$($date -r "$path" +%s) # date last modified
-      if [ -z "$datec" ]; then # initializing directory
-        if [ $datem -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changes in last 50 days
-          modified=true
-        else modified=false
-        fi
-      elif [ "$datem" -gt "$datec" ]; then
-        modified=true # modified since last copied
-      else modified=false # not modified since last copied
-      fi
-      $modified && {
-        echo "Modified local file \"$file\" since previous sync."
-        updated=true
-        cp "$path" "$sdloc/$file"
-        }
-    fi
-  done
-  $copied || echo "No new files found."
-  $updated || echo "No recently modified files found."
-  # Iterate through remote files
-  for path in "$sdloc/"*.{mp3,m4a,m3u8}; do
-    [ ! -r "$path" ] && continue # e.g. if glob failed
-    file="${path##*/}"
-    if [ ! -r "$locloc/$file" ]; then
-      deleted=true # record
-      echo "Deleted local file: $file. Deleting from SD..."
-      rm "$path"
-    fi
-  done
-  $deleted || echo "No old files deleted."
-  # Record in Playlist when last sync occurred
-  date +%s >> "$locloc/sdlog"
+# Rudimentary wordcount with detex
+function wctex() {
+  file="$1"
+  # Below worked for certain templates:
+  # Explicitly delete begin/end environments because detex won't pick them up
+  # and use the equals sign to exclude equations
+  # detexed="$(cat "$file" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
+  #   | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | grep -v .pdf | grep -v 'fig[0-9]' \
+  #   | grep -v 'empty' | grep -v '^\s*$')"
+  # Below worked for BAMS template, gets count between end of abstract
+  # and start of methods
+  # The -e flag to ignore certain environments (e.g. abstract environment)
+  detexed="$(cat "$file" | \
+    detex -e align,equation | grep -v .pdf | grep -v 'fig[0-9]')"
+  echo "$detexed" | xargs # print result in one giant line
+  echo "$detexed" | wc -w # get word count
 }
+
+# ***Other Tools*** are "impressive" and "presentation", and both should be in bin
+# Homebrew presentation software; below installs it, from http://pygobject.readthedocs.io/en/latest/getting_started.html
+# brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
+alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
 ################################################################################
 # FZF fuzzy file completion tool
@@ -1335,7 +1222,6 @@ function sdsync() {
 ################################################################################
 # Run installation script; similar to the above one
 if [ -f ~/.fzf.bash ]; then
-  #----------------------------------------------------------------------------#
   # See man page for --bind information
   # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
   #   key bindings will enabled multiple selection
@@ -1436,8 +1322,6 @@ if [ -f ~/.fzf.bash ]; then
           }"
     complete -o nospace -F _fzf_complete_$_command $_command
   done
-  #----------------------------------------------------------------------------#
-  # Finished
   echo "Enabled fuzzy file completion."
 fi
 
@@ -1521,6 +1405,9 @@ $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
 #   function _update_ps1() { PS1="$(powerline-shell $?)"; }
 #   [ "$TERM" != "linux" ] && PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 #   }
+# Fun stuff
+alias playlist="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
+alias forecast="curl wttr.in/Fort\ Collins" # list weather information
 # Messages
 title_update # force update in case anything changed it, e.g. shell integration
 $_macos && { # first the MacOS options

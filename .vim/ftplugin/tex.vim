@@ -5,10 +5,14 @@
 "------------------------------------------------------------------------------"
 "Disable latex spellchecking in comments (works for default syntax file)
 let g:tex_comment_nospell=1
-"Configure concealment
-" let user determine which classes of concealment will be supported
-"   a=accents/ligatures b=bold/italics d=delimiters m=math symbols  g=Greek  s=superscripts/subscripts
-let g:tex_conceal='amgsS'
+"Restrict concealmeant to just symbols and stuff
+" a=accents/ligatures
+" b=bold/italics
+" d=delimiters (e.g. $$ math mode)
+" m=math symbols
+" g=Greek
+" s=superscripts/subscripts
+let g:tex_conceal='agm'
 " let g:tex_conceal= 'abdmgsS'
 "With foldmethod=syntax, can now fold chapters and stuff
 let g:tex_fold_enable=1
@@ -24,8 +28,8 @@ let g:tex_stylish=1
 "------------------------------------------------------------------------------"
 "Commands for compiling latex
 "Use C-z for compiling normally, and <Leader>z for compiling to word document.
-noremap <silent> <buffer> <C-z> :w<CR>:exec('!clear; set -x; compile '.shellescape(@%).' false')<CR>
-noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; ~/bin/compile '.shellescape(@%).' true')<CR>
+noremap <silent> <buffer> <C-z> :w<CR>:exec('!clear; set -x; document '.shellescape(@%).' false')<CR>
+noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; document '.shellescape(@%).' true')<CR>
 "------------------------------------------------------------------------------"
 "Font sizing
 inoremap <buffer> ;1 \tiny 
@@ -91,8 +95,8 @@ inoremap <buffer> ;` \partial
 inoremap <buffer> ;~ \mathrm{d} 
 inoremap <buffer> ;! \mathrm{D} 
 "u is for unary
-inoremap <buffer> ;U {-} 
-inoremap <buffer> ;u {+} 
+inoremap <buffer> ;U ${-}$
+inoremap <buffer> ;u ${+}$
 "integration
 inoremap <buffer> ;i \int 
 inoremap <buffer> ;I \iint 
@@ -109,8 +113,11 @@ inoremap <buffer> ;j _
 inoremap <buffer> ;, \,
 "Insert a line (feel free to modify width)
 "Will prompt user for fraction of page
-inoremap <buffer> <expr> ;_ '{\centering\noindent\rule{'
-  \.input('fraction: ').'\paperwidth}{0.7pt}}'
+"Note centering fails inside itemize environments, so use begin/end center instead
+" inoremap <buffer> <expr> ;_ '{\centering\noindent\rule{'
+"   \.input('fraction: ').'\textwidth}{0.7pt}}'
+inoremap <buffer> <expr> ;_ '\begin{center}\noindent\rule{'
+    \.input('fraction: ').'\textwidth}{0.7pt}\end{center}'
 "centerline (can modify this; \rule is simple enough to understand)
 "------------------------------------------------------------------------------"
 "C-@ is same as C-Space (google it)
