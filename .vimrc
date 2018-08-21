@@ -205,10 +205,11 @@ nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
 nnoremap Y y$
 nnoremap D D
 "For some reason this is necessary or there is a cursor delay when hitting cc
-nnoremap cc cc
-nnoremap c<CR> s
+nnoremap cc s
+nnoremap cC cc
 "Replace the currently highlighted text
 vnoremap cc s
+vnoremap cC s
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
@@ -394,7 +395,8 @@ Plug 'JuliaEditorSupport/julia-vim'
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
-" Plug 'vim-scripts/matchit.zip' "now track my own
+Plug 'vim-scripts/matchit.zip'
+Plug 'andymass/vim-matchup' "better matching, see github
 "------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'
@@ -672,6 +674,13 @@ if has_key(g:plugs, "vim-sneak")
 endif
 
 "###############################################################################
+"MATHUP
+if has_key(g:plugs, "vim-matchup") "better matching, see github
+  let g:matchup_matchparen_enabled = 1
+  let g:matchup_transmute_enabled = 1
+endif
+
+"###############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
 "Note: If enter is mapped delimitmate will turn off its auto expand
 "enter mapping.
@@ -750,12 +759,12 @@ function! s:spelltoggle(...)
   endif
   if toggle
     setlocal spell
-    nnoremap <buffer> yn ]S
-    nnoremap <buffer> yN [S
+    nnoremap <buffer> ;n ]S
+    nnoremap <buffer> ;N [S
   else
     setlocal nospell
-    nnoremap <buffer> yn <Nop>
-    nnoremap <buffer> yN <Nop>
+    nnoremap <buffer> ;n <Nop>
+    nnoremap <buffer> ;N <Nop>
   endif
 endfunction
 function! s:langtoggle(...)
@@ -1215,7 +1224,7 @@ if has_key(g:plugs, "syntastic")
       call extend(checkers, split(split(result[-1], ':')[-1], '\s\+')[:1])
     endif
     if a:0 "just echo the result
-      echo 'Checkers: '.join(checkers, ', ')
+      echo 'Checkers: '.join(checkers[:-2], ', ')
     else
       return checkers
     endif
@@ -1297,7 +1306,7 @@ endif
 augroup wrap "For some reason both autocommands below are necessary; fuck it
   au!
   au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
-  au BufEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
+  au BufRead  * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
@@ -1797,12 +1806,12 @@ vnoremap <silent> _e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 vnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 nnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace all tabs
-vnoremap <expr> <silent> \<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
-nnoremap <expr> <silent> \<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+vnoremap <expr> <silent> _<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+nnoremap <expr> <silent> _<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 "Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> _' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> _" :silent! %s/“/``/g<CR>:silent! %s/”/'/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> _" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
 nnoremap <silent> _\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 nnoremap <silent> _- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 "Replace useless BibTex entries
@@ -1931,8 +1940,8 @@ vnoremap gu gu
 nnoremap gU gUiw
 vnoremap gU gU
 vnoremap gl ~
-nnoremap <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-nnoremap <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
+nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
+nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gl <Plug>cap1
 nmap gt <Plug>cap2
 " nnoremap gl ~h
