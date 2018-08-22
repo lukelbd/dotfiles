@@ -33,24 +33,31 @@
 #   now show in short format, without help information, and with branch info
 # 'fix':
 #   fix user/email information through every commit in repository
-# 'tree':  = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
+# 'tree': = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
 #   --oneline --decorate --color --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) \
 #   %C(bold blue)<%an>%Creset' $@ 2>/dev/null"
+# 'giant':
+#   when you commit giant files (i.e. over 100MB), even after you delete them,
+#   you won't be able to push to Github because they were tracked and are found
+#   in .vim. use this to delete file/directory throughout history. from:
+#   https://stackoverflow.com/a/23657759/4970632
 #------------------------------------------------------------------------------;
 [alias]
 	short    = !git status --short --branch $@
 	remotes  = !git remote --verbose $@
 	branches = !git branch --all --verbose $@
-	stat   = !git diff --stat $@
-	wtf    = !git-wtf $@
-	fix    = !git-fix $@
-	root   = !git rev-parse --show-toplevel
+	stat     = !git diff --stat $@
+	wtf      = !git-wtf $@
+	fix      = !git-fix $@
+	root     = !git rev-parse --show-toplevel
 	commands = "!git help -a | grep \"^  [a-z]\" | tr ' ' '\\n' | grep -v \"^$\" | sort"
-	update = "!git stash clear; git stash; git merge $@; git stash pop"
+	update   = "!git stash clear; git stash; git merge $@; git stash pop"
 	tree = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
 		--oneline --decorate --color $@ 2>/dev/null"
 	twig = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
 		--decorate --color $@ 2>/dev/null"
+	huge = "!git filter-branch --index-filter 'git rm -r --cached \
+		--ignore-unmatch $1'"
 	get  = "!git branch -r | grep -v '\\->' | while read remote; do \
 		if ! git branch -l | grep \"${remote#origin/}\" &>/dev/null; \
 		then git branch --track \"${remote#origin/}\" \"$remote\"; \
