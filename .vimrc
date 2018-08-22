@@ -1587,6 +1587,7 @@ augroup END
 set expandtab "says to always expand \t to their length in <SPACE>'s!
 set autoindent "indents new lines
 set backspace=indent,eol,start "backspace by indent - handy
+nnoremap <silent> <Leader><Tab> :set expandtab!<CR>
 "VIM configures backspace-delete by tabs
 "We implement our own function to forewards-delete by tabs
 function! s:foreward_delete()
