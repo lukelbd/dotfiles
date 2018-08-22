@@ -649,8 +649,7 @@ function rlcp() { # "copy to local (from remote); 'copy there'"
   dest="$(compressuser ${!#})" # last value
   dest="${dest//\ /\\\ }"      # escape whitespace manually
   echo "(Port $port) Copying ${array[@]} on this server to home server at: $dest..."
-  return
-  command scp -o StrictHostKeyChecking=no -P$port "${array[@]}" ${USER}@localhost:"$dest"
+  command scp -o StrictHostKeyChecking=no -P$port ${array[@]} ${USER}@localhost:"$dest"
 }
 # Copy from local macbook to <this server>
 function lrcp() { # "copy to remote (from local); 'copy here'"
