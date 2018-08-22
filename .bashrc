@@ -636,25 +636,29 @@ function ssh_fancy() {
      echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
 # Copy from <this server> to local macbook
-function rlcp() {    # "copy to local (from remote); 'copy there'"
+# NOTE: Often want to copy result of glob expansion.
+# NOTE: Below, we use the bash parameter expansion ${!#} -->
+# 'variable whose name is result of "$#"' --> $n where n is the number
+# of args. Also can do math inside param expansion indexing.
+function rlcp() { # "copy to local (from remote); 'copy there'"
   local port file dest
   $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
-  [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
   [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  port=$(cat $_port_file) # port from most recent login
-  file="$1"                 # second to last
-  dest="$(compressuser $2)" # last value
-  dest="${dest//\ /\\\ }"   # escape whitespace manually
-  echo "(Port $port) Copying $file on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port "$file" ${USER}@localhost:"$dest"
+  port=$(cat $_port_file)      # port from most recent login
+  array=${@:1:$#-1}            # result of user input glob expansion, or just one file
+  dest="$(compressuser ${!#})" # last value
+  dest="${dest//\ /\\\ }"      # escape whitespace manually
+  echo "(Port $port) Copying ${array[@]} on this server to home server at: $dest..."
+  return
+  command scp -o StrictHostKeyChecking=no -P$port "${array[@]}" ${USER}@localhost:"$dest"
 }
 # Copy from local macbook to <this server>
-function lrcp() {    # "copy to remote (from local); 'copy here'"
+function lrcp() { # "copy to remote (from local); 'copy here'"
   local port file dest
   $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
   [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
   [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  port=$(cat $_port_file) # port from most recent login
+  port=$(cat $_port_file)   # port from most recent login
   dest="$1"                 # last value
   file="$(compressuser $2)" # second to last
   file="${file//\ /\\\ }"   # escape whitespace manually
@@ -1395,9 +1399,9 @@ function title_update() {
     _title="$(cat $_title_file)" # only text in file, is this current session's title
   fi
   # Update or re-declare
-  _title="$(echo "$_title" | sed 's/^[ \t]*//;s/[ \t]*$//')"
+  _title="$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')"
   if [ -z "$_title" ]; then title # reset title
-  else echo -ne "\033]0;"$_title"\007" # re-assert existing title, in case changed
+  else echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
   fi
 }
 # New window; might have closed one and opened another, so declare new title
