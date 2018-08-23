@@ -121,28 +121,30 @@ inoremap <C-p> <C-r>"
 "Use a function because don't want to trigger those annoying
 "InsertLeave/InsertEnter autocommands, it's more flexible, and
 "it preserves everything as a single 'undo' command
-function! s:insert_bs()
+function! s:word_back(key)
   let cursor = col('.')-1 "index along text string
   let text = getline('.')[:cursor-1]
   let pos  = match(text,'\S\+\s*$')
   if pos>=0
-    return repeat("\<BS>", len(text)-pos)
+    return repeat(a:key, len(text)-pos)
   else
     return ''
   endif
 endfunction
-function! s:insert_del()
+function! s:word_forward(key)
   let cursor = col('.')-1 "index along text string
   let text = getline('.')[cursor:]
   let pos  = match(text,'^\S\+\s*\zs')
   if pos>=0
-    return repeat("\<Delete>", pos)
+    return repeat(a:key, pos)
   else
     return ''
   endif
 endfunction
-inoremap <expr> <C-b> <sid>insert_bs()
-inoremap <expr> <C-f> <sid>insert_del()
+inoremap <expr> <C-r> <sid>word_back("\<BS>")
+inoremap <expr> <C-g> <sid>word_forward("\<Delete>")
+inoremap <expr> <C-b> <sid>word_back("\<Left>")
+inoremap <expr> <C-f> <sid>word_forward("\<Right>")
 
 "##############################################################################"
 "HELPFUL FUNCTIONS FOR USER
