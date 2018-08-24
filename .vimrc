@@ -136,13 +136,14 @@ function! s:word_back(key)
     return prefix.''
   endif
 endfunction
+
 function! s:word_forward(key)
   let prefix = ''
   let cursor = col('.')-1 "index along text string
   let text = getline('.')[cursor:] "will be empty if e.g. cursor is on eol
   if match(text,'^\S*\s*$')!=-1 "no more word beginnings
-    let prefix = repeat(a:key, 1+len(text)) "moves us to next line
-    let text   = getline(line('.')+1)
+    let prefix = repeat(a:key, len(text)) "moves us to next line
+    let text   = ' '.getline(line('.')+1) "the space lets us move to word starts on first column
   endif
   let pos  = match(text,'^\S*\s\+\zs')
   if pos>=0
