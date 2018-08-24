@@ -7,6 +7,13 @@
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
 "Run current script in shell
 nnoremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
+"Abbreviations
+"Don't use the nore thing, otherwise they only work when exit right after typing
+inoreabbrev <buffer> true  True
+inoreabbrev <buffer> false False
+inoreabbrev <buffer> none  None
+inoreabbrev <buffer> nan   np.nan
+inoreabbrev <buffer> inf   np.inf
 "Builtin python ftplugin syntax option; these should be provided with VIM by default
 let g:python_highlight_all=1
 "Convert key=value to 'key':value, and vice versa, on current line or within selection

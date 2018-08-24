@@ -81,9 +81,6 @@ augroup insertenter
   au!
   au InsertEnter * let b:insertenter=winsaveview()
 augroup END
-"Simple maps to paste stuff in register and undo stuf
-inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
-inoremap <C-p> <C-r>"
 "Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
@@ -100,20 +97,70 @@ function! s:tab_reset()
 endfunction
 "Commands that when pressed expand to the default complete menu options:
 "Keystrokes that close popup menu (note that insertleave triggers tabreset)
-inoremap <expr> <BS>    !pumvisible() ? "\<BS>"    : <sid>tab_reset()."\<C-e>\<BS>"
-inoremap <expr> <Space> !pumvisible() ? "\<Space>" : <sid>tab_reset()."\<Space>"
+"WARNING: The space remap and tab remap break insert mode abbreviations!
+"Need to trigger them manually with <C-]> (see :help i_Ctrl-])
+inoremap <expr> <BS>    !pumvisible() ? "\<BS>"          : <sid>tab_reset()."\<C-e>\<BS>"
+inoremap <expr> <Space> !pumvisible() ? "\<C-]>\<Space>" : <sid>tab_reset()."\<C-]>\<Space>"
 "Incrementing items in menu
-inoremap <expr> <C-j>             !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <C-k>             !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
-inoremap <expr> <Up>              !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
-inoremap <expr> <Down>            !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
+inoremap <expr> <C-j>             !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
+inoremap <expr> <Up>              !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
+inoremap <expr> <Down>            !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
-"Always accept, choose default menu item if necessary
-inoremap <expr> <Tab> !pumvisible() ? "\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-y>".<sid>tab_reset()
-"Accept only if we have explicitly scrolled down to something
-"Also prevents annoying delay where otherwise, have to press enter twice when popup menu open
-inoremap <expr> <CR>  !pumvisible() ? "\<CR>" : b:menupos==0 ? "\<C-e>\<CR>" : "\<C-y>".<sid>tab_reset()
+"Tab always means 'accept', and choose default menu item if necessary
+inoremap <expr> <Tab> !pumvisible() ? "\<C-]>\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-y>".<sid>tab_reset()
+"Enter means 'accept' only when we have explicitly scrolled down to something
+"Also prevent annoying delay where otherwise, have to press enter twice when popup menu open
+inoremap <expr> <CR>  !pumvisible() ? "\<C-]>\<CR>" : b:menupos==0 ? "\<C-e>\<C-]>\<CR>" : "\<C-y>".<sid>tab_reset()
+"Miscelaneous map, undoes last change
+inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
+"Map to backspace by *beginning* of *WORDs*
+"Use a function because don't want to trigger those annoying
+"InsertLeave/InsertEnter autocommands, it's more flexible, and
+"it preserves everything as a single 'undo' command
+function! s:word_back(key)
+  let prefix = ''
+  let cursor = col('.')-1 "index along text string
+  let text = (cursor>0 ? getline('.')[:cursor-1] : '')
+  if match(text,'^\s*$')!=-1
+    let prefix = repeat(a:key, 1+len(text)) "moves us to previous line; also note cursor can be on eol char
+    let text   = getline(line('.')-1)
+  endif
+  let pos = match(text,'\S\+\s*$')
+  if pos>=0
+    return prefix.(repeat(a:key, len(text)-pos))
+  else
+    return prefix.''
+  endif
+endfunction
+function! s:word_forward(key)
+  let prefix = ''
+  let cursor = col('.')-1 "index along text string
+  let text = getline('.')[cursor:] "will be empty if e.g. cursor is on eol
+  if match(text,'^\S*\s*$')!=-1 "no more word beginnings
+    let prefix = repeat(a:key, len(text)) "moves us to next line
+    let text   = ' '.getline(line('.')+1) "the space lets us move to word starts on first column
+  endif
+  let pos  = match(text,'^\S*\s\+\zs')
+  if pos>=0
+    return prefix.(repeat(a:key, pos))
+  else
+    return prefix.''
+  endif
+endfunction
+"Apply maps, and simply use row of keys above j/k et cetera
+"Note pressing Ctrl-i in iTerm sends F3; see first few lines of vimrc
+inoremap <expr> <F3>  <sid>word_back("\<Left>")
+inoremap <expr> <C-o> <sid>word_forward("\<Right>")
+inoremap <expr> <C-u> <sid>word_back("\<BS>")
+inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
+
+"##############################################################################"
+"HELPFUL FUNCTIONS FOR USER
+function! Reverse(text) "want this to be accessible!
+  return join(reverse(split(a:text, '.\zs')), '')
+endfunction
 
 "##############################################################################"
 "DYING BREATH
@@ -1560,7 +1607,7 @@ endif
 augroup saving
 augroup END
 nnoremap <silent> <C-s> :w!<CR>
-nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-b to compile instead."<CR>
+nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-z to compile instead."<CR>
 nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 

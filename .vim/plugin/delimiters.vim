@@ -49,13 +49,13 @@ function! s:outofdelim(n)
   endif
 endfunction
 "Apply remaps
-"Mnemonic here is C-o gets us out; currently not used by any other maps!
+"Original mnemonic was C-o gets us OUT!
 imap jk <C-o>
-inoremap <expr> <C-o> !pumvisible() ? <sid>outofdelim(1)
-  \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1) 
-  \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
 inoremap kk k
 inoremap jj j
+" inoremap <expr> <C-o> !pumvisible() ? <sid>outofdelim(1)
+"   \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1)
+"   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
 
 "------------------------------------------------------------------------------"
 "Fancy builtin delimitMate version
