@@ -117,28 +117,38 @@ inoremap <expr> <CR>  !pumvisible() ? "\<C-]>\<CR>" : b:menupos==0 ? "\<C-e>\<C-
 "Simple maps to paste stuff in register and undo stuf
 inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
 inoremap <C-p> <C-r>"
-"Map to backspace by word
+"Map to backspace by *beginning* of *WORDs*
 "Use a function because don't want to trigger those annoying
 "InsertLeave/InsertEnter autocommands, it's more flexible, and
 "it preserves everything as a single 'undo' command
 function! s:word_back(key)
+  let prefix = ''
   let cursor = col('.')-1 "index along text string
-  let text = getline('.')[:cursor-1]
-  let pos  = match(text,'\S\+\s*$')
+  let text = (cursor>0 ? getline('.')[:cursor-1] : '')
+  if match(text,'^\s*$')!=-1
+    let prefix = repeat(a:key, 1+len(text)) "moves us to previous line; also note cursor can be on eol char
+    let text   = getline(line('.')-1)
+  endif
+  let pos = match(text,'\S\+\s*$')
   if pos>=0
-    return repeat(a:key, len(text)-pos)
+    return prefix.(repeat(a:key, len(text)-pos))
   else
-    return ''
+    return prefix.''
   endif
 endfunction
 function! s:word_forward(key)
+  let prefix = ''
   let cursor = col('.')-1 "index along text string
-  let text = getline('.')[cursor:]
-  let pos  = match(text,'^\S\+\s*\zs')
+  let text = getline('.')[cursor:] "will be empty if e.g. cursor is on eol
+  if match(text,'^\S*\s*$')!=-1 "no more word beginnings
+    let prefix = repeat(a:key, 1+len(text)) "moves us to next line
+    let text   = getline(line('.')+1)
+  endif
+  let pos  = match(text,'^\S*\s\+\zs')
   if pos>=0
-    return repeat(a:key, pos)
+    return prefix.(repeat(a:key, pos))
   else
-    return ''
+    return prefix.''
   endif
 endfunction
 inoremap <expr> <C-r> <sid>word_back("\<BS>")
