@@ -658,8 +658,8 @@ function lrcp() { # "copy to remote (from local); 'copy here'"
   [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
   [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)   # port from most recent login
-  dest="$1"                 # last value
-  file="$(compressuser $2)" # second to last
+  dest="$2"                 # last value
+  file="$(compressuser $1)" # second to last
   file="${file//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
