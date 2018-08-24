@@ -113,10 +113,8 @@ inoremap <expr> <Tab> !pumvisible() ? "\<C-]>\<Tab>" : b:menupos==0 ? "\<C-n>\<C
 "Enter means 'accept' only when we have explicitly scrolled down to something
 "Also prevent annoying delay where otherwise, have to press enter twice when popup menu open
 inoremap <expr> <CR>  !pumvisible() ? "\<C-]>\<CR>" : b:menupos==0 ? "\<C-e>\<C-]>\<CR>" : "\<C-y>".<sid>tab_reset()
-"Miscelaneous insert mode maps
-"Simple maps to paste stuff in register and undo stuf
+"Miscelaneous map, undoes last change
 inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
-inoremap <C-p> <C-r>"
 "Map to backspace by *beginning* of *WORDs*
 "Use a function because don't want to trigger those annoying
 "InsertLeave/InsertEnter autocommands, it's more flexible, and
@@ -136,7 +134,6 @@ function! s:word_back(key)
     return prefix.''
   endif
 endfunction
-
 function! s:word_forward(key)
   let prefix = ''
   let cursor = col('.')-1 "index along text string
@@ -152,10 +149,12 @@ function! s:word_forward(key)
     return prefix.''
   endif
 endfunction
-inoremap <expr> <C-r> <sid>word_back("\<BS>")
-inoremap <expr> <C-g> <sid>word_forward("\<Delete>")
-inoremap <expr> <C-b> <sid>word_back("\<Left>")
-inoremap <expr> <C-f> <sid>word_forward("\<Right>")
+"Apply maps, and simply use row of keys above j/k et cetera
+"Note pressing Ctrl-i in iTerm sends F3; see first few lines of vimrc
+inoremap <expr> <F3>  <sid>word_back("\<Left>")
+inoremap <expr> <C-o> <sid>word_forward("\<Right>")
+inoremap <expr> <C-u> <sid>word_back("\<BS>")
+inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
 
 "##############################################################################"
 "HELPFUL FUNCTIONS FOR USER
