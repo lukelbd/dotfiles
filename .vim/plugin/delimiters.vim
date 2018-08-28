@@ -52,10 +52,10 @@ endfunction
 "Original mnemonic was C-o gets us OUT!
 inoremap kk k
 inoremap jj j
-" imap jk <C-o>
 inoremap <expr> jk !pumvisible() ? <sid>outofdelim(1)
   \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1)
   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
+" imap jk <C-o> "don't use this one
 
 "------------------------------------------------------------------------------"
 "Fancy builtin delimitMate version

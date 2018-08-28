@@ -30,8 +30,8 @@
 "Todo: Make sure python2 and python3 shebangs work
 "Maybe re-implement: if getline(1)=~"#!.*python[23]" | let force="--language=python"
 "------------------------------------------------------------------------------"
-let g:has_ctags = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-if !g:has_ctags
+call system("type ctags &>/dev/null")
+if v:shell_error "exit code
   finish
 endif
 augroup ctags
@@ -69,8 +69,8 @@ nnoremap <silent> <Leader>C :ReadTags<CR>
 "We call ctags in number mode (i.e. return line number instead of search pattern)
 function! s:ctagcmd(...)
   let flags=(a:0 ? a:1 : '') "extra flags
-  return "ctags -n --langmap=vim:+.vimrc,sh:+.bashrc ".flags." "
-    \."-f - ".shellescape(expand('%:p'))." | cut -d '\t' -f1,3-4 "
+  return "ctags --excmd=number --langmap=vim:+.vimrc,sh:+.bashrc ".flags." "
+    \."-f - ".shellescape(expand('%:p'))." 2>/dev/null | cut -d '\t' -f1,3-4 "
   " \." | command grep '^[^\t]*\t".expand('%:p')."' "this filters to only tags from 'this file'
 endfunction
 
@@ -99,16 +99,22 @@ endfunction
 function! s:ctagsread()
   "First get simple list of lists; tag properties sorted alphabetically by
   "identifier, and numerically by line number
-  "To filter by category, use: filter(b:ctags, 'v:val[2]=="<category>"')
-  "First bail out if filetype is bad
+  "* To filter by category, use: filter(b:ctags, 'v:val[2]=="<category>"')
+  "* First bail out if filetype is bad
   if exists('g:tags_ignore') && index(g:tags_ignore, &ft)!=-1
     return
   endif
   let flags=(getline(1)=~'#!.*python[23]' ? '--language-force=python' : '')
+  "Call system command
+  "Warning: In MacVim, instead what gets called is:
+  "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ctags"
+  "and then for some reason ctags can't accept -n flag or --excmd=number flag.
+  "Warning: To test if ctags worked, want exit status of *first* command in pipeline (i.e. ctags)
+  "but instead we get cut/sed statuses. If ctags returns error
   let ctags=map(split(system(s:ctagcmd(flags)." | sed 's/;\"\t/\t/g'"), '\n'), "split(v:val,'\t')")
-  if len(ctags)==0 "don't want warning message for files without tags!
-    " echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
+  if len(ctags)==0 || len(ctags[0])==0 "don't want warning message for files without tags!
     return
+    "echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
   endif
   let b:ctags_alph=sort(deepcopy(ctags), 's:alphsort') "sort numerically by *position 1* in the sub-arrays
   let b:ctags_line=sort(deepcopy(ctags), 's:linesort') "sort alphabetically by *position 0* in the sub-arrays
