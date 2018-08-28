@@ -18,11 +18,11 @@ shopt -s nullglob # glob-expand into zero entries
 latex=pdflatex # by default use pdflatex
 bibtex=bibtex # for compiling bibliographies
 templates="$HOME/latex" # location of LaTeX templates and style files
-filename="$1" # the current file
-tex2docx="$2" # option
+filename="$1"   # the current file
+texdiff="$2" # get difference pdf?
+tex2docx="$3"   # option
 [ $TERM_PROGRAM == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
-[ -z "$filename" ]   && echo "Error: Must call compile-script with filename."                                 && exit 1
-[ -z "$tex2docx" ]   && echo "Error: Must call compile-script with true/false option for converting to docx." && exit 1
+[ $# -ne 3 ] && echo "Error: Script requires exactly 3 arguments."
 [ ! -r "$filename" ] && echo "Error: File \"$filename\" does not exist."                                      && exit 1
 ! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils."
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
@@ -202,9 +202,8 @@ $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
 #------------------------------------------------------------------------------#
 # Create the difference-LaTeX file, with track changes
 #------------------------------------------------------------------------------#
-if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
+if $texdiff && [ ! -z "$dfilename" ]; then
   # Check for earlier version
-  texdiff=true
   prefix=${filename%[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex} # parameter expensions are fire yo
   pfiles=($prefix[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex) # sorted manuscript files (glob is sorted by default)
   # Get the part of list corresponding to files that
@@ -232,8 +231,8 @@ if [ ! -z "$dfilename" ] && [[ ! "$dfilename" =~ meeting ]]; then
       [ ! -r "$dfilestem.pdf" ] && echo "Warning: Difference PDF not produced." && texdiff=false
     fi
   fi
-else
-  # Get difference PDF
+elif $texdiff; then
+  echo "Warning: Previous version not found."
   texdiff=false
 fi
 
