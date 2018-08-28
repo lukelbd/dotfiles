@@ -1496,10 +1496,9 @@ if has_key(g:plugs, "tabular")
   vnoremap <expr> _a ':Table      /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
-  nnoremap <expr> _C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> _C ':Table      /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  " nnoremap <expr> _C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  " vnoremap <expr> _C ':Table      /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "By comment character, but this time ignore comment-only lines
-  "Enforces that
   nnoremap <expr> _c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   vnoremap <expr> _c ':Table      /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
@@ -1836,9 +1835,9 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 augroup delete
 augroup END
 "Replace commented lines; very useful when sharing manuscripts
-nnoremap <silent> <expr> _c ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+nnoremap <silent> <expr> _C ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
-vnoremap <silent> <expr> _c ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+vnoremap <silent> <expr> _C ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
       \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
 "Replace consecutive spaces on current line with one space
 vnoremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
