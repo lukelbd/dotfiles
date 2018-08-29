@@ -2055,9 +2055,12 @@ function! s:keywordsetup()
 endfunction
 augroup syntax
   au!
+  "The below filetype-specific commands don't sucessfully overwrite existing highlighting;
+  "need to use after/syntax/ft.vim instead
   " au Syntax *.tex syn match Ignore '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
   " au Syntax *.tex call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
-  au Syntax * call <sid>keywordsetup()
+  " au Syntax *.vim syn region htmlNoSpell start=+<!--+ end=+--\s*>+ contains=@NoSpell
+  au Syntax  * call <sid>keywordsetup()
   au BufRead * set conceallevel=2 concealcursor=
   " au BufEnter * if &ft=="tex" | hi Conceal ctermbg=None ctermfg=None | else | hi Conceal ctermbg=None ctermfg=Black | endif
   au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
@@ -2065,6 +2068,8 @@ augroup syntax
 augroup END
 "Python syntax
 highlight link pythonImportedObject Identifier
+"HTML syntax
+" highlight link htmlNoSpell
 "Popup menu
 highlight Pmenu ctermbg=None ctermfg=White cterm=None
 highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None
