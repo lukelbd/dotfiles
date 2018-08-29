@@ -119,10 +119,12 @@ inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
 "Use a function because don't want to trigger those annoying
 "InsertLeave/InsertEnter autocommands, it's more flexible, and
 "it preserves everything as a single 'undo' command
+"Warning: Older versions of vim don't allow indexing strings or
+"lists with variable integers -- have to use an eval.
 function! s:word_back(key)
   let prefix = ''
   let cursor = col('.')-1 "index along text string
-  let text = (cursor>0 ? getline('.')[:cursor-1] : '')
+  exe 'let text = (cursor>0 ? getline(".")[:'.cursor.'-1] : "")'
   if match(text,'^\s*$')!=-1
     let prefix = repeat(a:key, 1+len(text)) "moves us to previous line; also note cursor can be on eol char
     let text   = getline(line('.')-1)
@@ -137,7 +139,8 @@ endfunction
 function! s:word_forward(key)
   let prefix = ''
   let cursor = col('.')-1 "index along text string
-  let text = getline('.')[cursor:] "will be empty if e.g. cursor is on eol
+  let text = getline('.') "note below evaluates to empty e.g. if cursor on e.o.l.
+  exe 'let text = getline(".")['.cursor.':]'
   if match(text,'^\S*\s*$')!=-1 "no more word beginnings
     let prefix = repeat(a:key, len(text)) "moves us to next line
     let text   = ' '.getline(line('.')+1) "the space lets us move to word starts on first column
