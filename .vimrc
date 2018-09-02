@@ -895,7 +895,11 @@ command! -nargs=? SimpleSetup call <sid>simplesetup(<args>)
 "Disable all remaps
 augroup increment
 augroup END
-"Disable old ones
+"Disable old maps, create new ones
+"Also change what vim considers to be 'numbers', want
+"to avoid situation where integers with leading zeros
+"are considered 'octal'
+set nrformats=alpha
 if has_key(g:plugs, "vim-visual-increment")
   silent! vunmap <C-a>
   silent! vunmap <C-x>

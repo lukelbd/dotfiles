@@ -5,6 +5,10 @@
 " * Ctags integration -- jumping between successive tags, jumping to a particular
 "   tag based on its regex, searching/replacing text blocks delimited by the
 "   lines on which tags appear (roughly results in function-local search).
+"   Each element of the b:ctags list (and similar lists) is as follows:
+"     Index 0: Tag name.
+"     Index 1: Tag line number.
+"     Index 2: Tag type.
 " * Made my own implementation instead of using easytags or gutentags, because
 "   (1) find that :tag and :pop are not that useful outside of help menus --
 "   generally only want to edit one file at a time, and the <C-]> is about as
@@ -48,7 +52,7 @@ set cpoptions+=d
 let g:tags_ignore=['help', 'rst', 'qf', 'diff', 'man', 'nerdtree', 'tagbar']
 "List of per-file/per-filetype tag categories that we define as 'scope-delimiters',
 "i.e. tags approximately denoting boundaries for variable scope of code block underneath cursor
-let g:tags_scope={
+let g:tags_top={
   \ '.vimrc'  : 'a',
   \ 'vim'     : 'afc',
   \ 'tex'     : 'bs',
@@ -120,14 +124,14 @@ function! s:ctagsread()
   let b:ctags_line=sort(deepcopy(ctags), 's:linesort') "sort alphabetically by *position 0* in the sub-arrays
   "Next filter the tags sorted by line to include only a few limited categories
   "Will also filter to pick only ***top-level*** items (i.e. tags with global scope)
-  if has_key(g:tags_scope, expand('%:t'))
-    let cats=g:tags_scope[expand('%:t')]
-  elseif has_key(g:tags_scope,&ft)
-    let cats=g:tags_scope[&ft]
+  if has_key(g:tags_top, expand('%:t'))
+    let cats=g:tags_top[expand('%:t')]
+  elseif has_key(g:tags_top,&ft)
+    let cats=g:tags_top[&ft]
   else
-    let cats=g:tags_scope['default']
+    let cats=g:tags_top['default']
   endif
-  let b:ctags_scope=filter(deepcopy(b:ctags_line), 'len(v:val)==3 && v:val[2]=~"['.cats.']"')
+  let b:ctags_top=filter(deepcopy(b:ctags_line), 'len(v:val)==3 && v:val[2]=~"['.cats.']"')
 endfunction
 command! ReadTags call <sid>ctagsread()
 
@@ -153,11 +157,11 @@ noremap <silent> <Leader><Space> :call fzf#run({'source': <sid>ctagmenu(b:ctags_
 "------------------------------------------------------------------------------"
 "Define simple function for jumping between these boundaries
 function! s:ctagbracket(foreward, n)
-  if !exists("b:ctags_scope") || len(b:ctags_scope)==0
+  if !exists("b:ctags_top") || len(b:ctags_top)==0
     echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
     return
   endif
-  let ctaglines=map(deepcopy(b:ctags_scope),'v:val[-2]')
+  let ctaglines=map(deepcopy(b:ctags_top),'v:val[-2]')
   let njumps=(a:n==0 ? 1 : a:n)
   for i in range(njumps)
     let lnum=line('.')
@@ -207,12 +211,13 @@ endfunction
 "   renaming, and do it by confirming every single instance
 function! s:scopesearch(command)
   "Test out scopesearch
-  if !exists("b:ctags_scope") || len(b:ctags_scope)==0
+  let ntext=10 "text length
+  if !exists("b:ctags_top") || len(b:ctags_top)==0
     echohl WarningMsg | echo "Warning: Tags unavailable, so cannot limit search scope." | echohl None
     return ""
   endif
   let start=line('.')
-  let ctaglines=map(deepcopy(b:ctags_scope), 'v:val[1]') "just pick out the line number
+  let ctaglines=map(deepcopy(b:ctags_top), 'v:val[1]') "just pick out the line number
   let ctaglines=ctaglines+[line('$')]
   "Return values
   "%% is literal % character
@@ -220,7 +225,12 @@ function! s:scopesearch(command)
   "and first atom selects *below* that line (so decrement by 1)
   for i in range(0,len(ctaglines)-2)
     if ctaglines[i]<=start && ctaglines[i+1]>start "must be line above start of next function
-      echom "Scopesearch selected lines ".ctaglines[i]." to ".(ctaglines[i+1]-1)."."
+      let text=b:ctags_top[i][0]
+      if len(text)>=ntext
+        let text=text[:ntext-1].'...'
+      endif
+      " echom 'Scopesearch selected lines '.ctaglines[i].' to '.(ctaglines[i+1]-1).'.'
+      echom 'Scopesearch selected line '.ctaglines[i].' ('.text.') to '.(ctaglines[i+1]-1).'.'
       if a:command | return printf('%d,%ds', ctaglines[i]-1, ctaglines[i+1]) "range for :line1,line2s command
       else | return printf('\%%>%dl\%%<%dl', ctaglines[i]-1, ctaglines[i+1])
       endif
@@ -250,9 +260,8 @@ nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze
   "note the @/ sets the 'last search' register to this string value
 
 "Remap ? for function-wide searching; follows convention of */# and &/@
-"The \(\) makes text after the scope-atoms a bit more readable
 "Also note the <silent> will prevent beginning the search until another key is pressed
-nnoremap <silent> ? /<C-r>=<sid>scopesearch(0)<CR>\(\)\(\)\(\)
+nnoremap <silent> ? /<C-r>=<sid>scopesearch(0)<CR>
 "Map to search by character; never use default ! map so why not!
 "by default ! waits for a motion, then starts :<range> command
 nnoremap <silent> ! ylh/<C-r>=escape(@",'/\')<CR><CR>
