@@ -71,10 +71,10 @@ nnoremap <silent> <Leader>C :ReadTags<CR>
 
 "Function for generating command-line exe that prints taglist to stdout
 "We call ctags in number mode (i.e. return line number instead of search pattern)
+"To add global options, modify ~/.ctags
 function! s:ctagcmd(...)
   let flags=(a:0 ? a:1 : '') "extra flags
-  return "ctags --excmd=number --langmap=vim:+.vimrc,sh:+.bashrc ".flags." "
-    \."-f - ".shellescape(expand('%:p'))." 2>/dev/null | cut -d '\t' -f1,3-4 "
+  return "ctags ".flags." ".shellescape(expand('%:p'))." 2>/dev/null | cut -d '\t' -f1,3-4 "
   " \." | command grep '^[^\t]*\t".expand('%:p')."' "this filters to only tags from 'this file'
 endfunction
 
