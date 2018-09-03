@@ -462,13 +462,14 @@ if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 "------------------------------------------------------------------------------"
-"Sessions and swap files
+"Sessions and swap files and reloading
 "Mapped in my .bashrc vims to vim -S .vimsession and exiting vim saves the session there
 "Also vim-obsession more compatible with older versions
 "NOTE: Apparently obsession causes all folds to be closed
 Plug 'tpope/vim-obsession'
 " if g:compatible_workspace | Plug 'thaerkh/vim-workspace' | endif
 " Plug 'gioele/vim-autoswap' "deals with swap files automatically; no longer use them so unnecessary
+" Plug 'xolox/vim-reload' "better to write my own simple plugin
 "------------------------------------------------------------------------------"
 "Git wrappers and differencing tools
 Plug 'tpope/vim-fugitive'
@@ -1560,15 +1561,6 @@ if has_key(g:plugs, "tagbar")
     endif
     TagbarToggle
     if &ft=="tagbar"
-      "Change the default open stuff for vimrc
-      "Make sure normal commands align with maps
-      let tabnms=map(tabpagebuflist(),'fnamemodify(bufname(v:val), ":t")')
-      if index(tabnms,".vimrc")!=-1
-        silent normal _
-        call search("^\. autocommand groups$")
-        silent normal =
-        noh
-      endif
       "Make sure NERDTree is always flushed to the far right
       "Do this by moving TagBar one spot to the left if it is opened
       "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
@@ -1601,6 +1593,18 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_map_openfold="="
   let g:tagbar_map_closeallfolds="_"
   let g:tagbar_map_openallfolds="+"
+  "Custom creations
+  let g:tagbar_type_tex = {
+      \ 'ctagstype' : 'latex',
+      \ 'kinds'     : [
+          \ 's:sections',
+          \ 'g:graphics:0:0',
+          \ 'l:labels',
+          \ 'r:refs:1:0',
+          \ 'p:pagerefs:1:0'
+      \ ],
+      \ 'sort'    : 0
+  \ }
 endif
 
 "###############################################################################
