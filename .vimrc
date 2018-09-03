@@ -1525,50 +1525,44 @@ endif
 
 "###############################################################################
 "TAGBAR (requires 'brew install ctags-exuberant')
-" * Note tagbar BufReadPost autocommand must come after the c:tags one, or
-"   we end up just generating tags for the Tagbar sidebar buffer.
-" * Note the default mappings:
-"   -p jumps to tag under cursor, in code window, but remain in tagbar
-"   -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
-"   -C-n and C-p browses by top-level tags
-"   - +,- open and close folds under cursor
-"   -o toggles the fold under cursor, or current one
-"   -q quits the window
+" Note some mappings:
+" p jumps to tag under cursor, in code window, but remain in tagbar
+" C-n and C-p browses by top-level tags
+" o toggles the fold under cursor, or current one
 if has_key(g:plugs, "tagbar")
-  "Note to have tagbar open automatically FileType did not work; possibly some
-  "conflict with Obsession; instead BufReadPost worked
-  " augroup tagbar
-  "   au!
-  "   au BufReadPost * call s:tagbarmanager()
-  " augroup END
-  " function! s:tagbarmanager()
-  "   if index(['.vimrc','.bashrc'], expand("%:t"))==-1
-  "   if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
-  "   if ".vimrc"=~expand("%:t") || (".py,.jl,.m"=~expand("%:e") && expand("%:e")!="")
-  "     call s:tagbarsetup()
-  "   endif
-  " endfunction
-  "Setting up Tagbar with a custom configuration
+  "Automatically open tagbar (with FileType did not work because maybe
+  "some conflict with Obsession; BufReadPost works though)
   augroup tagbar
+    au!
+    au BufReadPost * call s:tagbarmanager()
   augroup END
+  function! s:tagbarmanager()
+    if ".py,.jl,.m,.vim,.tex"=~expand("%:e") && expand("%:e")!=""
+      call s:tagbarsetup()
+    endif
+  endfunction
+  "Setting up Tagbar with a custom configuration
   function! s:tagbarsetup()
-    "First toggle the tagbar; issues when toggling from NERDTree so switch
-    "back if cursor is already there. No issues toggline from Help window.
-    "Note toggling tagbar in a help menu appears to be fine
+    "Manage various panels, make sure nerdtree is flushed to right
+    "if open; first close tagbar if open, open if closed
     if &ft=="nerdtree"
       wincmd h
       wincmd h "move two places in case e.g. have help menu + nerdtree already
     endif
-    TagbarToggle
-    if &ft=="tagbar"
-      "Make sure NERDTree is always flushed to the far right
-      "Do this by moving TagBar one spot to the left if it is opened
-      "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
-      let tabfts=map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
-      if index(tabfts,"nerdtree")!=-1 | wincmd h | wincmd x | endif
-      exe 'vertical resize '.g:tagbar_width
-      wincmd p
+    let tabfts=map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
+    if index(tabfts,"tagbar")!=-1
+      TagbarClose
+    else
+      TagbarOpen
+      if index(tabfts,"nerdtree")!=-1
+        wincmd l
+        wincmd L
+        wincmd p
+      endif
     endif
+    "Make sure NERDTree is always flushed to the far right
+    "Do this by moving TagBar one spot to the left if it is opened
+    "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
   "Global settings
@@ -1577,33 +1571,49 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_silent=1 "no information echoed
   let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
   let g:tagbar_left=0 "open on left; more natural this way
-  let g:tagbar_foldlevel=-1 "default none
   let g:tagbar_indent=-1 "only one space indent
-  let g:tagbar_autoshowtag=0 "do not open tag folds when cursor moves over one
-  let g:tagbar_show_linenumbers=0 "don't show line numbers
-  let g:tagbar_autofocus=1 "don't autojump to window if opened
+  let g:tagbar_show_linenumbers=0 "not needed
+  let g:tagbar_autofocus=0 "don't autojump to window if opened
   let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
   let g:tagbar_case_insensitive=1 "make sorting case insensitive
   let g:tagbar_compact=1 "no header information in panel
-  let g:tagbar_singleclick=0 "one click select; annoying
   let g:tagbar_width=15 "better default
   let g:tagbar_zoomwidth=15 "don't ever 'zoom' even if text doesn't fit
   let g:tagbar_expand=0
-  let g:tagbar_map_closefold="-"
+  " let g:tagbar_singleclick=1 "one click select, was annoying
+  "Mappings
   let g:tagbar_map_openfold="="
+  let g:tagbar_map_closefold="-"
   let g:tagbar_map_closeallfolds="_"
   let g:tagbar_map_openallfolds="+"
-  "Custom creations
+  "Fold levels
+  let g:tagbar_autoshowtag=2 "never ever open tagbar folds automatically, even when opening for first time
+  " let g:tagbar_foldlevel=0 "setting to zero will override the 'kinds' fields in below dicts
+  "Custom creations; note the kinds depend on some special language defs in ~/.ctags
+  "For more info, see :help tagbar-extend
+  "To list kinds, see :!ctags --list-kinds=<filetype>
+  "The first number is whether to fold by default, second is whether to highlight location
+  " \ 'r:refs:1:0', "not useful
+  " \ 'p:pagerefs:1:0' "not useful
   let g:tagbar_type_tex = {
       \ 'ctagstype' : 'latex',
       \ 'kinds'     : [
           \ 's:sections',
-          \ 'g:graphics:0:0',
-          \ 'l:labels',
-          \ 'r:refs:1:0',
-          \ 'p:pagerefs:1:0'
+          \ 'g:graphics:0:1',
+          \ 'l:labels:0:1',
       \ ],
-      \ 'sort'    : 0
+      \ 'sort' : 0
+  \ }
+  let g:tagbar_type_vim = {
+      \ 'ctagstype' : 'vim',
+      \ 'kinds'     : [
+          \ 'a:augroups:0',
+          \ 'f:functions:1',
+          \ 'c:commands:1:0',
+          \ 'v:variables:1:0',
+          \ 'm:maps:1:0',
+      \ ],
+      \ 'sort' : 0
   \ }
 endif
 
