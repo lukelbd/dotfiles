@@ -201,10 +201,8 @@ noremap <Left>  <C-o>
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "the escapes prevent a weird error where sometimes q triggers command-history window
 "Arrow keys are for macbook mapping
-noremap <C-j>  g;
-noremap <C-k>  g,
-noremap <Down> g;
-noremap <Up>   g,
+noremap <C-f> g;
+noremap <C-y> g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Delete entire line, leave behind an empty line
@@ -287,8 +285,8 @@ vnoremap <CR> <C-c>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 "Some other useful visual mode maps
 "Also prevent highlighting selection under cursor, unless on first character
-nnoremap v$ myv$h
-nnoremap vv ^myv$gE
+nnoremap v$ myvg$h
+nnoremap vv g^myvg$gE
 nnoremap vA ggmyVG
 nnoremap <silent> v/ hn:noh<CR>gn
 
@@ -1358,8 +1356,10 @@ endif
 "WRAPPING AND LINE BREAKING
 augroup wrap "For some reason both autocommands below are necessary; fuck it
   au!
-  au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
   au BufRead  * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
+  au BufEnter * let b:wrap_mode=(exists('b:wrap_mode') ? b:wrap_mode : 0) |
+              \ let &scrolloff=(g:scrolloff*(1-b:wrap_mode))
+  " au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
@@ -1367,7 +1367,7 @@ let g:scrolloff=4
 let g:colorcolumn=(has('gui_running') ? '0' : '80,120')
 "Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
 function! s:wraptoggle(...)
-  if a:0 "if non-zer number of args
+  if a:0 "if non-zero number of args
     let toggle=a:1
   elseif exists('b:wrap_mode')
     let toggle=1-b:wrap_mode
@@ -1375,11 +1375,10 @@ function! s:wraptoggle(...)
     let toggle=1
   endif
   if toggle==1
-    let b:wrap_mode=1
     "Display options that make more sense with wrapped lines
-    setlocal wrap
-    setlocal scrolloff=0
-    setlocal colorcolumn=0
+    let b:wrap_mode=1
+    let &l:wrap=1
+    let &l:colorcolumn=0
     "Basic wrap-mode navigation, always move visually
     "Still might occasionally want to navigate by lines though, so remap those to g
     noremap <buffer> k gk
@@ -1397,11 +1396,10 @@ function! s:wraptoggle(...)
     nnoremap <buffer> gA A
     nnoremap <buffer> gI I
   else
-    let b:wrap_mode=0
     "Disable previous options
-    setlocal nowrap
-    execute 'setlocal scrolloff='.g:scrolloff
-    execute 'setlocal colorcolumn='.g:colorcolumn
+    let b:wrap_mode=0
+    let &l:wrap=0
+    let &l:colorcolumn=g:colorcolumn
     "Disable previous maps
     silent! unmap k
     silent! unmap j
@@ -1530,9 +1528,10 @@ endif
 if has_key(g:plugs, "tagbar")
   "Automatically open tagbar (with FileType did not work because maybe
   "some conflict with Obsession; BufReadPost works though)
+  "Gets pretty annoying so nah
   augroup tagbar
     au!
-    au BufReadPost * call s:tagbarmanager()
+    " au BufReadPost * call s:tagbarmanager()
   augroup END
   function! s:tagbarmanager()
     if ".py,.jl,.m,.vim,.tex"=~expand("%:e") && expand("%:e")!=""
@@ -1666,8 +1665,10 @@ function! s:foreward_delete()
 endfunction
 inoremap <silent> <expr> <Delete> <sid>foreward_delete()
 "Wrapping
+let &breakat=" 	!*-+;:,./?" "break at single instances of several characters
 set textwidth=0 "also disable it to start with dummy
 set linebreak "breaks lines only in whitespace makes wrapping acceptable
+set breakindent "map indentation when breaking
 set wrapmargin=0 "starts wrapping at the edge; >0 leaves empty bufferzone
 set display=lastline "displays as much of wrapped lastline as possible;
 "Global behavior
