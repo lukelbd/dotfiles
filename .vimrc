@@ -1588,7 +1588,7 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_map_openallfolds="+"
   "Fold levels
   let g:tagbar_autoshowtag=2 "never ever open tagbar folds automatically, even when opening for first time
-  " let g:tagbar_foldlevel=0 "setting to zero will override the 'kinds' fields in below dicts
+  let g:tagbar_foldlevel=1 "setting to zero will override the 'kinds' fields in below dicts
   "Custom creations; note the kinds depend on some special language defs in ~/.ctags
   "For more info, see :help tagbar-extend
   "To list kinds, see :!ctags --list-kinds=<filetype>
@@ -1632,9 +1632,9 @@ nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if tabpagenr('$')==1
-      \\| qa \| else \| tabclose \| if !g:tabpagelast \| silent! tabp \| endif \| endif<CR>
+  \ \| qa \| else \| tabclose \| if !g:tabpagelast \| silent! tabp \| endif \| endif<CR>
 nnoremap <silent> <C-w> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>
-      \:q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
+  \ :q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
 "so we have close current window, close tab, and close everything
 "last map has to test wither the :q action closed the entire tab
 silent! tnoremap <silent> <C-c> <C-w>:q!<CR>
