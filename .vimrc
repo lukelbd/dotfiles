@@ -1142,8 +1142,6 @@ if has_key(g:plugs, "nerdcommenter")
   let g:NERDCommentEmptyLines = 1     " allow commenting and inverting empty lines (useful when commenting a region)
   let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 1
-  nnoremap <silent> c' o'''<CR>.<CR>'''<Up><Esc>A<BS>
-  nnoremap <silent> c" o"""<CR>.<CR>"""<Up><Esc>A<BS>
   "Create functions that return fancy comment 'blocks' -- e.g. for denoting
   "section changes, for drawing a line across the screen, for writing information
   "Functions will preserve indentation level of the line where cursor is located
@@ -1215,7 +1213,7 @@ if has_key(g:plugs, "nerdcommenter")
   endfunction
   function! s:docstring(char)
     let col=s:commentindent()
-    let spaces=(col-1)
+    let spaces=(col-1+&l:tabstop)
     normal! k
     call append(line('.'), [repeat(' ',spaces).repeat(a:char,3), repeat(' ',spaces), repeat(' ',spaces).repeat(a:char,3)])
     normal! jj$
