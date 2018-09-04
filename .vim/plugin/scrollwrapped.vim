@@ -15,10 +15,6 @@
 "------------------------------------------------------------------------------"
 "Helper functions first
 "------------------------------------------------------------------------------"
-augroup scroll
-  au!
-  " au InsertEnter * let b:curswant=-1
-augroup END
 "Reverse a string
 function! s:reverse(string)
   return join(reverse(split(a:string, '.\zs')), '')
@@ -246,11 +242,6 @@ function! s:scroll(target,mode,move)
   "----------------------------------------------------------------------------"
   "Finally restore to the new column
   "----------------------------------------------------------------------------"
-  "Playing with idea of persistent curswant, maybe delete
-  " if !exists('b:curswant') || b:curswant==-1
-  "   let b:curswant=curcol "persistent column
-  " endif
-  " call winrestview({'topline':topline, 'lnum':curline, 'leftcol':0, 'col':curcol, 'curswant':b:curswant})
   call winrestview({'topline':topline, 'lnum':curline, 'leftcol':0, 'col':curcol})
   let &l:scrolloff=scrolloff
   echom 'WinLine: '.winline.' to '.winline()
@@ -282,3 +273,4 @@ vnoremap <silent> <expr> <Up>   eval(winheight(0)/5).'<C-y>'.eval(winheight(0)/5
 " nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(1,0,0)<CR>:redraw<CR>
 " vnoremap <silent> <ScrollWheelDown> <C-e>gj
 " vnoremap <silent> <ScrollWheelUp> <C-y>gk
+
