@@ -583,7 +583,7 @@ function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overrid
       let loaded+=[file]
     endif
   endfor
-  echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")'), ', ').'.'
+  echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
 endfunction
 command! Refresh call <sid>refresh()
 nnoremap <silent> <Leader>S :call <sid>refresh()<CR>
