@@ -104,7 +104,8 @@ function! s:scroll(target,mode,move)
     let scrolled=0
     let topline_init=line('w0')
     let topline=(a:mode=='u' ? topline_init : topline_init-1) "initial
-    while scrolled<a:target && topline!=stopline
+    let lineheight=s:wrapped_line_props('l',topline)
+    while scrolled<=a:target && topline!=stopline
       let topline+=motion
       let lineheight=s:wrapped_line_props('l',topline)
       let scrolled+=lineheight
