@@ -2,19 +2,21 @@
 " Name:   wrapscroll.vim
 " Author: Luke Davis (lukelbd@gmail.com)
 " Date:   2018-09-03
+"------------------------------------------------------------------------------"
 "Approximately scroll by N virtual lines while line wrapping is toggled
 "Note vim forces us to always start at beginning of wrapped line, but don't
 "necessarily have to end on one. So, scrolling is ***always controlled***
 "by the lines near the top of the screen!
-"------------------------------------------------------------------------------"
-augroup scroll
-  au!
-  au InsertEnter * let b:curswant=-1
-augroup END
-
+"Warning: Function may behave in special circumstances -- for exapmle, vim always
+"coerces scrolling to the next topline if we try to go to the bottom line, but it
+"runs off-screen. Not sure of robust way to fix this.
 "------------------------------------------------------------------------------"
 "Helper functions first
 "------------------------------------------------------------------------------"
+augroup scroll
+  au!
+  " au InsertEnter * let b:curswant=-1
+augroup END
 "Reverse a string
 function! s:reverse(string)
   return join(reverse(split(a:string, '.\zs')), '')
@@ -24,6 +26,7 @@ endfunction
 " 2. Get a list of *actual* column numbers where *virtual* line breaks have
 "    been placed by vim; numbers correspond to first char of each *virtual* col.
 function! s:wrapped_line_props(mode,line)
+  let verb=0
   if 'lc'!~a:mode
     echom "Error: Mode string must be either [l]ine or [c]ol."
     return -1
@@ -42,6 +45,9 @@ function! s:wrapped_line_props(mode,line)
   let colnum=1
   let colstarts=[1]
   let lineheight=1
+  if verb
+    echo 'winwidth: '.width.' indent: '.n_indent
+  endif
   while len(string)+1>=width "must include newline character
     "Determine offset due to 'linebreak' feature
     "Note this won't be perfect! Consecutive non-whitespace characters
@@ -50,7 +56,6 @@ function! s:wrapped_line_props(mode,line)
       let test=s:reverse(string[:width-1])
       let offset=match(test, '['.&l:breakat.']')
       " let offset=match(test, '['.&l:breakat.']\(\w\|\s\)') "breaks shit
-      " echom 'offset: '.offset
     endif
     let colnum+=(width-offset-n_indent) "the *actual* column number at first position
     let colstarts+=[colnum] "add column to list
@@ -65,7 +70,7 @@ function! s:wrapped_line_props(mode,line)
   " echom 'lineheight: '.lineheight
 endfunction
 command! LineHeight echom <sid>wrapped_line_props('l','.')
-command! ColBreaks echom join(<sid>wrapped_line_props('c','.'),', ')
+command! ColStarts echom join(<sid>wrapped_line_props('c','.'),', ')
 
 "------------------------------------------------------------------------------"
 "Next the driver function:
@@ -76,7 +81,8 @@ command! ColBreaks echom join(<sid>wrapped_line_props('c','.'),', ')
 "------------------------------------------------------------------------------"
 function! s:scroll(target,mode,move)
   "Initial stuff
-  let verb=0
+  let verb=1
+  let winline=winline()
   if 'ud'!~a:mode
     echom "Error: Mode string must be either [u]p or [d]own."
     return -1
@@ -145,14 +151,18 @@ function! s:scroll(target,mode,move)
     "Determine which wrapped line we are on, and therefore,
     "the number of window columns we *have* to traverse
     let curcol=col('.')
-    let colbreaks=s:wrapped_line_props('c',curline)
-    let curline_offset=index(map(colbreaks, curcol.'>=v:val'), 0)-1
-    let curline_height=len(colbreaks)
-    if curline_offset==-1
+    let colstarts=s:wrapped_line_props('c',curline)
+    let index=index(map(copy(colstarts), curcol.'>=v:val'), 0)
+    let curline_height=len(colstarts)
+    if index==-1 "cursor is sitting on the last virtual line of 'curline'
       let curline_offset=curline_height-1 "offset from first virtual line of current line
+    elseif index==0 "should never happen -- would mean cursor is in column '0' because colstarts always starts with 1
+      echom "Error: What the fudge." | return
+    else
+      let curline_offset=index-1
     endif
     if verb
-      echom 'current line: '.curline.' wrap number: '.curline_offset
+      echom 'current line: '.curline.' virtual num: '.curline_offset.' colstarts: '.join(colstarts,', ')
     endif
     "--------------------------------------------------------------------------"
     "Determine the new cursorline, and offset down that line
@@ -161,9 +171,9 @@ function! s:scroll(target,mode,move)
     "The scroll_init will be the *required* visual lines scrolled if
     "we move the cursor line up or down
     if a:mode=='u'
-      let scroll_init=curline_offset "virtual lines scrolled by moving one line
+      let scroll_init=curline_offset "how many virtual lines to the first one
     else
-      let scroll_init=curline_height-curline_offset-1
+      let scroll_init=curline_height-curline_offset "how many virtual lines to start of next line (e.g. if height is 2, offset is 1, we're at the bottom; just scroll one more)
     endif
     if scroll_init>=scrolled
       "Case where we do not move lines
@@ -177,27 +187,40 @@ function! s:scroll(target,mode,move)
       "Idea is e.g. if we are on 2nd out of 4 visual lines, want to go to next one,
       "that represents a virtual scrolling of 2 lines at the start. Then scroll
       "by line heights until enough.
+      let qline=curline
       let scroll=scroll_init
-      let scrolled_cur=scroll_init "virtual lines scrolled if we move up/down for first time
-      while scrolled_cur<scrolled
+      let scrolled_cur=scroll_init "virtual to reach (up) first one on this line or (down) first one on next line
+      while scrolled_cur<=scrolled
+       "Determine line height
+       "Note the init scroll brought us to (up) start of this line, so we want to query text above it,
+       "or to (down) start of next line, so we want to query text on that next line
         if verb
-          echom 'scroll: '.scroll.' cursor scrolled: '.scrolled_cur.' target: '.scrolled
+          echom 'lineheight: '.lineheight.' scroll: '.scrolled_cur.' target: '.scrolled
         endif
-        let curline+=motion "for now stop at line just *before* the destination
-        let scroll=s:wrapped_line_props('l',curline) "virtual lines scrolled if we move *past* this current line
-        let scrolled_cur+=scroll "number of lines scrolled if we move past *all virtual lines* of curline
+        let qline+=motion "corresponds to (up) previous line or (down) this line.
+        let lineheight=s:wrapped_line_props('l',qline) "necessary scroll to get to next/previous first line
+        let scrolled_cur+=lineheight "add, then test
       endwhile
-      let scrolled_cur-=scroll "number of lines scrolled if we move up to first/last virtual line of curline
-      let remainder=scrolled-scrolled_cur "remaining virtual lines to be scrolled
-      "Have no idea why the below -1s work, but seem to work, maybe
+      "Figure our remaining virtual lines to be scrolled
+      "The scrolled-scrolled_cur just gives scrolling past *cursor line* virtual lines,
+      "plus the lineheights
+      let scrolled_cur-=lineheight "number of lines scrolled if we move up to first/last virtual line of curline
+      let remainder=scrolled-scrolled_cur "number left
       if a:mode=='u'
-        let curline_offset=scroll-remainder
+        if remainder==0 "don't have to move to previous line at all
+          let curline=qline+1
+          let curline_offset=0
+        else
+          let curline=qline
+          let curline_offset=lineheight-remainder "e.g. if remainder is 1, lineheight is 3, want curline 'offset' to be 2
+        endif
       else
-        let curline_offset=max([0,remainder-1])
+        let curline=qline
+        let curline_offset=remainder "minimum remainder is 1
       endif
-    endif
-    if verb
-      echom 'destination line: '.curline.' remainder: '.remainder.' wrap number: '.curline_offset
+      if verb
+        echom 'destination line: '.curline.' remainder: '.remainder.' wrap number: '.curline_offset
+      endif
     endif
     "--------------------------------------------------------------------------"
     "Get the column number for winrestview
@@ -219,12 +242,13 @@ function! s:scroll(target,mode,move)
   "Finally restore to the new column
   "----------------------------------------------------------------------------"
   "Playing with idea of persistent curswant, maybe delete
-  if !exists('b:curswant') || b:curswant==-1
-    let b:curswant=curcol "persistent column
-  endif
-  call winrestview({'topline':topline, 'lnum':curline,
-                  \ 'leftcol':0, 'col':curcol, 'curswant':b:curswant})
+  " if !exists('b:curswant') || b:curswant==-1
+  "   let b:curswant=curcol "persistent column
+  " endif
+  " call winrestview({'topline':topline, 'lnum':curline, 'leftcol':0, 'col':curcol, 'curswant':b:curswant})
+  call winrestview({'topline':topline, 'lnum':curline, 'leftcol':0, 'col':curcol})
   let &l:scrolloff=scrolloff
+  echom 'WinLine: '.winline.' to '.winline()
 endfunction
 
 "Create normal mode maps
