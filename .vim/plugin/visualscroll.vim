@@ -82,7 +82,7 @@ command! ColStarts echom join(<sid>wrapped_line_props('c','.'),', ')
 "------------------------------------------------------------------------------"
 function! s:scroll(target,mode,move)
   "Initial stuff
-  let verb=1
+  let verb=0
   let winline=winline()
   if 'ud'!~a:mode
     echom "Error: Mode string must be either [u]p or [d]own."

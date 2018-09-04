@@ -512,25 +512,29 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 Plug 'justinmk/vim-sneak'
 "------------------------------------------------------------------------------"
 "End of plugins
-"The plug#end also declares filetype syntax and indent on
+"The plug#end also declares filetype plugin, syntax, and indent on
 "Note apparently every BufRead autocmd inside an ftdetect/filename.vim file
 "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
 "###############################################################################
 "SESSION MANAGEMENT
-"First, jump to mark '"' without changing the jumplist (:help g`)
-"Mark '"' is the cursor position when last exiting the current buffer
-"CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
+"First, simple Obsession session management
+"Also manually preserve last cursor location:
+" Jump to mark '"' without changing the jumplist (:help g`)
+" Mark '"' is the cursor position when last exiting the current buffer
 augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
     au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .vimsession
   endif
+  "Autosave
   let s:autosave="InsertLeave" | if exists("##TextChanged") | let s:autosave.=",TextChanged" | endif
   " exe "au ".s:autosave." * w"
 augroup END
+"Function to toggle autosave on and off
+"Consider disabling
 function! s:autosave_toggle(on)
   if a:on "in future consider using this to disable autosave for large files
     if exists('b:autosave_on') && b:autosave_on=1
@@ -555,14 +559,36 @@ function! s:autosave_toggle(on)
     augroup END
   endif
 endfunction
+"Vim workspace settings
+"Had some issues with this plugin
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
   let g:workspace_session_name = '.vimsession'
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
-  let g:workspace_persist_undo_history = 0 "don't need to save undo history
-  let g:workspace_autosave_untrailspaces = 0 "sometimes we WANT trailing spaces!
+  let g:workspace_persist_undo_history = 0    "don't need to save undo history
+  let g:workspace_autosave_untrailspaces = 0  "sometimes we WANT trailing spaces!
   let g:workspace_autosave_ignore = ['help', 'rst', 'qf', 'diff', 'man']
 endif
-"Remember file position, so come back after opening to same spot
+"Function for refreshing custom filetype-specific files and .vimrc
+"If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
+"then just source it with the 'execute' shortcut Ctrl-z
+function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overridden by ftplugin stuff
+  filetype detect "if started with empty file, but now shebang makes filetype clear
+  filetype plugin indent on
+  let loaded = []
+  let files  = ['~/.vim/ftplugin/'.&ft.'.vim',       '~/.vim/syntax/'.&ft.'.vim',
+               \'~/.vim/after/ftplugin/'.&ft.'.vim', '~/.vim/after/syntax/'.&ft.'.vim']
+  for file in files
+    if !empty(glob(file))
+      exe 'so '.file
+      let loaded+=[file]
+    endif
+  endfor
+  echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")'), ', ').'.'
+endfunction
+command! Refresh call <sid>refresh()
+nnoremap <silent> <Leader>S :call <sid>refresh()<CR>
+"Redraw screen
+nnoremap <silent> <Leader>r :redraw!<CR>
 
 "##############################################################################"
 "DICTIONARY COMPLETION
@@ -1968,9 +1994,6 @@ silent! unmap zuz
 "Single-keystroke indent, dedent, fix indentation
 augroup gcommands
 augroup END
-"Don't know why these are here but just go with it bro
-nnoremap <silent> <Leader>r :redraw!<CR>
-nnoremap <silent> <Leader>S :filetype detect \| so ~/.vimrc<CR>:echom "Refreshed .vimrc and re-loaded syntax."<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
 "Undo these maps to avoid confusion
@@ -2172,11 +2195,11 @@ command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 "Remember :scriptnames lists all loaded files
 function! s:ftplugin()
   "Enable 'simple' mode
-  execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
+  execute 'split $VIMRUNTIME/ftplugin/'.&ft.'.vim'
   silent SimpleSetup
 endfunction
 function! s:ftsyntax()
-  execute 'split $VIMRUNTIME/syntax/'.&filetype.'.vim'
+  execute 'split $VIMRUNTIME/syntax/'.&ft.'.vim'
   silent SimpleSetup
 endfunction
 command! PluginFile call <sid>ftplugin()
