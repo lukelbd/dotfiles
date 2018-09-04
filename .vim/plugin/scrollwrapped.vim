@@ -7,10 +7,11 @@
 "Note vim forces us to always start at beginning of wrapped line, but don't
 "necessarily have to end on one. So, scrolling is ***always controlled***
 "by the lines near the top of the screen!
-"Warning: Function may behave in special circumstances -- i.e. vim always
-"coerces scrolling to the next topline if we try to go to the bottom line when
-"the bottom line runs off-screen. Not sure of robust way to fix this. Probably
+"Warning: Function may misbehave in special circumstances -- i.e. vim always
+"coerces current topline to the next one if we try to put cursor on the bottom
+"line when it runs off-screen. Not sure of robust way to fix this. Probably
 "best to just let cursor get 'pushed' up the screen when this happens.
+"Note: If cursor moves down screen instead of up the screen, some shit is wrong yo.
 "------------------------------------------------------------------------------"
 "Helper functions first
 "------------------------------------------------------------------------------"
@@ -104,7 +105,8 @@ function! s:scroll(target,mode,move)
   if &l:wrap
     "Determine new line iteratively
     let scrolled=0
-    let topline=(a:mode=='u' ? line('w0') : line('w0')-1) "initial
+    let topline_init=line('w0')
+    let topline=(a:mode=='u' ? topline_init : topline_init-1) "initial
     while scrolled<=a:target && topline!=stopline
       let topline+=motion
       let lineheight=s:wrapped_line_props('l',topline)
@@ -122,18 +124,15 @@ function! s:scroll(target,mode,move)
       echom 'old topline: '.line('w0').' new topline: '.topline.' visual motion: '.scrolled.' target: '.a:target
     endif
     "Optionally *backtrack*, if using the previous topline option would
-    "have been a bit closer to 'n' lines
-    "Later should modify this to move by *at least* one line
-    " let options=[-counter,counter+lineheight] "smaller number is the line *closer* to desired scroll number
-    " let closest=index(options, min(options))
-    " if closest==1
-    "   let scrolled-=lineheight
-    "   if a:mode=='u'
-    "     let topline+=1
-    "   else
-    "     let topline-=1
-    "   endif
-    " endif
+    "have been a bit closer to 'n' lines. Re-enforces moving by at least one line.
+    let options=[abs(scrolled-a:target),abs(scrolled-lineheight-a:target)]
+    if index(options,min(options))==1 && topline_init!=(topline-motion)
+      if verb
+        echom "Backtracked."
+      endif
+      let scrolled-=lineheight
+      let topline-=motion
+    endif
   else
     "If wrap not toggled, much simpler
     let topline=line('w0')
@@ -252,7 +251,10 @@ function! s:scroll(target,mode,move)
   echom 'WinLine: '.winline.' to '.winline()
 endfunction
 
-"Create normal mode maps
+"------------------------------------------------------------------------------"
+"Mappings
+"------------------------------------------------------------------------------"
+"Normal mode maps
 "Arrow keys are for macbook Karabiner mapping
 nnoremap <silent> <C-d>  :call <sid>scroll(winheight(0)/3,'d',1)<CR>
 nnoremap <silent> <C-u>  :call <sid>scroll(winheight(0)/3,'u',1)<CR>
@@ -260,7 +262,6 @@ nnoremap <silent> <C-j>  :call <sid>scroll(winheight(0)/5,'d',1)<CR>
 nnoremap <silent> <C-k>  :call <sid>scroll(winheight(0)/5,'u',1)<CR>
 nnoremap <silent> <Down> :call <sid>scroll(winheight(0)/5,'d',1)<CR>
 nnoremap <silent> <Up>   :call <sid>scroll(winheight(0)/5,'u',1)<CR>
-
 "Visual mode scrolling with consistent mappings
 "Arrow keys are for macbook Karabiner mapping
 vnoremap <silent> <expr> <C-d>  eval(winheight(0)/3).'<C-e>'.eval(winheight(0)/3).'gj'
@@ -269,7 +270,6 @@ vnoremap <silent> <expr> <C-j>  eval(winheight(0)/5).'<C-e>'.eval(winheight(0)/5
 vnoremap <silent> <expr> <C-k>  eval(winheight(0)/5).'<C-y>'.eval(winheight(0)/5).'gk'
 vnoremap <silent> <expr> <Down> eval(winheight(0)/5).'<C-e>'.eval(winheight(0)/5).'gj'
 vnoremap <silent> <expr> <Up>   eval(winheight(0)/5).'<C-y>'.eval(winheight(0)/5).'gk'
-
 "Mouse remaps; they break things and default scrolling is fine so forget it
 " nnoremap <silent> <ScrollWheelUp> :call <sid>scroll(winheight(0)/12+1,1)<CR>
 " nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(winheight(0)/12+1,0)<CR>
