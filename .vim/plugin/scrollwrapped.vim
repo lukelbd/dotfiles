@@ -52,11 +52,12 @@ function! s:wrapped_line_props(mode,line)
   endif
   while len(string)+1>=width "must include newline character
     "Determine offset due to 'linebreak' feature
-    "Note this won't be perfect! Consecutive non-whitespace characters
+    "Note: This won't be perfect! Consecutive non-whitespace characters
     "in breakat seem to *prevent* breaking, for example. But close enough.
+    "Note: Need to escape the dash or won't work sometimes (try searching [*-+])
     if &l:linebreak
       let test=s:reverse(string[:width-1])
-      let offset=match(test, '['.&l:breakat.']')
+      let offset=match(test, '['.escape(&l:breakat,'-').']')
       " let offset=match(test, '['.&l:breakat.']\(\w\|\s\)') "breaks shit
     endif
     let colnum+=(width-offset-n_indent) "the *actual* column number at first position
@@ -107,7 +108,7 @@ function! s:scroll(target,mode,move)
     let scrolled=0
     let topline_init=line('w0')
     let topline=(a:mode=='u' ? topline_init : topline_init-1) "initial
-    while scrolled<=a:target && topline!=stopline
+    while scrolled<a:target && topline!=stopline
       let topline+=motion
       let lineheight=s:wrapped_line_props('l',topline)
       let scrolled+=lineheight
@@ -127,11 +128,11 @@ function! s:scroll(target,mode,move)
     "have been a bit closer to 'n' lines. Re-enforces moving by at least one line.
     let options=[abs(scrolled-a:target),abs(scrolled-lineheight-a:target)]
     if index(options,min(options))==1 && topline_init!=(topline-motion)
-      if verb
-        echom "Backtracked."
-      endif
       let scrolled-=lineheight
       let topline-=motion
+      if verb
+        echom 'backtracked; new topline: '.topline.' visual motion: '.scrolled
+      endif
     endif
   else
     "If wrap not toggled, much simpler
@@ -175,12 +176,15 @@ function! s:scroll(target,mode,move)
     else
       let scroll_init=curline_height-curline_offset "how many virtual lines to start of next line (e.g. if height is 2, offset is 1, we're at the bottom; just scroll one more)
     endif
-    if scroll_init>=scrolled
+    if scrolled<(scroll_init+(a:mode=='u')) "see below for explanation
       "Case where we do not move lines
-      if a:mode=='u'
-        let curline_offset=curline_offset-scrolled
-      else
-        let curline_offset=curline_offset+scrolled
+      " * If going up, scroll_init is distance to first virtual line of *this line*, so scroll_init
+      "   *equal* to scrolled is acceptable (hence, increment RHS of inequality by 1)
+      " * If going down, scroll_init is distance to first virtual line of *next line*, so need
+      "   scroll_init to be 1 *more* than scrolled for us to be able to stay on current line.
+      let curline_offset+=motion*scrolled
+      if verb
+        echom 'Not changing line.'
       endif
     else
       "Case where we do move lines
@@ -219,7 +223,8 @@ function! s:scroll(target,mode,move)
         let curline_offset=remainder "minimum remainder is 1
       endif
       if verb
-        echom 'destination line: '.curline.' remainder: '.remainder.' wrap number: '.curline_offset
+        let lineheight=s:wrapped_line_props('l',curline)
+        echom 'destination line: '.curline.' remainder: '.remainder.' destination height: '.lineheight.' offset: '.curline_offset
       endif
     endif
     "--------------------------------------------------------------------------"
@@ -227,7 +232,7 @@ function! s:scroll(target,mode,move)
     let colstarts=s:wrapped_line_props('c',curline)
     let curcol=wincol+colstarts[curline_offset]-1
     if verb
-      echom 'destination column num: '.curcol
+      echom 'destination colnum: '.curcol.' colstarts: '.join(colstarts, ', ')
     endif
   else
     "If wrap not toggled, much simpler
