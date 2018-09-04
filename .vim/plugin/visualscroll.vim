@@ -7,9 +7,10 @@
 "Note vim forces us to always start at beginning of wrapped line, but don't
 "necessarily have to end on one. So, scrolling is ***always controlled***
 "by the lines near the top of the screen!
-"Warning: Function may behave in special circumstances -- for exapmle, vim always
-"coerces scrolling to the next topline if we try to go to the bottom line, but it
-"runs off-screen. Not sure of robust way to fix this.
+"Warning: Function may behave in special circumstances -- i.e. vim always
+"coerces scrolling to the next topline if we try to go to the bottom line when
+"the bottom line runs off-screen. Not sure of robust way to fix this. Probably
+"best to just let cursor get 'pushed' up the screen when this happens.
 "------------------------------------------------------------------------------"
 "Helper functions first
 "------------------------------------------------------------------------------"
