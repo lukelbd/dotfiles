@@ -245,7 +245,9 @@ function! s:scroll(target,mode,move)
   "----------------------------------------------------------------------------"
   call winrestview({'topline':topline, 'lnum':curline, 'leftcol':0, 'col':curcol})
   let &l:scrolloff=scrolloff
-  echom 'WinLine: '.winline.' to '.winline()
+  if verb
+    echom 'WinLine: '.winline.' to '.winline()
+  endif
 endfunction
 
 "------------------------------------------------------------------------------"
