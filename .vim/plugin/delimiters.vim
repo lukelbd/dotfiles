@@ -347,7 +347,8 @@ function! s:texsurround()
   call s:target_fancy('J', '\underset{}{', '}',   1)
   call s:target_fancy('/', '\dfrac{',      '}{}', 1)
   "Sections and titles
-  call s:target_fancy('0', '\frametitle{',     '}',   1)
+  call s:target_fancy('~', '\title{',     '}',   1)
+  call s:target_fancy('!', '\frametitle{',     '}',   1)
   call s:target_fancy('1', '\section{',        '}',   1)
   call s:target_fancy('2', '\subsection{',     '}',   1)
   call s:target_fancy('3', '\subsubsection{',  '}',   1)
@@ -358,35 +359,40 @@ function! s:texsurround()
   call s:target_fancy('7', '\ref{',     '}', 1) "just the number
   call s:target_fancy('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
   call s:target_fancy('9', '\label{',   '}', 1) "declare labels that ref and autoref point to
-  call s:target_fancy('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
+  call s:target_fancy('0', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
   call s:target_fancy('a', '\caption{', '}', 1) "amazingly 'a' not used yet
   call s:target_fancy('A', '\captionof{figure}{', '}', 1) "alternative
+  " call s:target_fancy('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
   "Other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Have been rethinking this
-  call s:target_fancy('!', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
-  call s:target_fancy('&', '\citet{',   '}', 1) "second most common one
-  call s:target_fancy('*', '\cite{',    '}', 1) "most common
-  call s:target_fancy('@', '\citep{',   '}', 1) "second most common one
-  call s:target_fancy('#', '\citenum{', '}', 1) "most common
+  call s:target_fancy('c', '\cite{',   '}', 1) "second most common one
+  call s:target_fancy('C', '\citenum{',    '}', 1) "most common
+  call s:target_fancy('z', '\citep{',   '}', 1) "second most common one
+  call s:target_fancy('Z', '\citet{', '}', 1) "most common
   " call s:target_fancy('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "The next enfironments will also insert *newlines*
   "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
   "note that fragile make compiling way slower
   "Slide with 'w'hite frame is the w map
   call s:target_fancy('g', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
-  call s:target_fancy('s', "\n".'\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n", 1)
-  call s:target_fancy('S', "\n".'\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n", 1)
-  call s:target_fancy('w', "\n".'{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n", 1)
+  call s:target_fancy('s', '\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n", 1)
+  call s:target_fancy('S', '\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n", 1)
+  call s:target_fancy('w', '{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n", 1)
   "Figure environments, and pages
-  call s:target_fancy('p', "\n".'\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
-  call s:target_fancy('f', "\n".'\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
-  call s:target_fancy('f', "\n".'\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}'."\n", 1)
-  " call s:target_fancy('F', "\n".'\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
-  call s:target_fancy('W', "\n".'\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}'."\n")
+  call s:target_fancy('p', '\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
+  call s:target_fancy('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
+  call s:target_fancy('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}'."\n", 1)
+  " call s:target_fancy('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
+  call s:target_fancy('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}'."\n")
   "Equations
-  call s:target_fancy('%', "\n".'\begin{equation*}'."\n", "\n".'\end{equation*}'."\n")
-  call s:target_fancy('^', "\n".'\begin{align*}'."\n", "\n".'\end{align*}'."\n")
-  call s:target_fancy('T', "\n".'\begin{tabular}{', "}\n\n".'\end{tabular}'."\n")
+  call s:target_fancy('%', '\begin{equation*}'."\n", "\n".'\end{equation*}'."\n")
+  call s:target_fancy('^', '\begin{align*}'."\n", "\n".'\end{align*}'."\n")
+  call s:target_fancy('T', '\begin{tabular}{', "}\n\n".'\end{tabular}'."\n")
+  "Itemize environments
+  call s:target_fancy('*', '\begin{itemize}'."\n",                  "\n".'\end{itemize}'."\n")
+  call s:target_fancy('&', '\begin{description}'."\n",              "\n".'\end{description}'."\n") "d is now open
+  call s:target_fancy('#', '\begin{enumerate}'."\n",                "\n".'\end{enumerate}'."\n")
+  call s:target_fancy('@', '\begin{enumerate}[label=\alph*.]'."\n", "\n".'\end{enumerate}'."\n")
   "Versions of the above, but this time puting them on own lines
   "TODO: fix these
   " * The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
@@ -399,10 +405,6 @@ function! s:texsurround()
   " " call s:target_fancy('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   "   "not sure what these args are for; c will vertically center
   " call s:target_fancy(',C', '\begin{column}{.5\textwidth}',     '\end{column}')
-  " call s:target_fancy(',i', '\begin{itemize}',                  '\end{itemize}')
-  " call s:target_fancy(',I', '\begin{description}',              '\end{description}') "d is now open
-  " call s:target_fancy(',n', '\begin{enumerate}',                '\end{enumerate}')
-  " call s:target_fancy(',N', '\begin{enumerate}[label=\alph*.]', '\end{enumerate}')
   " call s:target_fancy(',b', '\begin{block}{}',                  '\end{block}')
   " call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
   " call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')

@@ -256,6 +256,8 @@ MISSING 05;37;41
 .bib    33
 .aux    33
 ### Text files and readmes and stuff
+# LICENSE 33 # doesn't work
+# README  33
 .tex    33
 .bbl    33
 .txt    33
