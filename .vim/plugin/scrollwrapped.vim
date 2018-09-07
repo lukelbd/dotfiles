@@ -32,7 +32,7 @@ function! s:wrapped_line_props(mode,line)
   "First figure out indents
   let string=getline(a:line)
   let width=winwidth(0)-(&l:nu || &l:rnu)*&l:numberwidth "exclude region for numbers
-  if &l:breakindent
+  if exists('&breakindent') && &l:breakindent
     let n_indent=max([0,match(string,'^ \+\zs')])
   else
     let n_indent=0
