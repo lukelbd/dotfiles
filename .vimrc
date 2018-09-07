@@ -201,10 +201,8 @@ noremap <Left>  <C-o>
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "the escapes prevent a weird error where sometimes q triggers command-history window
 "Arrow keys are for macbook mapping
-noremap <C-j>  g;
-noremap <C-k>  g,
-noremap <Down> g;
-noremap <Up>   g,
+noremap <C-f> g;
+noremap <C-y> g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Delete entire line, leave behind an empty line
@@ -287,8 +285,8 @@ vnoremap <CR> <C-c>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 "Some other useful visual mode maps
 "Also prevent highlighting selection under cursor, unless on first character
-nnoremap v$ myv$h
-nnoremap vv ^myv$gE
+nnoremap v$ myvg$h
+nnoremap vv g^myvg$gE
 nnoremap vA ggmyVG
 nnoremap <silent> v/ hn:noh<CR>gn
 
@@ -462,13 +460,14 @@ if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 "------------------------------------------------------------------------------"
-"Sessions and swap files
+"Sessions and swap files and reloading
 "Mapped in my .bashrc vims to vim -S .vimsession and exiting vim saves the session there
 "Also vim-obsession more compatible with older versions
 "NOTE: Apparently obsession causes all folds to be closed
 Plug 'tpope/vim-obsession'
 " if g:compatible_workspace | Plug 'thaerkh/vim-workspace' | endif
 " Plug 'gioele/vim-autoswap' "deals with swap files automatically; no longer use them so unnecessary
+" Plug 'xolox/vim-reload' "better to write my own simple plugin
 "------------------------------------------------------------------------------"
 "Git wrappers and differencing tools
 Plug 'tpope/vim-fugitive'
@@ -513,25 +512,29 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 Plug 'justinmk/vim-sneak'
 "------------------------------------------------------------------------------"
 "End of plugins
-"The plug#end also declares filetype syntax and indent on
+"The plug#end also declares filetype plugin, syntax, and indent on
 "Note apparently every BufRead autocmd inside an ftdetect/filename.vim file
 "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
 "###############################################################################
 "SESSION MANAGEMENT
-"First, jump to mark '"' without changing the jumplist (:help g`)
-"Mark '"' is the cursor position when last exiting the current buffer
-"CursorHold is supper annoying to me; just use InsertLeave and TextChanged if possible
+"First, simple Obsession session management
+"Also manually preserve last cursor location:
+" Jump to mark '"' without changing the jumplist (:help g`)
+" Mark '"' is the cursor position when last exiting the current buffer
 augroup session
   au!
   if has_key(g:plugs, "vim-obsession") "must manually preserve cursor position
     au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .vimsession
   endif
+  "Autosave
   let s:autosave="InsertLeave" | if exists("##TextChanged") | let s:autosave.=",TextChanged" | endif
   " exe "au ".s:autosave." * w"
 augroup END
+"Function to toggle autosave on and off
+"Consider disabling
 function! s:autosave_toggle(on)
   if a:on "in future consider using this to disable autosave for large files
     if exists('b:autosave_on') && b:autosave_on=1
@@ -556,14 +559,36 @@ function! s:autosave_toggle(on)
     augroup END
   endif
 endfunction
+"Vim workspace settings
+"Had some issues with this plugin
 if has_key(g:plugs, "thaerkh/vim-workspace") "cursor positions automatically saved
   let g:workspace_session_name = '.vimsession'
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
-  let g:workspace_persist_undo_history = 0 "don't need to save undo history
-  let g:workspace_autosave_untrailspaces = 0 "sometimes we WANT trailing spaces!
+  let g:workspace_persist_undo_history = 0    "don't need to save undo history
+  let g:workspace_autosave_untrailspaces = 0  "sometimes we WANT trailing spaces!
   let g:workspace_autosave_ignore = ['help', 'rst', 'qf', 'diff', 'man']
 endif
-"Remember file position, so come back after opening to same spot
+"Function for refreshing custom filetype-specific files and .vimrc
+"If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
+"then just source it with the 'execute' shortcut Ctrl-z
+function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overridden by ftplugin stuff
+  filetype detect "if started with empty file, but now shebang makes filetype clear
+  filetype plugin indent on
+  let loaded = []
+  let files  = ['~/.vim/ftplugin/'.&ft.'.vim',       '~/.vim/syntax/'.&ft.'.vim',
+               \'~/.vim/after/ftplugin/'.&ft.'.vim', '~/.vim/after/syntax/'.&ft.'.vim']
+  for file in files
+    if !empty(glob(file))
+      exe 'so '.file
+      let loaded+=[file]
+    endif
+  endfor
+  echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
+endfunction
+command! Refresh call <sid>refresh()
+nnoremap <silent> <Leader>S :call <sid>refresh()<CR>
+"Redraw screen
+nnoremap <silent> <Leader>r :redraw!<CR>
 
 "##############################################################################"
 "DICTIONARY COMPLETION
@@ -1357,8 +1382,10 @@ endif
 "WRAPPING AND LINE BREAKING
 augroup wrap "For some reason both autocommands below are necessary; fuck it
   au!
-  au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
   au BufRead  * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
+  au BufEnter * let b:wrap_mode=(exists('b:wrap_mode') ? b:wrap_mode : 0) |
+              \ let &scrolloff=(g:scrolloff*(1-b:wrap_mode))
+  " au VimEnter * exe 'WrapToggle '.(index(['bib','tex','markdown'],&ft)!=-1)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
@@ -1366,7 +1393,7 @@ let g:scrolloff=4
 let g:colorcolumn=(has('gui_running') ? '0' : '80,120')
 "Call function with anything other than 1/0 (e.g. -1) to toggle wrapmode
 function! s:wraptoggle(...)
-  if a:0 "if non-zer number of args
+  if a:0 "if non-zero number of args
     let toggle=a:1
   elseif exists('b:wrap_mode')
     let toggle=1-b:wrap_mode
@@ -1374,11 +1401,10 @@ function! s:wraptoggle(...)
     let toggle=1
   endif
   if toggle==1
-    let b:wrap_mode=1
     "Display options that make more sense with wrapped lines
-    setlocal wrap
-    setlocal scrolloff=0
-    setlocal colorcolumn=0
+    let b:wrap_mode=1
+    let &l:wrap=1
+    let &l:colorcolumn=0
     "Basic wrap-mode navigation, always move visually
     "Still might occasionally want to navigate by lines though, so remap those to g
     noremap <buffer> k gk
@@ -1396,11 +1422,10 @@ function! s:wraptoggle(...)
     nnoremap <buffer> gA A
     nnoremap <buffer> gI I
   else
-    let b:wrap_mode=0
     "Disable previous options
-    setlocal nowrap
-    execute 'setlocal scrolloff='.g:scrolloff
-    execute 'setlocal colorcolumn='.g:colorcolumn
+    let b:wrap_mode=0
+    let &l:wrap=0
+    let &l:colorcolumn=g:colorcolumn
     "Disable previous maps
     silent! unmap k
     silent! unmap j
@@ -1522,59 +1547,45 @@ endif
 
 "###############################################################################
 "TAGBAR (requires 'brew install ctags-exuberant')
-" * Note tagbar BufReadPost autocommand must come after the c:tags one, or
-"   we end up just generating tags for the Tagbar sidebar buffer.
-" * Note the default mappings:
-"   -p jumps to tag under cursor, in code window, but remain in tagbar
-"   -Enter jumps to tag, go to window (doesn't work for pseudo-tags, generic headers)
-"   -C-n and C-p browses by top-level tags
-"   - +,- open and close folds under cursor
-"   -o toggles the fold under cursor, or current one
-"   -q quits the window
+" Note some mappings:
+" p jumps to tag under cursor, in code window, but remain in tagbar
+" C-n and C-p browses by top-level tags
+" o toggles the fold under cursor, or current one
 if has_key(g:plugs, "tagbar")
-  "Note to have tagbar open automatically FileType did not work; possibly some
-  "conflict with Obsession; instead BufReadPost worked
-  " augroup tagbar
-  "   au!
-  "   au BufReadPost * call s:tagbarmanager()
-  " augroup END
-  " function! s:tagbarmanager()
-  "   if index(['.vimrc','.bashrc'], expand("%:t"))==-1
-  "   if ".vimrc"=~expand("%:t") || (".py,.jl,.m,.tex"=~expand("%:e") && expand("%:e")!="")
-  "   if ".vimrc"=~expand("%:t") || (".py,.jl,.m"=~expand("%:e") && expand("%:e")!="")
-  "     call s:tagbarsetup()
-  "   endif
-  " endfunction
-  "Setting up Tagbar with a custom configuration
+  "Automatically open tagbar (with FileType did not work because maybe
+  "some conflict with Obsession; BufReadPost works though)
+  "Gets pretty annoying so nah
   augroup tagbar
+    au!
+    " au BufReadPost * call s:tagbarmanager()
   augroup END
+  function! s:tagbarmanager()
+    if ".py,.jl,.m,.vim,.tex"=~expand("%:e") && expand("%:e")!=""
+      call s:tagbarsetup()
+    endif
+  endfunction
+  "Setting up Tagbar with a custom configuration
   function! s:tagbarsetup()
-    "First toggle the tagbar; issues when toggling from NERDTree so switch
-    "back if cursor is already there. No issues toggline from Help window.
-    "Note toggling tagbar in a help menu appears to be fine
+    "Manage various panels, make sure nerdtree is flushed to right
+    "if open; first close tagbar if open, open if closed
     if &ft=="nerdtree"
       wincmd h
       wincmd h "move two places in case e.g. have help menu + nerdtree already
     endif
-    TagbarToggle
-    if &ft=="tagbar"
-      "Change the default open stuff for vimrc
-      "Make sure normal commands align with maps
-      let tabnms=map(tabpagebuflist(),'fnamemodify(bufname(v:val), ":t")')
-      if index(tabnms,".vimrc")!=-1
-        silent normal _
-        call search("^\. autocommand groups$")
-        silent normal =
-        noh
+    let tabfts=map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
+    if index(tabfts,"tagbar")!=-1
+      TagbarClose
+    else
+      TagbarOpen
+      if index(tabfts,"nerdtree")!=-1
+        wincmd l
+        wincmd L
+        wincmd p
       endif
-      "Make sure NERDTree is always flushed to the far right
-      "Do this by moving TagBar one spot to the left if it is opened
-      "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
-      let tabfts=map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
-      if index(tabfts,"nerdtree")!=-1 | wincmd h | wincmd x | endif
-      exe 'vertical resize '.g:tagbar_width
-      wincmd p
     endif
+    "Make sure NERDTree is always flushed to the far right
+    "Do this by moving TagBar one spot to the left if it is opened
+    "while NERDTree already open. If TagBar was opened first, NERDTree will already be far to the right.
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
   "Global settings
@@ -1583,22 +1594,50 @@ if has_key(g:plugs, "tagbar")
   let g:tagbar_silent=1 "no information echoed
   let g:tagbar_previewwin_pos="bottomleft" "result of pressing 'P'
   let g:tagbar_left=0 "open on left; more natural this way
-  let g:tagbar_foldlevel=-1 "default none
   let g:tagbar_indent=-1 "only one space indent
-  let g:tagbar_autoshowtag=0 "do not open tag folds when cursor moves over one
-  let g:tagbar_show_linenumbers=0 "don't show line numbers
-  let g:tagbar_autofocus=1 "don't autojump to window if opened
+  let g:tagbar_show_linenumbers=0 "not needed
+  let g:tagbar_autofocus=0 "don't autojump to window if opened
   let g:tagbar_sort=1 "sort alphabetically? actually much easier to navigate, so yes
   let g:tagbar_case_insensitive=1 "make sorting case insensitive
   let g:tagbar_compact=1 "no header information in panel
-  let g:tagbar_singleclick=0 "one click select; annoying
   let g:tagbar_width=15 "better default
   let g:tagbar_zoomwidth=15 "don't ever 'zoom' even if text doesn't fit
   let g:tagbar_expand=0
-  let g:tagbar_map_closefold="-"
+  " let g:tagbar_singleclick=1 "one click select, was annoying
+  "Mappings
   let g:tagbar_map_openfold="="
+  let g:tagbar_map_closefold="-"
   let g:tagbar_map_closeallfolds="_"
   let g:tagbar_map_openallfolds="+"
+  "Fold levels
+  let g:tagbar_autoshowtag=2 "never ever open tagbar folds automatically, even when opening for first time
+  let g:tagbar_foldlevel=1 "setting to zero will override the 'kinds' fields in below dicts
+  "Custom creations; note the kinds depend on some special language defs in ~/.ctags
+  "For more info, see :help tagbar-extend
+  "To list kinds, see :!ctags --list-kinds=<filetype>
+  "The first number is whether to fold by default, second is whether to highlight location
+  " \ 'r:refs:1:0', "not useful
+  " \ 'p:pagerefs:1:0' "not useful
+  let g:tagbar_type_tex = {
+      \ 'ctagstype' : 'latex',
+      \ 'kinds'     : [
+          \ 's:sections',
+          \ 'g:graphics:0:1',
+          \ 'l:labels:0:1',
+      \ ],
+      \ 'sort' : 0
+  \ }
+  let g:tagbar_type_vim = {
+      \ 'ctagstype' : 'vim',
+      \ 'kinds'     : [
+          \ 'a:augroups:0',
+          \ 'f:functions:1',
+          \ 'c:commands:1:0',
+          \ 'v:variables:1:0',
+          \ 'm:maps:1:0',
+      \ ],
+      \ 'sort' : 0
+  \ }
 endif
 
 "###############################################################################
@@ -1616,9 +1655,9 @@ nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if tabpagenr('$')==1
-      \\| qa \| else \| tabclose \| if !g:tabpagelast \| silent! tabp \| endif \| endif<CR>
+  \ \| qa \| else \| tabclose \| if !g:tabpagelast \| silent! tabp \| endif \| endif<CR>
 nnoremap <silent> <C-w> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>
-      \:q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
+  \ :q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
 "so we have close current window, close tab, and close everything
 "last map has to test wither the :q action closed the entire tab
 silent! tnoremap <silent> <C-c> <C-w>:q!<CR>
@@ -1652,8 +1691,10 @@ function! s:foreward_delete()
 endfunction
 inoremap <silent> <expr> <Delete> <sid>foreward_delete()
 "Wrapping
+let &breakat=" 	!*-+;:,./?" "break at single instances of several characters
 set textwidth=0 "also disable it to start with dummy
 set linebreak "breaks lines only in whitespace makes wrapping acceptable
+set breakindent "map indentation when breaking
 set wrapmargin=0 "starts wrapping at the edge; >0 leaves empty bufferzone
 set display=lastline "displays as much of wrapped lastline as possible;
 "Global behavior
@@ -1953,9 +1994,6 @@ silent! unmap zuz
 "Single-keystroke indent, dedent, fix indentation
 augroup gcommands
 augroup END
-"Don't know why these are here but just go with it bro
-nnoremap <silent> <Leader>r :redraw!<CR>
-nnoremap <silent> <Leader>S :filetype detect \| so ~/.vimrc<CR>:echom "Refreshed .vimrc and re-loaded syntax."<CR>
 "Complete overview of g commands here; change behavior a bit to
 "be more mnemonically sensible and make wrapped-line editing easier, but is great
 "Undo these maps to avoid confusion
@@ -2157,11 +2195,11 @@ command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 "Remember :scriptnames lists all loaded files
 function! s:ftplugin()
   "Enable 'simple' mode
-  execute 'split $VIMRUNTIME/ftplugin/'.&filetype.'.vim'
+  execute 'split $VIMRUNTIME/ftplugin/'.&ft.'.vim'
   silent SimpleSetup
 endfunction
 function! s:ftsyntax()
-  execute 'split $VIMRUNTIME/syntax/'.&filetype.'.vim'
+  execute 'split $VIMRUNTIME/syntax/'.&ft.'.vim'
   silent SimpleSetup
 endfunction
 command! PluginFile call <sid>ftplugin()
