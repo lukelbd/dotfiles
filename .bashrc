@@ -425,6 +425,19 @@ hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status
 function c() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 function empty() { for i in {1..100}; do echo; done; }
+function abspath() { # abspath that works on mac, Linux, or anything with bash
+  if [ -d "$1" ]; then
+    (cd "$1"; pwd)
+  elif [ -f "$1" ]; then
+    if [[ $1 = /* ]]; then
+      echo "$1"
+    elif [[ $1 == */* ]]; then
+      echo "$(cd "${1%/*}"; pwd)/${1##*/}"
+    else
+      echo "$(pwd)/$1"
+    fi
+  fi
+}
 
 # Controlling and viewing running processes
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
@@ -1188,9 +1201,9 @@ function flatten() {
 # Extract PDF annotations
 # Turned out kind of complicated
 function unannotate() {
-  local original=$1
-  local final=${original%.pdf}_unannotated.pdf
-  [ ${original##*.} != "pdf" ] && echo "Error: Must input PDF file." && return 1
+  local original="$1"
+  local final="${original%.pdf}_unannotated.pdf"
+  [ "${original##*.}" != "pdf" ] && echo "Error: Must input PDF file." && return 1
   $_macos && local sed="gsed" || local sed="sed"
   # Try this from: https://superuser.com/a/428744/506762
   # Actually doesn't work, maybe relied on some particular format; need pdftk uncompression
@@ -1201,9 +1214,9 @@ function unannotate() {
   # Download package instead of Homebrew version; homebrew one is broked
   # The environment variables prevent 'Illegal byte sequence' error
   # on Linux and Mac; see: https://stackoverflow.com/a/23584470/4970632
-  pdftk $original output uncompressed.pdf uncompress
+  pdftk "$original" output uncompressed.pdf uncompress
   LANG=C LC_ALL=C $sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
-  pdftk stripped.pdf output $final compress
+  pdftk stripped.pdf output "$final" compress
   rm uncompressed.pdf stripped.pdf
 }
 
