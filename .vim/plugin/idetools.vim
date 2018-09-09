@@ -210,7 +210,9 @@ function! s:ctagbracketmaps()
     return
   endif
   noremap <expr> <buffer> <silent> [t <sid>ctagbracket(0,'.v:count.').'gg:call <sid>ctagmessage()<CR>'
+  noremap <expr> <buffer> <silent> [[ <sid>ctagbracket(0,'.v:count.').'gg:call <sid>ctagmessage()<CR>'
   noremap <expr> <buffer> <silent> ]t <sid>ctagbracket(1,'.v:count.').'gg:call <sid>ctagmessage()<CR>'
+  noremap <expr> <buffer> <silent> ]] <sid>ctagbracket(1,'.v:count.').'gg:call <sid>ctagmessage()<CR>'
   " if exists('g:has_nowait') && g:has_nowait
   "   noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
   "   noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
