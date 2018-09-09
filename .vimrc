@@ -1694,7 +1694,9 @@ inoremap <silent> <expr> <Delete> <sid>foreward_delete()
 let &breakat=" 	!*-+;:,./?" "break at single instances of several characters
 set textwidth=0 "also disable it to start with dummy
 set linebreak "breaks lines only in whitespace makes wrapping acceptable
-set breakindent "map indentation when breaking
+if exists('&breakindent')
+  set breakindent "map indentation when breaking
+endif
 set wrapmargin=0 "starts wrapping at the edge; >0 leaves empty bufferzone
 set display=lastline "displays as much of wrapped lastline as possible;
 "Global behavior

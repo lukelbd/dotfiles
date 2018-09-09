@@ -1,4 +1,6 @@
 -f -
+--fields=+k
+--fields=+t
 --excmd=number
 --langdef=latex
 --langmap=latex:.tex,vim:+.vimrc,sh:+.bashrc
