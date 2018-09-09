@@ -52,7 +52,7 @@ set cpoptions+=d
 let g:tags_ignore=['help', 'rst', 'qf', 'diff', 'man', 'nerdtree', 'tagbar']
 "List of per-file/per-filetype tag categories that we define as 'scope-delimiters',
 "i.e. tags approximately denoting boundaries for variable scope of code block underneath cursor
-let g:tags_top={
+let g:tags_top = {
   \ '.vimrc'  : 'a',
   \ 'vim'     : 'afc',
   \ 'tex'     : 'bs',
@@ -60,6 +60,11 @@ let g:tags_top={
   \ 'fortran' : 'smfp',
   \ 'default' : 'f',
   \ }
+"List of files for which we only want not just the 'top level' tags (i.e. tags
+"that do not belong to another block, e.g. a program or subroutine)
+"Note: In future, may want to only filter tags belonging to specific
+"group (e.g. if tag belongs to a 'program', ignore it).
+let g:fts_all = ['fortran']
 
 "------------------------------------------------------------------------------"
 "The below contains super cool ctags functions that are way better than
@@ -74,7 +79,7 @@ nnoremap <silent> <Leader>C :ReadTags<CR>
 "To add global options, modify ~/.ctags
 function! s:ctagcmd(...)
   let flags=(a:0 ? a:1 : '') "extra flags
-  return "ctags ".flags." ".shellescape(expand('%:p'))." 2>/dev/null | cut -d '\t' -f1,3-4 "
+  return "ctags ".flags." ".shellescape(expand('%:p'))." 2>/dev/null | cut -d '\t' -f1,3-5 "
   " \." | command grep '^[^\t]*\t".expand('%:p')."' "this filters to only tags from 'this file'
 endfunction
 
@@ -126,12 +131,13 @@ function! s:ctagsread()
   "Will also filter to pick only ***top-level*** items (i.e. tags with global scope)
   if has_key(g:tags_top, expand('%:t'))
     let cats=g:tags_top[expand('%:t')]
-  elseif has_key(g:tags_top,&ft)
+  elseif has_key(g:tags_top, &ft)
     let cats=g:tags_top[&ft]
   else
     let cats=g:tags_top['default']
   endif
-  let b:ctags_top=filter(deepcopy(b:ctags_line), 'len(v:val)==3 && v:val[2]=~"['.cats.']"')
+  let b:ctags_top=filter(deepcopy(b:ctags_line),
+    \ 'v:val[2]=~"['.cats.']" && ('.index(g:fts_all,&ft).'!=-1 || len(v:val)==3)')
 endfunction
 command! ReadTags call <sid>ctagsread()
 
@@ -159,9 +165,9 @@ noremap <silent> <Leader><Space> :call fzf#run({'source': <sid>ctagmenu(b:ctags_
 function! s:ctagbracket(foreward, n)
   if !exists("b:ctags_top") || len(b:ctags_top)==0
     echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
-    return
+    return line('.') "stay on current line if failed
   endif
-  let ctaglines=map(deepcopy(b:ctags_top),'v:val[-2]')
+  let ctaglines=map(deepcopy(b:ctags_top),'v:val[1]')
   let njumps=(a:n==0 ? 1 : a:n)
   for i in range(njumps)
     let lnum=line('.')
@@ -184,18 +190,27 @@ function! s:ctagbracket(foreward, n)
         endif
       endfor
     endif
-    return ctaglines[i] "just return the line number
+    let b:ctag_index=i
+    return ctaglines[i]
   endfor
 endfunction
+function! s:ctagmessage() "do this becuase otherwise, message disappears when jumping to tag, because screen had to refresh
+  if !exists("b:ctags_top") || len(b:ctags_top)==0 || !exists("b:ctag_index")
+    return
+  endif
+  let tag=b:ctags_top[b:ctag_index]
+  echo 'Tag: '.tag[0]
+endfunction
 
-"Now define the maps, and declare another useful map to jump to definition of key under cursor
+"Now define the maps
+"Declare another useful map to jump to definition of key under cursor
 nnoremap <CR> gd
 function! s:ctagbracketmaps()
   if exists('g:tags_ignore') && index(g:tags_ignore, &ft)!=-1
     return
   endif
-  noremap <expr> <buffer> <silent> [t <sid>ctagbracket(0,'.v:count.').'gg'
-  noremap <expr> <buffer> <silent> ]t <sid>ctagbracket(1,'.v:count.').'gg'
+  noremap <expr> <buffer> <silent> [t <sid>ctagbracket(0,'.v:count.').'gg:call <sid>ctagmessage()<CR>'
+  noremap <expr> <buffer> <silent> ]t <sid>ctagbracket(1,'.v:count.').'gg:call <sid>ctagmessage()<CR>'
   " if exists('g:has_nowait') && g:has_nowait
   "   noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
   "   noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
