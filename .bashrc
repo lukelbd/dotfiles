@@ -782,7 +782,7 @@ function connect() {
   ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address."      && return 1
   # Get list of available ports on this machine; currently we check 20 options
   if [ $# -eq 0 ]; then
-    for port in $(seq 20000 20020); do
+    for port in $(seq 30000 30020); do
       ! netstat -an | grep "[:.]$port" &>/dev/null && candidates+=($port)
     done
     [ ${#candidates[@]} -eq 0 ] && echo "Error: No ports available on this machine." && return 1
@@ -843,12 +843,12 @@ function notebook() {
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
     port="--port=$1"
-  elif ! $_macos; then
+  elif ! $_macos; then # remote ports will use 3XXXX
     connect
     [ -z "$_jupyter_port" ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
-  else
+  else # local ports will use 2XXXX
     for port in $(seq 20000 20020); do
       ! netstat -an | grep "[:.]$port" &>/dev/null && break
     done

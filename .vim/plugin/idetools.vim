@@ -1,5 +1,9 @@
 "------------------------------------------------------------------------------"
-"Plugin by Luke Davis <lukelbd@gmail.com> 
+" Author: Luke Davis (lukelbd@gmail.com)
+" Date: 2018-09-09
+"Copy of unimpaired.vim from Tim Pope, and many custom features including
+"ctags integration, scope-searching, and refactoring tools.
+"------------------------------------------------------------------------------"
 "Tries to wrap a few related features into one plugin file,
 "including super cool and useful ***refactoring*** tools based on ctags:
 " * Ctags integration -- jumping between successive tags, jumping to a particular
@@ -52,7 +56,7 @@ set cpoptions+=d
 let g:tags_ignore=['help', 'rst', 'qf', 'diff', 'man', 'nerdtree', 'tagbar']
 "List of per-file/per-filetype tag categories that we define as 'scope-delimiters',
 "i.e. tags approximately denoting boundaries for variable scope of code block underneath cursor
-let g:tags_top={
+let g:tags_top = {
   \ '.vimrc'  : 'a',
   \ 'vim'     : 'afc',
   \ 'tex'     : 'bs',
@@ -60,6 +64,11 @@ let g:tags_top={
   \ 'fortran' : 'smfp',
   \ 'default' : 'f',
   \ }
+"List of files for which we only want not just the 'top level' tags (i.e. tags
+"that do not belong to another block, e.g. a program or subroutine)
+"Note: In future, may want to only filter tags belonging to specific
+"group (e.g. if tag belongs to a 'program', ignore it).
+let g:fts_all = ['fortran']
 
 "------------------------------------------------------------------------------"
 "The below contains super cool ctags functions that are way better than
@@ -74,7 +83,7 @@ nnoremap <silent> <Leader>C :ReadTags<CR>
 "To add global options, modify ~/.ctags
 function! s:ctagcmd(...)
   let flags=(a:0 ? a:1 : '') "extra flags
-  return "ctags ".flags." ".shellescape(expand('%:p'))." 2>/dev/null | cut -d '\t' -f1,3-4 "
+  return "ctags ".flags." ".shellescape(expand('%:p'))." 2>/dev/null | cut -d '\t' -f1,3-5 "
   " \." | command grep '^[^\t]*\t".expand('%:p')."' "this filters to only tags from 'this file'
 endfunction
 
@@ -126,12 +135,13 @@ function! s:ctagsread()
   "Will also filter to pick only ***top-level*** items (i.e. tags with global scope)
   if has_key(g:tags_top, expand('%:t'))
     let cats=g:tags_top[expand('%:t')]
-  elseif has_key(g:tags_top,&ft)
+  elseif has_key(g:tags_top, &ft)
     let cats=g:tags_top[&ft]
   else
     let cats=g:tags_top['default']
   endif
-  let b:ctags_top=filter(deepcopy(b:ctags_line), 'len(v:val)==3 && v:val[2]=~"['.cats.']"')
+  let b:ctags_top=filter(deepcopy(b:ctags_line),
+    \ 'v:val[2]=~"['.cats.']" && ('.index(g:fts_all,&ft).'!=-1 || len(v:val)==3)')
 endfunction
 command! ReadTags call <sid>ctagsread()
 
@@ -150,7 +160,7 @@ endfunction
 function! s:ctagjump(ctag) "split by multiple whitespace, get the line number (comes after the colon)
   exe split(a:ctag, '\s\+')[0][:-2]
 endfunction
-noremap <silent> <Leader><Space> :call fzf#run({'source': <sid>ctagmenu(b:ctags_alph), 'sink': function('<sid>ctagjump'), 'down': '~20%'})<CR>
+nnoremap <silent> <Space><Space> :call fzf#run({'source': <sid>ctagmenu(b:ctags_alph), 'sink': function('<sid>ctagjump'), 'down': '~20%'})<CR>
 
 "------------------------------------------------------------------------------"
 "Next tools for using ctags to approximate variable scope
@@ -159,46 +169,50 @@ noremap <silent> <Leader><Space> :call fzf#run({'source': <sid>ctagmenu(b:ctags_
 function! s:ctagbracket(foreward, n)
   if !exists("b:ctags_top") || len(b:ctags_top)==0
     echohl WarningMsg | echom "Warning: ctags unavailable." | echohl None
-    return
+    return line('.') "stay on current line if failed
   endif
-  let ctaglines=map(deepcopy(b:ctags_top),'v:val[-2]')
+  let ctaglines=map(deepcopy(b:ctags_top),'v:val[1]')
   let njumps=(a:n==0 ? 1 : a:n)
   for i in range(njumps)
     let lnum=line('.')
     "Edge cases; at bottom or top of document
-    if lnum<ctaglines[0] || lnum>ctaglines[-1]
-      let i=(a:foreward ? 0 : -1)
+    if lnum<b:ctags_top[0][1] || lnum>b:ctags_top[-1][1]
+      let idx=(a:foreward ? 0 : -1)
     "Extra case not handled in main loop
-    elseif lnum==ctaglines[-1]
-      let i=(a:foreward ? 0 : -2)
+    elseif lnum==b:ctags_top[-1][1]
+      let idx=(a:foreward ? 0 : -2)
     "Main loop
     else
-      for i in range(len(ctaglines)-1)
-        if lnum==ctaglines[i]
-          let i=(a:foreward ? i+1 : i-1) | break
-        elseif lnum>ctaglines[i] && lnum<ctaglines[i+1]
-          let i=(a:foreward ? i+1 : i) | break
+      for i in range(len(b:ctags_top)-1)
+        if lnum==b:ctags_top[i][1]
+          let idx=(a:foreward ? i+1 : i-1) | break
+        elseif lnum>b:ctags_top[i][1] && lnum<b:ctags_top[i+1][1]
+          let idx=(a:foreward ? i+1 : i) | break
         endif
-        if i==len(ctaglines)-1
-          echohl WarningMsg | "Error: Bracket jump failed." | echohl None
+        if i==len(b:ctags_top)-1
+          echohl WarningMsg | "Error: Bracket jump failed." | echohl None | return line('.')
         endif
       endfor
     endif
-    return ctaglines[i] "just return the line number
   endfor
+  echo 'Tag: '.b:ctags_top[idx][0]
+  return b:ctags_top[idx][1]
 endfunction
 
-"Now define the maps, and declare another useful map to jump to definition of key under cursor
+"Now define the maps
+"Declare another useful map to jump to definition of key under cursor
 nnoremap <CR> gd
 function! s:ctagbracketmaps()
   if exists('g:tags_ignore') && index(g:tags_ignore, &ft)!=-1
     return
   endif
   noremap <expr> <buffer> <silent> [t <sid>ctagbracket(0,'.v:count.').'gg'
+  noremap <expr> <buffer> <silent> [[ <sid>ctagbracket(0,'.v:count.').'gg'
   noremap <expr> <buffer> <silent> ]t <sid>ctagbracket(1,'.v:count.').'gg'
+  noremap <expr> <buffer> <silent> ]] <sid>ctagbracket(1,'.v:count.').'gg'
   " if exists('g:has_nowait') && g:has_nowait
-  "   noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
-  "   noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
+  " noremap <nowait> <expr> <buffer> <silent> [ <sid>ctagbracket(0,'.v:count.').'gg'
+  " noremap <nowait> <expr> <buffer> <silent> ] <sid>ctagbracket(1,'.v:count.').'gg'
 endfunction
 
 "------------------------------------------------------------------------------"
@@ -255,13 +269,12 @@ nnoremap <silent> <Leader>* :echo 'Number of occurences: '.system('grep -c "\b'.
 nnoremap <silent> * :let @/='\<'.expand('<cword>').'\>\C'<CR>lb:set hlsearch<CR>
 nnoremap <silent> & :let @/='\_s\@<='.expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
 "Equivalent of * and # (each one key to left), but limited to function scope
+"Note the @/ sets the 'last search' register to this string value
 nnoremap <silent> # :let @/=<sid>scopesearch(0).'\<'.expand('<cword>').'\>\C'<CR>lB:set hlsearch<CR>
 nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze\_s\C'<CR>lB:set hlsearch<CR>
-  "note the @/ sets the 'last search' register to this string value
-
-"Remap ? for function-wide searching; follows convention of */# and &/@
-"Also note the <silent> will prevent beginning the search until another key is pressed
-nnoremap <silent> ? /<C-r>=<sid>scopesearch(0)<CR>
+"Remap g/ for function-wide searching; similar convention to other commands
+"Note the <silent> will prevent beginning the search until another key is pressed
+nnoremap <silent> g/ /<C-r>=<sid>scopesearch(0)<CR>
 "Map to search by character; never use default ! map so why not!
 "by default ! waits for a motion, then starts :<range> command
 nnoremap <silent> ! ylh/<C-r>=escape(@",'/\')<CR><CR>
@@ -324,6 +337,8 @@ endfunction
 "Remaps using black magic
 " * First one just uses last search, the other ones use word under cursor
 " * Note gn and gN move to next hlsearch, then *visually selects it*, so cgn says to change in this selection
+" * Note don't need 'c?', since if you want a function local string replacement, just
+"   run 'g/' to select your text, then c/, d/, ca/, da/, et cetera. Same exact result.
 nnoremap <silent> c/ :set hlsearch<CR>
       \:let g:inject_replace_occurences=1<CR>cgn
 nnoremap <silent> c* :let @/='\<'.expand('<cword>').'\>\C'<CR>:set hlsearch<CR>
