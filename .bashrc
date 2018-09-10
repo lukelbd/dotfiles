@@ -270,7 +270,8 @@ function open() {
       case "$file" in
         *.pdf|*.svg|*.jpg|*.jpeg|*.png) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
-        *.html|*.xml|*.htm) app="Chromium.app" ;;
+        *.html|*.xml|*.htm|*.gif) app="Chromium.app" ;;
+        *.mov|*.mp4) app="VLC.app" ;;
         *.md) app="Marked 2.app" ;;
         *)    app="TextEdit.app" ;;
       esac

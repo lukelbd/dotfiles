@@ -256,8 +256,8 @@ fi
 #------------------------------------------------------------------------------#
 echo "Opening files."
 cleanup
+{ ! $texdiff && ! $tex2docx; } && open -a "$viewer" "$filestem.pdf" # open new pdf
 $texdiff  && [ -e "$dfilestem.pdf" ] && open -a "$viewer" "$dfilestem.pdf" # open difference
-open -a "$viewer" "$filestem.pdf" # open new pdf
 $tex2docx && [ -e "$filestem.docx" ] && open -a "pages" "$filestem.docx" # open document
 open -a $terminal # bring terminal back into focus
 
