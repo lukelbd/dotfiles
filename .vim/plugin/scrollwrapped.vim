@@ -32,7 +32,7 @@ function! s:wrapped_line_props(mode,line)
   "First figure out indents
   let string=getline(a:line)
   let width=winwidth(0)-(&l:nu || &l:rnu)*&l:numberwidth "exclude region for numbers
-  if &l:breakindent
+  if exists('&breakindent') && &l:breakindent
     let n_indent=max([0,match(string,'^ \+\zs')])
   else
     let n_indent=0
@@ -84,7 +84,7 @@ function! s:scroll(target,mode,move)
   let winline=winline()
   if 'ud'!~a:mode
     echom "Error: Mode string must be either [u]p or [d]own."
-    return -1
+    return ''
   endif
   let scrolloff=&l:scrolloff
   let &l:scrolloff=0
@@ -110,7 +110,7 @@ function! s:scroll(target,mode,move)
       let lineheight=s:wrapped_line_props('l',topline)
       let scrolled+=lineheight
       if lineheight==-1 "indicates error
-        return
+        return ''
       endif
     endwhile
     let topline=(a:mode=='u' ? topline : topline+1)
@@ -155,7 +155,7 @@ function! s:scroll(target,mode,move)
     if index==-1 "cursor is sitting on the last virtual line of 'curline'
       let curline_offset=curline_height-1 "offset from first virtual line of current line
     elseif index==0 "should never happen -- would mean cursor is in column '0' because colstarts always starts with 1
-      echom "Error: What the fudge." | return
+      echom "Error: What the fudge." | return ''
     else
       let curline_offset=index-1
     endif
@@ -243,11 +243,12 @@ function! s:scroll(target,mode,move)
   "----------------------------------------------------------------------------"
   "Finally restore to the new column
   "----------------------------------------------------------------------------"
-  call winrestview({'topline':topline, 'lnum':curline, 'leftcol':0, 'col':curcol})
+  call winrestview({'topline':max([topline,0]), 'lnum':curline, 'leftcol':0, 'col':curcol})
   let &l:scrolloff=scrolloff
   if verb
     echom 'WinLine: '.winline.' to '.winline()
   endif
+  return ''
 endfunction
 
 "------------------------------------------------------------------------------"
@@ -255,14 +256,13 @@ endfunction
 "------------------------------------------------------------------------------"
 "Normal mode maps
 "Arrow keys are for macbook Karabiner mapping
-nnoremap <silent> <C-d>  :call <sid>scroll(winheight(0)/3,'d',1)<CR>
-nnoremap <silent> <C-u>  :call <sid>scroll(winheight(0)/3,'u',1)<CR>
+nnoremap <silent> <C-d> :call <sid>scroll(winheight(0)/3,'d',1)<CR>
+nnoremap <silent> <C-u> :call <sid>scroll(winheight(0)/3,'u',1)<CR>
 nnoremap <silent> <C-j>  :call <sid>scroll(winheight(0)/5,'d',1)<CR>
 nnoremap <silent> <C-k>  :call <sid>scroll(winheight(0)/5,'u',1)<CR>
 nnoremap <silent> <Down> :call <sid>scroll(winheight(0)/5,'d',1)<CR>
 nnoremap <silent> <Up>   :call <sid>scroll(winheight(0)/5,'u',1)<CR>
-"Visual mode scrolling with consistent mappings
-"Arrow keys are for macbook Karabiner mapping
+"Closest reasonable thing for visual mode
 vnoremap <silent> <expr> <C-d>  eval(winheight(0)/3).'<C-e>'.eval(winheight(0)/3).'gj'
 vnoremap <silent> <expr> <C-u>  eval(winheight(0)/3).'<C-y>'.eval(winheight(0)/3).'gk'
 vnoremap <silent> <expr> <C-j>  eval(winheight(0)/5).'<C-e>'.eval(winheight(0)/5).'gj'
@@ -276,4 +276,3 @@ vnoremap <silent> <expr> <Up>   eval(winheight(0)/5).'<C-y>'.eval(winheight(0)/5
 " nnoremap <silent> <ScrollWheelDown> :call <sid>scroll(1,0,0)<CR>:redraw<CR>
 " vnoremap <silent> <ScrollWheelDown> <C-e>gj
 " vnoremap <silent> <ScrollWheelUp> <C-y>gk
-
