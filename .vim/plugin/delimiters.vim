@@ -9,6 +9,14 @@ if !exists("g:plugs")
   echo "Warning: vim-plugs required to check if dependency plugins are installed."
   finish
 endif
+if !exists("g:plugs")
+  echo "Warning: vim-plugs required to check if dependency plugins are installed."
+  finish
+endif
+if !exists("g:plugs")
+  echo "Warning: vim-plugs required to check if dependency plugins are installed."
+  finish
+endif
 if !has_key(g:plugs, "vim-surround")
   finish
 endif
@@ -71,89 +79,6 @@ imap <C-n> <Nop>
 vmap <C-s> <Plug>VSurround
 
 "------------------------------------------------------------------------------"
-"Function to alias builtin vim surround blocks
-function! s:alias(original,new,...)
-  if a:0 "just checks for existance of third variable
-    let buffer="<buffer>"
-  else
-    let buffer=""
-  endif
-  exe 'nnoremap '.buffer.' di'.a:original.' di'.a:new
-  exe 'nnoremap '.buffer.' ci'.a:original.' ci'.a:new
-  exe 'nnoremap '.buffer.' yi'.a:original.' yi'.a:new
-  exe 'nnoremap '.buffer.' <silent> vi'.a:original.' mVvi'.a:new
-  exe 'nnoremap '.buffer.' da'.a:original.' da'.a:new
-  exe 'nnoremap '.buffer.' ca'.a:original.' ca'.a:new
-  exe 'nnoremap '.buffer.' ya'.a:original.' ya'.a:new
-  exe 'nnoremap '.buffer.' <silent> va'.a:original.' mVva'.a:new
-endfunction
-for pair in ['r[', 'a<', 'c{']
-  call s:alias(pair[0], pair[1])
-endfor
-
-"Expand to include 'function' delimiters, i.e. function[...]
-nnoremap dif dib
-nnoremap cif cib
-nnoremap yif yib
-nnoremap <silent> vif vib
-nnoremap daf mzF(bdt(lda(`z
-nnoremap caf F(bdt(lca(
-nnoremap yaf mzF(bvf(%y`z
-nnoremap <silent> vaf F(bmVvf(%
-
-"Expand to include 'array' delimiters, i.e. array[...]
-nnoremap diA dir
-nnoremap ciA cir
-nnoremap yiA yir
-nnoremap <silent> viA vir
-nnoremap daA mzF[bdt[lda[`z
-nnoremap caA F[bdt[lca[
-nnoremap yaA mzF[bvf[%y`z
-nnoremap <silent> vaA F[bmVvf[%
-
-"Next mimick surround syntax with current line
-"Will make 'a' the whole line excluding newline, and 'i' ignore leading/trailing whitespace 
-nnoremap das 0d$
-nnoremap cas cc
-nnoremap yas 0y$
-nnoremap <silent> vas 0v$   
-nnoremap dis ^v$gEd
-nnoremap cis ^v$gEc
-nnoremap yis ^v$gEy
-nnoremap <silent> vis ^v$gE
-
-"And as we do with surround below, sentences
-"Will make 'a' the whole sentence, and 'i' up to start of next one
-nnoremap da. l(v)hd
-nnoremap ca. l(v)hs
-nnoremap ya. l(v)hy
-nnoremap <silent> va. l(v)h
-nnoremap di. v)hd
-nnoremap ci. v)hs
-nnoremap yi. v)hy
-nnoremap <silent> va. v)h
-
-"------------------------------------------------------------------------------"
-"Miscellaneous stuff
-"Selecting text in-between commented out lines
-nnoremap <expr> vic "/^\\s*".b:NERDCommenterDelims['left']."<CR><Up>$mVvN<Down>0<Esc>:noh<CR>gv"
-"Maybe add other special ideas
-
-"------------------------------------------------------------------------------"
-"Alias some 'block' definitions for vim-surround replacement commands
-"* Analagous to the yss syntax for current line
-"* Pretty much never ever want to surround based
-"  on result of a movement, so the 'iw' stuff is unnecessary
-nmap ysw ysiw
-nmap ysW ysiW
-nmap ysp ysip
-nmap ys. ysis
-nmap ySw ySiw
-nmap ySW ySiW
-nmap ySp ySip
-nmap yS. ySis
-
-"------------------------------------------------------------------------------"
 "Define some new vim-surround targets, usable with ds/cs/ys/yS
 "* Hit ga to get ASCII code (leftmost number; not the HEX code!)
 "* Note that if you just enter some uncoded character, will
@@ -184,47 +109,12 @@ nmap ds\ /\\"<CR>xxdN
 nnoremap dsf mzF(bdt(xf)x`z
 nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
 
-"Function for adding single-character delim mappings and fixing
-"surround-vim commands as described above automatically
-function! s:target_simple(symbol,start,end,...)
-  if a:0
-    let buffer="<buffer>"
-  else
-    let buffer=""
-  endif
-  "First the builtin ones
-  exe 'nnoremap '.buffer.' da'.a:symbol.' F'.a:start.'df'.a:end
-  exe 'nnoremap '.buffer.' ca'.a:symbol.' F'.a:start.'cf'.a:end
-  exe 'nnoremap '.buffer.' ya'.a:symbol.' F'.a:start.'yf'.a:end
-  exe 'nnoremap <silent> '.buffer.' va'.a:symbol.' F'.a:start.'vf'.a:end
-  exe 'nnoremap '.buffer.' da'.a:symbol.' T'.a:start.'dt'.a:end
-  exe 'nnoremap '.buffer.' ca'.a:symbol.' T'.a:start.'ct'.a:end
-  exe 'nnoremap '.buffer.' ya'.a:symbol.' T'.a:start.'yt'.a:end
-  exe 'nnoremap <silent> '.buffer.' va'.a:symbol.' T'.a:start.'vt'.a:end
-  "Next vim-surround repair
-  "This time we can't assume there is an existing valid target e.g. mapping
-  "c to B, so we have to make these up ourselves
-  if a:symbol==a:start && a:symbol==a:end "nothing needs to be done
-    return
-  elseif a:start==a:end "just point surround to the actual delimiters
-    exe 'nmap '.buffer.' ds'.a:symbol.' ds'.a:start
-    exe 'nmap '.buffer.' cs'.a:symbol.' cs'.a:start
-  else "harder
-  "Warning: Ugly hack! Just change delimiters to (), and execute cs on those
-    exe 'nmap '.buffer.' ds'.a:symbol.' f'.a:end.'xF'.a:start.'x'
-    exe 'nmap '.buffer.' cs'.a:symbol.' f'.a:end.'r)F'.a:start.'r(dsb'
-  endif
-endfunction
-"Add a couple very simple ones
-call s:target_simple('$', '$', '$', 0)
-call s:target_simple('!', '!', '!', 0)
-
 "------------------------------------------------------------------------------"
 "Function for adding fancy multiple character delimiters
 "These will only be 'placed', never detected; for example, will never work in
 "da<target>, ca<target>, cs<target><other>, etc. commands; only should be used for
 "ys<target>, yS<target>, visual-mode S, insert-mode <C-s>, et cetera
-function! s:target_fancy(symbol,start,end,...) "if final argument passed, this is buffer-local
+function! s:target(symbol,start,end,...) "if final argument passed, this is buffer-local
   if a:0 "surprisingly, below is standard vim script syntax
     " silent! unlet g:surround_{char2nr(a:symbol)}
     let b:surround_{char2nr(a:symbol)}=a:start."\r".a:end
@@ -232,6 +122,17 @@ function! s:target_fancy(symbol,start,end,...) "if final argument passed, this i
     let g:surround_{char2nr(a:symbol)}=a:start."\r".a:end
   endif
 endfunction
+
+"------------------------------------------------------------------------------"
+"Simple aliases for surround objects
+nmap ysw ysiw
+nmap ysW ysiW
+nmap ysp ysip
+nmap ys. ysis
+nmap ySw ySiw
+nmap ySW ySiW
+nmap ySp ySip
+nmap yS. ySis
 
 "------------------------------------------------------------------------------"
 "Apply the above concepts to LaTeX in particular
@@ -300,115 +201,115 @@ function! s:texsurround()
 
   "Next delimiters generally not requiring new lines
   "Math mode brackets
-  call s:target_fancy('|', '\left\|', '\right\|', 1)
-  call s:target_fancy('{', '\left\{', '\right\}', 1)
-  call s:target_fancy('(', '\left(',  '\right)',  1)
-  call s:target_fancy('[', '\left[',  '\right]',  1)
-  call s:target_fancy('<', '\left<',  '\right>',  1)
+  call s:target('|', '\left\|', '\right\|', 1)
+  call s:target('{', '\left\{', '\right\}', 1)
+  call s:target('(', '\left(',  '\right)',  1)
+  call s:target('[', '\left[',  '\right]',  1)
+  call s:target('<', '\left<',  '\right>',  1)
   "Arrays and whatnot; analagous to above, just point to right
-  call s:target_fancy('}', '\left\{\begin{array}{ll}', '\end{array}\right.', 1)
-  call s:target_fancy(')', '\begin{pmatrix}',          '\end{pmatrix}',      1)
-  call s:target_fancy(']', '\begin{bmatrix}',          '\end{bmatrix}',      1)
+  call s:target('}', '\left\{\begin{array}{ll}', '\end{array}\right.', 1)
+  call s:target(')', '\begin{pmatrix}',          '\end{pmatrix}',      1)
+  call s:target(']', '\begin{bmatrix}',          '\end{bmatrix}',      1)
   "Font types
-  call s:target_fancy('o', '{\color{red}', '}', 1)
-  call s:target_fancy('i', '\textit{',     '}', 1)
-  call s:target_fancy('t', '\textbf{',     '}', 1)
-  call s:target_fancy('E', '\emph{'  ,     '}', 1) "use e for times 10 to the whatever
-  call s:target_fancy('u', '\underline{',  '}', 1)
-  call s:target_fancy('m', '\mathrm{',     '}', 1)
-  call s:target_fancy('n', '\mathbf{',     '}', 1)
-  call s:target_fancy('M', '\mathcal{',    '}', 1)
-  call s:target_fancy('N', '\mathbb{',     '}', 1)
+  call s:target('o', '{\color{red}', '}', 1)
+  call s:target('i', '\textit{',     '}', 1)
+  call s:target('t', '\textbf{',     '}', 1)
+  call s:target('E', '\emph{'  ,     '}', 1) "use e for times 10 to the whatever
+  call s:target('u', '\underline{',  '}', 1)
+  call s:target('m', '\mathrm{',     '}', 1)
+  call s:target('n', '\mathbf{',     '}', 1)
+  call s:target('M', '\mathcal{',    '}', 1)
+  call s:target('N', '\mathbb{',     '}', 1)
   "Verbatim
-  call s:target_fancy('y', '\texttt{',     '}', 1) "typewriter text
-  call s:target_fancy('Y', '\pyth$',       '$', 1) "python verbatim
-  call s:target_fancy('V', '\verb$',       '$', 1) "verbatim
+  call s:target('y', '\texttt{',     '}', 1) "typewriter text
+  call s:target('Y', '\pyth$',       '$', 1) "python verbatim
+  call s:target('V', '\verb$',       '$', 1) "verbatim
   "Math modifiers for symbols
-  call s:target_fancy('v', '\vec{',        '}', 1)
-  call s:target_fancy('d', '\dot{',        '}', 1)
-  call s:target_fancy('D', '\ddot{',       '}', 1)
-  call s:target_fancy('h', '\hat{',        '}', 1)
-  call s:target_fancy('`', '\tilde{',      '}', 1)
-  call s:target_fancy('-', '\overline{',   '}', 1)
-  call s:target_fancy('_', '\cancelto{}{', '}', 1)
+  call s:target('v', '\vec{',        '}', 1)
+  call s:target('d', '\dot{',        '}', 1)
+  call s:target('D', '\ddot{',       '}', 1)
+  call s:target('h', '\hat{',        '}', 1)
+  call s:target('`', '\tilde{',      '}', 1)
+  call s:target('-', '\overline{',   '}', 1)
+  call s:target('_', '\cancelto{}{', '}', 1)
   "Boxes; the second one allows stuff to extend into margins, possibly
-  call s:target_fancy('x', '\boxed{',      '}', 1)
-  call s:target_fancy('X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1)
+  call s:target('x', '\boxed{',      '}', 1)
+  call s:target('X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1)
   "Quotes
-  call s:target_fancy('q', '`',          "'",  1)
-  call s:target_fancy('Q', '``',         "''", 1)
+  call s:target('q', '`',          "'",  1)
+  call s:target('Q', '``',         "''", 1)
   "Simple enivronments, exponents, etc.
-  call s:target_fancy('\', '\sqrt{',       '}',   1)
-  call s:target_fancy('$', '$',            '$',   1)
-  call s:target_fancy('e', '\times10^{',   '}',   1)
-  call s:target_fancy('k', '^{',           '}',   1)
-  call s:target_fancy('j', '_{',           '}',   1)
-  call s:target_fancy('K', '\overset{}{',  '}',   1)
-  call s:target_fancy('J', '\underset{}{', '}',   1)
-  call s:target_fancy('/', '\dfrac{',      '}{}', 1)
+  call s:target('\', '\sqrt{',       '}',   1)
+  call s:target('$', '$',            '$',   1)
+  call s:target('e', '\times10^{',   '}',   1)
+  call s:target('k', '^{',           '}',   1)
+  call s:target('j', '_{',           '}',   1)
+  call s:target('K', '\overset{}{',  '}',   1)
+  call s:target('J', '\underset{}{', '}',   1)
+  call s:target('/', '\dfrac{',      '}{}', 1)
   "Sections and titles
-  call s:target_fancy('~', '\title{',     '}',   1)
-  call s:target_fancy('!', '\frametitle{',     '}',   1)
-  call s:target_fancy('1', '\section{',        '}',   1)
-  call s:target_fancy('2', '\subsection{',     '}',   1)
-  call s:target_fancy('3', '\subsubsection{',  '}',   1)
-  call s:target_fancy('4', '\section*{',       '}',   1)
-  call s:target_fancy('5', '\subsection*{',    '}',   1)
-  call s:target_fancy('6', '\subsubsection*{', '}',   1)
+  call s:target('~', '\title{',     '}',   1)
+  call s:target('!', '\frametitle{',     '}',   1)
+  call s:target('1', '\section{',        '}',   1)
+  call s:target('2', '\subsection{',     '}',   1)
+  call s:target('3', '\subsubsection{',  '}',   1)
+  call s:target('4', '\section*{',       '}',   1)
+  call s:target('5', '\subsection*{',    '}',   1)
+  call s:target('6', '\subsubsection*{', '}',   1)
   "Shortcuts for citations and such
-  call s:target_fancy('7', '\ref{',     '}', 1) "just the number
-  call s:target_fancy('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
-  call s:target_fancy('9', '\label{',   '}', 1) "declare labels that ref and autoref point to
-  call s:target_fancy('0', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
-  call s:target_fancy('a', '\caption{', '}', 1) "amazingly 'a' not used yet
-  call s:target_fancy('A', '\captionof{figure}{', '}', 1) "alternative
-  " call s:target_fancy('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
+  call s:target('7', '\ref{',     '}', 1) "just the number
+  call s:target('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
+  call s:target('9', '\label{',   '}', 1) "declare labels that ref and autoref point to
+  call s:target('0', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
+  call s:target('a', '\caption{', '}', 1) "amazingly 'a' not used yet
+  call s:target('A', '\captionof{figure}{', '}', 1) "alternative
+  " call s:target('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
   "Other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Have been rethinking this
-  call s:target_fancy('c', '\cite{',   '}', 1) "second most common one
-  call s:target_fancy('C', '\citenum{',    '}', 1) "most common
-  call s:target_fancy('z', '\citep{',   '}', 1) "second most common one
-  call s:target_fancy('Z', '\citet{', '}', 1) "most common
-  " call s:target_fancy('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
+  call s:target('c', '\cite{',   '}', 1) "second most common one
+  call s:target('C', '\citenum{',    '}', 1) "most common
+  call s:target('z', '\citep{',   '}', 1) "second most common one
+  call s:target('Z', '\citet{', '}', 1) "most common
+  " call s:target('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "The next enfironments will also insert *newlines*
   "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
   "note that fragile make compiling way slower
   "Slide with 'w'hite frame is the w map
-  call s:target_fancy('g', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
-  call s:target_fancy('s', '\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n", 1)
-  call s:target_fancy('S', '\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n", 1)
-  call s:target_fancy('w', '{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n", 1)
+  call s:target('g', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
+  call s:target('s', '\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n", 1)
+  call s:target('S', '\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n", 1)
+  call s:target('w', '{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n", 1)
   "Figure environments, and pages
-  call s:target_fancy('p', '\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
-  call s:target_fancy('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
-  call s:target_fancy('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}'."\n", 1)
-  " call s:target_fancy('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
-  call s:target_fancy('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}'."\n")
+  call s:target('p', '\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
+  call s:target('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
+  call s:target('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}'."\n", 1)
+  " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
+  call s:target('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}'."\n")
   "Equations
-  call s:target_fancy('%', '\begin{equation*}'."\n", "\n".'\end{equation*}'."\n")
-  call s:target_fancy('^', '\begin{align*}'."\n", "\n".'\end{align*}'."\n")
-  call s:target_fancy('T', '\begin{tabular}{', "}\n\n".'\end{tabular}'."\n")
+  call s:target('%', '\begin{equation*}'."\n", "\n".'\end{equation*}'."\n")
+  call s:target('^', '\begin{align*}'."\n", "\n".'\end{align*}'."\n")
+  call s:target('T', '\begin{tabular}{', "}\n\n".'\end{tabular}'."\n")
   "Itemize environments
-  call s:target_fancy('*', '\begin{itemize}'."\n",                  "\n".'\end{itemize}'."\n")
-  call s:target_fancy('&', '\begin{description}'."\n",              "\n".'\end{description}'."\n") "d is now open
-  call s:target_fancy('#', '\begin{enumerate}'."\n",                "\n".'\end{enumerate}'."\n")
-  call s:target_fancy('@', '\begin{enumerate}[label=\alph*.]'."\n", "\n".'\end{enumerate}'."\n")
+  call s:target('*', '\begin{itemize}'."\n",                  "\n".'\end{itemize}'."\n")
+  call s:target('&', '\begin{description}'."\n",              "\n".'\end{description}'."\n") "d is now open
+  call s:target('#', '\begin{enumerate}'."\n",                "\n".'\end{enumerate}'."\n")
+  call s:target('@', '\begin{enumerate}[label=\alph*.]'."\n", "\n".'\end{enumerate}'."\n")
   "Versions of the above, but this time puting them on own lines
   "TODO: fix these
   " * The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
   "   with default single column; see: https://tex.stackexchange.com/a/366422/73149
   " * Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
-  " call s:target_fancy(',;', '\begin{center}',             '\end{center}')               "because ; was available
-  " call s:target_fancy(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  " call s:target_fancy(',c', '\begin{columns}[c]',         '\end{columns}')
-  " call s:target_fancy(',y', '\begin{python}',             '\end{python}')
-  " " call s:target_fancy('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+  " call s:target(',;', '\begin{center}',             '\end{center}')               "because ; was available
+  " call s:target(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
+  " call s:target(',c', '\begin{columns}[c]',         '\end{columns}')
+  " call s:target(',y', '\begin{python}',             '\end{python}')
+  " " call s:target('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   "   "not sure what these args are for; c will vertically center
-  " call s:target_fancy(',C', '\begin{column}{.5\textwidth}',     '\end{column}')
-  " call s:target_fancy(',b', '\begin{block}{}',                  '\end{block}')
-  " call s:target_fancy(',B', '\begin{alertblock}{}',             '\end{alertblock}')
-  " call s:target_fancy(',v', '\begin{verbatim}',                 '\end{verbatim}')
-  " call s:target_fancy(',V', '\begin{code}',                     '\end{code}')
+  " call s:target(',C', '\begin{column}{.5\textwidth}',     '\end{column}')
+  " call s:target(',b', '\begin{block}{}',                  '\end{block}')
+  " call s:target(',B', '\begin{alertblock}{}',             '\end{alertblock}')
+  " call s:target(',v', '\begin{verbatim}',                 '\end{verbatim}')
+  " call s:target(',V', '\begin{code}',                     '\end{code}')
 endfunction
 
 "------------------------------------------------------------------------------"
@@ -421,16 +322,16 @@ augroup html_delimit
   au FileType html call s:htmlmacros()
 augroup END
 function! s:htmlmacros()
-  call s:target_fancy('h', '<head>',   '</head>',   1)
-  call s:target_fancy('b', '<body>',   '</body>',   1)
-  call s:target_fancy('t', '<title>',  '</title>',  1)
-  call s:target_fancy('e', '<em>',     '</em>',     1)
-  call s:target_fancy('t', '<strong>', '</strong>', 1)
-  call s:target_fancy('p', '<p>',      '</p>',      1)
-  call s:target_fancy('1', '<h1>',     '</h1>',     1)
-  call s:target_fancy('2', '<h2>',     '</h2>',     1)
-  call s:target_fancy('3', '<h3>',     '</h3>',     1)
-  call s:target_fancy('4', '<h4>',     '</h4>',     1)
-  call s:target_fancy('5', '<h5>',     '</h5>',     1)
+  call s:target('h', '<head>',   '</head>',   1)
+  call s:target('b', '<body>',   '</body>',   1)
+  call s:target('t', '<title>',  '</title>',  1)
+  call s:target('e', '<em>',     '</em>',     1)
+  call s:target('t', '<strong>', '</strong>', 1)
+  call s:target('p', '<p>',      '</p>',      1)
+  call s:target('1', '<h1>',     '</h1>',     1)
+  call s:target('2', '<h2>',     '</h2>',     1)
+  call s:target('3', '<h3>',     '</h3>',     1)
+  call s:target('4', '<h4>',     '</h4>',     1)
+  call s:target('5', '<h5>',     '</h5>',     1)
 endfunction
 

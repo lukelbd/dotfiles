@@ -31,12 +31,13 @@ noremap K <Nop>
 "Disable c-z and Z for exiting vim
 noremap <C-z> <Nop>
 noremap Z <Nop>
+"Disable tab changing with gt
+noremap gt <Nop>
+noremap gT <Nop>
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
 "Repeat previous command
-nnoremap <Leader>: :<Up><CR>
-nnoremap <Leader>? /<Up><CR>
 set updatetime=1000 "used for CursorHold autocmds
 set nobackup noswapfile noundofile "no more swap files; constantly hitting C-s so it's safe
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
@@ -172,26 +173,6 @@ au VimLeave * if v:dying | echo "\nAAAAaaaarrrggghhhh!!!\n" | endif
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
-"MOSTLY NORMAL MODE MAPS
-"These keys aren't used currently, and are in a really good spot,
-"so why not? Fits mnemonically that insert above is Shift+<key for insert below>
-noremap <silent> ` :call append(line('.'),'')<CR>
-noremap <silent> ~ :call append(line('.')-1,'')<CR>
-"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
-"use ss/substitute instead of cl if you want to enter insert mode
-noremap <silent> cL mzi<CR><Esc>`z
-"Swap with row above, and swap with row below; awesome mnemonic, right?
-"use same syntax for c/s because almost *never* want to change up/down
-"The command-based approach make sthe cursor much less jumpy
-" noremap <silent> ck mzkddp`z
-" noremap <silent> cj jmzkddp`zj
-noremap <silent> ck k:let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
-      \ \| call winrestview(g:view)<CR>
-noremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
-      \ \| call winrestview(g:view)<CR>j
-"Useful for typos
-noremap <silent> cl xph
-noremap <silent> ch Xp
 "Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 "Arrow keys are for macbook mapping
 noremap <C-l>   <C-i>
@@ -205,13 +186,6 @@ noremap <C-f> g;
 noremap <C-y> g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
-"Delete entire line, leave behind an empty line
-"Has to be *normal* mode remaps, or will affect operator pending mode; for
-"example if you type 'dd', there will be delay.
-nnoremap dL 0d$
-"Make goto declarations more similar to ctags commands, which are all leader prefixed
-noremap <Leader>d gd
-noremap <Leader>D gD
 "Easy mark usage
 noremap " :echo "Setting mark."<CR>ma
 noremap ' `a
@@ -219,12 +193,35 @@ noremap ' `a
 "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
 map @ <Nop>
 noremap , @a
-"Redo map to capital U; means we cannot 'undo line', but who cares
-nnoremap U <C-r>
 "Use - for throwaway register, pipeline for clipboard register
 "Don't try anything fancy here, it's not worth it!
 noremap <silent> - "_
 noremap <silent> \| "*
+"These keys aren't used currently, and are in a really good spot,
+"so why not? Fits mnemonically that insert above is Shift+<key for insert below>
+nnoremap <silent> ` :call append(line('.'),'')<CR>
+nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
+"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
+"use ss/substitute instead of cl if you want to enter insert mode
+nnoremap <silent> cL mzi<CR><Esc>`z
+"Swap with row above, and swap with row below; awesome mnemonic, right?
+"use same syntax for c/s because almost *never* want to change up/down
+"The command-based approach make sthe cursor much less jumpy
+" noremap <silent> ck mzkddp`z
+" noremap <silent> cj jmzkddp`zj
+nnoremap <silent> ck k:let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>
+nnoremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>j
+"Useful for typos
+nnoremap <silent> cl xph
+nnoremap <silent> ch Xp
+"Delete entire line, leave behind an empty line
+"Has to be *normal* mode remaps, or will affect operator pending mode; for
+"example if you type 'dd', there will be delay.
+nnoremap dL 0d$
+"Redo map to capital U; means we cannot 'undo line', but who cares
+nnoremap U <C-r>
 "Don't save single-character deletions to any register
 nnoremap x "_x
 nnoremap X "_X
@@ -236,13 +233,6 @@ vnoremap P "_dP
 "works because Vim doesn't remove spaces when text has been inserted
 nnoremap o ox<BS>
 nnoremap O Ox<BS>
-"Disable arrow keys because you're better than that
-"Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
-" for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
-"   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
-"     exe s:map.' '.s:motion.' <Nop>'
-"   endfor
-" endfor
 "Disabling dumb extra scroll commands
 nnoremap <C-p> <Nop>
 nnoremap <C-n> <Nop>
@@ -258,13 +248,20 @@ nnoremap cC cc
 "Replace the currently highlighted text
 vnoremap cc s
 vnoremap cC s
+"Disable arrow keys because you're better than that
+"Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
+" for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
+"   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
+"     exe s:map.' '.s:motion.' <Nop>'
+"   endfor
+" endfor
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
 "Turn off common things in normal mode
-"also prevent Ctrl+c rining the bell
+"also prevent Ctrl+c ringing the bell
 nnoremap <C-c> <Nop>
 nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
@@ -273,22 +270,21 @@ nnoremap <Backspace> <Nop>
 "VISUAL MODE BEHAVIOR
 "Highlighting
 "Figured it out finally!!! This actually makes sense - they're next to eachother on keyboard!
-noremap <silent> <Leader>i :set hlsearch<CR>
-noremap <silent> <Leader>o :noh<CR>
+nnoremap <silent> <Leader>i :set hlsearch<CR>
+nnoremap <silent> <Leader>o :noh<CR>
 "Enable left mouse click in visual mode to extend selection; normally this is impossible
 "Note we can't use `< and `> because those refer to start and end of last visual selection,
 "while we actually want the place where we *last exited* visual mode, like '^ for insert mode
-nnoremap v myv
-nnoremap V myV
+"TODO: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
+"Want to be able to ***temporarily turn scrolloff to infinity*** when enter visual
+"mode, to do that need to stop explicitly mapping vi/va stuff, and to do that need
+"to work on text objects.
+" nnoremap v myv
+" nnoremap <silent> v/ hn:noh<CR>gn
+" nnoremap V myV
 nnoremap <C-v> my<C-v>
 vnoremap <CR> <C-c>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
-"Some other useful visual mode maps
-"Also prevent highlighting selection under cursor, unless on first character
-nnoremap v$ myvg$h
-nnoremap vv g^myvg$gE
-nnoremap vA ggmyVG
-nnoremap <silent> v/ hn:noh<CR>gn
 
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
@@ -330,8 +326,13 @@ endif
 
 "###############################################################################
 "CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
+"Also quick map to repeat last command
 function! s:commandline_check()
   nnoremap <buffer> <silent> q :q<CR>
+  silent! unmap <CR>
+  silent! unmap <C-c>
+  nnoremap  <buffer> <C-z> <C-c><CR>
+  inoremap <buffer> <C-z> <C-c><CR>
   setlocal nonumber norelativenumber nolist laststatus=0
 endfunction
 augroup cmdwin
@@ -339,7 +340,10 @@ augroup cmdwin
   au CmdwinEnter * call s:commandline_check()
   au CmdwinLeave * setlocal laststatus=2
 augroup END
-  "commandline-window settings; when we are inside of q:, q/, and q?
+nnoremap <Leader>; q:
+nnoremap <Leader>/ q/
+nnoremap <Leader>? q?
+nnoremap <Leader>: :<Up><CR>
 
 "###############################################################################
 "TAB COMPLETION OPENING NEW FILES
@@ -363,14 +367,16 @@ set softtabstop=2
 "Requirements flag, and load repeat.vim right away because want to know if it exists
 "and its functions are available
 exe 'runtime autoload/repeat.vim'
-let g:has_signs              = has("signs") "for git gutter and syntastic maybe
-let g:has_ctags              = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-let g:has_repeat             = exists("*repeat#set") "start checks for function existence
-let g:has_nowait             = (v:version>=704 || v:version==703 && has("patch1261"))
+let g:has_signs       = has("signs") "for git gutter and syntastic maybe
+let g:has_ctags       = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
+let g:has_repeat      = exists("*repeat#set") "start checks for function existence
+let g:has_nowait      = (v:version>=704 || v:version==703 && has("patch1261"))
+let g:has_matchaddpos = exists("*matchaddpos")
 let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))
 let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") "try alternative completion library
+let g:compatible_matchup     = g:has_matchaddpos "so far only this maybe?
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
@@ -387,6 +393,13 @@ call plug#begin('~/.vim/plugged')
 "Requires changing Conceal group color, but doing that also messes up latex conceal
 "backslashes (which we need to stay transparent); so forget it probably
 " Plug 'yggdroot/indentline'
+"------------------------------------------------------------------------------"
+"Custom text objects (inner/outer selections)
+Plug 'kana/vim-textobj-user'
+Plug 'bps/vim-textobj-python' "consider copying over
+Plug 'kana/vim-textobj-indent'
+Plug 'kana/vim-textobj-entire'
+" Plug 'machakann/vim-textobj-functioncall' "fucking sucks/doesn't work, fuck you
 "------------------------------------------------------------------------------"
 "Colors (don't need colors)
 " Plug 'altercation/vim-colors-solarized'
@@ -443,8 +456,8 @@ Plug 'JuliaEditorSupport/julia-vim'
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
+if g:compatible_matchup | Plug 'andymass/vim-matchup' | endif "better matching, see github
 Plug 'vim-scripts/matchit.zip'
-Plug 'andymass/vim-matchup' "better matching, see github
 "------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'
@@ -606,7 +619,7 @@ au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
 "See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
 augroup templates
   au!
-  au BufNewFile *.tex call <sid>textemplates()
+  au BufNewFile *.tex call <sid>textemplates() | redraw!
 augroup END
 function! s:textemplates()
   function! TeXTemplates(A,L,P)
@@ -621,14 +634,15 @@ function! s:textemplates()
     return names
   endfunction
   " echo 'Current templates available: '.join(names, ', ').'.'
-  while 1
-    let template=expand("~")."/latex/".input("Template (tab to reveal options): ", "", "customlist,TeXTemplates").".tex"
-    if filereadable(template)
-      execute "0r ".template
-      break
-    endif
-    echo "\nInvalid name."
-  endwhile
+  " while 1
+  let template=expand("~")."/latex/".input("Template (tab to reveal options): ", "", "customlist,TeXTemplates").".tex"
+  if filereadable(template)
+    execute "0r ".template
+    break
+  else
+    echom "Warning: Invalid name."
+  endif
+  " endwhile
 endfunction
 
 "##############################################################################"
@@ -878,16 +892,16 @@ augroup END
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
 "Todo: If you're an insane person could also generate autocompletion for these ones, but nah
-noremap <Leader>h :vert help 
+nnoremap <Leader>h :vert help 
 if has_key(g:plugs,'fzf.vim')
-  noremap <Leader>H :Help<CR>
+  nnoremap <Leader>H :Help<CR>
 endif
 "--help info; pipe output into less for better interaction
-noremap <silent> <expr> <Leader>m ':!clear; search='.input('Get help info: ').'; '
+nnoremap <silent> <expr> <Leader>m ':!clear; search='.input('Get help info: ').'; '
   \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 "man pages use capital m
-noremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').'; '
+nnoremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').'; '
   \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
@@ -903,11 +917,11 @@ function! s:simplesetup(...)
     vertical resize 80 "always certain size
     nnoremap <buffer> <CR> <C-]>
     if g:has_nowait
-      noremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
-      noremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+      nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+      nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
     else
-      noremap <nowait> <buffer> <silent> [[ :<C-u>pop<CR>
-      noremap <nowait> <buffer> <silent> ]] :<C-u>tag<CR>
+      nnoremap <nowait> <buffer> <silent> [[ :<C-u>pop<CR>
+      nnoremap <nowait> <buffer> <silent> ]] :<C-u>tag<CR>
     endif
   endif
   nnoremap <silent> <buffer> q :q<CR>
@@ -1085,10 +1099,10 @@ endif
 if has_key(g:plugs,'fzf.vim')
   "More neat mappings
   "This one opens up a searchable windows list
-  noremap <Tab><Tab> :Windows<CR>
+  nnoremap <Tab><Tab> :Windows<CR>
   "Function for searching git repository; crazy useful
   "Think i for git
-  noremap <silent> <C-p> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
+  nnoremap <silent> <C-p> :call fzf#run({'source': 'git ls-files', 'sink': 'tabe', 'down': '~20%'})<CR>
 endif
 
 "###############################################################################
@@ -1120,8 +1134,8 @@ if has_key(g:plugs, "nerdtree")
     au FileType nerdtree call s:nerdtreesetup()
   augroup END
   " f stands for files here
-  " noremap <Leader>f :NERDTreeFind<CR>
-  noremap <Leader>f :NERDTree %<CR>
+  " nnoremap <Leader>f :NERDTreeFind<CR>
+  nnoremap <Leader>f :NERDTree %<CR>
   let g:NERDTreeWinPos="right"
   let g:NERDTreeWinSize=20 "instead of 31 default
   let g:NERDTreeShowHidden=1
@@ -1139,7 +1153,7 @@ if has_key(g:plugs, "nerdtree")
   function! s:nerdtreesetup()
     setlocal nolist
     exe 'vertical resize '.g:NERDTreeWinSize
-    noremap <buffer> <Leader>f :NERDTreeClose<CR>
+    nnoremap <buffer> <Leader>f :NERDTreeClose<CR>
     if g:has_nowait | nmap <buffer> <nowait> d D | endif
     "prevents attempts to change it; this descends into directory
   endfunction
@@ -1407,18 +1421,19 @@ function! s:wraptoggle(...)
     let &l:colorcolumn=0
     "Basic wrap-mode navigation, always move visually
     "Still might occasionally want to navigate by lines though, so remap those to g
-    noremap <buffer> k gk
-    noremap <buffer> j gj
-    noremap <buffer> ^ g^
-    noremap <buffer> $ g$
-    noremap <buffer> 0 g0
-    nnoremap <buffer> A g$a
-    nnoremap <buffer> I g^i
-    noremap <buffer> gj j
-    noremap <buffer> gk k
-    noremap <buffer> g^ ^
-    noremap <buffer> g$ $
-    noremap <buffer> g0 0
+    "Use noremap instead of nnoremap, so works in *operator-pending mode*
+    noremap  <buffer> k  gk
+    noremap  <buffer> j  gj
+    noremap  <buffer> ^  g^
+    noremap  <buffer> $  g$
+    noremap  <buffer> 0  g0
+    noremap  <buffer> gj j
+    noremap  <buffer> gk k
+    noremap  <buffer> g^ ^
+    noremap  <buffer> g$ $
+    noremap  <buffer> g0 0
+    nnoremap <buffer> A  g$a
+    nnoremap <buffer> I  g^i
     nnoremap <buffer> gA A
     nnoremap <buffer> gI I
   else
@@ -1427,20 +1442,20 @@ function! s:wraptoggle(...)
     let &l:wrap=0
     let &l:colorcolumn=g:colorcolumn
     "Disable previous maps
-    silent! unmap k
-    silent! unmap j
-    silent! unmap ^
-    silent! unmap $
-    silent! unmap 0
-    silent! unmap A
-    silent! unmap I
-    silent! unmap gj
-    silent! unmap gk
-    silent! unmap g^
-    silent! unmap g$
-    silent! unmap g0
-    silent! unmap gA
-    silent! unmap gI
+    silent! unmap  <buffer> k
+    silent! unmap  <buffer> j
+    silent! unmap  <buffer> ^
+    silent! unmap  <buffer> $
+    silent! unmap  <buffer> 0
+    silent! unmap  <buffer> gj
+    silent! unmap  <buffer> gk
+    silent! unmap  <buffer> g^
+    silent! unmap  <buffer> g$
+    silent! unmap  <buffer> g0
+    silent! nunmap <buffer> A
+    silent! nunmap <buffer> I
+    silent! nunmap <buffer> gA
+    silent! nunmap <buffer> gI
   endif
 endfunction
 command! -nargs=? WrapToggle call <sid>wraptoggle(<args>)
@@ -1734,19 +1749,19 @@ augroup tabs
   au TabLeave * let g:lasttab=tabpagenr()
 augroup END
 "Basic switching, and shortcut for 'last active tab'
-noremap <Tab>1 1gt
-noremap <Tab>2 2gt
-noremap <Tab>3 3gt
-noremap <Tab>4 4gt
-noremap <Tab>5 5gt
-noremap <Tab>6 6gt
-noremap <Tab>7 7gt
-noremap <Tab>8 8gt
-noremap <Tab>9 9gt
-noremap <Tab>, gT
-noremap <Tab>. gt
+nnoremap <Tab>1 1gt
+nnoremap <Tab>2 2gt
+nnoremap <Tab>3 3gt
+nnoremap <Tab>4 4gt
+nnoremap <Tab>5 5gt
+nnoremap <Tab>6 6gt
+nnoremap <Tab>7 7gt
+nnoremap <Tab>8 8gt
+nnoremap <Tab>9 9gt
+nnoremap <Tab>, gT
+nnoremap <Tab>. gt
 let g:lasttab=1
-noremap <silent> <Tab>' :execute "tabn ".g:lasttab<CR>
+nnoremap <silent> <Tab>' :execute "tabn ".g:lasttab<CR>
   "return to previous tab
 "Moving screen around cursor
 nnoremap <Tab>u zt
@@ -1776,9 +1791,9 @@ endfunction
 function! s:tablist(A,L,P)
   return map(range(1,tabpagenr('$')),'string(v:val)')
 endfunction
-noremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: ', '', 'customlist,<sid>tablist'))<CR>
-noremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
-noremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
+nnoremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: ', '', 'customlist,<sid>tablist'))<CR>
+nnoremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
+nnoremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 "Next a function for completing stuff, *including* hidden files god damnit
 "Note allfiles function seems to have to be in local scope; otherwise can't find s:allfiles or <sid>allfiles
 function! AllFiles(A,L,P)
@@ -1805,17 +1820,27 @@ nnoremap <silent> <C-o> :call <sid>openwrapper()<CR>
 "Beware if you switched underscore and backslash!
 set splitright
 set splitbelow
-noremap <Tab>- :split 
-noremap <Tab>\ :split 
-noremap <Tab>_ :vsplit 
-noremap <Tab>\| :vsplit 
+nnoremap <Tab>- :split 
+nnoremap <Tab>\ :split 
+nnoremap <Tab>_ :vsplit 
+nnoremap <Tab>\| :vsplit 
 "Window selection
-noremap <Tab>j <C-w>j
-noremap <Tab>k <C-w>k
-noremap <Tab>h <C-w>h
-noremap <Tab>l <C-w>l
+nnoremap <Tab>j <C-w>j
+nnoremap <Tab>k <C-w>k
+nnoremap <Tab>h <C-w>h
+nnoremap <Tab>l <C-w>l
 "Switch to last window
 nnoremap <Tab>; <C-w><C-p>
+"Maps for resizing windows
+nnoremap <expr> <silent> <Tab>9 '<Esc>:resize '.(winheight(0)-3*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> <Tab>0 '<Esc>:resize '.(winheight(0)+3*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> <Tab>( '<Esc>:resize '.(winheight(0)-5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> <Tab>) '<Esc>:resize '.(winheight(0)+5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> <Tab>[ '<Esc>:vertical resize '.(winwidth(0)-5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> <Tab>] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> <Tab>{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
+nnoremap <silent> <Tab>= :vertical resize 80<CR>
 
 "###############################################################################
 "COPY/PASTING CLIPBOARD
@@ -1959,32 +1984,16 @@ set foldnestmax=10 "avoids weird things
 set foldopen=tag,mark "options for opening folds on cursor movement; disallow block
   "i.e. percent motion, horizontal motion, insert, jump
 "Folding maps
+"Delete all folds; delete fold at cursor is zd
 nnoremap zD zE
-  "delete all folds; delete fold at cursor is zd
+"Never need the lower-case versions (which globally change fold levels), but
+"often want to open/close everything; this mnemonically makes sense because
+"folding is sort-of like indenting really
 nnoremap z> zM
 nnoremap z< zR
-  "never need the lower-case versions (which globally change fold levels), but
-  "often want to open/close everything; this mnemonically makes sense because
-  "folding is sort-of like indenting really
+"Open and close all folds; to open/close under cursor, use zo/zc
 nnoremap zO zR
 nnoremap zC zM
-  "open and close all folds; to open/close under cursor, use zo/zc
-"Overhaul z-remaps for controlling window state; make them Tab-prexied
-"maps, because I *hate* inconsistency; want all window-related maps to have same prefix
-noremap <expr> <silent> <Tab>9 '<Esc>:resize '.(winheight(0)-3*max([1,v:count])).'<CR>'
-noremap <expr> <silent> <Tab>0 '<Esc>:resize '.(winheight(0)+3*max([1,v:count])).'<CR>'
-noremap <expr> <silent> <Tab>( '<Esc>:resize '.(winheight(0)-5*max([1,v:count])).'<CR>'
-noremap <expr> <silent> <Tab>) '<Esc>:resize '.(winheight(0)+5*max([1,v:count])).'<CR>'
-noremap <expr> <silent> <Tab>[ '<Esc>:vertical resize '.(winwidth(0)-5*max([1,v:count])).'<CR>'
-noremap <expr> <silent> <Tab>] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v:count])).'<CR>'
-noremap <expr> <silent> <Tab>{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
-noremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
-noremap <silent> <Tab>= :vertical resize 80<CR>
-  "and the z-prefix is a natural companion to the resizing commands
-  "the Tab commands should just sort and navigate between panes
-  "think of the 0 as 'original size', like cmd-0 on macbook
-"To prevent delay; this is associated with FastFold or something
-silent! unmap zuz
 "Change fold levels, and make sure return to same place
 "Never really use this feature so forget it
 " nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
@@ -1992,38 +2001,11 @@ silent! unmap zuz
 
 "###############################################################################
 "g CONFIGURATION
-"SINGLE-KEYSTROKE MOTION BETWEEN FUNCTIONS
-"Single-keystroke indent, dedent, fix indentation
 augroup gcommands
 augroup END
-"Complete overview of g commands here; change behavior a bit to
-"be more mnemonically sensible and make wrapped-line editing easier, but is great
-"Undo these maps to avoid confusion
-noremap gt <Nop>
-noremap gT <Nop>
-"Jumping between comments; pretty neat huh?
-"Moves cursor in whatever mode you want
-function! s:smartjump(regex,backwards) "jump to next comment
-  let startline=line('.')
-  let flag=(a:backwards ? 'Wnb' : 'Wn') "don't wrap around EOF, and don't jump yet
-  let offset=(a:backwards ? 1 : -1) "actually want to jump to line *just before* comment
-  let commentline=search(a:regex,flag)
-  if getline('.') =~# a:regex
-    return startline
-  elseif commentline==0
-    return startline "don't move
-  else
-    return commentline+offset
-  endif
-endfunction
-noremap <expr> <silent> gc <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],0).'gg'
-noremap <expr> <silent> gC <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],1).'gg'
-noremap <expr> <silent> ge <sid>smartjump('^\s*$',0).'gg'
-noremap <expr> <silent> gE <sid>smartjump('^\s*$',1).'gg'
-"Default 'open file under cursor' to open in new tab; change for normal and vidual
-noremap gf <c-w>gf
-noremap <expr> gF ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
-  \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
+"Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
 "Capitalization stuff with g, a bit refined
 "not currently used in normal mode, and fits better mnemonically
 "Mnemonic is l for letter, t for title case
@@ -2038,19 +2020,11 @@ nmap gl <Plug>cap1
 nmap gt <Plug>cap2
 " nnoremap gl ~h
 " nnoremap gt mzguiw~h`z
-"Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
-"Repeat last command
-noremap <silent> g; :<Up><CR>
-"Enter command window, execute stuff with enter key; that is the default but we want
-"enter to not move cursor ordinarily, so have to unmap it after entering window.
-"Oddly writing a function that declares maps, and calling it after using q:, did
-"not work, and making all of the map commands one line with \| did not work. Only the below works.
-noremap <silent> <Leader>; q::silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
-  \:noremap <lt>buffer <lt>C-z> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-z> <lt>C-c><CR>
-noremap <silent> <Leader>/ q/:silent! unmap <lt>CR><CR>:silent! unmap <lt>C-c><CR>
-  \:noremap <lt>buffer <lt>C-z> <lt>C-c><CR>:inoremap <lt>buffer> <lt>C-z> <lt>C-c><CR>
+"Default 'open file under cursor' to open in new tab; change for normal and vidual
+"Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
+nnoremap <expr> gf ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
+  \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
+nnoremap gF <c-w>gf
 "Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
 " * Note the <Esc> is needed first because it cancels application of the number operator
