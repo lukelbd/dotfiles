@@ -119,6 +119,52 @@ inoreabbrev <buffer> <expr> ;_ '\begin{center}\noindent\rule{'
     \.input('fraction: ').'\textwidth}{0.7pt}\end{center}'
 "centerline (can modify this; \rule is simple enough to understand)
 "------------------------------------------------------------------------------"
+"TeX plugin
+"Copied from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
+if has_key(g:plugs,'vim-textobj-user')
+  call textobj#user#plugin('latex', {
+  \   'environment': {
+  \     'pattern': ['\\begin{[^}]\+}.*\n\s*', '\n^\s*\\end{[^}]\+}.*$'],
+  \     'select-a': 'aL',
+  \     'select-i': 'iL',
+  \   },
+  \  'command': {
+  \     'pattern': ['\\\S\+{', '}'],
+  \     'select-a': 'al',
+  \     'select-i': 'il',
+  \   },
+  \  'bracket-math': {
+  \     'pattern': ['\\\[', '\\\]'],
+  \     'select-a': 'ab',
+  \     'select-i': 'ib',
+  \   },
+  \  'paren-math': {
+  \     'pattern': ['\\(', '\\)'],
+  \     'select-a': 'a\',
+  \     'select-i': 'i\',
+  \   },
+  \  'dollar-math-a': {
+  \     'pattern': '[$][^$]*[$]',
+  \     'select': 'a$',
+  \   },
+  \  'dollar-math-i': {
+  \     'pattern': '[$]\zs[^$]*\ze[$]',
+  \     'select': 'i$',
+  \   },
+  \  'quote': {
+  \     'pattern': ['`', "'"],
+  \     'select-a': 'aq',
+  \     'select-i': 'iq',
+  \   },
+  \  'double-quote': {
+  \     'pattern': ['``', "''"],
+  \     'select-a': 'aQ',
+  \     'select-i': 'iQ',
+  \   },
+  \ })
+endif
+
+"------------------------------------------------------------------------------"
 "C-@ is same as C-Space (google it)
 "These are pretty much obsolete now
 " noremap <silent> <buffer> <F11> :exec("!clear; set -x; "

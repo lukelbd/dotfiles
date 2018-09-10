@@ -1,21 +1,18 @@
+"------------------------------------------------------------------------------"
 " Vim Toggle Plugin
-" Author: Timo Teifel
-" Email: timo at teifel-net dot de
-" Version: 0.3
-" Date: 06 Feb 2004
+" Author: Timo Teifel (timo at teifel-net dot de)
+" Modified By: Luke Davis (lukelbd at gmail dot com)
 " Licence: GPL v2.0
-"
+"------------------------------------------------------------------------------"
 " Usage:
-" Drop into your plugin directory, Pressing Control-T toggles
-" value under cursor in insert-mode. In normal/visual mode,
-" the + key toggles the value under the cursor.
+" Drop into your plugin directory, the 'map' below toggles values under cursor.
 " Currently known values are:
-" 
 "  true     <->     false
 "  on       <->     off
 "  yes      <->     no
 "  +        <->     -
 "  >        <->     <
+"  0        <->     1
 "  define   <->     undef
 "  ||       <->     &&
 "  &&       <->     ||
@@ -25,17 +22,17 @@
 "  doesn't have a sign, one is inserted (- of course).
 "
 "  On unknown values, nothing happens.
+"------------------------------------------------------------------------------"
 
-"Edited remaps to my liking
-let map='<Leader>b'
-exe 'nnoremap '.map.' :call Toggle()<CR>'
-exe 'vnoremap '.map.' <Esc>:call Toggle()<CR>'
+" the single mapping
+" alternatively use the command
+nnoremap <Leader>b :Toggle<CR>
 
 " some global settings
-let g:charsOn=["+", ">", "1"]
-let g:charsOff=["-", "<", "0"]
-let g:wordsOn=["true", "on", "yes", "define", "in", "up", "left", "north", "east"]
-let g:wordsOff=["false", "off", "no", "undef", "out", "down", "right", "south", "west"]
+let g:charsOn  = ["+", ">", "1"]
+let g:charsOff = ["-", "<", "0"]
+let g:wordsOn  = ["true", "on", "yes", "define", "in", "up", "left", "north", "east"]
+let g:wordsOff = ["false", "off", "no", "undef", "out", "down", "right", "south", "west"]
 
 " some Helper functions
 function! s:Toggle_changeChar(string, pos, char)
@@ -190,7 +187,7 @@ function! s:Toggle_main() "{{{
   return 1
 endfunction " }}}
 
-function! Toggle()
+function! s:toggle()
   " main function call
   let s:status = s:Toggle_main()
   " deliver error message
@@ -209,5 +206,5 @@ function! Toggle()
   unlet! s:lineNo
   unlet! s:columnNo
 endfunction
-
+command! Toggle call <sid>toggle()
 " vim:fdm=marker commentstring="%s
