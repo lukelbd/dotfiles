@@ -4,40 +4,6 @@
 " Custom text objects defined with vim-text-obj, and copied from other folks.
 " For more info see: https://www.reddit.com/r/vim/comments/48e4ci/vimscript_how_to_create_a_new_text_object/d0iy3ny/
 "------------------------------------------------------------------------------"
-"First some simple operator remaps
-function! s:alias(original,new)
-  exe 'onoremap i'.a:original.' i'.a:new
-  exe 'onoremap a'.a:original.' a'.a:new
-endfunction
-for pair in ['r[', 'a<', 'c{']
-  call s:alias(pair[0], pair[1])
-endfor
-"Jumping between comments and empty lines
-"Should implement the below as text objects
-function! s:smartjump(regex,backwards) "jump to next comment
-  let startline=line('.')
-  let flag=(a:backwards ? 'Wnb' : 'Wn') "don't wrap around EOF, and don't jump yet
-  let offset=(a:backwards ? 1 : -1) "actually want to jump to line *just before* comment
-  let commentline=search(a:regex,flag)
-  if getline('.') =~# a:regex
-    return startline
-  elseif commentline==0
-    return startline "don't move
-  else
-    return commentline+offset
-  endif
-endfunction
-"Comment jumping and selecting
-"Consider turning the comment selections below into text objects
-noremap <expr> <silent> gc <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],0).'gg'
-noremap <expr> <silent> gC <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],1).'gg'
-nmap vic gCVgc
-nmap vac vic
-"Empty line jumping
-"Note vip/vap are builtin commands -- just wanted to redefine {/} motions
-"to go to the line just *before*/*after* empty one
-noremap <expr> <silent> ge <sid>smartjump('^\s*$',0).'gg'
-noremap <expr> <silent> gE <sid>smartjump('^\s*$',1).'gg'
 "------------------------------------------------------------------------------"
 "Declare some textobj objects
 "TODO: Finish this.
@@ -100,19 +66,51 @@ function! CurrentLineI()
 endfunction
 
 "------------------------------------------------------------------------------"
+" Miscelenaous stuff, single-key aliases
+"------------------------------------------------------------------------------"
+function! s:alias(original,new)
+  exe 'onoremap i'.a:original.' i'.a:new
+  exe 'onoremap a'.a:original.' a'.a:new
+endfunction
+for pair in ['r[', 'a<', 'c{']
+  call s:alias(pair[0], pair[1])
+endfor
+"Jumping between comments and empty lines
+"Should implement the below as text objects
+function! s:smartjump(regex,backwards) "jump to next comment
+  let startline=line('.')
+  let flag=(a:backwards ? 'Wnb' : 'Wn') "don't wrap around EOF, and don't jump yet
+  let offset=(a:backwards ? 1 : -1) "actually want to jump to line *just before* comment
+  let commentline=search(a:regex,flag)
+  if getline('.') =~# a:regex
+    return startline
+  elseif commentline==0
+    return startline "don't move
+  else
+    return commentline+offset
+  endif
+endfunction
+"Comment jumping and selecting
+"Consider turning the comment selections below into text objects
+noremap <expr> <silent> gc <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],0).'gg'
+noremap <expr> <silent> gC <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],1).'gg'
+nmap vic gCVgc
+nmap vac vic
+"Empty line jumping
+"Note vip/vap are builtin commands -- just wanted to redefine {/} motions
+"to go to the line just *before*/*after* empty one
+noremap <expr> <silent> ge <sid>smartjump('^\s*$',0).'gg'
+noremap <expr> <silent> gE <sid>smartjump('^\s*$',1).'gg'
+
+"------------------------------------------------------------------------------"
 "TeX plugin
 "Copied from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
 "so I could change the names.
 "------------------------------------------------------------------------------"
 augroup textobj_tex
   au!
-  if s:manual
-    au FileType tex call s:tex_textobjs_manual()
-  else
-    au FileType tex call textobj#user#plugin('latex',s:tex_textobjs_dict)
-  endif
+  au FileType tex call textobj#user#plugin('latex',s:tex_textobjs_dict)
 augroup END
-
 "Dictionary containing text objects
 let s:tex_textobjs_dict={
   \   'environment': {
@@ -154,45 +152,6 @@ let s:tex_textobjs_dict={
   \     'select-i': 'iQ',
   \   },
   \ }
-function! s:tex_textobjs_manual()
-  "Apply 'inner'/'outer'/'surround' syntax to \command{text} and \begin{env}text\end{env}
-  nnoremap <buffer> dal F{F\dt{daB
-  nnoremap <buffer> cal F{F\dt{caB
-  nnoremap <buffer> yal F{F\vf{%y
-  nnoremap <buffer> <silent> val F{F\vf{%
-  nnoremap <buffer> dil diB
-  nnoremap <buffer> cil ciB
-  nnoremap <buffer> yil yiB
-  nnoremap <buffer> <silent> vil viB
-
-  "Selecting LaTeX begin/end environments as best we can, using %-jumping 
-  "enhanced by an ftplugin if possible.
-  nmap <buffer> daL /\\end{<CR>:noh<CR>V^%d
-  nmap <buffer> caL /\\end{<CR>:noh<CR>V^%cc
-  nmap <silent> <buffer> vaL /\\end{<CR>:noh<CR>V^%
-  nmap <buffer> diL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>d
-  nmap <buffer> ciL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>cc
-  nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
-
-  "Next, latex quotes
-  "The double ones are harder to do
-  nnoremap <buffer> daq F`df'
-  nnoremap <buffer> caq F`cf'
-  nnoremap <buffer> yaq F`yf'
-  nnoremap <buffer> <silent> vaq F`vf'
-  nnoremap <buffer> diq T`dt'
-  nnoremap <buffer> ciq T`ct'
-  nnoremap <buffer> yiq T`yt'
-  nnoremap <buffer> <silent> viq T`vt'
-  nnoremap <buffer> daQ 2F`d2f'
-  nnoremap <buffer> caQ 2F`c2f'
-  nnoremap <buffer> yaQ 2F`y2f'
-  nnoremap <buffer> <silent> vaQ 2F`v2f'
-  nnoremap <buffer> diQ T`dt'
-  nnoremap <buffer> ciQ T`ct'
-  nnoremap <buffer> yiQ T`yt'
-  nnoremap <buffer> <silent> viQ T`vt'
-endfunction
 
 "------------------------------------------------------------------------------"
 "Previous version with manual mappings, super ugly
@@ -228,4 +187,42 @@ endfunction
 " nnoremap ci. v)hs
 " nnoremap yi. v)hy
 " nnoremap <silent> va. v)h
-"
+"----------------------------------------------------------------------------"
+" As above but for latex stuff
+"----------------------------------------------------------------------------"
+" "Apply 'inner'/'outer'/'surround' syntax to \command{text} and \begin{env}text\end{env}
+" nnoremap <buffer> dal F{F\dt{daB
+" nnoremap <buffer> cal F{F\dt{caB
+" nnoremap <buffer> yal F{F\vf{%y
+" nnoremap <buffer> <silent> val F{F\vf{%
+" nnoremap <buffer> dil diB
+" nnoremap <buffer> cil ciB
+" nnoremap <buffer> yil yiB
+" nnoremap <buffer> <silent> vil viB
+" "Selecting LaTeX begin/end environments as best we can, using %-jumping
+" "enhanced by an ftplugin if possible.
+" nmap <buffer> daL /\\end{<CR>:noh<CR>V^%d
+" nmap <buffer> caL /\\end{<CR>:noh<CR>V^%cc
+" nmap <silent> <buffer> vaL /\\end{<CR>:noh<CR>V^%
+" nmap <buffer> diL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>d
+" nmap <buffer> ciL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>cc
+" nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
+" "Next, latex quotes
+" "The double ones are harder to do
+" nnoremap <buffer> daq F`df'
+" nnoremap <buffer> caq F`cf'
+" nnoremap <buffer> yaq F`yf'
+" nnoremap <buffer> <silent> vaq F`vf'
+" nnoremap <buffer> diq T`dt'
+" nnoremap <buffer> ciq T`ct'
+" nnoremap <buffer> yiq T`yt'
+" nnoremap <buffer> <silent> viq T`vt'
+" nnoremap <buffer> daQ 2F`d2f'
+" nnoremap <buffer> caQ 2F`c2f'
+" nnoremap <buffer> yaQ 2F`y2f'
+" nnoremap <buffer> <silent> vaQ 2F`v2f'
+" nnoremap <buffer> diQ T`dt'
+" nnoremap <buffer> ciQ T`ct'
+" nnoremap <buffer> yiQ T`yt'
+" nnoremap <buffer> <silent> viQ T`vt'
+
