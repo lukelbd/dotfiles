@@ -6,15 +6,7 @@
 "and provide new tool for jumping outside of delimiters.
 "------------------------------------------------------------------------------"
 if !exists("g:plugs")
-  echo "Warning: vim-plugs required to check if dependency plugins are installed."
-  finish
-endif
-if !exists("g:plugs")
-  echo "Warning: vim-plugs required to check if dependency plugins are installed."
-  finish
-endif
-if !exists("g:plugs")
-  echo "Warning: vim-plugs required to check if dependency plugins are installed."
+  echo "Warning: vim-plug required to check if dependency plugins are installed."
   finish
 endif
 if !has_key(g:plugs, "vim-surround")
@@ -25,7 +17,9 @@ if !has_key(g:plugs, "delimitmate")
 endif
 
 "------------------------------------------------------------------------------"
-"Simple function for moving outside current delimiter
+"Initial configuration
+"------------------------------------------------------------------------------"
+"First a simple function for moving outside current delimiter
 "Puts cursor to the right of closing braces and quotes
 " * Just search for braces instead of using percent-mapping, because when
 "   in the middle of typing often don't particularly *care* if a bracket is completed/has
@@ -64,53 +58,32 @@ inoremap <expr> jk !pumvisible() ? <sid>outofdelim(1)
   \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1)
   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
 " imap jk <C-o> "don't use this one
-
-"------------------------------------------------------------------------------"
 "Fancy builtin delimitMate version
 "Get cursor outside of consecutive delimiter, ignoring subgroups
 "and always passing to the right of consecutive braces
 "Also disable <C-n> to avoid confusion; will be using up/down anyway
 imap <C-p> <Plug>delimitMateJumpMany
 imap <C-n> <Nop>
-
-"------------------------------------------------------------------------------"
 "Remap surround.vim defaults
 "Make the visual-mode map same as insert-mode map; by default it is capital S
 vmap <C-s> <Plug>VSurround
 
 "------------------------------------------------------------------------------"
-"Define some new vim-surround targets, usable with ds/cs/ys/yS
-"* Hit ga to get ASCII code (leftmost number; not the HEX code!)
-"* Note that if you just enter some uncoded character, will
-"  use that as a delimiter -- e.g. yss` surrounds with backticks
-"* Note double quotes are required, because surround-vim wants
-"  the literal \r return character.
-"c for curly brace
-let g:surround_{char2nr('c')}="{\r}"
-"f for functions, with user prompting
-let g:surround_{char2nr('f')}="\1function: \1(\r)"
-"\ for \" escaped quotes
-let g:surround_{char2nr('\')}="\\\"\r\\\""
-"p for print
-let g:surround_{char2nr('p')}="print(\r)"
-
+"Define additional shortcuts like ys's' for the non-whitespace part
+"of this line -- use 'w' for <cword>, 'W' for <CWORD>, 'p' for current paragraph
 "------------------------------------------------------------------------------"
-"Important Note: One problem with custom targets is vim-surround
-"can 'put' them, but cannot 'find' them e.g. in a ds<custom-target>
-"or cs<custom-target><other-target> command.
-"Caveat: Surround *can* detect them if they are single character, so if
-"you have a single-character map, just point the alias to that character.
-"Fix curly braces
-nmap dsc dsB
-nmap csc csB
-"Fix escaped quotes
-nmap ds\ /\\"<CR>xxdN
-"Fix functions
-nnoremap dsf mzF(bdt(xf)x`z
-nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
+nmap ysw ysiw
+nmap ysW ysiW
+nmap ysp ysip
+nmap ys. ysis
+nmap ySw ySiw
+nmap ySW ySiW
+nmap ySp ySip
+nmap yS. ySis
 
 "------------------------------------------------------------------------------"
 "Function for adding fancy multiple character delimiters
+"------------------------------------------------------------------------------"
 "These will only be 'placed', never detected; for example, will never work in
 "da<target>, ca<target>, cs<target><other>, etc. commands; only should be used for
 "ys<target>, yS<target>, visual-mode S, insert-mode <C-s>, et cetera
@@ -124,15 +97,33 @@ function! s:target(symbol,start,end,...) "if final argument passed, this is buff
 endfunction
 
 "------------------------------------------------------------------------------"
-"Simple aliases for surround objects
-nmap ysw ysiw
-nmap ysW ysiW
-nmap ysp ysip
-nmap ys. ysis
-nmap ySw ySiw
-nmap ySW ySiW
-nmap ySp ySip
-nmap yS. ySis
+"Define global, *insertable* vim-surround targets
+"Multichar Delims: Surround can 'put' them, but cannot 'find' them
+"e.g. in a ds<custom-target> or cs<custom-target><other-target> command.
+"Single Delims: Delims *can* be 'found' if they are single character, but
+"setting g:surround_does not do so -- instead, just map commands
+"------------------------------------------------------------------------------"
+"* Hit ga to get ASCII code (leftmost number; not the HEX code!)
+"* Note that if you just enter some uncoded character, will
+"  use that as a delimiter -- e.g. yss` surrounds with backticks
+"* Note double quotes are required, because surround-vim wants
+"  the literal \r return character.
+"c for curly brace
+" let g:surround_{char2nr('c')}="{\r}"
+call s:target('c', '{', '}')
+nmap dsc dsB
+nmap csc csB
+"f for functions, with user prompting
+call s:target('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
+nnoremap dsf mzF(bdt(xf)x`z
+nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
+"\ for \" escaped quotes \"
+call s:target('\', '\"', '\"')
+nmap ds\ /\\"<CR>xxdN
+nmap cs\ /\\"<CR>xNx
+"p for print
+"then just use dsf, csf, et cetera to delete
+call s:target('p', 'print(', ')')
 
 "------------------------------------------------------------------------------"
 "Apply the above concepts to LaTeX in particular
@@ -142,60 +133,22 @@ augroup tex_delimit
   au FileType tex call s:texsurround()
 augroup END
 function! s:texsurround()
-  "Use 'l' for commands, 'L' for environments
-  "These are special maps that will load prompts; see vim-surround documentation on customization
-  let b:surround_{char2nr('l')} = "\1command: \1{\r}"
-  let b:surround_{char2nr('L')} = "\\begin{\1\\begin{\1}\r\\end{\1\1}"
-
-  "Apply 'inner'/'outer'/'surround' syntax to \command{text} and \begin{env}text\end{env}
-  nnoremap <buffer> dal F{F\dt{daB
-  nnoremap <buffer> cal F{F\dt{caB
-  nnoremap <buffer> yal F{F\vf{%y
-  nnoremap <buffer> <silent> val F{F\vf{%
-  nnoremap <buffer> dil diB
-  nnoremap <buffer> cil ciB
-  nnoremap <buffer> yil yiB
-  nnoremap <buffer> <silent> vil viB
-
-  "Fix vim-surround for 'l' commands
+  "'l' for commands
+  call s:target('l', "\1command: \1{", '}')
   nmap <buffer> dsl F{F\dt{dsB
   nmap <buffer> <expr> csl 'F{F\lct{'.input('command: ').'<Esc>F\'
-
-  "Selecting LaTeX begin/end environments as best we can, using %-jumping 
-  "enhanced by an ftplugin if possible.
-  nmap <buffer> daL /\\end{<CR>:noh<CR>V^%d
-  nmap <buffer> caL /\\end{<CR>:noh<CR>V^%cc
-  nmap <silent> <buffer> vaL /\\end{<CR>:noh<CR>V^%
-  nmap <buffer> diL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>d
-  nmap <buffer> ciL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>cc
-  nmap <silent> <buffer> viL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>
-
-  "Fix vim-surround for 'L' environments
-  "Ugly hack for the surround one
-  nmap <buffer> dsL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>dp<Up>V<Up>d
-  nmap <buffer> <expr> csL '/\\end{<CR>:noh<CR>A!!!<Esc>^%f{<Right>ciB'
-  \.input('\begin{').'<Esc>/!!!<CR>:noh<CR>A {<C-r>.}<Esc>2F{dt{'
-
-  "Next, latex quotes
-  "The double ones are harder to do
-  nnoremap <buffer> daq F`df'
-  nnoremap <buffer> caq F`cf'
-  nnoremap <buffer> yaq F`yf'
-  nnoremap <buffer> <silent> vaq F`vf'
-  nnoremap <buffer> diq T`dt'
-  nnoremap <buffer> ciq T`ct'
-  nnoremap <buffer> yiq T`yt'
-  nnoremap <buffer> <silent> viq T`vt'
-  nnoremap <buffer> daQ 2F`d2f'
-  nnoremap <buffer> caQ 2F`c2f'
-  nnoremap <buffer> yaQ 2F`y2f'
-  nnoremap <buffer> <silent> vaQ 2F`v2f'
-  nnoremap <buffer> diQ T`dt'
-  nnoremap <buffer> ciQ T`ct'
-  nnoremap <buffer> yiQ T`yt'
-  nnoremap <buffer> <silent> viQ T`vt'
-
-  "Vim-surround fixes for them
+  "'L' for environments
+  call s:target('L', "\\begin{\1\\begin{\1}", "\n"."\\end{\1\1}")
+  nnoremap <buffer> dsL :let @/='\\end{[^}]\+}.*\n'<CR>dgn:let @/='\\begin{[^}]\+}.*\n'<CR>dgN
+  nnoremap <expr> <buffer> csL ':let @/="\\\\end{\\zs[^}]\\+\\ze}"<CR>cgn'
+           \ .input('\begin{')
+           \ .'<Esc>yiB:let @/="\\\\begin{\\zs[^}]\\+\\ze}"<CR>cgN<C-r>"<Esc>'
+  " nmap <buffer> dsL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>dp<Up>V<Up>d
+  " nmap <buffer> <expr> csL '/\\end{<CR>:noh<CR>A!!!<Esc>^%f{<Right>ciB'
+  " \.input('\begin{').'<Esc>/!!!<CR>:noh<CR>A {<C-r>.}<Esc>2F{dt{'
+  "Quotations
+  call s:target('q', '`',  "'",  1)
+  call s:target('Q', '``', "''", 1)
   nnoremap <buffer> dsq f'xF`x
   nnoremap <buffer> dsQ 2f'F'2x2F`2x
 
@@ -207,9 +160,9 @@ function! s:texsurround()
   call s:target('[', '\left[',  '\right]',  1)
   call s:target('<', '\left<',  '\right>',  1)
   "Arrays and whatnot; analagous to above, just point to right
-  call s:target('}', '\left\{\begin{array}{ll}', '\end{array}\right.', 1)
-  call s:target(')', '\begin{pmatrix}',          '\end{pmatrix}',      1)
-  call s:target(']', '\begin{bmatrix}',          '\end{bmatrix}',      1)
+  call s:target('}', '\left\{\begin{array}{ll}', "\n".'\end{array}\right.', 1)
+  call s:target(')', '\begin{pmatrix}',          "\n".'\end{pmatrix}',      1)
+  call s:target(']', '\begin{bmatrix}',          "\n".'\end{bmatrix}',      1)
   "Font types
   call s:target('o', '{\color{red}', '}', 1)
   call s:target('i', '\textit{',     '}', 1)
@@ -235,9 +188,6 @@ function! s:texsurround()
   "Boxes; the second one allows stuff to extend into margins, possibly
   call s:target('x', '\boxed{',      '}', 1)
   call s:target('X', '\fbox{\parbox{\textwidth}{', '}}\medskip', 1)
-  "Quotes
-  call s:target('q', '`',          "'",  1)
-  call s:target('Q', '``',         "''", 1)
   "Simple enivronments, exponents, etc.
   call s:target('\', '\sqrt{',       '}',   1)
   call s:target('$', '$',            '$',   1)
@@ -276,24 +226,24 @@ function! s:texsurround()
   "note that fragile make compiling way slower
   "Slide with 'w'hite frame is the w map
   call s:target('g', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
-  call s:target('s', '\begin{frame}'."\n",                          "\n".'\end{frame}' ."\n", 1)
-  call s:target('S', '\begin{frame}[fragile]'."\n",                 "\n".'\end{frame}' ."\n", 1)
-  call s:target('w', '{\usebackgroundtemplate{}\begin{frame}'."\n", "\n".'\end{frame}}'."\n", 1)
+  call s:target('s', '\begin{frame}',                          "\n".'\end{frame}' , 1)
+  call s:target('S', '\begin{frame}[fragile]',                 "\n".'\end{frame}' , 1)
+  call s:target('w', '{\usebackgroundtemplate{}\begin{frame}', "\n".'\end{frame}}', 1)
   "Figure environments, and pages
-  call s:target('p', '\begin{minipage}{\linewidth}'."\n", "\n".'\end{minipage}'."\n", 1)
-  call s:target('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}'."\n", 1)
-  call s:target('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}'."\n", 1)
-  " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}'."\n", 1)
-  call s:target('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}'."\n")
+  call s:target('p', '\begin{minipage}{\linewidth}', "\n".'\end{minipage}', 1)
+  call s:target('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}', 1)
+  call s:target('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}', 1)
+  " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}', 1)
+  call s:target('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}')
   "Equations
-  call s:target('%', '\begin{equation*}'."\n", "\n".'\end{equation*}'."\n")
-  call s:target('^', '\begin{align*}'."\n", "\n".'\end{align*}'."\n")
-  call s:target('T', '\begin{tabular}{', "}\n\n".'\end{tabular}'."\n")
+  call s:target('%', '\begin{equation*}', "\n".'\end{equation*}')
+  call s:target('^', '\begin{align*}', "\n".'\end{align*}')
+  call s:target('T', '\begin{tabular}{', "}\n".'\end{tabular}')
   "Itemize environments
-  call s:target('*', '\begin{itemize}'."\n",                  "\n".'\end{itemize}'."\n")
-  call s:target('&', '\begin{description}'."\n",              "\n".'\end{description}'."\n") "d is now open
-  call s:target('#', '\begin{enumerate}'."\n",                "\n".'\end{enumerate}'."\n")
-  call s:target('@', '\begin{enumerate}[label=\alph*.]'."\n", "\n".'\end{enumerate}'."\n")
+  call s:target('*', '\begin{itemize}',                  "\n".'\end{itemize}')
+  call s:target('&', '\begin{description}',              "\n".'\end{description}') "d is now open
+  call s:target('#', '\begin{enumerate}',                "\n".'\end{enumerate}')
+  call s:target('@', '\begin{enumerate}[label=\alph*.]', "\n".'\end{enumerate}')
   "Versions of the above, but this time puting them on own lines
   "TODO: fix these
   " * The onlytextwidth option keeps two-columns (any arbitrary widths) aligned
