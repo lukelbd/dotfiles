@@ -32,11 +32,23 @@ set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·
 "Older versions can't combine number with relativenumber
 set number numberwidth=4
 set relativenumber
-"Disable builtin, because we modified that shit yo
-let g:loaded_matchparen=0
-"Format options
-" * See help fo-table for what these mean; the o and r options continue comment lines,
-"   the n recognizes numbered lists. Note formatopsions are buffer-local.
+"Default tabs
+set tabstop=2
+set shiftwidth=2
+set softtabstop=2
+"Detect features; variables are used to decide which plugins can be loaded
+exe 'runtime autoload/repeat.vim'
+let g:has_signs         = has("signs") "for git gutter and syntastic maybe
+let g:has_ctags         = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
+let g:has_repeat        = exists("*repeat#set") "start checks for function existence
+let g:has_nowait        = (v:version>=704 || v:version==703 && has("patch1261"))
+let g:loaded_matchparen = 0 "disable builtin, because we modified that shit yo
+if !g:has_repeat
+  echom "Warning: vim-repeat unavailable, some features will be unavailable."
+  sleep 1
+endif
+"Format options; see :help fo-table to see what they mean -- want to continue comment lines
+"and numbered lists
 let g:formatoptions="lro"
 exe 'setlocal formatoptions='.g:formatoptions
 augroup formatopts
@@ -53,14 +65,146 @@ augroup escapefix
   au!
   au InsertLeave * normal! `^
 augroup END
-"Always navigate by word, god damnit
+"Always navigate by \w word, never have '*' look up keyword words
 "See: https://superuser.com/a/1150645/506762
-"Some plugins make periods part of 'word' motions, which sucks balls
 " augroup keywordfix
 "   au!
 "   au BufEnter * set iskeyword=45,65-90,95,97-122,48-57 "the same: -,a-z,_,A-Z,0-9
 " augroup END
-" set iskeyword=45,65-90,95,97-122,48-57 "the same: -,a-z,_,A-Z,0-9
+" set iskeyword=45,65-90,95,97-122,48-57
+
+"###############################################################################
+"CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+"Misc stuff
+noremap <CR>    <Nop>
+noremap <Space> <Nop>
+"The above 2 enter weird modes I don't understand...
+noremap Q     <Nop>
+noremap K     <Nop>
+"Disable c-z and Z for exiting vim
+noremap <C-z> <Nop>
+noremap Z     <Nop>
+"Disable tab changing with gt
+noremap gt    <Nop>
+noremap gT    <Nop>
+"Disabling dumb extra scroll commands
+noremap <C-p> <Nop>
+noremap <C-n> <Nop>
+"Turn off common things in normal mode
+"also prevent Ctrl+c ringing the bell
+nnoremap <C-c>       <Nop>
+nnoremap <Delete>    <Nop>
+nnoremap <Backspace> <Nop>
+"Disable arrow keys because you're better than that
+"Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
+" for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
+"   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
+"     exe s:map.' '.s:motion.' <Nop>'
+"   endfor
+" endfor
+"Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
+"Arrow keys are for macbook mapping
+noremap <C-l>   <C-i>
+noremap <C-h>   <C-o>
+noremap <Right> <C-i>
+noremap <Left>  <C-o>
+"Forward (C-f) and backward in changelist
+noremap <C-y> g;
+noremap <C-f> g,
+"Enable shortcut so that recordings are taken by just toggling 'q' on-off
+"the escapes prevent a weird error where sometimes q triggers command-history window
+noremap <silent> <expr> q b:recording ?
+  \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
+"Easy mark usage
+noremap " :echo "Setting mark."<CR>ma
+noremap ' `a
+"New macro useage; almost always just use one at a time
+"also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
+map @ <Nop>
+noremap , @a
+"Redo map to capital U; means we cannot 'undo line', but who cares
+nnoremap U <C-r>
+"Use - for throwaway register, pipeline for clipboard register
+"Don't try anything fancy here, it's not worth it!
+noremap <silent> - "_
+noremap <silent> \| "*
+"These keys aren't used currently, and are in a really good spot,
+"so why not? Fits mnemonically that insert above is Shift+<key for insert below>
+nnoremap <silent> ` :call append(line('.'),'')<CR>
+nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
+"Now use sneak plugin; use cc for replace character, cC for whole line
+nnoremap cc s
+nnoremap cC cc
+"Replace the currently highlighted text
+"Note s/cc have identical outcomes in visual mode
+vnoremap cc s
+vnoremap cC s
+"Swap with row above, and swap with row below; awesome mnemonic, right?
+"use same syntax for c/s because almost *never* want to change up/down
+"The command-based approach make sthe cursor much less jumpy
+" noremap <silent> ck mzkddp`z
+" noremap <silent> cj jmzkddp`zj
+nnoremap <silent> ck k:let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>
+nnoremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
+      \ \| call winrestview(g:view)<CR>j
+"Useful for typos
+nnoremap <silent> cl xph
+nnoremap <silent> ch Xp
+"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
+"use ss/substitute instead of cl if you want to enter insert mode
+nnoremap <silent> cL mzi<CR><Esc>`z
+"Delete entire line, leave behind an empty line
+"Has to be *normal* mode remaps, or will affect operator pending mode; for
+"example if you type 'dd', there will be delay.
+nnoremap dL 0d$
+"Pressing enter on empty line preserves leading whitespace (HACKY)
+"works because Vim doesn't remove spaces when text has been inserted
+nnoremap o ox<BS>
+nnoremap O Ox<BS>
+"Don't save single-character deletions to any register
+nnoremap x "_x
+nnoremap X "_X
+"Paste from the nth previously deleted or changed (c/C) text
+"The initial escape cancels your count operator, otherwise multiple lines pasted
+"Can't map 0p because then every time hit 0 to go to first line, get delay, so instead
+"use 9 for last yanked (unchanged) text, because why not
+nnoremap <expr> p v:count==0 ? 'p' : ( v:count==9 ? '<Esc>"0p' : '<Esc>"'.v:count.'p' )
+nnoremap <expr> P v:count==0 ? 'P' : ( v:count==9 ? '<Esc>"0P' : '<Esc>"'.v:count.'P' )
+"Visual mode p/P to replace selected text with contents of register
+vnoremap p "_dP
+vnoremap P "_dP
+"Yank, substitute, delete until end of current line
+nnoremap Y y$
+nnoremap D D
+"Better join behavior -- before 2J joined this line and next, now it
+"means 'join the two lines below'; more intuitive
+nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
+"Toggle highlighting
+nnoremap <silent> <Leader>i :set hlsearch<CR>
+nnoremap <silent> <Leader>o :noh<CR>
+"Enable left mouse click in visual mode to extend selection; normally this is impossible
+"Note we can't use `< and `> because those refer to start and end of last visual selection,
+"while we actually want the place where we *last exited* visual mode, like '^ for insert mode
+"TODO: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
+"Want to be able to ***temporarily turn scrolloff to infinity*** when enter visual
+"mode, to do that need to stop explicitly mapping vi/va stuff, and to do that need
+"to work on text objects.
+nnoremap v myv
+nnoremap <silent> v/ hn:noh<CR>gn
+nnoremap V myV
+nnoremap <C-v> my<C-v>
+vnoremap <CR> <C-c>
+vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
+"Useful function
+function! Reverse(text) "want this to be accessible!
+  return join(reverse(split(a:text, '.\zs')), '')
+endfunction
+"See v:dying info
+augroup death
+  au!
+  au VimLeave * if v:dying | echo "\nAAAAaaaarrrggghhhh!!!\n" | endif
+augroup END
 
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
@@ -146,151 +290,11 @@ inoremap <expr> <F3>  <sid>word_back("\<Left>")
 inoremap <expr> <C-o> <sid>word_forward("\<Right>")
 inoremap <expr> <C-u> <sid>word_back("\<BS>")
 inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
-
-"##############################################################################"
-"HELPFUL FUNCTIONS FOR USER
-function! Reverse(text) "want this to be accessible!
-  return join(reverse(split(a:text, '.\zs')), '')
-endfunction
-
-"##############################################################################"
-"DYING BREATH
-"See v:dying info
-au VimLeave * if v:dying | echo "\nAAAAaaaarrrggghhhh!!!\n" | endif
-
-"###############################################################################
-"CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
-"Misc stuff
-noremap <CR> <Nop>
-noremap <Space> <Nop>
-"The above 2 enter weird modes I don't understand...
-noremap Q <Nop>
-noremap K <Nop>
-"Disable c-z and Z for exiting vim
-noremap <C-z> <Nop>
-noremap Z <Nop>
-"Disable tab changing with gt
-noremap gt <Nop>
-noremap gT <Nop>
-"Turn off common things in normal mode
-"also prevent Ctrl+c ringing the bell
-nnoremap <C-c> <Nop>
-nnoremap <Delete> <Nop>
-nnoremap <Backspace> <Nop>
-"Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
-"Arrow keys are for macbook mapping
-noremap <C-l>   <C-i>
-noremap <C-h>   <C-o>
-noremap <Right> <C-i>
-noremap <Left>  <C-o>
-"Forward (C-f) and backward in changelist
-noremap <C-y> g;
-noremap <C-f> g,
-"Enable shortcut so that recordings are taken by just toggling 'q' on-off
-"the escapes prevent a weird error where sometimes q triggers command-history window
-noremap <silent> <expr> q b:recording ?
-  \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
-"Easy mark usage
-noremap " :echo "Setting mark."<CR>ma
-noremap ' `a
-"New macro useage; almost always just use one at a time
-"also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
-map @ <Nop>
-noremap , @a
-"Redo map to capital U; means we cannot 'undo line', but who cares
-nnoremap U <C-r>
-"Use - for throwaway register, pipeline for clipboard register
-"Don't try anything fancy here, it's not worth it!
-noremap <silent> - "_
-noremap <silent> \| "*
-"These keys aren't used currently, and are in a really good spot,
-"so why not? Fits mnemonically that insert above is Shift+<key for insert below>
-nnoremap <silent> ` :call append(line('.'),'')<CR>
-nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
-"Now use sneak plugin; use cc for replace character, cC for whole line
-nnoremap cc s
-nnoremap cC cc
-"Replace the currently highlighted text
-"Note s/cc have identical outcomes in visual mode
-vnoremap cc s
-vnoremap cC s
-"Swap with row above, and swap with row below; awesome mnemonic, right?
-"use same syntax for c/s because almost *never* want to change up/down
-"The command-based approach make sthe cursor much less jumpy
-" noremap <silent> ck mzkddp`z
-" noremap <silent> cj jmzkddp`zj
-nnoremap <silent> ck k:let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
-      \ \| call winrestview(g:view)<CR>
-nnoremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
-      \ \| call winrestview(g:view)<CR>j
-"Useful for typos
-nnoremap <silent> cl xph
-nnoremap <silent> ch Xp
-"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
-"use ss/substitute instead of cl if you want to enter insert mode
-nnoremap <silent> cL mzi<CR><Esc>`z
-"Delete entire line, leave behind an empty line
-"Has to be *normal* mode remaps, or will affect operator pending mode; for
-"example if you type 'dd', there will be delay.
-nnoremap dL 0d$
-"Pressing enter on empty line preserves leading whitespace (HACKY)
-"works because Vim doesn't remove spaces when text has been inserted
-nnoremap o ox<BS>
-nnoremap O Ox<BS>
-"Don't save single-character deletions to any register
-nnoremap x "_x
-nnoremap X "_X
-"Paste from the nth previously deleted or changed (c/C) text
-"The initial escape cancels your count operator, otherwise multiple lines pasted
-"Also map the 0 register -- this contains previously yanked (unchanged) text
-nnoremap <expr> p v:count==0 ? 'p' : '<Esc>"'.v:count.'p'
-nnoremap <expr> P v:count==0 ? 'P' : '<Esc>"'.v:count.'P'
-nnoremap 0p "0p
-nnoremap 0P "0P
-"Visual mode p/P to replace selected text with contents of register
-vnoremap p "_dP
-vnoremap P "_dP
-"Disabling dumb extra scroll commands
-nnoremap <C-p> <Nop>
-nnoremap <C-n> <Nop>
-"Better join behavior -- before 2J joined this line and next, now it
-"means 'join the two lines below'; more intuitive
-nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
-"Yank, substitute, delete until end of current line
-nnoremap Y y$
-nnoremap D D
-"Disable arrow keys because you're better than that
-"Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
-" for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
-"   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
-"     exe s:map.' '.s:motion.' <Nop>'
-"   endfor
-" endfor
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
-
-"###############################################################################
-"VISUAL MODE BEHAVIOR
-"Highlighting
-"Figured it out finally!!! This actually makes sense - they're next to eachother on keyboard!
-nnoremap <silent> <Leader>i :set hlsearch<CR>
-nnoremap <silent> <Leader>o :noh<CR>
-"Enable left mouse click in visual mode to extend selection; normally this is impossible
-"Note we can't use `< and `> because those refer to start and end of last visual selection,
-"while we actually want the place where we *last exited* visual mode, like '^ for insert mode
-"TODO: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
-"Want to be able to ***temporarily turn scrolloff to infinity*** when enter visual
-"mode, to do that need to stop explicitly mapping vi/va stuff, and to do that need
-"to work on text objects.
-" nnoremap v myv
-" nnoremap <silent> v/ hn:noh<CR>gn
-" nnoremap V myV
-nnoremap <C-v> my<C-v>
-vnoremap <CR> <C-c>
-vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
@@ -365,33 +369,16 @@ let &wildignore="*.pdf,*.doc,*.docs,*.page,*.pages,"
 " COMPLICATED FUNCTIONS, MAPPINGS, FILETYPE MAPPINGS
 "###############################################################################
 "###############################################################################
-"INITIAL STUFF
-"Default tabs
-set tabstop=2
-set shiftwidth=2
-set softtabstop=2
-"Requirements flag, and load repeat.vim right away because want to know if it exists
-"and its functions are available
-exe 'runtime autoload/repeat.vim'
-let g:has_signs       = has("signs") "for git gutter and syntastic maybe
-let g:has_ctags       = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-let g:has_repeat      = exists("*repeat#set") "start checks for function existence
-let g:has_nowait      = (v:version>=704 || v:version==703 && has("patch1261"))
+"VIM-PLUG PLUGINS
+"Don't load some plugins if not compatible
+augroup plug
+augroup END
 let g:has_matchaddpos = exists("*matchaddpos")
 let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))
 let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") "try alternative completion library
 let g:compatible_matchup     = g:has_matchaddpos "so far only this maybe?
-if !g:has_repeat
-  echom "Warning: vim-repeat unavailable, some features will be unavailable."
-  sleep 1
-endif
-
-"##############################################################################"
-"VIM-PLUG PLUGINS
-augroup plug
-augroup END
 call plug#begin('~/.vim/plugged')
 "------------------------------------------------------------------------------"
 "Indent line
