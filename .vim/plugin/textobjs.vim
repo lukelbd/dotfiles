@@ -101,27 +101,33 @@ endif
 "------------------------------------------------------------------------------"
 "Other people do it better: machakann/vim-textobj-functioncall
 "Question: Why does the below not work without \<?
-" \   'function': {
-" \     'pattern': ['\<[a-zA-Z_][a-zA-Z0-9_]*(', ')'],
-" \     'select-a': 'af',
-" \     'select-i': 'if',
-" \   },
-" \   'method': {
-" \     'pattern': ['\<[a-zA-Z_][a-zA-Z0-9_.#]*(', ')'],
-" \     'select-a': 'aF',
-" \     'select-i': 'iF',
-" \   },
 if !has_key(g:plugs, 'vim-textobj-user')
   finish
+  hello( world )
 endif
+"Highlight current line, to match 'yss' vim-surround syntax
 call textobj#user#plugin('general', {
-\   'line': {
-\     'select-a-function': 'CurrentLineA',
-\     'select-a': 'as',
-\     'select-i-function': 'CurrentLineI',
-\     'select-i': 'is',
-\   },
-\ })
+  \   'line': {
+  \     'select-a-function': 'CurrentLineA',
+  \     'select-a': 'as',
+  \     'select-i-function': 'CurrentLineI',
+  \     'select-i': 'is',
+  \   },
+  \ })
+"Highlight functions and arrays; use keyword chars, i.e. what is considered
+"a 'word' by '*', 'gd/gD', et cetera
+call textobj#user#plugin('misc', {
+  \   'function': {
+  \     'pattern': ['\<\h\k*(', ')'],
+  \     'select-a': 'af',
+  \     'select-i': 'if',
+  \   },
+  \   'method': {
+  \     'pattern': ['\<\h\k*(', ')'],
+  \     'select-a': 'aF',
+  \     'select-i': 'iF',
+  \   },
+  \ })
 "Fucntions for general objects
 function! CurrentLineA()
   normal! 0
