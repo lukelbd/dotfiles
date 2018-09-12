@@ -62,7 +62,7 @@ if $_macos; then
   # PGI compilers
   export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
   # Youtube tool
-  export PATH="$HOME/youtubemusic:$PATH"
+  export PATH="$HOME/youtube-m4a:$PATH"
   # Matlab
   export PATH="/Applications/MATLAB_R2014a.app/bin:$PATH"
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
@@ -842,8 +842,8 @@ function notebook() {
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
-    port="--port=$1"
-  elif ! $_macos; then # remote ports will use 3XXXX
+    port="--port=$1"   
+  elif ! $_macos; then # remote ports will use 3XXXX   
     connect
     [ -z "$_jupyter_port" ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."

@@ -772,6 +772,18 @@ endif
 "Warning: My InsertLeave mapping to stop moving the cursor left also fucks
 "up the enter map; consider overwriting function.
 if has_key(g:plugs, "delimitmate")
+  "First filetype settings
+  "Enable carat matching for filetypes where need tags (or keycode symbols)
+  "Vim needs to disable matching ", or everything is super slow
+  "Tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
+  "Markdown need backticks for code, and can maybe do LaTeX math
+  augroup delimitmate
+    au!
+    au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
+    au FileType vim let b:delimitMate_quotes = "'"
+    au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
+    au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
+  augroup END
   "Todo: Apparently delimitmate has its own jump command, should start using it.
   "Set up delimiter paris; delimitMate uses these by default
   "Can set global defaults along with buffer-specific alternatives
@@ -781,17 +793,6 @@ if has_key(g:plugs, "delimitmate")
   let g:delimitMate_quotes="\" '"
   let g:delimitMate_matchpairs="(:),{:},[:]"
   let g:delimitMate_excluded_regions="String" "by default is disabled inside, don't want that
-  augroup delimitmate
-    au!
-    au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
-    "override for formats that use carats
-    au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
-    "vim needs to disable matching ", or everything is super slow
-    au FileType vim let b:delimitMate_quotes = "'"
-    "markdown need backticks for code, and can maybe do LaTeX
-    au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
-    "tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
-  augroup END
 endif
 
 "###############################################################################
@@ -1540,9 +1541,9 @@ if has_key(g:plugs, "tabular")
   "is start match here (must escape backslash), then search for the comment
   " nnoremap <expr> _C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   " vnoremap <expr> _C ':Table      /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  "By comment character, but this time ignore comment-only lines
-  nnoremap <expr> _c ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
-  vnoremap <expr> _c ':Table      /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  "By comment character, but ignore comment-only lines
+  nnoremap <expr> _C ':Tabularize /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
+  vnoremap <expr> _C ':Table      /^\s*[^ \t'.b:NERDCommenterDelims['left'].'].*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
   "This selects the *first* uncommented equals sign that does not belong to
@@ -1890,50 +1891,39 @@ command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
 "   because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
 " * Make sure 'noignorecase' turned on when in insert mode, so *autocompletion* respects case.
-augroup searchreplace
+augroup search_replace
   au!
   au InsertEnter * set noignorecase "default ignore case
   au InsertLeave * set ignorecase
+  au FileType bib,tex call <sid>tex_replace()
 augroup END
 set hlsearch incsearch "show match as typed so far, and highlight as you go
 set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
-
-"###############################################################################
-"DELETING STUFF TOOLS
 "Will use the 'g' prefix for these, because why not
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
-augroup delete
-augroup END
-"Replace commented lines; very useful when sharing manuscripts
-nnoremap <silent> <expr> _C ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
-vnoremap <silent> <expr> _C ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
-      \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g<CR>'
+"Delete commented text; very useful when sharing manuscripts
+noremap <silent> <expr> _c ':s/\(^\s*'.b:NERDCommenterDelims['left'].'.*$\n'
+  \.'\\|^.*\S*\zs\s\+'.b:NERDCommenterDelims['left'].'.*$\)//g \| noh<CR>'
+"Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Replace consecutive spaces on current line with one space
-vnoremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
-nnoremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g<CR>:echom "Squeezed consecutive spaces."<CR>
-"Replace trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-"Will probably be necessary after the comment trimming
-nnoremap <silent> _w :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
-vnoremap <silent> _w :s/\s\+$//g<CR>:echom "Trimmed trailing whitespace."<CR>
+noremap <silent> _w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
+noremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
 "Delete empty lines
-nnoremap <silent> _e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
-vnoremap <silent> _e :s/^\s*$\n//g<CR>:echom "Removed empty lines."<CR>
 "Replace consecutive newlines with single newline
-vnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-nnoremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g<CR>:echom "Squeezed consecutive newlines."<CR>
-"Replace all tabs
-vnoremap <expr> <silent> _<Tab> ':s/\t/'.repeat(' ',&tabstop).'/g<CR>'
-nnoremap <expr> <silent> _<Tab> ':%s/\t/'.repeat(' ',&tabstop).'/g<CR>'
+noremap <silent> _e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>
+noremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g \| noh<CR>:echom "Squeezed consecutive newlines."<CR>
+"Replace tabs with spaces
+noremap <expr> <silent> _<Tab> ':s/\t/' .repeat(' ',&tabstop).'/g \| noh<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 "Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> _' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
 nnoremap <silent> _" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
 nnoremap <silent> _\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 nnoremap <silent> _- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-"Replace useless BibTex entries
-nnoremap <silent> _X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
-" nnoremap <expr> gX ':%s/^\s*'.b:NERDCommenterDelims['left'].'.*$\n//gc<CR>'
+"Special: replace useless BibTex entries
+function! s:tex_replace()
+  nnoremap <buffer> <silent> _x :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+endfunction
 
 "###############################################################################
 "CAPS LOCK
