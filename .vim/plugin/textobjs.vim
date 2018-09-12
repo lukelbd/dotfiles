@@ -33,6 +33,7 @@ endfor
 "Note the 'a' letter is reserved for c'a'rats, e.g. <hello>
 "Question: Why does the below not work without \<?
 if !has_key(g:plugs, 'vim-textobj-user')
+  echom "Warning: textobj unavailable."
   finish
 endif
 call textobj#user#plugin('code', {
