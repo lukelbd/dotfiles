@@ -4,9 +4,7 @@
 " Custom text objects defined with vim-text-obj, and copied from other folks.
 " For more info see: https://www.reddit.com/r/vim/comments/48e4ci/vimscript_how_to_create_a_new_text_object/d0iy3ny/
 "------------------------------------------------------------------------------"
-"------------------------------------------------------------------------------"
 "First some simple operator remaps
-let s:manual=0
 function! s:alias(original,new)
   exe 'onoremap i'.a:original.' i'.a:new
   exe 'onoremap a'.a:original.' a'.a:new
@@ -14,7 +12,6 @@ endfunction
 for pair in ['r[', 'a<', 'c{']
   call s:alias(pair[0], pair[1])
 endfor
-
 "Jumping between comments and empty lines
 "Should implement the below as text objects
 function! s:smartjump(regex,backwards) "jump to next comment
@@ -41,71 +38,43 @@ nmap vac vic
 "to go to the line just *before*/*after* empty one
 noremap <expr> <silent> ge <sid>smartjump('^\s*$',0).'gg'
 noremap <expr> <silent> gE <sid>smartjump('^\s*$',1).'gg'
-
-if s:manual
-  "Expand to include 'function' delimiters, i.e. function[...]
-  nnoremap daf mzF(bdt(lda(`z
-  nnoremap caf F(bdt(lca(
-  nnoremap yaf mzF(bvf(%y`z
-  nnoremap <silent> vaf F(bmVvf(%
-
-  "Expand to include 'array' delimiters, i.e. array[...]
-  onoremap iA ir
-  nnoremap daA mzF[bdt[lda[`z
-  nnoremap caA F[bdt[lca[
-  nnoremap yaA mzF[bvf[%y`z
-  nnoremap <silent> vaA F[bmVvf[%
-
-  "Next mimick surround syntax with current line
-  "Will make 'a' the whole line excluding newline, and 'i' ignore leading/trailing whitespace
-  nnoremap das 0d$
-  nnoremap cas cc
-  nnoremap yas 0y$
-  nnoremap <silent> vas 0v$
-  nnoremap dis ^v$gEd
-  nnoremap cis ^v$gEc
-  nnoremap yis ^v$gEy
-  nnoremap <silent> vis ^v$gE
-
-  "And as we do with surround below, sentences
-  "Will make 'a' the whole sentence, and 'i' up to start of next one
-  nnoremap da. l(v)hd
-  nnoremap ca. l(v)hs
-  nnoremap ya. l(v)hy
-  nnoremap <silent> va. l(v)h
-  nnoremap di. v)hd
-  nnoremap ci. v)hs
-  nnoremap yi. v)hy
-  nnoremap <silent> va. v)h
-
-  "Alias some 'block' definitions for vim-surround replacement commands
-  "* Analagous to the yss syntax for current line
-  "* Pretty much never ever want to surround based
-  "  on result of a movement, so the 'iw' stuff is unnecessary
-  "* For some reason the visual ones don't work, need to specify explicitly
-  onoremap w iw
-  onoremap W iW
-  onoremap p ip
-  onoremap s is
-  onoremap . is
-  nmap vw viw
-  nmap vW viW
-  nmap vp vip
-  nmap vs vis
-  nmap v. vis
-endif
-
 "------------------------------------------------------------------------------"
 "Declare some textobj objects
-"TODO: Implement this.
+"TODO: Finish this.
 "------------------------------------------------------------------------------"
-"Other people do it better: machakann/vim-textobj-functioncall
-"Question: Why does the below not work without \<?
+"For some **super common** blocks, don't always have to hit inner/outer/whatever
+"Here, in spirit of vim-surround 'yss', declare a few special such blocks
+"Note the visual ones don't work by default, need to specify explicitly
+omap w  iw
+omap W  iW
+omap p  ip
+nmap vw viw
+nmap vW viW
+nmap vp vip
+
+"Next declare some special textobj plugin objects
+"Consider using: machakann/vim-textobj-functioncall
 if !has_key(g:plugs, 'vim-textobj-user')
   finish
-  hello( world )
 endif
+"Highlight functions and arrays; use keyword chars, i.e. what is considered
+"a 'word' by '*', 'gd/gD', et cetera
+"Note the 'a' letter is reserved for c'a'rats, e.g. <hello>
+"Question: Why does the below not work without \<?
+call textobj#user#plugin('misc', {
+  \   'function': {
+  \     'pattern': ['\<\h\k*(', ')'],
+  \     'select-a': 'af',
+  \     'select-i': 'if',
+  \   },
+  \   'array': {
+  \     'pattern': ['\<\h\k*\[', '\]'],
+  \     'select-a': 'aA',
+  \     'select-i': 'iA',
+  \   },
+  \ })
 "Highlight current line, to match 'yss' vim-surround syntax
+"Copied from example somewhere possibly
 call textobj#user#plugin('general', {
   \   'line': {
   \     'select-a-function': 'CurrentLineA',
@@ -114,21 +83,6 @@ call textobj#user#plugin('general', {
   \     'select-i': 'is',
   \   },
   \ })
-"Highlight functions and arrays; use keyword chars, i.e. what is considered
-"a 'word' by '*', 'gd/gD', et cetera
-call textobj#user#plugin('misc', {
-  \   'function': {
-  \     'pattern': ['\<\h\k*(', ')'],
-  \     'select-a': 'af',
-  \     'select-i': 'if',
-  \   },
-  \   'method': {
-  \     'pattern': ['\<\h\k*(', ')'],
-  \     'select-a': 'aF',
-  \     'select-i': 'iF',
-  \   },
-  \ })
-"Fucntions for general objects
 function! CurrentLineA()
   normal! 0
   let head_pos = getpos('.')
@@ -239,3 +193,39 @@ function! s:tex_textobjs_manual()
   nnoremap <buffer> yiQ T`yt'
   nnoremap <buffer> <silent> viQ T`vt'
 endfunction
+
+"------------------------------------------------------------------------------"
+"Previous version with manual mappings, super ugly
+"------------------------------------------------------------------------------"
+" "Expand to include 'function' delimiters, i.e. function[...]
+" nnoremap daf mzF(bdt(lda(`z
+" nnoremap caf F(bdt(lca(
+" nnoremap yaf mzF(bvf(%y`z
+" nnoremap <silent> vaf F(bmVvf(%
+" "Expand to include 'array' delimiters, i.e. array[...]
+" onoremap iA ir
+" nnoremap daA mzF[bdt[lda[`z
+" nnoremap caA F[bdt[lca[
+" nnoremap yaA mzF[bvf[%y`z
+" nnoremap <silent> vaA F[bmVvf[%
+" "Next mimick surround syntax with current line
+" "Will make 'a' the whole line excluding newline, and 'i' ignore leading/trailing whitespace
+" nnoremap das 0d$
+" nnoremap cas cc
+" nnoremap yas 0y$
+" nnoremap <silent> vas 0v$
+" nnoremap dis ^v$gEd
+" nnoremap cis ^v$gEc
+" nnoremap yis ^v$gEy
+" nnoremap <silent> vis ^v$gE
+" "And as we do with surround below, sentences
+" "Will make 'a' the whole sentence, and 'i' up to start of next one
+" nnoremap da. l(v)hd
+" nnoremap ca. l(v)hs
+" nnoremap ya. l(v)hy
+" nnoremap <silent> va. l(v)h
+" nnoremap di. v)hd
+" nnoremap ci. v)hs
+" nnoremap yi. v)hy
+" nnoremap <silent> va. v)h
+"
