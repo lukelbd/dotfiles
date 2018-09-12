@@ -5,18 +5,19 @@
 " For more info see: https://www.reddit.com/r/vim/comments/48e4ci/vimscript_how_to_create_a_new_text_object/d0iy3ny/
 "------------------------------------------------------------------------------"
 "------------------------------------------------------------------------------"
-"Declare some textobj objects
-"TODO: Finish this.
+" Global stuff
+" Some ideas for future:
+" https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj (similar to my d/ and d? commands!)
 "------------------------------------------------------------------------------"
 "For some **super common** blocks, don't always have to hit inner/outer/whatever
 "Here, in spirit of vim-surround 'yss', declare a few special such blocks
 "Note the visual ones don't work by default, need to specify explicitly
-omap w  iw
-omap W  iW
-omap p  ip
-nmap vw viw
-nmap vW viW
-nmap vp vip
+onoremap w  iw
+onoremap W  iW
+onoremap p  ip
+nnoremap vw viw
+nnoremap vW viW
+nnoremap vp vip
 
 "Next declare some special textobj plugin objects
 "Consider using: machakann/vim-textobj-functioncall
