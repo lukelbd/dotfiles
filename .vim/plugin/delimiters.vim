@@ -138,11 +138,12 @@ function! s:texsurround()
   nmap <buffer> dsl F{F\dt{dsB
   nmap <buffer> <expr> csl 'F{F\lct{'.input('command: ').'<Esc>F\'
   "'L' for environments
+  "Note uppercase registers *append* to previous contents
   call s:target('L', "\\begin{\1\\begin{\1}", "\n"."\\end{\1\1}")
   nnoremap <buffer> dsL :let @/='\\end{[^}]\+}.*\n'<CR>dgn:let @/='\\begin{[^}]\+}.*\n'<CR>dgN
   nnoremap <expr> <buffer> csL ':let @/="\\\\end{\\zs[^}]\\+\\ze}"<CR>cgn'
            \ .input('\begin{')
-           \ .'<Esc>yiB:let @/="\\\\begin{\\zs[^}]\\+\\ze}"<CR>cgN<C-r>"<Esc>'
+           \ .'<Esc>h:let @z="<C-r><C-w>"<CR>:let @/="\\\\begin{\\zs[^}]\\+\\ze}"<CR>cgN<C-r>z<Esc>'
   " nmap <buffer> dsL /\\end{<CR>:noh<CR><Up>V<Down>^%<Down>dp<Up>V<Up>d
   " nmap <buffer> <expr> csL '/\\end{<CR>:noh<CR>A!!!<Esc>^%f{<Right>ciB'
   " \.input('\begin{').'<Esc>/!!!<CR>:noh<CR>A {<C-r>.}<Esc>2F{dt{'
