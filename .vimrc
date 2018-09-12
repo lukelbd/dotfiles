@@ -16,24 +16,11 @@
 "     Map C-j/C-k/C-h/C-l to arrow keys
 "     Swap underscore and backslash, so underscore is easy to reach
 "###############################################################################
-"IMPORTANT STUFF
+"IMPORTANT STUFF and SETTINGS
 "Says to always use the vim default where vi and vim differ; for example, if you
 "put this too late, whichwrap will be reset
 set nocompatible
 let mapleader="\<Space>"
-"File types commonly want to ignore for various utilities
-"Misc stuff
-noremap <CR> <Nop>
-noremap <Space> <Nop>
-"The above 2 enter weird modes I don't understand...
-noremap Q <Nop>
-noremap K <Nop>
-"Disable c-z and Z for exiting vim
-noremap <C-z> <Nop>
-noremap Z <Nop>
-"Disable tab changing with gt
-noremap gt <Nop>
-noremap gT <Nop>
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
@@ -173,17 +160,34 @@ au VimLeave * if v:dying | echo "\nAAAAaaaarrrggghhhh!!!\n" | endif
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+"Misc stuff
+noremap <CR> <Nop>
+noremap <Space> <Nop>
+"The above 2 enter weird modes I don't understand...
+noremap Q <Nop>
+noremap K <Nop>
+"Disable c-z and Z for exiting vim
+noremap <C-z> <Nop>
+noremap Z <Nop>
+"Disable tab changing with gt
+noremap gt <Nop>
+noremap gT <Nop>
+"Turn off common things in normal mode
+"also prevent Ctrl+c ringing the bell
+nnoremap <C-c> <Nop>
+nnoremap <Delete> <Nop>
+nnoremap <Backspace> <Nop>
 "Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 "Arrow keys are for macbook mapping
 noremap <C-l>   <C-i>
 noremap <C-h>   <C-o>
 noremap <Right> <C-i>
 noremap <Left>  <C-o>
+"Forward (C-f) and backward in changelist
+noremap <C-y> g;
+noremap <C-f> g,
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "the escapes prevent a weird error where sometimes q triggers command-history window
-"Arrow keys are for macbook mapping
-noremap <C-f> g;
-noremap <C-y> g,
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Easy mark usage
@@ -193,6 +197,8 @@ noremap ' `a
 "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
 map @ <Nop>
 noremap , @a
+"Redo map to capital U; means we cannot 'undo line', but who cares
+nnoremap U <C-r>
 "Use - for throwaway register, pipeline for clipboard register
 "Don't try anything fancy here, it's not worth it!
 noremap <silent> - "_
@@ -201,9 +207,13 @@ noremap <silent> \| "*
 "so why not? Fits mnemonically that insert above is Shift+<key for insert below>
 nnoremap <silent> ` :call append(line('.'),'')<CR>
 nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
-"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
-"use ss/substitute instead of cl if you want to enter insert mode
-nnoremap <silent> cL mzi<CR><Esc>`z
+"Now use sneak plugin; use cc for replace character, cC for whole line
+nnoremap cc s
+nnoremap cC cc
+"Replace the currently highlighted text
+"Note s/cc have identical outcomes in visual mode
+vnoremap cc s
+vnoremap cC s
 "Swap with row above, and swap with row below; awesome mnemonic, right?
 "use same syntax for c/s because almost *never* want to change up/down
 "The command-based approach make sthe cursor much less jumpy
@@ -216,23 +226,30 @@ nnoremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), ge
 "Useful for typos
 nnoremap <silent> cl xph
 nnoremap <silent> ch Xp
+"Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
+"use ss/substitute instead of cl if you want to enter insert mode
+nnoremap <silent> cL mzi<CR><Esc>`z
 "Delete entire line, leave behind an empty line
 "Has to be *normal* mode remaps, or will affect operator pending mode; for
 "example if you type 'dd', there will be delay.
 nnoremap dL 0d$
-"Redo map to capital U; means we cannot 'undo line', but who cares
-nnoremap U <C-r>
-"Don't save single-character deletions to any register
-nnoremap x "_x
-nnoremap X "_X
-"Default behavior replaces selection with register after p, but puts
-"deleted text in register; correct this behavior
-vnoremap p "_dP
-vnoremap P "_dP
 "Pressing enter on empty line preserves leading whitespace (HACKY)
 "works because Vim doesn't remove spaces when text has been inserted
 nnoremap o ox<BS>
 nnoremap O Ox<BS>
+"Don't save single-character deletions to any register
+nnoremap x "_x
+nnoremap X "_X
+"Paste from the nth previously deleted or changed (c/C) text
+"The initial escape cancels your count operator, otherwise multiple lines pasted
+"Also map the 0 register -- this contains previously yanked (unchanged) text
+nnoremap <expr> p v:count==0 ? 'p' : '<Esc>"'.v:count.'p'
+nnoremap <expr> P v:count==0 ? 'P' : '<Esc>"'.v:count.'P'
+nnoremap 0p "0p
+nnoremap 0P "0P
+"Visual mode p/P to replace selected text with contents of register
+vnoremap p "_dP
+vnoremap P "_dP
 "Disabling dumb extra scroll commands
 nnoremap <C-p> <Nop>
 nnoremap <C-n> <Nop>
@@ -242,12 +259,6 @@ nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
 "Yank, substitute, delete until end of current line
 nnoremap Y y$
 nnoremap D D
-"For some reason this is necessary or there is a cursor delay when hitting cc
-nnoremap cc s
-nnoremap cC cc
-"Replace the currently highlighted text
-vnoremap cc s
-vnoremap cC s
 "Disable arrow keys because you're better than that
 "Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
 " for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
@@ -260,11 +271,6 @@ vnoremap cC s
 " inoremap (<CR> (<CR>)<Esc>ko
 " inoremap {<CR> {<CR>}<Esc>ko
 " inoremap ({<CR> ({<CR>});<Esc>ko
-"Turn off common things in normal mode
-"also prevent Ctrl+c ringing the bell
-nnoremap <C-c> <Nop>
-nnoremap <Delete> <Nop>
-nnoremap <Backspace> <Nop>
 
 "###############################################################################
 "VISUAL MODE BEHAVIOR
@@ -397,8 +403,8 @@ call plug#begin('~/.vim/plugged')
 "Custom text objects (inner/outer selections)
 Plug 'kana/vim-textobj-user'
 Plug 'bps/vim-textobj-python' "consider copying over
-Plug 'kana/vim-textobj-indent'
-Plug 'kana/vim-textobj-entire'
+Plug 'kana/vim-textobj-indent' "match indentation, object is 'i'
+Plug 'kana/vim-textobj-entire' "entire file, object is 'e'
 " Plug 'machakann/vim-textobj-functioncall' "fucking sucks/doesn't work, fuck you
 "------------------------------------------------------------------------------"
 "Colors (don't need colors)
@@ -638,7 +644,7 @@ function! s:textemplates()
   let template=expand("~")."/latex/".input("Template (tab to reveal options): ", "", "customlist,TeXTemplates").".tex"
   if filereadable(template)
     execute "0r ".template
-    break
+    " break
   else
     echom "Warning: Invalid name."
   endif
@@ -1526,19 +1532,20 @@ if has_key(g:plugs, "tabular")
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
   nnoremap <expr> _r ':Tabularize /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
   vnoremap <expr> _r ':Table      /^\s*[^\t '.b:NERDCommenterDelims['left'].']\+\zs\ /r0l0l0<CR>'
+  "As above, but let align
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
-  nnoremap <expr> _\| ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> _\| ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> _l ':Tabularize /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> _l ':Table      /^\s*\S\{-1,}\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\s/l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
   nnoremap <expr> __ ':Tabularize /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   vnoremap <expr> __ ':Table      /\S\('.b:NERDCommenterDelims['left'].'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
-  nnoremap <expr> _a ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> _a ':Table      /\S\zs\ /l0<CR>'
+  nnoremap <expr> _\| ':Tabularize /\S\zs\ /l0<CR>'
+  vnoremap <expr> _\| ':Table      /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
   " nnoremap <expr> _C ':Tabularize /^.*\zs'.b:NERDCommenterDelims['left'].'/l1<CR>'
