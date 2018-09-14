@@ -182,7 +182,8 @@ nnoremap <silent> y/ :let @"=@/<CR>
 nnoremap <silent> y? :let @"=@/<CR>
 "Better join behavior -- before 2J joined this line and next, now it
 "means 'join the two lines below'; more intuitive
-nnoremap <expr> J v:count>1 ? 'JJ' : 'J'
+nnoremap <expr> J v:count>1  ? 'JJ' : 'J'
+nnoremap <expr> K v:count==0 ? 'Jx' : repeat('Jx',v:count)
 "Toggle highlighting
 nnoremap <silent> <Leader>i :set hlsearch<CR>
 nnoremap <silent> <Leader>o :noh<CR>

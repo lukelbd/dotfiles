@@ -1169,9 +1169,18 @@ function pdf2png() {
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
   done
 } # sometimes need bitmap yo
+function svg2png() {
+  pdf2png $@
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density -background none"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .svg$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.svg}.png"
+  done
+}
 function pdf2tiff() {
-  resolution=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
   flags="-flatten -units PixelsPerInch -density $density"
   for f in "${args[@]}"; do
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
