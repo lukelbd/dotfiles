@@ -62,7 +62,7 @@ if $_macos; then
   # PGI compilers
   export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
   # Youtube tool
-  export PATH="$HOME/youtubemusic:$PATH"
+  export PATH="$HOME/youtube-m4a:$PATH"
   # Matlab
   export PATH="/Applications/MATLAB_R2014a.app/bin:$PATH"
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
@@ -173,7 +173,7 @@ fi
 export PATH="$HOME/bin:$PATH"
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
-alias  brew="PATH=$PATH brew"
+alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
@@ -270,7 +270,8 @@ function open() {
       case "$file" in
         *.pdf|*.svg|*.jpg|*.jpeg|*.png) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
-        *.html|*.xml|*.htm) app="Chromium.app" ;;
+        *.html|*.xml|*.htm|*.gif) app="Chromium.app" ;;
+        *.mov|*.mp4) app="VLC.app" ;;
         *.md) app="Marked 2.app" ;;
         *)    app="TextEdit.app" ;;
       esac
@@ -842,7 +843,7 @@ function notebook() {
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
     port="--port=$1"
-  elif ! $_macos; then # remote ports will use 3XXXX
+  elif ! $_macos; then # remote ports will use 3XXXX   
     connect
     [ -z "$_jupyter_port" ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
@@ -1168,9 +1169,18 @@ function pdf2png() {
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
   done
 } # sometimes need bitmap yo
+function svg2png() {
+  pdf2png $@
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
+  flags="-flatten -units PixelsPerInch -density $density -background none"
+  for f in "${args[@]}"; do
+    [[ "$f" =~ .svg$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.svg}.png"
+  done
+}
 function pdf2tiff() {
-  resolution=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && resolution=$1 args="${args[@]:1}"
+  density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
   flags="-flatten -units PixelsPerInch -density $density"
   for f in "${args[@]}"; do
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
