@@ -9,10 +9,8 @@ if !exists("g:plugs")
   echo "Warning: vim-plug required to check if dependency plugins are installed."
   finish
 endif
-if !has_key(g:plugs, "vim-surround")
-  finish
-endif
-if !has_key(g:plugs, "delimitmate")
+if !PlugActive("vim-surround") || !PlugActive("delimitmate")
+  echom "Warning: vim-surround or delimitmate not available."
   finish
 endif
 

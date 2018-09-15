@@ -12,17 +12,20 @@
 "For some **super common** blocks, don't always have to hit inner/outer/whatever
 "Here, in spirit of vim-surround 'yss', declare a few special such blocks
 "Note the visual ones don't work by default, need to specify explicitly
-onoremap w  iw
-onoremap W  iW
-onoremap p  ip
-nnoremap vw viw
-nnoremap vW viW
-nnoremap vp vip
+"Nevermind, bad idea! Actually do want dw/dW sometimes!!!
+" onoremap w  iw
+" onoremap W  iW
+" onoremap p  ip
+" nnoremap vw viw
+" nnoremap vW viW
+" nnoremap vp vip
 
 "Alias single-key builtin text objects
 function! s:alias(original,new)
   exe 'onoremap i'.a:original.' i'.a:new
+  exe 'xnoremap i'.a:original.' i'.a:new
   exe 'onoremap a'.a:original.' a'.a:new
+  exe 'xnoremap a'.a:original.' a'.a:new
 endfunction
 for pair in ['r[', 'a<', 'c{']
   call s:alias(pair[0], pair[1])
@@ -32,7 +35,7 @@ endfor
 "a 'word' by '*', 'gd/gD', et cetera
 "Note the 'a' letter is reserved for c'a'rats, e.g. <hello>
 "Question: Why does the below not work without \<?
-if !has_key(g:plugs, 'vim-textobj-user')
+if !PlugActive('vim-textobj-user')
   echom "Warning: textobj unavailable."
   finish
 endif
@@ -81,6 +84,8 @@ call textobj#user#plugin('universal', {
   \     'select-i': 'iC',
   \   },
   \ })
+  " \     'move-p': 'gC', "tried doing this, got weird error, whatevs
+  " \     'move-n': 'gc',
 
 "Functions for current line stuff
 function! s:current_line_a()
@@ -131,8 +136,8 @@ endfunction
 "And the commented line stuff
 function! s:uncommented_lines()
   normal! 0l
-  let nnb = search('^\s*'.b:NERDCommenterDelims['left'].'.*\zs$', 'Wnc')
-  let pnb = search('^\ze\s*'.b:NERDCommenterDelims['left'].'.*$', 'Wncb')
+  let nnb = search('^\s*'.Comment().'.*\zs$', 'Wnc')
+  let pnb = search('^\ze\s*'.Comment().'.*$', 'Wncb')
   if pnb==line('.')
     return 0
   endif
@@ -282,8 +287,8 @@ let s:tex_textobjs_dict={
 " endfunction
 " "Comment jumping and selecting
 " "Consider turning the comment selections below into text objects
-" noremap <expr> <silent> gc <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],0).'gg'
-" noremap <expr> <silent> gC <sid>smartjump('^\s*'.b:NERDCommenterDelims['left'],1).'gg'
+" noremap <expr> <silent> gc <sid>smartjump('^\s*'.Comment(),0).'gg'
+" noremap <expr> <silent> gC <sid>smartjump('^\s*'.Comment(),1).'gg'
 " "Empty line jumping
 " "Much better than paragraph motion, because whitespace-only lines now count as 'empty'
 " "Note vip/vap are builtin commands -- just wanted to redefine {/} motions

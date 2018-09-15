@@ -173,7 +173,7 @@ fi
 export PATH="$HOME/bin:$PATH"
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
-alias  brew="PATH=$PATH brew"
+alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
@@ -842,7 +842,7 @@ function notebook() {
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
-    port="--port=$1"   
+    port="--port=$1"
   elif ! $_macos; then # remote ports will use 3XXXX   
     connect
     [ -z "$_jupyter_port" ] && return 1
