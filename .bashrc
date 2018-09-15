@@ -422,7 +422,7 @@ alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn -
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Shell scripting utilities
-function c() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+function calc() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 function empty() { for i in {1..100}; do echo; done; }
 function abspath() { # abspath that works on mac, Linux, or anything with bash
