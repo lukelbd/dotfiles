@@ -9,8 +9,12 @@ hi TabLineFill ctermfg=White ctermbg=Black cterm=None
 hi TabLineSel  ctermfg=Black ctermbg=White cterm=None
 "Hijacked from Tabline function, and modified
 "Only display name of a 'primary' file, not e.g. tagbar
-let g:charmax=12 "maximum characters for filename
-let g:bufignore = ['nerdtree', 'tagbar', 'codi', 'help'] "filetypes considered 'helpers'
+if !exists('g:charmax')
+  let g:charmax=12 "maximum characters for filename
+endif
+if !exists('g:bufignore')
+  let g:bufignore = ['nerdtree', 'tagbar', 'codi', 'help'] "filetypes considered 'helpers'
+endif
 function! Tabline()
   let tabstrings = [] "put strings in list
   let tabtexts = [] "actual text on screen
