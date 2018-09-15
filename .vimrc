@@ -771,14 +771,14 @@ if PlugActive('unite.vim') && PlugActive('citation.vim')
   " let g:citation_vim_bibtex_file="./empty_convert.bib" "by default, make this your filename
   "Mappings
   function! s:citation_maps()
-    nnoremap <buffer> <silent> ;zz :Cite    <CR>:Zotero -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;zt :Cite t  <CR>:Zotero -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;zp :Cite p  <CR>:Zotero -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;zn :Cite num<CR>:Zotero -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bb :Cite    <CR>:BibTeX -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bt :Cite t  <CR>:BibTeX -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bp :Cite p  <CR>:BibTeX -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bn :Cite num<CR>:BibTeX -buffer-name=citation-start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;zz :Cite    <CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;zt :Cite t  <CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;zp :Cite p  <CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;zn :Cite num<CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;bb :Cite    <CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;bt :Cite t  <CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;bp :Cite p  <CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
+    nnoremap <buffer> <silent> ;bn :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
   endfunction
   " "Insert citation, view citation info, append information
   " nnoremap <silent> ;c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
