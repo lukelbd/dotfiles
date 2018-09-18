@@ -25,6 +25,8 @@
 "put this too late, whichwrap will be reset
 set nocompatible
 let mapleader="\<Space>"
+set viminfo='100,:100,<100,@100,s10,f0 "commands, marks (e.g. jump history), exclude registers >10kB of text
+set history=100 "search history
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
@@ -122,9 +124,12 @@ noremap <C-f> g,
 "the escapes prevent a weird error where sometimes q triggers command-history window
 noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
-"Easy mark usage
-noremap " :echo "Setting mark."<CR>ma
-noremap ' `a
+"Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
+"and use ' or [1-8]' to jump to a mark.
+"WARNING: HighlightMark should only be used with lowercase letters
+noremap <expr> " (v:count==9 ? '<Esc>:RemoveHighlights<CR>' :
+  \ 'm'.nr2char(97+v:count).':HighlightMark '.nr2char(97+v:count).'<CR>')
+noremap <expr> ' "`".nr2char(97+v:count)
 "New macro useage; almost always just use one at a time
 "also easy to remembers; dot is 'repeat last command', comma is 'repeat last macro'
 map @ <Nop>
@@ -175,7 +180,7 @@ nnoremap X "_X
 "Paste from the nth previously deleted or changed (c/C) text
 "The initial escape cancels your count operator, otherwise multiple lines pasted
 "Can't map 0p because then every time hit 0 to go to first line, get delay, so instead
-"use 9 for last yanked (unchanged) text, because why not
+"Use 9 for last yanked (unchanged) text, because why not
 nnoremap <expr> p v:count==0 ? 'p' : ( v:count==9 ? '<Esc>"0p' : '<Esc>"'.v:count.'p' )
 nnoremap <expr> P v:count==0 ? 'P' : ( v:count==9 ? '<Esc>"0P' : '<Esc>"'.v:count.'P' )
 "Visual mode p/P to replace selected text with contents of register
@@ -301,7 +306,7 @@ inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
 "###############################################################################
 "GLOBAL FUNCTIONS, FOR VIM SCRIPTING
 function! PlugActive(key)
-  return has_key(g:plugs, a:key) "change if switch plugin managers, e.g.
+  return has_key(g:plugs, a:key) "change if (e.g.) switch plugin managers
   " echo filter(split(&rtp), ','), 'v:val =~? "tex")
 endfunction
 function! In(list,item)
@@ -310,9 +315,16 @@ endfunction
 function! Reverse(text) "want this to be accessible!
   return join(reverse(split(a:text, '.\zs')), '')
 endfunction
+function! Strip(text)
+  return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
+endfunction
 function! Comment()
-  return split(&commentstring, '%s')[0]
   "alternatively, b:NERDCommenterDelims['left']
+  if &commentstring =~ '%s'
+    return Strip(split(&commentstring, '%s')[0])
+  else
+    return ''
+  endif
 endfunction
 augroup death
   au!
@@ -678,119 +690,124 @@ endfunction
 augroup citations
   au!
   au BufRead  *.tex let b:citation_vim_bibtex_file='' | call <sid>citation_maps()
-  au BufEnter *.tex let g:citation_vim_bibtex_file=b:citation_vim_bibtex_file
+  au BufEnter *.tex let g:citation_vim_bibtex_file=(exists('b:citation_vim_bibtex_file') ? b:citation_vim_bibtex_file : '')
 augroup END
-if PlugActive('unite.vim') && PlugActive('unite-bibtex')
-  "Settings and stuff
-  let g:unite_data_directory='~/.unite'
-  let g:unite_bibtex_cache_dir='~/.unite'
-  let g:unite_bibtex_prefix = '\citet{'
-  let g:unite_bibtex_postfix = '}'
-  let g:unite_bibtex_separator = ', '
-  let g:unite_bibtex_bib_files=['./empty_convert.bib']
-endif
-if PlugActive('unite.vim') && PlugActive('citation.vim')
-  "Possible data sources:
-  " abstract,       author, collection, combined,    date, doi,
-  " duplicate_keys, file,   isbn,       publication, key,  key_inner, language,
-  " issue,          notes,  pages,      publisher,   tags, title,     type,
-  " url,            volume, zotero_key
-  "Helper functions
-  function! s:citations_zotero()
-    "Set up for zotero searching
-    if g:citation_vim_mode!='zotero'
-      echom "Deleting cache."
-      call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
-    endif
-    let g:citation_vim_mode='zotero'
-  endfunction
-  function! s:citations_bibtex()
-    "Select bibliography file to use
-    "Provide user option to pick from multiple files
-    "To *reset* bib name, use :let g:ref=''
-    if g:citation_vim_mode=='zotero'
-      echom "Deleting cache."
-      call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
-    endif
-    if b:citation_vim_bibtex_file==''
-      let b:citation_vim_bibtex_file=s:bibfile()
-      let g:citation_vim_bibtex_file=b:citation_vim_bibtex_file
-    endif
-    let g:citation_vim_mode='bibtex'
-  endfunction
-  function! s:bibfile()
-    "Select bibliography files from user-given list
-    let cwd=expand('%:h') "head component of path, can be relative
-    let b:refs=split(glob(cwd.'/*.bib'),"\n")
-    if len(b:refs)==0
-      echom 'Warning: No .bib files found in file directory.'
-      return ''
-    elseif len(b:refs)==1
-      let ref=b:refs[0]
-    else
-      while 1
-        let ref=input('Select bibliography (tab to reveal options): ', '', 'customlist,BibFiles')
-        if In(b:refs,ref)
-          break
-        endif
-        echom ' (invalid name)'
-      endwhile
-    endif
-    return ref
-  endfunction
-  function! BibFiles(A,L,P)
-    "List bibfiles, simple function
-    let names=[]
-    for ref in b:refs
-      if ref =~? '^'.a:A "if what user typed so far matches name
-        call add(names, ref)
+if PlugActive('unite.vim')
+  "Set up fuzzy matching
+  call unite#filters#sorter_default#use(['sorter_rank'])
+  " call unite#filters#matcher_default#use(['matcher_fuzzy'])
+  if PlugActive('unite-bibtex')
+    "Settings and stuff
+    let g:unite_data_directory='~/.unite'
+    let g:unite_bibtex_cache_dir='~/.unite'
+    let g:unite_bibtex_prefix = '\citet{'
+    let g:unite_bibtex_postfix = '}'
+    let g:unite_bibtex_separator = ', '
+    let g:unite_bibtex_bib_files=['./empty_convert.bib']
+  endif
+  if PlugActive('citation.vim')
+    "Possible data sources:
+    " abstract,       author, collection, combined,    date, doi,
+    " duplicate_keys, file,   isbn,       publication, key,  key_inner, language,
+    " issue,          notes,  pages,      publisher,   tags, title,     type,
+    " url,            volume, zotero_key
+    "Helper functions
+    function! s:citations_zotero()
+      "Set up for zotero searching
+      if g:citation_vim_mode!='zotero'
+        echom "Deleting cache."
+        call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
       endif
-    endfor
-    return names
-  endfunction
-  command! -nargs=* Zotero call <sid>citations_zotero() | Unite <args>
-  command! -nargs=* BibTeX call <sid>citations_bibtex() | Unite <args>
-  command! BibFile call <sid>bibfile()
-  "Another simple functino to toggle prefix name
-  function! s:cite(...)
-    let suffix=(a:0 ? a:1 : '')
-    let g:citation_vim_outer_prefix='\cite'.suffix.'{'
-  endfunction
-  command! -nargs=? Cite call <sid>cite('<args>')
-  "Universal settings
-  let g:citation_vim_mode="zotero" "will always default to zotero
-  let g:unite_data_directory='~/.unite'
-  let g:citation_vim_cache_path='~/.unite'
-  let g:citation_vim_outer_prefix='\cite{'
-  let g:citation_vim_inner_prefix=''
-  let g:citation_vim_suffix='}'
-  let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors
-  let g:citation_vim_zotero_path="~/Zotero" "location of .sqlite file
-  let g:citation_vim_zotero_version=5
-  " let g:citation_vim_zotero_attachment_path="~/Google Drive" "not needed cause symlinks are there maybe, didn't actually change 'data directory'
-  " let g:citation_vim_bibtex_file="./empty_convert.bib" "by default, make this your filename
-  "Mappings
-  function! s:citation_maps()
-    nnoremap <buffer> <silent> ;zz :Cite    <CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;zt :Cite t  <CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;zp :Cite p  <CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;zn :Cite num<CR>:Zotero -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bb :Cite    <CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bt :Cite t  <CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bp :Cite p  <CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-    nnoremap <buffer> <silent> ;bn :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -default-action=append citation/key<CR>
-  endfunction
-  " "Insert citation, view citation info, append information
-  " nnoremap <silent> ;c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-  " nnoremap <silent> ;I :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
-  " nnoremap <silent> ;A :<C-u>Unite -default-action=yank citation/title<CR>
-  " "Open pdf, open file directory, open url
-  " nnoremap <silent> ;f :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
-  " nnoremap <silent> ;d :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
-  " nnoremap <silent> ;u :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
-  " "Search for word under cursor; search for words, input prompt
-  " nnoremap <silent> ;s :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
-  " nnoremap <silent> ;S :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
+      let g:citation_vim_mode='zotero'
+    endfunction
+    function! s:citations_bibtex()
+      "Select bibliography file to use
+      "Provide user option to pick from multiple files
+      "To *reset* bib name, use :let g:ref=''
+      if g:citation_vim_mode=='zotero'
+        echom "Deleting cache."
+        call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
+      endif
+      if b:citation_vim_bibtex_file==''
+        let b:citation_vim_bibtex_file=s:bibfile()
+        let g:citation_vim_bibtex_file=b:citation_vim_bibtex_file
+      endif
+      let g:citation_vim_mode='bibtex'
+    endfunction
+    function! s:bibfile()
+      "Select bibliography files from user-given list
+      let cwd=expand('%:h') "head component of path, can be relative
+      let b:refs=split(glob(cwd.'/*.bib'),"\n")
+      if len(b:refs)==0
+        echom 'Warning: No .bib files found in file directory.'
+        return ''
+      elseif len(b:refs)==1
+        let ref=b:refs[0]
+      else
+        while 1
+          let ref=input('Select bibliography (tab to reveal options): ', '', 'customlist,BibFiles')
+          if In(b:refs,ref)
+            break
+          endif
+          echom ' (invalid name)'
+        endwhile
+      endif
+      return ref
+    endfunction
+    function! BibFiles(A,L,P)
+      "List bibfiles, simple function
+      let names=[]
+      for ref in b:refs
+        if ref =~? '^'.a:A "if what user typed so far matches name
+          call add(names, ref)
+        endif
+      endfor
+      return names
+    endfunction
+    command! -nargs=* Zotero call <sid>citations_zotero() | Unite <args>
+    command! -nargs=* BibTeX call <sid>citations_bibtex() | Unite <args>
+    command! BibFile call <sid>bibfile()
+    "Another simple functino to toggle prefix name
+    function! s:cite(...)
+      let suffix=(a:0 ? a:1 : '')
+      let g:citation_vim_outer_prefix='\cite'.suffix.'{'
+    endfunction
+    command! -nargs=? Cite call <sid>cite('<args>')
+    "Universal settings
+    let g:citation_vim_mode="zotero" "will always default to zotero
+    let g:unite_data_directory='~/.unite'
+    let g:citation_vim_cache_path='~/.unite'
+    let g:citation_vim_outer_prefix='\cite{'
+    let g:citation_vim_inner_prefix=''
+    let g:citation_vim_suffix='}'
+    let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors
+    let g:citation_vim_zotero_path="~/Zotero" "location of .sqlite file
+    let g:citation_vim_zotero_version=5
+    " let g:citation_vim_zotero_attachment_path="~/Google Drive" "not needed cause symlinks are there maybe, didn't actually change 'data directory'
+    " let g:citation_vim_bibtex_file="./empty_convert.bib" "by default, make this your filename
+    "Mappings
+    function! s:citation_maps()
+      nnoremap <buffer> <silent> ;zz :Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> ;zt :Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> ;zp :Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> ;zn :Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> ;bb :Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> ;bt :Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> ;bp :Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> ;bn :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+    endfunction
+    " "Insert citation, view citation info, append information
+    " nnoremap <silent> ;c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
+    " nnoremap <silent> ;I :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
+    " nnoremap <silent> ;A :<C-u>Unite -default-action=yank citation/title<CR>
+    " "Open pdf, open file directory, open url
+    " nnoremap <silent> ;f :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+    " nnoremap <silent> ;d :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
+    " nnoremap <silent> ;u :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
+    " "Search for word under cursor; search for words, input prompt
+    " nnoremap <silent> ;s :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
+    " nnoremap <silent> ;S :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
+  endif
 endif
 
 "##############################################################################"
@@ -1395,7 +1412,6 @@ if PlugActive("nerdcommenter")
   function! s:docstring(char)
     let col=s:commentindent()
     let spaces=(col-1+&l:tabstop)
-    normal! k
     call append(line('.'), [repeat(' ',spaces).repeat(a:char,3), repeat(' ',spaces), repeat(' ',spaces).repeat(a:char,3)])
     normal! jj$
   endfunction
