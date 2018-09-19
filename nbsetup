@@ -113,8 +113,11 @@ ipython.magic("config InlineBackend.figure_formats = ['retina']")
 # ipython.magic("config InlineBackend.figure_formats = ['retina','svg']")
 # By default several rcParams are reset when printing to cell output; for
 # retina (which is hi-res bitmap) we just want to set the DPI to something reasonable
+# NOTE: No longer do this, just maintain savefig rc defaults different from
+# the other other defaults.
 ipython.magic("config InlineBackend.rc = {}")
 # Optionally keep figures tight around edges
-# TODO: Can this also be set with an .rc setting?
+# NOTE: No longer do this. Probably should just control with rc setting if want, then
+# turn off tight bounding box saving.
 ipython.magic("config InlineBackend.print_figure_kwargs = {'bbox_inches':None}") #bbox_inches=\'tight\', pad_inches=0.1)')
 print("Configured inline plotting.")

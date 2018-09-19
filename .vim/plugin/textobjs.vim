@@ -84,8 +84,20 @@ call textobj#user#plugin('universal', {
   \     'select-i': 'iC',
   \   },
   \ })
-  " \     'move-p': 'gC', "tried doing this, got weird error, whatevs
-  " \     'move-n': 'gc',
+" \     'move-p': 'gC', "tried doing this, got weird error, whatevs
+" \     'move-n': 'gc',
+
+"Motion functions
+"Had hard time getting stuff to work in textobj
+function! s:search(regex,forward)
+  let motion=(a:forward ? '' : 'b')
+  let result=search(a:regex, 'Wn'.motion)
+  return (result==0 ? line('.') : result)
+endfunction
+noremap <expr> <silent> gc <sid>search('^\ze\s*'.Comment().'.*$', 1).'gg'
+noremap <expr> <silent> gC <sid>search('^\ze\s*'.Comment().'.*$', 0).'gg'
+noremap <expr> <silent> ge <sid>search('^\ze\s*$', 1).'gg'
+noremap <expr> <silent> gE <sid>search('^\ze\s*$', 0).'gg'
 
 "Functions for current line stuff
 function! s:current_line_a()
