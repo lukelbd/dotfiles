@@ -104,7 +104,7 @@ inoreabbrev <buffer> ;+ \sum
 inoreabbrev <buffer> ;* \prod
 inoreabbrev <buffer> ;x \times
 inoreabbrev <buffer> ;. \cdot
-inoreabbrev <buffer> ;o \circ
+inoreabbrev <buffer> ;o $^\circ$
 inoreabbrev <buffer> ;= \equiv
 inoreabbrev <buffer> ;~ {\sim}
 inoreabbrev <buffer> ;k ^

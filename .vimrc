@@ -126,7 +126,6 @@ noremap <silent> <expr> q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 "and use ' or [1-8]' to jump to a mark.
-"WARNING: HighlightMark should only be used with lowercase letters
 noremap <expr> " (v:count==9 ? '<Esc>:RemoveHighlights<CR>' :
   \ 'm'.nr2char(97+v:count).':HighlightMark '.nr2char(97+v:count).'<CR>')
 noremap <expr> ' "`".nr2char(97+v:count)
