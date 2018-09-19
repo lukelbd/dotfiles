@@ -1,10 +1,10 @@
 "------------------------------------------------------------------------------"
-" Name:   wrapscroll.vim
+" Name:   scrollwrapped.vim
 " Author: Luke Davis (lukelbd@gmail.com)
 " Date:   2018-09-03
 "------------------------------------------------------------------------------"
-"Approximately scroll by N virtual lines while line wrapping is toggled
-"Note vim forces us to always start at beginning of wrapped line, but don't
+"Distustingly over-engineered solution to scrolling wrapped lines in vim
+"Note: vim forces us to always start at beginning of wrapped line, but don't
 "necessarily have to end on one. So, scrolling is ***always controlled***
 "by the lines near the top of the screen!
 "Warning: Function may misbehave in special circumstances -- i.e. vim always
