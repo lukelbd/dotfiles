@@ -165,7 +165,7 @@ function! s:texsurround()
   "Font types
   call s:target('o', '{\color{red}', '}', 1)
   call s:target('i', '\textit{',     '}', 1)
-  call s:target('t', '\textbf{',     '}', 1)
+  call s:target('b', '\textbf{',     '}', 1)
   call s:target('E', '\emph{'  ,     '}', 1) "use e for times 10 to the whatever
   call s:target('u', '\underline{',  '}', 1)
   call s:target('m', '\mathrm{',     '}', 1)
@@ -237,7 +237,7 @@ function! s:texsurround()
   "Equations
   call s:target('%', '\begin{equation*}', "\n".'\end{equation*}')
   call s:target('^', '\begin{align*}', "\n".'\end{align*}')
-  call s:target('T', '\begin{tabular}{', "}\n".'\end{tabular}')
+  call s:target('t', '\begin{tabular}{', "}\n".'\end{tabular}')
   "Itemize environments
   call s:target('*', '\begin{itemize}',                  "\n".'\end{itemize}')
   call s:target('&', '\begin{description}',              "\n".'\end{description}') "d is now open
