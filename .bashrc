@@ -423,7 +423,7 @@ alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn -
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Shell scripting utilities
-function c() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+function calc() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
 function empty() { for i in {1..100}; do echo; done; }
 function abspath() { # abspath that works on mac, Linux, or anything with bash
@@ -444,23 +444,26 @@ function abspath() { # abspath that works on mac, Linux, or anything with bash
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
 alias restarts="last reboot | less"
-function listjobs() {
-  ps | grep "$1" | grep -v PID | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs
+function listps() {
+  ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
+     | grep "$1" | cut -d' ' -f1,4
 } # list job pids using ps; alternatively can use naked 'jobs' command
-function killjobs() {
-  [ $# -eq 0 ] && echo "Error: Must specify grep pattern(s)." && return 1
-  for str in $@; do
+function killps() {
+  local strs
+  [ $# -ne 0 ] && strs=($@) || strs=(all)
+  for str in ${strs[@]}; do
     echo "Killing $str jobs..."
-    kill $(ps | grep "$str" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f1 | xargs) 2>/dev/null
+    [ $str == 'all' ] && str=""
+    kill $(listps "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 } # kill jobs by name
-function killall() {
+function killjobs() {
   local count=$(jobs | wc -l | xargs)
   for i in $(seq 1 $count); do
     echo "Killing job $i..."
     eval "kill %$i"
   done
-} # kill jobs with the percent sign thing
+} # kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
