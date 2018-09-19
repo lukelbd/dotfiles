@@ -775,32 +775,33 @@ function jt() {
 # Will be called whenever a notebook is iniated, and can be called to refresh stale connections.
 function connect() {
   # Error checks and declarations
-  local port candidates
+  local server outcome ports exits
   unset _jupyter_port
   $_macos                && echo "Error: This function is intended to run inside ssh sessions."                      && return 1
   [ ! -r $_port_file ]   && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
   ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address."      && return 1
-  # Get list of available ports on this machine; currently we check 20 options
-  if [ $# -eq 0 ]; then
-    for port in $(seq 30000 30020); do
-      ! netstat -an | grep "[:.]$port" &>/dev/null && candidates+=($port)
-    done
-    [ ${#candidates[@]} -eq 0 ] && echo "Error: No ports available on this machine." && return 1
-  fi
-  # Try to establish the 2-way connections
   # The ip command prints this server's ip address ($hostname doesn't include full url)
   # ssh -f (port-forwarding in background) -N (don't issue command)
   echo "Sending commands to macbook."
   server=$USER@$(ip route get 1 | awk '{print $NF;exit}')
   [ $? -ne 0 ] && echo "Error: Could not figure out this server's ip address." && return 1
+  # Try to establish 2-way connections
+  # Can filter to find ports available on host *and* home server, or just iterate
+  # through user provided ports -- if the ssh fails, will return error.
   outcome=$(command ssh -t -o StrictHostKeyChecking=no -p $(cat $_port_file) $USER@localhost "
-  # Just try connecting over input ports
   if [ $# -ne 0 ]; then
-    ports=\"$@\"
-  # Find the first available port by parsing netstat
+    # Just try connecting over input ports
+    ports=\"$@\" # could fail when we try to ssh
   else
-    ports=${candidates[0]}
-    candidates=(${candidates[@]})
+    # Find available port on this server
+    # Warning: Giant subprocess below
+    candidates=($(
+      for port in $(seq 30000 30020); do
+        ! netstat -an | grep "[:.]$port" &>/dev/null && echo $port
+      done
+      ))
+    # Find which of these is available on home server
+    ports=${candidates[0]} # initialize
     i=0; while netstat -an | grep \"[:.]\$ports\" &>/dev/null; do
       let i=i+1
       ports=\${candidates[\$i]}
