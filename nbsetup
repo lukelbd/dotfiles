@@ -4,6 +4,12 @@ Script to set up magic commands and other notebook properties.
 Just call this in the first cell with "run pyfuncs/notebook". And voila!
 Call with optional directory argument to make that the new working directory.
 
+Unbelievably weird problem:
+  * Warning on calling rcdefaults(): https://stackoverflow.com/q/48320804/4970632
+    Apparently you can change the backend until the first plot is drawn, then
+    it stays the same. So the rcdefault() command changes the backend to a
+    non-inline version.
+
 Notes on python figures:
   * Can use InlineBackend rc configuration to make inline figure properties
     different from figure.<subproperty> settings in rcParams.
