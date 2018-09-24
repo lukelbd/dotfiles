@@ -1,9 +1,9 @@
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"------------------------------------------------------------------------------"
 " Vim syntax file for completion for Slurm and embedded Awk highlighting
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"------------------------------------------------------------------------------"
 " Awk: copied from https://stackoverflow.com/a/13925238/4970632
 " Currently just highlights stuff white; needs work.
-" ===================
+"------------------------------------------------------------------------------"
 " syn include @AWKScript syntax/awk.vim
 " syn region AWKScriptCode matchgroup=AWKCommand
 "     \ start=+[=\\]\@<!'+ skip=+\\'+ end=+'+ contains=@AWKScript contained
@@ -18,43 +18,12 @@
 "     \ contains=@shIdList,@shExprList2 nextgroup=AWKScriptCode
 " syn cluster shCommandSubList add=AWKScriptEmbedded
 " hi def link AWKCommand Type
-
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"  Copyright (C) 2012 Damien François. <damien.francois@uclouvain.Be>
-"  Written by Damien François. <damien.francois@uclouvain.Be>.
-"
-"  This file is part of SLURM, a resource management program.
-"  For details, see <https://slurm.schedmd.com/>.
-"  Please also read the included file: DISCLAIMER.
-"
-"  SLURM is free software; you can redistribute it and/or modify it under
-"  the terms of the GNU General Public License as published by the Free
-"  Software Foundation; either version 2 of the License, or (at your option)
-"  any later version.
-"
-"  In addition, as a special exception, the copyright holders give permission
-"  to link the code of portions of this program with the OpenSSL library under
-"  certain conditions as described in each individual source file, and
-"  distribute linked combinations including the two. You must obey the GNU
-"  General Public License in all respects for all of the code used other than
-"  OpenSSL. If you modify file(s) with this exception, you may extend this
-"  exception to your version of the file(s), but you are not obligated to do
-"  so. If you do not wish to do so, delete this exception statement from your
-"  version.  If you delete this exception statement from all source files in
-"  the program, then also delete it here.
-"
-"  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
-"  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
-"  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
-"  details.
-"
-"  You should have received a copy of the GNU General Public License along
-"  with SLURM; if not, write to the Free Software Foundation, Inc.,
-"  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
-"
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-" Set some variables or something
-" ===================
+"------------------------------------------------------------------------------"
+" Slurm SBATCH comments are one liners beginning with #SBATCH and containing
+" the keyword (i.e.SBATCH), one option (here only options starting with -- are
+" considered), and one optional value.
+"------------------------------------------------------------------------------"
+"Manage shell type
 if !exists("b:is_kornshell") && !exists("b:is_bash")
   if exists("g:is_posix") && !exists("g:is_kornshell")
    let g:is_kornshell= g:is_posix
@@ -73,15 +42,10 @@ if !exists("b:is_kornshell") && !exists("b:is_bash")
     let b:is_sh= 1
   endif
 endif
-
-" Slurm:
-" ===================
-" Slurm SBATCH comments are one liners beginning with #SBATCH and containing
-" the keyword (i.e.SBATCH), one option (here only options starting with -- are
-" considered), and one optional value.
+"Syntax declarations
+"All shSlurmString are suspect; they probably could be narrowed down to more
+"specific regular expressions. Typical example is --mail-type or --begin
 syn region  shSlurmComment start="^#SBATCH" end="\n" oneline contains=shSlurmKeyword,shSlurmOption,shSlurmValue
-" all shSlurmString are suspect; they probably could be narrowed down to more
-" specific regular expressions. Typical example is --mail-type or --begin
 syn match shSlurmKeyword contained '#SBATCH\s*'
 syn match shSlurmOption contained '--account='           nextgroup=shSlurmString
 syn match shSlurmOption contained '--acctg-freq='        nextgroup=shSlurmNumber
@@ -164,14 +128,9 @@ syn keyword   shSlurmPropag contained ALL AS CORE CPU DATA FSIZE MEMLOCK NOFILE 
 syn keyword   shSlurmDist   contained block cyclic arbitrary
 syn match  shSlurmDist  contained  'plane\(=.*\)\='
 syn match  shSlurmEmail contained  '[-a-zA-Z0-9.+]*@[-a-zA-Z0-9.+]*'
-
-"Anything that is not recognized is marked as error
 hi def link shSlurmComment  Error
-"The #SBATCH keyword
 hi def link shSlurmKeyword  Function
-"The option
 hi def link shSlurmOption   Operator
-"The values
 hi def link shSlurmDuration Special
 hi def link shSlurmString   Special
 hi def link shSlurmMailType Special

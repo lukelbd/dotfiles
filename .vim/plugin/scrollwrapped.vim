@@ -16,6 +16,7 @@
 "Helper functions first
 "------------------------------------------------------------------------------"
 "Reverse a string
+let s:tolerance=100
 function! s:reverse(string)
   return join(reverse(split(a:string, '.\zs')), '')
 endfunction
@@ -37,16 +38,14 @@ function! s:wrapped_line_props(mode,line)
   else
     let n_indent=0
   endif
-  " echom 'nindent: '.n_indent
   "Iterate through pieces of string
   let offset=0
   let colnum=1
   let colstarts=[1]
   let lineheight=1
-  if verb
-    echo 'winwidth: '.width.' indent: '.n_indent
-  endif
+  let counter=0
   while len(string)+1>=width "must include newline character
+    let counter+=1
     "Determine offset due to 'linebreak' feature
     "Note: This won't be perfect! Consecutive non-whitespace characters
     "in breakat seem to *prevent* breaking, for example. But close enough.
@@ -63,7 +62,14 @@ function! s:wrapped_line_props(mode,line)
     " echom 'offset: '.offset
     "Note since vim uses 0-indexing, position <width> is 1 char after end
     "Also make sure we trim leading spaces
+    if verb
+      echom 'width: '.width.' indent: '.n_indent.' string: '.(width-offset).' '.len(string)
+    endif
     let string=repeat(' ',n_indent).substitute(string[width-offset:],'^ \+','','')
+    if counter==s:tolerance
+      " echom "Warning: Could not determine line height."
+      break
+    endif
   endwhile
   return (a:mode=='l' ? lineheight : colstarts)
   " echom 'lineheight: '.lineheight
@@ -105,12 +111,18 @@ function! s:scroll(target,mode,move)
     let topline_init=line('w0')
     let topline=(a:mode=='u' ? topline_init : topline_init-1) "initial
     let lineheight=s:wrapped_line_props('l',topline)
+    let counter=0
     while scrolled<=a:target && topline!=stopline
+      let counter+=1
       let topline+=motion
       let lineheight=s:wrapped_line_props('l',topline)
       let scrolled+=lineheight
       if lineheight==-1 "indicates error
         return ''
+      endif
+      if counter==s:tolerance
+        " echom "Warning: Failed determining new line!"
+        break
       endif
     endwhile
     let topline=(a:mode=='u' ? topline : topline+1)
@@ -192,6 +204,7 @@ function! s:scroll(target,mode,move)
       let scroll=scroll_init
       let scrolled_cur=scroll_init "virtual to reach (up) first one on this line or (down) first one on next line
       while scrolled_cur<=scrolled
+        let counter+=1
        "Determine line height
        "Note the init scroll brought us to (up) start of this line, so we want to query text above it,
        "or to (down) start of next line, so we want to query text on that next line
@@ -201,6 +214,10 @@ function! s:scroll(target,mode,move)
         let qline+=motion "corresponds to (up) previous line or (down) this line.
         let lineheight=s:wrapped_line_props('l',qline) "necessary scroll to get to next/previous first line
         let scrolled_cur+=lineheight "add, then test
+        if counter==s:tolerance
+          " echom "Warning: Failed determining line height."
+          break
+        endif
       endwhile
       "Figure our remaining virtual lines to be scrolled
       "The scrolled-scrolled_cur just gives scrolling past *cursor line* virtual lines,
@@ -226,8 +243,14 @@ function! s:scroll(target,mode,move)
     endif
     "--------------------------------------------------------------------------"
     "Get the column number for winrestview
+    "The min() call is to avoid errors that crop up due to those brute-force
+    "while-loop breaks above when tolerance is exceeded
     let colstarts=s:wrapped_line_props('c',curline)
-    let curcol=wincol+colstarts[curline_offset]-1
+    if verb
+      echom 'Length of colstarts vs. requested offset: '.len(colstarts).' '.curline_offset
+    endif
+    let idx=max([min([curline_offset,len(colstarts)-1]),0])
+    let curcol=wincol+colstarts[idx]-1
     if verb
       echom 'destination colnum: '.curcol.' colstarts: '.join(colstarts, ', ')
     endif

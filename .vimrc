@@ -1,6 +1,14 @@
 ".vimrc
 "###############################################################################
 " A fancy vimrc that does all sorts of magical things.
+" When to use after: https://vi.stackexchange.com/questions/12731/when-to-use-the-after-directory
+" Note: so far don't organize stuff into *after* files (only distinction
+" is that they should test b:did_ftplugin, b:current_syntax, et. cetera or
+" g:loaded_<name>, et. cetera). Just smash indent/ftplugin files together
+" and only some of the files in .vim/ftplugin have those lines.
+" Note: use :vimgrep <pattern> % to quickfix list, then can browse them
+" separately from the normal n/N searching. Also note location lists are
+" window-local quickfix lists -- use lvimgrep, lgrep, etc.
 " Note: vim should be brew install'd *without* your anaconda tools in the path,
 " there should be an alias for 'brew' that fixes this.
 " Note: vim install with Homebrew can only work with *python* installed with
@@ -24,6 +32,8 @@
 "Says to always use the vim default where vi and vim differ; for example, if you
 "put this too late, whichwrap will be reset
 set nocompatible
+set shortmess=a "snappy messages, frmo the avoid press enter doc
+set shiftround "round to multiple of shiftwidth
 let mapleader="\<Space>"
 set viminfo='100,:100,<100,@100,s10,f0 "commands, marks (e.g. jump history), exclude registers >10kB of text
 set history=100 "search history
@@ -304,10 +314,12 @@ inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
 
 "###############################################################################
 "GLOBAL FUNCTIONS, FOR VIM SCRIPTING
+"Test plugin status
 function! PlugActive(key)
   return has_key(g:plugs, a:key) "change if (e.g.) switch plugin managers
   " echo filter(split(&rtp), ','), 'v:val =~? "tex")
 endfunction
+"Misc fuctions
 function! In(list,item)
   return index(a:list,a:item)!=-1
 endfunction
@@ -317,14 +329,27 @@ endfunction
 function! Strip(text)
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
+"Better grep, with limited regex translation
+function! Grep(regex) "returns list of matches
+  let regex=a:regex
+  let regex=substitute(regex, '\(\\<\|\\>\)', '\\b', 'g') "not sure why double backslash needed
+  let regex=substitute(regex, '\\s', "[ \t]",  'g')
+  let regex=substitute(regex, '\\S', "[^ \t]", 'g')
+  let result=split(system("grep '".regex."' ".@%.' 2>/dev/null'), "\n")
+  echo result
+  return result
+endfunction
+command! -nargs=1 Grep call Grep(<q-args>)
+"Builtin comment string decoding
+"Alternatively, b:NERDCommenterDelims['left']
 function! Comment()
-  "alternatively, b:NERDCommenterDelims['left']
   if &commentstring =~ '%s'
     return Strip(split(&commentstring, '%s')[0])
   else
     return ''
   endif
 endfunction
+"Misc
 augroup death
   au!
   au VimLeave * if v:dying | echo "\nAAAAaaaarrrggghhhh!!!\n" | endif "see v:dying info
@@ -422,12 +447,12 @@ call plug#begin('~/.vim/plugged')
 "------------------------------------------------------------------------------"
 "Custom text objects (inner/outer selections)
 "a,b, asdfas, adsfashh
-Plug 'kana/vim-textobj-user'   " base
-Plug 'bps/vim-textobj-python'  " consider copying over
-Plug 'kana/vim-textobj-indent' " match indentation, object is 'i'
-Plug 'kana/vim-textobj-entire' " entire file, object is 'e'
-Plug 'sgur/vim-textobj-parameter' " warning, can hang
-" Plug 'vim-scripts/argtextobj.vim'  " arguments
+Plug 'kana/vim-textobj-user'      "base
+Plug 'kana/vim-textobj-indent'    "match indentation, object is 'i'
+Plug 'kana/vim-textobj-entire'    "entire file, object is 'e'
+Plug 'sgur/vim-textobj-parameter' "warning: this can hang
+" Plug 'bps/vim-textobj-python' "not really ever used, just use indent objects
+" Plug 'vim-scripts/argtextobj.vim' "arguments
 " Plug 'machakann/vim-textobj-functioncall' "fucking sucks/doesn't work, fuck you
 "------------------------------------------------------------------------------"
 "Colors (don't need colors)
@@ -479,7 +504,8 @@ Plug 'rafaqz/citation.vim'
 Plug 'JuliaEditorSupport/julia-vim'
 "------------------------------------------------------------------------------"
 "Python wrappers
-" Plug 'davidhalter/jedi-vim' "these need special support
+Plug 'vim-scripts/Pydiction' "just changes completeopt and dictionary and stuff
+" Plug 'davidhalter/jedi-vim' "mostly autocomplete stuff
 " Plug 'cjrh/vim-conda' "for changing anconda VIRTUALENV; probably don't need it
 " Plug 'klen/python-mode' "incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython' "same problem as python-mode
@@ -2215,7 +2241,7 @@ endif
 "  probably want them to look like comment characters
 "* The url regex was copied from the one used for .tmux.conf
 function! s:keywordsetup()
-   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*Comment
+   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\)
    hi link customURL Underlined
    if &ft!="vim"
      syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment "comments
@@ -2295,8 +2321,8 @@ highlight Terminal ctermbg=Black
 "Highlight group under cursor
 function! s:group()
   echo "actual <".synIDattr(synID(line("."),col("."),1),"name")."> "
-    \."appears <".synIDattr(synID(line("."),col("."),0),"name")."> "
-    \."group <".synIDattr(synIDtrans(synID(line("."),col("."),1)),"name").">"
+     \."appears <".synIDattr(synID(line("."),col("."),0),"name")."> "
+     \."group <".synIDattr(synIDtrans(synID(line("."),col("."),1)),"name").">"
 endfunction
 command! Group call <sid>group()
 "The :syntax commands within that group
@@ -2308,7 +2334,7 @@ function! s:syntax(name)
     exe "verb syntax list ".synIDattr(synID(line("."),col("."),0),"name")
   endif
 endfunction
-command! -nargs=? Syntax call <sid>syntax('<args>')
+command! -nargs=? Syntax call <sid>syntax(<q-args>)
 "Toggle conceal
 function! s:concealtoggle(...)
   if a:0
