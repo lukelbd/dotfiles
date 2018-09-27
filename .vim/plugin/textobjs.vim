@@ -79,9 +79,9 @@ call textobj#user#plugin('universal', {
   \   'uncommented': {
   \     'sfile': expand('<sfile>:p'),
   \     'select-a-function': 's:uncommented_lines',
-  \     'select-a': 'aC',
+  \     'select-a': 'au',
   \     'select-i-function': 's:uncommented_lines',
-  \     'select-i': 'iC',
+  \     'select-i': 'iu',
   \   },
   \ })
 " \     'move-p': 'gC', "tried doing this, got weird error, whatevs
