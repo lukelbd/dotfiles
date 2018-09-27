@@ -330,7 +330,7 @@ function _setup_bindings() {
   stty stop undef   # no more ctrl-s
   stty eof undef    # no more ctrl-d
 }
-_setup_bindings 2>/dev/null
+_setup_bindings 2>/dev/null # ignore any errors
 
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
@@ -404,9 +404,9 @@ alias cd="cd -P" # don't want this on my mac temporarily
 alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 
 # Information on directories
+! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 alias df="df -h" # disk useage
 alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
-! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 function ds() { # directory ls
   [ -z $1 ] && dir="" || dir="$1/"
   dir="${dir//\/\//\/}"
@@ -423,9 +423,9 @@ alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn -
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Shell scripting utilities
-function calc() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
-function join() { local IFS="$1"; shift; echo "$*"; } # join array elements by some separator
-function empty() { for i in {1..100}; do echo; done; }
+function calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+function join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
+function clear!() { clear; for i in {1..100}; do echo; done; }    # print bunch of empty liens
 function abspath() { # abspath that works on mac, Linux, or anything with bash
   if [ -d "$1" ]; then
     (cd "$1"; pwd)
@@ -450,6 +450,7 @@ function listps() {
 } # list job pids using ps; alternatively can use naked 'jobs' command
 function killps() {
   local strs
+  $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
   [ $# -ne 0 ] && strs=($@) || strs=(all)
   for str in ${strs[@]}; do
     echo "Killing $str jobs..."
@@ -715,8 +716,8 @@ pycomplex=$(echo "$pysimple
   import pandas as pd
   import xarray as xr
   $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX')
-                    import matplotlib.pyplot as plt
-                    from pyfuncs import plot")
+                     import matplotlib.pyplot as plt
+                     import pubplot as plot")
   " | sed 's/^ *//g')
 alias iwork="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
 alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pysimple\""
@@ -908,8 +909,8 @@ cd "${remotedir}"; git status -s; sleep 1
 mfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
 ofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
 # Initialize message
-[ \$mfiles -ne 0 ]         && message+="Modified \$mfiles figure(s)."           && space1=" "
-[ \$ofiles -ne 0 ]         && message+="\${space1}Made \$ofiles new figure(s)." && space2=" "
+[ \$mfiles -ne 0 ]         && message+="Modify \$mfiles figure(s)."           && space1=" "
+[ \$ofiles -ne 0 ]         && message+="\${space1}Make \$ofiles new figure(s)." && space2=" "
 [ ! -z "${extramessage}" ] && message+="\${space2}${extramessage}"
 echo "Commiting changes with message: \\"\$message\\""
 git add --all && git commit -q -m "\$message" && git push -q

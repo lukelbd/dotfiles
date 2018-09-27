@@ -1,3 +1,9 @@
+"------------------------------------------------------------------------------"
+" Author: Luke Davis (lukelbd@gmail.com)
+" Date: 2018-09-23
+" Much better python syntax
+" Not sure where this came from! Copied from somewhere.
+"------------------------------------------------------------------------------"
 " For version 5.x: Clear all syntax items
 " For versions greater than 6.x: Quit when a syntax file was already loaded
 if v:version < 600
@@ -35,9 +41,8 @@ endfunction
 "
 " Default options
 "
-
 call s:EnableByDefault('g:python_slow_sync')
-call s:EnableByDefault('g:python_highlight_builtin_funcs_kwarg')
+" call s:EnableByDefault('g:python_highlight_builtin_funcs_kwarg') "definitely not default!
 
 if s:Enabled('g:python_highlight_all')
   call s:EnableByDefault('g:python_highlight_builtins')
@@ -360,7 +365,8 @@ if s:Enabled('g:python_highlight_builtin_funcs')
   let s:funcs_re = 'syn match pythonBuiltinFunc ''\v\.@<!\zs<%(' . s:funcs_re . ')>'
 
   if !s:Enabled('g:python_highlight_builtin_funcs_kwarg')
-      let s:funcs_re .= '\=@!'
+      " let s:funcs_re .= '\(\s*\=\)\@!'
+      let s:funcs_re .= '(\s*\=)@!'
   endif
 
   execute s:funcs_re . ''''

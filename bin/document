@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 #------------------------------------------------------------------------------#
+# TODO: Add functionality to also copy over beamer themes.
+#------------------------------------------------------------------------------#
 # May require bash 4.0
 # This script compile LaTeX documents on macOS
 # * Will compile a RTF version of document if filename is specially
@@ -15,20 +17,20 @@
 #------------------------------------------------------------------------------#
 # Initial stuff
 shopt -s nullglob # glob-expand into zero entries
-latex=pdflatex # by default use pdflatex
-bibtex=bibtex # for compiling bibliographies
-templates="$HOME/latex" # location of LaTeX templates and style files
-filename="$1"   # the current file
-texdiff="$2" # get difference pdf?
-tex2docx="$3"   # option
+latex=pdflatex    # by default use pdflatex
+bibtex=bibtex     # for compiling bibliographies
+filename="$1"     # the current file
+texdiff="$2"      # get difference pdf?
+tex2docx="$3"     # option
+templates="$HOME/latex $HOME/latex2" # location of LaTeX templates and style files
 [ $TERM_PROGRAM == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
-[ $# -ne 3 ] && echo "Error: Script requires exactly 3 arguments."
-[ ! -r "$filename" ] && echo "Error: File \"$filename\" does not exist."                                      && exit 1
-! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils."
+[ $# -ne 3 ] && echo "Error: Script requires exactly 3 arguments"
+[ ! -r "$filename" ] && echo "Error: File \"$filename\" does not exist" && exit 1
+! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils"
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
-  directory="${filename%/*}" # trim shortest pattern matching <stuff>/*, keep "stuff"
-  filename="${filename##*/}" # trim longest pattern matching */<stuff>, keep "stuff"
-  [ ! -d "$directory" ] && echo "Error: Directory $directory does not exist." && exit 1
+  directory="${filename%/*}"    # trim shortest pattern matching <stuff>/*, keep "stuff"
+  filename="${filename##*/}"    # trim longest pattern matching */<stuff>, keep "stuff"
+  [ ! -d "$directory" ] && echo "Error: Directory $directory does not exist" && exit 1
   cd "$directory" # move there
 fi
 filestem="${filename%.tex}" # simple
@@ -36,9 +38,14 @@ filestem="${filename%.tex}" # simple
 # Parse raw file to get some options
 # Function for ignoring comments
 function nocomments() { cat "$1" | grep -o '^[^%]*'; }
+
+# Function for getting content inside braces
+function inbraces() { cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' '; }
+
 # First if GIF/animation in file, need to change from Skim to compatible viewer
 nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
   && viewer="Adobe Acrobat Reader DC" || viewer="Skim"
+
 # Get actual .bib file or resource; will need it for
 # The -n flag prevents printing every single line after running command
 # nocomments "$filename" | egrep '\\bibliography{.*}|\\printbibliography|\\nobibliography{.*}' &>/dev/null \
@@ -49,18 +56,27 @@ if [ -z "$bibfile" ]; then
 else
   bibliography=true
   bibfile="${bibfile%.bib}.bib" # add back extension, if abscent
-  echo "Detected biliography name \"$bibfile\"."
+  echo "Bibliography: \"$bibfile\""
 fi
+
 # Finally detect if we want to run latexdiff on this file
-[[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]] \
-  && dfilename="${filename%.tex}changes.tex" || dfilename="" # keep empty
-# Some overrides if this is beamer document
-nocomments "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null \
-  && latex=pdflatex && dfilename="" && tex2docx=false # beamer options
+[[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]]
+[ $? -eq 0 ] && dfilename="${filename%.tex}changes.tex" || dfilename=""
+
 # Automatically choose from xelatex and pdflatex; just need xelatex for
 # tex files that load fontspec, or use modules that themselves load fontspec
-nocomments "$filename" | egrep 'fontspec|xltxtra' &>/dev/null \
-  && latex=xelatex && dfilename="" && tex2docx=false
+nocomments "$filename" | egrep 'fontspec|xltxtra' &>/dev/null
+[ $? -eq 0 ] && latex=xelatex
+
+# Use Lua if beamer present, will be faster
+# Also required for beamerposter, not sure about other cases
+nocomments "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null
+[ $? -eq 0 ] && latex=lualatex
+
+# Override if special package present
+# Actually this caused everything to hang
+# nocomments "$filename" | grep 'beamerposter' &>/dev/null
+# [ $? -eq 0 ] && latex=lualatex # gemini recommends this at least
 
 #------------------------------------------------------------------------------#
 # Manage all LaTeX files, and move them around if necessary
@@ -73,48 +89,51 @@ function cleanup() {
   files_new=(*) # new files
   files_rm=() # record deleted
   ext_ignore=(tex bbl pdf docx png jpg jpeg eps gif)
+  message="Removed files:\n"
   for file_new in "${files_new[@]}"; do
     if [[ ! " ${files_old[@]} " =~ " $file_new " ]]; then
       if [[ ! " ${ext_ignore[@]} " =~ " ${file_new##*.} " ]]; then
-        echo "Removed file: $file_new."
+        message+="$file_new\n"
         rm "$file_new" # delete the file
         files_rm+=("$file_new")
       fi
     fi
   done
+  printf "$message"
 }
+
 # Function to find stuff
 # * Supply with a list of latex-ish file names, then the extension as last argument
 # * Important to call kpsewhich with a list of files rather than calling it
 #   successively; otherwise can be extremely slow, for some strange reason
 function latexfind() {
   [ $# -eq 1 ] && return 1
-  ext=${!#} # the last argument
-  names=($(echo ${@:1:$#-1} | tr " " "\n" | sort)) # the previous arguments 
-  files=($(kpsewhich ${names[@]/%/.${ext}})) # append suffix to each file
+  ext=${!#}                                        # last argument
+  names=($(echo ${@:1:$#-1} | tr " " "\n" | sort)) # the previous arguments, sorted alphabetically
+  files=($(kpsewhich ${names[@]/%/.${ext}}))       # append suffix to each file
+  message=""
   for name in ${names[@]}; do
     file="${name}.${ext}" # file we want
-    # Potentially delete local file to 'refresh' things
-    # [ -r "$1" ] && [ "$(realpath "$(pwd)")" != "$(realpath $templates)" ] \
-    #   && rm "$1" # removes .sty or .bst file if not in template directory
-    # Determine location and stuff
-    if [[ ${files[@]} =~ $file ]]; then # search succeeded
-      # if [ -e "./${file##*/}" ]; then
-      if [[ " ${files[@]}" =~ " ./${name}.${ext}" ]]; then # is in cd
-        echo "Using \"${file}\" from current directory."
-      else
-        echo "Using \"${file}\" from TeXLive distribution."
-      fi
-    else # search failed
-      if [ -r "${templates}/${file}" ]; then
-        echo "Copying \"${file}\" from latex directory to current directory."
-        cp "${templates}/${file}" ./
-      else
-        echo "File \"${file}\" not found in latex directory or with kpsewhich."
-        exit 1
-      fi
+    # [[ "${files[@]}" =~ "$file" ]] && echo 'true1'
+    # ! [[ "${files[@]}" =~ " ./${file}" ]] && echo 'false2'
+    if [[ "${files[@]}" =~ "$file" ]] && ! [[ " ${files[@]}" =~ " ./${file}" ]]; then
+      # TeX distribution sees file, and it's not in current directory
+      # message+="${file}:\tcurrent directory"
+      message+="${file}:\tTeXLive distribution"
+    else
+      # Look for file in custom paths, copy over
+      trigger=true; for template in $templates; do
+        if [ -r "${template}/${file}" ]; then
+          message+="${file}: copied to current directory (!!!)" # make more visible
+          cp "${template}/${file}" ./
+          trigger=false; break
+        fi
+      done
+      $trigger && echo "${file} not found" && exit 1
     fi
+    message+="\n"
   done
+  column -t -s $'\t' <<< $(printf "$message") # weirdly piping doesn't work, only this works
 }
 
 #------------------------------------------------------------------------------#
@@ -123,11 +142,12 @@ function latexfind() {
 # First the custom .cls files
 # Will ignore commented out lines; see https://unix.stackexchange.com/a/157607/112647
 # Also ignore documentclass calls within verbatim commands; or just enforce starts at 0 position
-class=($(nocomments "$filename" | grep '^\\documentclass' |
-          cut -s -d'{' -f2 | cut -s -d'}' -f1 ))
-[ ${#class[@]} -gt 1 ] && echo "Error: Ambiguous document class: \"${class[@]}\"." && exit 1
-echo "Finding class file."
-latexfind $class cls
+classes=($(nocomments "$filename" | grep '^\\documentclass' | inbraces))
+          # cut -s -d'{' -f2 | cut -s -d'}' -f1 ))
+[ ${#classes[@]} -gt 1 ] && echo "Error: Ambiguous document class: \"${classes[@]}\"." && exit 1
+echo "Finding class file"
+latexfind $classes cls
+
 # As above but for the RequirePackage lines in the .cls file
 # * Have encountered a RequirePackage inside AtEndOfClass, so we also account for that
 # * Also must delete stuff inside [] to account for possible nested {} argument
@@ -138,30 +158,53 @@ latexfind $class cls
 #   do by deleting lines containing a '#' character
 # * Note this is *incomplete*, as it cannot handle multi-line requirepackage
 #   commands which happens sometimes.
-classfile=$(kpsewhich ${class}.cls)
-[ -z $classfile ] && echo "Error: Could not find class file ${class}.cls" && exit 1
+classfile=$(kpsewhich ${classes}.cls)
+[ -z $classfile ] && echo "Error: You should never see this error, already checked for ${classes}.cls existence, check code" && exit 1
 rpackages=($(nocomments "$classfile" | grep '^.*\\RequirePackage' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
-  | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs)) # | awk '!/\[|\]/'
-echo "Finding sty dependencies of class."
+  | inbraces))
+  # | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs)) # | awk '!/\[|\]/'
+echo "Finding sty dependencies of class"
 latexfind ${rpackages[@]} sty
+
 # As above but for .sty files
 # Will also detect \usepackage{package1,package2} lists
 packages=($(nocomments "$filename" |  egrep '^.*\\usepackage|^.*\\templatetype' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
-  | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs))
-echo "Finding preamble sty files."
+  | inbraces))
+  # | cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' ' | xargs))
+echo "Finding preamble sty files"
 latexfind ${packages[@]} sty
+
 # As above but for .bst file
-bibstyle=($(nocomments "$filename" | grep '^.*\\bibliographystyle' \
-  | cut -s -d'{' -f2 | cut -s -d'}' -f1))
+bibstyle=($(nocomments "$filename" | grep '^.*\\bibliographystyle' | inbraces))
+  # | cut -s -d'{' -f2 | cut -s -d'}' -f1))
 if [ ${#bibstyle[@]} -eq 1 ]; then
-  echo "Finding bst file."
+  echo "Finding bst file"
   latexfind $bibstyle bst
 elif [ ${#bibstyle[@]} -gt 1 ]; then
-  echo "More than one bibliographystyle found." && exit 1
+  echo "Error: More than one bibliographystyle found" && exit 1
+fi
+
+# Next beamer theme
+themes=($(nocomments "$filename" | grep '^.*\\usetheme' | inbraces | sed 's/^/beamertheme/'))
+# latexfind ${themes[@]}
+if [ ${#themes[@]} -eq 1 ]; then
+  echo "Finding beamer theme file"
+  latexfind $themes sty
+elif [ ${#themes[@]} -gt 1 ]; then
+  echo "Error: More than one beamer theme found" && exit 1
+fi
+
+# And beamer color theme
+colorthemes=($(nocomments "$filename" | grep '^.*\\usecolortheme' | inbraces | sed 's/^/beamercolortheme/'))
+if [ ${#colorthemes[@]} -eq 1 ]; then
+  echo "Finding beamer theme file"
+  latexfind $colorthemes sty
+elif [ ${#colorthemes[@]} -gt 1 ]; then
+  echo "Error: More than one beamer theme found" && exit 1
 fi
 
 #------------------------------------------------------------------------------#
@@ -180,24 +223,26 @@ files_old=(*) # glob expansion to every filename
 #   bibtex <file>.aux), then run TWICE as before.
 # * See this page for matching consecutive lines with SED:
 #   https://unix.stackexchange.com/q/165362/112647
-echo "Compiling with $latex."
+echo "Compiling with $latex"
 if $bibliography; then
-  echo "Generating aux file."
+  echo "Generating aux file"
   $latex -draftmode $flags "$filestem" &>/dev/null
-  echo "Generating bibliography."
+  echo "Generating bibliography"
   $bibtex "$filestem" #&>/dev/null
 fi
-echo "Initial pass."
-$latex -draftmode $flags "$filestem" &>/dev/null
-echo "Final pass."
+if ! [[ "lualatex xelatex" =~ $latex ]]; then
+  echo "Draftmode pass"
+  $latex -draftmode $flags "$filestem" &>/dev/null
+fi
 # This time want to read error messages
 # * Below, the last line matches only triplets created by the second sed line
 #   (blank\nmessage\nline#) and inserts '--' between groups of matches.
 # * Also, sed -E uses extended regular expressions, not basic; allows |
 #   operator, like egrep.
+echo "Final pass"
 $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
   | grep -A2 '^$' | sed '/^$/d'
-[ ! -r "$filestem.pdf" ] && echo "Error: PDF not produced." && cleanup
+[ ! -r "$filestem.pdf" ] && echo "Error: PDF not produced" && cleanup
 
 #------------------------------------------------------------------------------#
 # Create the difference-LaTeX file, with track changes
@@ -214,11 +259,11 @@ if $texdiff && [ ! -z "$dfilename" ]; then
   if [ "$index" -ne 0 ]; then
     # Get difference PDF, with changes highlighted
     pfilename="${pfiles[$(($index-1))]}"
-    echo "Running latexdiff on ${filename##*/} minus ${pfilename##*/}."
+    echo "Running latexdiff on ${filename##*/} minus ${pfilename##*/}"
     [ -e "$dfilename" ] && rm "$dfilename"
     latexdiff "$pfilename" "$filename" > "$dfilename"
     if [ ! -r $dfilename ]; then
-      echo "Warning: Difference file not produced." && texdiff=false
+      echo "Warning: Difference file not produced" && texdiff=false
     else
       # Finish the the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
       dfilestem="${dfilename%.tex}"
@@ -228,11 +273,11 @@ if $texdiff && [ ! -z "$dfilename" ]; then
       fi
       $latex -draftmode $flags "$dfilestem" &>/dev/null
       $latex $flags "$dfilestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' | tail +2
-      [ ! -r "$dfilestem.pdf" ] && echo "Warning: Difference PDF not produced." && texdiff=false
+      [ ! -r "$dfilestem.pdf" ] && echo "Warning: Difference PDF not produced" && texdiff=false
     fi
   fi
 elif $texdiff; then
-  echo "Warning: Previous version not found."
+  echo "Warning: Previous version not found"
   texdiff=false
 fi
 
@@ -242,9 +287,9 @@ fi
 #------------------------------------------------------------------------------#
 if $tex2docx; then
   if ! type pandoc &>/dev/null; then
-    echo "Warning: Pandoc not found. Use brew install pandoc."
+    echo "Warning: Pandoc not found. Use brew install pandoc"
   else
-    echo "Running pandoc to convert tex-->docx."
+    echo "Running pandoc to convert tex-->docx"
     $bibliography && panbib="--bibliography=$bibfile" || panbib=""
     echo pandoc --output="$filestem.docx" "$panbib" "$filename"
     pandoc --output="$filestem.docx" "$panbib" "$filename"
@@ -254,7 +299,7 @@ fi
 #------------------------------------------------------------------------------#
 # Clean things up and open the appropriate apps
 #------------------------------------------------------------------------------#
-echo "Opening files."
+echo "Opening files"
 cleanup
 { ! $texdiff && ! $tex2docx; } && open -a "$viewer" "$filestem.pdf" # open new pdf
 $texdiff  && [ -e "$dfilestem.pdf" ] && open -a "$viewer" "$dfilestem.pdf" # open difference
