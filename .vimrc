@@ -718,8 +718,8 @@ endfunction
 "This also allows buffer-specific bibtex sources
 augroup citations
   au!
-  au BufRead  *.tex let b:citation_vim_bibtex_file='' | call <sid>citation_maps()
-  au BufEnter *.tex let g:citation_vim_bibtex_file=(exists('b:citation_vim_bibtex_file') ? b:citation_vim_bibtex_file : '')
+  au BufRead  *.tex,*.bib let b:citation_vim_bibtex_file='' | call <sid>citation_maps()
+  au BufEnter *.tex,*.bib let g:citation_vim_bibtex_file=(exists('b:citation_vim_bibtex_file') ? b:citation_vim_bibtex_file : '')
 augroup END
 if PlugActive('unite.vim')
   "Set up fuzzy matching
@@ -798,10 +798,16 @@ if PlugActive('unite.vim')
     command! BibFile call <sid>bibfile()
     "Another simple functino to toggle prefix name
     function! s:cite(...)
-      let suffix=(a:0 ? a:1 : '')
-      let g:citation_vim_outer_prefix='\cite'.suffix.'{'
+      if a:0 && a:1!=''
+        let suffix=(a:1=='c' ? '' : a:1)
+        let g:citation_vim_outer_prefix='\cite'.suffix.'{'
+        let g:citation_vim_suffix='}'
+      else
+        let g:citation_vim_outer_prefix=''
+        let g:citation_vim_suffix=''
+      endif
     endfunction
-    command! -nargs=? Cite call <sid>cite('<args>')
+    command! -nargs=? Cite call <sid>cite(<q-args>)
     "Universal settings
     let g:citation_vim_mode="zotero" "will always default to zotero
     let g:unite_data_directory='~/.unite'
@@ -815,15 +821,28 @@ if PlugActive('unite.vim')
     " let g:citation_vim_zotero_attachment_path="~/Google Drive" "not needed cause symlinks are there maybe, didn't actually change 'data directory'
     " let g:citation_vim_bibtex_file="./empty_convert.bib" "by default, make this your filename
     "Mappings
+    "Note that F4 is mapped to Ctrl-m in iTerm
     function! s:citation_maps()
-      nnoremap <buffer> <silent> ;zz :Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> ;zt :Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> ;zp :Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> ;zn :Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> ;bb :Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> ;bt :Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> ;bp :Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> ;bn :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <F4>k  <Esc>:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <F4>c  <Esc>:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <F4>t  <Esc>:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <F4>p  <Esc>:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <F4>n  <Esc>:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-n>k <Esc>:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-n>c <Esc>:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-n>t <Esc>:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-n>p <Esc>:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-n>n <Esc>:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <F4>k  :Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <F4>c  :Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <F4>t  :Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <F4>p  :Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <F4>n  :Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-n>k :Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-n>c :Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-n>t :Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-n>p :Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-n>n :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
     endfunction
     " "Insert citation, view citation info, append information
     " nnoremap <silent> ;c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
@@ -1236,6 +1255,10 @@ command! EIMap call <sid>eimap()
 
 "##############################################################################"
 "FZF COMPLETION
+"TODO: Mimick command-line behavior with function -- can have FZF print
+"available files/dirs, then call function that recursively calls the FZF
+"activator if user selected a dir, opens the tab when they selected a file
+"##############################################################################"
 "Maybe not necessary anymore because Ctrl-P access got way better
 "Vim documentation is incomplete; also see readme file: https://github.com/junegunn/fzf/blob/master/README-VIM.md
 "The ctrl-i map below prevents tab from doing anything
@@ -1450,10 +1473,10 @@ if PlugActive("nerdcommenter")
   "Section headers and dividers
   nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
   nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
-  nmap c- <Plug>bar1
-  nmap c\ <Plug>bar2
-  nnoremap <silent> c_  :call <sid>section('-')<CR>A
-  nnoremap <silent> c\| :call <sid>section()<CR>A
+  nmap c_ <Plug>bar1
+  nmap c\| <Plug>bar2
+  nnoremap <silent> c-  :call <sid>section('-')<CR>A
+  nnoremap <silent> c\ :call <sid>section()<CR>A
   "Author information comment
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
   "Current date comment; y is for year; note d is reserved for that kwarg-to-dictionary map
@@ -2205,7 +2228,7 @@ nmap gt <Plug>cap2
 "Default 'open file under cursor' to open in new tab; change for normal and vidual
 "Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
 nnoremap <expr> gf ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
-  \."\| else \| echom 'File(s) do not exist.' \| endif<CR>"
+  \."\| else \| echom 'File \"'.expand('<cfile>').'\" does not exist.' \| endif<CR>"
 nnoremap gF <c-w>gf
 "Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
