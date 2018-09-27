@@ -50,18 +50,24 @@ function! s:outofdelim(n)
 endfunction
 "Apply remaps
 "Original mnemonic was C-o gets us OUT!
-inoremap kk k
-inoremap jj j
-inoremap <expr> jk !pumvisible() ? <sid>outofdelim(1)
+" inoremap kk k
+" inoremap jj j
+" inoremap <expr> jk !pumvisible() ? <sid>outofdelim(1)
+"   \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1)
+"   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
+" imap jk <C-o> "don't use this one
+"Use key substituting 'ctrl+.' keypress
+" (in) (in)
+" (ii   ) (in) in (in)   ( ( ( asd) ))  
+inoremap <expr> <F2> !pumvisible() ? <sid>outofdelim(1)
   \ : b:menupos==0 ? "\<C-e>".<sid>tabreset().<sid>outofdelim(1)
   \ : "\<C-y>".<sid>tabreset().<sid>outofdelim(1)
-" imap jk <C-o> "don't use this one
 "Fancy builtin delimitMate version
 "Get cursor outside of consecutive delimiter, ignoring subgroups
 "and always passing to the right of consecutive braces
 "Also disable <C-n> to avoid confusion; will be using up/down anyway
-imap <C-p> <Plug>delimitMateJumpMany
-imap <C-n> <Nop>
+" imap <C-p> <Plug>delimitMateJumpMany
+" imap <C-n> <Nop>
 "Remap surround.vim defaults
 "Make the visual-mode map same as insert-mode map; by default it is capital S
 vmap <C-s> <Plug>VSurround
@@ -224,20 +230,22 @@ function! s:texsurround()
   "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
   "note that fragile make compiling way slower
   "Slide with 'w'hite frame is the w map
-  call s:target('g', '\makebox[\textwidth][c]{\includegraphicsawidth=\textwidth]{', '}}', 1) "center across margins
+  call s:target('g', '\includegraphics[width=\textwidth]{', '}', 1) "center across margins
+  call s:target('G', '\makebox[\textwidth][c]{\includegraphics[width=\textwidth]{', '}}', 1) "center across margins
   call s:target('s', '\begin{frame}',                          "\n".'\end{frame}' , 1)
   call s:target('S', '\begin{frame}[fragile]',                 "\n".'\end{frame}' , 1)
   call s:target('w', '{\usebackgroundtemplate{}\begin{frame}', "\n".'\end{frame}}', 1)
   "Figure environments, and pages
-  call s:target('p', '\begin{minipage}{\linewidth}', "\n".'\end{minipage}', 1)
   call s:target('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}', 1)
   call s:target('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}', 1)
-  " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}', 1)
   call s:target('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}')
+  " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}', 1)
+  " call s:target('p', '\begin{minipage}{\linewidth}', "\n".'\end{minipage}', 1) "not sure what this is used for
   "Equations
   call s:target('%', '\begin{equation*}', "\n".'\end{equation*}')
   call s:target('^', '\begin{align*}', "\n".'\end{align*}')
   call s:target('t', '\begin{tabular}{', "}\n".'\end{tabular}')
+  call s:target('B', '\begin{block}', "\n".'\end{block}')
   "Itemize environments
   call s:target('*', '\begin{itemize}',                  "\n".'\end{itemize}')
   call s:target('&', '\begin{description}',              "\n".'\end{description}') "d is now open
