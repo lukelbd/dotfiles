@@ -422,6 +422,10 @@ alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --c
 alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
+# Query files
+function todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f"; done; }
+function note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
+
 # Shell scripting utilities
 function calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 function join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator

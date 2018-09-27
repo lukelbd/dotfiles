@@ -50,7 +50,7 @@ nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
 # The -n flag prevents printing every single line after running command
 # nocomments "$filename" | egrep '\\bibliography{.*}|\\printbibliography|\\nobibliography{.*}' &>/dev/null \
 #   && bibliography=true || bibliography=false
-bibfile=$(nocomments "$filename" | gsed -n 's/^[ \t]*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}.*$/\2/p')
+bibfile=$(nocomments "$filename" | gsed -n 's/^.*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}.*$/\2/p')
 if [ -z "$bibfile" ]; then
   bibliography=false
 else
