@@ -236,8 +236,8 @@ function! s:texsurround()
   call s:target('S', '\begin{frame}[fragile]',                 "\n".'\end{frame}' , 1)
   call s:target('w', '{\usebackgroundtemplate{}\begin{frame}', "\n".'\end{frame}}', 1)
   "Figure environments, and pages
-  call s:target('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}', 1)
   call s:target('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}', 1)
+  call s:target('F', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}', 1)
   call s:target('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}')
   " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}', 1)
   " call s:target('p', '\begin{minipage}{\linewidth}', "\n".'\end{minipage}', 1) "not sure what this is used for

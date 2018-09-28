@@ -47,8 +47,14 @@ function! s:pydoc(...)
   let b:aliases={} "helpful to add this to list
   for result in results
     let alias=split(substitute(result, '^import\s*\(\S*\)\s*\<as\>\s*\(\w*\)', '\1:\2', ''), ":")
+    echom string
+    echom join(alias, ', ')
+    sleep 3
     if string =~ escape('^'.alias[1].'.', '.')
+      echom string
       let string=substitute(string, '^'.alias[1].'.', alias[0].'.', '')
+      echom string
+      sleep 3
       break
     endif
     let b:aliases[alias[1]] = alias[0]
