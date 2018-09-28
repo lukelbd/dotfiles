@@ -50,6 +50,7 @@
 	wtf      = !git-wtf $@
 	fix      = !git-fix $@
 	root     = !git rev-parse --show-toplevel
+	file     = "!git log -p -- $@"
 	commands = "!git help -a | grep \"^  [a-z]\" | tr ' ' '\\n' | grep -v \"^$\" | sort"
 	update   = "!git stash clear; git stash; git merge $@; git stash pop"
 	tree = "!git log --graph --abbrev-commit --date=relative --branches --name-status \

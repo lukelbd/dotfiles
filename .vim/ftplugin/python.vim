@@ -17,9 +17,9 @@ nnoremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; python ".shellesca
 "Use period (.) as part of iskeyword
 "Note: This actually triggers pythonNumberError syntax group to highlight numbers
 "with period but no decimal places -- perhaps a good thing, because has poor readability.
-" set iskeyword+=.
+setlocal iskeyword-=.
 "New indent expression
-set indentexpr=s:pyindent(v:lnum)
+setlocal indentexpr=s:pyindent(v:lnum)
 "Builtin python ftplugin syntax option; these should be provided with VIM by default
 let g:python_highlight_all=1
 "For pyDiction plugin
@@ -36,16 +36,18 @@ function! s:pydoc(...)
   if a:0 && len(a:1)>0
     let string=a:1
   else
+    setlocal iskeyword+=.
     let string=expand('<cword>')
+    setlocal iskeyword-=.
   endif
   "Translate first word according to list of common import aliases
   "Get aliases using system grep (which calls sytem grep, and is builtin)
   let space="[ \t]" "space or literal tab (double quotes)
   let nonspace="[^ \t]" "non-space
-  let results=system("grep '".'^import\b'.space.'*'.nonspace.'*'.space.'*\bas\b'.space.'*\w*'."' ".@%)
-  let results=split(results, "\n")
+  let results1=system("grep '".'^import\b'.space.'*'.nonspace.'*'.space.'*\bas\b'.space.'*\w*'."' ".@%)
+  let results2=split(results1, "\n") "older versions of vim can't write different type to same variable!
   let b:aliases={} "helpful to add this to list
-  for result in results
+  for result in results2
     let alias=split(substitute(result, '^import\s*\(\S*\)\s*\<as\>\s*\(\w*\)', '\1:\2', ''), ":")
     echom string
     echom join(alias, ', ')
