@@ -54,11 +54,11 @@ set shiftwidth=2
 set softtabstop=2
 "Detect features; variables are used to decide which plugins can be loaded
 exe 'runtime autoload/repeat.vim'
-let g:has_signs         = has("signs") "for git gutter and syntastic maybe
-let g:has_ctags         = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-let g:has_repeat        = exists("*repeat#set") "start checks for function existence
-let g:has_nowait        = (v:version>=704 || v:version==703 && has("patch1261"))
-let g:loaded_matchparen = 0 "disable builtin, because we modified that shit yo
+let g:has_signs  = has("signs") "for git gutter and syntastic maybe
+let g:has_ctags  = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
+let g:has_nowait = (v:version>=704 || v:version==703 && has("patch1261"))
+let g:has_matchaddpos = exists("*matchaddpos") "for matchparen
+let g:has_repeat      = exists("*repeat#set") "start checks for function existence
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
@@ -431,7 +431,6 @@ let &wildignore="*.pdf,*.doc,*.docs,*.page,*.pages,"
 "Don't load some plugins if not compatible
 augroup plug
 augroup END
-let g:has_matchaddpos = exists("*matchaddpos")
 let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))
 let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0, so not too useful
@@ -513,8 +512,13 @@ Plug 'vim-scripts/Pydiction' "just changes completeopt and dictionary and stuff
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
 Plug 'Konfekt/FastFold'
-if g:compatible_matchup | Plug 'andymass/vim-matchup' | endif "better matching, see github
-Plug 'vim-scripts/matchit.zip'
+if g:compatible_matchup
+  let g:loaded_matchparen = 1
+  Plug 'andymass/vim-matchup'
+else
+  let g:loaded_matchparen = 0
+  Plug 'vim-scripts/matchit.zip'
+endif "better matching, see github
 "------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'
