@@ -938,7 +938,7 @@ endif
 "MATHUP
 if PlugActive("vim-matchup") "better matching, see github
   let g:matchup_matchparen_enabled = 1
-  let g:matchup_transmute_enabled = 1
+  let g:matchup_transmute_enabled = 0 "breaks latex!
 endif
 
 "###############################################################################
@@ -1603,10 +1603,13 @@ endif
 "Note: Vim seems to run wraptoggle() *asynchronously* so if you test the
 "filetype within function instead of right when you issue autocommand, can
 "get the wrong files wrapped.
-augroup wrap_tabs "For some reason both autocommands below are necessary; fuck it
+"Note: BufRead failed sometimes, maps got mysteriously reset even though
+"wrapping was still on, happened when switching to non-wrapped tabs at start
+"of session
+augroup wrap_tabs
   au!
-  au BufRead * exe 'WrapToggle '.In(['bib','tex','markdown'],&ft)
-  au BufRead * exe 'TabToggle '.In(['text','gitconfig'],&ft)
+  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown'],&ft)
+  au FileType * exe 'TabToggle '.In(['text','gitconfig'],&ft)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want

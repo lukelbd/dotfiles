@@ -913,8 +913,8 @@ cd "${remotedir}"; git status -s; sleep 1
 mfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
 ofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
 # Initialize message
-[ \$mfiles -ne 0 ]         && message+="Modify \$mfiles figure(s)."           && space1=" "
-[ \$ofiles -ne 0 ]         && message+="\${space1}Make \$ofiles new figure(s)." && space2=" "
+[ \$mfiles -ne 0 ]         && message+="Modify \$mfiles figure(s)"           && space1=", "
+[ \$ofiles -ne 0 ]         && message+="\${space1}Make \$ofiles new figure(s)" && space2=", "
 [ ! -z "${extramessage}" ] && message+="\${space2}${extramessage}"
 echo "Commiting changes with message: \\"\$message\\""
 git add --all && git commit -q -m "\$message" && git push -q
