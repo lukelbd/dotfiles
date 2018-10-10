@@ -2416,10 +2416,11 @@ augroup END
 "On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
 "See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
 "For some reason the setreg function fails
-command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
-WipeReg
+"Warning: On cheyenne, get lalloc error when calling WipeReg, strange
 " command! WipeReg let regs='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-"' | let i=0 | while i<strlen(regs) | exec 'let @'.regs[i].'=""' | let i=i+1 | endwhile | unlet regs
-noh "turn off highlighting at startup
+if $HOSTNAME !~ 'cheyenne'
+  command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
+  WipeReg
+endif
+noh     "turn off highlighting at startup
 redraw! "weird issue sometimes where statusbar disappears
-" suspend
-" echom 'Custom vimrc loaded.'
