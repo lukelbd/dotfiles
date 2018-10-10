@@ -1,2 +1,2 @@
-"Simply set the comment string
+"Just set the comment string
 set commentstring=%%s
