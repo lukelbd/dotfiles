@@ -1,2 +1,2 @@
-" Just fixes indentation
-setlocal tabstop=4 softtabstop=4 shiftwidth=4
+"Use exact same features
+runtime ftplugin/python.vim

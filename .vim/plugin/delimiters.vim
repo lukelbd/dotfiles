@@ -121,9 +121,6 @@ nmap csc csB
 call s:target('\', '\"', '\"')
 nmap ds\ /\\"<CR>xxdN
 nmap cs\ /\\"<CR>xNx
-"" and ' for curly quotes
-call s:target("'", '‘', '’')
-call s:target('"', '“', '”')
 "f for functions, with user prompting
 call s:target('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
 nnoremap        dsf mzF(bdt(xf)x`z
@@ -159,6 +156,11 @@ function! s:texsurround()
   call s:target('Q', '``', "''", 1)
   nnoremap <buffer> dsq f'xF`x
   nnoremap <buffer> dsQ 2f'F'2x2F`2x
+  "Curly quotations
+  call s:target("'", '‘', '’')
+  call s:target('"', '“', '”')
+  nnoremap <buffer> ds' f’xF‘x
+  nnoremap <buffer> ds" f”xF“x
 
   "Next delimiters generally not requiring new lines
   "Math mode brackets
