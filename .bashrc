@@ -434,9 +434,9 @@ function abspath() { # abspath that works on mac, Linux, or anything with bash
   if [ -d "$1" ]; then
     (cd "$1"; pwd)
   elif [ -f "$1" ]; then
-    if [[ $1 = /* ]]; then
+    if [[ "$1" = /* ]]; then
       echo "$1"
-    elif [[ $1 == */* ]]; then
+    elif [[ "$1" == */* ]]; then
       echo "$(cd "${1%/*}"; pwd)/${1##*/}"
     else
       echo "$(pwd)/$1"
@@ -534,6 +534,7 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # Declare some names for active servers
 gauss="ldavis@gauss.atmos.colostate.edu"
 monde="ldavis@monde.atmos.colostate.edu"
+cheyenne="davislu@cheyenne.ucar.edu"
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
