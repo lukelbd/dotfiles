@@ -407,6 +407,7 @@ alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 
 # Information on directories
 ! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
+! $_macos && alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
 alias df="df -h" # disk useage
 alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
 function ds() { # directory ls
@@ -639,6 +640,10 @@ fi
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
 # Big honking useful wrapper -- will *always* use this to ssh between servers
+# WARNING: This function ssh's into the server twice, first to query the available
+# port for two-way forwarding, then to ssh in over that port. If the server in question
+# *requires* password entry (e.g. Duo authentification), and cannot be configured
+# for passwordless login with ssh-copy-id, then need to skip first step.
 _port_file=~/.port # file storing port number
 alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
 function ssh_fancy() {
@@ -646,19 +651,19 @@ function ssh_fancy() {
   [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
   listen=22  # default sshd listening port; see the link above
   port=10000 # starting port
-  port=$(command ssh "$1" "
-    port=$port
-    while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
-      let port=\$port+1
-    done
-    echo \$port
-    ") # find first available port
+  if ! [[ $1 =~ cheyenne ]]; then # dynamically find first available port
+    echo "Determining port automatically."
+    port=$(command ssh "$1" "port=$port
+      while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
+        let port=\$port+1
+      done; echo \$port")
+  fi
   port_write="$(compressuser $_port_file)"
   title_write="$(compressuser $_title_file)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen $1 \
     "echo $port >$port_write; echo $_title >$title_write; \
-     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
+    echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
 # Copy from <this server> to local macbook
 # NOTE: Often want to copy result of glob expansion.

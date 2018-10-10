@@ -216,9 +216,9 @@ function! s:texsurround()
   call s:target('5', '\subsection*{',    '}',   1)
   call s:target('6', '\subsubsection*{', '}',   1)
   "Beamer
-  call s:target('!', '\frametitle{',      '}',   1)
-  call s:target('c', '\begin{column}{',  "}\n".'\end{column}')
-  call s:target('C', '\begin{columns}[', ']\end{columns}')
+  call s:target('!', '\frametitle{',     '}',                  1)
+  call s:target('c', '\begin{column}{',  "}\n".'\end{column}', 1)
+  call s:target('C', '\begin{columns}[', ']\end{columns}',     1)
   " call s:target('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   " call s:target('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
   "Shortcuts for citations and such
@@ -230,10 +230,10 @@ function! s:texsurround()
   call s:target('A', '\captionof{figure}{', '}', 1) "alternative
   "Other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Have been rethinking this
-  call s:target('n', '\cite{',   '}', 1) "second most common one
+  call s:target('n', '\cite{',   '}',     1) "second most common one
   call s:target('N', '\citenum{',    '}', 1) "most common
-  call s:target('m', '\citep{',   '}', 1) "second most common one
-  call s:target('M', '\citet{', '}', 1) "most common
+  call s:target('m', '\citep{',   '}',    1) "second most common one
+  call s:target('M', '\citet{', '}',      1) "most common
   " call s:target('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "The next enfironments will also insert *newlines*
   "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
