@@ -140,10 +140,8 @@ else
     echo "Loading system default bashrc."
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
     source /etc/bashrc
-    # Begin interactive node
-    # Only lasts 2 hours, so forget it
-    # echo "Entering interactive node."
-    # sinteractive
+    # Begin interactive node; or not since only lasts 2 hours
+    # echo "Entering interactive node." && sinteractive
     # Add stuff to pythonpath
     export PYTHONPATH="$HOME/project-midway2:$PYTHONPATH"
     # Module load and stuff
@@ -151,16 +149,14 @@ else
     module purge 2>/dev/null
     module load intel/16.0
     module load mkl/11.3
-    # In future, use my own environment
-    # Idea to share conda environment, but really not necessary
     module load Anaconda3
-    # [[ -z "$CONDA_PREFIX" ]] && {
-    #   echo "Activating conda environment."
-    #   source activate /project2/rossby/group07/.conda
-    #   }
     # Fix prompt
-    # unset PROMPT_COMMAND
     export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
+  # Cheyenne supercomputer
+  ;; cheyenne*)
+    # Load some really simple stuff
+    module load tmux
+    alias modules="module avail 2>&1 | cat "
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -178,8 +174,14 @@ alias brew="PATH=$PATH brew"
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 # Anaconda options
-if [[ -e "$HOME/anaconda3" || -e "$HOME/miniconda3" ]]; then
-  source $HOME/anaconda3/etc/profile.d/conda.sh # set up environment variables
+_conda=
+if [ -d "$HOME/anaconda3" ]; then
+  _conda='anaconda3'
+elif [ -d "$HOME/miniconda3" ]; then
+  _conda='miniconda3'
+fi
+if [ -n "$_conda" ]; then
+  source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables
   conda activate # activate the default environment
   echo "Enabled conda."
 fi
