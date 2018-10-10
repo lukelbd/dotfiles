@@ -1336,19 +1336,21 @@ if [ -f ~/.fzf.bash ]; then
   # Feel free to add to this list, it is super cool
   for _command in shopt help man type which bind alias unalias function git cdo; do
     # Post-processing commands *must* have name <name_of_complete_function>_post
+    # Note for some commands, probably want to list both *subcommands* and *files*
     case $_command in
       shopt) _generator="shopt | cut -d' ' -f1 | cut -d$'\\t' -f1" ;;
       help|man|type|which) _generator="cat \$HOME/.commands | grep -v '[!.:]'" ;; # faster than loading every time
       bind)                _generator="bind -l" ;;
       unalias|alias)       _generator="compgen -a" ;;
       function)            _generator="compgen -A function" ;;
-      git)                 _generator="git commands" ;;
-      cdo)                 _generator="cdo --operators"
+      git)                 _generator="cat <(git commands | sed 's/$/ (command)/g' | column -t) <(find . -depth 1 | sed 's:^\\./::')"
+     _fzf_complete_git_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
+      cdo)                 _generator="cat <(cdo --operators | sed 's:[ ]*[^ ]*$::g' | sed 's/^\\([^ ]*[ ]*\\)\\(.*\\)$/\\1(\\2)/g' | tr '[:upper:]' '[:lower:]') <(find . -depth 1 | sed 's:^\\./::')"
      _fzf_complete_cdo_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
     esac
     # Create functions, and declare completions
     eval "_fzf_complete_$_command() {
-          _fzf_complete \$FZF_COMPLETION_OPTS \"\$@\" < <( $_generator )
+          _fzf_complete $FZF_COMPLETION_OPTS \"\$@\" < <( $_generator )
           }"
     complete -F _fzf_complete_$_command $_command
   done
