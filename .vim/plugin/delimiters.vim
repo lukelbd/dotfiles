@@ -157,8 +157,8 @@ function! s:texsurround()
   nnoremap <buffer> dsq f'xF`x
   nnoremap <buffer> dsQ 2f'F'2x2F`2x
   "Curly quotations
-  call s:target("'", '‘', '’')
-  call s:target('"', '“', '”')
+  call s:target("'", '‘', '’', 1)
+  call s:target('"', '“', '”', 1)
   nnoremap <buffer> ds' f’xF‘x
   nnoremap <buffer> ds" f”xF“x
 
