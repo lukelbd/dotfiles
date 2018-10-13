@@ -140,10 +140,8 @@ else
     echo "Loading system default bashrc."
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
     source /etc/bashrc
-    # Begin interactive node
-    # Only lasts 2 hours, so forget it
-    # echo "Entering interactive node."
-    # sinteractive
+    # Begin interactive node; or not since only lasts 2 hours
+    # echo "Entering interactive node." && sinteractive
     # Add stuff to pythonpath
     export PYTHONPATH="$HOME/project-midway2:$PYTHONPATH"
     # Module load and stuff
@@ -151,16 +149,14 @@ else
     module purge 2>/dev/null
     module load intel/16.0
     module load mkl/11.3
-    # In future, use my own environment
-    # Idea to share conda environment, but really not necessary
     module load Anaconda3
-    # [[ -z "$CONDA_PREFIX" ]] && {
-    #   echo "Activating conda environment."
-    #   source activate /project2/rossby/group07/.conda
-    #   }
     # Fix prompt
-    # unset PROMPT_COMMAND
     export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
+  # Cheyenne supercomputer
+  ;; cheyenne*)
+    # Load some really simple stuff
+    module load tmux
+    alias modules="module avail 2>&1 | cat "
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -178,8 +174,14 @@ alias brew="PATH=$PATH brew"
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 # Anaconda options
-if [[ -e "$HOME/anaconda3" || -e "$HOME/miniconda3" ]]; then
-  source $HOME/anaconda3/etc/profile.d/conda.sh # set up environment variables
+_conda=
+if [ -d "$HOME/anaconda3" ]; then
+  _conda='anaconda3'
+elif [ -d "$HOME/miniconda3" ]; then
+  _conda='miniconda3'
+fi
+if [ -n "$_conda" ]; then
+  source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables
   conda activate # activate the default environment
   echo "Enabled conda."
 fi
@@ -405,6 +407,7 @@ alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 
 # Information on directories
 ! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
+! $_macos && alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
 alias df="df -h" # disk useage
 alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
 function ds() { # directory ls
@@ -434,9 +437,9 @@ function abspath() { # abspath that works on mac, Linux, or anything with bash
   if [ -d "$1" ]; then
     (cd "$1"; pwd)
   elif [ -f "$1" ]; then
-    if [[ $1 = /* ]]; then
+    if [[ "$1" = /* ]]; then
       echo "$1"
-    elif [[ $1 == */* ]]; then
+    elif [[ "$1" == */* ]]; then
       echo "$(cd "${1%/*}"; pwd)/${1##*/}"
     else
       echo "$(pwd)/$1"
@@ -534,6 +537,7 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # Declare some names for active servers
 gauss="ldavis@gauss.atmos.colostate.edu"
 monde="ldavis@monde.atmos.colostate.edu"
+cheyenne="davislu@cheyenne.ucar.edu"
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
@@ -636,6 +640,10 @@ fi
 #   * Why iterate from ports 10000 upward? Because is even though disable host key
 #     checking, still get this warning message every time.
 # Big honking useful wrapper -- will *always* use this to ssh between servers
+# WARNING: This function ssh's into the server twice, first to query the available
+# port for two-way forwarding, then to ssh in over that port. If the server in question
+# *requires* password entry (e.g. Duo authentification), and cannot be configured
+# for passwordless login with ssh-copy-id, then need to skip first step.
 _port_file=~/.port # file storing port number
 alias ssh="ssh_fancy" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 function ssh_fancy() {
@@ -643,19 +651,19 @@ function ssh_fancy() {
   [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
   listen=22  # default sshd listening port; see the link above
   port=10000 # starting port
-  port=$(command ssh "$1" "
-    port=$port
-    while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
-      let port=\$port+1
-    done
-    echo \$port
-    ") # find first available port
+  if ! [[ $1 =~ cheyenne ]]; then # dynamically find first available port
+    echo "Determining port automatically."
+    port=$(command ssh "$1" "port=$port
+      while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
+        let port=\$port+1
+      done; echo \$port")
+  fi
   port_write="$(compressuser $_port_file)"
   title_write="$(compressuser $_title_file)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen $1 \
     "echo $port >$port_write; echo $_title >$title_write; \
-     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
+    echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
 # Copy from <this server> to local macbook
 # NOTE: Often want to copy result of glob expansion.
@@ -913,8 +921,8 @@ cd "${remotedir}"; git status -s; sleep 1
 mfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
 ofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
 # Initialize message
-[ \$mfiles -ne 0 ]         && message+="Modify \$mfiles figure(s)."           && space1=" "
-[ \$ofiles -ne 0 ]         && message+="\${space1}Make \$ofiles new figure(s)." && space2=" "
+[ \$mfiles -ne 0 ]         && message+="Modify \$mfiles figure(s)"           && space1=", "
+[ \$ofiles -ne 0 ]         && message+="\${space1}Make \$ofiles new figure(s)" && space2=", "
 [ ! -z "${extramessage}" ] && message+="\${space2}${extramessage}"
 echo "Commiting changes with message: \\"\$message\\""
 git add --all && git commit -q -m "\$message" && git push -q
@@ -1330,19 +1338,21 @@ if [ -f ~/.fzf.bash ]; then
   # Feel free to add to this list, it is super cool
   for _command in shopt help man type which bind alias unalias function git cdo; do
     # Post-processing commands *must* have name <name_of_complete_function>_post
+    # Note for some commands, probably want to list both *subcommands* and *files*
     case $_command in
       shopt) _generator="shopt | cut -d' ' -f1 | cut -d$'\\t' -f1" ;;
       help|man|type|which) _generator="cat \$HOME/.commands | grep -v '[!.:]'" ;; # faster than loading every time
       bind)                _generator="bind -l" ;;
       unalias|alias)       _generator="compgen -a" ;;
       function)            _generator="compgen -A function" ;;
-      git)                 _generator="git commands" ;;
-      cdo)                 _generator="cdo --operators"
+      git)                 _generator="cat <(git commands | sed 's/$/ (command)/g' | column -t) <(find . -depth 1 | sed 's:^\\./::')"
+     _fzf_complete_git_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
+      cdo)                 _generator="cat <(cdo --operators | sed 's:[ ]*[^ ]*$::g' | sed 's/^\\([^ ]*[ ]*\\)\\(.*\\)$/\\1(\\2)/g' | tr '[:upper:]' '[:lower:]') <(find . -depth 1 | sed 's:^\\./::')"
      _fzf_complete_cdo_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
     esac
     # Create functions, and declare completions
     eval "_fzf_complete_$_command() {
-          _fzf_complete \$FZF_COMPLETION_OPTS \"\$@\" < <( $_generator )
+          _fzf_complete $FZF_COMPLETION_OPTS \"\$@\" < <( $_generator )
           }"
     complete -F _fzf_complete_$_command $_command
   done

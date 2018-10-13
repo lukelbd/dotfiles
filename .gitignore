@@ -1,5 +1,7 @@
 # Specifically for this repository #
 ####################################
+zshell
+  # not using zshell, store settings in there for now
 .vim/zcache
   # cache for the zotero integration plugin
 latex/*/
