@@ -637,7 +637,7 @@ fi
 #     checking, still get this warning message every time.
 # Big honking useful wrapper -- will *always* use this to ssh between servers
 _port_file=~/.port # file storing port number
-alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
+alias ssh="ssh_fancy" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 function ssh_fancy() {
   local port listen port_write title_write
   [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
