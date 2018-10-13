@@ -117,14 +117,14 @@ endfunction
 call s:target('c', '{', '}')
 nmap dsc dsB
 nmap csc csB
-"f for functions, with user prompting
-call s:target('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
-nnoremap dsf mzF(bdt(xf)x`z
-nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
 "\ for \" escaped quotes \"
 call s:target('\', '\"', '\"')
 nmap ds\ /\\"<CR>xxdN
 nmap cs\ /\\"<CR>xNx
+"f for functions, with user prompting
+call s:target('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
+nnoremap        dsf mzF(bdt(xf)x`z
+nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
 "p for print
 "then just use dsf, csf, et cetera to delete
 call s:target('p', 'print(', ')')
@@ -156,6 +156,11 @@ function! s:texsurround()
   call s:target('Q', '``', "''", 1)
   nnoremap <buffer> dsq f'xF`x
   nnoremap <buffer> dsQ 2f'F'2x2F`2x
+  "Curly quotations
+  call s:target("'", '‘', '’', 1)
+  call s:target('"', '“', '”', 1)
+  nnoremap <buffer> ds' f’xF‘x
+  nnoremap <buffer> ds" f”xF“x
 
   "Next delimiters generally not requiring new lines
   "Math mode brackets
@@ -169,15 +174,15 @@ function! s:texsurround()
   call s:target(')', '\begin{pmatrix}',          "\n".'\end{pmatrix}',      1)
   call s:target(']', '\begin{bmatrix}',          "\n".'\end{bmatrix}',      1)
   "Font types
-  call s:target('o', '{\color{red}', '}', 1)
-  call s:target('i', '\textit{',     '}', 1)
-  call s:target('b', '\textbf{',     '}', 1)
-  call s:target('E', '\emph{'  ,     '}', 1) "use e for times 10 to the whatever
+  call s:target('o', '{\color{red}', '}', 1) "requires \usepackage[colorlinks]{hyperref}
   call s:target('u', '\underline{',  '}', 1)
-  call s:target('m', '\mathrm{',     '}', 1)
-  call s:target('n', '\mathbf{',     '}', 1)
-  call s:target('M', '\mathcal{',    '}', 1)
-  call s:target('N', '\mathbb{',     '}', 1)
+  call s:target('i', '\textit{',     '}', 1)
+  call s:target('E', '\emph{'  ,     '}', 1) "use e for times 10 to the whatever
+  call s:target('b', '\textbf{',     '}', 1)
+  call s:target('B', '\mathbf{',     '}', 1)
+  call s:target('r', '\mathrm{',     '}', 1)
+  call s:target('R', '\mathbb{',     '}', 1) "usually for denoting sets of numbers
+  call s:target('z', '\mathcal{',    '}', 1)
   "Verbatim
   call s:target('y', '\texttt{',     '}', 1) "typewriter text
   call s:target('Y', '\pyth$',       '$', 1) "python verbatim
@@ -204,13 +209,18 @@ function! s:texsurround()
   call s:target('/', '\dfrac{',      '}{}', 1)
   "Sections and titles
   call s:target('~', '\title{',     '}',   1)
-  call s:target('!', '\frametitle{',     '}',   1)
   call s:target('1', '\section{',        '}',   1)
   call s:target('2', '\subsection{',     '}',   1)
   call s:target('3', '\subsubsection{',  '}',   1)
   call s:target('4', '\section*{',       '}',   1)
   call s:target('5', '\subsection*{',    '}',   1)
   call s:target('6', '\subsubsection*{', '}',   1)
+  "Beamer
+  call s:target('!', '\frametitle{',     '}',                  1)
+  call s:target('c', '\begin{column}{',  "}\n".'\end{column}', 1)
+  call s:target('C', '\begin{columns}[', ']\end{columns}',     1)
+  " call s:target('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+  " call s:target('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
   "Shortcuts for citations and such
   call s:target('7', '\ref{',     '}', 1) "just the number
   call s:target('8', '\autoref{', '}', 1) "name and number; autoref is part of hyperref package
@@ -218,13 +228,12 @@ function! s:texsurround()
   call s:target('0', '\tag{',     '}', 1) "change the default 1-2-3 ordering; common to use *
   call s:target('a', '\caption{', '}', 1) "amazingly 'a' not used yet
   call s:target('A', '\captionof{figure}{', '}', 1) "alternative
-  " call s:target('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
   "Other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
   "Have been rethinking this
-  call s:target('c', '\cite{',   '}', 1) "second most common one
-  call s:target('C', '\citenum{',    '}', 1) "most common
-  call s:target('z', '\citep{',   '}', 1) "second most common one
-  call s:target('Z', '\citet{', '}', 1) "most common
+  call s:target('n', '\cite{',   '}',     1) "second most common one
+  call s:target('N', '\citenum{',    '}', 1) "most common
+  call s:target('m', '\citep{',   '}',    1) "second most common one
+  call s:target('M', '\citet{', '}',      1) "most common
   " call s:target('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
   "The next enfironments will also insert *newlines*
   "Frame; fragile option makes verbatim possible (https://tex.stackexchange.com/q/136240/73149)
@@ -236,8 +245,8 @@ function! s:texsurround()
   call s:target('S', '\begin{frame}[fragile]',                 "\n".'\end{frame}' , 1)
   call s:target('w', '{\usebackgroundtemplate{}\begin{frame}', "\n".'\end{frame}}', 1)
   "Figure environments, and pages
-  call s:target('f', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}', 1)
   call s:target('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}', 1)
+  call s:target('F', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}', 1)
   call s:target('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}')
   " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}', 1)
   " call s:target('p', '\begin{minipage}{\linewidth}', "\n".'\end{minipage}', 1) "not sure what this is used for
@@ -258,11 +267,8 @@ function! s:texsurround()
   " * Use command \rule{\textwidth}{<any height>} to visualize blocks/spaces in document
   " call s:target(',;', '\begin{center}',             '\end{center}')               "because ; was available
   " call s:target(',:', '\newpage\hspace{0pt}\vfill', '\vfill\hspace{0pt}\newpage') "vertically centered page
-  " call s:target(',c', '\begin{columns}[c]',         '\end{columns}')
   " call s:target(',y', '\begin{python}',             '\end{python}')
-  " " call s:target('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
   "   "not sure what these args are for; c will vertically center
-  " call s:target(',C', '\begin{column}{.5\textwidth}',     '\end{column}')
   " call s:target(',b', '\begin{block}{}',                  '\end{block}')
   " call s:target(',B', '\begin{alertblock}{}',             '\end{alertblock}')
   " call s:target(',v', '\begin{verbatim}',                 '\end{verbatim}')
