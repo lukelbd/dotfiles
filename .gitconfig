@@ -49,6 +49,9 @@
 	stat     = !git diff --stat $@
 	wtf      = !git-wtf $@
 	fix      = !git-fix $@
+	vim      = !git-vim $@
+	shrink   = !git-shrink $@
+	shrink   = !git-truncate $@
 	root     = !git rev-parse --show-toplevel
 	file     = "!git log -p -- $@"
 	commands = "!git help -a | grep \"^  [a-z]\" | tr ' ' '\\n' | grep -v \"^$\" | sort"

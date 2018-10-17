@@ -1684,6 +1684,10 @@ command! -nargs=? WrapToggle call <sid>wraptoggle(<args>)
 
 "###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
+"By default, :Tabularize command provided *without range* will select the
+"contiguous lines that contain specified delimiter; so this function only makes
+"sense when applied for a visual range! So we don't need to worry about using Tabularize's
+"automatic range selection/implementing it in this special command
 augroup tabular
 augroup END
 if PlugActive("tabular")
@@ -1712,7 +1716,7 @@ if PlugActive("tabular")
     endwhile
     "Execute tabularize function
     if firstline>lastline
-      echom "Warning: No matches in selection."
+      echom 'Warning: No matches in selection.'
     else
       exe firstline.','.lastline.'Tabularize '.a:arg
     endif
@@ -1722,14 +1726,10 @@ if PlugActive("tabular")
     endfor
   endfunction
   "Command
-  "* By default, :Tabularize command provided *without range* will select the
-  "  contiguous lines that contain specified delimiter; so this function only makes
-  "  sense when applied for a visual range! So we don't need to worry about using Tabularize's
-  "  automatic range selection/implementing it in this special command
   "* Note odd concept (see :help args) that -nargs=1 will pass subsequent text, including
   "  whitespace, as single argument, but -nargs=*, et cetera, will aceept multiple arguments delimited by whitespace
   "* Be careful -- make sure to pass <args> in singly quoted string!
-	command! -range -nargs=1 Table <line1>,<line2>call <sid>table('<args>')
+	command! -range -nargs=1 Table <line1>,<line2>call <sid>table(<q-args>)
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
   nnoremap <silent> <expr> _<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
@@ -1738,11 +1738,11 @@ if PlugActive("tabular")
   nnoremap <expr> _, ':Tabularize /,\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> _, ':Table      /,\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
-  nnoremap <expr> _d ':Tabularize /\('.Comment().'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> _d ':Table      /\('.Comment().'.*\)\@<!\zs:/l0c1<CR>'
+  nnoremap <expr> _D ':Tabularize /\('.Comment().'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> _D ':Table      /\('.Comment().'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
-  nnoremap <expr> _D ':Tabularize /:\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> _D ':Table      /:\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> _d ':Tabularize /:\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> _d ':Table      /:\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned

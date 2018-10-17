@@ -1,0 +1,849 @@
+
+
+The importance of unresolved biases in 20th century sea-surface1
+
+temperature observations2
+Luke L. B. Davis *#, David W. J. Thompson#, John J. Kennedy##, and Elizabeth C. Kent$3
+
+#Department of Atmospheric Science, Colorado State University, Fort Collins, Colorado USA4
+
+##Met Office Hadley Centre, Exeter, UK5
+
+$National Oceanography Centre, Southampton, UK6
+
+*Corresponding author address: Luke L. B. Davis, Department of Atmospheric Science, Colorado
+
+State University, 3915 W. Laporte Ave., Fort Collins, Colorado USA
+7
+8
+
+E-mail: luke.davis@colostate.edu9
+
+Generated using v4.3.2 of the AMS LATEX template 1
+
+ABSTRACT
+A new analysis of sea-surface temperature (SST) observations indicates notable uncertainty in observed decadal climate variability in the second half of
+the 20th century, particularly during the decades following World War II. The
+uncertainties are revealed by exploring SST data binned separately for the two
+predominant measurement types: "engine-room intake" (ERI) and "bucket"
+measurements. ERI measurements indicate large decreases in global-mean
+SSTs from 1950 to 1975, whereas "bucket" measurements indicate increases
+in SST over this period before bias adjustments are applied but decreases after
+they are applied. The trends in the bias adjustments applied to the "bucket"
+data are larger than the global-mean trends during the period 1950-1975, and
+thus the global-mean trends during this period derive largely from the adjustments themselves. This is critical, since the adjustments are based on incomplete information about the underlying measurement methods, and are thus
+subject to considerable uncertainty. The uncertainty in decadal-scale variability is particularly pronounced over the North Pacific, where the sign of lowfrequency variability through the 1950s-1970s is different for each measurement type. The uncertainty highlighted here has important - but in our view
+widely overlooked - implications for the interpretation of observed decadal
+climate variability over both the Pacific and Atlantic basins during the midto-late 20th century.
+
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+
+2
+
+Capsule Summary30
+
+Biases in sea-surface temperature observations lead to larger uncertainties in our understanding31
+of mid-to-late 20th century climate variability than previously thought.32
+
+1. Introduction33
+
+The world ocean warmed by ,0.75K from 1900-2016, but the warming did not occur monoton-34
+ically: temperatures increased during the first half of the 20th century, decreased slightly during35
+the decades following World War II, and increased rapidly after ,1975 (Hartmann et al. 2013).36
+The decreases in ocean temperatures from the 1950s-1970s are apparent in SSTs averaged over37
+the globe and both the Atlantic and Pacific sectors (Figures 1k-o, black time series; Figures 2k-o,38
+black bars).39
+
+The absence of warming during the decades following World War II is important because it co-40
+incides with steadily increasing concentrations of carbon dioxide over the same period. Several41
+theories have been proposed to explain the absence of warming during this period, including in-42
+creases in atmospheric sulfate aerosols (Tett et al. 2002; Lamarque et al. 2010; Booth et al. 2012;43
+Myhre et al. 2013; Folland et al. 2018) and decadal variability in the ocean (Delworth and Mann44
+2000; Baines and Folland 2007; Knight et al. 2006; Semenov et al. 2010). Here we provide novel45
+analyses of SST data separated into the two primary measurement sources to demonstrate that the46
+uncertainty in decadal variability of SST from the 1950s-1970s is at least as large as the observed47
+decadal variability itself. The results highlight the critical importance of considering uncertainty48
+in SST observations in analyses of observed decadal climate variability.49
+
+SST data during the period after 1980 are derived from several in situ and remotely-sensed50
+sources (Kent et al. 2010; Kennedy et al. 2011b). But SST data prior to 1980 are derived almost51
+entirely from two in situ sources via "ships of opportunity": 1) the temperature of seawater in52
+
+3
+
+buckets that have been submerged below the ocean surface and then hauled back onto a ship53
+deck (bucket measurements); and 2) the temperature of the pumped water supply to an engine54
+room (engine-room intake or ERI measurements) (Kent et al. 2010; Kennedy et al. 2011b). A55
+comparatively small number of hull sensor observations are also included in the ERI category, as56
+the biases in both hull sensor and ERI data are thought to be governed by similar factors (Kennedy57
+et al. 2011b).58
+
+Bucket and ERI measurements both exhibit substantial measurement biases (Kent and Kaplan59
+2006; Rayner et al. 2006; Kent et al. 2010; Kennedy et al. 2011b; Kent et al. 2017; Folland and60
+Parker 1995). ERI measurements are often warm-biased due to the transfer of heat from the61
+superstructure of the ship as water passes through pipes, while bucket measurements are often62
+cold-biased due to the exchange of latent and sensible heat with the surrounding air. If the mix of63
+measurement types and their relative biases are well understood, then the biases can be adjusted so64
+that they have little effect on the time evolution of spatially-averaged temperature data. But if the65
+mix of measurement types is poorly documented, large biases can remain after adjustment, even66
+in widely used climate data sources (Folland and Parker 1995; Thompson et al. 2008; Karl et al.67
+2015).68
+
+In principle, SST data stratified by measurement type provide the opportunity to assess the69
+reproducibility of SST variability in subsets of the data not influenced by changes to instrumenta-70
+tion. With this in mind, the UK Met Office Hadley Centre developed SST datasets stratified into71
+bucket and ERI measurements in conjunction with the release of their most recent gridded dataset72
+HadSST3 (Kennedy et al. 2011a,b). The bucket and ERI data are available over the period 1946-73
+2006, and were developed in the same way as the full HadSST3 dataset (Kennedy et al. 2011a,b);74
+that is, by 1) estimating the measurement types of SST observations in the International Compre-75
+hensive Ocean-Atmosphere Data Set release 2.5 archive (ICOADS2.5; Woodruff et al. (2011)); 2)76
+
+4
+
+consolidating the observations onto monthly 5ffi*5ffi grids; 3) applying bias adjustment schemes77
+unique to each measurement type; and 4) accounting for parametric uncertainty in the bias ad-78
+justment schemes by generating 100 plausible realizations of the adjustments. For each of the79
+bucket-only and ERI-only datasets, observations estimated to be from the other measurement type80
+were ignored, and for this analysis, grid boxes without valid data from the other measurement type81
+were excluded. The latter step ensures that the bucket-only and ERI-only data are "co-located," or82
+have the same spatial coverage through time at the grid box level. This is critical, as measurement83
+types are often distributed differently across each ocean basin (Kent and Taylor 2006).84
+
+The identification of SST methodology is imperfect; in many cases, the ICOADS2.5 metadata85
+does not provide specific information about the measurement method, and hence the measurement86
+type must be estimated from other information, such as country of origin (Kennedy et al. 2011b).87
+Even if the measurement type is indicated by the metadata, the indication is sometimes incor-88
+rect (Kent et al. 2007). In other cases, the general type of measurement is known (e.g., bucket),89
+but specific aspects of the measurement (e.g., the construction and insulation of the bucket) are90
+not. Nevertheless, the bucket-only and ERI-only datasets reflect the best available estimates of91
+mid-20th century SST variability minimally influenced by changes to instrumentation. Together,92
+the two datasets thus provide a unique opportunity to explore uncertainty in observed decadal93
+variability.94
+
+2. The Problem95
+
+The unadjusted bucket and ERI data yield remarkably different renditions of 20th century SST96
+variability, particularly prior to ,1975 (red and blue time series in Figs 1a-e; red and blue bars97
+in Figs 2a-e; Figs 3a and 3b). For example, the ERI data exhibit cooling of the Pacific ocean98
+from 1950-1975, whereas the unadjusted bucket data indicate warming (Figs 1d-e; Figs 2d-e; Figs99
+
+5
+
+3a and 3b). Likewise, the ERI data exhibit cooling in the global average over the same period,100
+whereas the bucket data indicate warming (Figs 1a, 2a).101
+
+The adjustments applied to the ERI data using the HadSST3 bias adjustment scheme are mostly102
+stationary in time, with the exception of the short-term bias adjustments applied to the Atlantic103
+sector during the early 1990s (red time series in Figs 1f-j; see Kent and Kaplan (2006)). Hence104
+they do not notably affect estimates of decadal variability (red bars in Figs 2f-j; Fig. 3d). In105
+contrast, the adjustments applied to the bucket data introduce a substantial 0.1K/decade cooling106
+over the period 1950 to 1975 (blue time series in Figs 1f-j; blue bars in Figs 2f-j; Fig. 3e), due107
+to the assumed transition from canvas to rubber buckets (Kent et al. 2010; Kennedy et al. 2011b).108
+The cooling introduced by the adjustments applied to the bucket data ranges from -0.05 to -0.15109
+K/decade across the 100 realizations of the HadSST3 bias adjustments (error bars in Figs 2f-j).110
+The adjusted bucket temperature data exhibit robust cooling in Atlantic basin averages but not in111
+the global and Pacific basin averages. The Atlantic cooling is apparent in all 100 realizations of112
+the adjusted bucket data (whiskers on blue bars in Figs 2l-m) and is also statistically significant113
+with respect to the detrended variability in the data (Figs S1l-m, Supplemental Materials). The114
+adjustments for both ERI and bucket data are roughly stationary in time during the 1976-2006115
+period (Figs 4d-f).116
+
+The resulting adjusted ERI and bucket data (red and blue time series in Figs 1k-o; red and117
+blue bars in Figs 2k-o; Figs 3g-h) are in closer agreement with each other than their unadjusted118
+counterparts. However, the trends in the SST field over the period 1950-1975 are still notably119
+different for the two measurement types. In the global-average, the cooling in the adjusted bucket120
+data is roughly half as large as the cooling in the adjusted ERI data (Figs 1k, 2k). The discrepancies121
+are especially notable in the Pacific sector, where the adjusted ERI data exhibit cooling over the122
+period 1950-1975 but the adjusted bucket data exhibit relatively little change in temperature (Figs123
+
+6
+
+1n-o; Figs 2n-o; Figs 3g-h). In contrast, over the Atlantic sector the adjusted ERI data exhibit124
+significantly weaker cooling than the adjusted bucket data (Figs 1l-m; Figs 2l-m; Figs 3g-h).125
+These patterns of disagreement are stronger in the North Pacific and North Atlantic during boreal126
+winter (Figs S2l-m, Figs S3g-h; Supplemental Materials).127
+
+After 1975, the agreement between the ERI and bucket data improves as the magnitude of the128
+adjustments decreases and the overall quality and consistency of the observations increases. Nev-129
+ertheless there remain notable differences in the adjusted ERI and bucket SST trends over the130
+1976-2006 period, especially over the south-central Pacific sector (Figs 4g-i) and during austral131
+winter (Figs S4g-i, Supplemental Materials).132
+
+Importantly, the amplitudes of the trends in the adjusted ERI and bucket data over the 1950-1975133
+period are comparable to the differences between them (compare the red and blue bars with the134
+pink bars in Figs 2k-o, and Figs 3g-h with Fig. 3i), which points to the scale of the uncertainty135
+in the adjusted data. As indicated by the whiskers on the pink bars in Figs 2k-o and the stippling136
+in Fig. 3i, the 100 bias adjustment realizations cannot account for these differences, and thus do137
+not entirely characterize the bias uncertainties in the trends. When averaged over large spatial138
+domains, the amplitudes of the trends are also comparable to the trends in the bias adjustments139
+themselves (compare the middle and bottom rows of Fig. 2). This is key, as the bias adjustment140
+schemes are subject to considerable uncertainty, particularly prior to 1980 (Kennedy et al. 2011b;141
+Kent et al. 2017).142
+
+In the case of HadSST3, the bias adjustment schemes are derived from metadata contained in143
+ICOADS2.5 and historical documentation (Kennedy et al. 2011b). However, the metadata are144
+frequently incomplete, and thus various sources of bias are not known with confidence, including145
+bucket type, the speed of the ship, the depth from which water for the engine-room is drawn, and146
+whether a datum is derived from a bucket or ERI measurement in the first place (Kent and Taylor147
+
+7
+
+2006; Kent et al. 2017). For example, the HadSST3 bias adjustments assume 40-80% of the SST148
+data from 1960-1980 are derived from bucket measurements, whereas a recent reassessment of149
+measurement type suggests the fraction of bucket measurements over this time is consistently150
+closer to 40% (Carella et al. 2018).151
+
+The uncertainties in the bias adjustment scheme applied to HadSST3 data can be inferred from152
+the time series in Fig. 1 as follows (see also Kent et al. (2017) and Carella et al. (2018)). The153
+unadjusted ERI and bucket time series can be decomposed as:154
+
+ERIunadjusted = ERItrue + ERItrue bias (1)
+
+Bunadjusted = Btrue + Btrue bias (2)
+
+where ERItrue and Btrue are the "true" SST data in the absence of measurement bias, and ERItrue bias155
+and Btrue bias are the "ideal" bias adjustments. Since the bucket and ERI data used here are co-156
+located in space, it follows that ERItrue = Btrue over area averages large enough to suppress sam-157
+pling and measurement uncertainties (Kennedy et al. 2011a; Carella et al. 2018), and therefore158
+
+ERIunadjusted - Bunadjusted = ERItrue bias - Btrue bias (3)
+The uncertainty in the bias adjustments applied to the bucket and ERI data (and hence to the159
+HadSST3 dataset) can thus be estimated by comparing (a) the differences between the unadjusted160
+ERI and bucket data with (b) the differences between the ERI and bucket bias estimates (i.e., the161
+negative of the ERI and bucket bias adjustments). If the bias adjustments are ideal, then the time162
+series given by (a) and (b) should be identical. Note that the time series can also be identical163
+if there is a common bias in the ERI and bucket measurements; the series being identical is a164
+necessary but not sufficient criterion for ideal adjustments.165
+
+Fig. 5 shows the results of the above calculation for the domains considered in Figs 1-2. The166
+orange lines indicate the differences between the ERI and bucket bias estimates averaged over all167
+
+8
+
+100 pairs of adjustments (the range given by the 100 realizations is indicated by orange shading);168
+the black lines indicate the differences between the unadjusted ERI and bucket data. Again, (1)169
+if the bias adjustments are ideal, then the black and orange lines should overlie each other, and170
+(2) if the 100 realizations of the bias adjustments characterize the uncertainty in the adjustments,171
+then the black lines should lie within the regions of orange shading. Overall, the adjustments172
+required to bring ERI and bucket data into agreement (black lines) are clearly much larger and173
+much more variable than the mean of the actual bias adjustments applied to the HadSST3 data.174
+The inferred uncertainties in the bias adjustments are comparable to the amplitude of the observed175
+decadal variability in the SST field.176
+
+The uncertainties in decadal-scale variability indicated in Figs 1-5 also affect the two other ma-177
+jor historical SST data sets based on the ICOADS2.5 archive: the Centennial in situ Observation-178
+Based Estimates of SST (COBE-SST2; Hirahara et al. (2013)) developed by the Japanese Meteo-179
+rological Agency, and version 4 of the Extended Reconstructed SST dataset (ERSST4; Huang et al.180
+(2014) and Liu et al. (2014)) released by the US National Climatic Data Center. The ERSSTv4 and181
+COBE-SST2 datasets are included to provide a point of comparison with SST data that employ182
+very different bias correction schemes: The bias adjustments applied in HadSST3 and COBE-183
+SST2 are both based on information about measurement type as inferred from the metadata; the184
+adjustments applied in ERSST4 are based only on comparisons with night-time marine air tem-185
+perature (NMAT) data, which require their own bias adjustments (Rayner et al. 2003; Kent et al.186
+2013; Kennedy 2014). In general, over the 1950-1975 period, the trends in the bias-adjusted187
+COBE-SST2 data are similar to those in the HadSST3 data, whereas the trends in the bias-adjusted188
+NMAT and ERSST4 data are somewhat weaker than those in the HadSST3 data, particularly over189
+the Atlantic Ocean and in the global-mean (Figs 2k-o; see Methods for details of the analysis).190
+
+9
+
+3. So What?191
+
+The results shown here reveal a level of regional uncertainty in observed SSTs that is not widely192
+acknowledged in the climate dynamics literature. In our view, it should be. Confidence in observed193
+decadal variability derives from confidence in the bias adjustments applied to the SST data. And194
+as shown here, the uncertainty in the bias adjustment schemes is frequently comparable to the195
+amplitude of the observed decadal variability itself. The uncertainty has important implications for196
+our understanding of the role of aerosols in 20th century climate change (Tett et al. 2002; Lamarque197
+et al. 2010; Booth et al. 2012; Myhre et al. 2013; Folland et al. 2018), since aerosols are believed198
+to have contributed to the absence of global warming during the mid 20th century (Kobayashi199
+et al. 2015; Laloyaux et al. 2017; Taylor et al. 2011; Flato et al. 2013). It also has important200
+implications for quantifying the amplitudes of patterns of decadal-scale variability, particularly201
+over the problematic North Pacific sector (Fig. 1 and 2), and in association with Pacific and202
+Atlantic decadal variability (Mantua et al. 1997; Mantua and Hare 2002; Newman et al. 2016;203
+Delworth and Mann 2000; Baines and Folland 2007; Knight et al. 2006; Semenov et al. 2010).204
+
+The findings indicate notable shortcomings in our ability to accurately classify SST measure-205
+ment methods and to quantify the associated biases. Complicating matters is that measurement206
+biases vary not only from one measurement method to the next, but also within the individual207
+methods: ERI biases can vary between individual ships and recruiting countries (Kent et al. 1993);208
+bucket biases depend on the bucket type, and the transition from canvas to rubber buckets for a209
+given recruiting country is highly uncertain (Kennedy et al. 2011b). Additionally, the metadata210
+necessary to identify ships is often missing from ICOADS (Carella et al. 2018), and the propor-211
+tions of recruiting countries can change substantially over time, especially before ,1970 (Fig. S5,212
+Supplemental Materials; Thompson et al. (2008)). For example, the large differences between213
+
+10
+
+trends in the bucket and ERI data over the Pacific sector relative to those over the Atlantic sector214
+(Figs. 2l-o, 3i) are potentially due to differences in the types of bucket and ERI measurements215
+used in each region, as implied by the differences in recruiting countries between the two sectors216
+(Fig. S6, Supplemental Materials). Not surprisingly, despite recent advances (Freeman et al. 2017;217
+Carella et al. 2018; Hausfather et al. 2017; Cowtan et al. 2017; Hirahara et al. 2013), it may take218
+years to resolve the discrepancies between the ERI and bucket time series highlighted here.219
+
+What is the best way forward? The recent review of SST biases by Kent et al. (2017) concludes220
+with a series of recommendations for improving the reliability of historical SST bias estimations,221
+especially after World War II. These include improving the metadata and volume of observations in222
+the ICOADS archive, improving the classification of measurement methods from documentation223
+and by analysing of data characteristics, improving the physical and statistical models used to224
+estimate SST bias, and entraining more scientists into the field of SST bias adjustment. Novel225
+analyses could include clustering of observations by individual ship or recruiting country, which226
+may help isolate the bias variations within each measurement method. Our results make clear the227
+critical importance of the recommendations in Kent et al. (2017) for improving our understanding228
+of 20th century climate variability.229
+
+Acknowledgments. We thank the three anonymous reviewers for their insightful comments,230
+which greatly improved the paper. L.L.B.D. and D.W.J.T. were supported by the NSF Climate231
+and Large-Scale Dynamics Program (AGS-1547003). J.J.K. was supported by the Joint UK232
+BEIS/Defra Met Office Hadley Centre Climate Programme (GA01101). E.C.K. was supported233
+by the NERC (NE/J020788/1).234
+
+11
+
+APPENDIX235
+
+Methods236
+The HadSST3 data (Kennedy et al. 2011b) and night-time marine air temperature data (Kent237
+et al. 2013) were obtained from the Met Office Hadley Centre (https://metoffice.gov.238
+uk/hadobs). Subsequent to this study, the ERI-only and bucket-only data are also published239
+on the Hadley Centre website. The unadjusted ICOADS sea-surface temperature observations240
+(Woodruff et al. 2011) were obtained from the National Center for Atmospheric Research (https:241
+//rda.ucar.edu/). The Japan Meteorological Agency (COBE-SST2; Hirahara et al. (2013))242
+and National Climatic Data Center (ERSST4; Huang et al. (2014) and Liu et al. (2014)) sea-243
+surface temperature data were both obtained from the Earth System Research Laboratory Physi-244
+cal Sciences Division (https://esrl.noaa.gov/psd). To accommodate comparisons with the245
+Hadley Centre data, the COBE-SST2 and ERSST4 data were (1) re-gridded onto the 5ffi*5ffi res-246
+olution HadSST3 grid and (2) had their respective monthly 1961-1990 climatologies subtracted247
+(to match the HadSST3 climatology period). The gridded NMAT, HadSST3, COBE-SST2, and248
+ERSST4 data were matched to the spatial coverage of the co-located ERI-only and bucket-only249
+data. The coordinate boundaries used for each spatial average are shown in Table A1 (grid boxes250
+were weighted by the cosine of the central latitude and the ocean fraction within each box). Note251
+that all data used in this study are in anomaly form with respect to the 1961-1990 base period.252
+
+References253
+Baines, P. G., and C. K. Folland, 2007: Evidence for a rapid global climate shift across the late254
+
+1960s. Journal of Climate, 20 (12), 2721-2744.255
+
+12
+
+Booth, B. B. B., N. J. Dunstone, P. R. Halloran, T. Andrews, and N. Bellouin, 2012: Aerosols256
+
+implicated as a prime driver of twentieth-century North Atlantic climate variability. Nature,257
+484 (7393), 228-232.258
+
+Carella, G., J. J. Kennedy, D. I. Berry, S. Hirahara, C. J. Merchant, S. Morak-Bozzo, and E. C.259
+
+Kent, 2018: Estimating sea surface temperature measurement methods using characteristic dif-260
+ferences in the diurnal cycle. Geophysical Research Letters, 45 (1), 363-371.261
+
+Cowtan, K., R. Rohde, and Z. Hausfather, 2017: Evaluating biases in sea surface temperature262
+
+records using coastal weather stations. Quarterly Journal of the Royal Meteorological Society,263
+doi:10.1002/qj.3235.264
+
+Delworth, T. L., and M. E. Mann, 2000: Observed and simulated multidecadal variability in the265
+
+Northern Hemisphere. Climate Dynamics, 16 (9), 661-676.266
+
+Flato, G., and Coauthors, 2013: Evaluation of Climate Models, Book Section 9, 741-866. Cam-267
+
+bridge University Press, Cambridge, United Kingdom and New York, NY, USA.268
+
+Folland, C. K., O. Boucher, A. Colman, and D. E. Parker, 2018: Causes of irregularities in trends of269
+
+global mean surface temperature since the late 19th century. Science advances, 4 (6), eaao5297.270
+
+Folland, C. K., and D. E. Parker, 1995: Correction of instrumental biases in historical sea surface271
+
+temperature data. Quarterly Journal of the Royal Meteorological Society, 121 (522), 319-367.272
+
+Freeman, E., and Coauthors, 2017: ICOADS Release 3.0: A major update to the historical marine273
+
+climate record. International Journal of Climatology, 37 (5), 2211-2232.274
+
+Hartmann, D., and Coauthors, 2013: Observations: Atmosphere and Surface, Book Section 2,275
+
+159-254. Cambridge University Press, Cambridge, United Kingdom and New York, NY, USA.276
+
+13
+
+Hausfather, Z., K. Cowtan, D. C. Clarke, P. Jacobs, M. Richardson, and R. Rohde, 2017: Assessing277
+
+recent warming using instrumentally homogeneous sea surface temperature records. Science278
+Advances, 3 (1), e1601 207.279
+
+Hirahara, S., M. Ishii, and Y. Fukuda, 2013: Centennial-Scale Sea Surface Temperature Analysis280
+
+and Its Uncertainty. Journal of Climate, 27 (1), 57-75.281
+
+Huang, B., and Coauthors, 2014: Extended reconstructed sea surface temperature version 4282
+
+(ERSST.v4). Part I: Upgrades and intercomparisons. Journal of Climate, 28 (3), 911-930.283
+
+Karl, T. R., and Coauthors, 2015: Possible artifacts of data biases in the recent global surface284
+
+warming hiatus. Science, 348 (6242), 1469-1472.285
+
+Kennedy, J. J., 2014: A review of uncertainty in in situ measurements and data sets of sea surface286
+
+temperature. Reviews of Geophysics, 52 (1), 1-32.287
+
+Kennedy, J. J., N. A. Rayner, R. O. Smith, D. E. Parker, and M. Saunby, 2011a: Reassessing biases288
+
+and other uncertainties in sea surface temperature observations measured in situ since 1850:289
+1. Measurement and sampling uncertainties. Journal of Geophysical Research: Atmospheres,290
+116 (D14), D14 103.291
+
+Kennedy, J. J., N. A. Rayner, R. O. Smith, D. E. Parker, and M. Saunby, 2011b: Reassessing biases292
+
+and other uncertainties in sea surface temperature observations measured in situ since 1850:293
+2. Biases and homogenization. Journal of Geophysical Research: Atmospheres, 116 (D14),294
+D14 104.295
+
+Kent, E. C., and A. Kaplan, 2006: Toward estimating climatic trends in SST. Part III: Systematic296
+
+biases. Journal of Atmospheric and Oceanic Technology, 23 (3), 487-500.297
+
+14
+
+Kent, E. C., J. J. Kennedy, D. I. Berry, and R. O. Smith, 2010: Effects of instrumentation changes298
+
+on sea surface temperature measured in situ. Wiley Interdisciplinary Reviews: Climate Change,299
+1 (5), 718-728.300
+
+Kent, E. C., N. A. Rayner, D. I. Berry, M. Saunby, B. I. Moat, J. J. Kennedy, and D. E. Parker,301
+
+2013: Global analysis of night marine air temperature and its uncertainty since 1880: The302
+HadNMAT2 data set. Journal of Geophysical Research: Atmospheres, 118 (3), 1281-1298.303
+
+Kent, E. C., and P. K. Taylor, 2006: Toward estimating climatic trends in SST. Part I: Methods of304
+
+measurement. Journal of Atmospheric and Oceanic Technology, 23 (3), 464-475.305
+
+Kent, E. C., P. K. Taylor, B. S. Truscott, and J. S. Hopkins, 1993: The Accuracy of Voluntary Ob-306
+
+serving Ships' Meteorological Observations-Results of the VSOP-NA. Journal of Atmospheric307
+and Oceanic Technology, 10 (4), 591-608.308
+
+Kent, E. C., S. D. Woodruff, and D. I. Berry, 2007: Metadata from WMO Publication No. 47309
+
+and an Assessment of Voluntary Observing Ship Observation Heights in ICOADS. Journal of310
+Atmospheric and Oceanic Technology, 24 (2), 214-234.311
+
+Kent, E. C., and Coauthors, 2017: A call for new approaches to quantifying biases in observations312
+
+of sea surface temperature. Bulletin of the American Meteorological Society, 98 (8), 1601-1616.313
+
+Knight, J. R., C. K. Folland, and A. A. Scaife, 2006: Climate impacts of the Atlantic Multidecadal314
+
+Oscillation. Geophysical Research Letters, 33 (17), L17 706.315
+
+Kobayashi, S., and Coauthors, 2015: The JRA-55 reanalysis: General specifications and basic316
+
+characteristics. Journal of the Meteorological Society of Japan. Ser. II, 93 (1), 5-48.317
+
+Laloyaux, L., E. De Boisseson, and P. Dahlgren, 2017: CERA-20C: An Earth system approach to318
+
+climate reanalysis. J. ECMWF Newsl, 150, 25-30.319
+
+15
+
+Lamarque, J.-F., and Coauthors, 2010: Historical (1850-2000) gridded anthropogenic and biomass320
+
+burning emissions of reactive gases and aerosols: Methodology and application. Atmospheric321
+Chemistry and Physics, 10 (15), 7017-7039.322
+
+Liu, W., and Coauthors, 2014: Extended reconstructed sea surface temperature version 4323
+
+(ERSST.v4): Part II. Parametric and structural uncertainty estimations. Journal of Climate,324
+28 (3), 931-951.325
+
+Mantua, N. J., and S. R. Hare, 2002: The Pacific Decadal Oscillation. Journal of oceanography,326
+
+58 (1), 35-44.327
+
+Mantua, N. J., S. R. Hare, Y. Zhang, J. M. Wallace, and R. C. Francis, 1997: A Pacific Interdecadal328
+
+Climate Oscillation with impacts on salmon production. Bulletin of the American Meteorologi-329
+cal Society, 78 (6), 1069-1079.330
+
+Myhre, G., and Coauthors, 2013: Anthropogenic and Natural Radiative Forcing, Book Section 8,331
+
+659-740. Cambridge University Press, Cambridge, United Kingdom and New York, NY, USA.332
+
+Newman, M., and Coauthors, 2016: The Pacific Decadal Oscillation, revisited. Journal of Climate,333
+
+29 (12), 4399-4427.334
+
+Rayner, N. A., P. Brohan, D. E. Parker, C. K. Folland, J. J. Kennedy, M. Vanicek, T. J. Ansell, and335
+
+S. F. B. Tett, 2006: Improved analyses of changes and uncertainties in sea surface temperature336
+measured in situ since the mid-nineteenth century: The HadSST2 dataset. Journal of Climate,337
+19 (3), 446-469.338
+
+Rayner, N. A., D. E. Parker, E. B. Horton, C. K. Folland, L. V. Alexander, D. P. Rowell, E. C. Kent,339
+
+and A. Kaplan, 2003: Global analyses of sea surface temperature, sea ice, and night marine air340
+
+16
+
+temperature since the late nineteenth century. Journal of Geophysical Research: Atmospheres,341
+108 (D14), 4407.342
+
+Semenov, V. A., M. Latif, D. Dommenget, N. S. Keenlyside, A. Strehz, T. Martin, and W. Park,343
+
+2010: The impact of North Atlantic-Arctic multidecadal variability on Northern Hemisphere344
+surface air temperature. Journal of Climate, 23 (21), 5668-5677.345
+
+Taylor, K. E., R. J. Stouffer, and G. A. Meehl, 2011: An overview of CMIP5 and the experiment346
+
+design. Bulletin of the American Meteorological Society, 93 (4), 485-498.347
+
+Tett, S. F. B., and Coauthors, 2002: Estimation of natural and anthropogenic contributions to twen-348
+
+tieth century temperature change. Journal of Geophysical Research: Atmospheres, 107 (D16),349
+ACL 10-1.350
+
+Thompson, D. W. J., J. J. Kennedy, J. M. Wallace, and P. D. Jones, 2008: A large discontinuity351
+
+in the mid-twentieth century in observed global-mean surface temperature. Nature, 453 (7195),352
+646-649.353
+
+Woodruff, S. D., and Coauthors, 2011: ICOADS Release 2.5: Extensions and enhancements to the354
+
+surface marine meteorological archive. International Journal of Climatology, 31 (7), 951-967.355
+
+17
+
+LIST OF TABLES356
+Table A1. Boundaries used for spatial averages of gridded SST data. . . . . . . 19357
+
+18
+Region Boundaries
+
+Globe 60ffiS - 60ffiN, 180ffiW - 180ffiE
+Atlantic Ocean 10ffiN - 60ffiN, 80ffiW - 0ffiE60ffiS - 10ffiN, 70ffiW - 20ffiE
+
+Pacific Ocean 10ffiN - 60ffiN, 100ffiE - 100ffiW10ffiS - 10ffiN, 100ffiE - 70ffiW
+
+60ffiS - 10ffiS, 150ffiE - 70ffiW
+North Atlantic 20ffiN - 60ffiN, 80ffiW - 0ffiE
+
+North Pacific 20ffiN - 60ffiN, 120ffiE - 100ffiW
+
+Table A1. Boundaries used for spatial averages of gridded SST data.
+
+19
+
+LIST OF FIGURES358
+Fig. 1. Time series of sea-surface temperature anomalies (K, relative to 1961-1990) for the359 datasets and regions indicated. From top-to-bottom: (a-e) area-averages of the unadjusted
+360 engine-room intake (ERI), bucket, and HadSST3 data, (f-j) area-averages of the bias adjust361 ments applied to the data, and (k-o) area-averages of the adjusted data. The North Atlantic
+362 and North Pacific time series indicate averages north of 20ffiN. The shaded regions in the
+363 middle and bottom rows indicate the range of all 100 realizations of the HadSST3 bias ad364 justments; the thick lines indicate the average over all 100 realizations. The time series are
+365 smoothed by a centred 37-month running mean for display purposes. Note that the ERI,
+366 bucket, and HadSST3 data are co-located in space (see Methods). . . . . . . . . 21
+367
+
+Fig. 2. Linear least-squares trends in sea-surface temperature anomalies from 1950 to 1975368 for the datasets and regions indicated. From top to bottom: (a-e) trends in the area369 averaged unadjusted data, (f-j) trends in the area-averaged bias adjustments, and (k-o) trends
+370 in the area-averaged adjusted data. The North Atlantic and North Pacific trends indicate
+371 averages north of 20ffiN. Thin error bars in the middle and bottom rows indicate the range
+372 of trends from all 100 realizations of the HadSST3 bias adjustments. The thicker error bars
+373 indicate interquartile ranges of the trends. The significance of the mean trends with respect
+374 to the internal variability is given in Supplemental Materials. Note that the COBE-SST2,
+375 NMAT, and ERSST4 data are co-located with the engine-room intake (ERI), bucket, and
+376 HadSST3 data (see Methods). Note also that the NMAT data are only available in their
+377 adjusted form. . . . . . . . . . . . . . . . . . . . . . . 22
+378
+
+Fig. 3. Linear least-squares trends in sea-surface temperature anomalies from 1950 to 1975379 for the indicated datasets. From left-to-right: trends in the engine-room intake (ERI)
+380 dataset, bucket dataset, and their differences. From top-to-bottom: (a-c) trends in the unad381 justed data, (d-f) trends in the bias adjustments (i.e., the mean of the trends calculated for
+382 all 100 realizations of the HadSST3 bias adjustments), and (g-i) trends in the adjusted data.
+383 Trends were not computed where fewer than 50% of the timesteps from 1950 to 1975 were
+384 available. Grid boxes are stippled where the trends (g-h) and trend differences (i) have the
+385 same sign across all 100 bias adjustment realizations. . . . . . . . . . . . . 23
+386
+
+Fig. 4. As in Figure 3, but for the 1976-2006 period. . . . . . . . . . . . . . 24387
+Fig. 5. Estimating the uncertainty in the bias adjustments for the indicated regions. The or-388 ange lines represent the differences between the bucket and engine-room intake (ERI) bias
+389 estimates averaged over all 100 realizations of the bias adjustments, and shading indicates
+390 the range of the differences. The black lines represent the differences between the unad391 justed ERI and bucket data. The latter correspond to the ideal bias adjustments required to
+392 bring the bucket and ERI data into agreement. See Eq. 3 and accompanying discussion in
+393 the text. The time series are smoothed with a 12-month running mean to remove the seasonal
+394 cycle from the bias adjustments (see Folland and Parker (1995)). . . . . . . . . . 25
+395
+
+20
+
+1960 1980 2000
+0.40.2
+
+00.2
+0.4
+
+k
+
+adjustedseries
+
+1960 1980 2000
+
+l
+
+1960 1980 2000
+m
+
+1960 1980 2000
+n
+
+1960 1980 2000
+o
+0.40.2
+
+00.2
+0.4
+
+anomaly (K)
+
+Globe
+a
+
+unadjustedseries
+
+0.20
+0.2
+
+f
+
+biasadjustments
+
+Atlantic Ocean
+b
+
+North Atlantic
+c
+
+Pacific Ocean
+d
+
+North Pacific
+e
+
+g h i j
+
+ERI bucket HadSST3
+FIG. 1. Time series of sea-surface temperature anomalies (K, relative to 1961-1990) for the datasets and
+regions indicated. From top-to-bottom: (a-e) area-averages of the unadjusted engine-room intake (ERI), bucket,
+and HadSST3 data, (f-j) area-averages of the bias adjustments applied to the data, and (k-o) area-averages of
+the adjusted data. The North Atlantic and North Pacific time series indicate averages north of 20ffiN. The shaded
+regions in the middle and bottom rows indicate the range of all 100 realizations of the HadSST3 bias adjustments;
+the thick lines indicate the average over all 100 realizations. The time series are smoothed by a centred 37-month
+running mean for display purposes. Note that the ERI, bucket, and HadSST3 data are co-located in space (see
+Methods).
+
+396
+397
+398
+399
+400
+401
+402
+403
+
+21
+
+0.10.05
+
+00.05
+0.1 adjusted
+
+k l m n o
+
+0.10.05
+
+0
+0.050.1
+
+tren
+d (K
+dec
+ade
+
+1)
+
+Globe
+
+unadjusted
+a
+
+0.050
+0.05
+
+biasadjustments
+
+f
+
+Atlantic Ocean
+b
+
+North Atlantic
+c
+
+1950-1975 trends in monthly sea-surface temperature
+
+Pacific Ocean
+
+d
+
+North Pacific
+e
+
+g h i j
+
+HadSST3 NMAT COBE-SST2 ERSSTv4ERI bucket ERI minus bucket
+FIG. 2. Linear least-squares trends in sea-surface temperature anomalies from 1950 to 1975 for the
+datasets and regions indicated. From top to bottom: (a-e) trends in the area-averaged unadjusted data, (f-j)
+trends in the area-averaged bias adjustments, and (k-o) trends in the area-averaged adjusted data. The North
+Atlantic and North Pacific trends indicate averages north of 20ffiN. Thin error bars in the middle and bottom
+rows indicate the range of trends from all 100 realizations of the HadSST3 bias adjustments. The thicker error
+bars indicate interquartile ranges of the trends. The significance of the mean trends with respect to the internal
+variability is given in Supplemental Materials. Note that the COBE-SST2, NMAT, and ERSST4 data are colocated with the engine-room intake (ERI), bucket, and HadSST3 data (see Methods). Note also that the NMAT
+data are only available in their adjusted form.
+
+404
+405
+406
+407
+408
+409
+410
+411
+412
+
+22
+
+adjusted  g) h) i)
+unadjusted  a)
+
+ERI
+
+bias       adjustments  d)
+
+1950-1975 trends in monthly sea-surface temperature
+
+b) bucket c) ERI minus bucket
+
+e) f)
+
+0.5 0.4 0.3 0.2 0.1 0 0.1 0.2 0.3 0.4 0.5K/decade
+FIG. 3. Linear least-squares trends in sea-surface temperature anomalies from 1950 to 1975 for the
+indicated datasets. From left-to-right: trends in the engine-room intake (ERI) dataset, bucket dataset, and their
+differences. From top-to-bottom: (a-c) trends in the unadjusted data, (d-f) trends in the bias adjustments (i.e.,
+the mean of the trends calculated for all 100 realizations of the HadSST3 bias adjustments), and (g-i) trends in
+the adjusted data. Trends were not computed where fewer than 50% of the timesteps from 1950 to 1975 were
+available. Grid boxes are stippled where the trends (g-h) and trend differences (i) have the same sign across all
+100 bias adjustment realizations.
+
+413
+414
+415
+416
+417
+418
+419
+
+23
+
+adjusted  g) h) i)
+unadjusted  a)
+
+ERI
+
+bias       adjustments  d)
+
+1976-2006 trends in monthly sea-surface temperature
+
+b) bucket c) ERI minus bucket
+
+e) f)
+
+0.5 0.4 0.3 0.2 0.1 0 0.1 0.2 0.3 0.4 0.5K/decade
+
+FIG. 4. As in Figure 3, but for the 1976-2006 period.
+
+24
+
+1950 1960 1970 1980 1990 2000
+0.2
+
+0
+0.2
+
+North Pacific
+
+0.2
+
+0
+0.2
+
+difference (K)
+
+Globe
+0.2
+
+0
+0.2
+
+Atlantic Ocean
+
+0.2
+
+0
+0.2
+
+North Atlantic
+
+0.2
+
+0
+0.2
+
+Pacific Ocean
+
+actual adjustments ideal adjustments
+FIG. 5. Estimating the uncertainty in the bias adjustments for the indicated regions. The orange lines
+represent the differences between the bucket and engine-room intake (ERI) bias estimates averaged over all
+100 realizations of the bias adjustments, and shading indicates the range of the differences. The black lines
+represent the differences between the unadjusted ERI and bucket data. The latter correspond to the ideal bias
+adjustments required to bring the bucket and ERI data into agreement. See Eq. 3 and accompanying discussion
+in the text. The time series are smoothed with a 12-month running mean to remove the seasonal cycle from the
+bias adjustments (see Folland and Parker (1995)).
+
+420
+421
+422
+423
+424
+425
+426
+
+25

@@ -1,0 +1,15 @@
+#!usr/bin/env bash
+# Author: David Underhill
+# Script to permanently delete files/folders from your git repository. To use
+# it, cd to your repository's root and then run the script with a list of paths
+# you want to delete, e.g., git-delete-history path1 path2
+# Also see: https://development.robinwinslow.uk/2013/06/11/dont-ever-commit-binary-files-to-git/
+# 1) Make sure we're at the root of git repo
+# 2) Remove all paths or glob patterns passed as arguments
+#    from the history of the repo.
+# 3) Remove temporary git-history-branch.
+set -o errexit
+[ $# -eq 0 ] && exit 0
+cd $(git rev-parse --show-toplevel)
+git filter-branch --index-filter "git rm -rf --cached --ignore-unmatch $@" HEAD
+rm -rf .git/refs/original/ && git reflog expire --all && git gc --aggressive --prune
