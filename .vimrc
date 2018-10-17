@@ -1469,15 +1469,21 @@ if PlugActive("nerdcommenter")
     normal! jj
   endfunction
   "Inline style of format # ---- Hello world! ----
-  function! s:inline()
-    let ndash=4
+  function! s:inline(ndash)
     let nspace=s:commentindent()
     let cchar=Comment()
     normal! k
-    call append(line('.'), repeat(' ',nspace).cchar.repeat(' ',ndash).repeat('-',ndash).'  '.repeat('-',ndash))
-    normal! j
+    call append(line('.'), repeat(' ',nspace).cchar.repeat('-',a:ndash).'  '.repeat('-',a:ndash))
+    normal! j^
     call search('- \zs', '', line('.')) "search, and stop on this line (should be same one); no flags
-    normal! i
+  endfunction
+  "Inline style of format # ---- Hello world! ----
+  function! s:double()
+    let nspace=s:commentindent()
+    let cchar=Comment()
+    normal! k
+    call append(line('.'), repeat(' ',nspace).cchar.'  '.cchar)
+    normal! j$h
   endfunction
   "Separator of dashes just matching current line length
   function! s:separator(...)
@@ -1512,8 +1518,10 @@ if PlugActive("nerdcommenter")
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
   "Current date comment; y is for year; note d is reserved for that kwarg-to-dictionary map
   nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>
+  "Comment characters on either side fo line
+  nnoremap <silent> c, :call <sid>double()<CR>i
   "Create an 'inline' comment header
-  nnoremap <silent> cI :call <sid>inline()<CR>i
+  nnoremap <silent> cI :call <sid>inline(4)<CR>i
   "Create comment separator below current line
   nnoremap <silent> c; :call <sid>separator('-')<CR>
   nnoremap <silent> c: :call <sid>separator()<CR>
