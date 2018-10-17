@@ -586,22 +586,22 @@ endfunction " }}}
 " nnoremap <buffer> [[  :<C-U>call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', 'b')<CR>
 nnoremap <buffer> ]C  :<C-U>call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', '')<CR>
 nnoremap <buffer> [C  :<C-U>call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', 'b')<CR>
-nnoremap <buffer> ]M  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', '')<CR>
-nnoremap <buffer> [M  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', 'b')<CR>
+nnoremap <buffer> ]F  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', '')<CR>
+nnoremap <buffer> [F  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', 'b')<CR>
 
 " onoremap <buffer> ]]  :<C-U>call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', '')<CR>
 " onoremap <buffer> [[  :<C-U>call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', 'b')<CR>
 onoremap <buffer> ]C  :<C-U>call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', '')<CR>
 onoremap <buffer> [C  :<C-U>call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', 'b')<CR>
-onoremap <buffer> ]M  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', '')<CR>
-onoremap <buffer> [M  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', 'b')<CR>
+onoremap <buffer> ]F  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', '')<CR>
+onoremap <buffer> [F  :<C-U>call <sid>pymode_move('^<Bslash>s*def<Bslash>s', 'b')<CR>
 
 " vnoremap <buffer> ]]  :call <sid>pymode_vmove('<Bslash>v^(class<bar>def)<Bslash>s', '')<CR>
 " vnoremap <buffer> [[  :call <sid>pymode_vmove('<Bslash>v^(class<bar>def)<Bslash>s', 'b')<CR>
 vnoremap <buffer> ]C  :call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', '')<CR>
 vnoremap <buffer> [C  :call <sid>pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', 'b')<CR>
-vnoremap <buffer> ]M  :call <sid>pymode_vmove('^<Bslash>s*def<Bslash>s', '')<CR>
-vnoremap <buffer> [M  :call <sid>pymode_vmove('^<Bslash>s*def<Bslash>s', 'b')<CR>
+vnoremap <buffer> ]F  :call <sid>pymode_vmove('^<Bslash>s*def<Bslash>s', '')<CR>
+vnoremap <buffer> [F  :call <sid>pymode_vmove('^<Bslash>s*def<Bslash>s', 'b')<CR>
 
 " Text objects
 onoremap <buffer> C  :<C-U>call <sid>pymode_select('^<Bslash>s*class<Bslash>s', 0)<CR>
@@ -610,11 +610,11 @@ onoremap <buffer> iC :<C-U>call <sid>pymode_select('^<Bslash>s*class<Bslash>s', 
 vnoremap <buffer> aC :<C-U>call <sid>pymode_select('^<Bslash>s*class<Bslash>s', 0)<CR>
 vnoremap <buffer> iC :<C-U>call <sid>pymode_select('^<Bslash>s*class<Bslash>s', 1)<CR>
 
-onoremap <buffer> M  :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 0)<CR>
-onoremap <buffer> aM :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 0)<CR>
-onoremap <buffer> iM :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 1)<CR>
-vnoremap <buffer> aM :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 0)<CR>
-vnoremap <buffer> iM :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 1)<CR>
+onoremap <buffer> F  :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 0)<CR>
+onoremap <buffer> aF :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 0)<CR>
+onoremap <buffer> iF :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 1)<CR>
+vnoremap <buffer> aF :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 0)<CR>
+vnoremap <buffer> iF :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 1)<CR>
 
 " Python-mode motion functions
 fun! s:pymode_move(pattern, flags, ...) "{{{

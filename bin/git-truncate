@@ -1,0 +1,22 @@
+#!/bin/bash -e
+# Copied from: https://gist.github.com/magnetikonline/5062718
+# Inspired by: https://github.com/adrienthebo/git-tools/blob/master/git-truncate
+if [[ (-z $1) || (-z $2) ]]; then
+  echo "Usage: $(basename "$0") DROP_AT_SHA1 BRANCH"
+  exit 1
+fi
+if [[ ! $1 =~ ^[0-9a-f]{7,40}$ ]]; then
+  echo "Error: Invalid Git commit SHA1" >&2
+  exit 1
+fi
+# Note: if fails - include [--force] argument
+git filter-branch \
+  --parent-filter "sed \"s/-p $1[0-9a-f]*//\"" \
+  --prune-empty \
+  -- "$2"
+IFS=$'\n'
+for ref_name in $(git for-each-ref --format="%(refname)" refs/original); do
+  echo "$ref_name"
+  git update-ref -d "$ref_name"
+done
+git gc --aggressive --prune=all

@@ -42,7 +42,6 @@ endfunction
 " Default options
 "
 call s:EnableByDefault('g:python_slow_sync')
-" call s:EnableByDefault('g:python_highlight_builtin_funcs_kwarg') "definitely not default!
 
 if s:Enabled('g:python_highlight_all')
   call s:EnableByDefault('g:python_highlight_builtins')
@@ -349,7 +348,7 @@ endif
 
 "
 " Builtin functions
-" Modified by me! Added 'exit' to builtin functions.
+" Note: Modified by lukelbd, added 'exit' to builtin functions
 if s:Enabled('g:python_highlight_builtin_funcs')
   let s:funcs_re = '__import__|abs|all|any|bin|callable|chr|classmethod|compile|complex|delattr|dir|divmod|enumerate|eval|filter|format|getattr|globals|hasattr|hash|help|hex|id|input|isinstance|issubclass|iter|len|locals|map|max|memoryview|min|next|oct|open|ord|pow|property|range|repr|reversed|round|setattr|slice|sorted|staticmethod|sum|super|type|vars|zip|exit'
 
@@ -362,13 +361,12 @@ if s:Enabled('g:python_highlight_builtin_funcs')
       let s:funcs_re .= '|ascii|exec|print'
   endif
 
-  let s:funcs_re = 'syn match pythonBuiltinFunc ''\v\.@<!\zs<%(' . s:funcs_re . ')>'
+  "Note: modified by lukelbd to only highlight when builtin functions are being *called*, otherwise
+  "variables sharing same name as builtin function get highlighted
+  let s:funcs_re = 'syn match pythonBuiltinFunc ''\v\.@<!\zs<%(' . s:funcs_re . ')>\ze\('
+  " let s:funcs_re .= '(\s*\=)@!'
 
-  if !s:Enabled('g:python_highlight_builtin_funcs_kwarg')
-      " let s:funcs_re .= '\(\s*\=\)\@!'
-      let s:funcs_re .= '(\s*\=)@!'
-  endif
-
+  "Note: this closes the regex string with single quote, and calls function
   execute s:funcs_re . ''''
   unlet s:funcs_re
 endif

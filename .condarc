@@ -1,0 +1,8 @@
+show_channel_urls: true
+add_pip_as_python_dependency: true
+channels:
+  - conda-forge
+  - defaults
+create_default_packages:
+  - pip
+  - ipykernel

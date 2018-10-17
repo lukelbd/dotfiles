@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Simple script for getting vim processes running in git repository (this
+# poses a danger to accidental overwriting)
+# First some error checks
+! git rev-parse --git-dir &>/dev/null && echo "Error: not in git repository." && exit 1
+[ -z "$USER" ] && echo "Error: \$USER unavailable." && exit 1
+
+# Get vim processes
+[[ "$OSTYPE" == "darwin"* ]] && field=3 || field=1 # format of ps output depends on implementation (darwin is macOS)
+gitdir="$(git rev-parse --show-toplevel)" # root of git repo
+pids=$(ps -u $USER | grep vim | tr -s ' ' | cut -d' ' -f$field | xargs)
+
+# Figure out how many vim instances running in repo
+# Alternative to pwdx provided by: https://gist.github.com/magnetikonline/5062718
+numprocesses=0
+function pwdx() { lsof -a -p $1 -d cwd -Fn | tail -1 | sed 's/.//'; } # should work on every os
+for pid in $pids; do
+  pwdx $pid
+  if [[ "$(pwdx $pid)" =~ "$gitdir" ]]; then
+    let numprocesses+=1
+  fi
+done
+echo "$numprocesses vim sessions running in git repository."

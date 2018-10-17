@@ -84,13 +84,23 @@ let s:universal_textobjs_dict={
   \     'select-i-function': 's:uncommented_lines',
   \     'select-i': 'iu',
   \   },
+  \   'methodcall': {
+  \     'sfile': expand('<sfile>:p'),
+  \     'select-a': 'af', 'select-a-function': 's:methodcall_a',
+  \     'select-i': 'if', 'select-i-function': 's:methodcall_i',
+  \   },
+  \   'methodef': {
+  \     'sfile': expand('<sfile>:p'),
+  \     'select-a': 'aF', 'select-a-function': 's:methoddef_a',
+  \     'select-i': 'iF', 'select-i-function': 's:methoddef_i'
+  \   },
   \   'function': {
-  \     'pattern': ['\<\h\k*(', ')'],
-  \     'select-a': 'af',
-  \     'select-i': 'if',
+  \     'pattern': ['\<\h\w*(', ')'],
+  \     'select-a': 'am',
+  \     'select-i': 'im',
   \   },
   \   'array': {
-  \     'pattern': ['\<\h\k*\[', '\]'],
+  \     'pattern': ['\<\h\w*\[', '\]'],
   \     'select-a': 'aA',
   \     'select-i': 'iA',
   \   },
@@ -107,6 +117,12 @@ let s:universal_textobjs_dict={
   \ }
 " \     'move-p': 'gC', "tried doing this, got weird error, whatevs
 " \     'move-n': 'gc',
+" For some reason this doesn't work, have to use special methodall
+" \   'fart': {
+" \     'pattern': ['\<[_a-zA-Z0-9.]*(', ')'],
+" \     'select-a': 'aF',
+" \     'select-i': 'iF',
+" \   },
 
 "------------------------------------------------------------------------------"
 "TeX plugin definitions
@@ -226,4 +242,62 @@ function! s:uncommented_lines()
   endif
   return s:helper(pnb,nnb)
 endfunction
+
+"Method calls
+function! s:methodcall_a()
+   return s:methodcall('a')
+endfunction
+function! s:methodcall_i()
+   return s:methodcall('i')
+endfunction
+function! s:methodcall(motion)
+   if a:motion == 'a'
+      silent! normal! [(
+   endif
+   silent! execute "normal! w?\\v(\\.{0,1}\\w+)+\<cr>"
+   let head_pos = getpos('.')
+   normal! %
+   let tail_pos = getpos('.')
+   if tail_pos == head_pos
+      return 0
+   endif
+   return ['v', head_pos, tail_pos]
+endfunction
+
+"Chained methodcall command
+function! s:methoddef_i()
+   return s:methoddef('i')
+endfunction
+function! s:methoddef_a()
+   return s:methoddef('a')
+endfunction
+function! s:char_under_cursor()
+    return getline('.')[col('.') - 1]
+endfunction
+function! s:methoddef(motion)
+   if a:motion == 'a'
+      silent! normal! [(
+   endif
+   silent! execute 'normal! w?\v(\.{0,1}\w+)+' . "\<cr>"
+   let head = getpos('.')
+   while s:char_under_cursor() == '.'
+      silent! execute "normal! ?)\<cr>%"
+      silent! execute 'normal! w?\v(\.{0,1}\w+)+' . "\<cr>"
+      let head = getpos('.')
+   endwhile
+   silent! execute "normal! %"
+   let tail = getpos('.')
+   silent! execute 'normal! /\v(\.{0,1}\w+)+' . "\<cr>"
+   while s:char_under_cursor() == '.'
+      silent! execute "normal! %"
+      let tail = getpos('.')
+      silent! execute 'normal! /\v(\.{0,1}\w+)+' . "\<cr>"
+   endwhile
+   call setpos('.', tail)
+   if tail == head
+      return 0
+   endif
+   return ['v', head, tail]
+endfunction
+
 

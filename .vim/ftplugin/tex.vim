@@ -121,10 +121,13 @@ inoreabbrev <buffer> <expr> ;_ '\begin{center}\noindent\rule{'
 
 "------------------------------------------------------------------------------"
 "C-@ is same as C-Space (google it)
-"These are pretty much obsolete now
-" noremap <silent> <buffer> <F11> :exec("!clear; set -x; "
-"     \.'ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null \| wc -w')<CR>
-" noremap <silent> <buffer> <F12> :exec('!clear; set -x; open -a Skim; '
-"     \.'osascript ~/bin/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
-"     \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
-"     \.'open -a iTerm')<CR>:redraw!<CR>
+"These are pretty much obsolete now, since 'detex' can exclude figure environments
+"and tables and equations and stuff, but these cannot
+function! s:wordcount()
+  exe '!clear; set -x; ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null | wc -w'
+  exe '!clear; set -x; open -a Skim; '
+    \.'osascript ~/bin/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
+    \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
+    \.'open -a iTerm')<CR>:redraw!<CR>
+endfunction
+command! WordCount call <sid>wordcount()

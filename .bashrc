@@ -242,16 +242,31 @@ function vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  local session=".vimsession"
-  if [[ -z "$@" ]] && [[ -r "$session" ]]; then
+  local session=.vimsession
+  local flags files
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -*) flags+=("$1") ;;
+       *) files+=("$1")  ;;
+    esac
+    shift
+ done
+  if [[ "${#files[@]}" -eq 0 ]] && [[ -r "$session" ]]; then
+    # Fix various Obsession bugs
     # Unfold stuff after entering each buffer; for some reason folds are otherwise
     # re-closed upon openening each file
+    # Also prevent double-loading, possibly Obsession expects different workflow/does
+    # not anticipate :tabedit commands, ends up loading everything *twice*
     # Check out: cat $session | grep -n -E 'fold|zt'
     $_macos && _sed='gsed' || _sed='sed' # only GNU sed works here
-    $_sed -i "/zt/a setlocal nofoldenable" $session
-    command vim -S $session # for working with obsession
+    $_sed -i '/zt/a setlocal nofoldenable' $session
+    $_sed -i 's/^[0-9]*,[0-9]*fold$//g' $session
+    $_sed -i 's/^if bufexists.*$//g' $session
+    $_sed -i -s 'N;/normal! zo/!P;D' $session
+    $_sed -i -s 'N;/normal! zc/!P;D' $session
+    command vim "${flags[@]}" -S $session # for working with obsession
   else
-    command vim -p "$@" # when loading specific files; also open them in separate tabs
+    command vim "${flags[@]}" -p "${files[@]}" # when loading specific files; also open them in separate tabs
   fi
   clear # clear screen after exit
 }
@@ -1228,10 +1243,11 @@ function flatten() {
 # Extract PDF annotations
 # Turned out kind of complicated
 function unannotate() {
+  local _sed
   local original="$1"
   local final="${original%.pdf}_unannotated.pdf"
   [ "${original##*.}" != "pdf" ] && echo "Error: Must input PDF file." && return 1
-  $_macos && local sed="gsed" || local sed="sed"
+  $_macos && _sed='gsed' || _sed='sed'
   # Try this from: https://superuser.com/a/428744/506762
   # Actually doesn't work, maybe relied on some particular format; need pdftk uncompression
   # cp "$original" "$final"
@@ -1242,25 +1258,24 @@ function unannotate() {
   # The environment variables prevent 'Illegal byte sequence' error
   # on Linux and Mac; see: https://stackoverflow.com/a/23584470/4970632
   pdftk "$original" output uncompressed.pdf uncompress
-  LANG=C LC_ALL=C $sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
+  LANG=C LC_ALL=C $_sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
   pdftk stripped.pdf output "$final" compress
   rm uncompressed.pdf stripped.pdf
 }
 
 # Rudimentary wordcount with detex
 function wctex() {
-  file="$1"
   # Below worked for certain templates:
   # Explicitly delete begin/end environments because detex won't pick them up
   # and use the equals sign to exclude equations
-  # detexed="$(cat "$file" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
+  # detexed="$(cat "$1" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
   #   | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | grep -v .pdf | grep -v 'fig[0-9]' \
   #   | grep -v 'empty' | grep -v '^\s*$')"
   # Below worked for BAMS template, gets count between end of abstract
   # and start of methods
   # The -e flag to ignore certain environments (e.g. abstract environment)
-  detexed="$(cat "$file" | \
-    detex -e align,equation | grep -v .pdf | grep -v 'fig[0-9]')"
+  local detexed="$(cat "$1" | \
+    detex -e align,equation,tabular | grep -v .pdf | grep -v 'fig[0-9]')"
   echo "$detexed" | xargs # print result in one giant line
   echo "$detexed" | wc -w # get word count
 }
@@ -1296,7 +1311,7 @@ if [ -f ~/.fzf.bash ]; then
   _command='' # use find . -maxdepth 1 search non recursively
   _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
     --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,shift-tab:up,tab:down,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up,ctrl-d:accept,/:accept' \
+    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up' \
     | tr '\n' ' ')
   export FZF_DEFAULT_COMMAND="$_command"
   export FZF_CTRL_T_COMMAND="$_command"
