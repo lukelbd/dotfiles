@@ -1,5 +1,6 @@
-show_channel_urls: true
-add_pip_as_python_dependency: true
+always_yes: True
+show_channel_urls: True
+auto_update_conda: True
 channels:
   - conda-forge
   - defaults
