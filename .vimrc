@@ -1442,7 +1442,7 @@ if PlugActive("nerdcommenter")
   function! s:section(...) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
     if a:0
       let fill=a:1 "fill character
-    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
+    else "choose fill based on filetype -- if comment char is 'skinny', pick another one
       let fill=s:commentfiller()
     endif
     let nspace=s:commentindent()
@@ -1480,11 +1480,16 @@ if PlugActive("nerdcommenter")
     normal! i
   endfunction
   "Separator of dashes just matching current line length
-  function! s:separator()
+  function! s:separator(...)
+    if a:0
+      let fill=a:1 "fill character
+    else
+      let fill=Comment() "comment character
+    endif
     let nspace=s:commentindent()
     let ndash=(match(getline('.'), '\s*$')-nspace) "location of last non-whitespace char
     let cchar=Comment()
-    call append(line('.'), repeat(' ',nspace).repeat('-',ndash))
+    call append(line('.'), repeat(' ',nspace).repeat(fill,ndash))
   endfunction
   "Docstring
   function! s:docstring(char)
@@ -1510,7 +1515,8 @@ if PlugActive("nerdcommenter")
   "Create an 'inline' comment header
   nnoremap <silent> cI :call <sid>inline()<CR>i
   "Create comment separator below current line
-  nnoremap <silent> c, :call <sid>separator()<CR>
+  nnoremap <silent> c; :call <sid>separator('-')<CR>
+  nnoremap <silent> c: :call <sid>separator()<CR>
   "Python docstring
   nnoremap c' :call <sid>docstring("'")<CR>A
   nnoremap c" :call <sid>docstring('"')<CR>A
