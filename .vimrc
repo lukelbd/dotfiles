@@ -1380,11 +1380,15 @@ endif
 augroup nerdcomment
 augroup END
 if PlugActive("nerdcommenter")
+  "----------------------------------------------------------------------------"
+  "Basic settings and maps
+  "----------------------------------------------------------------------------"
   "Custom delimiter overwrites (default python includes space for some reason)
   let g:NERDCustomDelimiters = {
     \ 'python': {'left': '#'}, 'cython': {'left': '#'},
     \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}
     \ }
+  "Default settings
   let g:NERDCreateDefaultMappings = 0 " disable default mappings (make my own)
   let g:NERDSpaceDelims = 1           " comments led with spaces
   let g:NERDCompactSexyComs = 1       " use compact syntax for prettified multi-line comments
@@ -1392,97 +1396,6 @@ if PlugActive("nerdcommenter")
   let g:NERDCommentEmptyLines = 1     " allow commenting and inverting empty lines (useful when commenting a region)
   let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 1
-  "Create functions that return fancy comment 'blocks' -- e.g. for denoting
-  "section changes, for drawing a line across the screen, for writing information
-  "Functions will preserve indentation level of the line where cursor is located
-  function! s:commentfiller()
-    if &ft=="vim"
-      return '#'
-    else
-      return Comment()
-    endif
-  endfunction
-  function! s:commentindent()
-    let col=match(getline('.'), '^\s*\S\zs') "location of first non-whitespace char
-    return (col==-1 ? 1 : col)
-  endfunction
-  function! s:bar(...) "inserts above by default; most common use
-    if a:0 "if non-zero number of args
-      let fill=a:1 "fill character
-    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill=s:commentfiller()
-    endif
-    let col=s:commentindent()
-    let nfill=(78-col+1)/len(fill) "divide by length of fill character
-    let spaces=(col-1)    "leading spaces
-    let cchar=Comment()
-    normal! k
-    call append(line('.'), repeat(' ',spaces).cchar.repeat(fill,nfill).cchar)
-    normal! jj
-  endfunction
-  function! s:section(...) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
-    if a:0
-      let fill=a:1 "fill character
-    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill=s:commentfiller()
-    endif
-    let col=s:commentindent()
-    let nfill=(78-col+1)/len(fill) "divide by length of fill character
-    let spaces=(col-1)    "leading spaces
-    let cchar=Comment()
-    let lines=[repeat(' ',spaces).cchar.repeat(fill,nfill).cchar,
-             \ repeat(' ',spaces).cchar.' ',
-             \ repeat(' ',spaces).cchar.repeat(fill,nfill).cchar]
-    normal! k
-    call append(line('.'), lines)
-    normal! jj$
-  endfunction
-  function! s:message(...)
-    if a:0
-      let message=' '.a:1
-    else
-      let message=''
-    endif
-    let col=s:commentindent()
-    let spaces=(col-1)    "leading spaces
-    let cchar=Comment()
-    normal! k
-    call append(line('.'), repeat(' ',spaces).cchar.message)
-    normal! jj
-  endfunction
-  function! s:inline()
-    let ndash=4
-    let col=s:commentindent()
-    let spaces=(col-1)    "leading spaces
-    let cchar=Comment()
-    normal! k
-    call append(line('.'), repeat(' ',spaces).cchar.repeat(' ',ndash).repeat('-',ndash).'  '.repeat('-',ndash))
-    normal! j
-    call search('- \zs', '', line('.')) "search, and stop on this line (should be same one); no flags
-    normal! i
-  endfunction
-  function! s:docstring(char)
-    let col=s:commentindent()
-    let spaces=(col-1+&l:tabstop)
-    call append(line('.'), [repeat(' ',spaces).repeat(a:char,3), repeat(' ',spaces), repeat(' ',spaces).repeat(a:char,3)])
-    normal! jj$
-  endfunction
-  "Python docstring
-  nnoremap c' :call <sid>docstring("'")<CR>A
-  nnoremap c" :call <sid>docstring('"')<CR>A
-  "Section headers and dividers
-  nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
-  nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
-  nmap c_ <Plug>bar1
-  nmap c\| <Plug>bar2
-  nnoremap <silent> c-  :call <sid>section('-')<CR>A
-  nnoremap <silent> c\ :call <sid>section()<CR>A
-  "Author information comment
-  nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-  "Current date comment; y is for year; note d is reserved for that kwarg-to-dictionary map
-  nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>
-  "Create an 'inline' comment header
-  nnoremap <silent> cI :call <sid>inline()<CR>i
   "Basic maps for toggling comments
   nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
   nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
@@ -1493,6 +1406,114 @@ if PlugActive("nerdcommenter")
   vnoremap <silent> co :call NERDComment('v', 'comment')<CR>
   vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
   vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
+
+  "----------------------------------------------------------------------------"
+  "Create functions that return fancy comment 'blocks' -- e.g. for denoting
+  "section changes, for drawing a line across the screen, for writing information
+  "Functions will preserve indentation level of the line where cursor is located
+  "----------------------------------------------------------------------------"
+  "First the helpers functions
+  function! s:commentfiller()
+    if &ft=="vim"
+      return '#'
+    else
+      return Comment()
+    endif
+  endfunction
+  function! s:commentindent()
+    let col=match(getline('.'), '^\s*\S\zs') "location of first non-whitespace char
+    return (col==-1 ? 0 : col-1)
+  endfunction
+  "Next separators that extend out to 80th column
+  function! s:bar(...) "inserts above by default; most common use
+    if a:0 "if non-zero number of args
+      let fill=a:1 "fill character
+    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
+      let fill=s:commentfiller()
+    endif
+    let nspace=s:commentindent()
+    let nfill=(78-nspace)/len(fill) "divide by length of fill character
+    let cchar=Comment()
+    normal! k
+    call append(line('.'), repeat(' ',nspace).cchar.repeat(fill,nfill).cchar)
+    normal! jj
+  endfunction
+  "Sectioners (bars with text in-between)
+  function! s:section(...) "to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
+    if a:0
+      let fill=a:1 "fill character
+    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
+      let fill=s:commentfiller()
+    endif
+    let nspace=s:commentindent()
+    let nfill=(78-nspace)/len(fill) "divide by length of fill character
+    let cchar=Comment()
+    let lines=[repeat(' ',nspace).cchar.repeat(fill,nfill).cchar,
+             \ repeat(' ',nspace).cchar.' ',
+             \ repeat(' ',nspace).cchar.repeat(fill,nfill).cchar]
+    normal! k
+    call append(line('.'), lines)
+    normal! jj$
+  endfunction
+  "Arbtirary message above this line, matching indentation level
+  function! s:message(...)
+    if a:0
+      let message=' '.a:1
+    else
+      let message=''
+    endif
+    let nspace=s:commentindent()
+    let cchar=Comment()
+    normal! k
+    call append(line('.'), repeat(' ',nspace).cchar.message)
+    normal! jj
+  endfunction
+  "Inline style of format # ---- Hello world! ----
+  function! s:inline()
+    let ndash=4
+    let nspace=s:commentindent()
+    let cchar=Comment()
+    normal! k
+    call append(line('.'), repeat(' ',nspace).cchar.repeat(' ',ndash).repeat('-',ndash).'  '.repeat('-',ndash))
+    normal! j
+    call search('- \zs', '', line('.')) "search, and stop on this line (should be same one); no flags
+    normal! i
+  endfunction
+  "Separator of dashes just matching current line length
+  function! s:separator()
+    let nspace=s:commentindent()
+    let ndash=(match(getline('.'), '\s*$')-nspace) "location of last non-whitespace char
+    let cchar=Comment()
+    call append(line('.'), repeat(' ',nspace).repeat('-',ndash))
+  endfunction
+  "Docstring
+  function! s:docstring(char)
+    let nspace=(s:commentindent()+&l:tabstop)
+    call append(line('.'), [repeat(' ',nspace).repeat(a:char,3), repeat(' ',nspace), repeat(' ',nspace).repeat(a:char,3)])
+    normal! jj$
+  endfunction
+
+  "----------------------------------------------------------------------------"
+  " Apply remaps using functions
+  "----------------------------------------------------------------------------"
+  "Section headers and dividers
+  nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
+  nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
+  nmap c_ <Plug>bar1
+  nmap c\| <Plug>bar2
+  nnoremap <silent> c- :call <sid>section('-')<CR>A
+  nnoremap <silent> c\ :call <sid>section()<CR>A
+  "Author information comment
+  nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+  "Current date comment; y is for year; note d is reserved for that kwarg-to-dictionary map
+  nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>
+  "Create an 'inline' comment header
+  nnoremap <silent> cI :call <sid>inline()<CR>i
+  "Create comment separator below current line
+  nnoremap <silent> c, :call <sid>separator()<CR>
+  "Python docstring
+  nnoremap c' :call <sid>docstring("'")<CR>A
+  nnoremap c" :call <sid>docstring('"')<CR>A
 endif
 
 "###############################################################################
