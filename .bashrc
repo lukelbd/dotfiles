@@ -660,7 +660,7 @@ fi
 # *requires* password entry (e.g. Duo authentification), and cannot be configured
 # for passwordless login with ssh-copy-id, then need to skip first step.
 _port_file=~/.port # file storing port number
-alias ssh="ssh_fancy" # many other utilities use ssh and avoid aliases, but do *not* test for functions
+alias ssh="ssh_fancy" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 function ssh_fancy() {
   local port listen port_write title_write
   [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
