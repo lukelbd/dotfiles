@@ -23,7 +23,8 @@ filename="$1"     # the current file
 texdiff="$2"      # get difference pdf?
 tex2docx="$3"     # option
 templates="$HOME/latex $HOME/latex2" # location of LaTeX templates and style files
-[ $TERM_PROGRAM == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
+[ "$TERM_PROGRAM" == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
+[ -z "$terminal" ] && terminal="MacVim" # probably means we are running from GUI program
 [ $# -ne 3 ] && echo "Error: Script requires exactly 3 arguments"
 [ ! -r "$filename" ] && echo "Error: File \"$filename\" does not exist" && exit 1
 ! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils"
@@ -181,31 +182,31 @@ latexfind ${packages[@]} sty
 # As above but for .bst file
 bibstyle=($(nocomments "$filename" | grep '^.*\\bibliographystyle' | inbraces))
   # | cut -s -d'{' -f2 | cut -s -d'}' -f1))
-if [ ${#bibstyle[@]} -eq 1 ]; then
-  echo "Finding bst file"
-  latexfind $bibstyle bst
-elif [ ${#bibstyle[@]} -gt 1 ]; then
-  echo "Error: More than one bibliographystyle found" && exit 1
-fi
+# if [ ${#bibstyle[@]} -eq 1 ]; then
+echo "Finding bst file"
+latexfind $bibstyle bst
+# elif [ ${#bibstyle[@]} -gt 1 ]; then
+#   echo "Error: More than one bibliographystyle found" && exit 1
+# fi
 
 # Next beamer theme
 themes=($(nocomments "$filename" | grep '^.*\\usetheme' | inbraces | sed 's/^/beamertheme/'))
 # latexfind ${themes[@]}
-if [ ${#themes[@]} -eq 1 ]; then
-  echo "Finding beamer theme file"
-  latexfind $themes sty
-elif [ ${#themes[@]} -gt 1 ]; then
-  echo "Error: More than one beamer theme found" && exit 1
-fi
+# if [ ${#themes[@]} -eq 1 ]; then
+echo "Finding beamer theme file"
+latexfind $themes sty
+# elif [ ${#themes[@]} -gt 1 ]; then
+#   echo "Error: More than one beamer theme found" && exit 1
+# fi
 
 # And beamer color theme
 colorthemes=($(nocomments "$filename" | grep '^.*\\usecolortheme' | inbraces | sed 's/^/beamercolortheme/'))
-if [ ${#colorthemes[@]} -eq 1 ]; then
+# if [ ${#colorthemes[@]} -eq 1 ]; then
   echo "Finding beamer theme file"
   latexfind $colorthemes sty
-elif [ ${#colorthemes[@]} -gt 1 ]; then
-  echo "Error: More than one beamer theme found" && exit 1
-fi
+# elif [ ${#colorthemes[@]} -gt 1 ]; then
+#   echo "Error: More than one beamer colortheme found" && exit 1
+# fi
 
 #------------------------------------------------------------------------------#
 # Compile the document and display it

@@ -185,6 +185,10 @@ if [ -n "$_conda" ]; then
   conda activate # activate the default environment
   echo "Enabled conda."
 fi
+# Matplotlib stuff
+# See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
+# Necessary for rendering fonts in ipython notebooks
+export MPLCONFIGDIR=$HOME/.matplotlib
 
 ################################################################################
 # Wrappers for common functions
