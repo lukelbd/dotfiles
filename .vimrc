@@ -32,6 +32,7 @@
 "Says to always use the vim default where vi and vim differ; for example, if you
 "put this too late, whichwrap will be reset
 set nocompatible
+set tabpagemax=100 "allow opening shit load of tabs at once
 set shortmess=a "snappy messages, frmo the avoid press enter doc
 set shiftround "round to multiple of shiftwidth
 let mapleader="\<Space>"
@@ -329,6 +330,9 @@ endfunction
 function! Strip(text)
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
+"Misc commands
+command! Reverse g/^/m0
+" command! CommaReverse s/\v([^, ]+)(\s*,\s*)([^, ]+)/\3\2\1/ "just works for two items
 "Better grep, with limited regex translation
 function! Grep(regex) "returns list of matches
   let regex=a:regex
@@ -390,7 +394,6 @@ endif
 if has("gui_running")
   set guicursor+=a:blinkon0 "disable blinking for GUI version
   set number relativenumber guioptions= "no scrollbars
-  colorscheme slate "no longer controlled through terminal colors
 endif
 
 "###############################################################################
@@ -443,6 +446,11 @@ call plug#begin('~/.vim/plugged')
 "Requires changing Conceal group color, but doing that also messes up latex conceal
 "backslashes (which we need to stay transparent); so forget it probably
 " Plug 'yggdroot/indentline'
+"------------------------------------------------------------------------------"
+"Color schemes
+Plug 'flazz/vim-colorschemes'
+Plug 'fcpg/vim-fahrenheit'
+Plug 'KabbAmine/yowish.vim'
 "------------------------------------------------------------------------------"
 "Custom text objects (inner/outer selections)
 "a,b, asdfas, adsfashh
@@ -2296,8 +2304,7 @@ endif
 " autocmd FileType * call s:gmaps()
 
 "###############################################################################
-"Syntax:
-"SPECIAL SYNTAX HIGHLIGHTING OVERWRITE (all languages; must come after filetype stuff)
+"SPECIAL SYNTAX HIGHLIGHTING OVERWRITES (all languages; must come after filetype stuff)
 "* See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
 "  for every file; we add our own custom highlighting for vim comments
 "* For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
@@ -2305,6 +2312,36 @@ endif
 "* And generally only want 'conceal' characters invisible for latex; otherwise we
 "  probably want them to look like comment characters
 "* The url regex was copied from the one used for .tmux.conf
+"------------------------------------------------------------------------------"
+"First coloring for ***GUI Vim versions***
+"See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/ 
+"------------------------------------------------------------------------------"
+if has('gui_running')
+  "Declare colorscheme
+  " colorscheme gruvbox
+  " colorscheme kolor
+  " colorscheme dracula
+  " colorscheme onedark
+  " colorscheme molokai
+  colorscheme oceanicnext "really nice
+  " colorscheme yowish "yellow
+  " colorscheme tomorrow-night
+  " colorscheme atom "mimics Atom
+  " colorscheme chlordane "hacker theme
+  " colorscheme papercolor
+  " colorscheme solarized
+  " colorscheme fahrenheit
+  " colorscheme slate "no longer controlled through terminal colors
+  "Bugfixes
+  hi! link vimCommand Statement
+  hi! link vimNotFunc Statement
+  hi! link vimFuncKey Statement
+  hi! link vimMap     Statement
+endif
+"------------------------------------------------------------------------------"
+"Next coloring for **Terminal VIM versions***
+"Have to use cTerm colors, and control the ANSI colors from your terminal settings
+"------------------------------------------------------------------------------"
 function! s:keywordsetup()
    syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\)
    hi link customURL Underlined
@@ -2324,60 +2361,55 @@ augroup syntax
   " au Syntax *.vim syn region htmlNoSpell start=+<!--+ end=+--\s*>+ contains=@NoSpell
   au Syntax  * call <sid>keywordsetup()
   au BufRead * set conceallevel=2 concealcursor=
-  " au BufEnter * if &ft=="tex" | hi Conceal ctermbg=None ctermfg=None | else | hi Conceal ctermbg=None ctermfg=Black | endif
-  au InsertEnter * highlight StatusLine ctermbg=White ctermfg=Black cterm=None
-  au InsertLeave * highlight StatusLine ctermbg=Black ctermfg=White cterm=None
+  " au BufEnter * if &ft=="tex" | hi Conceal ctermbg=NONE ctermfg=NONE | else | hi Conceal ctermbg=NONE ctermfg=Black | endif
+  au InsertEnter * highlight StatusLine ctermbg=Black ctermbg=White ctermfg=Black cterm=NONE
+  au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
 augroup END
 "Python syntax
 highlight link pythonImportedObject Identifier
 "HTML syntax
 " highlight link htmlNoSpell
 "Popup menu
-highlight Pmenu ctermbg=None ctermfg=White cterm=None
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None
-highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
+highlight Pmenu     ctermbg=NONE    ctermfg=White cterm=NONE
+highlight PmenuSel  ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE    ctermfg=Black cterm=NONE
 "Status line
-highlight StatusLine ctermbg=Black ctermfg=White cterm=None
+highlight StatusLine ctermbg=Black ctermfg=White cterm=NONE
 "Create dummy group -- will be transparent, but use to add @Nospell
-highlight Dummy ctermbg=None ctermfg=None
+highlight Dummy ctermbg=NONE ctermfg=NONE
 "Magenta is uncommon color, so change this
 "Note if Sneak undefined, this won't raise error; vim thinkgs maybe we will define it later
-highlight Sneak ctermbg=DarkMagenta ctermfg=None
+highlight Sneak  ctermbg=DarkMagenta ctermfg=NONE
 "And search/highlight stuff; by default foreground is black, make it transparent
-highlight Search ctermbg=Magenta ctermfg=None
+highlight Search ctermbg=Magenta     ctermfg=NONE
 "Fundamental changes, move control from LightColor to Color and DarkColor, because
 "ANSI has no control over light ones it seems.
 "Generally 'Light' is NormalColor and 'Normal' is DarkColor
-highlight Type ctermbg=None ctermfg=DarkGreen
-highlight Constant ctermbg=None ctermfg=Red
-highlight Special ctermbg=None ctermfg=DarkRed
-highlight Indentifier cterm=Bold ctermbg=None ctermfg=Cyan
-highlight PreProc ctermbg=None ctermfg=DarkCyan
+highlight Type        ctermbg=NONE ctermfg=DarkGreen
+highlight Constant    ctermbg=NONE ctermfg=Red
+highlight Special     ctermbg=NONE ctermfg=DarkRed
+highlight PreProc     ctermbg=NONE ctermfg=DarkCyan
+highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 "Make Conceal highlighting group ***transparent***, so that when you
 "set the conceallevel to 0, concealed elements revert to their original highlighting.
-highlight Conceal ctermbg=None ctermfg=None
+highlight Conceal    ctermbg=NONE  ctermfg=NONE ctermbg=NONE  ctermfg=NONE
 "Special characters
-highlight Comment ctermfg=Black cterm=None
-highlight NonText ctermfg=Black cterm=None
-highlight SpecialKey ctermfg=Black cterm=None
+highlight Comment    ctermfg=Black cterm=NONE
+highlight NonText    ctermfg=Black cterm=NONE
+highlight SpecialKey ctermfg=Black cterm=NONE
 "Matching parentheses
-highlight Todo ctermfg=None ctermbg=Red
-highlight MatchParen ctermfg=None ctermbg=Blue
+highlight Todo       ctermfg=NONE  ctermbg=Red
+highlight MatchParen ctermfg=NONE ctermbg=Blue
 "Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
 "background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
-"gray, and 'ANSI black bold' to black).
-"Note 'lightgray' is just normal white
-highlight LineNR cterm=None ctermbg=None ctermfg=Black
-if !has('gui_running')
-  set cursorline
-  highlight CursorLine cterm=None ctermbg=Black
-  highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
-endif
+"gray, and 'ANSI black bold' to black). Note 'lightgray' is just normal white
+set cursorline
+highlight LineNR       cterm=NONE ctermbg=NONE ctermfg=Black
+highlight CursorLine   cterm=NONE ctermbg=Black
+highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 "Column stuff; color 80th column, and after 120
-if !has('gui_running')
-  highlight ColorColumn cterm=None ctermbg=Gray
-  highlight SignColumn cterm=None ctermfg=Black ctermbg=None
-endif
+highlight ColorColumn  cterm=NONE ctermbg=Gray
+highlight SignColumn  guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 "Make sure terminal is black, for versions with :terminal command
 highlight Terminal ctermbg=Black
 
