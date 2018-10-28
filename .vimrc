@@ -346,11 +346,15 @@ endfunction
 command! -nargs=1 Grep call Grep(<q-args>)
 "Builtin comment string decoding
 "Alternatively, b:NERDCommenterDelims['left']
-function! Comment()
-  if &commentstring =~ '%s'
+function! Comment(...)
+  " let placeholder = (a:0 ? ' ' : '') "sometimes want to put character that will never be matched
+  let placeholder = (a:0 ? '|' : '')
+  if &ft == '' || &commentstring == ''
+    return placeholder
+  elseif &commentstring =~ '%s'
     return Strip(split(&commentstring, '%s')[0])
   else
-    return ''
+    return placeholder
   endif
 endfunction
 "Misc
@@ -1778,48 +1782,48 @@ if PlugActive("tabular")
   nnoremap <silent> <expr> _<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
   vnoremap <silent> <expr> _<Space> "<Esc>:silent! '<,'>Table /".input('Alignment regex: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
-  nnoremap <expr> _, ':Tabularize /,\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> _, ':Table      /,\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> _, ':Tabularize /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> _, ':Table      /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
-  nnoremap <expr> _D ':Tabularize /\('.Comment().'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> _D ':Table      /\('.Comment().'.*\)\@<!\zs:/l0c1<CR>'
+  nnoremap <expr> _D ':Tabularize /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> _D ':Table      /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
-  nnoremap <expr> _d ':Tabularize /:\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> _d ':Table      /:\('.Comment().'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> _d ':Tabularize /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> _d ':Table      /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  nnoremap <expr> _r ':Tabularize /^\s*[^\t '.Comment().']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> _r ':Table      /^\s*[^\t '.Comment().']\+\zs\ /r0l0l0<CR>'
+  nnoremap <expr> _r ':Tabularize /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> _r ':Table      /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
   "As above, but let align
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
-  nnoremap <expr> _l ':Tabularize /^\s*\S\{-1,}\('.Comment().'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> _l ':Table      /^\s*\S\{-1,}\('.Comment().'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> _l ':Tabularize /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> _l ':Table      /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
-  nnoremap <expr> __ ':Tabularize /\S\('.Comment().'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> __ ':Table      /\S\('.Comment().'.*\)\@<!\zs\ /l0<CR>'
+  nnoremap <expr> __ ':Tabularize /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> __ ':Table      /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
   nnoremap <expr> _\| ':Tabularize /\S\zs\ /l0<CR>'
   vnoremap <expr> _\| ':Table      /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
-  " nnoremap <expr> _C ':Tabularize /^.*\zs'.Comment().'/l1<CR>'
-  " vnoremap <expr> _C ':Table      /^.*\zs'.Comment().'/l1<CR>'
+  " nnoremap <expr> _C ':Tabularize /^.*\zs'.Comment(1).'/l1<CR>'
+  " vnoremap <expr> _C ':Table      /^.*\zs'.Comment(1).'/l1<CR>'
   "By comment character, but ignore comment-only lines
-  nnoremap <expr> _C ':Tabularize /^\s*[^ \t'.Comment().'].*\zs'.Comment().'/l1<CR>'
-  vnoremap <expr> _C ':Table      /^\s*[^ \t'.Comment().'].*\zs'.Comment().'/l1<CR>'
+  nnoremap <expr> _C ':Tabularize /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
+  vnoremap <expr> _C ':Table      /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
   "This selects the *first* uncommented equals sign that does not belong to
   "a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
-  nnoremap <expr> _= ':Tabularize /^[^'.Comment().']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  vnoremap <expr> _= ':Table      /^[^'.Comment().']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  nnoremap <expr> _+ ':Tabularize /^[^'.Comment().']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
-  vnoremap <expr> _+ ':Table      /^[^'.Comment().']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  nnoremap <expr> _= ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  vnoremap <expr> _= ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  nnoremap <expr> _+ ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  vnoremap <expr> _+ ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
   " nnoremap <expr> _= ':Tabularize /^[^=]*\zs=/l1c1<CR>'
   " vnoremap <expr> _= ':Table      /^[^=]*\zs=/l1c1<CR>'
   " nnoremap <expr> _+ ':Tabularize /^[^=]*=\zs/l0c1<CR>'
