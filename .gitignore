@@ -4,6 +4,8 @@ zshell
   # not using zshell, store settings in there for now
 .vim/zcache
   # cache for the zotero integration plugin
+powerball*
+  # playing around
 latex/*/
   # ignore subdirectories; those are just sources/backups really
 bin/cdo
