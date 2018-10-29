@@ -5,6 +5,7 @@ zshell
 .vim/zcache
   # cache for the zotero integration plugin
 powerball*
+megamillions*
   # playing around
 latex/*/
   # ignore subdirectories; those are just sources/backups really
