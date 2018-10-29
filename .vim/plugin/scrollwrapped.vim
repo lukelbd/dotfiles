@@ -155,8 +155,12 @@ function! s:scroll(target,mode,move)
   "----------------------------------------------------------------------------"
   "Note numberwidth can be variable unless you set it manually to
   "something pretty big, possible bug there
+  "WARNING: numberwidth will *lie* if you have more line numbers than it permits,
+  "so you should instead test the number of lines directly
   let curline=line('.')
-  let wincol=wincol()-&numberwidth-1
+  let numberwidth=max([len(string(line('$')))+1, &l:numberwidth])
+  let wincol=wincol()-numberwidth-1
+  " let wincol=wincol()-&l:numberwidth-1
   if &l:wrap
     "Determine which wrapped line we are on, and therefore,
     "the number of window columns we *have* to traverse
