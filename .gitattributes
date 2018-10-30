@@ -1,78 +1,78 @@
 # Mark files as binary
 # This extension list was just copied from .dircolors.ansi
 # Image
-*.bmp  binary
-*.cgm  binary
-*.dl   binary
-*.emf  binary
-*.gif  binary
-*.jpeg binary
-*.jpg  binary
-*.JPG  binary
-*.mng  binary
-*.pbm  binary
-*.pcx  binary
-*.pgm  binary
-*.png  binary
-*.PNG  binary
-*.ppm  binary
-*.pps  binary
-*.ppsx binary
-*.svg  binary
-*.svgz binary
-*.tga  binary
-*.tif  binary
-*.tiff binary
-*.xbm  binary
-*.xcf  binary
-*.xpm  binary
-*.xwd  binary
-*.xwd  binary
-*.yuv  binary
+*.bmp  -text -diff
+*.cgm  -text -diff
+*.dl   -text -diff
+*.emf  -text -diff
+*.gif  -text -diff
+*.jpeg -text -diff
+*.jpg  -text -diff
+*.JPG  -text -diff
+*.mng  -text -diff
+*.pbm  -text -diff
+*.pcx  -text -diff
+*.pgm  -text -diff
+*.png  -text -diff
+*.PNG  -text -diff
+*.ppm  -text -diff
+*.pps  -text -diff
+*.ppsx -text -diff
+*.svg  -text -diff
+*.svgz -text -diff
+*.tga  -text -diff
+*.tif  -text -diff
+*.tiff -text -diff
+*.xbm  -text -diff
+*.xcf  -text -diff
+*.xpm  -text -diff
+*.xwd  -text -diff
+*.xwd  -text -diff
+*.yuv  -text -diff
 
-*# Audio
-*.aac  binary
-*.au   binary
-*.flac binary
-*.m4a  binary
-*.mid  binary
-*.midi binary
-*.mka  binary
-*.mp3  binary
-*.mpa  binary
-*.mpeg binary
-*.mpg  binary
-*.ogg  binary
-*.opus binary
-*.ra   binary
-*.wav  binary
+# Audio
+*.aac  -text -diff
+*.au   -text -diff
+*.flac -text -diff
+*.m4a  -text -diff
+*.mid  -text -diff
+*.midi -text -diff
+*.mka  -text -diff
+*.mp3  -text -diff
+*.mpa  -text -diff
+*.mpeg -text -diff
+*.mpg  -text -diff
+*.ogg  -text -diff
+*.opus -text -diff
+*.ra   -text -diff
+*.wav  -text -diff
 
 # Video
-*.anx  binary
-*.asf  binary
-*.avi  binary
-*.axv  binary
-*.flc  binary
-*.fli  binary
-*.flv  binary
-*.gl   binary
-*.m2v  binary
-*.m4v  binary
-*.mkv  binary
-*.mov  binary
-*.MOV  binary
-*.mp4  binary
-*.mp4v binary
-*.mpeg binary
-*.mpg  binary
-*.nuv  binary
-*.ogm  binary
-*.ogv  binary
-*.ogx  binary
-*.qt   binary
-*.rm   binary
-*.rmvb binary
-*.swf  binary
-*.vob  binary
-*.webm binary
-*.wmv  binary
+*.anx  -text -diff
+*.asf  -text -diff
+*.avi  -text -diff
+*.axv  -text -diff
+*.flc  -text -diff
+*.fli  -text -diff
+*.flv  -text -diff
+*.gl   -text -diff
+*.m2v  -text -diff
+*.m4v  -text -diff
+*.mkv  -text -diff
+*.mov  -text -diff
+*.MOV  -text -diff
+*.mp4  -text -diff
+*.mp4v -text -diff
+*.mpeg -text -diff
+*.mpg  -text -diff
+*.nuv  -text -diff
+*.ogm  -text -diff
+*.ogv  -text -diff
+*.ogx  -text -diff
+*.qt   -text -diff
+*.rm   -text -diff
+*.rmvb -text -diff
+*.swf  -text -diff
+*.vob  -text -diff
+*.webm -text -diff
+*.wmv  -text -diff
