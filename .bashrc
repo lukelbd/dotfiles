@@ -1230,7 +1230,7 @@ function pdf2eps() {
       pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
   done
 }
-function flatten() {
+function pdf2flat() {
   # this page is helpful:
   # https://unix.stackexchange.com/a/358157/112647
   # 1. pdftk keeps vector graphics
@@ -1479,6 +1479,33 @@ function title_update() {
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title_declare
+
+################################################################################
+# iTerm2 shell integration helper functions
+################################################################################
+for func in imgcat imgls; do
+  unalias $func
+  eval 'function '$func'() {
+    local i tmp tmpdir files
+    i=0
+    files=($@)
+    tmpdir="."
+    # [ -n "$TMPDIR" ] && tmpdir="$TMPDIR" || tmpdir="."
+    for file in "${files[@]}"; do
+      if [ "${file##*.}" == pdf ]; then
+        tmp="$tmpdir/tmp.${file%.*}.png" # convert to png
+        convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
+        # pdf2png "$file" "$tmp" # too high res
+        # pdf2flat "$file" "$tmp" # too slow
+      else
+        tmp="$tmpdir/tmp.${file}"
+        convert -flatten "$file" "$tmp"
+      fi
+      $HOME/.iterm2/'$func' "$tmp"
+      rm "$tmp"
+    done
+  }'
+done
 
 ################################################################################
 # Message
