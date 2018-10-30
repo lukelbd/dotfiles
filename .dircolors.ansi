@@ -188,9 +188,9 @@ EXEC 01;35  # Unix
 
 # Orphaned symlinks (blinking white on red)
 # Blink may or may not work (works on iTerm dark or light, and Putty dark)
-ORPHAN  05;37;41
+ORPHAN  37;41
 # And the files that orphaned symlinks point to (blinking white on red)
-MISSING 05;37;41
+MISSING 37;41
 
 #############################################################################
 ### By extension
