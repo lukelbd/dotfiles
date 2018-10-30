@@ -5,17 +5,54 @@
 # and note semicolons must always be escaped.
 # Also this thread: https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------;
+# PROTIPS (add to this)
+# * To rename branch use git branch -m <old_name> <new_name>
+# * To rename local and remote see: https://stackoverflow.com/q/8762601/4970632
+#------------------------------------------------------------------------------;
 # NOTE that some older versions of git won't accept the flags below the [status],
 # [branch], et cetera blocks below. In that case, use the alternately named aliases
 # defined above.
 #------------------------------------------------------------------------------;
+# TODO:
+# 'truncate':
+#   see: https://gist.github.com/magnetikonline/5062718
+#   also see: https://passingcuriosity.com/2017/truncating-git-history/
+#   use this to trncate at given SHA
+# 'delete':
+#   for more information see the script; can be passed a filename or a regular
+#   expresion e.g. '*.mov'
+# 'giant':
+#   when you commit giant files (i.e. over 100MB), even after you delete them,
+#   you won't be able to push to Github because they were tracked and are found
+#   in .vim. use this to delete file/directory throughout history. from:
+#   https://stackoverflow.com/a/23657759/4970632
+# 'opts':
+#   fails not just as git alias, but when calling the regex manually
+#   see: https://stackoverflow.com/a/52846422/4970632
+#   "!f(){ echo ${1}; echo /usr/local/share/doc/git-doc/git-${1}.txt; cat /usr/local/share/doc/git-doc/git-${1}.txt | ggrep --initial-tab --recursive \
+#   --binary-files=without-match --no-filename --only-matching --perl-regexp \
+#   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
+#------------------------------------------------------------------------------;
 # New commands:
+# 'amend':
+#   change the name of arbitrary commit messages; just provide a SHA1 reference
+#   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
+# 'deleted':
+#   see: https://stackoverflow.com/a/18197405/4970632
+#   lists files that were deleted in git history, but were never re-created
+#   or added back in
+# 'big':
+#   lists the largest files in git repo, sorts them by size, and shows user
+#   the human-readable size and corresponding filename for that SHA reference
+#   from: https://github.com/18F/C2/issues/439
+#   note output format for git-verify-pack is either of:
+#     SHA-1 type size size-in-packfile offset-in-packfile
+#   or for 'deltified' objects
+#     SHA-1 type size size-in-packfile offset-in-packfile depth base-SHA-1
 # 'wtf':
 #   calls the git-wtf command copied from somewhere; it actually queries the
 #   remote server to test whether we are synced
 #   also prints current branch and remote branch, with extra info
-# 'amend':
-#   consider adding back; was !git commit --amend -m \"$@\"
 # 'update':
 #   use e.g. if have untracked changes on one branch, but
 #   want to git fetch and git merge changes to a different file.
@@ -36,16 +73,11 @@
 # 'tree': = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
 #   --oneline --decorate --color --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) \
 #   %C(bold blue)<%an>%Creset' $@ 2>/dev/null"
-# 'giant':
-#   when you commit giant files (i.e. over 100MB), even after you delete them,
-#   you won't be able to push to Github because they were tracked and are found
-#   in .vim. use this to delete file/directory throughout history. from:
-#   https://stackoverflow.com/a/23657759/4970632
 #------------------------------------------------------------------------------;
 [alias]
 	short    = !git status --short --branch $@
 	remotes  = !git remote --verbose $@
-	branches = !git branch --all --verbose $@
+	info     = !git branch -vv --all $@
 	stat     = !git diff --stat $@
 	wtf      = !git-wtf $@
 	fix      = !git-fix $@
@@ -53,6 +85,17 @@
 	shrink   = !git-shrink $@
 	shrink   = !git-truncate $@
 	root     = !git rev-parse --show-toplevel
+	objects  = !git count-objects -H -v
+	delete   = !git-delete $@
+	amend    = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	deleted  = "!current=($(git ls-files)); tracked=($(git log --all --pretty=format: --name-only --diff-filter=D | xargs)); \
+		deleted=(); resurrected=(); for file in \"${tracked[@]}\"; do if [[ \" ${current[@]} \" =~ \" $file \" ]]; then resurrected+=(\"$file\"); else deleted+=(\"$file\"); fi; done; \
+		echo \"${deleted[@]}\" | tr \" \" \"\\n\""
+		# echo \"Deleted: ${deleted[@]}\"; echo \"Resurrected: ${resurrected[@]}\""
+	big      = "!git verify-pack -v $(git rev-parse --show-toplevel)/.git/objects/pack/pack-*.idx \
+		| sort -k 3 -n | tail -20 | awk '{system(\"git rev-list --objects --all | \
+		grep \"$1\" | cut -d\\\" \\\" -f2 | xargs printf \\\"%-30s \\\"\"); \
+		system(\"bytes2human \"$3\" \"$4\" | xargs printf \\\"%-10s\\\"\"); system(\"echo\")}'"
 	file     = "!git log -p -- $@"
 	commands = "!git help -a | grep \"^  [a-z]\" | tr ' ' '\\n' | grep -v \"^$\" | sort"
 	update   = "!git stash clear; git stash; git merge $@; git stash pop"
@@ -60,8 +103,6 @@
 		--oneline --decorate --color $@ 2>/dev/null"
 	twig = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
 		--decorate --color $@ 2>/dev/null"
-	huge = "!git filter-branch --index-filter 'git rm -r --cached \
-		--ignore-unmatch $1'"
 	get  = "!git branch -r | grep -v '\\->' | while read remote; do \
 		if ! git branch -l | grep \"${remote#origin/}\" &>/dev/null; \
 		then git branch --track \"${remote#origin/}\" \"$remote\"; \
@@ -77,8 +118,6 @@
 [status]
 	branch = true
 	short = true
-[branch]
-	verbose = true
 [remote]
 	verbose = true
 [color]

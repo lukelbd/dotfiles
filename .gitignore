@@ -7,14 +7,15 @@ zshell
 powerball*
 megamillions*
   # playing around
-root/*source
-  # ignore source files
 latex/*/
   # ignore subdirectories; those are just sources/backups really
 bin/cdo
   # compiled stuff; add to this list
 empty*
   # practice files
+root/
+!root/README*
+  # ignore root folder
 *.log
   # random log files
 tags

@@ -167,10 +167,15 @@ OTHER_WRITABLE 34;47
 LINK 35
 
 # Pipe, socket, block device, character device (blue bg)
-FIFO 30;44
-SOCK 35;44
-DOOR 35;44 # Solaris 2.5 and later
-BLK  33;44
+# FIFO 30;44
+# SOCK 35;44
+# DOOR 35;44 # Solaris 2.5 and later
+# BLK  33;44
+# CHR  37;44
+FIFO 37;44
+SOCK 37;44
+DOOR 37;44 # Solaris 2.5 and later
+BLK  37;44
 CHR  37;44
 
 # Compiled binary stuff
@@ -188,9 +193,12 @@ EXEC 01;35  # Unix
 
 # Orphaned symlinks (blinking white on red)
 # Blink may or may not work (works on iTerm dark or light, and Putty dark)
-ORPHAN  05;37;41
+# ORPHAN  31;47
+ORPHAN  41;37
+# ORPHAN  41;35
 # And the files that orphaned symlinks point to (blinking white on red)
-MISSING 05;37;41
+# MISSING  31;47
+MISSING 41;37
 
 #############################################################################
 ### By extension

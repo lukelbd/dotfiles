@@ -39,6 +39,8 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 # Reset all aliases
 # Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
+# Reset functions? Nah, no decent way to do it
+# declare -F # to view current ones
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
 # First, the path management
@@ -439,6 +441,30 @@ function dl() { # directory sizes
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
 
+# Convert bytes to human
+# From: https://unix.stackexchange.com/a/259254/112647
+# NOTE: Will use this in a couple awk scripts in git config
+# aliases and other tools, so need to *export* the function
+bytes2human() {
+  if [ $# -gt 0 ]; then
+    nums="$@"
+  else
+    nums="$(cat /dev/stdin)"
+  fi
+  for i in $nums; do
+    b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
+    # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
+    while ((b > 1024)); do
+        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
+        b=$((b / 1024))
+        let s++
+    done
+    echo "$b$d${S[$s]}"
+    # echo "$b$d$ {S[$s]}"
+  done
+}
+export -f bytes2human
+
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
@@ -563,6 +589,57 @@ zephyr="lukelbd@zephyr.meteo.mcgill.ca"
 midway="t-9841aa@midway2-login1.rcc.uchicago.edu" # pass: orkalluctudg
 archive="ldm@ldm.atmos.colostate.edu"             # user: atmos-2012
 ldm="ldm@ldm.atmos.colostate.edu"                 # user: atmos-2012
+
+# SSH file system
+# For how to install sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
+# For pros and cons see: https://unix.stackexchange.com/q/25974/112647
+# For how to test for empty directory see: https://superuser.com/a/352387/506762
+# Idea is we use the mount to *transfer files back and forth*, or for example
+# to view files on Mac/use Mac tools like Panoply to play with files
+function isempty() {
+  if [ -d "$1" ]; then
+    local contents=($(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null))
+    if [ ${#contents[@]} == 0 ]; then
+      return 0 # nothing inside
+    elif [ ${#contents[@]} == 1 ] && [ ${contents##*/} == .DS_Store ]; then
+      return 0 # this can happen even if you delete all files
+    else
+      return 1
+    fi
+  else
+    return 0 # does not exist, so is empty
+  fi
+}
+function mount() {
+  # Mount remote server by name (using the names declared above)
+  local server address
+  ! $_macos && echo "Error: This should be run from your macbook." && return 1
+  [ $# -ne 1 ] && echo "Error: Function sshfs() requires exactly 1 argument." && return 1
+  server="$1"
+  address="${!server}" # evaluates the variable name passed
+  echo "Server: $server"
+  echo "Address: $address"
+  [ -z "$server" ] && echo "Error: Unknown server \"$server\". Consider adding it to .bashrc." && return 1
+  if ! isempty "$HOME/$server"; then
+    echo "Error: Directory \"$HOME/$server\" already exists, and is non-empty!" && return 1
+  fi
+  command sshfs "$address:/home/ldavis" "$HOME/$server" -ovolname="$server"
+}
+function unmount() { # name 'unmount' more intuitive than 'umount'
+  # WARNING: Need to be super careful server is not empty and we accidentally rm -r $HOME!
+  ! $_macos && echo "Error: This should be run from your macbook." && return 1
+  server="$1"
+  [ -z "$server" ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
+  echo "Server: $server"
+  command umount "$HOME/$server" &>/dev/null
+  if [ $? -ne 0 ]; then
+    echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
+  elif ! isempty "$HOME/$server"; then
+    echo "Warning: Leftover mount folder appears to be non-empty!"
+  else
+    rm -r "$HOME/$server"
+  fi
+}
 
 # Short helper functions
 # See current ssh connections
@@ -906,58 +983,6 @@ function reconnect() {
     connect $ports
   else
     echo "No active jupyter notebooks found."
-  fi
-}
-
-# Note git pull will fail if the merge is anything other than
-# a fast-forward merge (e.g. modifying multiple files); otherwise
-# need to commit local changes first
-function figuresync() {
-  # For now this function is designed specifically for one project; for
-  # future projects can modify it
-  # * The exclude-standard flag excludes ignored files listed with 'other' -o flag
-  #   See: https://stackoverflow.com/a/26891150/4970632
-  # * Takes server argument..
-  local server localdir remotedir extramessage
-  [[ $# -ne 1 && $# -ne 2 ]] && echo "Error: This function needs 1-2 arguments."
-  ! $_macos && echo "Error: Function intended to be called from macbook." && return 1
-  server="$1"       # server
-  extramessage="$2" # may be empty
-  localdir="$(pwd)"
-  localdir="${localdir##*/}"
-  if [ "$localdir" == "Tau" ]; then # special handling
-    [[ "$server" =~ euclid ]] && local remotedir=/birner-home/ldavis || local remotedir=/home/ldavis
-    remotedir=$remotedir/working
-  else # default handling
-    remotedir="/home/ldavis/$localdir"
-  fi
-  echo "Syncing local directory \"$localdir\" with remote directory \"$remotedir\"."
-  # Issue script to server over ssh
-  read -r -d '' commands << EOF
-# List modified and 'other' (untracked) files of pdf type
-# Also have to add github rsa manually because we don't source the bashrc
-eval "\$(ssh-agent -s)" &>/dev/null; ssh-add ~/.ssh/id_rsa_github
-cd "${remotedir}"; git status -s; sleep 1
-mfiles=\$(git ls-files -m | grep '^.*\\.pdf' | wc -w)
-ofiles=\$(git ls-files -o | grep '^.*\\.pdf' | wc -w)
-# Initialize message
-[ \$mfiles -ne 0 ]         && message+="Modify \$mfiles figure(s)"           && space1=", "
-[ \$ofiles -ne 0 ]         && message+="\${space1}Make \$ofiles new figure(s)" && space2=", "
-[ ! -z "${extramessage}" ] && message+="\${space2}${extramessage}"
-echo "Commiting changes with message: \\"\$message\\""
-git add --all && git commit -q -m "\$message" && git push -q
-# if [ ! -z "\$message" ]; then
-#   echo "Commiting changes with message: \\"\$message\\""
-#   git add --all && git commit -q -m "\$message" && git push -q
-# else
-#   echo "No new figures." && exit 1
-# fi
-EOF
-  command ssh $server "$commands"
-  # Check output, and git fetch if new figures were found
-  if [ $? -eq 0 ]; then # non-zero exit code
-    echo "Pulling changes to macbook."
-    git fetch && git merge -m "Syncing with macbook." # assume in correct directory already
   fi
 }
 
@@ -1479,6 +1504,7 @@ function title_update() {
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title_declare
+alias title="title_declare" # easier for user
 
 ################################################################################
 # iTerm2 shell integration helper functions
