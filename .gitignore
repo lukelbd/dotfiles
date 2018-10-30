@@ -7,6 +7,8 @@ zshell
 powerball*
 megamillions*
   # playing around
+root/*source
+  # ignore source files
 latex/*/
   # ignore subdirectories; those are just sources/backups really
 bin/cdo
