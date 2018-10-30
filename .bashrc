@@ -680,6 +680,7 @@ function ssh_fancy() {
   port_write="$(compressuser $_port_file)"
   title_write="$(compressuser $_title_file)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
+    -X \
     -t -R $port:localhost:$listen $1 \
     "echo $port >$port_write; echo $_title >$title_write; \
     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
@@ -1440,7 +1441,7 @@ function read_idle() {
   done
   echo "$input" # a bit different, echo instead of implicitly setting
 }
-function title() { # Cmd-I from iterm2 also works
+function title_declare() { # Cmd-I from iterm2 also works
   # Record title from user input, or as user argument
   ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
@@ -1461,7 +1462,7 @@ function title_update() {
   # Check file availability
   [ ! -r "$_title_file" ] && {
     if ! $_macos; then echo "Error: Title file not available." && return 1
-    else title
+    else title_declare
     fi; }
   # Read from file
   if $_macos; then
@@ -1471,14 +1472,13 @@ function title_update() {
   fi
   # Update or re-declare
   _title="$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')"
-  if [ -z "$_title" ]; then title # reset title
+  if [ -z "$_title" ]; then title_declare # reset title
   else echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
   fi
 }
-# New window; might have closed one and opened another, so declare new title
+# Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
-# Currently always asks for title; but could create new one
-$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title
+$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title_declare
 
 ################################################################################
 # Message
