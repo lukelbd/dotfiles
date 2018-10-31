@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#set -x 
+
+# Shows you the largest objects in your repo's pack file.
+# Written for osx.
+# @see http://stubbisms.wordpress.com/2009/07/10/git-script-to-show-largest-pack-objects-and-trim-your-waist-line/
+# @also see: https://github.com/18F/C2/issues/439
+# @author Antony Stubbs
+# Note: output format for git-verify-pack is either of:
+#   SHA-1 type size size-in-packfile offset-in-packfile
+# or for 'deltified' objects
+#   SHA-1 type size size-in-packfile offset-in-packfile depth base-SHA-1
+
+# Set the internal field spereator to line break, so that we can iterate easily over the verify-pack output
+IFS=$'\n';
+
+# List all objects including their size, sort by size, take top 10
+objects=$(git verify-pack -v .git/objects/pack/pack-*.idx | grep -v chain | sort -k4nr | head)
+
+echo "All sizes are in kB. The pack column is the size of the object, compressed, inside the pack file."
+output="size,pack,SHA,location"
+for y in $objects; do
+  # Extract the size in bytes
+  size=$((`echo $y | cut -f 5 -d ' '`/1024))
+  # Extract the compressed size in bytes
+  compressedSize=$((`echo $y | cut -f 6 -d ' '`/1024))
+  # Extract the SHA
+  sha=`echo $y | cut -f 1 -d ' '`
+  # Find the objects location in the repository tree
+  other=`git rev-list --all --objects | grep $sha`
+  #lineBreak=`echo -e "\n"`
+  output="${output}\n${size},${compressedSize},${other}"
+done
+
+echo -e $output | column -t -s ', '
+

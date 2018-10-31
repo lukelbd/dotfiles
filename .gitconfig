@@ -41,14 +41,8 @@
 #   see: https://stackoverflow.com/a/18197405/4970632
 #   lists files that were deleted in git history, but were never re-created
 #   or added back in
-# 'big':
-#   lists the largest files in git repo, sorts them by size, and shows user
-#   the human-readable size and corresponding filename for that SHA reference
-#   from: https://github.com/18F/C2/issues/439
-#   note output format for git-verify-pack is either of:
-#     SHA-1 type size size-in-packfile offset-in-packfile
-#   or for 'deltified' objects
-#     SHA-1 type size size-in-packfile offset-in-packfile depth base-SHA-1
+# 'pack':
+#   see the git-pack command for more details
 # 'wtf':
 #   calls the git-wtf command copied from somewhere; it actually queries the
 #   remote server to test whether we are synced
@@ -92,10 +86,6 @@
 		deleted=(); resurrected=(); for file in \"${tracked[@]}\"; do if [[ \" ${current[@]} \" =~ \" $file \" ]]; then resurrected+=(\"$file\"); else deleted+=(\"$file\"); fi; done; \
 		echo \"${deleted[@]}\" | tr \" \" \"\\n\""
 		# echo \"Deleted: ${deleted[@]}\"; echo \"Resurrected: ${resurrected[@]}\""
-	big      = "!git verify-pack -v $(git rev-parse --show-toplevel)/.git/objects/pack/pack-*.idx \
-		| sort -k 3 -n | tail -20 | awk '{system(\"git rev-list --objects --all | \
-		grep \"$1\" | cut -d\\\" \\\" -f2 | xargs printf \\\"%-30s \\\"\"); \
-		system(\"bytes2human \"$3\" \"$4\" | xargs printf \\\"%-10s\\\"\"); system(\"echo\")}'"
 	file     = "!git log -p -- $@"
 	commands = "!git help -a | grep \"^  [a-z]\" | tr ' ' '\\n' | grep -v \"^$\" | sort"
 	update   = "!git stash clear; git stash; git merge $@; git stash pop"

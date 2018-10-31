@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -o errexit
+# set -o errexit
 # Author: David Underhill
 # Script to permanently delete files/folders from your git repository.  To use 
 # it, cd to your repository's root and then run the script with a list of paths
@@ -7,13 +7,14 @@ set -o errexit
 # For *some improvements* see:
 # https://stackoverflow.com/a/5985276/4970632
 # which will prune empty commits.
-# Another resource:
-# https://blog.ostermiller.org/git-remove-from-history
 # See:
 # https://stackoverflow.com/a/18197405/4970632
 # https://development.robinwinslow.uk/2013/06/11/dont-ever-commit-binary-files-to-git/
 # which reference github file on: https://gist.githubusercontent.com/nottrobin/5758221/raw/ff740b4ac3b8ab80d40e3598ec461400dce42b5d/git-prune
-# When to use tag-name-filter:
+# Two more detailed guides:
+# http://stevelorek.com/how-to-shrink-a-git-repository.html
+# https://blog.ostermiller.org/git-remove-from-history
+# Purpose of tag-name-filter:
 # https://stackoverflow.com/q/21009947/4970632
 if [ $# -ne 1 ]; then
 # if [ $# -le 1 ]; then
@@ -55,6 +56,7 @@ git add --all && git commit -q -m "Remove matches."
 # NOTE: Make sure to remove from *all* branches using -- --all instead of HEAD
 echo "Filtering branch."
 git filter-branch -f --prune-empty --index-filter "git rm -rf --cached --ignore-unmatch -- $pattern" -- --all
+# git filter-branch -f --prune-empty --tag-name-filter cat --index-filter "git rm -rf --cached --ignore-unmatch -- $pattern" -- --all
 
 # Remove the temporary history git-filter-branch otherwise leaves behind for a long time
 echo "Deleting refs and logs."
@@ -66,15 +68,22 @@ git reflog expire --verbose --expire=now --all
 # git for-each-ref --format="%(refname)" refs/original/ | xargs -n 1 git update-ref -d
 
 echo "Running git gc."
+git gc --prune=now
 git gc --aggressive --prune=now
 [ $? -ne 0 ] && echo "Error" && exit 1
 
 # Move matches back
 echo "Fixing gitignore"
 hash gsed 2>/dev/null && sub=gsed || sub=sed
-$sub -i "$(($nlines+1)),\$d" "$root/.gitignore"
+$sub -i "${nlines},\$d" "$root/.gitignore"
+# $sub -i "$(($nlines+1)),\$d" "$root/.gitignore"
 # sed -i -n "/$prefix/q;p" "$root/.gitignore"
 # echo "Moving deleted files back."
 # for file in "${files[@]}"; do
 #   mv "$tmp/$file" "$root/$file"
 # done
+
+# What to do next?
+# git push origin --force --all
+# git push origin --force --tags
+
