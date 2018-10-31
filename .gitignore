@@ -104,3 +104,6 @@ __pycache__
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Filter-branch files
+colors/*
