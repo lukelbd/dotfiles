@@ -13,6 +13,9 @@ bin/cdo
   # compiled stuff; add to this list
 empty*
   # practice files
+root/
+!root/README*
+  # ignore root folder
 *.log
   # random log files
 tags
