@@ -78,7 +78,6 @@
 	short    = !git status --short --branch $@
 	remotes  = !git remote --verbose $@
 	info     = !git branch -vv --all $@
-	branch   = !command git branch -vv --all $@
 	stat     = !git diff --stat $@
 	wtf      = !git-wtf $@
 	fix      = !git-fix $@

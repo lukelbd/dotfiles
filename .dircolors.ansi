@@ -199,7 +199,6 @@ ORPHAN  41;37
 # And the files that orphaned symlinks point to (blinking white on red)
 # MISSING  31;47
 MISSING 41;37
-# ORPHAN  41;35
 
 #############################################################################
 ### By extension
