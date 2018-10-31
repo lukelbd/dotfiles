@@ -91,7 +91,7 @@
 	amend    = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	deleted  = "!current=($(git ls-files)); tracked=($(git log --all --pretty=format: --name-only --diff-filter=D | xargs)); \
 		deleted=(); resurrected=(); for file in \"${tracked[@]}\"; do if [[ \" ${current[@]} \" =~ \" $file \" ]]; then resurrected+=(\"$file\"); else deleted+=(\"$file\"); fi; done; \
-		echo \"${deleted[@]}\""
+		echo \"${deleted[@]}\" | tr \" \" \"\\n\""
 		# echo \"Deleted: ${deleted[@]}\"; echo \"Resurrected: ${resurrected[@]}\""
 	big      = "!git verify-pack -v $(git rev-parse --show-toplevel)/.git/objects/pack/pack-*.idx \
 		| sort -k 3 -n | tail -20 | awk '{system(\"git rev-list --objects --all | \
