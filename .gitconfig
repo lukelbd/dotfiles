@@ -81,10 +81,11 @@
 	wtf      = !git-wtf $@
 	fix      = !git-fix $@
 	vim      = !git-vim $@
-	delete   = !git-delete $@
 	shrink   = !git-shrink $@
 	shrink   = !git-truncate $@
 	root     = !git rev-parse --show-toplevel
+	objects  = !git count-objects -H -v
+	delete   = !git-delete $@
 	deleted  = "!current=($(git ls-files)); tracked=($(git log --all --pretty=format: --name-only --diff-filter=D | xargs)); \
 		deleted=(); resurrected=(); for file in \"${tracked[@]}\"; do if [[ \" ${current[@]} \" =~ \" $file \" ]]; then resurrected+=(\"$file\"); else deleted+=(\"$file\"); fi; done; \
 		echo \"Deleted: ${deleted[@]}\"; echo \"Resurrected: ${resurrected[@]}\""
