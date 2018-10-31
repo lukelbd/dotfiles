@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -o errexit
-
 # Author: David Underhill
 # Script to permanently delete files/folders from your git repository.  To use 
 # it, cd to your repository's root and then run the script with a list of paths
 # you want to delete, e.g., git-delete-history path1 path2
+# For *some improvements* see:
+# https://stackoverflow.com/a/5985276/4970632
+# which will prune empty commits.
 # See:
 # https://stackoverflow.com/a/18197405/4970632
 # https://development.robinwinslow.uk/2013/06/11/dont-ever-commit-binary-files-to-git/
@@ -17,7 +19,7 @@ fi
 # Use -f because often 'backup already exists'
 files=$@
 folder="$(git rev-parse --show-toplevel)/.git"
-git filter-branch -f --index-filter "git rm -rf --cached --ignore-unmatch -- $files" HEAD
+git filter-branch -f --prune-empty --index-filter "git rm -rf --cached --ignore-unmatch -- $files" HEAD
 
 # Remove the temporary history git-filter-branch otherwise leaves behind for a long time
 # rm -rf .git/refs/original && rm -rf .git/logs/
@@ -25,10 +27,15 @@ echo "Deleting refs."
 rm -rf "$folder/refs/original/"
 [ $? -ne 0 ] && echo "Error" && exit 1
 
+# Not sure what this does, from that first link (not original script)
+# git for-each-ref --format="%(refname)" refs/original/ | xargs -n 1 git update-ref -d
+
 echo "Deleting logs."
-git reflog expire --all
+git reflog expire --verbose --expire=0 --all
+# git reflog expire --all
 [ $? -ne 0 ] && echo "Error" && exit 1
 
 echo "Running git gc."
-git gc --aggressive --prune
+# git gc --aggressive --prune
+git gc --aggressive --prune=0
 [ $? -ne 0 ] && echo "Error" && exit 1

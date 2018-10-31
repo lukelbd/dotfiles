@@ -34,9 +34,13 @@
 #   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 # New commands:
-# 'doc':
-#   see: https://stackoverflow.com/a/52846422/4970632
-#   just download the git documentation and run fancy command
+# 'amend':
+#   change the name of arbitrary commit messages; just provide a SHA1 reference
+#   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
+# 'deleted':
+#   see: https://stackoverflow.com/a/18197405/4970632
+#   lists files that were deleted in git history, but were never re-created
+#   or added back in
 # 'big':
 #   lists the largest files in git repo, sorts them by size, and shows user
 #   the human-readable size and corresponding filename for that SHA reference
@@ -49,8 +53,6 @@
 #   calls the git-wtf command copied from somewhere; it actually queries the
 #   remote server to test whether we are synced
 #   also prints current branch and remote branch, with extra info
-# 'amend':
-#   consider adding back; was !git commit --amend -m \"$@\"
 # 'update':
 #   use e.g. if have untracked changes on one branch, but
 #   want to git fetch and git merge changes to a different file.
@@ -86,6 +88,7 @@
 	root     = !git rev-parse --show-toplevel
 	objects  = !git count-objects -H -v
 	delete   = !git-delete $@
+	amend    = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	deleted  = "!current=($(git ls-files)); tracked=($(git log --all --pretty=format: --name-only --diff-filter=D | xargs)); \
 		deleted=(); resurrected=(); for file in \"${tracked[@]}\"; do if [[ \" ${current[@]} \" =~ \" $file \" ]]; then resurrected+=(\"$file\"); else deleted+=(\"$file\"); fi; done; \
 		echo \"${deleted[@]}\""
