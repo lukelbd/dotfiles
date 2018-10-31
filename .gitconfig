@@ -88,7 +88,8 @@
 	delete   = !git-delete $@
 	deleted  = "!current=($(git ls-files)); tracked=($(git log --all --pretty=format: --name-only --diff-filter=D | xargs)); \
 		deleted=(); resurrected=(); for file in \"${tracked[@]}\"; do if [[ \" ${current[@]} \" =~ \" $file \" ]]; then resurrected+=(\"$file\"); else deleted+=(\"$file\"); fi; done; \
-		echo \"Deleted: ${deleted[@]}\"; echo \"Resurrected: ${resurrected[@]}\""
+		echo \"${deleted[@]}\""
+		# echo \"Deleted: ${deleted[@]}\"; echo \"Resurrected: ${resurrected[@]}\""
 	big      = "!git verify-pack -v $(git rev-parse --show-toplevel)/.git/objects/pack/pack-*.idx \
 		| sort -k 3 -n | tail -20 | awk '{system(\"git rev-list --objects --all | \
 		grep \"$1\" | cut -d\\\" \\\" -f2 | xargs printf \\\"%-30s \\\"\"); \
