@@ -39,6 +39,8 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
 # Reset all aliases
 # Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
+# Reset functions? Nah, no decent way to do it
+# declare -F # to view current ones
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
 # First, the path management
@@ -438,6 +440,30 @@ function dl() { # directory sizes
   [ -z $1 ] && dir="." || dir="$1"
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
+
+# Convert bytes to human
+# From: https://unix.stackexchange.com/a/259254/112647
+# NOTE: Will use this in a couple awk scripts in git config
+# aliases and other tools, so need to *export* the function
+bytes2human() {
+  if [ $# -gt 0 ]; then
+    nums="$@"
+  else
+    nums="$(cat /dev/stdin)"
+  fi
+  for i in $nums; do
+    b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
+    # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
+    while ((b > 1024)); do
+        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
+        b=$((b / 1024))
+        let s++
+    done
+    echo "$b$d${S[$s]}"
+    # echo "$b$d$ {S[$s]}"
+  done
+}
+export -f bytes2human
 
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -o errexit
+
+# Author: David Underhill
+# Script to permanently delete files/folders from your git repository.  To use 
+# it, cd to your repository's root and then run the script with a list of paths
+# you want to delete, e.g., git-delete-history path1 path2
+# See:
+# https://stackoverflow.com/a/18197405/4970632
+# https://development.robinwinslow.uk/2013/06/11/dont-ever-commit-binary-files-to-git/
+# which reference github file on: https://gist.githubusercontent.com/nottrobin/5758221/raw/ff740b4ac3b8ab80d40e3598ec461400dce42b5d/git-prune
+if [ $# -eq 0 ]; then
+  exit 0
+fi
+
+# Remove all paths passed as arguments from the history of the repo
+# Use -f because often 'backup already exists'
+files=$@
+folder="$(git rev-parse --show-toplevel)/.git"
+git filter-branch -f --index-filter "git rm -rf --cached --ignore-unmatch -- $files" HEAD
+
+# Remove the temporary history git-filter-branch otherwise leaves behind for a long time
+# rm -rf .git/refs/original && rm -rf .git/logs/
+rm -rf "$folder/refs/original/" && git reflog expire --all && git gc --aggressive --prune
