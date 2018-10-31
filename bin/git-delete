@@ -75,8 +75,8 @@ git gc --aggressive --prune=now
 # Move matches back
 echo "Fixing gitignore"
 hash gsed 2>/dev/null && sub=gsed || sub=sed
-$sub -i "${nlines},\$d" "$root/.gitignore"
-# $sub -i "$(($nlines+1)),\$d" "$root/.gitignore"
+$sub -i "$(($nlines+1)),\$d" "$root/.gitignore"
+# $sub -i "${nlines},\$d" "$root/.gitignore"
 # sed -i -n "/$prefix/q;p" "$root/.gitignore"
 # echo "Moving deleted files back."
 # for file in "${files[@]}"; do

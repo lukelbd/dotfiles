@@ -431,14 +431,43 @@ alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 ! $_macos && alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
 alias df="df -h" # disk useage
 alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
+function columnize() { # neat function that splits lines into columns so they fill the terminal window
+  local cmd
+  local input output final
+  local tcols ncols maxlen nlines
+  [ $# -eq 0 ] && input="$(cat /dev/stdin)" || input="$1"
+  ! $_macos && cmd=wc || cmd=gwc
+  ncols=1 # start with 1
+  tcols=$(tput cols)
+  maxlen=0 # initial
+  nlines=$(printf "$input" | $cmd -l) # check against initial line count
+  output="$input" # default
+  while true; do
+    final="$output" # record previous output, this is what we will print
+    output="$(printf "$input" | xargs -n$ncols | column -t)"
+    maxlen=$(printf "$output" | $cmd -L)
+    # maxlen=$(printf "$output" | awk '{print length}' | sort -nr | head -1) # or wc -L but that's unavailable on mac
+    [ $maxlen -gt $tcols ] && break # this time *do not* print latest result, will result in line break due to terminal edge
+    [ $ncols -gt $nlines ] && final="$output" && break # test *before* increment, want to use that output
+    # echo terminal $tcols ncols $ncols nlines $nlines maxlen $maxlen
+    let ncols+=1
+  done
+  printf "$final"
+}
 function ds() { # directory ls
-  [ -z $1 ] && dir="" || dir="$1/"
-  dir="${dir//\/\//\/}"
-  command $_ls_command --color=always -A -d $dir*/
+  local dir
+  [ -z $1 ] && dir="." || dir="$1"
+  # [ -z $1 ] && dir="" || dir="$1/"
+  # dir="${dir//\/\//\/}"
+  # command $_ls_command --color=always -A -d $dir*/
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | columnize
+  # find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||'
 }
 function dl() { # directory sizes
+  local cmd dir
   [ -z $1 ] && dir="." || dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
+  ! $_macos && cmd=sort || cmd=gsort
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | $cmd -sh
 }
 
 # Convert bytes to human
