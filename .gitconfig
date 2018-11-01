@@ -8,6 +8,19 @@
 # PROTIPS (add to this)
 # * To rename branch use git branch -m <old_name> <new_name>
 # * To rename local and remote see: https://stackoverflow.com/q/8762601/4970632
+# * The smudge filter is run when you git add, the other one when you run
+#   git checkout/git pull/git merge/anything that 'checks out' a file.
+# * To ***test a new 'clean' filter***, try moving your file of interest to
+#   a temporary file then 'checking out' the version of the file on HEAD, i.e.
+#   git mv file tmp && git checkout tmp
+#------------------------------------------------------------------------------;
+# NBSTRIPOUT NOTE
+# * If you try to commit a file for which only the output has been changed,
+#   then nothing will happen (git will say is up to date)
+# * If you change the notebook code on one server then push/pull on another
+#   server, the *entire output will be wiped* because it would be super
+#   non-trivial to try to 'invert' the output stripping process; so you need
+#   to decide if this is acceptable (probably yes)
 #------------------------------------------------------------------------------;
 # NOTE that some older versions of git won't accept the flags below the [status],
 # [branch], et cetera blocks below. In that case, use the alternately named aliases
