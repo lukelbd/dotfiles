@@ -1619,6 +1619,9 @@ $_macos && { # first the MacOS options
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
   [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
-  fortune # fun message
-  } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
+  }
+  # fortune # fun message
+  # } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
+# Dad jokes
+curl https://icanhazdadjoke.com/; echo; # yay dad jokes
 

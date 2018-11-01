@@ -1,3 +1,8 @@
+# Notebook stuff; use filter to modify file when it is staged, use
+# the diff to modify files before comparing in git diff
+# *.ipynb filter=nbstripout
+*.ipynb diff=ipynb
+
 # Mark files as binary
 # This extension list was just copied from .dircolors.ansi
 # Image
