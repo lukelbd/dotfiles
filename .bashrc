@@ -874,6 +874,24 @@ function iperl() { # see this answer: https://stackoverflow.com/a/22840242/49706
 ################################################################################
 # Notebook stuff
 ################################################################################
+# Use this function if you want to sync notebooks across servers, but don't
+# want to sync the output for the sake of repository size.
+# Install tool with:
+#   pip install nbstripout
+# Your .gitignore should have lines:
+#   *.ipynb
+#   !stripped-*.ipynb
+function nbstrip() {
+  ! hash nbstripout 2>/dev/null && echo "Error: Must install nbstripout with 'pip install nbstripout'." && return 1
+  files=($@)
+  [ $# -eq 0 ] && files=(*.ipynb) && echo "Running nbstripout on every .ipynb file in this directory."
+  for file in "${files[@]}"; do
+    [[ "$file" =~ stripped-* ]] && echo "Skipping $file" && continue
+    echo "Stripping $file"
+    cat "$file" | nbstripout > "stripped-$file"
+  done
+}
+
 # * To uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes are just not changing in Chrome, open Developer tab

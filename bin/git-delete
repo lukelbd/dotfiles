@@ -37,7 +37,7 @@ nlines=$(wc -l < "$root/.gitignore")
 printf "\n# Filter-branch files\n" >>"$root/.gitignore"
 git rm -r --cached "$pattern"
 echo "$pattern" >>"$root/.gitignore"
-git add --all && git commit -q -m "Remove matches."
+git add --all && git commit -q -m "Stop tracking files before filter-branch"
 # current=($(git ls-files))
 # files=($@) # also expand glob pattern
 # for file in "${current[@]}"; do
