@@ -31,6 +31,10 @@
 export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://unix.stackexchange.com/a/124408/112647
+# Message constructor; modify the number to increase number of dots
+function _bashrc_message() {
+  printf "${1}$(printf '.%.0s' $(seq 1 $((50 - ${#1}))))"
+}
 
 ################################################################################
 # Settings for particular machines
@@ -48,6 +52,7 @@ unalias -a
 # behavior! For example, due to my overriding behavior of grep/man/help commands, and
 # the system default bashrc running those commands with my unexpected overrides
 export PYTHONPATH="" # this one needs to be re-initialized
+_bashrc_message "Configuring environment and loading modules..."
 if $_macos; then
   # Mac options
   # Defaults... but will reset them
@@ -83,7 +88,6 @@ else
   # Olbers options
   olbers)
     # Add netcdf4 executables to path, for ncdump
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH="/usr/local/bin:/usr/bin:/bin"
     export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
     export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
@@ -100,7 +104,6 @@ else
   # Gauss options
   ;; gauss)
     # Basics
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH="/usr/local/bin:/usr/bin:/bin"
     # Add all other utilities to path
     export PATH="/usr/local/netcdf4-pgi/bin:$PATH"
@@ -113,7 +116,6 @@ else
   # Euclid options
   ;; euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH="/usr/local/bin:/usr/bin:/bin"
     # PGI utilites, plus Matlab
     export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
@@ -122,13 +124,12 @@ else
   # Monde options
   ;; monde*)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    echo "Overriding system \$PATH and \$LD_LIBRARY_PATH."
     export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
     # PGI utilites, plus Matlab
     source set_pgi.sh # is in /usr/local/bin
     # And edit the library path
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-    # ISCA modeling stuff
+    # Isca modeling stuff
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde # "environment" configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work # temporary working directory used in running the model
@@ -139,7 +140,6 @@ else
   # Chicago options
   ;; midway*)
     # Default bashrc setup
-    echo "Loading system default bashrc."
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
     source /etc/bashrc
     # Begin interactive node; or not since only lasts 2 hours
@@ -162,9 +162,6 @@ else
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
-  # Consider loading defaults
-  # [ -f /etc/bashrc ] && . /etc/bashrc
-  # [ -f /etc/profile ] && . /etc/profile
 fi
 # Access custom executables
 # No longer will keep random executables loose in homre directory; put everything here
@@ -175,7 +172,15 @@ alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
-# Anaconda options
+# Matplotlib stuff
+# See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
+# May be necessary for rendering fonts in ipython notebooks
+export MPLCONFIGDIR=$HOME/.matplotlib
+printf "done\n"
+
+################################################################################
+# Anaconda stuff
+################################################################################
 _conda=
 if [ -d "$HOME/anaconda3" ]; then
   _conda='anaconda3'
@@ -183,18 +188,16 @@ elif [ -d "$HOME/miniconda3" ]; then
   _conda='miniconda3'
 fi
 if [ -n "$_conda" ]; then
+  _bashrc_message "Enabling conda..."
   source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables
   conda activate # activate the default environment
-  echo "Enabled conda."
+  printf "done\n"
 fi
-# Matplotlib stuff
-# See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
-# Necessary for rendering fonts in ipython notebooks
-export MPLCONFIGDIR=$HOME/.matplotlib
 
 ################################################################################
 # Wrappers for common functions
 ################################################################################
+_bashrc_message "Declaring functions and aliases..."
 # Append prompt command
 function prompt_append() { # input argument should be new command
   export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
@@ -408,8 +411,8 @@ else
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
   alias bindings_stty="stty -a"                # bindings
 fi
-alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
 alias inputrc_ops="bind -v"           # the 'set' options, and their values
+alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
 function env() { set; } # just prints all shell variables
 
 ################################################################################
@@ -888,7 +891,7 @@ function nbstrip() {
   for file in "${files[@]}"; do
     [[ "$file" =~ stripped-* ]] && echo "Skipping $file" && continue
     echo "Stripping $file"
-    cat "$file" | nbstripout > "stripped-$file"
+    cat "$file" | nbstripout --keep-count > "stripped-$file"
   done
 }
 
@@ -1362,12 +1365,16 @@ function wctex() {
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
 alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
+# This is ***the end*** of all function and alias declarations
+printf "done\n"
+
 ################################################################################
 # FZF fuzzy file completion tool
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
 if [ -f ~/.fzf.bash ]; then
+  _bashrc_message "Enabling fzf..."
   # See man page for --bind information
   # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
   #   key bindings will enabled multiple selection
@@ -1470,7 +1477,7 @@ if [ -f ~/.fzf.bash ]; then
           }"
     complete -o nospace -F _fzf_complete_$_command $_command
   done
-  echo "Enabled fuzzy file completion."
+  printf "done\n"
 fi
 
 ################################################################################
@@ -1479,8 +1486,34 @@ fi
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
 # They are super annoying and useless
 if [ -f ~/.iterm2_shell_integration.bash ]; then
-   source ~/.iterm2_shell_integration.bash
-   echo "Enabled shell integration."
+  _bashrc_message "Enabling shell integration..."
+  # First enable
+  source ~/.iterm2_shell_integration.bash
+  # Declare some helper functions
+  for func in imgcat imgls; do
+    unalias $func
+    eval 'function '$func'() {
+      local i tmp tmpdir files
+      i=0
+      files=($@)
+      tmpdir="."
+      # [ -n "$TMPDIR" ] && tmpdir="$TMPDIR" || tmpdir="."
+      for file in "${files[@]}"; do
+        if [ "${file##*.}" == pdf ]; then
+          tmp="$tmpdir/tmp.${file%.*}.png" # convert to png
+          convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
+          # pdf2png "$file" "$tmp" # too high res
+          # pdf2flat "$file" "$tmp" # too slow
+        else
+          tmp="$tmpdir/tmp.${file}"
+          convert -flatten "$file" "$tmp"
+        fi
+        $HOME/.iterm2/'$func' "$tmp"
+        rm "$tmp"
+      done
+    }'
+  done
+  printf "done\n"
 fi
 
 ################################################################################
@@ -1552,33 +1585,6 @@ function title_update() {
 [[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title_declare
 alias title="title_declare" # easier for user
-
-################################################################################
-# iTerm2 shell integration helper functions
-################################################################################
-for func in imgcat imgls; do
-  unalias $func
-  eval 'function '$func'() {
-    local i tmp tmpdir files
-    i=0
-    files=($@)
-    tmpdir="."
-    # [ -n "$TMPDIR" ] && tmpdir="$TMPDIR" || tmpdir="."
-    for file in "${files[@]}"; do
-      if [ "${file##*.}" == pdf ]; then
-        tmp="$tmpdir/tmp.${file%.*}.png" # convert to png
-        convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
-        # pdf2png "$file" "$tmp" # too high res
-        # pdf2flat "$file" "$tmp" # too slow
-      else
-        tmp="$tmpdir/tmp.${file}"
-        convert -flatten "$file" "$tmp"
-      fi
-      $HOME/.iterm2/'$func' "$tmp"
-      rm "$tmp"
-    done
-  }'
-done
 
 ################################################################################
 # Message
