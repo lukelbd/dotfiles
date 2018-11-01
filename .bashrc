@@ -33,7 +33,7 @@ export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "
   # see: https://unix.stackexchange.com/a/124408/112647
 # Message constructor; modify the number to increase number of dots
 function _bashrc_message() {
-  printf "${1}$(printf '.%.0s' $(seq 1 $((50 - ${#1}))))"
+  printf "${1}$(printf '.%.0s' $(seq 1 $((46 - ${#1}))))"
 }
 
 ################################################################################
@@ -52,7 +52,7 @@ unalias -a
 # behavior! For example, due to my overriding behavior of grep/man/help commands, and
 # the system default bashrc running those commands with my unexpected overrides
 export PYTHONPATH="" # this one needs to be re-initialized
-_bashrc_message "Configuring environment and loading modules..."
+_bashrc_message "Configuring environment and loading modules"
 if $_macos; then
   # Mac options
   # Defaults... but will reset them
@@ -188,7 +188,13 @@ elif [ -d "$HOME/miniconda3" ]; then
   _conda='miniconda3'
 fi
 if [ -n "$_conda" ]; then
-  _bashrc_message "Enabling conda..."
+  # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
+  # The first thing creates a bunch of environment variables and functions
+  # The second part calls the 'conda' function, which calls an activation function, which does the
+  # whole solving environment thing
+  # If you use the '. activate' version, there is an 'activate' file in bin
+  # that does these two things
+  _bashrc_message "Enabling conda"
   source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables
   conda activate # activate the default environment
   printf "done\n"
@@ -197,7 +203,7 @@ fi
 ################################################################################
 # Wrappers for common functions
 ################################################################################
-_bashrc_message "Declaring functions and aliases..."
+_bashrc_message "Declaring functions and aliases"
 # Append prompt command
 function prompt_append() { # input argument should be new command
   export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
@@ -1374,7 +1380,7 @@ printf "done\n"
 ################################################################################
 # Run installation script; similar to the above one
 if [ -f ~/.fzf.bash ]; then
-  _bashrc_message "Enabling fzf..."
+  _bashrc_message "Enabling fzf"
   # See man page for --bind information
   # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
   #   key bindings will enabled multiple selection
@@ -1486,7 +1492,7 @@ fi
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
 # They are super annoying and useless
 if [ -f ~/.iterm2_shell_integration.bash ]; then
-  _bashrc_message "Enabling shell integration..."
+  _bashrc_message "Enabling shell integration"
   # First enable
   source ~/.iterm2_shell_integration.bash
   # Declare some helper functions
