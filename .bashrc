@@ -463,7 +463,7 @@ function columnize() { # neat function that splits lines into columns so they fi
   done
   printf "$final"
 }
-function ds() { # directory ls
+function ld() { # directory ls
   local dir
   [ -z $1 ] && dir="." || dir="$1"
   # [ -z $1 ] && dir="" || dir="$1/"
@@ -472,6 +472,7 @@ function ds() { # directory ls
   find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | columnize
   # find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||'
 }
+alias du='du -h -d 1'
 function dl() { # directory sizes
   local cmd dir
   [ -z $1 ] && dir="." || dir="$1"
