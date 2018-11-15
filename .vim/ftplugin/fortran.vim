@@ -20,4 +20,4 @@ function! s:fortranrun()
   exe '!clear; set -x; gfortran '.f90_path.' -o '.exe_path.' && '.exe_path.' && rm '.exe_path
   return
 endfunction
-nnoremap <silent> <buffer> <C-z> :w<CR>:call <sid>fortranrun()<CR>
+nnoremap <silent> <buffer> <C-z> :update<CR>:call <sid>fortranrun()<CR>

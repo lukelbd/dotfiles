@@ -9,4 +9,4 @@ let g:sh_minlines = 2000
 let g:sh_maxlines = 5000
 "------------------------------------------------------------------------------"
 "Run bash script with simple command
-nnoremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; ".shellescape(@%))<CR><CR>
+nnoremap <silent> <buffer> <C-z> :update<CR>:exec("!clear; set -x; ".shellescape(@%))<CR><CR>

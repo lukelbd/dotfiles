@@ -104,7 +104,7 @@
 	update   = "!git stash clear; git stash; git merge $@; git stash pop"
 	tree = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
 		--oneline --decorate --color $@ 2>/dev/null"
-	twig = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
+	trunk = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
 		--decorate --color $@ 2>/dev/null"
 	get  = "!git branch -r | grep -v '\\->' | while read remote; do \
 		if ! git branch -l | grep \"${remote#origin/}\" &>/dev/null; \

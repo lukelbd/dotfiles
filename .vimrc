@@ -1581,19 +1581,20 @@ if PlugActive("syntastic")
     return (exists('b:syntastic_on') && b:syntastic_on)
   endfunction
   function! s:syntastic_enable()
+    "Run checker
     let nbufs=len(tabpagebuflist())
     let checkers=s:syntastic_checkers()
     if len(checkers)==0
       echom 'No checkers available.'
     else "try running the checker, see if anything comes up
       noautocmd SyntasticCheck
-      if len(tabpagebuflist())>nbufs || s:syntastic_status()
-        wincmd j | set syntax=on
-        SimpleSetup
+      if (len(tabpagebuflist())>nbufs && !s:syntastic_status()) 
+        \ || (len(tabpagebuflist())==nbufs && s:syntastic_status())
+        wincmd j | set syntax=on | SimpleSetup
         wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
-        echom 'Using checker '.checkers[-1].'.'
       else
         echom 'No errors found with checker '.checkers[-1].'.'
+        let b:syntastic_on=0
       endif
     endif
   endfunction
@@ -1602,7 +1603,7 @@ if PlugActive("syntastic")
     SyntasticReset
   endfunction
   "Set up custom remaps
-  nnoremap <silent> ;x :call <sid>syntastic_enable()<CR>
+  nnoremap <silent> ;x :update<CR>:call <sid>syntastic_enable()<CR>
   nnoremap <silent> ;X :call <sid>syntastic_disable()<CR>
   "Disable auto checking (passive mode means it only checks when we call it)
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
@@ -1932,9 +1933,12 @@ endif
 "###############################################################################
 "BUFFER WRITING/SAVING
 "Just declare a couple maps here
+"Note: Update only writes if file has been changed; see
+"https://stackoverflow.com/a/22425359/4970632
 augroup saving
 augroup END
-nnoremap <silent> <C-s> :w!<CR>
+nnoremap <silent> <C-s> :update<CR>
+" nnoremap <silent> <C-s> :w!<CR>
 nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-z to compile instead."<CR>
 nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
 "use force write, in case old version exists
@@ -2173,9 +2177,9 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 noremap <silent> <expr> _c ':s/\(^\s*'.Comment().'.*$\n'
   \.'\\|^.*\S*\zs\s\+'.Comment().'.*$\)//g \| noh<CR>'
 "Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-"Replace consecutive spaces on current line with one space
+"Replace consecutive spaces on current line with one space, if they're not part of indentation
 noremap <silent> _w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
-noremap <silent> _W :s/\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
+noremap <silent> _W :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
 "Delete empty lines
 "Replace consecutive newlines with single newline
 noremap <silent> _e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>

@@ -23,14 +23,17 @@
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 ################################################################################
 [[ $- != *i* ]] && return
+clear # first clear screen
 
 ################################################################################
 # Prompt
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
-export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+# export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
-  # see: https://unix.stackexchange.com/a/124408/112647
+  # see: https://stackoverflow.com/a/28938235/4970632
+  # also see: https://unix.stackexchange.com/a/124408/112647
 # Message constructor; modify the number to increase number of dots
 function _bashrc_message() {
   printf "${1}$(printf '.%.0s' $(seq 1 $((29 - ${#1}))))"
@@ -48,11 +51,10 @@ unalias -a
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
 # First, the path management
-# If loading default bashrc, *must* happen before everything else or may get unexpected
-# behavior! For example, due to my overriding behavior of grep/man/help commands, and
-# the system default bashrc running those commands with my unexpected overrides
-export PYTHONPATH="" # this one needs to be re-initialized
+# If you source the default bashrc, *must* happen before everything else or
+# may get unexpected behavior due to unexpected alias/function overrides!
 _bashrc_message "Variables and modules"
+export PYTHONPATH="" # this one needs to be re-initialized
 if $_macos; then
   # Mac options
   # Defaults... but will reset them
@@ -172,6 +174,7 @@ alias brew="PATH=$PATH brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
+export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 # Matplotlib stuff
 # See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
 # May be necessary for rendering fonts in ipython notebooks
@@ -855,20 +858,18 @@ fi
 alias julia="julia --banner=no"
 # iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
-pysimple=$(echo "get_ipython().magic('load_ext autoreload')
-  get_ipython().magic('autoreload 2')" | sed 's/^ *//g')
-pycomplex=$(echo "$pysimple
-  from datetime import datetime
-  from datetime import date
+_py_simple=$(echo "
+  get_ipython().magic('load_ext autoreload')
+  get_ipython().magic('autoreload 2')
+  " | sed 's/^ *//g')
+_py_complex=$(echo "$_py_simple
   import numpy as np
   import pandas as pd
   import xarray as xr
-  $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX')
-                     import matplotlib.pyplot as plt
-                     import pubplot as plot")
+  $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import skyplot as plot")
   " | sed 's/^ *//g')
-alias iwork="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pycomplex\""
-alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$pysimple\""
+alias iwork="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_complex\""
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_simple\""
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
 # * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
@@ -1560,7 +1561,8 @@ function title_declare() { # Cmd-I from iterm2 also works
   if [ -n "$1" ]; then # warning: $@ is somehow always non-empty!
     _title="$@"
   else
-    _title="$(read_idle -p "Window title (window $_win_num): ")"
+    read -p "Window title (window $_win_num):" _title
+    # _title="$(read_idle -p "Window title (window $_win_num): ")"
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while

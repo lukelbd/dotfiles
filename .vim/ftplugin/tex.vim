@@ -28,7 +28,7 @@ let g:tex_stylish=1
 "------------------------------------------------------------------------------"
 "Commands for compiling latex
 "Use C-z for compiling normally, and <Leader>z for compiling to word document.
-noremap <silent> <buffer> <C-z> :w<CR>:exec('!clear; set -x; ~/bin/document '.shellescape(@%).' false false')<CR>
+noremap <silent> <buffer> <C-z> :update<CR>:exec('!clear; set -x; ~/bin/document '.shellescape(@%).' false false')<CR>
 noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; ~/bin/document '.shellescape(@%).' true  false')<CR>
 noremap <silent> <buffer> <Leader>Z :w<CR>:exec('!clear; set -x; ~/bin/document '.shellescape(@%).' false true')<CR>
 "------------------------------------------------------------------------------"

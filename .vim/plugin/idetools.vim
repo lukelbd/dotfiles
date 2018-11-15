@@ -275,6 +275,7 @@ nnoremap <silent> @ :let @/='\_s\@<='.<sid>scopesearch(0).expand('<cWORD>').'\ze
 "Remap g/ for function-wide searching; similar convention to other commands
 "Note the <silent> will prevent beginning the search until another key is pressed
 nnoremap <silent> g/ /<C-r>=<sid>scopesearch(0)<CR>
+nnoremap <silent> g? ?<C-r>=<sid>scopesearch(0)<CR>
 "Map to search by character; never use default ! map so why not!
 "by default ! waits for a motion, then starts :<range> command
 nnoremap <silent> ! ylh/<C-r>=escape(@",'/\')<CR><CR>

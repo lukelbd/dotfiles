@@ -7,4 +7,4 @@ function! s:crun()
   exe '!clear; set -x; gcc '.cpp_path.' -o '.exe_path.' && '.exe_path.' && rm '.exe_path
   return
 endfunction
-nnoremap <silent> <buffer> <C-z> :w<CR>:call <sid>crun()<CR>
+nnoremap <silent> <buffer> <C-z> :update<CR>:call <sid>crun()<CR>

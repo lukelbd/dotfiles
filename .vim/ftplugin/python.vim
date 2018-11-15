@@ -13,7 +13,7 @@
 "Tab settings; normally keep it to just 2 spaces
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
 "Run current script in shell
-nnoremap <silent> <buffer> <C-z> :w<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
+nnoremap <silent> <buffer> <C-z> :update<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
 "Use period (.) as part of iskeyword
 "Note: This actually triggers pythonNumberError syntax group to highlight numbers
 "with period but no decimal places -- perhaps a good thing, because has poor readability.
