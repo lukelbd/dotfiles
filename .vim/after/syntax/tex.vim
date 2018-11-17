@@ -15,7 +15,8 @@
 "------------------------------------------------------------------------------"
 "Things recommended from :help tex-syntax
 "First, more lines for accuracy
-syntax sync minlines=2000
+" syntax sync minlines=2000
+syntax sync minlines=500
 "Add math zones
 "The first arg is an identifying suffix -- must be between K and U
 "The last arg is whether environment has a 'starred' form, i.e. \begin{align*}

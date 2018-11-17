@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
 #------------------------------------------------------------------------------#
-# TODO: Add functionality to also copy over beamer themes.
-#------------------------------------------------------------------------------#
 # May require bash 4.0
-# This script compile LaTeX documents on macOS
-# * Will compile a RTF version of document if filename is specially
-#   formatted like manuscriptYYYY-MM-DD.tex
-# * Will compile with a bibliography using any .bib file detected in
-#   the same folder; useful because may want to keep the same .bib file
-#   for every version of the manuscript. If you have more than one .bib file
-#   the function will fail.
-# * Why this instead of latexmk? It adds a few features, and also had issues with
-#   latexmk where would always end up with random extra files being created. Only
-#   way to consistently remove those temporary files was to query files present in
-#   folder before/after compiling step; delete the new ones. This is better!
+# This script compile LaTeX documents on macOS. Why do we usually need
+# 4 compilation steps?
+#   1. At the first `latex` run, all `\cite{...}` arguments are written in the
+#      file `document.aux`.
+#   2. At the `bibtex` run, this information is taken by bibtex and the relevant
+#      entries are put into the `.bbl` file, sorted either alphabetically or by
+#      citation order (sometimes called "unsorted") and formatted according to
+#      the instructions provided by the bibliography style that's in use.
+#   3. At the next run of `latex`, the `.bbl` file is included at the point
+#      the `\bibliography` instructions, and the correct labels for `\cite{...}`
+#      commands are written in `.aux` file.
+#   4. Only at the last run, `latex` knows what the correct labels are and
+#      includes them in the document.
+# Why this instead of latexmk? It adds a few features, and also had issues with
+# latexmk where would always end up with random extra files being created. Only
+# way to consistently remove those temporary files was to query files present in
+# folder before/after compiling step; delete the new ones. This is better!
 #------------------------------------------------------------------------------#
 # Initial stuff
 shopt -s nullglob # glob-expand into zero entries
@@ -60,7 +64,7 @@ else
   echo "Bibliography: \"$bibfile\""
 fi
 
-# Finally detect if we want to run latexdiff on this file
+# Detect if we want to run latexdiff on this file
 [[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]]
 [ $? -eq 0 ] && dfilename="${filename%.tex}changes.tex" || dfilename=""
 
@@ -71,7 +75,7 @@ nocomments "$filename" | egrep 'fontspec|xltxtra' &>/dev/null
 
 # Use Lua if beamer present, will be faster
 # Also required for beamerposter, not sure about other cases
-nocomments "$filename" | grep '\\documentclass\[.*\]{beamer}' &>/dev/null
+nocomments "$filename" | grep 'documentclass.*{beamer}' &>/dev/null
 [ $? -eq 0 ] && latex=lualatex
 
 # Override if special package present
@@ -218,21 +222,25 @@ colorthemes=($(nocomments "$filename" | grep '^.*\\usecolortheme' | inbraces | s
 flags="-interaction=nonstopmode --shell-escape"
 files_old=(*) # glob expansion to every filename
 # Compile normal PDF, or the track-changes version
-# * Always compile TWICE to enable glossary-references, equation-references
+# * Always compile *twice* to enable glossary-references, equation-references
 # * If bibliography present, compile once to get .aux file, run bibtex
 #   on the auxfile (cannot call bibtex <file>.tex; must be bibtex <file> or
 #   bibtex <file>.aux), then run TWICE as before.
 # * See this page for matching consecutive lines with SED:
 #   https://unix.stackexchange.com/q/165362/112647
-echo "Compiling with $latex"
+case $latex in
+  xelatex)  stylized=XeLaTeX ;;
+  pdflatex) stylized=PDFLaTeX ;;
+  lualatex) stylized=LuaLaTeX ;;
+  *) echo "Error: Unknown compiler \"$latex\"." && exit 1
+esac
+echo "Compiling with $stylized"
+echo "Generating aux file" # maybe just need to generate glossary!
+$latex -draftmode $flags "$filestem" &>/dev/null
 if $bibliography; then
-  echo "Generating aux file"
-  $latex -draftmode $flags "$filestem" &>/dev/null
   echo "Generating bibliography"
   $bibtex "$filestem" #&>/dev/null
-fi
-if ! [[ "lualatex xelatex" =~ $latex ]]; then
-  echo "Draftmode pass"
+  echo "Incorporating bbl file"
   $latex -draftmode $flags "$filestem" &>/dev/null
 fi
 # This time want to read error messages
