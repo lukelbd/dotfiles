@@ -2,7 +2,7 @@
 "###############################################################################
 " A fancy vimrc that does all sorts of magical things.
 " When to use after: https://vi.stackexchange.com/questions/12731/when-to-use-the-after-directory
-" Note: so far don't organize stuff into *after* files (only distinction
+" Note: So far don't organize stuff into *after* files (only distinction
 " is that they should test b:did_ftplugin, b:current_syntax, et. cetera or
 " g:loaded_<name>, et. cetera). Just smash indent/ftplugin files together
 " and only some of the files in .vim/ftplugin have those lines.
@@ -489,6 +489,7 @@ Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
+Plug 'tpope/vim-liquid'
 " Plug 'tweekmonster/impsort.vim' "this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' "this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
 "------------------------------------------------------------------------------"
@@ -584,7 +585,7 @@ Plug 'godlygeek/tabular'
 Plug 'triglav/vim-visual-increment' "visual incrementing/decrementing
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
+" if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 "------------------------------------------------------------------------------"
 "Single line/multiline transition; make sure comes after surround
 "Hardly ever need this
@@ -1129,9 +1130,9 @@ if PlugActive("vim-visual-increment")
   silent! vunmap <C-a>
   silent! vunmap <C-x>
   vmap + <Plug>VisualIncrement
-  vmap \ <Plug>VisualDecrement
+  vmap _ <Plug>VisualDecrement
   nnoremap + <C-a>
-  nnoremap \ <C-x>
+  nnoremap _ <C-x>
 endif
 
 "###############################################################################
@@ -1289,7 +1290,7 @@ endif
 if PlugActive('fzf.vim')
   "Custom tools using fzf#run command
   "First a helper function (see below)
-  let g:size='~20%'
+  let g:size='~35%'
   function! s:tabselect()
     let items=[]
     for i in range(tabpagenr('$')) "iterate through each tab
@@ -1398,7 +1399,8 @@ if PlugActive("nerdcommenter")
   "Custom delimiter overwrites (default python includes space for some reason)
   let g:NERDCustomDelimiters = {
     \ 'python': {'left': '#'}, 'cython': {'left': '#'},
-    \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'}
+    \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'},
+    \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
   "Default settings
   let g:NERDCreateDefaultMappings = 0 " disable default mappings (make my own)
@@ -1780,55 +1782,55 @@ if PlugActive("tabular")
 	command! -range -nargs=1 Table <line1>,<line2>call <sid>table(<q-args>)
   "NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   "Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> _<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
-  vnoremap <silent> <expr> _<Space> "<Esc>:silent! '<,'>Table /".input('Alignment regex: ').'/l1c1<CR>'
+  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
+  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Alignment regex: ').'/l1c1<CR>'
   "By commas; suitable for diag_table's in models; does not ignore comment characters
-  nnoremap <expr> _, ':Tabularize /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> _, ':Table      /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> \, ':Tabularize /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \, ':Table      /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
   "Dictionary, colon on right
-  nnoremap <expr> _D ':Tabularize /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> _D ':Table      /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
+  nnoremap <expr> \D ':Tabularize /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> \D ':Table      /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
   "Dictionary, colon on left
-  nnoremap <expr> _d ':Tabularize /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> _d ':Table      /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> \d ':Tabularize /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \d ':Table      /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
   "Right-align by spaces, considering comments as one 'field'; other words are
   "aligned by space; very hard to ignore comment-only lines here, because we specify text
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  nnoremap <expr> _r ':Tabularize /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> _r ':Table      /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
+  nnoremap <expr> \r ':Tabularize /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> \r ':Table      /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
   "As above, but let align
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
-  nnoremap <expr> _l ':Tabularize /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> _l ':Table      /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
-  nnoremap <expr> __ ':Tabularize /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> __ ':Table      /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
+  nnoremap <expr> \\ ':Tabularize /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> \\ ':Table      /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
-  nnoremap <expr> _\| ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> _\| ':Table      /\S\zs\ /l0<CR>'
+  nnoremap <expr> \\| ':Tabularize /\S\zs\ /l0<CR>'
+  vnoremap <expr> \\| ':Table      /\S\zs\ /l0<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
-  " nnoremap <expr> _C ':Tabularize /^.*\zs'.Comment(1).'/l1<CR>'
-  " vnoremap <expr> _C ':Table      /^.*\zs'.Comment(1).'/l1<CR>'
+  " nnoremap <expr> \C ':Tabularize /^.*\zs'.Comment(1).'/l1<CR>'
+  " vnoremap <expr> \C ':Table      /^.*\zs'.Comment(1).'/l1<CR>'
   "By comment character, but ignore comment-only lines
-  nnoremap <expr> _C ':Tabularize /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
-  vnoremap <expr> _C ':Table      /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
+  nnoremap <expr> \C ':Tabularize /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
+  vnoremap <expr> \C ':Table      /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
   "Align by the first equals sign either keeping it to the left or not
   "The eaiser to type one (-=) puts equals signs in one column
   "This selects the *first* uncommented equals sign that does not belong to
   "a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
-  nnoremap <expr> _= ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  vnoremap <expr> _= ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  nnoremap <expr> _+ ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
-  vnoremap <expr> _+ ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
-  " nnoremap <expr> _= ':Tabularize /^[^=]*\zs=/l1c1<CR>'
-  " vnoremap <expr> _= ':Table      /^[^=]*\zs=/l1c1<CR>'
-  " nnoremap <expr> _+ ':Tabularize /^[^=]*=\zs/l0c1<CR>'
-  " vnoremap <expr> _+ ':Table      /^[^=]*=\zs/l0c1<CR>'
+  nnoremap <expr> \= ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  vnoremap <expr> \= ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  nnoremap <expr> \+ ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  vnoremap <expr> \+ ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  " nnoremap <expr> \= ':Tabularize /^[^=]*\zs=/l1c1<CR>'
+  " vnoremap <expr> \= ':Table      /^[^=]*\zs=/l1c1<CR>'
+  " nnoremap <expr> \+ ':Tabularize /^[^=]*=\zs/l0c1<CR>'
+  " vnoremap <expr> \+ ':Table      /^[^=]*=\zs/l0c1<CR>'
 endif
 
 "###############################################################################
@@ -2174,27 +2176,27 @@ set noinfercase ignorecase smartcase "smartcase makes search case insensitive, u
 "Will use the 'g' prefix for these, because why not
 "see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
 "Delete commented text; very useful when sharing manuscripts
-noremap <silent> <expr> _c ':s/\(^\s*'.Comment().'.*$\n'
+noremap <silent> <expr> \c ':s/\(^\s*'.Comment().'.*$\n'
   \.'\\|^.*\S*\zs\s\+'.Comment().'.*$\)//g \| noh<CR>'
 "Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <silent> _w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
-noremap <silent> _W :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
+noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
+noremap <silent> \W :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
 "Delete empty lines
 "Replace consecutive newlines with single newline
-noremap <silent> _e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>
-noremap <silent> _E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g \| noh<CR>:echom "Squeezed consecutive newlines."<CR>
+noremap <silent> \e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>
+noremap <silent> \E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g \| noh<CR>:echom "Squeezed consecutive newlines."<CR>
 "Replace tabs with spaces
-noremap <expr> <silent> _<Tab> ':s/\t/' .repeat(' ',&tabstop).'/g \| noh<CR>'
+noremap <expr> <silent> \<Tab> ':s/\t/' .repeat(' ',&tabstop).'/g \| noh<CR>'
 "Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 "Underscore is easiest one to switch if using that Karabiner map
-nnoremap <silent> _' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> _" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> _\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
-nnoremap <silent> _- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
+nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> \\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 "Special: replace useless BibTex entries
 function! s:tex_replace()
-  nnoremap <buffer> <silent> _x :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  nnoremap <buffer> <silent> \x :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
 endfunction
 
 "###############################################################################

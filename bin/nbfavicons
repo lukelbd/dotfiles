@@ -1,28 +1,42 @@
 #!/usr/bin/env bash
+# Just switches ipython notebook favicons out
 # User array notation to expand pattern
 base=~/anaconda3
 icodir=($base/lib/python*/site-packages/notebook/static/base/images)
 icofiles=($icodir/*.ico)
+icofiles=(${icofiles[@]##*/})
 [ ! -d "$icodir" ] && echo "Error: Directory not found: \"$icodir\"." && exit 1
+
 # Override information
-pngdir=~/bin/favicons # override
-tmp=$pngdir/tmp
+dir=~/bin/favicons # override
+tmp=$dir/tmp
 [ ! -d "$tmp" ] && mkdir $tmp
-pngfiles=($pngdir/*.png)
-pngfiles=(${pngfiles[@]##*/})
-for icofile in ${icofiles[@]##*/}; do
-  if [[ " ${pngfiles[@]%.png} " =~ " ${icofile%.ico} " ]]; then
-    echo "Overriding favicon with file \"${icofile%.ico}.png\"."
-    tmpfiles=() # store here
-    for reso in 16 32 48 128 256; do
-      convert $pngdir/${icofile%.ico}.png -scale $reso $tmp/$reso.png
-      tmpfiles+=($tmp/$reso.png)
-    done
-    convert ${tmpfiles[@]} $tmp/$icofile
-    if [ ! -r $icodir/${icofile%.ico}-default.ico ]; then
-      cp $icodir/$icofile $icodir/${icofile%.ico}-default.ico
+files=($dir/*.png)
+files+=($dir/*.ico)
+files=(${files[@]##*/})
+for file in ${files[@]##*/}; do
+  base=${file%.*}
+  # echo " ${icofiles[@]%.*} "
+  if [[ " ${icofiles[@]%.*} " =~ " $base " ]]; then
+    echo "Overriding favicon with file \"$file\"."
+    # Build new favicon
+    if [ "${file##*.}" == png ]; then
+      so=$tmp/$base.ico
+      tmpfiles=() # store here
+      for reso in 16 32 48 128 256; do
+        convert $dir/$base.png -scale $reso $tmp/$reso.png
+        tmpfiles+=($tmp/$reso.png)
+      done
+      convert ${tmpfiles[@]} $so
+    else
+      so=$dir/$base.ico
     fi
-    cp $tmp/$icofile $icodir/$icofile # move that shit over
+
+    # Replace favicon
+    if [ ! -r $icodir/$base-default.ico ]; then
+      cp $icodir/$base.ico $icodir/$base-default.ico
+    fi
+    cp $so $icodir/$base.ico # move that shit over
   fi
 done
 rm -r $tmp # empty it out

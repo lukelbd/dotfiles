@@ -232,9 +232,9 @@ case $latex in
   xelatex)  stylized=XeLaTeX ;;
   pdflatex) stylized=PDFLaTeX ;;
   lualatex) stylized=LuaLaTeX ;;
-  *) echo "Error: Unknown compiler \"$latex\"." && exit 1
+  *) echo "Error: Unknown compiler \"$latex\"." && exit 1 ;;
 esac
-echo "Compiling with $stylized"
+echo "Running with $stylized"
 echo "Generating aux file" # maybe just need to generate glossary!
 $latex -draftmode $flags "$filestem" &>/dev/null
 if $bibliography; then

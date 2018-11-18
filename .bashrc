@@ -508,8 +508,8 @@ bytes2human() {
 export -f bytes2human
 
 # Grepping and diffing; enable colors
-alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+alias grep="grep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+alias egrep="egrep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Query files
@@ -608,6 +608,36 @@ function merge() {
 ################################################################################
 alias suser="squeue -u $USER"
 alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
+
+################################################################################
+# Website tools
+################################################################################
+# Use 'brew install ruby-bundler nodejs' then 'bundle install' first
+# See README.md in website directory
+# Ignore standard error because of annoying deprecation warnings; see:
+# https://github.com/academicpages/academicpages.github.io/issues/54
+# jupyter nbconvert --to html
+# A template idea:
+# http://briancaffey.github.io/2016/03/14/ipynb-with-jekyll.html
+# Another template idea:
+# http://www.leeclemmer.com/2017/07/04/how-to-publish-jupyter-notebooks-to-your-jekyll-static-website.html
+# For fixing tiny font size in code cells see
+# http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
+# Note CSS variables are in _sass/_variables
+alias server="bundle exec jekyll liveserve 2>/dev/null"
+function nbweb() {
+  [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
+  local template name root dir md
+  root=$HOME/website
+  template=$root/nbtemplate.tpl
+  folder=tools # name of folder that jekyll will create
+  path=$root/_$folder/notebooks
+  md="$path/${1%.ipynb}".md
+  jupyter nbconvert --to markdown --template $template --output-dir $path $1
+  # jupyter nbconvert --to markdown $1 --config $root/jekyll.py
+  # jupyter nbconvert --to markdown --output-dir $path $1
+  gsed -i "s:showcase_files:../$folder/notebooks/showcase_files:g" $md
+}
 
 ################################################################################
 # SSH, session management, and Github stuff
@@ -755,17 +785,6 @@ if ! $_macos; then # only do this if not on macbook
     ps -ef | grep $SSH_AGENT_PID | grep ssh-agent$ >/dev/null || initssh
   else
     initssh
-  fi
-fi
-# Check git remote on current folder, make sure it points to SSH/HTTPS depending
-# on current machine (on Macs just use HTTPS with keychain; on Linux must use id_rsa_github
-# SSH key or password/username can only be stored in plaintext in home directory)
-_git_message=$(git remote -v 2>/dev/null)
-if [ ! -z "$_git_message" ]; then
-  if [[ "$_git_message" =~ "https" ]] && ! $_macos; then # ssh node for Linux
-    echo "Warning: Current Github repository points to HTTPS address. Must be changed to git@github.com SSH node."
-  elif [[ "$_git_message" =~ "git@github" ]] && $_macos; then # url for Mac
-    echo "Warning: Current Github repository points to SSH node. Must be changed to HTTPS address."
   fi
 fi
 
