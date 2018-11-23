@@ -33,6 +33,7 @@
 "put this too late, whichwrap will be reset
 set nocompatible
 set tabpagemax=100 "allow opening shit load of tabs at once
+set redrawtime=5000 "sometimes takes a long time, let it happen
 set shortmess=a "snappy messages, frmo the avoid press enter doc
 set shiftround "round to multiple of shiftwidth
 let mapleader="\<Space>"
@@ -1524,10 +1525,10 @@ if PlugActive("nerdcommenter")
   "Section headers and dividers
   nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
   nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
-  nmap c_ <Plug>bar1
-  nmap c\| <Plug>bar2
-  nnoremap <silent> c- :call <sid>section('-')<CR>A
-  nnoremap <silent> c\ :call <sid>section()<CR>A
+  nmap c- <Plug>bar1
+  nmap c_ <Plug>bar2
+  nnoremap <silent> c\  :call <sid>section('-')<CR>A
+  nnoremap <silent> c\| :call <sid>section()<CR>A
   "Author information comment
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
   "Current date comment; y is for year; note d is reserved for that kwarg-to-dictionary map

@@ -68,13 +68,13 @@ nnoremap <buffer> <silent> <Leader>d :call <sid>pydoc()<CR>:redraw!<CR>
 
 "------------------------------------------------------------------------------"
 "Abbreviations
-"Add to these
+"Actually these were fucking annoying, forget it
 "------------------------------------------------------------------------------"
-inoreabbrev <buffer> true  True
-inoreabbrev <buffer> false False
-inoreabbrev <buffer> none  None
-inoreabbrev <buffer> nan   np.nan
-inoreabbrev <buffer> inf   np.inf
+" inoreabbrev <buffer> true  True
+" inoreabbrev <buffer> false False
+" inoreabbrev <buffer> none  None
+" inoreabbrev <buffer> nan   np.nan
+" inoreabbrev <buffer> inf   np.inf
 
 "------------------------------------------------------------------------------"
 " Easy conversion between key=value pairs and 'key':value dictionary entries

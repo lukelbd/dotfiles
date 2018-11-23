@@ -176,8 +176,8 @@ alias brew="PATH=$PATH brew"
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 # Matplotlib stuff
-# See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
 # May be necessary for rendering fonts in ipython notebooks
+# See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
 export MPLCONFIGDIR=$HOME/.matplotlib
 printf "done\n"
 
@@ -624,7 +624,7 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # For fixing tiny font size in code cells see
 # http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
 # Note CSS variables are in _sass/_variables
-alias server="bundle exec jekyll liveserve 2>/dev/null"
+alias server="bundle exec jekyll liveserve --config '_config.yml,_config.dev.yml' 2>/dev/null"
 function nbweb() {
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
   local template name root dir md
@@ -633,10 +633,10 @@ function nbweb() {
   folder=tools # name of folder that jekyll will create
   path=$root/_$folder/notebooks
   md="$path/${1%.ipynb}".md
-  jupyter nbconvert --to markdown --template $template --output-dir $path $1
+  jupyter nbconvert --to=markdown --template=$template --output-dir=$path $1
+  gsed -i "s:showcase_files:../$folder/notebooks/showcase_files:g" $md
   # jupyter nbconvert --to markdown $1 --config $root/jekyll.py
   # jupyter nbconvert --to markdown --output-dir $path $1
-  gsed -i "s:showcase_files:../$folder/notebooks/showcase_files:g" $md
 }
 
 ################################################################################
@@ -877,6 +877,9 @@ fi
 alias julia="julia --banner=no"
 # iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
+# NOTE: MacOSX backend broken right now:
+# https://github.com/matplotlib/matplotlib/pull/11850
+# Seems to not yet be in a stable conda release, so stay tuned.
 _py_simple=$(echo "
   get_ipython().magic('load_ext autoreload')
   get_ipython().magic('autoreload 2')
@@ -885,8 +888,8 @@ _py_complex=$(echo "$_py_simple
   import numpy as np
   import pandas as pd
   import xarray as xr
-  $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import skyplot as plot")
   " | sed 's/^ *//g')
+  # $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import proplot as plot")
 alias iwork="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_complex\""
 alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_simple\""
 # Perl -- hard to understand, but here it goes:
