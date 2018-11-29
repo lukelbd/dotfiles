@@ -96,6 +96,20 @@ augroup END
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+"Undo cheyenne maps -- not sure how to isolate/disable /etc/vimrc without
+"disabling other stuff we want, e.g. syntax highlighting
+let s:check=mapcheck("\<Esc>", 'n')
+if s:check != '' "non-empty
+  silent! unmap <Esc>[3~
+  let s:insert_maps = ['[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
+      \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
+      \ '[3;5~', '[2;5~', '[1;5F', '[1;5H', '[1;5B', '[1;5A', '[1;5C',
+      \ '[1;5D', '[6;2~', '[5;2~', '[3;2~', '[2;2~', '[1;2F', '[1;2H',
+      \ '[1;2B', '[1;2A', '[1;2C', '[1;2D']
+  for s:insert_map in s:insert_maps
+    exe 'silent! iunmap <Esc>'.s:insert_map
+  endfor
+endif
 "Misc stuff
 noremap <CR>    <Nop>
 noremap <Space> <Nop>
@@ -115,7 +129,7 @@ noremap <C-n> <Nop>
 "also prevent Ctrl+c ringing the bell
 nnoremap <C-c>       <Nop>
 nnoremap <Delete>    <Nop>
-nnoremap <Backspace> <Nop>
+nnoremap <Aackspace> <Nop>
 "Disable arrow keys because you're better than that
 "Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
 " for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
