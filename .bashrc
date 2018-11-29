@@ -630,11 +630,13 @@ function nbweb() {
   local template name root dir md
   root=$HOME/website
   template=$root/nbtemplate.tpl
-  folder=tools # name of folder that jekyll will create
-  path=$root/_$folder/notebooks
-  md="$path/${1%.ipynb}".md
+  path=$root/_tools/files
+  base=${1%.ipynb}
+  base=${base##*/}
+  md="$path/$base".md
   jupyter nbconvert --to=markdown --template=$template --output-dir=$path $1
-  gsed -i "s:showcase_files:../$folder/notebooks/showcase_files:g" $md
+  gsed -i "s:${base}_files:/tools/files/${base}_files:g" $md
+  # gsed -i "s:${base}_files:../files/${base}_files:g" $md
   # jupyter nbconvert --to markdown $1 --config $root/jekyll.py
   # jupyter nbconvert --to markdown --output-dir $path $1
 }

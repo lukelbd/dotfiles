@@ -663,11 +663,12 @@ endif
 "If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
 "then just source it with the 'execute' shortcut Ctrl-z
 function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overridden by ftplugin stuff
+  " so ~/.vimrc "have issues with 'cannot refresh refresh(), it is currently in use'
   filetype detect "if started with empty file, but now shebang makes filetype clear
   filetype plugin indent on
   let loaded = []
-  let files  = ['~/.vim/ftplugin/'.&ft.'.vim',       '~/.vim/syntax/'.&ft.'.vim',
-               \'~/.vim/after/ftplugin/'.&ft.'.vim', '~/.vim/after/syntax/'.&ft.'.vim']
+  let files = ['~/.vim/ftplugin/'.&ft.'.vim',       '~/.vim/syntax/'.&ft.'.vim',
+             \ '~/.vim/after/ftplugin/'.&ft.'.vim', '~/.vim/after/syntax/'.&ft.'.vim']
   for file in files
     if !empty(glob(file))
       exe 'so '.file
@@ -676,7 +677,7 @@ function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overrid
   endfor
   echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
 endfunction
-command! Refresh call <sid>refresh()
+command! Refresh so ~/.vimrc | call <sid>refresh()
 nnoremap <silent> <Leader>S :call <sid>refresh()<CR>
 "Redraw screen
 nnoremap <silent> <Leader>r :redraw!<CR>
@@ -1412,15 +1413,28 @@ if PlugActive("nerdcommenter")
   let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 1
   "Basic maps for toggling comments
-  nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
-  nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
-  nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
-  nmap co <Plug>comment1
-  nmap cO <Plug>comment2
-  nmap c. <Plug>comment3
-  vnoremap <silent> co :call NERDComment('v', 'comment')<CR>
-  vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
-  vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
+  function! s:comment_insert()
+    if exists('b:NERDCommenterDelims')
+      let left=b:NERDCommenterDelims['left']
+      let right=b:NERDCommenterDelims['right']
+      let left_alt=b:NERDCommenterDelims['leftAlt']
+      let right_alt=b:NERDCommenterDelims['rightAlt']
+      if (left != '' && right != '')
+        return (left . '  ' . right . repeat("\<Left>", len(right)+1))
+      elseif left_alt != '' && right_alt != ''
+        return (left_alt . '  ' . right_alt . repeat("\<Left>", len(right_alt)+1))
+      else
+        return (left . ' ')
+      endif
+    else
+      return ''
+    endif
+  endfunction
+  inoremap <expr> <C-c> <sid>comment_insert()
+  " imap <expr> <C-c> b:NERDCommenterDelims['left'] . ' ' . b:NERDCommenterDelims['right']
+  map c. <Plug>NERDCommenterToggle
+  map co <Plug>NERDCommenterComment
+  map cO <Plug>NERDCommenterUncomment
 
   "----------------------------------------------------------------------------"
   "Create functions that return fancy comment 'blocks' -- e.g. for denoting
@@ -1428,14 +1442,14 @@ if PlugActive("nerdcommenter")
   "Functions will preserve indentation level of the line where cursor is located
   "----------------------------------------------------------------------------"
   "First the helpers functions
-  function! s:commentfiller()
+  function! s:comment_filler()
     if &ft=="vim"
       return '#'
     else
       return Comment()
     endif
   endfunction
-  function! s:commentindent()
+  function! s:comment_indent()
     let col=match(getline('.'), '^\s*\S\zs') "location of first non-whitespace char
     return (col==-1 ? 0 : col-1)
   endfunction
@@ -1444,9 +1458,9 @@ if PlugActive("nerdcommenter")
     if a:0 "if non-zero number of args
       let fill=a:1 "fill character
     else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill=s:commentfiller()
+      let fill=s:comment_filler()
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let nfill=(78-nspace)/len(fill) "divide by length of fill character
     let cchar=Comment()
     normal! k
@@ -1458,9 +1472,9 @@ if PlugActive("nerdcommenter")
     if a:0
       let fill=a:1 "fill character
     else "choose fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill=s:commentfiller()
+      let fill=s:comment_filler()
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let nfill=(78-nspace)/len(fill) "divide by length of fill character
     let cchar=Comment()
     let lines=[repeat(' ',nspace).cchar.repeat(fill,nfill).cchar,
@@ -1477,7 +1491,7 @@ if PlugActive("nerdcommenter")
     else
       let message=''
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let cchar=Comment()
     normal! k
     call append(line('.'), repeat(' ',nspace).cchar.message)
@@ -1485,7 +1499,7 @@ if PlugActive("nerdcommenter")
   endfunction
   "Inline style of format # ---- Hello world! ----
   function! s:inline(ndash)
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let cchar=Comment()
     normal! k
     call append(line('.'), repeat(' ',nspace).cchar.repeat('-',a:ndash).'  '.repeat('-',a:ndash))
@@ -1494,7 +1508,7 @@ if PlugActive("nerdcommenter")
   endfunction
   "Inline style of format # ---- Hello world! ----
   function! s:double()
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let cchar=Comment()
     normal! k
     call append(line('.'), repeat(' ',nspace).cchar.'  '.cchar)
@@ -1507,14 +1521,14 @@ if PlugActive("nerdcommenter")
     else
       let fill=Comment() "comment character
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let ndash=(match(getline('.'), '\s*$')-nspace) "location of last non-whitespace char
     let cchar=Comment()
     call append(line('.'), repeat(' ',nspace).repeat(fill,ndash))
   endfunction
   "Docstring
   function! s:docstring(char)
-    let nspace=(s:commentindent()+&l:tabstop)
+    let nspace=(s:comment_indent()+&l:tabstop)
     call append(line('.'), [repeat(' ',nspace).repeat(a:char,3), repeat(' ',nspace), repeat(' ',nspace).repeat(a:char,3)])
     normal! jj$
   endfunction
@@ -1659,7 +1673,7 @@ endif
 "of session
 augroup wrap_tabs
   au!
-  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown'],&ft)
+  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown','liquid'],&ft)
   au FileType * exe 'TabToggle '.In(['text','gitconfig'],&ft)
 augroup END
 "Buffer amount on either side
