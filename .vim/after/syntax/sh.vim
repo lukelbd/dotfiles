@@ -19,10 +19,6 @@
 " syn cluster shCommandSubList add=AWKScriptEmbedded
 " hi def link AWKCommand Type
 "------------------------------------------------------------------------------"
-" Slurm SBATCH comments are one liners beginning with #SBATCH and containing
-" the keyword (i.e.SBATCH), one option (here only options starting with -- are
-" considered), and one optional value.
-"------------------------------------------------------------------------------"
 "Manage shell type
 if !exists("b:is_kornshell") && !exists("b:is_bash")
   if exists("g:is_posix") && !exists("g:is_kornshell")
@@ -42,11 +38,51 @@ if !exists("b:is_kornshell") && !exists("b:is_bash")
     let b:is_sh= 1
   endif
 endif
-"Syntax declarations
+
+"PBS system, less precise highlighting
+"Simply copied from Slurm example below
+"See also discussion here: https://unix.stackexchange.com/q/452461/112647
+syn match shPBSKeyword contained '#\(PBS\)\s*'
+syn region shPBSComment start='^#\(PBS\)' end="\n" oneline contains=shPBSKeyword,shPBSOption,shPBSValue
+syn match shPBSOption contained '\-[^=]*'
+hi def link shPBSKeyword PreProc
+hi def link shPBSComment Error
+syn region shPBSValue start="=" end="$" contains=shPBSString,shPBSMailType,shPBSIdentifier,shPBSEnv,shPBSHint,shPBSMode,shPBSPropag,shPBSInterval,shPBSDist,shPBSEmail
+syn match shPBSNumber   contained '\d\d*'
+syn match shPBSDuration contained '\d\d*\(:\d\d\)\{,2}'
+syn match shPBSNodeInfo contained '\d\d*\(:\d\d*\)\{,2}'
+syn match shPBSDuration contained '\d\d*-\d\=\d\(:\d\d\)\{,2}'
+syn match shPBSInterval contained '\d\d*\(-\d*\)\='
+syn match shPBSString   contained '.*'
+syn match shPBSEnv      contained '\d*L\=S\='
+syn keyword shPBSHint   contained compute_bound memory_bound nomultithread multithread
+syn keyword shPBSMode   contained append truncate
+syn keyword shPBSPropag contained ALL AS CORE CPU DATA FSIZE MEMLOCK NOFILE CPROC RSS STACK
+syn keyword shPBSDist   contained block cyclic arbitrary
+syn match shPBSDist  contained  'plane\(=.*\)\='
+syn match shPBSEmail contained  '[-a-zA-Z0-9.+]*@[-a-zA-Z0-9.+]*'
+hi def link shPBSComment  Error
+hi def link shPBSKeyword  PreProc
+hi def link shPBSOption   PreProc
+hi def link shPBSDuration Special
+hi def link shPBSString   Special
+hi def link shPBSMailType Special
+hi def link shPBSNumber   Special
+hi def link shPBSSep      Special
+hi def link shPBSNodeInfo Special
+hi def link shPBSEnv      Special
+hi def link shPBSHint     Special
+hi def link shPBSMode     Special
+hi def link shPBSPropag   Special
+hi def link shPBSInterval Special
+hi def link shPBSDist     Special
+hi def link shPBSEmail    Special
+
+"SLURM/SBATCH supercomputer system; see https://github.com/SchedMD/slurm/blob/master/contribs/slurm_completion_help/slurm.vim
 "All shSlurmString are suspect; they probably could be narrowed down to more
 "specific regular expressions. Typical example is --mail-type or --begin
-syn region  shSlurmComment start="^#SBATCH" end="\n" oneline contains=shSlurmKeyword,shSlurmOption,shSlurmValue
-syn match shSlurmKeyword contained '#SBATCH\s*'
+syn region shSlurmComment start='^#\(SBATCH\)' end="\n" oneline contains=shSlurmKeyword,shSlurmOption,shSlurmValue
+syn match shSlurmKeyword contained '#\(SBATCH\)\s*'
 syn match shSlurmOption contained '--account='           nextgroup=shSlurmString
 syn match shSlurmOption contained '--acctg-freq='        nextgroup=shSlurmNumber
 syn match shSlurmOption contained '--extra-node-info='   nextgroup=shSlurmNodeInfo
@@ -114,7 +150,7 @@ syn match shSlurmOption contained '--nodelist='          nextgroup=shSlurmString
 syn match shSlurmOption contained '--wckey='             nextgroup=shSlurmString
 syn match shSlurmOption contained '--wrap='              nextgroup=shSlurmString
 syn match shSlurmOption contained '--exclude='           nextgroup=shSlurmString
-syn region shSlurmValue start="=" end="$" contains=shSlurmNoshSlurmEnvdeInfo,shSlurmString,shSlurmMailType,shSlurmIdentifier,shSlurmEnv,shSlurmHint,shSlurmMode,shSlurmPropag,shSlurmInterval,shSlurmDist,shSlurmEmail
+syn region shSlurmValue start="=" end="$" contains=shSlurmString,shSlurmMailType,shSlurmIdentifier,shSlurmEnv,shSlurmHint,shSlurmMode,shSlurmPropag,shSlurmInterval,shSlurmDist,shSlurmEmail
 syn match shSlurmNumber   contained '\d\d*'
 syn match shSlurmDuration contained '\d\d*\(:\d\d\)\{,2}'
 syn match shSlurmNodeInfo contained '\d\d*\(:\d\d*\)\{,2}'
@@ -122,16 +158,16 @@ syn match shSlurmDuration contained '\d\d*-\d\=\d\(:\d\d\)\{,2}'
 syn match shSlurmInterval contained '\d\d*\(-\d*\)\='
 syn match shSlurmString   contained '.*'
 syn match shSlurmEnv      contained '\d*L\=S\='
-syn keyword   shSlurmHint   contained compute_bound memory_bound nomultithread multithread
-syn keyword   shSlurmMode   contained append truncate
-syn keyword   shSlurmPropag contained ALL AS CORE CPU DATA FSIZE MEMLOCK NOFILE CPROC RSS STACK
-syn keyword   shSlurmDist   contained block cyclic arbitrary
-syn match  shSlurmDist  contained  'plane\(=.*\)\='
-syn match  shSlurmEmail contained  '[-a-zA-Z0-9.+]*@[-a-zA-Z0-9.+]*'
+syn keyword shSlurmHint   contained compute_bound memory_bound nomultithread multithread
+syn keyword shSlurmMode   contained append truncate
+syn keyword shSlurmPropag contained ALL AS CORE CPU DATA FSIZE MEMLOCK NOFILE CPROC RSS STACK
+syn keyword shSlurmDist   contained block cyclic arbitrary
+syn match shSlurmDist  contained  'plane\(=.*\)\='
+syn match shSlurmEmail contained  '[-a-zA-Z0-9.+]*@[-a-zA-Z0-9.+]*'
 hi def link shSlurmComment  Error
-hi def link shSlurmKeyword  Function
-hi def link shSlurmOption   Operator
-hi def link shSlurmDuration Special
+hi def link shSlurmKeyword  PreProc
+hi def link shSlurmOption   PreProc
+" hi def link shSlurmDuration Special
 hi def link shSlurmString   Special
 hi def link shSlurmMailType Special
 hi def link shSlurmNumber   Special

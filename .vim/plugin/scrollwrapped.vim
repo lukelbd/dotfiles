@@ -51,21 +51,21 @@ function! s:wrapped_line_props(mode,line)
     "in breakat seem to *prevent* breaking, for example. But close enough.
     "Note: Need to escape the dash or won't work sometimes (try searching [*-+])
     if &l:linebreak
-      let test=s:reverse(string[:width-1])
+      let test=s:reverse(string[0:width-1])
       let offset=match(test, '['.escape(&l:breakat,'-').']')
       " let offset=match(test, '['.&l:breakat.']\(\w\|\s\)') "breaks shit
     endif
     let colnum+=(width-offset-n_indent) "the *actual* column number at first position
     let colstarts+=[colnum] "add column to list
     let lineheight+=1 "increment line
-    " echom 'substring: '.string[:width/2]
-    " echom 'offset: '.offset
     "Note since vim uses 0-indexing, position <width> is 1 char after end
     "Also make sure we trim leading spaces
+    "NOTE: Older versions of Vim require math expressions within index
+    "brackets surrounded by parentheses, or get weird error
     if verb
       echom 'width: '.width.' indent: '.n_indent.' string: '.(width-offset).' '.len(string)
     endif
-    let string=repeat(' ',n_indent).substitute(string[width-offset:],'^ \+','','')
+    let string=repeat(' ',n_indent).substitute(string[(width-offset):],'^ \+','','')
     if counter==s:tolerance
       " echom "Warning: Could not determine line height."
       break
