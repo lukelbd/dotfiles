@@ -59,8 +59,7 @@ exe 'runtime autoload/repeat.vim'
 let g:has_signs  = has("signs") "for git gutter and syntastic maybe
 let g:has_ctags  = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_nowait = (v:version>=704 || v:version==703 && has("patch1261"))
-let g:has_matchaddpos = exists("*matchaddpos") "for matchparen
-let g:has_repeat      = exists("*repeat#set") "start checks for function existence
+let g:has_repeat = exists("*repeat#set") "start checks for function existence
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
@@ -96,6 +95,20 @@ augroup END
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+"Undo cheyenne maps -- not sure how to isolate/disable /etc/vimrc without
+"disabling other stuff we want, e.g. syntax highlighting
+let s:check=mapcheck("\<Esc>", 'n')
+if s:check != '' "non-empty
+  silent! unmap <Esc>[3~
+  let s:insert_maps = ['[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
+      \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
+      \ '[3;5~', '[2;5~', '[1;5F', '[1;5H', '[1;5B', '[1;5A', '[1;5C',
+      \ '[1;5D', '[6;2~', '[5;2~', '[3;2~', '[2;2~', '[1;2F', '[1;2H',
+      \ '[1;2B', '[1;2A', '[1;2C', '[1;2D']
+  for s:insert_map in s:insert_maps
+    exe 'silent! iunmap <Esc>'.s:insert_map
+  endfor
+endif
 "Misc stuff
 noremap <CR>    <Nop>
 noremap <Space> <Nop>
@@ -115,7 +128,7 @@ noremap <C-n> <Nop>
 "also prevent Ctrl+c ringing the bell
 nnoremap <C-c>       <Nop>
 nnoremap <Delete>    <Nop>
-nnoremap <Backspace> <Nop>
+nnoremap <Aackspace> <Nop>
 "Disable arrow keys because you're better than that
 "Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
 " for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
@@ -445,7 +458,6 @@ let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703
 let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") "try alternative completion library
-let g:compatible_matchup     = g:has_matchaddpos "so far only this maybe?
 call plug#begin('~/.vim/plugged')
 "------------------------------------------------------------------------------"
 "Indent line
@@ -527,14 +539,11 @@ Plug 'vim-scripts/Pydiction' "just changes completeopt and dictionary and stuff
 "------------------------------------------------------------------------------"
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
+let g:loaded_matchparen = 1
 Plug 'Konfekt/FastFold'
-if g:compatible_matchup
-  let g:loaded_matchparen = 1
-  Plug 'andymass/vim-matchup'
-else
-  let g:loaded_matchparen = 0
-  Plug 'vim-scripts/matchit.zip'
-endif "better matching, see github
+Plug 'andymass/vim-matchup'
+" let g:loaded_matchparen = 0 "alternative (previously required matchaddpos, no longer)
+" Plug 'vim-scripts/matchit.zip'
 "------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'

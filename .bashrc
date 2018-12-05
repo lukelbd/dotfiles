@@ -76,9 +76,9 @@ if $_macos; then
   export PATH="/Applications/MATLAB_R2014a.app/bin:$PATH"
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
   # but on Linux distributions seems to work fine inside anaconda)
-  # By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends
-  # up in above path after brew install gcc49... and must install this rather than gcc, which
-  # loads libgfortran.3.dylib and yields gcc version 7
+  # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
+  # actually ends up in above path after brew install gcc49... and must install
+  # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
   alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
   export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
   export NCARG_ROOT="$HOME/ncl" # critically necessary to run NCL
@@ -88,49 +88,32 @@ else
   # Linux options
   case $HOSTNAME in
   # Olbers options
-  olbers)
-    # Add netcdf4 executables to path, for ncdump
-    export PATH="/usr/local/bin:/usr/bin:/bin"
-    export PATH="/usr/local/netcdf4-pgi/bin:$PATH" # fortran lib
-    export PATH="/usr/local/netcdf4/bin:$PATH" # c lib
-    # HDF5 utilities (not needed now, but maybe someday)
-    export PATH="/usr/local/hdf5/bin:$PATH"
-    # MPICH utilities
-    export PATH="/usr/local/mpich3/bin:$PATH"
-    # PGI utilities
-    export PATH="/opt/pgi/linux86-64/2017/bin:$PATH"
-    # Matlab
-    export PATH="/opt/Mathworks/R2016a/bin:$PATH"
-    # And edit library path
-    export LD_LIBRARY_PATH=/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib
+  # olbers)
+  #   # Add utilies to path; PGI, Matlab, basics, and edit library path
+  #   export PATH="/usr/local/bin:/usr/bin:/bin"
+  #   export PATH="/usr/local/netcdf4-pgi/bin:/usr/local/netcdf4/bin:$PATH" # fortran lib
+  #   export PATH="/usr/local/hdf5/bin:/usr/local/mpich3/bin:$PATH"
+  #   export PATH="/opt/pgi/linux86-64/2017/bin:/opt/Mathworks/R2016a/bin$PATH"
+  #   export LD_LIBRARY_PATH="/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib"
   # Gauss options
-  ;; gauss)
-    # Basics
-    export PATH="/usr/local/bin:/usr/bin:/bin"
-    # Add all other utilities to path
-    export PATH="/usr/local/netcdf4-pgi/bin:$PATH"
-    export PATH="/usr/local/hdf5-pgi/bin:$PATH"
-    export PATH="/usr/local/mpich3-pgi/bin:$PATH"
-    # PGI utilities, plus Matlab
-    export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
-    # edit the library path
-    export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
+  # gauss)
+  #   # Add utilities to path; PGI, Matlab, basics, and edit library path
+  #   export PATH="/usr/local/bin:/usr/bin:/bin"
+  #   export PATH="/usr/local/netcdf4-pgi/bin:/usr/local/hdf5-pgi/bin:/usr/local/mpich3-pgi/bin:$PATH"
+  #   export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
+  #   export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
   # Euclid options
-  ;; euclid)
+  euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     export PATH="/usr/local/bin:/usr/bin:/bin"
-    # PGI utilites, plus Matlab
     export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
-    # And edit the library path
     export LD_LIBRARY_PATH="/usr/local/lib"
   # Monde options
   ;; monde*)
-    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH="/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
-    # PGI utilites, plus Matlab
-    source set_pgi.sh # is in /usr/local/bin
-    # And edit the library path
+    # Basics; all netcdf, mpich, etc. utilites separate, add them
+    export PATH="/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
+    source set_pgi.sh # is in /usr/local/bin, sets up PGI and matlab
     # Isca modeling stuff
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde # "environment" configuration for emps-gv4
@@ -139,28 +122,26 @@ else
     # The Euclid/Gauss servers do not have NCL, so need to use conda
     # Monde has NCL installed already
     export NCARG_ROOT="/usr/local" # use the version located here
-  # Chicago options
+  # Chicago supercomputer, any of the login nodes
   ;; midway*)
     # Default bashrc setup
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
     source /etc/bashrc
     # Begin interactive node; or not since only lasts 2 hours
-    # echo "Entering interactive node." && sinteractive
-    # Add stuff to pythonpath
-    export PYTHONPATH="$HOME/project-midway2:$PYTHONPATH"
+    # sinteractive
     # Module load and stuff
-    echo "Running module load commands."
     module purge 2>/dev/null
     module load intel/16.0
     module load mkl/11.3
     module load Anaconda3
     # Fix prompt
     export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
-  # Cheyenne supercomputer
+  # Cheyenne supercomputer, any of the login nodes
   ;; cheyenne*)
-    # Load some really simple stuff
+    # Edit library path, path
+    export LD_LIBRARY_PATH="/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH"
+    # Load some modules
     module load tmux
-    alias modules="module avail 2>&1 | cat "
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -411,8 +392,16 @@ _setup_opts 2>/dev/null # ignore if option unavailable
 ################################################################################
 # The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
+# NOTE: Example for finding variables:
+# for var in $(variables | grep -i netcdf); do echo ${var}: ${!var}; done
+# NOTE: See: https://stackoverflow.com/a/949006/4970632
 alias aliases="compgen -a"
+alias variables="compgen -v"
 alias functions="compgen -A function" # show current shell functions
+alias builtins="compgen -b" # bash builtins
+alias commands="compgen -c"
+alias keywords="compgen -k"
+alias modules="module avail 2>&1 | cat "
 if $_macos; then
   alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
   alias bindings_stty="stty -e"                # bindings
@@ -483,9 +472,10 @@ alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*
 
 # Convert bytes to human
 # From: https://unix.stackexchange.com/a/259254/112647
-# NOTE: Will use this in a couple awk scripts in git config
-# aliases and other tools, so need to *export* the function
-bytes2human() {
+# NOTE: Used to use this in a couple awk scripts in git config
+# aliases and other tools, so used export -f bytes2human. This causes errors
+# when intering interactive node on supercomputer, so forget it.
+function bytes2human() {
   if [ $# -gt 0 ]; then
     nums="$@"
   else
@@ -494,16 +484,15 @@ bytes2human() {
   for i in $nums; do
     b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
     # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    while ((b > 1024)); do
-        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
-        b=$((b / 1024))
+    while (($b > 1024)); do
+        d="$(printf ".%02d" $(($b % 1024 * 100 / 1024)))"
+        b=$(($b / 1024))
         let s++
     done
     echo "$b$d${S[$s]}"
     # echo "$b$d$ {S[$s]}"
   done
 }
-export -f bytes2human
 
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
@@ -654,7 +643,7 @@ function nbweb() {
 # Declare some names for active servers
 gauss="ldavis@gauss.atmos.colostate.edu"
 monde="ldavis@monde.atmos.colostate.edu"
-cheyenne="davislu@cheyenne3.ucar.edu" # need to use same login node (opts are 1-6) to restore tmux sessions, etc
+cheyenne="davislu@cheyenne3.ucar.edu" # to hook up to existing screen/tmux sessions, pick one of the 1-6 login nodes
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
@@ -769,7 +758,7 @@ function killssh {
 function initssh {
   # echo "Initialising new SSH agent..."
   if [ -f "$HOME/.ssh/id_rsa_github" ]; then
-    echo "Adding Github private SSH key."
+    # echo "Adding Github private SSH key."
     command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
     chmod 600 "${SSH_ENV}"
     source "${SSH_ENV}" >/dev/null
@@ -1639,14 +1628,13 @@ alias title="title_declare" # easier for user
 alias playlist="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
 alias forecast="curl wttr.in/Fort\ Collins" # list weather information
 # Messages
-title_update # force update in case anything changed it, e.g. shell integration
+# title_update # force update in case anything changed it, e.g. shell integration
 $_macos && { # first the MacOS options
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
   [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
   }
-  # fortune # fun message
-  # } || { curl https://icanhazdadjoke.com/; echo; } # yay dad jokes
+_bashrc_loaded='true'
 # Dad jokes
-curl https://icanhazdadjoke.com/; echo; # yay dad jokes
+# curl https://icanhazdadjoke.com/; echo; # yay dad jokes
 

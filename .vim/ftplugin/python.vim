@@ -102,7 +102,9 @@ function! s:kwtrans(mode) range
     if line==a:firstline && line==a:lastline
       let prefix = (firstcol>=1 ? string[:firstcol-1] : '') "damn negative indexing makes this complicated
       let suffix = string[lastcol+1:]
-      let string = string[firstcol:lastcol] "just plain easier
+      " let string = string[:lastcol] "just plain easier
+      " let string = string[firstcol:]
+      let string = string[firstcol:lastcol]
     elseif line==a:firstline
       let prefix = (firstcol>=1 ? string[:firstcol-1] : '')
       let string = string[firstcol:]
