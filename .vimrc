@@ -129,9 +129,9 @@ noremap <C-l>   <C-i>
 noremap <C-h>   <C-o>
 noremap <Right> <C-i>
 noremap <Left>  <C-o>
-"Forward (C-f) and backward in changelist
-noremap <C-y> g;
-noremap <C-f> g,
+"Forward <C-m> (mapped to F4 in iTerm) and backwards
+noremap <C-n> g;
+noremap <F4> g,
 "Enable shortcut so that recordings are taken by just toggling 'q' on-off
 "the escapes prevent a weird error where sometimes q triggers command-history window
 noremap <silent> <expr> q b:recording ?
@@ -302,6 +302,8 @@ function! s:word_forward(key)
     return prefix.''
   endif
 endfunction
+"New map for 'execute one normal mode command, then return to insert mode'
+inoremap <F1> <C-o>
 "Apply maps, and simply use row of keys above j/k et cetera
 "Note pressing Ctrl-i in iTerm sends F3; see first few lines of vimrc
 inoremap <expr> <F3>  <sid>word_back("\<Left>")
@@ -707,7 +709,7 @@ function! s:tex_pick()
     if template=='blank' || template==''
       break
     elseif filereadable(expand('~/latex/'.template.'.tex'))
-      execute "0r ".template
+      execute "0r ~/latex/".template.'.tex'
       break
     endif
     echom " (invalid name)"
@@ -836,40 +838,31 @@ if PlugActive('unite.vim')
     " let g:citation_vim_zotero_attachment_path="~/Google Drive" "not needed cause symlinks are there maybe, didn't actually change 'data directory'
     " let g:citation_vim_bibtex_file="./empty_convert.bib" "by default, make this your filename
     "Mappings
-    "Note that F4 is mapped to Ctrl-m in iTerm
     function! s:citation_maps()
-      inoremap <buffer> <silent> <F4>k  <Esc>:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <F4>c  <Esc>:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <F4>t  <Esc>:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <F4>p  <Esc>:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <F4>n  <Esc>:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-n>k <Esc>:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-n>c <Esc>:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-n>t <Esc>:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-n>p <Esc>:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-n>n <Esc>:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <F4>k  :Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <F4>c  :Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <F4>t  :Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <F4>p  :Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <F4>n  :Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-n>k :Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-n>c :Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-n>t :Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-n>p :Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-n>n :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      "Zotero
+      nnoremap <buffer> <silent> <C-g>k  :Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-g>c  :Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-g>t  :Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-g>p  :Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-g>n  :Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      "BibTex lookup (will look for .bib file automatically)
+      nnoremap <buffer> <silent> <C-f>k :Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-f>c :Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-f>t :Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-f>p :Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      nnoremap <buffer> <silent> <C-f>n :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
     endfunction
     " "Insert citation, view citation info, append information
-    " nnoremap <silent> ;c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    " nnoremap <silent> ;I :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
-    " nnoremap <silent> ;A :<C-u>Unite -default-action=yank citation/title<CR>
+    " nnoremap <silent> <C-n>c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
+    " nnoremap <silent> <C-n>I :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
+    " nnoremap <silent> <C-n>A :<C-u>Unite -default-action=yank citation/title<CR>
     " "Open pdf, open file directory, open url
-    " nnoremap <silent> ;f :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
-    " nnoremap <silent> ;d :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
-    " nnoremap <silent> ;u :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
+    " nnoremap <silent> <C-n>f :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
+    " nnoremap <silent> <C-n>d :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
+    " nnoremap <silent> <C-n>u :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
     " "Search for word under cursor; search for words, input prompt
-    " nnoremap <silent> ;s :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
-    " nnoremap <silent> ;S :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
+    " nnoremap <silent> <C-n>s :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
+    " nnoremap <silent> <C-n>S :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
   endif
 endif
 
@@ -2211,7 +2204,8 @@ nnoremap <silent> \\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing da
 nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 "Special: replace useless BibTex entries
 function! s:tex_replace()
-  nnoremap <buffer> <silent> \x :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=.*$\n//gc<CR>
+  nnoremap <buffer> <silent> \x :%s/^\s*\(abstract\\|file\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
+  nnoremap <buffer> <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
 endfunction
 
 "###############################################################################

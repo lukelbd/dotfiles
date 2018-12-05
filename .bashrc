@@ -76,12 +76,12 @@ if $_macos; then
   export PATH="/Applications/MATLAB_R2014a.app/bin:$PATH"
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
   # but on Linux distributions seems to work fine inside anaconda)
+  # By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends
+  # up in above path after brew install gcc49... and must install this rather than gcc, which
+  # loads libgfortran.3.dylib and yields gcc version 7
   alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
   export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
   export NCARG_ROOT="$HOME/ncl" # critically necessary to run NCL
-    # by default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib; actually ends
-    # up in above path after brew install gcc49... and must install this rather than gcc, which
-    # loads libgfortran.3.dylib and yields gcc version 7
   # Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
   # [ -f /etc/profile ] && . /etc/profile # this itself should also run /etc/bashrc
 else
@@ -469,11 +469,7 @@ function columnize() { # neat function that splits lines into columns so they fi
 function ld() { # directory ls
   local dir
   [ -z $1 ] && dir="." || dir="$1"
-  # [ -z $1 ] && dir="" || dir="$1/"
-  # dir="${dir//\/\//\/}"
-  # command $_ls_command --color=always -A -d $dir*/
   find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | columnize
-  # find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||'
 }
 alias du='du -h -d 1'
 function dl() { # directory sizes
@@ -482,6 +478,8 @@ function dl() { # directory sizes
   ! $_macos && cmd=sort || cmd=gsort
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | $cmd -sh
 }
+# Find but ignoring hidden folders and stuff
+alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
 
 # Convert bytes to human
 # From: https://unix.stackexchange.com/a/259254/112647
@@ -656,7 +654,7 @@ function nbweb() {
 # Declare some names for active servers
 gauss="ldavis@gauss.atmos.colostate.edu"
 monde="ldavis@monde.atmos.colostate.edu"
-cheyenne="davislu@cheyenne.ucar.edu"
+cheyenne="davislu@cheyenne3.ucar.edu" # need to use same login node (opts are 1-6) to restore tmux sessions, etc
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
