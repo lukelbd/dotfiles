@@ -59,8 +59,7 @@ exe 'runtime autoload/repeat.vim'
 let g:has_signs  = has("signs") "for git gutter and syntastic maybe
 let g:has_ctags  = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_nowait = (v:version>=704 || v:version==703 && has("patch1261"))
-let g:has_matchaddpos = exists("*matchaddpos") "for matchparen
-let g:has_repeat      = exists("*repeat#set") "start checks for function existence
+let g:has_repeat = exists("*repeat#set") "start checks for function existence
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
@@ -96,6 +95,20 @@ augroup END
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+"Undo cheyenne maps -- not sure how to isolate/disable /etc/vimrc without
+"disabling other stuff we want, e.g. syntax highlighting
+let s:check=mapcheck("\<Esc>", 'n')
+if s:check != '' "non-empty
+  silent! unmap <Esc>[3~
+  let s:insert_maps = ['[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
+      \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
+      \ '[3;5~', '[2;5~', '[1;5F', '[1;5H', '[1;5B', '[1;5A', '[1;5C',
+      \ '[1;5D', '[6;2~', '[5;2~', '[3;2~', '[2;2~', '[1;2F', '[1;2H',
+      \ '[1;2B', '[1;2A', '[1;2C', '[1;2D']
+  for s:insert_map in s:insert_maps
+    exe 'silent! iunmap <Esc>'.s:insert_map
+  endfor
+endif
 "Misc stuff
 noremap <CR>    <Nop>
 noremap <Space> <Nop>
@@ -115,7 +128,7 @@ noremap <C-n> <Nop>
 "also prevent Ctrl+c ringing the bell
 nnoremap <C-c>       <Nop>
 nnoremap <Delete>    <Nop>
-nnoremap <Backspace> <Nop>
+nnoremap <Aackspace> <Nop>
 "Disable arrow keys because you're better than that
 "Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
 " for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
@@ -443,7 +456,6 @@ let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703
 let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") "try alternative completion library
-let g:compatible_matchup     = g:has_matchaddpos "so far only this maybe?
 call plug#begin('~/.vim/plugged')
 "------------------------------------------------------------------------------"
 "Indent line
@@ -525,14 +537,11 @@ Plug 'vim-scripts/Pydiction' "just changes completeopt and dictionary and stuff
 "------------------------------------------------------------------------------"
 "Folding and matching
 if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
+let g:loaded_matchparen = 1
 Plug 'Konfekt/FastFold'
-if g:compatible_matchup
-  let g:loaded_matchparen = 1
-  Plug 'andymass/vim-matchup'
-else
-  let g:loaded_matchparen = 0
-  Plug 'vim-scripts/matchit.zip'
-endif "better matching, see github
+Plug 'andymass/vim-matchup'
+" let g:loaded_matchparen = 0 "alternative (previously required matchaddpos, no longer)
+" Plug 'vim-scripts/matchit.zip'
 "------------------------------------------------------------------------------"
 "Files and directories
 Plug 'scrooloose/nerdtree'
@@ -663,11 +672,12 @@ endif
 "If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
 "then just source it with the 'execute' shortcut Ctrl-z
 function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overridden by ftplugin stuff
+  " so ~/.vimrc "have issues with 'cannot refresh refresh(), it is currently in use'
   filetype detect "if started with empty file, but now shebang makes filetype clear
   filetype plugin indent on
   let loaded = []
-  let files  = ['~/.vim/ftplugin/'.&ft.'.vim',       '~/.vim/syntax/'.&ft.'.vim',
-               \'~/.vim/after/ftplugin/'.&ft.'.vim', '~/.vim/after/syntax/'.&ft.'.vim']
+  let files = ['~/.vim/ftplugin/'.&ft.'.vim',       '~/.vim/syntax/'.&ft.'.vim',
+             \ '~/.vim/after/ftplugin/'.&ft.'.vim', '~/.vim/after/syntax/'.&ft.'.vim']
   for file in files
     if !empty(glob(file))
       exe 'so '.file
@@ -676,7 +686,7 @@ function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overrid
   endfor
   echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
 endfunction
-command! Refresh call <sid>refresh()
+command! Refresh so ~/.vimrc | call <sid>refresh()
 nnoremap <silent> <Leader>S :call <sid>refresh()<CR>
 "Redraw screen
 nnoremap <silent> <Leader>r :redraw!<CR>
@@ -1412,15 +1422,28 @@ if PlugActive("nerdcommenter")
   let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 1
   "Basic maps for toggling comments
-  nnoremap <silent> <Plug>comment1 :call NERDComment('n', 'comment')<CR>:call repeat#set("\<Plug>comment1",v:count)<CR>
-  nnoremap <silent> <Plug>comment2 :call NERDComment('n', 'uncomment')<CR>:call repeat#set("\<Plug>comment2",v:count)<CR>
-  nnoremap <silent> <Plug>comment3 :call NERDComment('n', 'toggle')<CR>:call repeat#set("\<Plug>comment3",v:count)<CR>
-  nmap co <Plug>comment1
-  nmap cO <Plug>comment2
-  nmap c. <Plug>comment3
-  vnoremap <silent> co :call NERDComment('v', 'comment')<CR>
-  vnoremap <silent> cO :call NERDComment('v', 'uncomment')<CR>
-  vnoremap <silent> c. :call NERDComment('v', 'toggle')<CR>
+  function! s:comment_insert()
+    if exists('b:NERDCommenterDelims')
+      let left=b:NERDCommenterDelims['left']
+      let right=b:NERDCommenterDelims['right']
+      let left_alt=b:NERDCommenterDelims['leftAlt']
+      let right_alt=b:NERDCommenterDelims['rightAlt']
+      if (left != '' && right != '')
+        return (left . '  ' . right . repeat("\<Left>", len(right)+1))
+      elseif left_alt != '' && right_alt != ''
+        return (left_alt . '  ' . right_alt . repeat("\<Left>", len(right_alt)+1))
+      else
+        return (left . ' ')
+      endif
+    else
+      return ''
+    endif
+  endfunction
+  inoremap <expr> <C-c> <sid>comment_insert()
+  " imap <expr> <C-c> b:NERDCommenterDelims['left'] . ' ' . b:NERDCommenterDelims['right']
+  map c. <Plug>NERDCommenterToggle
+  map co <Plug>NERDCommenterComment
+  map cO <Plug>NERDCommenterUncomment
 
   "----------------------------------------------------------------------------"
   "Create functions that return fancy comment 'blocks' -- e.g. for denoting
@@ -1428,14 +1451,14 @@ if PlugActive("nerdcommenter")
   "Functions will preserve indentation level of the line where cursor is located
   "----------------------------------------------------------------------------"
   "First the helpers functions
-  function! s:commentfiller()
+  function! s:comment_filler()
     if &ft=="vim"
       return '#'
     else
       return Comment()
     endif
   endfunction
-  function! s:commentindent()
+  function! s:comment_indent()
     let col=match(getline('.'), '^\s*\S\zs') "location of first non-whitespace char
     return (col==-1 ? 0 : col-1)
   endfunction
@@ -1444,9 +1467,9 @@ if PlugActive("nerdcommenter")
     if a:0 "if non-zero number of args
       let fill=a:1 "fill character
     else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill=s:commentfiller()
+      let fill=s:comment_filler()
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let nfill=(78-nspace)/len(fill) "divide by length of fill character
     let cchar=Comment()
     normal! k
@@ -1458,9 +1481,9 @@ if PlugActive("nerdcommenter")
     if a:0
       let fill=a:1 "fill character
     else "choose fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill=s:commentfiller()
+      let fill=s:comment_filler()
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let nfill=(78-nspace)/len(fill) "divide by length of fill character
     let cchar=Comment()
     let lines=[repeat(' ',nspace).cchar.repeat(fill,nfill).cchar,
@@ -1477,7 +1500,7 @@ if PlugActive("nerdcommenter")
     else
       let message=''
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let cchar=Comment()
     normal! k
     call append(line('.'), repeat(' ',nspace).cchar.message)
@@ -1485,7 +1508,7 @@ if PlugActive("nerdcommenter")
   endfunction
   "Inline style of format # ---- Hello world! ----
   function! s:inline(ndash)
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let cchar=Comment()
     normal! k
     call append(line('.'), repeat(' ',nspace).cchar.repeat('-',a:ndash).'  '.repeat('-',a:ndash))
@@ -1494,7 +1517,7 @@ if PlugActive("nerdcommenter")
   endfunction
   "Inline style of format # ---- Hello world! ----
   function! s:double()
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let cchar=Comment()
     normal! k
     call append(line('.'), repeat(' ',nspace).cchar.'  '.cchar)
@@ -1507,14 +1530,14 @@ if PlugActive("nerdcommenter")
     else
       let fill=Comment() "comment character
     endif
-    let nspace=s:commentindent()
+    let nspace=s:comment_indent()
     let ndash=(match(getline('.'), '\s*$')-nspace) "location of last non-whitespace char
     let cchar=Comment()
     call append(line('.'), repeat(' ',nspace).repeat(fill,ndash))
   endfunction
   "Docstring
   function! s:docstring(char)
-    let nspace=(s:commentindent()+&l:tabstop)
+    let nspace=(s:comment_indent()+&l:tabstop)
     call append(line('.'), [repeat(' ',nspace).repeat(a:char,3), repeat(' ',nspace), repeat(' ',nspace).repeat(a:char,3)])
     normal! jj$
   endfunction
@@ -1659,7 +1682,7 @@ endif
 "of session
 augroup wrap_tabs
   au!
-  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown'],&ft)
+  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown','liquid'],&ft)
   au FileType * exe 'TabToggle '.In(['text','gitconfig'],&ft)
 augroup END
 "Buffer amount on either side
