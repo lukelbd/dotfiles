@@ -470,11 +470,7 @@ function columnize() { # neat function that splits lines into columns so they fi
 function ld() { # directory ls
   local dir
   [ -z $1 ] && dir="." || dir="$1"
-  # [ -z $1 ] && dir="" || dir="$1/"
-  # dir="${dir//\/\//\/}"
-  # command $_ls_command --color=always -A -d $dir*/
   find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | columnize
-  # find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||'
 }
 alias du='du -h -d 1'
 function dl() { # directory sizes
@@ -483,6 +479,8 @@ function dl() { # directory sizes
   ! $_macos && cmd=sort || cmd=gsort
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | $cmd -sh
 }
+# Find but ignoring hidden folders and stuff
+alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
 
 # Convert bytes to human
 # From: https://unix.stackexchange.com/a/259254/112647
