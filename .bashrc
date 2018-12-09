@@ -35,7 +35,7 @@ export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<co
   # see: https://stackoverflow.com/a/28938235/4970632
   # also see: https://unix.stackexchange.com/a/124408/112647
 # Message constructor; modify the number to increase number of dots
-function _bashrc_message() {
+_bashrc_message() {
   printf "${1}$(printf '.%.0s' $(seq 1 $((29 - ${#1}))))"
 }
 
@@ -189,16 +189,42 @@ fi
 ################################################################################
 _bashrc_message "Functions and aliases"
 # Append prompt command
-function prompt_append() { # input argument should be new command
+_prompt() { # input argument should be new command
   export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
 }
+
+# Neat function that splits lines into columns so they fill the terminal window
+_columnize() {
+  local cmd
+  local input output final
+  local tcols ncols maxlen nlines
+  [ $# -eq 0 ] && input="$(cat /dev/stdin)" || input="$1"
+  ! $_macos && cmd=wc || cmd=gwc
+  ncols=1 # start with 1
+  tcols=$(tput cols)
+  maxlen=0 # initial
+  nlines=$(printf "$input" | $cmd -l) # check against initial line count
+  output="$input" # default
+  while true; do
+    final="$output" # record previous output, this is what we will print
+    output=$(printf "$input" | xargs -n$ncols | column -t)
+    maxlen=$(printf "$output" | $cmd -L)
+    # maxlen=$(printf "$output" | awk '{print length}' | sort -nr | head -1) # or wc -L but that's unavailable on mac
+    [ $maxlen -gt $tcols ] && break # this time *do not* print latest result, will result in line break due to terminal edge
+    [ $ncols -gt $nlines ] && final="$output" && break # test *before* increment, want to use that output
+    # echo terminal $tcols ncols $ncols nlines $nlines maxlen $maxlen
+    let ncols+=1
+  done
+  printf "$final"
+}
+
 # Help page wrapper
 # See this page for how to avoid recursion when wrapping shell builtins and commands:
 # http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 # Don't want to use aliases, e.g. because ncl requires DYLD_LIBRARY_PATH to open
 # so we alias that as command prefix (don't want to change global path cause it
 # messes other shit up, maybe homebrew)
-function help() {
+help() {
   local arg="$@"
   [ -z "$arg" ] && echo "Requires argument." && return 1
   if builtin help "$arg" &>/dev/null; then
@@ -209,8 +235,9 @@ function help() {
     echo "No help information for \"$arg\"."
   fi
 }
+
 # Man page wrapper
-function man() { # always show useful information when man is called
+man() { # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
@@ -233,11 +260,12 @@ function man() { # always show useful information when man is called
     echo "No man entry for \"$1\"."
   fi
 }
+
 # Editor stuff
 # VIM command to keep track of session -- need to 'source' the sessionfile, which is
 # just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
 # re-closing every time we start a session
-function vim() {
+vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
@@ -269,9 +297,10 @@ function vim() {
   fi
   clear # clear screen after exit
 }
+
 # Open files optionally based on name, or revert to default behavior
 # if -a specified
-function open() {
+open() {
   local files app app_default
   while [[ $# -gt 0 ]]; do
     case $1 in
@@ -298,6 +327,7 @@ function open() {
     command open -a "$app" $file
   done
 }
+
 # Environment variables
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 export EDITOR=vim # default editor, nice and simple
@@ -309,7 +339,7 @@ export EDITOR=vim # default editor, nice and simple
 # Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
-function _setup_bindings() {
+_setup_bindings() {
   complete -r # remove completions
   bind -r '"\C-i"'
   bind -r '"\C-d"'
@@ -351,7 +381,7 @@ _setup_bindings 2>/dev/null # ignore any errors
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
-function _setup_opts() {
+_setup_opts() {
   # Turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
   set +H
   # No more control-d closing terminal
@@ -411,7 +441,7 @@ else
 fi
 alias inputrc_ops="bind -v"           # the 'set' options, and their values
 alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
-function env() { set; } # just prints all shell variables
+env() { set; } # just prints all shell variables
 
 ################################################################################
 # General utilties
@@ -432,40 +462,18 @@ alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 ! $_macos && alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
 alias df="df -h" # disk useage
 alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
-function columnize() { # neat function that splits lines into columns so they fill the terminal window
-  local cmd
-  local input output final
-  local tcols ncols maxlen nlines
-  [ $# -eq 0 ] && input="$(cat /dev/stdin)" || input="$1"
-  ! $_macos && cmd=wc || cmd=gwc
-  ncols=1 # start with 1
-  tcols=$(tput cols)
-  maxlen=0 # initial
-  nlines=$(printf "$input" | $cmd -l) # check against initial line count
-  output="$input" # default
-  while true; do
-    final="$output" # record previous output, this is what we will print
-    output="$(printf "$input" | xargs -n$ncols | column -t)"
-    maxlen=$(printf "$output" | $cmd -L)
-    # maxlen=$(printf "$output" | awk '{print length}' | sort -nr | head -1) # or wc -L but that's unavailable on mac
-    [ $maxlen -gt $tcols ] && break # this time *do not* print latest result, will result in line break due to terminal edge
-    [ $ncols -gt $nlines ] && final="$output" && break # test *before* increment, want to use that output
-    # echo terminal $tcols ncols $ncols nlines $nlines maxlen $maxlen
-    let ncols+=1
-  done
-  printf "$final"
-}
-function ld() { # directory ls
+# Directory sizes, normal and detailed, analagous to ls/ll
+alias du='du -h -d 1' # also a better default du
+ds() {
   local dir
   [ -z $1 ] && dir="." || dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | columnize
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
 }
-alias du='du -h -d 1'
-function dl() { # directory sizes
+dl() {
   local cmd dir
   [ -z $1 ] && dir="." || dir="$1"
   ! $_macos && cmd=sort || cmd=gsort
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | $cmd -sh
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | $cmd -sh
 }
 # Find but ignoring hidden folders and stuff
 alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
@@ -475,7 +483,7 @@ alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*
 # NOTE: Used to use this in a couple awk scripts in git config
 # aliases and other tools, so used export -f bytes2human. This causes errors
 # when intering interactive node on supercomputer, so forget it.
-function bytes2human() {
+bytes2human() {
   if [ $# -gt 0 ]; then
     nums="$@"
   else
@@ -484,9 +492,9 @@ function bytes2human() {
   for i in $nums; do
     b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
     # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    while (($b > 1024)); do
-        d="$(printf ".%02d" $(($b % 1024 * 100 / 1024)))"
-        b=$(($b / 1024))
+    while ((b > 1024)); do
+        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
+        b=$((b / 1024))
         let s++
     done
     echo "$b$d${S[$s]}"
@@ -500,14 +508,14 @@ alias egrep="egrep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git 
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Query files
-function todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f"; done; }
-function note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
+todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f"; done; }
+note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
 
 # Shell scripting utilities
-function calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
-function join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
-function clear!() { clear; for i in {1..100}; do echo; done; }    # print bunch of empty liens
-function abspath() { # abspath that works on mac, Linux, or anything with bash
+calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
+clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
+abspath() { # abspath that works on mac, Linux, or anything with bash
   if [ -d "$1" ]; then
     (cd "$1"; pwd)
   elif [ -f "$1" ]; then
@@ -525,11 +533,11 @@ function abspath() { # abspath that works on mac, Linux, or anything with bash
 alias pt="top" # mnemonically similar to 'ps'; table of processes, total
 alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
 alias restarts="last reboot | less"
-function listps() {
+listps() {
   ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
      | grep "$1" | cut -d' ' -f1,4
 } # list job pids using ps; alternatively can use naked 'jobs' command
-function killps() {
+killps() {
   local strs
   $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
   [ $# -ne 0 ] && strs=($@) || strs=(all)
@@ -539,7 +547,7 @@ function killps() {
     kill $(listps "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 } # kill jobs by name
-function killjobs() {
+killjobs() {
   local count=$(jobs | wc -l | xargs)
   for i in $(seq 1 $count); do
     echo "Killing job $i..."
@@ -550,7 +558,7 @@ function killjobs() {
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
 # Color not useful anyway; is just bold white, and we delete those lines
-function gdiff() {
+gdiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
     | egrep '(files|differ)' # add to these
@@ -558,13 +566,13 @@ function gdiff() {
 # Next use builtin diff command as engine
 # *Different* files
 # The last grep command is to highlight important parts
-function ddiff() {
+ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories
-function idiff() {
+idiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
     | egrep '(Only in.*:|Files | and | differ| identical)'
@@ -572,7 +580,7 @@ function idiff() {
 
 # Merge fileA and fileB into merge.{ext}
 # See this answer: https://stackoverflow.com/a/9123563/4970632
-function merge() {
+merge() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
   local ext="" # no extension
@@ -612,7 +620,7 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
 # Note CSS variables are in _sass/_variables
 alias server="bundle exec jekyll liveserve --config '_config.yml,_config.dev.yml' 2>/dev/null"
-function nbweb() {
+nbweb() {
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
   local template name root dir md
   root=$HOME/website
@@ -641,9 +649,13 @@ function nbweb() {
 #   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
 ################################################################################
 # Declare some names for active servers
+# For cheyenne, to hook up to existing screen/tmux sessions, pick one
+# of the 1-6 login nodes -- from testing seems node 4 is usually most
+# empty (probably human psychology thing; 3 seems random, 1-2 are obvious
+# first and second choices, 5 is nice round number, 6 is last node)
 gauss="ldavis@gauss.atmos.colostate.edu"
 monde="ldavis@monde.atmos.colostate.edu"
-cheyenne="davislu@cheyenne3.ucar.edu" # to hook up to existing screen/tmux sessions, pick one of the 1-6 login nodes
+cheyenne="davislu@cheyenne4.ucar.edu"
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
@@ -657,7 +669,7 @@ ldm="ldm@ldm.atmos.colostate.edu"                 # user: atmos-2012
 # For how to test for empty directory see: https://superuser.com/a/352387/506762
 # Idea is we use the mount to *transfer files back and forth*, or for example
 # to view files on Mac/use Mac tools like Panoply to play with files
-function isempty() {
+isempty() {
   if [ -d "$1" ]; then
     local contents=($(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null))
     if [ ${#contents[@]} == 0 ]; then
@@ -671,7 +683,7 @@ function isempty() {
     return 0 # does not exist, so is empty
   fi
 }
-function mount() {
+mount() {
   # Mount remote server by name (using the names declared above)
   local server address
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
@@ -684,9 +696,18 @@ function mount() {
   if ! isempty "$HOME/$server"; then
     echo "Error: Directory \"$HOME/$server\" already exists, and is non-empty!" && return 1
   fi
-  command sshfs "$address:/home/ldavis" "$HOME/$server" -ovolname="$server"
+  # Options meant to help speed up connection
+  # See discussion: https://superuser.com/q/344255/506762
+  # Also see blogpost: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
+  # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
+  command sshfs "$address:/home/ldavis" "$HOME/$server" \
+    -oCiphers=arcfour \
+    -oCompression=no \
+    -ocache_timeout=115200 \
+    -oattr_timeout=115200 \
+    -ovolname="$server"
 }
-function unmount() { # name 'unmount' more intuitive than 'umount'
+unmount() { # name 'unmount' more intuitive than 'umount'
   # WARNING: Need to be super careful server is not empty and we accidentally rm -r $HOME!
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
   server="$1"
@@ -706,7 +727,7 @@ function unmount() { # name 'unmount' more intuitive than 'umount'
 # See current ssh connections
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 # View address
-function address_ip() {
+ip() {
   # Get the ip address; several weird options for this
   if ! $_macos; then
     # See this: https://stackoverflow.com/q/13322485/4970632
@@ -718,22 +739,22 @@ function address_ip() {
   fi
 }
 # String parsing
-function expanduser() { # turn tilde into $HOME
+_expanduser() { # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
   param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
   echo $param
 }
-function compressuser() { # turn $HOME into tilde
+_compressuser() { # turn $HOME into tilde
   local param="$*"
   param="${param/#$HOME/~}"
   param="${param/#$HOME/\~}"
   echo $param
 }
 # Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
-function disconnect() {
+disconnect() {
   local pids port=$1
-  [ $# -ne 1 ] && echo "Error: Function requires exactly 1 arg."
+  [ $# -ne 1 ] && echo "Error: Function requires exactly 1 arg." && return 1
   # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
   pids="$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)"
   [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
@@ -743,22 +764,22 @@ function disconnect() {
 
 # Trigger ssh-agent if not already running, and add Github private key
 # Make sure to make private key passwordless, for easy login; all I want here
-# is to avoid storing plaintext username/password in ~/.git-credentials, but free private key is fine
+# is to avoid storing plaintext username/password in ~/.git-credentials, but
+# free private key is fine
 # * See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
 #   The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
-# * Used to just ssh-add on every login, but that starts fantom ssh-agent processes that persist
-#   when terminal is closed (all the 'eval' does is set environment variables; ssh-agent without
-#   the eval just starts the process in background).
+# * Used to just ssh-add on every login, but that starts fantom ssh-agent
+#   processes that persist when terminal is closed (all the 'eval' does is
+#   set environment variables; ssh-agent without the eval just starts the
+#   process in background).
 # * Now we re-use pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
 SSH_ENV="$HOME/.ssh/environment"
-function killssh {
+killssh() {
   # kill $(ps aux | grep ssh-agent | tr -s ' ' | cut -d' ' -f2 | xargs)
   kill $(ps aux | grep ssh-agent | grep -v grep | awk '{print $2}')
 }
-function initssh {
-  # echo "Initialising new SSH agent..."
+initssh() {
   if [ -f "$HOME/.ssh/id_rsa_github" ]; then
-    # echo "Adding Github private SSH key."
     command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
     chmod 600 "${SSH_ENV}"
     source "${SSH_ENV}" >/dev/null
@@ -791,8 +812,8 @@ fi
 # *requires* password entry (e.g. Duo authentification), and cannot be configured
 # for passwordless login with ssh-copy-id, then need to skip first step.
 _port_file=~/.port # file storing port number
-alias ssh="ssh_fancy" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
-function ssh_fancy() {
+alias ssh="_ssh" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
+_ssh() {
   local port listen port_write title_write
   [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
   listen=22  # default sshd listening port; see the link above
@@ -804,8 +825,8 @@ function ssh_fancy() {
         let port=\$port+1
       done; echo \$port")
   fi
-  port_write="$(compressuser $_port_file)"
-  title_write="$(compressuser $_title_file)"
+  port_write="$(_compressuser $_port_file)"
+  title_write="$(_compressuser $_title_file)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -X \
     -t -R $port:localhost:$listen $1 \
@@ -817,26 +838,26 @@ function ssh_fancy() {
 # NOTE: Below, we use the bash parameter expansion ${!#} -->
 # 'variable whose name is result of "$#"' --> $n where n is the number
 # of args. Also can do math inside param expansion indexing.
-function rlcp() { # "copy to local (from remote); 'copy there'"
+rlcp() { # "copy to local (from remote); 'copy there'"
   local port file dest
   $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
   [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)      # port from most recent login
   array=${@:1:$#-1}            # result of user input glob expansion, or just one file
-  dest="$(compressuser ${!#})" # last value
+  dest="$(_compressuser ${!#})" # last value
   dest="${dest//\ /\\\ }"      # escape whitespace manually
   echo "(Port $port) Copying ${array[@]} on this server to home server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P$port ${array[@]} ${USER}@localhost:"$dest"
 }
 # Copy from local macbook to <this server>
-function lrcp() { # "copy to remote (from local); 'copy here'"
+lrcp() { # "copy to remote (from local); 'copy here'"
   local port file dest
   $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
   [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
   [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)   # port from most recent login
   dest="$2"                 # last value
-  file="$(compressuser $1)" # second to last
+  file="$(_compressuser $1)" # second to last
   file="${file//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
@@ -849,8 +870,8 @@ function lrcp() { # "copy to remote (from local); 'copy here'"
 # * Calling R with --slave or --interactive makes quiting totally impossible somehow.
 # * The ---always-readline prevents prompt from switching to the default prompt, but
 #   also seems to disable ctrl-d for exiting.
-alias r="R -q --no-save"
-alias R="R -q --no-save"
+alias r="echo 'This is an R REPL.' && command R -q --no-save"
+alias R="echo 'This is an R REPL.' && command R -q --no-save"
 # alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
 # Matlab, just a simple alias
 alias matlab="matlab -nodesktop -nosplash -r \"run('~/init.m')\""
@@ -879,7 +900,7 @@ _py_complex=$(echo "$_py_simple
   import xarray as xr
   " | sed 's/^ *//g')
   # $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import proplot as plot")
-alias iwork="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_complex\""
+alias iviper="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_complex\""
 alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_simple\""
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
@@ -887,40 +908,24 @@ alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i
 #   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
 #   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
 #   for success, and if not, prints the error message. This is a build-your-own eval.
-function iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
-  echo 'This is an Interactive Perl shell.'
+iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+  echo 'This is a Perl REPL.'
   ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
 }
 
 ################################################################################
 # Notebook stuff
-################################################################################
-# Use this function if you want to sync notebooks across servers, but don't
-# want to sync the output for the sake of repository size.
-# Install tool with:
-#   pip install nbstripout
-# Your .gitignore should have lines:
-#   *.ipynb
-#   !stripped-*.ipynb
-function nbstrip() {
-  ! hash nbstripout 2>/dev/null && echo "Error: Must install nbstripout with 'pip install nbstripout'." && return 1
-  files=($@)
-  [ $# -eq 0 ] && files=(*.ipynb) && echo "Running nbstripout on every .ipynb file in this directory."
-  for file in "${files[@]}"; do
-    [[ "$file" =~ stripped-* ]] && echo "Skipping $file" && continue
-    echo "Stripping $file"
-    cat "$file" | nbstripout --keep-count > "stripped-$file"
-  done
-}
-
+# * Install nbstripout with 'pip install nbstripout', then add it to the
+#   global .gitattributes for automatic stripping of contents.
 # * To uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes are just not changing in Chrome, open Developer tab
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
+################################################################################
 # Wrapper aroung jupyter theme function, much better
 _jt_configured=false # theme is not initially setup because takes a long time
-function jt() {
+_jt() {
   # Choose default themes and font
   # chesterish is best; monokai has green/pink theme;
   # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
@@ -945,17 +950,17 @@ function jt() {
   fi
   # Make sure theme is valid
   # mkadf
-  themes=($(command jt -l | sed '1d'))
+  themes=($(_jt -l | sed '1d'))
   [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
     echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
-  command jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
+  _jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
     -t $jupyter_theme -f $jupyter_font
 }
 
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
 # Will be called whenever a notebook is iniated, and can be called to refresh stale connections.
-function connect() {
+connect() {
   # Error checks and declarations
   local server outcome ports exits
   unset _jupyter_port
@@ -1016,11 +1021,11 @@ function connect() {
 # Fancy wrapper for declaring notebook
 # Will set up necessary port-forwarding connections on local and remote server, so
 # that you can just click the url that pops up
-function notebook() {
+notebook() {
   # Set default jupyter theme
   local port
   ! $_jt_configured && \
-    echo "Configure jupyter notebook theme." && jt && _jt_configured=true
+    echo "Configure jupyter notebook theme." && _jt && _jt_configured=true
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
@@ -1043,7 +1048,7 @@ function notebook() {
 
 # Refresh stale connections from macbook to server
 # Simply calls the 'connect' function
-function reconnect() {
+reconnect() {
   local ports
   $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
@@ -1059,7 +1064,7 @@ function reconnect() {
 # Dataset utilities
 ################################################################################
 # Fortran tools
-function namelist() {
+namelist() {
   [ -z "$1" ] && local file="input.nml" || local file="$1"
   echo "Params in current namelist:"
   cat "$file" | cut -d= -f1 -s | grep -v '!' | xargs
@@ -1070,27 +1075,27 @@ function namelist() {
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
-function nchelp() {
+nchelp() {
   echo "Available commands:"
   echo "ncdump ncglobal ncinfo
         ncvarsinfo ncdimsinfo
         nclist ncvarlist ncdimslist
         ncvarinfo ncvardump ncvardata ncvartable" | column -t
 }
-function ncdump() { # almost always want this; access old versions in functions with backslash
+ncdump() { # almost always want this; access old versions in functions with backslash
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   command ncdump -h "$@" | less
 }
-function ncglobal() { # show just the global attributes
+ncglobal() { # show just the global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   command ncdump -h "$@" | grep -A100 ^// | less
 }
-function ncinfo() { # only get text between variables: and linebreak before global attributes
+ncinfo() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
-function ncvarsinfo() { # get information for just variables (no dimension/global info)
+ncvarsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
@@ -1101,7 +1106,7 @@ function ncvarsinfo() { # get information for just variables (no dimension/globa
     # -A means print x TRAILING lines starting from FIRST match
     # -B means prinx x PRECEDING lines starting from LAST match
 }
-function ncdimsinfo() { # get information for just variables (no dimension/global info)
+ncdimsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
@@ -1110,19 +1115,19 @@ function ncdimsinfo() { # get information for just variables (no dimension/globa
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
 }
-function nclist() { # only get text between variables: and linebreak before global attributes
+nclist() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-function ncdimlist() { # get list of dimensions
+ncdimlist() { # get list of dimensions
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-function ncvarlist() { # only get text between variables: and linebreak before global attributes
+ncvarlist() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
@@ -1137,14 +1142,14 @@ function ncvarlist() { # only get text between variables: and linebreak before g
   done
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
-function ncvarinfo() { # as above but just for one variable
+ncvarinfo() { # as above but just for one variable
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
 }
-function ncvardump() { # dump variable contents (first argument) from file (second argument)
+ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
@@ -1154,27 +1159,24 @@ function ncvardump() { # dump variable contents (first argument) from file (seco
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
-function ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
+ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
+  # Below procedure is ideal for "sanity checks" of data; just test one
+  # timestep slice at every level; the tr -s ' ' trims multiple whitespace
+  # to single and the column command re-aligns columns
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   local args=("$@")
   local args=(${args[@]:2}) # extra arguments
-  echo ${args[@]}
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
-    # this procedure is ideal for "sanity checks" of data; just test one
-    # timestep slice at every level; the tr -s ' ' trims multiple whitespace to single
-    # and the column command re-aligns columns
 }
-function ncvartable() { # as above but show everything
+ncvartable() { # as above but show everything
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   local args=("$@")
   local args=(${args[@]:2}) # extra arguments
-  echo ${args[@]}
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
-  # 2>/dev/null
 }
 # Extract generalized files
-function extract() {
+extract() {
   for name in "$@"; do
       # shell actually passes **already expanded** glob pattern when you call it as argument
       # to a function; so, need to cat all input arguments with @ into list
@@ -1204,28 +1206,6 @@ function extract() {
 ################################################################################
 # Fancy Colors
 ################################################################################
-# Temporarily change iTerm2 profile while REPL or other command is active
-# Alias any command with 'cmdcolor' as prefix
-function cmdcolor() {
-  # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
-  # Or that's dumb and just use ITERM_PROFILE
-  newprofile=Argonaut
-  oldprofile=$ITERM_PROFILE
-  # Restore the current settings if the user ctrl-c's out of the command
-  trap ctrl_c INT
-  function ctrl_c() {
-    echo -e "\033]50;SetProfile=$oldprofile\a"
-    exit
-  }
-  # Set profile; if you want you can allow profile as $1, then call shift,
-  # and now the remaining command arguments are $@
-  echo -e "\033]50;SetProfile=$newprofile\a"
-  # Note, can use 'command' to avoid function/alias lookup
-  # See: https://stackoverflow.com/a/6365872/4970632
-  "$@" # need to quote it, might need to escape stuff
-  # Restore settings
-  echo -e "\033]50;SetProfile=$oldprofile\a"
-}
 # Standardize less/man/etc. colors
 # Used this post from thread: https://unix.stackexchange.com/a/329092/112647
 # [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
@@ -1240,6 +1220,30 @@ if hash tput 2>/dev/null; then
   export LESS_TERMCAP_ue=$'\e[0m'        # reset underline
   export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
 fi
+
+# Temporarily change iTerm2 profile while REPL or other command is active
+# Alias any command with '_cmdcolor' as prefix
+# _cmdcolor() {
+#   # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
+#   # Or that's dumb and just use ITERM_PROFILE
+#   newprofile=Argonaut
+#   oldprofile=$ITERM_PROFILE
+#   # Restore the current settings if the user ctrl-c's out of the command
+#   trap ctrl_c INT
+#   function ctrl_c() {
+#     echo -e "\033]50;SetProfile=$oldprofile\a"
+#     exit
+#   }
+#   # Set profile; if you want you can allow profile as $1, then call shift,
+#   # and now the remaining command arguments are $@
+#   echo -e "\033]50;SetProfile=$newprofile\a"
+#   # Note, can use 'command' to avoid function/alias lookup
+#   # See: https://stackoverflow.com/a/6365872/4970632
+#   "$@" # need to quote it, might need to escape stuff
+#   # Restore settings
+#   echo -e "\033]50;SetProfile=$oldprofile\a"
+# }
+
 # # Magic changing stderr color
 # # Turns out that iTerm2 SHELL INTEGRATION mostly handles the idea behind this;
 # # want "bad commands" to be more visible
@@ -1257,17 +1261,19 @@ fi
 #     echo -e "${COLOR_RED}${line}${COLOR_RESET}" # -n is non-empty; this terminates at end
 #   done # "read" reads from standard input (whatever stream fed into this process)
 # )
-# function undirect(){ echo -ne '\0'; exec 2>&9; } # return stream 2 to "dummy stream" 9
-# function undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
-# function redirect(){
+# _undirect(){ echo -ne '\0'; exec 2>&9; } # return stream 2 to "dummy stream" 9
+# _undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
+# _redirect(){
 #   local PRG="${BASH_COMMAND%% *}" # ignore flags/arguments
 #   for X in ${STDERR_COLOR_EXCEPTIONS[@]}; do
 #     [ "$X" == "${PRG##*/}" ] && return 1; # trim directories
 #   done # if special program, don't send to coloring stream
 #   exec 2>&8 # send stream 2 to the coloring stream
 # }
-# trap "redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
-# export PROMPT_COMMAND="undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
+# # Interactive stuff gets super wonky if you try to _redirect it, so
+# # filter these tools out
+# trap "_redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
+# export PROMPT_COMMAND="_undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
 # export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # commands
 #   brew
 #   brew\ cask
@@ -1275,24 +1281,26 @@ fi
 #   \\ipython \\jupyter \\python \\matlab # disabled alias versions
 #   node rhino ncl matlab # misc languages; javascript, NCL, matlab
 #   cdo conda pip easy_install python ipython jupyter notebook) # python stuff
-#   # interactive stuff gets SUPER WONKY if you try to redirect it with this script
 
 ################################################################################
 # Utilities related to preparing PDF documents
 # Converting figures between different types, other pdf tools, word counts
 ################################################################################
-# * Flatten gets rid of transparency/renders it against white background, and the units/density specify
-#   a <N>dpi resulting bitmap file.
-# * Another option is "-background white -alpha remove", try this.
-# * Note the PNAS journal says 1000-1200dpi recommended for line art images and stuff with text.
-# * Note imagemagick does *not* handle vector formats; will rasterize output image and embed in a pdf, so
-#   cannot flatten transparent components with convert -flatten in.pdf out.pdf
-function gif2png() {
+# First some simple convsersions
+# * Flatten gets rid of transparency/renders it against white background, and
+#   the units/density specify a <N>dpi resulting bitmap file. Another option
+#   is "-background white -alpha remove", try this.
+# * Note the PNAS journal says 1000-1200dpi recommended for line art images
+#   and stuff with text.
+# * Note imagemagick does *not* handle vector formats; will rasterize output
+#   image and embed in a pdf, so cannot flatten transparent components with
+#   convert -flatten in.pdf out.pdf
+gif2png() {
   for f in "$@";
     do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
   done
 } # often needed because LaTeX can't read gif files
-function pdf2png() {
+pdf2png() {
   density=1200 args=("$@")
   [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
   flags="-flatten -units PixelsPerInch -density $density"
@@ -1300,7 +1308,7 @@ function pdf2png() {
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
   done
 } # sometimes need bitmap yo
-function svg2png() {
+svg2png() {
   pdf2png $@
   density=1200 args=("$@")
   [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
@@ -1309,7 +1317,7 @@ function svg2png() {
     [[ "$f" =~ .svg$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.svg}.png"
   done
 }
-function pdf2tiff() {
+pdf2tiff() {
   density=1200 args=("$@")
   [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
   flags="-flatten -units PixelsPerInch -density $density"
@@ -1317,14 +1325,14 @@ function pdf2tiff() {
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
   done
 } # alternative for converting to bitmap
-function pdf2eps() {
+pdf2eps() {
   args=("$@")
   for f in "${args[@]}"; do
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && \
       pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
   done
 }
-function pdf2flat() {
+pdf2flat() {
   # this page is helpful:
   # https://unix.stackexchange.com/a/358157/112647
   # 1. pdftk keeps vector graphics
@@ -1341,7 +1349,7 @@ function pdf2flat() {
 
 # Extract PDF annotations
 # Turned out kind of complicated
-function unannotate() {
+unannotate() {
   local _sed
   local original="$1"
   local final="${original%.pdf}_unannotated.pdf"
@@ -1363,7 +1371,7 @@ function unannotate() {
 }
 
 # Rudimentary wordcount with detex
-function wctex() {
+wctex() {
   # Below worked for certain templates:
   # Explicitly delete begin/end environments because detex won't pick them up
   # and use the equals sign to exclude equations
@@ -1374,7 +1382,7 @@ function wctex() {
   # and start of methods
   # The -e flag to ignore certain environments (e.g. abstract environment)
   local detexed="$(cat "$1" | \
-    detex -e align,equation,tabular | grep -v .pdf | grep -v 'fig[0-9]')"
+    detex -e 'tabular,align,equation,align*,equation*' | grep -v .pdf | grep -v 'fig[0-9]')"
   echo "$detexed" | xargs # print result in one giant line
   echo "$detexed" | wc -w # get word count
 }
@@ -1521,8 +1529,6 @@ if [ -f ~/.iterm2_shell_integration.bash ]; then
         if [ "${file##*.}" == pdf ]; then
           tmp="$tmpdir/tmp.${file%.*}.png" # convert to png
           convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
-          # pdf2png "$file" "$tmp" # too high res
-          # pdf2flat "$file" "$tmp" # too slow
         else
           tmp="$tmpdir/tmp.${file}"
           convert -flatten "$file" "$tmp"
@@ -1550,22 +1556,10 @@ fi
 # Note, in read, if you specify number of characters, even pressing
 # enter key will be recorded as a result; break loop by checking if it
 # was pressed
-_title_file=~/.title
 _win_num="${TERM_SESSION_ID%%t*}"
 _win_num="${_win_num#w}"
-function read_idle() {
-  # Function to wait for 3 *idle* seconds, until
-  # Other flags will be passed to command
-  local args=("$@")
-  local input=""
-  read "${args[@]}" -t 3 -N 1 char
-  while [ -n "$char" ] && [ "$char" != $'\n' ]; do
-    input+=$char
-    read -t 3 -N 1 char
-  done
-  echo "$input" # a bit different, echo instead of implicitly setting
-}
-function title_declare() { # Cmd-I from iterm2 also works
+_title_file=~/.title
+_title() { # default way is probably using Cmd-I in iTerm2
   # Record title from user input, or as user argument
   ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
@@ -1573,7 +1567,6 @@ function title_declare() { # Cmd-I from iterm2 also works
     _title="$@"
   else
     read -p "Window title (window $_win_num):" _title
-    # _title="$(read_idle -p "Window title (window $_win_num): ")"
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
@@ -1582,29 +1575,34 @@ function title_declare() { # Cmd-I from iterm2 also works
   gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
   echo "$_win_num: $_title" >>$_title_file # add to file
 }
-# Prompt user input potentially, but try to load from file
-function title_update() {
-  # Check file availability
-  [ ! -r "$_title_file" ] && {
-    if ! $_macos; then echo "Error: Title file not available." && return 1
-    else title_declare
-    fi; }
-  # Read from file
-  if $_macos; then
-    _title="$(cat $_title_file | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
+_title_get() {
+  # Simply gets the title from file
+  if ! [ -r "$_title_file" ]; then
+    _title=""
+  elif $_macos; then
+    _title="$(cat "$_title_file" | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
   else
-    _title="$(cat $_title_file)" # only text in file, is this current session's title
+    _title="$(cat "$_title_file")" # only text in file, is this current session's title
   fi
-  # Update or re-declare
   _title="$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')"
-  if [ -z "$_title" ]; then title_declare # reset title
-  else echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
+}
+_title_update() {
+  # Check file availability
+  if ! [ -r "$_title_file" ] && ! $_macos; then
+    echo "Error: Title file not available." && return 1
+  fi
+  # Read from file
+  _title_get # set _title global variable
+  if [ -z "$_title" ]; then
+    _title # reset title
+  else
+    echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
   fi
 }
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
-[[ ! "$PROMPT_COMMAND" =~ "title_update" ]] && prompt_append title_update
-$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && [ -z "$_title" ] && title_declare
-alias title="title_declare" # easier for user
+[[ ! "$PROMPT_COMMAND" =~ "_title_update" ]] && _prompt _title_update
+$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title
+alias title="_title" # easier for user
 
 ################################################################################
 # Message
@@ -1625,16 +1623,13 @@ alias title="title_declare" # easier for user
 #   [ "$TERM" != "linux" ] && PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
 #   }
 # Fun stuff
-alias playlist="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
-alias forecast="curl wttr.in/Fort\ Collins" # list weather information
-# Messages
-# title_update # force update in case anything changed it, e.g. shell integration
 $_macos && { # first the MacOS options
+  alias artists="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
+  alias forecast="curl wttr.in/Fort\ Collins" # list weather information
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
   [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
   }
 _bashrc_loaded='true'
 # Dad jokes
-# curl https://icanhazdadjoke.com/; echo; # yay dad jokes
-
+curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes

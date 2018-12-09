@@ -20,6 +20,7 @@
 # folder before/after compiling step; delete the new ones. This is better!
 #------------------------------------------------------------------------------#
 # Initial stuff
+#------------------------------------------------------------------------------#
 shopt -s nullglob # glob-expand into zero entries
 latex=pdflatex    # by default use pdflatex
 bibtex=bibtex     # for compiling bibliographies
@@ -39,8 +40,10 @@ if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   cd "$directory" # move there
 fi
 filestem="${filename%.tex}" # simple
+
 #------------------------------------------------------------------------------#
 # Parse raw file to get some options
+#------------------------------------------------------------------------------#
 # Function for ignoring comments
 function nocomments() { cat "$1" | grep -o '^[^%]*'; }
 
