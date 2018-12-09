@@ -1611,7 +1611,7 @@ _title_update() {
   # Read from file
   _title_get # set _title global variable, attemp to read existing window title
   if [ -z "$_title" ]; then
-    _title_set # reset title
+    $_macos && _title_set # set title name
   else
     echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
   fi
