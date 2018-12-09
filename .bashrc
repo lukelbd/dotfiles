@@ -127,21 +127,33 @@ else
     # Default bashrc setup
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
     source /etc/bashrc
-    # Begin interactive node; or not since only lasts 2 hours
-    # sinteractive
     # Module load and stuff
-    module purge 2>/dev/null
-    module load intel/16.0
-    module load mkl/11.3
-    module load Anaconda3
+    # NOTE: Use 'sinteractive' for interactive mode
+    # module purge 2>/dev/null
+    _loaded=($(module --terse list 2>&1)) # already loaded
+    _toload=(Anaconda3 intel mkl) # for some reason latest CDO version is not default
+    for _module in ${_toload[@]}; do
+      if [[ ! " ${_loaded[@]} " =~ "$_module" ]]; then
+        module load $_module
+      fi
+    done
     # Fix prompt
     export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
   # Cheyenne supercomputer, any of the login nodes
   ;; cheyenne*)
     # Edit library path, path
     export LD_LIBRARY_PATH="/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH"
+    # Set tmpdir; following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
+    export TMPDIR=/glade/scratch/$USER/tmp
     # Load some modules
-    module load tmux
+    # NOTE: Use 'qinteractive' for interactive mode
+    _loaded=($(module --terse list 2>&1)) # already loaded
+    _toload=(tmux ncl nco cdo/1.9.4) # for some reason latest CDO version is not default
+    for _module in ${_toload[@]}; do
+      if [[ ! " ${_loaded[@]} " =~ "$_module" ]]; then
+        module load $_module
+      fi
+    done
   # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
@@ -530,13 +542,14 @@ abspath() { # abspath that works on mac, Linux, or anything with bash
 }
 
 # Controlling and viewing running processes
-alias pt="top" # mnemonically similar to 'ps'; table of processes, total
-alias pc="mpstat -P ALL 1" # mnemonically similar to 'ps'; individual core usage
+alias toc="mpstat -P ALL 1" # like top, but for each core
 alias restarts="last reboot | less"
-listps() {
+# List job pids using ps; alternatively can use naked 'jobs' command
+tou() {
   ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
      | grep "$1" | cut -d' ' -f1,4
-} # list job pids using ps; alternatively can use naked 'jobs' command
+}
+# Kill jobs by name
 killps() {
   local strs
   $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
@@ -546,14 +559,15 @@ killps() {
     [ $str == 'all' ] && str=""
     kill $(listps "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
-} # kill jobs by name
+}
+ # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
 killjobs() {
   local count=$(jobs | wc -l | xargs)
   for i in $(seq 1 $count); do
     echo "Killing job $i..."
     eval "kill %$i"
   done
-} # kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
+}
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color

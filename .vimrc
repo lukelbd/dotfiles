@@ -458,6 +458,7 @@ let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703
 let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
 let g:compatible_workspace   = (v:version>=800) "needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") "try alternative completion library
+if expand('$HOSTNAME') =~ 'cheyenne\?' | let g:compatible_neocomplete = 0 | endif "had annoying bugs with refactoring tools
 call plug#begin('~/.vim/plugged')
 "------------------------------------------------------------------------------"
 "Indent line
