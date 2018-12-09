@@ -713,12 +713,14 @@ mount() {
   # Options meant to help speed up connection
   # See discussion: https://superuser.com/q/344255/506762
   # Also see blogpost: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
+  # -ocache_timeout=115200 \
+  # -oattr_timeout=115200 \
+  # -ociphers=arcfour \
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
+  # -oauto_cache,reconnect,defer_permissions \
   command sshfs "$address:/home/ldavis" "$HOME/$server" \
-    -oCiphers=arcfour \
-    -oCompression=no \
-    -ocache_timeout=115200 \
-    -oattr_timeout=115200 \
+    -ocache_timeout=115200 -oattr_timeout=115200 \
+    -ocompression=no \
     -ovolname="$server"
 }
 unmount() { # name 'unmount' more intuitive than 'umount'
@@ -1573,7 +1575,7 @@ fi
 _win_num="${TERM_SESSION_ID%%t*}"
 _win_num="${_win_num#w}"
 _title_file=~/.title
-_title() { # default way is probably using Cmd-I in iTerm2
+_title_set() { # default way is probably using Cmd-I in iTerm2
   # Record title from user input, or as user argument
   ! $_macos && echo "Error: Can only set title from mac." && return 1
   [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
@@ -1606,17 +1608,17 @@ _title_update() {
     echo "Error: Title file not available." && return 1
   fi
   # Read from file
-  _title_get # set _title global variable
+  _title_get # set _title global variable, attemp to read existing window title
   if [ -z "$_title" ]; then
-    _title # reset title
+    _title_set # reset title
   else
     echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
   fi
 }
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ ! "$PROMPT_COMMAND" =~ "_title_update" ]] && _prompt _title_update
-$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title
-alias title="_title" # easier for user
+$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
+alias title="_title_set" # easier for user
 
 ################################################################################
 # Message
