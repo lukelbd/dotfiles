@@ -544,8 +544,9 @@ abspath() { # abspath that works on mac, Linux, or anything with bash
 # Controlling and viewing running processes
 alias toc="mpstat -P ALL 1" # like top, but for each core
 alias restarts="last reboot | less"
-# List job pids using ps; alternatively can use naked 'jobs' command
-tou() {
+# List shell processes using ps (will include background processes initiated
+# by shell scripts, not just ones sent to background by this shell)
+tos() {
   ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
      | grep "$1" | cut -d' ' -f1,4
 }
