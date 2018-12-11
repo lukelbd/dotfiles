@@ -2,6 +2,7 @@
 "Highlight builtin NCL commands by adding this dictionary to
 "the dictionary; not sure how it works. From NCL UCAR page VIM recommendations.
 "------------------------------------------------------------------------------"
+setlocal commentstring=;%s
 setlocal dict+=~/.vim/words/ncl.dic
 " augroup ncl
 "   au!

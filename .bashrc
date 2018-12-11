@@ -1035,6 +1035,20 @@ connect() {
   done
 }
 
+# Refresh stale connections from macbook to server
+# Simply calls the 'connect' function
+reconnect() {
+  local ports
+  $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
+  ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
+  if [ -n "$ports" ]; then
+    echo "Refreshing jupyter notebook connections over port(s) $ports."
+    connect $ports
+  else
+    echo "No active jupyter notebooks found."
+  fi
+}
+
 # Fancy wrapper for declaring notebook
 # Will set up necessary port-forwarding connections on local and remote server, so
 # that you can just click the url that pops up
@@ -1061,20 +1075,6 @@ notebook() {
     port="--port=$port"
   fi
   jupyter notebook --no-browser $port --NotebookApp.iopub_data_rate_limit=10000000
-}
-
-# Refresh stale connections from macbook to server
-# Simply calls the 'connect' function
-reconnect() {
-  local ports
-  $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
-  ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
-  if [ -n "$ports" ]; then
-    echo "Refreshing jupyter notebook connections over port(s) $ports."
-    connect $ports
-  else
-    echo "No active jupyter notebooks found."
-  fi
 }
 
 ################################################################################
@@ -1224,8 +1224,7 @@ extract() {
 # Fancy Colors
 ################################################################################
 # Standardize less/man/etc. colors
-# Used this post from thread: https://unix.stackexchange.com/a/329092/112647
-# [[ -f ~/.LESS_TERMCAP ]] && . ~/.LESS_TERMCAP # use colors for less, man, etc.
+# Used this: https://unix.stackexchange.com/a/329092/112647
 export LESS="--RAW-CONTROL-CHARS"
 [ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
@@ -1287,6 +1286,7 @@ fi
 #   done # if special program, don't send to coloring stream
 #   exec 2>&8 # send stream 2 to the coloring stream
 # }
+
 # # Interactive stuff gets super wonky if you try to _redirect it, so
 # # filter these tools out
 # trap "_redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
@@ -1350,17 +1350,17 @@ pdf2eps() {
   done
 }
 pdf2flat() {
-  # this page is helpful:
+  # This page is helpful:
   # https://unix.stackexchange.com/a/358157/112647
   # 1. pdftk keeps vector graphics
   # 2. convert just converts to bitmap and eliminates transparency
-  # 3. pdf2ps piping retains quality
+  # 3. pdf2ps piping retains quality (ps uses vector graphics, but can't do transparency)
+  # convert "$f" "${f}_flat.pdf"
+  # pdftk "$f" output "${f}_flat.pdf" flatten
   args=("$@")
   for f in "${args[@]}"; do
     [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
       pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
-      # convert "$f" "${f}_flat.pdf"
-      # pdftk "$f" output "${f}_flat.pdf" flatten
   done
 }
 
@@ -1649,4 +1649,7 @@ $_macos && { # first the MacOS options
   }
 _bashrc_loaded='true'
 # Dad jokes
-curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
+# NOTE: Get hang when doing this from within interactive cluster node; good
+# way to test for that is compare hostname command with variable (variable will
+# not change for some reason)
+[ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
