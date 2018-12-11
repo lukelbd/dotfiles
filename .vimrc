@@ -363,9 +363,11 @@ command! -nargs=1 Grep call Grep(<q-args>)
 "Builtin comment string decoding
 "Alternatively, b:NERDCommenterDelims['left']
 function! Comment(...)
-  " let placeholder = (a:0 ? ' ' : '') "sometimes want to put character that will never be matched
+  "By default, return character that will never be matched?
+  " let placeholder = (a:0 ? ' ' : '')
   let placeholder = (a:0 ? '|' : '')
-  if &ft == '' || &commentstring == ''
+  "Get comment char
+  if &ft == '' || &commentstring == '' "the
     return placeholder
   elseif &commentstring =~ '%s'
     return Strip(split(&commentstring, '%s')[0])
@@ -1828,8 +1830,14 @@ if PlugActive("tabular")
   nnoremap <expr> \\ ':Tabularize /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
   vnoremap <expr> \\ ':Table      /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
   "As above, but include comments
-  nnoremap <expr> \\| ':Tabularize /\S\zs\ /l0<CR>'
-  vnoremap <expr> \\| ':Table      /\S\zs\ /l0<CR>'
+  " nnoremap <expr> \\| ':Tabularize /\S\zs\ /l0<CR>'
+  " vnoremap <expr> \\| ':Table      /\S\zs\ /l0<CR>'
+  "Tables
+  nnoremap <expr> \\| ':Tabularize /\|/l1c1<CR>'
+  vnoremap <expr> \\| ':Table      /\|/l1c1<CR>'
+  "Case/esac blocks
+  nnoremap <expr> \) ':Tabularize /\(\S\+)\zs\\|\zs;;\)/l1c0l1<CR>'
+  vnoremap <expr> \) ':Table      /\(\S\+)\zs\\|\zs;;\)/l1c0l1<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
   " nnoremap <expr> \C ':Tabularize /^.*\zs'.Comment(1).'/l1<CR>'
@@ -2210,8 +2218,8 @@ noremap <expr> <silent> \<Tab> ':s/\t/' .repeat(' ',&tabstop).'/g \| noh<CR>'
 "Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
 nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> \\ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> \_ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 "Special: replace useless BibTex entries
 function! s:tex_replace()
   nnoremap <buffer> <silent> \x :%s/^\s*\(abstract\\|file\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>

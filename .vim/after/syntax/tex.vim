@@ -35,7 +35,11 @@ syn region texMatcherNM matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]" end="
 " * The regex ignores comments (preceding % sign) and newline command \\
 "   Also ignores the situation \command1\command2, which would otherwise
 "   be unreadable and is common in macros
-call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
+try
+  call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
+catch /.*/
+  "do nothing; older vim versions only accept 4 matchadd args, so concealing backslashes as above is impossible
+endtry
 "For some reason a syn match command fails
 " * See: https://vi.stackexchange.com/q/5696/8084
 " * Appears that wherever the backslash is concealed, this one 'overwrites' existing
