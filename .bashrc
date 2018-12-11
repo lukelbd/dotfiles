@@ -832,10 +832,12 @@ _port_file=~/.port # file storing port number
 alias ssh="_ssh" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local port listen port_write title_write
-  [ $# -ne 1 ] && echo "Error: This function needs exactly 1 argument." && return 1
+  [ $# -gt 2 ] && echo "Error: This function needs 1 or 2 arguments." && return 1
   listen=22  # default sshd listening port; see the link above
   port=10000 # starting port
-  if ! [[ $1 =~ cheyenne ]]; then # dynamically find first available port
+  if [ -n "$2" ]; then
+    port="$2" # custom
+  elif ! [[ $1 =~ cheyenne ]]; then # dynamically find first available port
     echo "Determining port automatically."
     port=$(command ssh "$1" "port=$port
       while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
