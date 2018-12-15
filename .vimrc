@@ -1405,6 +1405,7 @@ if PlugActive("nerdcommenter")
   "----------------------------------------------------------------------------"
   "Custom delimiter overwrites (default python includes space for some reason)
   let g:NERDCustomDelimiters = {
+    \ 'julia': {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
     \ 'python': {'left': '#'}, 'cython': {'left': '#'},
     \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'},
     \ 'smarty': {'left': '<!--', 'right': '-->'},
@@ -2378,12 +2379,16 @@ endif
 "------------------------------------------------------------------------------"
 "Next coloring for **Terminal VIM versions***
 "Have to use cTerm colors, and control the ANSI colors from your terminal settings
+"Warning: The containedin just tries to *guess* what particular comment and
+"string group names are for given filetype syntax schemes. Verify that the
+"regexes will match using :Group with cursor over a comment.
+"Example: Had to change .*Comment to .*Comment.* since Julia has CommentL name
 "------------------------------------------------------------------------------"
 function! s:keywordsetup()
-   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\)
+   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
    hi link customURL Underlined
    if &ft!="vim"
-     syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment "comments
+     syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment.* "comments
      syn match Special '^\%1l#!.*$' "shebangs
    else
      syn clear vimTodo "vim instead uses the Stuff: syntax

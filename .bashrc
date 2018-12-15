@@ -59,31 +59,36 @@ if $_macos; then
   # Mac options
   # Defaults... but will reset them
   # eval `/usr/libexec/path_helper -s`
-  # Basics
-  export PATH=""
-  export PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+  # . /etc/profile # this itself should also run /etc/bashrc
+  # Defaults
+  export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
   # LaTeX and X11
   export PATH="/opt/X11/bin:/Library/TeX/texbin:$PATH"
-  # Macports
+  # Homebrew, Macports, PGI compilers
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
-  # Homebrew
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
-  # PGI compilers
   export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
-  # Youtube tool
+
+  # Local tools
+  # NOTE: Added matlab as a symlink in builds directory, was cleaner
+  # NOTE: CDO needs IO thread locking (with -L flag) for NetCDF4 files (which
+  # use HDF5 internally) if HDF5 wasn't compiled with parallel support
+  # Turns out *cannot be done* in Homebrew; see: https://code.mpimet.mpg.de/boards/2/topics/4630?r=5714#message-5714
+  # We remedied this by compiling cdo ourselves with hdf5 and netcdf libraries
+  # export PATH="$HOME/builds/cdo-1.9.5/src:$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH" # no more local cdo, had issues
+  export PATH="$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH"
   export PATH="$HOME/youtube-m4a:$PATH"
-  # Matlab
-  export PATH="/Applications/MATLAB_R2014a.app/bin:$PATH"
+
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
   # but on Linux distributions seems to work fine inside anaconda)
   # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
-  # actually ends up in above path after brew install gcc49... and must install
+  # actually ends up in above path after brew install gcc49; and must install
   # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
-  alias ncl="DYLD_LIBRARY_PATH=\"/usr/local/lib/gcc/4.9\" ncl"
-  export PATH="$HOME/ncl/bin:$PATH" # NCL utilities
-  export NCARG_ROOT="$HOME/ncl" # critically necessary to run NCL
-  # Mac loading; load /etc/profile (on macOS, this runs a path setup executeable and resets the $PATH variable)
-  # [ -f /etc/profile ] && . /etc/profile # this itself should also run /etc/bashrc
+  # NOTE: Instead of aliasing ncl with library path prefix, try using
+  # a fallback library path; suggested here: https://stackoverflow.com/a/3172515/4970632
+  # This shouldn't screw up Homebrew stuff
+  export NCARG_ROOT="$HOME/builds/ncl-6.4.0" # critically necessary to run NCL
+  export DYLD_FALLBACK_LIBRARY_PATH="/usr/local/lib/gcc/4.9" # fix libs
 else
   # Linux options
   case $HOSTNAME in
@@ -163,7 +168,7 @@ fi
 export PATH="$HOME/bin:$PATH"
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
-alias brew="PATH=$PATH brew"
+alias brew="PATH=\"$PATH\" brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
@@ -711,6 +716,13 @@ mount() {
   if ! isempty "$HOME/$server"; then
     echo "Error: Directory \"$HOME/$server\" already exists, and is non-empty!" && return 1
   fi
+  # Home directory on remote server
+  # NOTE: Using tilde ~ does not seem to work
+  local home
+  case $server in
+    cheyenne*) home="/glade/u/home/davislu" ;;
+    *)         home="/home/ldavis" ;;
+  esac
   # Options meant to help speed up connection
   # See discussion: https://superuser.com/q/344255/506762
   # Also see blogpost: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
@@ -719,7 +731,7 @@ mount() {
   # -ociphers=arcfour \
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
   # -oauto_cache,reconnect,defer_permissions \
-  command sshfs "$address:/home/ldavis" "$HOME/$server" \
+  command sshfs "$address:$home" "$HOME/$server" \
     -ocache_timeout=115200 -oattr_timeout=115200 \
     -ocompression=no \
     -ovolname="$server"
@@ -903,7 +915,10 @@ else
   alias ncl="ncl -Q -n"
 fi
 # Julia, simple alias
-alias julia="julia --banner=no"
+# NOTE: Need revise plugin https://github.com/timholy/Revise.jl to automatically
+# update modules like ipython autoreload
+alias julia="julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
+$_macos && JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
 # iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
 # NOTE: MacOSX backend broken right now:
@@ -1596,7 +1611,9 @@ _title_set() { # default way is probably using Cmd-I in iTerm2
 }
 _title_get() {
   # Simply gets the title from file
-  if ! [ -r "$_title_file" ]; then
+  if [ -n "$_title" ]; then
+    _title="$_title" # already exists
+  elif ! [ -r "$_title_file" ]; then
     _title=""
   elif $_macos; then
     _title="$(cat "$_title_file" | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
@@ -1622,6 +1639,7 @@ _title_update() {
 [[ ! "$PROMPT_COMMAND" =~ "_title_update" ]] && _prompt _title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 alias title="_title_set" # easier for user
+# alias titlereset="rm ~/.title"
 
 ################################################################################
 # Message

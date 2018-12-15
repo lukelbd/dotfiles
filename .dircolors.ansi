@@ -207,6 +207,7 @@ MISSING 41;37
 # (and any comments you want to add after a '#')
 
 ### Code files
+.jl     31
 .ncl    31
 .nco    31
 .f77    31
