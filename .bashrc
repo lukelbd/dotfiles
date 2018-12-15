@@ -472,6 +472,7 @@ $_macos && _ls_command='gls' || _ls_command='ls'
 alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
+alias log="tail -f" # only ever use this command to watch logfiles in realtime
 alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 
 # Information on directories
@@ -583,6 +584,7 @@ qkill() {
     echo "Deleted job $proc"
   done
 }
+alias qrm="rm ~/*.[oe][0-9][0-9][0-9]*" # remove (empty) job logs
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
