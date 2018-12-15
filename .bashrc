@@ -148,7 +148,7 @@ else
     # Load some modules
     # NOTE: Use 'qinteractive' for interactive mode
     _loaded=($(module --terse list 2>&1)) # already loaded
-    _toload=(tmux ncl nco cdo/1.9.4) # for some reason latest CDO version is not default
+    _toload=(nco tmux) # have latest greatest versions of CDO and NCL via conda
     for _module in ${_toload[@]}; do
       if [[ ! " ${_loaded[@]} " =~ "$_module" ]]; then
         module load $_module
@@ -551,7 +551,7 @@ tos() {
      | grep "$1" | cut -d' ' -f1,4
 }
 # Kill jobs by name
-killps() {
+pskill() {
   local strs
   $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
   [ $# -ne 0 ] && strs=($@) || strs=(all)
@@ -562,11 +562,20 @@ killps() {
   done
 }
  # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
-killjobs() {
+jkill() {
   local count=$(jobs | wc -l | xargs)
   for i in $(seq 1 $count); do
     echo "Killing job $i..."
     eval "kill %$i"
+  done
+}
+# Kill PBS processes all at once; useful when debugging stuff, submitting teeny
+# jobs. The tail command skips first (n-1) lines.
+qkill() {
+  local proc
+  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do
+    qdel $proc
+    echo "Deleted job $proc"
   done
 }
 
@@ -1620,6 +1629,7 @@ _title_update() {
 [[ ! "$PROMPT_COMMAND" =~ "_title_update" ]] && _prompt _title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 alias title="_title_set" # easier for user
+alias title_update="_title_update" # old tmux sessions start panes with this command, super annoying, so provide alias
 
 ################################################################################
 # Message
