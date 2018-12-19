@@ -156,7 +156,7 @@ else
     # Load some modules
     # NOTE: Use 'qinteractive' for interactive mode
     _loaded=($(module --terse list 2>&1)) # already loaded
-    _toload=(tmux ncl nco cdo/1.9.4) # for some reason latest CDO version is not default
+    _toload=(nco tmux) # have latest greatest versions of CDO and NCL via conda
     for _module in ${_toload[@]}; do
       if [[ ! " ${_loaded[@]} " =~ "$_module" ]]; then
         module load $_module
@@ -475,6 +475,7 @@ $_macos && _ls_command='gls' || _ls_command='ls'
 alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
+alias log="tail -f" # only ever use this command to watch logfiles in realtime
 alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 
 # Information on directories
@@ -559,7 +560,7 @@ tos() {
      | grep "$1" | cut -d' ' -f1,4
 }
 # Kill jobs by name
-killps() {
+pskill() {
   local strs
   $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
   [ $# -ne 0 ] && strs=($@) || strs=(all)
@@ -570,13 +571,23 @@ killps() {
   done
 }
  # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
-killjobs() {
+jkill() {
   local count=$(jobs | wc -l | xargs)
   for i in $(seq 1 $count); do
     echo "Killing job $i..."
     eval "kill %$i"
   done
 }
+# Kill PBS processes all at once; useful when debugging stuff, submitting teeny
+# jobs. The tail command skips first (n-1) lines.
+qkill() {
+  local proc
+  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do
+    qdel $proc
+    echo "Deleted job $proc"
+  done
+}
+alias qrm="rm ~/*.[oe][0-9][0-9][0-9]*" # remove (empty) job logs
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color

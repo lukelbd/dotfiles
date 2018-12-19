@@ -1819,12 +1819,13 @@ if PlugActive("tabular")
   "before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
   nnoremap <expr> \r ':Tabularize /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
   vnoremap <expr> \r ':Table      /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
-  "As above, but let align
+  "As above, but left align
   "See :help non-greedy to see what braces do; it is like *, except instead of matching
   "as many as possible, can match as few as possible in some range;
   "with braces, a minus will mean non-greedy
   nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
   vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
+  "Just align by spaces
   "Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   "checks whether something doesn't match *anywhere before* what follows
   "Also the \S has to come before the \(\) atom instead of after for some reason
@@ -1837,8 +1838,22 @@ if PlugActive("tabular")
   nnoremap <expr> \\| ':Tabularize /\|/l1c1<CR>'
   vnoremap <expr> \\| ':Table      /\|/l1c1<CR>'
   "Case/esac blocks
-  nnoremap <expr> \) ':Tabularize /\(\S\+)\zs\\|\zs;;\)/l1c0l1<CR>'
-  vnoremap <expr> \) ':Table      /\(\S\+)\zs\\|\zs;;\)/l1c0l1<CR>'
+  "The bottom pair don't align the double semicolons; just any comments that come after
+  "Note the extra 1 is necessary to add space before comment characters
+  "That regex following the Comment(1) is so tabularize will ignore the common
+  "paramter expansions ${param#*pattern} and ${param##*pattern}
+  "Common for this to come up: e.g. -x=*) x=${1#*=}
+  " asdfda*|asd*) asdfjioajoidfjaosi"* ;; "comment 1S asdfjio *asdfjio*
+  " a|asdfsa) asdjiofjoi""* ;; "coiasdfojiadfj asd asd asdf
+  " asdf) asdjijoiasdfjoi ;;
+  nnoremap <expr> \) ':Tabularize /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
+  vnoremap <expr> \) ':Table      /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
+  nnoremap <expr> \( ':Tabularize /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
+  vnoremap <expr> \( ':Table      /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
+  "Chained && statements, common in bash
+  "Again param expansions are common so don't bother with comment detection this time
+  nnoremap <expr> \& ':Tabularize /&&/l1c1<CR>'
+  vnoremap <expr> \& ':Table      /&&/l1c1<CR>'
   "By comment character; ^ is start of line, . is any char, .* is any number, \zs
   "is start match here (must escape backslash), then search for the comment
   " nnoremap <expr> \C ':Tabularize /^.*\zs'.Comment(1).'/l1<CR>'
