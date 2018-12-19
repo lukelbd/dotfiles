@@ -87,8 +87,11 @@ if $_macos; then
   # NOTE: Instead of aliasing ncl with library path prefix, try using
   # a fallback library path; suggested here: https://stackoverflow.com/a/3172515/4970632
   # This shouldn't screw up Homebrew stuff
+  # NOTE: Fallback path doesn't mess up Homebrew, but *does* mess up some
+  # python modules e.g. cartopy, so forget it
+  alias ncl='DYLD_LIBRARY_PATH="/usr/local/lib/gcc/4.9" ncl' # fix libs
   export NCARG_ROOT="$HOME/builds/ncl-6.4.0" # critically necessary to run NCL
-  export DYLD_FALLBACK_LIBRARY_PATH="/usr/local/lib/gcc/4.9" # fix libs
+  # export DYLD_FALLBACK_LIBRARY_PATH="/usr/local/lib/gcc/4.9" # fix libs
 else
   # Linux options
   case $HOSTNAME in
@@ -708,7 +711,13 @@ mount() {
   local server address
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
   [ $# -ne 1 ] && echo "Error: Function sshfs() requires exactly 1 argument." && return 1
+  # Detect aliases
   server="$1"
+  location="$server"
+  case "$server" in
+    glade) server=cheyenne ;;
+  esac
+  # Get address
   address="${!server}" # evaluates the variable name passed
   echo "Server: $server"
   echo "Address: $address"
@@ -716,12 +725,13 @@ mount() {
   if ! isempty "$HOME/$server"; then
     echo "Error: Directory \"$HOME/$server\" already exists, and is non-empty!" && return 1
   fi
-  # Home directory on remote server
+  # Directory on remote server
   # NOTE: Using tilde ~ does not seem to work
-  local home
-  case $server in
-    cheyenne*) home="/glade/u/home/davislu" ;;
-    *)         home="/home/ldavis" ;;
+  local dir
+  case $location in
+    glade*)    location="/glade/scratch/davislu" ;;
+    cheyenne*) location="/glade/u/home/davislu" ;;
+    *)         location="/home/ldavis" ;;
   esac
   # Options meant to help speed up connection
   # See discussion: https://superuser.com/q/344255/506762
@@ -731,7 +741,7 @@ mount() {
   # -ociphers=arcfour \
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
   # -oauto_cache,reconnect,defer_permissions \
-  command sshfs "$address:$home" "$HOME/$server" \
+  command sshfs "$address:$location" "$HOME/$server" \
     -ocache_timeout=115200 -oattr_timeout=115200 \
     -ocompression=no \
     -ovolname="$server"
@@ -983,18 +993,17 @@ _jt() {
     export jupyter_font="$2"
   fi
   # Make sure theme is valid
-  # mkadf
-  themes=($(_jt -l | sed '1d'))
+  themes=($(jt -l | sed '1d'))
   [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
     echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
-  _jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
+  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
     -t $jupyter_theme -f $jupyter_font
 }
 
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
 # Will be called whenever a notebook is iniated, and can be called to refresh stale connections.
-connect() {
+_connect() {
   # Error checks and declarations
   local server outcome ports exits
   unset _jupyter_port
@@ -1053,14 +1062,14 @@ connect() {
 }
 
 # Refresh stale connections from macbook to server
-# Simply calls the 'connect' function
+# Simply calls the '_connect' function
 reconnect() {
   local ports
   $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
   if [ -n "$ports" ]; then
     echo "Refreshing jupyter notebook connections over port(s) $ports."
-    connect $ports
+    _connect $ports
   else
     echo "No active jupyter notebooks found."
   fi
@@ -1080,7 +1089,7 @@ notebook() {
     echo "Initializing jupyter notebook over port $1."
     port="--port=$1"
   elif ! $_macos; then # remote ports will use 3XXXX   
-    connect
+    _connect
     [ -z "$_jupyter_port" ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
@@ -1611,9 +1620,9 @@ _title_set() { # default way is probably using Cmd-I in iTerm2
 }
 _title_get() {
   # Simply gets the title from file
-  if [ -n "$_title" ]; then
-    _title="$_title" # already exists
-  elif ! [ -r "$_title_file" ]; then
+  # if [ -n "$_title" ]; then # this lets window have different title in different panes
+    # _title="$_title" # already exists
+  if ! [ -r "$_title_file" ]; then
     _title=""
   elif $_macos; then
     _title="$(cat "$_title_file" | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
