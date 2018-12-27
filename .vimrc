@@ -189,11 +189,11 @@ nnoremap <silent> cl xph
 nnoremap <silent> ch Xp
 "Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
 "use ss/substitute instead of cl if you want to enter insert mode
-nnoremap <silent> cL mzi<CR><Esc>`z
+nnoremap <silent> dL mzi<CR><Esc>`z
 "Delete entire line, leave behind an empty line
 "Has to be *normal* mode remaps, or will affect operator pending mode; for
 "example if you type 'dd', there will be delay.
-nnoremap dL 0d$
+nnoremap dD 0d$
 "Pressing enter on empty line preserves leading whitespace (HACKY)
 "works because Vim doesn't remove spaces when text has been inserted
 nnoremap o ox<BS>
@@ -689,10 +689,10 @@ function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overrid
       let loaded+=[file]
     endif
   endfor
-  echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
+  echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
 endfunction
 command! Refresh so ~/.vimrc | call <sid>refresh()
-nnoremap <silent> <Leader>S :call <sid>refresh()<CR>
+nnoremap <silent> <Leader>S :Refresh<CR>
 "Redraw screen
 nnoremap <silent> <Leader>r :redraw!<CR>
 
