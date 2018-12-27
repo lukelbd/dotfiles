@@ -567,7 +567,7 @@ pskill() {
   for str in ${strs[@]}; do
     echo "Killing $str jobs..."
     [ $str == 'all' ] && str=""
-    kill $(listps "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
+    kill $(tos "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 }
  # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
@@ -781,8 +781,8 @@ ip() {
   # Get the ip address; several weird options for this
   if ! $_macos; then
     # See this: https://stackoverflow.com/q/13322485/4970632
-    # ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
-    ip route get 1 | awk '{print $NF;exit}'
+    # command ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
+    command ip route get 1 | awk '{print $NF;exit}'
   else
     # See this: https://apple.stackexchange.com/q/20547/214359
     ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
@@ -1019,12 +1019,11 @@ _connect() {
   local server outcome ports exits
   unset _jupyter_port
   $_macos                && echo "Error: This function is intended to run inside ssh sessions."                      && return 1
-  [ ! -r $_port_file ]   && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
-  ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address."      && return 1
+  ! [ -r $_port_file ]   && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
   # The ip command prints this server's ip address ($hostname doesn't include full url)
   # ssh -f (port-forwarding in background) -N (don't issue command)
   echo "Sending commands to macbook."
-  server=$USER@$(ip route get 1 | awk '{print $NF;exit}')
+  server=$USER@$(ip) # calls my custom function
   [ $? -ne 0 ] && echo "Error: Could not figure out this server's ip address." && return 1
   # Try to establish 2-way connections
   # Can filter to find ports available on host *and* home server, or just iterate
@@ -1063,13 +1062,14 @@ _connect() {
   ports=($(echo $outcome | cut -d' ' -f1 | tr '-' ' ' | xargs))
   exits=($(echo $outcome | cut -d' ' -f2 | tr '-' ' ' | xargs))
   for idx in $(seq 0 $((${#ports[@]}-1))); do
-    if [ ${exits[$idx]} -eq 0 ]; then
-      _jupyter_port=${ports[$idx]}
-      echo "Connection over port ${ports[$idx]} successful."
+    if [ ${exits[idx]} -eq 0 ]; then
+      _jupyter_port=${ports[idx]}
+      echo "Connection over port ${ports[idx]} successful."
     else
-      echo "Connection over port ${ports[$idx]} failed."
+      echo "Connection over port ${ports[idx]} failed."
     fi
   done
+  [ -z "$_jupyter_port" ] && return 1 || return 0
 }
 
 # Refresh stale connections from macbook to server
@@ -1101,7 +1101,7 @@ notebook() {
     port="--port=$1"
   elif ! $_macos; then # remote ports will use 3XXXX   
     _connect
-    [ -z "$_jupyter_port" ] && return 1
+    [ $? -ne 0 ] && return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
   else # local ports will use 2XXXX
@@ -1464,100 +1464,49 @@ if [ -f ~/.fzf.bash ]; then
   # * Inline info puts the number line thing on same line as text. More compact.
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual; here, '-1' is terminal default, not '0'
-  # Custom options
-  export FZF_COMPLETION_FIND_IGNORE=".DS_Store .vimsession .vim.tags __pycache__ .ipynb_checkpoints"
-  export FZF_COMPLETION_FIND_OPTS=" -maxdepth 1 "
-  export FZF_COMPLETION_TRIGGER='' # tab triggers completion
-  export FZF_COMPLETION_DIR_COMMANDS="cd pushd rmdir" # usually want to list everything
-  # The builtin options # --ansi --color=bw
+  # Completion options don't require export
+  unset FZF_COMPLETION_FILE_COMMANDS FZF_COMPLETION_PID_COMMANDS FZF_COMPLETION_DIR_COMMANDS
+  unset FZF_COMPLETION_INCLUDE # optional requirement
+  FZF_COMPLETION_TRIGGER='' # empty means tab triggers completion, otherwise need '**'
+  FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
+  FZF_COMPLETION_FIND_IGNORE=".DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
+  # Do not override default find command
+  unset FZF_DEFAULT_COMMAND
+  unset FZF_CTRL_T_COMMAND
+  unset FZF_ALT_C_COMMAND
+  # Override options
+  _fzf_opts=$(echo ' --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
+    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up' \
+    | tr '\n' ' ')
+  FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
+  export FZF_DEFAULT_OPTS="$_fzf_opts"
+  export FZF_CTRL_T_OPTS="$_fzf_opts"
+  export FZF_ALT_C_OPTS="$_fzf_opts"
+
+  # Builtin options # --ansi --color=bw
   # Try to make bindings similar to vim; configure ctrl+, and ctrl+. to trigger completion
   # and scroll through just like tabs, ctrl+j and ctrl+k reserved for history scrolling, and use
   # slash, enter, or ctrl-d to accept an answer (d for 'descend')
-  _command='' # use find . -maxdepth 1 search non recursively
-  _opts=$(echo ' --select-1 --exit-0 --inline-info --height=6
-    --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up' \
-    | tr '\n' ' ')
-  export FZF_DEFAULT_COMMAND="$_command"
-  export FZF_CTRL_T_COMMAND="$_command"
-  export FZF_ALT_C_COMMAND="$_command"
-  export FZF_COMPLETION_OPTS="$_opts" # tab triggers completion
-  export FZF_DEFAULT_OPTS="$_opts"
-  export FZF_CTRL_T_OPTS="$_opts"
-  export FZF_ALT_C_OPTS="$_opts"
-  #----------------------------------------------------------------------------#
-  # To re-generate, just delete the .commands file and source this file
-  # Generate list of all executables, and use fzf path completion by default
-  # for almost all of them
-  # WARNING: BOLD MOVE COTTON.
-  _ignore="{ } \\[ \\[\\[ gecho echo type which cdo git fzf $FZF_COMPLETION_DIR_COMMANDS"
-  _ignore="^\\($(echo "$_ignore" | sed 's/ /\\|/g')\\)$"
-  if [ ! -r "$HOME/.commands" ]; then
-    echo "Recording available commands."
-    compgen -c >$HOME/.commands # will include aliases and functions
-  fi
-  export FZF_COMPLETION_FILE_COMMANDS=$(cat $HOME/.commands | grep -v "$_ignore" 2>/dev/null | xargs)
-  # complete $_complete_path $(cat $HOME/.commands | grep -v $_ignore | xargs)
-  #----------------------------------------------------------------------------#
+
   # Source file
   complete -r # reset first
   source ~/.fzf.bash
-  #----------------------------------------------------------------------------#
+
   # Create custom bindings
   # Use below to bind ctrl t command
   # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
   # Bind alt c command to ctrl f (i.e. the 'enter folder' command)
   bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
-  # Add a few basic completion options
-  # First set the default ones
-  _complete_path=$(complete | grep 'rm$' | sed 's/complete//;s/rm//')
   complete -E # when line empty, perform no complection (options empty)
-  # complete -D $_complete_path # ideal, but this seems to break stuff
-  #----------------------------------------------------------------------------#
-  # Non-path completion: subcommands, shell commands, etc.
-  # Feel free to add to this list, it is super cool
-  for _command in shopt help man type which bind alias unalias function git cdo; do
-    # Post-processing commands *must* have name <name_of_complete_function>_post
-    # Note for some commands, probably want to list both *subcommands* and *files*
-    case $_command in
-      shopt) _generator="shopt | cut -d' ' -f1 | cut -d$'\\t' -f1" ;;
-      help|man|type|which) _generator="cat \$HOME/.commands | grep -v '[!.:]'" ;; # faster than loading every time
-      bind)                _generator="bind -l" ;;
-      unalias|alias)       _generator="compgen -a" ;;
-      function)            _generator="compgen -A function" ;;
-      git)                 _generator="cat <(git commands | sed 's/$/ (command)/g' | column -t) <(find . -depth 1 | sed 's:^\\./::')"
-     _fzf_complete_git_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
-      cdo)                 _generator="cat <(cdo --operators | sed 's:[ ]*[^ ]*$::g' | sed 's/^\\([^ ]*[ ]*\\)\\(.*\\)$/\\1(\\2)/g' | tr '[:upper:]' '[:lower:]') <(find . -depth 1 | sed 's:^\\./::')"
-     _fzf_complete_cdo_post() { cat /dev/stdin | cut -d' ' -f1; } ;;
-    esac
-    # Create functions, and declare completions
-    eval "_fzf_complete_$_command() {
-          _fzf_complete $FZF_COMPLETION_OPTS \"\$@\" < <( $_generator )
-          }"
-    complete -F _fzf_complete_$_command $_command
-  done
-  #----------------------------------------------------------------------------#
-  # Path completion with file extension filter
-  # For info see: https://unix.stackexchange.com/a/15309/112647
-  # These will wrap around the generic path completion function
-  _fzf_find_prefix='-name .git -prune -o -name .svn -prune -o ( -type d -o -type f -o -type l )'
-  for _command in pdf image html; do
-    case $_command in
-      image) _filter="\\( -iname \\*.jpg -o -iname \\*.png -o -iname \\*.gif -o -iname \\*.svg -o -iname \\*.eps -o -iname \\*.pdf \\)" ;;
-      html)  _filter="-iname \\*.html" ;;
-      pdf)   _filter="-name \\*.pdf" ;;
-    esac
-    eval "_fzf_compgen_$_command() {
-      command find -L \"\$1\" \
-        \$FZF_COMPLETION_FIND_OPTS \
-        -name .git -prune -o -name .svn -prune -o \\( -type d -o -type f -o -type l \\) \
-        -a $_filter -a -not -path \"\$1\" -print 2> /dev/null | sed 's@^\\./@@'
-    }"
-    eval "_fzf_complete_$_command() {
-          __fzf_generic_path_completion _fzf_compgen_$_command \"-m\" \"\$@\"
-          }"
-    complete -o nospace -F _fzf_complete_$_command $_command
-  done
+
+  # Generate list of all executables, and use fzf path completion by default
+  # for almost all of them
+  # To re-generate, just delete the .commands file and source this file
+  if ! [ -r "$HOME/.commands" ]; then
+    echo "Recording available commands."
+    compgen -c >$HOME/.commands # will include aliases and functions
+  fi
+
   printf "done\n"
 fi
 
