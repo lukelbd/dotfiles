@@ -689,7 +689,7 @@ nbweb() {
 # first and second choices, 5 is nice round number, 6 is last node)
 gauss="ldavis@gauss.atmos.colostate.edu"
 monde="ldavis@monde.atmos.colostate.edu"
-cheyenne="davislu@cheyenne4.ucar.edu"
+cheyenne="davislu@cheyenne5.ucar.edu"
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
