@@ -1487,12 +1487,6 @@ if [ -f ~/.fzf.bash ]; then
   # Source file
   complete -r # reset first
   source ~/.fzf.bash
-
-  # Bind ctrl-t FZF command to another key
-  # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
-
-  # Bind alt-c FZF command to ctrl-f (i.e. the 'enter folder' command)
-  bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
   printf "done\n"
 fi
 
