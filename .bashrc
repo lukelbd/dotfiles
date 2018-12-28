@@ -1474,7 +1474,8 @@ if [ -f ~/.fzf.bash ]; then
   unset FZF_DEFAULT_COMMAND
   unset FZF_CTRL_T_COMMAND
   unset FZF_ALT_C_COMMAND
-  # Override options
+  # Override options, same for every one
+  # Builtin options: --ansi --color=bw
   _fzf_opts=$(echo ' --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
     --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up' \
     | tr '\n' ' ')
@@ -1483,30 +1484,15 @@ if [ -f ~/.fzf.bash ]; then
   export FZF_CTRL_T_OPTS="$_fzf_opts"
   export FZF_ALT_C_OPTS="$_fzf_opts"
 
-  # Builtin options # --ansi --color=bw
-  # Try to make bindings similar to vim; configure ctrl+, and ctrl+. to trigger completion
-  # and scroll through just like tabs, ctrl+j and ctrl+k reserved for history scrolling, and use
-  # slash, enter, or ctrl-d to accept an answer (d for 'descend')
-
   # Source file
   complete -r # reset first
   source ~/.fzf.bash
 
-  # Create custom bindings
-  # Use below to bind ctrl t command
+  # Bind ctrl-t FZF command to another key
   # bind -x "$(bind -X | grep 'C-t' | sed 's/C-t/<custom>/g')"
-  # Bind alt c command to ctrl f (i.e. the 'enter folder' command)
+
+  # Bind alt-c FZF command to ctrl-f (i.e. the 'enter folder' command)
   bind "$(bind -s | grep '\\ec' | sed 's/\\ec/\\C-f/g')"
-  complete -E # when line empty, perform no complection (options empty)
-
-  # Generate list of all executables, and use fzf path completion by default
-  # for almost all of them
-  # To re-generate, just delete the .commands file and source this file
-  if ! [ -r "$HOME/.commands" ]; then
-    echo "Recording available commands."
-    compgen -c >$HOME/.commands # will include aliases and functions
-  fi
-
   printf "done\n"
 fi
 
