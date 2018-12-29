@@ -692,9 +692,11 @@ function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overrid
   echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
 endfunction
 command! Refresh so ~/.vimrc | call <sid>refresh()
-nnoremap <silent> <Leader>S :call <sid>refresh()<CR>
+nnoremap <silent> <Leader>s :Refresh<CR>
 "Redraw screen
 nnoremap <silent> <Leader>r :redraw!<CR>
+"Load from disk
+nnoremap <silent> <Leader>R :e<CR>
 
 "##############################################################################"
 "DICTIONARY COMPLETION
@@ -1982,9 +1984,7 @@ endif
 augroup saving
 augroup END
 nnoremap <silent> <C-s> :update<CR>
-" nnoremap <silent> <C-s> :w!<CR>
 nnoremap <silent> <C-x> :echom "Ctrl-x reserved for tmux commands. Use Ctrl-z to compile instead."<CR>
-nnoremap <silent> <C-r> :if &ft=="vim" \| so % \| echom "Sourced file." \| endif<CR>
 "use force write, in case old version exists
 nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if tabpagenr('$')==1
