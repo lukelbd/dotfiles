@@ -189,11 +189,11 @@ nnoremap <silent> cl xph
 nnoremap <silent> ch Xp
 "Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
 "use ss/substitute instead of cl if you want to enter insert mode
-nnoremap <silent> cL mzi<CR><Esc>`z
+nnoremap <silent> dL mzi<CR><Esc>`z
 "Delete entire line, leave behind an empty line
 "Has to be *normal* mode remaps, or will affect operator pending mode; for
 "example if you type 'dd', there will be delay.
-nnoremap dL 0d$
+nnoremap dD 0d$
 "Pressing enter on empty line preserves leading whitespace (HACKY)
 "works because Vim doesn't remove spaces when text has been inserted
 nnoremap o ox<BS>
@@ -689,7 +689,7 @@ function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overrid
       let loaded+=[file]
     endif
   endfor
-  echom "Loaded ".join(map(['~/.vimrc']+loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
+  echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val,":~")[2:]'), ', ').'.'
 endfunction
 command! Refresh so ~/.vimrc | call <sid>refresh()
 nnoremap <silent> <Leader>s :Refresh<CR>
@@ -854,17 +854,17 @@ if PlugActive('unite.vim')
     "Mappings
     function! s:citation_maps()
       "Zotero
-      nnoremap <buffer> <silent> <C-g>k  :Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-g>c  :Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-g>t  :Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-g>p  :Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-g>n  :Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>k <Esc>:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>c <Esc>:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>t <Esc>:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>p <Esc>:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>n <Esc>:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
       "BibTex lookup (will look for .bib file automatically)
-      nnoremap <buffer> <silent> <C-f>k :Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-f>c :Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-f>t :Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-f>p :Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      nnoremap <buffer> <silent> <C-f>n :Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>k <Esc>:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>c <Esc>:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>t <Esc>:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>p <Esc>:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>n <Esc>:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
     endfunction
     " "Insert citation, view citation info, append information
     " nnoremap <silent> <C-n>c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
