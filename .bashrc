@@ -600,7 +600,11 @@ qkill() {
     echo "Deleted job $proc"
   done
 }
-alias qrm="rm ~/*.[oe][0-9][0-9][0-9]*" # remove (empty) job logs
+# Other convenient aliases; remove logs, and better qstat command
+alias qrm="rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*" # remove (empty) job logs
+alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
+# alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E -v 'etime|pset|project|substate|server|ctime|Job_Owner|Join_Path|comment|umask|exec|mem|jobdir|cpupercent'"
+# alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -v 'Join'"
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
@@ -906,7 +910,7 @@ _ssh() {
 rlcp() { # "copy to local (from remote); 'copy there'"
   local port file dest
   $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
-  [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
+  ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)      # port from most recent login
   array=${@:1:$#-1}            # result of user input glob expansion, or just one file
   dest="$(_compressuser ${!#})" # last value
@@ -919,7 +923,7 @@ lrcp() { # "copy to remote (from local); 'copy here'"
   local port file dest
   $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
   [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
-  [ ! -r $_port_file ] && echo "Error: Port unavailable." && return 1
+  ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)   # port from most recent login
   dest="$2"                 # last value
   file="$(_compressuser $1)" # second to last
@@ -1033,6 +1037,7 @@ _connect() {
   unset _jupyter_port
   $_macos                && echo "Error: This function is intended to run inside ssh sessions."                      && return 1
   ! [ -r $_port_file ]   && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
+  ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address."      && return 1
   # The ip command prints this server's ip address ($hostname doesn't include full url)
   # ssh -f (port-forwarding in background) -N (don't issue command)
   echo "Sending commands to macbook."
@@ -1144,10 +1149,10 @@ namelist() {
 #     so just don't install it
 nchelp() {
   echo "Available commands:"
-  echo "ncdump ncglobal ncinfo
+  echo "ncdump ncinfo ncglobal
         ncvarsinfo ncdimsinfo
-        nclist ncvarlist ncdimslist
-        ncvarinfo ncvardump ncvardata ncvartable" | column -t
+        ncin ncitems ncvars ncdims
+        ncvarinfo ncvardump ncvartable ncvartable2" | column -t
 }
 ncdump() { # almost always want this; access old versions in functions with backslash
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
@@ -1159,14 +1164,14 @@ ncglobal() { # show just the global attributes
 }
 ncinfo() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
 ncvarsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
@@ -1177,30 +1182,36 @@ ncdimsinfo() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
 }
-nclist() { # only get text between variables: and linebreak before global attributes
+ncin() { # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
+  [ $# -ne 2 ] && { echo "two arguments required."; return 1; }
+  ! [ -r "$2" ] && { echo "file \"$2\" not found."; return 1; }
+  command ncdump -h "$2" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
+    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
+}
+ncitems() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncdimlist() { # get list of dimensions
+ncdims() { # get list of dimensions
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncvarlist() { # only get text between variables: and linebreak before global attributes
+ncvars() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  [ ! -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
-  local list=($(nclist "$1"))
-  local dmnlist=($(ncdimlist "$1"))
+  local list=($(ncitems "$1"))
+  local dmnlist=($(ncdims "$1"))
   local varlist=() # add variables here
   for item in "${list[@]}"; do
     if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
@@ -1211,14 +1222,14 @@ ncvarlist() { # only get text between variables: and linebreak before global att
 }
 ncvarinfo() { # as above but just for one variable
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
 }
 ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
   command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse | less
@@ -1226,7 +1237,7 @@ ncvardump() { # dump variable contents (first argument) from file (second argume
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
-ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
+ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
   # Below procedure is ideal for "sanity checks" of data; just test one
   # timestep slice at every level; the tr -s ' ' trims multiple whitespace
   # to single and the column command re-aligns columns
@@ -1235,9 +1246,9 @@ ncvardata() { # parses the CDO parameter table; ncvarinfo replaces this
   local args=(${args[@]:2}) # extra arguments
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
 }
-ncvartable() { # as above but show everything
+ncvartable2() { # as above but show everything
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  [ ! -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   local args=("$@")
   local args=(${args[@]:2}) # extra arguments
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
@@ -1596,6 +1607,9 @@ _title_update() {
   else
     echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
   fi
+}
+title_update() { # fix name issues
+  _title_update $@
 }
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ ! "$PROMPT_COMMAND" =~ "_title_update" ]] && _prompt _title_update
