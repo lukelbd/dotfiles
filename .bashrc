@@ -110,18 +110,25 @@ else
   #   export PATH="/usr/local/netcdf4-pgi/bin:/usr/local/hdf5-pgi/bin:/usr/local/mpich3-pgi/bin:$PATH"
   #   export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
   #   export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
+
   # Euclid options
   euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     export PATH="/usr/local/bin:/usr/bin:/bin"
     export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
     export LD_LIBRARY_PATH="/usr/local/lib"
+
   # Monde options
   ;; monde*)
     # Basics; all netcdf, mpich, etc. utilites separate, add them
     export PATH="/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-    source set_pgi.sh # is in /usr/local/bin, sets up PGI and matlab
+    # PGI stuff
+    # source set_pgi.sh # or do this manually
+    export PGI="/opt/pgi"
+    export PATH="/opt/pgi/linux86-64/18.10/bin:$PATH"
+    export MANPATH="$MANPATH:/opt/pgi/linux86-64/18.10/man"
+    export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
     # Isca modeling stuff
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde # "environment" configuration for emps-gv4
@@ -130,6 +137,7 @@ else
     # The Euclid/Gauss servers do not have NCL, so need to use conda
     # Monde has NCL installed already
     export NCARG_ROOT="/usr/local" # use the version located here
+
   # Chicago supercomputer, any of the login nodes
   ;; midway*)
     # Default bashrc setup
@@ -147,6 +155,7 @@ else
     done
     # Fix prompt
     export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
+
   # Cheyenne supercomputer, any of the login nodes
   ;; cheyenne*)
     # Edit library path, path
@@ -166,16 +175,20 @@ else
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
 fi
+
 # Access custom executables
 # No longer will keep random executables loose in homre directory; put everything here
 export PATH="$HOME/bin:$PATH"
+
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=\"$PATH\" brew"
+
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
+
 # Matplotlib stuff
 # May be necessary for rendering fonts in ipython notebooks
 # See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
