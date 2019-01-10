@@ -613,7 +613,7 @@ gdiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
   #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
-  git --no-pager diff --no-index "$1" "$2" 2>&1
+  git --no-pager diff --no-index "$1" "$2"
 }
 # Next use builtin diff command as engine
 # *Different* files
@@ -1144,12 +1144,14 @@ namelist() {
   echo "Params in current namelist:"
   cat "$file" | cut -d= -f1 -s | grep -v '!' | xargs
 }
+
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
 #   * note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
+# Summaries first
 nchelp() {
   echo "Available commands:"
   echo "ncdump ncinfo ncglobal
@@ -1170,51 +1172,55 @@ ncinfo() { # only get text between variables: and linebreak before global attrib
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
-ncvarsinfo() { # get information for just variables (no dimension/global info)
+ncvars() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
+  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | \
+    sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
     # -B means prinx x PRECEDING lines starting from LAST match
 }
-ncdimsinfo() { # get information for just variables (no dimension/global info)
-    # the cdo parameter table actually gives a subset of this information, so don't
-    # bother parsing that information
+ncdims() { # just dimensions and their numbers
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
+  # command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | \
+  #   tr -d ';' | tr -s ' ' | column -t
+  command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q'  | sed '1d;$d' \
+      | tr -d ';' | tr -s ' ' | column -t
 }
+
+# Listing stuff
 ncin() { # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
   [ $# -ne 2 ] && { echo "two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "file \"$2\" not found."; return 1; }
   command ncdump -h "$2" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
+    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
 }
-ncitems() { # only get text between variables: and linebreak before global attributes
+nclist() { # only get text between variables: and linebreak before global attributes
+    # note variables don't always have dimensions! (i.e. constants)
+    # in this case looks like " double var ;" instead of " double var(x,y) ;"
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-    | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+    | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncdims() { # get list of dimensions
+ncdimlist() { # get list of dimensions
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncvars() { # only get text between variables: and linebreak before global attributes
+ncvarlist() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
-  local list=($(ncitems "$1"))
-  local dmnlist=($(ncdims "$1"))
+  local list=($(nclist "$1"))
+  local dmnlist=($(ncdimlist "$1"))
   local varlist=() # add variables here
   for item in "${list[@]}"; do
     if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
@@ -1223,10 +1229,12 @@ ncvars() { # only get text between variables: and linebreak before global attrib
   done
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
+
+# Inquiries about specific variables
 ncvarinfo() { # as above but just for one variable
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
+  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
 }
@@ -1235,7 +1243,7 @@ ncvardump() { # dump variable contents (first argument) from file (second argume
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
-  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse | less
+  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
     # shhh... just let it happen
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
@@ -1256,6 +1264,7 @@ ncvartable2() { # as above but show everything
   local args=(${args[@]:2}) # extra arguments
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
 }
+
 # Extract generalized files
 extract() {
   for name in "$@"; do
