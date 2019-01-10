@@ -619,7 +619,9 @@ gdiff() {
 # The last grep command is to highlight important parts
 ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
+  command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
+    --exclude='*.git*' --exclude='*.svn*' \
+    --strip-trailing-cr -r "$1" "$2" \
     | egrep '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories

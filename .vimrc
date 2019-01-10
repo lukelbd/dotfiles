@@ -2314,14 +2314,15 @@ noremap M gE
 "not currently used in normal mode, and fits better mnemonically
 "Mnemonic is l for letter, t for title case
 nnoremap gu guiw
-vnoremap gu gu
+" vnoremap gu gu
 nnoremap gU gUiw
-vnoremap gU gU
+" vnoremap gU gU
 vnoremap gl ~
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gl <Plug>cap1
 nmap gt <Plug>cap2
+vnoremap gt mzgu<Esc>`<~h
 " nnoremap gl ~h
 " nnoremap gt mzguiw~h`z
 "Default 'open file under cursor' to open in new tab; change for normal and vidual
