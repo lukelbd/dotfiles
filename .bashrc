@@ -611,8 +611,9 @@ alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]
 # Color not useful anyway; is just bold white, and we delete those lines
 gdiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
-    | egrep '(files|differ)' # add to these
+  # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
+  #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
+  git --no-pager diff --no-index "$1" "$2" 2>&1
 }
 # Next use builtin diff command as engine
 # *Different* files
@@ -622,13 +623,13 @@ ddiff() {
   command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
     --exclude='*.git*' --exclude='*.svn*' \
     --strip-trailing-cr -r "$1" "$2" \
-    | egrep '(Only in.*:|Files | and |differ| identical)'
+    | grep -E '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories
 idiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
-    | egrep '(Only in.*:|Files | and | differ| identical)'
+    | grep -E '(Only in.*:|Files | and | differ| identical)'
 }
 
 # Merge fileA and fileB into merge.{ext}
