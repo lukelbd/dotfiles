@@ -55,6 +55,7 @@ unalias -a
 # may get unexpected behavior due to unexpected alias/function overrides!
 _bashrc_message "Variables and modules"
 export PYTHONPATH="" # this one needs to be re-initialized
+export PYTHONUNBUFFERED=1 # necessary, or else running bash script that invokes python will prevent print statements from getting flushed to stdout until execution finishes
 if $_macos; then
   # Mac options
   # Defaults... but will reset them
@@ -198,13 +199,13 @@ printf "done\n"
 ################################################################################
 # Anaconda stuff
 ################################################################################
-_conda=
+unset _conda
 if [ -d "$HOME/anaconda3" ]; then
   _conda='anaconda3'
 elif [ -d "$HOME/miniconda3" ]; then
   _conda='miniconda3'
 fi
-if [ -n "$_conda" ]; then
+if [ -n "$_conda" ] && [ -z "$CONDA_DEFAULT_ENV" ]; then
   # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
   # The first thing creates a bunch of environment variables and functions
   # The second part calls the 'conda' function, which calls an activation function, which does the
@@ -1490,7 +1491,7 @@ printf "done\n"
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
-if [ -f ~/.fzf.bash ]; then
+if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
   _bashrc_message "Enabling fzf"
   # See man page for --bind information
   # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
@@ -1503,9 +1504,9 @@ if [ -f ~/.fzf.bash ]; then
   # Completion options don't require export
   unset FZF_COMPLETION_FILE_COMMANDS FZF_COMPLETION_PID_COMMANDS FZF_COMPLETION_DIR_COMMANDS
   unset FZF_COMPLETION_INCLUDE # optional requirement
-  FZF_COMPLETION_TRIGGER='' # empty means tab triggers completion, otherwise need '**'
+  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion, otherwise need '**'
   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
-  FZF_COMPLETION_FIND_IGNORE=".DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
+  FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
   # Do not override default find command
   unset FZF_DEFAULT_COMMAND
   unset FZF_CTRL_T_COMMAND
@@ -1531,7 +1532,7 @@ fi
 ################################################################################
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
 # They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ]; then
+if [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
   _bashrc_message "Enabling shell integration"
   # First enable
   source ~/.iterm2_shell_integration.bash
