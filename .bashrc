@@ -29,7 +29,10 @@ clear # first clear screen
 # Prompt
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
-export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
+  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+  _ps1_set=1
+fi
 # export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://stackoverflow.com/a/28938235/4970632
@@ -55,6 +58,7 @@ unalias -a
 # may get unexpected behavior due to unexpected alias/function overrides!
 _bashrc_message "Variables and modules"
 export PYTHONPATH="" # this one needs to be re-initialized
+export PYTHONUNBUFFERED=1 # necessary, or else running bash script that invokes python will prevent print statements from getting flushed to stdout until execution finishes
 if $_macos; then
   # Mac options
   # Defaults... but will reset them
@@ -110,18 +114,25 @@ else
   #   export PATH="/usr/local/netcdf4-pgi/bin:/usr/local/hdf5-pgi/bin:/usr/local/mpich3-pgi/bin:$PATH"
   #   export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
   #   export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
+
   # Euclid options
   euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     export PATH="/usr/local/bin:/usr/bin:/bin"
     export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
     export LD_LIBRARY_PATH="/usr/local/lib"
+
   # Monde options
   ;; monde*)
     # Basics; all netcdf, mpich, etc. utilites separate, add them
     export PATH="/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-    source set_pgi.sh # is in /usr/local/bin, sets up PGI and matlab
+    # PGI stuff
+    # source set_pgi.sh # or do this manually
+    export PGI="/opt/pgi"
+    export PATH="/opt/pgi/linux86-64/18.10/bin:$PATH"
+    export MANPATH="$MANPATH:/opt/pgi/linux86-64/18.10/man"
+    export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
     # Isca modeling stuff
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde # "environment" configuration for emps-gv4
@@ -130,6 +141,7 @@ else
     # The Euclid/Gauss servers do not have NCL, so need to use conda
     # Monde has NCL installed already
     export NCARG_ROOT="/usr/local" # use the version located here
+
   # Chicago supercomputer, any of the login nodes
   ;; midway*)
     # Default bashrc setup
@@ -147,6 +159,7 @@ else
     done
     # Fix prompt
     export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
+
   # Cheyenne supercomputer, any of the login nodes
   ;; cheyenne*)
     # Edit library path, path
@@ -166,16 +179,20 @@ else
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
 fi
+
 # Access custom executables
 # No longer will keep random executables loose in homre directory; put everything here
 export PATH="$HOME/bin:$PATH"
+
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=\"$PATH\" brew"
+
 # Include modules (i.e. folders with python files) located in the home directory
 # Also include python scripts in bin
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
+
 # Matplotlib stuff
 # May be necessary for rendering fonts in ipython notebooks
 # See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
@@ -185,13 +202,13 @@ printf "done\n"
 ################################################################################
 # Anaconda stuff
 ################################################################################
-_conda=
+unset _conda
 if [ -d "$HOME/anaconda3" ]; then
   _conda='anaconda3'
 elif [ -d "$HOME/miniconda3" ]; then
   _conda='miniconda3'
 fi
-if [ -n "$_conda" ]; then
+if [ -n "$_conda" ] && [ -z "$CONDA_DEFAULT_ENV" ]; then
   # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
   # The first thing creates a bunch of environment variables and functions
   # The second part calls the 'conda' function, which calls an activation function, which does the
@@ -609,22 +626,25 @@ alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]
 # Color not useful anyway; is just bold white, and we delete those lines
 gdiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
-    | egrep '(files|differ)' # add to these
+  # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
+  #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
+  git --no-pager diff --no-index "$1" "$2"
 }
 # Next use builtin diff command as engine
 # *Different* files
 # The last grep command is to highlight important parts
 ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
-    | egrep '(Only in.*:|Files | and |differ| identical)'
+  command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
+    --exclude='*.git*' --exclude='*.svn*' \
+    --strip-trailing-cr -r "$1" "$2" \
+    | grep -E '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories
 idiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
-    | egrep '(Only in.*:|Files | and | differ| identical)'
+    | grep -E '(Only in.*:|Files | and | differ| identical)'
 }
 
 # Merge fileA and fileB into merge.{ext}
@@ -1142,12 +1162,14 @@ namelist() {
   echo "Params in current namelist:"
   cat "$file" | cut -d= -f1 -s | grep -v '!' | xargs
 }
+
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
 #   * note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
+# Summaries first
 nchelp() {
   echo "Available commands:"
   echo "ncdump ncinfo ncglobal
@@ -1168,51 +1190,55 @@ ncinfo() { # only get text between variables: and linebreak before global attrib
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
-ncvarsinfo() { # get information for just variables (no dimension/global info)
+ncvars() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
+  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | \
+    sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
     # -B means prinx x PRECEDING lines starting from LAST match
 }
-ncdimsinfo() { # get information for just variables (no dimension/global info)
-    # the cdo parameter table actually gives a subset of this information, so don't
-    # bother parsing that information
+ncdims() { # just dimensions and their numbers
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
+  # command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | \
+  #   tr -d ';' | tr -s ' ' | column -t
+  command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q'  | sed '1d;$d' \
+      | tr -d ';' | tr -s ' ' | column -t
 }
+
+# Listing stuff
 ncin() { # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
   [ $# -ne 2 ] && { echo "two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "file \"$2\" not found."; return 1; }
   command ncdump -h "$2" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
+    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
 }
-ncitems() { # only get text between variables: and linebreak before global attributes
+nclist() { # only get text between variables: and linebreak before global attributes
+    # note variables don't always have dimensions! (i.e. constants)
+    # in this case looks like " double var ;" instead of " double var(x,y) ;"
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-    | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+    | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncdims() { # get list of dimensions
+ncdimlist() { # get list of dimensions
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncvars() { # only get text between variables: and linebreak before global attributes
+ncvarlist() { # only get text between variables: and linebreak before global attributes
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
-  local list=($(ncitems "$1"))
-  local dmnlist=($(ncdims "$1"))
+  local list=($(nclist "$1"))
+  local dmnlist=($(ncdimlist "$1"))
   local varlist=() # add variables here
   for item in "${list[@]}"; do
     if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
@@ -1221,10 +1247,12 @@ ncvars() { # only get text between variables: and linebreak before global attrib
   done
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
+
+# Inquiries about specific variables
 ncvarinfo() { # as above but just for one variable
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
+  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
 }
@@ -1233,7 +1261,7 @@ ncvardump() { # dump variable contents (first argument) from file (second argume
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
-  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse | less
+  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
     # shhh... just let it happen
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
@@ -1254,6 +1282,7 @@ ncvartable2() { # as above but show everything
   local args=(${args[@]:2}) # extra arguments
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
 }
+
 # Extract generalized files
 extract() {
   for name in "$@"; do
@@ -1479,6 +1508,7 @@ printf "done\n"
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
+# if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ -f ~/.fzf.bash ]; then
   _bashrc_message "Enabling fzf"
   # See man page for --bind information
@@ -1492,9 +1522,9 @@ if [ -f ~/.fzf.bash ]; then
   # Completion options don't require export
   unset FZF_COMPLETION_FILE_COMMANDS FZF_COMPLETION_PID_COMMANDS FZF_COMPLETION_DIR_COMMANDS
   unset FZF_COMPLETION_INCLUDE # optional requirement
-  FZF_COMPLETION_TRIGGER='' # empty means tab triggers completion, otherwise need '**'
+  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion, otherwise need '**'
   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
-  FZF_COMPLETION_FIND_IGNORE=".DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
+  FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
   # Do not override default find command
   unset FZF_DEFAULT_COMMAND
   unset FZF_CTRL_T_COMMAND
@@ -1520,7 +1550,7 @@ fi
 ################################################################################
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
 # They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ]; then
+if [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
   _bashrc_message "Enabling shell integration"
   # First enable
   source ~/.iterm2_shell_integration.bash
