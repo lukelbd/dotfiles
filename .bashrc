@@ -29,7 +29,10 @@ clear # first clear screen
 # Prompt
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
-export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
+  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+  _ps1_set=1
+fi
 # export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://stackoverflow.com/a/28938235/4970632
@@ -1491,7 +1494,8 @@ printf "done\n"
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
-if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
+# if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
+if [ -f ~/.fzf.bash ]; then
   _bashrc_message "Enabling fzf"
   # See man page for --bind information
   # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
