@@ -279,13 +279,15 @@ man() { # always show useful information when man is called
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
-  local arg="$@"
+  local search arg
+  arg="$@"
   [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
   [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
     if $_macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
-      [ $1 == "builtin" ] && local search=$1 || local search=bash
-    else local search=$1 # linux shows all info necessary, just have to find it
+      [ $1 == "builtin" ] && search=$1 || search=bash
+    else
+      search=$1 # linux shows all info necessary, just have to find it
     fi
     echo "Searching for stuff in ${search}."
     LESS=-p"^ *${1}.*\[.*$" command man $search
@@ -306,8 +308,8 @@ vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  local session=.vimsession
-  local flags files
+  local flags files session
+  session=.vimsession
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -*) flags+=("$1") ;;
@@ -353,6 +355,7 @@ abspath() { # abspath that works on mac, Linux, or anything with bash
 # Open files optionally based on name, or revert to default behavior
 # if -a specified
 open() {
+  ! $_macos && echo "Error: This should be run from your macbook." && return 1
   local files app app_default
   while [[ $# -gt 0 ]]; do
     case $1 in
