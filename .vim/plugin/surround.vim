@@ -362,6 +362,7 @@ function! s:texsurround()
   inoremap <buffer> <C-z>I \iint
 
   "3 levels of differentiation; each one stronger
+  inoremap <buffer> <C-z>- ${-}$
   inoremap <buffer> <C-z>+ \sum
   inoremap <buffer> <C-z>* \prod
   inoremap <buffer> <C-z>x \times

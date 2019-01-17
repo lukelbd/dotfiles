@@ -318,6 +318,21 @@ vim() {
   clear # clear screen after exit
 }
 
+# Absolute path, works everywhere
+abspath() { # abspath that works on mac, Linux, or anything with bash
+  if [ -d "$1" ]; then
+    (cd "$1"; pwd)
+  elif [ -f "$1" ]; then
+    if [[ "$1" = /* ]]; then
+      echo "$1"
+    elif [[ "$1" == */* ]]; then
+      echo "$(cd "${1%/*}"; pwd)/${1##*/}"
+    else
+      echo "$(pwd)/$1"
+    fi
+  fi
+}
+
 # Open files optionally based on name, or revert to default behavior
 # if -a specified
 open() {
@@ -333,12 +348,21 @@ open() {
   for file in "${files[@]}"; do
     if [ -z "$app_default" ]; then
       case "$file" in
-        *.pdf|*.svg|*.jpg|*.jpeg|*.png) app="Preview.app" ;;
+        # Special considerations for PDF figure files
+        *.pdf)
+          path="$(abspath "$file")"
+          if [[ "$path" =~ "figs-" ]] || [[ "$path" =~ "figures-" ]]; then
+            app="Preview.app"
+          else
+            app="PDF Expert.app"
+          fi ;;
+        # Other simpler filetypes
+        *.svg|*.jpg|*.jpeg|*.png)       app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
-        *.html|*.xml|*.htm|*.gif) app="Chromium.app" ;;
-        *.mov|*.mp4) app="VLC.app" ;;
-        *.md) app="Marked 2.app" ;;
-        *)    app="TextEdit.app" ;;
+        *.html|*.xml|*.htm|*.gif)       app="Chromium.app" ;;
+        *.mov|*.mp4)                    app="VLC.app" ;;
+        *.md)                           app="Marked 2.app" ;;
+        *)                              app="MacVim.app" ;;
       esac
     else
       app="$app_default"
@@ -536,19 +560,6 @@ note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
 calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
 clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
-abspath() { # abspath that works on mac, Linux, or anything with bash
-  if [ -d "$1" ]; then
-    (cd "$1"; pwd)
-  elif [ -f "$1" ]; then
-    if [[ "$1" = /* ]]; then
-      echo "$1"
-    elif [[ "$1" == */* ]]; then
-      echo "$(cd "${1%/*}"; pwd)/${1##*/}"
-    else
-      echo "$(pwd)/$1"
-    fi
-  fi
-}
 
 # Controlling and viewing running processes
 alias toc="mpstat -P ALL 1" # like top, but for each core
@@ -731,12 +742,13 @@ mount() {
   location="$server"
   case "$server" in
     glade) server=cheyenne ;;
+    mdata?) server=monde ;;
   esac
   # Get address
   address="${!server}" # evaluates the variable name passed
+  [ -z "$address" ] && echo "Error: Unknown server \"$server\". Consider adding it to .bashrc." && return 1
   echo "Server: $server"
   echo "Address: $address"
-  [ -z "$server" ] && echo "Error: Unknown server \"$server\". Consider adding it to .bashrc." && return 1
   if ! isempty "$HOME/$server"; then
     echo "Error: Directory \"$HOME/$server\" already exists, and is non-empty!" && return 1
   fi
@@ -744,8 +756,9 @@ mount() {
   # NOTE: Using tilde ~ does not seem to work
   local dir
   case $location in
-    glade*)    location="/glade/scratch/davislu" ;;
-    cheyenne*) location="/glade/u/home/davislu" ;;
+    glade)     location="/glade/scratch/davislu" ;;
+    mdata?)    location="/${location}/ldavis" ;; # mdata1, mdata2, ...
+    cheyenne?) location="/glade/u/home/davislu" ;;
     *)         location="/home/ldavis" ;;
   esac
   # Options meant to help speed up connection
@@ -756,8 +769,9 @@ mount() {
   # -ociphers=arcfour \
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
   # -oauto_cache,reconnect,defer_permissions \
+  # NOTE: The cache timeout prevents us from detecting new files!
   command sshfs "$address:$location" "$HOME/$server" \
-    -ocache_timeout=115200 -oattr_timeout=115200 \
+    -ocache_timeout=60 -oattr_timeout=115200 \
     -ocompression=no \
     -ovolname="$server"
 }
@@ -1550,8 +1564,12 @@ fi
 # Note, in read, if you specify number of characters, even pressing
 # enter key will be recorded as a result; break loop by checking if it
 # was pressed
-_win_num="${TERM_SESSION_ID%%t*}"
-_win_num="${_win_num#w}"
+if [[ "$TERM_PROGRAM" =~ Apple_Terminal ]]; then
+  _win_num=0
+else
+  _win_num="${TERM_SESSION_ID%%t*}"
+  _win_num="${_win_num#w}"
+fi
 _title_file=~/.title
 _title_set() { # default way is probably using Cmd-I in iTerm2
   # Record title from user input, or as user argument
