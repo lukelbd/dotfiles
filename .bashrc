@@ -81,7 +81,7 @@ if $_macos; then
   # We remedied this by compiling cdo ourselves with hdf5 and netcdf libraries
   # export PATH="$HOME/builds/cdo-1.9.5/src:$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH" # no more local cdo, had issues
   export PATH="$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH"
-  export PATH="$HOME/youtube-m4a:$PATH"
+  export PATH="$HOME/youtube-dl-music:$PATH"
 
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
   # but on Linux distributions seems to work fine inside anaconda)
@@ -1236,13 +1236,13 @@ ncdimlist() { # get list of dimensions
     | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 ncvarlist() { # only get text between variables: and linebreak before global attributes
+  local list dmnlist varlist
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
-  local list=($(nclist "$1"))
-  local dmnlist=($(ncdimlist "$1"))
-  local varlist=() # add variables here
+  list=($(nclist "$1"))
+  dmnlist=($(ncdimlist "$1"))
   for item in "${list[@]}"; do
     if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
       varlist+=("$item")
