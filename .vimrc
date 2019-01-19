@@ -694,9 +694,9 @@ endfunction
 command! Refresh so ~/.vimrc | call <sid>refresh()
 nnoremap <silent> <Leader>s :Refresh<CR>
 "Redraw screen
-nnoremap <silent> <Leader>r :redraw!<CR>
+nnoremap <silent> <Leader>R :redraw!<CR>
 "Load from disk
-nnoremap <silent> <Leader>R :e<CR>
+nnoremap <silent> <Leader>r :e<CR>
 
 "##############################################################################"
 "DICTIONARY COMPLETION
