@@ -208,7 +208,7 @@ if [ -d "$HOME/anaconda3" ]; then
 elif [ -d "$HOME/miniconda3" ]; then
   _conda='miniconda3'
 fi
-if [ -n "$_conda" ] && [ -z "$CONDA_DEFAULT_ENV" ]; then
+if [ -n "$_conda" ] && { [ -z "$CONDA_DEFAULT_ENV" ] || ! type conda &>/dev/null; }; then # the type check is necessary!
   # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
   # The first thing creates a bunch of environment variables and functions
   # The second part calls the 'conda' function, which calls an activation function, which does the
@@ -1264,7 +1264,7 @@ ncvardump() { # dump variable contents (first argument) from file (second argume
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
-  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
+  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B1000 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
     # shhh... just let it happen
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse

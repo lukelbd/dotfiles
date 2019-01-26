@@ -39,6 +39,7 @@ set shiftround "round to multiple of shiftwidth
 let mapleader="\<Space>"
 set viminfo='100,:100,<100,@100,s10,f0 "commands, marks (e.g. jump history), exclude registers >10kB of text
 set history=100 "search history
+set shell=/usr/bin/env\ bash
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
@@ -68,8 +69,8 @@ endif
 "This sets buffer filetypes to ignore when assigning 'tab titles' based on windows in that tab
 let g:bufignore=['nerdtree', 'tagbar', 'codi', 'help'] "filetypes considered 'helpers'
 "Format options; see :help fo-table to see what they mean -- want to continue comment lines
-"and numbered lists
-let g:formatoptions="lro"
+"and numbered lists.
+let g:formatoptions="lroj"
 exe 'setlocal formatoptions='.g:formatoptions
 augroup formatopts
   au!
@@ -383,8 +384,10 @@ augroup END
 
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
-"First mouse stuff
-set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
+"First mouse stuff. Make sure we are using *vim", not vi (use the latter for quickly examining contents).
+if version >= 500
+  set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences
+end if
 if has('ttymouse')
   set ttymouse=sgr
 else
