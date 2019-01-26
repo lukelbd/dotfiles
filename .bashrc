@@ -64,14 +64,23 @@ if $_macos; then
   # Defaults... but will reset them
   # eval `/usr/libexec/path_helper -s`
   # . /etc/profile # this itself should also run /etc/bashrc
-  # Defaults
-  export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
-  # LaTeX and X11
-  export PATH="/opt/X11/bin:/Library/TeX/texbin:$PATH"
+  # Defaults, LaTeX and X11
   # Homebrew, Macports, PGI compilers
+  export PATH="/opt/X11/bin:/Library/TeX/texbin:/usr/bin:/bin:/usr/sbin:/sbin"
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
   export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
+
+  # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+  # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
+  # versions! See: https://stackoverflow.com/a/3464303/4970632
+  # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
+  # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
+  if [ -d ~/.rvm/bin ]; then
+    [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+    export PATH="$PATH:$HOME/.rvm/bin"
+    rvm use ruby 1>/dev/null
+  fi
 
   # Local tools
   # NOTE: Added matlab as a symlink in builds directory, was cleaner
@@ -683,15 +692,17 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # See README.md in website directory
 # Ignore standard error because of annoying deprecation warnings; see:
 # https://github.com/academicpages/academicpages.github.io/issues/54
-# jupyter nbconvert --to html
 # A template idea:
 # http://briancaffey.github.io/2016/03/14/ipynb-with-jekyll.html
 # Another template idea:
 # http://www.leeclemmer.com/2017/07/04/how-to-publish-jupyter-notebooks-to-your-jekyll-static-website.html
-# For fixing tiny font size in code cells see
+# For fixing tiny font size in code cells see:
 # http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
 # Note CSS variables are in _sass/_variables
-alias server="bundle exec jekyll liveserve --config '_config.yml,_config.dev.yml' 2>/dev/null"
+# Below does live updates (watch) and incrementally builds website (incremental)
+# alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
+# Use 2>/dev/null to ignore deprecation warnings
+alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 nbweb() {
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
   local template name root dir md
@@ -1256,18 +1267,25 @@ ncvarinfo() { # as above but just for one variable
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
+  # the space makes sure it isn't another variable that has trailing-substring
+  # identical to this variable; and the $'' is how to insert literal tab
 }
 ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
+<<<<<<< HEAD
   command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B1000 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
     # shhh... just let it happen
     # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
     # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
+=======
+  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
+  # shhh... just let it happen
+  # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
+  # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
+>>>>>>> 2fa8212996d125890e7ac9c7f4929710e569c2ad
 }
 ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
   # Below procedure is ideal for "sanity checks" of data; just test one

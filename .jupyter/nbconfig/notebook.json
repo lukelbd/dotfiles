@@ -70,7 +70,6 @@
         "shift-q": "jupyter-notebook:confirm-restart-kernel",
         "cmd-k": "jupyter-notebook:split-cell-at-cursor",
         "u": "jupyter-notebook:undo-cell-deletion",
-        "/": "jupyter-notebook:find-and-replace",
         ":": "jupyter-notebook:show-command-palette",
         "w": "jupyter-notebook:save-notebook",
         "y": "jupyter-notebook:copy-cell",
@@ -83,8 +82,15 @@
         "t": "jupyter-notebook:toggle-cell-output-collapsed",
         "shift-o": "jupyter-notebook:insert-cell-above",
         "o": "jupyter-notebook:insert-cell-below",
-        "shift-r": "jupyter-notebook:reconnect-kernel"
-      }
+        "shift-r": "jupyter-notebook:reconnect-kernel",
+        "?": "jupyter-notebook:edit-command-mode-keyboard-shortcuts",
+        "/": "jupyter-notebook:find-and-replace",
+        "h": "jupyter-notebook:edit-command-mode-keyboard-shortcuts",
+        "m": "jupyter-notebook:merge-selected-cells"
+      },
+      "unbind": [
+        "shift-m"
+      ]
     }
   },
   "comment_uncomment_indent": true,
