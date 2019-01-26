@@ -385,9 +385,9 @@ augroup END
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff. Make sure we are using *vim", not vi (use the latter for quickly examining contents).
-if version >= 500
+if v:version >= 500
   set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences
-end if
+endif
 if has('ttymouse')
   set ttymouse=sgr
 else

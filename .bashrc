@@ -1275,17 +1275,10 @@ ncvardump() { # dump variable contents (first argument) from file (second argume
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
-<<<<<<< HEAD
-  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B1000 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
-    # shhh... just let it happen
-    # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
-    # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
-=======
   command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
   # shhh... just let it happen
   # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
   # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
->>>>>>> 2fa8212996d125890e7ac9c7f4929710e569c2ad
 }
 ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
   # Below procedure is ideal for "sanity checks" of data; just test one
