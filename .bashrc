@@ -227,7 +227,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then # above doesn't work, ne
   # that does these two things
   _bashrc_message "Enabling conda"
   source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables
-  conda activate # activate the default environment
+  CONDA_CHANGEPS1=false conda activate # activate the default environment, without changing PS1
   printf "done\n"
 fi
 
@@ -1699,3 +1699,21 @@ _bashrc_loaded='true'
 # way to test for that is compare hostname command with variable (variable will
 # not change for some reason)
 [ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
+
+# TODO: Consider doing this instead of conda activate? Also appears the
+# changeps1 thing is because don't want 'base' environemtn to do so.
+# >>> conda init >>>
+# !! Contents within this block are managed by 'conda init' !!
+# __conda_setup="$(CONDA_REPORT_ERRORS=false '/home/ldavis/miniconda3/bin/conda' shell.bash hook 2> /dev/null)"
+# if [ $? -eq 0 ]; then
+#   command eval "$__conda_setup"
+# else
+#   if [ -f "/home/ldavis/miniconda3/etc/profile.d/conda.sh" ]; then
+#     . "/home/ldavis/miniconda3/etc/profile.d/conda.sh"
+#     CONDA_CHANGEPS1=false conda activate base
+#   else
+#       command export PATH="/home/ldavis/miniconda3/bin:$PATH"
+#   fi
+# fi
+# unset __conda_setup
+# # <<< conda init <<<
