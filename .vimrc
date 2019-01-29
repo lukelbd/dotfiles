@@ -39,6 +39,7 @@ set shiftround "round to multiple of shiftwidth
 let mapleader="\<Space>"
 set viminfo='100,:100,<100,@100,s10,f0 "commands, marks (e.g. jump history), exclude registers >10kB of text
 set history=100 "search history
+set shell=/usr/bin/env\ bash
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
@@ -68,8 +69,8 @@ endif
 "This sets buffer filetypes to ignore when assigning 'tab titles' based on windows in that tab
 let g:bufignore=['nerdtree', 'tagbar', 'codi', 'help'] "filetypes considered 'helpers'
 "Format options; see :help fo-table to see what they mean -- want to continue comment lines
-"and numbered lists
-let g:formatoptions="lro"
+"and numbered lists.
+let g:formatoptions="lroj"
 exe 'setlocal formatoptions='.g:formatoptions
 augroup formatopts
   au!
@@ -383,8 +384,10 @@ augroup END
 
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
-"First mouse stuff
-set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences; these
+"First mouse stuff. Make sure we are using *vim", not vi (use the latter for quickly examining contents).
+if v:version >= 500
+  set mouse=a "mouse clicks and scroll wheel allowed in insert mode via escape sequences
+endif
 if has('ttymouse')
   set ttymouse=sgr
 else
@@ -694,9 +697,9 @@ endfunction
 command! Refresh so ~/.vimrc | call <sid>refresh()
 nnoremap <silent> <Leader>s :Refresh<CR>
 "Redraw screen
-nnoremap <silent> <Leader>r :redraw!<CR>
+nnoremap <silent> <Leader>R :redraw!<CR>
 "Load from disk
-nnoremap <silent> <Leader>R :e<CR>
+nnoremap <silent> <Leader>r :e<CR>
 
 "##############################################################################"
 "DICTIONARY COMPLETION
@@ -2314,14 +2317,15 @@ noremap M gE
 "not currently used in normal mode, and fits better mnemonically
 "Mnemonic is l for letter, t for title case
 nnoremap gu guiw
-vnoremap gu gu
+" vnoremap gu gu
 nnoremap gU gUiw
-vnoremap gU gU
+" vnoremap gU gU
 vnoremap gl ~
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gl <Plug>cap1
 nmap gt <Plug>cap2
+vnoremap gt mzgu<Esc>`<~h
 " nnoremap gl ~h
 " nnoremap gt mzguiw~h`z
 "Default 'open file under cursor' to open in new tab; change for normal and vidual

@@ -29,7 +29,10 @@ clear # first clear screen
 # Prompt
 ################################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
-export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
+  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+  _ps1_set=1
+fi
 # export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://stackoverflow.com/a/28938235/4970632
@@ -55,19 +58,29 @@ unalias -a
 # may get unexpected behavior due to unexpected alias/function overrides!
 _bashrc_message "Variables and modules"
 export PYTHONPATH="" # this one needs to be re-initialized
+export PYTHONUNBUFFERED=1 # necessary, or else running bash script that invokes python will prevent print statements from getting flushed to stdout until execution finishes
 if $_macos; then
   # Mac options
   # Defaults... but will reset them
   # eval `/usr/libexec/path_helper -s`
   # . /etc/profile # this itself should also run /etc/bashrc
-  # Defaults
-  export PATH="/usr/bin:/bin:/usr/sbin:/sbin"
-  # LaTeX and X11
-  export PATH="/opt/X11/bin:/Library/TeX/texbin:$PATH"
+  # Defaults, LaTeX and X11
   # Homebrew, Macports, PGI compilers
+  export PATH="/opt/X11/bin:/Library/TeX/texbin:/usr/bin:/bin:/usr/sbin:/sbin"
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
   export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
+
+  # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+  # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
+  # versions! See: https://stackoverflow.com/a/3464303/4970632
+  # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
+  # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
+  if [ -d ~/.rvm/bin ]; then
+    [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+    export PATH="$PATH:$HOME/.rvm/bin"
+    rvm use ruby 1>/dev/null
+  fi
 
   # Local tools
   # NOTE: Added matlab as a symlink in builds directory, was cleaner
@@ -77,7 +90,7 @@ if $_macos; then
   # We remedied this by compiling cdo ourselves with hdf5 and netcdf libraries
   # export PATH="$HOME/builds/cdo-1.9.5/src:$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH" # no more local cdo, had issues
   export PATH="$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH"
-  export PATH="$HOME/youtube-m4a:$PATH"
+  export PATH="$HOME/youtube-dl-music:$PATH"
 
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
   # but on Linux distributions seems to work fine inside anaconda)
@@ -198,13 +211,13 @@ printf "done\n"
 ################################################################################
 # Anaconda stuff
 ################################################################################
-_conda=
+unset _conda
 if [ -d "$HOME/anaconda3" ]; then
   _conda='anaconda3'
 elif [ -d "$HOME/miniconda3" ]; then
   _conda='miniconda3'
 fi
-if [ -n "$_conda" ]; then
+if [ -n "$_conda" ] && { [ -z "$CONDA_DEFAULT_ENV" ] || ! type conda &>/dev/null; }; then # the type check is necessary!
   # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
   # The first thing creates a bunch of environment variables and functions
   # The second part calls the 'conda' function, which calls an activation function, which does the
@@ -275,13 +288,15 @@ man() { # always show useful information when man is called
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
-  local arg="$@"
+  local search arg
+  arg="$@"
   [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
   [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
     if $_macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
-      [ $1 == "builtin" ] && local search=$1 || local search=bash
-    else local search=$1 # linux shows all info necessary, just have to find it
+      [ $1 == "builtin" ] && search=$1 || search=bash
+    else
+      search=$1 # linux shows all info necessary, just have to find it
     fi
     echo "Searching for stuff in ${search}."
     LESS=-p"^ *${1}.*\[.*$" command man $search
@@ -302,8 +317,8 @@ vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  local session=.vimsession
-  local flags files
+  local flags files session
+  session=.vimsession
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -*) flags+=("$1") ;;
@@ -331,9 +346,25 @@ vim() {
   clear # clear screen after exit
 }
 
+# Absolute path, works everywhere
+abspath() { # abspath that works on mac, Linux, or anything with bash
+  if [ -d "$1" ]; then
+    (cd "$1"; pwd)
+  elif [ -f "$1" ]; then
+    if [[ "$1" = /* ]]; then
+      echo "$1"
+    elif [[ "$1" == */* ]]; then
+      echo "$(cd "${1%/*}"; pwd)/${1##*/}"
+    else
+      echo "$(pwd)/$1"
+    fi
+  fi
+}
+
 # Open files optionally based on name, or revert to default behavior
 # if -a specified
 open() {
+  ! $_macos && echo "Error: This should be run from your macbook." && return 1
   local files app app_default
   while [[ $# -gt 0 ]]; do
     case $1 in
@@ -346,12 +377,21 @@ open() {
   for file in "${files[@]}"; do
     if [ -z "$app_default" ]; then
       case "$file" in
-        *.pdf|*.svg|*.jpg|*.jpeg|*.png) app="Preview.app" ;;
+        # Special considerations for PDF figure files
+        *.pdf)
+          path="$(abspath "$file")"
+          if [[ "$path" =~ "figs-" ]] || [[ "$path" =~ "figures-" ]]; then
+            app="Preview.app"
+          else
+            app="PDF Expert.app"
+          fi ;;
+        # Other simpler filetypes
+        *.svg|*.jpg|*.jpeg|*.png)       app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
-        *.html|*.xml|*.htm|*.gif) app="Chromium.app" ;;
-        *.mov|*.mp4) app="VLC.app" ;;
-        *.md) app="Marked 2.app" ;;
-        *)    app="TextEdit.app" ;;
+        *.html|*.xml|*.htm|*.gif)       app="Chromium.app" ;;
+        *.mov|*.mp4)                    app="VLC.app" ;;
+        *.md)                           app="Marked 2.app" ;;
+        *)                              app="MacVim.app" ;;
       esac
     else
       app="$app_default"
@@ -549,19 +589,6 @@ note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
 calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
 clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
-abspath() { # abspath that works on mac, Linux, or anything with bash
-  if [ -d "$1" ]; then
-    (cd "$1"; pwd)
-  elif [ -f "$1" ]; then
-    if [[ "$1" = /* ]]; then
-      echo "$1"
-    elif [[ "$1" == */* ]]; then
-      echo "$(cd "${1%/*}"; pwd)/${1##*/}"
-    else
-      echo "$(pwd)/$1"
-    fi
-  fi
-}
 
 # Controlling and viewing running processes
 alias toc="mpstat -P ALL 1" # like top, but for each core
@@ -613,14 +640,16 @@ gdiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
   #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
-  git --no-pager diff --no-index "$1" "$2" 2>&1
+  git --no-pager diff --no-index "$1" "$2"
 }
 # Next use builtin diff command as engine
 # *Different* files
 # The last grep command is to highlight important parts
 ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" \
+  command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
+    --exclude='*.git*' --exclude='*.svn*' \
+    --strip-trailing-cr -r "$1" "$2" \
     | grep -E '(Only in.*:|Files | and |differ| identical)'
 }
 # *Identical* files in two directories
@@ -663,15 +692,17 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # See README.md in website directory
 # Ignore standard error because of annoying deprecation warnings; see:
 # https://github.com/academicpages/academicpages.github.io/issues/54
-# jupyter nbconvert --to html
 # A template idea:
 # http://briancaffey.github.io/2016/03/14/ipynb-with-jekyll.html
 # Another template idea:
 # http://www.leeclemmer.com/2017/07/04/how-to-publish-jupyter-notebooks-to-your-jekyll-static-website.html
-# For fixing tiny font size in code cells see
+# For fixing tiny font size in code cells see:
 # http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
 # Note CSS variables are in _sass/_variables
-alias server="bundle exec jekyll liveserve --config '_config.yml,_config.dev.yml' 2>/dev/null"
+# Below does live updates (watch) and incrementally builds website (incremental)
+# alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
+# Use 2>/dev/null to ignore deprecation warnings
+alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 nbweb() {
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
   local template name root dir md
@@ -745,12 +776,13 @@ mount() {
   location="$server"
   case "$server" in
     glade) server=cheyenne ;;
+    mdata?) server=monde ;;
   esac
   # Get address
   address="${!server}" # evaluates the variable name passed
+  [ -z "$address" ] && echo "Error: Unknown server \"$server\". Consider adding it to .bashrc." && return 1
   echo "Server: $server"
   echo "Address: $address"
-  [ -z "$server" ] && echo "Error: Unknown server \"$server\". Consider adding it to .bashrc." && return 1
   if ! isempty "$HOME/$server"; then
     echo "Error: Directory \"$HOME/$server\" already exists, and is non-empty!" && return 1
   fi
@@ -758,8 +790,9 @@ mount() {
   # NOTE: Using tilde ~ does not seem to work
   local dir
   case $location in
-    glade*)    location="/glade/scratch/davislu" ;;
-    cheyenne*) location="/glade/u/home/davislu" ;;
+    glade)     location="/glade/scratch/davislu" ;;
+    mdata?)    location="/${location}/ldavis" ;; # mdata1, mdata2, ...
+    cheyenne?) location="/glade/u/home/davislu" ;;
     *)         location="/home/ldavis" ;;
   esac
   # Options meant to help speed up connection
@@ -770,8 +803,9 @@ mount() {
   # -ociphers=arcfour \
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
   # -oauto_cache,reconnect,defer_permissions \
+  # NOTE: The cache timeout prevents us from detecting new files!
   command sshfs "$address:$location" "$HOME/$server" \
-    -ocache_timeout=115200 -oattr_timeout=115200 \
+    -ocache_timeout=60 -oattr_timeout=115200 \
     -ocompression=no \
     -ovolname="$server"
 }
@@ -1142,12 +1176,14 @@ namelist() {
   echo "Params in current namelist:"
   cat "$file" | cut -d= -f1 -s | grep -v '!' | xargs
 }
+
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
 #   * note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
 #     the homebrew install location 'brew tap homebrew/science, brew install cdo'
 #   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #     so just don't install it
+# Summaries first
 nchelp() {
   echo "Available commands:"
   echo "ncdump ncinfo ncglobal
@@ -1168,52 +1204,56 @@ ncinfo() { # only get text between variables: and linebreak before global attrib
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
-ncvarsinfo() { # get information for just variables (no dimension/global info)
+ncvars() { # get information for just variables (no dimension/global info)
     # the cdo parameter table actually gives a subset of this information, so don't
     # bother parsing that information
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
+  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | \
+    sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
     # the space makes sure it isn't another variable that has trailing-substring
     # identical to this variable; and the $'' is how to insert literal tab
     # -A means print x TRAILING lines starting from FIRST match
     # -B means prinx x PRECEDING lines starting from LAST match
 }
-ncdimsinfo() { # get information for just variables (no dimension/global info)
-    # the cdo parameter table actually gives a subset of this information, so don't
-    # bother parsing that information
+ncdims() { # just dimensions and their numbers
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | tr -d ';' | tr -s ' ' | column -t | less
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
+  # command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | \
+  #   tr -d ';' | tr -s ' ' | column -t
+  command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q'  | sed '1d;$d' \
+      | tr -d ';' | tr -s ' ' | column -t
 }
+
+# Listing stuff
 ncin() { # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
   [ $# -ne 2 ] && { echo "two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "file \"$2\" not found."; return 1; }
   command ncdump -h "$2" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
+    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
 }
-ncitems() { # only get text between variables: and linebreak before global attributes
+nclist() { # only get text between variables: and linebreak before global attributes
+    # note variables don't always have dimensions! (i.e. constants)
+    # in this case looks like " double var ;" instead of " double var(x,y) ;"
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-    | cut -d '(' -f 1 | sed 's/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+    | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncdims() { # get list of dimensions
+ncdimlist() { # get list of dimensions
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d '=' -f 1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncvars() { # only get text between variables: and linebreak before global attributes
+ncvarlist() { # only get text between variables: and linebreak before global attributes
+  local list dmnlist varlist
   [ $# -ne 1 ] && { echo "One argument required."; return 1; }
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
   #   # data model, so don't use this approach
-  local list=($(ncitems "$1"))
-  local dmnlist=($(ncdims "$1"))
-  local varlist=() # add variables here
+  list=($(nclist "$1"))
+  dmnlist=($(ncdimlist "$1"))
   for item in "${list[@]}"; do
     if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
       varlist+=("$item")
@@ -1221,22 +1261,24 @@ ncvars() { # only get text between variables: and linebreak before global attrib
   done
   echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
 }
+
+# Inquiries about specific variables
 ncvarinfo() { # as above but just for one variable
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
-  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g' | less
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
+  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
+  # the space makes sure it isn't another variable that has trailing-substring
+  # identical to this variable; and the $'' is how to insert literal tab
 }
 ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
   ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
-  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse | less
-    # shhh... just let it happen
-    # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
-    # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
+  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
+  # shhh... just let it happen
+  # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
+  # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
 ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
   # Below procedure is ideal for "sanity checks" of data; just test one
@@ -1254,6 +1296,7 @@ ncvartable2() { # as above but show everything
   local args=(${args[@]:2}) # extra arguments
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
 }
+
 # Extract generalized files
 extract() {
   for name in "$@"; do
@@ -1479,6 +1522,7 @@ printf "done\n"
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 ################################################################################
 # Run installation script; similar to the above one
+# if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ -f ~/.fzf.bash ]; then
   _bashrc_message "Enabling fzf"
   # See man page for --bind information
@@ -1492,9 +1536,9 @@ if [ -f ~/.fzf.bash ]; then
   # Completion options don't require export
   unset FZF_COMPLETION_FILE_COMMANDS FZF_COMPLETION_PID_COMMANDS FZF_COMPLETION_DIR_COMMANDS
   unset FZF_COMPLETION_INCLUDE # optional requirement
-  FZF_COMPLETION_TRIGGER='' # empty means tab triggers completion, otherwise need '**'
+  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion, otherwise need '**'
   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
-  FZF_COMPLETION_FIND_IGNORE=".DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
+  FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
   # Do not override default find command
   unset FZF_DEFAULT_COMMAND
   unset FZF_CTRL_T_COMMAND
@@ -1520,7 +1564,7 @@ fi
 ################################################################################
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
 # They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ]; then
+if [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
   _bashrc_message "Enabling shell integration"
   # First enable
   source ~/.iterm2_shell_integration.bash
@@ -1564,8 +1608,12 @@ fi
 # Note, in read, if you specify number of characters, even pressing
 # enter key will be recorded as a result; break loop by checking if it
 # was pressed
-_win_num="${TERM_SESSION_ID%%t*}"
-_win_num="${_win_num#w}"
+if [[ "$TERM_PROGRAM" =~ Apple_Terminal ]]; then
+  _win_num=0
+else
+  _win_num="${TERM_SESSION_ID%%t*}"
+  _win_num="${_win_num#w}"
+fi
 _title_file=~/.title
 _title_set() { # default way is probably using Cmd-I in iTerm2
   # Record title from user input, or as user argument
