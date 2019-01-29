@@ -748,8 +748,14 @@ endfunction
 "ZOTERO and BibTeX INTEGRATION
 "Requires pybtex and bibtexparser python modules, and unite.vim plugin
 "Simply cannot get bibtex to work, ***always*** throws error gathering
-"candidates message, so annoying
-"This also allows buffer-specific bibtex sources
+"candidates message, so annoying.
+"NOTE: Use macports for this right now. By default the +python vim was compiled
+"with is not on path; access with port select --set pip <pip36|python36>. To
+"install module dependencies, use that pip. Can also install most packages
+"with 'port install py36-module_name' but often get error 'no module
+"named pkg_resources'; see this thread: https://stackoverflow.com/a/10538412/4970632
+"WARNING: Uninstalled homebrew python so maybe presentation tool does not work
+"anymore. Figure this out.
 augroup citations
   au!
   au BufRead  *.tex,*.bib let b:citation_vim_bibtex_file='' | call <sid>citation_maps()
@@ -857,17 +863,17 @@ if PlugActive('unite.vim')
     "Mappings
     function! s:citation_maps()
       "Zotero
-      inoremap <buffer> <silent> <C-g>k <Esc>:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>c <Esc>:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>t <Esc>:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>p <Esc>:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>n <Esc>:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>k <Esc>h:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>c <Esc>h:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>t <Esc>h:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>p <Esc>h:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>n <Esc>h:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
       "BibTex lookup (will look for .bib file automatically)
-      inoremap <buffer> <silent> <C-f>k <Esc>:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>c <Esc>:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>t <Esc>:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>p <Esc>:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>n <Esc>:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>k <Esc>h:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>c <Esc>h:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>t <Esc>h:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>p <Esc>h:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>n <Esc>h:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
     endfunction
     " "Insert citation, view citation info, append information
     " nnoremap <silent> <C-n>c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>

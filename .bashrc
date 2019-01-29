@@ -217,7 +217,8 @@ if [ -d "$HOME/anaconda3" ]; then
 elif [ -d "$HOME/miniconda3" ]; then
   _conda='miniconda3'
 fi
-if [ -n "$_conda" ] && { [ -z "$CONDA_DEFAULT_ENV" ] || ! type conda &>/dev/null; }; then # the type check is necessary!
+# if [ -n "$_conda" ] && { [ -z "$CONDA_DEFAULT_ENV" ] || ! type conda &>/dev/null; }; then # the type check is necessary!
+if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then # above doesn't work, need to just check path
   # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
   # The first thing creates a bunch of environment variables and functions
   # The second part calls the 'conda' function, which calls an activation function, which does the
