@@ -644,7 +644,7 @@ gdiff() {
   git --no-pager diff --no-index "$1" "$2"
 }
 # Next use builtin diff command as engine
-# *Different* files
+# *Different* files in 2 directories
 # The last grep command is to highlight important parts
 ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
@@ -665,7 +665,7 @@ idiff() {
 merge() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
   [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
-  local ext="" # no extension
+  local ext # no extension
   if [[ ${1##*/} =~ '.' || ${2##*/} =~ '.' ]]; then
     [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
     local ext=.${1##*.}
@@ -704,20 +704,29 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 # Use 2>/dev/null to ignore deprecation warnings
 alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
-nbweb() {
+nbdocs() {
+  # Convert notebook
+  local template base
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
-  local template name root dir md
-  root=$HOME/website
-  template=$root/nbtemplate.tpl
-  path=$root/_tools/files
+  ! [ -d docs ] && echo "Error: No docs subdirectory found." && return 1
+  template=docs/_templates/nbtemplate.tpl
   base=${1%.ipynb}
   base=${base##*/}
-  md="$path/$base".md
-  jupyter nbconvert --to=markdown --template=$template --output-dir=$path $1
-  gsed -i "s:${base}_files:/tools/files/${base}_files:g" $md
-  # gsed -i "s:${base}_files:../files/${base}_files:g" $md
-  # jupyter nbconvert --to markdown $1 --config $root/jekyll.py
-  # jupyter nbconvert --to markdown --output-dir $path $1
+  jupyter nbconvert --to=rst --output-dir=docs $1
+  rm -r docs/$base 2>/dev/null
+  mv docs/${base}_files docs/$base
+  gsed -i "s:${base}_files:${base}:g" docs/${base}.rst
+  # Next run special magical vim regexs that add back in sphinx
+  # links and default non-figure cell output. Your only other option for
+  # non-greedy regexes really is perl, and fuck that.
+  echo "Running vi search and replace."
+  command vi -c ':%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//g | wq' docs/${base}.rst
+  command vi -c ':%s/``\(\~\?\)\(mpl_toolkits.\{-}\|numpy.\{-}\|pandas.\{-}\|climpy.\{-}\|metpy.\{-}\|scipy.\{-}\|xarray.\{-}\|matplotlib.\{-}\|cartopy.\{-}\|basemap.\{-}\|proplot.\{-}\)``/`\1\2`/g | wq' docs/${base}.rst
+  command vi -c ':%s/:ref:``\(.\{-}\)``/:ref:`\1`/g | wq' docs/${base}.rst
+  command vi -c ':%s/code::\s*$/code:: ipython3/g | wq' docs/${base}.rst # weird error sometimes happens when code changed, but cell not run
+  # mv docs/${base}.rst docs/${base}.rst
+  # jupyter nbconvert --to=rst --template=$template --output-dir=docs $1
+  # gsed -i "s:${base}_files:/tools/files/${base}_files:g" $rst
 }
 
 ################################################################################
@@ -816,14 +825,14 @@ unmount() { # name 'unmount' more intuitive than 'umount'
   server="$1"
   [ -z "$server" ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
   echo "Server: $server"
-  command umount "$HOME/$server" &>/dev/null
+  command umount "$HOME/$server"
   if [ $? -ne 0 ]; then
-    echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
+    command diskutil umount "$HOME/$server"
+    [ $? -ne 0 ] && echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"." && return 1
   elif ! isempty "$HOME/$server"; then
-    echo "Warning: Leftover mount folder appears to be non-empty!"
-  else
-    rm -r "$HOME/$server"
+    echo "Warning: Leftover mount folder appears to be non-empty!" && return 1
   fi
+  rm -r "$HOME/$server"
 }
 
 # Short helper functions
@@ -1042,11 +1051,14 @@ _jt() {
   if [ $# -lt 1 ]; then 
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
-      uriah*)  jupyter_theme=solarizedl;;
-      gauss*)  jupyter_theme=gruvboxd;;
-      euclid*) jupyter_theme=gruvboxd;;
-      monde*)  jupyter_theme=onedork;;
-      midway*) jupyter_theme=onedork;;
+      # uriah*)  jupyter_theme=solarizedl;;
+      # uriah*)  jupyter_theme=monokai;;
+      # uriah*)  jupyter_theme=chesterish ;;
+      uriah*)  jupyter_theme=grade3   ;;
+      gauss*)  jupyter_theme=gruvboxd ;;
+      euclid*) jupyter_theme=gruvboxd ;;
+      monde*)  jupyter_theme=onedork  ;;
+      midway*) jupyter_theme=onedork  ;;
       *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
     esac
   else jupyter_theme="$1"

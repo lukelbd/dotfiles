@@ -61,7 +61,12 @@ inoremap <expr> <F2> !pumvisible() ? <sid>outofdelim(1)
 " imap <C-n> <Nop>
 "Remap surround.vim defaults
 "Make the visual-mode map same as insert-mode map; by default it is capital S
+"Note: Lowercase Isurround surrounds words, ISurround surrounds lines.
 vmap <C-s> <Plug>VSurround
+imap <C-s> <Plug>Isurround
+"Cancellation
+inoremap <C-s><Esc> <Nop>
+inoremap <C-z><Esc> <Nop>
 
 "------------------------------------------------------------------------------"
 "Define additional shortcuts like ys's' for the non-whitespace part
@@ -204,10 +209,10 @@ function! s:texsurround()
   call s:target('\', '\sqrt{',       '}',   1)
   call s:target('$', '$',            '$',   1)
   call s:target('e', '\times10^{',   '}',   1)
-  call s:target('k', '^\mathrm{',           '}',   1)
-  call s:target('j', '_\mathrm{',           '}',   1)
-  call s:target('K', '\overset{}{',  '}',   1)
-  call s:target('J', '\underset{}{', '}',   1)
+  " call s:target('k', '^\mathrm{',           '}',   1)
+  " call s:target('j', '_\mathrm{',           '}',   1)
+  call s:target('k', '\overset{}{',  '}',   1)
+  call s:target('j', '\underset{}{', '}',   1)
   call s:target('/', '\frac{',      '}{}', 1)
   call s:target('?', '\dfrac{',      '}{}', 1)
 
@@ -221,10 +226,12 @@ function! s:texsurround()
   call s:target('6', '\subsubsection*{', '}',   1)
 
   "Beamer
-  call s:target('!', '\frametitle{',     '}',                  1)
-  call s:target('c', '\begin{column}{',  "}\n".'\end{column}', 1)
-  call s:target('C', '\begin{columns}[', ']\end{columns}',     1)
-  " call s:target('c', '\begin{columns}[t,onlytextwidth]', '\end{columns}')
+  call s:target('n', '\pdfcomment{', '}', 1) "not sure what this is used for
+  call s:target('!', '\frametitle{', '}', 1)
+  " call s:target('c', '\begin{column}{',  "}\n".'\end{column}', 1)
+  " call s:target('C', '\begin{columns}[', ']\end{columns}',     1)
+  call s:target('c', '\begin{column}{0.5\textwidth}',  "\n".'\end{column}', 1)
+  call s:target('C', '\begin{columns}', "\n".'\end{columns}')
   " call s:target('z', '\note{',    '}', 1) "notes are for beamer presentations, appear in separate slide
 
   "Shortcuts for citations and such
@@ -236,11 +243,11 @@ function! s:texsurround()
   call s:target('A', '\captionof{figure}{', '}', 1) "alternative
 
   "Other stuff like citenum/citep (natbib) and textcite/authorcite (biblatex) must be done manually
-  "Have been rethinking this
-  call s:target('n', '\cite{',   '}',     1) "second most common one
-  call s:target('N', '\citenum{',    '}', 1) "most common
-  call s:target('m', '\citep{',   '}',    1) "second most common one
-  call s:target('M', '\citet{', '}',      1) "most common
+  "NOTE: Now use Zotero citation thing, do not need these.
+  " call s:target('n', '\cite{',   '}',     1) "second most common one
+  " call s:target('N', '\citenum{',    '}', 1) "most common
+  " call s:target('m', '\citep{',   '}',    1) "second most common one
+  " call s:target('M', '\citet{', '}',      1) "most common
   " call s:target('G', '\vcenteredhbox{\includegraphics[width=\textwidth]{', '}}', 1) "use in beamer talks
 
   "The next enfironments will also insert *newlines*
@@ -254,18 +261,18 @@ function! s:texsurround()
   call s:target('w', '{\usebackgroundtemplate{}\begin{frame}', "\n".'\end{frame}}', 1)
 
   "Figure environments, and pages
+  call s:target('m', '\begin{minipage}{\linewidth}', "\n".'\end{minipage}', 1) "not sure what this is used for
   call s:target('f', '\begin{center}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{center}', 1)
   call s:target('F', '\begin{figure}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{figure}', 1)
   call s:target('W', '\begin{wrapfigure}{r}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{wrapfigure}', 1)
   " call s:target('F', '\begin{subfigure}{.5\textwidth}'."\n".'\centering'."\n".'\includegraphics{', "}\n".'\end{subfigure}', 1)
-  " call s:target('p', '\begin{minipage}{\linewidth}', "\n".'\end{minipage}', 1) "not sure what this is used for
 
   "Equations
   call s:target('%', '\begin{equation*}', "\n".'\end{equation*}', 1)
   call s:target('^', '\begin{align*}', "\n".'\end{align*}', 1)
   call s:target('t', '\begin{tabular}{', "}\n".'\end{tabular}', 1)
   call s:target('T', '\begin{table}'."\n".'\centering'."\n".'\caption{}'."\n".'\begin{tabular}{', "}\n".'\end{tabular}'."\n".'\end{table}', 1)
-  " call s:target('B', '\begin{block}', "\n".'\end{block}', 1)
+  call s:target('>', '\uncover<X>{%', "\n".'}', 1)
 
   "Itemize environments
   call s:target('*', '\begin{itemize}',                  "\n".'\end{itemize}', 1)
@@ -290,6 +297,12 @@ function! s:texsurround()
   "------------------------------------------------------------------------------"
   "Shortcuts
   "------------------------------------------------------------------------------"
+  "Basics
+  inoremap <buffer> <C-z>[ []<Left>
+  inoremap <buffer> <C-z>( ()<Left>
+  inoremap <buffer> <C-z>< <><Left>
+  inoremap <buffer> <C-z>{ {}<Left>
+
   "Font sizing
   inoremap <buffer> <C-z>1 \tiny
   inoremap <buffer> <C-z>2 \scriptsize
@@ -347,6 +360,9 @@ function! s:texsurround()
   inoremap <buffer> <C-z>w \omega
   inoremap <buffer> <C-z>W \Omega
   inoremap <buffer> <C-z>z \zeta
+
+  "Needed for pdfcomment newlines
+  inoremap <buffer> <C-z>M \textCR<CR>
 
   "Derivatives
   inoremap <buffer> <C-z>: \partial
