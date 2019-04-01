@@ -19,24 +19,35 @@
 # way to consistently remove those temporary files was to query files present in
 # folder before/after compiling step; delete the new ones. This is better!
 #------------------------------------------------------------------------------#
-# Initial stuff
-#------------------------------------------------------------------------------#
+# Parse args
 shopt -s nullglob # glob-expand into zero entries
 latex=pdflatex    # by default use pdflatex
 bibtex=bibtex     # for compiling bibliographies
-filename="$1"     # the current file
-texdiff="$2"      # get difference pdf?
-tex2docx="$3"     # option
+texdiff=false     # get difference pdf?
+tex2docx=false    # option
+while [ $# -gt 0 ]; do
+  case $1 in
+    -d|--diff) texdiff=true ;;
+    -w|--word) tex2docx=true ;;
+    [^-]*)
+      [ -n "$filename" ] && echo "Error: Got multiple filenames." && exit 1
+      filename="$1" ;;
+    *) echo "Error: Unknown arg ${arg}." && exit 1
+  esac
+  shift
+done
+[ -z "$filename" ]   && echo "Error: Must pass filename."               && exit 1
+! [ -r "$filename" ] && echo "Error: File \"$filename\" does not exist" && exit 1
+! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils" && exit 1
+
+# Initial stuff
 templates="$HOME/latex $HOME/latex2" # location of LaTeX templates and style files
 [ "$TERM_PROGRAM" == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
 [ -z "$terminal" ] && terminal="MacVim" # probably means we are running from GUI program
-[ $# -ne 3 ] && echo "Error: Script requires exactly 3 arguments"
-[ ! -r "$filename" ] && echo "Error: File \"$filename\" does not exist" && exit 1
-! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils"
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   directory="${filename%/*}"    # trim shortest pattern matching <stuff>/*, keep "stuff"
   filename="${filename##*/}"    # trim longest pattern matching */<stuff>, keep "stuff"
-  [ ! -d "$directory" ] && echo "Error: Directory $directory does not exist" && exit 1
+  ! [ -d "$directory" ] && echo "Error: Directory $directory does not exist" && exit 1
   cd "$directory" # move there
 fi
 filestem="${filename%.tex}" # simple
@@ -68,7 +79,7 @@ else
 fi
 
 # Detect if we want to run latexdiff on this file
-[[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex ]]
+[[ "$filename" =~ .*[0-9][0-9][0-9][0-9]-[0-9][0-9]*.tex ]]
 [ $? -eq 0 ] && dfilename="${filename%.tex}changes.tex" || dfilename=""
 
 # Automatically choose from xelatex and pdflatex; just need xelatex for
@@ -240,11 +251,14 @@ esac
 echo "Running with $stylized"
 echo "Generating aux file" # maybe just need to generate glossary!
 $latex -draftmode $flags "$filestem" &>/dev/null
+[ $? -ne 0 ] && echo "Warning: Non-zero exit code."
 if $bibliography; then
   echo "Generating bibliography"
   $bibtex "$filestem" #&>/dev/null
+  [ $? -ne 0 ] && echo "Warning: Non-zero exit code."
   echo "Incorporating bbl file"
   $latex -draftmode $flags "$filestem" &>/dev/null
+  [ $? -ne 0 ] && echo "Warning: Non-zero exit code."
 fi
 # This time want to read error messages
 # * Below, the last line matches only triplets created by the second sed line
@@ -254,15 +268,16 @@ fi
 echo "Final pass"
 $latex $flags "$filestem" | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
   | grep -A2 '^$' | sed '/^$/d'
-[ ! -r "$filestem.pdf" ] && echo "Error: PDF not produced" && cleanup
+[ $? -ne 0 ] && echo "Warning: Non-zero exit code."
+! [ -r "$filestem.pdf" ] && echo "Error: PDF not produced" && cleanup
 
 #------------------------------------------------------------------------------#
 # Create the difference-LaTeX file, with track changes
 #------------------------------------------------------------------------------#
-if $texdiff && [ ! -z "$dfilename" ]; then
+if $texdiff && ! [ -z "$dfilename" ]; then
   # Check for earlier version
-  prefix=${filename%[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex} # parameter expensions are fire yo
-  pfiles=($prefix[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].tex) # sorted manuscript files (glob is sorted by default)
+  prefix=${filename%[0-9][0-9][0-9][0-9]-[0-9][0-9]*.tex} # parameter expensions are fire yo
+  pfiles=($prefix[0-9][0-9][0-9][0-9]-[0-9][0-9]*.tex) # sorted manuscript files (glob is sorted by default)
   # Get the part of list corresponding to files that
   # come BEFORE current one in alphanumeric sorting
   for index in "${!pfiles[@]}"; do

@@ -348,7 +348,16 @@ function! Strip(text)
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
 "Misc commands
-command! Reverse g/^/m0
+function! Reverse_command(l1, l2)
+  let line1 = a:l1 "cannot overwrite input var names
+  let line2 = a:l2
+  if line1 == line2
+    let line1 = 1
+    let line2 = line('$')
+  endif
+  exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
+endfunction
+command! -range Reverse call Reverse_command(<line1>, <line2>)
 " command! CommaReverse s/\v([^, ]+)(\s*,\s*)([^, ]+)/\3\2\1/ "just works for two items
 "Better grep, with limited regex translation
 function! Grep(regex) "returns list of matches
@@ -596,6 +605,16 @@ Plug 'raimondi/delimitmate'
 "Alternative to tabular is: https://github.com/tommcdo/vim-lion
 "But in defense tabular is *super* flexible
 Plug 'godlygeek/tabular'
+"All of this rst shit failed; anyway can just do simple tables with === signs
+"instead of those fancy grid cell tables.
+" Plug 'nvie/vim-rst-tables'
+" Plug 'ossobv/vim-rst-tables-py3'
+" Plug 'philpep/vim-rst-tables'
+" noremap <silent> \s :python ReformatTable()<CR>
+"Try again; also adds ReST highlighting to docstrings
+"Also fails! Fuck this shit.
+" Plug 'Rykka/riv.vim'
+" let g:riv_python_rst_hl=1
 "------------------------------------------------------------------------------"
 "Calculators and number stuff
 "No longer use codi, because had endless problems with it, and this cool 'Numi'
@@ -674,7 +693,7 @@ if PlugActive("thaerkh/vim-workspace") "cursor positions automatically saved
   let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
   let g:workspace_persist_undo_history = 0    "don't need to save undo history
   let g:workspace_autosave_untrailspaces = 0  "sometimes we WANT trailing spaces!
-  let g:workspace_autosave_ignore = ['help', 'rst', 'qf', 'diff', 'man']
+  let g:workspace_autosave_ignore = ['help', 'qf', 'diff', 'man']
 endif
 "Function for refreshing custom filetype-specific files and .vimrc
 "If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
@@ -863,17 +882,22 @@ if PlugActive('unite.vim')
     "Mappings
     function! s:citation_maps()
       "Zotero
-      inoremap <buffer> <silent> <C-g>k <Esc>h:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>c <Esc>h:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>t <Esc>h:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>p <Esc>h:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>n <Esc>h:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      "BibTex lookup (will look for .bib file automatically)
-      inoremap <buffer> <silent> <C-f>k <Esc>h:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>c <Esc>h:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>t <Esc>h:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>p <Esc>h:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>n <Esc>h:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      "Note: Want to start citation insertion *under cursor*, which
+      "end of the line, then, don't need to move left.
+      "if (col('.') != col('$')-1) \| normal! h \| endif
+      inoremap <buffer> <silent> <C-g>k <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>c <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>t <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>i <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite i<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>p <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-g>n <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      "BibTex lookup (will look for .bib file automatically)             <CR>
+      inoremap <buffer> <silent> <C-f>k <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>c <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>t <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>i <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite i<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>p <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      inoremap <buffer> <silent> <C-f>n <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
     endfunction
     " "Insert citation, view citation info, append information
     " nnoremap <silent> <C-n>c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
@@ -986,10 +1010,10 @@ if PlugActive("delimitmate")
   "Markdown need backticks for code, and can maybe do LaTeX math
   augroup delimitmate
     au!
-    au FileType vim,html,markdown let b:delimitMate_matchpairs="(:),{:},[:],<:>"
+    au FileType vim,html,markdown,rst let b:delimitMate_matchpairs="(:),{:},[:],<:>"
     au FileType vim let b:delimitMate_quotes = "'"
     au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
-    au FileType markdown let b:delimitMate_quotes = "\" ' $ `"
+    au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
   augroup END
   "Todo: Apparently delimitmate has its own jump command, should start using it.
   "Set up delimiter paris; delimitMate uses these by default
@@ -1007,7 +1031,7 @@ endif
 "Turn on for certain filetypes
 augroup spell
   au!
-  au FileType tex,html,markdown call s:spelltoggle(1)
+  au FileType tex,html,markdown,rst call s:spelltoggle(1)
 augroup END
 "Off by default
 set nospell spelllang=en_us spellcapcheck=
@@ -1088,10 +1112,10 @@ endfunction
 "want to see line numbers or special characters a la :set list.
 "Also enable quitting these windows with single 'q' press
 augroup simple
-  "Note rst is 'restructured text' and qf is 'quickfix'
+  "Note qf is 'quickfix'
   au!
   au BufEnter * let b:recording=0
-  au FileType rst,qf,help,diff,man SimpleSetup 1
+  au FileType qf,help,diff,man SimpleSetup 1
   au FileType gitcommit SimpleSetup 0
 augroup END
 "Next set the help-menu remaps
@@ -1212,7 +1236,7 @@ if PlugActive("neocomplete.vim") "just check if activated
   augroup neocomplete
     au!
     au FileType css setlocal omnifunc=csscomplete#CompleteCSS
-    au FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
+    au FileType html,markdown,rst setlocal omnifunc=htmlcomplete#CompleteTags
     au FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
     au FileType python setlocal omnifunc=pythoncomplete#Complete
     au FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
@@ -1254,7 +1278,7 @@ if PlugActive('indentline.vim')
   let g:indentLine_char='¦' "¦│┆
   let g:indentLine_setColors=0
   let g:indentLine_setConceal=0
-  let g:indentLine_fileTypeExclude = ['rst', 'qf', 'diff', 'man', 'help', 'gitcommit', 'tex']
+  let g:indentLine_fileTypeExclude = ['qf', 'diff', 'man', 'help', 'gitcommit', 'tex']
 endif
 
 "###############################################################################
@@ -1569,8 +1593,10 @@ if PlugActive("nerdcommenter")
   "Create an 'inline' comment header
   nnoremap <silent> cI :call <sid>inline(4)<CR>i
   "Create comment separator below current line
+  "These are ReST section levels
   nnoremap <silent> c; :call <sid>separator('-')<CR>
-  nnoremap <silent> c: :call <sid>separator()<CR>
+  nnoremap <silent> c: :call <sid>separator('=')<CR>
+  nnoremap <silent> c` :call <sid>separator('`')<CR>
   "Python docstring
   nnoremap c' :call <sid>docstring("'")<CR>A
   nnoremap c" :call <sid>docstring('"')<CR>A
@@ -1690,8 +1716,8 @@ endif
 "of session
 augroup wrap_tabs
   au!
-  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown','liquid'],&ft)
-  au FileType * exe 'TabToggle '.In(['text','gitconfig'],&ft)
+  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown','rst','liquid'], &ft)
+  au FileType * exe 'TabToggle '.In(['text','gitconfig','make'], &ft)
 augroup END
 "Buffer amount on either side
 "Can change this variable globally if want
