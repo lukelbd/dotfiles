@@ -1472,16 +1472,22 @@ if PlugActive("nerdcommenter")
   endfunction
   "Next separators that extend out to 80th column
   function! s:bar(...) "inserts above by default; most common use
-    if a:0 "if non-zero number of args
+    let cchar=Comment()
+    let nfill=78
+    let suffix=cchar
+    let nspace=s:comment_indent()
+    if a:0==2 "if non-zero number of args
       let fill=a:1 "fill character
-    else "chosoe fill based on filetype -- if comment char is 'skinny', pick another one
+      let nfill=a:2 "count
+      let suffix='' "no suffix
+    elseif a:0==1
+      let fill=a:1
+    else "choose fill based on filetype -- if comment char is 'skinny', pick another one
       let fill=s:comment_filler()
     endif
-    let nspace=s:comment_indent()
-    let nfill=(78-nspace)/len(fill) "divide by length of fill character
-    let cchar=Comment()
+    let nfill=(nfill-nspace)/len(fill) "divide by length of fill character
     normal! k
-    call append(line('.'), repeat(' ',nspace).cchar.repeat(fill,nfill).cchar)
+    call append(line('.'), repeat(' ',nspace).cchar.repeat(fill,nfill).suffix)
     normal! jj
   endfunction
   "Sectioners (bars with text in-between)
@@ -1519,7 +1525,7 @@ if PlugActive("nerdcommenter")
     let nspace=s:comment_indent()
     let cchar=Comment()
     normal! k
-    call append(line('.'), repeat(' ',nspace).cchar.repeat('-',a:ndash).'  '.repeat('-',a:ndash))
+    call append(line('.'), repeat(' ',nspace).cchar.repeat(' ',a:ndash).repeat('-',a:ndash).'  '.repeat('-',a:ndash))
     normal! j^
     call search('- \zs', '', line('.')) "search, and stop on this line (should be same one); no flags
   endfunction
@@ -1566,8 +1572,14 @@ if PlugActive("nerdcommenter")
   nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>
   "Comment characters on either side fo line
   nnoremap <silent> c, :call <sid>double()<CR>i
+  "----------------------------------------------------------------------------"
+  " Other header styles, not preferred by me but often seen
+  "----------------------------------------------------------------------------"
   "Create an 'inline' comment header
-  nnoremap <silent> cI :call <sid>inline(4)<CR>i
+  nnoremap <silent> cI :call <sid>inline(5)<CR>i
+  "Header
+  nnoremap <silent> <Plug>bar3 :call <sid>bar('-',70)<CR>:call repeat#set("\<Plug>bar3")<CR>
+  nmap <silent> cL <Plug>bar3
   "Create comment separator below current line
   nnoremap <silent> c; :call <sid>separator('-')<CR>
   nnoremap <silent> c: :call <sid>separator()<CR>
