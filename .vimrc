@@ -272,13 +272,13 @@ inoremap <expr> <Up>              !pumvisible() ? "\<Up>"   : <sid>tab_decrease(
 inoremap <expr> <Down>            !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
+"Miscelaneous map, undoes last change
+inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
 "Tab always means 'accept', and choose default menu item if necessary
 inoremap <expr> <Tab> !pumvisible() ? "\<C-]>\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-y>".<sid>tab_reset()
 "Enter means 'accept' only when we have explicitly scrolled down to something
 "Also prevent annoying delay where otherwise, have to press enter twice when popup menu open
 inoremap <expr> <CR>  !pumvisible() ? "\<C-]>\<CR>" : b:menupos==0 ? "\<C-e>\<C-]>\<CR>" : "\<C-y>".<sid>tab_reset()
-"Miscelaneous map, undoes last change
-inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
 "Map to backspace by *beginning* of *WORDs*
 "Use a function because don't want to trigger those annoying
 "InsertLeave/InsertEnter autocommands, it's more flexible, and
@@ -480,6 +480,14 @@ call plug#begin('~/.vim/plugged')
 "Requires changing Conceal group color, but doing that also messes up latex conceal
 "backslashes (which we need to stay transparent); so forget it probably
 " Plug 'yggdroot/indentline'
+"------------------------------------------------------------------------------"
+"My plugins
+Plug 'lukelbd/vim-statusline'
+Plug 'lukelbd/vim-scrollwrapped'
+Plug 'lukelbd/vim-tabline'
+Plug 'lukelbd/vim-idetools'
+Plug 'lukelbd/vim-toggle'
+Plug 'lukelbd/vim-ftplugins'
 "------------------------------------------------------------------------------"
 "Color schemes
 Plug 'flazz/vim-colorschemes'
