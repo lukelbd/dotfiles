@@ -40,6 +40,9 @@ let mapleader="\<Space>"
 set viminfo='100,:100,<100,@100,s10,f0 "commands, marks (e.g. jump history), exclude registers >10kB of text
 set history=100 "search history
 set shell=/usr/bin/env\ bash
+"The column
+set scrolloff=4
+let &g:colorcolumn=(has('gui_running') ? '0' : '80,120')
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark "standardize colors -- need to make sure background set to dark, and should be good to go
@@ -334,8 +337,8 @@ inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
 "GLOBAL FUNCTIONS, FOR VIM SCRIPTING
 "Test plugin status
 function! PlugActive(key)
-  return has_key(g:plugs, a:key) "change if (e.g.) switch plugin managers
   " echo filter(split(&rtp), ','), 'v:val =~? "tex")
+  return has_key(g:plugs, a:key) "change if (e.g.) switch plugin managers
 endfunction
 "Misc fuctions
 function! In(list,item)
@@ -487,7 +490,7 @@ Plug 'lukelbd/vim-scrollwrapped'
 Plug 'lukelbd/vim-tabline'
 Plug 'lukelbd/vim-idetools'
 Plug 'lukelbd/vim-toggle'
-Plug 'lukelbd/vim-ftplugins'
+Plug 'lukelbd/vim-textools'
 "------------------------------------------------------------------------------"
 "Color schemes
 Plug 'flazz/vim-colorschemes'
@@ -656,8 +659,8 @@ call plug#end()
 "SESSION MANAGEMENT
 "First, simple Obsession session management
 "Also manually preserve last cursor location:
-" Jump to mark '"' without changing the jumplist (:help g`)
-" Mark '"' is the cursor position when last exiting the current buffer
+" * Jump to mark '"' without changing the jumplist (:help g`)
+" * Mark '"' is the cursor position when last exiting the current buffer
 augroup session
   au!
   if PlugActive("vim-obsession") "must manually preserve cursor position
@@ -723,10 +726,10 @@ function! s:refresh() "refresh sesssion; sometimes ~/.vimrc settings are overrid
 endfunction
 command! Refresh so ~/.vimrc | call <sid>refresh()
 nnoremap <silent> <Leader>s :Refresh<CR>
-"Redraw screen
-nnoremap <silent> <Leader>R :redraw!<CR>
 "Load from disk
 nnoremap <silent> <Leader>r :e<CR>
+"Redraw screen
+nnoremap <silent> <Leader>R :redraw!<CR>
 
 "##############################################################################"
 "DICTIONARY COMPLETION
@@ -1225,18 +1228,6 @@ if PlugActive("codi.vim")
 endif
 
 "###############################################################################
-"MUCOMPLETE
-"Compact alternative to neocomplete
-"Just could not get it working, not many people so maybe just broken
-augroup mucomplete
-augroup END
-if PlugActive("vim-mucomplete") "just check if activated
-  " let g:mucomplete#enable_auto_at_startup = 1
-  " let g:mucomplete#no_mappings = 1
-  " let g:mucomplete#no_popup_mappings = 1
-endif
-
-"###############################################################################
 "NEOCOMPLETE (RECOMMENDED SETTINGS)
 if PlugActive("neocomplete.vim") "just check if activated
   "Enable omni completion for different filetypes; sooper cool bro
@@ -1276,17 +1267,6 @@ if PlugActive("neocomplete.vim") "just check if activated
   "Define keyword.
   if !exists('g:neocomplete#keyword_patterns') | let g:neocomplete#keyword_patterns = {} | endif
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
-endif
-
-"##############################################################################"
-"INDENTLINE
-"Decided not worth it; need to make them black/pale, but often want conceal
-"characters to have no coloring (i.e. use whatever color is underneath).
-if PlugActive('indentline.vim')
-  let g:indentLine_char='¦' "¦│┆
-  let g:indentLine_setColors=0
-  let g:indentLine_setConceal=0
-  let g:indentLine_fileTypeExclude = ['qf', 'diff', 'man', 'help', 'gitcommit', 'tex']
 endif
 
 "###############################################################################
@@ -1373,16 +1353,6 @@ if PlugActive('fzf.vim')
   "Open file through recursive search
   "Almost always need this from inside git repo, so don't bother
   " nnoremap <silent> <C-p> :Files<CR>
-endif
-
-"###############################################################################
-"Ctrl-Space
-"Massive plugin that I might stop using
-"Probably just want to use Unite for some of these features, and
-"use the vim-FZF plugin for fuzzy buffer searching.
-if PlugActive('vim-ctrlspace')
-  set hidden
-  let g:CtrlSpaceUseTabline=0 "want to use my own!
 endif
 
 "###############################################################################
@@ -1715,90 +1685,6 @@ if PlugActive('vimtex')
 endif
 
 "###############################################################################
-"WRAPPING AND LINE BREAKING
-"Note: Vim seems to run wraptoggle() *asynchronously* so if you test the
-"filetype within function instead of right when you issue autocommand, can
-"get the wrong files wrapped.
-"Note: BufRead failed sometimes, maps got mysteriously reset even though
-"wrapping was still on, happened when switching to non-wrapped tabs at start
-"of session
-augroup wrap_tabs
-  au!
-  au FileType * exe 'WrapToggle '.In(['bib','tex','markdown','rst','liquid'], &ft)
-  au FileType * exe 'TabToggle '.In(['text','gitconfig','make'], &ft)
-augroup END
-"Buffer amount on either side
-"Can change this variable globally if want
-let g:scrolloff=4 "but no scrolloff for wrapped documents
-let g:colorcolumn=(has('gui_running') ? '0' : '80,120')
-"Functions and command for toggling 'line wrapping' (with associated settings)
-"and 'literal tabs' (so far just one option)
-function! s:tabtoggle(...)
-  if a:0
-    let &l:expandtab=1-a:1 "toggle 'on' means literal tabs are 'on'
-  else
-    setlocal expandtab!
-  endif
-  let b:tab_mode=&l:expandtab
-endfunction
-command! -nargs=? TabToggle call <sid>tabtoggle(<args>)
-function! s:wraptoggle(...)
-  if a:0 "if non-zero number of args
-    let toggle=a:1
-  elseif !exists('b:wrap_mode')
-    let toggle=1
-  else
-    let toggle=1-b:wrap_mode
-  endif
-  if toggle==1
-    "Display options that make more sense with wrapped lines
-    let b:wrap_mode=1
-    let &l:scrolloff=0
-    let &l:wrap=1
-    let &l:colorcolumn=0
-    "Basic wrap-mode navigation, always move visually
-    "Still might occasionally want to navigate by lines though, so remap those to g
-    "Use noremap instead of nnoremap, so works in *operator-pending mode*
-    noremap  <buffer> k  gk
-    noremap  <buffer> j  gj
-    noremap  <buffer> ^  g^
-    noremap  <buffer> $  g$
-    noremap  <buffer> 0  g0
-    noremap  <buffer> gj j
-    noremap  <buffer> gk k
-    noremap  <buffer> g^ ^
-    noremap  <buffer> g$ $
-    noremap  <buffer> g0 0
-    nnoremap <buffer> A  g$a
-    nnoremap <buffer> I  g^i
-    nnoremap <buffer> gA A
-    nnoremap <buffer> gI I
-  else
-    "Disable previous options
-    let b:wrap_mode=0
-    let &l:scrolloff=g:scrolloff
-    let &l:wrap=0
-    let &l:colorcolumn=g:colorcolumn
-    "Disable previous maps
-    silent! unmap  <buffer> k
-    silent! unmap  <buffer> j
-    silent! unmap  <buffer> ^
-    silent! unmap  <buffer> $
-    silent! unmap  <buffer> 0
-    silent! unmap  <buffer> gj
-    silent! unmap  <buffer> gk
-    silent! unmap  <buffer> g^
-    silent! unmap  <buffer> g$
-    silent! unmap  <buffer> g0
-    silent! nunmap <buffer> A
-    silent! nunmap <buffer> I
-    silent! nunmap <buffer> gA
-    silent! nunmap <buffer> gI
-  endif
-endfunction
-command! -nargs=? WrapToggle call <sid>wraptoggle(<args>)
-
-"###############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
 "By default, :Tabularize command provided *without range* will select the
 "contiguous lines that contain specified delimiter; so this function only makes
@@ -2078,8 +1964,7 @@ set display=lastline "displays as much of wrapped lastline as possible;
 set nostartofline "when switching buffers, doesn't move to start of line (weird default)
 set nolazyredraw  "maybe slower, but looks super cool and pretty and stuff
 set virtualedit=  "prevent cursor from going where no actual character
-set noerrorbells visualbell t_vb=
-  "set visualbell ENABLES internal bell; but t_vb= means nothing is shown on the window
+set noerrorbells visualbell t_vb= "set visualbell ENABLES internal bell; but t_vb= means nothing is shown on the window
 "Multi-key mappings and Multi-character keycodes
 set esckeys "make sure enabled; allows keycodes
 set notimeout timeoutlen=0 "so when timeout is disabled, we do this
@@ -2543,10 +2428,23 @@ function! s:concealtoggle(...)
   exe 'set conceallevel='.(conceal_on ? 2 : 0)
 endfunction
 command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
+"Toggling tabs on and off
+augroup tab_toggle
+  au!
+  au FileType * exe 'TabToggle '.(index(g:tabtoggle_tab_filetypes, &ft)!=-1)
+augroup END
+function! s:tabtoggle(...)
+  if a:0
+    let &l:expandtab=1-a:1 "toggle 'on' means literal tabs are 'on'
+  else
+    setlocal expandtab!
+  endif
+  let b:tab_mode=&l:expandtab
+endfunction
+command! -nargs=? TabToggle call <sid>tabtoggle(<args>)
 "Get current plugin file
 "Remember :scriptnames lists all loaded files
 function! s:ftplugin()
-  "Enable 'simple' mode
   execute 'split $VIMRUNTIME/ftplugin/'.&ft.'.vim'
   silent SimpleSetup
 endfunction

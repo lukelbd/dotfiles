@@ -707,18 +707,19 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 nbdocs() {
   # Convert notebook
-  local base
+  local base root
+  root=$(git rev-parse --show-toplevel)
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
-  ! [ -d docs ] && echo "Error: No docs subdirectory found." && return 1
+  ! [ -d $root/docs ] && echo "Error: No docs subdirectory found." && return 1
   base=${1%.ipynb}
   base=${base##*/}
-  jupyter nbconvert --to=rst --output-dir=docs $1
+  jupyter nbconvert --to=rst --output-dir=$root/docs $1
   # template=docs/_templates/nbtemplate.tpl
   # jupyter nbconvert --to=rst --template=$template --output-dir=docs $1
   # Edits
-  rm -r docs/$base 2>/dev/null
-  mv docs/${base}_files docs/$base
-  gsed -i "s:${base}_files:${base}:g" docs/${base}.rst
+  rm -r $root/docs/$base 2>/dev/null
+  mv $root/docs/${base}_files $root/docs/$base
+  gsed -i "s:${base}_files:${base}:g" $root/docs/${base}.rst
   # Next run special magical vim regexs that add back in sphinx
   # links and default non-figure cell output. Your only other option for
   # non-greedy regexes is perl, and fuck that.
@@ -730,7 +731,7 @@ nbdocs() {
      '%s/``\(\~\?\)\(datetime\|mpl_toolkits\|numpy\|pandas\|climpy\|metpy\|scipy\|xarray\|matplotlib\|cartopy\|basemap\|proplot\)\(.\{-}\)``/`\1\2\3`/ge | '"\
     "'%s/:ref:``\(.\{-}\)``/:ref:`\1`/ge | '"\
     "'%s/code::\s*$/code:: ipython3/ge | '"\
-    "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' docs/${base}.rst &>/dev/null
+    "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' $root/docs/${base}.rst &>/dev/null
 }
 
 ################################################################################
