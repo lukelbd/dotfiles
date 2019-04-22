@@ -2429,6 +2429,7 @@ function! s:concealtoggle(...)
 endfunction
 command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 "Toggling tabs on and off
+let g:tabtoggle_tab_filetypes=['make', 'rst', 'gitconfig']
 augroup tab_toggle
   au!
   au FileType * exe 'TabToggle '.(index(g:tabtoggle_tab_filetypes, &ft)!=-1)
