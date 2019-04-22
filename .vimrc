@@ -1602,7 +1602,7 @@ if PlugActive("nerdcommenter")
   "Create an 'inline' comment header
   nnoremap <silent> cI :call <sid>inline(5)<CR>i
   "Header
-  nnoremap <silent> <Plug>bar3 :call <sid>bar('-',70)<CR>:call repeat#set("\<Plug>bar3")<CR>
+  nnoremap <silent> <Plug>bar3 :call <sid>bar('-',71)<CR>:call repeat#set("\<Plug>bar3")<CR>
   nmap <silent> cL <Plug>bar3
   "Create comment separator below current line
   "These are ReST section levels
