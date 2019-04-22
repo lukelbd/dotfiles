@@ -69,7 +69,8 @@ if $_macos; then
   export PATH="/opt/X11/bin:/Library/TeX/texbin:/usr/bin:/bin:/usr/sbin:/sbin"
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
-  export PATH="/opt/pgi/osx86-64/2017/bin:$PATH"
+  export PATH="/opt/pgi/osx86-64/2018/bin:$PATH"
+  export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
 
   # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
   # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
@@ -706,40 +707,36 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 nbdocs() {
   # Convert notebook
-  local template base
+  local base root
+  root=$(git rev-parse --show-toplevel)
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
-  ! [ -d docs ] && echo "Error: No docs subdirectory found." && return 1
-  template=docs/_templates/nbtemplate.tpl
+  ! [ -d $root/docs ] && echo "Error: No docs subdirectory found." && return 1
   base=${1%.ipynb}
   base=${base##*/}
-  jupyter nbconvert --to=rst --output-dir=docs $1
-  rm -r docs/$base 2>/dev/null
-  mv docs/${base}_files docs/$base
-  gsed -i "s:${base}_files:${base}:g" docs/${base}.rst
+  jupyter nbconvert --to=rst --output-dir=$root/docs $1
+  # template=docs/_templates/nbtemplate.tpl
+  # jupyter nbconvert --to=rst --template=$template --output-dir=docs $1
+  # Edits
+  rm -r $root/docs/$base 2>/dev/null
+  mv $root/docs/${base}_files $root/docs/$base
+  gsed -i "s:${base}_files:${base}:g" $root/docs/${base}.rst
   # Next run special magical vim regexs that add back in sphinx
   # links and default non-figure cell output. Your only other option for
-  # non-greedy regexes really is perl, and fuck that.
+  # non-greedy regexes is perl, and fuck that.
+  # NOTE: The crazy long regex below is to match `numpy` (simple link to
+  # homepage of module) and `~numpy.function` (the function). Note that
+  # sphinx will not expand `~numpy` as link, but will expand `numpy`.
   echo "Running vi search and replace."
-  command vi -c ':%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//g | wq' docs/${base}.rst
-  command vi -c ':%s/``\(\~\?\)\(mpl_toolkits.\{-}\|numpy.\{-}\|pandas.\{-}\|climpy.\{-}\|metpy.\{-}\|scipy.\{-}\|xarray.\{-}\|matplotlib.\{-}\|cartopy.\{-}\|basemap.\{-}\|proplot.\{-}\)``/`\1\2`/g | wq' docs/${base}.rst
-  command vi -c ':%s/:ref:``\(.\{-}\)``/:ref:`\1`/g | wq' docs/${base}.rst
-  command vi -c ':%s/code::\s*$/code:: ipython3/g | wq' docs/${base}.rst # weird error sometimes happens when code changed, but cell not run
-  # mv docs/${base}.rst docs/${base}.rst
-  # jupyter nbconvert --to=rst --template=$template --output-dir=docs $1
-  # gsed -i "s:${base}_files:/tools/files/${base}_files:g" $rst
+  command vi -c \
+     '%s/``\(\~\?\)\(datetime\|mpl_toolkits\|numpy\|pandas\|climpy\|metpy\|scipy\|xarray\|matplotlib\|cartopy\|basemap\|proplot\)\(.\{-}\)``/`\1\2\3`/ge | '"\
+    "'%s/:ref:``\(.\{-}\)``/:ref:`\1`/ge | '"\
+    "'%s/code::\s*$/code:: ipython3/ge | '"\
+    "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' $root/docs/${base}.rst &>/dev/null
 }
 
 ################################################################################
 # SSH, session management, and Github stuff
-# Note: enabling files with spaces is tricky, need: https://stackoverflow.com/a/20364170/4970632
-# 1) Basically have to escape the string "twice"; once in this shell, and again once re-interpreted by
-# destination shell... however we ACTUALLY *DO* WANT THE TILDE TO EXPAND
-# 2) Another weird thing; note we must ESCAPE TILDE IN A PARAMETER EXPANSION, even
-# though this is not necessary in double quotes alone; makes sense... maybe...
-# 3) BEWARE: replacing string with tilde in parameter expansion behaves DIFFERENTLY
-# ACROSS DIFFERENT VERSIONS OF BASH. Test this with foo=~/data, foobar="${foo/#$HOME/~}".
-#   * On Gauss (bash 4.3), you need to escape the tilde or surround it by quotes.
-#   * On Mac (bash 4.4) and Euclid (bash 4.2), the escape \ or quotes "" are interpreted literally; need tilde by itself.
+# Enabling files with spaces is tricky: https://stackoverflow.com/a/20364170/4970632
 ################################################################################
 # Declare some names for active servers
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one
@@ -760,8 +757,6 @@ ldm="ldm@ldm.atmos.colostate.edu"                 # user: atmos-2012
 # For how to install sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
 # For pros and cons see: https://unix.stackexchange.com/q/25974/112647
 # For how to test for empty directory see: https://superuser.com/a/352387/506762
-# Idea is we use the mount to *transfer files back and forth*, or for example
-# to view files on Mac/use Mac tools like Panoply to play with files
 isempty() {
   if [ -d "$1" ]; then
     local contents=($(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null))
@@ -821,6 +816,7 @@ mount() {
 }
 unmount() { # name 'unmount' more intuitive than 'umount'
   # WARNING: Need to be super careful server is not empty and we accidentally rm -r $HOME!
+  # WARNING: Do not touch this shit, or isempty function!
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
   server="$1"
   [ -z "$server" ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
@@ -841,12 +837,12 @@ alias connections="ps aux | grep -v grep | grep 'ssh '"
 # View address
 ip() {
   # Get the ip address; several weird options for this
+  # See this: https://stackoverflow.com/q/13322485/4970632
   if ! $_macos; then
-    # See this: https://stackoverflow.com/q/13322485/4970632
+    command ip route get 1 | awk '{print $NF; exit}'
     # command ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
-    command ip route get 1 | awk '{print $NF;exit}'
+  # See this: https://apple.stackexchange.com/q/20547/214359
   else
-    # See this: https://apple.stackexchange.com/q/20547/214359
     ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
   fi
 }
@@ -910,15 +906,14 @@ if ! $_macos; then # only do this if not on macbook
   fi
 fi
 
+################################################################################
 # Functions for scp-ing from local to remote, and vice versa
+################################################################################
+# Big honking useful wrapper -- will *always* use this to ssh between servers
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
 # For exit on forward see: https://serverfault.com/a/577830/427991
 # For why we alias the function see: https://serverfault.com/a/656535/427991
 # For enter command then remain in shell see: https://serverfault.com/q/79645/427991
-#   * Note this has nice side-effect of eliminating annoying "banner message"
-#   * Why iterate from ports 10000 upward? Because is even though disable host key
-#     checking, still get this warning message every time.
-# Big honking useful wrapper -- will *always* use this to ssh between servers
 # WARNING: This function ssh's into the server twice, first to query the available
 # port for two-way forwarding, then to ssh in over that port. If the server in question
 # *requires* password entry (e.g. Duo authentification), and cannot be configured
@@ -942,7 +937,6 @@ _ssh() {
   port_write="$(_compressuser $_port_file)"
   title_write="$(_compressuser $_title_file)"
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -X \
     -t -R $port:localhost:$listen $1 \
     "echo $port >$port_write; echo $_title >$title_write; \
     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
@@ -953,7 +947,7 @@ _ssh() {
 # 'variable whose name is result of "$#"' --> $n where n is the number
 # of args. Also can do math inside param expansion indexing.
 rlcp() { # "copy to local (from remote); 'copy there'"
-  local port file dest
+  local port array dest
   $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)      # port from most recent login
@@ -978,47 +972,41 @@ lrcp() { # "copy to remote (from local); 'copy here'"
 }
 
 ################################################################################
-# Setup REPLs
+# REPLs
 ################################################################################
-# R utilities
-# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
-# * The ---always-readline prevents prompt from switching to the default prompt, but
-#   also seems to disable ctrl-d for exiting.
-alias r="echo 'This is an R REPL.' && command R -q --no-save"
-alias R="echo 'This is an R REPL.' && command R -q --no-save"
-# alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
-# Matlab, just a simple alias
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/init.m')\""
-# NCL interactive environment
-# Make sure that we encapsulate any other alias; for example, on Macs, will
-# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
-if alias ncl &>/dev/null; then
-  eval "$(alias ncl)' -Q -n'"
-else
-  alias ncl="ncl -Q -n"
-fi
-# Julia, simple alias
-# NOTE: Need revise plugin https://github.com/timholy/Revise.jl to automatically
-# update modules like ipython autoreload
-alias julia="julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-$_macos && JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
 # iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
 # NOTE: MacOSX backend broken right now:
 # https://github.com/matplotlib/matplotlib/pull/11850
-# Seems to not yet be in a stable conda release, so stay tuned.
-_py_simple=$(echo "
-  get_ipython().magic('load_ext autoreload')
-  get_ipython().magic('autoreload 2')
-  " | sed 's/^ *//g')
-_py_complex=$(echo "$_py_simple
-  import numpy as np
-  import pandas as pd
-  import xarray as xr
-  " | sed 's/^ *//g')
-  # $($_macos && echo "import matplotlib as mpl; mpl.use('MacOSX'); import proplot as plot")
-alias iviper="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_complex\""
-alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"$_py_simple\""
+alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"
+get_ipython().magic('load_ext autoreload')
+get_ipython().magic('autoreload 2')
+import numpy as np
+\""
+# Julia, simple alias
+# NOTE: Need revise plugin https://github.com/timholy/Revise.jl to automatically
+# update modules like ipython autoreload
+alias ijulia="julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
+$_macos && JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
+# NCL interactive environment
+# Make sure that we encapsulate any other alias; for example, on Macs, will
+# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
+if alias ncl &>/dev/null; then
+  _incl=$(alias ncl | cut -d= -f2- | sed "s/^\'//g;s/\'$//g")
+  alias incl="$_incl -Q -n"
+else
+  alias incl="ncl -Q -n"
+fi
+# R utilities
+# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
+# * The ---always-readline prevents prompt from switching to the default prompt, but
+#   also seems to disable ctrl-d for exiting.
+# alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
+alias r="command R -q --no-save"
+alias R="command R -q --no-save"
+# Matlab
+# Just loads the startup script
+alias imatlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
 # * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
@@ -1026,7 +1014,6 @@ alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i
 #   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
 #   for success, and if not, prints the error message. This is a build-your-own eval.
 iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
-  echo 'This is a Perl REPL.'
   ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
 }
@@ -1703,7 +1690,7 @@ $_macos && { # first the MacOS options
   alias forecast="curl wttr.in/Fort\ Collins" # list weather information
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
-  [[ $BASH_VERSION =~ ^4.* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
+  [[ $BASH_VERSION =~ ^[4-9].* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
   }
 _bashrc_loaded='true'
 # Dad jokes

@@ -1,9 +1,8 @@
 "------------------------------------------------------------------------------"
 " Vim syntax file for completion for Slurm and embedded Awk highlighting
 "------------------------------------------------------------------------------"
-" Awk: copied from https://stackoverflow.com/a/13925238/4970632
 " Currently just highlights stuff white; needs work.
-"------------------------------------------------------------------------------"
+" Awk: copied from https://stackoverflow.com/a/13925238/4970632
 " syn include @AWKScript syntax/awk.vim
 " syn region AWKScriptCode matchgroup=AWKCommand
 "     \ start=+[=\\]\@<!'+ skip=+\\'+ end=+'+ contains=@AWKScript contained
@@ -20,6 +19,7 @@
 " hi def link AWKCommand Type
 "------------------------------------------------------------------------------"
 "Manage shell type
+"Copied from somewhere, maybe part of PBS
 if !exists("b:is_kornshell") && !exists("b:is_bash")
   if exists("g:is_posix") && !exists("g:is_kornshell")
    let g:is_kornshell= g:is_posix

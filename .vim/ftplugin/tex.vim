@@ -26,22 +26,20 @@ let g:tex_stylish=1
 "Fast highlighting, but pretty ugly
 " let g:tex_fast= ""
 
-"------------------------------------------------------------------------------"
 "Commands for compiling latex
 "Use C-z for compiling normally, and <Leader>Z for compiling to word document.
 noremap <silent> <buffer> <C-z> :update<CR>:exec('!clear; set -x; vimlatex '.shellescape(@%))<CR>
 noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; vimlatex '.shellescape(@%).' --diff')<CR>
 noremap <silent> <buffer> <Leader>Z :w<CR>:exec('!clear; set -x; vimlatex '.shellescape(@%).' --word')<CR>
 
-"------------------------------------------------------------------------------"
 "C-@ is same as C-Space (google it)
 "These are pretty much obsolete now, since 'detex' can exclude figure environments
 "and tables and equations and stuff, but these cannot
-function! s:wordcount()
-  exe '!clear; set -x; ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null | wc -w'
-  exe '!clear; set -x; open -a Skim; '
-    \.'osascript ~/bin/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
-    \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
-    \.'open -a iTerm')<CR>:redraw!<CR>
-endfunction
-command! WordCount call <sid>wordcount()
+" function! s:wordcount()
+"   exe '!clear; set -x; ps2ascii '.shellescape(expand('%:p:r').'.pdf').' 2>/dev/null | wc -w'
+"   exe '!clear; set -x; open -a Skim; '
+"     \.'osascript ~/bin/wordcount.scpt '.shellescape(expand('%:p:r').'.pdf').'; '
+"     \.'[ "$TERM_PROGRAM"=="Apple_Terminal" ] && terminal="Terminal" \|\| terminal="$TERM_PROGRAM"; '
+"     \.'open -a iTerm')<CR>:redraw!<CR>
+" endfunction
+" command! WordCount call <sid>wordcount()

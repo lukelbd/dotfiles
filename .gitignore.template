@@ -1,32 +1,33 @@
 # Template .gitignore for new repos #
 #####################################
+# Vim session files and swap files, from various points in my history
 .[sS]ession.*
 .vimsession
 .vimtags
 .*.sw[a-z]
-  # vim session files and swap files, from various points in my history
 *.tmp
+# .nfs files appear on Linux servers sometimes
 .nfs*
-  # .nfs files appear on Linux servers sometimes
 *.pyc
+# Python files
 __pycache__
-  # python files
+# Common temporary files
 *.log
 *.tmp
 example.*
 empty.*
-  # common temporary files
+# Common directory names for garbage
 old
 trash
 garbage
-  # common directory names for garbage
+# Compiled source code
 *.com
 *.class
 *.dll
 *.exe
 *.o
 *.so
-  # compiled source code
+# Compressed files
 *.7z
 *.dmg
 *.gz
@@ -35,9 +36,8 @@ garbage
 *.rar
 *.tar
 *.zip
-  # compressed files
+# OS-generated files
 .DS_Store
 .DS_Store?
 .Trashes
 ._*
-  # os-generated files
