@@ -15,9 +15,10 @@ let b:fortran_dialect='f08' "can be F or f08
 "Tool that compiles code, then runs it, then deletes the executable
 function! s:fortranrun()
   w
-  let f90_path=shellescape(@%)
-  let exe_path=shellescape(expand('%:p:r'))
-  exe '!clear; set -x; gfortran '.f90_path.' -o '.exe_path.' && '.exe_path.' && rm '.exe_path
-  return
+  let dir_path=shellescape(expand('%:h'))
+  let f90_path=shellescape(expand('%:t'))
+  let exe_path=shellescape(expand('%:t:r'))
+  exe '!clear; set -x; cd '.dir_path.'; pgf90 '.f90_path.' -o '.exe_path.' && ./'.exe_path.' && rm '.exe_path
+  " exe '!clear; set -x; cd '.dir_path.'; gfortran '.f90_path.' -o '.exe_path.' && ./'.exe_path.' && rm '.exe_path
 endfunction
 nnoremap <silent> <buffer> <C-z> :update<CR>:call <sid>fortranrun()<CR>

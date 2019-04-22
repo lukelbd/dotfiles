@@ -605,10 +605,10 @@ tos() {
 pskill() {
   local strs
   $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
-  [ $# -ne 0 ] && strs=($@) || strs=(all)
-  for str in ${strs[@]}; do
+  [ $# -ne 0 ] && strs=("$@") || strs=(null)
+  for str in "${strs[@]}"; do
     echo "Killing $str jobs..."
-    [ $str == 'all' ] && str=""
+    [ $str == 'null' ] && str=""
     kill $(tos "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 }
