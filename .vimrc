@@ -240,6 +240,24 @@ nnoremap V myV
 nnoremap <C-v> my<C-v>
 vnoremap <CR> <C-c>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
+"Navigation
+"These used to be part of idetools or textools plugins,
+"but too esoteric.
+nnoremap <CR> gd
+noremap <expr> <silent> gc <sid>search('^\ze\s*'.Comment().'.*$', 1).'gg'
+noremap <expr> <silent> gC <sid>search('^\ze\s*'.Comment().'.*$', 0).'gg'
+noremap <expr> <silent> ge <sid>search('^\ze\s*$', 1).'gg'
+noremap <expr> <silent> gE <sid>search('^\ze\s*$', 0).'gg'
+"Alias single-key builtin text objects
+function! s:alias(original,new)
+  exe 'onoremap i'.a:original.' i'.a:new
+  exe 'xnoremap i'.a:original.' i'.a:new
+  exe 'onoremap a'.a:original.' a'.a:new
+  exe 'xnoremap a'.a:original.' a'.a:new
+endfunction
+for pair in ['r[', 'a<', 'c{']
+  call s:alias(pair[0], pair[1])
+endfor
 
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
@@ -269,19 +287,25 @@ endfunction
 inoremap <expr> <BS>    !pumvisible() ? "\<BS>"          : <sid>tab_reset()."\<C-e>\<BS>"
 inoremap <expr> <Space> !pumvisible() ? "\<C-]>\<Space>" : <sid>tab_reset()."\<C-]>\<Space>"
 "Incrementing items in menu
-inoremap <expr> <C-k>             !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
-inoremap <expr> <C-j>             !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
-inoremap <expr> <Up>              !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
-inoremap <expr> <Down>            !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
+inoremap <expr> <C-k>  !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
+inoremap <expr> <C-j>  !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
+inoremap <expr> <Up>   !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
+inoremap <expr> <Down> !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
-"Miscelaneous map, undoes last change
-inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
 "Tab always means 'accept', and choose default menu item if necessary
 inoremap <expr> <Tab> !pumvisible() ? "\<C-]>\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-y>".<sid>tab_reset()
 "Enter means 'accept' only when we have explicitly scrolled down to something
 "Also prevent annoying delay where otherwise, have to press enter twice when popup menu open
 inoremap <expr> <CR>  !pumvisible() ? "\<C-]>\<CR>" : b:menupos==0 ? "\<C-e>\<C-]>\<CR>" : "\<C-y>".<sid>tab_reset()
+"Apply maps, and simply use row of keys above j/k et cetera
+"Note pressing Ctrl-i in iTerm sends F3; see first few lines of vimrc
+inoremap <expr> <F3>  <sid>word_back("\<Left>")
+inoremap <expr> <C-o> <sid>word_forward("\<Right>")
+inoremap <expr> <C-u> <sid>word_back("\<BS>")
+inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
+"Miscelaneous map, undoes last change
+inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
 "Map to backspace by *beginning* of *WORDs*
 "Use a function because don't want to trigger those annoying
 "InsertLeave/InsertEnter autocommands, it's more flexible, and
@@ -319,14 +343,6 @@ function! s:word_forward(key)
     return prefix.''
   endif
 endfunction
-"New map for 'execute one normal mode command, then return to insert mode'
-inoremap <F1> <C-o>
-"Apply maps, and simply use row of keys above j/k et cetera
-"Note pressing Ctrl-i in iTerm sends F3; see first few lines of vimrc
-inoremap <expr> <F3>  <sid>word_back("\<Left>")
-inoremap <expr> <C-o> <sid>word_forward("\<Right>")
-inoremap <expr> <C-u> <sid>word_back("\<BS>")
-inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
 "**Neat idea for insert mode remap**; put closing braces on next line
 "adapted from: https://blog.nickpierson.name/colemak-vim/
 " inoremap (<CR> (<CR>)<Esc>ko
@@ -1424,13 +1440,13 @@ if PlugActive("nerdcommenter")
     \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
   "Default settings
-  let g:NERDCreateDefaultMappings = 0 " disable default mappings (make my own)
-  let g:NERDSpaceDelims = 1           " comments led with spaces
-  let g:NERDCompactSexyComs = 1       " use compact syntax for prettified multi-line comments
-  let g:NERDTrimTrailingWhitespace=1  " trailing whitespace deletion
-  let g:NERDCommentEmptyLines = 1     " allow commenting and inverting empty lines (useful when commenting a region)
-  let g:NERDDefaultAlign = 'left'     " align line-wise comment delimiters flush left instead of following code indentation
-  let g:NERDCommentWholeLinesInVMode = 1
+  let g:NERDCreateDefaultMappings=0  "disable default mappings (make my own)
+  let g:NERDSpaceDelims=1            "comments led with spaces
+  let g:NERDCompactSexyComs=1        "use compact syntax for prettified multi-line comments
+  let g:NERDTrimTrailingWhitespace=1 "trailing whitespace deletion
+  let g:NERDCommentEmptyLines=1      "allow commenting and inverting empty lines (useful when commenting a region)
+  let g:NERDDefaultAlign='left'      "align line-wise comment delimiters flush left instead of following code indentation
+  let g:NERDCommentWholeLinesInVMode=1
   "Basic maps for toggling comments
   function! s:comment_insert()
     if exists('b:NERDCommenterDelims')
@@ -1438,19 +1454,18 @@ if PlugActive("nerdcommenter")
       let right=b:NERDCommenterDelims['right']
       let left_alt=b:NERDCommenterDelims['leftAlt']
       let right_alt=b:NERDCommenterDelims['rightAlt']
-      if (left != '' && right != '')
-        return (left . '  ' . right . repeat("\<Left>", len(right)+1))
-      elseif left_alt != '' && right_alt != ''
-        return (left_alt . '  ' . right_alt . repeat("\<Left>", len(right_alt)+1))
+      if (left!='' && right!='')
+        return (left.'  '.right.repeat("\<Left>", len(right)+1))
+      elseif (left_alt!='' && right_alt!='')
+        return (left_alt.'  '.right_alt.repeat("\<Left>", len(right_alt)+1))
       else
-        return (left . ' ')
+        return (left.' ')
       endif
     else
       return ''
     endif
   endfunction
   inoremap <expr> <C-c> <sid>comment_insert()
-  " imap <expr> <C-c> b:NERDCommenterDelims['left'] . ' ' . b:NERDCommenterDelims['right']
   map c. <Plug>NERDCommenterToggle
   map co <Plug>NERDCommenterComment
   map cO <Plug>NERDCommenterUncomment
@@ -1807,24 +1822,17 @@ if PlugActive("tabular")
 endif
 
 "###############################################################################
-"TAGBAR (requires 'brew install ctags-exuberant')
-" Note some mappings:
-" p jumps to tag under cursor, in code window, but remain in tagbar
-" C-n and C-p browses by top-level tags
-" o toggles the fold under cursor, or current one
+"CTAGS (requires 'brew install ctags-exuberant')
+augroup ctags
+augroup END
+"IDEtools setup
+nnoremap <silent> <Leader>c :DisplayTags<CR>:redraw!<CR>
+nnoremap <silent> <Leader>C :ReadTags<CR>
+"Next tagbar settings; note some mappings:
+"p jumps to tag under cursor, in code window, but remain in tagbar
+"C-n and C-p browses by top-level tags
+"o toggles the fold under cursor, or current one
 if PlugActive("tagbar")
-  "Automatically open tagbar (with FileType did not work because maybe
-  "some conflict with Obsession; BufReadPost works though)
-  "Gets pretty annoying so nah
-  augroup tagbar
-    au!
-    " au BufReadPost * call s:tagbarmanager()
-  augroup END
-  function! s:tagbarmanager()
-    if ".py,.jl,.m,.vim,.tex"=~expand("%:e") && expand("%:e")!=""
-      call s:tagbarsetup()
-    endif
-  endfunction
   "Setting up Tagbar with a custom configuration
   function! s:tagbarsetup()
     "Manage various panels, make sure nerdtree is flushed to right
@@ -2429,7 +2437,7 @@ function! s:concealtoggle(...)
 endfunction
 command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 "Toggling tabs on and off
-let g:tabtoggle_tab_filetypes=['make', 'rst', 'gitconfig']
+let g:tabtoggle_tab_filetypes=['text', 'gitconfig', 'make']
 augroup tab_toggle
   au!
   au FileType * exe 'TabToggle '.(index(g:tabtoggle_tab_filetypes, &ft)!=-1)
