@@ -1440,13 +1440,13 @@ if PlugActive("nerdcommenter")
     \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
   "Default settings
+  let g:NERDSpaceDelims=1            "comments have leading space
   let g:NERDCreateDefaultMappings=0  "disable default mappings (make my own)
-  let g:NERDSpaceDelims=1            "comments led with spaces
-  let g:NERDCompactSexyComs=1        "use compact syntax for prettified multi-line comments
+  let g:NERDCompactSexyComs=1        "compact syntax for prettified multi-line comments
   let g:NERDTrimTrailingWhitespace=1 "trailing whitespace deletion
   let g:NERDCommentEmptyLines=1      "allow commenting and inverting empty lines (useful when commenting a region)
   let g:NERDDefaultAlign='left'      "align line-wise comment delimiters flush left instead of following code indentation
-  let g:NERDCommentWholeLinesInVMode=1
+  let g:NERDCommentWholeLinesInVMode=2
   "Basic maps for toggling comments
   function! s:comment_insert()
     if exists('b:NERDCommenterDelims')
@@ -1465,9 +1465,13 @@ if PlugActive("nerdcommenter")
       return ''
     endif
   endfunction
+  "The maps
+  "Use NERDCommenterMinimal commenter to use left-right delimiters, or alternatively use
+  "NERDCommenterSexy commenter for better alignment
   inoremap <expr> <C-c> <sid>comment_insert()
+  " map c. <Plug>NERDComSexyComment
   map c. <Plug>NERDCommenterToggle
-  map co <Plug>NERDCommenterComment
+  map co <Plug>NERDCommenterSexy
   map cO <Plug>NERDCommenterUncomment
 
   "----------------------------------------------------------------------------"
@@ -2399,8 +2403,13 @@ highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 "Make Conceal highlighting group ***transparent***, so that when you
 "set the conceallevel to 0, concealed elements revert to their original highlighting.
 highlight Conceal    ctermbg=NONE  ctermfg=NONE ctermbg=NONE  ctermfg=NONE
-"Special characters
+"Features that only work in iTerm with minimum contrast setting
+"Disable by using 'Gray' highlighting
+" highlight LineNR       cterm=NONE ctermbg=NONE ctermfg=Gray
+" highlight Comment    ctermfg=Gray cterm=NONE
+highlight LineNR       cterm=NONE ctermbg=NONE ctermfg=Black
 highlight Comment    ctermfg=Black cterm=NONE
+"Special characters
 highlight NonText    ctermfg=Black cterm=NONE
 highlight SpecialKey ctermfg=Black cterm=NONE
 "Matching parentheses
@@ -2410,7 +2419,6 @@ highlight MatchParen ctermfg=NONE ctermbg=Blue
 "background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
 "gray, and 'ANSI black bold' to black). Note 'lightgray' is just normal white
 set cursorline
-highlight LineNR       cterm=NONE ctermbg=NONE ctermfg=Black
 highlight CursorLine   cterm=NONE ctermbg=Black
 highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 "Column stuff; color 80th column, and after 120

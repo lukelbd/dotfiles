@@ -134,6 +134,7 @@
 [core]
 	mergeoptions = --no-edit
 	attributesfile = ~/.gitattributes
+	ignorecase = false
 [filter "nbstripout"]
 	clean = nbstripout
 	smudge = cat
