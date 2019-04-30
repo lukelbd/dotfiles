@@ -1036,6 +1036,7 @@ _jt() {
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
 # Will be called whenever a notebook is iniated, and can be called to refresh stale connections.
+# TODO: Make this work from macbook instead of remote server
 _connect() {
   # Error checks and declarations
   local server outcome ports exits
@@ -1056,7 +1057,7 @@ _connect() {
     # Just try connecting over input ports
     ports=\"$@\" # could fail when we try to ssh
   else
-    # Find available port on this server
+    # Find available ports on this server
     # Warning: Giant subprocess below
     candidates=($(
       for port in $(seq 30000 30020); do
@@ -1064,7 +1065,7 @@ _connect() {
       done
       ))
     # Find which of these is available on home server
-    ports=${candidates[0]} # initialize
+    ports=\${candidates[0]} # initialize
     i=0; while netstat -an | grep \"[:.]\$ports\" &>/dev/null; do
       let i=i+1
       ports=\${candidates[\$i]}
@@ -1097,7 +1098,7 @@ _connect() {
 
 # Refresh stale connections from macbook to server
 # Simply calls the '_connect' function
-reconnect() {
+pyconnect() {
   local ports
   $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
   ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
