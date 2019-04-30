@@ -60,16 +60,16 @@ _bashrc_message "Variables and modules"
 export PYTHONPATH="" # this one needs to be re-initialized
 export PYTHONUNBUFFERED=1 # necessary, or else running bash script that invokes python will prevent print statements from getting flushed to stdout until execution finishes
 if $_macos; then
-  # Mac options
-  # Defaults... but will reset them
-  # eval `/usr/libexec/path_helper -s`
-  # . /etc/profile # this itself should also run /etc/bashrc
-  # Defaults, LaTeX and X11
-  # Homebrew, Macports, PGI compilers
-  export PATH="/opt/X11/bin:/Library/TeX/texbin:/usr/bin:/bin:/usr/sbin:/sbin"
+  # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
+  # NOTE: Added ffmpeg with sudo port install ffmpeg +nonfree
+  # NOTE: Added matlab as a symlink in builds directory
+  # NOTE: Install gcc and gfortran with 'port install gcc6' then
+  # 'port select --set gcc mp-gcc6' (check 'port select --list gcc')
+  export PATH="/opt/X11/bin:/Library/TeX/texbin:/usr/bin:/bin:/usr/sbin:/sbin" # baseline
   export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
   export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
-  export PATH="/opt/pgi/osx86-64/2018/bin:$PATH"
+  export PATH="/opt/pgi/osx86-64/2018/bin:$PATH" # PGI compilers
+  export PATH="$HOME/builds/ncl-6.5.0/bin:$HOME/builds/matlab/bin:$PATH" # builds and matlab symlink
   export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
 
   # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
@@ -83,48 +83,17 @@ if $_macos; then
     rvm use ruby 1>/dev/null
   fi
 
-  # Local tools
-  # NOTE: Added matlab as a symlink in builds directory, was cleaner
-  # NOTE: CDO needs IO thread locking (with -L flag) for NetCDF4 files (which
-  # use HDF5 internally) if HDF5 wasn't compiled with parallel support
-  # Turns out *cannot be done* in Homebrew; see: https://code.mpimet.mpg.de/boards/2/topics/4630?r=5714#message-5714
-  # We remedied this by compiling cdo ourselves with hdf5 and netcdf libraries
-  # export PATH="$HOME/builds/cdo-1.9.5/src:$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH" # no more local cdo, had issues
-  export PATH="$HOME/builds/ncl-6.4.0/bin:$HOME/builds/matlab/bin:$PATH"
-  export PATH="$HOME/youtube-dl-music:$PATH"
-
   # NCL NCAR command language (had trouble getting it to work on Mac with conda,
   # but on Linux distributions seems to work fine inside anaconda)
   # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
   # actually ends up in above path after brew install gcc49; and must install
   # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
-  # NOTE: Instead of aliasing ncl with library path prefix, try using
-  # a fallback library path; suggested here: https://stackoverflow.com/a/3172515/4970632
-  # This shouldn't screw up Homebrew stuff
-  # NOTE: Fallback path doesn't mess up Homebrew, but *does* mess up some
-  # python modules e.g. cartopy, so forget it
-  alias ncl='DYLD_LIBRARY_PATH="/usr/local/lib/gcc/4.9" ncl' # fix libs
-  export NCARG_ROOT="$HOME/builds/ncl-6.4.0" # critically necessary to run NCL
-  # export DYLD_FALLBACK_LIBRARY_PATH="/usr/local/lib/gcc/4.9" # fix libs
+  # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
+  alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl' # fix libs
+  export NCARG_ROOT="$HOME/builds/ncl-6.5.0" # critically necessary to run NCL
 else
   # Linux options
   case $HOSTNAME in
-  # Olbers options
-  # olbers)
-  #   # Add utilies to path; PGI, Matlab, basics, and edit library path
-  #   export PATH="/usr/local/bin:/usr/bin:/bin"
-  #   export PATH="/usr/local/netcdf4-pgi/bin:/usr/local/netcdf4/bin:$PATH" # fortran lib
-  #   export PATH="/usr/local/hdf5/bin:/usr/local/mpich3/bin:$PATH"
-  #   export PATH="/opt/pgi/linux86-64/2017/bin:/opt/Mathworks/R2016a/bin$PATH"
-  #   export LD_LIBRARY_PATH="/usr/local/mpich3/lib:/usr/local/hdf5/lib:/usr/local/netcdf4/lib:/usr/local/netcdf4-pgi/lib"
-  # Gauss options
-  # gauss)
-  #   # Add utilities to path; PGI, Matlab, basics, and edit library path
-  #   export PATH="/usr/local/bin:/usr/bin:/bin"
-  #   export PATH="/usr/local/netcdf4-pgi/bin:/usr/local/hdf5-pgi/bin:/usr/local/mpich3-pgi/bin:$PATH"
-  #   export PATH="/opt/pgi/linux86-64/2016/bin:/opt/Mathworks/R2016a/bin:$PATH"
-  #   export LD_LIBRARY_PATH="/usr/local/mpich3-pgi/lib:/usr/local/hdf5-pgi/lib:/usr/local/netcdf4-pgi/lib"
-
   # Euclid options
   euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
@@ -190,9 +159,9 @@ else
   ;; esac
 fi
 
-# Access custom executables
+# Access custom executables, custom git projects
 # No longer will keep random executables loose in homre directory; put everything here
-export PATH="$HOME/bin:$PATH"
+export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$PATH"
 
 # Homebrew; save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
@@ -809,8 +778,9 @@ mount() {
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
   # -oauto_cache,reconnect,defer_permissions \
   # NOTE: The cache timeout prevents us from detecting new files!
+  # -ocache_timeout=60 -oattr_timeout=115200 \
   command sshfs "$address:$location" "$HOME/$server" \
-    -ocache_timeout=60 -oattr_timeout=115200 \
+    -ocache=no \
     -ocompression=no \
     -ovolname="$server"
 }

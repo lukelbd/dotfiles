@@ -3,7 +3,7 @@
     "jupyter-js-widgets/extension": false,
     "nbextensions_configurator/config_menu/main": true,
     "contrib_nbextensions_help_item/main": true,
-    "highlight_selected_word/main": false,
+    "highlight_selected_word/main": true,
     "comment-uncomment/main": true,
     "code_prettify/code_prettify": false,
     "search-replace/main": false,
@@ -15,7 +15,7 @@
     "vim_binding/vim_binding": false,
     "toc2/main": true,
     "collapsible_headings/main": false,
-    "varInspector/main": false
+    "varInspector/main": true
   },
   "highlight_selected_word": {
     "highlight_color": "#cccccc",
@@ -94,5 +94,9 @@
     }
   },
   "comment_uncomment_indent": true,
-  "comment_uncomment_keybinding": "ctrl-c"
+  "comment_uncomment_keybinding": "ctrl-c",
+  "Notebook": {
+    "Toolbar": true,
+    "Header": true
+  }
 }
