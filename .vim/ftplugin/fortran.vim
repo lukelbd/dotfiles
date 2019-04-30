@@ -14,7 +14,7 @@ let fortran_more_precise=0
 let b:fortran_dialect='f08' "can be F or f08
 "Tool that compiles code, then runs it, then deletes the executable
 function! s:fortranrun()
-  w
+  write
   let dir_path=shellescape(expand('%:h'))
   let f90_path=shellescape(expand('%:t'))
   let exe_path=shellescape(expand('%:t:r'))
