@@ -1035,78 +1035,77 @@ _jt() {
 
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
-# Will be called whenever a notebook is iniated, and can be called to refresh stale connections.
-# TODO: Make this work from macbook instead of remote server
 _connect() {
-  # Error checks and declarations
-  local server outcome ports exits
-  unset _jupyter_port
-  $_macos                && echo "Error: This function is intended to run inside ssh sessions."                      && return 1
-  ! [ -r $_port_file ]   && echo "Error: File \"$HOME/$_port_file\" not available. Cannot send commands to macbook." && return 1
-  ! which ip &>/dev/null && echo "Error: Command \"ip\" not available. Cannot determine this server's address."      && return 1
-  # The ip command prints this server's ip address ($hostname doesn't include full url)
+  # Usage changes depending on whether on macbook
   # ssh -f (port-forwarding in background) -N (don't issue command)
-  echo "Sending commands to macbook."
-  server=$USER@$(ip) # calls my custom function
-  [ $? -ne 0 ] && echo "Error: Could not figure out this server's ip address." && return 1
-  # Try to establish 2-way connections
-  # Can filter to find ports available on host *and* home server, or just iterate
-  # through user provided ports -- if the ssh fails, will return error.
-  outcome=$(command ssh -t -o StrictHostKeyChecking=no -p $(cat $_port_file) $USER@localhost "
-  if [ $# -ne 0 ]; then
-    # Just try connecting over input ports
-    ports=\"$@\" # could fail when we try to ssh
+  local server outcome port ports stat stats get_ports set_ports
+  unset _jupyter_port
+  if $_macos; then
+    ports="${@:2}"
+    server=$1 # input server
+    [ -z "$server" ] && echo "Error: Must input server." && return 1
   else
-    # Find available ports on this server
-    # Warning: Giant subprocess below
-    candidates=($(
-      for port in $(seq 30000 30020); do
-        ! netstat -an | grep "[:.]$port" &>/dev/null && echo $port
-      done
-      ))
-    # Find which of these is available on home server
-    ports=\${candidates[0]} # initialize
-    i=0; while netstat -an | grep \"[:.]\$ports\" &>/dev/null; do
-      let i=i+1
-      ports=\${candidates[\$i]}
-    done
+    ports="$@"
+    server=$USER@$(ip) # this computer
+    [ $? -ne 0 ] && echo "Error: Could not figure out this server's ip address." && return 1
   fi
-  # Attempt connections over each port in ports list
-  exits=\"\"
-  for port in \$ports; do
-    command ssh -N -f -L localhost:\$port:localhost:\$port $server &>/dev/null
-    exits+=\"\$? \"
+  # Which ports to connect over
+  set_ports='for port in $ports; do
+    command ssh -N -f -L localhost:$port:localhost:$port $server &>/dev/null
+    stats+="${port}-$? "
+  done'
+  if [ -n "$ports" ]; then
+    get_ports='ports="'"$ports"'"'
+  else
+    for port in {30000..30020}; do
+      ! netstat -an | grep "[:.]$port" &>/dev/null && ports+=" $port"
+    done
+    get_ports="for port in $ports; do"'
+      ! netstat -an | grep "[:.]$port" &>/dev/null && ports=$port && break
+    done'
+  fi
+  # Connect specified ports
+  # WARNING: Need quotes around eval or line breaks may not be preserved
+  if $_macos; then
+    eval "$get_ports"
+    eval "$set_ports"
+  else
+    port=$(cat $_port_file)
+    [ -z "$port" ] && echo "Error: Unknown connection port. Cannot send commands to macbook." && return 1
+    stats=$(command ssh -o StrictHostKeyChecking=no -p $port $USER@localhost \
+      "$get_ports; $set_ports; printf "'"$stats"')
+  fi
+  # Message
+  for stat in $stats; do
+    echo "Exit status ${stat#*-} for connection over port ${stat%-*}."
+    [ ${stat#*-} -eq 0 ] && _jupyter_port=${stat%-*}
   done
-  # Finally print stuff that can be easily parsed; try to avoid newlines
-  printf \"\$ports\" | tr ' ' '-'
-  printf ' '
-  printf \"\$exits\" | tr ' ' '-'
-  " 2>/dev/null)
-  # Parse result
-  ports=($(echo $outcome | cut -d' ' -f1 | tr '-' ' ' | xargs))
-  exits=($(echo $outcome | cut -d' ' -f2 | tr '-' ' ' | xargs))
-  for idx in $(seq 0 $((${#ports[@]}-1))); do
-    if [ ${exits[idx]} -eq 0 ]; then
-      _jupyter_port=${ports[idx]}
-      echo "Connection over port ${ports[idx]} successful."
-    else
-      echo "Connection over port ${ports[idx]} failed."
-    fi
-  done
-  [ -z "$_jupyter_port" ] && return 1 || return 0
+  [ -n "$_jupyter_port" ] # return with this exit status
 }
 
 # Refresh stale connections from macbook to server
 # Simply calls the '_connect' function
 pyconnect() {
-  local ports
-  $_macos && echo "Error: This function is intended to run inside ssh sessions." && return 1
-  ports=$(ps u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d'=' -f2 | xargs)
-  if [ -n "$ports" ]; then
-    echo "Refreshing jupyter notebook connections over port(s) $ports."
-    _connect $ports
+  local ports get_ports
+  # Get the ports
+  # WARNING: Using pseudo-tty allocation (i.e. simulating active shell with
+  # -t flag) causes ssh command to mess up.
+  get_ports="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
+  if $_macos; then
+    server=$1
+    [ -z "$server" ] && echo "Error: Must input server." && return 1
+    ports=$(command ssh -o StrictHostKeyChecking=no $server "$get_ports")
+    [ $? -ne 0 ] && echo "Error: Failed to get list of ports." && return 1
   else
-    echo "No active jupyter notebooks found."
+    ports=$(eval "$get_ports")
+  fi
+  # Connect
+  [ -z "$ports" ] && echo "Error: No active jupyter notebooks found." && return 1
+  echo "Connecting to jupyter notebook(s) over port(s) $ports."
+  if $_macos; then
+    _connect $server $ports
+  else
+    _connect $ports
   fi
 }
 
