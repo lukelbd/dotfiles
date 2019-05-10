@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-#set -x 
-
+#------------------------------------------------------------------------------#
 # Shows you the largest objects in your repo's pack file.
 # Written for osx.
 # @see http://stubbisms.wordpress.com/2009/07/10/git-script-to-show-largest-pack-objects-and-trim-your-waist-line/
 # @also see: https://github.com/18F/C2/issues/439
 # @author Antony Stubbs
+#------------------------------------------------------------------------------#
 # Note: output format for git-verify-pack is either of:
 #   SHA-1 type size size-in-packfile offset-in-packfile
 # or for 'deltified' objects
 #   SHA-1 type size size-in-packfile offset-in-packfile depth base-SHA-1
+#------------------------------------------------------------------------------#
 
 # Set the internal field spereator to line break, so that we can iterate easily over the verify-pack output
 IFS=$'\n';
@@ -23,20 +24,18 @@ bytes2human() {
   fi
   for i in $nums; do
     b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
     while ((b > 1024)); do
         d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
         b=$((b / 1024))
         let s++
     done
     echo "$b$d${S[$s]}"
-    # echo "$b$d$ {S[$s]}"
   done
 }
 
 # List all objects including their size, sort by size, take top 10
 nhead=10 # number of commits to show
-objects=$(git verify-pack -v .git/objects/pack/pack-*.idx | grep -v chain | sort -k4nr | head -$nhead)
+objects=$(git verify-pack -v .git/objects/pack/pack-*.idx 2>/dev/null | grep -v chain | sort -k4nr | head -$nhead)
 
 # echo "All sizes are in kB. The pack column is the size of the object, compressed, inside the pack file."
 output="size,pack,SHA,location"

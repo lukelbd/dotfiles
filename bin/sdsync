@@ -22,6 +22,11 @@ $_macos && date=gdate || date=date
 for path in "$mb_playlist/"*.{mp3,m4a,m3u8}; do
   ! [ -r "$path" ] && continue # e.g. if glob failed
   file="${path##*/}"
+  # Alphabetical order
+  if [[ "$file" =~ '.m3u8' ]]; then
+    m3u8=$(cat "$file" | sed '1d' | tac | sed '$!N;s/\n/#/' | sort -r --ignore-case | gsed 's/\#\#/\n\#/g' | tac)
+    printf "#EXTM3U\n$m3u8" >"$file"
+  fi
   # Copy new files downloaded
   if ! [ -r "$sd_playlist/$file" ]; then
     copied=true # record

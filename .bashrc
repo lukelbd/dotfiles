@@ -359,7 +359,7 @@ open() {
         # Other simpler filetypes
         *.svg|*.jpg|*.jpeg|*.png)       app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
-        *.html|*.xml|*.htm|*.gif)       app="Chromium.app" ;;
+        *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
         *.mov|*.mp4)                    app="VLC.app" ;;
         *.md)                           app="Marked 2.app" ;;
         *)                              app="MacVim.app" ;;
@@ -1038,7 +1038,7 @@ _jt() {
 _connect() {
   # Usage changes depending on whether on macbook
   # ssh -f (port-forwarding in background) -N (don't issue command)
-  local server outcome port ports stat stats get_ports set_ports
+  local server port ports stat stats get_ports set_ports
   unset _jupyter_port
   if $_macos; then
     ports="${@:2}"

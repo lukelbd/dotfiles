@@ -121,10 +121,9 @@ function cleanup() {
   printf "$message"
 }
 
-# Function to find stuff
-# * Supply with a list of latex-ish file names, then the extension as last argument
-# * Important to call kpsewhich with a list of files rather than calling it
-#   successively; otherwise can be extremely slow, for some strange reason
+# Find LaTeX files with kpsewhich, and if not present, copy from custom folder
+# Important to call kpsewhich with a list of files rather than calling it
+# successively; otherwise can be extremely slow, for some strange reason
 function latexfind() {
   [ $# -eq 1 ] && return 1
   ext=${!#}                                        # last argument
