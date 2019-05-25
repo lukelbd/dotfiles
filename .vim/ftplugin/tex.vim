@@ -28,9 +28,9 @@ let g:tex_stylish=1
 
 "Commands for compiling latex
 "Use C-z for compiling normally, and <Leader>Z for compiling to word document.
-noremap <silent> <buffer> <C-z> :update<CR>:exec('!clear; set -x; vimlatex '.shellescape(@%))<CR>
-noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; vimlatex '.shellescape(@%).' --diff')<CR>
-noremap <silent> <buffer> <Leader>Z :w<CR>:exec('!clear; set -x; vimlatex '.shellescape(@%).' --word')<CR>
+noremap <silent> <buffer> <C-z> :update<CR>:exec('!clear; set -x; ~/bin/vimlatex '.shellescape(@%))<CR>
+noremap <silent> <buffer> <Leader>z :w<CR>:exec('!clear; set -x; ~/bin/vimlatex '.shellescape(@%).' --diff')<CR>
+noremap <silent> <buffer> <Leader>Z :w<CR>:exec('!clear; set -x; ~/bin/vimlatex '.shellescape(@%).' --word')<CR>
 
 "C-@ is same as C-Space (google it)
 "These are pretty much obsolete now, since 'detex' can exclude figure environments

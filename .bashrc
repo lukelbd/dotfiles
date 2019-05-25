@@ -357,7 +357,7 @@ open() {
             app="PDF Expert.app"
           fi ;;
         # Other simpler filetypes
-        *.svg|*.jpg|*.jpeg|*.png)       app="Preview.app" ;;
+        *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
         *.mov|*.mp4)                    app="VLC.app" ;;

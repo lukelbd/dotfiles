@@ -34,12 +34,12 @@ for path in "$mb_playlist/"*.{mp3,m4a,m3u8}; do
     cp "$path" "$sd_playlist/$file"
   # Replace old file of same name with modified one
   elif $modified_check; then
-    if ! [ -r "$mb_playlist/sdlog" ]; then
-      yn "Warning: sdlog not found! Cancel sdsync?" # call script to confirm
+    if ! [ -r "$mb_playlist/sd.log" ]; then
+      yn "Warning: sd.log not found! Cancel sdsync?" # call script to confirm
       [ $? -ne 0 ] && exit 1
-      touch "$mb_playlist/sdlog" # if doesn't exist, make
+      touch "$mb_playlist/sd.log" # if doesn't exist, make
     fi
-    date_c=$(tail -n 1 "$mb_playlist/sdlog") # date copied to SD
+    date_c=$(tail -n 1 "$mb_playlist/sd.log") # date copied to SD
     date_m=$($date -r "$path" +%s)           # date last modified
     if [ -z "$date_c" ]; then # initializing directory
       if [ $date_m -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changed within 50 days
@@ -75,5 +75,5 @@ done
 $deleted || echo "No old files deleted."
 
 # Record in Playlist when last sync occurred
-date +%s >> "$mb_playlist/sdlog"
+date +%s >> "$mb_playlist/sd.log"
 
