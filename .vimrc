@@ -34,6 +34,7 @@
 set nocompatible
 set tabpagemax=100 "allow opening shit load of tabs at once
 set redrawtime=5000 "sometimes takes a long time, let it happen
+set maxmempattern=50000 "from 1000 to 10000
 set shortmess=a "snappy messages, frmo the avoid press enter doc
 set shiftround "round to multiple of shiftwidth
 let mapleader="\<Space>"
@@ -42,6 +43,7 @@ set history=100 "search history
 set shell=/usr/bin/env\ bash
 "The column
 set scrolloff=4
+let g:scrolloff=5
 let &g:colorcolumn=(has('gui_running') ? '0' : '80,120')
 "See solution: https://unix.stackexchange.com/a/414395/112647
 set slm= "disable 'select mode' slm, allow only visual mode for that stuff
@@ -352,8 +354,8 @@ endfunction
 "###############################################################################
 "GLOBAL FUNCTIONS, FOR VIM SCRIPTING
 "Test plugin status
+" echo a:key.': '.len(filter(split(&rtp, ','), 'v:val =~? "'.a:key.'"'))
 function! PlugActive(key)
-  " echo filter(split(&rtp), ','), 'v:val =~? "tex")
   return has_key(g:plugs, a:key) "change if (e.g.) switch plugin managers
 endfunction
 "Misc fuctions
@@ -501,12 +503,19 @@ call plug#begin('~/.vim/plugged')
 " Plug 'yggdroot/indentline'
 "------------------------------------------------------------------------------"
 "My plugins
-Plug 'lukelbd/vim-statusline'
-Plug 'lukelbd/vim-scrollwrapped'
-Plug 'lukelbd/vim-tabline'
-Plug 'lukelbd/vim-idetools'
-Plug 'lukelbd/vim-toggle'
-Plug 'lukelbd/vim-textools'
+"Always try to load locally if possible! See: https://github.com/junegunn/vim-plug/issues/32
+"Note ^= prepends to list, += appends
+for name in ['statusline', 'scrollwrapped', 'tabline', 'idetools', 'toggle', 'textools']
+  let plug=expand('~/vim-'.name)
+  if isdirectory(plug)
+    if &rtp !~ plug
+      exe 'set rtp^='.plug
+      exe 'set rtp+='.plug.'/after'
+    endif
+  else
+    Plug 'lukelbd/vim-'.plug
+  endif
+endfor
 "------------------------------------------------------------------------------"
 "Color schemes
 Plug 'flazz/vim-colorschemes'

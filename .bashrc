@@ -168,7 +168,7 @@ export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$PATH"
 alias brew="PATH=\"$PATH\" brew"
 
 # Include modules (i.e. folders with python files) located in the home directory
-# Also include python scripts in bin
+# NOTE: Trailing ':' adds empty path, i.e. this directory
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 
@@ -676,7 +676,7 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 nbdocs() {
   # Convert notebook
-  local base root
+  local base root dest
   root=$(git rev-parse --show-toplevel)
   [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
   ! [ -d $root/docs ] && echo "Error: No docs subdirectory found." && return 1
@@ -685,22 +685,34 @@ nbdocs() {
   jupyter nbconvert --to=rst --output-dir=$root/docs $1
   # template=docs/_templates/nbtemplate.tpl
   # jupyter nbconvert --to=rst --template=$template --output-dir=docs $1
-  # Edits
-  rm -r $root/docs/$base 2>/dev/null
-  mv $root/docs/${base}_files $root/docs/$base
-  gsed -i "s:${base}_files:${base}:g" $root/docs/${base}.rst
-  # Next run special magical vim regexs that add back in sphinx
+
+  # Change default nbconvert file location
+  dest=$root/docs/$base
+  rm -r $dest 2>/dev/null # remove old one
+  mv ${dest}_files $dest
+  gsed -i "s:${base}_files:${base}:g" ${dest}.rst
+
+  # Run special magical vim regexs that add back in sphinx
   # links and default non-figure cell output. Your only other option for
-  # non-greedy regexes is perl, and fuck that.
-  # NOTE: The crazy long regex below is to match `numpy` (simple link to
-  # homepage of module) and `~numpy.function` (the function). Note that
-  # sphinx will not expand `~numpy` as link, but will expand `numpy`.
+  # non-greedy regexes is perl, and fuck that. Also need to match naked
+  # module (e.g. ``numpy``) literals, hence the search for specific packages.
   echo "Running vi search and replace."
   command vi -c \
      '%s/``\(\~\?\)\(datetime\|mpl_toolkits\|numpy\|pandas\|climpy\|metpy\|scipy\|xarray\|matplotlib\|cartopy\|basemap\|proplot\)\(.\{-}\)``/`\1\2\3`/ge | '"\
     "'%s/:ref:``\(.\{-}\)``/:ref:`\1`/ge | '"\
     "'%s/code::\s*$/code:: ipython3/ge | '"\
-    "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' $root/docs/${base}.rst &>/dev/null
+    "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' ${dest}.rst &>/dev/null
+
+  # Finally split into files based on sections with magical awk command
+  # For each line, awk runs bracket command if search is valid, if condition is
+  # empty, or if variable evaluates to true (i.e. if non-empty and non-zero)
+  # WARNING: This can potentially overwrite existing files!
+  cat ${dest}.rst | awk '
+  /^=/ {++count; file="'$dest'"count".rst"; print file}
+  file {print line > file}
+  {line=$0}
+  ' -
+  rm ${dest}.rst
 }
 
 ################################################################################
