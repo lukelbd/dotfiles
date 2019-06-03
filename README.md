@@ -13,11 +13,9 @@ management shortcuts, the second one for complex regexs replacements and tabular
 alignment, and the third for miscellaneous tasks.
 Also check out my repositories starting with `vim-` for some handy custom plugins.
 
-## Try out my `.dircolors.ansi` for useful color-coding of `ls` results. Git config
-Try out my `.gitconfig` for a few handy `git` aliases. Also see the
-various functions in `bin`.
-
-## Jupyter config
-The `.jupyter` folder is synced just to preserve my custom key bindings in `notebook.json`, along with some `nbextension` settings in `tree.json`, `common.json`, and `jupyter_notebook_config.json`.
+## Misc config
+You can find various functions in `bin`,
+and handy `git` commands in my `.gitconfig` file.
+Note `.jupyter` is synced just to preserve my custom key bindings in `notebook.json`, along with some `nbextension` settings in `tree.json`, `common.json`, and `jupyter_notebook_config.json`.
 <!-- The `custom` folder contains custom javascript and CSS files controlled by `jupyterthemes`.  -->
 
