@@ -2,29 +2,29 @@
 "###############################################################################
 " A fancy vimrc that does all sorts of magical things.
 " When to use after: https://vi.stackexchange.com/questions/12731/when-to-use-the-after-directory
-" Note: So far don't organize stuff into *after* files (only distinction
+" NOTE: So far don't organize stuff into *after* files (only distinction
 " is that they should test b:did_ftplugin, b:current_syntax, et. cetera or
 " g:loaded_<name>, et. cetera). Just smash indent/ftplugin files together
 " and only some of the files in .vim/ftplugin have those lines.
-" Note: use :vimgrep <pattern> % to quickfix list, then can browse them
+" NOTE: use :vimgrep <pattern> % to quickfix list, then can browse them
 " separately from the normal n/N searching. Also note location lists are
 " window-local quickfix lists -- use lvimgrep, lgrep, etc.
-" Note: vim should be brew install'd *without* your anaconda tools in the path,
+" NOTE: vim should be brew install'd *without* your anaconda tools in the path,
 " there should be an alias for 'brew' that fixes this.
-" Note: vim install with Homebrew can only work with *python* installed with
+" NOTE: vim install with Homebrew can only work with *python* installed with
 " Homebrew -- currently default vim is compiled with python2 support, so you
 " brew install python2, then use pip2 install <x> to make modules accessible
 " to python vim backend.
-" Note: Have iTerm map some ctrl+key combinations that would otherwise
+" NOTE: Have iTerm map some ctrl+key combinations that would otherwise
 " be impossible to the F1, F2 keys. Currently they are:
 "     F1: 1b 4f 50 (Ctrl-,)
 "     F2: 1b 4f 51 (Ctrl-.)
 "     F3: 1b 4f 52 (Ctrl-i)
 "     F4: 1b 4f 53 (Ctrl-m)
 "     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
-" Note: Currently use Karabiner 'map Ctrl-j/k/h/l to arrow keys' turned on
+" NOTE: Currently use Karabiner 'map Ctrl-j/k/h/l to arrow keys' turned on
 " so be aware that if you map those keys in Vim, should also map arrows.
-" Note: Currently have Karabiner swap underscore and backslash (so that
+" NOTE: Currently have Karabiner swap underscore and backslash (so that
 " camelcase is way, way easier to type, and having to press shift for backslash
 " is no big deal because only ever need it for regexes mostly)
 "###############################################################################
@@ -70,11 +70,9 @@ if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
 endif
-"Tools for plugins
-"This sets buffer filetypes to ignore when assigning 'tab titles' based on windows in that tab
+"Set buffer filetypes to ignore when assigning 'tab titles' based on windows in that tab
 let g:bufignore=['nerdtree', 'tagbar', 'codi', 'help'] "filetypes considered 'helpers'
-"Format options; see :help fo-table to see what they mean -- want to continue comment lines
-"and numbered lists.
+"Enforce global format options, see :help fo-table to see what they mean
 let g:formatoptions="lroj"
 exe 'setlocal formatoptions='.g:formatoptions
 augroup formatopts
@@ -83,34 +81,24 @@ augroup formatopts
 augroup END
 "Escape repair, necessary when we allow h/l to change line number
 "Note for whichwrap, <> = left/right insert, [] = left/right normal mode
-"After escaping, always return to place where last exited
-"Todo: This breaks delimitmate option to create newlines (along with insert
-"mode map of enter below); figure out why and how to fix
 set whichwrap=[,],<,>,h,l
 augroup escapefix
   au!
   au InsertLeave * normal! `^
 augroup END
-"Always navigate by \w word, never have '*' look up keyword words
-"See: https://superuser.com/a/1150645/506762
-" augroup keywordfix
-"   au!
-"   au BufEnter * set iskeyword=45,65-90,95,97-122,48-57 "the same: -,a-z,_,A-Z,0-9
-" augroup END
-" set iskeyword=45,65-90,95,97-122,48-57
 
 "###############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 "Undo cheyenne maps -- not sure how to isolate/disable /etc/vimrc without
 "disabling other stuff we want, e.g. syntax highlighting
 let s:check=mapcheck("\<Esc>", 'n')
-if s:check != '' "non-empty
+if s:check != ''
   silent! unmap <Esc>[3~
   let s:insert_maps = ['[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
-      \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
-      \ '[3;5~', '[2;5~', '[1;5F', '[1;5H', '[1;5B', '[1;5A', '[1;5C',
-      \ '[1;5D', '[6;2~', '[5;2~', '[3;2~', '[2;2~', '[1;2F', '[1;2H',
-      \ '[1;2B', '[1;2A', '[1;2C', '[1;2D']
+    \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
+    \ '[3;5~', '[2;5~', '[1;5F', '[1;5H', '[1;5B', '[1;5A', '[1;5C',
+    \ '[1;5D', '[6;2~', '[5;2~', '[3;2~', '[2;2~', '[1;2F', '[1;2H',
+    \ '[1;2B', '[1;2A', '[1;2C', '[1;2D']
   for s:insert_map in s:insert_maps
     exe 'silent! iunmap <Esc>'.s:insert_map
   endfor
@@ -134,14 +122,7 @@ noremap <C-n> <Nop>
 "also prevent Ctrl+c ringing the bell
 nnoremap <C-c>       <Nop>
 nnoremap <Delete>    <Nop>
-nnoremap <Aackspace> <Nop>
-"Disable arrow keys because you're better than that
-"Cancelled because now my Mac remaps C-h/j/k/l to motion commands, yay
-" for s:map in ['noremap', 'inoremap', 'cnoremap'] "disable typical navigation keys
-"   for s:motion in ['<Up>', '<Down>', '<Home>', '<End>', '<Left>', '<Right>']
-"     exe s:map.' '.s:motion.' <Nop>'
-"   endfor
-" endfor
+nnoremap <Backspace> <Nop>
 "Navigate changelist with c-j/c-k; navigate jumplist with <C-h>/<C-l>
 "Arrow keys are for macbook mapping
 noremap <C-l>   <C-i>
@@ -184,8 +165,6 @@ vnoremap cC s
 "Swap with row above, and swap with row below; awesome mnemonic, right?
 "use same syntax for c/s because almost *never* want to change up/down
 "The command-based approach make sthe cursor much less jumpy
-" noremap <silent> ck mzkddp`z
-" noremap <silent> cj jmzkddp`zj
 nnoremap <silent> ck k:let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
       \ \| call winrestview(g:view)<CR>
 nnoremap <silent> cj :let g:view=winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
@@ -263,11 +242,6 @@ endfor
 
 "###############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
-"First add an autocmd for saving where last *entered* insert mode
-augroup insertenter
-  au!
-  au InsertEnter * let b:insertenter=winsaveview()
-augroup END
 "Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
@@ -282,12 +256,17 @@ endfunction
 function! s:tab_reset()
   let b:menupos=0 | return ''
 endfunction
-"Commands that when pressed expand to the default complete menu options:
+"Commands that when pressed expand to the default complete menu options
 "Keystrokes that close popup menu (note that insertleave triggers tabreset)
 "WARNING: The space remap and tab remap break insert mode abbreviations!
 "Need to trigger them manually with <C-]> (see :help i_Ctrl-])
 inoremap <expr> <BS>    !pumvisible() ? "\<BS>"          : <sid>tab_reset()."\<C-e>\<BS>"
 inoremap <expr> <Space> !pumvisible() ? "\<C-]>\<Space>" : <sid>tab_reset()."\<C-]>\<Space>"
+"Tab always means 'accept', and choose default menu item if necessary
+inoremap <expr> <Tab> !pumvisible() ? "\<C-]>\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-y>".<sid>tab_reset()
+"Enter means 'accept' only when we have explicitly scrolled down to something
+"Also prevent annoying delay where otherwise, have to press enter twice when popup menu open
+inoremap <expr> <CR>  !pumvisible() ? "\<C-]>\<CR>" : b:menupos==0 ? "\<C-e>\<C-]>\<CR>" : "\<C-y>".<sid>tab_reset()
 "Incrementing items in menu
 inoremap <expr> <C-k>  !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
 inoremap <expr> <C-j>  !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
@@ -295,81 +274,27 @@ inoremap <expr> <Up>   !pumvisible() ? "\<Up>"   : <sid>tab_decrease()."\<C-p>"
 inoremap <expr> <Down> !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
-"Tab always means 'accept', and choose default menu item if necessary
-inoremap <expr> <Tab> !pumvisible() ? "\<C-]>\<Tab>" : b:menupos==0 ? "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-y>".<sid>tab_reset()
-"Enter means 'accept' only when we have explicitly scrolled down to something
-"Also prevent annoying delay where otherwise, have to press enter twice when popup menu open
-inoremap <expr> <CR>  !pumvisible() ? "\<C-]>\<CR>" : b:menupos==0 ? "\<C-e>\<C-]>\<CR>" : "\<C-y>".<sid>tab_reset()
-"Apply maps, and simply use row of keys above j/k et cetera
-"Note pressing Ctrl-i in iTerm sends F3; see first few lines of vimrc
-inoremap <expr> <F3>  <sid>word_back("\<Left>")
-inoremap <expr> <C-o> <sid>word_forward("\<Right>")
-inoremap <expr> <C-u> <sid>word_back("\<BS>")
-inoremap <expr> <C-p> <sid>word_forward("\<Delete>")
-"Miscelaneous map, undoes last change
-inoremap <C-u> <Esc>u:call winrestview(b:insertenter)<CR>a
-"Map to backspace by *beginning* of *WORDs*
-"Use a function because don't want to trigger those annoying
-"InsertLeave/InsertEnter autocommands, it's more flexible, and
-"it preserves everything as a single 'undo' command
-"Warning: Older versions of vim don't allow indexing strings or
-"lists with variable integers -- have to use an eval.
-function! s:word_back(key)
-  let prefix = ''
-  let cursor = col('.')-1 "index along text string
-  exe 'let text = (cursor>0 ? getline(".")[:'.cursor.'-1] : "")'
-  if match(text,'^\s*$')!=-1
-    let prefix = repeat(a:key, 1+len(text)) "moves us to previous line; also note cursor can be on eol char
-    let text   = getline(line('.')-1)
-  endif
-  let pos = match(text,'\S\+\s*$')
-  if pos>=0
-    return prefix.(repeat(a:key, len(text)-pos))
-  else
-    return prefix.''
-  endif
-endfunction
-function! s:word_forward(key)
-  let prefix = ''
-  let cursor = col('.')-1 "index along text string
-  let text = getline('.') "note below evaluates to empty e.g. if cursor on e.o.l.
-  exe 'let text = getline(".")['.cursor.':]'
-  if match(text,'^\S*\s*$')!=-1 "no more word beginnings
-    let prefix = repeat(a:key, len(text)) "moves us to next line
-    let text   = ' '.getline(line('.')+1) "the space lets us move to word starts on first column
-  endif
-  let pos  = match(text,'^\S*\s\+\zs')
-  if pos>=0
-    return prefix.(repeat(a:key, pos))
-  else
-    return prefix.''
-  endif
-endfunction
-"**Neat idea for insert mode remap**; put closing braces on next line
-"adapted from: https://blog.nickpierson.name/colemak-vim/
-" inoremap (<CR> (<CR>)<Esc>ko
-" inoremap {<CR> {<CR>}<Esc>ko
-" inoremap ({<CR> ({<CR>});<Esc>ko
 
 "###############################################################################
 "GLOBAL FUNCTIONS, FOR VIM SCRIPTING
 "Test plugin status
-" echo a:key.': '.len(filter(split(&rtp, ','), 'v:val =~? "'.a:key.'"'))
 function! PlugActive(key)
   return has_key(g:plugs, a:key) "change if (e.g.) switch plugin managers
 endfunction
-"Misc fuctions
+"Return whether inside list
 function! In(list,item)
   return index(a:list,a:item)!=-1
 endfunction
+"Reverse string
 function! Reverse(text) "want this to be accessible!
   return join(reverse(split(a:text, '.\zs')), '')
 endfunction
+"Strip leading and trailing whitespace
 function! Strip(text)
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
-"Misc commands
-function! Reverse_command(l1, l2)
+"Reverse selected lines
+function! ReverseLines(l1, l2)
   let line1 = a:l1 "cannot overwrite input var names
   let line2 = a:l2
   if line1 == line2
@@ -378,8 +303,7 @@ function! Reverse_command(l1, l2)
   endif
   exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
 endfunction
-command! -range Reverse call Reverse_command(<line1>, <line2>)
-" command! CommaReverse s/\v([^, ]+)(\s*,\s*)([^, ]+)/\3\2\1/ "just works for two items
+command! -range Reverse call ReverseLines(<line1>, <line2>)
 "Better grep, with limited regex translation
 function! Grep(regex) "returns list of matches
   let regex=a:regex
@@ -391,14 +315,10 @@ function! Grep(regex) "returns list of matches
   return result
 endfunction
 command! -nargs=1 Grep call Grep(<q-args>)
-"Builtin comment string decoding
-"Alternatively, b:NERDCommenterDelims['left']
+"Get comment character
 function! Comment(...)
-  "By default, return character that will never be matched?
-  " let placeholder = (a:0 ? ' ' : '')
   let placeholder = (a:0 ? '|' : '')
-  "Get comment char
-  if &ft == '' || &commentstring == '' "the
+  if &ft == '' || &commentstring == ''
     return placeholder
   elseif &commentstring =~ '%s'
     return Strip(split(&commentstring, '%s')[0])
@@ -406,11 +326,24 @@ function! Comment(...)
     return placeholder
   endif
 endfunction
-"Misc
-augroup death
-  au!
-  au VimLeave * if v:dying | echo "\nAAAAaaaarrrggghhhh!!!\n" | endif "see v:dying info
-augroup END
+"Suppress all mappings with certain prefix
+"We do this for all special remaps!
+function! Suppress(prefix, mode)
+  let c=nr2char(getchar())
+  if maparg(a:prefix.c, a:mode) != ''
+    return a:prefix.c
+  else
+    return '\<Nop>'
+  endif
+endfunction
+"Add parent mappings
+nnoremap <expr> \ Suppress('\', 'n')
+nnoremap <expr> <Tab> Suppress('<Tab>', 'n')
+nnoremap <expr> <Leader> Suppress('<Leader>', 'n')
+inoremap <expr> <C-s> Suppress('<C-s>', 'i')
+inoremap <expr> <C-z> Suppress('<C-z>', 'i')
+inoremap <expr> <C-o> Suppress('<C-o>', 'i')
+inoremap <expr> <C-p> Suppress('<C-p>', 'i')
 
 "###############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
@@ -473,16 +406,16 @@ nnoremap <Leader>? q?
 
 "###############################################################################
 "TAB COMPLETION OPENING NEW FILES
+"Never want to open these in VIM; includes GUI-only filetypes
+"and machine-compiled source code (.o and .mod for fortran, .pyc for python).
 let &wildignore="*.pdf,*.doc,*.docs,*.page,*.pages,"
   \."*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,"
   \."*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,"
   \."*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,"
-  "never want to open these in VIM; includes GUI-only filetypes
-  "and machine-compiled source code (.o and .mod for fortran, .pyc for python)
 
 "###############################################################################
 "###############################################################################
-" COMPLICATED FUNCTIONS, MAPPINGS, FILETYPE MAPPINGS
+" COMPLICATED MAPPINGS AND FILETYPE MAPPINGS
 "###############################################################################
 "###############################################################################
 "VIM-PLUG PLUGINS
@@ -497,7 +430,7 @@ if expand('$HOSTNAME') =~ 'cheyenne\?' | let g:compatible_neocomplete = 0 | endi
 call plug#begin('~/.vim/plugged')
 "------------------------------------------------------------------------------"
 "Indent line
-"Warning: Right now *totally* fucks up search mode, and cursorline overlaps. So not good.
+"WARNING: Right now *totally* fucks up search mode, and cursorline overlaps. So not good.
 "Requires changing Conceal group color, but doing that also messes up latex conceal
 "backslashes (which we need to stay transparent); so forget it probably
 " Plug 'yggdroot/indentline'
@@ -680,6 +613,17 @@ Plug 'justinmk/vim-sneak'
 "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
+"##############################################################################"
+"SNIPPETS
+"TODO: Add these
+
+"##############################################################################"
+"DICTIONARY COMPLETION
+"Add dictionary search
+set complete-=k complete+=k " Add dictionary search (as per dictionary option)
+"Make vim look inside ~/.vim/words; currently just ncl is there
+au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
+
 "###############################################################################
 "SESSION MANAGEMENT
 "First, simple Obsession session management
@@ -725,11 +669,11 @@ endfunction
 "Vim workspace settings
 "Had some issues with this plugin
 if PlugActive("thaerkh/vim-workspace") "cursor positions automatically saved
-  let g:workspace_session_name = '.vimsession'
-  let g:workspace_session_disable_on_args = 1 "enter vim (without args) to load previous sessions
-  let g:workspace_persist_undo_history = 0    "don't need to save undo history
-  let g:workspace_autosave_untrailspaces = 0  "sometimes we WANT trailing spaces!
-  let g:workspace_autosave_ignore = ['help', 'qf', 'diff', 'man']
+  let g:workspace_session_name='.vimsession'
+  let g:workspace_session_disable_on_args=1 "enter vim (without args) to load previous sessions
+  let g:workspace_persist_undo_history=0    "don't need to save undo history
+  let g:workspace_autosave_untrailspaces=0  "sometimes we WANT trailing spaces!
+  let g:workspace_autosave_ignore=['help', 'qf', 'diff', 'man']
 endif
 "Function for refreshing custom filetype-specific files and .vimrc
 "If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
@@ -757,13 +701,6 @@ nnoremap <silent> <Leader>r :e<CR>
 nnoremap <silent> <Leader>R :redraw!<CR>
 
 "##############################################################################"
-"DICTIONARY COMPLETION
-"Add dictionary search
-set complete-=k complete+=k " Add dictionary search (as per dictionary option)
-"Make vim look inside ~/.vim/words; currently just ncl is there
-au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
-
-"##############################################################################"
 "TEMPLATES
 "***NOTE*** BufNewFile events don't work inside ftplugin, because by the time
 "vim has reached that file, the BufNewFiel event is no longer valid!
@@ -775,9 +712,8 @@ augroup templates
   au BufNewFile *.tex call <sid>tex_pick() | redraw!
 augroup END
 function! s:tex_pick()
-  " echo 'Current templates available: '.join(names, ', ').'.'
   while 1
-    let template=input('Template (tab to reveal options): ', '', 'customlist,TeXTemplates')
+    let template=input('Template (tab to reveal options): ', '', 'customlist,TexTemplates')
     if template=='blank' || template==''
       break
     elseif filereadable(expand('~/latex/'.template.'.tex'))
@@ -787,7 +723,7 @@ function! s:tex_pick()
     echom " (invalid name)"
   endwhile
 endfunction
-function! TeXTemplates(A,L,P)
+function! TexTemplates(A,L,P)
   let templates=split(globpath('~/latex/', '*.tex'),"\n")
   let names=[]
   for template in templates
@@ -802,52 +738,62 @@ endfunction
 "##############################################################################"
 "ZOTERO and BibTeX INTEGRATION
 "Requires pybtex and bibtexparser python modules, and unite.vim plugin
-"Simply cannot get bibtex to work, ***always*** throws error gathering
-"candidates message, so annoying.
-"NOTE: Use macports for this right now. By default the +python vim was compiled
-"with is not on path; access with port select --set pip <pip36|python36>. To
+"Simply cannot get bibtex to work always throws error gathering candidates
+"Possible data sources:
+" abstract,       author, collection, combined,    date, doi,
+" duplicate_keys, file,   isbn,       publication, key,  key_inner, language,
+" issue,          notes,  pages,      publisher,   tags, title,     type,
+" url,            volume, zotero_key
+"NOTE: Set up with macports. By default the +python vim was compiled with
+"is not on path; access with port select --set pip <pip36|python36>. To
 "install module dependencies, use that pip. Can also install most packages
 "with 'port install py36-module_name' but often get error 'no module
 "named pkg_resources'; see this thread: https://stackoverflow.com/a/10538412/4970632
-"WARNING: Uninstalled homebrew python so maybe presentation tool does not work
-"anymore. Figure this out.
 augroup citations
   au!
   au BufRead  *.tex,*.bib let b:citation_vim_bibtex_file='' | call <sid>citation_maps()
   au BufEnter *.tex,*.bib let g:citation_vim_bibtex_file=(exists('b:citation_vim_bibtex_file') ? b:citation_vim_bibtex_file : '')
+  au FileType unite call <sid>unite_setup()
 augroup END
+"Apply custom maps
+function! s:unite_setup()
+  imap <buffer> <CR> <Plug>(unite_do_default_action)a
+  nmap <buffer> q <Plug>(unite_exit)a
+  imap <buffer> q i_<Plug>(unite_exit)a
+  imap <buffer> <C-g> i_<Plug>(unite_exit)a
+  nmap <buffer> <C-g> <Plug>(unite_exit)a
+  imap <buffer> <Tab> i_<Plug>(unite_choose_action)a
+  nmap <buffer> <Tab> <Plug>(unite_choose_action)a
+endfunction
 if PlugActive('unite.vim')
-  "Set up fuzzy matching
-  call unite#filters#sorter_default#use(['sorter_rank'])
+  "Fuzzy matching
   " call unite#filters#matcher_default#use(['matcher_fuzzy'])
-  if PlugActive('unite-bibtex')
-    "Settings and stuff
-    let g:unite_data_directory='~/.unite'
-    let g:unite_bibtex_cache_dir='~/.unite'
-    let g:unite_bibtex_prefix = '\citet{'
-    let g:unite_bibtex_postfix = '}'
-    let g:unite_bibtex_separator = ', '
-    let g:unite_bibtex_bib_files=['./empty_convert.bib']
-  endif
+  call unite#filters#sorter_default#use(['sorter_rank'])
   if PlugActive('citation.vim')
-    "Possible data sources:
-    " abstract,       author, collection, combined,    date, doi,
-    " duplicate_keys, file,   isbn,       publication, key,  key_inner, language,
-    " issue,          notes,  pages,      publisher,   tags, title,     type,
-    " url,            volume, zotero_key
-    "Helper functions
-    function! s:citations_zotero()
-      "Set up for zotero searching
+    "Settings
+    let g:citation_vim_mode="zotero" "will always default to zotero
+    let g:unite_data_directory='~/.unite'
+    let g:citation_vim_cache_path='~/.unite'
+    let g:citation_vim_outer_prefix='\cite{'
+    let g:citation_vim_inner_prefix=''
+    let g:citation_vim_suffix='}'
+    let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors
+    let g:citation_vim_zotero_path="~/Zotero" "location of .sqlite file
+    let g:citation_vim_zotero_version=5
+    "Zotero searching
+    " function! s:cite_zotero(suffix, opts)
+    function! s:cite_zotero(suffix, opts)
       if g:citation_vim_mode!='zotero'
         echom "Deleting cache."
         call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
       endif
       let g:citation_vim_mode='zotero'
+      let g:citation_vim_outer_prefix='\cite'.a:suffix.'{'
+      call unite#helper#call_unite('Unite', a:opts, line('.'), line('.'))
+      return ''
     endfunction
-    function! s:citations_bibtex()
-      "Select bibliography file to use
-      "Provide user option to pick from multiple files
-      "To *reset* bib name, use :let g:ref=''
+    "Bibtex searching, select bibliography file to use auto or manually
+    function! s:cite_bibtex(suffix, opts)
       if g:citation_vim_mode=='zotero'
         echom "Deleting cache."
         call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
@@ -857,10 +803,24 @@ if PlugActive('unite.vim')
         let g:citation_vim_bibtex_file=b:citation_vim_bibtex_file
       endif
       let g:citation_vim_mode='bibtex'
+      let g:citation_vim_outer_prefix='\cite'.a:suffix.'{'
+      call unite#helper#call_unite('Unite', a:opts, line('.'), line('.'))
+      normal! a
+      return ''
+    endfunction
+    "Ask user to select bibliography files from list
+    "Requires special completion function for selecting bibfiles
+    function! BibFiles(A,L,P)
+      let names=[]
+      for ref in b:refs
+        if ref =~? '^'.a:A "if what user typed so far matches name
+          call add(names, ref)
+        endif
+      endfor
+      return names
     endfunction
     function! s:bibfile()
-      "Select bibliography files from user-given list
-      let cwd=expand('%:h') "head component of path, can be relative
+      let cwd=expand('%:h')
       let b:refs=split(glob(cwd.'/*.bib'),"\n")
       if len(b:refs)==0
         echom 'Warning: No .bib files found in file directory.'
@@ -878,80 +838,24 @@ if PlugActive('unite.vim')
       endif
       return ref
     endfunction
-    function! BibFiles(A,L,P)
-      "List bibfiles, simple function
-      let names=[]
-      for ref in b:refs
-        if ref =~? '^'.a:A "if what user typed so far matches name
-          call add(names, ref)
-        endif
-      endfor
-      return names
-    endfunction
-    command! -nargs=* Zotero call <sid>citations_zotero() | Unite <args>
-    command! -nargs=* BibTeX call <sid>citations_bibtex() | Unite <args>
-    command! BibFile call <sid>bibfile()
-    "Another simple functino to toggle prefix name
-    function! s:cite(...)
-      if a:0 && a:1!=''
-        let suffix=(a:1=='c' ? '' : a:1)
-        let g:citation_vim_outer_prefix='\cite'.suffix.'{'
-        let g:citation_vim_suffix='}'
-      else
-        let g:citation_vim_outer_prefix=''
-        let g:citation_vim_suffix=''
-      endif
-    endfunction
-    command! -nargs=? Cite call <sid>cite(<q-args>)
-    "Universal settings
-    let g:citation_vim_mode="zotero" "will always default to zotero
-    let g:unite_data_directory='~/.unite'
-    let g:citation_vim_cache_path='~/.unite'
-    let g:citation_vim_outer_prefix='\cite{'
-    let g:citation_vim_inner_prefix=''
-    let g:citation_vim_suffix='}'
-    let g:citation_vim_et_al_limit=3 "show et al if more than 2 authors
-    let g:citation_vim_zotero_path="~/Zotero" "location of .sqlite file
-    let g:citation_vim_zotero_version=5
-    " let g:citation_vim_zotero_attachment_path="~/Google Drive" "not needed cause symlinks are there maybe, didn't actually change 'data directory'
-    " let g:citation_vim_bibtex_file="./empty_convert.bib" "by default, make this your filename
     "Mappings
+    "NOTE: For more default mappings, see zotero.vim documentation
     function! s:citation_maps()
       "Zotero
-      "Note: Want to start citation insertion *under cursor*, which
-      "end of the line, then, don't need to move left.
-      "if (col('.') != col('$')-1) \| normal! h \| endif
-      inoremap <buffer> <silent> <C-g>k <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>c <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite c<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>t <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite t<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>i <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite i<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>p <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite p<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-g>n <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite num<CR>:Zotero -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      "BibTex lookup (will look for .bib file automatically)             <CR>
-      inoremap <buffer> <silent> <C-f>k <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>c <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite c<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>t <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite t<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>i <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite i<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>p <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite p<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
-      inoremap <buffer> <silent> <C-f>n <Esc>:if (col('.') != col('$')-1)<CR>normal h<CR>endif<CR>:Cite num<CR>:BibTeX -buffer-name=citation -start-insert -ignorecase -default-action=append citation/key<CR>
+      "NOTE: Do not use start-insert option, need map to declare special exit map
+      let b:cite_opts='-resume -start-insert -buffer-name=citation -ignorecase -default-action=append citation/key'
+      inoremap <silent> <buffer> <C-o>c <Esc>:call <sid>cite_zotero('', b:cite_opts)<CR>
+      inoremap <silent> <buffer> <C-o>t <Esc>:call <sid>cite_zotero('t', b:cite_opts)<CR>
+      inoremap <silent> <buffer> <C-o>p <Esc>:call <sid>cite_zotero('p', b:cite_opts)<CR>
+      inoremap <silent> <buffer> <C-o>n <Esc>:call <sid>cite_zotero('num', b:cite_opts)<CR>
+      "BibTex lookup (will look for .bib file automatically)
+      inoremap <silent> <buffer> <C-p>c <Esc>:call <sid>cite_bibtex('', b:cite_opts)<CR>
+      inoremap <silent> <buffer> <C-p>t <Esc>:call <sid>cite_bibtex('t', b:cite_opts)<CR>
+      inoremap <silent> <buffer> <C-p>p <Esc>:call <sid>cite_bibtex('p', b:cite_opts)<CR>
+      inoremap <silent> <buffer> <C-p>n <Esc>:call <sid>cite_bibtex('num', b:cite_opts)<CR>
     endfunction
-    " "Insert citation, view citation info, append information
-    " nnoremap <silent> <C-n>c :<C-u>Unite -buffer-name=citation-start-insert -default-action=append citation/key<CR>
-    " nnoremap <silent> <C-n>I :<C-u>Unite -input=<C-R><C-W> -default-action=preview -force-immediately citation/combined<CR>
-    " nnoremap <silent> <C-n>A :<C-u>Unite -default-action=yank citation/title<CR>
-    " "Open pdf, open file directory, open url
-    " nnoremap <silent> <C-n>f :<C-u>Unite -input=<C-R><C-W> -default-action=file -force-immediately citation/file<CR>
-    " nnoremap <silent> <C-n>d :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/file<CR>
-    " nnoremap <silent> <C-n>u :<C-u>Unite -input=<C-R><C-W> -default-action=start -force-immediately citation/url<CR>
-    " "Search for word under cursor; search for words, input prompt
-    " nnoremap <silent> <C-n>s :<C-u>Unite  -default-action=yank  citation/key:<C-R><C-W><CR>
-    " nnoremap <silent> <C-n>S :<C-u>exec "Unite  -default-action=start citation/key:" . escape(input('Search Key : '),' ')<CR>
   endif
 endif
-
-"##############################################################################"
-"SNIPPETS
-"TODO: Add these
 
 "###############################################################################
 "GIT GUTTER AND FUGITIVE
@@ -1034,9 +938,9 @@ endif
 
 "###############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
-"Note: If enter is mapped delimitmate will turn off its auto expand
+"NOTE: If enter is mapped delimitmate will turn off its auto expand
 "enter mapping.
-"Warning: My InsertLeave mapping to stop moving the cursor left also fucks
+"WARNING: My InsertLeave mapping to stop moving the cursor left also fucks
 "up the enter map; consider overwriting function.
 if PlugActive("delimitmate")
   "First filetype settings
@@ -1051,7 +955,7 @@ if PlugActive("delimitmate")
     au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
     au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
   augroup END
-  "Todo: Apparently delimitmate has its own jump command, should start using it.
+  "TODO: Apparently delimitmate has its own jump command, should start using it.
   "Set up delimiter paris; delimitMate uses these by default
   "Can set global defaults along with buffer-specific alternatives
   let g:delimitMate_expand_space=1
@@ -1148,15 +1052,14 @@ endfunction
 "want to see line numbers or special characters a la :set list.
 "Also enable quitting these windows with single 'q' press
 augroup simple
-  "Note qf is 'quickfix'
   au!
   au BufEnter * let b:recording=0
-  au FileType qf,help,diff,man SimpleSetup 1
-  au FileType gitcommit SimpleSetup 0
+  au FileType qf,help,diff,man call <sid>simple_setup()
+  au FileType gitcommit call <sid>simple_setup(0)
 augroup END
 "Next set the help-menu remaps
 "The defalt 'fart' search= assignments are to avoid passing empty strings
-"Todo: If you're an insane person could also generate autocompletion for these ones, but nah
+"TODO: If you're an insane person could also generate autocompletion for these ones, but nah
 nnoremap <Leader>h :vert help 
 if PlugActive('fzf.vim')
   nnoremap <Leader>H :Help<CR>
@@ -1170,11 +1073,11 @@ nnoremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').';
   \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 "The doc pages appear in rst files, so turn off extra chars for them
 "Also the syntastic shows up as qf files so want extra stuff turned off there too
-function! s:simplesetup(...)
+function! s:simple_setup(...)
   if len(tabpagebuflist())==1
     q "exit if only one left
   endif
-  if (a:0 ? a:1 : 1) "don't save
+  if (a:0 ? a:1 : 1) "pass zero to disable saving suppression
     nnoremap <buffer> <C-s> <Nop>
   endif
   if &ft=="help"
@@ -1192,7 +1095,6 @@ function! s:simplesetup(...)
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell
 endfunction
-command! -nargs=? SimpleSetup call <sid>simplesetup(<args>)
 
 "###############################################################################
 "VIM VISUAL INCREMENT; creating columns of 1/2/3/4 etc.
@@ -1349,14 +1251,14 @@ if PlugActive('fzf.vim')
   function! s:tabselect()
     let items=[]
     for i in range(tabpagenr('$')) "iterate through each tab
-      let tabnr = i + 1 "the tab number
-      let buflist = tabpagebuflist(tabnr)
+      let tabnr=i+1 "the tab number
+      let buflist=tabpagebuflist(tabnr)
       for b in buflist "get the 'primary' panel in a tab, ignore 'helper' panels even if they are in focus
         if !In(g:bufignore, getbufvar(b, "&ft"))
-          let bufnr = b "we choose this as our 'primary' file for tab title
+          let bufnr=b "we choose this as our 'primary' file for tab title
           break
         elseif b==buflist[-1] "occurs if e.g. entire tab is a help window; exception, and indeed use it for tab title
-          let bufnr = b
+          let bufnr=b
         endif
       endfor
       if tabnr==tabpagenr()
@@ -1372,12 +1274,10 @@ if PlugActive('fzf.vim')
   "Navigate to tabs, ignoring panels e.g. help windows and tagbar, better than :Windows
   " nnoremap <silent> <Tab><Tab> :Windows<CR>
   nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tabselect(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':g:size})<CR>
-  "Open file in git repository, builtin version is fine
-  nnoremap <silent> <C-p> :GFiles<CR>
-  " nnoremap <silent> <C-p> :call fzf#run({'source':'git ls-files', 'sink':'tabe', 'down':g:size})<CR>
   "Open file through recursive search
-  "Almost always need this from inside git repo, so don't bother
-  " nnoremap <silent> <C-p> :Files<CR>
+  nnoremap <silent> <C-p> :Files<CR>
+  "Open file in git repository, builtin version is fine
+  " nnoremap <silent> <C-p> :GFiles<CR>
 endif
 
 "###############################################################################
@@ -1666,9 +1566,9 @@ if PlugActive("syntastic")
       echom 'No checkers available.'
     else "try running the checker, see if anything comes up
       noautocmd SyntasticCheck
-      if (len(tabpagebuflist())>nbufs && !s:syntastic_status()) 
-        \ || (len(tabpagebuflist())==nbufs && s:syntastic_status())
-        wincmd j | set syntax=on | SimpleSetup
+      if (len(tabpagebuflist())>nbufs && !s:syntastic_status())
+          \ || (len(tabpagebuflist())==nbufs && s:syntastic_status())
+        wincmd j | set syntax=on | call <sid>simple_setup()
         wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
       else
         echom 'No errors found with checker '.checkers[-1].'.'
@@ -1941,7 +1841,7 @@ endif
 "###############################################################################
 "BUFFER WRITING/SAVING
 "Just declare a couple maps here
-"Note: Update only writes if file has been changed; see
+"NOTE: Update only writes if file has been changed; see
 "https://stackoverflow.com/a/22425359/4970632
 augroup saving
 augroup END
@@ -2230,7 +2130,7 @@ cnoremap <F5> <C-^>
 
 "###############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
-augroup z
+augroup zcommands
 augroup END
 "SimpylFold settings
 let g:SimpylFold_docstring_preview=1
@@ -2259,10 +2159,6 @@ nnoremap z< zR
 "Open and close all folds; to open/close under cursor, use zo/zc
 nnoremap zO zR
 nnoremap zC zM
-"Change fold levels, and make sure return to same place
-"Never really use this feature so forget it
-" nnoremap <silent> zl :let b:position=winsaveview()<CR>zm:call winrestview(b:position)<CR>
-" nnoremap <silent> zh :let b:position=winsaveview()<CR>zr:call winrestview(b:position)<CR>
 
 "###############################################################################
 "g CONFIGURATION
@@ -2284,8 +2180,6 @@ nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gl <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
-" nnoremap gl ~h
-" nnoremap gt mzguiw~h`z
 "Default 'open file under cursor' to open in new tab; change for normal and vidual
 "Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
 nnoremap <expr> gf ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
@@ -2303,20 +2197,6 @@ else
   nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
   nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
-"Moving between functions, from: https://vi.stackexchange.com/a/13406/8084
-"Must be re-declared every time enter file because g<stuff>, [<stuff>, and ]<stuff> may get re-mapped
-"DON'T DO THIS, THEY WERE RIGHT! NOT WORTH IT! START TO LOSE KEYBOARD-SPACE BECAUSE HAVE TO
-"REMAP OTHER KEYS TO SOME OF THE LOST g<key> FUNCTIONS!
-" nnoremap <silent> <nowait> g gg
-" vnoremap <silent> <nowait> g gg
-" function! s:gmaps()
-"   " nmap <silent> <buffer> <nowait> g :<C-u>exe 'normal '.v:count.'gg'<CR>
-"   nmap <silent> <buffer> <nowait> g gg
-"   vmap <silent> <buffer> <nowait> g gg
-"     "don't know why this works, but it does; just using nnoremap above fails
-"     "and trying the <C-u> exe thing results in 'command too recursive'
-" endfunction
-" autocmd FileType * call s:gmaps()
 
 "###############################################################################
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITES (all languages; must come after filetype stuff)
@@ -2356,7 +2236,7 @@ endif
 "------------------------------------------------------------------------------"
 "Next coloring for **Terminal VIM versions***
 "Have to use cTerm colors, and control the ANSI colors from your terminal settings
-"Warning: The containedin just tries to *guess* what particular comment and
+"WARNING: The containedin just tries to *guess* what particular comment and
 "string group names are for given filetype syntax schemes. Verify that the
 "regexes will match using :Group with cursor over a comment.
 "Example: Had to change .*Comment to .*Comment.* since Julia has CommentL name
@@ -2484,18 +2364,18 @@ command! -nargs=? TabToggle call <sid>tabtoggle(<args>)
 "Remember :scriptnames lists all loaded files
 function! s:ftplugin()
   execute 'split $VIMRUNTIME/ftplugin/'.&ft.'.vim'
-  silent SimpleSetup
+  silent call <sid>simple_setup()
 endfunction
 function! s:ftsyntax()
   execute 'split $VIMRUNTIME/syntax/'.&ft.'.vim'
-  silent SimpleSetup
+  silent call <sid>simple_setup()
 endfunction
 command! PluginFile call <sid>ftplugin()
 command! SyntaxFile call <sid>ftsyntax()
 "Window displaying all colors
 function! s:colors()
   source $VIMRUNTIME/syntax/colortest.vim
-  silent SimpleSetup
+  silent call <sid>simple_setup()
 endfunction
 command! Colors call <sid>colors()
 command! GroupColors vert help group-name
@@ -2520,7 +2400,7 @@ augroup END
 "On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
 "See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
 "For some reason the setreg function fails
-"Warning: On cheyenne, get lalloc error when calling WipeReg, strange
+"WARNING: On cheyenne, get lalloc error when calling WipeReg, strange
 " command! WipeReg let regs='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-"' | let i=0 | while i<strlen(regs) | exec 'let @'.regs[i].'=""' | let i=i+1 | endwhile | unlet regs
 if $HOSTNAME !~ 'cheyenne'
   command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor

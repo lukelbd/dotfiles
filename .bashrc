@@ -523,37 +523,14 @@ dl() {
 # Find but ignoring hidden folders and stuff
 alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
 
-# Convert bytes to human
-# From: https://unix.stackexchange.com/a/259254/112647
-# NOTE: Used to use this in a couple awk scripts in git config
-# aliases and other tools, so used export -f bytes2human. This causes errors
-# when intering interactive node on supercomputer, so forget it.
-bytes2human() {
-  if [ $# -gt 0 ]; then
-    nums="$@"
-  else
-    nums="$(cat /dev/stdin)"
-  fi
-  for i in $nums; do
-    b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    while ((b > 1024)); do
-        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
-        b=$((b / 1024))
-        let s++
-    done
-    echo "$b$d${S[$s]}"
-    # echo "$b$d$ {S[$s]}"
-  done
-}
-
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 alias egrep="egrep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Query files
-todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f"; done; }
+# awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
+todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f" | sed $'s/^[ \t]*//g'; done; }
 note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
 
 # Shell scripting utilities
@@ -564,12 +541,12 @@ clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty lie
 # Controlling and viewing running processes
 alias toc="mpstat -P ALL 1" # like top, but for each core
 alias restarts="last reboot | less"
-# List shell processes using ps (will include background processes initiated
-# by shell scripts, not just ones sent to background by this shell)
+# List shell processes using ps
 tos() {
   ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
      | grep "$1" | cut -d' ' -f1,4
 }
+
 # Kill jobs by name
 pskill() {
   local strs
@@ -581,6 +558,7 @@ pskill() {
     kill $(tos "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 }
+
  # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
 jkill() {
   local count=$(jobs | wc -l | xargs)
@@ -589,6 +567,8 @@ jkill() {
     eval "kill %$i"
   done
 }
+
+# Supercomputer stuff
 # Kill PBS processes all at once; useful when debugging stuff, submitting teeny
 # jobs. The tail command skips first (n-1) lines.
 qkill() {
@@ -598,11 +578,10 @@ qkill() {
     echo "Deleted job $proc"
   done
 }
-# Other convenient aliases; remove logs, and better qstat command
+# Remove logs
 alias qrm="rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*" # remove (empty) job logs
+# Better qstat command
 alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
-# alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E -v 'etime|pset|project|substate|server|ctime|Job_Owner|Join_Path|comment|umask|exec|mem|jobdir|cpupercent'"
-# alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -v 'Join'"
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine; disable color
@@ -647,6 +626,30 @@ merge() {
   mv backup$ext $1
   rm tmp$ext
   echo "Files merged into \"merge$ext\"."
+}
+
+# Convert bytes to human
+# From: https://unix.stackexchange.com/a/259254/112647
+# NOTE: Used to use this in a couple awk scripts in git config
+# aliases and other tools, so used export -f bytes2human. This causes errors
+# when intering interactive node on supercomputer, so forget it.
+bytes2human() {
+  if [ $# -gt 0 ]; then
+    nums="$@"
+  else
+    nums="$(cat /dev/stdin)"
+  fi
+  for i in $nums; do
+    b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
+    # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
+    while ((b > 1024)); do
+        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
+        b=$((b / 1024))
+        let s++
+    done
+    echo "$b$d${S[$s]}"
+    # echo "$b$d$ {S[$s]}"
+  done
 }
 
 ################################################################################
@@ -719,7 +722,7 @@ nbdocs() {
 # SSH, session management, and Github stuff
 # Enabling files with spaces is tricky: https://stackoverflow.com/a/20364170/4970632
 ################################################################################
-# Declare some names for active servers
+# To enable passwordless login, just use "ssh-copy-id $server"
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one
 # of the 1-6 login nodes -- from testing seems node 4 is usually most
 # empty (probably human psychology thing; 3 seems random, 1-2 are obvious
@@ -730,8 +733,8 @@ cheyenne="davislu@cheyenne5.ucar.edu"
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
+lmu="Luke.Davis@login.meteo.physik.uni-muenchen.de"
 midway="t-9841aa@midway2-login1.rcc.uchicago.edu" # pass: orkalluctudg
-archive="ldm@ldm.atmos.colostate.edu"             # user: atmos-2012
 ldm="ldm@ldm.atmos.colostate.edu"                 # user: atmos-2012
 
 # SSH file system
