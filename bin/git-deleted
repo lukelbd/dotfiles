@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#------------------------------------------------------------------------------#
+# List files that were added and removed to the repo, but never added back
+# This can be used with 'git delete' to remove certain patterns
+# See: https://stackoverflow.com/a/18197405/4970632
+#------------------------------------------------------------------------------#
+# Get list
+[ $# -ne 0 ] && echo "Usage: git get" && exit 1
+current=($(git ls-files))
+tracked=($(git log --all --pretty=format: --name-only --diff-filter=D))
+for file in "${tracked[@]}"; do
+  if [[ " ${current[@]} " =~ " $file " ]]; then
+    resurrected+=("$file")
+  else
+    deleted+=("$file")
+  fi
+done
+# Message
+echo "Resurrected:"
+echo "${resurrected[@]}" | tr ' ' $'\n'
+echo "Deleted:"
+echo "${deleted[@]}" | tr ' ' $'\n'

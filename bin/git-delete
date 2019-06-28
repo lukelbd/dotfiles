@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# set -o errexit
 #------------------------------------------------------------------------------#
 # Author: David Underhill
-# Script to permanently delete files/folders from your git repository. To use
+# Script to permanently delete files/folders from your git history. To use
 # it, cd to your repository's root and then run the script with a list of paths
-# you want to delete, e.g., git-delete path1 path2, or with glob patterns
+# you want to delete, e.g., git-delete path1 path2, or with glob patterns.
+# Try also 'git deleted' and 'git objects' to see which files are bad.
 #------------------------------------------------------------------------------#
 # Original script:
 # set -o errexit
@@ -25,18 +25,11 @@
 # Purpose of tag-name-filter:
 # https://stackoverflow.com/q/21009947/4970632
 #------------------------------------------------------------------------------#
-# Checks
-if [ $# -ne 1 ]; then
-  echo "Error: Need exactly 1 argument (file or glob pattern)."
-  exit 1
-fi
-
 # Test if unstaged changes
+[ $# -ne 1 ] && echo "Usage: git delete FILE_OR_PATTERN" && exit 1
 root="$(git rev-parse --show-toplevel)"
 stat="$(git status --porcelain)"
-if [ -n "$stat" ]; then
-  echo "Error: Unstaged changes detected." && exit 1
-fi
+[ -n "$stat" ] && echo "Error: Unstaged changes detected." && exit 1
 
 # Preserve current ones (mv is super fast, so while this is ugly, no big deal)
 pattern="$@" # the glob pattern

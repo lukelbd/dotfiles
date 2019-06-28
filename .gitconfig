@@ -1,9 +1,6 @@
 #------------------------------------------------------------------------------;
-# Configuration file. The push-default allows "git push" to go to origin-master.
-# See this link+comments for some ideas: https://coderwall.com/p/euwpig/a-better-git-log
-# For escaping stuff see: https://stackoverflow.com/a/16136745/4970632
-# and note semicolons must always be escaped.
-# Also this thread: https://stackoverflow.com/q/2421011/4970632
+# Configuration file. Newlines within double quotes must be escaped.
+# See: https://stackoverflow.com/a/16136745/4970632 and https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------;
 # PROTIPS (add to this)
 # * To rename branch use git branch -m <old_name> <new_name>
@@ -39,27 +36,21 @@
 #   you won't be able to push to Github because they were tracked and are found
 #   in .vim. use this to delete file/directory throughout history. from:
 #   https://stackoverflow.com/a/23657759/4970632
+# 'deleted':
+#   lists files that were deleted in git history, but were never re-created
+#   or added back in
 # 'delete':
 #   for more information see the script; can be passed a filename or a regular
 #   expresion e.g. '*.mov'
 # 'truncate':
 #   use this to truncate at given SHA
-#   see: https://gist.github.com/magnetikonline/5062718
-#   also see: https://passingcuriosity.com/2017/truncating-git-history/
-# 'deleted':
-#   see: https://stackoverflow.com/a/18197405/4970632
-#   lists files that were deleted in git history, but were never re-created
-#   or added back in
 # 'get':
-#   fetch all branches, even ones that don't yet exist on
+#   fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all); see
 #   https://stackoverflow.com/a/10312587/4970632
 # 'ignore':
 #   stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
-#   the find command must be different in this case; mindepth of 1 excludes
-#   the root directory (i.e. the subfolder itself), and maxdepth prevents any
-#   unnecessary recursion
 # 'amend':
 #   change the name of arbitrary commit messages; just provide a SHA1 reference
 #   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
@@ -68,6 +59,10 @@
 #   want to git fetch and git merge changes to a different file.
 # 'commands':
 #   list of valid commands, used for FZF integration
+# 'tree':
+#   descriptive git log
+# 'trunk':
+#   succinct git log
 #------------------------------------------------------------------------------;
 # TODO
 # 'opts':
@@ -91,29 +86,14 @@
 	objects  = !git count-objects -H -v
 	delete   = !git-delete $@
 	truncate = !git-truncate $@
-	deleted  = "!current=($(git ls-files)); tracked=($(git log --all --pretty=format: --name-only --diff-filter=D | xargs)); \
-		deleted=(); resurrected=(); for file in \"${tracked[@]}\"; do if [[ \" ${current[@]} \" =~ \" $file \" ]]; then resurrected+=(\"$file\"); else deleted+=(\"$file\"); fi; done; \
-		echo \"${deleted[@]}\" | tr \" \" \"\\n\""
-		# echo \"Deleted: ${deleted[@]}\"; echo \"Resurrected: ${resurrected[@]}\""
-	get = "!git branch -r | grep -v '\\->' | while read remote; do \
-		if ! git branch -l | grep \"${remote#origin/}\" &>/dev/null; \
-		then git branch --track \"${remote#origin/}\" \"$remote\"; \
-		else echo \"${remote#origin/}\" exists; \
-		fi; done"
-	ignore = "!root=$(git rev-parse --show-toplevel); if [ -n \"$root\" ]; \
-		then cat $root/.gitignore | grep -v '#' | grep -v '^\\s*$' | sed 's/\\*\\*\\///g' | while read pattern; \
-		do echo \"$pattern\"; \
-		if [[ \"$pattern\" =~ \"/*/\" ]]; then \
-		find \"$root/${pattern%/*/}\" -mindepth 1 -maxdepth 1 -type d -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
-		else find \"$root\" -name \"$pattern\" -print0 | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null; \
-		fi; done; fi"
-	amend = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
-	update = "!git stash clear; git stash; git merge $@; git stash pop"
+	get      = !get-get $@
+	deleted  = !git-deleted $@
+	ignore   = !git-ignore $@
+	amend    = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	update   = "!git stash clear; git stash; git merge $@; git stash pop"
 	commands = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
-	tree = "!git log --graph --abbrev-commit --date=relative --branches --name-status \
-		--oneline --decorate --color $@ 2>/dev/null"
-	trunk = "!git log --graph --abbrev-commit --date=relative --branches --oneline \
-		--decorate --color $@ 2>/dev/null"
+	tree     = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
+	trunk    = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $@ 2>/dev/null"
 [status]
 	branch = true
 	short = true

@@ -373,8 +373,8 @@ open() {
 }
 
 # Environment variables
-export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 export EDITOR=vim # default editor, nice and simple
+export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 
 ################################################################################
 # SHELL BEHAVIOR, KEY BINDINGS
@@ -597,16 +597,46 @@ gdiff() {
 # The last grep command is to highlight important parts
 ddiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
-    --exclude='*.git*' --exclude='*.svn*' \
-    --strip-trailing-cr -r "$1" "$2" \
-    | grep -E '(Only in.*:|Files | and |differ| identical)'
+  # Builtin method
+  # command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
+  #   --exclude='*.git*' --exclude='*.svn*' \
+  #   --strip-trailing-cr -r "$1" "$2" \
+  #   | grep -E '(Only in.*:|Files | and |differ| identical)'
+  # Manual method with more info
+  local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
+  dir1=$1
+  dir2=$2
+  for dir in "$dir1" "$dir2"; do
+    ! [ -d $dir ] && echo "Error: $dir does not exist or is not a directory." && return 1
+    files+=$'\n'$(find $dir -depth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
+  done
+  files=($(echo "$files" | sort | uniq)) # unique files
+  for file in ${files[@]}; do # iterate
+    file=${file##*/}
+    if [ -e "$dir1/$file" ] && [ -e "$dir2/$file" ]; then
+      if [ "$dir1/$file" -nt "$dir2/$file" ]; then
+        cat1+="$file in $dir1 is newer."$'\n'
+      elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
+        cat2+="$file in $dir2 is newer."$'\n'
+      else
+        cat3+="$file in $dir1 and $dir2 are same age."$'\n'
+      fi
+    elif [ -e $dir1/$file ]; then
+      cat4+="$file only in $dir1."$'\n'
+    else
+      cat5+="$file only in $dir2."$'\n'
+    fi
+  done
+  for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
+    printf "$cat"
+  done
 }
 # *Identical* files in two directories
 idiff() {
   [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
-    | grep -E '(Only in.*:|Files | and | differ| identical)'
+  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+    --brief --strip-trailing-cr -r "$1" "$2" | \
+    grep identical | grep -E '(Only in.*:|Files | and | differ| identical)'
 }
 
 # Merge fileA and fileB into merge.{ext}

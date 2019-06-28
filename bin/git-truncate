@@ -1,22 +1,40 @@
 #!/bin/bash -e
+#------------------------------------------------------------------------------#
+# Rev parse method
+# Copied from: https://stackoverflow.com/a/34829535/4970632
+#------------------------------------------------------------------------------#
+# Shallow to last 5 commits
+[ $# -ne 1 ] && echo "Usage: git truncate NUM_COMMITS" >&2 && exit 1
+git rev-parse HEAD~$1 > .git/shallow
+# Prune unreachable objects
+git fsck --unreachable # Will show you the list of what will be deleted
+git gc --prune=now     # Will actually delete your data
+
+#------------------------------------------------------------------------------#
+# Clone method
+# Copied from: https://stackoverflow.com/a/34829535/4970632
+#------------------------------------------------------------------------------#
+# Clone the original repo into limitedRepo
+# git clone file:///path_to/originalRepo limitedRepo --depth=10
+# Remove the original repo, to free up some space
+# rm -rf originalRepo
+# cd limitedRepo
+# git remote rm origin
+
+#------------------------------------------------------------------------------#
+# Filter branch method
 # Copied from: https://gist.github.com/magnetikonline/5062718
 # Inspired by: https://github.com/adrienthebo/git-tools/blob/master/git-truncate
-if [[ (-z $1) || (-z $2) ]]; then
-  echo "Usage: $(basename "$0") DROP_AT_SHA1 BRANCH"
-  exit 1
-fi
-if [[ ! $1 =~ ^[0-9a-f]{7,40}$ ]]; then
-  echo "Error: Invalid Git commit SHA1" >&2
-  exit 1
-fi
-# Note: if fails - include [--force] argument
-git filter-branch \
-  --parent-filter "sed \"s/-p $1[0-9a-f]*//\"" \
-  --prune-empty \
-  -- "$2"
-IFS=$'\n'
-for ref_name in $(git for-each-ref --format="%(refname)" refs/original); do
-  echo "$ref_name"
-  git update-ref -d "$ref_name"
-done
-git gc --aggressive --prune=all
+#------------------------------------------------------------------------------#
+# [ $# -ne 2 ] && echo "Usage: $(basename "$0") DROP_AT_SHA1 BRANCH" >&2 && exit 1
+# ! [[ $1 =~ ^[0-9a-f]{7,40}$ ]] && echo "Error: Invalid Git commit SHA1" >&2 && exit 1
+# git filter-branch \
+#   --parent-filter "sed \"s/-p $1[0-9a-f]*//\"" \
+#   --prune-empty \
+#   -- "$2"
+# IFS=$'\n'
+# for ref_name in $(git for-each-ref --format="%(refname)" refs/original); do
+#   echo "$ref_name"
+#   git update-ref -d "$ref_name"
+# done
+# git gc --aggressive --prune=all
