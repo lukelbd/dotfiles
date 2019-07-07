@@ -42,7 +42,7 @@ done
 ! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils" && exit 1
 
 # Initial stuff
-templates="$HOME/latex $HOME/latex2" # location of LaTeX templates and style files
+templates="$HOME/latex" # location of LaTeX templates and style files
 [ "$TERM_PROGRAM" == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
 [ -z "$terminal" ] && terminal="MacVim" # probably means we are running from GUI program
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
@@ -128,16 +128,13 @@ texfind() {
     if [[ "${files[@]}" =~ "$file" ]] && ! [[ " ${files[@]}" =~ " ./${file}" ]]; then
       # TeX distribution sees file, and it's not in current directory
       message+="${file}:\tTeXLive distribution"
+    elif [ -r "${templates}/${file}" ]; then
+      # Get file from custom templates folder, copy over
+      message+="${file}: copied to current directory (!!!)" # make more visible
+      cp "${templates}/${file}" ./
     else
-      # Look for file in custom paths, copy over
-      trigger=true; for template in $templates; do
-        if [ -r "${template}/${file}" ]; then
-          message+="${file}: copied to current directory (!!!)" # make more visible
-          cp "${template}/${file}" ./
-          trigger=false; break
-        fi
-      done
-      $trigger && echo "${file} not found" && exit 1
+      echo "${file} not found"
+      exit 1
     fi
     message+="\n"
   done

@@ -7,10 +7,18 @@ Try out my `.dircolors.ansi` for useful color-coding of `ls` results.
 
 ## Vim config
 Check out `.vimrc` for my plugin usage and some handy functions and remaps. Instead of
-just using `<Leader>` for custom maps, I use three different keys for custom
-map prefixes: `<Tab>`, `\`, and `<Space>`. The first one is used for window and tab
-management shortcuts, the second one for complex regexs replacements and tabular
-alignment, and the third for miscellaneous tasks.
+just using `<Leader>` for custom maps, I use several different keys for custom
+map prefixes:
+
+* `<Tab>`: Normal mode. Used for window and tab management and resizing.
+* `c`: Normal mode. Used for toggling comments and inserting comment headers.
+* `\`: Normal mode. Used for complex regex replacements and tabular alignment.
+* `;`: Normal mode. Used for syntastic commands and spell checking.
+* `g`: Normal mode. Used for git-gutter commands and other git things.
+* `<Leader>`: Normal mode. Used for miscellaneous and complex tasks. Mapped to `<Space>`.
+* `<C-o>`, `<C-p>`: Insert mode. Used for inserting LaTeX citations.
+* `<C-s>`, `<C-z>`: Insert mode. Used for surrounding cursor with delimiters and inserting snippets or symbols.
+
 Also check out my repositories starting with `vim-` for some handy custom plugins.
 
 ## Misc config
