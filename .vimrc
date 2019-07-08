@@ -1625,8 +1625,8 @@ nnoremap <silent> <C-w> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(t
   \ :q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
 "Terminal maps
 "WARNING: Do not map escape or cannot send iTerm-shortcuts with escape codes!
-nnoremap <Leader>T :terminal<CR>
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
+nnoremap <Leader>T :terminal<CR>
 
 "###############################################################################
 "OPENING FILES
