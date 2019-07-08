@@ -777,8 +777,8 @@ if PlugActive("delimitmate")
     au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
     au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
   augroup END
-  "TODO: Apparently delimitmate has its own jump command, should start using it.
-  "Set up delimiter paris; delimitMate uses these by default
+  "TODO: Apparently delimitMate has its own jump command, should start using it.
+  "Set up delimiter pairs; delimitMate uses these by default
   "Can set global defaults along with buffer-specific alternatives
   let g:delimitMate_expand_space=1
   let g:delimitMate_expand_cr=2 "expand even if it is not empty!
@@ -820,15 +820,15 @@ function! s:langtoggle(...)
   endif
 endfunction
 "Change spelling
-function! s:spellchange(direction)
+function! s:spellchange(direc)
   let nospell=0
   if !&l:spell
     let nospell=1
     setlocal spell
   endif
   let winview=winsaveview()
-  exe 'normal! '.(a:direction==']' ? 'bh' : 'el')
-  exe 'normal! '.a:direction.'s'
+  exe 'normal! '.(a:direc==']' ? 'bh' : 'el')
+  exe 'normal! '.a:direc.'s'
   normal! 1z=
   call winrestview(winview)
   if nospell
@@ -846,10 +846,10 @@ nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
 nnoremap ;m z=
 nnoremap <buffer> ;n ]S
 nnoremap <buffer> ;N [S
-nnoremap <Plug>backwardspell :call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
-nnoremap <Plug>forwardspell  :call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
-nmap ;d ;n<Plug>forwardspell
-nmap ;D ;N<Plug>backwardspell
+nnoremap <Plug>forwardspell  bh]S:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
+nnoremap <Plug>backwardspell el[S:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
+nmap ;d <Plug>forwardspell
+nmap ;D <Plug>backwardspell
 "Add/remove from dictionary
 nnoremap ;a zg
 nnoremap ;r zug
@@ -1623,9 +1623,10 @@ nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if 
   \ \| qa \| else \| tabclose \| if !g:tabpagelast \| silent! tabp \| endif \| endif<CR>
 nnoremap <silent> <C-w> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>
   \ :q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
-"Terminal maps
+"Terminal maps, map Ctrl-c to literal keypress so it does not close window
 "WARNING: Do not map escape or cannot send iTerm-shortcuts with escape codes!
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
+silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :terminal<CR>
 
 "###############################################################################
@@ -1962,11 +1963,10 @@ for c in range(char2nr('A'), char2nr('Z'))
   exe 'lnoremap '.nr2char(c+32).' '.nr2char(c)
   exe 'lnoremap '.nr2char(c).' '.nr2char(c+32)
 endfor
-"Use iTerm hex Code map to simulate an F5 press whenever you press some other
-"easier to reach combo. Currently it is <C-/> -- like it a lot!
+"Caps lock toggle, uses iTerm mapping of impossible key combination to the
+"F5 keypress. See top of file.
 inoremap <F5> <C-^>
 cnoremap <F5> <C-^>
-"can't lnoremap the above, because iminsert is turning it on and off
 
 "###############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
