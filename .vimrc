@@ -455,7 +455,7 @@ Plug 'KabbAmine/yowish.vim'
 Plug 'kana/vim-textobj-user'      "base
 Plug 'kana/vim-textobj-indent'    "match indentation, object is 'i'
 Plug 'kana/vim-textobj-entire'    "entire file, object is 'e'
-Plug 'sgur/vim-textobj-parameter' "warning: this can hang
+" Plug 'sgur/vim-textobj-parameter' "disable because this conflicts with latex
 " Plug 'bps/vim-textobj-python' "not really ever used, just use indent objects
 " Plug 'vim-scripts/argtextobj.vim' "arguments
 " Plug 'machakann/vim-textobj-functioncall' "fucking sucks/doesn't work, fuck you
@@ -685,6 +685,8 @@ nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :e<CR>
 "Redraw screen
 nnoremap <silent> <Leader>R :redraw!<CR>
+"Trigger autoread, used mostly for log files
+nnoremap <silent> <Leader>l :checktime<CR>
 
 "###############################################################################
 "GIT GUTTER AND FUGITIVE
@@ -855,14 +857,23 @@ nnoremap ;a zg
 nnoremap ;r zug
 
 "###############################################################################
-"VIM VISUAL INCREMENT; creating columns of 1/2/3/4 etc.
+"INCREMENT and SUM PLUGINS
 augroup increment
 augroup END
+"The increment plugin
 if PlugActive("vim-visual-increment")
   vmap + <Plug>VisualIncrement
   vmap _ <Plug>VisualDecrement
   nnoremap + <C-a>
   nnoremap _ <C-x>
+endif
+"The howmuch.vim plugin, currently with minor modifications in .vim folder
+"TODO: Add maps to all other versions, maybe use = key as prefix
+if hasmapto('<Plug>AutoCalcAppendWithEqAndSum', 'v')
+  vmap c+ <Plug>AutoCalcAppendWithEqAndSum
+endif
+if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
+  vmap c= <Plug>AutoCalcReplaceWithSum
 endif
 
 "###############################################################################
@@ -1674,7 +1685,7 @@ function! s:fzfopen_select(item)
 endfunction
 "Maps for opening file in current directory, and opening file in some input directory
 if PlugActive('fzf.vim')
-  nnoremap <silent> <F3> :Open .<CR>
+  nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
   nnoremap <C-o> :Open 
   nnoremap <silent> <C-p> :Files<CR>
 else
@@ -2195,6 +2206,7 @@ function! s:tabtoggle(...)
   let b:tab_mode=&l:expandtab
 endfunction
 command! -nargs=? TabToggle call <sid>tabtoggle(<args>)
+nnoremap <Leader><Tab> :TabToggle<CR>
 "Get current plugin file
 "Remember :scriptnames lists all loaded files
 function! s:ftplugin()

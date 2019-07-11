@@ -1678,19 +1678,9 @@ alias title="_title_set" # easier for user
 # entering password once) or configure with http (stores information in plaintext
 # but only ever have to do this once)
 ################################################################################
-# Options for ensuring git credentials (https connection) is set up; now use SSH id, so forget it
-# $_macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && command ssh -T git@github.com; }
-# $_macos || { [ ! -e ~/.git-credentials ] && git config --global credential.helper store && echo "You may be prompted for a username+password when you enter a git command."; }
-# Overcomplicated MacOS options
-# $_macos && fortune | lolcat || echo "Shell configured and namespace populated."
-# $_macos && { neofetch --config off --color_blocks off --colors 4 1 8 8 8 7 --disable term && fortune | lolcat; } || echo "Shell configured and namespace populated."
-# alias hack="cmatrix" # hackerlolz
-# alias clock="while true; do echo \"$(date '+%D %T' | toilet -f term -F border --metal)\"; sleep 1; done"
-# hash powerline-shell 2>/dev/null && { # powerline shell; is ooglay so forget it
-#   function _update_ps1() { PS1="$(powerline-shell $?)"; }
-#   [ "$TERM" != "linux" ] && PROMPT_COMMAND="_update_ps1; $PROMPT_COMMAND"
-#   }
 # Fun stuff
+# TODO: This hangs when run from interactive cluster node, we test by comparing
+# histname variable with command (variable does not change)
 $_macos && { # first the MacOS options
   alias artists="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
   alias forecast="curl wttr.in/Fort\ Collins" # list weather information
@@ -1698,27 +1688,6 @@ $_macos && { # first the MacOS options
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
   [[ $BASH_VERSION =~ ^[4-9].* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
   }
-_bashrc_loaded='true'
-# Dad jokes
-# NOTE: Get hang when doing this from within interactive cluster node; good
-# way to test for that is compare hostname command with variable (variable will
-# not change for some reason)
 [ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
+_bashrc_loaded=true
 
-# TODO: Consider doing this instead of conda activate? Also appears the
-# changeps1 thing is because don't want 'base' environemtn to do so.
-# >>> conda init >>>
-# !! Contents within this block are managed by 'conda init' !!
-# __conda_setup="$(CONDA_REPORT_ERRORS=false '/home/ldavis/miniconda3/bin/conda' shell.bash hook 2> /dev/null)"
-# if [ $? -eq 0 ]; then
-#   command eval "$__conda_setup"
-# else
-#   if [ -f "/home/ldavis/miniconda3/etc/profile.d/conda.sh" ]; then
-#     . "/home/ldavis/miniconda3/etc/profile.d/conda.sh"
-#     CONDA_CHANGEPS1=false conda activate base
-#   else
-#       command export PATH="/home/ldavis/miniconda3/bin:$PATH"
-#   fi
-# fi
-# unset __conda_setup
-# # <<< conda init <<<

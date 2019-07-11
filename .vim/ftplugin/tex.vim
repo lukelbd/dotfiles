@@ -27,14 +27,20 @@ function! s:latex_background(...)
   let tabnames=map(tabpagebuflist(), 'expand("#".v:val.":t")')
   "Jump to logfile if it is open, else open one
   let idx=index(tabnames, logfile)
+  silent! call system('rm '.logfile)
+  silent! call system('touch '.logfile)
   if idx==-1
-    exe 'split '.logfile
+    silent! exe string(winheight('.')/4).'split '.logfile
     setlocal autoread "open file and set autoread before starting script!
+    exe "normal! \<C-w>\<C-p>"
+  else
+    exe "normal! \<C-w>\<C-p>"
+    silent! e
     exe "normal! \<C-w>\<C-p>"
   endif
   "Run function
-  call system('~/bin/vimlatex '.shellescape(@%).' '.opts.' &>'.logfile.' &')
-  " silent! call execute('~/bin/vimlatex '.curfile.' '.opts.' &>'.logfile.' &')
+  silent! call system('~/bin/vimlatex '.shellescape(@%).' '.opts.' &>'.logfile.' &')
+  echom "Running vimlatex in background."
 endfunction
 noremap <silent> <buffer> <C-z> :call <sid>latex_background()<CR>
 noremap <silent> <buffer> <Leader>z :call <sid>latex_background(' --diff')<CR>
