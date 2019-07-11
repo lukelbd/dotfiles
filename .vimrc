@@ -437,7 +437,7 @@ for name in ['statusline', 'scrollwrapped', 'tabline', 'idetools', 'toggle', 'te
       exe 'set rtp+='.plug.'/after'
     endif
   else
-    Plug 'lukelbd/vim-'.plug
+    Plug 'lukelbd/vim-'.name
   endif
 endfor
 
@@ -1707,7 +1707,7 @@ endfunction
 "Function that generates lists of tabs and their numbers
 function! s:tabselect()
   if !exists('g:tabline_bufignore')
-    let g:tabline_bufignore=['qf', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] "filetypes considered 'helpers'
+    let g:tabline_bufignore=['qf', 'vim-plug', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] "filetypes considered 'helpers'
   endif
   let items=[]
   for i in range(tabpagenr('$')) "iterate through each tab
@@ -1791,7 +1791,7 @@ nnoremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,
 augroup simple
   au!
   au BufEnter * let b:recording=0
-  au FileType qf,diff,man,fugitive,gitcommit call <sid>popup_setup()
+  au FileType qf,diff,man,fugitive,gitcommit,vim-plug call <sid>popup_setup()
   au FileType help call <sid>help_setup()
   au FileType log call <sid>simple_setup()
 augroup END
@@ -2207,6 +2207,8 @@ function! s:ftsyntax()
 endfunction
 command! PluginFile call <sid>ftplugin()
 command! SyntaxFile call <sid>ftsyntax()
+"Map to wraptoggle
+nnoremap <silent> <Leader>w :WrapToggle<CR>
 "Window displaying all colors
 function! s:colors()
   source $VIMRUNTIME/syntax/colortest.vim
