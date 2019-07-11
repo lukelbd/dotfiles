@@ -553,11 +553,11 @@ tos() {
 pskill() {
   local strs
   $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
-  [ $# -ne 0 ] && strs=("$@") || strs=(null)
+  [ $# -ne 0 ] && strs=("$@") || strs=(all)
   for str in "${strs[@]}"; do
     echo "Killing $str jobs..."
-    [ $str == 'null' ] && str=""
-    kill $(tos "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
+    [ $str == all ] && str=""
+    kill $(tops "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 }
 
@@ -1095,7 +1095,7 @@ _connect() {
   fi
   # Which ports to connect over
   set_ports='for port in $ports; do
-    command ssh -N -f -L localhost:$port:localhost:$port $server &>/dev/null
+    command ssh -t -N -f -L localhost:$port:localhost:$port '"$server"' &>/dev/null
     stats+="${port}-$? "
   done'
   if [ -n "$ports" ]; then
@@ -1160,7 +1160,7 @@ notebook() {
   # Set default jupyter theme
   local port
   ! $_jt_configured && \
-    echo "Configure jupyter notebook theme." && _jt && _jt_configured=true
+    echo "Configuring jupyter notebook theme." && _jt && _jt_configured=true
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
