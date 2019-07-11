@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+#------------------------------------------------------------------------------#
+# Function that lists font files in various dirs
+#------------------------------------------------------------------------------#
+shopt -s nullglob
+found=false
+pattern="$1"
+[ $# -ne 1 ] && echo "Usage: find-fonts PATTERN" && exit 1
+for dir in ~/Library/Fonts /System/Library/Fonts /Library/Fonts /Library/Fonts/Microsoft /opt/local/share/fonts; do
+  files=($dir/$pattern)
+  if [ ${#files[@]} -gt 0 ]; then
+    echo "$dir: ${files[@]##*/}"
+    found=true
+  fi
+done
+! $found && echo "No $pattern files found." && exit 1
+exit 0

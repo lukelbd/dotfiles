@@ -1,4 +1,7 @@
 #!/bin/bash
+#------------------------------------------------------------------------------#
+# Magic command that fixes name and email for full commit history
+#------------------------------------------------------------------------------#
 git filter-branch -f --env-filter '
 CORRECT_NAME="Luke Davis"
 CORRECT_EMAIL="lukelbd@gmail.com"

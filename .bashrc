@@ -168,7 +168,7 @@ export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$PATH"
 alias brew="PATH=\"$PATH\" brew"
 
 # Include modules (i.e. folders with python files) located in the home directory
-# Also include python scripts in bin
+# NOTE: Trailing ':' adds empty path, i.e. this directory
 export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 
@@ -335,9 +335,9 @@ abspath() { # abspath that works on mac, Linux, or anything with bash
 # Open files optionally based on name, or revert to default behavior
 # if -a specified
 open() {
-  ! $_macos && echo "Error: This should be run from your macbook." && return 1
+  ! $_macos && echo "Error: open() should be run from your macbook." && return 1
   local files app app_default
-  while [[ $# -gt 0 ]]; do
+  while [ $# -gt 0 ]; do
     case $1 in
       -a|--application) app_default="$2"; shift; shift; ;;
       -*) echo "Error: Unknown flag $1." && return 1 ;;
@@ -346,7 +346,11 @@ open() {
   done
   echo ${files[@]}
   for file in "${files[@]}"; do
-    if [ -z "$app_default" ]; then
+    if [ -n "$app_default" ]; then
+      app="$app_default"
+    elif [ -d "$file" ]; then
+      app="Finder.app"
+    else
       case "$file" in
         # Special considerations for PDF figure files
         *.pdf)
@@ -357,15 +361,13 @@ open() {
             app="PDF Expert.app"
           fi ;;
         # Other simpler filetypes
-        *.svg|*.jpg|*.jpeg|*.png)       app="Preview.app" ;;
+        *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
-        *.html|*.xml|*.htm|*.gif)       app="Chromium.app" ;;
+        *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
         *.mov|*.mp4)                    app="VLC.app" ;;
         *.md)                           app="Marked 2.app" ;;
         *)                              app="MacVim.app" ;;
       esac
-    else
-      app="$app_default"
     fi
     echo "Opening file \"$file\"."
     command open -a "$app" $file
@@ -373,8 +375,8 @@ open() {
 }
 
 # Environment variables
-export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 export EDITOR=vim # default editor, nice and simple
+export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 
 ################################################################################
 # SHELL BEHAVIOR, KEY BINDINGS
@@ -523,6 +525,139 @@ dl() {
 # Find but ignoring hidden folders and stuff
 alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
 
+# Grepping and diffing; enable colors
+alias grep="grep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+alias egrep="egrep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
+
+# Query files
+# awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
+todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f" | sed $'s/^[ \t]*//g'; done; }
+note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
+
+# Shell scripting utilities
+calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
+clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
+
+# Controlling and viewing running processes
+alias toc="mpstat -P ALL 1" # like top, but for each core
+alias restarts="last reboot | less"
+# List shell processes using ps
+tos() {
+  ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
+     | grep "$1" | cut -d' ' -f1,4
+}
+
+# Kill jobs by name
+pskill() {
+  local strs
+  $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
+  [ $# -ne 0 ] && strs=("$@") || strs=(all)
+  for str in "${strs[@]}"; do
+    echo "Killing $str jobs..."
+    [ $str == all ] && str=""
+    kill $(tops "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
+  done
+}
+
+ # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
+jkill() {
+  local count=$(jobs | wc -l | xargs)
+  for i in $(seq 1 $count); do
+    echo "Killing job $i..."
+    eval "kill %$i"
+  done
+}
+
+# Supercomputer stuff
+# Kill PBS processes all at once; useful when debugging stuff, submitting teeny
+# jobs. The tail command skips first (n-1) lines.
+qkill() {
+  local proc
+  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do
+    qdel $proc
+    echo "Deleted job $proc"
+  done
+}
+# Remove logs
+alias qrm="rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*" # remove (empty) job logs
+# Better qstat command
+alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
+
+# Differencing stuff, similar git commands stuff
+# First use git as the difference engine, disable color
+gdiff() {
+  [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
+  git --no-pager diff --no-index "$1" "$2"
+  # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
+  #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
+}
+# Next use builtin diff command, *different* files in 2 directories
+# The last grep command is to highlight important parts
+ddiff() {
+  # Builtin method
+  # command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
+  #   --exclude='*.git*' --exclude='*.svn*' \
+  #   --strip-trailing-cr -r "$1" "$2" \
+  #   | grep -E '(Only in.*:|Files | and |differ| identical)'
+  # Manual method with more info
+  [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
+  local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
+  dir1=$1
+  dir2=$2
+  for dir in "$dir1" "$dir2"; do
+    ! [ -d $dir ] && echo "Error: $dir does not exist or is not a directory." && return 1
+    files+=$'\n'$(find $dir -depth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
+  done
+  files=($(echo "$files" | sort | uniq)) # unique files
+  for file in ${files[@]}; do # iterate
+    file=${file##*/}
+    if [ -e "$dir1/$file" ] && [ -e "$dir2/$file" ]; then
+      if [ "$dir1/$file" -nt "$dir2/$file" ]; then
+        cat1+="$file in $dir1 is newer."$'\n'
+      elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
+        cat2+="$file in $dir2 is newer."$'\n'
+      else
+        cat3+="$file in $dir1 and $dir2 are same age."$'\n'
+      fi
+    elif [ -e $dir1/$file ]; then
+      cat4+="$file only in $dir1."$'\n'
+    else
+      cat5+="$file only in $dir2."$'\n'
+    fi
+  done
+  for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
+    printf "$cat"
+  done
+}
+# *Identical* files in two directories
+idiff() {
+  [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
+  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+    --brief --strip-trailing-cr -r "$1" "$2" | \
+    grep identical | grep -E '(Only in.*:|Files | and | differ| identical)'
+}
+
+# Merge fileA and fileB into merge.{ext}
+# See this answer: https://stackoverflow.com/a/9123563/4970632
+merge() {
+  [ $# -ne 2 ] && echo "Usage: idiff FILE1 FILE2" && return 1
+  [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
+  local ext # no extension
+  if [[ ${1##*/} =~ '.' || ${2##*/} =~ '.' ]]; then
+    [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
+    local ext=.${1##*.}
+  fi
+  touch tmp$ext # use empty file as the 'root' of the merge
+  cp $1 backup$ext
+  git merge-file $1 tmp$ext $2 # will write to file 1
+  mv $1 merge$ext
+  mv backup$ext $1
+  rm tmp$ext
+  echo "Files merged into \"merge$ext\"."
+}
+
 # Convert bytes to human
 # From: https://unix.stackexchange.com/a/259254/112647
 # NOTE: Used to use this in a couple awk scripts in git config
@@ -545,108 +680,6 @@ bytes2human() {
     echo "$b$d${S[$s]}"
     # echo "$b$d$ {S[$s]}"
   done
-}
-
-# Grepping and diffing; enable colors
-alias grep="grep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-alias egrep="egrep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
-
-# Query files
-todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f"; done; }
-note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
-
-# Shell scripting utilities
-calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
-join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
-clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
-
-# Controlling and viewing running processes
-alias toc="mpstat -P ALL 1" # like top, but for each core
-alias restarts="last reboot | less"
-# List shell processes using ps (will include background processes initiated
-# by shell scripts, not just ones sent to background by this shell)
-tops() {
-  ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
-     | grep "$1" | cut -d' ' -f1,4
-}
-# Kill jobs by name
-pskill() {
-  local strs
-  $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
-  [ $# -ne 0 ] && strs=("$@") || strs=(all)
-  for str in "${strs[@]}"; do
-    echo "Killing $str jobs..."
-    [ $str == all ] && str=""
-    kill $(tops "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
-  done
-}
- # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
-jkill() {
-  local count=$(jobs | wc -l | xargs)
-  for i in $(seq 1 $count); do
-    echo "Killing job $i..."
-    eval "kill %$i"
-  done
-}
-# Kill PBS processes all at once; useful when debugging stuff, submitting teeny
-# jobs. The tail command skips first (n-1) lines.
-qkill() {
-  local proc
-  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do
-    qdel $proc
-    echo "Deleted job $proc"
-  done
-}
-# Other convenient aliases; remove logs, and better qstat command
-alias qrm="rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*" # remove (empty) job logs
-alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
-# alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E -v 'etime|pset|project|substate|server|ctime|Job_Owner|Join_Path|comment|umask|exec|mem|jobdir|cpupercent'"
-# alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -v 'Join'"
-
-# Differencing stuff, similar git commands stuff
-# First use git as the difference engine; disable color
-# Color not useful anyway; is just bold white, and we delete those lines
-gdiff() {
-  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
-  #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
-  git --no-pager diff --no-index "$1" "$2"
-}
-# Next use builtin diff command as engine
-# *Different* files in 2 directories
-# The last grep command is to highlight important parts
-ddiff() {
-  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
-    --exclude='*.git*' --exclude='*.svn*' \
-    --strip-trailing-cr -r "$1" "$2" \
-    | grep -E '(Only in.*:|Files | and |differ| identical)'
-}
-# *Identical* files in two directories
-idiff() {
-  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  command diff -s -x '.vimsession' -x '*.sw[a-z]' --brief --strip-trailing-cr -r "$1" "$2" | grep identical \
-    | grep -E '(Only in.*:|Files | and | differ| identical)'
-}
-
-# Merge fileA and fileB into merge.{ext}
-# See this answer: https://stackoverflow.com/a/9123563/4970632
-merge() {
-  [ $# -ne 2 ] && echo "Error: Need exactly two args." && return 1
-  [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
-  local ext # no extension
-  if [[ ${1##*/} =~ '.' || ${2##*/} =~ '.' ]]; then
-    [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
-    local ext=.${1##*.}
-  fi
-  touch tmp$ext # use empty file as the 'root' of the merge
-  cp $1 backup$ext
-  git merge-file $1 tmp$ext $2 # will write to file 1
-  mv $1 merge$ext
-  mv backup$ext $1
-  rm tmp$ext
-  echo "Files merged into \"merge$ext\"."
 }
 
 ################################################################################
@@ -674,40 +707,50 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 # Use 2>/dev/null to ignore deprecation warnings
 alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
-nbdocs() {
+nbconvert() {
   # Convert notebook
-  local base root
+  local base root dest
   root=$(git rev-parse --show-toplevel)
-  [ $# -ne 1 ] && echo "Error: Need one input arg." && return 1
+  [ $# -ne 1 ] && echo "Usage: nbconvert IPYNBFILE" && return 1
   ! [ -d $root/docs ] && echo "Error: No docs subdirectory found." && return 1
   base=${1%.ipynb}
   base=${base##*/}
   jupyter nbconvert --to=rst --output-dir=$root/docs $1
-  # template=docs/_templates/nbtemplate.tpl
-  # jupyter nbconvert --to=rst --template=$template --output-dir=docs $1
-  # Edits
-  rm -r $root/docs/$base 2>/dev/null
-  mv $root/docs/${base}_files $root/docs/$base
-  gsed -i "s:${base}_files:${base}:g" $root/docs/${base}.rst
-  # Next run special magical vim regexs that add back in sphinx
+
+  # Change default nbconvert file location
+  dest=$root/docs/$base
+  rm -r $dest 2>/dev/null # remove old one
+  mv ${dest}_files $dest
+  gsed -i "s:${base}_files:${base}:g" ${dest}.rst
+
+  # Run special magical vim regexs that add back in sphinx
   # links and default non-figure cell output. Your only other option for
-  # non-greedy regexes is perl, and fuck that.
-  # NOTE: The crazy long regex below is to match `numpy` (simple link to
-  # homepage of module) and `~numpy.function` (the function). Note that
-  # sphinx will not expand `~numpy` as link, but will expand `numpy`.
+  # non-greedy regexes is perl, and fuck that. Also need to match naked
+  # module (e.g. ``numpy``) literals, hence the search for specific packages.
   echo "Running vi search and replace."
   command vi -c \
-     '%s/``\(\~\?\)\(datetime\|mpl_toolkits\|numpy\|pandas\|climpy\|metpy\|scipy\|xarray\|matplotlib\|cartopy\|basemap\|proplot\)\(.\{-}\)``/`\1\2\3`/ge | '"\
+     '%s/``\(\~\?\)\(datetime\|mpl_toolkits\|numpy\|pandas\|climpy\|metpy\|scipy\|xarray\|matplotlib\|cartopy\|proplot\)\(.\{-}\)``/`\1\2\3`/ge | '"\
     "'%s/:ref:``\(.\{-}\)``/:ref:`\1`/ge | '"\
     "'%s/code::\s*$/code:: ipython3/ge | '"\
-    "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' $root/docs/${base}.rst &>/dev/null
+    "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' ${dest}.rst &>/dev/null
+
+  # Finally split into files based on sections with magical awk command
+  # For each line, awk runs bracket command if search is valid, if condition is
+  # empty, or if variable evaluates to true (i.e. if non-empty and non-zero)
+  # WARNING: This can potentially overwrite existing files!
+  cat ${dest}.rst | awk '
+  /^=/ {++count; file="'$dest'"count".rst"; print file}
+  file {print line > file}
+  {line=$0}
+  ' -
+  rm ${dest}.rst
 }
 
 ################################################################################
 # SSH, session management, and Github stuff
 # Enabling files with spaces is tricky: https://stackoverflow.com/a/20364170/4970632
 ################################################################################
-# Declare some names for active servers
+# To enable passwordless login, just use "ssh-copy-id $server"
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one
 # of the 1-6 login nodes -- from testing seems node 4 is usually most
 # empty (probably human psychology thing; 3 seems random, 1-2 are obvious
@@ -718,8 +761,8 @@ cheyenne="davislu@cheyenne5.ucar.edu"
 euclid="ldavis@euclid.atmos.colostate.edu"
 olbers="ldavis@olbers.atmos.colostate.edu"
 zephyr="lukelbd@zephyr.meteo.mcgill.ca"
+lmu="Luke.Davis@login.meteo.physik.uni-muenchen.de"
 midway="t-9841aa@midway2-login1.rcc.uchicago.edu" # pass: orkalluctudg
-archive="ldm@ldm.atmos.colostate.edu"             # user: atmos-2012
 ldm="ldm@ldm.atmos.colostate.edu"                 # user: atmos-2012
 
 # SSH file system
@@ -744,7 +787,7 @@ mount() {
   # Mount remote server by name (using the names declared above)
   local server address
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
-  [ $# -ne 1 ] && echo "Error: Function sshfs() requires exactly 1 argument." && return 1
+  [ $# -ne 1 ] && echo "Usage: mount SERVER_NAME" && return 1
   # Detect aliases
   server="$1"
   location="$server"
@@ -832,7 +875,7 @@ _compressuser() { # turn $HOME into tilde
 # Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
 disconnect() {
   local pids port=$1
-  [ $# -ne 1 ] && echo "Error: Function requires exactly 1 arg." && return 1
+  [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
   # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
   pids="$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)"
   [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
@@ -892,7 +935,7 @@ _port_file=~/.port # file storing port number
 alias ssh="_ssh" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local port listen port_write title_write
-  [ $# -gt 2 ] && echo "Error: This function needs 1 or 2 arguments." && return 1
+  [ $# -gt 2 ] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
   listen=22  # default sshd listening port; see the link above
   port=10000 # starting port
   if [ -n "$2" ]; then
@@ -918,7 +961,8 @@ _ssh() {
 # of args. Also can do math inside param expansion indexing.
 rlcp() { # "copy to local (from remote); 'copy there'"
   local port array dest
-  $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
+  $_macos && echo "Error: rlcp intended to be called from an ssh session." && return 1
+  [ $# -lt 2 ] && echo "Usage: rlcp REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)      # port from most recent login
   array=${@:1:$#-1}            # result of user input glob expansion, or just one file
@@ -930,8 +974,8 @@ rlcp() { # "copy to local (from remote); 'copy there'"
 # Copy from local macbook to <this server>
 lrcp() { # "copy to remote (from local); 'copy here'"
   local port file dest
-  $_macos && echo "Error: Function intended to be called from an ssh session." && return 1
-  [ $# -ne 2 ] && echo "Error: This function needs exactly 2 arguments." && return 1
+  $_macos && echo "Error: lrcp intended to be called from an ssh session." && return 1
+  [ $# -ne 2 ] && echo "Usage: lrcp LOCAL_FILE REMOTE_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)   # port from most recent login
   dest="$2"                 # last value
@@ -1038,7 +1082,7 @@ _jt() {
 _connect() {
   # Usage changes depending on whether on macbook
   # ssh -f (port-forwarding in background) -N (don't issue command)
-  local server outcome port ports stat stats get_ports set_ports
+  local server port ports stat stats get_ports set_ports
   unset _jupyter_port
   if $_macos; then
     ports="${@:2}"
@@ -1162,66 +1206,58 @@ nchelp() {
         ncvarinfo ncvardump ncvartable ncvartable2" | column -t
 }
 ncdump() { # almost always want this; access old versions in functions with backslash
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
+  [ $# -ne 1 ] && echo "Usage: ncdump FILE" && return 1
   command ncdump -h "$@" | less
 }
 ncglobal() { # show just the global attributes
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
+  [ $# -ne 1 ] && echo "Usage: ncglobal FILE" && return 1
   command ncdump -h "$@" | grep -A100 ^// | less
 }
 ncinfo() { # only get text between variables: and linebreak before global attributes
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
+  [ $# -ne 1 ] && echo "Usage: ncinfo FILE" && return 1
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
   command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
-ncvars() { # get information for just variables (no dimension/global info)
-    # the cdo parameter table actually gives a subset of this information, so don't
-    # bother parsing that information
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+ncvars() { # the space makes sure it isn't another variable that has trailing-substring
+  # identical to this variable, -A prints TRAILING lines starting from FIRST match,
+  # -B means prinx x PRECEDING lines starting from LAST match
+  [ $# -ne 1 ] && echo "Usage: ncvars FILE" && return 1
+  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
   command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | \
     sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
-    # the space makes sure it isn't another variable that has trailing-substring
-    # identical to this variable; and the $'' is how to insert literal tab
-    # -A means print x TRAILING lines starting from FIRST match
-    # -B means prinx x PRECEDING lines starting from LAST match
 }
-ncdims() { # just dimensions and their numbers
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  # command ncdump -h "$1" | grep -B100 "^variables:$" | sed '1,2d;$d' | \
-  #   tr -d ';' | tr -s ' ' | column -t
+ncdims() {
+  [ $# -ne 1 ] && echo "Usage: ncdims FILE" && return 1
+  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q'  | sed '1d;$d' \
       | tr -d ';' | tr -s ' ' | column -t
 }
 
 # Listing stuff
 ncin() { # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
-  [ $# -ne 2 ] && { echo "two arguments required."; return 1; }
-  ! [ -r "$2" ] && { echo "file \"$2\" not found."; return 1; }
+  [ $# -ne 2 ] && echo "Usage: ncin VAR FILE" && return 1
+  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   command ncdump -h "$2" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
 }
 nclist() { # only get text between variables: and linebreak before global attributes
-    # note variables don't always have dimensions! (i.e. constants)
-    # in this case looks like " double var ;" instead of " double var(x,y) ;"
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  # note variables don't always have dimensions! (i.e. constants)
+  # in this case looks like " double var ;" instead of " double var(x,y) ;"
+  [ $# -ne 1 ] && echo "Usage: nclist FILE" && return 1
+  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
   command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 ncdimlist() { # get list of dimensions
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
+  [ $# -ne 1 ] && echo "Usage: ncdimlist FILE" && return 1
+  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
 ncvarlist() { # only get text between variables: and linebreak before global attributes
   local list dmnlist varlist
-  [ $# -ne 1 ] && { echo "One argument required."; return 1; }
-  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  # cdo -s showname "$1" # this omits some "weird" variables that don't fit into CDO
-  #   # data model, so don't use this approach
+  [ $# -ne 1 ] && echo "Usage: ncvarlist FILE" && return 1
+  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
   list=($(nclist "$1"))
   dmnlist=($(ncdimlist "$1"))
   for item in "${list[@]}"; do
@@ -1234,19 +1270,18 @@ ncvarlist() { # only get text between variables: and linebreak before global att
 
 # Inquiries about specific variables
 ncvarinfo() { # as above but just for one variable
-  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  [ $# -ne 2 ] && echo "Usage: ncvarinfo VAR FILE" && return 1
+  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
   # the space makes sure it isn't another variable that has trailing-substring
   # identical to this variable; and the $'' is how to insert literal tab
 }
 ncvardump() { # dump variable contents (first argument) from file (second argument)
-  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  [ $# -ne 2 ] && echo "Usage: ncvardump VAR FILE" && return 1
+  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   $_macos && _reverse="gtac" || _reverse="tac"
   # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
   command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
-  # shhh... just let it happen
   # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
   # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
@@ -1254,14 +1289,15 @@ ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
   # Below procedure is ideal for "sanity checks" of data; just test one
   # timestep slice at every level; the tr -s ' ' trims multiple whitespace
   # to single and the column command re-aligns columns
-  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
+  [ $# -ne 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
+  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   local args=("$@")
   local args=(${args[@]:2}) # extra arguments
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
 }
 ncvartable2() { # as above but show everything
-  [ $# -ne 2 ] && { echo "Two arguments required."; return 1; }
-  ! [ -r "$2" ] && { echo "File \"$2\" not found."; return 1; }
+  [ $# -ne 2 ] && echo "Usage: ncvartable2 VAR FILE" && return 1
+  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   local args=("$@")
   local args=(${args[@]:2}) # extra arguments
   cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less

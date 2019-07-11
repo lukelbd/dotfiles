@@ -1,0 +1,430 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+updated on Sept. 19, 2017
+
+Created on Sept. 19, 2017
+@author: Elizabeth A. Barnes
+"""
+#.............................................
+# INTITIAL SETUP
+#.............................................
+
+#.............................................
+# IMPORT STATEMENTS
+#.............................................
+import numpy as np
+import copy as copy
+#import matplotlib.pyplot as plt
+#import matplotlib.mlab as mlab
+#import scipy.signal as sig
+#from scipy import stats
+#from scipy import interpolate
+#import numpy.ma as ma
+#import csv
+#from numpy import genfromtxt
+#from mpl_toolkits.basemap import Basemap
+
+import os
+import sys
+#import shutil
+import time
+import glob
+import subprocess
+import difflib
+#import atexit
+
+import argparse
+
+#from netCDF4 import Dataset
+#import itertools
+
+#scipy.linalg
+
+import general_functions as gf
+reload(gf)
+
+#%% running commands in both rclone and gdrive
+def get_gd_info(cmd_out):
+        p = subprocess.Popen(cmd_out, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
+        output = p.stdout.read()    
+        list_output = output.splitlines()
+        list_output = [y.split('   ') for y in list_output]
+
+        path_name = []    
+        filesize = []               
+        for entry in list_output:
+            if(entry[0][0:4] == 'Path'):
+                path_name = entry[0][6:]
+            elif(entry[0][0:4] == 'Size'):
+                filesize = entry[0][6:]
+                filesize = filesize[:filesize.rfind('B')-1]
+
+        if(len(path_name)==0):
+            raise ValueError('Cannot determine the GoogleDrive base directory path...exiting program.')                    
+        else:
+            return path_name, filesize      
+        
+def try_try_again(cmd_out):
+    
+    try:
+        p = subprocess.Popen(cmd_out, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, close_fds=True)
+        output = p.stdout.read()
+        
+        if('Failed stat file' in output):
+            print '--cannot stat file.'
+            return 'SkippedFile'       
+        if('rateLimitExceeded' in output or 'Failed' in output):
+            print output
+            return 0
+        elif('userRateLimitExceeded' in output):
+            print output
+            save_data_processed()
+            raise ValueError('!!!User rate limit exceeded. Closing out now.!!!!')
+        elif('Downloading' not in output and 'dir' not in output and 'bin' not in output and len(output)!=0 and 'created' not in output and 'Deleted' not in output):
+            print output
+            return 0
+        elif('mkdir' in cmd_out):
+            #print output
+            return output
+        else:        
+            #print output
+            return output
+    except:
+        return 0
+
+#% functions for CHECKING WITH GDRIVE
+def get_gdrive_list(parent_id):
+    
+    cmd = 'gdrive list --no-header -m 10000000 --order name --absolute --bytes --name-width 0 -q " \'' +  parent_id + '\' in parents and trashed=false" '
+
+    try_it = 0
+    while try_it < 4:
+        glist_out = try_try_again(cmd)
+
+        if(glist_out == 0):
+            try_it = try_it + 1            
+            if(try_it >= 4):
+                raise ValueError('*****TRIED 4 TIMES AND DID NOT WORK******...exiting program.')
+            
+            ss = 5.0**(try_it)
+            print time.ctime() + ': OPERATION FAILED....waiting ' + str(ss) + ' seconds then trying again'
+            sys.stdout.flush()        
+            time.sleep(ss)
+            print time.ctime() + ': trying again [' + str(try_it) + ']'
+            sys.stdout.flush()        
+            
+        else:
+            glist_out = glist_out.splitlines()
+            
+            filelist = [y.split('   ') for y in glist_out]
+            
+            file_id_list = list()
+            dir_id_list = list()    
+            
+            for filename in filelist:
+                str_list = filter(None, filename) # fastest
+        
+                file_id_list.append([x for x in str_list if 'bin' in str_list[2]])
+                dir_id_list.append([x for x in str_list if 'dir' in str_list[2]])
+        
+            file_id_list_out = filter(None, file_id_list)
+            dir_id_list_out = filter(None, dir_id_list)
+            
+            return dir_id_list_out, file_id_list_out
+
+def walk_gdrive_recursive(parent_id):
+    
+    global GDRIVE_FILELIST, GDRIVE_DIRLIST
+    
+    child_dirlist, child_filelist = get_gdrive_list(parent_id)
+    
+    if(gdDir_ISFILE):
+        if(len(child_dirlist)>0 or len(child_filelist)>0):
+            raise ValueError('something is not right here!')
+        # parent_id must be a single file
+        filepath, filesize = get_gd_info('gdrive info ' + parent_id + ' --bytes')
+        GDRIVE_FILELIST.append([parent_id, filepath, filesize])
+        return
+    
+    for child_file in child_filelist:
+        #print child_file
+        GDRIVE_FILELIST.append([child_file[0], child_file[1], child_file[3][:child_file[3].find(' ')]])    
+    
+    for child_dir in child_dirlist:
+        #print child_dir[1]
+        GDRIVE_DIRLIST.append([child_dir[0],child_dir[1]])
+        walk_gdrive_recursive(child_dir[0])
+
+
+#% functions for UPLOADING WITH GDRIVE
+
+def run_download_commmand(cmd_out):
+    
+    try_it = 0
+    while try_it < 4:
+        glist_out = try_try_again(cmd_out)
+
+        if(glist_out == 0):
+            try_it = try_it + 1            
+            if(try_it >= 4):
+                save_data_processed()
+                raise ValueError('*****TRIED 4 TIMES AND DID NOT WORK******...exiting program.')
+            
+            ss = 5.0**(try_it)
+            print time.ctime() + ': OPERATION FAILED....waiting ' + str(ss) + ' seconds then trying again'
+            sys.stdout.flush()
+            time.sleep(ss)
+            print time.ctime() + ': trying again [' + str(try_it) + ']'            
+            sys.stdout.flush()        
+            
+        else:
+            return glist_out
+
+def save_data_processed():
+    global gdDirID, SKIPPED_FILES, FILES_TO_RUN, FILES_TO_RUN_TOTAL, GDRIVE_directory_paths_ALL, GDRIVE_FILELIST, GDRIVE_DIRLIST, save_processedfiles_npz
+
+#    print '* ' + time.ctime() + ': saving processed directory data to npz file *' + save_processedfiles_npz[save_processedfiles_npz.rfind('/')+1:]
+    np.savez(save_processedfiles_npz, SKIPPED_FILES = SKIPPED_FILES, FILES_TO_RUN = FILES_TO_RUN, FILES_TO_RUN_TOTAL = FILES_TO_RUN_TOTAL, GDRIVE_directory_paths_ALL=GDRIVE_directory_paths_ALL)
+
+def save_data_basefiles():
+    global GDRIVE_FILELIST, GDRIVE_DIRLIST, all_local_nc_files, save_basefilelists_npz
+
+#    print '* ' + time.ctime() + ': saving local and google drive lists to npz file *' + save_basefilelists_npz[save_basefilelists_npz.rfind('/')+1:]
+    np.savez(save_basefilelists_npz, GDRIVE_FILELIST = GDRIVE_FILELIST, GDRIVE_DIRLIST = GDRIVE_DIRLIST, all_local_nc_files=all_local_nc_files)
+
+def load_npz(filename, var = None):
+
+    if var is None:
+        exec_command = 'with np.load( "' + filename + '" ) as data: globals().update(data)'
+        return exec_command                                 
+    else:
+        exec_command = 'with np.load( "' + filename + '" ) as data: globals().update({"' + var + '": data["' + var +'"]})'
+        return exec_command                                 
+
+
+#%%
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#                           STARTING REAL CODE NOW
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+#%% setup parsing code for user input
+parser = argparse.ArgumentParser()
+parser.add_argument('localDir', help = 'local directory where you want to download the data. Path should NOT contain a trailing backslash: e.g. correct = /Users/eabarnes/MISC')
+#parser.add_argument('gdDir', help = 'GD directory to look for files and sub-directories. Should NOT contain a trailing backslash: e.g. correct = BACKUP/DATA_REPO/CMIP5')
+parser.add_argument('gdDirID', help = 'GD ID to the directory or file you wish to restore/download.')
+parser.add_argument('--puwilo', default = False, action = 'store_true', help = 'pick-up-where-I-left-off, i.e. load all data files that are saved (default: False)')
+parser.add_argument('--loadbasefileonly', default = False, action = 'store_true', help = 'only load the file with local and GD directories saved (default: False)')
+parser.add_argument('--checkfilesize', default = False, action = 'store_true', help = 'check both the name and file size - if sizes differ, delete local file and download GD file (default: False)')
+parser.add_argument('--savefileDir', default = os.getcwd(), help = 'the base directory where to save the npz files that keep track of where things are (default: current working directory = os.cwd())')
+parser.add_argument('--dryrun', default = False, action= 'store_true', help = 'dry run of the command, so no files/directories are actually downloaded from GD (default: False)')
+args = parser.parse_args()
+
+localDir = args.localDir
+gdDirID = args.gdDirID
+
+# get the name of the GD directory/file associated with the gdDirID
+gdDir,ff = get_gd_info('gdrive info ' + gdDirID)
+
+global gdDir_ISFILE
+if(len(ff)>0):
+    gdDir_ISFILE = True
+else:
+    gdDir_ISFILE = False
+
+puwilo = args.puwilo
+loadbasefileonly = args.loadbasefileonly
+checkfilesize = args.checkfilesize
+savefileDir = args.savefileDir
+dryrun = args.dryrun
+
+if savefileDir and savefileDir[-1] != '/':
+     savefileDir = savefileDir + '/'
+
+
+#%% setup directory structures, main base file lists, and save files
+
+#  determine where to save files for --puwilo option
+save_basefilelists_npz = savefileDir + 'gdriveRESTORE_basefilelists_' + str(gdDirID) + '.npz'
+save_processedfiles_npz = savefileDir + 'gdriveRESTORE_processedfiles_' + str(gdDirID) + '.npz'
+
+# delete these files if --puwilo or --loadbasefileonly is not called
+if loadbasefileonly:
+    if os.path.isfile(save_processedfiles_npz):
+        os.remove(save_processedfiles_npz)
+        
+elif not puwilo:
+    if os.path.isfile(save_processedfiles_npz):
+        os.remove(save_processedfiles_npz)
+    if os.path.isfile(save_basefilelists_npz):        
+        os.remove(save_basefilelists_npz)
+
+#%% RUNNING MAIN CODE
+
+print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'    
+print time.ctime() + ': starting to analyze GoogleDrive:' + gdDir   
+print '------------------------------------------------------------------------------'
+
+if(dryrun):
+    print 'THIS IS A DRY RUN - NO FILES ARE BEING EXCHANGED'
+    print '------------------------------------------------------------------------------'
+
+print ''
+
+#%% Scanning Google Drive and local files
+
+# --------declare variables -----------
+all_local_nc_files = list()
+GDRIVE_FILELIST = list()
+GDRIVE_DIRLIST = list()
+GDRIVE_DIRLIST.append([gdDirID,gdDir])
+# --------declare variables -----------
+
+# load the BASEFILES if the file exists, otherwise, run again
+if (puwilo and os.path.isfile(save_basefilelists_npz)) or (loadbasefileonly and os.path.isfile(save_basefilelists_npz)):
+    print time.ctime() + ': loading basefilelist saved file ' + save_basefilelists_npz[save_basefilelists_npz.rfind('/')+1:]
+    exec(load_npz(save_basefilelists_npz))
+    
+    GDRIVE_FILELIST = list(GDRIVE_FILELIST)
+    GDRIVE_DIRLIST = list(GDRIVE_DIRLIST)
+    all_local_nc_files = list(all_local_nc_files)
+    
+else:
+    #% get local files on your local machine
+    if(os.path.isfile(localDir)):
+        all_local_nc_files = [localDir]
+    elif(os.path.isdir(localDir)):
+        print time.ctime() + ': getting the local directory structure.......'
+        all_local_nc_files = [y for x in os.walk(localDir) for y in glob.glob(os.path.join(x[0], '*'))]
+        print ''
+    else:
+        raise ValueError('localDir must be a file or a directory! stopping...')
+
+    # get Google drive structure
+    print time.ctime() + ': getting the Google Drive directory structure.......'
+    walk_gdrive_recursive(gdDirID)
+    
+    save_data_basefiles()
+   
+#%% process the new files and directories (make comparison)
+
+# --------declare variables -----------
+FILES_TO_RUN = list()
+FILES_TO_RUN_TOTAL = list()
+SKIPPED_FILES = list()
+GDRIVE_directory_paths_ALL = list()
+# --------declare variables -----------
+    
+# load the processed if the file exists, otherwise, run again
+if(puwilo and os.path.isfile(save_processedfiles_npz)):
+    print time.ctime() + ': loading processed data file ' + save_processedfiles_npz[save_processedfiles_npz.rfind('/')+1:]
+    exec(load_npz(save_processedfiles_npz))
+    
+    FILES_TO_RUN = list(FILES_TO_RUN)
+    FILES_TO_RUN_TOTAL = list(FILES_TO_RUN_TOTAL)
+    SKIPPED_FILES = list(SKIPPED_FILES)
+    GDRIVE_directory_paths_ALL = list() # will remake later
+
+else:
+    #% determine directories to make and files to upload
+    print time.ctime() + ': performing directory comparison between local and Google Drive.......'
+    
+    GDRIVE_directory_paths = [y[1] for y in GDRIVE_DIRLIST]
+    
+    #find relative paths of local files
+    LOCAL_FILELIST = [x[x.find(localDir)+len(localDir):] for x in all_local_nc_files if not os.path.isdir(x)]
+    LOCAL_DIRLIST = [x[x.find(localDir)+len(localDir):] for x in all_local_nc_files if os.path.isdir(x)]
+                        
+    for gd_filename in GDRIVE_FILELIST:
+    
+        if(gdDir_ISFILE):
+            file_exists = [x for x in LOCAL_FILELIST if gdDir[:gdDir.rfind('/')] + x == gd_filename[1]]
+        else:
+            file_exists = [x for x in LOCAL_FILELIST if gdDir + x == gd_filename[1]]
+        
+        if len(file_exists) > 0 and not checkfilesize:
+            #print 'file exists'
+            continue
+        elif len(file_exists) > 0 and checkfilesize:
+            
+            gd_filesize = gd_filename[2]
+            local_filesize = str(os.path.getsize(localDir + file_exists[0]))
+
+            if gd_filesize == local_filesize:
+                #print 'file exists and are the same size'
+                continue
+            else:
+                print ''
+                print localDir + file_exists[0]
+                print 'file exists locally but is not the same size as on GD - removing local file - will restore new local file momentarily'
+                if(not(dryrun)):
+                    os.remove(localDir + file_exists[0])
+        
+        # save GD file to restore
+        FILES_TO_RUN.append(gd_filename)
+
+    # save processed lists
+    if(not(dryrun)):
+        print ''
+        save_data_processed()
+        print ''
+        
+#%% upload new files to Google Drive via gdrive
+N = len(FILES_TO_RUN)
+print ''
+print time.ctime() + ': Restoring ' + str(N) + ' files from Google Drive.....'
+print ''
+sys.stdout.flush()    
+
+fcount = 1
+
+while len(FILES_TO_RUN) > 0:
+    
+    #create local directory if it does not exist
+    tobe_restored_local_file = localDir + FILES_TO_RUN[0][1][len(gdDir):]
+    tobe_restored_local_dir = localDir + FILES_TO_RUN[0][1][len(gdDir):FILES_TO_RUN[0][1].rfind('/')+1]
+    if not os.path.exists(tobe_restored_local_dir):
+        if(not(dryrun)):
+            os.makedirs(tobe_restored_local_dir)
+    
+    cmd_run = 'gdrive download ' + FILES_TO_RUN[0][0] + ' --path ' + tobe_restored_local_dir 
+    
+    print '* ' + time.ctime() + ': restoring file ' + str(fcount) + '/' + str(N) + ' *'
+    print FILES_TO_RUN[0][1] + ' --> '
+    print tobe_restored_local_file
+    
+    if(not(dryrun)):
+        output = run_download_commmand(cmd_run)
+    
+        if('SkippedFile' in output):
+            print '--skipped this file.'
+            SKIPPED_FILES.append(FILES_TO_RUN[0])
+    
+    print time.ctime() + ': complete.......'   
+    print ''    
+    sys.stdout.flush()
+ 
+    fcount = fcount + 1
+    
+    del FILES_TO_RUN[0]
+    
+    if(not(dryrun)):
+        # save FILES_TO_RUN in case it crashes...
+        save_data_processed()
+    
+if(not(dryrun)):
+    print ''    
+    save_data_processed()
+    if(len(SKIPPED_FILES)>0):
+        print ''
+        print 'The following files were skipped due to one reason or another...'
+        for x in SKIPPED_FILES: print x
+print '------------------------------------------------------------------------------'
+print time.ctime() + ': code complete.'
+print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'    
+
+
+#%% this file is over
+

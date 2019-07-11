@@ -3,7 +3,9 @@
 --fields=+t
 --excmd=number
 --langdef=latex
---langmap=latex:.tex,vim:+.vimrc,sh:+.bashrc
+--langdef=markdown
+--langmap=latex:.tex,markdown:.md,vim:+.vimrc,sh:+.bashrc
+--regex-markdown=/^#[ \t](.*$)/\1/h,heading,headings/
 --regex-latex=/^[^%]*\\tableofcontents/.Table of Contents/s,toc/
 --regex-latex=/^[^%]*\\frontmatter/.Frontmatter/s,frontmatter/
 --regex-latex=/^[^%]*\\mainmatter/.Mainmatter/s,mainmatter/

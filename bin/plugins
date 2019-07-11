@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# I use this to bulk change the README text for my vim plugins
+for dir in ~/vim-*; do
+  cd $dir
+  echo "Plugin: ${dir##*/}"
+#   gsed -i -n '/# Installation/q;p' $dir/README.md # the -n prevents implicit printing, and p required to print lines
+#   echo '
+# # Installation
+# Install with your favorite [plugin manager](https://vi.stackexchange.com/questions/388/what-is-the-difference-between-the-vim-plugin-managers).
+# I highly recommend the [`vim-plug`](https://github.com/junegunn/vim-plug) manager,
+# in which case you can install this plugin by adding
+# ```
+# Plug '"'lukelbd/${dir##*/}'"'
+# ```
+# to your `~/.vimrc`.
+# ' >>$dir/README.md
+#   git add --all && git commit -m "Installation instructions"
+  git add --all && git commit -m "Readme"
+  git pull
+  git push
+done
