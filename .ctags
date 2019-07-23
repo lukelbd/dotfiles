@@ -11,6 +11,7 @@
 --regex-latex=/^[^%]*\\mainmatter/.Mainmatter/s,mainmatter/
 --regex-latex=/^[^%]*\\backmatter/.Backmatter/s,backmatter/
 --regex-latex=/^[^%]*\\bibliography\{/.Bibliography/s,bibliography/
+--regex-latex=/^[^%]*\\begin[[:space:]]*(\[[^]]*\])?\{block\*?\}[[:space:]]*\{([^}]+)\}/.\2/s,block/
 --regex-latex=/^[^%]*\\part[[:space:]]*(\[[^]]*\])?[[:space:]]*\{([^}]+)\}/.\2/s,part/
 --regex-latex=/^[^%]*\\part[[:space:]]*\*[[:space:]]*\{([^}]+)\}/.\1/s,part/
 --regex-latex=/^[^%]*\\chapter[[:space:]]*(\[[^]]*\])?[[:space:]]*\{([^}]+)\}/.\2/s,chapter/

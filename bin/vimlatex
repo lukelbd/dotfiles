@@ -41,10 +41,17 @@ done
 ! [ -r "$filename" ] && echo "Error: File \"$filename\" does not exist" && exit 1
 ! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils" && exit 1
 
-# Initial stuff
+# Get terminal program
+if [ -z "$TERM_PROGRAM" ]; then
+  terminal="MacVim"
+elif [[ "$TERM_PROGRAM" =~ "Apple_Terminal" ]]; then # or e.g. Apple_Terminal2.0
+  terminal="Terminal"
+else
+  terminal="$TERM_PROGRAM"
+fi
+
+# Get paths
 templates="$HOME/latex" # location of LaTeX templates and style files
-[ "$TERM_PROGRAM" == "Apple_Terminal" ] && terminal="Terminal" || terminal="$TERM_PROGRAM"
-[ -z "$terminal" ] && terminal="MacVim" # probably means we are running from GUI program
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   directory="${filename%/*}"    # trim shortest pattern matching <stuff>/*, keep "stuff"
   filename="${filename##*/}"    # trim longest pattern matching */<stuff>, keep "stuff"
@@ -276,11 +283,11 @@ fi
 # Open the files
 echo "Opening files"
 if $texdiff; then
-  open -a "$viewer" "$dfilestem.pdf" # open difference
+  open -a "$viewer" "$dfilestem.pdf" & # open difference
 elif $tex2docx; then
-  open -a "pages" "$filestem.docx" # open document
+  open -a "pages" "$filestem.docx" & # open document
 else
-  open -a "$viewer" "$filestem.pdf" # open new pdf
+  open -a "$viewer" "$filestem.pdf" & # open new pdf
 fi
-open -a $terminal # bring terminal back into focus
+open -a "$terminal" & # bring terminal back into focus
 
