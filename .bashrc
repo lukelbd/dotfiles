@@ -588,7 +588,8 @@ alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]
 # First use git as the difference engine, disable color
 gdiff() {
   [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
-  git --no-pager diff --no-index "$1" "$2"
+  git diff --no-index --color=always "$1" "$2"
+  # git --no-pager diff --no-index "$1" "$2"
   # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
   #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
 }
@@ -641,20 +642,21 @@ idiff() {
 # Merge fileA and fileB into merge.{ext}
 # See this answer: https://stackoverflow.com/a/9123563/4970632
 merge() {
-  [ $# -ne 2 ] && echo "Usage: idiff FILE1 FILE2" && return 1
+  [ $# -ne 2 ] && echo "Usage: merge FILE1 FILE2" && return 1
   [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
-  local ext # no extension
+  local ext out # no extension
   if [[ ${1##*/} =~ '.' || ${2##*/} =~ '.' ]]; then
     [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
     local ext=.${1##*.}
   fi
+  out=merge$ext
   touch tmp$ext # use empty file as the 'root' of the merge
   cp $1 backup$ext
   git merge-file $1 tmp$ext $2 # will write to file 1
-  mv $1 merge$ext
+  mv $1 $out
   mv backup$ext $1
   rm tmp$ext
-  echo "Files merged into \"merge$ext\"."
+  echo "Files merged into \"$out\"."
 }
 
 # Convert bytes to human
@@ -1194,23 +1196,19 @@ namelist() {
 # Summaries first
 nchelp() {
   echo "Available commands:"
-  echo "ncdump ncinfo ncglobal
-        ncvarsinfo ncdimsinfo
-        ncin ncitems ncvars ncdims
+  echo "ncinfo ncglobal ncvars ncdims
+        ncin nclist ncvarlist ncdimlist
         ncvarinfo ncvardump ncvartable ncvartable2" | column -t
-}
-ncdump() { # almost always want this; access old versions in functions with backslash
-  [ $# -ne 1 ] && echo "Usage: ncdump FILE" && return 1
-  command ncdump -h "$@" | less
 }
 ncglobal() { # show just the global attributes
   [ $# -ne 1 ] && echo "Usage: ncglobal FILE" && return 1
   command ncdump -h "$@" | grep -A100 ^// | less
 }
 ncinfo() { # only get text between variables: and linebreak before global attributes
+  # command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
   [ $# -ne 1 ] && echo "Usage: ncinfo FILE" && return 1
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
+  command ncdump -h "$1" | sed '1,1d;$d' | less # trims first and last lines; do not need these
 }
 ncvars() { # the space makes sure it isn't another variable that has trailing-substring
   # identical to this variable, -A prints TRAILING lines starting from FIRST match,

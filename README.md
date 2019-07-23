@@ -19,7 +19,7 @@ map prefixes:
 * `<C-o>`, `<C-p>`: Insert mode. Used for inserting LaTeX citations.
 * `<C-s>`, `<C-z>`: Insert mode. Used for surrounding cursor with delimiters and inserting snippets or symbols.
 
-Also check out my repositories starting with `vim-` for some handy custom plugins.
+Also check out my repositories starting with `vim-` for some custom plugins.
 
 ## Misc config
 You can find various functions in `bin`,

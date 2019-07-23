@@ -845,10 +845,10 @@ nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>
 nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
 "Spell maps
 nnoremap ;m z=
-nnoremap <buffer> ;n ]S
-nnoremap <buffer> ;N [S
-nnoremap <Plug>forwardspell  bh]S:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
-nnoremap <Plug>backwardspell el[S:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
+nnoremap <buffer> ;n ]s
+nnoremap <buffer> ;N [s
+nnoremap <Plug>forwardspell  bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
+nnoremap <Plug>backwardspell el[s:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
 nmap ;d <Plug>forwardspell
 nmap ;D <Plug>backwardspell
 "Add/remove from dictionary
@@ -1623,16 +1623,35 @@ endif
 "###############################################################################
 "BUFFER WRITING/SAVING
 "NOTE: Update only writes if file has been changed
-augroup saving
+augroup buffer
 augroup END
+"Helper functions
+function! s:tab_close()
+  let ntabs=tabpagenr('$')
+  let islast=(tabpagenr('$') - tabpagenr())
+  if ntabs==1
+    qa
+  else
+    tabclose
+    if !islast
+      silent! tabp
+    endif
+  endif
+endfunction
+function! s:window_close()
+  let ntabs=tabpagenr('$')
+  let islast=(tabpagenr('$')==tabpagenr())
+  q
+  if ntabs!=tabpagenr('$') && !islast
+    silent! tabp
+  endif
+endfunction
 "Save and quit all
-nnoremap <silent> <C-a> :qa<CR> 
 nnoremap <silent> <C-s> :update<CR>
-"Below maps test whether the :q action closed the entire tab
-nnoremap <silent> <C-q> :let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>:if tabpagenr('$')==1
-  \ \| qa \| else \| tabclose \| if !g:tabpagelast \| silent! tabp \| endif \| endif<CR>
-nnoremap <silent> <C-w> :let g:tabpagenr=tabpagenr('$')<CR>:let g:tabpagelast=(tabpagenr('$')==tabpagenr())<CR>
-  \ :q<CR>:if g:tabpagenr!=tabpagenr('$') && !g:tabpagelast \| silent! tabp \| endif<CR>
+nnoremap <silent> <C-a> :qa<CR>
+"Maps that test whether the :q action closed the entire tab
+nnoremap <silent> <C-w> :call <sid>window_close()<CR>
+nnoremap <silent> <C-q> :call <sid>tab_close()<CR>
 "Terminal maps, map Ctrl-c to literal keypress so it does not close window
 "WARNING: Do not map escape or cannot send iTerm-shortcuts with escape codes!
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
