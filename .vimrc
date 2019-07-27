@@ -1265,7 +1265,7 @@ if PlugActive("syntastic")
   let g:syntastic_auto_jump = 0 "disable jumping to errors
   "Choose syntax checkers
   let g:syntastic_tex_checkers=['lacheck']
-  let g:syntastic_python_checkers=['pyflakes'] "pylint very slow; pyflakes light by comparison
+  let g:syntastic_python_checkers=['python'] "pylint very slow; pyflakes light by comparison
   let g:syntastic_fortran_checkers=['gfortran']
   let g:syntastic_vim_checkers=['vimlint']
   "Colors

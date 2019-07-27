@@ -1560,9 +1560,12 @@ fi
 ################################################################################
 # Shell integration; iTerm2 feature only
 ################################################################################
+# Make sure it was not already installed, and we are not inside vim :terminal
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-# They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
+if [ -n "$VIMRUNTIME" ]; then
+  unset PROMPT_COMMAND
+elif [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
+  # && [ -z "$VIMRUNTIME" ]; then
   _bashrc_message "Enabling shell integration"
   # First enable
   source ~/.iterm2_shell_integration.bash
