@@ -24,25 +24,33 @@ let g:tex_no_error=1
 function! s:latex_background(...)
   let opts=(a:0 ? a:1 : '') "flags
   let logfile=expand('%:t:r').'.exe'
-  let tabnames=map(tabpagebuflist(), 'expand("#".v:val.":t")')
   "Jump to logfile if it is open, else open one
-  let idx=index(tabnames, logfile)
   silent! call system('rm '.logfile)
   silent! call system('touch '.logfile)
-  if idx==-1
+  let lognum=bufwinnr(logfile)
+  if lognum==-1
     silent! exe string(winheight('.')/4).'split '.logfile
-    setlocal autoread "open file and set autoread before starting script!
-    exe "normal! \<C-w>\<C-p>"
+    " setlocal autoread "open file and set autoread before starting script!
+    silent! exe winnr('#').'wincmd w'
   else
-    exe "normal! \<C-w>\<C-p>"
-    silent! e
-    exe "normal! \<C-w>\<C-p>"
+    silent! exe bufwinnr(logfile)."wincmd w"
+    silent! edit +$
+    silent! exe winnr('#').'wincmd w'
   endif
   "Run function
   silent! call system('~/bin/vimlatex '.shellescape(@%).' '.opts.' &>'.logfile.' &')
   echom "Running vimlatex in background."
 endfunction
+"Refresh log
+function! s:latex_refresh()
+  let logfile=expand('%:t:r').'.exe'
+  silent! exe bufwinnr(logfile)."wincmd w"
+  silent! edit +$
+  silent! exe winnr('#').'wincmd w'
+endfunction
+"Maps
 noremap <silent> <buffer> <C-z> :call <sid>latex_background()<CR>
 noremap <silent> <buffer> <Leader>z :call <sid>latex_background(' --diff')<CR>
 noremap <silent> <buffer> <Leader>Z :call <sid>latex_background(' --word')<CR>
+noremap <silent> <buffer> <Leader>l :call <sid>latex_refresh()<CR>
 

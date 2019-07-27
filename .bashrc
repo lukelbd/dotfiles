@@ -83,8 +83,7 @@ if $_macos; then
     rvm use ruby 1>/dev/null
   fi
 
-  # NCL NCAR command language (had trouble getting it to work on Mac with conda,
-  # but on Linux distributions seems to work fine inside anaconda)
+  # NCL NCAR command language, had trouble getting it to work on Mac with conda
   # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
   # actually ends up in above path after brew install gcc49; and must install
   # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
@@ -787,14 +786,14 @@ isempty() {
 }
 mount() {
   # Mount remote server by name (using the names declared above)
-  local server address
+  local server address location
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
   [ $# -ne 1 ] && echo "Usage: mount SERVER_NAME" && return 1
   # Detect aliases
   server="$1"
   location="$server"
   case "$server" in
-    glade) server=cheyenne ;;
+    glade)  server=cheyenne ;;
     mdata?) server=monde ;;
   esac
   # Get address
@@ -807,7 +806,6 @@ mount() {
   fi
   # Directory on remote server
   # NOTE: Using tilde ~ does not seem to work
-  local dir
   case $location in
     glade)     location="/glade/scratch/davislu" ;;
     mdata?)    location="/${location}/ldavis" ;; # mdata1, mdata2, ...
@@ -821,7 +819,6 @@ mount() {
   # -oattr_timeout=115200 \
   # -ociphers=arcfour \
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
-  # -oauto_cache,reconnect,defer_permissions \
   # NOTE: The cache timeout prevents us from detecting new files!
   # -ocache_timeout=60 -oattr_timeout=115200 \
   command sshfs "$address:$location" "$HOME/$server" \
@@ -830,15 +827,13 @@ mount() {
     -ovolname="$server"
 }
 unmount() { # name 'unmount' more intuitive than 'umount'
-  # WARNING: Need to be super careful server is not empty and we accidentally rm -r $HOME!
-  # WARNING: Do not touch this shit, or isempty function!
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
   server="$1"
   [ -z "$server" ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
   echo "Server: $server"
   command umount "$HOME/$server"
   if [ $? -ne 0 ]; then
-    command diskutil umount "$HOME/$server"
+    diskutil umount force "$HOME/$server"
     [ $? -ne 0 ] && echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"." && return 1
   elif ! isempty "$HOME/$server"; then
     echo "Warning: Leftover mount folder appears to be non-empty!" && return 1
@@ -855,7 +850,6 @@ ip() {
   # See this: https://stackoverflow.com/q/13322485/4970632
   if ! $_macos; then
     command ip route get 1 | awk '{print $NF; exit}'
-    # command ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'
   # See this: https://apple.stackexchange.com/q/20547/214359
   else
     ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
@@ -1064,7 +1058,8 @@ _jt() {
       midway*) jupyter_theme=onedork  ;;
       *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
     esac
-  else jupyter_theme="$1"
+  else
+    jupyter_theme="$1"
   fi
   if [ $# -lt 2 ]; then
     export jupyter_font="cousine" # look up available ones online
@@ -1073,10 +1068,9 @@ _jt() {
   fi
   # Make sure theme is valid
   themes=($(jt -l | sed '1d'))
-  [[ ! " ${themes[@]} " =~ " $jupyter_theme " ]] && \
+  ! [[ " ${themes[@]} " =~ " $jupyter_theme " ]] && \
     echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
-  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 \
-    -t $jupyter_theme -f $jupyter_font
+  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t $jupyter_theme -f $jupyter_font
 }
 
 # This function will establish two-way connection between server and local macbook
@@ -1195,10 +1189,10 @@ namelist() {
 
 # NetCDF tools (should just remember these)
 # NCKS behavior very different between versions, so use ncdump instead
-#   * note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
-#     the homebrew install location 'brew tap homebrew/science, brew install cdo'
-#   * this is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
-#     so just don't install it
+# * Note if HDF4 is installed in your anaconda distro, ncdump will point to *that location* before
+#   the homebrew install location 'brew tap homebrew/science, brew install cdo'
+# * This is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
+#   so just don't install it
 # Summaries first
 nchelp() {
   echo "Available commands:"
@@ -1621,8 +1615,8 @@ fi
 _title_file=~/.title
 _title_set() { # default way is probably using Cmd-I in iTerm2
   # Record title from user input, or as user argument
-  ! $_macos && echo "Error: Can only set title from mac." && return 1
-  [ -z "$TERM_SESSION_ID" ] && echo "Error: Not an iTerm session." && return 1
+  ! $_macos && return 1
+  [ -z "$TERM_SESSION_ID" ] && return 1
   if [ -n "$1" ]; then # warning: $@ is somehow always non-empty!
     _title="$@"
   else
@@ -1684,7 +1678,9 @@ $_macos && { # first the MacOS options
   alias forecast="curl wttr.in/Fort\ Collins" # list weather information
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
-  [[ $BASH_VERSION =~ ^[4-9].* ]] || chsh -s /usr/local/bin/bash # change current shell to Homebrew-bash
+  if [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]]; then
+    chsh -s /usr/local/bin/bash # change shell to Homebrew-bash, if not in MacVim session
+  fi
   }
 [ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
 _bashrc_loaded=true

@@ -16,6 +16,7 @@
 let mapleader="\<Space>"
 set confirm "require confirmation if you try to quit
 set nocompatible "always use the vim defaults
+set cursorline
 set tabpagemax=100 "allow opening shit load of tabs at once
 set redrawtime=5000 "sometimes takes a long time, let it happen
 set maxmempattern=50000 "from 1000 to 10000
@@ -685,8 +686,6 @@ nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :e<CR>
 "Redraw screen
 nnoremap <silent> <Leader>R :redraw!<CR>
-"Trigger autoread, used mostly for log files
-nnoremap <silent> <Leader>l :checktime<CR>
 
 "###############################################################################
 "GIT GUTTER AND FUGITIVE
@@ -1828,7 +1827,7 @@ augroup END
 "Simple setup function
 function! s:simple_setup()
   nnoremap <silent> <buffer> q :q<CR>
-  setlocal nolist nonumber norelativenumber nospell
+  setlocal nolist nonumber norelativenumber nospell nocursorline colorcolumn=
 endfunction
 "For popup windows
 function! s:popup_setup()
@@ -2171,7 +2170,6 @@ highlight MatchParen ctermfg=NONE ctermbg=Blue
 "Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
 "background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
 "gray, and 'ANSI black bold' to black). Note 'lightgray' is just normal white
-set cursorline
 highlight CursorLine   cterm=NONE ctermbg=Black
 highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 "Column stuff; color 80th column, and after 120

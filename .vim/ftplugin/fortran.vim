@@ -16,7 +16,7 @@ let b:fortran_dialect='f08' "can be F or f08
 function! s:fortranrun()
   write
   if !exists('g:fortran_compiler')
-    let g:fortran_compiler="pgf90"
+    let g:fortran_compiler="gfortran"
   endif
   let dir_path=shellescape(expand('%:h'))
   let f90_path=shellescape(expand('%:t'))
