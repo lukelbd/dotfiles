@@ -147,7 +147,7 @@ noremap <expr> " (v:count==9 ? '<Esc>:RemoveHighlights<CR>' :
 "Repeat macro with , like . repeats last command
 map @ <Nop>
 noremap , @a
-noremap <silent> <expr> q b:recording ?
+noremap <silent> <expr> Q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Redo map to capital U; means we cannot 'undo line', but who cares
 nnoremap U <C-r>
@@ -1927,7 +1927,7 @@ function! s:copytoggle(...)
     echo "Copy mode disabled."
   endif
 endfunction
-nnoremap <C-c> :call <sid>copytoggle()<CR>
+nnoremap <C-y> :call <sid>copytoggle()<CR>
 command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 "yank because from Vim, we yank; but remember, c-v is still pastemode
 "-nargs=? means 0 or 1
