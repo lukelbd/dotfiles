@@ -1491,23 +1491,16 @@ unannotate() {
 }
 
 # Rudimentary wordcount with detex
+# The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
-  # Below worked for certain templates:
-  # Explicitly delete begin/end environments because detex won't pick them up
-  # and use the equals sign to exclude equations
-  # detexed="$(cat "$1" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
-  #   | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | grep -v .pdf | grep -v 'fig[0-9]' \
-  #   | grep -v 'empty' | grep -v '^\s*$')"
-  # Below worked for BAMS template, gets count between end of abstract
-  # and start of methods
-  # The -e flag to ignore certain environments (e.g. abstract environment)
-  local detexed="$(cat "$1" | \
-    detex -e 'tabular,align,equation,align*,equation*' | grep -v .pdf | grep -v 'fig[0-9]')"
+  local detexed="$(cat "$1" \
+    | detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
+    | grep -v .pdf | grep -v 'fig[0-9]')"
   echo "$detexed" | xargs # print result in one giant line
   echo "$detexed" | wc -w # get word count
 }
 
-# ***Other Tools*** are "impressive" and "presentation", and both should be in bin
+# Other tools are "impressive" and "presentation", and both should be in bin
 # Homebrew presentation software; below installs it, from http://pygobject.readthedocs.io/en/latest/getting_started.html
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
 alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"

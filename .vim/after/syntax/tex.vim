@@ -1,4 +1,4 @@
-" Donwloaded: 2018-02-20
+" Downloaded: 2018-02-20
 " vimtex - LaTeX plugin for Vim
 " Maintainer: Karl Yngve Lervåg
 " Email:      karl.yngve@gmail.com

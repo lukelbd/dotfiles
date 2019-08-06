@@ -52,6 +52,7 @@ fi
 
 # Get paths
 templates="$HOME/latex" # location of LaTeX templates and style files
+echo "Filename: $filename"
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   directory="${filename%/*}"    # trim shortest pattern matching <stuff>/*, keep "stuff"
   filename="${filename##*/}"    # trim longest pattern matching */<stuff>, keep "stuff"

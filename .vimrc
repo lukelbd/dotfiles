@@ -52,6 +52,13 @@ set complete-=k complete+=k "add dictionary search, as per dictionary option
 set splitright "splitting behavior
 set splitbelow
 set nospell spelllang=en_us spellcapcheck= "spellcheck off by default
+set hlsearch incsearch "show match as typed so far, and highlight as you go
+set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
+set foldmethod=expr "fold methods
+set foldlevel=99
+set foldlevelstart=99
+set foldnestmax=10 "avoids weird things
+set foldopen=tag,mark "options for opening folds on cursor movement; disallow block
 if exists('&breakindent')
   set breakindent "map indentation when breaking
 endif
@@ -1944,13 +1951,10 @@ augroup search_replace
   au InsertLeave * set ignorecase
   au FileType bib,tex call <sid>tex_replace()
 augroup END
-set hlsearch incsearch "show match as typed so far, and highlight as you go
-set noinfercase ignorecase smartcase "smartcase makes search case insensitive, unless has capital letter
-"Will use the 'g' prefix for these, because why not
-"see https://unix.stackexchange.com/a/12814/112647 for idea on multi-empty-line map
-"Delete commented text; very useful when sharing manuscripts
-noremap <silent> <expr> \c ':s/\(^\s*'.Comment().'.*$\n'
-  \.'\\|^.*\S*\zs\s\+'.Comment().'.*$\)//g \| noh<CR>'
+"Delete commented text
+"WARNING: For some reason search screws up when using \(\) groups, maybe
+"because first parts of match are identical?
+noremap <expr> <silent> \c ':s/^\s*'.Comment().'.*$\n//ge \| s/\s\s*'.Comment().'.*$//ge \| noh<CR>'
 "Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Replace consecutive spaces on current line with one space, if they're not part of indentation
 noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
@@ -2007,16 +2011,6 @@ let g:SimpylFold_fold_import=0
 let g:SimpylFold_fold_imports=0
 let g:SimpylFold_fold_docstring=0
 let g:SimpylFold_fold_docstrings=0
-"Basic settings
-" set nofoldenable
-set foldmethod=expr
-set foldlevel=99
-set foldlevelstart=99
-"More options
-" set foldlevel=2
-set foldnestmax=10 "avoids weird things
-set foldopen=tag,mark "options for opening folds on cursor movement; disallow block
-  "i.e. percent motion, horizontal motion, insert, jump
 "Folding maps
 "Delete all folds; delete fold at cursor is zd
 nnoremap zD zE
