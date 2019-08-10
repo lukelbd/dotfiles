@@ -154,6 +154,7 @@ noremap <expr> " (v:count==9 ? '<Esc>:RemoveHighlights<CR>' :
 "Repeat macro with , like . repeats last command
 map @ <Nop>
 noremap , @a
+noremap q <Nop>
 noremap <silent> <expr> Q b:recording ?
   \ 'q<Esc>:let b:recording=0<CR>' : 'qa<Esc>:let b:recording=1<CR>'
 "Redo map to capital U; means we cannot 'undo line', but who cares
@@ -1673,22 +1674,22 @@ augroup open
 augroup END
 function! s:fzfopen_run(path)
   "Initial stuff
-  let path=a:path
-  if path==''
-    let path='.'
-  elseif path[len(path)-1]=='/'
-    let path=path[:len(path)-2]
+  if a:path==''
+    let g:fzfopen_next='.'
+  else
+    let g:fzfopen_next=a:path
   endif
-  if !filereadable(path) && !isdirectory(path) "create new file!
-    exe 'tabe '.path
+  let g:fzfopen_next=substitute(fnamemodify(g:fzfopen_next, ':p'), '/$', '', '')
+  if !isdirectory(g:fzfopen_next) "create new file or open current one!
+    exe 'tabe '.g:fzfopen_next
     return
   endif
   "Set global variables
-  let g:fzfopen_next=path "if is already a path we skip this!
   while isdirectory(g:fzfopen_next)
     let g:fzfopen_prev=g:fzfopen_next
     call fzf#run({'source':s:fzfopen_files(g:fzfopen_next), 'options':'--no-sort', 'sink':function('s:fzfopen_select'), 'down':'~30%'})
     if g:fzfopen_prev==g:fzfopen_next "do nothing, user selected nothing
+      echom "Exact same!!! ".g:fzfopen_next
       return
     endif
   endwhile
@@ -1698,14 +1699,20 @@ endfunction
 command! -nargs=? -complete=file Open call <sid>fzfopen_run(<q-args>)
 "Function that generates list of files in directory
 function! s:fzfopen_files(path)
-  let path=fnamemodify(a:path, ':t') "indicate directory we are referring to!
-  let files=split(glob(a:path.'/*'),'\n') + split(glob(a:path.'/.?*'),'\n') "the ? ignores the current directory '.'
-  return map(files, '"'.path.'/".fnamemodify(v:val, ":t")')
+  let folder=substitute(fnamemodify(a:path, ':p'), '/$', '', '') "absolute path
+  let files=split(glob(folder.'/*'),'\n') + split(glob(folder.'/.?*'),'\n') "the ? ignores the current directory '.'
+  return map(files, '"'.fnamemodify(folder, ':t').'/".fnamemodify(v:val, ":t")')
 endfunction
 "Set current file to 'previous file' (i.e. the directory) plus selected file basename
+"TODO: Fix fzf in terminal to add the previous direcotry as an option
 function! s:fzfopen_select(item)
   if a:item!=''
-    let g:fzfopen_next=g:fzfopen_next.'/'.fnamemodify(a:item, ':t')
+    let tail=fnamemodify(a:item, ':t')
+    if tail=='..' "fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+      let g:fzfopen_next=fnamemodify(g:fzfopen_next, ':h') "head of current directory
+    else
+      let g:fzfopen_next=g:fzfopen_next.'/'.tail
+    endif
   endif
 endfunction
 "Maps for opening file in current directory, and opening file in some input directory
