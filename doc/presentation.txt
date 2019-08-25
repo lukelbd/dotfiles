@@ -1,3 +1,0 @@
-Note this script is a great example of how to effectively parse
-shell arguments in python. Always thought argParser was weird, but
-this scripts seems to avoid using it.

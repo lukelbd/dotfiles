@@ -1,5 +1,5 @@
 ".vimrc
-"###############################################################################
+"##############################################################################
 " A fancy vimrc that does all sorts of magical things.
 " NOTE: Have iTerm map some ctrl+key combinations that would otherwise
 " be impossible to the F1, F2 keys. Currently they are:
@@ -10,7 +10,7 @@
 "     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
 " Also use Karabiner 'map Ctrl-j/k/h/l to arrow keys', so be aware that if
 " you map those keys in Vim, should also map arrows.
-"###############################################################################
+"##############################################################################
 "IMPORTANT STUFF and SETTINGS
 "First the settings
 let mapleader="\<Space>"
@@ -99,7 +99,7 @@ if !g:has_repeat
   sleep 1
 endif
 
-"###############################################################################
+"##############################################################################
 "CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 "Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 "disabling other stuff we want e.g. syntax highlighting
@@ -219,7 +219,8 @@ vnoremap p "_dP
 vnoremap P "_dP
 "Navigation
 "These used to be part of idetools or textools plugins, but too esoteric
-nnoremap <CR> gd
+"TODO: Integrate tags plugin with vim so we can use ctrl-]
+" nnoremap <CR> <C-]>
 noremap <expr> <silent> gc search('^\ze\s*'.Comment().'.*$', '').'gg'
 noremap <expr> <silent> gC search('^\ze\s*'.Comment().'.*$', 'b').'gg'
 noremap <expr> <silent> ge search('^\ze\s*$', '').'gg'
@@ -235,7 +236,7 @@ for pair in ['r[', 'a<', 'c{']
   call s:alias(pair[0], pair[1])
 endfor
 
-"###############################################################################
+"##############################################################################
 "INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
 "Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
@@ -270,7 +271,7 @@ inoremap <expr> <Down> !pumvisible() ? "\<Down>" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelDown> !pumvisible() ? "" : <sid>tab_increase()."\<C-n>"
 inoremap <expr> <ScrollWheelUp>   !pumvisible() ? "" : <sid>tab_decrease()."\<C-p>"
 
-"###############################################################################
+"##############################################################################
 "GLOBAL FUNCTIONS, FOR VIM SCRIPTING
 "Test plugin status
 function! PlugActive(key)
@@ -338,7 +339,7 @@ imap <expr> <C-z> Suppress('<C-z>', 'i')
 imap <expr> <C-o> Suppress('<C-o>', 'i')
 imap <expr> <C-p> Suppress('<C-p>', 'i')
 
-"###############################################################################
+"##############################################################################
 "DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 "First mouse stuff. Make sure we are using *vim", not vi (use the latter for quickly examining contents).
 if v:version >= 500
@@ -370,14 +371,14 @@ if exists("&t_EI")
   endif
 endif
 
-"###############################################################################
+"##############################################################################
 "GUI OPTIONS
 if has("gui_running")
   set guicursor+=a:blinkon0 "disable blinking for GUI version
   set number relativenumber guioptions= "no scrollbars
 endif
 
-"###############################################################################
+"##############################################################################
 "CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
 function! s:commandline_check()
   nnoremap <buffer> <silent> q :q<CR>
@@ -397,7 +398,7 @@ nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
 
-"###############################################################################
+"##############################################################################
 "WILDMENU OPTIONS
 set wildmenu
 set wildmode=longest:list,full
@@ -414,11 +415,11 @@ endfunction
 cnoremap <expr> <F1> <sid>wildstab()
 cnoremap <expr> <F2> <sid>wildtab()
 
-"###############################################################################
-"###############################################################################
+"##############################################################################
+"##############################################################################
 " COMPLICATED MAPPINGS AND FILETYPE MAPPINGS
-"###############################################################################
-"###############################################################################
+"##############################################################################
+"##############################################################################
 "VIM-PLUG PLUGINS
 "Don't load some plugins if not compatible
 augroup plug
@@ -536,6 +537,8 @@ if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'vim-scripts/EnhancedJumps'
 
 "Commenting and syntax checking
+"NOTE: Syntastic looks for checker commands in your PATH! You must install
+"them manually!
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 
@@ -609,7 +612,7 @@ Plug 'justinmk/vim-sneak'
 "is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
-"###############################################################################
+"##############################################################################
 "BASIC CONFIG
 if PlugActive("vim-matchup") "better matching, see github
   let g:matchup_matchparen_enabled = 1
@@ -622,7 +625,7 @@ if PlugActive('.fzf')
     \ 'ctrl-x': 'split', 'ctrl-v': 'vsplit'}
 endif
 
-"###############################################################################
+"##############################################################################
 "SESSION MANAGEMENT
 "First, simple Obsession session management
 "Also manually preserve last cursor location:
@@ -695,7 +698,7 @@ nnoremap <silent> <Leader>r :e<CR>
 "Redraw screen
 nnoremap <silent> <Leader>R :redraw!<CR>
 
-"###############################################################################
+"##############################################################################
 "GIT GUTTER AND FUGITIVE
 "TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
@@ -767,7 +770,7 @@ if PlugActive("vim-sneak")
   map <F2> <Plug>Sneak_;
 endif
 
-"###############################################################################
+"##############################################################################
 "DELIMITMATE (auto-generate closing delimiters)
 "NOTE: If enter is mapped delimitmate will turn off its auto expand
 "enter mapping.
@@ -797,7 +800,7 @@ if PlugActive("delimitmate")
   let g:delimitMate_excluded_regions="String" "by default is disabled inside, don't want that
 endif
 
-"###############################################################################
+"##############################################################################
 "SPELLCHECK (really is a BUILTIN plugin, hence why it's in this section)
 "Turn on for certain filetypes
 augroup spell
@@ -812,6 +815,13 @@ function! s:spelltoggle(...)
     let toggle=1-&l:spell
   endif
   let &l:spell=toggle
+  if toggle
+    nnoremap <buffer> ;n ]s
+    nnoremap <buffer> ;N [s
+  else
+    silent! nunmap <buffer> ;n
+    silent! nunmap <buffer> ;N
+  endif
 endfunction
 "Toggle between UK and US English
 function! s:langtoggle(...)
@@ -853,8 +863,6 @@ nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>
 nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
 "Spell maps
 nnoremap ;m z=
-nnoremap <buffer> ;n ]s
-nnoremap <buffer> ;N [s
 nnoremap <Plug>forwardspell  bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
 nnoremap <Plug>backwardspell el[s:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
 nmap ;d <Plug>forwardspell
@@ -863,7 +871,7 @@ nmap ;D <Plug>backwardspell
 nnoremap ;a zg
 nnoremap ;r zug
 
-"###############################################################################
+"##############################################################################
 "INCREMENT and SUM PLUGINS
 augroup increment
 augroup END
@@ -883,7 +891,7 @@ if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
   vmap c= <Plug>AutoCalcReplaceWithSum
 endif
 
-"###############################################################################
+"##############################################################################
 "CODI (MATHEMATICAL NOTEPAD)
 "Now should just use 'Numi' instead; had too many issues with this
 augroup codi
@@ -922,7 +930,7 @@ if PlugActive("codi.vim")
   let g:codi#log = "codi.log" "log everything, becuase you *will* have issues
 endif
 
-"###############################################################################
+"##############################################################################
 "NEOCOMPLETE (RECOMMENDED SETTINGS)
 if PlugActive("neocomplete.vim") "just check if activated
   "Enable omni completion for different filetypes; sooper cool bro
@@ -964,7 +972,7 @@ if PlugActive("neocomplete.vim") "just check if activated
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
 endif
 
-"###############################################################################
+"##############################################################################
 "NERDTREE
 "Most important commands: 'o' to view contents, 'u' to move up directory,
 "'t' open in new tab, 'T' open in new tab but retain focus, 'i' open file in 
@@ -1008,7 +1016,7 @@ if PlugActive("nerdtree")
   endfunction
 endif
 
-"###############################################################################
+"##############################################################################
 "NERDCommenter (comment out stuff)
 "Note the default mappings, all prefixed by <Leader> (but we disable them)
 " -cc comments line or selection
@@ -1081,7 +1089,7 @@ if PlugActive("nerdcommenter")
   "Next separators that extend out to 80th column
   function! s:bar(...) "inserts above by default; most common use
     let cchar=Comment()
-    let nfill=78
+    let nfill=77
     let suffix=cchar
     let nspace=s:comment_indent()
     if a:0==2 "if non-zero number of args
@@ -1106,7 +1114,7 @@ if PlugActive("nerdcommenter")
       let fill=s:comment_filler()
     endif
     let nspace=s:comment_indent()
-    let nfill=(78-nspace)/len(fill) "divide by length of fill character
+    let nfill=(77-nspace)/len(fill) "divide by length of fill character
     let cchar=Comment()
     let lines=[repeat(' ',nspace).cchar.repeat(fill,nfill).cchar,
              \ repeat(' ',nspace).cchar.' ',
@@ -1195,17 +1203,62 @@ if PlugActive("nerdcommenter")
   nnoremap c" :call <sid>docstring('"')<CR>A
 endif
 
-"###############################################################################
+"##############################################################################
 "SYNTASTIC (syntax checking for code)
 augroup syntastic
 augroup END
 if PlugActive("syntastic")
   "Commands for circular location-list (error) scrolling
   "Also remap the commands
-  command! Lnext try | lnext | catch | lfirst | catch | endtry
-  command! Lprev try | lprev | catch | llast  | catch | endtry
-  nnoremap <silent> ;n :Lnext<CR>
-  nnoremap <silent> ;N :Lprev<CR>
+  " command! Lnext try | lnext | catch | lfirst | catch | endtry
+  " command! Lprev try | lprev | catch | llast  | catch | endtry
+  command! -bar -count=1 Cnext execute <sid>cfnext(<count>, 'qf')
+  command! -bar -count=1 Cprev execute <sid>cfnext(<count>, 'qf', 1)
+  command! -bar -count=1 Lnext execute <sid>cfnext(<count>, 'loc')
+  command! -bar -count=1 Lprev execute <sid>cfnext(<count>, 'loc', 1)
+  "Next error in location list
+  "Copied from: https://vi.stackexchange.com/a/14359
+  function! s:cfnext(count, list, ...) abort
+    let reverse = a:0 && a:1 
+    let func = 'get' . a:list . 'list'
+    let params = a:list == 'loc' ? [0] : []
+    let cmd = a:list == 'loc' ? 'll' : 'cc'
+    let items = call(func, params)
+    if len(items) == 0
+      return 'echoerr ' . string('E42: No Errors')
+    endif
+    call map(items, 'extend(v:val, {"idx": v:key + 1})')
+    if reverse
+      call reverse(items)
+    endif
+    let [bufnr, cmp] = [bufnr('%'), reverse ? 1 : -1]
+    let context = [line('.'), col('.')]
+    if v:version > 800 || has('patch-8.0.1112')
+      let current = call(func, extend(copy(params), [{'idx':1}])).idx
+    else
+      redir => capture | execute cmd | redir END
+      let current = str2nr(matchstr(capture, '(\zs\d\+\ze of \d\+)'))
+    endif
+    call add(context, current)
+    call filter(items, 'v:val.bufnr == bufnr && s:cmp(context, [v:val.lnum, v:val.col, v:val.idx]) == cmp')
+    let idx = get(get(items, 0, {}), 'idx', 'E553: No more items')
+    if type(idx) == type(0)
+      return cmd . idx
+    else
+      return 'echoerr' . string(idx)
+    endif
+  endfunction
+  function! s:cmp(a, b)
+    for i in range(len(a:a))
+      if a:a[i] < a:b[i]
+        return -1
+      elseif a:a[i] > a:b[i]
+        return 1
+      endif
+    endfor
+    return 0
+  endfunction
+
   "Determine checkers from annoying human-friendly output; version suitable
   "for scripting does not seem available. Weirdly need 'silent' to avoid
   "printint to vim menu. The *last* value in array will be checker.
@@ -1227,20 +1280,21 @@ if PlugActive("syntastic")
     endif
   endfunction
   command! SyntasticCheckers call <sid>syntastic_checkers(1)
+
   "Helper function
   "Need to run Syntastic with noautocmd to prevent weird conflict with tabbar,
   "but that means have to change some settings manually
   function! s:syntastic_status()
     return (exists('b:syntastic_on') && b:syntastic_on)
   endfunction
+  "Run checker
   function! s:syntastic_enable()
-    "Run checker
     let nbufs=len(tabpagebuflist())
     let checkers=s:syntastic_checkers()
     if len(checkers)==0
       echom 'No checkers available.'
     else "try running the checker, see if anything comes up
-      noautocmd SyntasticCheck
+      SyntasticCheck
       if (len(tabpagebuflist())>nbufs && !s:syntastic_status())
           \ || (len(tabpagebuflist())==nbufs && s:syntastic_status())
         wincmd j | set syntax=on | call <sid>simple_setup()
@@ -1250,18 +1304,27 @@ if PlugActive("syntastic")
         let b:syntastic_on=0
       endif
     endif
+    nnoremap <buffer> <silent> ;n :Lnext<CR>
+    nnoremap <buffer> <silent> ;N :Lprev<CR>
   endfunction
+  "Disable checker
   function! s:syntastic_disable()
     let b:syntastic_on=0
     SyntasticReset
+    silent! nunmap <buffer> ;n
+    silent! nunmap <buffer> ;N
   endfunction
-  "Set up custom remaps
+  "Custom remaps
   nnoremap <silent> ;x :update<CR>:call <sid>syntastic_enable()<CR>
   nnoremap <silent> ;X :call <sid>syntastic_disable()<CR>
-  "Disable auto checking (passive mode means it only checks when we call it)
+
+  "Choose syntax checkers, disable auto checking
+  "flake8 pep8 pycodestyle pyflakes pylint python
+  "pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
+  "NOTE: Need 'python' checker in addition to these other ones, because python
+  "tests for import-time errors and others test for runtime errors!
   let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
   let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
-  "Other defaults
   let g:syntastic_always_populate_loc_list = 1 "necessary, or get errors
   let g:syntastic_auto_loc_list = 1 "creates window; if 0, does not create window
   let g:syntastic_loc_list_height = 5
@@ -1271,12 +1334,11 @@ if PlugActive("syntastic")
   let g:syntastic_enable_signs = 1 "disable useless signs
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0 "disable jumping to errors
-  "Choose syntax checkers
   let g:syntastic_tex_checkers=['lacheck']
-  let g:syntastic_python_checkers=['python'] "pylint very slow; pyflakes light by comparison
+  let g:syntastic_python_checkers=['python', 'pyflakes']
   let g:syntastic_fortran_checkers=['gfortran']
   let g:syntastic_vim_checkers=['vimlint']
-  "Colors
+  "Syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
@@ -1297,7 +1359,7 @@ if PlugActive('vimtex')
   let g:vimtex_fold_enabled = 0 "So large files can open more easily
 endif
 
-"###############################################################################
+"##############################################################################
 "TABULAR - ALIGNING AROUND :,=,ETC.
 "By default, :Tabularize command provided *without range* will select the
 "contiguous lines that contain specified delimiter; so this function only makes
@@ -1419,7 +1481,7 @@ if PlugActive("tabular")
   " vnoremap <expr> \+ ':Table      /^[^=]*=\zs/l0c1<CR>'
 endif
 
-"###############################################################################
+"##############################################################################
 "CTAGS and TAGBAR (requires 'brew install ctags-exuberant')
 augroup ctags
 augroup END
@@ -1624,11 +1686,11 @@ if PlugActive('unite.vim')
   endif
 endif
 
-"###############################################################################
-"###############################################################################
+"##############################################################################
+"##############################################################################
 " GENERAL STUFF, BASIC REMAPS
-"###############################################################################
-"###############################################################################
+"##############################################################################
+"##############################################################################
 "BUFFER WRITING/SAVING
 "NOTE: Update only writes if file has been changed
 augroup buffer
@@ -1666,7 +1728,7 @@ nnoremap <silent> <C-q> :call <sid>tab_close()<CR>
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :terminal<CR>
 
-"###############################################################################
+"##############################################################################
 "OPENING FILES
 "Driver function that checks if user FZF selection is directory and keeps
 "opening FZF windows until user selects a file.
@@ -1689,7 +1751,6 @@ function! s:fzfopen_run(path)
     let g:fzfopen_prev=g:fzfopen_next
     call fzf#run({'source':s:fzfopen_files(g:fzfopen_next), 'options':'--no-sort', 'sink':function('s:fzfopen_select'), 'down':'~30%'})
     if g:fzfopen_prev==g:fzfopen_next "do nothing, user selected nothing
-      echom "Exact same!!! ".g:fzfopen_next
       return
     endif
   endwhile
@@ -1726,7 +1787,7 @@ else
   nnoremap <C-p> :tabe 
 endif
 
-"###############################################################################
+"##############################################################################
 "TABS and WINDOWS
 augroup tabs
   au!
@@ -1828,7 +1889,7 @@ nnoremap <expr> <silent> <Tab>] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v
 nnoremap <expr> <silent> <Tab>{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
 nnoremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
 
-"###############################################################################
+"##############################################################################
 "SIMPLE WINDOW SETTINGS
 "Enable quitting windows with simple 'q' press and disable line numbers
 augroup simple
@@ -1839,7 +1900,9 @@ augroup simple
   au FileType log call <sid>simple_setup()
 augroup END
 "Simple setup function
+"For location lists, enter jumps to location. Restore this behavior.
 function! s:simple_setup()
+  nnoremap <silent> <buffer> <CR> <CR>
   nnoremap <silent> <buffer> q :q<CR>
   setlocal nolist nonumber norelativenumber nospell nocursorline colorcolumn=
 endfunction
@@ -1901,7 +1964,7 @@ function! s:textemplates()
   return [''] + templates "add blank entry as default choice
 endfunction
 
-"###############################################################################
+"##############################################################################
 "COPY/PASTING CLIPBOARD
 "Pastemode toggling; pretty complicated
 "Really really really want to toggle with <C-v> since often hit Ctrl-V, Cmd-V, so
@@ -1946,7 +2009,7 @@ command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 "yank because from Vim, we yank; but remember, c-v is still pastemode
 "-nargs=? means 0 or 1
 
-"###############################################################################
+"##############################################################################
 "SEARCHING AND FIND-REPLACE STUFF
 "Basic stuff first
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
@@ -1961,7 +2024,9 @@ augroup END
 "Delete commented text
 "WARNING: For some reason search screws up when using \(\) groups, maybe
 "because first parts of match are identical?
-noremap <expr> <silent> \c ':s/^\s*'.Comment().'.*$\n//ge \| s/\s\s*'.Comment().'.*$//ge \| noh<CR>'
+noremap <expr> <silent> \c (mode() =~ '^n' ? 'V' : '').':<C-u>'
+    \."'<,'>".'s/^\s*'.Comment().'.*$\n//ge \| '
+    \."'<,'>".'s/\s\s*'.Comment().'.*$//ge \| noh<CR>'
 "Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 "Replace consecutive spaces on current line with one space, if they're not part of indentation
 noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
@@ -1984,7 +2049,7 @@ function! s:tex_replace()
   nnoremap <buffer> <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
 endfunction
 
-"###############################################################################
+"##############################################################################
 "CAPS LOCK
 "The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
 "that would cancel command-line queries (or I'd have to scroll up to resume them)
@@ -2008,7 +2073,7 @@ endfor
 inoremap <F5> <C-^>
 cnoremap <F5> <C-^>
 
-"###############################################################################
+"##############################################################################
 "FOLDING STUFF AND Z-PREFIXED COMMANDS
 augroup zcommands
 augroup END
@@ -2030,7 +2095,7 @@ nnoremap z< zR
 nnoremap zO zR
 nnoremap zC zM
 
-"###############################################################################
+"##############################################################################
 "g CONFIGURATION
 augroup gcommands
 augroup END
@@ -2068,7 +2133,7 @@ else
   nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
 
-"###############################################################################
+"##############################################################################
 "SPECIAL SYNTAX HIGHLIGHTING OVERWRITES (all languages; must come after filetype stuff)
 "* See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
 "  for every file; we add our own custom highlighting for vim comments
@@ -2180,7 +2245,7 @@ highlight SignColumn  guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 "for versions with :terminal command
 highlight Terminal ctermbg=NONE ctermfg=NONE
 
-"###############################################################################
+"##############################################################################
 "USEFUL COMMANDS
 "Highlight group under cursor
 function! s:group()
@@ -2247,11 +2312,11 @@ endfunction
 command! Colors call <sid>colors()
 command! GroupColors vert help group-name
 
-"###############################################################################
-"###############################################################################
+"##############################################################################
+"##############################################################################
 "EXIT
-"###############################################################################
-"###############################################################################
+"##############################################################################
+"##############################################################################
 "Clear past jumps
 "Don't want stuff from plugin files and the vimrc populating jumplist after statrup
 "Simple way would be to use au BufRead * clearjumps

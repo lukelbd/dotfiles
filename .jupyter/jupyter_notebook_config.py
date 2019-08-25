@@ -1,12 +1,9 @@
 # Configuration file for jupyter-notebook.
-
-################################################################################
-# Custom stuff; see link for help
-# http://jupyter-notebook.readthedocs.io/en/stable/config.html
-# TODO TERRIBLE ERROR: jupyter apparently will not read some of these options, at least
-# aren't documented in the above, so cannot exec liens, etc. Need to do this stuff
-# manually... and I suppose the only option is that notebook script.
 # c = get_config()
+#-----------------------------------------------------------------------------#
+# Custom stuff
+#-----------------------------------------------------------------------------#
+# http://jupyter-notebook.readthedocs.io/en/stable/config.html
 # c.InteractiveShellApp.extensions = ['autoreload'] # any load_ext commands
 # c.InteractiveShellApp.exec_lines = ['%autoreload 2', # reload everything if modified
 #     '%matplotlib inline', # for some reason below commands fail
@@ -23,7 +20,6 @@
 # c.PlainTextFormatter.pprint = True # enable pretty printing (may be default)
 # c.BaseIPythonApplication.profile = 'default' # explicitly name default profile
 
-################################################################################
 #------------------------------------------------------------------------------
 # Application(SingletonConfigurable) configuration
 #------------------------------------------------------------------------------
