@@ -23,7 +23,7 @@ let g:tex_no_error=1
 "Use C-z for compiling normally, and <Leader>Z for compiling to word document.
 function! s:latex_background(...)
   let opts=(a:0 ? a:1 : '') "flags
-  let logfile=expand('%:t:r').'.exe'
+  let logfile=expand('%:r').'.exe'
   "Jump to logfile if it is open, else open one
   silent! call system('rm '.logfile)
   silent! call system('touch '.logfile)
@@ -43,7 +43,7 @@ function! s:latex_background(...)
 endfunction
 "Refresh log
 function! s:latex_refresh()
-  let logfile=expand('%:t:r').'.exe'
+  let logfile=expand('%:r').'.exe'
   silent! exe bufwinnr(logfile)."wincmd w"
   silent! edit +$
   silent! exe winnr('#').'wincmd w'

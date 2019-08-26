@@ -171,6 +171,7 @@ alias brew="PATH=\"$PATH\" brew"
 export MPLBACKEND="Qt5Agg" # default for python and ipython
 export PYTHONPATH="$HOME:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
+alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing dist/*"
 
 # Matplotlib stuff
 # May be necessary for rendering fonts in ipython notebooks
@@ -507,8 +508,8 @@ if [ -r "$HOME/.dircolors.ansi" ]; then
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
 $_macos && _ls_command='gls' || _ls_command='ls'
-alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
-alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
+alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
+alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
 alias log="tail -f" # only ever use this command to watch logfiles in realtime
 alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
@@ -941,7 +942,7 @@ _port_file=~/.port # file storing port number
 alias ssh="_ssh" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local port listen port_write title_write
-  [ $# -gt 2 ] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
+  [[ $# -gt 2 || $# -lt 1 ]] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
   listen=22  # default sshd listening port; see the link above
   port=10000 # starting port
   if [ -n "$2" ]; then

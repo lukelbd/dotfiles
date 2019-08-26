@@ -1970,7 +1970,7 @@ endfunction
 "Really really really want to toggle with <C-v> since often hit Ctrl-V, Cmd-V, so
 "makes way more sense, but that makes inserting 'literal chars' impossible
 "Workaround is to map cv to enter insert mode with <C-v>
-nnoremap <expr> <silent> <Leader>v ":if &eventignore=='' \| "
+nnoremap <expr> <silent> cv ":if &eventignore=='' \| "
   \."setlocal eventignore=InsertEnter \| "
   \."echom 'Ctrl-V pasting disabled for next InsertEnter.' "
   \." \| else \| setlocal eventignore= \| echom '' \| endif<CR>"
@@ -2004,7 +2004,7 @@ function! s:copytoggle(...)
     echo "Copy mode disabled."
   endif
 endfunction
-nnoremap <C-y> :call <sid>copytoggle()<CR>
+nnoremap cC :call <sid>copytoggle()<CR>
 command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 "yank because from Vim, we yank; but remember, c-v is still pastemode
 "-nargs=? means 0 or 1
@@ -2151,7 +2151,7 @@ if has('gui_running')
   " colorscheme dracula
   " colorscheme onedark
   " colorscheme molokai
-  colorscheme oceanicnext "really nice
+  colorscheme oceanicnext
   " colorscheme yowish "yellow
   " colorscheme tomorrow-night
   " colorscheme atom "mimics Atom
