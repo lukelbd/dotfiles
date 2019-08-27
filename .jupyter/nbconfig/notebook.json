@@ -9,7 +9,7 @@
     "search-replace/main": false,
     "scroll_down/main": true,
     "python-markdown/main": false,
-    "autoscroll/main": true,
+    "autoscroll/main": false,
     "toggle_all_line_numbers/main": false,
     "jupyter_themes/theme_selector": true,
     "vim_binding/vim_binding": false,

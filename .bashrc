@@ -500,8 +500,15 @@ $_macos && _ls_command='gls' || _ls_command='ls'
 alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
-alias log="tail -f" # only ever use this command to watch logfiles in realtime
 alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
+log() {
+  while ! [ -r "$1" ]; do
+    echo "Waiting..."
+    sleep 2
+  done
+  tail -f "$1"
+# alias log="tail -f" # only ever use this command to watch logfiles in realtime
+}
 
 # Information on directories
 ! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
@@ -556,7 +563,7 @@ pskill() {
   for str in "${strs[@]}"; do
     echo "Killing $str jobs..."
     [ $str == all ] && str=""
-    kill $(tops "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
+    kill $(tos "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
   done
 }
 
