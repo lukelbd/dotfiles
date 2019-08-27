@@ -1,2 +1,2 @@
 "Logfile settings
-au BufRead,BufNewFile *.log,*.exe set filetype=log
+au BufRead,BufNewFile *.log,*.exe,*.info set filetype=log

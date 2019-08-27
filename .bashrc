@@ -16,18 +16,18 @@
 #     http://mywiki.wooledge.org/glob
 #  * Use '<package_manager> list' for MOST PACKAGE MANAGERS to see what is installed
 #     e.g. brew list, conda list, pip list
-################################################################################
+###############################################################################
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message:
 # 1) https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
-################################################################################
+###############################################################################
 [[ $- != *i* ]] && return
 clear # first clear screen
 
-################################################################################
+###############################################################################
 # Prompt
-################################################################################
+###############################################################################
 # Keep things minimal; just make prompt boldface so its a bit more identifiable
 if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
   export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
@@ -42,10 +42,10 @@ _bashrc_message() {
   printf "${1}$(printf '.%.0s' $(seq 1 $((29 - ${#1}))))"
 }
 
-################################################################################
+###############################################################################
 # Settings for particular machines
 # Custom key bindings and interaction
-################################################################################
+###############################################################################
 # Reset all aliases
 # Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
@@ -162,14 +162,16 @@ fi
 # No longer will keep random executables loose in homre directory; put everything here
 export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$PATH"
 
-# Homebrew; save path before adding anaconda
+# Homebrew, save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=\"$PATH\" brew"
 
 # Include modules (i.e. folders with python files) located in the home directory
 # NOTE: Trailing ':' adds empty path, i.e. this directory
-export PYTHONPATH="$HOME/bin:$HOME:$PYTHONPATH"
+export MPLBACKEND="Qt5Agg" # default for python and ipython
+export PYTHONPATH="$HOME:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
+alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing dist/*"
 
 # Matplotlib stuff
 # May be necessary for rendering fonts in ipython notebooks
@@ -177,9 +179,9 @@ export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://
 export MPLCONFIGDIR=$HOME/.matplotlib
 printf "done\n"
 
-################################################################################
+###############################################################################
 # Anaconda stuff
-################################################################################
+###############################################################################
 unset _conda
 if [ -d "$HOME/anaconda3" ]; then
   _conda='anaconda3'
@@ -197,12 +199,21 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then # above doesn't work, ne
   _bashrc_message "Enabling conda"
   source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables
   CONDA_CHANGEPS1=false conda activate # activate the default environment, without changing PS1
+  avail() {
+    local current latest
+    [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
+    current=$(conda list "$1" | grep '\b'"$1"'\b' | awk 'NR == 1 {print $2}')
+    latest=$(conda search "$1" | grep '\b'"$1"'\b' | awk 'END {print $2}')
+    echo "Package:         $1"
+    echo "Current version: $current"
+    echo "Latest version:  $latest"
+    }
   printf "done\n"
 fi
 
-################################################################################
+###############################################################################
 # Wrappers for common functions
-################################################################################
+###############################################################################
 _bashrc_message "Functions and aliases"
 # Append prompt command
 _prompt() { # input argument should be new command
@@ -377,9 +388,9 @@ open() {
 export EDITOR=vim # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 
-################################################################################
+###############################################################################
 # SHELL BEHAVIOR, KEY BINDINGS
-################################################################################
+###############################################################################
 # Readline/inputrc settings
 # Use Ctrl-R to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
@@ -462,9 +473,9 @@ _setup_opts() {
 }
 _setup_opts 2>/dev/null # ignore if option unavailable
 
-################################################################################
+###############################################################################
 # Aliases/functions for printing out information
-################################################################################
+###############################################################################
 # The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
 # NOTE: Example for finding variables:
@@ -488,17 +499,17 @@ alias inputrc_ops="bind -v"           # the 'set' options, and their values
 alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
 env() { set; } # just prints all shell variables
 
-################################################################################
+###############################################################################
 # General utilties
-################################################################################
+###############################################################################
 # Configure ls behavior, define colorization using dircolors
 if [ -r "$HOME/.dircolors.ansi" ]; then
   $_macos && _dc_command=gdircolors || _dc_command=dircolors
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
 $_macos && _ls_command='gls' || _ls_command='ls'
-alias ls="clear && $_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
-alias ll="clear && $_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
+alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
+alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
 alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 log() {
@@ -538,8 +549,8 @@ hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status
 
 # Query files
 # awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
-todo() { for f in $@; do echo "File: $f"; grep -i '\btodo\b' "$f" | sed $'s/^[ \t]*//g'; done; }
-note() { for f in $@; do echo "File: $f"; grep -i '\bnote:' "$f"; done; }
+todo() { for f in $@; do echo "File: $f"; grep -i -n '\btodo\b' "$f"; done; } # | sed $'s/\t/  /g' | sed 's/^\([^ ]* \) */\1/g'; done; }
+note() { for f in $@; do echo "File: $f"; grep -i -n '\bnote:' "$f"; done; }
 
 # Shell scripting utilities
 calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
@@ -690,16 +701,16 @@ bytes2human() {
   done
 }
 
-################################################################################
+###############################################################################
 # Supercomputer tools
 # Add to these
-################################################################################
+###############################################################################
 alias suser="squeue -u $USER"
 alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
 
-################################################################################
+###############################################################################
 # Website tools
-################################################################################
+###############################################################################
 # Use 'brew install ruby-bundler nodejs' then 'bundle install' first
 # See README.md in website directory
 # Ignore standard error because of annoying deprecation warnings; see:
@@ -754,10 +765,10 @@ nbconvert() {
   rm ${dest}.rst
 }
 
-################################################################################
+###############################################################################
 # SSH, session management, and Github stuff
 # Enabling files with spaces is tricky: https://stackoverflow.com/a/20364170/4970632
-################################################################################
+###############################################################################
 # To enable passwordless login, just use "ssh-copy-id $server"
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one
 # of the 1-6 login nodes -- from testing seems node 4 is usually most
@@ -922,9 +933,9 @@ if ! $_macos; then # only do this if not on macbook
   fi
 fi
 
-################################################################################
+###############################################################################
 # Functions for scp-ing from local to remote, and vice versa
-################################################################################
+###############################################################################
 # Big honking useful wrapper -- will *always* use this to ssh between servers
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
 # For exit on forward see: https://serverfault.com/a/577830/427991
@@ -938,7 +949,7 @@ _port_file=~/.port # file storing port number
 alias ssh="_ssh" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local port listen port_write title_write
-  [ $# -gt 2 ] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
+  [[ $# -gt 2 || $# -lt 1 ]] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
   listen=22  # default sshd listening port; see the link above
   port=10000 # starting port
   if [ -n "$2" ]; then
@@ -988,9 +999,9 @@ lrcp() { # "copy to remote (from local); 'copy here'"
   command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
 }
 
-################################################################################
+###############################################################################
 # REPLs
-################################################################################
+###############################################################################
 # iPython wrapper -- load your favorite magics and modules on startup
 # Have to sed trim the leading spaces to avoid indentation errors
 # NOTE: MacOSX backend broken right now:
@@ -1035,7 +1046,7 @@ iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
 }
 
-################################################################################
+###############################################################################
 # Notebook stuff
 # * Install nbstripout with 'pip install nbstripout', then add it to the
 #   global .gitattributes for automatic stripping of contents.
@@ -1043,7 +1054,7 @@ iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes are just not changing in Chrome, open Developer tab
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
-################################################################################
+###############################################################################
 # Wrapper aroung jupyter theme function, much better
 _jt_configured=false # theme is not initially setup because takes a long time
 _jt() {
@@ -1051,33 +1062,33 @@ _jt() {
   # chesterish is best; monokai has green/pink theme;
   # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
   # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  local jupyter_theme jupyter_font themes
+  local theme font themes
   if [ $# -lt 1 ]; then 
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
-      # uriah*)  jupyter_theme=solarizedl;;
-      # uriah*)  jupyter_theme=monokai;;
-      # uriah*)  jupyter_theme=chesterish ;;
-      uriah*)  jupyter_theme=grade3   ;;
-      gauss*)  jupyter_theme=gruvboxd ;;
-      euclid*) jupyter_theme=gruvboxd ;;
-      monde*)  jupyter_theme=onedork  ;;
-      midway*) jupyter_theme=onedork  ;;
+      # uriah*)  theme=solarizedl;;
+      # uriah*)  theme=monokai;;
+      # uriah*)  theme=chesterish ;;
+      uriah*)  theme=grade3   ;;
+      gauss*)  theme=gruvboxd ;;
+      euclid*) theme=gruvboxd ;;
+      monde*)  theme=onedork  ;;
+      midway*) theme=onedork  ;;
       *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
     esac
   else
-    jupyter_theme="$1"
+    theme="$1"
   fi
   if [ $# -lt 2 ]; then
-    export jupyter_font="cousine" # look up available ones online
+    export font="cousine" # look up available ones online
   else
-    export jupyter_font="$2"
+    export font="$2"
   fi
   # Make sure theme is valid
   themes=($(jt -l | sed '1d'))
-  ! [[ " ${themes[@]} " =~ " $jupyter_theme " ]] && \
-    echo "Error: Theme $jupyter_theme is invalid; choose from ${themes[@]}." && return 1
-  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t $jupyter_theme -f $jupyter_font
+  ! [[ " ${themes[@]} " =~ " $theme " ]] && \
+    echo "Error: Theme $theme is invalid; choose from ${themes[@]}." && return 1
+  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t $theme -f $font
 }
 
 # This function will establish two-way connection between server and local macbook
@@ -1184,9 +1195,9 @@ notebook() {
   jupyter notebook --no-browser $port --NotebookApp.iopub_data_rate_limit=10000000
 }
 
-################################################################################
+###############################################################################
 # Dataset utilities
-################################################################################
+###############################################################################
 # Fortran tools
 namelist() {
   [ -z "$1" ] && local file="input.nml" || local file="$1"
@@ -1330,9 +1341,9 @@ extract() {
   done
 }
 
-################################################################################
+###############################################################################
 # Fancy Colors
-################################################################################
+###############################################################################
 # Standardize less/man/etc. colors
 # Used this: https://unix.stackexchange.com/a/329092/112647
 export LESS="--RAW-CONTROL-CHARS"
@@ -1409,10 +1420,10 @@ fi
 #   node rhino ncl matlab # misc languages; javascript, NCL, matlab
 #   cdo conda pip easy_install python ipython jupyter notebook) # python stuff
 
-################################################################################
+###############################################################################
 # Utilities related to preparing PDF documents
 # Converting figures between different types, other pdf tools, word counts
-################################################################################
+###############################################################################
 # First some simple convsersions
 # * Flatten gets rid of transparency/renders it against white background, and
 #   the units/density specify a <N>dpi resulting bitmap file. Another option
@@ -1498,23 +1509,16 @@ unannotate() {
 }
 
 # Rudimentary wordcount with detex
+# The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
-  # Below worked for certain templates:
-  # Explicitly delete begin/end environments because detex won't pick them up
-  # and use the equals sign to exclude equations
-  # detexed="$(cat "$1" | sed '1,/^\\end{abstract}/d;/^\\begin{addendum}/,$d' \
-  #   | sed '/^\\begin{/d;/^\\end{/d;/=/d' | detex -c | grep -v .pdf | grep -v 'fig[0-9]' \
-  #   | grep -v 'empty' | grep -v '^\s*$')"
-  # Below worked for BAMS template, gets count between end of abstract
-  # and start of methods
-  # The -e flag to ignore certain environments (e.g. abstract environment)
-  local detexed="$(cat "$1" | \
-    detex -e 'tabular,align,equation,align*,equation*' | grep -v .pdf | grep -v 'fig[0-9]')"
+  local detexed="$(cat "$1" \
+    | detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
+    | grep -v .pdf | grep -v 'fig[0-9]')"
   echo "$detexed" | xargs # print result in one giant line
   echo "$detexed" | wc -w # get word count
 }
 
-# ***Other Tools*** are "impressive" and "presentation", and both should be in bin
+# Other tools are "impressive" and "presentation", and both should be in bin
 # Homebrew presentation software; below installs it, from http://pygobject.readthedocs.io/en/latest/getting_started.html
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
 alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
@@ -1522,10 +1526,10 @@ alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local
 # This is ***the end*** of all function and alias declarations
 printf "done\n"
 
-################################################################################
+###############################################################################
 # FZF fuzzy file completion tool
 # See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
-################################################################################
+###############################################################################
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ -f ~/.fzf.bash ]; then
@@ -1564,12 +1568,15 @@ if [ -f ~/.fzf.bash ]; then
   printf "done\n"
 fi
 
-################################################################################
+###############################################################################
 # Shell integration; iTerm2 feature only
-################################################################################
+###############################################################################
+# Make sure it was not already installed, and we are not inside vim :terminal
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-# They are super annoying and useless
-if [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
+if [ -n "$VIMRUNTIME" ]; then
+  unset PROMPT_COMMAND
+elif [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
+  # && [ -z "$VIMRUNTIME" ]; then
   _bashrc_message "Enabling shell integration"
   # First enable
   source ~/.iterm2_shell_integration.bash
@@ -1598,9 +1605,9 @@ if [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INS
   printf "done\n"
 fi
 
-################################################################################
+###############################################################################
 # iTerm2 title management
-################################################################################
+###############################################################################
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762
 # 1. First was idea to make title match the working directory; but fails/not useful
 # when inside tmux sessions
@@ -1608,7 +1615,7 @@ fi
 # 2. Finally had idea to investigate environment variables -- terms out that
 # TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
 # grep that, then if the title is not already set AND we are on pane zero, request title.
-################################################################################
+###############################################################################
 # First function that sets title
 # Note, in read, if you specify number of characters, even pressing
 # enter key will be recorded as a result; break loop by checking if it
@@ -1671,12 +1678,12 @@ $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 alias title="_title_set" # easier for user
 # alias titlereset="rm ~/.title"
 
-################################################################################
+###############################################################################
 # Message
 # If github push/pulls will require password, configure with SSH (may require
 # entering password once) or configure with http (stores information in plaintext
 # but only ever have to do this once)
-################################################################################
+###############################################################################
 # Fun stuff
 # TODO: This hangs when run from interactive cluster node, we test by comparing
 # histname variable with command (variable does not change)
