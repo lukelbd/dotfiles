@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #-----------------------------------------------------------------------------#
-# Post commit hook that looks for __version__ variable in __init__.py file,
-# compares it to the current tag, and updates the commit if the __version__ was
-# also updated. Copy to .git/hooks/post-commit to add this to any project.
+# Increments tag if version or __version__ variable in __init__.py file has
+# changed since last tag. Copy to .git/hooks/post-commit to implement this
 # See also: https://stackoverflow.com/a/27332476/4970632
 # See also: https://stackoverflow.com/a/46972376/4970632
+# For sharing with users: https://stackoverflow.com/a/427269/4970632
 # This is currently very lightweight and assumes workflow where users
 # manually increment tag number, which is probably appropriate
 #-----------------------------------------------------------------------------#
