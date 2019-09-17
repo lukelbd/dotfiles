@@ -7,10 +7,12 @@
 ! git rev-parse --git-dir &>/dev/null && echo "Error: not in git repository." && exit 1
 [ -z "$USER" ] && echo "Error: \$USER unavailable." && exit 1
 
-# Get vim processes
-[[ "$OSTYPE" == "darwin"* ]] && field=3 || field=1 # format of ps output depends on implementation (darwin is macOS)
+# Get vim processes *excluding* 'git-vim' and 'git vim'
+# Note format of ps output depends on implementation (darwin is macOS)
+[[ "$OSTYPE" == "darwin"* ]] && field=3 || field=1
 gitdir="$(git rev-parse --show-toplevel)" # root of git repo
-pids=$(ps -u $USER | grep vim | tr -s ' ' | cut -d' ' -f$field | xargs)
+pids=$(ps -u $USER | grep 'vim' | grep -v 'git vim' | grep -v 'git-vim' \
+  | tr -s ' ' | cut -d' ' -f$field | xargs)
 
 # Figure out how many vim instances running in repo
 # Alternative to pwdx provided by: https://gist.github.com/magnetikonline/5062718
@@ -19,6 +21,7 @@ echo "Git dir: $gitdir"
 let num=0
 for pid in $pids; do
   if [[ "$(pwdx $pid)" =~ "$gitdir" ]]; then
+    ps $pid | awk 'END {print}'
     let num+=1
   fi
 done

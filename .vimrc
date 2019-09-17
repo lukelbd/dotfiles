@@ -1297,7 +1297,7 @@ if PlugActive("syntastic")
       SyntasticCheck
       if (len(tabpagebuflist())>nbufs && !s:syntastic_status())
           \ || (len(tabpagebuflist())==nbufs && s:syntastic_status())
-        wincmd j | set syntax=on | call <sid>simple_setup()
+        wincmd j | set syntax=on | call <sid>popup_setup()
         wincmd k | let b:syntastic_on=1 | silent! set signcolumn=no
       else
         echom 'No errors found with checker '.checkers[-1].'.'
@@ -1724,9 +1724,10 @@ nnoremap <silent> <C-w> :call <sid>window_close()<CR>
 nnoremap <silent> <C-q> :call <sid>tab_close()<CR>
 "Terminal maps, map Ctrl-c to literal keypress so it does not close window
 "WARNING: Do not map escape or cannot send iTerm-shortcuts with escape codes!
+"NOTE: Must change local directory to have term pop up in this dir: https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>T :terminal<CR>
+nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
 "##############################################################################
 "OPENING FILES
@@ -1897,7 +1898,7 @@ augroup simple
   au BufEnter * let b:recording=0
   au FileType qf,diff,man,fugitive,gitcommit,vim-plug call <sid>popup_setup()
   au FileType help call <sid>help_setup()
-  au FileType log call <sid>simple_setup()
+  au FileType log call <sid>simple_setup() \| setlocal nomodifiable
 augroup END
 "Simple setup function
 "For location lists, enter jumps to location. Restore this behavior.
@@ -2294,11 +2295,11 @@ nnoremap <Leader><Tab> :TabToggle<CR>
 "Remember :scriptnames lists all loaded files
 function! s:ftplugin()
   execute 'split $VIMRUNTIME/ftplugin/'.&ft.'.vim'
-  silent call <sid>simple_setup()
+  silent call <sid>popup_setup()
 endfunction
 function! s:ftsyntax()
   execute 'split $VIMRUNTIME/syntax/'.&ft.'.vim'
-  silent call <sid>simple_setup()
+  silent call <sid>popup_setup()
 endfunction
 command! PluginFile call <sid>ftplugin()
 command! SyntaxFile call <sid>ftsyntax()
@@ -2307,7 +2308,7 @@ nnoremap <silent> <Leader>w :WrapToggle<CR>
 "Window displaying all colors
 function! s:colors()
   source $VIMRUNTIME/syntax/colortest.vim
-  silent call <sid>simple_setup()
+  silent call <sid>popup_setup()
 endfunction
 command! Colors call <sid>colors()
 command! GroupColors vert help group-name

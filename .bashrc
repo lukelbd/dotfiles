@@ -71,6 +71,7 @@ if $_macos; then
   export PATH="/opt/pgi/osx86-64/2018/bin:$PATH" # PGI compilers
   export PATH="$HOME/builds/ncl-6.5.0/bin:$HOME/builds/matlab/bin:$PATH" # builds and matlab symlink
   export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
+  export PKG_CONFIG_PATH="/opt/local/bin/pkg-config"
 
   # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
   # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
@@ -169,7 +170,7 @@ alias brew="PATH=\"$PATH\" brew"
 # Include modules (i.e. folders with python files) located in the home directory
 # NOTE: Trailing ':' adds empty path, i.e. this directory
 export MPLBACKEND="Qt5Agg" # default for python and ipython
-export PYTHONPATH="$HOME:$PYTHONPATH"
+export PYTHONPATH="$HOME:$HOME/sphinx-automodapi:$PYTHONPATH"
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing dist/*"
 
@@ -518,16 +519,29 @@ log() {
     sleep 2
   done
   tail -f "$1"
-# alias log="tail -f" # only ever use this command to watch logfiles in realtime
 }
+
+# Standardize less/man/etc. colors
+# Used this: https://unix.stackexchange.com/a/329092/112647
+export LESS="--RAW-CONTROL-CHARS"
+[ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
+if hash tput 2>/dev/null; then
+  export LESS_TERMCAP_md=$'\e[1;33m'     # begin blink
+  export LESS_TERMCAP_so=$'\e[01;44;37m' # begin reverse video
+  export LESS_TERMCAP_us=$'\e[01;37m'    # begin underline
+  export LESS_TERMCAP_me=$'\e[0m'        # reset bold/blink
+  export LESS_TERMCAP_se=$'\e[0m'        # reset reverse video
+  export LESS_TERMCAP_ue=$'\e[0m'        # reset underline
+  export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
+fi
 
 # Information on directories
 ! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 ! $_macos && alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
-alias df="df -h" # disk useage
-alias eject="diskutil unmount 'NO NAME'" # eject disk on macOS, default to this name
 # Directory sizes, normal and detailed, analagous to ls/ll
+alias df="df -h" # disk useage
 alias du='du -h -d 1' # also a better default du
+alias pmount="simple-mtpfs -f ~/phone"
 ds() {
   local dir
   [ -z $1 ] && dir="." || dir="$1"
@@ -1340,85 +1354,6 @@ extract() {
     fi
   done
 }
-
-###############################################################################
-# Fancy Colors
-###############################################################################
-# Standardize less/man/etc. colors
-# Used this: https://unix.stackexchange.com/a/329092/112647
-export LESS="--RAW-CONTROL-CHARS"
-[ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
-if hash tput 2>/dev/null; then
-  export LESS_TERMCAP_md=$'\e[1;33m'     # begin blink
-  export LESS_TERMCAP_so=$'\e[01;44;37m' # begin reverse video
-  export LESS_TERMCAP_us=$'\e[01;37m'    # begin underline
-  export LESS_TERMCAP_me=$'\e[0m'        # reset bold/blink
-  export LESS_TERMCAP_se=$'\e[0m'        # reset reverse video
-  export LESS_TERMCAP_ue=$'\e[0m'        # reset underline
-  export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
-fi
-
-# Temporarily change iTerm2 profile while REPL or other command is active
-# Alias any command with '_cmdcolor' as prefix
-# _cmdcolor() {
-#   # Get current profile name; courtesy of: https://stackoverflow.com/a/34452331/4970632
-#   # Or that's dumb and just use ITERM_PROFILE
-#   newprofile=Argonaut
-#   oldprofile=$ITERM_PROFILE
-#   # Restore the current settings if the user ctrl-c's out of the command
-#   trap ctrl_c INT
-#   function ctrl_c() {
-#     echo -e "\033]50;SetProfile=$oldprofile\a"
-#     exit
-#   }
-#   # Set profile; if you want you can allow profile as $1, then call shift,
-#   # and now the remaining command arguments are $@
-#   echo -e "\033]50;SetProfile=$newprofile\a"
-#   # Note, can use 'command' to avoid function/alias lookup
-#   # See: https://stackoverflow.com/a/6365872/4970632
-#   "$@" # need to quote it, might need to escape stuff
-#   # Restore settings
-#   echo -e "\033]50;SetProfile=$oldprofile\a"
-# }
-
-# # Magic changing stderr color
-# # Turns out that iTerm2 SHELL INTEGRATION mostly handles the idea behind this;
-# # want "bad commands" to be more visible
-# # See comment: https://stackoverflow.com/a/21320645/4970632
-# # See exec summary: https://stackoverflow.com/a/18351547/4970632
-# # For trap info: https://www.computerhope.com/unix/utrap.htm
-# # But unreliable; there is issue with sometimes no newline generated
-# # Uncomment stuff below to restore
-# export COLOR_RED="$(tput setaf 1)"
-# export COLOR_RESET="$(tput sgr0)"
-# exec 9>&2 # copy error descriptor onto write file descriptor 9
-# exec 8> >( # open this "process substitution" for writing on descriptor 8
-#   # while IFS='' read -r -d $'\0' line || [ -n "$line" ]; do
-#   while IFS='' read -r line || [ -n "$line" ]; do
-#     echo -e "${COLOR_RED}${line}${COLOR_RESET}" # -n is non-empty; this terminates at end
-#   done # "read" reads from standard input (whatever stream fed into this process)
-# )
-# _undirect(){ echo -ne '\0'; exec 2>&9; } # return stream 2 to "dummy stream" 9
-# _undirect(){ exec 2>&9; } # return stream 2 to "dummy stream" 9
-# _redirect(){
-#   local PRG="${BASH_COMMAND%% *}" # ignore flags/arguments
-#   for X in ${STDERR_COLOR_EXCEPTIONS[@]}; do
-#     [ "$X" == "${PRG##*/}" ] && return 1; # trim directories
-#   done # if special program, don't send to coloring stream
-#   exec 2>&8 # send stream 2 to the coloring stream
-# }
-
-# # Interactive stuff gets super wonky if you try to _redirect it, so
-# # filter these tools out
-# trap "_redirect;" DEBUG # trap executes whenever receiving signal <ARG> (here, "DEBUG"==every simple command)
-# export PROMPT_COMMAND="_undirect;" # execute this just before prompt PS1 is printed (so after stderr/stdout printing)
-# export STDERR_COLOR_EXCEPTIONS=(wget scp ssh mpstat top source .  diff sdsync # commands
-#   brew
-#   brew\ cask
-#   youtube metadata # some scripts
-#   \\ipython \\jupyter \\python \\matlab # disabled alias versions
-#   node rhino ncl matlab # misc languages; javascript, NCL, matlab
-#   cdo conda pip easy_install python ipython jupyter notebook) # python stuff
 
 ###############################################################################
 # Utilities related to preparing PDF documents

@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Simple script; pass this a string and it will create a confirm prompt, waiting
+#-----------------------------------------------------------------------------#
+# Pass this a string and it will create a confirm prompt, waiting
 # for user to answer and returning corresponding exit code
-# If called interactively (e.g. the script is sourced), make sure to 'return', not 'exit'
+#-----------------------------------------------------------------------------#
 [[ $- == *i* ]] && action="return" || action="exit" # don't want to quit an interactive shell!
 [[ -z "$@" ]] && prompt="Confirm" || prompt="$@"
 while true; do
   read -r -p "$prompt ([y]/n) " response
-  if [ ! -z "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
+  if [ -n "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
     echo "Invalid response."
     continue # invalid, so try again
   fi

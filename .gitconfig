@@ -22,6 +22,8 @@
 # NEW COMMANDS
 # 'hist':
 #   full history for a given file
+# 'exec':
+#   exec arbitrary shell command on top level
 # 'wtf':
 #   queries the remote server to test whether we are synced
 #   also prints current branch and remote branch, with extra info
@@ -73,12 +75,14 @@
 #   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 [alias]
-	root     = !git rev-parse --show-toplevel
-	remotes  = !git remote --verbose $@
-	branches = !git --no-pager branch -vv --all $@
-	short    = !git status --short --branch $@
-	stat     = !git diff --stat $@
-	hist     = !git log -p -- $@
+	tags     = push origin --tags
+	root     = rev-parse --show-toplevel
+	remotes  = remote --verbose
+	branches = !git --no-pager branch -vv --all
+	short    = status --short --branch
+	long     = status --long --branch
+	stat     = diff --stat
+	hist     = log -p --
 	wtf      = !git-wtf $@
 	user     = !git-user $@
 	vim      = !git-vim $@
@@ -89,6 +93,7 @@
 	get      = !get-get $@
 	deleted  = !git-deleted $@
 	ignore   = !git-ignore $@
+	exec     = "!exec "
 	update   = "!git fetch --all; git stash clear; git stash; git merge $@; git stash pop"
 	commands = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
 	amend    = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
@@ -103,6 +108,7 @@
 	ui = on
 [push]
 	default = upstream
+	followTags = true
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com

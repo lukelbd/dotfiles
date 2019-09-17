@@ -44,9 +44,13 @@ endfunction
 "Refresh log
 function! s:latex_refresh()
   let logfile=expand('%:r').'.exe'
-  silent! exe bufwinnr(logfile)."wincmd w"
-  silent! edit +$
-  silent! exe winnr('#').'wincmd w'
+  if expand('%') == logfile
+    edit +$
+  else
+    silent! exe bufwinnr(logfile)."wincmd w"
+    silent! edit +$
+    silent! exe winnr('#').'wincmd w'
+  endif
 endfunction
 "Maps
 noremap <silent> <buffer> <C-z> :call <sid>latex_background()<CR>

@@ -1,25 +1,26 @@
 #!/usr/bin/env bash
+#-----------------------------------------------------------------------------#
 # Sync a local directory with files on SD card
 # This function will only modify files on the SD card, never the local
 # directory; beware problem that files are 'modified' when transferred to
 # SD card, so cannot check dates on them.
-
-# Initial stuff
-shopt -u nullglob # no nullglob
-sd_name="NO NAME" # edit when get new card
-sd_playlist="/Volumes/$sd_name/playlist" # sd data
-modified_check=true # probably always want this
-! [ -d "$sd_playlist" ] && echo "Error: SD card not found." && return 1
-mb_playlist="$HOME/playlist" # macbook data
-echo "SD playlist: $sd_playlist"
-echo "MB playlist: $mb_playlist"
+#-----------------------------------------------------------------------------#
+shopt -u nullglob
+# cp=cp # can cause errors; see: https://github.com/osxfuse/osxfuse/issues/363
+cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
+sd_folder="$HOME/phone/Card/Playlist"
+mb_folder="$HOME/playlist"
+sync_modified=true
+! [ -d "$sd_folder" ] && echo "Error: SD card not found." && exit 1
+echo "SD playlist: $sd_folder"
+echo "MB playlist: $mb_folder"
 
 # Iterate through local files
 copied=false  # copied anything?
 updated=false # updated anything?
 deleted=false # deleted anything?
 $_macos && date=gdate || date=date
-for path in "$mb_playlist/"*.{mp3,m4a,m3u8}; do
+for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
   ! [ -r "$path" ] && continue # e.g. if glob failed
   file="${path##*/}"
   # Alphabetical order
@@ -28,18 +29,19 @@ for path in "$mb_playlist/"*.{mp3,m4a,m3u8}; do
     printf "#EXTM3U\n$m3u8" >"$file"
   fi
   # Copy new files downloaded
-  if ! [ -r "$sd_playlist/$file" ]; then
+  if ! [ -r "$sd_folder/$file" ]; then
     copied=true # record
     echo "New local file: $file. Copying to SD..."
-    cp "$path" "$sd_playlist/$file"
+    $cp "$path" "$sd_folder/$file"
+    [ $? -ne 0 ] && echo "Error: Copy failed." && exit 1
   # Replace old file of same name with modified one
-  elif $modified_check; then
-    if ! [ -r "$mb_playlist/sd.log" ]; then
-      yn "Warning: sd.log not found! Cancel sdsync?" # call script to confirm
+  elif $sync_modified; then
+    if ! [ -r "$mb_folder/sd.log" ]; then
+      yn "Warning: sd.log not found! Cancel psync?" # call script to confirm
       [ $? -ne 0 ] && exit 1
-      touch "$mb_playlist/sd.log" # if doesn't exist, make
+      touch "$mb_folder/sd.log" # if doesn't exist, make
     fi
-    date_c=$(tail -n 1 "$mb_playlist/sd.log") # date copied to SD
+    date_c=$(tail -n 1 "$mb_folder/sd.log") # date copied to SD
     date_m=$($date -r "$path" +%s)           # date last modified
     if [ -z "$date_c" ]; then # initializing directory
       if [ $date_m -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changed within 50 days
@@ -54,7 +56,8 @@ for path in "$mb_playlist/"*.{mp3,m4a,m3u8}; do
     $modified && {
       echo "Modified local file \"$file\" since previous sync."
       updated=true
-      cp "$path" "$sd_playlist/$file"
+      $cp "$path" "$sd_folder/$file"
+      [ $? -ne 0 ] && echo "Error: Copy failed." && exit 1
       }
   fi
 done
@@ -62,10 +65,10 @@ $copied  || echo "No new files found."
 $updated || echo "No recently modified files found."
 
 # Iterate through remote files
-for path in "$sd_playlist/"*.{mp3,m4a,m3u8}; do
+for path in "$sd_folder/"*.{mp3,m4a,m3u8}; do
   ! [ -r "$path" ] && continue # e.g. if glob failed
   file="${path##*/}"
-  if ! [ -r "$mb_playlist/$file" ]; then
+  if ! [ -r "$mb_folder/$file" ]; then
     # Delete old file
     deleted=true # record
     echo "Deleted local file: $file. Deleting from SD..."
@@ -75,5 +78,5 @@ done
 $deleted || echo "No old files deleted."
 
 # Record in Playlist when last sync occurred
-date +%s >> "$mb_playlist/sd.log"
+date +%s >> "$mb_folder/sd.log"
 
