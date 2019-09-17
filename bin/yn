@@ -16,4 +16,5 @@ while true; do
   else
     $action 0 # 'good' exit, i.e. yes
   fi
+  break
 done
