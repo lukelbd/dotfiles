@@ -545,7 +545,7 @@ fi
 # Directory sizes, normal and detailed, analagous to ls/ll
 alias df="df -h" # disk useage
 alias du='du -h -d 1' # also a better default du
-alias pmount="simple-mtpfs -f ~/phone"
+alias pmount="simple-mtpfs -f -v ~/phone"
 ds() {
   local dir
   [ -z $1 ] && dir="." || dir="$1"

@@ -8,7 +8,7 @@
 shopt -u nullglob
 # cp=cp # can cause errors; see: https://github.com/osxfuse/osxfuse/issues/363
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
-sd_folder="$HOME/phone/Card/Playlist"
+sd_folder="$HOME/phone/Music"
 mb_folder="$HOME/playlist"
 sync_modified=true
 ! [ -d "$sd_folder" ] && echo "Error: SD card not found." && exit 1
