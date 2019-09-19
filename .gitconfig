@@ -24,6 +24,9 @@
 #   full history for a given file
 # 'exec':
 #   exec arbitrary shell command on top level
+# 'rmupstream':
+#   unset upstream branch, needed after you change the name of a local branch
+#   with git branch -m name because git tracks the old remote branch name
 # 'wtf':
 #   queries the remote server to test whether we are synced
 #   also prints current branch and remote branch, with extra info
@@ -75,30 +78,31 @@
 #   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 [alias]
-	tags     = push origin --tags
-	root     = rev-parse --show-toplevel
-	remotes  = remote --verbose
-	branches = !git --no-pager branch -vv --all
-	short    = status --short --branch
-	long     = status --long --branch
-	stat     = diff --stat
-	hist     = log -p --
-	wtf      = !git-wtf $@
-	user     = !git-user $@
-	vim      = !git-vim $@
-	pack     = !git-pack $@
-	objects  = !git count-objects -H -v
-	delete   = !git-delete $@
-	truncate = !git-truncate $@
-	get      = !get-get $@
-	deleted  = !git-deleted $@
-	ignore   = !git-ignore $@
-	exec     = "!exec "
-	update   = "!git fetch --all; git stash clear; git stash; git merge $@; git stash pop"
-	commands = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
-	amend    = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
-	tree     = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
-	trunk    = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $@ 2>/dev/null"
+	tags       = push origin --tags
+	root       = rev-parse --show-toplevel
+	rmupstream = branch --unset-upstream
+	remotes    = remote --verbose
+	branches   = "!git remote prune origin; git --no-pager branch -vv --all"
+	short      = status --short --branch
+	long       = status --long --branch
+	stat       = diff --stat
+	hist       = log -p --
+	wtf        = !git-wtf $@
+	user       = !git-user $@
+	vim        = !git-vim $@
+	pack       = !git-pack $@
+	objects    = !git count-objects -H -v
+	delete     = !git-delete $@
+	truncate   = !git-truncate $@
+	get        = !get-get $@
+	deleted    = !git-deleted $@
+	ignore     = !git-ignore $@
+	exec       = "!exec "
+	update     = "!git fetch --all; git stash clear; git stash; git merge $@; git stash pop"
+	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
+	amend      = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	tree       = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
+	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $@ 2>/dev/null"
 [status]
 	branch = true
 	short = true
@@ -122,3 +126,5 @@
 	required = true
 [diff "ipynb"]
 	textconv = nbstripout -t
+[pager]
+	branch = false

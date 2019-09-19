@@ -1,40 +1,24 @@
 #!/bin/bash
 ################################################################################
 # setup
-# This script creates symlinks from $HOME to the committed files in $HOME/dotfiles
+# Creates symlinks from $HOME to the committed files in $HOME/dotfiles
 ################################################################################
 # Files to be ignored
-# Just a few of them yo; want to symlink everything else
-exclude=(README.md setup cleanup .gitignore learning originals)
+exclude=(README.md setup cleanup .gitignore originals)
 
-# Some syncing notes; use the following to reset if stuff changed:
-# git fetch --all
-# git reset --hard origin/master
-# This will just re-clone everything, forget local changes
-
-# Variables
-# if hash realpath 2>/dev/null; then
-#   dotfiles="$(realpath ${0%/*})" # place where everything stored
-# else # realpath not avialable on linux often
-#   dotfiles="$(readlink -f ${0%/*})"
-# fi # have determined abs path
-dotfiles=~/dotfiles # other commands can be unpredictable
-cd $dotfiles # move to this directory, if not present
-storage="$dotfiles/originals" # place old files into here
+# Setup
+root="$HOME"
+dotfiles="$HOME/dotfiles"
+cd $dotfiles
+[ $? -ne 0 ] && echo "Error: dotfiles repo should be cloned into \$HOME." && exit 1
 files=($(git ls-tree --name-only master | xargs)) # get list of committed files
+storage="$dotfiles/originals"
+[ -d $storage ] || mkdir $storage
 
-# Create storage for old dotfiles
-echo "Creating \"$storage\" for backup of any existing dotfiles..."
-[ ! -d $storage ] && mkdir $storage
-
-# Move existing stuff to storage, then create symlinks 
-# Only move if the item itself is not a symlink
-root="$HOME" # default location for real dotfiles
+# Move existing stuff to storage, then create symlinks
 for file in ${files[@]}; do # iterate through files
-  # if [ $file != "setup" ] && [ $file != ".gitignore" ]; then
-  if [[ ! " ${exclude[@]} " =~ " $file " ]]; then
+  if ! [[ " ${exclude[@]} " =~ " $file " ]]; then
     echo "Creating symlink to $file in $HOME/..."
-    # Be conservative
     if [ -L $root/$file ]; then
       echo "Removing existing symlink $root/$file..."
       rm $root/$file # remove if symlink
@@ -42,8 +26,6 @@ for file in ${files[@]}; do # iterate through files
       echo "Moving existing $file file to $storage..."
       mv $root/$file $storage/ # copy if not
     fi
-    # Finally create symlink
-    # Make sure source-file is path RELATIVE to current location
     ln -s $dotfiles/$file $root/$file
   fi
 done

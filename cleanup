@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# This file cleans up random symlinks in the home directory
+###############################################################################
+# Remove all symlinks to dotfiles in the home directory
+###############################################################################
 shopt -s dotglob # show hidden files as well
 for f in ~/*; do
-  if [ -L "$f" ]; then
-    if [[ "$(readlink "$f")" =~ "dotfiles" ]]; then
-      # echo "Actual filename \"$f\"."
-      echo "Removing dotfile symlink \"$f\"."
-      rm "$f"
-    fi
-  fi
+  [ -L "$f" ] || continue
+  [[ "$(readlink "$f")" =~ "dotfiles" ]] || continue
+  echo "Removing dotfile symlink \"$f\"."
+  rm "$f"
 done
