@@ -69,7 +69,7 @@ syn match   awkSpecialCharacter display contained "\\x[0-9A-Fa-f]\+"
 
 syn match   awkFieldVars	"\$\d\+"
 
-"catch errors caused by wrong parenthesis
+" catch errors caused by wrong parenthesis
 syn region	awkParen	transparent start="(" end=")" contains=ALLBUT,awkParenError,awkSpecialCharacter,awkArrayElement,awkArrayArray,awkTodo,awkRegExp,awkBrktRegExp,awkBrackets,awkCharClass
 syn match	awkParenError	display ")"
 syn match	awkInParen	display contained "[{}]"
@@ -104,29 +104,29 @@ syn match  awkFloat		display "[+-]\=\<\d\+\.\d+\>"
 " Floating point number, starting with a dot.
 syn match  awkFloat		display "[+-]\=\<.\d+\>"
 syn case ignore
-"floating point number, with dot, optional exponent
+" floating point number, with dot, optional exponent
 syn match  awkFloat	display "\<\d\+\.\d*\(e[-+]\=\d\+\)\=\>"
-"floating point number, starting with a dot, optional exponent
+" floating point number, starting with a dot, optional exponent
 syn match  awkFloat	display "\.\d\+\(e[-+]\=\d\+\)\=\>"
-"floating point number, without dot, with exponent
+" floating point number, without dot, with exponent
 syn match  awkFloat	display "\<\d\+e[-+]\=\d\+\>"
 syn case match
 
-"syn match  awkIdentifier	"\<[a-zA-Z_][a-zA-Z0-9_]*\>"
+" syn match  awkIdentifier	"\<[a-zA-Z_][a-zA-Z0-9_]*\>"
 
 " Arithmetic operators: +, and - take care of ++, and --
-"syn match   awkOperator	"+\|-\|\*\|/\|%\|="
-"syn match   awkOperator	"+=\|-=\|\*=\|/=\|%="
-"syn match   awkOperator	"^\|^="
+" syn match   awkOperator	"+\|-\|\*\|/\|%\|="
+" syn match   awkOperator	"+=\|-=\|\*=\|/=\|%="
+" syn match   awkOperator	"^\|^="
 
 " Comparison expressions.
-"syn match   awkExpression	"==\|>=\|=>\|<=\|=<\|\!="
-"syn match   awkExpression	"\~\|\!\~"
-"syn match   awkExpression	"?\|:"
-"syn keyword awkExpression	in
+" syn match   awkExpression	"==\|>=\|=>\|<=\|=<\|\!="
+" syn match   awkExpression	"\~\|\!\~"
+" syn match   awkExpression	"?\|:"
+" syn keyword awkExpression	in
 
 " Boolean Logic (OR, AND, NOT)
-"syn match  awkBoolLogic	"||\|&&\|\!"
+" syn match  awkBoolLogic	"||\|&&\|\!"
 
 " This is overridden by less-than & greater-than.
 " Put this above those to override them.
@@ -134,8 +134,8 @@ syn case match
 " less/greater than (most of the time), but it won't work yet because
 " keywords always have precedence over match & region.
 " File I/O: (print foo, bar > "filename") & for nawk (getline < "filename")
-"syn match  awkFileIO		contained ">"
-"syn match  awkFileIO		contained "<"
+" syn match  awkFileIO		contained ">"
+" syn match  awkFileIO		contained "<"
 
 " Expression separators: ';' and ','
 syn match  awkSemicolon	";"
@@ -187,8 +187,8 @@ if version >= 508 || !exists("did_awk_syn_inits")
   HiLink awkFloat		Float
 
   HiLink awkFileIO		Special
-  "HiLink awkOperator		Special
-  "HiLink awkExpression		Special
+  " HiLink awkOperator		Special
+  " HiLink awkExpression		Special
   HiLink awkBoolLogic		Special
 
   HiLink awkPatterns		Special
@@ -198,7 +198,7 @@ if version >= 508 || !exists("did_awk_syn_inits")
   HiLink awkLineSkip		Special
   HiLink awkSemicolon		Special
   HiLink awkComma		Special
-  "HiLink awkIdentifier		Identifier
+  " HiLink awkIdentifier		Identifier
 
   HiLink awkComment		Comment
   HiLink awkTodo		Todo

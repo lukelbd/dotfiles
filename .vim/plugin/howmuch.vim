@@ -1,40 +1,40 @@
 " HowMuch : calculate visual selected math expressions
 " Author  : Kai Yuan <kent.yuan@gmail.com>
 " License: {{{
-"Copyright (c) 2013 Kai Yuan
-"Permission is hereby granted, free of charge, to any person obtaining a copy of
-"this software and associated documentation files (the "Software"), to deal in
-"the Software without restriction, including without limitation the rights to
-"use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-"the Software, and to permit persons to whom the Software is furnished to do so,
-"subject to the following conditions:
+" Copyright (c) 2013 Kai Yuan
+" Permission is hereby granted, free of charge, to any person obtaining a copy of
+" this software and associated documentation files (the "Software"), to deal in
+" the Software without restriction, including without limitation the rights to
+" use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+" the Software, and to permit persons to whom the Software is furnished to do so,
+" subject to the following conditions:
 "
-"The above copyright notice and this permission notice shall be included in all
-"copies or substantial portions of the Software.
+" The above copyright notice and this permission notice shall be included in all
+" copies or substantial portions of the Software.
 "
-"THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-"IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-"FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-"COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-"IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-"CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+" THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+" IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+" FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+" COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+" IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+" CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-"Global settings
-let g:HowMuch_auto_engines=['py', 'bc'] "python engine uses from math import *
-let g:HowMuch_scale=3 "precision
+" Global settings
+let g:HowMuch_auto_engines = ['py', 'bc'] " python engine uses from math import *
+let g:HowMuch_scale = 3 " precision
 
-"Command to display version number
+" Command to display version number
 " if exists("g:loaded_HowMuch")
 "   finish
 " endif
 let g:loaded_HowMuch = 1
 let s:version ="1.0.2"
-"command to check version
+" command to check version
 command! HowMuchVersion echo "HowMuch Version: " . s:version
-":HowMuch command
+" :HowMuch command
 command! -range -nargs=* HowMuch call HowMuch#DoWithCommand(<q-args>)
 
-"<Plug> mappings for auto engine
+" <Plug> mappings for auto engine
 vnoremap <silent><unique> <Plug>AutoCalcReplace            :call HowMuch#HowMuch(0,0,0,'auto')<cr>
 vnoremap <silent><unique> <Plug>AutoCalcReplaceWithSum     :call HowMuch#HowMuch(0,0,1,'auto')<cr>
 vnoremap <silent><unique> <Plug>AutoCalcAppend             :call HowMuch#HowMuch(1,0,0,'auto')<cr>
@@ -42,7 +42,7 @@ vnoremap <silent><unique> <Plug>AutoCalcAppendWithEq       :call HowMuch#HowMuch
 vnoremap <silent><unique> <Plug>AutoCalcAppendWithSum      :call HowMuch#HowMuch(1,0,1,'auto')<cr>
 vnoremap <silent><unique> <Plug>AutoCalcAppendWithEqAndSum :call HowMuch#HowMuch(1,1,1,'auto')<cr>
 
-"<Plug> mappings for bc engine
+" <Plug> mappings for bc engine
 vnoremap <silent><unique> <Plug>BcCalcReplace              :call HowMuch#HowMuch(0,0,0,'bc')<cr>
 vnoremap <silent><unique> <Plug>BcCalcReplaceWithSum       :call HowMuch#HowMuch(0,0,1,'bc')<cr>
 vnoremap <silent><unique> <Plug>BcCalcAppend               :call HowMuch#HowMuch(1,0,0,'bc')<cr>
@@ -50,7 +50,7 @@ vnoremap <silent><unique> <Plug>BcCalcAppendWithEq         :call HowMuch#HowMuch
 vnoremap <silent><unique> <Plug>BcCalcAppendWithSum        :call HowMuch#HowMuch(1,0,1,'bc')<cr>
 vnoremap <silent><unique> <Plug>BcCalcAppendWithEqAndSum   :call HowMuch#HowMuch(1,1,1,'bc')<cr>
 
-"<Plug> mappings for vim engine
+" <Plug> mappings for vim engine
 vnoremap <silent><unique> <Plug>VimCalcReplace             :call HowMuch#HowMuch(0,0,0,'vim')<cr>
 vnoremap <silent><unique> <Plug>VimCalcReplaceWithSum      :call HowMuch#HowMuch(0,0,1,'vim')<cr>
 vnoremap <silent><unique> <Plug>VimCalcAppend              :call HowMuch#HowMuch(1,0,0,'vim')<cr>
@@ -58,7 +58,7 @@ vnoremap <silent><unique> <Plug>VimCalcAppendWithEq        :call HowMuch#HowMuch
 vnoremap <silent><unique> <Plug>VimCalcAppendWithSum       :call HowMuch#HowMuch(1,0,1,'vim')<cr>
 vnoremap <silent><unique> <Plug>VimCalcAppendWithEqAndSum  :call HowMuch#HowMuch(1,1,1,'vim')<cr>
 
-"<Plug> mappings for python engine
+" <Plug> mappings for python engine
 vnoremap <silent><unique> <Plug>PyCalcReplace              :call HowMuch#HowMuch(0,0,0,'py')<cr>
 vnoremap <silent><unique> <Plug>PyCalcReplaceWithSum       :call HowMuch#HowMuch(0,0,1,'py')<cr>
 vnoremap <silent><unique> <Plug>PyCalcAppend               :call HowMuch#HowMuch(1,0,0,'py')<cr>
@@ -66,9 +66,9 @@ vnoremap <silent><unique> <Plug>PyCalcAppendWithEq         :call HowMuch#HowMuch
 vnoremap <silent><unique> <Plug>PyCalcAppendWithSum        :call HowMuch#HowMuch(1,0,1,'py')<cr>
 vnoremap <silent><unique> <Plug>PyCalcAppendWithEqAndSum   :call HowMuch#HowMuch(1,1,1,'py')<cr>
 
-"===========================================================
+" ===========================================================
 " original code
-"default mappings for auto
+" default mappings for auto
 " if !hasmapto('<Plug>AutoCalcReplace','v')
 "   vmap <leader><leader>? <Plug>AutoCalcReplace
 " endif

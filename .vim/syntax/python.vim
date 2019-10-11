@@ -15,8 +15,8 @@ endif
 "
 " Commands
 "
-command! -buffer Python2Syntax let b:python_version_2 = 1 | let &syntax=&syntax
-command! -buffer Python3Syntax let b:python_version_2 = 0 | let &syntax=&syntax
+command! -buffer Python2Syntax let b:python_version_2 = 1 | let &syntax = &syntax
+command! -buffer Python3Syntax let b:python_version_2 = 0 | let &syntax = &syntax
 
 " Enable option if it's not defined
 function! s:EnableByDefault(name)
@@ -361,12 +361,12 @@ if s:Enabled('g:python_highlight_builtin_funcs')
       let s:funcs_re .= '|ascii|exec|print'
   endif
 
-  "Note: modified by lukelbd to only highlight when builtin functions are being *called*, otherwise
-  "variables sharing same name as builtin function get highlighted
+  " Note: modified by lukelbd to only highlight when builtin functions are being *called*, otherwise
+  " variables sharing same name as builtin function get highlighted
   let s:funcs_re = 'syn match pythonBuiltinFunc ''\v\.@<!\zs<%(' . s:funcs_re . ')>\ze\('
   " let s:funcs_re .= '(\s*\=)@!'
 
-  "Note: this closes the regex string with single quote, and calls function
+  " Note: this closes the regex string with single quote, and calls function
   execute s:funcs_re . ''''
   unlet s:funcs_re
 endif

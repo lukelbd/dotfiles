@@ -1,74 +1,74 @@
 " Author: Luke Davis (lukelbd@gmail.com)
 " Date: 2018-09-20
 "------------------------------------------------------------------------------"
-"Various settings and macros for python files
-"Includes a couple nice features for converting {'a':1} to a=1 
-"easily; can do this line by line, or for a whole dictionary.
+" Various settings and macros for python files
+" Includes a couple nice features for converting {'a':1} to a=1 
+" easily; can do this line by line, or for a whole dictionary.
 "------------------------------------------------------------------------------"
 " if exists("b:did_ftplugin") && exists("b:did_indent")
 "   finish
 " endif
-" let b:did_ftplugin=1
-" let b:did_indent=1
-"Tab settings; normally keep it to just 2 spaces
+" let b:did_ftplugin = 1
+" let b:did_indent = 1
+" Tab settings; normally keep it to just 2 spaces
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
-"Run current script in shell
+" Run current script in shell
 nnoremap <silent> <buffer> <C-z> :update<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
-"Use period (.) as part of iskeyword
-"Note: This actually triggers pythonNumberError syntax group to highlight numbers
-"with period but no decimal places -- perhaps a good thing, because has poor readability.
+" Use period (.) as part of iskeyword
+" Note: This actually triggers pythonNumberError syntax group to highlight numbers
+" with period but no decimal places -- perhaps a good thing, because has poor readability.
 setlocal iskeyword-=.
-"New indent expression
+" New indent expression
 setlocal indentexpr=s:pyindent(v:lnum)
-"Builtin python ftplugin syntax option; these should be provided with VIM by default
-let g:python_highlight_all=1
-"For pyDiction plugin
+" Builtin python ftplugin syntax option; these should be provided with VIM by default
+let g:python_highlight_all = 1
+" For pyDiction plugin
 let g:pydiction_location = expand('~').'/.vim/plugged/Pydiction/complete-dict'
 
 "------------------------------------------------------------------------------"
-"Pydoc documentation command
-"Couldn't really find equivalent tool in python-mode or jedi-vim and
-"didn't like their builtin versions, so made this. Deciphers module aliases.
-"Note: Works in all situations as long as module alias is followed by '.'
+" Pydoc documentation command
+" Couldn't really find equivalent tool in python-mode or jedi-vim and
+" didn't like their builtin versions, so made this. Deciphers module aliases.
+" Note: Works in all situations as long as module alias is followed by '.'
 "------------------------------------------------------------------------------"
 function! s:pydoc(...)
-  "Look up either 1) word (with dots) under cursor or 2) passed argument.
+  " Look up either 1) word (with dots) under cursor or 2) passed argument.
   if a:0 && len(a:1)>0
-    let string=a:1
+    let string = a:1
   else
     setlocal iskeyword+=.
-    let string=expand('<cword>')
+    let string = expand('<cword>')
     setlocal iskeyword-=.
   endif
-  "Translate first word according to list of common import aliases
-  "Get aliases using system grep (which calls sytem grep, and is builtin)
-  let space="[ \t]" "space or literal tab (double quotes)
-  let nonspace="[^ \t]" "non-space
-  let results1=system("grep '".'^import\b'.space.'*'.nonspace.'*'.space.'*\bas\b'.space.'*\w*'."' ".@%)
-  let results2=split(results1, "\n") "older versions of vim can't write different type to same variable!
-  let b:aliases={} "helpful to add this to list
+  " Translate first word according to list of common import aliases
+  " Get aliases using system grep (which calls sytem grep, and is builtin)
+  let space = "[ \t]" "space or literal tab (double quotes)
+  let nonspace = "[^ \t]" "non-space
+  let results1 = system("grep '".'^import\b'.space.'*'.nonspace.'*'.space.'*\bas\b'.space.'*\w*'."' ".@%)
+  let results2 = split(results1, "\n") "older versions of vim can't write different type to same variable!
+  let b:aliases = {} " helpful to add this to list
   for result in results2
-    let alias=split(substitute(result, '^import\s*\(\S*\)\s*\<as\>\s*\(\w*\)', '\1:\2', ''), ":")
+    let alias = split(substitute(result, '^import\s*\(\S*\)\s*\<as\>\s*\(\w*\)', '\1:\2', ''), ":")
     if string =~ escape('^'.alias[1].'.', '.')
-      let string=substitute(string, '^'.alias[1].'.', alias[0].'.', '')
+      let string = substitute(string, '^'.alias[1].'.', alias[0].'.', '')
       break
     endif
     let b:aliases[alias[1]] = alias[0]
   endfor
-  "Get aliases using :vimgrep and loclists (dumb idea)
+  " Get aliases using :vimgrep and loclists (dumb idea)
   " translate = {'plt':'matplotlib.pyplot', 'numpy':'np', 'xarray':'xr', 'pandas':'pd'}
   " call setloclist(0,[]) "set location list for current window (0) to empty (not necessary unless use lvimgrepadd)
   " lvimgrep /^import\>\s*\S*\s*\<as\>\s*\zs\w*/ % "add matches to loclist
-  "Finally try calling pydoc
-  "Note system() will fail because won't bring up interactie prompt
+  " Finally try calling pydoc
+  " Note system() will fail because won't bring up interactie prompt
   exe '!clear; pydoc '.string
 endfunction
 command! -nargs=? PyDoc silent call <sid>pydoc(<q-args>) | redraw!
 nnoremap <buffer> <silent> <Leader>d :call <sid>pydoc()<CR>:redraw!<CR>
 
 "------------------------------------------------------------------------------"
-"Abbreviations
-"Actually these were fucking annoying, forget it
+" Abbreviations
+" Actually these were fucking annoying, forget it
 "------------------------------------------------------------------------------"
 " inoreabbrev <buffer> true  True
 " inoreabbrev <buffer> false False
@@ -81,26 +81,26 @@ nnoremap <buffer> <silent> <Leader>d :call <sid>pydoc()<CR>:redraw!<CR>
 " Do son on current line, or within visual selection
 "------------------------------------------------------------------------------"
 function! s:kwtrans(mode) range
-  "Will allow for non-line selections
-  "First get columns
-  let winview=winsaveview()
+  " Will allow for non-line selections
+  " First get columns
+  let winview = winsaveview()
   if a:firstline==a:lastline
     let firstcol = 0
-    let lastcol  = col('$')-2 "col('$') is location of newline char, and strings are zero-indexed
+    let lastcol  = col('$')-2 " col('$') is location of newline char, and strings are zero-indexed
   else
     let firstcol = col("'<")-1 "cause strings are zero-indexed
     let lastcol  = col("'>")-1
   endif
-  let fixed=[]
+  let fixed = []
   for line in range(a:firstline,a:lastline)
-    "Annoying ugly block for getting visual selection
-    "Want to *ignore* stuff not in selection, but on same line as
-    "the start/end of selection, because it's more flexible
+    " Annoying ugly block for getting visual selection
+    " Want to *ignore* stuff not in selection, but on same line as
+    " the start/end of selection, because it's more flexible
     let string = getline(line)
     let prefix = ''
     let suffix = ''
     if line==a:firstline && line==a:lastline
-      let prefix = (firstcol>=1 ? string[:firstcol-1] : '') "damn negative indexing makes this complicated
+      let prefix = (firstcol>=1 ? string[:firstcol-1] : '') " damn negative indexing makes this complicated
       let suffix = string[lastcol+1:]
       " let string = string[:lastcol] "just plain easier
       " let string = string[firstcol:]
@@ -112,25 +112,25 @@ function! s:kwtrans(mode) range
       let suffix = string[lastcol+1:]
       let string = string[:lastcol]
     endif
-    "Double check
+    " Double check
     if len(matchstr(string,':'))>0 && len(matchstr(string,'-'))>0
       echom "Error: Ambiguous line." | return
     endif
-    "Next finally start matching shit
-    "Turn colons into equals
+    " Next finally start matching shit
+    " Turn colons into equals
     " echo 'line:'.a:firstline.'-'.a:lastline.' col:'.firstcol.'-'.lastcol.' string:'.string.' prefix:'.prefix.' suffix:'.suffix | sleep 2
-    if a:mode==1 "kwargs to dictionary
+    if a:mode==1 " kwargs to dictionary
       let string = substitute(string, '\<\ze\w\+\s*=', "'", 'g') "add leading quote first
       let string = substitute(string, '\>\ze\s*=', "'", 'g')
       let string = substitute(string, '=', ':', 'g')
-    elseif a:mode==0 "dictionary to kwargs
+    elseif a:mode==0 " dictionary to kwargs
       let string = substitute(string, "\\>['\"]".'\ze\s*:', '', 'g') "remove trailing quote first
       let string = substitute(string, "['\"]\\<".'\ze\w\+\s*:', '', 'g')
       let string = substitute(string, ':', '=', 'g')
     endif
     let fixed  = fixed + [prefix.string.suffix]
   endfor
-  "Replace lines with fixed text
+  " Replace lines with fixed text
   exe a:firstline.','a:lastline.'d'
   call append(a:firstline-1,fixed)
   call winrestview(winview)
@@ -577,11 +577,11 @@ function! s:pymode_blockstarter(lnum, block_start_re) " {{{
 endfunction " }}}
 
 "------------------------------------------------------------------------------"
-"Now class/module block support
-"Includes support for blocks like functions and classes
-"Since idetools.vim uses ctags for [[ and ]] motion those maps aren't necessary
-"Todo: The motion commands seem to be broken, not that we need them
-"very often. Usually just want to select stuff.
+" Now class/module block support
+" Includes support for blocks like functions and classes
+" Since idetools.vim uses ctags for [[ and ]] motion those maps aren't necessary
+" Todo: The motion commands seem to be broken, not that we need them
+" very often. Usually just want to select stuff.
 "------------------------------------------------------------------------------"
 " Motion remaps
 " nnoremap <buffer> ]]  :<C-U>call s:pymode_move('<Bslash>v^(class<bar>def)<Bslash>s', '')<CR>
@@ -619,7 +619,7 @@ vnoremap <buffer> aF :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 0)
 vnoremap <buffer> iF :<C-U>call <sid>pymode_select('^<Bslash>s*def<Bslash>s', 1)<CR>
 
 " Python-mode motion functions
-fun! s:pymode_move(pattern, flags, ...) "{{{
+fun! s:pymode_move(pattern, flags, ...) " {{{
   let cnt = v:count1 - 1
   let [line, column] = searchpos(a:pattern, a:flags . 'sW')
   let indent = indent(line)
@@ -630,21 +630,21 @@ fun! s:pymode_move(pattern, flags, ...) "{{{
     endif
   endwhile
   return [line, column]
-endfunction "}}}
+endfunction " }}}
 
-fun! s:pymode_vmove(pattern, flags) range "{{{
+fun! s:pymode_vmove(pattern, flags) range " {{{
   call cursor(a:lastline, 0)
   let end = s:pymode_move(a:pattern, a:flags)
   call cursor(a:firstline, 0)
   normal! v
   call cursor(end)
-endfunction "}}}
+endfunction " }}}
 
-fun! s:pos_le(pos1, pos2) "{{{
+fun! s:pos_le(pos1, pos2) " {{{
   return ((a:pos1[0] < a:pos2[0]) || (a:pos1[0] == a:pos2[0] && a:pos1[1] <= a:pos2[1]))
-endfunction "}}}
+endfunction " }}}
 
-fun! s:pymode_select(pattern, inner) "{{{
+fun! s:pymode_select(pattern, inner) " {{{
   let cnt = v:count1 - 1
   let orig = getpos('.')[1:2]
   let snum = s:pymode_blockstart(orig[0], a:pattern)
@@ -670,9 +670,9 @@ fun! s:pymode_select(pattern, inner) "{{{
     normal! v
     call cursor(enum, len(getline(enum)))
   endif
-endfunction "}}}
+endfunction " }}}
 
-fun! s:pymode_blockstart(lnum, ...) "{{{
+fun! s:pymode_blockstart(lnum, ...) " {{{
   let pattern = a:0 ? a:1 : '^\s*\(@\|class\s.*:\|def\s\)'
   let lnum = a:lnum + 1
   let indent = 100
@@ -693,9 +693,9 @@ fun! s:pymode_blockstart(lnum, ...) "{{{
     let indent = indent(lnum)
   endwhile
   return 0
-endfunction "}}}
+endfunction " }}}
 
-fun! s:pymode_blockend(lnum, ...) "{{{
+fun! s:pymode_blockend(lnum, ...) " {{{
   let indent = a:0 ? a:1 : indent(a:lnum)
   let lnum = a:lnum
   while lnum
@@ -706,5 +706,5 @@ fun! s:pymode_blockend(lnum, ...) "{{{
     endif
   endwhile
   return line('$')
-endfunction "}}}
+endfunction " }}}
 " vim: fdm=marker:fdl=0

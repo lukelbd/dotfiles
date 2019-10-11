@@ -59,7 +59,7 @@ syn match nclNumber	display	"\<\d\+\.\d\+\([dq][-+]\=\d\+\)\=\(_\a\w*\)\=\>"
 syn match nclNumber	display	"\<\d\+\.\d\+\(e[-+]\=\d\+\)\=\(_\a\w*\)\=\>"
 
 
-"syn match nclBoolean	"\.\s*\(True\|False\)\s*\."
+" syn match nclBoolean	"\.\s*\(True\|False\)\s*\."
 syn keyword nclBoolean   True False 
 
 " pattern matching for comments

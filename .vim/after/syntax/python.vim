@@ -12,11 +12,11 @@
 "
 " " Load the ReST syntax file; but first we clear the current syntax
 " " definition, as rst.vim does nothing if b:current_syntax is defined.
-" let s:current_syntax=b:current_syntax
+" let s:current_syntax = b:current_syntax
 " unlet b:current_syntax
 " " Load the ReST syntax file
 " syntax include @ReST $VIMRUNTIME/syntax/rst.vim
-" let b:current_syntax=s:current_syntax
+" let b:current_syntax = s:current_syntax
 " unlet s:current_syntax
 "
 " " clear the rstLiteralBlock

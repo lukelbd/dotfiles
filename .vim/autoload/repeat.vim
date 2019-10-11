@@ -136,8 +136,8 @@ if !hasmapto('<Plug>(RepeatRedo)', 'n')
     nmap <C-R> <Plug>(RepeatRedo)
 endif
 
-"Deleting bufwritepre/bufwritepost did not fix the problem where autosave
-"ruins dot-repeat commands. Turns out the answer is probably pretty complex.
+" Deleting bufwritepre/bufwritepost did not fix the problem where autosave
+" ruins dot-repeat commands. Turns out the answer is probably pretty complex.
 augroup repeatPlugin
     autocmd!
     autocmd BufLeave,BufWritePre,BufReadPre * let g:repeat_tick = (g:repeat_tick == b:changedtick || g:repeat_tick == 0) ? 0 : -1

@@ -1,2 +1,2 @@
-"Syntax for NCL files
+" Syntax for NCL files
 au BufRead,BufNewFile *.ncl set filetype=ncl

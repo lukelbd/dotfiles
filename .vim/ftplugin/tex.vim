@@ -1,35 +1,35 @@
-"LaTeX specific settings
-"Restrict concealmeant to just symbols and stuff
+" LaTeX specific settings
+" Restrict concealmeant to just symbols and stuff
 " a=accents/ligatures
 " b=bold/italics
 " d=delimiters (e.g. $$ math mode)
 " m=math symbols
 " g=Greek
 " s=superscripts/subscripts
-let g:tex_conceal='agm'
+let g:tex_conceal = 'agm'
 
-"Allow @ in makeatletter, allow texmathonly outside of math regions (i.e.
-"don't highlight [_^] when you think they are outside math zone
-let g:tex_stylish=1
+" Allow @ in makeatletter, allow texmathonly outside of math regions (i.e.
+" don't highlight [_^] when you think they are outside math zone
+let g:tex_stylish = 1
 
-"Disable spell checking in verbatim mode and comments, disable errors
-" let g:tex_fast="" "fast highlighting, but pretty ugly
-let g:tex_fold_enable=1
-let g:tex_comment_nospell=1
-let g:tex_verbspell=0
-let g:tex_no_error=1
+" Disable spell checking in verbatim mode and comments, disable errors
+" let g:tex_fast = "" "fast highlighting, but pretty ugly
+let g:tex_fold_enable = 1
+let g:tex_comment_nospell = 1
+let g:tex_verbspell = 0
+let g:tex_no_error = 1
 
-"Typesetting LaTeX and displaying PDF viewer
-"Copied s:vim8 from autoreload/plug.vim file
+" Typesetting LaTeX and displaying PDF viewer
+" Copied s:vim8 from autoreload/plug.vim file
 let s:vim8 = has('patch-8.0.0039') && exists('*job_start')
 function! s:latex_background(...)
   if !s:vim8
     echom "Error: Latex compilation requires vim>=8.0"
     return 1
   endif
-  "Jump to logfile if it is open, else open one
-  let opts=(a:0 ? a:1 : '') "flags
-  let lognum=bufwinnr(logfile)
+  " Jump to logfile if it is open, else open one
+  let opts = (a:0 ? a:1 : '') " flags
+  let lognum = bufwinnr(logfile)
   if lognum==-1
     silent! exe string(winheight('.')/4).'split '.logfile
     " setlocal autoread "open file and set autoread before starting script!
@@ -39,13 +39,13 @@ function! s:latex_background(...)
     silent! edit +$
     silent! exe winnr('#').'wincmd w'
   endif
-  "Run function
+  " Run function
   silent! call system('~/bin/vimlatex '.shellescape(@%).' '.opts.' &>'.logfile.' &')
   echom "Running vimlatex in background."
 endfunction
-"Refresh log
+" Refresh log
 function! s:latex_refresh()
-  let logfile=expand('%:r').'.exe'
+  let logfile = expand('%:r').'.exe'
   if expand('%') == logfile
     silent! edit +$
   else
@@ -54,7 +54,7 @@ function! s:latex_refresh()
     silent! exe winnr('#').'wincmd w'
   endif
 endfunction
-"Maps
+" Maps
 noremap <silent> <buffer> <C-z> :call <sid>latex_background()<CR>
 noremap <silent> <buffer> <Leader>z :call <sid>latex_background(' --diff')<CR>
 noremap <silent> <buffer> <Leader>Z :call <sid>latex_background(' --word')<CR>

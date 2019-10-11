@@ -47,16 +47,16 @@
 "
 " Plug options:
 "
-"| Option                  | Description                                      |
-"| ----------------------- | ------------------------------------------------ |
-"| `branch`/`tag`/`commit` | Branch/tag/commit of the repository to use       |
-"| `rtp`                   | Subdirectory that contains Vim plugin            |
-"| `dir`                   | Custom directory for the plugin                  |
-"| `as`                    | Use different name for the plugin                |
-"| `do`                    | Post-update hook (string or funcref)             |
-"| `on`                    | On-demand loading: Commands or `<Plug>`-mappings |
-"| `for`                   | On-demand loading: File types                    |
-"| `frozen`                | Do not update unless explicitly specified        |
+" | Option                  | Description                                      |
+" | ----------------------- | ------------------------------------------------ |
+" | `branch`/`tag`/`commit` | Branch/tag/commit of the repository to use       |
+" | `rtp`                   | Subdirectory that contains Vim plugin            |
+" | `dir`                   | Custom directory for the plugin                  |
+" | `as`                    | Use different name for the plugin                |
+" | `do`                    | Post-update hook (string or funcref)             |
+" | `on`                    | On-demand loading: Commands or `<Plug>`-mappings |
+" | `for`                   | On-demand loading: File types                    |
+" | `frozen`                | Do not update unless explicitly specified        |
 "
 " More information: https://github.com/junegunn/vim-plug
 "
@@ -919,7 +919,7 @@ function! s:finish(pull)
     call add(msgs, "Press 'R' to retry.")
   endif
   if a:pull && len(s:update.new) < len(filter(getline(5, '$'),
-                \ "v:val =~ '^- ' && v:val !~# 'Already up.to.date'"))
+                \ " v:val =~ '^- ' && v:val !~# 'Already up.to.date'"))
     call add(msgs, "Press 'D' to see the updated changes.")
   endif
   echo join(msgs, ' ')
@@ -1419,7 +1419,7 @@ class Buffer(object):
     self.num_plugs = num_plugs
 
   def __where(self, name):
-    """ Find first line with name in current buffer. Return line num. """
+    " "" Find first line with name in current buffer. Return line num. """
     found, lnum = False, 0
     matcher = re.compile('^[-+x*] {0}:'.format(name))
     for line in vim.current.buffer:
@@ -1483,13 +1483,13 @@ class Command(object):
 
   @property
   def alive(self):
-    """ Returns true only if command still running. """
+    " "" Returns true only if command still running. """
     return self.proc and self.proc.poll() is None
 
   def execute(self, ntries=3):
-    """ Execute the command with ntries if CmdTimedOut.
+    " "" Execute the command with ntries if CmdTimedOut.
         Returns the output of the command if no Exception.
-    """
+    " ""
     attempt, finished, limit = 0, False, self.timeout
 
     while not finished:
@@ -1506,7 +1506,7 @@ class Command(object):
           raise
 
   def notify_retry(self):
-    """ Retry required for command, notify user. """
+    " "" Retry required for command, notify user. """
     for count in range(3, 0, -1):
       if G_STOP.is_set():
         raise KeyboardInterrupt
@@ -1517,10 +1517,10 @@ class Command(object):
     self.callback(['Retrying ...'])
 
   def try_command(self):
-    """ Execute a cmd & poll for callback. Returns list of output.
+    " "" Execute a cmd & poll for callback. Returns list of output.
         Raises CmdFailed   -> return code for Popen isn't 0
         Raises CmdTimedOut -> command exceeded timeout without new output
-    """
+    " ""
     first_line = True
 
     try:
@@ -1569,7 +1569,7 @@ class Command(object):
       raise
 
   def terminate(self):
-    """ Terminate process and cleanup. """
+    " "" Terminate process and cleanup. """
     if self.alive:
       if G_IS_WIN:
         os.kill(self.proc.pid, signal.SIGINT)
@@ -1704,7 +1704,7 @@ def esc(name):
   return '"' + name.replace('"', '\"') + '"'
 
 def nonblock_read(fname):
-  """ Read a file with nonblock flag. Return the last line. """
+  " "" Read a file with nonblock flag. Return the last line. """
   fread = os.open(fname, os.O_RDONLY | os.O_NONBLOCK)
   buf = os.read(fread, 100000).decode('utf-8', 'replace')
   os.close(fread)
@@ -1951,8 +1951,8 @@ function! s:update_ruby()
                 end
               elsif !compare_git_uri(current_uri, uri)
                 [false, ["Invalid URI: #{current_uri}",
-                         "Expected:    #{uri}",
-                         "PlugClean required."].join($/)]
+                         " Expected:    #{uri}",
+                         " PlugClean required."].join($/)]
               else
                 if pull
                   log.call name, 'Updating ...', :update
@@ -2097,7 +2097,7 @@ function! s:git_validate(spec, check_branch)
             " Only mention PlugClean if diverged, otherwise it's likely to be
             " pushable (and probably not that messed up).
             let err = printf(
-                  \ "Diverged from origin/%s (%d commit(s) ahead and %d commit(s) behind!\n"
+                  \ " Diverged from origin/%s (%d commit(s) ahead and %d commit(s) behind!\n"
                   \ .'Backup local changes and run PlugClean and PlugUpdate to reinstall it.', a:spec.branch, ahead, behind)
           else
             let err = printf("Ahead of origin/%s by %d commit(s).\n"

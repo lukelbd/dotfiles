@@ -13,22 +13,22 @@
 " Date: 2018-07-26
 " Custom syntax modifications
 "------------------------------------------------------------------------------"
-"Things recommended from :help tex-syntax
-"First, more lines for accuracy
+" Things recommended from :help tex-syntax
+" First, more lines for accuracy
 " syntax sync minlines=2000
 syntax sync minlines=500
-"Add math zones
-"The first arg is an identifying suffix -- must be between K and U
-"The last arg is whether environment has a 'starred' form, i.e. \begin{align*}
-"Explictly add these cause why not
+" Add math zones
+" The first arg is an identifying suffix -- must be between K and U
+" The last arg is whether environment has a 'starred' form, i.e. \begin{align*}
+" Explictly add these cause why not
 call TexNewMathZone("M","equation",1)
 call TexNewMathZone("N","align",1)
-"Disable spellcheck within *yellow-highlighted curly brace commands*, but does
-"*not* disable spellcheck within environments like textbf and naked braces {}
-"Just copied the :SyntaxFile line, but removed 'transparent' flag
+" Disable spellcheck within *yellow-highlighted curly brace commands*, but does
+" *not* disable spellcheck within environments like textbf and naked braces {}
+" Just copied the :SyntaxFile line, but removed 'transparent' flag
 syn region texMatcherNM matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]" end="}"
-    \ contains=@texMatchNMGroup,texError,@NoSpell "this is exact copy of :SyntaxFile line, but removes 'transparent' flag
-"Conceal backslash commands; only matchadd works for some reason
+    \ contains=@texMatchNMGroup,texError,@NoSpell " this is exact copy of :SyntaxFile line, but removes 'transparent' flag
+" Conceal backslash commands; only matchadd works for some reason
 " * WARNING: This will make highlight searches really weird if you make the 'priority' (arg 3)
 "   higher than the :hlsearch priority (0); see manual. Default is 10.
 " * ID of -1 (arg 4) means 'assign no id in particular; whatever is available'
@@ -38,9 +38,9 @@ syn region texMatcherNM matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]" end="
 try
   call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
 catch /.*/
-  "do nothing; older vim versions only accept 4 matchadd args, so concealing backslashes as above is impossible
+  " do nothing; older vim versions only accept 4 matchadd args, so concealing backslashes as above is impossible
 endtry
-"For some reason a syn match command fails
+" For some reason a syn match command fails
 " * See: https://vi.stackexchange.com/q/5696/8084
 " * Appears that wherever the backslash is concealed, this one 'overwrites' existing
 "   match.
@@ -50,7 +50,7 @@ endtry
 " Original plugin found below
 "------------------------------------------------------------------------------"
 " Perform spell checking when there is no syntax
-" - This will enable spell checking e.g. in toplevel of included files
+"- This will enable spell checking e.g. in toplevel of included files
 syntax spell toplevel
 
 " {{{1 Improve handling of newcommand and newenvironment commands
@@ -84,14 +84,14 @@ syntax match texInputFile /\\includepdf\%(\[.\{-}\]\)\=\s*{.\{-}}/
       \ contains=texStatement,texInputCurlies,texInputFileOpt
 
 " Allow subequations (fixes #1019)
-" - This should be temporary, as it seems subequations is erroneously part of
+"- This should be temporary, as it seems subequations is erroneously part of
 "   texBadMath from Charles Campbell's syntax plugin.
 syn match texBeginEnd "\(\\begin\>\|\\end\>\)\ze{subequations}" nextgroup=texBeginEndName
 
 " {{{1 Italic font, bold font and conceals
 
-"EDIT: Have disabled this feature, because we turned off the 'make bright colors
-"bold' in iTerm. So is now useless. The loop makes sure textbf highlighting is on.
+" EDIT: Have disabled this feature, because we turned off the 'make bright colors
+" bold' in iTerm. So is now useless. The loop makes sure textbf highlighting is on.
 " if get(g:, 'tex_fast', 'b') =~# 'b'
 "   let s:conceal = (has('conceal') && get(g:, 'tex_conceal', 'b') =~# 'b')
 "         \ ? 'concealends' : ''
@@ -277,7 +277,7 @@ syntax region texZone
       \ keepend
       \ contains=texBeginEnd
 syntax match texInputFile
-      \ "\\lstinputlisting\s*\(\[.*\]\)\={.\{-}}"
+      \ " \\lstinputlisting\s*\(\[.*\]\)\={.\{-}}"
       \ contains=texStatement,texInputCurlies,texInputFileOpt
 syntax match texZone "\\lstinline\s*\(\[.*\]\)\={.\{-}}"
 

@@ -9,14 +9,14 @@
 let g:loaded_highlightMarks = 1
 
 " Options
-if (!exists('g:highlightMarks_colors')) "raw colors
+if (!exists('g:highlightMarks_colors')) " raw colors
   let g:highlightMarks_colors = ['magenta']
 endif
-if (!exists('g:highlightMarks_cterm_colors')) "used for cterm colors
+if (!exists('g:highlightMarks_cterm_colors')) " used for cterm colors
   " let g:highlightMarks_cterm_colors = [5]
-  let g:highlightMarks_cterm_colors = [5] "5 is magenta, 4 is blue, etc.
+  let g:highlightMarks_cterm_colors = [5] " 5 is magenta, 4 is blue, etc.
 endif
-if (!exists('g:highlightMarks_useSigns')) "use signs or not
+if (!exists('g:highlightMarks_useSigns')) " use signs or not
   let g:highlightMarks_useSigns = 0
 endif
 
@@ -24,7 +24,7 @@ endif
 " because originally scripts was designed for file-global marks
 augroup highlight_marks
   au!
-  au BufRead * let b:highlights={} "when reading for first time, set
+  au BufRead * let b:highlights = {} " when reading for first time, set
   " au BufRead * if !exists('b:highlights') | let b:highlights = {} | endif
 augroup END
 

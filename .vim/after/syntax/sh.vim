@@ -18,43 +18,43 @@
 " syn cluster shCommandSubList add=AWKScriptEmbedded
 " hi def link AWKCommand Type
 "------------------------------------------------------------------------------"
-"Manage shell type
-"Copied from somewhere, maybe part of PBS
+" Manage shell type
+" Copied from somewhere, maybe part of PBS
 if !exists("b:is_kornshell") && !exists("b:is_bash")
   if exists("g:is_posix") && !exists("g:is_kornshell")
-   let g:is_kornshell= g:is_posix
+   let g:is_kornshell =  g:is_posix
   endif
   if exists("g:is_kornshell")
-    let b:is_kornshell= 1
+    let b:is_kornshell =  1
     if exists("b:is_sh")
       unlet b:is_sh
     endif
   elseif exists("g:is_bash")
-    let b:is_bash= 1
+    let b:is_bash =  1
     if exists("b:is_sh")
       unlet b:is_sh
     endif
   else
-    let b:is_sh= 1
+    let b:is_sh =  1
   endif
 endif
 
-"Embedded syntax
-"WARNING: Was never worth it, always ended up with everything red, syntax
-"not exactly matching real syntax.
-"Another one
+" Embedded syntax
+" WARNING: Was never worth it, always ended up with everything red, syntax
+" not exactly matching real syntax.
+" Another one
 " .vim/after/syntax/perl/heredoc-perl.vim
 " syntax include @Perl syntax/perl.vim
 " syntax region sqlSnip matchgroup=Snip start=+<<['"]RAW['"].*;\s*$+ end=+^\s*RAW$+ contains=@Perl
 " syntax region sqlSnip matchgroup=Snip start=+<<['"]TIDIED['"].*;\s*$+ end=+^\s*TIDIED$+ contains=@Perl
-"Embedded heredoc highlighting
+" Embedded heredoc highlighting
 " syntax include @PYTHON syntax/python.vim
 " syntax region hereDocPYTHON matchgroup=Statement start=/<<-\?\s*\z(PYTHON\)/ end=/^\s*\z1/ contains=@PYTHON,hereDocDeref,hereDocDerefSimple
 " syn match  hereDocDerefSimple  "\$\%(\h\w*\|\d\)"
 " syn region hereDocDeref  matchgroup=PreProc start="\${" end="}"  contains=@shDerefList,shDerefVarArray
 " hi def link hereDocDeref PreProc
 " hi def link hereDocDerefSimple PreProc
-"Value could be 'sh', 'posix', 'ksh' or 'bash'
+" Value could be 'sh', 'posix', 'ksh' or 'bash'
 " let s:bcs = b:current_syntax
 " unlet b:current_syntax
 " syntax include @PYTHON syntax/python.vim after/syntax/python.vim
@@ -65,13 +65,13 @@ endif
 "       \ containedin=@shCaseList,shCommandSubList,shFunctionList
 " hi def link shHereDocPython shRedir
 
-"PBS system, less precise highlighting
-"Simply copied from SBATCH example below
-"See also discussion here: https://unix.stackexchange.com/q/452461/112647
-"Regions
+" PBS system, less precise highlighting
+" Simply copied from SBATCH example below
+" See also discussion here: https://unix.stackexchange.com/q/452461/112647
+" Regions
 syn region shPBSComment start='^#\(PBS\)' end="\n" oneline contains=shPBSKeyword,shPBSOption,shPBSValue
 syn region shPBSValue start="=" end="$" contains=shPBSString,shPBSMailType,shPBSIdentifier,shPBSEnv,shPBSHint,shPBSMode,shPBSPropag,shPBSInterval,shPBSDist,shPBSEmail
-"Matches
+" Matches
 syn match shPBSKeyword contained '#\(PBS\)\s*'
 syn match shPBSOption contained '\-[^=]*'
 syn match shPBSNumber   contained '\d\d*'
@@ -83,12 +83,12 @@ syn match shPBSString   contained '.*'
 syn match shPBSEnv      contained '\d*L\=S\='
 syn match shPBSDist  contained  'plane\(=.*\)\='
 syn match shPBSEmail contained  '[-a-zA-Z0-9.+]*@[-a-zA-Z0-9.+]*'
-"Keywords
+" Keywords
 syn keyword shPBSHint   contained compute_bound memory_bound nomultithread multithread
 syn keyword shPBSMode   contained append truncate
 syn keyword shPBSPropag contained ALL AS CORE CPU DATA FSIZE MEMLOCK NOFILE CPROC RSS STACK
 syn keyword shPBSDist   contained block cyclic arbitrary
-"Links
+" Links
 hi def link shPBSComment  Error
 hi def link shPBSKeyword  PreProc
 hi def link shPBSOption   PreProc
@@ -106,12 +106,12 @@ hi def link shPBSInterval Special
 hi def link shPBSDist     Special
 hi def link shPBSEmail    Special
 
-"SLURM/SBATCH supercomputer system; see https://github.com/SchedMD/slurm/blob/master/contribs/slurm_completion_help/slurm.vim
-"All shSBATCHString are suspect; they probably could be narrowed down to more
-"specific regular expressions. Typical example is --mail-type or --begin
+" SLURM/SBATCH supercomputer system; see https://github.com/SchedMD/slurm/blob/master/contribs/slurm_completion_help/slurm.vim
+" All shSBATCHString are suspect; they probably could be narrowed down to more
+" specific regular expressions. Typical example is --mail-type or --begin
 syn region shSBATCHComment start='^#\(SBATCH\)' end="\n" oneline contains=shSBATCHKeyword,shSBATCHOption,shSBATCHValue
 syn region shSBATCHValue start="=" end="$" contains=shSBATCHString,shSBATCHMailType,shSBATCHIdentifier,shSBATCHEnv,shSBATCHHint,shSBATCHMode,shSBATCHPropag,shSBATCHInterval,shSBATCHDist,shSBATCHEmail
-"Options
+" Options
 syn match shSBATCHKeyword contained '#\(SBATCH\)\s*'
 syn match shSBATCHOption contained '--account='           nextgroup=shSBATCHString
 syn match shSBATCHOption contained '--acctg-freq='        nextgroup=shSBATCHNumber
@@ -189,12 +189,12 @@ syn match shSBATCHString   contained '.*'
 syn match shSBATCHEnv      contained '\d*L\=S\='
 syn match shSBATCHDist  contained  'plane\(=.*\)\='
 syn match shSBATCHEmail contained  '[-a-zA-Z0-9.+]*@[-a-zA-Z0-9.+]*'
-"Keywords
+" Keywords
 syn keyword shSBATCHHint   contained compute_bound memory_bound nomultithread multithread
 syn keyword shSBATCHMode   contained append truncate
 syn keyword shSBATCHPropag contained ALL AS CORE CPU DATA FSIZE MEMLOCK NOFILE CPROC RSS STACK
 syn keyword shSBATCHDist   contained block cyclic arbitrary
-"Links
+" Links
 hi def link shSBATCHComment  Error
 hi def link shSBATCHKeyword  PreProc
 hi def link shSBATCHOption   PreProc
