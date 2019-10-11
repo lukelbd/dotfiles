@@ -51,5 +51,5 @@ This surrounds assignments in vi script with spaces.
 ### No-space comparison operators
 This surrounds comparison operators with spaces, accounting for `<Tab>` style keystroke indicators in vim script.
 ```
-%s/\_s[^ ,\-<>@!&=\]\+\zs\(<=\|>=\|==\|<\|>\)\ze[^ ,!\-<>&=\]\+\_s/ \1 /ge
+%s/\_s[^ ,\-<>@!&=\\]\+\zs\(<=\|>=\|==\|^C|>\)\ze[^ ,!\-<>&=\\]\+\_s/ \1 /ge
 ```
