@@ -20,13 +20,15 @@ let g:tex_verbspell=0
 let g:tex_no_error=1
 
 "Typesetting LaTeX and displaying PDF viewer
-"Use C-z for compiling normally, and <Leader>Z for compiling to word document.
+"Copied s:vim8 from autoreload/plug.vim file
+let s:vim8 = has('patch-8.0.0039') && exists('*job_start')
 function! s:latex_background(...)
-  let opts=(a:0 ? a:1 : '') "flags
-  let logfile=expand('%:r').'.exe'
+  if !s:vim8
+    echom "Error: Latex compilation requires vim>=8.0"
+    return 1
+  endif
   "Jump to logfile if it is open, else open one
-  silent! call system('rm '.logfile)
-  silent! call system('touch '.logfile)
+  let opts=(a:0 ? a:1 : '') "flags
   let lognum=bufwinnr(logfile)
   if lognum==-1
     silent! exe string(winheight('.')/4).'split '.logfile
@@ -45,7 +47,7 @@ endfunction
 function! s:latex_refresh()
   let logfile=expand('%:r').'.exe'
   if expand('%') == logfile
-    edit +$
+    silent! edit +$
   else
     silent! exe bufwinnr(logfile)."wincmd w"
     silent! edit +$

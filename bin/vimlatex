@@ -19,6 +19,11 @@
 # way to consistently remove those temporary files was to query files present in
 # folder before/after compiling step; delete the new ones. This is better!
 #------------------------------------------------------------------------------#
+# Function for raising error
+raise() {
+  echo "Error: $@"
+  exit 1
+}
 # Parse args
 trap "cleanup" EXIT # remove files on exit or interruption!
 shopt -s nullglob # glob-expand into zero entries
@@ -31,15 +36,15 @@ while [ $# -gt 0 ]; do
     -d|--diff) texdiff=true ;;
     -w|--word) tex2docx=true ;;
     [^-]*)
-      [ -n "$filename" ] && echo "Error: Got multiple filenames." && exit 1
+      [ -n "$filename" ] && raise "Got multiple filenames."
       filename="$1" ;;
-    *) echo "Error: Unknown arg ${arg}." && exit 1
+    *) raise "Unknown arg ${arg}."
   esac
   shift
 done
-[ -z "$filename" ]   && echo "Error: Must pass filename."               && exit 1
-! [ -r "$filename" ] && echo "Error: File \"$filename\" does not exist" && exit 1
-! type gsed &>/dev/null && echo "Error: Need gsed installed. Use brew install coreutils" && exit 1
+[ -n "$filename" ] || raise "Must pass filename."
+[ -r "$filename" ] || raise "File \"$filename\" does not exist."
+type gsed &>/dev/null || raise "Need gsed installed. Use brew install coreutils."
 
 # Get terminal program
 if [ -z "$TERM_PROGRAM" ]; then
@@ -56,7 +61,7 @@ echo "Filename: $filename"
 if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   directory="${filename%/*}"    # trim shortest pattern matching <stuff>/*, keep "stuff"
   filename="${filename##*/}"    # trim longest pattern matching */<stuff>, keep "stuff"
-  ! [ -d "$directory" ] && echo "Error: Directory $directory does not exist" && exit 1
+  [ -d "$directory" ] || raise "Directory $directory does not exist."
   cd "$directory" # move there
 fi
 filestem="${filename%.tex}" # simple
@@ -64,14 +69,13 @@ filestem="${filename%.tex}" # simple
 # Cleanup function
 # Must create files_old list after e.g. ty files are added
 cleanup() {
+  local files_rm files_new
   [ -z "$files_old" ] && return 0
-  files_rm=() # record deleted
   files_new=(*) # new files
   ext_ignore=(tex bbl pdf docx png jpg jpeg eps gif)
   for file_new in "${files_new[@]}"; do
     [[ " ${files_old[@]} " =~ " $file_new " ]] && continue
     [[ " ${ext_ignore[@]} " =~ " ${file_new##*.} " ]] && continue
-    message+="$file_new\n"
     files_rm+=("$file_new")
   done
   rm "${files_rm[@]}"
@@ -126,32 +130,32 @@ nocomments "$filename" | grep 'documentclass.*{beamer}' &>/dev/null
 # Important to call kpsewhich with a list of files rather than calling it
 # successively; otherwise can be extremely slow, for some strange reason
 texfind() {
+  local texlive copied names files ext
   [ $# -eq 1 ] && return 1
   ext=${!#}                                        # last argument
   names=($(echo ${@:1:$#-1} | tr " " "\n" | sort)) # the previous arguments, sorted alphabetically
   files=($(kpsewhich ${names[@]/%/.${ext}}))       # append suffix to each file
-  message=""
   for name in ${names[@]}; do
     file="${name}.${ext}" # file we want
     if [[ "${files[@]}" =~ "$file" ]] && ! [[ " ${files[@]}" =~ " ./${file}" ]]; then
       # TeX distribution sees file, and it's not in current directory
-      message+="${file}:\tTeXLive distribution"
+      texlive+=("$file")
     elif [ -r "${templates}/${file}" ]; then
       # Get file from custom templates folder, copy over
-      message+="${file}: copied to current directory (!!!)" # make more visible
+      copied+=("$file")
       cp "${templates}/${file}" ./
     else
-      echo "${file} not found"
-      exit 1
+      raise "${file} not found"
     fi
     message+="\n"
   done
-  column -t -s $'\t' <<< $(printf "$message") # weirdly piping doesn't work, only this works
+  echo "TeXLive distribution: ${texlive[@]}"
+  echo "Copied from ~/${templates##*/}: ${copied[@]}"
 }
 
 # First the custom .cls files
 classes=($(nocomments "$filename" | grep '^\\documentclass' | inbraces))
-[ ${#classes[@]} -gt 1 ] && echo "Error: Ambiguous document class: \"${classes[@]}\"." && exit 1
+[ ${#classes[@]} -eq 1 ] || raise "Ambiguous document class: \"${classes[@]}\"."
 echo "Finding class file"
 texfind $classes cls
 
@@ -164,7 +168,7 @@ texfind $classes cls
 # * Finally need to account for newcommand with RequirePackage inside it, which we
 #   do by deleting lines containing a '#' character
 classfile=$(kpsewhich ${classes}.cls)
-[ -z $classfile ] && echo "Error: You should never see this error, already checked for ${classes}.cls existence, check code" && exit 1
+[ -n $classfile ] || raise "You should never see this error, already checked for ${classes}.cls existence, check code."
 rpackages=($(nocomments "$classfile" | grep '^.*\\RequirePackage' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
@@ -211,7 +215,7 @@ case $latex in
   xelatex)  stylized=XeLaTeX ;;
   pdflatex) stylized=PDFLaTeX ;;
   lualatex) stylized=LuaLaTeX ;;
-  *) echo "Error: Unknown compiler \"$latex\"." && exit 1 ;;
+  *) raise "Unknown compiler \"$latex\"." ;;
 esac
 echo "Running with $stylized"
 # Aux file
@@ -223,7 +227,7 @@ result=$($latex -draftmode $flags "$filestem")
 if $bibliography; then
   echo "Generating bibliography"
   result=$($bibtex "$filestem" 2>&1)
-  [ $? -ne 0 ] && echo "Warning: Non-zero exit code." && echo "$result" | cat # TODO: add filter?
+  [ $? -ne 0 ] && echo "Warning: Non-zero exit code." && echo "$result" | cat
   echo "Incorporating bbl file"
   result=$($latex -draftmode $flags "$filestem")
   [ $? -ne 0 ] && echo "Warning: Non-zero exit code." && echo "$result" | errfilter
@@ -232,7 +236,7 @@ fi
 echo "Final pass"
 $latex $flags "$filestem" | errfilter
 [ $? -ne 0 ] && echo "Warning: Non-zero exit code."
-! [ -r "$filestem.pdf" ] && echo "Error: PDF not produced" && cleanup
+[ -r "$filestem.pdf" ] || raise "PDF not produced."
 
 # Difference-LaTeX file, with track changes
 if $texdiff; then
@@ -284,11 +288,11 @@ fi
 # Open the files
 echo "Opening files"
 if $texdiff; then
-  open -a "$viewer" "$dfilestem.pdf" & # open difference
+  open -a "$viewer" "$dfilestem.pdf"
 elif $tex2docx; then
-  open -a "pages" "$filestem.docx" & # open document
+  open -a "pages" "$filestem.docx"
 else
-  open -a "$viewer" "$filestem.pdf" & # open new pdf
+  open -a "$viewer" "$filestem.pdf"
 fi
 open -a "$terminal" & # bring terminal back into focus
 

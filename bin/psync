@@ -25,8 +25,8 @@ for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
   file="${path##*/}"
   # Alphabetical order
   if [[ "$file" =~ '.m3u8' ]]; then
-    m3u8=$(cat "$file" | sed '1d' | tac | sed '$!N;s/\n/#/' | sort -r --ignore-case | gsed 's/\#\#/\n\#/g' | tac)
-    printf "#EXTM3U\n$m3u8" >"$file"
+    m3u8=$(cat "$path" | sed '1d' | tac | sed '$!N;s/\n/#/' | sort -r --ignore-case | gsed 's/\#\#/\n\#/g' | tac)
+    printf "#EXTM3U\n$m3u8" >"$path"
   fi
   # Copy new files downloaded
   if ! [ -r "$sd_folder/$file" ]; then
@@ -46,7 +46,8 @@ for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
     if [ -z "$date_c" ]; then # initializing directory
       if [ $date_m -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changed within 50 days
         modified=true
-      else modified=false
+      else
+        modified=false
       fi
     elif [ "$date_m" -gt "$date_c" ]; then
       modified=true # modified since last copied
