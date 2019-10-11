@@ -92,14 +92,13 @@ augroup END
 exe 'runtime autoload/repeat.vim'
 let g:has_signs  = has("signs") " for git gutter and syntastic maybe
 let g:has_ctags  = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-let g:has_nowait = (v:version>=704 || v:version==703 && has("patch1261"))
+let g:has_nowait = (v:version >= 704 || v:version == 703 && has("patch1261"))
 let g:has_repeat = exists("*repeat#set") " start checks for function existence
 if !g:has_repeat
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
   sleep 1
 endif
 
-"##############################################################################
 " CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
@@ -148,7 +147,7 @@ noremap <F4> g,
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
 noremap <expr> ' "`".nr2char(97+v:count)
-noremap <expr> " (v:count==9 ? '<Esc>:RemoveHighlights<CR>' :
+noremap <expr> " (v:count == 9 ? '<Esc>:RemoveHighlights<CR>' :
   \ 'm'.nr2char(97+v:count).':HighlightMark '.nr2char(97+v:count).'<CR>')
 " Record macro by pressing q, the escapes prevent q from triggerering command-history window
 " Repeat macro with , like . repeats last command
@@ -164,7 +163,7 @@ nnoremap U <C-r>
 noremap <silent> - "_
 noremap <silent> \| "*
 " These keys aren't used currently, and are in a really good spot,
-" so why not? Fits mnemonically that insert above is Shift+<key for insert below>
+" so why not?
 nnoremap <silent> ` :call append(line('.'),'')<CR>
 nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
 " Use cc for s because use sneak plugin
@@ -189,8 +188,8 @@ nnoremap x "_x
 nnoremap X "_X
 " Paste from the nth previously deleted or changed text
 " Use 9 for last yanked, unchanged text, because cannot use zero
-nnoremap <expr> p v:count==0 ? 'p' : ( v:count==9 ? '<Esc>"0p' : '<Esc>"'.v:count.'p' )
-nnoremap <expr> P v:count==0 ? 'P' : ( v:count==9 ? '<Esc>"0P' : '<Esc>"'.v:count.'P' )
+nnoremap <expr> p v:count == 0 ? 'p' : ( v:count == 9 ? '<Esc>"0p' : '<Esc>"'.v:count.'p' )
+nnoremap <expr> P v:count == 0 ? 'P' : ( v:count == 9 ? '<Esc>"0P' : '<Esc>"'.v:count.'P' )
 " Yank until end of line, like C and D
 nnoremap Y y$
 " Put last search into unnamed register
@@ -198,8 +197,8 @@ nnoremap <silent> y/ :let @" = @/<CR>
 nnoremap <silent> y? :let @" = @/<CR>
 " Better join behavior -- before 2J joined this line and next, now it
 " means 'join the two lines below'; more intuitive
-nnoremap <expr> J v:count>1  ? 'JJ' : 'J'
-nnoremap <expr> K v:count==0 ? 'Jx' : repeat('Jx',v:count)
+nnoremap <expr> J v:count > 1  ? 'JJ' : 'J'
+nnoremap <expr> K v:count == 0 ? 'Jx' : repeat('Jx',v:count)
 " Toggle highlighting
 nnoremap <silent> <Leader>i :set hlsearch<CR>
 nnoremap <silent> <Leader>o :noh<CR>
@@ -237,7 +236,6 @@ for pair in ['r[', 'a<', 'c{']
   call s:alias(pair[0], pair[1])
 endfor
 
-"##############################################################################
 " INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
 " Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
@@ -275,7 +273,6 @@ inoremap <expr> <Down> pumvisible() ? <sid>tab_increase()."\<C-n>" : "\<Down>"
 inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tab_decrease()."\<C-p>" : ""
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tab_increase()."\<C-n>" : ""
 
-"##############################################################################
 " GLOBAL FUNCTIONS, FOR VIM SCRIPTING
 " Test plugin status
 function! PlugActive(key)
@@ -343,7 +340,6 @@ imap <expr> <C-z> Suppress('<C-z>', 'i')
 imap <expr> <C-o> Suppress('<C-o>', 'i')
 imap <expr> <C-p> Suppress('<C-p>', 'i')
 
-"##############################################################################
 " DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 " First mouse stuff. Make sure we are using *vim", not vi (use the latter for quickly examining contents).
 if v:version >= 500
@@ -375,14 +371,12 @@ if exists("&t_EI")
   endif
 endif
 
-"##############################################################################
 " GUI OPTIONS
 if has("gui_running")
   set guicursor+=a:blinkon0 " disable blinking for GUI version
   set number relativenumber guioptions= " no scrollbars
 endif
 
-"##############################################################################
 " CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
 function! s:commandline_check()
   nnoremap <buffer> <silent> q :q<CR>
@@ -402,7 +396,6 @@ nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
 
-"##############################################################################
 " WILDMENU OPTIONS
 set wildmenu
 set wildmode=longest:list,full
@@ -420,17 +413,15 @@ cnoremap <expr> <F1> <sid>wildstab()
 cnoremap <expr> <F2> <sid>wildtab()
 
 "##############################################################################
-"##############################################################################
 " COMPLICATED MAPPINGS AND FILETYPE MAPPINGS
-"##############################################################################
 "##############################################################################
 " VIM-PLUG PLUGINS
 " Don't load some plugins if not compatible
 augroup plug
 augroup END
-let g:compatible_tagbar      = (g:has_ctags && (v:version>=704 || v:version==703 && has("patch1058")))
-let g:compatible_codi        = (v:version>=704 && has('job') && has('channel'))
-let g:compatible_workspace   = (v:version>=800) " needs Git 8.0, so not too useful
+let g:compatible_tagbar      = (g:has_ctags && (v:version >= 704 || v:version == 703 && has("patch1058")))
+let g:compatible_codi        = (v:version >= 704 && has('job') && has('channel'))
+let g:compatible_workspace   = (v:version >= 800) " needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") " try alternative completion library
 if expand('$HOSTNAME') =~ 'cheyenne\?' | let g:compatible_neocomplete = 0 | endif " had annoying bugs with refactoring tools
 call plug#begin('~/.vim/plugged')
@@ -569,7 +560,7 @@ Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 " if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 
-" All of this rst shit failed; anyway can just do simple tables with === signs
+" All of this rst shit failed; anyway can just do simple tables with == signs
 " instead of those fancy grid cell tables.
 " Plug 'nvie/vim-rst-tables'
 " Plug 'ossobv/vim-rst-tables-py3'
@@ -621,7 +612,6 @@ Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
 " is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
-"##############################################################################
 " SESSION MANAGEMENT
 " First, simple Obsession session management
 " Also manually preserve last cursor location:
@@ -630,7 +620,7 @@ call plug#end()
 augroup session
   au!
   if PlugActive("vim-obsession") "must manually preserve cursor position
-    au BufReadPost * if line("'\"")>0 && line("'\"")<=line("$") | exe "normal! g`\"" | endif
+    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .vimsession
   endif
   let s:autosave = "InsertLeave"
@@ -699,7 +689,6 @@ nnoremap <silent> <Leader>r :e<CR>
 " Redraw screen
 nnoremap <silent> <Leader>R :redraw!<CR>
 
-"##############################################################################
 " GIT GUTTER AND FUGITIVE
 " TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
@@ -751,7 +740,6 @@ if PlugActive("vim-fugitive")
   endfor
 endif
 
-"##############################################################################"
 " VIM SNEAK
 " Just configure the maps here
 " Also disable highlighting when doing sneak operations, because
@@ -771,7 +759,6 @@ if PlugActive("vim-sneak")
   map <F2> <Plug>Sneak_;
 endif
 
-"##############################################################################
 " DELIMITMATE (auto-generate closing delimiters)
 " NOTE: If enter is mapped delimitmate will turn off its auto expand
 " enter mapping.
@@ -801,7 +788,6 @@ if PlugActive("delimitmate")
   let g:delimitMate_excluded_regions = "String" "by default is disabled inside, don't want that
 endif
 
-"##############################################################################
 " SPELLCHECK (really is a BUILTIN plugin, hence why it's in this section)
 " Turn on for certain filetypes
 augroup spell
@@ -847,7 +833,7 @@ function! s:spellchange(direc)
     setlocal spell
   endif
   let winview = winsaveview()
-  exe 'normal! '.(a:direc==']' ? 'bh' : 'el')
+  exe 'normal! '.(a:direc == ']' ? 'bh' : 'el')
   exe 'normal! '.a:direc.'s'
   normal! 1z=
   call winrestview(winview)
@@ -872,7 +858,6 @@ nmap ;D <Plug>backwardspell
 nnoremap ;a zg
 nnoremap ;r zug
 
-"##############################################################################
 " INCREMENT and SUM PLUGINS
 augroup increment
 augroup END
@@ -892,7 +877,6 @@ if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
   vmap c= <Plug>AutoCalcReplaceWithSum
 endif
 
-"##############################################################################
 " CODI (MATHEMATICAL NOTEPAD)
 " Now should just use 'Numi' instead; had too many issues with this
 augroup codi
@@ -902,7 +886,7 @@ if PlugActive("codi.vim")
   nnoremap <C-n> :CodiUpdate<CR>
   inoremap <C-n> <Esc>:CodiUpdate<CR>a
   function! s:newcodi(name)
-    if a:name==''
+    if a:name == ''
       echom "Cancelled."
     else
       exec "tabe ".fnamemodify(a:name,':r').".py"
@@ -931,7 +915,6 @@ if PlugActive("codi.vim")
   let g:codi#log = "codi.log" "log everything, becuase you *will* have issues
 endif
 
-"##############################################################################
 " NEOCOMPLETE (RECOMMENDED SETTINGS)
 if PlugActive("neocomplete.vim") "just check if activated
   " Enable omni completion for different filetypes; sooper cool bro
@@ -973,7 +956,6 @@ if PlugActive("neocomplete.vim") "just check if activated
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
 endif
 
-"##############################################################################
 " NERDTREE
 " Most important commands: 'o' to view contents, 'u' to move up directory,
 " 't' open in new tab, 'T' open in new tab but retain focus, 'i' open file in 
@@ -988,7 +970,7 @@ endif
 if PlugActive("nerdtree")
   augroup nerdtree
     au!
-    au BufEnter * if (winnr('$')==1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+    au BufEnter * if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
     au FileType nerdtree call s:nerdtreesetup()
   augroup END
   " f stands for files here
@@ -1017,7 +999,6 @@ if PlugActive("nerdtree")
   endfunction
 endif
 
-"##############################################################################
 " NERDCommenter (comment out stuff)
 " Note the default mappings, all prefixed by <Leader> (but we disable them)
 " -cc comments line or selection
@@ -1093,11 +1074,11 @@ if PlugActive("nerdcommenter")
     let nfill = 77
     let suffix = cchar
     let nspace = s:comment_indent()
-    if a:0==2 " if non-zero number of args
+    if a:0 == 2 " if non-zero number of args
       let fill = a:1 " fill character
       let nfill = a:2 " count
       let suffix = '' " no suffix
-    elseif a:0==1
+    elseif a:0 == 1
       let fill = a:1
     else " choose fill based on filetype -- if comment char is 'skinny', pick another one
       let fill = s:comment_filler()
@@ -1204,7 +1185,6 @@ if PlugActive("nerdcommenter")
   nnoremap c" :call <sid>docstring('"')<CR>A
 endif
 
-"##############################################################################
 " SYNTASTIC (syntax checking for code)
 augroup syntastic
 augroup END
@@ -1292,12 +1272,12 @@ if PlugActive("syntastic")
   function! s:syntastic_enable()
     let nbufs = len(tabpagebuflist())
     let checkers = s:syntastic_checkers()
-    if len(checkers)==0
+    if len(checkers) == 0
       echom 'No checkers available.'
     else " try running the checker, see if anything comes up
       SyntasticCheck
-      if (len(tabpagebuflist())>nbufs && !s:syntastic_status())
-          \ || (len(tabpagebuflist())==nbufs && s:syntastic_status())
+      if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
+          \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
         wincmd j | set syntax=on | call <sid>popup_setup()
         wincmd k | let b:syntastic_on = 1 | silent! set signcolumn=no
       else
@@ -1344,7 +1324,6 @@ if PlugActive("syntastic")
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
 
-"##############################################################################"
 " VIMTEX SETTINGS AND STUFF
 augroup vimtex
 augroup END
@@ -1360,7 +1339,6 @@ if PlugActive('vimtex')
   let g:vimtex_fold_enabled = 0 " So large files can open more easily
 endif
 
-"##############################################################################
 " TABULAR - ALIGNING AROUND :,=,ETC.
 " By default, :Tabularize command provided *without range* will select the
 " contiguous lines that contain specified delimiter; so this function only makes
@@ -1392,7 +1370,7 @@ if PlugActive("tabular")
       endif
     endwhile
     " Execute tabularize function
-    if firstline>lastline
+    if firstline > lastline
       echom 'Warning: No matches in selection.'
     else
       exe firstline.','.lastline.'Tabularize '.a:arg
@@ -1474,7 +1452,6 @@ if PlugActive("tabular")
   vnoremap <expr> \+ ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
 endif
 
-"##############################################################################
 " CTAGS and TAGBAR (requires 'brew install ctags-exuberant')
 augroup ctags
 augroup END
@@ -1553,7 +1530,6 @@ if PlugActive("tagbar")
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
 endif
 
-"##############################################################################"
 " Bibtex and Zotero INTEGRATION
 " Requires pybtex and bibtexparser python modules, and unite.vim plugin
 " Simply cannot get bibtex to work always throws error gathering candidates
@@ -1608,7 +1584,7 @@ if PlugActive('unite.vim')
           let b:citation_vim_bibtex_file = ''
           call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
         endif
-        if b:citation_vim_bibtex_file==''
+        if b:citation_vim_bibtex_file == ''
           let b:citation_vim_bibtex_file = s:bibfile()
           let g:citation_vim_bibtex_file = b:citation_vim_bibtex_file
         endif
@@ -1640,10 +1616,10 @@ if PlugActive('unite.vim')
     function! s:bibfile()
       let cwd = expand('%:h')
       let b:refs = split(glob(cwd.'/*.bib'),"\n")
-      if len(b:refs)==0
+      if len(b:refs) == 0
         echom 'Warning: No .bib files found in file directory.'
         return ''
-      elseif len(b:refs)==1
+      elseif len(b:refs) == 1
         let ref = b:refs[0]
       else
         while 1
@@ -1671,9 +1647,7 @@ if PlugActive('unite.vim')
 endif
 
 "##############################################################################
-"##############################################################################
 " GENERAL STUFF, BASIC REMAPS
-"##############################################################################
 "##############################################################################
 " BUFFER WRITING/SAVING
 " NOTE: Update only writes if file has been changed
@@ -1683,7 +1657,7 @@ augroup END
 function! s:tab_close()
   let ntabs = tabpagenr('$')
   let islast = (tabpagenr('$') - tabpagenr())
-  if ntabs==1
+  if ntabs == 1
     qa
   else
     tabclose
@@ -1694,7 +1668,7 @@ function! s:tab_close()
 endfunction
 function! s:window_close()
   let ntabs = tabpagenr('$')
-  let islast = (tabpagenr('$')==tabpagenr())
+  let islast = (tabpagenr('$') == tabpagenr())
   q
   if ntabs!=tabpagenr('$') && !islast
     silent! tabp
@@ -1713,7 +1687,6 @@ nnoremap <silent> <C-q> :call <sid>tab_close()<CR>
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
-"##############################################################################
 " OPENING FILES
 " Driver function that checks if user FZF selection is directory and keeps
 " opening FZF windows until user selects a file.
@@ -1721,7 +1694,7 @@ augroup open
 augroup END
 function! s:fzfopen_run(path)
   " Initial stuff
-  if a:path==''
+  if a:path == ''
     let g:fzfopen_next = '.'
   else
     let g:fzfopen_next = a:path
@@ -1735,7 +1708,7 @@ function! s:fzfopen_run(path)
   while isdirectory(g:fzfopen_next)
     let g:fzfopen_prev = g:fzfopen_next
     call fzf#run({'source':s:fzfopen_files(g:fzfopen_next), 'options':'--no-sort', 'sink':function('s:fzfopen_select'), 'down':'~30%'})
-    if g:fzfopen_prev==g:fzfopen_next " do nothing, user selected nothing
+    if g:fzfopen_prev == g:fzfopen_next " do nothing, user selected nothing
       return
     endif
   endwhile
@@ -1754,7 +1727,7 @@ endfunction
 function! s:fzfopen_select(item)
   if a:item!=''
     let tail = fnamemodify(a:item, ':t')
-    if tail=='..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+    if tail == '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
       let g:fzfopen_next = fnamemodify(g:fzfopen_next, ':h') " head of current directory
     else
       let g:fzfopen_next = g:fzfopen_next.'/'.tail
@@ -1766,7 +1739,6 @@ nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 nnoremap <C-o> :Open 
 nnoremap <silent> <C-p> :Files<CR>
 
-"##############################################################################
 " TABS and WINDOWS
 augroup tabs
   au!
@@ -1777,9 +1749,9 @@ noremap gt <Nop>
 noremap gT <Nop>
 " Move current tab to the exact place of tab number N
 function! s:tabmove(n)
-  if a:n==tabpagenr() || a:n==0
+  if a:n == tabpagenr() || a:n == 0
     return
-  elseif a:n>tabpagenr() && version[0]>7
+  elseif a:n > tabpagenr() && version[0] > 7
     echo 'Moving tab...'
     execute 'tabmove '.a:n
   else
@@ -1804,7 +1776,7 @@ function! s:tabselect()
         let bufnr = b
       endif
     endfor
-    if tabnr==tabpagenr()
+    if tabnr == tabpagenr()
       continue
     endif
     let items += [tabnr.': '.fnamemodify(bufname(bufnr),'%:t')] " actual name
@@ -1866,7 +1838,6 @@ nnoremap <expr> <silent> <Tab>] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v
 nnoremap <expr> <silent> <Tab>{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
 nnoremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
 
-"##############################################################################
 " SIMPLE WINDOW SETTINGS
 " Enable quitting windows with simple 'q' press and disable line numbers
 augroup simple
@@ -1886,7 +1857,7 @@ endfunction
 " For popup windows
 function! s:popup_setup()
   call s:simple_setup()
-  if len(tabpagebuflist())==1 | q | endif " exit if only one left
+  if len(tabpagebuflist()) == 1 | q | endif " exit if only one left
 endfunction
 " For help windows
 function! s:help_setup()
@@ -1913,11 +1884,9 @@ nnoremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').';
 nnoremap <Leader>h :vert help 
 nnoremap <Leader>H :Help<CR>
 
-"##############################################################################"
 " SNIPPETS
 " TODO: Add these
 
-"##############################################################################"
 " TEMPLATES
 " Prompt user to choose from a list of templates (located in ~/latex folder)
 " when creating a new LaTeX file. Consider adding to this for other filetypes!
@@ -1941,7 +1910,6 @@ function! s:textemplates()
   return [''] + templates " add blank entry as default choice
 endfunction
 
-"##############################################################################
 " COPY/PASTING CLIPBOARD
 augroup copypaste " also clear command line when leaving insert mode, always
   au!
@@ -1990,7 +1958,6 @@ endfunction
 nnoremap cC :call <sid>copytoggle()<CR>
 command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 
-"##############################################################################
 " SEARCHING AND FIND-REPLACE STUFF
 " Basic stuff first
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
@@ -2030,7 +1997,6 @@ function! s:tex_replace()
   nnoremap <buffer> <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
 endfunction
 
-"##############################################################################
 " CAPS LOCK
 " The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
 " that would cancel command-line queries (or I'd have to scroll up to resume them)
@@ -2054,7 +2020,6 @@ endfor
 inoremap <F5> <C-^>
 cnoremap <F5> <C-^>
 
-"##############################################################################
 " FOLDING STUFF AND Z-PREFIXED COMMANDS
 augroup zcommands
 augroup END
@@ -2076,7 +2041,6 @@ nnoremap z< zR
 nnoremap zO zR
 nnoremap zC zM
 
-"##############################################################################
 " g CONFIGURATION
 augroup gcommands
 augroup END
@@ -2114,7 +2078,6 @@ else
   nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
 
-"##############################################################################
 " SPECIAL SYNTAX HIGHLIGHTING OVERWRITES (all languages; must come after filetype stuff)
 " * See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
 "   for every file; we add our own custom highlighting for vim comments
@@ -2165,7 +2128,7 @@ augroup syn
 augroup END
 " Keywords
 function! s:keywordsetup()
-   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
+   syn match customURL =\v < (((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
    hi link customURL Underlined
    if &ft!="vim"
      syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment.* " comments
@@ -2226,7 +2189,6 @@ highlight SignColumn  guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 " for versions with :terminal command
 highlight Terminal ctermbg=NONE ctermfg=NONE
 
-"##############################################################################
 " USEFUL COMMANDS
 " Highlight group under cursor
 function! s:group()
@@ -2294,9 +2256,7 @@ command! Colors call <sid>colors()
 command! GroupColors vert help group-name
 
 "##############################################################################
-"##############################################################################
 " EXIT
-"##############################################################################
 "##############################################################################
 " Clear past jumps
 " Don't want stuff from plugin files and the vimrc populating jumplist after statrup
@@ -2314,7 +2274,7 @@ augroup END
 " See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
 " For some reason the setreg function fails
 " WARNING: On cheyenne, get lalloc error when calling WipeReg, strange
-" command! WipeReg let regs = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-"' | let i = 0 | while i<strlen(regs) | exec 'let @'.regs[i].' = ""' | let i = i+1 | endwhile | unlet regs
+" command! WipeReg let regs = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-"' | let i = 0 | while i < strlen(regs) | exec 'let @'.regs[i].' = ""' | let i = i+1 | endwhile | unlet regs
 if $HOSTNAME !~ 'cheyenne'
   command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
   WipeReg

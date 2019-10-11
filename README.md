@@ -27,3 +27,29 @@ and handy `git` commands in my `.gitconfig` file.
 Note `.jupyter` is synced just to preserve my custom key bindings in `notebook.json`, along with some `nbextension` settings in `tree.json`, `common.json`, and `jupyter_notebook_config.json`.
 <!-- The `custom` folder contains custom javascript and CSS files controlled by `jupyterthemes`.  -->
 
+## Code style
+At various times, I've had to make enormous global changes to code style in various projects. They were generally applied with the vi regex engine, since it contains advanced features like non-greedy searches unavailable in sed. They are generally applied with
+
+```sh
+find . -name '*.ext' -exec vi -u NONE -c '%s/regex/replacement/ge | wq' {} \;
+```
+
+where some of the replacement patterns are as follows.
+
+### No-space vi comments
+This prepends a space to vi comments. The comment character is so small that I used to write comments without a space, but no one else on the planet seems to do this.
+```
+%s/\(^[ \t:]*"\(\zs\ze\)[^ #].*$\|^[^"]*\s"\(\zs\ze\)[^_\-:.%#=" ][^"]*$\)/ \2/ge
+```
+
+### No-space vi assignments
+This surrounds assignments in vi script with spaces.
+```
+%s/\<let\>\s\+\S\{-1,}\zs\([.^+%-]\?=\)/ \1 /ge
+```
+
+### No-space comparison operators
+This surrounds comparison operators with spaces, accounting for `<Tab>` style keystroke indicators in vim script.
+```
+%s/\_s[^ ,\-<>@!&]\+\zs\(<=\|>=\|==\|<\|>\)\ze[^ ,!\-<>&]\+\_s/ \1 /ge
+```

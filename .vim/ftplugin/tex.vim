@@ -1,4 +1,6 @@
+"-----------------------------------------------------------------------------"
 " LaTeX specific settings
+"-----------------------------------------------------------------------------"
 " Restrict concealmeant to just symbols and stuff
 " a=accents/ligatures
 " b=bold/italics
