@@ -26,7 +26,7 @@ let g:tex_no_error = 1
 let s:vim8 = has('patch-8.0.0039') && exists('*job_start')
 function! s:latex_background(...)
   if !s:vim8
-    echom "Error: Latex compilation requires vim>=8.0"
+    echom "Error: Latex compilation requires vim >= 8.0"
     return 1
   endif
   " Jump to logfile if it is open, else open one

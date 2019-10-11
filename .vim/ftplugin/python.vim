@@ -33,7 +33,7 @@ let g:pydiction_location = expand('~').'/.vim/plugged/Pydiction/complete-dict'
 "------------------------------------------------------------------------------"
 function! s:pydoc(...)
   " Look up either 1) word (with dots) under cursor or 2) passed argument.
-  if a:0 && len(a:1)>0
+  if a:0 && len(a:1) > 0
     let string = a:1
   else
     setlocal iskeyword+=.
@@ -84,7 +84,7 @@ function! s:kwtrans(mode) range
   " Will allow for non-line selections
   " First get columns
   let winview = winsaveview()
-  if a:firstline==a:lastline
+  if a:firstline == a:lastline
     let firstcol = 0
     let lastcol  = col('$')-2 " col('$') is location of newline char, and strings are zero-indexed
   else
@@ -99,16 +99,16 @@ function! s:kwtrans(mode) range
     let string = getline(line)
     let prefix = ''
     let suffix = ''
-    if line==a:firstline && line==a:lastline
-      let prefix = (firstcol>=1 ? string[:firstcol-1] : '') " damn negative indexing makes this complicated
+    if line == a:firstline && line == a:lastline
+      let prefix = (firstcol >= 1 ? string[:firstcol-1] : '') " damn negative indexing makes this complicated
       let suffix = string[lastcol+1:]
       " let string = string[:lastcol] "just plain easier
       " let string = string[firstcol:]
       let string = string[firstcol:lastcol]
-    elseif line==a:firstline
-      let prefix = (firstcol>=1 ? string[:firstcol-1] : '')
+    elseif line == a:firstline
+      let prefix = (firstcol >= 1 ? string[:firstcol-1] : '')
       let string = string[firstcol:]
-    elseif line==a:lastline
+    elseif line == a:lastline
       let suffix = string[lastcol+1:]
       let string = string[:lastcol]
     endif
@@ -119,11 +119,11 @@ function! s:kwtrans(mode) range
     " Next finally start matching shit
     " Turn colons into equals
     " echo 'line:'.a:firstline.'-'.a:lastline.' col:'.firstcol.'-'.lastcol.' string:'.string.' prefix:'.prefix.' suffix:'.suffix | sleep 2
-    if a:mode==1 " kwargs to dictionary
+    if a:mode == 1 " kwargs to dictionary
       let string = substitute(string, '\<\ze\w\+\s*=', "'", 'g') "add leading quote first
       let string = substitute(string, '\>\ze\s*=', "'", 'g')
       let string = substitute(string, '=', ':', 'g')
-    elseif a:mode==0 " dictionary to kwargs
+    elseif a:mode == 0 " dictionary to kwargs
       let string = substitute(string, "\\>['\"]".'\ze\s*:', '', 'g') "remove trailing quote first
       let string = substitute(string, "['\"]\\<".'\ze\w\+\s*:', '', 'g')
       let string = substitute(string, ':', '=', 'g')
@@ -443,8 +443,8 @@ function! s:pyindent(lnum)
   let thisline = getline(a:lnum)
   let thisindent = indent(a:lnum)
   " If the line starts with 'elif' or 'else', line up with 'if' or 'elif'
-  if thisline =~ '^\s*\(elif\|else\)\>'
-    let bslnum = s:pymode_blockstarter(a:lnum, '^\s*\(if\|elif\)\>')
+  if thisline =~ '^\s*\(elif\|else\)\ > '
+    let bslnum = s:pymode_blockstarter(a:lnum, '^\s*\(if\|elif\)\ > ')
     if bslnum > 0
       return indent(bslnum)
     else
@@ -453,8 +453,8 @@ function! s:pyindent(lnum)
   endif
   " If the line starts with 'except' or 'finally', line up with 'try'
   " or 'except'
-  if thisline =~ '^\s*\(except\|finally\)\>'
-    let bslnum = s:pymode_blockstarter(a:lnum, '^\s*\(try\|except\)\>')
+  if thisline =~ '^\s*\(except\|finally\)\ > '
+    let bslnum = s:pymode_blockstarter(a:lnum, '^\s*\(try\|except\)\ > ')
     if bslnum > 0
       return indent(bslnum)
     else
@@ -488,7 +488,7 @@ function! s:pyindent(lnum)
     return indent(sslnum) + &sw
   endif
   " If the previous line was a stop-execution statement or a pass
-  if getline(sslnum) =~ '^\s*\(break\|continue\|raise\|return\|pass\)\>'
+  if getline(sslnum) =~ '^\s*\(break\|continue\|raise\|return\|pass\)\ > '
     " See if the user has already dedented
     if indent(a:lnum) > indent(sslnum) - &sw
       " If not, recommend one dedent

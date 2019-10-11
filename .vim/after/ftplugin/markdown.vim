@@ -4,7 +4,7 @@ let g:vim_markdown_math = 1 " turn on $$ math; this is for vim-markdown
 " Helper function
 function! s:markdown_open()
   update
-  if $TERM_PROGRAM==""
+  if $TERM_PROGRAM == ""
     let terminal = "MacVim"
   elseif $TERM_PROGRAM =~? "Apple_Terminal"
     let terminal = "Terminal"

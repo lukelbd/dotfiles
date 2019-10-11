@@ -65,7 +65,7 @@ endfunction
 " Validate user's engine list
 " ============================
 function! HowMuch#check_user_engines()
-  if len(g:HowMuch_auto_engines)==0
+  if len(g:HowMuch_auto_engines) == 0
     throw HowMuch#errMsg('Empty g:HowMuch_auto_engines is not allowed.')
   endif
   for k in g:HowMuch_auto_engines
@@ -176,7 +176,7 @@ function! HowMuch#HowMuch(isAppend, withEq, sum, engineType) range
   " find the max_len
   if a:isAppend && (visualmode() == 'V' || visualmode() == '')
     for i in range(len(exps))
-      let max_len = len(exps[i])>max_len? len(exps[i]):max_len
+      let max_len = len(exps[i]) > max_len? len(exps[i]):max_len
     endfor
     let exps = map(exps, "v:val . repeat(' ', max_len-len(v:val))")
   endif
@@ -187,7 +187,7 @@ function! HowMuch#HowMuch(isAppend, withEq, sum, engineType) range
       let e       = HowMuch#to_float(exps[i])
       call HowMuch#debug("after to_float:", e)
       let result  = g:HowMuch_engine_map[tolower(a:engineType)](e)
-      let has_err = has_err>0? has_err : (result == 'Err'? 1:0)
+      let has_err = has_err > 0? has_err : (result == 'Err'? 1:0)
       if !has_err && a:sum
         call HowMuch#debug('before adding to total, result:', result)
         call HowMuch#debug('result type:', type(result))
@@ -212,12 +212,12 @@ function! HowMuch#HowMuch(isAppend, withEq, sum, engineType) range
      unlet total
      let total = 'Err'
     endif
-    " let total = has_err>0 ? 'Err': total
+    " let total = has_err > 0 ? 'Err': total
     call add(exps,repeat('-',max_len +2 ))
     if a:isAppend
-      call add(exps,'Sum' . repeat(' ', max_len-3). (a:withEq?' = ':' ' ) . (type(total)==type("") ? total : string(total)) )
+      call add(exps,'Sum' . repeat(' ', max_len-3). (a:withEq?' = ':' ' ) . (type(total) == type("") ? total : string(total)) )
     else
-      call add(exps,'Sum: ' .  (type(total)==type("") ? total : string(total) ))
+      call add(exps,'Sum: ' .  (type(total) == type("") ? total : string(total) ))
     endif
   endif
 
@@ -284,9 +284,9 @@ endfunction
 " ============================
 function! HowMuch#calc_in_bc(expr)
   let r = system(printf('echo "scale=%d;%s"|bc -l &2>/dev/null', g:HowMuch_scale, a:expr))
-  if v:shell_error>0
+  if v:shell_error > 0
     throw HowMuch#errMsg('bc program return error: '. v:shell_error)
-  elseif match(r, '[^0-9\n .]')>=0 || r == ''
+  elseif match(r, '[^0-9\n .]') >= 0 || r == ''
     throw HowMuch#errMsg('Invalid bc Expression')
   endif
   " removing the ending line break
