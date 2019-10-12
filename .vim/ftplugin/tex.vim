@@ -30,8 +30,7 @@ function! s:latex_background(...)
     return 1
   endif
   " Jump to logfile if it is open, else open one
-  " WARNING: Trailing space will be escaped as a flag!
-  let opts = (a:0 ? ' ' . a:1 : '') " flags
+  let opts = (a:0 ? a:1 : '') " flags
   let texfile = expand('%')
   let logfile = expand('%:t:r') . '.log'
   let lognum = bufwinnr(logfile)
@@ -44,15 +43,10 @@ function! s:latex_background(...)
     silent! exe winnr('#') . 'wincmd w'
   endif
   " Run job in realtime
+  " WARNING: Trailing space will be escaped as a flag! So trim it.
   let num = bufnr(logfile)
-  let g:tex_job = job_start('/Users/ldavis/bin/vimlatex ' . texfile . opts,
+  let g:tex_job = job_start('/Users/ldavis/bin/latexmk ' . texfile . trim(opts),
       \ { 'out_io': 'buffer', 'out_buf': num })
-endfunction
-" Refresh log
-function! s:latex_refresh()
-  silent! exe bufwinnr(logfile) . 'wincmd w'
-  silent! normal! G
-  silent! exe winnr('#') . 'wincmd w'
 endfunction
 " Maps
 noremap <silent> <buffer> <C-z> :call <sid>latex_background()<CR>

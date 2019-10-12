@@ -1,29 +1,59 @@
 #!/usr/bin/env bash
-#------------------------------------------------------------------------------#
-# May require bash 4.0
-# This script compile LaTeX documents on macOS. Why do we usually need
-# 4 compilation steps?
-#   1. At the first `latex` run, all `\cite{...}` arguments are written in the
-#      file `document.aux`.
-#   2. At the `bibtex` run, this information is taken by bibtex and the relevant
-#      entries are put into the `.bbl` file, sorted either alphabetically or by
-#      citation order (sometimes called "unsorted") and formatted according to
-#      the instructions provided by the bibliography style that's in use.
-#   3. At the next run of `latex`, the `.bbl` file is included at the point
-#      the `\bibliography` instructions, and the correct labels for `\cite{...}`
-#      commands are written in `.aux` file.
-#   4. Only at the last run, `latex` knows what the correct labels are and
-#      includes them in the document.
-# Why this instead of latexmk? It adds a few features, and also had issues with
-# latexmk where would always end up with random extra files being created. Only
-# way to consistently remove those temporary files was to query files present in
-# folder before/after compiling step; delete the new ones. This is better!
-#------------------------------------------------------------------------------#
+usage='latexmk [OPTIONS] FILE'
+doc='
+This script compiles LaTeX documents similar to latexmk but
+with custom features and designed for use with vim.
+
+New features compared to native latexmk?
+
+  * Run latexdiff on "previous" file if both file names end with a
+    YYYY-MM-DD date string by passing the -d or --doc flag.
+  * Automatically convert latex to Microsoft Word format using
+    pandoc by passing the -w or --word flag.
+  * Never *ever* generate random extra files again -- this script just queries
+    files present in directory before and after compilation, then removes
+    the new ones. This is implemented with an EXIT signal trap, and so works
+    even if compilation is interrupted.
+  * This script opens the resulting typeset file in a PDF viewer then brings
+    the terminal from which this script was invoked back to the foreground.
+    This is perfect for split-window workflow, with left terminal on left side
+    of screen and PDF viewer on right side.
+
+Why do we usually need 4 compilation steps?
+
+  1. At the first `latex` run, all `\cite{...}` arguments are written in the
+     file `document.aux`.
+  2. At the `bibtex` run, this information is taken by bibtex and the relevant
+     entries are put into the `.bbl` file, sorted either alphabetically or by
+     citation order (sometimes called "unsorted") and formatted according to
+     the instructions provided by the bibliography style that'\''s in use.
+  3. At the next run of `latex`, the `.bbl` file is included at the point
+     the `\bibliography` instructions, and the correct labels for `\cite{...}`
+     commands are written in `.aux` file.
+  4. Only at the last run, `latex` knows what the correct labels are and
+     includes them in the document.
+'
 # Function for raising error
 raise() {
+  echo "Usage: $usage"
   echo "Error: $@"
   exit 1
 }
+# Exit trap function
+cleanup() {
+  local files_rm files_new
+  [ -n "$files_old" ] || return 0
+  files_new=(*) # new files
+  ext_ignore=(tex bbl pdf docx png jpg jpeg eps gif)
+  for file_new in "${files_new[@]}"; do
+    [[ " ${files_old[@]} " =~ " $file_new " ]] && continue
+    [[ " ${ext_ignore[@]} " =~ " ${file_new##*.} " ]] && continue
+    files_rm+=("$file_new")
+  done
+  rm "${files_rm[@]}"
+  echo "Removed files: ${files_rm[@]}"
+}
+
 # Parse args
 trap "cleanup" EXIT # remove files on exit or interruption!
 shopt -s nullglob # glob-expand into zero entries
@@ -33,6 +63,7 @@ texdiff=false     # get difference pdf?
 tex2docx=false    # option
 while [ $# -gt 0 ]; do
   case $1 in
+    -h|--help) echo "$doc" && exit 0 ;;
     -d|--diff) texdiff=true ;;
     -w|--word) tex2docx=true ;;
     [^-]*)
@@ -65,22 +96,6 @@ if [[ "$filename" =~ / ]]; then # i.e. contains directory specifier
   cd "$directory" # move there
 fi
 filestem="${filename%.tex}" # simple
-
-# Cleanup function
-# Must create files_old list after e.g. ty files are added
-cleanup() {
-  local files_rm files_new
-  [ -z "$files_old" ] && return 0
-  files_new=(*) # new files
-  ext_ignore=(tex bbl pdf docx png jpg jpeg eps gif)
-  for file_new in "${files_new[@]}"; do
-    [[ " ${files_old[@]} " =~ " $file_new " ]] && continue
-    [[ " ${ext_ignore[@]} " =~ " ${file_new##*.} " ]] && continue
-    files_rm+=("$file_new")
-  done
-  rm "${files_rm[@]}"
-  echo "Removed files: ${files_rm[@]}"
-}
 
 #------------------------------------------------------------------------------#
 # Get compile options from LaTeX commands
