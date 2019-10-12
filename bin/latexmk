@@ -16,6 +16,9 @@ New features compared to native latexmk?
     files present in directory before and after compilation, then removes
     the new ones. This is implemented with an EXIT signal trap, and so works
     even if compilation is interrupted.
+  * Add custom style and theme files to a "~/latex" folder, and this script
+    will try to copy relevant files to the working directory when they are
+    not found in the TeXLive distribution with "kpsewhich".
   * This script opens the resulting typeset file in a PDF viewer then brings
     the terminal from which this script was invoked back to the foreground.
     This is perfect for split-window workflow, with left terminal on left side
