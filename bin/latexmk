@@ -6,10 +6,12 @@ with custom features and designed for use with vim.
 
 New features compared to native latexmk?
 
-  * Run latexdiff on "previous" file if both file names end with a
-    YYYY-MM-DD date string by passing the -d or --doc flag.
-  * Automatically convert latex to Microsoft Word format using
-    pandoc by passing the -w or --word flag.
+  * Pass -d or --diff to run latexdiff on most "recent" file. Requires files
+    in your directory are otherwise identically named, but end with unique
+    date strings YYYY-MM.tex or YYYY-MM-DD.tex
+  * Pass -w or --word to automatically convert latex to the Microsoft Word
+    format using pandoc. Useful for colaborating with peers that do not use
+    latex.
   * Never *ever* generate random extra files again -- this script just queries
     files present in directory before and after compilation, then removes
     the new ones. This is implemented with an EXIT signal trap, and so works
