@@ -130,11 +130,12 @@ nocomments "$filename" | grep 'documentclass.*{beamer}' &>/dev/null
 # Important to call kpsewhich with a list of files rather than calling it
 # successively; otherwise can be extremely slow, for some strange reason
 texfind() {
-  local texlive copied names files ext
-  [ $# -eq 1 ] && return 1
-  ext=${!#}                                        # last argument
-  names=($(echo ${@:1:$#-1} | tr " " "\n" | sort)) # the previous arguments, sorted alphabetically
-  files=($(kpsewhich ${names[@]/%/.${ext}}))       # append suffix to each file
+  local texlive copied names files scrip ext
+  [ $# -le 2 ] && return 1
+  ext="$1" # first argument
+  scrip="$2" # second argument
+  names=($(echo "${@:3}" | tr " " "\n" | sort)) # the previous arguments, sorted alphabetically
+  files=($(kpsewhich ${names[@]/%/.${ext}})) # append suffix to each file
   for name in ${names[@]}; do
     file="${name}.${ext}" # file we want
     if [[ "${files[@]}" =~ "$file" ]] && ! [[ " ${files[@]}" =~ " ./${file}" ]]; then
@@ -147,17 +148,15 @@ texfind() {
     else
       raise "${file} not found"
     fi
-    message+="\n"
   done
-  echo "TeXLive distribution: ${texlive[@]}"
-  echo "Copied from ~/${templates##*/}: ${copied[@]}"
+  [ ${#texlive[@]} -gt 0 ] && echo "$scrip from TeXLive: ${texlive[@]}"
+  [ ${#copied[@]} -gt 0 ] && echo "$scrip from ~/${templates##*/}: ${copied[@]}"
 }
 
 # First the custom .cls files
 classes=($(nocomments "$filename" | grep '^\\documentclass' | inbraces))
 [ ${#classes[@]} -eq 1 ] || raise "Ambiguous document class: \"${classes[@]}\"."
-echo "Finding class file"
-texfind $classes cls
+texfind cls "Class file" $classes
 
 # As above but for the RequirePackage lines in the .cls file. Note this is
 # *incomplete*, as it cannot handle multi-line requirepackage commands.
@@ -173,8 +172,7 @@ rpackages=($(nocomments "$classfile" | grep '^.*\\RequirePackage' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
   | inbraces))
-echo "Finding sty dependencies of class"
-texfind ${rpackages[@]} sty
+texfind sty "Class dependency sty" ${rpackages[@]}
 
 # As above but for .sty files
 # Will also detect \usepackage{package1,package2} lists
@@ -182,23 +180,19 @@ packages=($(nocomments "$filename" |  egrep '^.*\\usepackage|^.*\\templatetype' 
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
   | inbraces))
-echo "Finding preamble sty files"
-texfind ${packages[@]} sty
+texfind sty "Preamble sty" ${packages[@]}
 
 # As above but for .bst file
 bibstyle=($(nocomments "$filename" | grep '^.*\\bibliographystyle' | inbraces))
-echo "Finding bst file"
-texfind $bibstyle bst
+texfind bst "Bibstyle" $bibstyle
 
 # Next beamer theme
 themes=($(nocomments "$filename" | grep '^.*\\usetheme' | inbraces | sed 's/^/beamertheme/'))
-echo "Finding beamer theme file"
-texfind $themes sty
+texfind sty "Beamer theme" $themes
 
 # And beamer color theme
 colorthemes=($(nocomments "$filename" | grep '^.*\\usecolortheme' | inbraces | sed 's/^/beamercolortheme/'))
-echo "Finding beamer theme file"
-texfind $colorthemes sty
+texfind sty "Beamer color theme" $colorthemes
 
 #------------------------------------------------------------------------------#
 # Compile the document(s) and display them
@@ -286,13 +280,13 @@ if $tex2docx; then
 fi
 
 # Open the files
-echo "Opening files"
+open() { echo "Opening \"$2\""; command open -a "$1" "$2"; }
 if $texdiff; then
-  open -a "$viewer" "$dfilestem.pdf"
+  open "$viewer" "$dfilestem.pdf"
 elif $tex2docx; then
-  open -a "pages" "$filestem.docx"
+  open "Pages" "$filestem.docx"
 else
-  open -a "$viewer" "$filestem.pdf"
+  open "$viewer" "$filestem.pdf"
 fi
-open -a "$terminal" & # bring terminal back into focus
+command open -a "$terminal" & # bring terminal back into focus
 

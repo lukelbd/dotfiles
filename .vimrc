@@ -1788,7 +1788,7 @@ function! s:tabjump(item)
   exe 'normal! '.split(a:item,':')[0].'gt'
 endfunction
 " Function mappings
-nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tabselect(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~30%'})<CR>
+nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tabselect(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
 nnoremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: '))<CR>
 nnoremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 nnoremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
@@ -1851,7 +1851,8 @@ augroup END
 " For location lists, enter jumps to location. Restore this behavior.
 function! s:simple_setup()
   nnoremap <silent> <buffer> <CR> <CR>
-  nnoremap <silent> <buffer> q :q<CR>
+  nnoremap <silent> <buffer> <C-w> :q!<CR>
+  nnoremap <silent> <buffer> q :q!<CR>
   setlocal nolist nonumber norelativenumber nospell nocursorline colorcolumn=
 endfunction
 " For popup windows

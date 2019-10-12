@@ -30,35 +30,32 @@ function! s:latex_background(...)
     return 1
   endif
   " Jump to logfile if it is open, else open one
-  let opts = (a:0 ? a:1 : '') " flags
+  " WARNING: Trailing space will be escaped as a flag!
+  let opts = (a:0 ? ' ' . a:1 : '') " flags
+  let texfile = expand('%')
+  let logfile = expand('%:t:r') . '.log'
   let lognum = bufwinnr(logfile)
-  if lognum==-1
-    silent! exe string(winheight('.')/4).'split '.logfile
-    " setlocal autoread "open file and set autoread before starting script!
-    silent! exe winnr('#').'wincmd w'
+  if lognum == -1
+    silent! exe string(winheight('.')/4) . 'split ' . logfile
+    silent! exe winnr('#') . 'wincmd w'
   else
-    silent! exe bufwinnr(logfile)."wincmd w"
-    silent! edit +$
-    silent! exe winnr('#').'wincmd w'
+    silent! exe bufwinnr(logfile) . 'wincmd w'
+    silent! 1,$d
+    silent! exe winnr('#') . 'wincmd w'
   endif
-  " Run function
-  silent! call system('~/bin/vimlatex '.shellescape(@%).' '.opts.' &>'.logfile.' &')
-  echom "Running vimlatex in background."
+  " Run job in realtime
+  let num = bufnr(logfile)
+  let g:tex_job = job_start('/Users/ldavis/bin/vimlatex ' . texfile . opts,
+      \ { 'out_io': 'buffer', 'out_buf': num, 'pty': 1 })
 endfunction
 " Refresh log
 function! s:latex_refresh()
-  let logfile = expand('%:r').'.exe'
-  if expand('%') == logfile
-    silent! edit +$
-  else
-    silent! exe bufwinnr(logfile)."wincmd w"
-    silent! edit +$
-    silent! exe winnr('#').'wincmd w'
-  endif
+  silent! exe bufwinnr(logfile) . 'wincmd w'
+  silent! normal! G
+  silent! exe winnr('#') . 'wincmd w'
 endfunction
 " Maps
 noremap <silent> <buffer> <C-z> :call <sid>latex_background()<CR>
 noremap <silent> <buffer> <Leader>z :call <sid>latex_background(' --diff')<CR>
 noremap <silent> <buffer> <Leader>Z :call <sid>latex_background(' --word')<CR>
-noremap <silent> <buffer> <Leader>l :call <sid>latex_refresh()<CR>
 
