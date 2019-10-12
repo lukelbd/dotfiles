@@ -46,7 +46,7 @@ function! s:latex_background(...)
   " Run job in realtime
   let num = bufnr(logfile)
   let g:tex_job = job_start('/Users/ldavis/bin/vimlatex ' . texfile . opts,
-      \ { 'out_io': 'buffer', 'out_buf': num, 'pty': 1 })
+      \ { 'out_io': 'buffer', 'out_buf': num })
 endfunction
 " Refresh log
 function! s:latex_refresh()

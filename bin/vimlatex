@@ -130,10 +130,10 @@ nocomments "$filename" | grep 'documentclass.*{beamer}' &>/dev/null
 # Important to call kpsewhich with a list of files rather than calling it
 # successively; otherwise can be extremely slow, for some strange reason
 texfind() {
-  local texlive copied names files scrip ext
+  local texlive copied names files typ ext
   [ $# -le 2 ] && return 1
   ext="$1" # first argument
-  scrip="$2" # second argument
+  typ="$2" # second argument
   names=($(echo "${@:3}" | tr " " "\n" | sort)) # the previous arguments, sorted alphabetically
   files=($(kpsewhich ${names[@]/%/.${ext}})) # append suffix to each file
   for name in ${names[@]}; do
@@ -149,8 +149,8 @@ texfind() {
       raise "${file} not found"
     fi
   done
-  [ ${#texlive[@]} -gt 0 ] && echo "$scrip from TeXLive: ${texlive[@]}"
-  [ ${#copied[@]} -gt 0 ] && echo "$scrip from ~/${templates##*/}: ${copied[@]}"
+  [ ${#texlive[@]} -gt 0 ] && echo "$typ found in TeXLive: ${texlive[@]}"
+  [ ${#copied[@]} -gt 0 ] && echo "$typ copied from ~/${templates##*/}: ${copied[@]}"
 }
 
 # First the custom .cls files
@@ -172,7 +172,7 @@ rpackages=($(nocomments "$classfile" | grep '^.*\\RequirePackage' \
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
   | inbraces))
-texfind sty "Class dependency sty" ${rpackages[@]}
+texfind sty "Class sty dependency" ${rpackages[@]}
 
 # As above but for .sty files
 # Will also detect \usepackage{package1,package2} lists
@@ -180,19 +180,19 @@ packages=($(nocomments "$filename" |  egrep '^.*\\usepackage|^.*\\templatetype' 
   | sed 's/\[[^][]*\]//g' | gsed '/\[\|\]/d' \
   | sed 's/AtEndOfClass{//g' | gsed '/newcommand\|#/d' \
   | inbraces))
-texfind sty "Preamble sty" ${packages[@]}
+texfind sty "Preamble sty file" ${packages[@]}
 
 # As above but for .bst file
 bibstyle=($(nocomments "$filename" | grep '^.*\\bibliographystyle' | inbraces))
-texfind bst "Bibstyle" $bibstyle
+texfind bst "Bibstyle file" $bibstyle
 
 # Next beamer theme
 themes=($(nocomments "$filename" | grep '^.*\\usetheme' | inbraces | sed 's/^/beamertheme/'))
-texfind sty "Beamer theme" $themes
+texfind sty "Theme file" $themes
 
 # And beamer color theme
 colorthemes=($(nocomments "$filename" | grep '^.*\\usecolortheme' | inbraces | sed 's/^/beamercolortheme/'))
-texfind sty "Beamer color theme" $colorthemes
+texfind sty "Color theme file" $colorthemes
 
 #------------------------------------------------------------------------------#
 # Compile the document(s) and display them
