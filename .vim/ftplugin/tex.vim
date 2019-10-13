@@ -48,8 +48,13 @@ function! s:latex_background(...)
   let g:tex_job = job_start('/Users/ldavis/bin/latexmk ' . texfile . trim(opts),
       \ { 'out_io': 'buffer', 'out_buf': num })
 endfunction
-" Maps
+
+" Latex compiling maps
 noremap <silent> <buffer> <C-z> :call <sid>latex_background()<CR>
 noremap <silent> <buffer> <Leader>z :call <sid>latex_background(' --diff')<CR>
 noremap <silent> <buffer> <Leader>Z :call <sid>latex_background(' --word')<CR>
+
+" Regex that filters out useless bibtex entries
+nnoremap <buffer> <silent> \x :%s/^\s*\(abstract\\|file\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
+nnoremap <buffer> <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
 

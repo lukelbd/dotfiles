@@ -63,8 +63,9 @@ if exists('&breakindent')
   set breakindent " map indentation when breaking
 endif
 au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
+
 " Forward delete by tabs
-function! s:foreward_delete()
+function! s:forward_delete()
   let line = getline('.')
   if line[col('.')-1:col('.')-1+&tabstop-1]==repeat(" ", &tabstop)
     return repeat("\<Delete>",&tabstop)
@@ -72,7 +73,8 @@ function! s:foreward_delete()
     return "\<Delete>"
   endif
 endfunction
-inoremap <silent> <expr> <Delete> <sid>foreward_delete()
+inoremap <silent> <expr> <Delete> <sid>forward_delete()
+
 " Enforce global settings that filetype options may try to override
 set display=lastline " displays as much of wrapped lastline as possible;
 let &breakat = " 	!*-+;:,./?" " break at single instances of several characters
@@ -82,12 +84,14 @@ augroup globals
   au BufEnter * exe g:settings
 augroup END
 exe g:settings
+
 " Escape repair, needed when we allow h/l to change line number
 set whichwrap=[,],<,>,h,l " <> = left/right insert, [] = left/right normal mode
 augroup escapefix
   au!
   au InsertLeave * normal! `^
 augroup END
+
 " Detect features; variables are used to decide which plugins can be loaded
 exe 'runtime autoload/repeat.vim'
 let g:has_signs  = has("signs") " for git gutter and syntastic maybe
@@ -102,8 +106,7 @@ endif
 " CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
-let s:check = mapcheck("\<Esc>", 'n')
-if s:check != ''
+if mapcheck('<Esc>', 'n') != ''
   silent! unmap <Esc>[3~
   let s:insert_maps = ['[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
     \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
@@ -114,6 +117,22 @@ if s:check != ''
     exe 'silent! iunmap <Esc>'.s:insert_map
   endfor
 endif
+" Suppress all mappings with certain prefix
+function! Suppress(prefix, mode)
+  let c = nr2char(getchar())
+  if maparg(a:prefix . c, a:mode) != ''
+    return a:prefix . c
+  else
+    return ''
+  endif
+endfunction
+for s:pair in [['n', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-t>']]
+  let s:mode = s:pair[0]
+  let s:char = s:pair[1]
+  if mapcheck(s:char) == ''
+    exe "nmap <expr> " . s:char . " Suppress('" . s:char . "', '" . s:mode . "')"
+  endif
+endfor
 " Disable keys
 noremap <CR> <Nop>
 noremap <Space> <Nop>
@@ -226,44 +245,36 @@ noremap <expr> <silent> gC search('^\ze\s*'.Comment().'.*$', 'b').'gg'
 noremap <expr> <silent> ge search('^\ze\s*$', '').'gg'
 noremap <expr> <silent> gE search('^\ze\s*$', 'b').'gg'
 " Alias single-key builtin text objects
-function! s:alias(original,new)
-  exe 'onoremap i'.a:original.' i'.a:new
-  exe 'xnoremap i'.a:original.' i'.a:new
-  exe 'onoremap a'.a:original.' a'.a:new
-  exe 'xnoremap a'.a:original.' a'.a:new
-endfunction
-for pair in ['r[', 'a<', 'c{']
-  call s:alias(pair[0], pair[1])
+for s:pair in ['r[', 'a<', 'c{']
+  exe 'onoremap i' . s:pair[0] . ' i' . s:pair[1]
+  exe 'xnoremap i' . s:pair[0] . ' i' . s:pair[1]
+  exe 'onoremap a' . s:pair[0] . ' a' . s:pair[1]
+  exe 'xnoremap a' . s:pair[0] . ' a' . s:pair[1]
 endfor
-
-" INSERT MODE MAPS, IN CONTEXT OF POPUP MENU AND FOR 'ESCAPING' DELIMITER
 " Next popup manager; will count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
   au InsertLeave,BufEnter * let b:menupos = 0
 augroup END
 function! s:tab_increase() " use this inside <expr> remaps
-  let b:menupos += 1
-  return ''
+  let b:menupos += 1 | return ''
 endfunction
 function! s:tab_decrease()
-  let b:menupos -= 1
-  return ''
+  let b:menupos -= 1 | return ''
 endfunction
 function! s:tab_reset()
-  let b:menupos = 0
-  return ''
+  let b:menupos = 0 | return ''
 endfunction
-" Commands that when pressed expand to the default complete menu options
-" Keystrokes that close popup menu (note that insertleave triggers tabreset)
+" Popup menu related maps
 " NOTE: Try let a = 1 ? 1 ? 'a' : 'b' : 'c', this works!
 " WARNING: The space remap and tab remap break insert mode abbreviations!
-" Need to trigger them manually with <C-]> (see :help i_Ctrl-])
+" To use abbreviations you must trigger manually with <C-]> (see :help i_Ctrl-])
+" First keystrokes that close popup menu
 inoremap <expr> <BS> pumvisible() ? <sid>tab_reset()."\<C-e>\<BS>" : "\<BS>"
 inoremap <expr> <Space> pumvisible() ? <sid>tab_reset()."\<C-]>\<Space>" : "\<C-]>\<Space>"
 " Enter means 'accept' only when we have explicitly scrolled down to something
-inoremap <expr> <CR> pumvisible() ? b:menupos ? "\<C-y>".<sid>tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
 " Tab always means 'accept' and choose default menu item if necessary
+inoremap <expr> <CR> pumvisible() ? b:menupos ? "\<C-y>".<sid>tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
 inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>".<sid>tab_reset() : "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-]>\<Tab>"
 " Incrementing items in menu
 inoremap <expr> <C-k> pumvisible() ? <sid>tab_decrease()."\<C-p>" : "\<Up>"
@@ -321,24 +332,6 @@ function! Comment(...)
     return placeholder
   endif
 endfunction
-" Suppress all mappings with certain prefix
-" We do this for all special remaps!
-function! Suppress(prefix, mode)
-  let c = nr2char(getchar())
-  if maparg(a:prefix.c, a:mode) != ''
-    return a:prefix.c
-  else
-    return ''
-  endif
-endfunction
-" Add the recursive parent mappings
-nmap <expr> \ Suppress('\', 'n')
-nmap <expr> <Tab> Suppress('<Tab>', 'n')
-nmap <expr> <Leader> Suppress('<Leader>', 'n')
-imap <expr> <C-s> Suppress('<C-s>', 'i')
-imap <expr> <C-z> Suppress('<C-z>', 'i')
-imap <expr> <C-o> Suppress('<C-o>', 'i')
-imap <expr> <C-p> Suppress('<C-p>', 'i')
 
 " DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
 " First mouse stuff. Make sure we are using *vim", not vi (use the latter for quickly examining contents).
@@ -376,25 +369,6 @@ if has("gui_running")
   set guicursor+=a:blinkon0 " disable blinking for GUI version
   set number relativenumber guioptions= " no scrollbars
 endif
-
-" CHANGE COMMAND-LINE WINDOW SETTINGS i.e. q: q/ and q? mode
-function! s:commandline_check()
-  nnoremap <buffer> <silent> q :q<CR>
-  silent! unmap <CR>
-  silent! unmap <C-c>
-  nnoremap  <buffer> <C-z> <C-c><CR>
-  inoremap <buffer> <C-z> <C-c><CR>
-  setlocal nonumber norelativenumber nolist laststatus=0
-endfunction
-augroup cmdwin
-  au!
-  au CmdwinEnter * call s:commandline_check()
-  au CmdwinLeave * setlocal laststatus=2
-augroup END
-nnoremap <Leader>; :<Up><CR>
-nnoremap <Leader>: q:
-nnoremap <Leader>/ q/
-nnoremap <Leader>? q?
 
 " WILDMENU OPTIONS
 set wildmenu
@@ -536,7 +510,7 @@ Plug 'tpope/vim-eunuch'
 " Plug 'ajh17/VimCompletesMe' "no auto-popup feature
 " Plug 'lifepillar/vim-mucomplete' "broken, seriously, cannot get it to work, don't bother! is slow anyway.
 " if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif "haven't tried it
-" if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
+if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 
 " Delimiters
 Plug 'tpope/vim-surround'
@@ -671,8 +645,11 @@ function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overri
   filetype detect " if started with empty file, but now shebang makes filetype clear
   filetype plugin indent on
   let loaded = []
-  let files = ['~/.vim/ftplugin/'.&ft.'.vim',       '~/.vim/syntax/'.&ft.'.vim',
-             \ '~/.vim/after/ftplugin/'.&ft.'.vim', '~/.vim/after/syntax/'.&ft.'.vim']
+  let files = [
+      \ '~/.vim/ftplugin/' . &ft . '.vim',
+      \ '~/.vim/syntax/' . &ft . '.vim',
+      \ '~/.vim/after/ftplugin/' . &ft . '.vim',
+      \ '~/.vim/after/syntax/' . &ft . '.vim']
   for file in files
     if !empty(glob(file))
       exe 'so '.file
@@ -772,9 +749,9 @@ if PlugActive("delimitmate")
   " Markdown need backticks for code, and can maybe do LaTeX math
   augroup delimitmate
     au!
-    au FileType vim,html,markdown,rst let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
-    au FileType vim let b:delimitMate_quotes = "'"
+    au FileType vim let b:delimitMate_quotes = "'" | let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
     au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
+    au FileType html let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
     au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
   augroup END
   " TODO: Apparently delimitMate has its own jump command, should start using it.
@@ -917,8 +894,7 @@ endif
 
 " NEOCOMPLETE (RECOMMENDED SETTINGS)
 if PlugActive("neocomplete.vim") "just check if activated
-  " Enable omni completion for different filetypes; sooper cool bro
-  " Not sure if this works yet
+  " Enable omni completion for different filetypes
   augroup neocomplete
     au!
     au FileType css setlocal omnifunc=csscomplete#CompleteCSS
@@ -1843,26 +1819,23 @@ nnoremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,
 augroup simple
   au!
   au BufEnter * let b:recording = 0
-  au FileType qf,diff,man,fugitive,gitcommit,vim-plug call <sid>popup_setup()
+  au FileType qf,log,diff,man,fugitive,gitcommit,vim-plug call <sid>popup_setup()
   au FileType help call <sid>help_setup()
-  au FileType log call <sid>simple_setup() \| setlocal nomodifiable
+  au CmdwinEnter * call s:cmdwin_setup()
+  au CmdwinLeave * setlocal laststatus=2
 augroup END
-" Simple setup function
+" For popup windows
 " For location lists, enter jumps to location. Restore this behavior.
-function! s:simple_setup()
+function! s:popup_setup()
   nnoremap <silent> <buffer> <CR> <CR>
   nnoremap <silent> <buffer> <C-w> :q!<CR>
   nnoremap <silent> <buffer> q :q!<CR>
   setlocal nolist nonumber norelativenumber nospell nocursorline colorcolumn=
-endfunction
-" For popup windows
-function! s:popup_setup()
-  call s:simple_setup()
   if len(tabpagebuflist()) == 1 | q | endif " exit if only one left
 endfunction
 " For help windows
 function! s:help_setup()
-  call s:simple_setup()
+  call s:popup_setup()
   wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
   vertical resize 80 " always certain size
   nnoremap <buffer> <CR> <C-]>
@@ -1874,16 +1847,30 @@ function! s:help_setup()
     nnoremap <nowait> <buffer> <silent> ]] :<C-u>tag<CR>
   endif
 endfunction
+" For command windows
+function! s:cmdwin_setup()
+  silent! unmap <CR>
+  silent! unmap <C-c>
+  nnoremap <buffer> <silent> q :q<CR>
+  nnoremap  <buffer> <C-z> <C-c><CR>
+  inoremap <buffer> <C-z> <C-c><CR>
+  setlocal nonumber norelativenumber nolist laststatus=0
+endfunction
+" Vim command windows
+nnoremap <Leader>; :<Up><CR>
+nnoremap <Leader>: q:
+nnoremap <Leader>/ q/
+nnoremap <Leader>? q?
+" Vim help windows
+nnoremap <Leader>h :vert help 
+nnoremap <Leader>H :Help<CR>
+" Man pages
+nnoremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').'; '
+  \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 " Result of 'cmd --help', pipe output into less for better interaction
 nnoremap <silent> <expr> <Leader>m ':!clear; search='.input('Get help info: ').'; '
   \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
-" Man pages
-nnoremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').'; '
-  \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
-" Vim help menu remaps, the second one if an FZF command
-nnoremap <Leader>h :vert help 
-nnoremap <Leader>H :Help<CR>
 
 " SNIPPETS
 " TODO: Add these
@@ -1968,7 +1955,6 @@ augroup search_replace
   au!
   au InsertEnter * set noignorecase " default ignore case
   au InsertLeave * set ignorecase
-  au FileType bib,tex call <sid>tex_replace()
 augroup END
 " Delete commented text
 " WARNING: For some reason search screws up when using \(\) groups, maybe
@@ -1992,11 +1978,6 @@ nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed
 nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
 nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 nnoremap <silent> \_ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
-" Special: replace useless BibTex entries
-function! s:tex_replace()
-  nnoremap <buffer> <silent> \x :%s/^\s*\(abstract\\|file\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
-  nnoremap <buffer> <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\|urldate\\|copyright\\|keywords\\|annotate\\|note\\|shorttitle\)\s*=\s*{\_.\{-}},\?\n//gc<CR>
-endfunction
 
 " CAPS LOCK
 " The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
@@ -2079,7 +2060,7 @@ else
   nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
 
-" SPECIAL SYNTAX HIGHLIGHTING OVERWRITES (all languages; must come after filetype stuff)
+" SPECIAL SYNTAX HIGHLIGHTING OVERWRITES
 " * See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax
 "   for every file; we add our own custom highlighting for vim comments
 " * For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
@@ -2091,20 +2072,9 @@ endif
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/ 
 if has('gui_running')
   " Declare colorscheme
-  " colorscheme gruvbox
-  " colorscheme kolor
-  " colorscheme dracula
-  " colorscheme onedark
-  " colorscheme molokai
+  " gruvbox, kolor, dracula, onedark, molokai, yowish, tomorrow-night
+  " atom, chlordane, papercolor, solarized, fahrenheit, slate, oceanicnext
   colorscheme oceanicnext
-  " colorscheme yowish "yellow
-  " colorscheme tomorrow-night
-  " colorscheme atom "mimics Atom
-  " colorscheme chlordane "hacker theme
-  " colorscheme papercolor
-  " colorscheme solarized
-  " colorscheme fahrenheit
-  " colorscheme slate "no longer controlled through terminal colors
   " Bugfixes
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
@@ -2193,18 +2163,17 @@ highlight Terminal ctermbg=NONE ctermfg=NONE
 " USEFUL COMMANDS
 " Highlight group under cursor
 function! s:group()
-  echo "actual <".synIDattr(synID(line("."),col("."),1),"name")."> "
-     \."appears <".synIDattr(synID(line("."),col("."),0),"name")."> "
-     \."group <".synIDattr(synIDtrans(synID(line("."),col("."),1)),"name").">"
+  echo "actual <" . synIDattr(synID(line("."), col("."), 1), "name") . "> "
+   \ . "appears <" . synIDattr(synID(line("."), col("."), 0), "name") . "> "
+   \ . "group <" . synIDattr(synIDtrans(synID(line("."), col("."), 1)), "name") . ">"
 endfunction
 command! Group call <sid>group()
 " The :syntax commands within that group
 function! s:syntax(name)
   if a:name
-    exe "verb syntax list ".a:name
+    exe "verb syntax list " . a:name
   else
-    " echo "Name: ".synIDattr(synID(line("."),col("."),0),"name") | sleep 500 m
-    exe "verb syntax list ".synIDattr(synID(line("."),col("."),0),"name")
+    exe "verb syntax list " . synIDattr(synID(line("."), col("."), 0), "name")
   endif
 endfunction
 command! -nargs=? Syntax call <sid>syntax(<q-args>)
@@ -2222,7 +2191,7 @@ command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 let g:tabtoggle_tab_filetypes = ['text', 'gitconfig', 'make']
 augroup tab_toggle
   au!
-  au FileType * exe 'TabToggle '.(index(g:tabtoggle_tab_filetypes, &ft)!=-1)
+  exe 'au FileType ' . join(g:tabtoggle_tab_filetypes, ',') . 'TabToggle 1'
 augroup END
 function! s:tabtoggle(...)
   if a:0
