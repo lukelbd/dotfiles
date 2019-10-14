@@ -190,36 +190,36 @@ noremap <Right> <C-i>
 noremap <expr> ' "`".nr2char(97+v:count)
 noremap <expr> " (v:count == 9 ? '<Esc>:RemoveHighlights<CR>' :
   \ 'm'.nr2char(97+v:count).':HighlightMark '.nr2char(97+v:count).'<CR>')
-" Record macro by pressing q, the escapes prevent q from triggerering command-history window
-" Repeat macro with , like . repeats last command
+" Reserve lower case q for quitting popup windows
+noremap q <Nop>
+" Record macro by pressing Q, the escapes prevent q from triggerering
+" command-history window. Repeat macro with , just repeat command with .
 noremap @ <Nop>
 noremap , @a
-noremap q <Nop>
 noremap <silent> <expr> Q b:recording ?
   \ 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
-" Redo map to capital U; means we cannot 'undo line', but who cares
+" Redo map to capital U
 nnoremap U <C-r>
 " Use - for throwaway register, pipeline for clipboard register
-" Don't try anything fancy here, it's not worth it!
-noremap <silent> - "_
-noremap <silent> \| "*
-" These keys aren't used currently, and are in a really good spot,
-" so why not?
+noremap - "_
+noremap \| "*
+" These keys aren't used currently, so why not?
 nnoremap <silent> ` :call append(line('.'),'')<CR>
 nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
 " Use cc for s because use sneak plugin
+nnoremap c<Backspace> <Nop>
 nnoremap cc s
 vnoremap cc s
 " Swap with row above, and swap with row below
-nnoremap <silent> ck k:let g:view = winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
-      \ \| call winrestview(g:view)<CR>
-nnoremap <silent> cj :let g:view = winsaveview() \| d \| call append(line('.'), getreg('"')[:-2]) 
-      \ \| call winrestview(g:view)<CR>j
+nnoremap <silent> ck k:let g:view = winsaveview() \| d
+  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>
+nnoremap <silent> cj :let g:view = winsaveview() \| d
+  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>j
 " Swap adjacent characters
-nnoremap <silent> cl xph
-nnoremap <silent> ch Xp
+nnoremap cl xph
+nnoremap ch Xp
 " Mnemonic is 'cut line' at cursor; character under cursor will be deleted
-nnoremap <silent> dL mzi<CR><Esc>`z
+nnoremap dL mzi<CR><Esc>`z
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o ox<BS>
 nnoremap O Ox<BS>
@@ -250,11 +250,10 @@ nnoremap <silent> <Leader>d :lcd %:p:h<CR>
 " mode, to do that need to map vi and va stuff
 nnoremap v myv
 nnoremap V myV
-nnoremap vv my0v$h
 nnoremap <C-v> my<C-v>
 nnoremap <silent> v/ hn:noh<CR>mygn
-vnoremap <CR> <C-c>
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
+vnoremap <CR> <C-c>
 " Visual mode p/P to replace selected text with contents of register
 vnoremap p "_dP
 vnoremap P "_dP
@@ -277,7 +276,7 @@ endfor
 " Count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
-  au InsertLeave,BufEnter * let b:menupos = 0
+  au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
 function! s:tab_increase() " use this inside <expr> remaps
   let b:menupos += 1 | return ''
@@ -313,7 +312,7 @@ function! PlugActive(key)
 endfunction
 " Return whether inside list
 function! In(list,item)
-  return index(a:list,a:item)!=-1
+  return index(a:list,a:item) != -1
 endfunction
 " Reverse string
 function! Reverse(text) " want this to be accessible!
@@ -324,7 +323,7 @@ function! Strip(text)
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
 " Null list for completion, so tab doesn't produce literal char
-function! NullList(A,L,P)
+function! NullList(A, L, P)
   return []
 endfunction
 " Reverse selected lines
@@ -384,19 +383,13 @@ endif
 "   The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
 " * Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
 if exists("&t_SI")
-  if exists('$TMUX') | let &t_SI = "\ePtmux;\e\e[6 q\e\\"
-  else | let &t_SI = "\e[6 q"
-  endif
+  let &t_SI = (exists('$TMUX') ? "\ePtmux;\e\e[6 q\e\\" : "\e[6 q")
 endif
 if exists("&t_SR")
-  if exists('$TMUX') | let &t_SR = "\ePtmux;\e\e[4 q\e\\"
-  else | let &t_SR = "\e[4 q"
-  endif
+  let &t_SR = (exists('$TMUX') ? "\ePtmux;\e\e[4 q\e\\" : "\e[4 q")
 endif
 if exists("&t_EI")
-  if exists('$TMUX') | let &t_EI = "\ePtmux;\e\e[2 q\e\\"
-  else | let &t_EI = "\e[2 q"
-  endif
+  let &t_EI = (exists('$TMUX') ? "\ePtmux;\e\e[2 q\e\\" : "\e[2 q")
 endif
 
 "-----------------------------------------------------------------------------"
@@ -406,9 +399,9 @@ endif
 " Don't load some plugins if not compatible
 augroup plug
 augroup END
-let g:compatible_tagbar      = (g:has_ctags && (v:version >= 704 || v:version == 703 && has("patch1058")))
-let g:compatible_codi        = (v:version >= 704 && has('job') && has('channel'))
-let g:compatible_workspace   = (v:version >= 800) " needs Git 8.0, so not too useful
+let g:compatible_tagbar = (g:has_ctags && (v:version >= 704 || v:version == 703 && has("patch1058")))
+let g:compatible_codi = (v:version >= 704 && has('job') && has('channel'))
+let g:compatible_workspace = (v:version >= 800) " needs Git 8.0, so not too useful
 let g:compatible_neocomplete = has("lua") " try alternative completion library
 if expand('$HOSTNAME') =~ 'cheyenne\?' | let g:compatible_neocomplete = 0 | endif " had annoying bugs with refactoring tools
 call plug#begin('~/.vim/plugged')
@@ -545,7 +538,7 @@ Plug 'justinmk/vim-sneak'
 Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-" if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
+if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 
 " All of this rst shit failed; anyway can just do simple tables with == signs
 " instead of those fancy grid cell tables.
@@ -823,14 +816,17 @@ function! s:spellchange(direc)
     setlocal spell
   endif
   let winview = winsaveview()
-  exe 'normal! '.(a:direc == ']' ? 'bh' : 'el')
-  exe 'normal! '.a:direc.'s'
+  exe 'normal! ' . (a:direc == ']' ? 'bh' : 'el')
+  exe 'normal! ' . a:direc . 's'
   normal! 1z=
   call winrestview(winview)
   if nospell
     setlocal nospell
   endif
 endfunction
+" Functions
+command! SpellToggle call <sid>spelltoggle(<args>)
+command! LangToggle call <sid>langtoggle(<args>)
 " Toggle on and off
 nnoremap <silent> ;. :call <sid>spelltoggle()<CR>
 nnoremap <silent> ;o :call <sid>spelltoggle(1)<CR>
@@ -839,14 +835,13 @@ nnoremap <silent> ;O :call <sid>spelltoggle(0)<CR>
 nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>
 nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
 " Spell maps
+nnoremap ;a zg
+nnoremap ;r zug
 nnoremap ;m z=
-nnoremap <Plug>forwardspell  bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
+nnoremap <Plug>forwardspell bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
 nnoremap <Plug>backwardspell el[s:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
 nmap ;d <Plug>forwardspell
 nmap ;D <Plug>backwardspell
-" Add/remove from dictionary
-nnoremap ;a zg
-nnoremap ;r zug
 
 " INCREMENT and SUM PLUGINS
 augroup increment
@@ -868,13 +863,10 @@ if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
 endif
 
 " CODI (MATHEMATICAL NOTEPAD)
-" Now should just use 'Numi' instead; had too many issues with this
 augroup codi
 augroup END
 if PlugActive("codi.vim")
   " Update manually commands; o stands for codi
-  nnoremap <C-n> :CodiUpdate<CR>
-  inoremap <C-n> <Esc>:CodiUpdate<CR>a
   function! s:newcodi(name)
     if a:name == ''
       echom "Cancelled."
@@ -884,11 +876,11 @@ if PlugActive("codi.vim")
     endif
   endfunction
   " Create new calculator file, adds .py extension
-  nnoremap <silent> <Leader>n :call <sid>newcodi(input('Calculator name: ('.getcwd().') ', '', 'file'))<CR>
-  " Turn current file into calculator; m stands for math
-  nnoremap <silent> <Leader>N :Codi!! &ft<CR>
-  " Use builtin python2.7 on macbook to avoid creating history files
-  " \ 'bin': '/usr/bin/python',
+  " Alternatively current file into calculator
+  nnoremap <silent> <Leader>u :call <sid>newcodi(input('Calculator name (' . getcwd() . '): ', '', 'file'))<CR>
+  nnoremap <silent> <Leader>U :Codi!!<CR>
+  " Settings, use builtin python2.7 on macbook to avoid creating history files
+  " CursorHold sometimes caused errors and CPU spikes, so use InsertLeave
   let g:codi#interpreters = {
        \ 'python': {
            \ 'bin': '/usr/bin/python',
@@ -897,12 +889,9 @@ if PlugActive("codi.vim")
        \ } " see issue here: https://github.com/metakirby5/codi.vim/issues/85
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
-  let g:codi#width = 20 " simple window configuration
-  " CursorHold sometimes caused errors/CPU spikes; this is weird because actually
-  " shouldn't, get flickering cursor and codi still running even after 250ms; maybe some other option conflicts
-  let g:codi#autocmd = "None"
-  let g:codi#sync = 0 " probably easier
-  let g:codi#log = "codi.log" "log everything, becuase you *will* have issues
+  let g:codi#width = 20
+  let g:codi#autocmd = 'InsertLeave'
+  let g:codi#log = '' " enable when debugging
 endif
 
 " NEOCOMPLETE (RECOMMENDED SETTINGS)
@@ -916,33 +905,30 @@ if PlugActive("neocomplete.vim") "just check if activated
     au FileType python setlocal omnifunc=pythoncomplete#Complete
     au FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
   augroup END
-  " Disable python omnicompletion
-  " From the Q+A section
-  if !exists('g:neocomplete#sources#omni#input_patterns')
-    let g:neocomplete#sources#omni#input_patterns = {}
-  endif
-  let g:neocomplete#sources#omni#input_patterns.python = ''
-  " Important behavior; allows us to use neocomplete without mapping everything to <C-e> stuff
   " Basic behavior
   let g:neocomplete#enable_at_startup = 1
   let g:neocomplete#max_list = 10
   let g:neocomplete#enable_auto_select = 0
   let g:neocomplete#auto_completion_start_length = 1
   let g:neocomplete#sources#syntax#min_keyword_length = 2
-  " let g:neocomplete#disable_auto_complete = 1 "useful only if above is zero
-  " Do not use smartcase.
   let g:neocomplete#enable_smart_case = 0
   let g:neocomplete#enable_camel_case = 0
   let g:neocomplete#enable_ignore_case = 0
-  " Define dictionary.
+  " Disable python omnicompletion, from the Q+A section
+  if !exists('g:neocomplete#sources#omni#input_patterns')
+    let g:neocomplete#sources#omni#input_patterns = {}
+  endif
+  let g:neocomplete#sources#omni#input_patterns.python = ''
+  " Define dictionary and keyword
+  if !exists('g:neocomplete#keyword_patterns')
+    let g:neocomplete#keyword_patterns = {}
+  endif
+  let g:neocomplete#keyword_patterns['default'] = '\h\w*'
   let g:neocomplete#sources#dictionary#dictionaries = {
     \ 'default' : '',
-    \ 'vimshell' : $HOME.'/.vimshell_hist',
-    \ 'scheme' : $HOME.'/.gosh_completions'
-        \ }
-  " Define keyword.
-  if !exists('g:neocomplete#keyword_patterns') | let g:neocomplete#keyword_patterns = {} | endif
-  let g:neocomplete#keyword_patterns['default'] = '\h\w*'
+    \ 'vimshell' : $HOME . '/.vimshell_hist',
+    \ 'scheme' : $HOME . '/.gosh_completions'
+    \ }
 endif
 
 " NERDTREE
@@ -955,37 +941,35 @@ endif
 " of current directory, 'C' change tree root to selected dir, 'u' move up, 'U' move up
 " and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
 " 'I' toggle hidden file display, '?' toggle help
-" Remap NerdTree command
 if PlugActive("nerdtree")
   augroup nerdtree
     au!
     au BufEnter * if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-    au FileType nerdtree call s:nerdtreesetup()
+    au FileType nerdtree call s:nerdtree_setup()
   augroup END
-  " f stands for files here
-  " nnoremap <Leader>f :NERDTreeFind<CR>
-  nnoremap <Leader>f :NERDTree %<CR>
+  " NERDtree function
+  function! s:nerdtree_setup()
+    setlocal nolist
+    exe 'vertical resize '.g:NERDTreeWinSize
+    nnoremap <buffer> <Leader>f :NERDTreeClose<CR>
+    if g:has_nowait
+      nmap <buffer> <nowait> d D
+    endif
+  endfunction
+  " Basic settings
   let g:NERDTreeWinPos = "right"
   let g:NERDTreeWinSize = 20 " instead of 31 default
   let g:NERDTreeShowHidden = 1
   let g:NERDTreeMinimalUI = 1 " remove annoying ? for help note
   let g:NERDTreeMapChangeRoot = "D" "C was annoying, because VIM will wait for 'CD'
-  " Sorting and filetypes ignored
   let g:NERDTreeSortOrder = [] " use default sorting
   let g:NERDTreeIgnore = split(&wildignore, ',')
   for s:index in range(len(g:NERDTreeIgnore))
     let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
     let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\$', '')
   endfor
-  " Custom nerdtree maps here
-  " See this thread for ideas: https://superuser.com/q/195022/506762
-  function! s:nerdtreesetup()
-    setlocal nolist
-    exe 'vertical resize '.g:NERDTreeWinSize
-    nnoremap <buffer> <Leader>f :NERDTreeClose<CR>
-    if g:has_nowait | nmap <buffer> <nowait> d D | endif
-    " prevents attempts to change it; this descends into directory
-  endfunction
+  " Toggle
+  nnoremap <Leader>f :NERDTree %<CR>
 endif
 
 " NERDCommenter (comment out stuff)
@@ -1036,17 +1020,6 @@ if PlugActive("nerdcommenter")
       return ''
     endif
   endfunction
-
-  " Create functions that return fancy comment 'blocks' -- e.g. for denoting
-  " section changes, for drawing a line across the screen, for writing information
-  " First the helpers functions
-  function! s:comment_filler()
-    if &ft == "vim"
-      return '#'
-    else
-      return Comment()
-    endif
-  endfunction
   function! s:comment_indent()
     let col = match(getline('.'), '^\s*\S\zs') " location of first non-whitespace char
     return (col == -1 ? 0 : col-1)
@@ -1092,21 +1065,7 @@ if PlugActive("nerdcommenter")
     call append(line('.') - 1, repeat(' ', nspace) . repeat(a:fill, nfill))
   endfunction
 
-  " Arbtirary message above this line, matching indentation level
-  function! s:message(...)
-    if a:0
-      let message = ' ' . a:1
-    else
-      let message = ''
-    endif
-    let nspace = s:comment_indent()
-    let cchar = Comment()
-    normal! k
-    call append(line('.'), repeat(' ', nspace) . cchar . message)
-    normal! jj
-  endfunction
-
-  " Inline style of format # ---- Hello world! ----
+  " Inline style of format '# ---- Hello world! ----' and '# Hello world! #'
   function! s:inline(ndash)
     let nspace = s:comment_indent()
     let cchar = Comment()
@@ -1115,14 +1074,21 @@ if PlugActive("nerdcommenter")
     normal! j^
     call search('- \zs', '', line('.')) " search, and stop on this line (should be same one); no flags
   endfunction
-
-  " Inline style of format # ---- Hello world! ----
   function! s:double()
     let nspace = s:comment_indent()
     let cchar = Comment()
     normal! k
     call append(line('.'), repeat(' ', nspace) . cchar . '  ' . cchar)
     normal! j$h
+  endfunction
+
+  " Arbtirary message above this line, matching indentation level
+  function! s:message(message)
+    let nspace = s:comment_indent()
+    let cchar = Comment()
+    normal! k
+    call append(line('.'), repeat(' ', nspace) . cchar . ' ' . a:message)
+    normal! jj
   endfunction
 
   " Docstring
@@ -1147,16 +1113,19 @@ if PlugActive("nerdcommenter")
   nnoremap <silent> c: :call <sid>bar_surround('-', 77, 1)<CR>A
   nmap c; <Plug>bar1
   nmap c, <Plug>bar2
+
   " Author information, date insert, misc inserts
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
   nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>
   nnoremap <silent> cC :call <sid>double()<CR>i
   nnoremap <silent> cI :call <sid>inline(5)<CR>i
+
   " Add ReST section levels
   nnoremap <silent> c- :call <sid>header('-')<CR>
   nnoremap <silent> c_ :call <sid>header_surround('-')<CR>
   nnoremap <silent> c= :call <sid>header('=')<CR>
   nnoremap <silent> c+ :call <sid>header_surround('=')<CR>
+
   " Python docstring
   nnoremap c' :call <sid>docstring("'")<CR>A
   nnoremap c" :call <sid>docstring('"')<CR>A
