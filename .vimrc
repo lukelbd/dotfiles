@@ -1,5 +1,5 @@
 " .vimrc
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " A fancy vimrc that does all sorts of magical things.
 " NOTE: Have iTerm map some ctrl+key combinations that would otherwise
 " be impossible to the F1, F2 keys. Currently they are:
@@ -10,7 +10,7 @@
 "     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
 " Also use Karabiner 'map Ctrl-j/k/h/l to arrow keys', so be aware that if
 " you map those keys in Vim, should also map arrows.
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " IMPORTANT STUFF and SETTINGS
 " First the settings
 let mapleader = "\<Space>"
@@ -96,10 +96,10 @@ augroup END
 
 " Detect features; variables are used to decide which plugins can be loaded
 exe 'runtime autoload/repeat.vim'
-let g:has_signs  = has("signs") " for git gutter and syntastic maybe
-let g:has_ctags  = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
-let g:has_nowait = (v:version >= 704 || v:version == 703 && has("patch1261"))
-let g:has_repeat = exists("*repeat#set") " start checks for function existence
+let g:has_signs = has('signs') " for git gutter and syntastic maybe
+let g:has_ctags = str2nr(system('type ctags &>/dev/null && echo 1 || echo 0'))
+let g:has_nowait = (v:version >= 704 || v:version == 703 && has('patch1261'))
+let g:has_repeat = exists('*repeat#set') " start checks for function existence
 if !g:has_repeat
   echohl WarningMsg
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
@@ -158,7 +158,7 @@ endfor
 " Disable keys
 noremap <CR> <Nop>
 noremap <Space> <Nop>
-" Enter weird modes I don't understand
+" Disable weird modes I don't understand
 noremap Q <Nop>
 noremap K <Nop>
 " Disable Ctrl-z and Z for exiting vim
@@ -173,18 +173,18 @@ noremap <C-x> <Nop>
 inoremap <C-a> <Nop>
 inoremap <C-x> <Nop>
 " Turn off common things in normal mode
-" also prevent Ctrl+c ringing the bell
+" Also prevent Ctrl+c ringing the bell
 nnoremap <C-c> <Nop>
 nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
+" Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
+noremap <C-n> g;
+noremap <F4> g,
 " Jump to last jump
 noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
-" Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
-noremap <C-n> g;
-noremap <F4> g,
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
 noremap <expr> ' "`".nr2char(97+v:count)
@@ -192,7 +192,7 @@ noremap <expr> " (v:count == 9 ? '<Esc>:RemoveHighlights<CR>' :
   \ 'm'.nr2char(97+v:count).':HighlightMark '.nr2char(97+v:count).'<CR>')
 " Record macro by pressing q, the escapes prevent q from triggerering command-history window
 " Repeat macro with , like . repeats last command
-map @ <Nop>
+noremap @ <Nop>
 noremap , @a
 noremap q <Nop>
 noremap <silent> <expr> Q b:recording ?
@@ -218,8 +218,7 @@ nnoremap <silent> cj :let g:view = winsaveview() \| d \| call append(line('.'), 
 " Swap adjacent characters
 nnoremap <silent> cl xph
 nnoremap <silent> ch Xp
-" Mnemonic is 'cut line' at cursor; character under cursor (e.g. a space) will be deleted
-" use ss/substitute instead of cl if you want to enter insert mode
+" Mnemonic is 'cut line' at cursor; character under cursor will be deleted
 nnoremap <silent> dL mzi<CR><Esc>`z
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o ox<BS>
@@ -400,9 +399,9 @@ if exists("&t_EI")
   endif
 endif
 
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " COMPLICATED MAPPINGS AND FILETYPE MAPPINGS
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " VIM-PLUG PLUGINS
 " Don't load some plugins if not compatible
 augroup plug
@@ -1018,6 +1017,7 @@ if PlugActive("nerdcommenter")
   let g:NERDCommentEmptyLines = 1      " allow commenting and inverting empty lines (useful when commenting a region)
   let g:NERDDefaultAlign = 'left'      " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 2
+
   " Function for toggling comment while in insert mode
   function! s:comment_insert()
     if exists('b:NERDCommenterDelims')
@@ -1036,13 +1036,6 @@ if PlugActive("nerdcommenter")
       return ''
     endif
   endfunction
-  " The maps
-  " Use NERDCommenterMinimal commenter to use left-right delimiters, or alternatively use
-  " NERDCommenterSexy commenter for better alignment
-  inoremap <expr> <C-c> <sid>comment_insert()
-  map c. <Plug>NERDCommenterToggle
-  map co <Plug>NERDCommenterSexy
-  map cO <Plug>NERDCommenterUncomment
 
   " Create functions that return fancy comment 'blocks' -- e.g. for denoting
   " section changes, for drawing a line across the screen, for writing information
@@ -1058,45 +1051,47 @@ if PlugActive("nerdcommenter")
     let col = match(getline('.'), '^\s*\S\zs') " location of first non-whitespace char
     return (col == -1 ? 0 : col-1)
   endfunction
-  " Next separators that extend out to 80th column
-  function! s:bar(...) " inserts above by default; most common use
+
+  " Next separators of arbitrary length
+  function! s:bar(fill, nfill, suffix) " inserts above by default; most common use
     let cchar = Comment()
-    let nfill = 77
-    let suffix = cchar
     let nspace = s:comment_indent()
-    if a:0 == 2 " if non-zero number of args
-      let fill = a:1 " fill character
-      let nfill = a:2 " count
-      let suffix = '' " no suffix
-    elseif a:0 == 1
-      let fill = a:1
-    else " choose fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill = s:comment_filler()
-    endif
-    let nfill = (nfill - nspace)/len(fill) " divide by length of fill character
+    let suffix = (a:suffix ? cchar : '')
+    let nfill = (a:nfill - nspace)/len(a:fill) " divide by length of fill character
     normal! k
-    call append(line('.'), repeat(' ',nspace) . cchar . repeat(fill, nfill) . suffix)
+    call append(line('.'), repeat(' ', nspace) . cchar . repeat(a:fill, nfill) . suffix)
     normal! jj
   endfunction
-  " Sectioners (bars with text in-between)
-  function! s:section(...) " to make insert above, replace 'o' with 'O', and '<Up>' with '<Down>'
-    if a:0
-      let fill = a:1 " fill character
-    else " choose fill based on filetype -- if comment char is 'skinny', pick another one
-      let fill = s:comment_filler()
-    endif
-    let nspace = s:comment_indent()
-    let nfill = (77 - nspace)/len(fill) " divide by length of fill character
+  function! s:bar_surround(fill, nfill, suffix)
     let cchar = Comment()
+    let nspace = s:comment_indent()
+    let suffix = (a:suffix ? cchar : '')
+    let nfill = (a:nfill - nspace)/len(a:fill) " divide by length of fill character
     let lines = [
-     \ repeat(' ', nspace) . cchar . repeat(fill, nfill) . cchar,
+     \ repeat(' ', nspace) . cchar . repeat(a:fill, nfill) . suffix,
      \ repeat(' ', nspace) . cchar . ' ',
-     \ repeat(' ', nspace) . cchar . repeat(fill, nfill) . cchar
+     \ repeat(' ', nspace) . cchar . repeat(a:fill, nfill) . suffix
      \ ]
     normal! k
     call append(line('.'), lines)
     normal! jj$
   endfunction
+
+  " Separator of dashes matching current line length
+  function! s:header(fill)
+    let cchar = Comment()
+    let nspace = s:comment_indent()
+    let nfill = (match(getline('.'), '\s*$') - nspace) " location of last non-whitespace char
+    call append(line('.'), repeat(' ', nspace) . repeat(a:fill, nfill))
+  endfunction
+  function! s:header_surround(fill)
+    let cchar = Comment()
+    let nspace = s:comment_indent()
+    let nfill = (match(getline('.'), '\s*$') - nspace) " location of last non-whitespace char
+    call append(line('.'), repeat(' ', nspace) . repeat(a:fill, nfill))
+    call append(line('.') - 1, repeat(' ', nspace) . repeat(a:fill, nfill))
+  endfunction
+
   " Arbtirary message above this line, matching indentation level
   function! s:message(...)
     if a:0
@@ -1110,6 +1105,7 @@ if PlugActive("nerdcommenter")
     call append(line('.'), repeat(' ', nspace) . cchar . message)
     normal! jj
   endfunction
+
   " Inline style of format # ---- Hello world! ----
   function! s:inline(ndash)
     let nspace = s:comment_indent()
@@ -1119,6 +1115,7 @@ if PlugActive("nerdcommenter")
     normal! j^
     call search('- \zs', '', line('.')) " search, and stop on this line (should be same one); no flags
   endfunction
+
   " Inline style of format # ---- Hello world! ----
   function! s:double()
     let nspace = s:comment_indent()
@@ -1127,18 +1124,7 @@ if PlugActive("nerdcommenter")
     call append(line('.'), repeat(' ', nspace) . cchar . '  ' . cchar)
     normal! j$h
   endfunction
-  " Separator of dashes just matching current line length
-  function! s:separator(...)
-    if a:0
-      let fill = a:1 " fill character
-    else
-      let fill = Comment() " comment character
-    endif
-    let nspace = s:comment_indent()
-    let ndash = (match(getline('.'), '\s*$') - nspace) " location of last non-whitespace char
-    let cchar = Comment()
-    call append(line('.'), repeat(' ', nspace) . repeat(fill, ndash))
-  endfunction
+
   " Docstring
   function! s:docstring(char)
     let nspace = (s:comment_indent() + &l:tabstop)
@@ -1146,32 +1132,31 @@ if PlugActive("nerdcommenter")
     normal! jj$
   endfunction
 
+  " The maps
+  " Use NERDCommenterMinimal commenter to use left-right delimiters, or alternatively use
+  " NERDCommenterSexy commenter for better alignment
+  inoremap <expr> <C-c> <sid>comment_insert()
+  map c. <Plug>NERDCommenterToggle
+  map co <Plug>NERDCommenterSexy
+  map cO <Plug>NERDCommenterUncomment
+
   " Apply remaps using functions
   " Section headers and dividers
-  nnoremap <silent> <Plug>bar1 :call <sid>bar('-')<CR>:call repeat#set("\<Plug>bar1")<CR>
-  nnoremap <silent> <Plug>bar2 :call <sid>bar()<CR>:call repeat#set("\<Plug>bar2")<CR>
-  nmap c- <Plug>bar1
-  nmap c_ <Plug>bar2
-  nnoremap <silent> c\  :call <sid>section('-')<CR>A
-  nnoremap <silent> c\| :call <sid>section()<CR>A
-  " Author information comment
+  nnoremap <silent> <Plug>bar1 :call <sid>bar('-', 77, 1)<CR>:call repeat#set("\<Plug>bar1")<CR>
+  nnoremap <silent> <Plug>bar2 :call <sid>bar('-', 71, 0)<CR>:call repeat#set("\<Plug>bar2")<CR>
+  nnoremap <silent> c: :call <sid>bar_surround('-', 77, 1)<CR>A
+  nmap c; <Plug>bar1
+  nmap c, <Plug>bar2
+  " Author information, date insert, misc inserts
   nnoremap <silent> cA :call <sid>message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-  " Current date comment; y is for year; note d is reserved for that kwarg-to-dictionary map
   nnoremap <silent> cY :call <sid>message('Date: '.strftime('%Y-%m-%d'))<CR>
-  " Comment characters on either side fo line
-  nnoremap <silent> c, :call <sid>double()<CR>i
-
-  " Other header styles, not preferred by me but often seen
-  " Create an 'inline' comment header
+  nnoremap <silent> cC :call <sid>double()<CR>i
   nnoremap <silent> cI :call <sid>inline(5)<CR>i
-  " Header
-  nnoremap <silent> <Plug>bar3 :call <sid>bar('-',71)<CR>:call repeat#set("\<Plug>bar3")<CR>
-  nmap <silent> cL <Plug>bar3
-  " Create comment separator below current line
-  " These are ReST section levels
-  nnoremap <silent> c; :call <sid>separator('-')<CR>
-  nnoremap <silent> c: :call <sid>separator('=')<CR>
-  nnoremap <silent> c` :call <sid>separator('`')<CR>
+  " Add ReST section levels
+  nnoremap <silent> c- :call <sid>header('-')<CR>
+  nnoremap <silent> c_ :call <sid>header_surround('-')<CR>
+  nnoremap <silent> c= :call <sid>header('=')<CR>
+  nnoremap <silent> c+ :call <sid>header_surround('=')<CR>
   " Python docstring
   nnoremap c' :call <sid>docstring("'")<CR>A
   nnoremap c" :call <sid>docstring('"')<CR>A
@@ -1517,9 +1502,9 @@ if PlugActive("tagbar")
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
 endif
 
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " GENERAL STUFF, BASIC REMAPS
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " BUFFER WRITING/SAVING
 " NOTE: Update only writes if file has been changed
 augroup buffer
@@ -2132,9 +2117,9 @@ endfunction
 command! Colors call <sid>colors()
 command! GroupColors vert help group-name
 
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " EXIT
-"##############################################################################
+"-----------------------------------------------------------------------------"
 " Clear past jumps
 " Don't want stuff from plugin files and the vimrc populating jumplist after statrup
 " Simple way would be to use au BufRead * clearjumps
