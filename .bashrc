@@ -1,8 +1,9 @@
 #!/bin/bash
 #.bashrc
+#-----------------------------------------------------------------------------#
 # This file should override defaults in /etc/profile in /etc/bashrc.
-# Check out what is in the system defaults before using this, make sure your $PATH is populated.
-# To SSH between servers without password use:
+# Check out what is in the system defaults before using this, make sure your
+# $PATH is populated. To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
 # A few notes:
 #  * Prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
@@ -21,23 +22,21 @@
 # Known bug, scp/rsync fail without this line due to greeting message:
 # 1) https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
-#-----------------------------------------------------------------------------#
 [[ $- != *i* ]] && return
 clear # first clear screen
 
-#-----------------------------------------------------------------------------#
 # Prompt
-#-----------------------------------------------------------------------------#
-# Keep things minimal; just make prompt boldface so its a bit more identifiable
+# Keep things minimal, just make prompt boldface so its a bit more identifiable
 if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
   export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   _ps1_set=1
 fi
+
+# Message constructor; modify the number to increase number of dots
 # export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
   # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
   # see: https://stackoverflow.com/a/28938235/4970632
   # also see: https://unix.stackexchange.com/a/124408/112647
-# Message constructor; modify the number to increase number of dots
 _bashrc_message() {
   printf "${1}$(printf '.%.0s' $(seq 1 $((29 - ${#1}))))"
 }

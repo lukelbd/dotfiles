@@ -291,19 +291,19 @@ endfunction
 " WARNING: The space remap and tab remap break insert mode abbreviations!
 " To use abbreviations you must trigger manually with <C-]> (see :help i_Ctrl-])
 " First keystrokes that close popup menu
-inoremap <expr> <BS> pumvisible() ? <sid>tab_reset()."\<C-e>\<BS>" : "\<BS>"
-inoremap <expr> <Space> pumvisible() ? <sid>tab_reset()."\<C-]>\<Space>" : "\<C-]>\<Space>"
+inoremap <expr> <BS> pumvisible() ? <sid>tab_reset() . "\<C-e>\<BS>" : "\<BS>"
+inoremap <expr> <Space> pumvisible() ? <sid>tab_reset() . "\<C-]>\<Space>" : "\<C-]>\<Space>"
 " Enter means 'accept' only when we have explicitly scrolled down to something
 " Tab always means 'accept' and choose default menu item if necessary
-inoremap <expr> <CR> pumvisible() ? b:menupos ? "\<C-y>".<sid>tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
-inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>".<sid>tab_reset() : "\<C-n>\<C-y>".<sid>tab_reset() : "\<C-]>\<Tab>"
+inoremap <expr> <CR> pumvisible() ? b:menupos ? "\<C-y>" . <sid>tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
+inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . <sid>tab_reset() : "\<C-n>\<C-y>" . <sid>tab_reset() : "\<C-]>\<Tab>"
 " Incrementing items in menu
-inoremap <expr> <C-k> pumvisible() ? <sid>tab_decrease()."\<C-p>" : "\<Up>"
-inoremap <expr> <C-j> pumvisible() ? <sid>tab_increase()."\<C-n>" : "\<Down>"
-inoremap <expr> <Up> pumvisible() ? <sid>tab_decrease()."\<C-p>" : "\<Up>"
-inoremap <expr> <Down> pumvisible() ? <sid>tab_increase()."\<C-n>" : "\<Down>"
-inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tab_decrease()."\<C-p>" : ""
-inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tab_increase()."\<C-n>" : ""
+inoremap <expr> <C-k> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
+inoremap <expr> <C-j> pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
+inoremap <expr> <Up> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
+inoremap <expr> <Down> pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
+inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : ""
+inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tab_increase() . "\<C-n>" : ""
 
 " GLOBAL FUNCTIONS, FOR VIM SCRIPTING
 " Test plugin status
@@ -593,8 +593,7 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 call plug#end()
 
 " SESSION MANAGEMENT
-" First, simple Obsession session management
-" Also manually preserve last cursor location:
+" First, simple obsession session management
 " * Jump to mark '"' without changing the jumplist (:help g`)
 " * Mark '"' is the cursor position when last exiting the current buffer
 augroup session
@@ -603,47 +602,42 @@ augroup session
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .vimsession
   endif
-  let s:autosave = "InsertLeave"
-  if exists("##TextChanged")
-    let s:autosave .= ",TextChanged"
-  endif
 augroup END
-" Function to toggle autosave on and off
+" Manual autosave behavior
 " Consider disabling
-function! s:autosave_toggle(on)
-  if a:on " in future consider using this to disable autosave for large files
-    if exists('b:autosave_on') && b:autosave_on=1
-      return " already on
-    endif
-    let b:autosave_on = 1
-    echom 'Enabling autosave.'
-    augroup autosave
-      au! * <buffer>
-      let g:autosave = "InsertLeave"
-      if exists("##TextChanged")
-        let g:autosave .= ",TextChanged"
-      endif
-      exe "au ".g:autosave." <buffer> * w"
-    augroup END
-  else
-    if !exists('b:autosave_on') || b:autosave_on=0
-      return " already off
-    endif
+function! s:autosave_toggle(...)
+  " Parse input
+  if !exists('b:autosave_on')
     let b:autosave_on = 0
-    echom 'Disabling autosave.'
-    augroup autosave
-      au! * <buffer>
+  endif
+  if a:0
+    let toggle = a:1
+  else
+    let toggle = 1 - b:autosave_on
+  endif
+  if toggle == b:autosave_on
+    return
+  endif
+  " Toggle autocommands local to buffer as with codi
+  " We use augroups with buffer-specific names to prevent conflict
+  if toggle
+    let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
+    exe 'augroup autosave_' . bufnr('%')
+      au! *
+      exe 'au ' . cmds . ' <buffer> silent w'
     augroup END
+    echom 'Autosave enabled.'
+    let b:autosave_on = 1
+  else
+    exe 'augroup autosave_' . bufnr('%')
+      au! *
+    augroup END
+    echom 'Autosave disabled.'
+    let b:autosave_on = 0
   endif
 endfunction
-" Vim workspace settings, had issues with thi
-if PlugActive("vim-workspace") "cursor positions automatically saved
-  let g:workspace_session_name = '.vimsession'
-  let g:workspace_session_disable_on_args = 1 " enter vim (without args) to load previous sessions
-  let g:workspace_persist_undo_history = 0    " don't need to save undo history
-  let g:workspace_autosave_untrailspaces = 0  " sometimes we WANT trailing spaces!
-  let g:workspace_autosave_ignore = ['help', 'qf', 'diff', 'man']
-endif
+command! -nargs=? Autosave call s:autosave_toggle(<args>)
+nnoremap <Leader>S :Autosave<CR>
 " Function for refreshing custom filetype-specific files and .vimrc
 " If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
 " then just source it with the 'execute' shortcut Ctrl-z
@@ -664,13 +658,20 @@ function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overri
   endfor
   echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
 endfunction
-" Refresh command
-command! Refresh so ~/.vimrc | call <sid>refresh()
+command! Refresh so ~/.vimrc | call s:refresh()
+" Refresh command, load from disk, redraw screen
 nnoremap <silent> <Leader>s :Refresh<CR>
-" Load from disk
 nnoremap <silent> <Leader>r :e<CR>
-" Redraw screen
 nnoremap <silent> <Leader>R :redraw!<CR>
+" Vim workspace settings
+" Had issues with this! Do not remember what though
+if PlugActive("vim-workspace") "cursor positions automatically saved
+  let g:workspace_session_name = '.vimsession'
+  let g:workspace_session_disable_on_args = 1 " enter vim (without args) to load previous sessions
+  let g:workspace_persist_undo_history = 0    " don't need to save undo history
+  let g:workspace_autosave_untrailspaces = 0  " sometimes we WANT trailing spaces!
+  let g:workspace_autosave_ignore = ['help', 'qf', 'diff', 'man']
+endif
 
 " GIT GUTTER AND FUGITIVE
 " TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
@@ -825,8 +826,8 @@ function! s:spellchange(direc)
   endif
 endfunction
 " Functions
-command! SpellToggle call <sid>spelltoggle(<args>)
-command! LangToggle call <sid>langtoggle(<args>)
+command! SpellToggle call s:spelltoggle(<args>)
+command! LangToggle call s:langtoggle(<args>)
 " Toggle on and off
 nnoremap <silent> ;. :call <sid>spelltoggle()<CR>
 nnoremap <silent> ;o :call <sid>spelltoggle(1)<CR>
@@ -863,35 +864,54 @@ if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
 endif
 
 " CODI (MATHEMATICAL NOTEPAD)
-augroup codi
-augroup END
 if PlugActive("codi.vim")
-  " Update manually commands; o stands for codi
-  function! s:newcodi(name)
-    if a:name == ''
-      echom "Cancelled."
-    else
-      exec "tabe ".fnamemodify(a:name,':r').".py"
-      exec "Codi!! ".&ft
+  " Set custom buffer-local autocommands using codi autocommands
+  " We want TextChanged and InsertLeave, not TextChangedI which is enabled
+  " when setting g:codi#autocmd to 'TextChanged'
+  " See issue: https://github.com/metakirby5/codi.vim/issues/90
+  augroup codi
+    au!
+    au User CodiEnterPre call s:codi_enter()
+    au User CodiLeavePost call s:codi_leave()
+  augroup END
+  function! s:codi_enter()
+    let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
+    exe 'augroup codi_' . bufnr('%')
+      au!
+      exe 'au ' . cmds . ' <buffer> call codi#update()'
+    augroup END
+  endfunction
+  function! s:codi_leave()
+    exe 'augroup codi_' . bufnr('%')
+      au!
+    augroup END
+  endfunction
+
+  " New window function, command, and maps
+  function! s:codi_new(name)
+    if a:name != ''
+      exe "tabe " . fnamemodify(a:name,':r') . ".py"
+      Codi!!
     endif
   endfunction
-  " Create new calculator file, adds .py extension
-  " Alternatively current file into calculator
-  nnoremap <silent> <Leader>u :call <sid>newcodi(input('Calculator name (' . getcwd() . '): ', '', 'file'))<CR>
+  command! -nargs=1 NewCodi call s:codi_new(<q-args>)
+  nnoremap <silent> <Leader>u :exe 'NewCodi ' . input('Calculator name (' . getcwd() . '): ', '', 'file')<CR>
   nnoremap <silent> <Leader>U :Codi!!<CR>
-  " Settings, use builtin python2.7 on macbook to avoid creating history files
-  " CursorHold sometimes caused errors and CPU spikes, so use InsertLeave
-  let g:codi#interpreters = {
-       \ 'python': {
-           \ 'bin': '/usr/bin/python',
-           \ 'prompt': '^\(>>>\|\.\.\.\) ',
-           \ },
-       \ } " see issue here: https://github.com/metakirby5/codi.vim/issues/85
+
+  " Various settings, interpreter without history
+  " See issue and notes: https://github.com/metakirby5/codi.vim/issues/85
+  let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
   let g:codi#width = 20
-  let g:codi#autocmd = 'InsertLeave'
   let g:codi#log = '' " enable when debugging
+  let g:codi#interpreters = {
+    \ 'python': {
+        \ 'bin': 'python',
+        \ 'prompt': '^\(>>>\|\.\.\.\) ',
+        \ 'quitcmd': "import readline; readline.clear_history(); exit()",
+        \ },
+    \ }
 endif
 
 " NEOCOMPLETE (RECOMMENDED SETTINGS)
@@ -1139,10 +1159,10 @@ if PlugActive("syntastic")
   " Also remap the commands
   " command! Lnext try | lnext | catch | lfirst | catch | endtry
   " command! Lprev try | lprev | catch | llast  | catch | endtry
-  command! -bar -count=1 Cnext execute <sid>cfnext(<count>, 'qf')
-  command! -bar -count=1 Cprev execute <sid>cfnext(<count>, 'qf', 1)
-  command! -bar -count=1 Lnext execute <sid>cfnext(<count>, 'loc')
-  command! -bar -count=1 Lprev execute <sid>cfnext(<count>, 'loc', 1)
+  command! -bar -count=1 Cnext execute s:cfnext(<count>, 'qf')
+  command! -bar -count=1 Cprev execute s:cfnext(<count>, 'qf', 1)
+  command! -bar -count=1 Lnext execute s:cfnext(<count>, 'loc')
+  command! -bar -count=1 Lprev execute s:cfnext(<count>, 'loc', 1)
   " Next error in location list
   " Copied from: https://vi.stackexchange.com/a/14359
   function! s:cfnext(count, list, ...) abort
@@ -1206,7 +1226,7 @@ if PlugActive("syntastic")
       return checkers
     endif
   endfunction
-  command! SyntasticCheckers call <sid>syntastic_checkers(1)
+  command! SyntasticCheckers call s:syntastic_checkers(1)
 
   " Helper function
   " Need to run Syntastic with noautocmd to prevent weird conflict with tabbar,
@@ -1224,7 +1244,7 @@ if PlugActive("syntastic")
       SyntasticCheck
       if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
           \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
-        wincmd j | set syntax=on | call <sid>popup_setup()
+        wincmd j | set syntax=on | call s:popup_setup()
         wincmd k | let b:syntastic_on = 1 | silent! set signcolumn=no
       else
         echom 'No errors found with checker '.checkers[-1].'.'
@@ -1327,7 +1347,7 @@ if PlugActive("tabular")
   " * Note odd concept (see :help args) that -nargs=1 will pass subsequent text, including
   "   whitespace, as single argument, but -nargs=*, et cetera, will aceept multiple arguments delimited by whitespace
   " * Be careful -- make sure to pass <args> in singly quoted string!
-  command! -range -nargs=1 Table <line1>,<line2>call <sid>table(<q-args>)
+  command! -range -nargs=1 Table <line1>,<line2>call s:table(<q-args>)
   " Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
   nnoremap <silent> <expr> \<Space> ':silent! Tabularize /' . input('Alignment regex: ') . '/l1c1<CR>'
   vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /" . input('Alignment regex: ') . '/l1c1<CR>'
@@ -1451,7 +1471,7 @@ if PlugActive("tagbar")
   let g:tagbar_map_closeallfolds = "_"
   let g:tagbar_map_openallfolds = "+"
   " Open TagBar, make sure NerdTREE is flushed to right
-  function! s:tagbarsetup()
+  function! s:tagbar_setup()
     if &ft=="nerdtree"
       wincmd h
       wincmd h " move two places in case e.g. have help menu + nerdtree already
@@ -1468,7 +1488,7 @@ if PlugActive("tagbar")
       endif
     endif
   endfunction
-  nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
+  nnoremap <silent> <Leader>t :call <sid>tagbar_setup()<CR>
 endif
 
 "-----------------------------------------------------------------------------"
@@ -1567,7 +1587,7 @@ function! s:fzfopen_run(path)
   return
 endfunction
 " Note q-args evaluates to empty string if 'no args' were passed!
-command! -nargs=? -complete=file Open call <sid>fzfopen_run(<q-args>)
+command! -nargs=? -complete=file Open call s:fzfopen_run(<q-args>)
 " Maps for opening file in current directory, and opening file in some input directory
 nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 nnoremap <C-o> :Open 
@@ -1582,7 +1602,7 @@ augroup END
 noremap gt <Nop>
 noremap gT <Nop>
 " Move current tab to the exact place of tab number N
-function! s:tabmove(n)
+function! s:tab_move(n)
   if a:n == tabpagenr() || a:n == 0 || a:n == ''
     return
   elseif a:n > tabpagenr() && version[0] > 7
@@ -1594,7 +1614,7 @@ function! s:tabmove(n)
   endif
 endfunction
 " Function that generates lists of tabs and their numbers
-function! s:tabselect()
+function! s:tab_select()
   if !exists('g:tabline_bufignore')
     let g:tabline_bufignore = ['qf', 'vim-plug', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] " filetypes considered 'helpers'
   endif
@@ -1622,10 +1642,10 @@ function! s:tabjump(item)
   exe 'normal! '.split(a:item,':')[0].'gt'
 endfunction
 " Function mappings
-nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tabselect(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
-nnoremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: ', '', 'customlist,NullList'))<CR>
-nnoremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
-nnoremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
+nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tab_select(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
+nnoremap <silent> <Tab>m :call <sid>tab_move(input('Move tab: ', '', 'customlist,NullList'))<CR>
+nnoremap <silent> <Tab>> :call <sid>tab_move(eval(tabpagenr()+1))<CR>
+nnoremap <silent> <Tab>< :call <sid>tab_move(eval(tabpagenr()-1))<CR>
 " Add new tab changing
 nnoremap <Tab>1 1gt
 nnoremap <Tab>2 2gt
@@ -1677,9 +1697,9 @@ nnoremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,
 augroup simple
   au!
   au BufEnter * let b:recording = 0
-  au FileType qf,log,diff,man,fugitive,gitcommit,vim-plug call <sid>popup_setup()
-  au FileType help call <sid>help_setup()
-  au CmdwinEnter * call <sid>cmdwin_setup()
+  au FileType qf,log,diff,man,fugitive,gitcommit,vim-plug call s:popup_setup()
+  au FileType help call s:help_setup()
+  au CmdwinEnter * call s:cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
 augroup END
 " For popup windows
@@ -1776,7 +1796,7 @@ function! s:pastetoggle()
   return ''
 endfunction
 nnoremap <expr> <silent> <Leader>v <sid>pastetoggle()
-command! PasteToggle call <sid>pastetoggle()
+command! PasteToggle call s:pastetoggle()
 " Copymode to eliminate special chars during copy
 " See :help &l:; this gives the local value of setting
 function! s:copytoggle(...)
@@ -1803,7 +1823,7 @@ function! s:copytoggle(...)
   endif
 endfunction
 nnoremap <Leader>c :call <sid>copytoggle()<CR>
-command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
+command! -nargs=? CopyToggle call s:copytoggle(<args>)
 
 " SEARCHING AND FIND-REPLACE STUFF
 " Basic stuff first
@@ -1952,7 +1972,7 @@ endif
 " to change .*Comment to .*Comment.* since Julia has CommentL name
 augroup syn
   au!
-  au Syntax  * call <sid>keywordsetup()
+  au Syntax  * call s:keywordsetup()
   au BufRead * set conceallevel=2 concealcursor=
   au InsertEnter * highlight StatusLine ctermbg=Black ctermbg=White ctermfg=Black cterm=NONE
   au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
@@ -2028,7 +2048,7 @@ function! s:group()
    \ . "appears <" . synIDattr(synID(line("."), col("."), 0), "name") . "> "
    \ . "group <" . synIDattr(synIDtrans(synID(line("."), col("."), 1)), "name") . ">"
 endfunction
-command! Group call <sid>group()
+command! Group call s:group()
 " The :syntax commands within that group
 function! s:syntax(name)
   if a:name
@@ -2037,7 +2057,7 @@ function! s:syntax(name)
     exe "verb syntax list " . synIDattr(synID(line("."), col("."), 0), "name")
   endif
 endfunction
-command! -nargs=? Syntax call <sid>syntax(<q-args>)
+command! -nargs=? Syntax call s:syntax(<q-args>)
 " Toggle conceal
 function! s:concealtoggle(...)
   if a:0
@@ -2047,7 +2067,7 @@ function! s:concealtoggle(...)
   endif
   exe 'set conceallevel=' . (conceal_on ? 2 : 0)
 endfunction
-command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
+command! -nargs=? ConcealToggle call s:concealtoggle(<args>)
 " Toggling tabs on and off
 let g:tabtoggle_tab_filetypes = ['text', 'gitconfig', 'make']
 augroup tab_toggle
@@ -2062,28 +2082,28 @@ function! s:tabtoggle(...)
   endif
   let b:tab_mode = &l:expandtab
 endfunction
-command! -nargs=? TabToggle call <sid>tabtoggle(<args>)
+command! -nargs=? TabToggle call s:tabtoggle(<args>)
 nnoremap <Leader><Tab> :TabToggle<CR>
 " Get current plugin file
 " Remember :scriptnames lists all loaded files
 function! s:ftplugin()
   execute 'split $VIMRUNTIME/ftplugin/'.&ft.'.vim'
-  silent call <sid>popup_setup()
+  silent call s:popup_setup()
 endfunction
 function! s:ftsyntax()
   execute 'split $VIMRUNTIME/syntax/'.&ft.'.vim'
-  silent call <sid>popup_setup()
+  silent call s:popup_setup()
 endfunction
-command! PluginFile call <sid>ftplugin()
-command! SyntaxFile call <sid>ftsyntax()
+command! PluginFile call s:ftplugin()
+command! SyntaxFile call s:ftsyntax()
 " Map to wraptoggle
 nnoremap <silent> <Leader>w :WrapToggle<CR>
 " Window displaying all colors
 function! s:colors()
   source $VIMRUNTIME/syntax/colortest.vim
-  silent call <sid>popup_setup()
+  silent call s:popup_setup()
 endfunction
-command! Colors call <sid>colors()
+command! Colors call s:colors()
 command! GroupColors vert help group-name
 
 "-----------------------------------------------------------------------------"
