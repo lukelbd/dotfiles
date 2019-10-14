@@ -59,16 +59,18 @@ set foldlevel=99
 set foldlevelstart=99
 set foldnestmax=10 " avoids weird things
 set foldopen=tag,mark " options for opening folds on cursor movement; disallow block
+if has('gui_running')
+  set number relativenumber guioptions= guicursor+=a:blinkon0 " no scrollbars or blinking
+endif
 if exists('&breakindent')
   set breakindent " map indentation when breaking
 endif
-au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/' . &ft . '.dic'
 
 " Forward delete by tabs
 function! s:forward_delete()
   let line = getline('.')
-  if line[col('.')-1:col('.')-1+&tabstop-1]==repeat(" ", &tabstop)
-    return repeat("\<Delete>",&tabstop)
+  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(" ", &tabstop)
+    return repeat("\<Delete>", &tabstop)
   else
     return "\<Delete>"
   endif
@@ -78,12 +80,12 @@ inoremap <silent> <expr> <Delete> <sid>forward_delete()
 " Enforce global settings that filetype options may try to override
 set display=lastline " displays as much of wrapped lastline as possible;
 let &breakat = " 	!*-+;:,./?" " break at single instances of several characters
-let g:settings = 'setlocal linebreak wrapmargin=0 textwidth=0 formatoptions=lroj'
+let g:set_overrides = 'linebreak wrapmargin=0 textwidth=0 formatoptions=lroj'
 augroup globals
   au!
-  au BufEnter * exe g:settings
+  au BufEnter * exe 'setlocal ' . g:set_overrides
 augroup END
-exe g:settings
+exe 'setlocal ' . g:set_overrides
 
 " Escape repair, needed when we allow h/l to change line number
 set whichwrap=[,],<,>,h,l " <> = left/right insert, [] = left/right normal mode
@@ -104,7 +106,22 @@ if !g:has_repeat
   echohl None
 endif
 
-" CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+" Wildmenu options
+set wildmenu
+set wildmode=longest:list,full
+let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
+  \ . '*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,'
+  \ . '*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,'
+  \ . '*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,'
+function! s:wildtab()
+  call feedkeys("\<Tab>", 't') | return ''
+endfunction
+function! s:wildstab()
+  call feedkeys("\<S-Tab>", 't') | return ''
+endfunction
+cnoremap <expr> <F1> <sid>wildstab()
+cnoremap <expr> <F2> <sid>wildtab()
+
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
 if mapcheck('<Esc>', 'n') != ''
@@ -118,6 +135,7 @@ if mapcheck('<Esc>', 'n') != ''
     exe 'silent! iunmap <Esc>'.s:insert_map
   endfor
 endif
+
 " Suppress all mappings with certain prefix
 " Note that <C-b> prefix is used for citation inserts
 function! Suppress(prefix, mode)
@@ -135,6 +153,8 @@ for s:pair in [['n', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['i', '<C-s>'], ['
     exe "nmap <expr> " . s:char . " Suppress('" . s:char . "', '" . s:mode . "')"
   endif
 endfor
+
+" CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 " Disable keys
 noremap <CR> <Nop>
 noremap <Space> <Nop>
@@ -253,7 +273,9 @@ for s:pair in ['r[', 'a<', 'c{']
   exe 'onoremap a' . s:pair[0] . ' a' . s:pair[1]
   exe 'xnoremap a' . s:pair[0] . ' a' . s:pair[1]
 endfor
-" Next popup manager; will count number of tabs in popup menu so our position is always known
+
+" POPUP MENU RELATED MAPS
+" Count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
   au InsertLeave,BufEnter * let b:menupos = 0
@@ -267,7 +289,6 @@ endfunction
 function! s:tab_reset()
   let b:menupos = 0 | return ''
 endfunction
-" Popup menu related maps
 " NOTE: Try let a = 1 ? 1 ? 'a' : 'b' : 'c', this works!
 " WARNING: The space remap and tab remap break insert mode abbreviations!
 " To use abbreviations you must trigger manually with <C-]> (see :help i_Ctrl-])
@@ -348,8 +369,8 @@ function! RegexComment()
   return comment
 endfunction
 
-" DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
-" First mouse stuff. Make sure we are using *vim", not vi (use the latter for quickly examining contents).
+" Different cursor shape different modes
+" First mouse stuff, make sure we are using vim, not vi
 if v:version >= 500
   set mouse=a " mouse clicks and scroll wheel allowed in insert mode via escape sequences
 endif
@@ -378,28 +399,6 @@ if exists("&t_EI")
   else | let &t_EI = "\e[2 q"
   endif
 endif
-
-" GUI OPTIONS
-if has("gui_running")
-  set guicursor+=a:blinkon0 " disable blinking for GUI version
-  set number relativenumber guioptions= " no scrollbars
-endif
-
-" WILDMENU OPTIONS
-set wildmenu
-set wildmode=longest:list,full
-let &g:wildignore = "*.pdf,*.doc,*.docs,*.page,*.pages,"
-  \."*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,"
-  \."*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,"
-  \."*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,"
-function! s:wildtab()
-  call feedkeys("\<Tab>", 't') | return ''
-endfunction
-function! s:wildstab()
-  call feedkeys("\<S-Tab>", 't') | return ''
-endfunction
-cnoremap <expr> <F1> <sid>wildstab()
-cnoremap <expr> <F2> <sid>wildtab()
 
 "##############################################################################
 " COMPLICATED MAPPINGS AND FILETYPE MAPPINGS
@@ -646,7 +645,7 @@ function! s:autosave_toggle(on)
   endif
 endfunction
 " Vim workspace settings, had issues with thi
-if PlugActive("thaerkh/vim-workspace") "cursor positions automatically saved
+if PlugActive("vim-workspace") "cursor positions automatically saved
   let g:workspace_session_name = '.vimsession'
   let g:workspace_session_disable_on_args = 1 " enter vim (without args) to load previous sessions
   let g:workspace_persist_undo_history = 0    " don't need to save undo history
@@ -1343,11 +1342,6 @@ if PlugActive("tabular")
   " Command for tabuarizing, but ignoring lines without delimiters
   function! s:table(arg) range
     " Remove the lines without matching regexes
-    " * See: https://stackoverflow.com/a/40662545/4970632 for ideas
-    " * One idea: try using :global/regex/# command inside a redir to direct the resulting
-    "   message to a variable; will print lines with line numbers and newlines.
-    " * Another idea: use :call search(...,line('.')), :delete, and exe <line> to successively move between
-    "   lines, but better to use builtin vim text processing lines and not move the cursor.
     let dlines = [] " note we **cannot** use dictionary, because subsequent lines without matches will overwrite each other
     let lastline = a:lastline  " no longer read-only
     let firstline = a:firstline
@@ -1380,7 +1374,6 @@ if PlugActive("tabular")
   "   whitespace, as single argument, but -nargs=*, et cetera, will aceept multiple arguments delimited by whitespace
   " * Be careful -- make sure to pass <args> in singly quoted string!
   command! -range -nargs=1 Table <line1>,<line2>call <sid>table(<q-args>)
-  " NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   " Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
   nnoremap <silent> <expr> \<Space> ':silent! Tabularize /' . input('Alignment regex: ') . '/l1c1<CR>'
   vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /" . input('Alignment regex: ') . '/l1c1<CR>'
