@@ -8,6 +8,7 @@
 "     F3: 1b 4f 52 (Ctrl-i)
 "     F4: 1b 4f 53 (Ctrl-m)
 "     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
+"     F6: 1b 5b 31 37 7e (Ctrl-;)
 " Also use Karabiner 'map Ctrl-j/k/h/l to arrow keys', so be aware that if
 " you map those keys in Vim, should also map arrows.
 "-----------------------------------------------------------------------------"
@@ -20,8 +21,8 @@ set cursorline
 set tabpagemax=100 " allow opening shit load of tabs at once
 set redrawtime=5000 " sometimes takes a long time, let it happen
 set maxmempattern=50000 " from 1000 to 10000
-set shortmess=a " snappy messages, frmo the avoid press enter doc
-set shiftround " round to multiple of shiftwidth
+set shortmess=a " snappy messages, from the avoid press enter doc
+set shiftround " round to multiple of shift width
 set viminfo='100,:100,<100,@100,s10,f0 " commands, marks (e.g. jump history), exclude registers >10kB of text
 set history=100 " search history
 set shell=/usr/bin/env\ bash
@@ -172,7 +173,7 @@ augroup tab_toggle
 augroup END
 function! s:tab_toggle(...)
   if a:0
-    let &l:expandtab = 1-a:1 " toggle 'on' means literal tabs are 'on'
+    let &l:expandtab = 1 - a:1 " toggle 'on' means literal tabs are 'on'
   else
     setlocal expandtab!
   endif
@@ -214,23 +215,22 @@ noremap <Left> <C-o>
 noremap <Right> <C-i>
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
-noremap <expr> ' "`".nr2char(97+v:count)
-noremap <expr> " (v:count == 9 ? '<Esc>:RemoveHighlights<CR>' :
-  \ 'm'.nr2char(97+v:count).':HighlightMark '.nr2char(97+v:count).'<CR>')
+noremap <Leader>; :<C-u>RemoveHighlights<CR>
+noremap <expr> <F6> "`" . nr2char(97+v:count)
+noremap <expr> ; 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 " Reserve lower case q for quitting popup windows
 noremap q <Nop>
 " Record macro by pressing Q, the escapes prevent q from triggerering
-" command-history window. Repeat macro with , just repeat command with .
 noremap @ <Nop>
 noremap , @a
 noremap <silent> <expr> Q b:recording ?
   \ 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
 " Redo map to capital U
 nnoremap U <C-r>
-" Use - for throwaway register, pipeline for clipboard register
-noremap - "_
-noremap \| "*
-" These keys aren't used currently, so why not?
+" Maps for throwaaway and clipboard register
+noremap ' "_
+noremap " "*
+" Maps for inserting blank lines
 nnoremap <silent> ` :call append(line('.'),'')<CR>
 nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
 " Use cc for s because use sneak plugin
@@ -254,9 +254,10 @@ nnoremap O Ox<BS>
 nnoremap x "_x
 nnoremap X "_X
 " Paste from the nth previously deleted or changed text
-" Use 9 for last yanked, unchanged text, because cannot use zero
-nnoremap <expr> p v:count == 0 ? 'p' : ( v:count == 9 ? '<Esc>"0p' : '<Esc>"'.v:count.'p' )
-nnoremap <expr> P v:count == 0 ? 'P' : ( v:count == 9 ? '<Esc>"0P' : '<Esc>"'.v:count.'P' )
+" Use 'yp' to paste last yanked, unchanged text, because cannot use zero
+nnoremap yp "0p
+nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"'.v:count.'p'
+nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"'.v:count.'P'
 " Yank until end of line, like C and D
 nnoremap Y y$
 " Put last search into unnamed register
@@ -267,10 +268,11 @@ nnoremap <silent> y? :let @" = @/<CR>
 nnoremap <expr> J v:count > 1  ? 'JJ' : 'J'
 nnoremap <expr> K v:count == 0 ? 'Jx' : repeat('Jx',v:count)
 " Toggle highlighting
-nnoremap <silent> <Leader>i :set hlsearch<CR>
 nnoremap <silent> <Leader>o :noh<CR>
+nnoremap <silent> <Leader>O :set hlsearch<CR>
 " Move to current directory
-nnoremap <silent> <Leader>d :lcd %:p:h<CR>
+" Pneumonic is 'inside' just like Ctrl + i map
+nnoremap <silent> <Leader>i :lcd %:p:h<CR>:echom "Descended into file directory."<CR>
 " Enable left mouse click in visual mode to extend selection, normally this is impossible
 " TODO: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when enter visual
@@ -619,14 +621,11 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 " is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
-" VIM SNEAK
-" Just configure the maps here
-" Also disable highlighting when doing sneak operations, because
-" want to same the use highlight group
-augroup sneak
-augroup END
+" DELIMS and NAVIGATION
+" Vim sneak
 if PlugActive('vim-sneak')
-  " F and T move
+  augroup sneak
+  augroup END
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
   map f <Plug>Sneak_f
@@ -636,12 +635,7 @@ if PlugActive('vim-sneak')
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
 endif
-
-" DELIMITMATE (auto-generate closing delimiters)
-" NOTE: If enter is mapped delimitmate will turn off its auto expand
-" enter mapping.
-" WARNING: My InsertLeave mapping to stop moving the cursor left also fucks
-" up the enter map; consider overwriting function.
+" Auto-generate delimiters
 if PlugActive('delimitmate')
   " First filetype settings
   " Enable carat matching for filetypes where need tags (or keycode symbols)
@@ -655,7 +649,7 @@ if PlugActive('delimitmate')
     au FileType html let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
     au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
   augroup END
-  " Can set global defaults along with buffer-specific alternatives
+  " Set global defaults along with buffer-specific alternatives
   let g:delimitMate_expand_space = 1
   let g:delimitMate_expand_cr = 2 " expand even if it is not empty!
   let g:delimitMate_jump_expansion = 0
@@ -666,9 +660,9 @@ endif
 
 " GIT GUTTER AND FUGITIVE
 " TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
-augroup git
-augroup END
 if PlugActive('vim-gitgutter')
+  augroup git
+  augroup END
   " Create command for toggling on/off; old VIM versions always show signcolumn
   " if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
   " call gitgutter#disable() | silent! set signcolumn=no
@@ -729,13 +723,6 @@ function! s:spelltoggle(...)
     let toggle = 1 - &l:spell
   endif
   let &l:spell = toggle
-  if toggle
-    nnoremap <buffer> ;n ]s
-    nnoremap <buffer> ;N [s
-  else
-    silent! nunmap <buffer> ;n
-    silent! nunmap <buffer> ;N
-  endif
 endfunction
 " Toggle between UK and US English
 function! s:langtoggle(...)
@@ -771,19 +758,19 @@ endfunction
 command! SpellToggle call s:spelltoggle(<args>)
 command! LangToggle call s:langtoggle(<args>)
 " Toggle on and off
-nnoremap <silent> ;. :call <sid>spelltoggle()<CR>
-nnoremap <silent> ;o :call <sid>spelltoggle(1)<CR>
-nnoremap <silent> ;O :call <sid>spelltoggle(0)<CR>
-nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>
-nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
-" Spell maps
-nnoremap ;a zg
-nnoremap ;r zug
-nnoremap ;m z=
-nnoremap <Plug>forwardspell bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
-nnoremap <Plug>backwardspell el[s:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
-nmap ;d <Plug>forwardspell
-nmap ;D <Plug>backwardspell
+nnoremap <silent> <Leader>d :call <sid>spelltoggle(1)<CR>
+nnoremap <silent> <Leader>D :call <sid>spelltoggle(0)<CR>
+nnoremap <silent> <Leader>l :call <sid>langtoggle(1)<CR>
+nnoremap <silent> <Leader>L :call <sid>langtoggle(0)<CR>
+" Add and remove from dictionary
+nnoremap <Leader>a zg
+nnoremap <Leader>A zug
+nnoremap <Leader>! \|m z=
+" Similar to ]s and [s but also correct the word!
+nnoremap <buffer> <silent> <Plug>forwardspell bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
+nnoremap <buffer> <silent> <Plug>backwardspell el[s:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
+nmap ]d <Plug>forwardspell
+nmap [d <Plug>backwardspell
 
 " CODI (MATHEMATICAL NOTEPAD)
 if PlugActive('codi.vim')
@@ -836,9 +823,9 @@ endif
 " Increment plugin
 if PlugActive('vim-visual-increment')
   vmap + <Plug>VisualIncrement
-  vmap _ <Plug>VisualDecrement
+  vmap - <Plug>VisualDecrement
   nnoremap + <C-a>
-  nnoremap _ <C-x>
+  nnoremap - <C-x>
 endif
 " The howmuch.vim plugin, currently with minor modifications in .vim folder
 " TODO: Add maps to all other versions, maybe use = key as prefix
@@ -1059,18 +1046,7 @@ if PlugActive('nerdtree')
   augroup nerdtree
     au!
     au BufEnter * if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-    au FileType nerdtree call s:nerdtree_setup()
   augroup END
-  " NERDtree function
-  function! s:nerdtree_setup()
-    setlocal nolist
-    exe 'vertical resize '.g:NERDTreeWinSize
-    nnoremap <buffer> <Leader>f :NERDTreeClose<CR>
-    if g:has_nowait
-      nmap <buffer> <nowait> d D
-    endif
-  endfunction
-  " Basic settings
   let g:NERDTreeWinPos = "right"
   let g:NERDTreeWinSize = 20 " instead of 31 default
   let g:NERDTreeShowHidden = 1
@@ -1082,24 +1058,25 @@ if PlugActive('nerdtree')
     let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
     let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\$', '')
   endfor
-  " Toggle
-  nnoremap <Leader>f :NERDTree %<CR>
+  nnoremap <Leader>n :NERDTree %<CR>
 endif
 
 " SYNTASTIC (syntax checking for code)
 if PlugActive('syntastic')
   augroup syntastic
   augroup END
-  " Commands for circular location-list (error) scrolling
-  " Also remap the commands
-  " command! Lnext try | lnext | catch | lfirst | catch | endtry
-  " command! Lprev try | lprev | catch | llast  | catch | endtry
-  command! -bar -count=1 Cnext execute s:cfnext(<count>, 'qf')
-  command! -bar -count=1 Cprev execute s:cfnext(<count>, 'qf', 1)
-  command! -bar -count=1 Lnext execute s:cfnext(<count>, 'loc')
-  command! -bar -count=1 Lprev execute s:cfnext(<count>, 'loc', 1)
   " Next error in location list
   " Copied from: https://vi.stackexchange.com/a/14359
+  function! s:cmp(a, b)
+    for i in range(len(a:a))
+      if a:a[i] < a:b[i]
+        return -1
+      elseif a:a[i] > a:b[i]
+        return 1
+      endif
+    endfor
+    return 0
+  endfunction
   function! s:cfnext(count, list, ...) abort
     let reverse = a:0 && a:1 
     let func = 'get' . a:list . 'list'
@@ -1109,6 +1086,7 @@ if PlugActive('syntastic')
     if len(items) == 0
       return 'echoerr ' . string('E42: No Errors')
     endif
+    " Build up list of loc dictionaries 
     call map(items, 'extend(v:val, {"idx": v:key + 1})')
     if reverse
       call reverse(items)
@@ -1122,24 +1100,25 @@ if PlugActive('syntastic')
       let current = str2nr(matchstr(capture, '(\zs\d\+\ze of \d\+)'))
     endif
     call add(context, current)
-    call filter(items, 'v:val.bufnr == bufnr && s:cmp(context, [v:val.lnum, v:val.col, v:val.idx]) == cmp')
-    let idx = get(get(items, 0, {}), 'idx', 'E553: No more items')
-    if type(idx) == type(0)
-      return cmd . idx
+    " Jump to next loc circularly
+    call filter(items, 'v:val.bufnr == bufnr')
+    let nbuffer = len(get(items, 0, {}))
+    call filter(items, 's:cmp(context, [v:val.lnum, v:val.col, v:val.idx]) == cmp')
+    let inext = get(get(items, 0, {}), 'idx', 'E553: No more items')
+    if type(inext) == type(0)
+      return cmd . inext
+    elseif nbuffer != 0
+      exe '' . (reverse ? line('$') : 0)
+      return s:cfnext(a:count, a:list, reverse)
     else
-      return 'echoerr' . string(idx)
+      return 'echoerr' . string(inext)
     endif
   endfunction
-  function! s:cmp(a, b)
-    for i in range(len(a:a))
-      if a:a[i] < a:b[i]
-        return -1
-      elseif a:a[i] > a:b[i]
-        return 1
-      endif
-    endfor
-    return 0
-  endfunction
+  " Commands for circular location-list (error) scrolling
+  command! -bar -count=1 Cnext execute s:cfnext(<count>, 'qf')
+  command! -bar -count=1 Cprev execute s:cfnext(<count>, 'qf', 1)
+  command! -bar -count=1 Lnext execute s:cfnext(<count>, 'loc')
+  command! -bar -count=1 Lprev execute s:cfnext(<count>, 'loc', 1)
 
   " Determine checkers from annoying human-friendly output; version suitable
   " for scripting does not seem available. Weirdly need 'silent' to avoid
@@ -1175,7 +1154,7 @@ if PlugActive('syntastic')
     let checkers = s:syntastic_checkers()
     if len(checkers) == 0
       echom 'No checkers available.'
-    else " try running the checker, see if anything comes up
+    else
       SyntasticCheck
       if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
           \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
@@ -1186,27 +1165,20 @@ if PlugActive('syntastic')
         let b:syntastic_on = 0
       endif
     endif
-    nnoremap <buffer> <silent> ;n :Lnext<CR>
-    nnoremap <buffer> <silent> ;N :Lprev<CR>
   endfunction
-  " Disable checker
-  function! s:syntastic_disable()
-    let b:syntastic_on = 0
-    SyntasticReset
-    silent! nunmap <buffer> ;n
-    silent! nunmap <buffer> ;N
-  endfunction
-  " Custom remaps
-  nnoremap <silent> ;x :update \| call <sid>syntastic_enable()<CR>
-  nnoremap <silent> ;X :call <sid>syntastic_disable()<CR>
+  " Toggle and jump between errors
+  nnoremap <silent> <Leader>x :update \| call <sid>syntastic_enable()<CR>
+  nnoremap <silent> <Leader>X :let b:syntastic_on = 0 \| SyntasticReset<CR>
+  nnoremap <silent> ]x :Lnext<CR>
+  nnoremap <silent> [x :Lprev<CR>
 
   " Choose syntax checkers, disable auto checking
   " flake8 pep8 pycodestyle pyflakes pylint python
   " pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
   " NOTE: Need 'python' checker in addition to these other ones, because python
   " tests for import-time errors and others test for runtime errors!
-  let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[],'passive_filetypes':[]}
-  let g:syntastic_stl_format = "" "disables statusline colors; they were ugly
+  let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[], 'passive_filetypes':[]}
+  let g:syntastic_stl_format = '' "disables statusline colors; they were ugly
   let g:syntastic_always_populate_loc_list = 1 " necessary, or get errors
   let g:syntastic_auto_loc_list = 1 " creates window; if 0, does not create window
   let g:syntastic_loc_list_height = 5
@@ -1411,17 +1383,43 @@ if PlugActive('tagbar')
   nnoremap <silent> <Leader>t :call <sid>tagbar_setup()<CR>
 endif
 
+" REFRESH FILE
+" If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
+" then just source it with the 'execute' shortcut Ctrl-z
+function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
+  filetype detect " if started with empty file, but now shebang makes filetype clear
+  filetype plugin indent on
+  let loaded = []
+  let files = [
+    \ '~/.vim/ftplugin/' . &ft . '.vim',
+    \ '~/.vim/syntax/' . &ft . '.vim',
+    \ '~/.vim/after/ftplugin/' . &ft . '.vim',
+    \ '~/.vim/after/syntax/' . &ft . '.vim']
+  for file in files
+    if !empty(glob(file))
+      exe 'so '.file
+      call add(loaded, file)
+    endif
+  endfor
+  echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
+endfunction
+command! Refresh so ~/.vimrc | call s:refresh()
+" Refresh command, load from disk, redraw screen
+nnoremap <silent> <Leader>s :Refresh<CR>
+nnoremap <silent> <Leader>r :e<CR>
+nnoremap <silent> <Leader>R :redraw!<CR>
+
 " SESSION MANAGEMENT
 " First, simple obsession session management
 " * Jump to mark '"' without changing the jumplist (:help g`)
 " * Mark '"' is the cursor position when last exiting the current buffer
-augroup session
-  au!
-  if PlugActive('vim-obsession') "must manually preserve cursor position
+if PlugActive('vim-obsession') "must manually preserve cursor position
+  augroup session
+    au!
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .vimsession
-  endif
-augroup END
+  augroup END
+endif
 " Manual autosave behavior
 " Consider disabling
 function! s:autosave_toggle(...)
@@ -1457,31 +1455,6 @@ function! s:autosave_toggle(...)
 endfunction
 command! -nargs=? Autosave call s:autosave_toggle(<args>)
 nnoremap <Leader>S :Autosave<CR>
-" Function for refreshing custom filetype-specific files and .vimrc
-" If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
-" then just source it with the 'execute' shortcut Ctrl-z
-function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
-  filetype detect " if started with empty file, but now shebang makes filetype clear
-  filetype plugin indent on
-  let loaded = []
-  let files = [
-      \ '~/.vim/ftplugin/' . &ft . '.vim',
-      \ '~/.vim/syntax/' . &ft . '.vim',
-      \ '~/.vim/after/ftplugin/' . &ft . '.vim',
-      \ '~/.vim/after/syntax/' . &ft . '.vim']
-  for file in files
-    if !empty(glob(file))
-      exe 'so '.file
-      call add(loaded, file)
-    endif
-  endfor
-  echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
-endfunction
-command! Refresh so ~/.vimrc | call s:refresh()
-" Refresh command, load from disk, redraw screen
-nnoremap <silent> <Leader>s :Refresh<CR>
-nnoremap <silent> <Leader>r :e<CR>
-nnoremap <silent> <Leader>R :redraw!<CR>
 " Vim workspace settings
 " Had issues with this! Do not remember what though
 if PlugActive('vim-workspace') "cursor positions automatically saved
@@ -1748,7 +1721,6 @@ function! s:cmdwin_setup()
   setlocal nonumber norelativenumber nolist laststatus=0
 endfunction
 " Vim command windows
-nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
@@ -1786,54 +1758,6 @@ function! s:textemplates()
   return [''] + templates " add blank entry as default choice
 endfunction
 
-" COPY/PASTING CLIPBOARD
-augroup copypaste " also clear command line when leaving insert mode, always
-  au!
-  au InsertEnter * set pastetoggle=<C-v>
-  au InsertLeave * setlocal nopaste eventignore= pastetoggle=
-augroup END
-" Pastemode toggling, really want to toggle with <C-v> since often hit Ctrl-V,
-" but that makes inserting 'literal' chars impossible; below is workaround
-function! s:paste_toggle()
-  if &eventignore==''
-    setlocal eventignore=InsertEnter
-    echom 'Ctrl-V pasting disabled for next InsertEnter.'
-  else
-    setlocal eventignore=
-    echom ''
-  endif
-  return ''
-endfunction
-nnoremap <expr> <silent> <Leader>v <sid>paste_toggle()
-command! PasteToggle call s:paste_toggle()
-" Copymode to eliminate special chars during copy
-" See :help &l:; this gives the local value of setting
-function! s:copy_toggle(...)
-  if a:0
-    let toggle = a:1
-  else
-    let toggle = !exists("b:number")
-  endif
-  let copyprops = ["number", "list", "relativenumber", "scrolloff"]
-  if toggle
-    for prop in copyprops
-      if !exists("b:" . prop) "do not overwrite previously saved settings
-        exe "let b:" . prop . " = &l:" . prop
-      endif
-      exe "let &l:" . prop . " = 0"
-    endfor
-    echo "Copy mode enabled."
-  else
-    for prop in copyprops
-      exe "silent! let &l:" . prop . " = b:" . prop
-      exe "silent! unlet b:" . prop
-    endfor
-    echo "Copy mode disabled."
-  endif
-endfunction
-command! -nargs=? CopyToggle call s:copy_toggle(<args>)
-nnoremap <Leader>c :call <sid>copy_toggle()<CR>
-
 " SEARCHING AND FIND-REPLACE STUFF
 " Basic stuff first
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
@@ -1844,8 +1768,7 @@ augroup search_replace
   au InsertEnter * set noignorecase " default ignore case
   au InsertLeave * set ignorecase
 augroup END
-" Delete commented text
-" WARNING: For some reason search screws up when using \(\) groups, maybe
+" Delete commented text. For some reason search screws up when using \(\) groups, maybe
 " because first parts of match are identical?
 noremap <expr> <silent> \c ''
     \ . (mode() =~ '^n' ? 'V' : '') . ':<C-u>'
@@ -1882,39 +1805,44 @@ augroup END
 " iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1 via
 " <C-^> (not avilable for custom remap, since ^ is not alphabetical)
 set iminsert=0
-for c in range(char2nr('A'), char2nr('Z'))
-  exe 'lnoremap '.nr2char(c+32).' '.nr2char(c)
-  exe 'lnoremap '.nr2char(c).' '.nr2char(c+32)
+for s:c in range(char2nr('A'), char2nr('Z'))
+  exe 'lnoremap ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
+  exe 'lnoremap ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
 endfor
 " Caps lock toggle, uses iTerm mapping of impossible key combination to the
 " F5 keypress. See top of file.
 inoremap <F5> <C-^>
 cnoremap <F5> <C-^>
 
-" FOLDING STUFF AND Z-PREFIXED COMMANDS
-augroup zcommands
-augroup END
-" SimpylFold settings
-let g:SimpylFold_docstring_preview = 1
-let g:SimpylFold_fold_import = 0
-let g:SimpylFold_fold_imports = 0
-let g:SimpylFold_fold_docstring = 0
-let g:SimpylFold_fold_docstrings = 0
-" Folding maps
-" Delete all folds; delete fold at cursor is zd
-nnoremap zD zE
-" Never need the lower-case versions (which globally change fold levels), but
-" often want to open/close everything; this mnemonically makes sense because
-" folding is sort-of like indenting really
-nnoremap z> zM
-nnoremap z< zR
-" Open and close all folds; to open/close under cursor, use zo/zc
-nnoremap zO zR
-nnoremap zC zM
+" COPY MODE
+" Eliminates special chars during copy
+function! s:copy_toggle(...)
+  if a:0
+    let toggle = a:1
+  else
+    let toggle = !exists("b:number")
+  endif
+  let copyprops = ["number", "list", "relativenumber", "scrolloff"]
+  if toggle
+    for prop in copyprops
+      if !exists("b:" . prop) "do not overwrite previously saved settings
+        exe "let b:" . prop . " = &l:" . prop
+      endif
+      exe "let &l:" . prop . " = 0"
+    endfor
+    echo "Copy mode enabled."
+  else
+    for prop in copyprops
+      exe "silent! let &l:" . prop . " = b:" . prop
+      exe "silent! unlet b:" . prop
+    endfor
+    echo "Copy mode disabled."
+  endif
+endfunction
+command! -nargs=? CopyToggle call s:copy_toggle(<args>)
+nnoremap <Leader>c :call <sid>copy_toggle()<CR>
 
 " g CONFIGURATION
-augroup gcommands
-augroup END
 " Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
@@ -1922,9 +1850,7 @@ noremap M gE
 " not currently used in normal mode, and fits better mnemonically
 " Mnemonic is l for letter, t for title case
 nnoremap gu guiw
-" vnoremap gu gu
 nnoremap gU gUiw
-" vnoremap gU gU
 vnoremap gl ~
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
@@ -1933,9 +1859,9 @@ nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
-nnoremap <expr> gf ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
-  \."\| else \| echom 'File \"'.expand('<cfile>').'\" does not exist.' \| endif<CR>"
-nnoremap gF <c-w>gf
+nnoremap <Leader>F <c-w>gf
+nnoremap <expr> <Leader>f ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
+  \ . "\| else \| echom 'File \"'.expand('<cfile>').'\" does not exist.' \| endif<CR>"
 " Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
 " * Note the <Esc> is needed first because it cancels application of the number operator
@@ -1948,6 +1874,16 @@ else
   nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
   nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
+" SimpylFold settings
+let g:SimpylFold_docstring_preview = 1
+let g:SimpylFold_fold_import = 0
+let g:SimpylFold_fold_imports = 0
+let g:SimpylFold_fold_docstring = 0
+let g:SimpylFold_fold_docstrings = 0
+" Delete, open, close all folds, to open/close under cursor use zo/zc
+nnoremap zD zE
+nnoremap zO zR
+nnoremap zC zM
 
 " SPECIAL SYNTAX HIGHLIGHTING OVERWRITES
 " * See this thread (https://vi.stackexchange.com/q/9433/8084) on modifying syntax

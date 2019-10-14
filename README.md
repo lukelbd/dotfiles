@@ -10,12 +10,11 @@ Check out `.vimrc` for my plugin usage and some handy functions and remaps. Inst
 just using `<Leader>` for custom maps, I use several different keys for custom
 map prefixes:
 
-* `<Tab>`: Normal mode. Used for window and tab management and resizing.
-* `c`: Normal mode. Used for toggling comments and inserting comment headers.
-* `\`: Normal mode. Used for complex regex replacements and tabular alignment.
-* `;`: Normal mode. Used for syntastic commands and spell checking.
-* `g`: Normal mode. Used for git-gutter commands and other git things.
 * `<Leader>`: Normal mode. Used for miscellaneous and complex tasks. Mapped to `<Space>`.
+* `\`: Normal mode. Used as an alternate leader for complex regex replacements and tabular alignment.
+* `c`: Normal mode. Used for toggling comments and inserting comment headers.
+* `g`: Normal mode. Used for git-gutter commands and other git things.
+* `<Tab>`: Normal mode. Used for window and tab management and resizing.
 * `<C-o>`, `<C-p>`: Insert mode. Used for inserting LaTeX citations.
 * `<C-s>`, `<C-z>`: Insert mode. Used for surrounding cursor with delimiters and inserting snippets or symbols.
 
