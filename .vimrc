@@ -113,14 +113,14 @@ let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,'
   \ . '*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,'
   \ . '*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,'
-function! s:wildtab()
+function! s:wild_tab()
   call feedkeys("\<Tab>", 't') | return ''
 endfunction
-function! s:wildstab()
+function! s:wild_stab()
   call feedkeys("\<S-Tab>", 't') | return ''
 endfunction
-cnoremap <expr> <F1> <sid>wildstab()
-cnoremap <expr> <F2> <sid>wildtab()
+cnoremap <expr> <F1> <sid>wild_stab()
+cnoremap <expr> <F2> <sid>wild_tab()
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
@@ -153,6 +153,33 @@ for s:pair in [['n', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['i', '<C-s>'], ['
     exe "nmap <expr> " . s:char . " Suppress('" . s:char . "', '" . s:mode . "')"
   endif
 endfor
+
+" Toggle conceal on and off
+function! s:conceal_toggle(...)
+  if a:0
+    let conceal_on = a:1
+  else
+    let conceal_on = (&conceallevel ? 0 : 2) " turn off and on
+  endif
+  exe 'set conceallevel=' . (conceal_on ? 2 : 0)
+endfunction
+command! -nargs=? ConcealToggle call s:conceal_toggle(<args>)
+" Toggling tabs on and off
+let g:tabtoggle_tab_filetypes = ['text', 'gitconfig', 'make']
+augroup tab_toggle
+  au!
+  exe 'au FileType ' . join(g:tabtoggle_tab_filetypes, ',') . 'TabToggle 1'
+augroup END
+function! s:tab_toggle(...)
+  if a:0
+    let &l:expandtab = 1-a:1 " toggle 'on' means literal tabs are 'on'
+  else
+    setlocal expandtab!
+  endif
+  let b:tab_mode = &l:expandtab
+endfunction
+command! -nargs=? TabToggle call s:tab_toggle(<args>)
+nnoremap <Leader><Tab> :TabToggle<CR>
 
 " CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 " Disable keys
@@ -462,7 +489,7 @@ Plug 'Shougo/unite.vim'
 Plug 'rafaqz/citation.vim'
 " Plug 'twsh/unite-bibtex' " python 3 version
 " Plug 'msprev/unite-bibtex' " python 2 version
-" Plug 'lervag/vimtex'
+Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
 
 " Julia support and syntax highlighting
@@ -592,92 +619,56 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 " is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
-" SESSION MANAGEMENT
-" First, simple obsession session management
-" * Jump to mark '"' without changing the jumplist (:help g`)
-" * Mark '"' is the cursor position when last exiting the current buffer
-augroup session
-  au!
-  if PlugActive("vim-obsession") "must manually preserve cursor position
-    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
-    au VimEnter * Obsession .vimsession
-  endif
+" VIM SNEAK
+" Just configure the maps here
+" Also disable highlighting when doing sneak operations, because
+" want to same the use highlight group
+augroup sneak
 augroup END
-" Manual autosave behavior
-" Consider disabling
-function! s:autosave_toggle(...)
-  " Parse input
-  if !exists('b:autosave_on')
-    let b:autosave_on = 0
-  endif
-  if a:0
-    let toggle = a:1
-  else
-    let toggle = 1 - b:autosave_on
-  endif
-  if toggle == b:autosave_on
-    return
-  endif
-  " Toggle autocommands local to buffer as with codi
-  " We use augroups with buffer-specific names to prevent conflict
-  if toggle
-    let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
-    exe 'augroup autosave_' . bufnr('%')
-      au! *
-      exe 'au ' . cmds . ' <buffer> silent w'
-    augroup END
-    echom 'Autosave enabled.'
-    let b:autosave_on = 1
-  else
-    exe 'augroup autosave_' . bufnr('%')
-      au! *
-    augroup END
-    echom 'Autosave disabled.'
-    let b:autosave_on = 0
-  endif
-endfunction
-command! -nargs=? Autosave call s:autosave_toggle(<args>)
-nnoremap <Leader>S :Autosave<CR>
-" Function for refreshing custom filetype-specific files and .vimrc
-" If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
-" then just source it with the 'execute' shortcut Ctrl-z
-function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
-  filetype detect " if started with empty file, but now shebang makes filetype clear
-  filetype plugin indent on
-  let loaded = []
-  let files = [
-      \ '~/.vim/ftplugin/' . &ft . '.vim',
-      \ '~/.vim/syntax/' . &ft . '.vim',
-      \ '~/.vim/after/ftplugin/' . &ft . '.vim',
-      \ '~/.vim/after/syntax/' . &ft . '.vim']
-  for file in files
-    if !empty(glob(file))
-      exe 'so '.file
-      call add(loaded, file)
-    endif
-  endfor
-  echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
-endfunction
-command! Refresh so ~/.vimrc | call s:refresh()
-" Refresh command, load from disk, redraw screen
-nnoremap <silent> <Leader>s :Refresh<CR>
-nnoremap <silent> <Leader>r :e<CR>
-nnoremap <silent> <Leader>R :redraw!<CR>
-" Vim workspace settings
-" Had issues with this! Do not remember what though
-if PlugActive("vim-workspace") "cursor positions automatically saved
-  let g:workspace_session_name = '.vimsession'
-  let g:workspace_session_disable_on_args = 1 " enter vim (without args) to load previous sessions
-  let g:workspace_persist_undo_history = 0    " don't need to save undo history
-  let g:workspace_autosave_untrailspaces = 0  " sometimes we WANT trailing spaces!
-  let g:workspace_autosave_ignore = ['help', 'qf', 'diff', 'man']
+if PlugActive('vim-sneak')
+  " F and T move
+  map s <Plug>Sneak_s
+  map S <Plug>Sneak_S
+  map f <Plug>Sneak_f
+  map F <Plug>Sneak_F
+  map t <Plug>Sneak_t
+  map T <Plug>Sneak_T
+  map <F1> <Plug>Sneak_,
+  map <F2> <Plug>Sneak_;
+endif
+
+" DELIMITMATE (auto-generate closing delimiters)
+" NOTE: If enter is mapped delimitmate will turn off its auto expand
+" enter mapping.
+" WARNING: My InsertLeave mapping to stop moving the cursor left also fucks
+" up the enter map; consider overwriting function.
+if PlugActive('delimitmate')
+  " First filetype settings
+  " Enable carat matching for filetypes where need tags (or keycode symbols)
+  " Vim needs to disable matching ", or everything is super slow
+  " Tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
+  " Markdown need backticks for code, and can maybe do LaTeX math
+  augroup delimitmate
+    au!
+    au FileType vim let b:delimitMate_quotes = "'" | let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
+    au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
+    au FileType html let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
+    au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
+  augroup END
+  " Can set global defaults along with buffer-specific alternatives
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_expand_cr = 2 " expand even if it is not empty!
+  let g:delimitMate_jump_expansion = 0
+  let g:delimitMate_quotes = "\" '"
+  let g:delimitMate_matchpairs = "(:),{:},[:]"
+  let g:delimitMate_excluded_regions = "String" "by default is disabled inside, don't want that
 endif
 
 " GIT GUTTER AND FUGITIVE
 " TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 augroup git
 augroup END
-if PlugActive("vim-gitgutter")
+if PlugActive('vim-gitgutter')
   " Create command for toggling on/off; old VIM versions always show signcolumn
   " if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
   " call gitgutter#disable() | silent! set signcolumn=no
@@ -685,7 +676,7 @@ if PlugActive("vim-gitgutter")
   silent! set signcolumn=no " silent ignores errors if not option
   let g:gitgutter_map_keys = 0 " disable all maps yo
   let g:gitgutter_enabled = 0 " whether enabled at *startup*
-  function! s:gitguttertoggle(...)
+  function! s:gitgutter_toggle(...)
     " Either listen to input, turn on if switch not declared, or do opposite
     if a:0
       let toggle = a:1
@@ -703,9 +694,9 @@ if PlugActive("vim-gitgutter")
     endif
   endfunction
   " Maps for toggling gitgutter on and off
-  nnoremap <silent> go :call <sid>gitguttertoggle(1)<CR>
-  nnoremap <silent> gO :call <sid>gitguttertoggle(0)<CR>
-  nnoremap <silent> g. :call <sid>gitguttertoggle()<CR>
+  nnoremap <silent> go :call <sid>gitgutter_toggle(1)<CR>
+  nnoremap <silent> gO :call <sid>gitgutter_toggle(0)<CR>
+  nnoremap <silent> g. :call <sid>gitgutter_toggle()<CR>
   " Maps for showing/disabling changes under cursor
   nnoremap <silent> gs :GitGutterPreviewHunk<CR>:wincmd j<CR>
   nnoremap <silent> gS :GitGutterUndoHunk<CR>
@@ -715,64 +706,16 @@ if PlugActive("vim-gitgutter")
 endif
 " Next some fugitive command aliases
 " Just want to eliminate that annoying fucking capital G
-if PlugActive("vim-fugitive")
+if PlugActive('vim-fugitive')
   for gcommand in ['Gcd', 'Glcd', 'Gstatus', 'Gcommit', 'Gmerge', 'Gpull',
-  \ 'Grebase', 'Gpush', 'Gfetch', 'Grename', 'Gdelete', 'Gremove', 'Gblame', 'Gbrowse',
-  \ 'Ggrep', 'Glgrep', 'Glog', 'Gllog', 'Gedit', 'Gsplit', 'Gvsplit', 'Gtabedit', 'Gpedit',
-  \ 'Gread', 'Gwrite', 'Gwq', 'Gdiff', 'Gsdiff', 'Gvdiff', 'Gmove']
+   \ 'Grebase', 'Gpush', 'Gfetch', 'Grename', 'Gdelete', 'Gremove', 'Gblame', 'Gbrowse',
+   \ 'Ggrep', 'Glgrep', 'Glog', 'Gllog', 'Gedit', 'Gsplit', 'Gvsplit', 'Gtabedit', 'Gpedit',
+   \ 'Gread', 'Gwrite', 'Gwq', 'Gdiff', 'Gsdiff', 'Gvdiff', 'Gmove']
     exe 'cnoreabbrev g'.gcommand[1:].' '.gcommand
   endfor
 endif
 
-" VIM SNEAK
-" Just configure the maps here
-" Also disable highlighting when doing sneak operations, because
-" want to same the use highlight group
-augroup sneak
-augroup END
-if PlugActive("vim-sneak")
-  " F and T move
-  map s <Plug>Sneak_s
-  map S <Plug>Sneak_S
-  map f <Plug>Sneak_f
-  map F <Plug>Sneak_F
-  map t <Plug>Sneak_t
-  map T <Plug>Sneak_T
-  " Map ctrl , and ctrl ; to F1 and F2
-  map <F1> <Plug>Sneak_,
-  map <F2> <Plug>Sneak_;
-endif
-
-" DELIMITMATE (auto-generate closing delimiters)
-" NOTE: If enter is mapped delimitmate will turn off its auto expand
-" enter mapping.
-" WARNING: My InsertLeave mapping to stop moving the cursor left also fucks
-" up the enter map; consider overwriting function.
-if PlugActive("delimitmate")
-  " First filetype settings
-  " Enable carat matching for filetypes where need tags (or keycode symbols)
-  " Vim needs to disable matching ", or everything is super slow
-  " Tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
-  " Markdown need backticks for code, and can maybe do LaTeX math
-  augroup delimitmate
-    au!
-    au FileType vim let b:delimitMate_quotes = "'" | let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
-    au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
-    au FileType html let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
-    au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
-  augroup END
-  " TODO: Apparently delimitMate has its own jump command, should start using it.
-  " Set up delimiter pairs; delimitMate uses these by default
-  " Can set global defaults along with buffer-specific alternatives
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_expand_cr = 2 " expand even if it is not empty!
-  let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_quotes = "\" '"
-  let g:delimitMate_matchpairs = "(:),{:},[:]"
-  let g:delimitMate_excluded_regions = "String" "by default is disabled inside, don't want that
-endif
-
-" SPELLCHECK (really is a BUILTIN plugin, hence why it's in this section)
+" SPELLCHECK (really is a builtin plugin, hence why it's in this section)
 " Turn on for certain filetypes
 augroup spell
   au!
@@ -825,14 +768,12 @@ function! s:spellchange(direc)
     setlocal nospell
   endif
 endfunction
-" Functions
 command! SpellToggle call s:spelltoggle(<args>)
 command! LangToggle call s:langtoggle(<args>)
 " Toggle on and off
 nnoremap <silent> ;. :call <sid>spelltoggle()<CR>
 nnoremap <silent> ;o :call <sid>spelltoggle(1)<CR>
 nnoremap <silent> ;O :call <sid>spelltoggle(0)<CR>
-" Also toggle UK/US languages
 nnoremap <silent> ;k :call <sid>langtoggle(1)<CR>
 nnoremap <silent> ;K :call <sid>langtoggle(0)<CR>
 " Spell maps
@@ -844,32 +785,13 @@ nnoremap <Plug>backwardspell el[s:call <sid>spellchange('[')<CR>:call repeat#set
 nmap ;d <Plug>forwardspell
 nmap ;D <Plug>backwardspell
 
-" INCREMENT and SUM PLUGINS
-augroup increment
-augroup END
-" The increment plugin
-if PlugActive("vim-visual-increment")
-  vmap + <Plug>VisualIncrement
-  vmap _ <Plug>VisualDecrement
-  nnoremap + <C-a>
-  nnoremap _ <C-x>
-endif
-" The howmuch.vim plugin, currently with minor modifications in .vim folder
-" TODO: Add maps to all other versions, maybe use = key as prefix
-if hasmapto('<Plug>AutoCalcAppendWithEqAndSum', 'v')
-  vmap c+ <Plug>AutoCalcAppendWithEqAndSum
-endif
-if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
-  vmap c= <Plug>AutoCalcReplaceWithSum
-endif
-
 " CODI (MATHEMATICAL NOTEPAD)
-if PlugActive("codi.vim")
+if PlugActive('codi.vim')
   " Set custom buffer-local autocommands using codi autocommands
   " We want TextChanged and InsertLeave, not TextChangedI which is enabled
   " when setting g:codi#autocmd to 'TextChanged'
   " See issue: https://github.com/metakirby5/codi.vim/issues/90
-  augroup codi
+  augroup math
     au!
     au User CodiEnterPre call s:codi_enter()
     au User CodiLeavePost call s:codi_leave()
@@ -886,7 +808,6 @@ if PlugActive("codi.vim")
       au!
     augroup END
   endfunction
-
   " New window function, command, and maps
   function! s:codi_new(name)
     if a:name != ''
@@ -897,7 +818,6 @@ if PlugActive("codi.vim")
   command! -nargs=1 NewCodi call s:codi_new(<q-args>)
   nnoremap <silent> <Leader>u :exe 'NewCodi ' . input('Calculator name (' . getcwd() . '): ', '', 'file')<CR>
   nnoremap <silent> <Leader>U :Codi!!<CR>
-
   " Various settings, interpreter without history
   " See issue and notes: https://github.com/metakirby5/codi.vim/issues/85
   let g:codi#autocmd = 'None'
@@ -913,9 +833,24 @@ if PlugActive("codi.vim")
         \ },
     \ }
 endif
+" Increment plugin
+if PlugActive('vim-visual-increment')
+  vmap + <Plug>VisualIncrement
+  vmap _ <Plug>VisualDecrement
+  nnoremap + <C-a>
+  nnoremap _ <C-x>
+endif
+" The howmuch.vim plugin, currently with minor modifications in .vim folder
+" TODO: Add maps to all other versions, maybe use = key as prefix
+if hasmapto('<Plug>AutoCalcAppendWithEqAndSum', 'v')
+  vmap c+ <Plug>AutoCalcAppendWithEqAndSum
+endif
+if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
+  vmap c= <Plug>AutoCalcReplaceWithSum
+endif
 
 " NEOCOMPLETE (RECOMMENDED SETTINGS)
-if PlugActive("neocomplete.vim") "just check if activated
+if PlugActive('neocomplete.vim') "just check if activated
   " Enable omni completion for different filetypes
   augroup neocomplete
     au!
@@ -951,47 +886,6 @@ if PlugActive("neocomplete.vim") "just check if activated
     \ }
 endif
 
-" NERDTREE
-" Most important commands: 'o' to view contents, 'u' to move up directory,
-" 't' open in new tab, 'T' open in new tab but retain focus, 'i' open file in 
-" split window below, 's' open file in new split window VERTICAL, 'O' recursive open, 
-" 'x' close current nodes parent, 'X' recursive cose, 'p' jump
-" to current nodes parent, 'P' jump to root node, 'K' jump to first file in 
-" current tree, 'J' jump to last file in current tree, <C-j> <C-k> scroll direct children
-" of current directory, 'C' change tree root to selected dir, 'u' move up, 'U' move up
-" and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
-" 'I' toggle hidden file display, '?' toggle help
-if PlugActive("nerdtree")
-  augroup nerdtree
-    au!
-    au BufEnter * if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
-    au FileType nerdtree call s:nerdtree_setup()
-  augroup END
-  " NERDtree function
-  function! s:nerdtree_setup()
-    setlocal nolist
-    exe 'vertical resize '.g:NERDTreeWinSize
-    nnoremap <buffer> <Leader>f :NERDTreeClose<CR>
-    if g:has_nowait
-      nmap <buffer> <nowait> d D
-    endif
-  endfunction
-  " Basic settings
-  let g:NERDTreeWinPos = "right"
-  let g:NERDTreeWinSize = 20 " instead of 31 default
-  let g:NERDTreeShowHidden = 1
-  let g:NERDTreeMinimalUI = 1 " remove annoying ? for help note
-  let g:NERDTreeMapChangeRoot = "D" "C was annoying, because VIM will wait for 'CD'
-  let g:NERDTreeSortOrder = [] " use default sorting
-  let g:NERDTreeIgnore = split(&wildignore, ',')
-  for s:index in range(len(g:NERDTreeIgnore))
-    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
-    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\$', '')
-  endfor
-  " Toggle
-  nnoremap <Leader>f :NERDTree %<CR>
-endif
-
 " NERDCommenter (comment out stuff)
 " Note the default mappings, all prefixed by <Leader> (but we disable them)
 " -cc comments line or selection
@@ -1002,9 +896,9 @@ endif
 " -cy yanks lines before commenting
 " -c$ comments to eol
 " -cu uncomments line
-augroup nerdcomment
-augroup END
-if PlugActive("nerdcommenter")
+if PlugActive('nerdcommenter')
+  augroup nerdcomment
+  augroup END
   " Custom delimiter overwrites, default python includes space for some reason
   " TODO: Why can't this just use &commentstring?
   let g:NERDCustomDelimiters = {
@@ -1151,10 +1045,51 @@ if PlugActive("nerdcommenter")
   nnoremap c" :call <sid>docstring('"')<CR>A
 endif
 
+" NERDTREE
+" Most important commands: 'o' to view contents, 'u' to move up directory,
+" 't' open in new tab, 'T' open in new tab but retain focus, 'i' open file in 
+" split window below, 's' open file in new split window VERTICAL, 'O' recursive open, 
+" 'x' close current nodes parent, 'X' recursive cose, 'p' jump
+" to current nodes parent, 'P' jump to root node, 'K' jump to first file in 
+" current tree, 'J' jump to last file in current tree, <C-j> <C-k> scroll direct children
+" of current directory, 'C' change tree root to selected dir, 'u' move up, 'U' move up
+" and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
+" 'I' toggle hidden file display, '?' toggle help
+if PlugActive('nerdtree')
+  augroup nerdtree
+    au!
+    au BufEnter * if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+    au FileType nerdtree call s:nerdtree_setup()
+  augroup END
+  " NERDtree function
+  function! s:nerdtree_setup()
+    setlocal nolist
+    exe 'vertical resize '.g:NERDTreeWinSize
+    nnoremap <buffer> <Leader>f :NERDTreeClose<CR>
+    if g:has_nowait
+      nmap <buffer> <nowait> d D
+    endif
+  endfunction
+  " Basic settings
+  let g:NERDTreeWinPos = "right"
+  let g:NERDTreeWinSize = 20 " instead of 31 default
+  let g:NERDTreeShowHidden = 1
+  let g:NERDTreeMinimalUI = 1 " remove annoying ? for help note
+  let g:NERDTreeMapChangeRoot = "D" "C was annoying, because VIM will wait for 'CD'
+  let g:NERDTreeSortOrder = [] " use default sorting
+  let g:NERDTreeIgnore = split(&wildignore, ',')
+  for s:index in range(len(g:NERDTreeIgnore))
+    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
+    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\$', '')
+  endfor
+  " Toggle
+  nnoremap <Leader>f :NERDTree %<CR>
+endif
+
 " SYNTASTIC (syntax checking for code)
-augroup syntastic
-augroup END
-if PlugActive("syntastic")
+if PlugActive('syntastic')
+  augroup syntastic
+  augroup END
   " Commands for circular location-list (error) scrolling
   " Also remap the commands
   " command! Lnext try | lnext | catch | lfirst | catch | endtry
@@ -1262,7 +1197,7 @@ if PlugActive("syntastic")
     silent! nunmap <buffer> ;N
   endfunction
   " Custom remaps
-  nnoremap <silent> ;x :update<CR>:call <sid>syntastic_enable()<CR>
+  nnoremap <silent> ;x :update \| call <sid>syntastic_enable()<CR>
   nnoremap <silent> ;X :call <sid>syntastic_disable()<CR>
 
   " Choose syntax checkers, disable auto checking
@@ -1290,29 +1225,14 @@ if PlugActive("syntastic")
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
 
-" VIMTEX SETTINGS AND STUFF
-augroup vimtex
-augroup END
-if PlugActive('vimtex')
-  " Turn off annoying warning; see: https://github.com/lervag/vimtex/issues/507
-  let g:vimtex_compiler_latexmk = {'callback' : 0}
-  let g:vimtex_mappings_enable = 0
-  " See here for viewer configuration: https://github.com/lervag/vimtex/issues/175
-  let g:vimtex_view_view_method = 'skim'
-  " Try again
-  let g:vimtex_view_general_viewer = '/Applications/Skim.app/Contents/SharedSupport/displayline'
-  let g:vimtex_view_general_options = '-r @line @pdf @tex'
-  let g:vimtex_fold_enabled = 0 " So large files can open more easily
-endif
-
 " TABULAR - ALIGNING AROUND :,=,ETC.
 " By default, :Tabularize command provided *without range* will select the
 " contiguous lines that contain specified delimiter; so this function only makes
 " sense when applied for a visual range! So we don't need to worry about using Tabularize's
 " automatic range selection/implementing it in this special command
-augroup tabular
-augroup END
-if PlugActive("tabular")
+if PlugActive('tabular')
+  augroup tabular
+  augroup END
   " Command for tabuarizing, but ignoring lines without delimiters
   function! s:table(arg) range
     " Remove the lines without matching regexes
@@ -1415,8 +1335,6 @@ if PlugActive("tabular")
 endif
 
 " CTAGS and TAGBAR (requires 'brew install ctags-exuberant')
-augroup ctags
-augroup END
 " Mappings for vim-idetools command
 if PlugActive('vim-idetools') || &rtp =~ 'vim-idetools'
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
@@ -1425,7 +1343,9 @@ endif
 " * p jumps to tag under cursor, in code window, but remain in tagbar
 " * C-n and C-p browses by top-level tags
 " * o toggles the fold under cursor, or current one
-if PlugActive("tagbar")
+if PlugActive('tagbar')
+  augroup ctags
+  augroup END
   " Customization, for more info see :help tagbar-extend
   " To list kinds, see :!ctags --list-kinds=<filetype>
   " The first number is whether to fold, second is whether to highlight location
@@ -1489,6 +1409,98 @@ if PlugActive("tagbar")
     endif
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbar_setup()<CR>
+endif
+
+" SESSION MANAGEMENT
+" First, simple obsession session management
+" * Jump to mark '"' without changing the jumplist (:help g`)
+" * Mark '"' is the cursor position when last exiting the current buffer
+augroup session
+  au!
+  if PlugActive('vim-obsession') "must manually preserve cursor position
+    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
+    au VimEnter * Obsession .vimsession
+  endif
+augroup END
+" Manual autosave behavior
+" Consider disabling
+function! s:autosave_toggle(...)
+  " Parse input
+  if !exists('b:autosave_on')
+    let b:autosave_on = 0
+  endif
+  if a:0
+    let toggle = a:1
+  else
+    let toggle = 1 - b:autosave_on
+  endif
+  if toggle == b:autosave_on
+    return
+  endif
+  " Toggle autocommands local to buffer as with codi
+  " We use augroups with buffer-specific names to prevent conflict
+  if toggle
+    let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
+    exe 'augroup autosave_' . bufnr('%')
+      au! *
+      exe 'au ' . cmds . ' <buffer> silent w'
+    augroup END
+    echom 'Autosave enabled.'
+    let b:autosave_on = 1
+  else
+    exe 'augroup autosave_' . bufnr('%')
+      au! *
+    augroup END
+    echom 'Autosave disabled.'
+    let b:autosave_on = 0
+  endif
+endfunction
+command! -nargs=? Autosave call s:autosave_toggle(<args>)
+nnoremap <Leader>S :Autosave<CR>
+" Function for refreshing custom filetype-specific files and .vimrc
+" If you want to refresh some random global plugin in ~/.vim/autolaod or ~/.vim/plugin
+" then just source it with the 'execute' shortcut Ctrl-z
+function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
+  filetype detect " if started with empty file, but now shebang makes filetype clear
+  filetype plugin indent on
+  let loaded = []
+  let files = [
+      \ '~/.vim/ftplugin/' . &ft . '.vim',
+      \ '~/.vim/syntax/' . &ft . '.vim',
+      \ '~/.vim/after/ftplugin/' . &ft . '.vim',
+      \ '~/.vim/after/syntax/' . &ft . '.vim']
+  for file in files
+    if !empty(glob(file))
+      exe 'so '.file
+      call add(loaded, file)
+    endif
+  endfor
+  echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
+endfunction
+command! Refresh so ~/.vimrc | call s:refresh()
+" Refresh command, load from disk, redraw screen
+nnoremap <silent> <Leader>s :Refresh<CR>
+nnoremap <silent> <Leader>r :e<CR>
+nnoremap <silent> <Leader>R :redraw!<CR>
+" Vim workspace settings
+" Had issues with this! Do not remember what though
+if PlugActive('vim-workspace') "cursor positions automatically saved
+  let g:workspace_session_name = '.vimsession'
+  let g:workspace_session_disable_on_args = 1 " enter vim (without args) to load previous sessions
+  let g:workspace_persist_undo_history = 0    " don't need to save undo history
+  let g:workspace_autosave_untrailspaces = 0  " sometimes we WANT trailing spaces!
+  let g:workspace_autosave_ignore = ['help', 'qf', 'diff', 'man']
+endif
+" Vimtex settings
+" Turn off annoying warning; see: https://github.com/lervag/vimtex/issues/507
+" See here for viewer configuration: https://github.com/lervag/vimtex/issues/175
+if PlugActive('vimtex')
+  let g:vimtex_compiler_latexmk = {'callback' : 0}
+  let g:vimtex_mappings_enable = 0
+  let g:vimtex_view_view_method = 'skim'
+  let g:vimtex_view_general_viewer = '/Applications/Skim.app/Contents/SharedSupport/displayline'
+  let g:vimtex_view_general_options = '-r @line @pdf @tex'
+  let g:vimtex_fold_enabled = 0 " So large files can open more easily
 endif
 
 "-----------------------------------------------------------------------------"
@@ -1751,10 +1763,7 @@ nnoremap <silent> <expr> <Leader>m ':!clear; search=' . input('Get help info: ',
   \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 
-" SNIPPETS
-" TODO: Add these
-
-" TEMPLATES
+" TEMPLATES and SNIPPETS
 " Prompt user to choose from a list of templates (located in ~/latex folder)
 " when creating a new LaTeX file. Consider adding to this for other filetypes!
 " See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
@@ -1780,12 +1789,12 @@ endfunction
 " COPY/PASTING CLIPBOARD
 augroup copypaste " also clear command line when leaving insert mode, always
   au!
-  au InsertEnter * set pastetoggle=<C-v> " need to use this, because mappings don't work
-  au InsertLeave * set nopaste | setlocal eventignore= pastetoggle= | echo
+  au InsertEnter * set pastetoggle=<C-v>
+  au InsertLeave * setlocal nopaste eventignore= pastetoggle=
 augroup END
 " Pastemode toggling, really want to toggle with <C-v> since often hit Ctrl-V,
 " but that makes inserting 'literal' chars impossible; below is workaround
-function! s:pastetoggle()
+function! s:paste_toggle()
   if &eventignore==''
     setlocal eventignore=InsertEnter
     echom 'Ctrl-V pasting disabled for next InsertEnter.'
@@ -1795,11 +1804,11 @@ function! s:pastetoggle()
   endif
   return ''
 endfunction
-nnoremap <expr> <silent> <Leader>v <sid>pastetoggle()
-command! PasteToggle call s:pastetoggle()
+nnoremap <expr> <silent> <Leader>v <sid>paste_toggle()
+command! PasteToggle call s:paste_toggle()
 " Copymode to eliminate special chars during copy
 " See :help &l:; this gives the local value of setting
-function! s:copytoggle(...)
+function! s:copy_toggle(...)
   if a:0
     let toggle = a:1
   else
@@ -1808,22 +1817,22 @@ function! s:copytoggle(...)
   let copyprops = ["number", "list", "relativenumber", "scrolloff"]
   if toggle
     for prop in copyprops
-      if !exists("b:".prop) "do not overwrite previously saved settings
-        exe "let b:".prop." = &l:".prop
+      if !exists("b:" . prop) "do not overwrite previously saved settings
+        exe "let b:" . prop . " = &l:" . prop
       endif
-      exe "let &l:".prop." = 0"
+      exe "let &l:" . prop . " = 0"
     endfor
     echo "Copy mode enabled."
   else
     for prop in copyprops
-      exe "silent! let &l:".prop." = b:".prop
-      exe "silent! unlet b:".prop
+      exe "silent! let &l:" . prop . " = b:" . prop
+      exe "silent! unlet b:" . prop
     endfor
     echo "Copy mode disabled."
   endif
 endfunction
-nnoremap <Leader>c :call <sid>copytoggle()<CR>
-command! -nargs=? CopyToggle call s:copytoggle(<args>)
+command! -nargs=? CopyToggle call s:copy_toggle(<args>)
+nnoremap <Leader>c :call <sid>copy_toggle()<CR>
 
 " SEARCHING AND FIND-REPLACE STUFF
 " Basic stuff first
@@ -2058,32 +2067,6 @@ function! s:syntax(name)
   endif
 endfunction
 command! -nargs=? Syntax call s:syntax(<q-args>)
-" Toggle conceal
-function! s:concealtoggle(...)
-  if a:0
-    let conceal_on = a:1
-  else
-    let conceal_on = (&conceallevel ? 0 : 2) " turn off and on
-  endif
-  exe 'set conceallevel=' . (conceal_on ? 2 : 0)
-endfunction
-command! -nargs=? ConcealToggle call s:concealtoggle(<args>)
-" Toggling tabs on and off
-let g:tabtoggle_tab_filetypes = ['text', 'gitconfig', 'make']
-augroup tab_toggle
-  au!
-  exe 'au FileType ' . join(g:tabtoggle_tab_filetypes, ',') . 'TabToggle 1'
-augroup END
-function! s:tabtoggle(...)
-  if a:0
-    let &l:expandtab = 1-a:1 " toggle 'on' means literal tabs are 'on'
-  else
-    setlocal expandtab!
-  endif
-  let b:tab_mode = &l:expandtab
-endfunction
-command! -nargs=? TabToggle call s:tabtoggle(<args>)
-nnoremap <Leader><Tab> :TabToggle<CR>
 " Get current plugin file
 " Remember :scriptnames lists all loaded files
 function! s:ftplugin()
@@ -2123,12 +2106,10 @@ augroup END
 " Clear writeable registers
 " On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
 " See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
-" For some reason the setreg function fails
 " WARNING: On cheyenne, get lalloc error when calling WipeReg, strange
-" command! WipeReg let regs = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-"' | let i = 0 | while i < strlen(regs) | exec 'let @'.regs[i].' = ""' | let i = i+1 | endwhile | unlet regs
 if $HOSTNAME !~ 'cheyenne'
   command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
   WipeReg
 endif
-noh     " turn off highlighting at startup
+noh " turn off highlighting at startup
 redraw! " weird issue sometimes where statusbar disappears
