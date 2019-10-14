@@ -62,7 +62,7 @@ set foldopen=tag,mark " options for opening folds on cursor movement; disallow b
 if exists('&breakindent')
   set breakindent " map indentation when breaking
 endif
-au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/'.&ft.'.dic'
+au BufRead,BufNewFile * execute 'setlocal dict+=~/.vim/words/' . &ft . '.dic'
 
 " Forward delete by tabs
 function! s:forward_delete()
@@ -99,8 +99,9 @@ let g:has_ctags  = str2nr(system("type ctags &>/dev/null && echo 1 || echo 0"))
 let g:has_nowait = (v:version >= 704 || v:version == 703 && has("patch1261"))
 let g:has_repeat = exists("*repeat#set") " start checks for function existence
 if !g:has_repeat
+  echohl WarningMsg
   echom "Warning: vim-repeat unavailable, some features will be unavailable."
-  sleep 1
+  echohl None
 endif
 
 " CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
@@ -118,6 +119,7 @@ if mapcheck('<Esc>', 'n') != ''
   endfor
 endif
 " Suppress all mappings with certain prefix
+" Note that <C-b> prefix is used for citation inserts
 function! Suppress(prefix, mode)
   let c = nr2char(getchar())
   if maparg(a:prefix . c, a:mode) != ''
@@ -126,7 +128,7 @@ function! Suppress(prefix, mode)
     return ''
   endif
 endfunction
-for s:pair in [['n', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-t>']]
+for s:pair in [['n', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-b>']]
   let s:mode = s:pair[0]
   let s:char = s:pair[1]
   if mapcheck(s:char) == ''
@@ -240,10 +242,10 @@ vnoremap P "_dP
 " Navigation, used to be part of idetools but too esoteric
 " TODO: Integrate tags plugin with vim so we can use ctrl-]
 " nnoremap <CR> <C-]>
-noremap <expr> <silent> gc search('^\ze\s*'.Comment().'.*$', '').'gg'
-noremap <expr> <silent> gC search('^\ze\s*'.Comment().'.*$', 'b').'gg'
-noremap <expr> <silent> ge search('^\ze\s*$', '').'gg'
-noremap <expr> <silent> gE search('^\ze\s*$', 'b').'gg'
+noremap <expr> <silent> gc search('^\ze\s*' . Comment() . '.*$', '') . 'gg'
+noremap <expr> <silent> gC search('^\ze\s*' . Comment() . '.*$', 'b') . 'gg'
+noremap <expr> <silent> ge search('^\ze\s*$', '') . 'gg'
+noremap <expr> <silent> gE search('^\ze\s*$', 'b') . 'gg'
 " Alias single-key builtin text objects
 for s:pair in ['r[', 'a<', 'c{']
   exe 'onoremap i' . s:pair[0] . ' i' . s:pair[1]
@@ -301,6 +303,10 @@ endfunction
 function! Strip(text)
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
+" Null list for completion, so tab doesn't produce literal char
+function! NullList(A,L,P)
+  return []
+endfunction
 " Reverse selected lines
 function! ReverseLines(l1, l2)
   let line1 = a:l1 " cannot overwrite input var names
@@ -324,13 +330,22 @@ function! Grep(regex) " returns list of matches
 endfunction
 command! -nargs=1 Grep call Grep(<q-args>)
 " Get comment character
-function! Comment(...)
-  let placeholder = (a:0 ? '|' : '')
+" The placeholder is supposed to be a
+function! Comment()
   if &ft != '' && &commentstring =~ '%s'
     return Strip(split(&commentstring, '%s')[0])
   else
-    return placeholder
+    return ''
   endif
+endfunction
+" As above but return a character that is never matched if no comment char found
+" This if for use in Tabular regex statements
+function! RegexComment()
+  let comment = Comment()
+  if comment == ''
+    let comment = ' '
+  endif
+  return comment
 endfunction
 
 " DIFFERENT CURSOR SHAPE DIFFERENT MODES; works for everything (Terminal, iTerm2, tmux)
@@ -404,14 +419,14 @@ call plug#begin('~/.vim/plugged')
 " See: https://github.com/junegunn/vim-plug/issues/32
 " Note ^= prepends to list, += appends
 for name in ['statusline', 'scrollwrapped', 'tabline', 'idetools', 'toggle', 'textools']
-  let plug = expand('~/vim-'.name)
+  let plug = expand('~/vim-' . name)
   if isdirectory(plug)
     if &rtp !~ plug
-      exe 'set rtp^='.plug
-      exe 'set rtp+='.plug.'/after'
+      exe 'set rtp^=' . plug
+      exe 'set rtp+=' . plug . '/after'
     endif
   else
-    Plug 'lukelbd/vim-'.name
+    Plug 'lukelbd/vim-' . name
   endif
 endfor
 
@@ -988,12 +1003,12 @@ endif
 augroup nerdcomment
 augroup END
 if PlugActive("nerdcommenter")
-  " Basic settings and maps
-  " Custom delimiter overwrites (default python includes space for some reason)
+  " Custom delimiter overwrites, default python includes space for some reason
+  " TODO: Why can't this just use &commentstring?
   let g:NERDCustomDelimiters = {
     \ 'julia': {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
-    \ 'python': {'left': '#'}, 'cython': {'left': '#'},
-    \ 'pyrex': {'left': '#'}, 'ncl': {'left': ';'},
+    \ 'python': {'left': '#'}, 'cython': {'left': '#'}, 'pyrex': {'left': '#'},
+    \ 'ncl': {'left': ';'},
     \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
   " Default settings
@@ -1004,19 +1019,19 @@ if PlugActive("nerdcommenter")
   let g:NERDCommentEmptyLines = 1      " allow commenting and inverting empty lines (useful when commenting a region)
   let g:NERDDefaultAlign = 'left'      " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 2
-  " Basic maps for toggling comments
+  " Function for toggling comment while in insert mode
   function! s:comment_insert()
     if exists('b:NERDCommenterDelims')
       let left = b:NERDCommenterDelims['left']
       let right = b:NERDCommenterDelims['right']
       let left_alt = b:NERDCommenterDelims['leftAlt']
       let right_alt = b:NERDCommenterDelims['rightAlt']
-      if (left!='' && right!='')
-        return (left.'  '.right.repeat("\<Left>", len(right)+1))
-      elseif (left_alt!='' && right_alt!='')
-        return (left_alt.'  '.right_alt.repeat("\<Left>", len(right_alt)+1))
+      if (left != '' && right != '')
+        return (left . '  ' . right . repeat("\<Left>", len(right) + 1))
+      elseif (left_alt != '' && right_alt != '')
+        return (left_alt . '  ' . right_alt . repeat("\<Left>", len(right_alt) + 1))
       else
-        return (left.' ')
+        return (left . ' ')
       endif
     else
       return ''
@@ -1034,7 +1049,7 @@ if PlugActive("nerdcommenter")
   " section changes, for drawing a line across the screen, for writing information
   " First the helpers functions
   function! s:comment_filler()
-    if &ft=="vim"
+    if &ft == "vim"
       return '#'
     else
       return Comment()
@@ -1042,7 +1057,7 @@ if PlugActive("nerdcommenter")
   endfunction
   function! s:comment_indent()
     let col = match(getline('.'), '^\s*\S\zs') " location of first non-whitespace char
-    return (col==-1 ? 0 : col-1)
+    return (col == -1 ? 0 : col-1)
   endfunction
   " Next separators that extend out to 80th column
   function! s:bar(...) " inserts above by default; most common use
@@ -1059,9 +1074,9 @@ if PlugActive("nerdcommenter")
     else " choose fill based on filetype -- if comment char is 'skinny', pick another one
       let fill = s:comment_filler()
     endif
-    let nfill = (nfill-nspace)/len(fill) " divide by length of fill character
+    let nfill = (nfill - nspace)/len(fill) " divide by length of fill character
     normal! k
-    call append(line('.'), repeat(' ',nspace).cchar.repeat(fill,nfill).suffix)
+    call append(line('.'), repeat(' ',nspace) . cchar . repeat(fill, nfill) . suffix)
     normal! jj
   endfunction
   " Sectioners (bars with text in-between)
@@ -1072,11 +1087,13 @@ if PlugActive("nerdcommenter")
       let fill = s:comment_filler()
     endif
     let nspace = s:comment_indent()
-    let nfill = (77-nspace)/len(fill) " divide by length of fill character
+    let nfill = (77 - nspace)/len(fill) " divide by length of fill character
     let cchar = Comment()
-    let lines = [repeat(' ',nspace).cchar.repeat(fill,nfill).cchar,
-             \ repeat(' ',nspace).cchar.' ',
-             \ repeat(' ',nspace).cchar.repeat(fill,nfill).cchar]
+    let lines = [
+     \ repeat(' ', nspace) . cchar . repeat(fill, nfill) . cchar,
+     \ repeat(' ', nspace) . cchar . ' ',
+     \ repeat(' ', nspace) . cchar . repeat(fill, nfill) . cchar
+     \ ]
     normal! k
     call append(line('.'), lines)
     normal! jj$
@@ -1084,14 +1101,14 @@ if PlugActive("nerdcommenter")
   " Arbtirary message above this line, matching indentation level
   function! s:message(...)
     if a:0
-      let message = ' '.a:1
+      let message = ' ' . a:1
     else
       let message = ''
     endif
     let nspace = s:comment_indent()
     let cchar = Comment()
     normal! k
-    call append(line('.'), repeat(' ',nspace).cchar.message)
+    call append(line('.'), repeat(' ', nspace) . cchar . message)
     normal! jj
   endfunction
   " Inline style of format # ---- Hello world! ----
@@ -1099,7 +1116,7 @@ if PlugActive("nerdcommenter")
     let nspace = s:comment_indent()
     let cchar = Comment()
     normal! k
-    call append(line('.'), repeat(' ',nspace).cchar.repeat(' ',a:ndash).repeat('-',a:ndash).'  '.repeat('-',a:ndash))
+    call append(line('.'), repeat(' ', nspace) . cchar . repeat(' ', a:ndash) . repeat('-', a:ndash) . '  ' . repeat('-', a:ndash))
     normal! j^
     call search('- \zs', '', line('.')) " search, and stop on this line (should be same one); no flags
   endfunction
@@ -1108,7 +1125,7 @@ if PlugActive("nerdcommenter")
     let nspace = s:comment_indent()
     let cchar = Comment()
     normal! k
-    call append(line('.'), repeat(' ',nspace).cchar.'  '.cchar)
+    call append(line('.'), repeat(' ', nspace) . cchar . '  ' . cchar)
     normal! j$h
   endfunction
   " Separator of dashes just matching current line length
@@ -1119,14 +1136,14 @@ if PlugActive("nerdcommenter")
       let fill = Comment() " comment character
     endif
     let nspace = s:comment_indent()
-    let ndash = (match(getline('.'), '\s*$')-nspace) " location of last non-whitespace char
+    let ndash = (match(getline('.'), '\s*$') - nspace) " location of last non-whitespace char
     let cchar = Comment()
-    call append(line('.'), repeat(' ',nspace).repeat(fill,ndash))
+    call append(line('.'), repeat(' ', nspace) . repeat(fill, ndash))
   endfunction
   " Docstring
   function! s:docstring(char)
-    let nspace = (s:comment_indent()+&l:tabstop)
-    call append(line('.'), [repeat(' ',nspace).repeat(a:char,3), repeat(' ',nspace), repeat(' ',nspace).repeat(a:char,3)])
+    let nspace = (s:comment_indent() + &l:tabstop)
+    call append(line('.'), [repeat(' ', nspace) . repeat(a:char, 3), repeat(' ', nspace), repeat(' ', nspace) . repeat(a:char, 3)])
     normal! jj$
   endfunction
 
@@ -1340,14 +1357,16 @@ if PlugActive("tabular")
       if getline(searchline) !~# regex " if return value is zero, delete this line
         call add(dlines, [searchline, getline(searchline)])
         let lastline -= 1 " after deletion, the 'last line' of selection has changed
-        exe searchline.'d'
+        exe searchline . 'd'
       else " leave it alone, increment search
         let searchline += 1
       endif
     endwhile
     " Execute tabularize function
     if firstline > lastline
+      echohl WarningMsg
       echom 'Warning: No matches in selection.'
+      echohl None
     else
       exe firstline.','.lastline.'Tabularize '.a:arg
     endif
@@ -1360,89 +1379,89 @@ if PlugActive("tabular")
   " * Note odd concept (see :help args) that -nargs=1 will pass subsequent text, including
   "   whitespace, as single argument, but -nargs=*, et cetera, will aceept multiple arguments delimited by whitespace
   " * Be careful -- make sure to pass <args> in singly quoted string!
-	command! -range -nargs=1 Table <line1>,<line2>call <sid>table(<q-args>)
+  command! -range -nargs=1 Table <line1>,<line2>call <sid>table(<q-args>)
   " NOTE: e.g. for aligning text after colons, input character :\zs; aligns first character after matching preceding regex
   " Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /'.input('Alignment regex: ').'/l1c1<CR>'
-  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /".input('Alignment regex: ').'/l1c1<CR>'
-  " By commas; suitable for diag_table's in models; does not ignore comment characters
-  nnoremap <expr> \, ':Tabularize /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \, ':Table      /,\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
-  " Dictionary, colon on right
-  nnoremap <expr> \D ':Tabularize /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> \D ':Table      /\('.Comment(1).'.*\)\@<!\zs:/l0c1<CR>'
+  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /' . input('Alignment regex: ') . '/l1c1<CR>'
+  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /" . input('Alignment regex: ') . '/l1c1<CR>'
+  " By commas, suitable for diag_table; does not ignore comment characters
+  nnoremap <expr> \, ':Tabularize /,\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \, ':Table      /,\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
   " Dictionary, colon on left
-  nnoremap <expr> \d ':Tabularize /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \d ':Table      /:\('.Comment(1).'.*\)\@<!\zs/l0c1<CR>'
+  nnoremap <expr> \d ':Tabularize /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
+  vnoremap <expr> \d ':Table      /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
+  " Dictionary, colon on right
+  nnoremap <expr> \D ':Tabularize /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
+  vnoremap <expr> \D ':Table      /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
   " Right-align by spaces, considering comments as one 'field'; other words are
   " aligned by space; very hard to ignore comment-only lines here, because we specify text
   " before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  nnoremap <expr> \r ':Tabularize /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> \r ':Table      /^\s*[^\t '.Comment(1).']\+\zs\ /r0l0l0<CR>'
+  nnoremap <expr> \r ':Tabularize /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> \r ':Table      /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
   " As above, but left align
   " See :help non-greedy to see what braces do; it is like *, except instead of matching
   " as many as possible, can match as few as possible in some range;
   " with braces, a minus will mean non-greedy
-  nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\('.Comment(1).'.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
   " Just align by spaces
   " Check out documentation on \@<! atom; difference between that and \@! is that \@<!
   " checks whether something doesn't match *anywhere before* what follows
   " Also the \S has to come before the \(\) atom instead of after for some reason
-  nnoremap <expr> \\ ':Tabularize /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> \\ ':Table      /\S\('.Comment(1).'.*\)\@<!\zs\ /l0<CR>'
-  " Tables
+  nnoremap <expr> \\ ':Tabularize /\S\(' . RegexComment() . '.*\)\@<!\zs\ /l0<CR>'
+  vnoremap <expr> \\ ':Table      /\S\(' . RegexComment() . '.*\)\@<!\zs\ /l0<CR>'
+  " Tables separted by | chars
   nnoremap <expr> \\| ':Tabularize /\|/l1c1<CR>'
   vnoremap <expr> \\| ':Table      /\|/l1c1<CR>'
-  " Case/esac blocks
-  " The bottom pair don't align the double semicolons; just any comments that come after
-  " Note the extra 1 is necessary to add space before comment characters
-  " That regex following the Comment(1) is so tabularize will ignore the common
-  " paramter expansions ${param#*pattern} and ${param##*pattern}
-  " Common for this to come up: e.g. -x=*) x=${1#*=}
-  " asdfda*|asd*) asdfjioajoidfjaosi"* ;; "comment 1S asdfjio *asdfjio*
-  " a|asdfsa) asdjiofjoi""* ;; "coiasdfojiadfj asd asd asdf
-  " asdf) asdjijoiasdfjoi ;;
-  nnoremap <expr> \) ':Tabularize /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
-  vnoremap <expr> \) ':Table      /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
-  nnoremap <expr> \( ':Tabularize /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
-  vnoremap <expr> \( ':Table      /\('.Comment(1).'[^*'.Comment(1).'].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
   " Chained && statements, common in bash
   " Again param expansions are common so don't bother with comment detection this time
   nnoremap <expr> \& ':Tabularize /&&/l1c1<CR>'
   vnoremap <expr> \& ':Table      /&&/l1c1<CR>'
+  " Case/esac blocks
+  " The bottom pair don't align the double semicolons; just any comments that come after
+  " Note the extra 1 is necessary to add space before comment characters
+  " That regex following the RegexComment() is so tabularize will ignore the common
+  " parameter expansions ${param#*pattern} and ${param##*pattern}
+  " Common for this to come up: e.g. -x=*) x=${1#*=}
+  " asdfda*|asd*) asdfjioajoidfjaosi"* ;; "comment 1S asdfjio *asdfjio*
+  " a|asdfsa) asdjiofjoi""* ;; "coiasdfojiadfj asd asd asdf
+  " asdf) asdjijoiasdfjoi ;;
+  nnoremap <expr> \) ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
+  vnoremap <expr> \) ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
+  nnoremap <expr> \( ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
+  vnoremap <expr> \( ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
   " By comment character; ^ is start of line, . is any char, .* is any number, \zs
   " is start match here (must escape backslash), then search for the comment
-  " nnoremap <expr> \C ':Tabularize /^.*\zs'.Comment(1).'/l1<CR>'
-  " vnoremap <expr> \C ':Table      /^.*\zs'.Comment(1).'/l1<CR>'
+  " nnoremap <expr> \C ':Tabularize /^.*\zs' . RegexComment() . '/l1<CR>'
+  " vnoremap <expr> \C ':Table      /^.*\zs' . RegexComment() . '/l1<CR>'
   " By comment character, but ignore comment-only lines
-  nnoremap <expr> \C ':Tabularize /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
-  vnoremap <expr> \C ':Table      /^\s*[^ \t'.Comment(1).'].*\zs'.Comment(1).'/l1<CR>'
+  nnoremap <expr> \C ':Tabularize /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l1<CR>'
+  vnoremap <expr> \C ':Table      /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l1<CR>'
   " Align by the first equals sign either keeping it to the left or not
   " The eaiser to type one (-=) puts equals signs in one column
   " This selects the *first* uncommented equals sign that does not belong to
   " a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
-  nnoremap <expr> \= ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  vnoremap <expr> \= ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  nnoremap <expr> \+ ':Tabularize /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
-  vnoremap <expr> \+ ':Table      /^[^'.Comment(1).']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  nnoremap <expr> \= ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  vnoremap <expr> \= ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
+  nnoremap <expr> \+ ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  vnoremap <expr> \+ ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
 endif
 
 " CTAGS and TAGBAR (requires 'brew install ctags-exuberant')
 augroup ctags
 augroup END
-" Mappings for vim-idetools custom plugin
-nnoremap <silent> <Leader>c :DisplayTags<CR>:redraw!<CR>
-nnoremap <silent> <Leader>C :ReadTags<CR>
+" Mappings for vim-idetools command
+if PlugActive('vim-idetools') || &rtp =~ 'vim-idetools'
+  nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
+endif
 " Next tagbar settings; note some mappings:
-" p jumps to tag under cursor, in code window, but remain in tagbar
-" C-n and C-p browses by top-level tags
-" o toggles the fold under cursor, or current one
+" * p jumps to tag under cursor, in code window, but remain in tagbar
+" * C-n and C-p browses by top-level tags
+" * o toggles the fold under cursor, or current one
 if PlugActive("tagbar")
-  " Custom creations, note the kinds depend on some special language defs in ~/.ctags
-  " For more info, see :help tagbar-extend
+  " Customization, for more info see :help tagbar-extend
   " To list kinds, see :!ctags --list-kinds=<filetype>
-  " The first number is whether to fold by default, second is whether to highlight location
+  " The first number is whether to fold, second is whether to highlight location
   " \ 'r:refs:1:0', "not useful
   " \ 'p:pagerefs:1:0' "not useful
   let g:tagbar_type_tex = {
@@ -1480,7 +1499,6 @@ if PlugActive("tagbar")
   let g:tagbar_expand = 0
   let g:tagbar_autoshowtag = 2 " never ever open tagbar folds automatically, even when opening for first time
   let g:tagbar_foldlevel = 1 " setting to zero will override the 'kinds' fields in below dicts
-  " Mappings
   let g:tagbar_map_openfold = "="
   let g:tagbar_map_closefold = "-"
   let g:tagbar_map_closeallfolds = "_"
@@ -1504,122 +1522,6 @@ if PlugActive("tagbar")
     endif
   endfunction
   nnoremap <silent> <Leader>t :call <sid>tagbarsetup()<CR>
-endif
-
-" Bibtex and Zotero INTEGRATION
-" Requires pybtex and bibtexparser python modules, and unite.vim plugin
-" Simply cannot get bibtex to work always throws error gathering candidates
-" Possible data sources:
-"  abstract,       author, collection, combined,    date, doi,
-"  duplicate_keys, file,   isbn,       publication, key,  key_inner, language,
-"  issue,          notes,  pages,      publisher,   tags, title,     type,
-"  url,            volume, zotero_key
-" NOTE: Set up with macports. By default the +python vim was compiled with
-" is not on path; access with port select --set pip <pip36|python36>. To
-" install module dependencies, use that pip. Can also install most packages
-" with 'port install py36-module_name' but often get error 'no module
-" named pkg_resources'; see this thread: https://stackoverflow.com/a/10538412/4970632
-" NOTE: Citation mode '1' is zotero, '0' is bibtex
-augroup citations
-  au!
-  au BufRead  *.tex,*.bib let b:citation_vim_bibtex_file = '' | let b:citation_vim_bibtex_on = 1 | let b:citation_vim_bibtex_on_prev = 0 | call <sid>citation_maps()
-  au BufEnter *.tex,*.bib let g:citation_vim_bibtex_file = (exists('b:citation_vim_bibtex_file') ? b:citation_vim_bibtex_file : '')
-  au FileType unite call <sid>unite_setup()
-augroup END
-" Apply custom maps
-function! s:unite_setup()
-  imap <buffer> <CR> <Plug>(unite_do_default_action)a
-  nmap <buffer> q <Plug>(unite_exit)a
-  imap <buffer> q i_<Plug>(unite_exit)a
-  imap <buffer> <C-g> i_<Plug>(unite_exit)a
-  nmap <buffer> <C-g> <Plug>(unite_exit)a
-  imap <buffer> <Tab> i_<Plug>(unite_choose_action)a
-  nmap <buffer> <Tab> <Plug>(unite_choose_action)a
-endfunction
-if PlugActive('unite.vim')
-  " Fuzzy matching
-  " call unite#filters#matcher_default#use(['matcher_fuzzy'])
-  call unite#filters#sorter_default#use(['sorter_rank'])
-  if PlugActive('citation.vim')
-    " Settings
-    let g:unite_data_directory = '~/.unite'
-    let g:citation_vim_cache_path = '~/.unite'
-    let g:citation_vim_outer_prefix = '\cite{'
-    let g:citation_vim_inner_prefix = ''
-    let g:citation_vim_suffix = '}'
-    let g:citation_vim_et_al_limit = 3 " show et al if more than 2 authors
-    let g:citation_vim_zotero_path = '~/Zotero' " location of .sqlite file
-    let g:citation_vim_zotero_version = 5
-    " Searching
-    " function! s:cite_zotero(suffix, opts)
-    nnoremap <Leader>u :let b:citation_vim_mode = b:citation_vim_mode-1<CR>
-    function! s:cite(suffix, opts)
-      if b:citation_vim_bibtex_on
-        if !b:citation_vim_bibtex_on_prev
-          echom "Deleting cache."
-          let b:citation_vim_bibtex_file = ''
-          call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
-        endif
-        if b:citation_vim_bibtex_file == ''
-          let b:citation_vim_bibtex_file = s:bibfile()
-          let g:citation_vim_bibtex_file = b:citation_vim_bibtex_file
-        endif
-        let b:citation_vim_bibtex_on_prev = 1
-        let g:citation_vim_outer_prefix = '\cite'.a:suffix.'{'
-      else
-        if b:citation_vim_bibtex_on_prev
-          echom "Deleting cache."
-          call delete(expand(g:citation_vim_cache_path.'/citation_vim_cache'))
-        endif
-        let b:citation_vim_bibtex_on_prev = 0
-        let g:citation_vim_outer_prefix = '\cite'.a:suffix.'{'
-      endif
-      call unite#helper#call_unite('Unite', a:opts, line('.'), line('.'))
-      normal! a
-      return ''
-    endfunction
-    " Ask user to select bibliography files from list
-    " Requires special completion function for selecting bibfiles
-    function! BibFiles(A,L,P)
-      let names = []
-      for ref in b:refs
-        if ref =~? '^'.a:A " if what user typed so far matches name
-          call add(names, ref)
-        endif
-      endfor
-      return names
-    endfunction
-    function! s:bibfile()
-      let cwd = expand('%:h')
-      let b:refs = split(glob(cwd.'/*.bib'),"\n")
-      if len(b:refs) == 0
-        echom 'Warning: No .bib files found in file directory.'
-        return ''
-      elseif len(b:refs) == 1
-        let ref = b:refs[0]
-      else
-        while 1
-          let ref = input('Select bibliography (tab to reveal options): ', '', 'customlist,BibFiles')
-          if In(b:refs,ref)
-            break
-          endif
-          echom ' (invalid name)'
-        endwhile
-      endif
-      return ref
-    endfunction
-    " Mappings
-    " NOTE: For more default mappings, see zotero.vim documentation
-    " NOTE: Do not use start-insert option, need map to declare special exit map
-    " NOTE: Resume option starts with the previous input
-    function! s:citation_maps()
-      let b:cite_opts = '-start-insert -buffer-name=citation -ignorecase -default-action=append citation/key'
-      inoremap <silent> <buffer> <C-t>c <Esc>:call <sid>cite('', b:cite_opts)<CR>
-      inoremap <silent> <buffer> <C-t>t <Esc>:call <sid>cite('t', b:cite_opts)<CR>
-      inoremap <silent> <buffer> <C-t>p <Esc>:call <sid>cite('p', b:cite_opts)<CR>
-      inoremap <silent> <buffer> <C-t>n <Esc>:call <sid>cite('num', b:cite_opts)<CR>
-    endfunction
-  endif
 endif
 
 "##############################################################################
@@ -1664,52 +1566,61 @@ silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
 " OPENING FILES
-" Driver function that checks if user FZF selection is directory and keeps
-" opening FZF windows until user selects a file.
 augroup open
 augroup END
-function! s:fzfopen_run(path)
-  " Initial stuff
-  if a:path == ''
-    let g:fzfopen_next = '.'
-  else
-    let g:fzfopen_next = a:path
-  endif
-  let g:fzfopen_next = substitute(fnamemodify(g:fzfopen_next, ':p'), '/$', '', '')
-  if !isdirectory(g:fzfopen_next) " create new file or open current one!
-    exe 'tabe '.g:fzfopen_next
-    return
-  endif
-  " Set global variables
-  while isdirectory(g:fzfopen_next)
-    let g:fzfopen_prev = g:fzfopen_next
-    call fzf#run({'source':s:fzfopen_files(g:fzfopen_next), 'options':'--no-sort', 'sink':function('s:fzfopen_select'), 'down':'~30%'})
-    if g:fzfopen_prev == g:fzfopen_next " do nothing, user selected nothing
-      return
-    endif
-  endwhile
-  exe 'tabe '.g:fzfopen_next
-endfunction
-" Note q-args evaluates to empty string if 'no args' were passed!
-command! -nargs=? -complete=file Open call <sid>fzfopen_run(<q-args>)
 " Function that generates list of files in directory
 function! s:fzfopen_files(path)
   let folder = substitute(fnamemodify(a:path, ':p'), '/$', '', '') " absolute path
-  let files = split(glob(folder.'/*'),'\n') + split(glob(folder.'/.?*'),'\n') " the ? ignores the current directory '.'
-  return map(files, '"'.fnamemodify(folder, ':t').'/".fnamemodify(v:val, ":t")')
+  let files = split(glob(folder . '/*'), '\n') + split(glob(folder . '/.?*'),'\n') " the ? ignores the current directory '.'
+  let files = map(files, '"' . fnamemodify(folder, ':t') . '/" . fnamemodify(v:val, ":t")')
+  call insert(files, '[new file]', 0) " highest priority
+  return files
 endfunction
-" Set current file to 'previous file' (i.e. the directory) plus selected file basename
-" TODO: Fix fzf in terminal to add the previous direcotry as an option
-function! s:fzfopen_select(item)
-  if a:item!=''
-    let tail = fnamemodify(a:item, ':t')
-    if tail == '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
-      let g:fzfopen_next = fnamemodify(g:fzfopen_next, ':h') " head of current directory
-    else
-      let g:fzfopen_next = g:fzfopen_next.'/'.tail
-    endif
+" Function that checks if user FZF selection is directory and keeps opening
+" FZF windows until user selects a file.
+function! s:fzfopen_run(path)
+  if a:path == ''
+    let path = '.'
+  else
+    let path = a:path
   endif
+  let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
+  let path_orig = path
+  while isdirectory(path)
+    let pprev = path
+    let items = fzf#run({'source':s:fzfopen_files(path), 'options':'--no-sort', 'down':'~30%'})
+    " User cancelled or entered invalid string
+    if !len(items) " length of list
+      let path = ''
+      break
+    endif
+    " Build back selection into path
+    let item = items[0]
+    if item == '[new file]'
+      let item = input('Enter new filename (' . path . '): ', '', 'customlist,NullList')
+      if item == ''
+        let path = ''
+      else
+        let path = path . '/' . item
+      endif
+      break
+    else
+      let tail = fnamemodify(item, ':t')
+      if tail == '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+        let path = fnamemodify(path, ':h') " head of current directory
+      else
+        let path = path . '/' . tail
+      endif
+    endif
+  endwhile
+  " Open file or cancel operation
+  if path != ''
+    exe 'tabe ' . path
+  endif
+  return
 endfunction
+" Note q-args evaluates to empty string if 'no args' were passed!
+command! -nargs=? -complete=file Open call <sid>fzfopen_run(<q-args>)
 " Maps for opening file in current directory, and opening file in some input directory
 nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 nnoremap <C-o> :Open 
@@ -1725,7 +1636,7 @@ noremap gt <Nop>
 noremap gT <Nop>
 " Move current tab to the exact place of tab number N
 function! s:tabmove(n)
-  if a:n == tabpagenr() || a:n == 0
+  if a:n == tabpagenr() || a:n == 0 || a:n == ''
     return
   elseif a:n > tabpagenr() && version[0] > 7
     echo 'Moving tab...'
@@ -1765,7 +1676,7 @@ function! s:tabjump(item)
 endfunction
 " Function mappings
 nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tabselect(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
-nnoremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: '))<CR>
+nnoremap <silent> <Tab>m :call <sid>tabmove(input('Move tab: ', '', 'customlist,NullList'))<CR>
 nnoremap <silent> <Tab>> :call <sid>tabmove(eval(tabpagenr()+1))<CR>
 nnoremap <silent> <Tab>< :call <sid>tabmove(eval(tabpagenr()-1))<CR>
 " Add new tab changing
@@ -1821,7 +1732,7 @@ augroup simple
   au BufEnter * let b:recording = 0
   au FileType qf,log,diff,man,fugitive,gitcommit,vim-plug call <sid>popup_setup()
   au FileType help call <sid>help_setup()
-  au CmdwinEnter * call s:cmdwin_setup()
+  au CmdwinEnter * call <sid>cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
 augroup END
 " For popup windows
@@ -1847,13 +1758,14 @@ function! s:help_setup()
     nnoremap <nowait> <buffer> <silent> ]] :<C-u>tag<CR>
   endif
 endfunction
-" For command windows
+" For command windows, make sure local maps work
 function! s:cmdwin_setup()
   silent! unmap <CR>
   silent! unmap <C-c>
   nnoremap <buffer> <silent> q :q<CR>
-  nnoremap  <buffer> <C-z> <C-c><CR>
+  nnoremap <buffer> <C-z> <C-c><CR>
   inoremap <buffer> <C-z> <C-c><CR>
+  inoremap <buffer> <expr> <CR> ""
   setlocal nonumber norelativenumber nolist laststatus=0
 endfunction
 " Vim command windows
@@ -1865,10 +1777,10 @@ nnoremap <Leader>? q?
 nnoremap <Leader>h :vert help 
 nnoremap <Leader>H :Help<CR>
 " Man pages
-nnoremap <silent> <expr> <Leader>M ':!clear; search='.input('Get man info: ').'; '
+nnoremap <silent> <expr> <Leader>M ':!clear; search=' . input('Get man info: ', '', 'customlist,NullList') . '; '
   \.'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
 " Result of 'cmd --help', pipe output into less for better interaction
-nnoremap <silent> <expr> <Leader>m ':!clear; search='.input('Get help info: ').'; '
+nnoremap <silent> <expr> <Leader>m ':!clear; search=' . input('Get help info: ', '', 'customlist,NullList') . '; '
   \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
 
@@ -1916,7 +1828,7 @@ function! s:pastetoggle()
   endif
   return ''
 endfunction
-nnoremap <expr> <silent> cV <sid>pastetoggle()
+nnoremap <expr> <silent> <Leader>v <sid>pastetoggle()
 command! PasteToggle call <sid>pastetoggle()
 " Copymode to eliminate special chars during copy
 " See :help &l:; this gives the local value of setting
@@ -1943,7 +1855,7 @@ function! s:copytoggle(...)
     echo "Copy mode disabled."
   endif
 endfunction
-nnoremap cC :call <sid>copytoggle()<CR>
+nnoremap <Leader>c :call <sid>copytoggle()<CR>
 command! -nargs=? CopyToggle call <sid>copytoggle(<args>)
 
 " SEARCHING AND FIND-REPLACE STUFF
@@ -1959,9 +1871,10 @@ augroup END
 " Delete commented text
 " WARNING: For some reason search screws up when using \(\) groups, maybe
 " because first parts of match are identical?
-noremap <expr> <silent> \c (mode() =~ '^n' ? 'V' : '').':<C-u>'
-    \."'<,'>".'s/^\s*'.Comment().'.*$\n//ge \| '
-    \."'<,'>".'s/\s\s*'.Comment().'.*$//ge \| noh<CR>'
+noremap <expr> <silent> \c ''
+    \ . (mode() =~ '^n' ? 'V' : '') . ':<C-u>'
+    \ . "'<,'>" . 's/^\s*' . Comment() . '.*$\n//ge \| '
+    \ . "'<,'>" . 's/\s\s*' . Comment() . '.*$//ge \| noh<CR>'
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
 noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
@@ -1971,7 +1884,7 @@ noremap <silent> \W :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeez
 noremap <silent> \e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>
 noremap <silent> \E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g \| noh<CR>:echom "Squeezed consecutive newlines."<CR>
 " Replace tabs with spaces
-noremap <expr> <silent> \<Tab> ':s/\t/' .repeat(' ',&tabstop).'/g \| noh<CR>'
+noremap <expr> <silent> \<Tab> ':s/\t/'  . repeat(' ', &tabstop) . '/g \| noh<CR>'
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
@@ -2163,7 +2076,8 @@ highlight Terminal ctermbg=NONE ctermfg=NONE
 " USEFUL COMMANDS
 " Highlight group under cursor
 function! s:group()
-  echo "actual <" . synIDattr(synID(line("."), col("."), 1), "name") . "> "
+  echo ""
+   \ . "actual <" . synIDattr(synID(line("."), col("."), 1), "name") . "> "
    \ . "appears <" . synIDattr(synID(line("."), col("."), 0), "name") . "> "
    \ . "group <" . synIDattr(synIDtrans(synID(line("."), col("."), 1)), "name") . ">"
 endfunction
@@ -2184,7 +2098,7 @@ function! s:concealtoggle(...)
   else
     let conceal_on = (&conceallevel ? 0 : 2) " turn off and on
   endif
-  exe 'set conceallevel='.(conceal_on ? 2 : 0)
+  exe 'set conceallevel=' . (conceal_on ? 2 : 0)
 endfunction
 command! -nargs=? ConcealToggle call <sid>concealtoggle(<args>)
 " Toggling tabs on and off
