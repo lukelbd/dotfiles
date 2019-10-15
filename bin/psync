@@ -2,16 +2,19 @@
 #-----------------------------------------------------------------------------#
 # Sync a local directory with files on SD card
 # This function will only modify files on the SD card, never the local
-# directory; beware problem that files are 'modified' when transferred to
+# directory. Beware problem that files are 'modified' when transferred to
 # SD card, so cannot check dates on them.
 #-----------------------------------------------------------------------------#
 shopt -u nullglob
-# cp=cp # can cause errors; see: https://github.com/osxfuse/osxfuse/issues/363
+raise() {
+  echo "Error: $@"
+  exit 1
+}
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
 sd_folder="$HOME/phone/Music"
 mb_folder="$HOME/playlist"
 sync_modified=true
-! [ -d "$sd_folder" ] && echo "Error: SD card not found." && exit 1
+[ -d "$sd_folder" ] || echo "SD card not found."
 echo "SD playlist: $sd_folder"
 echo "MB playlist: $mb_folder"
 
@@ -33,7 +36,7 @@ for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
     copied=true # record
     echo "New local file: $file. Copying to SD..."
     $cp "$path" "$sd_folder/$file"
-    [ $? -ne 0 ] && echo "Error: Copy failed." && exit 1
+    [ $? -eq 0 ] || raise "Copy failed."
   # Replace old file of same name with modified one
   elif $sync_modified; then
     if ! [ -r "$mb_folder/sd.log" ]; then
@@ -54,12 +57,12 @@ for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
     else
       modified=false # not modified since last copied
     fi
-    $modified && {
+    if $modified; then
       echo "Modified local file \"$file\" since previous sync."
       updated=true
       $cp "$path" "$sd_folder/$file"
-      [ $? -ne 0 ] && echo "Error: Copy failed." && exit 1
-      }
+      [ $? -eq 0 ] || raise "Copy failed."
+    fi
   fi
 done
 $copied  || echo "No new files found."

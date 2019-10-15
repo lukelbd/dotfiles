@@ -1034,10 +1034,10 @@ endif
 
 " NERDTREE
 " Most important commands: 'o' to view contents, 'u' to move up directory,
-" 't' open in new tab, 'T' open in new tab but retain focus, 'i' open file in 
-" split window below, 's' open file in new split window VERTICAL, 'O' recursive open, 
+" 't' open in new tab, 'T' open in new tab but retain focus, 'i' open file in
+" split window below, 's' open file in new split window VERTICAL, 'O' recursive open,
 " 'x' close current nodes parent, 'X' recursive cose, 'p' jump
-" to current nodes parent, 'P' jump to root node, 'K' jump to first file in 
+" to current nodes parent, 'P' jump to root node, 'K' jump to first file in
 " current tree, 'J' jump to last file in current tree, <C-j> <C-k> scroll direct children
 " of current directory, 'C' change tree root to selected dir, 'u' move up, 'U' move up
 " and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
@@ -1078,7 +1078,7 @@ if PlugActive('syntastic')
     return 0
   endfunction
   function! s:cfnext(count, list, ...) abort
-    let reverse = a:0 && a:1 
+    let reverse = a:0 && a:1
     let func = 'get' . a:list . 'list'
     let params = a:list == 'loc' ? [0] : []
     let cmd = a:list == 'loc' ? 'll' : 'cc'
@@ -1086,7 +1086,7 @@ if PlugActive('syntastic')
     if len(items) == 0
       return 'echoerr ' . string('E42: No Errors')
     endif
-    " Build up list of loc dictionaries 
+    " Build up list of loc dictionaries
     call map(items, 'extend(v:val, {"idx": v:key + 1})')
     if reverse
       call reverse(items)
@@ -1654,8 +1654,8 @@ nnoremap <Tab>; <C-w><C-p>
 nnoremap <Tab>- :split 
 nnoremap <Tab>\ :vsplit 
 " Center the cursor in window
+" nnoremap <Tab>0 M
 nnoremap <Tab>0 mzz.`z
-nnoremap <Tab>0 M
 " Moving screen up/down, left/right
 nnoremap <Tab>i zt
 nnoremap <Tab>o zb
@@ -1894,7 +1894,7 @@ nnoremap zC zM
 "   probably want them to look like comment characters
 " * The url regex was copied from the one used for .tmux.conf
 " First coloring for ***GUI Vim versions***
-" See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/ 
+" See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
 if has('gui_running')
   " Declare colorscheme
   " gruvbox, kolor, dracula, onedark, molokai, yowish, tomorrow-night

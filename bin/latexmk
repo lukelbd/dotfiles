@@ -1,43 +1,49 @@
 #!/usr/bin/env bash
-usage='latexmk [OPTIONS] FILE'
-doc='
-This script compiles LaTeX documents similar to latexmk but
-with custom features and designed for use with vim.
+usage="latexmk [OPTIONS] FILE"
+doc="
+This script compiles LaTeX documents similar to latexmk but with custom
+features and designed for use with vim. Opens the resulting typeset file in a
+PDF viewer then brings the terminal from which this script was invoked back to
+the foreground. This is perfect for split-window workflow, with left terminal
+on left side of screen and PDF viewer on right side.
 
-New features compared to native latexmk?
+This script never *ever* generates random extra files -- it just queries
+files present in directory before and after compilation, then removes the
+new ones excepting 'pdf' and 'bbl' files. This is implemented with an EXIT
+signal trap, and so works even if compilation is interrupted. Also, if you
+add custom style and theme files to a '~/latex' folder, this script will try
+to copy relevant files to the working directory when they are not found in
+the TeXLive distribution with 'kpsewhich'.
 
-  * Pass -d or --diff to run latexdiff on most "recent" file. Requires files
-    in your directory are otherwise identically named, but end with unique
-    date strings YYYY-MM.tex or YYYY-MM-DD.tex
-  * Pass -w or --word to automatically convert latex to the Microsoft Word
-    format using pandoc. Useful for colaborating with peers that do not use
-    latex.
+
+Usage
+
+  $usage
+
+Positional arguments
+
+  FILE
+
+Optional arguments
+
+  -h|--help   Print this message.
+  -d|--diff   Run latexdiff on most 'recent' file. Requires files in your
+              directory are otherwise identically named, but end with unique
+              date strings YYYY-MM.tex or YYYY-MM-DD.tex
+  -w|--word   Pass -w or --word to automatically convert latex to the Microsoft
+              Word format using pandoc. Useful for colaborating with peers that
+              do not use latex.
+
+Additional features
+
   * Never *ever* generate random extra files again -- this script just queries
     files present in directory before and after compilation, then removes
     the new ones. This is implemented with an EXIT signal trap, and so works
     even if compilation is interrupted.
-  * Add custom style and theme files to a "~/latex" folder, and this script
+  * If you add custom style and theme files to a '~/latex' folder, this script
     will try to copy relevant files to the working directory when they are
-    not found in the TeXLive distribution with "kpsewhich".
-  * This script opens the resulting typeset file in a PDF viewer then brings
-    the terminal from which this script was invoked back to the foreground.
-    This is perfect for split-window workflow, with left terminal on left side
-    of screen and PDF viewer on right side.
-
-Why do we usually need 4 compilation steps?
-
-  1. At the first `latex` run, all `\cite{...}` arguments are written in the
-     file `document.aux`.
-  2. At the `bibtex` run, this information is taken by bibtex and the relevant
-     entries are put into the `.bbl` file, sorted either alphabetically or by
-     citation order (sometimes called "unsorted") and formatted according to
-     the instructions provided by the bibliography style that'\''s in use.
-  3. At the next run of `latex`, the `.bbl` file is included at the point
-     the `\bibliography` instructions, and the correct labels for `\cite{...}`
-     commands are written in `.aux` file.
-  4. Only at the last run, `latex` knows what the correct labels are and
-     includes them in the document.
-'
+    not found in the TeXLive distribution with 'kpsewhich'.
+"
 # Function for raising error
 raise() {
   echo "Usage: $usage"

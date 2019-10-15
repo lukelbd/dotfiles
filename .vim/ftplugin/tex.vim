@@ -72,20 +72,20 @@ nnoremap <buffer> <silent> \X :%s/^\s*\(abstract\\|language\\|file\\|doi\\|url\\
 " with 'port install py36-module_name' but often get error 'no module
 " named pkg_resources'; see this thread: https://stackoverflow.com/a/10538412/4970632
 if &rtp =~ 'unite.vim' && &rtp =~ 'citation.vim'
-  " Global and local settings
+  " Global settings
+  " Local settings are applied as global variables before calling cite command,
+  " and note they are always defined since this is an ftplugin file!
+  let b:citation_vim_mode = 'bibtex'
+  let b:citation_vim_bibtex_file = ''
   let g:unite_data_directory = '~/.unite'
   let g:citation_vim_cache_path = '~/.unite'
-  let g:citation_vim_outer_prefix = '\cite{'
+  let g:citation_vim_outer_prefix = ''
   let g:citation_vim_inner_prefix = ''
   let g:citation_vim_suffix = '}'
   let g:citation_vim_et_al_limit = 3 " show et al if more than 2 authors
   let g:citation_vim_zotero_path = '~/Zotero' " location of .sqlite file
   let g:citation_vim_zotero_version = 5
-  let g:citation_vim_bibtex_file = (exists('b:citation_vim_bibtex_file') ? b:citation_vim_bibtex_file : '')
   let g:citation_vim_opts = '-start-insert -buffer-name=citation -ignorecase -default-action=append citation/key'
-  " Pseudo local settings that are applied as global variables before calling cite command
-  let b:citation_vim_mode = 'bibtex'
-  let b:citation_vim_bibtex_file = ''
 
   " Where to search for stuff
   " NOTE: This tries to allow buffer-local settings
