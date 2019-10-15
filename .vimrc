@@ -205,31 +205,21 @@ inoremap <C-x> <Nop>
 nnoremap <C-c> <Nop>
 nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
-" Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
-noremap <C-n> g;
-noremap <F4> g,
-" Jump to last jump
-noremap <C-h> <C-o>
-noremap <C-l> <C-i>
-noremap <Left> <C-o>
-noremap <Right> <C-i>
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
-noremap <Leader>; :<C-u>RemoveHighlights<CR>
-noremap <expr> <F6> "`" . nr2char(97+v:count)
-noremap <expr> ; 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
+nnoremap <Leader>; :<C-u>RemoveHighlights<CR>
+nnoremap <expr> <F6> "`" . nr2char(97+v:count)
+nnoremap <expr> ; 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 " Reserve lower case q for quitting popup windows
-noremap q <Nop>
+nnoremap q <Nop>
 " Record macro by pressing Q, the escapes prevent q from triggerering
-noremap @ <Nop>
-noremap , @a
-noremap <silent> <expr> Q b:recording ?
+nnoremap @ <Nop>
+nnoremap , @a
+nnoremap <silent> <expr> Q b:recording ?
   \ 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
 " Redo map to capital U
+nnoremap <C-r> <Nop>
 nnoremap U <C-r>
-" Maps for throwaaway and clipboard register
-noremap ' "_
-noremap " "*
 " Maps for inserting blank lines
 nnoremap <silent> ` :call append(line('.'),'')<CR>
 nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
@@ -250,9 +240,6 @@ nnoremap dL mzi<CR><Esc>`z
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o ox<BS>
 nnoremap O Ox<BS>
-" Never save single-character deletions to any register
-nnoremap x "_x
-nnoremap X "_X
 " Paste from the nth previously deleted or changed text
 " Use 'yp' to paste last yanked, unchanged text, because cannot use zero
 nnoremap yp "0p
@@ -300,6 +287,20 @@ for s:pair in ['r[', 'a<', 'c{']
   exe 'onoremap a' . s:pair[0] . ' a' . s:pair[1]
   exe 'xnoremap a' . s:pair[0] . ' a' . s:pair[1]
 endfor
+" Never save single-character deletions to any register
+noremap x "_x
+noremap X "_X
+" Maps for throwaaway and clipboard register
+noremap ' "_
+noremap " "*
+" Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
+noremap <C-n> g;
+noremap <F4> g,
+" Jump to last jump
+noremap <C-h> <C-o>
+noremap <C-l> <C-i>
+noremap <Left> <C-o>
+noremap <Right> <C-i>
 
 " POPUP MENU RELATED MAPS
 " Count number of tabs in popup menu so our position is always known

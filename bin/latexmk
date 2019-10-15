@@ -140,9 +140,10 @@ run() {
     else
       cat=errfilter
     fi
-    echo "$res" | $cat
+    echo "$res" | $cat | sed 's/^/  /'
   fi
 }
+
 
 # First if GIF/animation in file, need to change from Skim to compatible viewer
 nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
@@ -263,20 +264,20 @@ case $latex in
   lualatex) stylized=LuaLaTeX ;;
   *) raise "Unknown compiler \"$latex\"." ;;
 esac
-echo "Running with $stylized"
+echo 'Running with '"${stylized}..."
 # Aux file
 # WARNING: To keep exit code from pdflatex, pipe later on
-echo "Generating aux file" # maybe just need to generate glossary!
+echo 'Generating aux file...' # maybe just need to generate glossary!
 run 0 $latex -draftmode $flags "$filestem"
 # Bibliography
 if $bibliography; then
-  echo "Generating bibliography"
+  echo 'Generating bibliography...'
   run 0 $bibtex "$filestem"
-  echo "Incorporating bbl file"
+  echo 'Incorporating bbl file...'
   run 0 $latex -draftmode $flags "$filestem"
 fi
 # Final run
-echo "Final pass"
+echo 'Generating PDF...'
 run 1 $latex $flags "$filestem"
 [ -r "$filestem.pdf" ] || raise "PDF not produced."
 
