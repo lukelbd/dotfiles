@@ -27,6 +27,9 @@ Positional arguments
 Optional arguments
 
   -h|--help   Print this message.
+  -r|--raw    Print raw, unfiltered error messages. By default this script
+              filters and parses the latex engine output so it is much easier
+              to peruse.
   -d|--diff   Run latexdiff on most 'recent' file. Requires files in your
               directory are otherwise identically named, but end with unique
               date strings YYYY-MM.tex or YYYY-MM-DD.tex
@@ -68,6 +71,7 @@ cleanup() {
 # Parse args
 trap "cleanup" EXIT # remove files on exit or interruption!
 shopt -s nullglob # glob-expand into zero entries
+raw=false
 latex=pdflatex    # by default use pdflatex
 bibtex=bibtex     # for compiling bibliographies
 texdiff=false     # get difference pdf?
@@ -75,6 +79,7 @@ tex2docx=false    # option
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help) echo "$doc" && exit 0 ;;
+    -r|--raw) raw=true ;;
     -d|--diff) texdiff=true ;;
     -w|--word) tex2docx=true ;;
     [^-]*)
@@ -111,12 +116,33 @@ filestem="${filename%.tex}" # simple
 #------------------------------------------------------------------------------#
 # Get compile options from LaTeX commands
 #------------------------------------------------------------------------------#
-# Helper functions
+# Ignore comments
 # TODO: Maybe awk is better?
-nocomments() { cat "$1" | grep -o '^[^%]*'; } # ignore comments
-inbraces() { cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' '; } # get content inside braces
-errfilter() { cat - | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
-  | grep -A2 '^$' | sed '/^$/d'; } # show only error messages
+nocomments() {
+  cat "$1" | grep -o '^[^%]*'
+}
+# Get content inside braces
+inbraces() {
+  cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' ' '
+}
+# Show only error messages
+errfilter() {
+  cat - | sed -E '/^! |^l\./!d' | sed $'s/^! /\\\n/g' \
+    | grep -A2 '^$' | sed '/^$/d'
+}
+# Run latex comand, first arg is 1 or 0, indicates whether to always print message
+run() {
+  local res cat
+  res=$("${@:2}" 2>&1)
+  if [ $? -ne 0 ] || [ $1 -eq 1 ]; then
+    if $raw || [[ "${@:2}" =~ "bibtex" ]]; then
+      cat=cat
+    else
+      cat=errfilter
+    fi
+    echo "$res" | $cat
+  fi
+}
 
 # First if GIF/animation in file, need to change from Skim to compatible viewer
 nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
@@ -241,21 +267,17 @@ echo "Running with $stylized"
 # Aux file
 # WARNING: To keep exit code from pdflatex, pipe later on
 echo "Generating aux file" # maybe just need to generate glossary!
-result=$($latex -draftmode $flags "$filestem")
-[ $? -ne 0 ] && echo "Warning: Non-zero exit code." && echo "$result" | errfilter
+run 0 $latex -draftmode $flags "$filestem"
 # Bibliography
 if $bibliography; then
   echo "Generating bibliography"
-  result=$($bibtex "$filestem" 2>&1)
-  [ $? -ne 0 ] && echo "Warning: Non-zero exit code." && echo "$result" | cat
+  run 0 $bibtex "$filestem"
   echo "Incorporating bbl file"
-  result=$($latex -draftmode $flags "$filestem")
-  [ $? -ne 0 ] && echo "Warning: Non-zero exit code." && echo "$result" | errfilter
+  run 0 $latex -draftmode $flags "$filestem"
 fi
 # Final run
 echo "Final pass"
-$latex $flags "$filestem" | errfilter
-[ $? -ne 0 ] && echo "Warning: Non-zero exit code."
+run 1 $latex $flags "$filestem"
 [ -r "$filestem.pdf" ] || raise "PDF not produced."
 
 # Difference-LaTeX file, with track changes
