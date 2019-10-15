@@ -13,12 +13,11 @@ map prefixes.
 | Prefix | Description |
 | ---- | ---- |
 | `<Leader>` | Normal mode. Used for miscellaneous and complex tasks. Mapped to `<Space>`. |
-| `\` | Normal mode. Used as an alternate leader for complex regex replacements and tabular alignment. |
+| `\` | Normal mode. Used for complex regex replacements and tabular alignment. |
 | `c` | Normal mode. Used for toggling comments and inserting comment headers. |
 | `g` | Normal mode. Used for git-gutter commands and other git things. |
 | `<Tab>` | Normal mode. Used for window and tab management and resizing. |
-| `<C-o>`, `<C-p>` | Insert mode. Used for inserting LaTeX citations. |
-| `<C-s>`, `<C-z>` | Insert mode. Used for surrounding cursor with delimiters and inserting snippets or symbols. |
+| `<C-b>`, `<C-s>`, `<C-z>` | Insert mode. Used for inserting LaTeX citations, surrounding the cursor with delimiters, and inserting symbols. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
 
 Also check out my repositories starting with `vim-` for some custom plugins.
 

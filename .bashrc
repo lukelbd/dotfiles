@@ -160,7 +160,7 @@ fi
 
 # Access custom executables, custom git projects
 # No longer will keep random executables loose in homre directory; put everything here
-export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$HOME/vim-textools/bin:$PATH"
+export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$HOME/vim-textools:$PATH"
 
 # Homebrew, save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
