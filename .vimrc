@@ -7,6 +7,7 @@
 "     F2: 1b 4f 51 (Ctrl-.)
 "     F3: 1b 4f 52 (Ctrl-i)
 "     F4: 1b 4f 53 (Ctrl-m)
+" Previously used the below but no longer
 "     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
 "     F6: 1b 5b 31 37 7e (Ctrl-;)
 " Also use Karabiner 'map Ctrl-j/k/h/l to arrow keys', so be aware that if
@@ -82,7 +83,7 @@ inoremap <silent> <expr> <Delete> <sid>forward_delete()
 set display=lastline " displays as much of wrapped lastline as possible;
 let &breakat = " 	!*-+;:,./?" " break at single instances of several characters
 let g:set_overrides = 'linebreak wrapmargin=0 textwidth=0 formatoptions=lroj'
-augroup globals
+augroup set_overrides
   au!
   au BufEnter * exe 'setlocal ' . g:set_overrides
 augroup END
@@ -90,7 +91,7 @@ exe 'setlocal ' . g:set_overrides
 
 " Escape repair, needed when we allow h/l to change line number
 set whichwrap=[,],<,>,h,l " <> = left/right insert, [] = left/right normal mode
-augroup escapefix
+augroup escape_fix
   au!
   au InsertLeave * normal! `^
 augroup END
@@ -137,8 +138,8 @@ if mapcheck('<Esc>', 'n') != ''
   endfor
 endif
 
-" Suppress all mappings with certain prefix
-" Note that <C-b> prefix is used for citation inserts
+" Suppress all prefix mappings initially so that we avoid accidental actions
+" due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
 function! Suppress(prefix, mode)
   let c = nr2char(getchar())
   if maparg(a:prefix . c, a:mode) != ''
@@ -148,12 +149,13 @@ function! Suppress(prefix, mode)
   endif
 endfunction
 for s:pair in [
-  \ ['n', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-b>']
+  \ ['n', '<Leader>'], ['v', '<Leader>'], ['n', '\'], ['v', '\'], ['n', ';'],
+  \ ['v', '<C-s>'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-b>']
   \ ]
   let s:mode = s:pair[0]
   let s:char = s:pair[1]
-  if mapcheck(s:char) == ''
-    exe "nmap <expr> " . s:char . " Suppress('" . s:char . "', '" . s:mode . "')"
+  if mapcheck(s:char, s:mode) == ''
+    exe s:mode . "map <expr> " . s:char . " Suppress('" . s:char . "', '" . s:mode . "')"
   endif
 endfor
 
@@ -184,6 +186,33 @@ endfunction
 command! -nargs=? TabToggle call s:tab_toggle(<args>)
 nnoremap <Leader><Tab> :TabToggle<CR>
 
+" Navigation, jump between blocks similar to ]] and [[
+" TODO: Integrate tags plugin with vim so we can use ctrl-]
+" nnoremap <CR> <C-]>
+function! s:search_block(regex, forward)
+  let lnum = line('.')
+  let lnum_orig = lnum
+  while match(getline(lnum), a:regex) != -1
+    if lnum == 1 && !a:forward
+      let lnum = line('$')
+    elseif lnum == line('$') && a:forward
+      let lnum = 1
+    else
+      let lnum = lnum + (a:forward ? 1 : -1)
+    endif
+    if lnum == lnum_orig " entire file matches regex
+      break
+    endif
+  endwhile
+  let flags = (a:forward ? 'w' : 'bw') " enable wrapping
+  exe lnum
+  call search(a:regex, flags) " jumps to next match too
+endfunction
+noremap <silent> [c :call <sid>search_block('^\ze\s*' . Comment() . '.*$', 0)<CR>
+noremap <silent> ]c :call <sid>search_block('^\ze\s*' . Comment() . '.*$', 1)<CR>
+noremap <silent> [e :call <sid>search_block('^\ze\s*$', 0)<CR>
+noremap <silent> ]e :call <sid>search_block('^\ze\s*$', 1)<CR>
+
 " CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
 " Disable keys
 noremap <CR> <Nop>
@@ -209,9 +238,9 @@ nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
-nnoremap <Leader>; :<C-u>RemoveHighlights<CR>
-nnoremap <expr> <F6> "`" . nr2char(97+v:count)
-nnoremap <expr> ; 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
+nnoremap <Leader>' :<C-u>RemoveHighlights<CR>
+nnoremap <expr> ' "`" . nr2char(97+v:count)
+nnoremap <expr> " 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 " Reserve lower case q for quitting popup windows
 nnoremap q <Nop>
 " Record macro by pressing Q, the escapes prevent q from triggerering
@@ -222,9 +251,6 @@ nnoremap <silent> <expr> Q b:recording ?
 " Redo map to capital U
 nnoremap <C-r> <Nop>
 nnoremap U <C-r>
-" Maps for inserting blank lines
-nnoremap <silent> ` :call append(line('.'),'')<CR>
-nnoremap <silent> ~ :call append(line('.')-1,'')<CR>
 " Use cc for s because use sneak plugin
 nnoremap c<Backspace> <Nop>
 nnoremap cc s
@@ -237,11 +263,11 @@ nnoremap <silent> cj :let g:view = winsaveview() \| d
 " Swap adjacent characters
 nnoremap cl xph
 nnoremap ch Xp
-" Mnemonic is 'cut line' at cursor; character under cursor will be deleted
-nnoremap dL mzi<CR><Esc>`z
+" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
+nnoremap cL mzi<CR><Esc>`z
 " Pressing enter on empty line preserves leading whitespace
-nnoremap o ox<BS>
-nnoremap O Ox<BS>
+nnoremap o ox<Backspace>
+nnoremap O Ox<Backspace>
 " Paste from the nth previously deleted or changed text
 " Use 'yp' to paste last yanked, unchanged text, because cannot use zero
 nnoremap yp "0p
@@ -250,13 +276,10 @@ nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"'.v:count.'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"'.v:count.'P'
 " Yank until end of line, like C and D
 nnoremap Y y$
-" Put last search into unnamed register
-nnoremap <silent> y/ :let @" = @/<CR>
-nnoremap <silent> y? :let @" = @/<CR>
 " Better join behavior -- before 2J joined this line and next, now it
 " means 'join the two lines below'; more intuitive
 nnoremap <expr> J v:count > 1  ? 'JJ' : 'J'
-nnoremap <expr> K v:count == 0 ? 'Jx' : repeat('Jx',v:count)
+nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 " Toggle highlighting
 nnoremap <silent> <Leader>o :noh<CR>
 nnoremap <silent> <Leader>O :set hlsearch<CR>
@@ -274,15 +297,8 @@ nnoremap <silent> v/ hn:noh<CR>mygn
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 vnoremap <CR> <C-c>
 " Visual mode p/P to replace selected text with contents of register
-vnoremap p "_dP
-vnoremap P "_dP
-" Navigation, used to be part of idetools but too esoteric
-" TODO: Integrate tags plugin with vim so we can use ctrl-]
-" nnoremap <CR> <C-]>
-noremap <expr> <silent> gc search('^\ze\s*' . Comment() . '.*$', '') . 'gg'
-noremap <expr> <silent> gC search('^\ze\s*' . Comment() . '.*$', 'b') . 'gg'
-noremap <expr> <silent> ge search('^\ze\s*$', '') . 'gg'
-noremap <expr> <silent> gE search('^\ze\s*$', 'b') . 'gg'
+vnoremap p d"1P
+vnoremap P d"1P
 " Alias single-key builtin text objects
 for s:pair in ['r[', 'a<', 'c{']
   exe 'onoremap i' . s:pair[0] . ' i' . s:pair[1]
@@ -294,8 +310,8 @@ endfor
 noremap x "_x
 noremap X "_X
 " Maps for throwaaway and clipboard register
-noremap ' "_
-noremap " "*
+noremap ` "_
+noremap ~ "*
 " Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
@@ -324,7 +340,7 @@ endfunction
 " WARNING: The space remap and tab remap break insert mode abbreviations!
 " To use abbreviations you must trigger manually with <C-]> (see :help i_Ctrl-])
 " First keystrokes that close popup menu
-inoremap <expr> <BS> pumvisible() ? <sid>tab_reset() . "\<C-e>\<BS>" : "\<BS>"
+inoremap <expr> <Backspace> pumvisible() ? <sid>tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
 inoremap <expr> <Space> pumvisible() ? <sid>tab_reset() . "\<C-]>\<Space>" : "\<C-]>\<Space>"
 " Enter means 'accept' only when we have explicitly scrolled down to something
 " Tab always means 'accept' and choose default menu item if necessary
@@ -765,55 +781,54 @@ function! s:tabjump(item)
   exe 'normal! '.split(a:item,':')[0].'gt'
 endfunction
 " Function mappings
-nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tab_select(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
-nnoremap <silent> <Tab>m :call <sid>tab_move(input('Move tab: ', '', 'customlist,NullList'))<CR>
-nnoremap <silent> <Tab>> :call <sid>tab_move(eval(tabpagenr()+1))<CR>
-nnoremap <silent> <Tab>< :call <sid>tab_move(eval(tabpagenr()-1))<CR>
+nnoremap <silent> ;<Space> :call fzf#run({'source':<sid>tab_select(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
+nnoremap <silent> ;m :call <sid>tab_move(input('Move tab: ', '', 'customlist,NullList'))<CR>
+nnoremap <silent> ;> :call <sid>tab_move(eval(tabpagenr()+1))<CR>
+nnoremap <silent> ;< :call <sid>tab_move(eval(tabpagenr()-1))<CR>
 " Add new tab changing
-nnoremap <Tab>1 1gt
-nnoremap <Tab>2 2gt
-nnoremap <Tab>3 3gt
-nnoremap <Tab>4 4gt
-nnoremap <Tab>5 5gt
-nnoremap <Tab>6 6gt
-nnoremap <Tab>7 7gt
-nnoremap <Tab>8 8gt
-nnoremap <Tab>9 9gt
+nnoremap ;1 1gt
+nnoremap ;2 2gt
+nnoremap ;3 3gt
+nnoremap ;4 4gt
+nnoremap ;5 5gt
+nnoremap ;6 6gt
+nnoremap ;7 7gt
+nnoremap ;8 8gt
+nnoremap ;9 9gt
 " Scroll tabs left-right
-nnoremap <Tab>, gT
-nnoremap <Tab>. gt
-" Switch to previous tab
+nnoremap ;, gT
+nnoremap ;. gt
+" Switch to previous tab and previous window
 if !exists('g:lasttab') | let g:lasttab = 1 | endif
-nnoremap <silent> <Tab>' :execute "tabn ".g:lasttab<CR>
-" Switch to previous window
-nnoremap <Tab>; <C-w><C-p>
+nnoremap <silent> ;; :exe "tabn ".g:lasttab<CR>
+nnoremap ;' <C-w><C-p>
 " Open in split window
 " TODO: Support with <C-o>
-nnoremap <Tab>- :split 
-nnoremap <Tab>\ :vsplit 
+nnoremap ;- :split 
+nnoremap ;\ :vsplit 
 " Center the cursor in window
-" nnoremap <Tab>0 M
-nnoremap <Tab>0 mzz.`z
+" nnoremap ;0 M
+nnoremap ;0 mzz.`z
 " Moving screen up/down, left/right
-nnoremap <Tab>i zt
-nnoremap <Tab>o zb
-nnoremap <Tab>u zH
-nnoremap <Tab>p zL
+nnoremap ;i zt
+nnoremap ;o zb
+nnoremap ;u zH
+nnoremap ;p zL
 " Window selection
-nnoremap <Tab>j <C-w>j
-nnoremap <Tab>k <C-w>k
-nnoremap <Tab>h <C-w>h
-nnoremap <Tab>l <C-w>l
+nnoremap ;j <C-w>j
+nnoremap ;k <C-w>k
+nnoremap ;h <C-w>h
+nnoremap ;l <C-w>l
 " Maps for resizing windows
-nnoremap <silent> <Tab>= :vertical resize 80<CR>
-nnoremap <expr> <silent> <Tab>( '<Esc>:resize '.(winheight(0)-3*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> <Tab>) '<Esc>:resize '.(winheight(0)+3*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> <Tab>_ '<Esc>:resize '.(winheight(0)-5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> <Tab>+ '<Esc>:resize '.(winheight(0)+5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> <Tab>[ '<Esc>:vertical resize '.(winwidth(0)-5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> <Tab>] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> <Tab>{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> <Tab>} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
+nnoremap <silent> ;= :vertical resize 80<CR>
+nnoremap <expr> <silent> ;( '<Esc>:resize '.(winheight(0)-3*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> ;) '<Esc>:resize '.(winheight(0)+3*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> ;_ '<Esc>:resize '.(winheight(0)-5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> ;+ '<Esc>:resize '.(winheight(0)+5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> ;[ '<Esc>:vertical resize '.(winwidth(0)-5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> ;] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> ;{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
+nnoremap <expr> <silent> ;} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
 
 " SIMPLE WINDOW SETTINGS
 " Enable quitting windows with simple 'q' press and disable line numbers
@@ -907,27 +922,17 @@ nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
 nnoremap <silent> \_ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
 
 " CAPS LOCK
-" The autocmd is confusing, but better than an autocmd that lmaps and lunmaps;
-" that would cancel command-line queries (or I'd have to scroll up to resume them)
-" don't think any other mapping type has anything like lmap; iminsert is unique
-" yay insert mode WITH CAPS LOCK how cool is that THAT THAT!
-augroup capslock
-  au!
-  au InsertLeave,CmdWinLeave * set iminsert=0
-augroup END
-" lmap == insert mode, command line (:), and regexp searches (/)
-" See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>; instead uses
-" iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1 via
-" <C-^> (not avilable for custom remap, since ^ is not alphabetical)
-set iminsert=0
+" See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
+" iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
 for s:c in range(char2nr('A'), char2nr('Z'))
   exe 'lnoremap ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
   exe 'lnoremap ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
 endfor
 " Caps lock toggle, uses iTerm mapping of impossible key combination to the
 " F5 keypress. See top of file.
-inoremap <F5> <C-^>
-cnoremap <F5> <C-^>
+set iminsert=0
+inoremap <C-v> <C-^>
+cnoremap <C-v> <C-^>
 
 " COPY MODE
 " Eliminates special chars during copy
@@ -935,27 +940,91 @@ function! s:copy_toggle(...)
   if a:0
     let toggle = a:1
   else
-    let toggle = !exists("b:number")
+    let toggle = !exists('b:number')
   endif
-  let copyprops = ["number", "list", "relativenumber", "scrolloff"]
+  let copyprops = ['list', 'number', 'relativenumber', 'scrolloff']
   if toggle
     for prop in copyprops
-      if !exists("b:" . prop) "do not overwrite previously saved settings
-        exe "let b:" . prop . " = &l:" . prop
+      if !exists('b:' . prop) "do not overwrite previously saved settings
+        exe 'let b:' . prop . ' = &l:' . prop
       endif
-      exe "let &l:" . prop . " = 0"
+      exe 'let &l:' . prop . ' = 0'
     endfor
-    echo "Copy mode enabled."
+    echo 'Copy mode enabled.'
   else
     for prop in copyprops
-      exe "silent! let &l:" . prop . " = b:" . prop
-      exe "silent! unlet b:" . prop
+      exe 'silent! let &l:' . prop . ' = b:' . prop
+      exe 'silent! unlet b:' . prop
     endfor
-    echo "Copy mode disabled."
+    echo 'Copy mode disabled.'
   endif
 endfunction
 command! -nargs=? CopyToggle call s:copy_toggle(<args>)
 nnoremap <Leader>c :call <sid>copy_toggle()<CR>
+
+" SPELLCHECK (really is a builtin plugin, hence why it's in this section)
+" Turn on for certain filetypes
+augroup spell_toggle
+  au!
+  au FileType tex,html,markdown,rst call s:spelltoggle(1)
+augroup END
+" Toggle spelling on and off
+function! s:spelltoggle(...)
+  if a:0
+    let toggle = a:1
+  else
+    let toggle = 1 - &l:spell
+  endif
+  let &l:spell = toggle
+endfunction
+" Toggle between UK and US English
+function! s:langtoggle(...)
+  if a:0
+    let uk = a:1
+  else
+    let uk = (&l:spelllang == 'en_gb' ? 0 : 1)
+  endif
+  if uk
+    setlocal spelllang=en_gb
+    echo 'Current language: UK english'
+  else
+    setlocal spelllang=en_us
+    echo 'Current language: US english'
+  endif
+endfunction
+" Change spelling
+function! s:spellchange(direc)
+  let nospell = 0
+  if !&l:spell
+    let nospell = 1
+    setlocal spell
+  endif
+  let winview = winsaveview()
+  exe 'normal! ' . (a:direc == ']' ? 'bh' : 'el')
+  exe 'normal! ' . a:direc . 's'
+  normal! 1z=
+  call winrestview(winview)
+  if nospell
+    setlocal nospell
+  endif
+endfunction
+command! SpellToggle call s:spelltoggle(<args>)
+command! LangToggle call s:langtoggle(<args>)
+
+" Toggle on and off
+nnoremap <silent> <Leader>d :call <sid>spelltoggle(1)<CR>
+nnoremap <silent> <Leader>D :call <sid>spelltoggle(0)<CR>
+nnoremap <silent> <Leader>l :call <sid>langtoggle(1)<CR>
+nnoremap <silent> <Leader>L :call <sid>langtoggle(0)<CR>
+" Add and remove from dictionary
+nnoremap <Leader>a zg
+nnoremap <Leader>A zug
+nnoremap <Leader>! \|m z=
+" Similar to ]s and [s but also correct the word!
+nnoremap <buffer> <silent> <Plug>forward_spell bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <buffer> <silent> <Plug>backward_spell el[s:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nmap ]d <Plug>forward_spell
+nmap [d <Plug>backward_spell
 
 " g CONFIGURATION
 " Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
@@ -1030,7 +1099,7 @@ endif
 " string group names are for given filetype syntax schemes. Verify that the
 " regexes will match using :Group with cursor over a comment. For example, had
 " to change .*Comment to .*Comment.* since Julia has CommentL name
-augroup syn
+augroup syntax_overrides
   au!
   au Syntax  * call s:keywordsetup()
   au BufRead * set conceallevel=2 concealcursor=
@@ -1148,10 +1217,12 @@ command! GroupColors vert help group-name
 " Simple way would be to use au BufRead * clearjumps
 " But older versions of VIM have no 'clearjumps' command, so this is a hack
 " see this post: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
-augroup clearjumps
+augroup clear_jumps
   au!
-  if exists(":clearjumps") | au BufRead * clearjumps "see help info on exists()
-  else | au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
+  if exists(':clearjumps')
+    au BufRead * clearjumps "see help info on exists()
+  else
+    au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
   endif
 augroup END
 " Clear writeable registers

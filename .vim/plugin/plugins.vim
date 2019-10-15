@@ -341,69 +341,6 @@ if PlugActive('vim-gitgutter')
   nnoremap <silent> gn :GitGutterNextHunk<CR>
 endif
 
-" SPELLCHECK (really is a builtin plugin, hence why it's in this section)
-" Turn on for certain filetypes
-augroup spell
-  au!
-  au FileType tex,html,markdown,rst call s:spelltoggle(1)
-augroup END
-" Toggle spelling on and off
-function! s:spelltoggle(...)
-  if a:0
-    let toggle = a:1
-  else
-    let toggle = 1 - &l:spell
-  endif
-  let &l:spell = toggle
-endfunction
-" Toggle between UK and US English
-function! s:langtoggle(...)
-  if a:0
-    let uk = a:1
-  else
-    let uk = (&l:spelllang == 'en_gb' ? 0 : 1)
-  endif
-  if uk
-    setlocal spelllang=en_gb
-    echo 'Current language: UK english'
-  else
-    setlocal spelllang=en_us
-    echo 'Current language: US english'
-  endif
-endfunction
-" Change spelling
-function! s:spellchange(direc)
-  let nospell = 0
-  if !&l:spell
-    let nospell = 1
-    setlocal spell
-  endif
-  let winview = winsaveview()
-  exe 'normal! ' . (a:direc == ']' ? 'bh' : 'el')
-  exe 'normal! ' . a:direc . 's'
-  normal! 1z=
-  call winrestview(winview)
-  if nospell
-    setlocal nospell
-  endif
-endfunction
-command! SpellToggle call s:spelltoggle(<args>)
-command! LangToggle call s:langtoggle(<args>)
-" Toggle on and off
-nnoremap <silent> <Leader>d :call <sid>spelltoggle(1)<CR>
-nnoremap <silent> <Leader>D :call <sid>spelltoggle(0)<CR>
-nnoremap <silent> <Leader>l :call <sid>langtoggle(1)<CR>
-nnoremap <silent> <Leader>L :call <sid>langtoggle(0)<CR>
-" Add and remove from dictionary
-nnoremap <Leader>a zg
-nnoremap <Leader>A zug
-nnoremap <Leader>! \|m z=
-" Similar to ]s and [s but also correct the word!
-nnoremap <buffer> <silent> <Plug>forwardspell bh]s:call <sid>spellchange(']')<CR>:call repeat#set("\<Plug>forwardspell")<CR>
-nnoremap <buffer> <silent> <Plug>backwardspell el[s:call <sid>spellchange('[')<CR>:call repeat#set("\<Plug>backwardspell")<CR>
-nmap ]d <Plug>forwardspell
-nmap [d <Plug>backwardspell
-
 " Codi (mathematical notepad)
 if PlugActive('codi.vim')
   " Set custom buffer-local autocommands using codi autocommands

@@ -69,11 +69,13 @@ function! s:MapNextFamily(map,cmd) abort
   endif
 endfunction
 
-call s:MapNextFamily('a','')
-call s:MapNextFamily('b','b')
-call s:MapNextFamily('l','l')
-call s:MapNextFamily('q','c')
-call s:MapNextFamily('t','t') "use my own tags plugin
+" These aren't used
+call s:MapNextFamily('a', '')
+call s:MapNextFamily('b', 'b')
+call s:MapNextFamily('l', 'l')
+call s:MapNextFamily('q', 'c')
+" Disable this in favor of custom plugin
+" call s:MapNextFamily('t', 't') "use my own tags plugin
 
 " Section: Next and previous file
 function! s:entries(path) abort
@@ -160,8 +162,27 @@ call s:map('n', 'vo', ':call <SID>setup_paste()<CR>o', '<silent>')
 call s:map('n', 'vO', ':call <SID>setup_paste()<CR>O', '<silent>')
 call s:map('n', 'vI', ':call <SID>setup_paste()<CR>0C', '<silent>')
 
-" Section: Diff
-" Disabled because not used
+" Section: Blank line
+function! s:BlankUp(count) abort
+  put!=repeat(nr2char(10), a:count)
+  ']+1
+  silent! call repeat#set("\<Plug>unimpairedBlankUp", a:count)
+endfunction
+
+function! s:BlankDown(count) abort
+  put =repeat(nr2char(10), a:count)
+  '[-1
+  silent! call repeat#set("\<Plug>unimpairedBlankDown", a:count)
+endfunction
+
+nnoremap <silent> <Plug>unimpairedBlankUp   :<C-U>call <SID>BlankUp(v:count1)<CR>
+nnoremap <silent> <Plug>unimpairedBlankDown :<C-U>call <SID>BlankDown(v:count1)<CR>
+
+call s:map('n', '[<Space>', '<Plug>unimpairedBlankUp')
+call s:map('n', ']<Space>', '<Plug>unimpairedBlankDown')
+
+" " Section: Diff
+" " Disabled because not used
 " call s:map('n', '[n', '<Plug>unimpairedContextPrevious')
 " call s:map('n', ']n', '<Plug>unimpairedContextNext')
 " call s:map('o', '[n', '<Plug>unimpairedContextPrevious')
@@ -207,24 +228,6 @@ call s:map('n', 'vI', ':call <SID>setup_paste()<CR>0C', '<silent>')
 " endfunction
 "
 " " Section: Line operations
-" function! s:BlankUp(count) abort
-"   put!=repeat(nr2char(10), a:count)
-"   ']+1
-"   silent! call repeat#set("\<Plug>unimpairedBlankUp", a:count)
-" endfunction
-"
-" function! s:BlankDown(count) abort
-"   put =repeat(nr2char(10), a:count)
-"   '[-1
-"   silent! call repeat#set("\<Plug>unimpairedBlankDown", a:count)
-" endfunction
-"
-" nnoremap <silent> <Plug>unimpairedBlankUp   :<C-U>call <SID>BlankUp(v:count1)<CR>
-" nnoremap <silent> <Plug>unimpairedBlankDown :<C-U>call <SID>BlankDown(v:count1)<CR>
-"
-" call s:map('n', '[<Space>', '<Plug>unimpairedBlankUp')
-" call s:map('n', ']<Space>', '<Plug>unimpairedBlankDown')
-"
 " function! s:ExecMove(cmd) abort
 "   let old_fdm = &foldmethod
 "   if old_fdm !=# 'manual'
@@ -350,7 +353,7 @@ call s:map('n', 'vI', ':call <SID>setup_paste()<CR>0C', '<silent>')
 " call s:map('n', ']p', '<Plug>unimpairedPutBelow', '<unique>')
 " call s:map('n', '[P', '<Plug>unimpairedPutAbove')
 " call s:map('n', ']P', '<Plug>unimpairedPutBelow')
-
+"
 " call s:map('n', '>P', ":call <SID>putline('[p', 'Above')<CR>>']", '<silent>')
 " call s:map('n', '>p', ":call <SID>putline(']p', 'Below')<CR>>']", '<silent>')
 " call s:map('n', '<P', ":call <SID>putline('[p', 'Above')<CR><']", '<silent>')
