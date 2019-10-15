@@ -243,6 +243,7 @@ nnoremap O Ox<BS>
 " Paste from the nth previously deleted or changed text
 " Use 'yp' to paste last yanked, unchanged text, because cannot use zero
 nnoremap yp "0p
+nnoremap yP "0P
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"'.v:count.'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"'.v:count.'P'
 " Yank until end of line, like C and D
@@ -427,8 +428,6 @@ endif
 "-----------------------------------------------------------------------------"
 " VIM-PLUG PLUGINS
 " Don't load some plugins if not compatible
-augroup plug
-augroup END
 let g:compatible_tagbar = (g:has_ctags && (v:version >= 704 || v:version == 703 && has("patch1058")))
 let g:compatible_codi = (v:version >= 704 && has('job') && has('channel'))
 let g:compatible_workspace = (v:version >= 800) " needs Git 8.0, so not too useful
@@ -466,16 +465,6 @@ Plug 'fcpg/vim-fahrenheit'
 Plug 'KabbAmine/yowish.vim'
 " Plug 'altercation/vim-colors-solarized'
 
-" Custom text objects (inner/outer selections)
-" a,b, asdfas, adsfashh
-Plug 'kana/vim-textobj-user'   " base
-Plug 'kana/vim-textobj-indent' " match indentation, object is 'i'
-Plug 'kana/vim-textobj-entire' " entire file, object is 'e'
-" Plug 'sgur/vim-textobj-parameter' " disable because this conflicts with latex
-" Plug 'bps/vim-textobj-python' " not really ever used, just use indent objects
-" Plug 'vim-scripts/argtextobj.vim' " arguments
-" Plug 'machakann/vim-textobj-functioncall' " fucking sucks/doesn't work, fuck you
-
 " Proper syntax highlighting for a few different things
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 Plug 'tmux-plugins/vim-tmux'
@@ -492,7 +481,7 @@ Plug 'Shougo/unite.vim'
 Plug 'rafaqz/citation.vim'
 " Plug 'twsh/unite-bibtex' " python 3 version
 " Plug 'msprev/unite-bibtex' " python 2 version
-Plug 'lervag/vimtex'
+" Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
 
 " Julia support and syntax highlighting
@@ -551,6 +540,16 @@ if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
 " Delimiters
 Plug 'tpope/vim-surround'
 Plug 'raimondi/delimitmate'
+
+" Custom text objects (inner/outer selections)
+" a,b, asdfas, adsfashh
+Plug 'kana/vim-textobj-user'   " base
+Plug 'kana/vim-textobj-indent' " match indentation, object is 'i'
+Plug 'kana/vim-textobj-entire' " entire file, object is 'e'
+" Plug 'sgur/vim-textobj-parameter' " disable because this conflicts with latex
+" Plug 'bps/vim-textobj-python' " not really ever used, just use indent objects
+" Plug 'vim-scripts/argtextobj.vim' " arguments
+" Plug 'machakann/vim-textobj-functioncall' " fucking sucks/doesn't work, fuck you
 
 " Aligning things and stuff
 " Alternative to tabular is: https://github.com/tommcdo/vim-lion
@@ -625,8 +624,6 @@ call plug#end()
 " DELIMS and NAVIGATION
 " Vim sneak
 if PlugActive('vim-sneak')
-  augroup sneak
-  augroup END
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
   map f <Plug>Sneak_f
@@ -643,7 +640,7 @@ if PlugActive('delimitmate')
   " Vim needs to disable matching ", or everything is super slow
   " Tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
   " Markdown need backticks for code, and can maybe do LaTeX math
-  augroup delimitmate
+  augroup delims
     au!
     au FileType vim let b:delimitMate_quotes = "'" | let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
     au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
@@ -659,11 +656,249 @@ if PlugActive('delimitmate')
   let g:delimitMate_excluded_regions = "String" "by default is disabled inside, don't want that
 endif
 
+" SURROUND
+" For now pretty empty, but we should add to this
+" Note that tag delimiters are *built in* to vim-surround
+" Just use the target 't', and prompt will ask for description
+if PlugActive('vim-surround')
+  augroup surround
+    au!
+    au FileType html call s:htmlmacros()
+  augroup END
+  " Define global, *insertable* vim-surround targets
+  " Multichar Delims: Surround can 'put' them, but cannot 'find' them
+  " e.g. in a ds<custom-target> or cs<custom-target><other-target> command.
+  " Single Delims: Delims *can* be 'found' if they are single character, but
+  " setting g:surround_does not do so -- instead, just map commands
+  " Helper func
+  function! s:target(map, start, end) " if final argument passed, this is buffer-local
+    let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
+  endfunction
+  " Go
+  call s:target('c', '{', '}')
+  nmap dsc dsB
+  nmap csc csB
+  call s:target('\', '\"', '\"')
+  nmap ds\ /\\"<CR>xxdN
+  nmap cs\ /\\"<CR>xNx
+  call s:target('p', 'print(', ')')
+  call s:target('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
+  nnoremap dsf mzF(bdt(xf)x`z
+  nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
+  " Define additional shortcuts like ys's' for the non-whitespace part
+  " of this line -- use 'w' for <cword>, 'W' for <CWORD>, 'p' for current paragraph
+  nmap ysw ysiw
+  nmap ysW ysiW
+  nmap ysp ysip
+  nmap ys. ysis
+  nmap ySw ySiw
+  nmap ySW ySiW
+  nmap ySp ySip
+  nmap yS. ySis
+  " Define HTML macros
+  function! s:htmlmacros()
+    call s:target('h', '<head>',   '</head>',   1)
+    call s:target('o', '<body>',   '</body>',   1)
+    call s:target('t', '<title>',  '</title>',  1)
+    call s:target('e', '<em>',     '</em>',     1)
+    call s:target('t', '<strong>', '</strong>', 1)
+    call s:target('p', '<p>',      '</p>',      1)
+    call s:target('1', '<h1>',     '</h1>',     1)
+    call s:target('2', '<h2>',     '</h2>',     1)
+    call s:target('3', '<h3>',     '</h3>',     1)
+    call s:target('4', '<h4>',     '</h4>',     1)
+    call s:target('5', '<h5>',     '</h5>',     1)
+  endfunction
+endif
+
+" TEXT OBJECTS
+" Many of these just copied, some ideas for future:
+" https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
+if PlugActive('vim-textobj-user')
+  " Functions for current line stuff
+  function! s:current_line_a()
+    normal! 0
+    let head_pos = getpos('.')
+    normal! $
+    let tail_pos = getpos('.')
+    return ['v', head_pos, tail_pos]
+  endfunction
+  function! s:current_line_i()
+    normal! ^
+    let head_pos = getpos('.')
+    normal! g_
+    let tail_pos = getpos('.')
+    let non_blank_char_exists_p = (getline('.')[head_pos[2] - 1] !~# '\s')
+    return (non_blank_char_exists_p ? ['v', head_pos, tail_pos] : 0)
+  endfunction
+
+  " Functions for blank line stuff
+  function! s:lines_helper(pnb, nnb)
+    let start_line = (a:pnb == 0) ? 1         : a:pnb + 1
+    let end_line   = (a:nnb == 0) ? line('$') : a:nnb - 1
+    let start_pos = getpos('.') | let start_pos[1] = start_line
+    let end_pos   = getpos('.') | let end_pos[1]   = end_line
+    return ['V', start_pos, end_pos]
+  endfunction
+  function! s:blank_lines()
+    normal! 0
+    let pnb = prevnonblank(line('.'))
+    let nnb = nextnonblank(line('.'))
+    if pnb == line('.') " also will be true for nextnonblank, if on nonblank
+      return 0
+    endif
+    return s:lines_helper(pnb,nnb)
+  endfunction
+
+  " Functions for new and improved paragraph stuff
+  function! s:nonblank_lines()
+    normal! 0l
+    let nnb = search('^\s*\zs$', 'Wnc') " the c means accept current position
+    let pnb = search('^\ze\s*$', 'Wnbc') " won't work for backwards search unless to right of first column
+    if pnb == line('.')
+      return 0
+    endif
+    return s:lines_helper(pnb,nnb)
+  endfunction
+
+  " And the commented line stuff
+  function! s:uncommented_lines()
+    normal! 0l
+    let nnb = search('^\s*'.Comment().'.*\zs$', 'Wnc')
+    let pnb = search('^\ze\s*'.Comment().'.*$', 'Wncb')
+    if pnb == line('.')
+      return 0
+    endif
+    return s:lines_helper(pnb,nnb)
+  endfunction
+
+  " Method calls
+  function! s:methodcall_a()
+    return s:methodcall('a')
+  endfunction
+  function! s:methodcall_i()
+    return s:methodcall('i')
+  endfunction
+  function! s:methodcall(motion)
+    if a:motion == 'a'
+        silent! normal! [(
+    endif
+    silent! execute "normal! w?\\v(\\.{0,1}\\w+)+\<cr>"
+    let head_pos = getpos('.')
+    normal! %
+    let tail_pos = getpos('.')
+    if tail_pos == head_pos
+        return 0
+    endif
+    return ['v', head_pos, tail_pos]
+  endfunction
+
+  " Chained methodcall command
+  function! s:methoddef_i()
+    return s:methoddef('i')
+  endfunction
+  function! s:methoddef_a()
+    return s:methoddef('a')
+  endfunction
+  function! s:char_under_cursor()
+      return getline('.')[col('.') - 1]
+  endfunction
+  function! s:methoddef(motion)
+    if a:motion == 'a'
+      silent! normal! [(
+    endif
+    silent! execute 'normal! w?\v(\.{0,1}\w+)+' . "\<cr>"
+    let head = getpos('.')
+    while s:char_under_cursor() == '.'
+      silent! execute "normal! ?)\<cr>%"
+      silent! execute 'normal! w?\v(\.{0,1}\w+)+' . "\<cr>"
+      let head = getpos('.')
+    endwhile
+    silent! execute "normal! %"
+    let tail = getpos('.')
+    silent! execute 'normal! /\v(\.{0,1}\w+)+' . "\<cr>"
+    while s:char_under_cursor() == '.'
+      silent! execute "normal! %"
+      let tail = getpos('.')
+      silent! execute 'normal! /\v(\.{0,1}\w+)+' . "\<cr>"
+    endwhile
+    call setpos('.', tail)
+    if tail == head
+      return 0
+    endif
+    return ['v', head, tail]
+  endfunction
+
+  " Dictionary of all universal text objects
+  " Highlight current line, functions, arrays, and methods. Thesse use keyword
+  " chars, i.e. what is considered a 'word' by '*', 'gd/gD', et cetera
+  let s:universal_textobjs_dict = {
+    \   'line': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 's:current_line_a',
+    \     'select-a': 'al',
+    \     'select-i-function': 's:current_line_i',
+    \     'select-i': 'il',
+    \   },
+    \   'blanklines': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 's:blank_lines',
+    \     'select-a': 'a<Space>',
+    \     'select-i-function': 's:blank_lines',
+    \     'select-i': 'i<Space>',
+    \   },
+    \   'nonblanklines': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 's:nonblank_lines',
+    \     'select-a': 'ap',
+    \     'select-i-function': 's:nonblank_lines',
+    \     'select-i': 'ip',
+    \   },
+    \   'uncommented': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 's:uncommented_lines',
+    \     'select-i-function': 's:uncommented_lines',
+    \     'select-a': 'au',
+    \     'select-i': 'iu',
+    \   },
+    \   'methodcall': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a': 'af', 'select-a-function': 's:methodcall_a',
+    \     'select-i': 'if', 'select-i-function': 's:methodcall_i',
+    \   },
+    \   'methodef': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a': 'aF', 'select-a-function': 's:methoddef_a',
+    \     'select-i': 'iF', 'select-i-function': 's:methoddef_i'
+    \   },
+    \   'function': {
+    \     'pattern': ['\<\h\w*(', ')'],
+    \     'select-a': 'am',
+    \     'select-i': 'im',
+    \   },
+    \   'array': {
+    \     'pattern': ['\<\h\w*\[', '\]'],
+    \     'select-a': 'aA',
+    \     'select-i': 'iA',
+    \   },
+    \  'curly': {
+    \     'pattern': ['‘', '’'],
+    \     'select-a': 'aq',
+    \     'select-i': 'iq',
+    \   },
+    \  'curly-double': {
+    \     'pattern': ['“', '”'],
+    \     'select-a': 'aQ',
+    \     'select-i': 'iQ',
+    \   },
+    \ }
+  " Enable
+  call textobj#user#plugin('universal', s:universal_textobjs_dict)
+endif
+
 " GIT GUTTER AND FUGITIVE
 " TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 if PlugActive('vim-gitgutter')
-  augroup git
-  augroup END
   " Create command for toggling on/off; old VIM versions always show signcolumn
   " if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
   " call gitgutter#disable() | silent! set signcolumn=no
@@ -885,8 +1120,6 @@ endif
 " -c$ comments to eol
 " -cu uncomments line
 if PlugActive('nerdcommenter')
-  augroup nerdcomment
-  augroup END
   " Custom delimiter overwrites, default python includes space for some reason
   " TODO: Why can't this just use &commentstring?
   let g:NERDCustomDelimiters = {
@@ -1064,8 +1297,6 @@ endif
 
 " SYNTASTIC (syntax checking for code)
 if PlugActive('syntastic')
-  augroup syntastic
-  augroup END
   " Next error in location list
   " Copied from: https://vi.stackexchange.com/a/14359
   function! s:cmp(a, b)
@@ -1204,8 +1435,6 @@ endif
 " sense when applied for a visual range! So we don't need to worry about using Tabularize's
 " automatic range selection/implementing it in this special command
 if PlugActive('tabular')
-  augroup tabular
-  augroup END
   " Command for tabuarizing, but ignoring lines without delimiters
   function! s:table(arg) range
     " Remove the lines without matching regexes
@@ -1317,8 +1546,6 @@ endif
 " * C-n and C-p browses by top-level tags
 " * o toggles the fold under cursor, or current one
 if PlugActive('tagbar')
-  augroup ctags
-  augroup END
   " Customization, for more info see :help tagbar-extend
   " To list kinds, see :!ctags --list-kinds=<filetype>
   " The first number is whether to fold, second is whether to highlight location
@@ -1421,6 +1648,7 @@ if PlugActive('vim-obsession') "must manually preserve cursor position
     au VimEnter * Obsession .vimsession
   augroup END
 endif
+nnoremap <silent> <Leader>v :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
 " Manual autosave behavior
 " Consider disabling
 function! s:autosave_toggle(...)
@@ -1480,11 +1708,14 @@ endif
 "-----------------------------------------------------------------------------"
 " GENERAL STUFF, BASIC REMAPS
 "-----------------------------------------------------------------------------"
-" BUFFER WRITING/SAVING
-" NOTE: Update only writes if file has been changed
-augroup buffer
-augroup END
+" BUFFER QUITTING/SAVING
 " Helper functions
+" NOTE: Update only writes if file has been changed
+function! s:vim_close()
+  qa
+  " tabdo windo
+  "   \ if &ft == 'log' | q! | else | q | endif
+endfunction
 function! s:tab_close()
   let ntabs = tabpagenr('$')
   let islast = (tabpagenr('$') - tabpagenr())
@@ -1501,14 +1732,13 @@ function! s:window_close()
   let ntabs = tabpagenr('$')
   let islast = (tabpagenr('$') == tabpagenr())
   q
-  if ntabs!=tabpagenr('$') && !islast
+  if ntabs != tabpagenr('$') && !islast
     silent! tabp
   endif
 endfunction
-" Save and quit all
+" Save and quit, also test whether the :q action closed the entire tab
 nnoremap <silent> <C-s> :update<CR>
-nnoremap <silent> <C-a> :qa<CR>
-" Maps that test whether the :q action closed the entire tab
+nnoremap <silent> <C-a> :call <sid>vim_close()<CR>
 nnoremap <silent> <C-w> :call <sid>window_close()<CR>
 nnoremap <silent> <C-q> :call <sid>tab_close()<CR>
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
@@ -1519,8 +1749,6 @@ silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
 " OPENING FILES
-augroup open
-augroup END
 " Function that generates list of files in directory
 function! s:fzfopen_files(path)
   let folder = substitute(fnamemodify(a:path, ':p'), '/$', '', '') " absolute path
@@ -1694,7 +1922,7 @@ function! s:popup_setup()
   nnoremap <silent> <buffer> <CR> <CR>
   nnoremap <silent> <buffer> <C-w> :q!<CR>
   nnoremap <silent> <buffer> q :q!<CR>
-  setlocal nolist nonumber norelativenumber nospell nocursorline colorcolumn=
+  setlocal nolist nonumber norelativenumber nospell nocursorline colorcolumn= buftype=nofile
   if len(tabpagebuflist()) == 1 | q | endif " exit if only one left
 endfunction
 " For help windows
@@ -1735,29 +1963,6 @@ nnoremap <silent> <expr> <Leader>M ':!clear; search=' . input('Get man info: ', 
 nnoremap <silent> <expr> <Leader>m ':!clear; search=' . input('Get help info: ', '', 'customlist,NullList') . '; '
   \.'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
   \.'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
-
-" TEMPLATES and SNIPPETS
-" Prompt user to choose from a list of templates (located in ~/latex folder)
-" when creating a new LaTeX file. Consider adding to this for other filetypes!
-" See: http://learnvimscriptthehardway.stevelosh.com/chapters/35.html
-augroup templates
-  au!
-  au BufNewFile *.tex call fzf#run({'source':s:textemplates(), 'options':'--no-sort', 'sink':function('s:texselect'), 'down':'~30%'})
-augroup END
-" Function that reads in a template from the line shown be textemplates
-function! s:texselect(item)
-  if len(a:item)
-    execute "0r ~/latex/".a:item
-  endif
-endfunction
-" Function that displays list of possible LaTeX templates
-" NOTE: When using builtin vim API, used input('prefix', '', 'customlist,TexTemplates')
-" where TexTemplates was a function TexTemplates(A,L,P) that returned a list of
-" possible choices given the prefix A of what user typed so far
-function! s:textemplates()
-  let templates = map(split(globpath('~/latex/', '*.tex'),"\n"), 'fnamemodify(v:val, ":t")')
-  return [''] + templates " add blank entry as default choice
-endfunction
 
 " SEARCHING AND FIND-REPLACE STUFF
 " Basic stuff first

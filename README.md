@@ -8,15 +8,17 @@ Try out my `.dircolors.ansi` for useful color-coding of `ls` results.
 ## Vim config
 Check out `.vimrc` for my plugin usage and some handy functions and remaps. Instead of
 just using `<Leader>` for custom maps, I use several different keys for custom
-map prefixes:
+map prefixes.
 
-* `<Leader>`: Normal mode. Used for miscellaneous and complex tasks. Mapped to `<Space>`.
-* `\`: Normal mode. Used as an alternate leader for complex regex replacements and tabular alignment.
-* `c`: Normal mode. Used for toggling comments and inserting comment headers.
-* `g`: Normal mode. Used for git-gutter commands and other git things.
-* `<Tab>`: Normal mode. Used for window and tab management and resizing.
-* `<C-o>`, `<C-p>`: Insert mode. Used for inserting LaTeX citations.
-* `<C-s>`, `<C-z>`: Insert mode. Used for surrounding cursor with delimiters and inserting snippets or symbols.
+| Prefix | Description |
+| ---- | ---- |
+| `<Leader>` | Normal mode. Used for miscellaneous and complex tasks. Mapped to `<Space>`. |
+| `\` | Normal mode. Used as an alternate leader for complex regex replacements and tabular alignment. |
+| `c` | Normal mode. Used for toggling comments and inserting comment headers. |
+| `g` | Normal mode. Used for git-gutter commands and other git things. |
+| `<Tab>` | Normal mode. Used for window and tab management and resizing. |
+| `<C-o>`, `<C-p>` | Insert mode. Used for inserting LaTeX citations. |
+| `<C-s>`, `<C-z>` | Insert mode. Used for surrounding cursor with delimiters and inserting snippets or symbols. |
 
 Also check out my repositories starting with `vim-` for some custom plugins.
 
@@ -26,7 +28,7 @@ and handy `git` commands in my `.gitconfig` file.
 Note `.jupyter` is synced just to preserve my custom key bindings in `notebook.json`, along with some `nbextension` settings in `tree.json`, `common.json`, and `jupyter_notebook_config.json`.
 <!-- The `custom` folder contains custom javascript and CSS files controlled by `jupyterthemes`.  -->
 
-## Code style
+## Refactoring regexes
 At various times, I've had to make enormous global changes to code style in various projects. They were generally applied with the vi regex engine, since it contains advanced features like non-greedy searches unavailable in sed. They are generally applied with
 
 ```sh
@@ -35,20 +37,17 @@ find . -name '*.ext' -exec vi -u NONE -c '%s/regex/replacement/ge | wq' {} \;
 
 where some of the replacement patterns are as follows.
 
-### No-space vi comments
-This prepends a space to vi comments. The comment character is so small that I used to write comments without a space, but no one else on the planet seems to do this.
+The following prepends a space to vi comments. The comment character is so small that I used to write comments without a space, but no one else on the planet seems to do this.
 ```
 %s/\(^[ \t:]*"\(\zs\ze\)[^ #].*$\|^[^"]*\s"\(\zs\ze\)[^_\-:.%#=" ][^"]*$\)/ \2/ge
 ```
 
-### No-space vi assignments
-This surrounds assignments in vi script with spaces.
+The following surrounds assignments in vi script with spaces.
 ```
 %s/\<let\>\s\+\S\{-1,}\zs\([.^+%-]\?=\)/ \1 /ge
 ```
 
-### No-space comparison operators
-This surrounds comparison operators with spaces, accounting for `<Tab>` style keystroke indicators in vim script.
+The following surrounds comparison operators with spaces, accounting for `<Tab>` style keystroke indicators in vim script.
 ```
 %s/\_s[^ ,\-<>@!&=\\]\+\zs\(<=\|>=\|==\|^C|>\)\ze[^ ,!\-<>&=\\]\+\_s/ \1 /ge
 ```

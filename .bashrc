@@ -56,7 +56,7 @@ unalias -a
 # If you source the default bashrc, *must* happen before everything else or
 # may get unexpected behavior due to unexpected alias/function overrides!
 _bashrc_message "Variables and modules"
-export PYTHONPATH="" # this one needs to be re-initialized
+unset PYTHONPATH # this one needs to be re-initialized
 export PYTHONUNBUFFERED=1 # necessary, or else running bash script that invokes python will prevent print statements from getting flushed to stdout until execution finishes
 if $_macos; then
   # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
@@ -160,7 +160,7 @@ fi
 
 # Access custom executables, custom git projects
 # No longer will keep random executables loose in homre directory; put everything here
-export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$PATH"
+export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$HOME/vim-textools/bin:$PATH"
 
 # Homebrew, save path before adding anaconda
 # Brew conflicts with anaconda (try "brew doctor" to see)
@@ -1489,7 +1489,7 @@ if [ -f ~/.fzf.bash ]; then
   # Completion options don't require export
   unset FZF_COMPLETION_FILE_COMMANDS FZF_COMPLETION_PID_COMMANDS FZF_COMPLETION_DIR_COMMANDS
   unset FZF_COMPLETION_INCLUDE # optional requirement
-  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion, otherwise need '**'
+  unset FZF_COMPLETION_TRIGGER # empty means tab triggers completion, otherwise need '**'
   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
   FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
   # Do not override default find command
@@ -1591,7 +1591,7 @@ _title_get() {
   # if [ -n "$_title" ]; then # this lets window have different title in different panes
     # _title="$_title" # already exists
   if ! [ -r "$_title_file" ]; then
-    _title=""
+    unset _title
   elif $_macos; then
     _title="$(cat "$_title_file" | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
   else
