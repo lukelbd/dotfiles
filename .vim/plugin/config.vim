@@ -69,27 +69,27 @@ if PlugActive('vim-surround')
   " not have been loaded yet!
   if &rtp =~ 'vim-textools'
     " Helper func
+    " \'    \'
     function! s:add_delim(map, start, end) " if final argument passed, this is global
       let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
     endfunction
-
-    " These are also defined in textools but make them global and
-    " do not include the delete_delims and change_delims functionality
+    " Mappings
+    vmap <C-s> <Plug>VSurround
+    imap <C-s> <Plug>Isurround
     nmap dsc dsB
     nmap csc csB
+    " These are also defined in textools but make them global and
+    " do not include the delete_delims and change_delims functionality
     call s:add_delim('b', '(', ')')
     call s:add_delim('c', '{', '}')
     call s:add_delim('B', '{', '}')
-    call s:add_delim('r', '\[', '\]')
+    call s:add_delim('r', '[', ']')
     call s:add_delim('a', '<', '>')
-
-    " Escaped quotes
+    " Function, print, and escaped quotes
     call s:add_delim('\', '\"', '\"')
-    nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
-
-    " Function and print statement
     call s:add_delim('p', 'print(', ')')
     call s:add_delim('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
+    nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
     nnoremap <silent> dsf :call textools#delete_delims('\w*(', ')')<CR>
     nnoremap <silent> csf :call textools#change_delims('\(\w*\)(', ')', input('function: '))<CR>
   endif
