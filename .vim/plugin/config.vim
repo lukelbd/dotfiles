@@ -73,13 +73,14 @@ if PlugActive('vim-surround')
       let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
     endfunction
 
-    " These are also defined in textools but make them global
+    " These are also defined in textools but make them global and
+    " do not include the delete_delims and change_delims functionality
     nmap dsc dsB
     nmap csc csB
     call s:add_delim('b', '(', ')')
     call s:add_delim('c', '{', '}')
     call s:add_delim('B', '{', '}')
-    call s:add_delim('r', '[', ']')
+    call s:add_delim('r', '\[', '\]')
     call s:add_delim('a', '<', '>')
 
     " Escaped quotes

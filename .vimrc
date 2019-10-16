@@ -868,6 +868,7 @@ function! s:cmdwin_setup()
   setlocal nonumber norelativenumber nolist laststatus=0
 endfunction
 " Vim command windows
+nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
