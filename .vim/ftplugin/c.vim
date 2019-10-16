@@ -1,5 +1,7 @@
 "------------------------------------------------------------------------------"
-" Compile code, then run it and delete the executable
+" C settings
+"------------------------------------------------------------------------------"
+" Compile code then run it and delete the executable
 function! s:crun()
   w
   let cpp_path = shellescape(@%)

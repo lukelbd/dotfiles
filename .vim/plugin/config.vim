@@ -33,8 +33,6 @@ if PlugActive('delimitmate')
   " First filetype settings
   " Enable carat matching for filetypes where need tags (or keycode symbols)
   " Vim needs to disable matching ", or everything is super slow
-  " Tex need | for verbatim environments; note you *cannot* do set matchpairs=xyz; breaks plugin
-  " Markdown need backticks for code, and can maybe do LaTeX math
   augroup delims
     au!
     au FileType vim let b:delimitMate_quotes = "'" | let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
@@ -42,7 +40,7 @@ if PlugActive('delimitmate')
     au FileType html let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
     au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
   augroup END
-  " Set global defaults along with buffer-specific alternatives
+  " Global defaults
   let g:delimitMate_expand_space = 1
   let g:delimitMate_expand_cr = 2 " expand even if it is not empty!
   let g:delimitMate_jump_expansion = 0
@@ -52,36 +50,11 @@ if PlugActive('delimitmate')
 endif
 
 " Vim surround
-" For now pretty empty, but we should add to this
-" Note that tag delimiters are *built in* to vim-surround
-" Just use the target 't', and prompt will ask for description
+" Add shortcuts for surrounding text objects with delims
+" NOTE: More global delims are found in textools plugin because I define
+" some complex helper funcs there
 if PlugActive('vim-surround')
-  augroup surround
-    au!
-    au FileType html call s:htmlmacros()
-  augroup END
-  " Define global, *insertable* vim-surround targets
-  " Multichar Delims: Surround can 'put' them, but cannot 'find' them
-  " e.g. in a ds<custom-target> or cs<custom-target><other-target> command.
-  " Single Delims: Delims *can* be 'found' if they are single character, but
-  " setting g:surround_does not do so -- instead, just map commands
-  " Helper func
-  function! s:target(map, start, end) " if final argument passed, this is buffer-local
-    let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
-  endfunction
-  " Go
-  call s:target('c', '{', '}')
-  nmap dsc dsB
-  nmap csc csB
-  call s:target('\', '\"', '\"')
-  nmap ds\ /\\"<CR>xxdN
-  nmap cs\ /\\"<CR>xNx
-  call s:target('p', 'print(', ')')
-  call s:target('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
-  nnoremap dsf mzF(bdt(xf)x`z
-  nnoremap <expr> csf 'F(hciw'.input('function: ').'<Esc>'
-  " Define additional shortcuts like ys's' for the non-whitespace part
-  " of this line -- use 'w' for <cword>, 'W' for <CWORD>, 'p' for current paragraph
+  " Define text object shortcuts
   nmap ysw ysiw
   nmap ysW ysiW
   nmap ysp ysip
@@ -90,20 +63,35 @@ if PlugActive('vim-surround')
   nmap ySW ySiW
   nmap ySp ySip
   nmap yS. ySis
-  " Define HTML macros
-  function! s:htmlmacros()
-    call s:target('h', '<head>',   '</head>',   1)
-    call s:target('o', '<body>',   '</body>',   1)
-    call s:target('t', '<title>',  '</title>',  1)
-    call s:target('e', '<em>',     '</em>',     1)
-    call s:target('t', '<strong>', '</strong>', 1)
-    call s:target('p', '<p>',      '</p>',      1)
-    call s:target('1', '<h1>',     '</h1>',     1)
-    call s:target('2', '<h2>',     '</h2>',     1)
-    call s:target('3', '<h3>',     '</h3>',     1)
-    call s:target('4', '<h4>',     '</h4>',     1)
-    call s:target('5', '<h5>',     '</h5>',     1)
-  endfunction
+  " Add to global delims from vim-textools plugin
+  " Test runtimepath directly in case it was loaded locally
+  " Note: Cannot test for existence of autoload function because it might
+  " not have been loaded yet!
+  if &rtp =~ 'vim-textools'
+    " Helper func
+    function! s:add_delim(map, start, end) " if final argument passed, this is global
+      let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
+    endfunction
+
+    " These are also defined in textools but make them global
+    nmap dsc dsB
+    nmap csc csB
+    call s:add_delim('b', '(', ')')
+    call s:add_delim('c', '{', '}')
+    call s:add_delim('B', '{', '}')
+    call s:add_delim('r', '[', ']')
+    call s:add_delim('a', '<', '>')
+
+    " Escaped quotes
+    call s:add_delim('\', '\"', '\"')
+    nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
+
+    " Function and print statement
+    call s:add_delim('p', 'print(', ')')
+    call s:add_delim('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
+    nnoremap <silent> dsf :call textools#delete_delims('\w*(', ')')<CR>
+    nnoremap <silent> csf :call textools#change_delims('\(\w*\)(', ')', input('function: '))<CR>
+  endif
 endif
 
 " Text objects

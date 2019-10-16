@@ -1,6 +1,5 @@
 "------------------------------------------------------------------------------"
-" A simple compile mapping, and trigger some global settings compatible
-" with vim's builtin fotran syntax highlighter.
+" Fortran settings
 "------------------------------------------------------------------------------"
 " These mostly make automatic indentation better
 " See this helpful thread: https://stackoverflow.com/a/17619568/4970632

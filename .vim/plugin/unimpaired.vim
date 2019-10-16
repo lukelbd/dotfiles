@@ -70,12 +70,12 @@ function! s:MapNextFamily(map,cmd) abort
 endfunction
 
 " These aren't used
-call s:MapNextFamily('a', '')
-call s:MapNextFamily('b', 'b')
-call s:MapNextFamily('l', 'l')
-call s:MapNextFamily('q', 'c')
+" call s:MapNextFamily('a', '')
+" call s:MapNextFamily('b', 'b')
+" call s:MapNextFamily('l', 'l')
+" call s:MapNextFamily('q', 'c')
 " Disable this in favor of custom plugin
-" call s:MapNextFamily('t', 't') "use my own tags plugin
+" call s:MapNextFamily('t', 't')
 
 " Section: Next and previous file
 function! s:entries(path) abort

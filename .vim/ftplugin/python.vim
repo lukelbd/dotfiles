@@ -1,16 +1,10 @@
+"-----------------------------------------------------------------------------"
 " Author: Luke Davis (lukelbd@gmail.com)
 " Date: 2018-09-20
-"------------------------------------------------------------------------------"
 " Various settings and macros for python files
-" Includes a couple nice features for converting {'a':1} to a=1 
-" easily; can do this line by line, or for a whole dictionary.
-"------------------------------------------------------------------------------"
-" if exists("b:did_ftplugin") && exists("b:did_indent")
-"   finish
-" endif
-" let b:did_ftplugin = 1
-" let b:did_indent = 1
-" Tab settings; normally keep it to just 2 spaces
+" Includes a couple mappings for converting {'a':1} to a=1
+"-----------------------------------------------------------------------------"
+" Tab settings
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
 " Run current script in shell
 nnoremap <silent> <buffer> <C-z> :update<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
@@ -65,16 +59,6 @@ function! s:pydoc(...)
 endfunction
 command! -nargs=? PyDoc silent call <sid>pydoc(<q-args>) | redraw!
 nnoremap <buffer> <silent> <Leader>d :call <sid>pydoc()<CR>:redraw!<CR>
-
-"------------------------------------------------------------------------------"
-" Abbreviations
-" Actually these were fucking annoying, forget it
-"------------------------------------------------------------------------------"
-" inoreabbrev <buffer> true  True
-" inoreabbrev <buffer> false False
-" inoreabbrev <buffer> none  None
-" inoreabbrev <buffer> nan   np.nan
-" inoreabbrev <buffer> inf   np.inf
 
 "------------------------------------------------------------------------------"
 " Easy conversion between key=value pairs and 'key':value dictionary entries

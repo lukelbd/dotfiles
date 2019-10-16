@@ -238,9 +238,9 @@ nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
-nnoremap <Leader>' :<C-u>RemoveHighlights<CR>
-nnoremap <expr> ' "`" . nr2char(97+v:count)
-nnoremap <expr> " 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
+nnoremap <Leader>` :<C-u>RemoveHighlights<CR>
+nnoremap <expr> ` "`" . nr2char(97+v:count)
+nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 " Reserve lower case q for quitting popup windows
 nnoremap q <Nop>
 " Record macro by pressing Q, the escapes prevent q from triggerering
@@ -310,8 +310,8 @@ endfor
 noremap x "_x
 noremap X "_X
 " Maps for throwaaway and clipboard register
-noremap ` "_
-noremap ~ "*
+noremap ' "_
+noremap " "*
 " Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
@@ -781,7 +781,7 @@ function! s:tabjump(item)
   exe 'normal! '.split(a:item,':')[0].'gt'
 endfunction
 " Function mappings
-nnoremap <silent> <Tab><Space> :call fzf#run({'source':<sid>tab_select(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
+nnoremap <silent> <Tab><Tab> :call fzf#run({'source':<sid>tab_select(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
 nnoremap <silent> <Tab>m :call <sid>tab_move(input('Move tab: ', '', 'customlist,NullList'))<CR>
 nnoremap <silent> <Tab>> :call <sid>tab_move(eval(tabpagenr()+1))<CR>
 nnoremap <silent> <Tab>< :call <sid>tab_move(eval(tabpagenr()-1))<CR>
@@ -835,16 +835,17 @@ augroup simple
 augroup END
 " For popup windows
 " For location lists, enter jumps to location. Restore this behavior.
-function! s:popup_setup()
+function! s:popup_setup(...)
   nnoremap <silent> <buffer> <CR> <CR>
   nnoremap <silent> <buffer> <C-w> :q!<CR>
   nnoremap <silent> <buffer> q :q!<CR>
-  setlocal nolist nonumber norelativenumber nospell nocursorline colorcolumn= buftype=nofile
+  setlocal nolist nonumber norelativenumber nospell modifiable nocursorline colorcolumn=
+  if !a:0 | setlocal buftype=nofile | endif
   if len(tabpagebuflist()) == 1 | q | endif " exit if only one left
 endfunction
 " For help windows
 function! s:help_setup()
-  call s:popup_setup()
+  call s:popup_setup(0) " argument means we do not set buftype=nofile
   wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
   vertical resize 80 " always certain size
   nnoremap <buffer> <CR> <C-]>
@@ -921,9 +922,12 @@ for s:c in range(char2nr('A'), char2nr('Z'))
   exe 'lnoremap ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
   exe 'lnoremap ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
 endfor
-" Caps lock toggle, uses iTerm mapping of impossible key combination to the
-" F5 keypress. See top of file.
+" Caps lock toggle and insert mode maps that toggle it on and off
 set iminsert=0
+augroup caps_lock
+  au!
+  au InsertLeave * setlocal iminsert=0
+augroup END
 inoremap <C-v> <C-^>
 cnoremap <C-v> <C-^>
 
@@ -1183,11 +1187,11 @@ command! -nargs=? Syntax call s:syntax(<q-args>)
 " Get current plugin file
 " Remember :scriptnames lists all loaded files
 function! s:ftplugin()
-  execute 'split $VIMRUNTIME/ftplugin/'.&ft.'.vim'
+  execute 'split $VIMRUNTIME/ftplugin/' . &ft . '.vim'
   silent call s:popup_setup()
 endfunction
 function! s:ftsyntax()
-  execute 'split $VIMRUNTIME/syntax/'.&ft.'.vim'
+  execute 'split $VIMRUNTIME/syntax/' . &ft . '.vim'
   silent call s:popup_setup()
 endfunction
 command! PluginFile call s:ftplugin()
