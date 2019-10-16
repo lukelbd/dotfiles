@@ -16,7 +16,7 @@ map prefixes.
 | `\` | Normal mode. Used for complex regex replacements and tabular alignment. |
 | `c` | Normal mode. Used for toggling comments and inserting comment headers. |
 | `g` | Normal mode. Used for git-gutter commands and other git things. |
-| `;` | Normal mode. Used for window and tab management and resizing. |
+| `<Tab>` | Normal mode. Used for window and tab management and resizing. |
 | `<C-s>` | Insert and visual mode. Used for surrounding the cursor with delimiters. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
 | `<C-z>` | Insert mode. Used for inserting snippets. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
 | `<C-b>` | Insert mode. Used for inserting LaTeX citations. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |

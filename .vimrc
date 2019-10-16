@@ -149,7 +149,7 @@ function! Suppress(prefix, mode)
   endif
 endfunction
 for s:pair in [
-  \ ['n', '<Leader>'], ['v', '<Leader>'], ['n', '\'], ['v', '\'], ['n', ';'],
+  \ ['n', '<Leader>'], ['v', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['v', '\'],
   \ ['v', '<C-s>'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-b>']
   \ ]
   let s:mode = s:pair[0]
@@ -728,9 +728,9 @@ endfunction
 " Note q-args evaluates to empty string if 'no args' were passed!
 command! -nargs=? -complete=file Open call s:fzfopen_run(<q-args>)
 " Maps for opening file in current directory, and opening file in some input directory
-nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 nnoremap <C-o> :Open 
 nnoremap <silent> <C-p> :Files<CR>
+nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 
 " TABS and WINDOWS
 augroup tabs
@@ -781,54 +781,47 @@ function! s:tabjump(item)
   exe 'normal! '.split(a:item,':')[0].'gt'
 endfunction
 " Function mappings
-nnoremap <silent> ;<Space> :call fzf#run({'source':<sid>tab_select(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
-nnoremap <silent> ;m :call <sid>tab_move(input('Move tab: ', '', 'customlist,NullList'))<CR>
-nnoremap <silent> ;> :call <sid>tab_move(eval(tabpagenr()+1))<CR>
-nnoremap <silent> ;< :call <sid>tab_move(eval(tabpagenr()-1))<CR>
-" Add new tab changing
-nnoremap ;1 1gt
-nnoremap ;2 2gt
-nnoremap ;3 3gt
-nnoremap ;4 4gt
-nnoremap ;5 5gt
-nnoremap ;6 6gt
-nnoremap ;7 7gt
-nnoremap ;8 8gt
-nnoremap ;9 9gt
-" Scroll tabs left-right
-nnoremap ;, gT
-nnoremap ;. gt
+nnoremap <silent> <Tab><Space> :call fzf#run({'source':<sid>tab_select(), 'options':'--no-sort', 'sink':function('<sid>tabjump'), 'down':'~50%'})<CR>
+nnoremap <silent> <Tab>m :call <sid>tab_move(input('Move tab: ', '', 'customlist,NullList'))<CR>
+nnoremap <silent> <Tab>> :call <sid>tab_move(eval(tabpagenr()+1))<CR>
+nnoremap <silent> <Tab>< :call <sid>tab_move(eval(tabpagenr()-1))<CR>
+" Tab changing commands
+for s:num in range(1,10)
+  exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
+endfor
+nnoremap <Tab>, gT
+nnoremap <Tab>. gt
 " Switch to previous tab and previous window
 if !exists('g:lasttab') | let g:lasttab = 1 | endif
-nnoremap <silent> ;; :exe "tabn ".g:lasttab<CR>
-nnoremap ;' <C-w><C-p>
+nnoremap <silent> <Tab>' :exe "tabn ".g:lasttab<CR>
+nnoremap <Tab>; <C-w><C-p>
 " Open in split window
 " TODO: Support with <C-o>
-nnoremap ;- :split 
-nnoremap ;\ :vsplit 
+nnoremap <Tab>- :split 
+nnoremap <Tab>\ :vsplit 
 " Center the cursor in window
 " nnoremap ;0 M
-nnoremap ;0 mzz.`z
-" Moving screen up/down, left/right
-nnoremap ;i zt
-nnoremap ;o zb
-nnoremap ;u zH
-nnoremap ;p zL
+" Moving screen up/down or left/right and centering cursor
+nnoremap <Tab>0 mzz.`z
+nnoremap <Tab>i zt
+nnoremap <Tab>o zb
+nnoremap <Tab>u zH
+nnoremap <Tab>p zL
 " Window selection
-nnoremap ;j <C-w>j
-nnoremap ;k <C-w>k
-nnoremap ;h <C-w>h
-nnoremap ;l <C-w>l
+nnoremap <Tab>j <C-w>j
+nnoremap <Tab>k <C-w>k
+nnoremap <Tab>h <C-w>h
+nnoremap <Tab>l <C-w>l
 " Maps for resizing windows
-nnoremap <silent> ;= :vertical resize 80<CR>
-nnoremap <expr> <silent> ;( '<Esc>:resize '.(winheight(0)-3*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> ;) '<Esc>:resize '.(winheight(0)+3*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> ;_ '<Esc>:resize '.(winheight(0)-5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> ;+ '<Esc>:resize '.(winheight(0)+5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> ;[ '<Esc>:vertical resize '.(winwidth(0)-5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> ;] '<Esc>:vertical resize '.(winwidth(0)+5*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> ;{ '<Esc>:vertical resize '.(winwidth(0)-10*max([1,v:count])).'<CR>'
-nnoremap <expr> <silent> ;} '<Esc>:vertical resize '.(winwidth(0)+10*max([1,v:count])).'<CR>'
+nnoremap <silent> <Tab>= :<C-u>vertical resize 80<CR>
+nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>) :<C-u>exe 'resize ' . (winheight(0) + 3*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>_ :<C-u>exe 'resize ' . (winheight(0) - 5*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>+ :<C-u>exe 'resize ' . (winheight(0) + 5*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>[ :<C-u>exe 'vertical resize ' . (winwidth(0) - 5*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10*max([1, v:count]))<CR>
 
 " SIMPLE WINDOW SETTINGS
 " Enable quitting windows with simple 'q' press and disable line numbers
