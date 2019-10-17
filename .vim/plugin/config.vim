@@ -10,10 +10,51 @@ function! PlugActive(key)
   return has_key(g:plugs, a:key) " change if (e.g.) switch plugin managers
 endfunction
 
-" Custom plugins
+" Custom plugin settings
 " Mappings for vim-idetools command
 if PlugActive('vim-idetools') || &rtp =~ 'vim-idetools'
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
+endif
+" Textools mappings and such
+" Add to global delims from vim-textools plugin
+" Test runtimepath directly in case it was loaded locally
+" Note: Cannot test for existence of autoload function because it might
+" not have been loaded yet!
+if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
+  " Delimiter mappings
+  augroup textools_settings
+    au!
+  augroup END
+  let g:textools_prevdelim_map = '<F1>'
+  let g:textools_nextdelim_map = '<F2>'
+  let g:textools_bibtextoggle_map = '<Leader>b'
+  let g:textools_latexmk_maps = {
+    \ '<C-z>': '',
+    \ '<Leader>z': '--diff',
+    \ '<Leader>Z': '--word',
+    \ }
+  " Command mappings
+  " Surround mappings
+  " The bracket maps are also defined in textools but make them global and
+  " do not include the delete_delims and change_delims functionality
+  function! s:add_delim(map, start, end) " if final argument passed, this is global
+    let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
+  endfunction
+  nmap dsc dsB
+  nmap csc csB
+  vmap <C-s> <Plug>VSurround
+  imap <C-s> <Plug>Isurround
+  call s:add_delim('b', '(', ')')
+  call s:add_delim('c', '{', '}')
+  call s:add_delim('B', '{', '}')
+  call s:add_delim('r', '[', ']')
+  call s:add_delim('a', '<', '>')
+  call s:add_delim('\', '\"', '\"')
+  call s:add_delim('p', 'print(', ')')
+  call s:add_delim('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
+  nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
+  nnoremap <silent> dsf :call textools#delete_delims('\w*(', ')')<CR>
+  nnoremap <silent> csf :call textools#change_delims('\(\w*\)(', ')', input('function: '))<CR>
 endif
 
 " Vim sneak
@@ -63,36 +104,6 @@ if PlugActive('vim-surround')
   nmap ySW ySiW
   nmap ySp ySip
   nmap yS. ySis
-  " Add to global delims from vim-textools plugin
-  " Test runtimepath directly in case it was loaded locally
-  " Note: Cannot test for existence of autoload function because it might
-  " not have been loaded yet!
-  if &rtp =~ 'vim-textools'
-    " Helper func
-    " \'    \'
-    function! s:add_delim(map, start, end) " if final argument passed, this is global
-      let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
-    endfunction
-    " Mappings
-    vmap <C-s> <Plug>VSurround
-    imap <C-s> <Plug>Isurround
-    nmap dsc dsB
-    nmap csc csB
-    " These are also defined in textools but make them global and
-    " do not include the delete_delims and change_delims functionality
-    call s:add_delim('b', '(', ')')
-    call s:add_delim('c', '{', '}')
-    call s:add_delim('B', '{', '}')
-    call s:add_delim('r', '[', ']')
-    call s:add_delim('a', '<', '>')
-    " Function, print, and escaped quotes
-    call s:add_delim('\', '\"', '\"')
-    call s:add_delim('p', 'print(', ')')
-    call s:add_delim('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
-    nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
-    nnoremap <silent> dsf :call textools#delete_delims('\w*(', ')')<CR>
-    nnoremap <silent> csf :call textools#change_delims('\(\w*\)(', ')', input('function: '))<CR>
-  endif
 endif
 
 " Text objects
