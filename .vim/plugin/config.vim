@@ -15,19 +15,25 @@ endfunction
 if PlugActive('vim-idetools') || &rtp =~ 'vim-idetools'
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
 endif
-" Textools mappings and such
-" Add to global delims from vim-textools plugin
-" Test runtimepath directly in case it was loaded locally
-" Note: Cannot test for existence of autoload function because it might
-" not have been loaded yet!
+" Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
+if PlugActive('vim-scrollwrapped') || &rtp =~ 'vim-scrollwrapped'
+  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
+  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
+  vnoremap <silent> <expr> <Down> (winheight(0)/4) . '<C-e>' . (winheight(0)/4) . 'gj'
+  vnoremap <silent> <expr> <Up>   (winheight(0)/4) . '<C-y>' . (winheight(0)/4) . 'gk'
+endif
+" Add global delims with vim-textools plugin functions and declare my weird
+" mapping defaults due to Karabiner
 if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
   " Delimiter mappings
+  " Note: Why is bibtextoggle_map a variable? Because otherwise we have to put
+  " this in ftplugin/tex.vim or define an autocommand
   augroup textools_settings
     au!
+    au FileType tex nnoremap <silent> <buffer> <Leader>b :BibtexToggle<CR>
   augroup END
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
-  let g:textools_bibtextoggle_map = '<Leader>b'
   let g:textools_latexmk_maps = {
     \ '<C-z>': '',
     \ '<Leader>z': '--diff',
@@ -167,66 +173,12 @@ if PlugActive('vim-textobj-user')
     return s:lines_helper(pnb,nnb)
   endfunction
 
-  " Method calls
-  function! s:methodcall_a()
-    return s:methodcall('a')
-  endfunction
-  function! s:methodcall_i()
-    return s:methodcall('i')
-  endfunction
-  function! s:methodcall(motion)
-    if a:motion == 'a'
-        silent! normal! [(
-    endif
-    silent! execute "normal! w?\\v(\\.{0,1}\\w+)+\<cr>"
-    let head_pos = getpos('.')
-    normal! %
-    let tail_pos = getpos('.')
-    if tail_pos == head_pos
-        return 0
-    endif
-    return ['v', head_pos, tail_pos]
-  endfunction
-
-  " Chained methodcall command
-  function! s:methoddef_i()
-    return s:methoddef('i')
-  endfunction
-  function! s:methoddef_a()
-    return s:methoddef('a')
-  endfunction
-  function! s:char_under_cursor()
-      return getline('.')[col('.') - 1]
-  endfunction
-  function! s:methoddef(motion)
-    if a:motion == 'a'
-      silent! normal! [(
-    endif
-    silent! execute 'normal! w?\v(\.{0,1}\w+)+' . "\<cr>"
-    let head = getpos('.')
-    while s:char_under_cursor() == '.'
-      silent! execute "normal! ?)\<cr>%"
-      silent! execute 'normal! w?\v(\.{0,1}\w+)+' . "\<cr>"
-      let head = getpos('.')
-    endwhile
-    silent! execute "normal! %"
-    let tail = getpos('.')
-    silent! execute 'normal! /\v(\.{0,1}\w+)+' . "\<cr>"
-    while s:char_under_cursor() == '.'
-      silent! execute "normal! %"
-      let tail = getpos('.')
-      silent! execute 'normal! /\v(\.{0,1}\w+)+' . "\<cr>"
-    endwhile
-    call setpos('.', tail)
-    if tail == head
-      return 0
-    endif
-    return ['v', head, tail]
-  endfunction
-
   " Dictionary of all universal text objects
   " Highlight current line, functions, arrays, and methods. Thesse use keyword
   " chars, i.e. what is considered a 'word' by '*', 'gd/gD', et cetera
+  " Note: Method definition needs that fancy regex instead of just \< because
+  " textobj looks for *narrowest* possible match so only catches tail of
+  " method call. Note that \@! fails but \zs works for some reason.
   let s:universal_textobjs_dict = {
     \   'line': {
     \     'sfile': expand('<sfile>:p'),
@@ -245,29 +197,24 @@ if PlugActive('vim-textobj-user')
     \   'nonblanklines': {
     \     'sfile': expand('<sfile>:p'),
     \     'select-a-function': 's:nonblank_lines',
-    \     'select-a': 'ap',
+    \     'select-a': 'aP',
     \     'select-i-function': 's:nonblank_lines',
-    \     'select-i': 'ip',
+    \     'select-i': 'iP',
     \   },
     \   'uncommented': {
     \     'sfile': expand('<sfile>:p'),
     \     'select-a-function': 's:uncommented_lines',
     \     'select-i-function': 's:uncommented_lines',
-    \     'select-a': 'au',
-    \     'select-i': 'iu',
-    \   },
-    \   'methodcall': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a': 'af', 'select-a-function': 's:methodcall_a',
-    \     'select-i': 'if', 'select-i-function': 's:methodcall_i',
-    \   },
-    \   'methodef': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a': 'aF', 'select-a-function': 's:methoddef_a',
-    \     'select-i': 'iF', 'select-i-function': 's:methoddef_i'
+    \     'select-a': 'aC',
+    \     'select-i': 'iC',
     \   },
     \   'function': {
     \     'pattern': ['\<\h\w*(', ')'],
+    \     'select-a': 'af',
+    \     'select-i': 'if',
+    \   },
+    \   'method': {
+    \     'pattern': ['\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')'],
     \     'select-a': 'am',
     \     'select-i': 'im',
     \   },

@@ -158,9 +158,9 @@ function! s:setup_paste() abort
 endfunction
 
 nnoremap <silent> <Plug>unimpairedPaste :call <SID>setup_paste()<CR>
-call s:map('n', 'vo', ':call <SID>setup_paste()<CR>o', '<silent>')
-call s:map('n', 'vO', ':call <SID>setup_paste()<CR>O', '<silent>')
-call s:map('n', 'vI', ':call <SID>setup_paste()<CR>0C', '<silent>')
+call s:map('n', ']v', ':call <SID>setup_paste()<CR>o', '<silent>')
+call s:map('n', '[v', ':call <SID>setup_paste()<CR>O', '<silent>')
+call s:map('n', 'cv', ':call <SID>setup_paste()<CR>c', '<silent>')
 
 " Section: Blank line
 function! s:BlankUp(count) abort
