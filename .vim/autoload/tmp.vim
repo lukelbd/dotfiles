@@ -1,4 +1,4 @@
-" HowMuch : calculate visual selected math expressions
+" howmuch : calculate visual selected math expressions
 " Author  : Kai Yuan <kent.yuan@gmail.com>
 " License: {{{
 " Copyright (c) 2013 Kai Yuan
@@ -20,24 +20,24 @@
 " CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 " }}}
 
-if exists("g:autoloaded_HowMuch")
+if exists("g:autoloaded_howmuch")
   finish
 endif
-let g:autoloaded_HowMuch = 1
-" let g:HowMuch_debug = 1
+let g:autoloaded_howmuch = 1
+" let g:howmuch_debug = 1
 
 " //////////////////////////////////////////////////////////////////////
 "                              Variables                              /
 " //////////////////////////////////////////////////////////////////////
-let g:HowMuch_scale   = exists('g:HowMuch_scale')?   g:HowMuch_scale   : 2
-let g:HowMuch_debug   = exists('g:HowMuch_debug')?   g:HowMuch_debug   : 0
-let g:HowMuch_auto_engines = exists('g:HowMuch_auto_engines')? g:HowMuch_auto_engines : ['bc', 'vim', 'py']
+let g:howmuch_scale   = exists('g:howmuch_scale')?   g:howmuch_scale   : 2
+let g:howmuch_debug   = exists('g:howmuch_debug')?   g:howmuch_debug   : 0
+let g:howmuch_auto_engines = exists('g:howmuch_auto_engines')? g:howmuch_auto_engines : ['bc', 'vim', 'py']
 
-let g:HowMuch_engine_map = exists('g:HowMuch_engine_map')? g:HowMuch_engine_map : {
-            \'auto':function('HowMuch#calc_auto'),
-            \ 'bc':function('HowMuch#calc_in_bc'),
-            \ 'py':function('HowMuch#calc_in_py'),
-            \ 'vim':function('HowMuch#calc_in_vim') }
+let g:howmuch_engine_map = exists('g:howmuch_engine_map')? g:howmuch_engine_map : {
+            \'auto':function('howmuch#calc_auto'),
+            \ 'bc':function('howmuch#calc_in_bc'),
+            \ 'py':function('howmuch#calc_in_py'),
+            \ 'vim':function('howmuch#calc_in_vim') }
 
 " //////////////////////////////////////////////////////////////////////
 "                         Helper  functions
@@ -47,30 +47,30 @@ let g:HowMuch_engine_map = exists('g:HowMuch_engine_map')? g:HowMuch_engine_map 
 " ============================
 " print debug information
 " ============================
-function! HowMuch#debug(prompt, msg)
-  if g:HowMuch_debug
-    echom printf( '[HowMuch Debug] %s :%s[$]', a:prompt, a:msg)
+function! howmuch#debug(prompt, msg)
+  if g:howmuch_debug
+    echom printf( '[howmuch Debug] %s :%s[$]', a:prompt, a:msg)
   endif
 endfunction
 
 " ============================
-" build HowMuch error message
+" build howmuch error message
 " ============================
-function! HowMuch#errMsg(msg)
-  return printf( '[HowMuch Error] %s',  a:msg)
+function! howmuch#errMsg(msg)
+  return printf( '[howmuch Error] %s',  a:msg)
 endfunction
 
 
 " ============================
 " Validate user's engine list
 " ============================
-function! HowMuch#check_user_engines()
-  if len(g:HowMuch_auto_engines) == 0
-    throw HowMuch#errMsg('Empty g:HowMuch_auto_engines is not allowed.')
+function! howmuch#check_user_engines()
+  if len(g:howmuch_auto_engines) == 0
+    throw howmuch#errMsg('Empty g:howmuch_auto_engines is not allowed.')
   endif
-  for k in g:HowMuch_auto_engines
-    if !exists('g:HowMuch_engine_map[tolower(k)]') || tolower(k) =="auto"
-      throw HowMuch#errMsg('Unsupported engine:'.k)
+  for k in g:howmuch_auto_engines
+    if !exists('g:howmuch_engine_map[tolower(k)]') || tolower(k) =="auto"
+      throw howmuch#errMsg('Unsupported engine:'.k)
     endif
   endfor
 endfunction
@@ -81,20 +81,20 @@ endfunction
 " useful for vim engine to get the
 " right scale
 " ============================
-function! HowMuch#to_float(expr)
+function! howmuch#to_float(expr)
   return  substitute(a:expr,'[^.0-9^]\zs\d\+\ze\([^.0-9]\|$\)', '&.0', 'g')
 endfunction
 
 
 " if number in format ###.000, remove the trailing zeros
-function! HowMuch#removeTrailingZero(float)
+function! howmuch#removeTrailingZero(float)
   return  substitute(a:float,'\.0*$', '', '')
 endfunction
 
 " ============================
 " get visual selected text
 " ============================
-function! HowMuch#get_visual_text()
+function! howmuch#get_visual_text()
   try
     let v_save = @v
     normal! gv"vy
@@ -108,17 +108,17 @@ endfunction
 " ============================
 " parse command arguments
 " ============================
-function! HowMuch#DoWithCommand(argStr)
+function! howmuch#DoWithCommand(argStr)
   let str = substitute(a:argStr,'\s','', 'g')
   let hasReplace = match(str,'r')>=0? 1:0
   let hasEq =  match(str,'=')>=0? 1:0
   let hasSum =  match(str,'s')>=0? 1:0
 
   if hasEq && hasReplace
-    echoerr HowMuch#errMsg('illegal option combination: "r" and "="')
+    echoerr howmuch#errMsg('illegal option combination: "r" and "="')
     return
   endif
-  call HowMuch#HowMuch(!hasReplace, hasEq, hasSum, 'auto')
+  call howmuch#howmuch(!hasReplace, hasEq, hasSum, 'auto')
 endfunction
 
 " ///////////////////////////////////////////////////////////////////}}}
@@ -143,15 +143,15 @@ endfunction
 "           0: without doing sum calculation.
 "
 " engineType:
-"           see variable g:HowMuch_engine_map, it defines that use which
+"           see variable g:howmuch_engine_map, it defines that use which
 "           engine to calculate the result.  If the value is 'auto', it will try engines
-"           (also follow the order) defined in g:HowMuch_auto_engines
+"           (also follow the order) defined in g:howmuch_auto_engines
 " ============================
-function! HowMuch#HowMuch(isAppend, withEq, sum, engineType) range
+function! howmuch#howmuch(isAppend, withEq, sum, engineType) range
 
   " if do sum in wrong mode, reject
   if a:sum && visualmode() ==# 'v'
-    echoerr HowMuch#errMsg('Sum feature is available only for line(V)/blockwise(<C-V>) visual mode')
+    echoerr howmuch#errMsg('Sum feature is available only for line(V)/blockwise(<C-V>) visual mode')
     return
   endif
 
@@ -161,12 +161,12 @@ function! HowMuch#HowMuch(isAppend, withEq, sum, engineType) range
   let max_len      = 0
   " first do validation
   try
-    call HowMuch#check_user_engines()
-  catch /HowMuch Error/
+    call howmuch#check_user_engines()
+  catch /howmuch Error/
     echoerr v:exception
     return
   endtry
-  let s = HowMuch#get_visual_text()
+  let s = howmuch#get_visual_text()
   let exps = split(s,'\n')
 
   " remove ending equals if there are
@@ -184,15 +184,15 @@ function! HowMuch#HowMuch(isAppend, withEq, sum, engineType) range
   for i in range(len(exps))
     try
       " using a tmp value to store modified expression (to float)
-      let e       = HowMuch#to_float(exps[i])
-      call HowMuch#debug("after to_float:", e)
-      let result  = g:HowMuch_engine_map[tolower(a:engineType)](e)
+      let e       = howmuch#to_float(exps[i])
+      call howmuch#debug("after to_float:", e)
+      let result  = g:howmuch_engine_map[tolower(a:engineType)](e)
       let has_err = has_err > 0? has_err : (result == 'Err'? 1:0)
       if !has_err && a:sum
-        call HowMuch#debug('before adding to total, result:', result)
-        call HowMuch#debug('result type:', type(result))
+        call howmuch#debug('before adding to total, result:', result)
+        call howmuch#debug('result type:', type(result))
         let total +=  str2float(result)
-        call HowMuch#debug('after adding total, total:', string(total))
+        call howmuch#debug('after adding total, total:', string(total))
       endif
     catch /.*/	
       let has_err +=1
@@ -222,7 +222,7 @@ function! HowMuch#HowMuch(isAppend, withEq, sum, engineType) range
   endif
 
   let s = join(exps, "\n")
-  call HowMuch#debug('last big expr string', s)
+  call howmuch#debug('last big expr string', s)
   let v_save = @v
   call setreg('v',s,visualmode())
   " add two empty lines if sum is true
@@ -241,22 +241,22 @@ endfunction
 " Auto-Calc will pick engine from the user defined engine list
 " in order, to do calculation. The first result without error will
 " be returned
-" HowMuch#calc_auto doesn't throw any exception
+" howmuch#calc_auto doesn't throw any exception
 " =============================
-function! HowMuch#calc_auto(expr)
+function! howmuch#calc_auto(expr)
   let errCount = 0
   let r = ''
-  for e in g:HowMuch_auto_engines
+  for e in g:howmuch_auto_engines
     try
-      call HowMuch#debug('Auto expr', a:expr)
-      let r = g:HowMuch_engine_map[tolower(e)](a:expr)
-      call HowMuch#debug('Auto result', r)
+      call howmuch#debug('Auto expr', a:expr)
+      let r = g:howmuch_engine_map[tolower(e)](a:expr)
+      call howmuch#debug('Auto result', r)
       return r
     catch /.*/
       let errCount += 1
-      call HowMuch#debug("Auto Exception",v:exception)
+      call howmuch#debug("Auto Exception",v:exception)
       " return Err without stopping further calculation
-      if errCount == len(g:HowMuch_auto_engines)
+      if errCount == len(g:howmuch_auto_engines)
         return "Err"
       endif
     endtry
@@ -266,14 +266,14 @@ endfunction
 " ============================
 " evaluation the expression with vim
 " ============================
-function! HowMuch#calc_in_vim(expr)
+function! howmuch#calc_in_vim(expr)
   try
-    call HowMuch#debug('Expression for vim', a:expr)
-    let r = substitute(printf('%.'. g:HowMuch_scale . 'f', eval(a:expr)), '\.0*$', '', '') . ' '
-    call HowMuch#debug('vim Result', r )
+    call howmuch#debug('Expression for vim', a:expr)
+    let r = substitute(printf('%.'. g:howmuch_scale . 'f', eval(a:expr)), '\.0*$', '', '') . ' '
+    call howmuch#debug('vim Result', r )
     return r
   catch /.*/
-    throw HowMuch#errMsg('Invalid Vim Expression:'. a:expr .  ' Exception:' . v:exception)
+    throw howmuch#errMsg('Invalid Vim Expression:'. a:expr .  ' Exception:' . v:exception)
   endtry
 endfunction
 "
@@ -282,28 +282,28 @@ endfunction
 " do math calculation with gnu bc -l
 " Note: echo 'abc'|bc -l will return 0
 " ============================
-function! HowMuch#calc_in_bc(expr)
-  let r = system(printf('echo "scale=%d;%s"|bc -l &2>/dev/null', g:HowMuch_scale, a:expr))
+function! howmuch#calc_in_bc(expr)
+  let r = system(printf('echo "scale=%d;%s"|bc -l &2>/dev/null', g:howmuch_scale, a:expr))
   if v:shell_error > 0
-    throw HowMuch#errMsg('bc program return error: '. v:shell_error)
+    throw howmuch#errMsg('bc program return error: '. v:shell_error)
   elseif match(r, '[^0-9\n .]') >= 0 || r == ''
-    throw HowMuch#errMsg('Invalid bc Expression')
+    throw howmuch#errMsg('Invalid bc Expression')
   endif
   " removing the ending line break
   let r = substitute(r, '[\n\r]*$', '', '')
-  return HowMuch#removeTrailingZero(r)
+  return howmuch#removeTrailingZero(r)
 endfunction
 
 " ============================
 " do math calculation with python
 "
 " ============================
-function! HowMuch#calc_in_py(expr)
+function! howmuch#calc_in_py(expr)
   if !has('python')
-    echoerr HowMuch#errMsg('vim was not compiled with +python!')
+    echoerr howmuch#errMsg('vim was not compiled with +python!')
     return 'Err'
   endif
-  call HowMuch#debug('Expression for python', a:expr)
+  call howmuch#debug('Expression for python', a:expr)
   let result = ''
 python << EOF
 import vim
@@ -314,7 +314,7 @@ import re
 ns = vars(math).copy()
 ns['__builtins__'] = None
 expr = vim.eval("a:expr")
-scale = vim.eval("g:HowMuch_scale")
+scale = vim.eval("g:howmuch_scale")
 try:
     fmt    = "{:." + str(scale) + "f}"
     result = fmt.format(eval(expr,ns))
@@ -326,11 +326,11 @@ vim.command("let result = string(%s)" % str(result))
 EOF
 
 
-  call HowMuch#debug('Result from python', result)
+  call howmuch#debug('Result from python', result)
   if result == 'Err'
-      throw HowMuch#errMsg('Invalid python Expression ' . a:expr)
+      throw howmuch#errMsg('Invalid python Expression ' . a:expr)
   endif
-  return HowMuch#removeTrailingZero(result)
+  return howmuch#removeTrailingZero(result)
 endfunction
 
 " vim: ts=2:sw=2:tw=78:fdm=marker:expandtab

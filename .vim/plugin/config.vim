@@ -50,6 +50,8 @@ if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
   nmap csc csB
   vmap <C-s> <Plug>VSurround
   imap <C-s> <Plug>Isurround
+  call s:add_delim('q', '‘', '’')
+  call s:add_delim('Q', '“', '”')
   call s:add_delim('b', '(', ')')
   call s:add_delim('c', '{', '}')
   call s:add_delim('B', '{', '}')
@@ -61,6 +63,8 @@ if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
   nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
   nnoremap <silent> dsf :call textools#delete_delims('\w*(', ')')<CR>
   nnoremap <silent> csf :call textools#change_delims('\(\w*\)(', ')', input('function: '))<CR>
+  nnoremap <silent> dsq :call textools#delete_delims("‘", "’")<CR>
+  nnoremap <silent> dsQ :call textools#delete_delims("“", "”")<CR>
 endif
 
 " Vim sneak
@@ -73,6 +77,22 @@ if PlugActive('vim-sneak')
   map T <Plug>Sneak_T
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
+endif
+
+" Vim surround
+" Add shortcuts for surrounding text objects with delims
+" NOTE: More global delims are found in textools plugin because I define
+" some complex helper funcs there
+if PlugActive('vim-surround')
+  " Define text object shortcuts
+  nmap ysw ysiw
+  nmap ysW ysiW
+  nmap ysp ysip
+  nmap ys. ysis
+  nmap ySw ySiw
+  nmap ySW ySiW
+  nmap ySp ySip
+  nmap yS. ySis
 endif
 
 " Auto-generate delimiters
@@ -94,22 +114,6 @@ if PlugActive('delimitmate')
   let g:delimitMate_quotes = "\" '"
   let g:delimitMate_matchpairs = "(:),{:},[:]"
   let g:delimitMate_excluded_regions = "String" "by default is disabled inside, don't want that
-endif
-
-" Vim surround
-" Add shortcuts for surrounding text objects with delims
-" NOTE: More global delims are found in textools plugin because I define
-" some complex helper funcs there
-if PlugActive('vim-surround')
-  " Define text object shortcuts
-  nmap ysw ysiw
-  nmap ysW ysiW
-  nmap ysp ysip
-  nmap ys. ysis
-  nmap ySw ySiw
-  nmap ySW ySiW
-  nmap ySp ySip
-  nmap yS. ySis
 endif
 
 " Text objects
@@ -761,6 +765,8 @@ if PlugActive('tabular')
   " Dictionary, colon on left
   nnoremap <expr> \d ':Tabularize /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> \d ':Table      /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
+  " nnoremap <expr> \d ':Tabularize /:\zs/l0c1<CR>'
+  " vnoremap <expr> \d ':Table      /:\zs/l0c1<CR>'
   " Dictionary, colon on right
   nnoremap <expr> \D ':Tabularize /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
   vnoremap <expr> \D ':Table      /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
@@ -896,6 +902,7 @@ function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overri
   filetype plugin indent on
   let loaded = []
   let files = [
+    \ '~/.vimrc',
     \ '~/.vim/ftplugin/' . &ft . '.vim',
     \ '~/.vim/syntax/' . &ft . '.vim',
     \ '~/.vim/after/ftplugin/' . &ft . '.vim',
@@ -906,9 +913,9 @@ function! s:refresh() " refresh sesssion, sometimes ~/.vimrc settings are overri
       call add(loaded, file)
     endif
   endfor
-  echom "Loaded ".join(map(['~/.vimrc'] + loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
+  echom "Loaded ".join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
 endfunction
-command! Refresh so ~/.vimrc | call s:refresh()
+command! Refresh call s:refresh()
 " Refresh command, load from disk, redraw screen
 nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :e<CR>
