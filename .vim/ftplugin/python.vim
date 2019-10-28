@@ -58,7 +58,7 @@ function! s:pydoc(...)
   exe '!clear; pydoc '.string
 endfunction
 command! -nargs=? PyDoc silent call <sid>pydoc(<q-args>) | redraw!
-nnoremap <buffer> <silent> <Leader>d :call <sid>pydoc()<CR>:redraw!<CR>
+nnoremap <buffer> <silent> <Leader>p :call <sid>pydoc()<CR>:redraw!<CR>
 
 "------------------------------------------------------------------------------"
 " Easy conversion between key=value pairs and 'key':value dictionary entries

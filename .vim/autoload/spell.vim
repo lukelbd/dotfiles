@@ -27,7 +27,7 @@ function! spell#lang_toggle(...)
   endif
 endfunction
 
-" Change spelling of next incorrect word
+" Correct next misspelled word
 function! spell#spell_change(direc)
   let nospell = 0
   if !&l:spell

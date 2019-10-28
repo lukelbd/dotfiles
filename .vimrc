@@ -117,9 +117,6 @@ endfunction
 function! Strip(text) " strip leading and trailing whitespace
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
-function! NullList(A, L, P) " null completelist so tab doesn't make literal char
-  return []
-endfunction
 
 " Query whether plugin is loaded
 function! PlugActive(key)
@@ -169,16 +166,6 @@ function! RegexComment()
   return comment
 endfunction
 
-" Wildmenu remaps
-function! s:wild_tab()
-  call feedkeys("\<Tab>", 't') | return ''
-endfunction
-function! s:wild_stab()
-  call feedkeys("\<S-Tab>", 't') | return ''
-endfunction
-cnoremap <expr> <F1> <sid>wild_stab()
-cnoremap <expr> <F2> <sid>wild_tab()
-
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
 if mapcheck('<Esc>', 'n') != ''
@@ -192,17 +179,6 @@ if mapcheck('<Esc>', 'n') != ''
     exe 'silent! iunmap <Esc>'.s:insert_map
   endfor
 endif
-
-" Forward delete by tabs
-function! s:forward_delete()
-  let line = getline('.')
-  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(" ", &tabstop)
-    return repeat("\<Delete>", &tabstop)
-  else
-    return "\<Delete>"
-  endif
-endfunction
-inoremap <silent> <expr> <Delete> <sid>forward_delete()
 
 " Suppress all prefix mappings initially so that we avoid accidental actions
 " due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
@@ -225,7 +201,32 @@ for s:pair in [
   endif
 endfor
 
-" CHANGE/ADD PROPERTIES/SHORTCUTS OF VERY COMMON ACTIONS
+" Different cursor shape different modes
+" First mouse stuff, make sure we are using vim, not vi
+if v:version >= 500
+  set mouse=a " mouse clicks and scroll wheel allowed in insert mode via escape sequences
+endif
+if has('ttymouse')
+  set ttymouse=sgr
+else
+  set ttymouse=xterm2
+endif
+" Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
+" fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
+" * Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
+"   The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
+" * Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
+if exists("&t_SI")
+  let &t_SI = (exists('$TMUX') ? "\ePtmux;\e\e[6 q\e\\" : "\e[6 q")
+endif
+if exists("&t_SR")
+  let &t_SR = (exists('$TMUX') ? "\ePtmux;\e\e[4 q\e\\" : "\e[4 q")
+endif
+if exists("&t_EI")
+  let &t_EI = (exists('$TMUX') ? "\ePtmux;\e\e[2 q\e\\" : "\e[2 q")
+endif
+
+" NORMAL and VISUAL MODE MAPS
 " Disable keys
 noremap <CR> <Nop>
 noremap <Space> <Nop>
@@ -334,7 +335,7 @@ noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
 
-" POPUP MENU RELATED MAPS
+" INSERT and COMMAND WINDOW MAPS
 " Count number of tabs in popup menu so our position is always known
 augroup popuphelper
   au!
@@ -349,8 +350,6 @@ endfunction
 function! s:tab_reset()
   let b:menupos = 0 | return ''
 endfunction
-" NOTE: Try let a = 1 ? 1 ? 'a' : 'b' : 'c', this works!
-" WARNING: The space remap and tab remap break insert mode abbreviations!
 " To use abbreviations you must trigger manually with <C-]> (see :help i_Ctrl-])
 " First keystrokes that close popup menu
 inoremap <expr> <Backspace> pumvisible() ? <sid>tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
@@ -366,31 +365,10 @@ inoremap <expr> <Up> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
 inoremap <expr> <Down> pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
 inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : ""
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tab_increase() . "\<C-n>" : ""
-
-" Different cursor shape different modes
-" First mouse stuff, make sure we are using vim, not vi
-if v:version >= 500
-  set mouse=a " mouse clicks and scroll wheel allowed in insert mode via escape sequences
-endif
-if has('ttymouse')
-  set ttymouse=sgr
-else
-  set ttymouse=xterm2
-endif
-" Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
-" fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
-" * Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
-"   The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
-" * Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
-if exists("&t_SI")
-  let &t_SI = (exists('$TMUX') ? "\ePtmux;\e\e[6 q\e\\" : "\e[6 q")
-endif
-if exists("&t_SR")
-  let &t_SR = (exists('$TMUX') ? "\ePtmux;\e\e[4 q\e\\" : "\e[4 q")
-endif
-if exists("&t_EI")
-  let &t_EI = (exists('$TMUX') ? "\ePtmux;\e\e[2 q\e\\" : "\e[2 q")
-endif
+" Special maps
+inoremap <silent> <expr> <Delete> utils#forward_delete()
+cnoremap <expr> <F1> utils#wild_tab(0)
+cnoremap <expr> <F2> utils#wild_tab(1)
 
 " VIM-PLUG PLUGINS
 " Don't load some plugins if not compatible
@@ -640,8 +618,8 @@ if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
   call s:add_delim('p', 'print(', ')')
   call s:add_delim('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
   nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
-  nnoremap <silent> dsf :call textools#delete_delims('\w*(', ')')<CR>
-  nnoremap <silent> csf :call textools#change_delims('\(\w*\)(', ')', input('function: '))<CR>
+  nnoremap <silent> dsf :call textools#delete_delims('\<\h\w*(', ')')<CR>
+  nnoremap <silent> csf :call textools#change_delims('\<\h\w*(', ')', input('function: ') . "(\r)")<CR>
   nnoremap <silent> dsq :call textools#delete_delims("‘", "’")<CR>
   nnoremap <silent> dsQ :call textools#delete_delims("“", "”")<CR>
 endif
@@ -759,6 +737,8 @@ if PlugActive('vim-textobj-user')
     \ }
   " Enable and define related maps
   call textobj#user#plugin('universal', s:universal_textobjs_dict)
+  noremap <silent> [p {
+  noremap <silent> ]p }
   noremap <silent> [C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 0)<CR>
   noremap <silent> ]C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 1)<CR>
   noremap <silent> [P :call textobj#search_block('^\ze\s*$', 0)<CR>
@@ -809,7 +789,7 @@ if PlugActive('codi.vim')
     au User CodiEnterPre call utils#codi_setup(1)
     au User CodiLeavePost call utils#codi_setup(0)
   augroup END
-  command! -nargs=1 CodiNew call utils#codi_new(<q-args>)
+  command! -nargs=? CodiNew call utils#codi_new(<q-args>)
   nnoremap <silent> <Leader>u :CodiNew<CR>
   nnoremap <silent> <Leader>U :Codi!!<CR>
   " See issue: https://github.com/metakirby5/codi.vim/issues/85
@@ -1025,8 +1005,8 @@ if PlugActive('tabular')
   " Dictionary, colon on left
   nnoremap <expr> \d ':Tabularize /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> \d ':Table      /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
-  " nnoremap <expr> \d ':Tabularize /:\zs/l0c1<CR>'
-  " vnoremap <expr> \d ':Table      /:\zs/l0c1<CR>'
+  nnoremap <expr> \d ':Tabularize /:\zs/l0c1<CR>'
+  vnoremap <expr> \d ':Table      /:\zs/l0c1<CR>'
   " Dictionary, colon on right
   nnoremap <expr> \D ':Tabularize /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
   vnoremap <expr> \D ':Table      /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
@@ -1143,7 +1123,7 @@ if PlugActive('vim-obsession') "must manually preserve cursor position
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
     au VimEnter * Obsession .vimsession
   augroup END
-  nnoremap <silent> <Leader>v :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
+  nnoremap <silent> <Leader>V :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
 endif
 " Related utils
 command! Refresh call utils#refresh()
@@ -1206,7 +1186,7 @@ nnoremap <Tab>, gT
 nnoremap <Tab>. gt
 nnoremap <silent> <Tab>' :exe "tabn ".(exists('g:lasttab') ? g:lasttab : 1)<CR>
 nnoremap <silent> <Tab><Tab> :call fzf#run({'source': utils#tab_select(), 'options': '--no-sort', 'sink':function('utils#tab_jump'), 'down':'~50%'})<CR>
-nnoremap <silent> <Tab>m :call utils#tab_move(input('Move tab: ', '', 'customlist,NullList'))<CR>
+nnoremap <silent> <Tab>m :call utils#tab_move()<CR>
 nnoremap <silent> <Tab>> :call utils#tab_move(eval(tabpagenr()+1))<CR>
 nnoremap <silent> <Tab>< :call utils#tab_move(eval(tabpagenr()-1))<CR>
 for s:num in range(1,10)
@@ -1252,13 +1232,10 @@ nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
-nnoremap <Leader>h :vert help 
-nnoremap <Leader>H :Help<CR>
-nnoremap <silent> <expr> <Leader>M ':!clear; search=' . input('Get man info: ', '', 'customlist,NullList') . '; '
-  \ . 'if [ -n $search ] && command man $search &>/dev/null; then command man $search; fi<CR>:redraw!<CR>'
-nnoremap <silent> <expr> <Leader>m ':!clear; search=' . input('Get help info: ', '', 'customlist,NullList') . '; '
-  \ . 'if [ -n $search ] && builtin help $search &>/dev/null; then builtin help $search 2>&1 \| less; '
-  \ . 'elif $search --help &>/dev/null; then $search --help 2>&1 \| less; fi<CR>:redraw!<CR>'
+nnoremap <silent> <Leader>h :call utils#show_cmd_help() \| redraw!<CR>
+nnoremap <silent> <Leader>m :call utils#show_cmd_man() \| redraw!<CR>
+nnoremap <silent> <Leader>v :Help<CR>
+" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 
 " SEARCHING AND FIND-REPLACE STUFF
 " Basic stuff first

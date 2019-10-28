@@ -21,6 +21,82 @@ function! utils#refresh() " refresh sesssion, sometimes ~/.vimrc settings are ov
   echom "Loaded ".join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
 endfunction
 
+" Vim help information
+function! utils#show_vim_help(...)
+  if a:0
+    let item = a:1
+  else
+    let item = input('Vim help item: ', '', 'help')
+  endif
+  if item != ''
+    exe 'vert help ' . item
+  endif
+endfunction
+
+" --help information
+function! utils#show_cmd_help(...)
+  if a:0
+    let cmd = a:1
+  else
+    let cmd = input('Get --help info: ', '', 'shellcmd')
+  endif
+  if cmd != ''
+    silent! exe '!clear; '
+      \ . 'search=' . cmd . '; '
+      \ . 'if [ -n $search ] && builtin help $search &>/dev/null; then '
+      \ . '  builtin help $search 2>&1 | less; '
+      \ . 'elif $search --help &>/dev/null; then '
+      \ . '  $search --help 2>&1 | less; '
+      \ . 'fi'
+    if v:shell_error != 0
+      echohl WarningMsg
+      echom 'Warning: "man ' . cmd . '" failed.'
+      echohl None
+    endif
+  endif
+endfunction
+
+" Man page information
+function! utils#show_cmd_man(...)
+  if a:0
+    let cmd = a:1
+  else
+    let cmd = input('Get man page: ', '', 'shellcmd')
+  endif
+  silent! exe '!clear; '
+    \ . 'search=' . cmd . '; '
+    \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
+    \ . '  command man $search; '
+    \ . 'fi'
+  if cmd != ''
+    if v:shell_error != 0
+      echohl WarningMsg
+      echom 'Warning: "' . cmd . ' --help" failed.'
+      echohl None
+    endif
+  endif
+endfunction
+
+" Command mode mappings
+function! utils#wild_tab(forward)
+  if a:forward
+    call feedkeys("\<Tab>", 't')
+  else
+    call feedkeys("\<S-Tab>", 't')
+  endif
+  return ''
+endfunction
+
+" Insert mode mappings
+function! utils#forward_delete()
+  let line = getline('.')
+  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(" ", &tabstop)
+    return repeat("\<Delete>", &tabstop)
+  else
+    return "\<Delete>"
+  endif
+endfunction
+
 " Toggle conceal characters on and off
 function! utils#conceal_toggle(...)
   if a:0
@@ -132,12 +208,9 @@ function! utils#codi_setup(toggle)
 endfunction
 
 " New codi window
-function! s:strip(text) " strip leading and trailing whitespace
-  return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
-endfunction
-function! utils#codi_new(name)
-  if a:name !~ '^\s*$'
-    let name = a:name
+function! utils#codi_new(...)
+  if a:0 && a:1 !~ '^\s*$'
+    let name = a:1
   else
     let name = input('Calculator name (' . getcwd() . '): ', '', 'file')
   endif
@@ -169,8 +242,7 @@ endfunction
 " Closing tabs and windows
 function! utils#vim_close()
   qa
-  " tabdo windo
-  "   \ if &ft == 'log' | q! | else | q | endif
+  " tabdo windo if &ft == 'log' | q! | else | q | endif
 endfunction
 function! utils#tab_close()
   let ntabs = tabpagenr('$')
@@ -194,15 +266,21 @@ function! utils#window_close()
 endfunction
 
 " Move current tab to the exact place of tab number N
-function! utils#tab_move(n)
-  if a:n == tabpagenr() || a:n == 0 || a:n == ''
-    return
-  elseif a:n > tabpagenr() && version[0] > 7
-    echo 'Moving tab...'
-    execute 'tabmove '.a:n
+function! utils#tab_list(A, L, P)
+  return map(range(1, tabpagenr('$')), 'string(v:val)')
+endfunction
+function! utils#tab_move(...)
+  if a:0
+    let nr = a:1
   else
-    echo 'Moving tab...'
-    execute 'tabmove '.eval(a:n-1)
+    let nr = input('Move tab: ', '', 'customlist,utils#tab_list')
+  endif
+  if nr == tabpagenr() || nr == 0 || nr == ''
+    return
+  elseif nr > tabpagenr() && version[0] > 7
+    exe 'tabmove ' . nr
+  else
+    exe 'tabmove ' . (nr - 1)
   endif
 endfunction
 

@@ -1,8 +1,7 @@
 "-----------------------------------------------------------------------------"
 " FZF plugin utilties
 "-----------------------------------------------------------------------------"
-" Function that generates list of files in directory
-let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
+" Generate list of files in directory
 function! s:list_files(path)
   let folder = substitute(fnamemodify(a:path, ':p'), '/$', '', '') " absolute path
   let files = split(glob(folder . '/*'), '\n') + split(glob(folder . '/.?*'),'\n') " the ? ignores the current directory '.'
@@ -11,8 +10,12 @@ function! s:list_files(path)
   return files
 endfunction
 
-" Function that checks if user FZF selection is directory and keeps opening
-" windows until user selects a file
+" Check if user FZF selection is directory and keep opening windows until
+" user selects a file
+let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
+function! fzf#null_list(A, L, P)
+  return []
+endfunction
 function! fzf#open_continuous(path)
   if a:path == ''
     let path = '.'
@@ -35,7 +38,7 @@ function! fzf#open_continuous(path)
     " Build back selection into path
     let item = items[0]
     if item == s:newfile
-      let item = input('Enter new filename (' . path . '): ', '', 'customlist,NullList')
+      let item = input('Enter new filename (' . path . '): ', '', 'customlist,fzf#null_list')
       if item == ''
         let path = ''
       else
