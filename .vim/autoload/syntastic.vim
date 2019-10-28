@@ -88,8 +88,9 @@ function! syntastic#syntastic_enable()
     SyntasticCheck
     if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
         \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
-      wincmd j | set syntax=on | call s:popup_setup()
-      wincmd k | let b:syntastic_on = 1 | silent! set signcolumn=no
+      wincmd k "p
+      let b:syntastic_on = 1
+      silent! set signcolumn=no
     else
       echom 'No errors found with checker '.checkers[-1].'.'
       let b:syntastic_on = 0

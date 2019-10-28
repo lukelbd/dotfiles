@@ -316,12 +316,12 @@ endfunction
 
 " For popup windows
 " For location lists, enter jumps to location. Restore this behavior.
-function! utils#popup_setup(...)
+function! utils#popup_setup(nofile)
   nnoremap <silent> <buffer> <CR> <CR>
   nnoremap <silent> <buffer> <C-w> :q!<CR>
   nnoremap <silent> <buffer> q :q!<CR>
   setlocal nolist nonumber norelativenumber nospell modifiable nocursorline colorcolumn=
-  if !a:0 | setlocal buftype=nofile | endif
+  if a:nofile | setlocal buftype=nofile | endif
   if len(tabpagebuflist()) == 1 | q | endif " exit if only one left
 endfunction
 
@@ -370,15 +370,15 @@ endfunction
 " Popup windows with default ftplugin and syntax files
 function! utils#show_ftplugin()
   execute 'split $VIMRUNTIME/ftplugin/' . &ft . '.vim'
-  silent call utils#popup_setup()
+  silent call utils#popup_setup(1)
 endfunction
 function! utils#show_syntax()
   execute 'split $VIMRUNTIME/syntax/' . &ft . '.vim'
-  silent call utils#popup_setup()
+  silent call utils#popup_setup(1)
 endfunction
 
 " Popup window with color display
 function! utils#show_colors()
   source $VIMRUNTIME/syntax/colortest.vim
-  silent call utils#popup_setup()
+  silent call utils#popup_setup(1)
 endfunction

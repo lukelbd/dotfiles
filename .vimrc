@@ -1222,7 +1222,8 @@ nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10*max([1
 augroup simple
   au!
   au BufEnter * let b:recording = 0
-  au FileType qf,log,diff,man,fugitive,gitcommit,vim-plug call utils#popup_setup()
+  au FileType log,diff,man,vim-plug call utils#popup_setup(1)
+  au FileType qf,gitcommit,fugitive call utils#popup_setup(0)
   au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
