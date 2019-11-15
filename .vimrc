@@ -74,6 +74,7 @@ set foldlevelstart=99
 set foldnestmax=10 " avoids weird things
 set foldopen=tag,mark " options for opening folds on cursor movement; disallow block
 set display=lastline " displays as much of wrapped lastline as possible;
+set diffopt=internal,filler,vertical,foldcolumn:0,context:5
 set wildmenu
 set wildmode=longest:list,full
 let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
@@ -433,7 +434,7 @@ Plug 'rafaqz/citation.vim'
 Plug 'JuliaEditorSupport/julia-vim'
 
 " Python wrappers
-Plug 'vim-scripts/Pydiction' " just changes completeopt and dictionary and stuff
+" Plug 'vim-scripts/Pydiction' " just changes completeopt and dictionary and stuff
 " Plug 'davidhalter/jedi-vim' " mostly autocomplete stuff
 " Plug 'cjrh/vim-conda'       " for changing anconda VIRTUALENV; probably don't need it
 " Plug 'klen/python-mode'     " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
@@ -514,16 +515,14 @@ Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 
-" All of this rst shit failed; anyway can just do simple tables with == signs
-" instead of those fancy grid cell tables.
+" All of this rst shit failed
+" Just to simple == tables instead of fancy ++ tables
 " Plug 'nvie/vim-rst-tables'
 " Plug 'ossobv/vim-rst-tables-py3'
 " Plug 'philpep/vim-rst-tables'
 " noremap <silent> \s :python ReformatTable()<CR>
-" Try again; also adds ReST highlighting to docstrings
-" Also fails! Fuck this shit.
-" Plug 'Rykka/riv.vim'
 " let g:riv_python_rst_hl = 1
+" Plug 'Rykka/riv.vim'
 
 " Single line/multiline transition; make sure comes after surround
 " Hardly ever need this
@@ -607,6 +606,8 @@ if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
   nmap csc csB
   vmap <C-s> <Plug>VSurround
   imap <C-s> <Plug>Isurround
+  call s:add_delim("'", "'", "'")
+  call s:add_delim('"', '"', '"')
   call s:add_delim('q', '‘', '’')
   call s:add_delim('Q', '“', '”')
   call s:add_delim('b', '(', ')')
@@ -618,10 +619,17 @@ if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
   call s:add_delim('p', 'print(', ')')
   call s:add_delim('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
   nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
+  nnoremap <silent> cs\ :call textools#change_delims('\\["'."']", '\\["'."']")<CR>
   nnoremap <silent> dsf :call textools#delete_delims('\<\h\w*(', ')')<CR>
   nnoremap <silent> csf :call textools#change_delims('\<\h\w*(', ')', input('function: ') . "(\r)")<CR>
+  nnoremap <silent> dsm :call textools#delete_delims('\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')')<CR>
+  nnoremap <silent> csm :call textools#change_delims('\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')', input('method: ') . "(\r)")<CR>
+  nnoremap <silent> dsA :call textools#delete_delims('\<\h\w*\[', '\]')<CR>
+  nnoremap <silent> csA :call textools#change_delims('\<\h\w*\[', '\]', input('array: ') . "[\r]")<CR>
   nnoremap <silent> dsq :call textools#delete_delims("‘", "’")<CR>
+  nnoremap <silent> csq :call textools#change_delims("‘", "’")<CR>
   nnoremap <silent> dsQ :call textools#delete_delims("“", "”")<CR>
+  nnoremap <silent> csQ :call textools#change_delims("“", "”")<CR>
 endif
 
 " Vim sneak
@@ -747,14 +755,20 @@ if PlugActive('vim-textobj-user')
 endif
 
 " Fugitive command aliases
-" Just want to eliminate that annoying fucking capital G
 if PlugActive('vim-fugitive')
   for gcommand in ['Gcd', 'Glcd', 'Gstatus', 'Gcommit', 'Gmerge', 'Gpull',
    \ 'Grebase', 'Gpush', 'Gfetch', 'Grename', 'Gdelete', 'Gremove', 'Gblame', 'Gbrowse',
    \ 'Ggrep', 'Glgrep', 'Glog', 'Gllog', 'Gedit', 'Gsplit', 'Gvsplit', 'Gtabedit', 'Gpedit',
-   \ 'Gread', 'Gwrite', 'Gwq', 'Gdiff', 'Gsdiff', 'Gvdiff', 'Gmove']
+   \ 'Gread', 'Gwrite', 'Gwq', 'Gmove']
     exe 'cnoreabbrev g'.gcommand[1:].' '.gcommand
   endfor
+  " Redirects
+  cnoreabbrev gdiff Gdiffsplit!
+  cnoreabbrev Gdiff Gdiffsplit!
+  cnoreabbrev ghdiff Ghdiffsplit!
+  cnoreabbrev Ghdiff Ghdiffsplit!
+  cnoreabbrev gvdiff Gvdiffsplit!
+  cnoreabbrev Gvdiff Gvdiffsplit!
 endif
 
 " Git gutter
@@ -1325,10 +1339,10 @@ noremap M gE
 " Mnemonic is l for letter, t for title case
 nnoremap gu guiw
 nnoremap gU gUiw
-vnoremap gl ~
+vnoremap gc ~
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-nmap gl <Plug>cap1
+nmap gc <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
 " Default 'open file under cursor' to open in new tab; change for normal and vidual

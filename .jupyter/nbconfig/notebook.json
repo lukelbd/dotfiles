@@ -4,7 +4,7 @@
     "nbextensions_configurator/config_menu/main": true,
     "contrib_nbextensions_help_item/main": true,
     "highlight_selected_word/main": false,
-    "comment-uncomment/main": true,
+    "comment-uncomment/main": false,
     "code_prettify/code_prettify": false,
     "search-replace/main": false,
     "scroll_down/main": true,

@@ -511,7 +511,7 @@ if [ -r "$HOME/.dircolors.ansi" ]; then
   $_macos && _dc_command=gdircolors || _dc_command=dircolors
   eval "$($_dc_command $HOME/.dircolors.ansi)"
 fi
-$_macos && _ls_command='gls' || _ls_command='ls'
+$_macos && _ls_command=gls || _ls_command=ls
 alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
@@ -539,8 +539,8 @@ if hash tput 2>/dev/null; then
 fi
 
 # Information on directories
-! $_macos && alias hardware="cat /etc/*-release" # print out Debian, etc. release info
-! $_macos && alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
+$_macos || alias hardware="cat /etc/*-release" # print out Debian, etc. release info
+$_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
 # Directory sizes, normal and detailed, analagous to ls/ll
 alias df="df -h" # disk useage
 alias du='du -h -d 1' # also a better default du
@@ -1487,9 +1487,11 @@ if [ -f ~/.fzf.bash ]; then
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual; here, '-1' is terminal default, not '0'
   # Completion options don't require export
+  # WARNING: The completion trigger must be *set* to empty string!
   unset FZF_COMPLETION_FILE_COMMANDS FZF_COMPLETION_PID_COMMANDS FZF_COMPLETION_DIR_COMMANDS
   unset FZF_COMPLETION_INCLUDE # optional requirement
   unset FZF_COMPLETION_TRIGGER # empty means tab triggers completion, otherwise need '**'
+  FZF_COMPLETION_TRIGGER=""
   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
   FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
   # Do not override default find command
