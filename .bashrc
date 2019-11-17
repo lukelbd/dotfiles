@@ -1337,10 +1337,10 @@ ncvartable2() { # as above but show everything
 }
 
 # Extract generalized files
+# Shell actually passes *already expanded* glob pattern when you call it as
+# argument to a function; so, need to cat all input arguments with @ into list
 extract() {
   for name in "$@"; do
-      # shell actually passes **already expanded** glob pattern when you call it as argument
-      # to a function; so, need to cat all input arguments with @ into list
     if [ -f "$name" ] ; then
       case "$name" in
         *.tar.bz2) tar xvjf "$name"    ;;
@@ -1467,7 +1467,7 @@ wctex() {
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
 alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
-# This is ***the end*** of all function and alias declarations
+# This is *the end* of all function and alias declarations
 printf "done\n"
 
 #-----------------------------------------------------------------------------#
@@ -1478,35 +1478,29 @@ printf "done\n"
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ -f ~/.fzf.bash ]; then
   _bashrc_message "Enabling fzf"
+  # Various default settings (export not necessary)
   # See man page for --bind information
-  # * Mainly use this to set bindings and window behavior; --no-multi seems to have no effect, certain
-  #   key bindings will enabled multiple selection
-  # * Also very important, bind slash to accept, so now the behavior is very similar
-  #   to behavior of normal bash shell completion
-  # * Inline info puts the number line thing on same line as text. More compact.
+  # * Inline info puts the number line thing on same line as text. More
+  #   compact.
+  # * Bind slash to accept, so now the behavior is very similar to behavior of
+  #   normal bash shell completion.
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-  #   Also see manual; here, '-1' is terminal default, not '0'
-  # Completion options don't require export
+  #   Also see manual. Here, '-1' is terminal default, not '0'.
   # WARNING: The completion trigger must be *set* to empty string!
-  unset FZF_COMPLETION_FILE_COMMANDS FZF_COMPLETION_PID_COMMANDS FZF_COMPLETION_DIR_COMMANDS
-  unset FZF_COMPLETION_INCLUDE # optional requirement
-  unset FZF_COMPLETION_TRIGGER # empty means tab triggers completion, otherwise need '**'
-  FZF_COMPLETION_TRIGGER=""
+  unset FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_ALT_C_COMMAND FZF_COMPLETION_DIR_COMMANDS
+  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion
   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
   FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
-  # Do not override default find command
-  unset FZF_DEFAULT_COMMAND
-  unset FZF_CTRL_T_COMMAND
-  unset FZF_ALT_C_COMMAND
-  # Override options, same for every one
-  # Builtin options: --ansi --color=bw
-  _fzf_opts=$(echo ' --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-t:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up' \
-    | tr '\n' ' ')
+
+  # Default fzf options same for all shortcuts
+  _fzf_opts=$(echo '
+    --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
+    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up
+    ' | tr -s $'\n' ' ')
   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
-  export FZF_DEFAULT_OPTS="$_fzf_opts"
-  export FZF_CTRL_T_OPTS="$_fzf_opts"
-  export FZF_ALT_C_OPTS="$_fzf_opts"
+  FZF_DEFAULT_OPTS="$_fzf_opts"
+  FZF_CTRL_T_OPTS="$_fzf_opts"
+  FZF_ALT_C_OPTS="$_fzf_opts"
 
   # Source file
   complete -r # reset first

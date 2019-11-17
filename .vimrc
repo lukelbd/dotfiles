@@ -755,19 +755,11 @@ if PlugActive('vim-textobj-user')
 endif
 
 " Fugitive command aliases
+" Used to alias G commands to lower case but upper case is more consistent
+" with Tim Pope eunuch commands
 if PlugActive('vim-fugitive')
-  for gcommand in ['Gcd', 'Glcd', 'Gstatus', 'Gcommit', 'Gmerge', 'Gpull',
-   \ 'Grebase', 'Gpush', 'Gfetch', 'Grename', 'Gdelete', 'Gremove', 'Gblame', 'Gbrowse',
-   \ 'Ggrep', 'Glgrep', 'Glog', 'Gllog', 'Gedit', 'Gsplit', 'Gvsplit', 'Gtabedit', 'Gpedit',
-   \ 'Gread', 'Gwrite', 'Gwq', 'Gmove']
-    exe 'cnoreabbrev g'.gcommand[1:].' '.gcommand
-  endfor
-  " Redirects
-  cnoreabbrev gdiff Gdiffsplit!
   cnoreabbrev Gdiff Gdiffsplit!
-  cnoreabbrev ghdiff Ghdiffsplit!
   cnoreabbrev Ghdiff Ghdiffsplit!
-  cnoreabbrev gvdiff Gvdiffsplit!
   cnoreabbrev Gvdiff Gvdiffsplit!
 endif
 
