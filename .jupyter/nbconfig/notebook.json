@@ -4,10 +4,10 @@
     "nbextensions_configurator/config_menu/main": true,
     "contrib_nbextensions_help_item/main": true,
     "highlight_selected_word/main": false,
-    "comment-uncomment/main": false,
+    "comment-uncomment/main": true,
     "code_prettify/code_prettify": false,
     "search-replace/main": false,
-    "scroll_down/main": true,
+    "scroll_down/main": false,
     "python-markdown/main": false,
     "autoscroll/main": false,
     "toggle_all_line_numbers/main": false,
@@ -86,7 +86,8 @@
         "?": "jupyter-notebook:edit-command-mode-keyboard-shortcuts",
         "/": "jupyter-notebook:find-and-replace",
         "h": "jupyter-notebook:edit-command-mode-keyboard-shortcuts",
-        "m": "jupyter-notebook:merge-selected-cells"
+        "m": "jupyter-notebook:merge-selected-cells",
+        "8": "jupyter-notebook:change-cell-to-raw"
       },
       "unbind": [
         "shift-m"

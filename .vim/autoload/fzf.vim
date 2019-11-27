@@ -55,8 +55,9 @@ function! fzf#open_continuous(path)
     endif
   endwhile
   " Open file or cancel operation
+  " If it is already open just jump to that tab
   if path != ''
-    exe 'tabe ' . path
+    exe 'tab drop ' . path
   endif
   return
 endfunction

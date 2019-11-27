@@ -48,27 +48,35 @@ _bashrc_message() {
 # Reset all aliases
 # Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
+
 # Reset functions? Nah, no decent way to do it
 # declare -F # to view current ones
+
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
+
+# Python stuff
+# Must set PYTHONBUFFERED or else running bash script that invokes python will
+# prevent print statements from getting flushed to stdout until exe finishes
+unset PYTHONPATH
+export PYTHONUNBUFFERED=1
+
 # First, the path management
-# If you source the default bashrc, *must* happen before everything else or
-# may get unexpected behavior due to unexpected alias/function overrides!
 _bashrc_message "Variables and modules"
-unset PYTHONPATH # this one needs to be re-initialized
-export PYTHONUNBUFFERED=1 # necessary, or else running bash script that invokes python will prevent print statements from getting flushed to stdout until execution finishes
 if $_macos; then
   # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
   # NOTE: Added ffmpeg with sudo port install ffmpeg +nonfree
   # NOTE: Added matlab as a symlink in builds directory
   # NOTE: Install gcc and gfortran with 'port install gcc6' then
   # 'port select --set gcc mp-gcc6' (check 'port select --list gcc')
-  export PATH="/opt/X11/bin:/Library/TeX/texbin:/usr/bin:/bin:/usr/sbin:/sbin" # baseline
-  export PATH="/opt/local/bin:/opt/local/sbin:$PATH" # MacPorts compilation locations
-  export PATH="/usr/local/bin:$PATH" # Homebrew package download locations
-  export PATH="/opt/pgi/osx86-64/2018/bin:$PATH" # PGI compilers
-  export PATH="$HOME/builds/ncl-6.5.0/bin:$HOME/builds/matlab/bin:$PATH" # builds and matlab symlink
+  export PATH=$(tr -d $'\n ' <<< "
+    $HOME/builds/ncl-6.5.0/bin:$HOME/builds/matlab/bin:
+    /opt/pgi/osx86-64/2018/bin:
+    /usr/local/bin:
+    /opt/local/bin:/opt/local/sbin:
+    /opt/X11/bin:/Library/TeX/texbin:
+    /usr/bin:/bin:/usr/sbin:/sbin:
+    ")
   export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
   export PKG_CONFIG_PATH="/opt/local/bin/pkg-config"
 
@@ -90,25 +98,30 @@ if $_macos; then
   # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
   alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl' # fix libs
   export NCARG_ROOT="$HOME/builds/ncl-6.5.0" # critically necessary to run NCL
+
 else
-  # Linux options
   case $HOSTNAME in
   # Euclid options
   euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH="/usr/local/bin:/usr/bin:/bin"
-    export PATH="/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH"
+    export PATH=$(tr -d $'\n ' <<< "
+      /opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:
+      /usr/local/bin:/usr/bin:/bin
+      ")
     export LD_LIBRARY_PATH="/usr/local/lib"
 
   # Monde options
   ;; monde*)
-    # Basics; all netcdf, mpich, etc. utilites separate, add them
-    export PATH="/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin"
-    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-    # PGI stuff
+    # All netcdf, mpich, etc. utilites are separate, must add them
     # source set_pgi.sh # or do this manually
+    export PATH=$(tr -d $'\n ' <<< "
+      /opt/pgi/linux86-64/18.10/bin:
+      /usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:
+      /usr/local/bin:
+      /usr/bin:/usr/local/sbin:/usr/sbin
+      ")
+    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
     export PGI="/opt/pgi"
-    export PATH="/opt/pgi/linux86-64/18.10/bin:$PATH"
     export MANPATH="$MANPATH:/opt/pgi/linux86-64/18.10/man"
     export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
     # Isca modeling stuff
@@ -116,14 +129,13 @@ else
     export GFDL_ENV=monde # "environment" configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data # directory for storing model output
-    # The Euclid/Gauss servers do not have NCL, so need to use conda
     # Monde has NCL installed already
-    export NCARG_ROOT="/usr/local" # use the version located here
+    export NCARG_ROOT="/usr/local"
 
   # Chicago supercomputer, any of the login nodes
   ;; midway*)
     # Default bashrc setup
-    export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin" # need to start here, or get error
+    export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
     source /etc/bashrc
     # Module load and stuff
     # NOTE: Use 'sinteractive' for interactive mode
@@ -136,13 +148,13 @@ else
       fi
     done
     # Fix prompt
-    export PROMPT_COMMAND="$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')"
+    export PROMPT_COMMAND=$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')
 
   # Cheyenne supercomputer, any of the login nodes
   ;; cheyenne*)
-    # Edit library path, path
+    # Edit library path
+    # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export LD_LIBRARY_PATH="/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH"
-    # Set tmpdir; following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export TMPDIR=/glade/scratch/$USER/tmp
     # Load some modules
     # NOTE: Use 'qinteractive' for interactive mode
@@ -153,16 +165,18 @@ else
         module load $_module
       fi
     done
-  # Otherwise
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
   ;; esac
 fi
 
-# Access custom executables, custom git projects
-# No longer will keep random executables loose in homre directory; put everything here
-export PATH="$HOME/bin:$HOME/ncparallel:$HOME/youtube-dl-music:$HOME/vim-textools:$PATH"
+# Access custom executables and git repos
+export PATH=$(tr -d $'\n ' <<< "
+  $HOME/bin:
+  $HOME/ncparallel:$HOME/youtube-dl-music:$HOME/vim-textools:
+  $PATH
+  ")
 
-# Homebrew, save path before adding anaconda
+# Save path before setting up conda
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=\"$PATH\" brew"
 
@@ -217,7 +231,7 @@ fi
 _bashrc_message "Functions and aliases"
 # Append prompt command
 _prompt() { # input argument should be new command
-  export PROMPT_COMMAND="$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')"
+  export PROMPT_COMMAND=$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')
 }
 
 # Neat function that splits lines into columns so they fill the terminal window
@@ -225,7 +239,7 @@ _columnize() {
   local cmd
   local input output final
   local tcols ncols maxlen nlines
-  [ $# -eq 0 ] && input="$(cat /dev/stdin)" || input="$1"
+  [ $# -eq 0 ] && input=$(cat /dev/stdin) || input="$1"
   ! $_macos && cmd=wc || cmd=gwc
   ncols=1 # start with 1
   tcols=$(tput cols)
@@ -271,7 +285,7 @@ man() { # always show useful information when man is called
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
   local search arg
   arg="$@"
-  [[ "$arg" =~ " " ]] && arg="$(echo $arg | tr '-' ' ')"
+  [[ "$arg" =~ " " ]] && arg=$(echo $arg | tr '-' ' ')
   [ -z $1 ] && echo "Requires one argument." && return 1
   if command man $1 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
     if $_macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
@@ -368,7 +382,7 @@ open() {
       case "$file" in
         # Special considerations for PDF figure files
         *.pdf)
-          path="$(abspath "$file")"
+          path=$(abspath "$file")
           if [[ "$path" =~ "figs-" ]] || [[ "$path" =~ "figures-" ]]; then
             app="Preview.app"
           else
@@ -696,34 +710,23 @@ merge() {
 
 # Convert bytes to human
 # From: https://unix.stackexchange.com/a/259254/112647
-# NOTE: Used to use this in a couple awk scripts in git config
-# aliases and other tools, so used export -f bytes2human. This causes errors
-# when intering interactive node on supercomputer, so forget it.
+# NOTE: Used to use this in a couple awk scripts in git config aliases
 bytes2human() {
   if [ $# -gt 0 ]; then
     nums="$@"
   else
-    nums="$(cat /dev/stdin)"
+    nums=$(cat /dev/stdin)
   fi
   for i in $nums; do
     b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    # b=${1:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
     while ((b > 1024)); do
-        d="$(printf ".%02d" $((b % 1024 * 100 / 1024)))"
+        d=$(printf ".%02d" $((b % 1024 * 100 / 1024)))
         b=$((b / 1024))
         let s++
     done
     echo "$b$d${S[$s]}"
-    # echo "$b$d$ {S[$s]}"
   done
 }
-
-#-----------------------------------------------------------------------------#
-# Supercomputer tools
-# Add to these
-#-----------------------------------------------------------------------------#
-alias suser="squeue -u $USER"
-alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
 
 #-----------------------------------------------------------------------------#
 # Website tools
@@ -743,50 +746,12 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 # Use 2>/dev/null to ignore deprecation warnings
 alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
-nbconvert() {
-  # Convert notebook
-  local base root dest
-  [ $# -eq 0 ] && echo "Usage: nbconvert IPYNBFILE [IPYNBFILE...]" && return 1
-  for nb in $@; do
-    if [ ${nb##*/} == "logo.ipynb" ] || [ ${nb##*/} == "testing.ipynb" ]; then
-      continue
-    fi
-    root=$(git rev-parse --show-toplevel)
-    ! [ -d $root/docs ] && echo "Error: No docs subdirectory found." && return 1
-    base=${nb%.ipynb}
-    base=${base##*/}
-    jupyter nbconvert --to=rst --output-dir=$root/docs $nb
 
-    # Change default nbconvert file location
-    dest=$root/docs/$base
-    rm -r $dest 2>/dev/null # remove old one
-    mv ${dest}_files $dest
-    gsed -i "s:${base}_files:${base}:g" ${dest}.rst
-
-    # Run special magical vim regexs that add back in sphinx
-    # links and default non-figure cell output. Your only other option for
-    # non-greedy regexes is perl, and fuck that. Also need to match naked
-    # module (e.g. ``numpy``) literals, hence the search for specific packages.
-    echo "Running vi search and replace."
-    command vi -u NONE -c \
-      '%s/``\(\~\?\)\(datetime\|mpl_toolkits\|numpy\|pandas\|climpy\|metpy\|scipy\|xarray\|matplotlib\|cartopy\|proplot\)\(.\{-}\)``/`\1\2\3`/ge | '"\
-      "'%s/:ref:``\(.\{-}\)``/:ref:`\1`/ge | '"\
-      "'%s/code::\s*$/code:: ipython3/ge | '"\
-      "'%s/.. parsed-literal::\n\n.\+\_.\{-}\n\n//ge | wq' ${dest}.rst &>/dev/null
-  done
-
-  # Finally split into files based on sections with magical awk command
-  # For each line, awk runs bracket command if search is valid, if condition is
-  # empty, or if variable evaluates to true (i.e. if non-empty and non-zero)
-  # WARNING: This can potentially overwrite existing files!
-  # WARNING: This was dumb, just split up your files yo
-  # cat ${dest}.rst | awk '
-  # /^=/ {++count; file="'$dest'"count".rst"; print file}
-  # file {print line > file}
-  # {line=$0}
-  # ' -
-  # rm ${dest}.rst
-}
+#-----------------------------------------------------------------------------#
+# Supercomputer tools
+#-----------------------------------------------------------------------------#
+alias suser="squeue -u $USER"
+alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
 
 #-----------------------------------------------------------------------------#
 # SSH, session management, and Github stuff
@@ -914,7 +879,7 @@ disconnect() {
   local pids port=$1
   [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
   # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
-  pids="$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)"
+  pids=$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
   [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
   kill $pids # kill the SSH processes
   echo "Processes $pids killed. Connections over port $port removed."
@@ -984,8 +949,8 @@ _ssh() {
         let port=\$port+1
       done; echo \$port")
   fi
-  port_write="$(_compressuser $_port_file)"
-  title_write="$(_compressuser $_title_file)"
+  port_write=$(_compressuser $_port_file)
+  title_write=$(_compressuser $_title_file)
   command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
     -t -R $port:localhost:$listen $1 \
     "echo $port >$port_write; echo $_title >$title_write; \
@@ -1003,7 +968,7 @@ rlcp() { # "copy to local (from remote); 'copy there'"
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)      # port from most recent login
   array=${@:1:$#-1}            # result of user input glob expansion, or just one file
-  dest="$(_compressuser ${!#})" # last value
+  dest=$(_compressuser ${!#}) # last value
   dest="${dest//\ /\\\ }"      # escape whitespace manually
   echo "(Port $port) Copying ${array[@]} on this server to home server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P$port ${array[@]} ${USER}@localhost:"$dest"
@@ -1016,7 +981,7 @@ lrcp() { # "copy to remote (from local); 'copy here'"
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)   # port from most recent login
   dest="$2"                 # last value
-  file="$(_compressuser $1)" # second to last
+  file=$(_compressuser $1) # second to last
   file="${file//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
@@ -1089,14 +1054,10 @@ _jt() {
   if [ $# -lt 1 ]; then 
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
-      # uriah*)  theme=solarizedl;;
-      # uriah*)  theme=monokai;;
-      # uriah*)  theme=chesterish ;;
-      uriah*)  theme=grade3   ;;
-      gauss*)  theme=gruvboxd ;;
+      uriah*)  theme=chesterish ;;
       euclid*) theme=gruvboxd ;;
-      monde*)  theme=onedork  ;;
-      midway*) theme=onedork  ;;
+      monde*)  theme=onedork ;;
+      midway*) theme=onedork ;;
       *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
     esac
   else
@@ -1196,8 +1157,8 @@ pyconnect() {
 notebook() {
   # Set default jupyter theme
   local port
-  # ! $_jt_configured && \
-  #   echo "Configuring jupyter notebook theme." && _jt && _jt_configured=true
+  ! $_jt_configured && \
+    echo "Configuring jupyter notebook theme." && _jt && _jt_configured=true
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
@@ -1455,9 +1416,9 @@ unannotate() {
 # Rudimentary wordcount with detex
 # The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
-  local detexed="$(cat "$1" \
+  local detexed=$(cat "$1" \
     | detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
-    | grep -v .pdf | grep -v 'fig[0-9]')"
+    | grep -v .pdf | grep -v 'fig[0-9]')
   echo "$detexed" | xargs # print result in one giant line
   echo "$detexed" | wc -w # get word count
 }
@@ -1493,10 +1454,10 @@ if [ -f ~/.fzf.bash ]; then
   FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
 
   # Default fzf options same for all shortcuts
-  _fzf_opts=$(echo '
+  _fzf_opts=$(tr -s $'\n' ' ' <<< '
     --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
     --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up
-    ' | tr -s $'\n' ' ')
+    ')
   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
   FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
@@ -1589,11 +1550,11 @@ _title_get() {
   if ! [ -r "$_title_file" ]; then
     unset _title
   elif $_macos; then
-    _title="$(cat "$_title_file" | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)"
+    _title=$(cat "$_title_file" | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)
   else
-    _title="$(cat "$_title_file")" # only text in file, is this current session's title
+    _title=$(cat "$_title_file") # only text in file, is this current session's title
   fi
-  _title="$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')"
+  _title=$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')
 }
 _title_update() {
   # Check file availability

@@ -568,6 +568,8 @@ call plug#end()
 " Custom plugin settings
 " Mappings for vim-idetools command
 if PlugActive('vim-idetools') || &rtp =~ 'vim-idetools'
+  nmap [[ [t
+  nmap ]] ]t
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
 endif
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
@@ -882,9 +884,11 @@ if PlugActive('nerdcommenter')
   " Custom delimiter overwrites, default python includes space for some reason
   " TODO: Why can't this just use &commentstring?
   let g:NERDCustomDelimiters = {
-    \ 'julia': {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
-    \ 'python': {'left': '#'}, 'cython': {'left': '#'}, 'pyrex': {'left': '#'},
-    \ 'ncl': {'left': ';'},
+    \ 'julia':  {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
+    \ 'python': {'left': '#'},
+    \ 'cython': {'left': '#'},
+    \ 'pyrex':  {'left': '#'},
+    \ 'ncl':    {'left': ';'},
     \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
   " Default settings
