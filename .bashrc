@@ -55,12 +55,6 @@ unalias -a
 # Flag for if in MacOs
 [[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
 
-# Python stuff
-# Must set PYTHONBUFFERED or else running bash script that invokes python will
-# prevent print statements from getting flushed to stdout until exe finishes
-unset PYTHONPATH
-export PYTHONUNBUFFERED=1
-
 # First, the path management
 _bashrc_message "Variables and modules"
 if $_macos; then
@@ -180,10 +174,10 @@ export PATH=$(tr -d $'\n ' <<< "
 # Brew conflicts with anaconda (try "brew doctor" to see)
 alias brew="PATH=\"$PATH\" brew"
 
-# Include modules (i.e. folders with python files) located in the home directory
-# NOTE: Trailing ':' adds empty path, i.e. this directory
+# Various python stuff
+unset PYTHONPATH # just use pip install -e . for cloned projects
 export MPLBACKEND="Qt5Agg" # default for python and ipython
-export PYTHONPATH="$HOME:$HOME/sphinx-automodapi:$PYTHONPATH"
+export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing dist/*"
 

@@ -987,7 +987,8 @@ if PlugActive('syntastic')
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0 " disable jumping to errors
   let g:syntastic_tex_checkers = ['lacheck']
-  let g:syntastic_python_checkers = ['python', 'pyflakes']
+  let g:syntastic_python_checkers = ['python', 'flake8']
+  let g:syntastic_python_flake8_post_args='--ignore=W503'
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vimlint']
   " Syntax colors
