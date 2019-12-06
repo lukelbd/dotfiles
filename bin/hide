@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-# This script hides a few user folders
-# Undo the below with "nohidden"
-chflags hidden ~/{Applications,Library,Movies,Music,Pictures,Documents,Public,Favorite}

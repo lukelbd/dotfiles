@@ -15,7 +15,8 @@
     "vim_binding/vim_binding": false,
     "toc2/main": true,
     "collapsible_headings/main": false,
-    "varInspector/main": true
+    "varInspector/main": true,
+    "code_prettify/autopep8": true
   },
   "highlight_selected_word": {
     "highlight_color": "#cccccc",
@@ -99,5 +100,11 @@
   "Notebook": {
     "Toolbar": true,
     "Header": true
+  },
+  "autopep8": {
+    "hotkeys": {
+      "process_selected": "alt-a"
+    },
+    "kernel_config_map_json": "{    \"python\": {        \"library\": \"import json\\nimport autopep8\",        \"prefix\": \"print(json.dumps(autopep8.fix_code(u\",        \"postfix\": \", options={'aggressive': 3, 'ignore': ['']})))\",     }}"
   }
 }

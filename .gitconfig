@@ -123,6 +123,7 @@
 	ignorecase = false
 [pager]
 	branch = false
+	tag = false
 [diff "ipynb"]
 	textconv = nbstripout -t
 [filter "nbstripout"]

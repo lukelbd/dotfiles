@@ -335,6 +335,8 @@ noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
+" Search for conflict blocks
+noremap gc /^[<>\|]\{2,}<CR>
 
 " INSERT and COMMAND WINDOW MAPS
 " Count number of tabs in popup menu so our position is always known
@@ -1267,8 +1269,8 @@ noremap <expr> <silent> \c ''
     \ . "'<,'>" . 's/\s\s*' . Comment() . '.*$//ge \| noh<CR>'
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
+noremap <silent> \s :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
 noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
-noremap <silent> \W :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
 " Delete empty lines
 " Replace consecutive newlines with single newline
 noremap <silent> \e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>
@@ -1336,10 +1338,10 @@ noremap M gE
 " Mnemonic is l for letter, t for title case
 nnoremap gu guiw
 nnoremap gU gUiw
-vnoremap gc ~
+vnoremap gl ~
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-nmap gc <Plug>cap1
+nmap gl <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
 " Default 'open file under cursor' to open in new tab; change for normal and vidual

@@ -175,7 +175,7 @@ export PATH=$(tr -d $'\n ' <<< "
 alias brew="PATH=\"$PATH\" brew"
 
 # Various python stuff
-unset PYTHONPATH # just use pip install -e . for cloned projects
+export PYTHONPATH="$HOME" # just use pip install -e . for cloned projects
 export MPLBACKEND="Qt5Agg" # default for python and ipython
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
