@@ -40,7 +40,7 @@ for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
   # Replace old file of same name with modified one
   elif $sync_modified; then
     if ! [ -r "$mb_folder/sd.log" ]; then
-      yn "Warning: sd.log not found! Cancel psync?" # call script to confirm
+      confirm "Warning: sd.log not found! Cancel psync?" # call script to confirm
       [ $? -ne 0 ] && exit 1
       touch "$mb_folder/sd.log" # if doesn't exist, make
     fi

@@ -11,10 +11,13 @@ if &rtp =~ 'vim-surround'
     let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
   endfunction
   call s:delim('h', '<head>',   '</head>')
-  call s:delim('o', '<body>',   '</body>')
+  call s:delim('m', '<body>',   '</body>') " m for main
+  call s:delim('f', '<footer>', '</footer>')
   call s:delim('t', '<title>',  '</title>')
   call s:delim('e', '<em>',     '</em>')
-  call s:delim('t', '<strong>', '</strong>')
+  call s:delim('o', '<b>',      '</b>') " o for bold
+  call s:delim('i', '<i>',      '</i>')
+  call s:delim('s', '<strong>', '</strong>')
   call s:delim('p', '<p>',      '</p>')
   call s:delim('1', '<h1>',     '</h1>')
   call s:delim('2', '<h2>',     '</h2>')

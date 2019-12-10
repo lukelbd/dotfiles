@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #-----------------------------------------------------------------------------#
-# Pass this a string and it will create a confirm prompt, waiting
-# for user to answer and returning corresponding exit code
+# Receive affirmative or negative response using input message, then
+# exit accordingly
 #-----------------------------------------------------------------------------#
 [[ $- == *i* ]] && action="return" || action="exit" # don't want to quit an interactive shell!
 [[ -z "$@" ]] && prompt="Confirm" || prompt="$@"
@@ -9,7 +9,7 @@ while true; do
   read -r -p "$prompt ([y]/n) " response
   if [ -n "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
     echo "Invalid response."
-    continue # invalid, so try again
+    continue # try again
   fi
   if [[ "$response" =~ ^[Nn]$ ]]; then # answer is either yes, no, or blank (i.e. yes)
     $action 1 # 'bad' exit, i.e. no

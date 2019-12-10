@@ -4,10 +4,10 @@
     "nbextensions_configurator/config_menu/main": true,
     "contrib_nbextensions_help_item/main": true,
     "highlight_selected_word/main": false,
-    "comment-uncomment/main": false,
+    "comment-uncomment/main": true,
     "code_prettify/code_prettify": false,
     "search-replace/main": false,
-    "scroll_down/main": true,
+    "scroll_down/main": false,
     "python-markdown/main": false,
     "autoscroll/main": false,
     "toggle_all_line_numbers/main": false,
@@ -15,7 +15,8 @@
     "vim_binding/vim_binding": false,
     "toc2/main": true,
     "collapsible_headings/main": false,
-    "varInspector/main": true
+    "varInspector/main": true,
+    "code_prettify/autopep8": true
   },
   "highlight_selected_word": {
     "highlight_color": "#cccccc",
@@ -86,7 +87,8 @@
         "?": "jupyter-notebook:edit-command-mode-keyboard-shortcuts",
         "/": "jupyter-notebook:find-and-replace",
         "h": "jupyter-notebook:edit-command-mode-keyboard-shortcuts",
-        "m": "jupyter-notebook:merge-selected-cells"
+        "m": "jupyter-notebook:merge-selected-cells",
+        "8": "jupyter-notebook:change-cell-to-raw"
       },
       "unbind": [
         "shift-m"
@@ -98,5 +100,11 @@
   "Notebook": {
     "Toolbar": true,
     "Header": true
+  },
+  "autopep8": {
+    "hotkeys": {
+      "process_selected": "alt-a"
+    },
+    "kernel_config_map_json": "{    \"python\": {        \"library\": \"import json\\nimport autopep8\",        \"prefix\": \"print(json.dumps(autopep8.fix_code(u\",        \"postfix\": \", options={'aggressive': 3, 'ignore': ['']})))\",     }}"
   }
 }

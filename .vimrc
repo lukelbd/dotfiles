@@ -336,6 +336,8 @@ noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
+" Search for conflict blocks
+noremap gc /^[<>\|]\{2,}<CR>
 
 " INSERT and COMMAND WINDOW MAPS
 " Count number of tabs in popup menu so our position is always known
@@ -569,6 +571,8 @@ call plug#end()
 " Custom plugin settings
 " Mappings for vim-idetools command
 if PlugActive('vim-idetools') || &rtp =~ 'vim-idetools'
+  nmap [[ [t
+  nmap ]] ]t
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
 endif
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
@@ -756,19 +760,11 @@ if PlugActive('vim-textobj-user')
 endif
 
 " Fugitive command aliases
+" Used to alias G commands to lower case but upper case is more consistent
+" with Tim Pope eunuch commands
 if PlugActive('vim-fugitive')
-  for gcommand in ['Gcd', 'Glcd', 'Gstatus', 'Gcommit', 'Gmerge', 'Gpull',
-   \ 'Grebase', 'Gpush', 'Gfetch', 'Grename', 'Gdelete', 'Gremove', 'Gblame', 'Gbrowse',
-   \ 'Ggrep', 'Glgrep', 'Glog', 'Gllog', 'Gedit', 'Gsplit', 'Gvsplit', 'Gtabedit', 'Gpedit',
-   \ 'Gread', 'Gwrite', 'Gwq', 'Gmove']
-    exe 'cnoreabbrev g'.gcommand[1:].' '.gcommand
-  endfor
-  " Redirects
-  cnoreabbrev gdiff Gdiffsplit!
   cnoreabbrev Gdiff Gdiffsplit!
-  cnoreabbrev ghdiff Ghdiffsplit!
   cnoreabbrev Ghdiff Ghdiffsplit!
-  cnoreabbrev gvdiff Gvdiffsplit!
   cnoreabbrev Gvdiff Gvdiffsplit!
 endif
 
@@ -891,9 +887,11 @@ if PlugActive('nerdcommenter')
   " Custom delimiter overwrites, default python includes space for some reason
   " TODO: Why can't this just use &commentstring?
   let g:NERDCustomDelimiters = {
-    \ 'julia': {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
-    \ 'python': {'left': '#'}, 'cython': {'left': '#'}, 'pyrex': {'left': '#'},
-    \ 'ncl': {'left': ';'},
+    \ 'julia':  {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
+    \ 'python': {'left': '#'},
+    \ 'cython': {'left': '#'},
+    \ 'pyrex':  {'left': '#'},
+    \ 'ncl':    {'left': ';'},
     \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
   " Default settings
@@ -992,7 +990,8 @@ if PlugActive('syntastic')
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0 " disable jumping to errors
   let g:syntastic_tex_checkers = ['lacheck']
-  let g:syntastic_python_checkers = ['python', 'pyflakes']
+  let g:syntastic_python_checkers = ['python', 'flake8']
+  let g:syntastic_python_flake8_post_args='--ignore=W503'
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vimlint']
   " Syntax colors
@@ -1271,8 +1270,8 @@ noremap <expr> <silent> \c ''
     \ . "'<,'>" . 's/\s\s*' . Comment() . '.*$//ge \| noh<CR>'
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
+noremap <silent> \s :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
 noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
-noremap <silent> \W :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
 " Delete empty lines
 " Replace consecutive newlines with single newline
 noremap <silent> \e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>
@@ -1340,10 +1339,10 @@ noremap M gE
 " Mnemonic is l for letter, t for title case
 nnoremap gu guiw
 nnoremap gU gUiw
-vnoremap gc ~
+vnoremap gl ~
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-nmap gc <Plug>cap1
+nmap gl <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
