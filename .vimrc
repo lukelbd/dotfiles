@@ -74,7 +74,8 @@ set foldlevelstart=99
 set foldnestmax=10 " avoids weird things
 set foldopen=tag,mark " options for opening folds on cursor movement; disallow block
 set display=lastline " displays as much of wrapped lastline as possible;
-set diffopt=internal,filler,vertical,foldcolumn:0,context:5
+set diffopt=vertical,foldcolumn:0,context:5
+silent! set diffopt^=filler
 set wildmenu
 set wildmode=longest:list,full
 let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
@@ -191,14 +192,14 @@ function! s:suppress(prefix, mode)
     return ''
   endif
 endfunction
-for s:pair in [
+for s:mapping in [
     \ ['n', '<Leader>'], ['v', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['v', '\'],
     \ ['v', '<C-s>'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-b>']
     \ ]
-  let s:mode = s:pair[0]
-  let s:char = s:pair[1]
-  if mapcheck(s:char, s:mode) == ''
-    exe s:mode . "map <expr> " . s:char . " s:suppress('" . s:char . "', '" . s:mode . "')"
+  let s:mode = s:mapping[0]
+  let s:key = s:mapping[1]
+  if mapcheck(s:key, s:mode) == ''
+    exe s:mode . "map <expr> " . s:key . " s:suppress('" . s:key . "', '" . s:mode . "')"
   endif
 endfor
 
@@ -315,11 +316,11 @@ vnoremap <CR> <C-c>
 vnoremap p d"1P
 vnoremap P d"1P
 " Alias single-key builtin text objects
-for s:pair in ['r[', 'a<', 'c{']
-  exe 'onoremap i' . s:pair[0] . ' i' . s:pair[1]
-  exe 'xnoremap i' . s:pair[0] . ' i' . s:pair[1]
-  exe 'onoremap a' . s:pair[0] . ' a' . s:pair[1]
-  exe 'xnoremap a' . s:pair[0] . ' a' . s:pair[1]
+for s:bracket in ['r[', 'a<', 'c{']
+  exe 'onoremap i' . s:bracket[0] . ' i' . s:bracket[1]
+  exe 'xnoremap i' . s:bracket[0] . ' i' . s:bracket[1]
+  exe 'onoremap a' . s:bracket[0] . ' a' . s:bracket[1]
+  exe 'xnoremap a' . s:bracket[0] . ' a' . s:bracket[1]
 endfor
 " Never save single-character deletions to any register
 noremap x "_x

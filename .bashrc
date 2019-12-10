@@ -197,7 +197,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then # above doesn't work, ne
   # If you use the '. activate' version, there is an 'activate' file in bin
   # that does these two things
   _bashrc_message "Enabling conda"
-  source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables
+# source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables  # commented out by conda initialize
   CONDA_CHANGEPS1=false conda activate # activate the default environment, without changing PS1
   avail() {
     local current latest
@@ -1643,4 +1643,5 @@ $_macos && { # first the MacOS options
   }
 [ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
 _bashrc_loaded=true
+
 
