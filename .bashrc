@@ -36,7 +36,7 @@ fi
 
 # Message constructor; modify the number to increase number of dots
 _bashrc_message() {
-  printf '%s' "${1}$(seq -f '.' -s '' $((29 - ${#1})))"
+  printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d [0-9])"
 }
 
 #-----------------------------------------------------------------------------#
