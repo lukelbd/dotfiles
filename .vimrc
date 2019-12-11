@@ -977,7 +977,11 @@ if PlugActive('syntastic')
   " pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
   " NOTE: Need 'python' checker in addition to these other ones, because python
   " tests for import-time errors and others test for runtime errors!
-  let g:syntastic_mode_map = {'mode':'passive', 'active_filetypes':[], 'passive_filetypes':[]}
+  let g:syntastic_mode_map = {
+      \ 'mode': 'passive',
+      \ 'active_filetypes': [],
+      \ 'passive_filetypes': []
+      \ }
   let g:syntastic_stl_format = '' "disables statusline colors; they were ugly
   let g:syntastic_always_populate_loc_list = 1 " necessary, or get errors
   let g:syntastic_auto_loc_list = 1 " creates window; if 0, does not create window
@@ -988,6 +992,7 @@ if PlugActive('syntastic')
   let g:syntastic_enable_signs = 1 " disable useless signs
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0 " disable jumping to errors
+  let g:syntastic_sh_checkers = ['shellcheck']
   let g:syntastic_tex_checkers = ['lacheck']
   let g:syntastic_python_checkers = ['python', 'flake8']
   let g:syntastic_python_flake8_post_args='--ignore=W503'

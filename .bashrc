@@ -38,7 +38,7 @@ fi
   # see: https://stackoverflow.com/a/28938235/4970632
   # also see: https://unix.stackexchange.com/a/124408/112647
 _bashrc_message() {
-  printf "${1}$(printf '.%.0s' $(seq 1 $((29 - ${#1}))))"
+  printf '%s' "${1}$(seq -f '.' -s '' $((29 - ${#1})))"
 }
 
 #-----------------------------------------------------------------------------#
@@ -80,7 +80,8 @@ if $_macos; then
   # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
   # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
   if [ -d ~/.rvm/bin ]; then
-    [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
+    # shellcheck source=/Users/ldavis/.rvm/scripts/rvm
+    [ -s ~/.rvm/scripts/rvm ] && source ~/.rvm/scripts/rvm # Load RVM into a shell session *as a function*
     export PATH="$PATH:$HOME/.rvm/bin"
     rvm use ruby 1>/dev/null
   fi
@@ -130,19 +131,20 @@ else
   ;; midway*)
     # Default bashrc setup
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
-    source /etc/bashrc
+    # shellcheck source=/etc/bashrc
     # Module load and stuff
     # NOTE: Use 'sinteractive' for interactive mode
     # module purge 2>/dev/null
-    _loaded=($(module --terse list 2>&1)) # already loaded
+    read -r -a _loaded < <(module --terse list 2>&1)
     _toload=(Anaconda3 intel mkl) # for some reason latest CDO version is not default
-    for _module in ${_toload[@]}; do
-      if [[ ! " ${_loaded[@]} " =~ "$_module" ]]; then
-        module load $_module
+    for _module in "${_toload[@]}"; do
+      if ! [[ " ${_loaded[*]} " =~ $_module ]]; then
+        module load "$_module"
       fi
     done
-    # Fix prompt
-    export PROMPT_COMMAND=$(echo $PROMPT_COMMAND | sed 's/printf.*";//g')
+    # Remove print statements from prompt
+    # WARNING: Greedy glob removes commands sandwiched between print statements
+    export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
 
   # Cheyenne supercomputer, any of the login nodes
   ;; cheyenne*)
@@ -152,11 +154,11 @@ else
     export TMPDIR=/glade/scratch/$USER/tmp
     # Load some modules
     # NOTE: Use 'qinteractive' for interactive mode
-    _loaded=($(module --terse list 2>&1)) # already loaded
+    read -r -a _loaded < <(module --terse list 2>&1)
     _toload=(nco tmux) # have latest greatest versions of CDO and NCL via conda
-    for _module in ${_toload[@]}; do
-      if [[ ! " ${_loaded[@]} " =~ "$_module" ]]; then
-        module load $_module
+    for _module in "${_toload[@]}"; do
+      if ! [[ " ${_loaded[@]} " =~ $_module ]]; then
+        module load "$_module"
       fi
     done
   ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
