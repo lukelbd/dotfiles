@@ -26,17 +26,15 @@
 clear # first clear screen
 
 # Prompt
-# Keep things minimal, just make prompt boldface so its a bit more identifiable
-# if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
-#   export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
-#   _ps1_set=1
-# fi
+# Keep things minimal, just make prompt bold so more identifiable
+# See: https://stackoverflow.com/a/28938235/4970632
+# See: https://unix.stackexchange.com/a/124408/112647
+if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
+  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+  _ps1_set=1
+fi
 
 # Message constructor; modify the number to increase number of dots
-# export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
-  # style; the \[ \033 chars are escape codes for changing color, then restoring it at end
-  # see: https://stackoverflow.com/a/28938235/4970632
-  # also see: https://unix.stackexchange.com/a/124408/112647
 _bashrc_message() {
   printf '%s' "${1}$(seq -f '.' -s '' $((29 - ${#1})))"
 }
@@ -1472,7 +1470,7 @@ fi
 
 #-----------------------------------------------------------------------------#
 # Conda stuff
-# WARNING: Must come after shel integration or gets overwritten
+# WARNING: Must come after shell integration or gets overwritten
 #-----------------------------------------------------------------------------#
 unset _conda
 if [ -d "$HOME/anaconda3" ]; then
@@ -1497,14 +1495,14 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
     }
 
   # Initialize conda
-  __conda_setup="$("/home/ldavis/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
+  __conda_setup="$("$HOME/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
   if [ $? -eq 0 ]; then
     eval "$__conda_setup"
   else
-    if [ -f "/home/ldavis/$_conda/etc/profile.d/conda.sh" ]; then
-      . "/home/ldavis/$_conda/etc/profile.d/conda.sh"
+    if [ -f "$HOME/$_conda/etc/profile.d/conda.sh" ]; then
+      . "$HOME/$_conda/etc/profile.d/conda.sh"
     else
-      export PATH="/home/ldavis/$_conda/bin:$PATH"
+      export PATH="$HOME/$_conda/bin:$PATH"
     fi
   fi
   unset __conda_setup
