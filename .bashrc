@@ -1442,7 +1442,7 @@ if [ -f ~/.fzf.bash ]; then
   _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
     --select-1 --exit-0 --inline-info --height=6 \
-    --bind=tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
+    --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
     "
   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
   FZF_DEFAULT_OPTS="$_fzf_opts"
@@ -1453,13 +1453,24 @@ if [ -f ~/.fzf.bash ]; then
   # The compgen ones were addd by my fork, the others are native, we adapted
   # defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
   FZF_COMPLETION_TRIGGER=''  # WARNING: cannot be unset, must be empty string!
-  _fzf_ignore() {
-    if [ $# -eq 0 ]; then
-      echo -false  # -not -false == -true
-    else
-      echo -name $(echo "$@" | xargs | sed 's/ / -o -name /g')
-    fi
-  }
+  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 \
+    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+    -prune -o -type f -print -o -type l \
+    -print 2> /dev/null | cut -b3- \
+    "
+  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 \
+    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+    -prune -o -type d \
+    -print 2> /dev/null | cut -b3-
+  "
+  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 \
+    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+    -prune -o -type f -print -o -type d -print -o -type l \
+    -print 2> /dev/null | cut -b3- \
+    "
   FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" \
       -maxdepth 1 -mindepth 1 \
       \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
@@ -1474,24 +1485,6 @@ if [ -f ~/.fzf.bash ]; then
         -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
     -prune -o -type d -a -not -path \"\$1\" \
     -print 2> /dev/null | sed 's@^\\./@@' \
-    "
-  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 \
-    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-    -prune -o -type d \
-    -print 2> /dev/null | cut -b3-
-  "
-  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 \
-    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-    -prune -o -type f -print -o -type d -print -o -type l \
-    -print 2> /dev/null | cut -b3- \
-    "
-  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 \
-    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-    -prune -o -type f -print -o -type l \
-    -print 2> /dev/null | cut -b3- \
     "
 
   # Source file
