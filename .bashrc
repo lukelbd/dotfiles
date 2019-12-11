@@ -36,7 +36,7 @@ fi
 
 # Message constructor; modify the number to increase number of dots
 _bashrc_message() {
-  printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d [0-9])"
+  printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
 }
 
 #-----------------------------------------------------------------------------#
@@ -61,6 +61,7 @@ if $_macos; then
   # NOTE: Added matlab as a symlink in builds directory
   # NOTE: Install gcc and gfortran with 'port install gcc6' then
   # 'port select --set gcc mp-gcc6' (check 'port select --list gcc')
+  # shellcheck disable=2155
   export PATH=$(tr -d $'\n ' <<< "
     $HOME/builds/ncl-6.5.0/bin:$HOME/builds/matlab/bin:
     /opt/pgi/osx86-64/2018/bin:
@@ -78,7 +79,6 @@ if $_macos; then
   # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
   # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
   if [ -d ~/.rvm/bin ]; then
-    # shellcheck source=/Users/ldavis/.rvm/scripts/rvm
     [ -s ~/.rvm/scripts/rvm ] && source ~/.rvm/scripts/rvm # Load RVM into a shell session *as a function*
     export PATH="$PATH:$HOME/.rvm/bin"
     rvm use ruby 1>/dev/null
@@ -102,9 +102,10 @@ else
       /usr/local/bin:/usr/bin:/bin
       ")
     export LD_LIBRARY_PATH="/usr/local/lib"
+    ;;
 
   # Monde options
-  ;; monde*)
+  monde*)
     # All netcdf, mpich, etc. utilites are separate, must add them
     # source set_pgi.sh # or do this manually
     export PATH=$(tr -d $'\n ' <<< "
@@ -124,12 +125,12 @@ else
     export GFDL_DATA=/mdata1/ldavis/isca_data # directory for storing model output
     # Monde has NCL installed already
     export NCARG_ROOT="/usr/local"
+    ;;
 
   # Chicago supercomputer, any of the login nodes
-  ;; midway*)
+  midway*)
     # Default bashrc setup
     export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
-    # shellcheck source=/etc/bashrc
     # Module load and stuff
     # NOTE: Use 'sinteractive' for interactive mode
     # module purge 2>/dev/null
@@ -143,9 +144,10 @@ else
     # Remove print statements from prompt
     # WARNING: Greedy glob removes commands sandwiched between print statements
     export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
+    ;;
 
   # Cheyenne supercomputer, any of the login nodes
-  ;; cheyenne*)
+  cheyenne*)
     # Edit library path
     # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export LD_LIBRARY_PATH="/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH"
@@ -159,8 +161,12 @@ else
         module load "$_module"
       fi
     done
-  ;; *) echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
-  ;; esac
+    ;;
+
+  *)
+    echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
+    ;;
+  esac
 fi
 
 # Access custom executables and git repos
@@ -918,6 +924,7 @@ _ssh() {
     "echo $port >$port_write; echo $_title >$title_write; \
     echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
 }
+
 # Copy from <this server> to local macbook
 # NOTE: Often want to copy result of glob expansion.
 # NOTE: Below, we use the bash parameter expansion ${!#} -->
@@ -935,6 +942,7 @@ rlcp() { # "copy to local (from remote); 'copy there'"
   echo "(Port $port) Copying ${array[@]} on this server to home server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P$port ${array[@]} ${USER}@localhost:"$dest"
 }
+
 # Copy from local macbook to <this server>
 lrcp() { # "copy to remote (from local); 'copy here'"
   local port file dest
@@ -947,6 +955,28 @@ lrcp() { # "copy to remote (from local); 'copy here'"
   file="${file//\ /\\\ }"   # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
+}
+
+# Push here and pull on remote
+pushpull() {
+  local port gdir1 gdir2
+  $_macos && echo "Error: rlcp intended to be called from an ssh session." && return 1
+  [ $# -eq 0 ] && echo "Error: Message required." && return 1
+  ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
+  port=$(cat $_port_file)  # port from most recent login
+  # Get git directories
+  gdir1=$(git rev-parse --show-toplevel 2>/dev/null)
+  [ $? -ne 0 ] && echo "Error: Not in git directory." && return 1
+  gdir2="${gdir1/$HOME/~}"  # relative to home
+  [ "$gdir1" == "$gdir2" ] && echo "Error: Not in home directory."
+  # Run commit, push, and pull
+  echo "Message: $*"  # here we *do* want to interpret args as one word
+  git add --all && git commit -m "$*" && git push origin master
+  [ $? -ne 0 ] && echo "Error: Commit failed." && return 1
+  # Pull on remote
+  echo "(Port $port) Pulling on home server at: $ndir"
+  command ssh -o StrictHostKeyChecking=no -p $port $USER@localhost \
+    "cd $gdir2; git pull origin;"
 }
 
 #-----------------------------------------------------------------------------#

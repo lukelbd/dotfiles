@@ -1,0 +1,5 @@
+# See: https://github.com/koalaman/shellcheck/issues/725
+# Ignore 2155: https://github.com/koalaman/shellcheck/wiki/SC2155
+# We never ever use set -e anyway! And if we think explicit check
+# is necessary, we will do so.
+disable=SC2155
