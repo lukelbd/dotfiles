@@ -1399,37 +1399,37 @@ printf "done\n"
 #-----------------------------------------------------------------------------#
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
-# if [ -f ~/.fzf.bash ]; then
-#   _bashrc_message "Enabling fzf"
-#   # Various default settings (export not necessary)
-#   # See man page for --bind information
-#   # * Inline info puts the number line thing on same line as text. More
-#   #   compact.
-#   # * Bind slash to accept, so now the behavior is very similar to behavior of
-#   #   normal bash shell completion.
-#   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-#   #   Also see manual. Here, '-1' is terminal default, not '0'.
-#   # WARNING: The completion trigger must be *set* to empty string!
-#   unset FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_ALT_C_COMMAND FZF_COMPLETION_DIR_COMMANDS
-#   FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion
-#   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
-#   FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
-#
-#   # Default fzf options same for all shortcuts
-#   _fzf_opts=$(tr -s $'\n' ' ' <<< '
-#     --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
-#     --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up
-#     ')
-#   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
-#   FZF_DEFAULT_OPTS="$_fzf_opts"
-#   FZF_CTRL_T_OPTS="$_fzf_opts"
-#   FZF_ALT_C_OPTS="$_fzf_opts"
-#
-#   # Source file
-#   complete -r # reset first
-#   source ~/.fzf.bash
-#   printf "done\n"
-# fi
+if [ -f ~/.fzf.bash ]; then
+  _bashrc_message "Enabling fzf"
+  # Various default settings (export not necessary)
+  # See man page for --bind information
+  # * Inline info puts the number line thing on same line as text. More
+  #   compact.
+  # * Bind slash to accept, so now the behavior is very similar to behavior of
+  #   normal bash shell completion.
+  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
+  #   Also see manual. Here, '-1' is terminal default, not '0'.
+  # WARNING: The completion trigger must be *set* to empty string!
+  unset FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_ALT_C_COMMAND FZF_COMPLETION_DIR_COMMANDS
+  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion
+  FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
+  FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
+
+  # Default fzf options same for all shortcuts
+  _fzf_opts=$(tr -s $'\n' ' ' <<< '
+    --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
+    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up
+    ')
+  FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
+  FZF_DEFAULT_OPTS="$_fzf_opts"
+  FZF_CTRL_T_OPTS="$_fzf_opts"
+  FZF_ALT_C_OPTS="$_fzf_opts"
+
+  # Source file
+  complete -r # reset first
+  source ~/.fzf.bash
+  printf "done\n"
+fi
 
 #-----------------------------------------------------------------------------#
 # Shell integration; iTerm2 feature only
