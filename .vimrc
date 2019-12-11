@@ -766,13 +766,15 @@ if PlugActive('vim-textobj-user')
     \ }
   " Enable and define related maps
   call textobj#user#plugin('universal', s:universal_textobjs_dict)
+  nnoremap <CR> <C-]>
   noremap <silent> [p {
   noremap <silent> ]p }
   noremap <silent> [C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 0)<CR>
   noremap <silent> ]C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 1)<CR>
   noremap <silent> [P :call textobj#search_block('^\ze\s*$', 0)<CR>
   noremap <silent> ]P :call textobj#search_block('^\ze\s*$', 1)<CR>
-  " nnoremap <CR> <C-]>
+  noremap <silent> [I :call textobj#search_block('^\ze\s*$', 0)<CR>
+  noremap <silent> ]I :call textobj#search_block('^\ze\s*$', 1)<CR>
 endif
 
 " Fugitive command aliases

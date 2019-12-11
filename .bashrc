@@ -542,8 +542,8 @@ dl() {
 alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
 
 # Grepping and diffing; enable colors
-alias grep="grep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-alias egrep="egrep --exclude-dir=_site --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
 
 # Query files
@@ -1439,21 +1439,60 @@ if [ -f ~/.fzf.bash ]; then
   #   normal bash shell completion.
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual. Here, '-1' is terminal default, not '0'.
-  # WARNING: The completion trigger must be *set* to empty string!
-  unset FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_ALT_C_COMMAND FZF_COMPLETION_DIR_COMMANDS
-  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion
-  FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
-  FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
-
-  # Default fzf options same for all shortcuts
-  _fzf_opts=$(tr -s $'\n' ' ' <<< '
-    --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up
-    ')
+  _fzf_opts=" \
+    --ansi --color=bg:-1,bg+:-1 --layout=default \
+    --select-1 --exit-0 --inline-info --height=6 \
+    --bind=tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
+    "
   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
   FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
+
+  # Defualt find commands
+  # The compgen ones were addd by my fork, the others are native, we adapted
+  # defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+  FZF_COMPLETION_TRIGGER=''  # WARNING: cannot be unset, must be empty string!
+  _fzf_ignore() {
+    if [ $# -eq 0 ]; then
+      echo -false  # -not -false == -true
+    else
+      echo -name $(echo "$@" | xargs | sed 's/ / -o -name /g')
+    fi
+  }
+  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" \
+      -maxdepth 1 -mindepth 1 \
+      \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+          -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+      -prune -o \\( -type d -o -type f -o -type l \\) -a -not -path \"\$1\" \
+      -a -not \\( -name '*.DS_Store' -o -name '*.vimsession' \\) \
+      -print 2> /dev/null | sed 's@^\\./@@' \
+    "
+  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" \
+    -maxdepth 1 -mindepth 1 \
+    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+    -prune -o -type d -a -not -path \"\$1\" \
+    -print 2> /dev/null | sed 's@^\\./@@' \
+    "
+  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 \
+    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+    -prune -o -type d \
+    -print 2> /dev/null | cut -b3-
+  "
+  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 \
+    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+    -prune -o -type f -print -o -type d -print -o -type l \
+    -print 2> /dev/null | cut -b3- \
+    "
+  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 \
+    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
+    -prune -o -type f -print -o -type l \
+    -print 2> /dev/null | cut -b3- \
+    "
 
   # Source file
   complete -r # reset first
