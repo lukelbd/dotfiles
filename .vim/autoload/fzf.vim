@@ -4,7 +4,7 @@
 " Tab drop plugin from: https://github.com/ohjames/tabdrop
 " WARNING: For some reason :tab drop and even :<bufnr>wincmd w fails
 " on monde so need to use the *tab jump* command instead!
-function! s:tab_drop(file)
+function! s:tab_drop(file) abort
   let visible = {}
   let path = fnamemodify(a:file, ':p')
   let tabjump = 0
