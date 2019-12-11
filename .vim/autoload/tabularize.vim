@@ -2,7 +2,7 @@
 " Tabularize plugin functions
 "-----------------------------------------------------------------------------"
 " Function for tabularizing but ignoring lines without delimiters
-function! tabularize#smart_table(arg) range
+function! tabularize#smart_table(arg) abort range
   " Remove the lines without matching regexes
   let dlines = [] " note we **cannot** use dictionary, because subsequent lines without matches will overwrite each other
   let lastline = a:lastline  " no longer read-only

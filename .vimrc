@@ -1,4 +1,3 @@
-" .vimrc
 "-----------------------------------------------------------------------------"
 " A fancy vimrc that does all sorts of magical things.
 " NOTE: Have iTerm map some ctrl+key combinations that would otherwise
@@ -14,22 +13,25 @@
 " you map those keys in Vim, should also map arrows.
 "-----------------------------------------------------------------------------"
 " IMPORTANT STUFF and SETTINGS
-" Detect features, variables are used to decide which plugins can be loaded
+" Note g:has_nowait is needed in autoload/utils.vim
+let &t_Co=256
 exe 'runtime autoload/repeat.vim'
-let g:has_signs = has('signs') " for git gutter and syntastic maybe
-let g:has_ctags = str2nr(system('type ctags &>/dev/null && echo 1 || echo 0'))
 let g:has_nowait = (v:version >= 704 || v:version == 703 && has('patch1261'))
-let g:has_repeat = exists('*repeat#set') " start checks for function existence
-if !g:has_repeat
+let s:has_signs = has('signs') " for git gutter and syntastic maybe
+let s:has_ctags = str2nr(system('type ctags &>/dev/null && echo 1 || echo 0'))
+let s:has_repeat = exists('*repeat#set') " start checks for function existence
+if ! s:has_repeat
   echohl WarningMsg
-  echom "Warning: vim-repeat unavailable, some features will be unavailable."
+  echom 'Warning: vim-repeat unavailable, some features will be unavailable.'
   echohl None
 endif
 
 " Global settings
+set encoding=utf-8
+set nocompatible " always use the vim defaults
+scriptencoding utf-8
 let mapleader = "\<Space>"
 set confirm " require confirmation if you try to quit
-set nocompatible " always use the vim defaults
 set cursorline
 set tabpagemax=100 " allow opening shit load of tabs at once
 set redrawtime=5000 " sometimes takes a long time, let it happen
@@ -82,7 +84,7 @@ let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,'
   \ . '*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,'
   \ . '*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,'
-let &breakat = " 	!*-+;:,./?" " break at single instances of several characters
+let &breakat = ' 	!*-+;:,./?' " break at single instances of several characters
 if exists('&breakindent')
   set breakindent " map indentation when breaking
 endif
@@ -122,7 +124,7 @@ endfunction
 
 " Query whether plugin is loaded
 function! PlugActive(key)
-  return has_key(g:plugs, a:key) " change if (e.g.) switch plugin managers
+  return has_key(g:plugs, a:key) " change as needed
 endfunction
 
 " Reverse selected lines
@@ -152,25 +154,26 @@ command! -nargs=1 Grep call Grep(<q-args>)
 " Get comment character
 " The placeholder is supposed to be a
 function! Comment()
-  if &ft != '' && &commentstring =~ '%s'
+  if &ft !=# '' && &commentstring =~# '%s'
     return Strip(split(&commentstring, '%s')[0])
   else
     return ''
   endif
 endfunction
+
 " As above but return a character that is never matched if no comment char found
-" This if for use in Tabular regex statements
+" This is for use in Tabular regex statements
 function! RegexComment()
-  let comment = Comment()
-  if comment == ''
-    let comment = nr2char(0) " null string, never matched
+  let char = Comment()
+  if ! len(char)  " empty
+    let char = nr2char(0) " null string, never matched
   endif
-  return comment
+  return char
 endfunction
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
-if mapcheck('<Esc>', 'n') != ''
+if len(mapcheck('<Esc>', 'n'))
   silent! unmap <Esc>[3~
   let s:insert_maps = ['[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
     \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
@@ -185,9 +188,9 @@ endif
 " Suppress all prefix mappings initially so that we avoid accidental actions
 " due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
 function! s:suppress(prefix, mode)
-  let c = nr2char(getchar())
-  if maparg(a:prefix . c, a:mode) != ''
-    return a:prefix . c
+  let char = nr2char(getchar())
+  if len(maparg(a:prefix . char, a:mode))
+    return a:prefix . char
   else
     return ''
   endif
@@ -198,8 +201,8 @@ for s:mapping in [
     \ ]
   let s:mode = s:mapping[0]
   let s:key = s:mapping[1]
-  if mapcheck(s:key, s:mode) == ''
-    exe s:mode . "map <expr> " . s:key . " s:suppress('" . s:key . "', '" . s:mode . "')"
+  if ! len(mapcheck(s:key, s:mode))
+    exe s:mode . 'map <expr> ' . s:key . ' s:suppress(''' . s:key . ''', ''' . s:mode . ''')'
   endif
 endfor
 
@@ -218,13 +221,13 @@ endif
 " * Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
 "   The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
 " * Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
-if exists("&t_SI")
+if exists('&t_SI')
   let &t_SI = (exists('$TMUX') ? "\ePtmux;\e\e[6 q\e\\" : "\e[6 q")
 endif
-if exists("&t_SR")
+if exists('&t_SR')
   let &t_SR = (exists('$TMUX') ? "\ePtmux;\e\e[4 q\e\\" : "\e[4 q")
 endif
-if exists("&t_EI")
+if exists('&t_EI')
   let &t_EI = (exists('$TMUX') ? "\ePtmux;\e\e[2 q\e\\" : "\e[2 q")
 endif
 
@@ -377,11 +380,10 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 " VIM-PLUG PLUGINS
 " Don't load some plugins if not compatible
 " Note: Plugin settings are defined in .vim/plugin/plugins.vim
-let g:compatible_tagbar = (g:has_ctags && (v:version >= 704 || v:version == 703 && has("patch1058")))
-let g:compatible_codi = (v:version >= 704 && has('job') && has('channel'))
-let g:compatible_workspace = (v:version >= 800) " needs Git 8.0, so not too useful
-let g:compatible_neocomplete = has("lua") " try alternative completion library
-if expand('$HOSTNAME') =~ 'cheyenne\?' | let g:compatible_neocomplete = 0 | endif " had annoying bugs with refactoring tools
+let s:compatible_tagbar = (s:has_ctags && (v:version >= 704 || v:version == 703 && has('patch1058')))
+let s:compatible_codi = (v:version >= 704 && has('job') && has('channel'))
+let s:compatible_workspace = (v:version >= 800) " needs Git 8.0, so not too useful
+let s:compatible_neocomplete = has('lua') && (expand('$HOSTNAME') !~# 'cheyenne\?')
 call plug#begin('~/.vim/plugged')
 
 " Custom plugins, try to load locally if possible!
@@ -409,10 +411,15 @@ let g:fzf_action = {'ctrl-i': 'silent!',
   \ 'ctrl-x': 'split', 'ctrl-v': 'vsplit'}
 
 " Color schemes for MacVim
+" Plug 'altercation/vim-colors-solarized'
 Plug 'flazz/vim-colorschemes'
 Plug 'fcpg/vim-fahrenheit'
 Plug 'KabbAmine/yowish.vim'
-" Plug 'altercation/vim-colors-solarized'
+
+" Colorize Hex strings
+" Test: ~/.vim/plugged/colorizer/colortest.txt
+" Works only in MacVim or when &t_Co == 256
+Plug 'lilydjwg/colorizer'
 
 " Proper syntax highlighting for a few different things
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
@@ -426,12 +433,12 @@ Plug 'tpope/vim-liquid'
 
 " TeX utilities; better syntax highlighting, better indentation,
 " and some useful remaps. Also zotero integration.
-Plug 'Shougo/unite.vim'
-Plug 'rafaqz/citation.vim'
 " Plug 'twsh/unite-bibtex' " python 3 version
 " Plug 'msprev/unite-bibtex' " python 2 version
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
+Plug 'Shougo/unite.vim'
+Plug 'rafaqz/citation.vim'
 
 " Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
@@ -444,37 +451,47 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'ivanov/vim-ipython'   " same problem as python-mode
 
 " Folding and matching
-if g:has_nowait | Plug 'tmhedberg/SimpylFold' | endif
-let g:loaded_matchparen = 1
+if g:has_nowait
+  Plug 'tmhedberg/SimpylFold'
+endif
 Plug 'Konfekt/FastFold'
 Plug 'andymass/vim-matchup'
+let g:loaded_matchparen = 1
 let g:matchup_matchparen_enabled = 1
 let g:matchup_transmute_enabled = 0 " breaks latex!
 
 " Files and directories
-Plug 'scrooloose/nerdtree'
-if g:compatible_tagbar | Plug 'majutsushi/tagbar' | endif
 " Plug 'jistr/vim-nerdtree-tabs' "unnecessary
 " Plug 'vim-scripts/EnhancedJumps'
+Plug 'scrooloose/nerdtree'
+if s:compatible_tagbar
+  Plug 'majutsushi/tagbar'
+endif
+
+" Tabdrop fix for vim
+" For some reason only TabDropHere works but not TabDrop
+Plug 'ohjames/tabdrop'
 
 " Commenting and syntax checking
-" NOTE: Syntastic looks for checker commands in your PATH! You must install
-" them manually!
+" Syntastic looks for checkers in $PATH, must be installed manually
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 
 " Sessions and swap files and reloading
 " Mapped in my .bashrc vims to vim -S .vimsession and exiting vim saves the session there
 " Also vim-obsession more compatible with older versions
-" NOTE: Apparently obsession causes all folds to be closed
-Plug 'tpope/vim-obsession'
-" if g:compatible_workspace | Plug 'thaerkh/vim-workspace' | endif
+" if s:compatible_workspace
+"   Plug 'thaerkh/vim-workspace'
+" endif
 " Plug 'gioele/vim-autoswap' "deals with swap files automatically; no longer use them so unnecessary
 " Plug 'xolox/vim-reload' "better to write my own simple plugin
+Plug 'tpope/vim-obsession'  " closes all folds
 
 " Git wrappers and differencing tools
 Plug 'tpope/vim-fugitive'
-if g:has_signs | Plug 'airblade/vim-gitgutter' | endif
+if s:has_signs
+  Plug 'airblade/vim-gitgutter'
+endif
 
 " Shell utilities, including Chmod and stuff
 Plug 'tpope/vim-eunuch'
@@ -483,22 +500,23 @@ Plug 'tpope/vim-eunuch'
 " Plug 'Valloric/YouCompleteMe' "broken
 " Plug 'ajh17/VimCompletesMe' "no auto-popup feature
 " Plug 'lifepillar/vim-mucomplete' "broken, seriously, cannot get it to work, don't bother! is slow anyway.
-" if g:compatible_neocomplete | Plug 'ervandew/supertab' | endif "haven't tried it
-if g:compatible_neocomplete | Plug 'shougo/neocomplete.vim' | endif
+" if s:compatible_neocomplete | Plug 'ervandew/supertab' | endif "haven't tried it
+if s:compatible_neocomplete
+  Plug 'shougo/neocomplete.vim'
+endif
 
 " Delimiters
 Plug 'tpope/vim-surround'
 Plug 'raimondi/delimitmate'
 
 " Custom text objects (inner/outer selections)
-" a,b, asdfas, adsfashh
-Plug 'kana/vim-textobj-user'   " base
+" Plug 'bps/vim-textobj-python' " not really ever used, just use indent objects
+" Plug 'sgur/vim-textobj-parameter' " this conflicts with latex
+" Plug 'vim-scripts/argtextobj.vim' " issues with this too
+" Plug 'machakann/vim-textobj-functioncall' " does not work
+Plug 'kana/vim-textobj-user' " base
 Plug 'kana/vim-textobj-indent' " match indentation, object is 'i'
 Plug 'kana/vim-textobj-entire' " entire file, object is 'e'
-" Plug 'sgur/vim-textobj-parameter' " disable because this conflicts with latex
-" Plug 'bps/vim-textobj-python' " not really ever used, just use indent objects
-" Plug 'vim-scripts/argtextobj.vim' " arguments
-" Plug 'machakann/vim-textobj-functioncall' " fucking sucks/doesn't work, fuck you
 
 " Aligning things and stuff
 " Alternative to tabular is: https://github.com/tommcdo/vim-lion
@@ -511,14 +529,14 @@ Plug 'godlygeek/tabular'
 Plug 'justinmk/vim-sneak'
 
 " Calculators and number stuff
-" No longer use codi, because had endless problems with it, and this cool 'Numi'
-" desktop calculator will suffice
-Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
+Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
+if s:compatible_codi
+  Plug 'metakirby5/codi.vim'
+endif
 
-" All of this rst shit failed
+" This RST shit all failed
 " Just to simple == tables instead of fancy ++ tables
 " Plug 'nvie/vim-rst-tables'
 " Plug 'ossobv/vim-rst-tables-py3'
@@ -537,29 +555,20 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 " Plug 'terryma/vim-multiple-cursors'
 
 " Indent line
-" WARNING: Right now *totally* fucks up search mode, and cursorline overlaps. So not good.
-" Requires changing Conceal group color, but doing that also messes up latex conceal
-" backslashes (which we need to stay transparent); so forget it probably
+" NOTE: This completely messes up search mode. Also requires changing Conceal
+" group color, but doing that also messes up latex conceal backslashes (which
+" we need to stay transparent). So forget it probably
 " Plug 'yggdroot/indentline'
 
-" Superman man pages (not really used currently)
-" Plug 'jez/vim-superman'
-
-" Thesaurus; appears broken
-" Plug 'beloglazov/vim-online-thesaurus'
-
-" Automatic list numbering; actually it mysteriously fails so fuck that shit
-" let g:bullets_enabled_file_types = ['vim', 'markdown', 'text', 'gitcommit', 'scratch']
-" Plug 'dkarter/bullets.vim'
+" Miscellaneous
+" Plug 'jez/vim-superman'  " man page
+" Plug 'beloglazov/vim-online-thesaurus'  " broken
+" Plug 'dkarter/bullets.vim'  " list numbering, fails too
 
 " Easy tags, for easy integration
 " Plug 'xolox/vim-misc' "depdency for easytags
 " Plug 'xolox/vim-easytags' "kinda old and not that useful honestly
 " Plug 'ludovicchabant/vim-gutentags' "slows shit down like crazy
-
-" Colorize Hex strings
-" Test: ~/.vim/plugged/colorizer/colortest.txt
-Plug 'lilydjwg/colorizer'
 
 " End of plugins
 " The plug#end also declares filetype plugin, syntax, and indent on
@@ -567,24 +576,25 @@ Plug 'lilydjwg/colorizer'
 " is automatically made part of the 'filetypedetect' augroup; that's why it exists!
 call plug#end()
 
-" Custom plugin settings
 " Mappings for vim-idetools command
-if PlugActive('vim-idetools') || &rtp =~ 'vim-idetools'
+if PlugActive('vim-idetools') || &rtp =~# 'vim-idetools'
   nmap [[ [t
   nmap ]] ]t
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
 endif
+
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
-if PlugActive('vim-scrollwrapped') || &rtp =~ 'vim-scrollwrapped'
+if PlugActive('vim-scrollwrapped') || &rtp =~# 'vim-scrollwrapped'
   nnoremap <silent> <Leader>w :WrapToggle<CR>
   nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
   nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
   vnoremap <silent> <expr> <Down> (winheight(0)/4) . '<C-e>' . (winheight(0)/4) . 'gj'
   vnoremap <silent> <expr> <Up>   (winheight(0)/4) . '<C-y>' . (winheight(0)/4) . 'gk'
 endif
+
 " Add global delims with vim-textools plugin functions and declare my weird
 " mapping defaults due to Karabiner
-if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
+if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
   " Delimiter mappings
   " Note: Why is bibtextoggle_map a variable? Because otherwise we have to put
   " this in ftplugin/tex.vim or define an autocommand
@@ -636,6 +646,13 @@ if PlugActive('vim-textools') || &rtp =~ 'vim-textools'
   nnoremap <silent> csQ :call textools#change_delims("“", "”")<CR>
 endif
 
+" *Very* expensive for large files so only ever activate manually
+" Mapping is # for hex string
+if PlugActive('colorizer')
+  let g:colorizer_startup = 0
+  nnoremap <Leader># :<C-u>ColorToggle<CR>
+endif
+
 " Vim sneak
 if PlugActive('vim-sneak')
   map s <Plug>Sneak_s
@@ -680,9 +697,9 @@ if PlugActive('delimitmate')
   let g:delimitMate_expand_space = 1
   let g:delimitMate_expand_cr = 2 " expand even if it is not empty!
   let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_quotes = "\" '"
-  let g:delimitMate_matchpairs = "(:),{:},[:]"
-  let g:delimitMate_excluded_regions = "String" "by default is disabled inside, don't want that
+  let g:delimitMate_quotes = '" '''
+  let g:delimitMate_matchpairs = '(:),{:},[:]'
+  let g:delimitMate_excluded_regions = 'String' "by default is disabled inside, don't want that
 endif
 
 " Text objects
@@ -749,13 +766,15 @@ if PlugActive('vim-textobj-user')
     \ }
   " Enable and define related maps
   call textobj#user#plugin('universal', s:universal_textobjs_dict)
+  nnoremap <CR> <C-]>
   noremap <silent> [p {
   noremap <silent> ]p }
   noremap <silent> [C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 0)<CR>
   noremap <silent> ]C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 1)<CR>
   noremap <silent> [P :call textobj#search_block('^\ze\s*$', 0)<CR>
   noremap <silent> ]P :call textobj#search_block('^\ze\s*$', 1)<CR>
-  " nnoremap <CR> <C-]>
+  noremap <silent> [I :call textobj#search_block('^\ze\s*$', 0)<CR>
+  noremap <silent> ]I :call textobj#search_block('^\ze\s*$', 1)<CR>
 endif
 
 " Fugitive command aliases
@@ -813,7 +832,7 @@ if PlugActive('codi.vim')
     \ 'python': {
         \ 'bin': 'python',
         \ 'prompt': '^\(>>>\|\.\.\.\) ',
-        \ 'quitcmd': "import readline; readline.clear_history(); exit()",
+        \ 'quitcmd': 'import readline; readline.clear_history(); exit()',
         \ },
     \ }
 endif
@@ -846,7 +865,7 @@ if PlugActive('neocomplete.vim') "just check if activated
     au FileType python setlocal omnifunc=pythoncomplete#Complete
     au FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
   augroup END
-  " Basic behavior
+  " Settings
   let g:neocomplete#enable_at_startup = 1
   let g:neocomplete#max_list = 10
   let g:neocomplete#enable_auto_select = 0
@@ -856,12 +875,12 @@ if PlugActive('neocomplete.vim') "just check if activated
   let g:neocomplete#enable_camel_case = 0
   let g:neocomplete#enable_ignore_case = 0
   " Disable python omnicompletion, from the Q+A section
-  if !exists('g:neocomplete#sources#omni#input_patterns')
+  if ! exists('g:neocomplete#sources#omni#input_patterns')
     let g:neocomplete#sources#omni#input_patterns = {}
   endif
   let g:neocomplete#sources#omni#input_patterns.python = ''
-  " Define dictionary and keyword
-  if !exists('g:neocomplete#keyword_patterns')
+  " Define dictionary and keyword options
+  if ! exists('g:neocomplete#keyword_patterns')
     let g:neocomplete#keyword_patterns = {}
   endif
   let g:neocomplete#keyword_patterns['default'] = '\h\w*'
@@ -873,15 +892,6 @@ if PlugActive('neocomplete.vim') "just check if activated
 endif
 
 " NERDCommenter
-" Note the default mappings, all prefixed by <Leader> (but we disable them)
-" -cc comments line or selection
-" -cn forces nesting (seems to be default though; maybe sometimes, is ignored)
-" -ci toggles comment state of inidivudal lines
-" -c<Space> toggles comment state based on topmost line state
-" -cs comments line with block-format layout
-" -cy yanks lines before commenting
-" -c$ comments to eol
-" -cu uncomments line
 if PlugActive('nerdcommenter')
   " Custom delimiter overwrites, default python includes space for some reason
   " TODO: Why can't this just use &commentstring?
@@ -893,7 +903,7 @@ if PlugActive('nerdcommenter')
     \ 'ncl':    {'left': ';'},
     \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
-  " Default settings
+  " Settings
   let g:NERDSpaceDelims = 1            " comments have leading space
   let g:NERDCreateDefaultMappings = 0  " disable default mappings (make my own)
   let g:NERDCompactSexyComs = 1        " compact syntax for prettified multi-line comments
@@ -901,8 +911,7 @@ if PlugActive('nerdcommenter')
   let g:NERDCommentEmptyLines = 1      " allow commenting and inverting empty lines (useful when commenting a region)
   let g:NERDDefaultAlign = 'left'      " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 2
-
-  " The maps
+  " Mappings
   " Use NERDCommenterMinimal commenter to use left-right delimiters, or alternatively use
   " NERDCommenterSexy commenter for better alignment
   inoremap <expr> <C-c> nerdcommenter#comment_insert()
@@ -945,11 +954,11 @@ if PlugActive('nerdtree')
     au!
     au BufEnter * if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
   augroup END
-  let g:NERDTreeWinPos = "right"
+  let g:NERDTreeWinPos = 'right'
   let g:NERDTreeWinSize = 20 " instead of 31 default
   let g:NERDTreeShowHidden = 1
   let g:NERDTreeMinimalUI = 1 " remove annoying ? for help note
-  let g:NERDTreeMapChangeRoot = "D" "C was annoying, because VIM will wait for 'CD'
+  let g:NERDTreeMapChangeRoot = 'D' " C was annoying, because VIM will wait for CD
   let g:NERDTreeSortOrder = [] " use default sorting
   let g:NERDTreeIgnore = split(&wildignore, ',')
   for s:index in range(len(g:NERDTreeIgnore))
@@ -992,12 +1001,13 @@ if PlugActive('syntastic')
   let g:syntastic_enable_signs = 1 " disable useless signs
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0 " disable jumping to errors
-  let g:syntastic_sh_checkers = ['shellcheck']
+  let g:syntastic_sh_checkers = ['shellcheck']  " https://github.com/koalaman/shellcheck
   let g:syntastic_tex_checkers = ['lacheck']
   let g:syntastic_python_checkers = ['python', 'flake8']
-  let g:syntastic_python_flake8_post_args='--ignore=W503'
   let g:syntastic_fortran_checkers = ['gfortran']
-  let g:syntastic_vim_checkers = ['vimlint']
+  let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
+  let g:syntastic_python_flake8_post_args='--ignore=W503'
+  let g:syntastic_sh_shellcheck_args='-e SC2059,SC2148'
   " Syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
@@ -1127,10 +1137,10 @@ if PlugActive('tagbar')
   let g:tagbar_expand = 0
   let g:tagbar_autoshowtag = 2 " never ever open tagbar folds automatically, even when opening for first time
   let g:tagbar_foldlevel = 1 " setting to zero will override the 'kinds' fields in below dicts
-  let g:tagbar_map_openfold = "="
-  let g:tagbar_map_closefold = "-"
-  let g:tagbar_map_closeallfolds = "_"
-  let g:tagbar_map_openallfolds = "+"
+  let g:tagbar_map_openfold = '='
+  let g:tagbar_map_closefold = '-'
+  let g:tagbar_map_closeallfolds = '_'
+  let g:tagbar_map_openallfolds = '+'
   nnoremap <silent> <Leader>t :call utils#tagbar_setup()<CR>
 endif
 
@@ -1138,7 +1148,10 @@ endif
 if PlugActive('vim-obsession') "must manually preserve cursor position
   augroup session
     au!
-    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
+    au BufReadPost *
+      \ if line("'\"") > 0 && line("'\"") <= line("$") |
+      \ exe "normal! g`\"" |
+      \ endif
     au VimEnter * Obsession .vimsession
   augroup END
   nnoremap <silent> <Leader>V :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
@@ -1186,7 +1199,6 @@ silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
 " OPENING FILES
-
 " TABS, WINDOWS, AND FILES
 augroup tabs
   au!
@@ -1351,9 +1363,16 @@ nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
+function! s:file_exists()
+  let files = glob(expand('<cfile>'))
+  if len(files) > 0
+    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
+  else
+    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  endif
+endfunction
 nnoremap <Leader>F <c-w>gf
-nnoremap <expr> <Leader>f ":if len(glob('<cfile>'))>0 \| echom 'File(s) exist.' "
-  \ . "\| else \| echom 'File \"'.expand('<cfile>').'\" does not exist.' \| endif<CR>"
+nnoremap <silent> <Leader>f :<C-u>call <sid>file_exists()<CR>
 " Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
 " * Note the <Esc> is needed first because it cancels application of the number operator
@@ -1366,7 +1385,7 @@ else
   nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
   nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
-" SimpylFold settings
+" Simpyl settings
 let g:SimpylFold_docstring_preview = 1
 let g:SimpylFold_fold_import = 0
 let g:SimpylFold_fold_imports = 0
@@ -1379,14 +1398,14 @@ nnoremap zC zM
 
 " GUI VIM COLORS
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+" gruvbox, kolor, dracula, onedark, molokai, yowish, tomorrow-night
+" atom, chlordane, papercolor, solarized, fahrenheit, slate, oceanicnext
 if has('gui_running')
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap     Statement
   colorscheme oceanicnext
-  " gruvbox, kolor, dracula, onedark, molokai, yowish, tomorrow-night
-  " atom, chlordane, papercolor, solarized, fahrenheit, slate, oceanicnext
 endif
 
 " TERMINAL VIM COLORS
@@ -1401,7 +1420,7 @@ endif
 function! s:keywordsetup()
    syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
    hi link customURL Underlined
-   if &ft!="vim"
+   if &ft !=# 'vim'
      syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment.* " comments
      syn match Special '^\%1l#!.*$' " shebangs
    else
@@ -1487,7 +1506,7 @@ augroup END
 " On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
 " See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
 " WARNING: On cheyenne, get lalloc error when calling WipeReg, strange
-if $HOSTNAME !~ 'cheyenne'
+if $HOSTNAME !~# 'cheyenne'
   command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
   WipeReg
 endif
