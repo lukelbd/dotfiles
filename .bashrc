@@ -27,10 +27,10 @@ clear # first clear screen
 
 # Prompt
 # Keep things minimal, just make prompt boldface so its a bit more identifiable
-if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
-  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
-  _ps1_set=1
-fi
+# if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
+#   export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+#   _ps1_set=1
+# fi
 
 # Message constructor; modify the number to increase number of dots
 # export PS1='\[\033[1;37m\]\h[\j]:\W \u\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
@@ -186,38 +186,6 @@ alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing di
 # See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
 export MPLCONFIGDIR=$HOME/.matplotlib
 printf "done\n"
-
-#-----------------------------------------------------------------------------#
-# Anaconda stuff
-#-----------------------------------------------------------------------------#
-unset _conda
-if [ -d "$HOME/anaconda3" ]; then
-  _conda='anaconda3'
-elif [ -d "$HOME/miniconda3" ]; then
-  _conda='miniconda3'
-fi
-# if [ -n "$_conda" ] && { [ -z "$CONDA_DEFAULT_ENV" ] || ! type conda &>/dev/null; }; then # the type check is necessary!
-if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then # above doesn't work, need to just check path
-  # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
-  # The first thing creates a bunch of environment variables and functions
-  # The second part calls the 'conda' function, which calls an activation function, which does the
-  # whole solving environment thing
-  # If you use the '. activate' version, there is an 'activate' file in bin
-  # that does these two things
-  _bashrc_message "Enabling conda"
-# source $HOME/$_conda/etc/profile.d/conda.sh # set up environment variables  # commented out by conda initialize
-  CONDA_CHANGEPS1=false conda activate # activate the default environment, without changing PS1
-  avail() {
-    local current latest
-    [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
-    current=$(conda list "$1" | grep '\b'"$1"'\b' | awk 'NR == 1 {print $2}')
-    latest=$(conda search "$1" | grep '\b'"$1"'\b' | awk 'END {print $2}')
-    echo "Package:         $1"
-    echo "Current version: $current"
-    echo "Latest version:  $latest"
-    }
-  printf "done\n"
-fi
 
 #-----------------------------------------------------------------------------#
 # Wrappers for common functions
@@ -1431,37 +1399,37 @@ printf "done\n"
 #-----------------------------------------------------------------------------#
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
-if [ -f ~/.fzf.bash ]; then
-  _bashrc_message "Enabling fzf"
-  # Various default settings (export not necessary)
-  # See man page for --bind information
-  # * Inline info puts the number line thing on same line as text. More
-  #   compact.
-  # * Bind slash to accept, so now the behavior is very similar to behavior of
-  #   normal bash shell completion.
-  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-  #   Also see manual. Here, '-1' is terminal default, not '0'.
-  # WARNING: The completion trigger must be *set* to empty string!
-  unset FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_ALT_C_COMMAND FZF_COMPLETION_DIR_COMMANDS
-  FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion
-  FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
-  FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
-
-  # Default fzf options same for all shortcuts
-  _fzf_opts=$(tr -s $'\n' ' ' <<< '
-    --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
-    --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up
-    ')
-  FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
-  FZF_DEFAULT_OPTS="$_fzf_opts"
-  FZF_CTRL_T_OPTS="$_fzf_opts"
-  FZF_ALT_C_OPTS="$_fzf_opts"
-
-  # Source file
-  complete -r # reset first
-  source ~/.fzf.bash
-  printf "done\n"
-fi
+# if [ -f ~/.fzf.bash ]; then
+#   _bashrc_message "Enabling fzf"
+#   # Various default settings (export not necessary)
+#   # See man page for --bind information
+#   # * Inline info puts the number line thing on same line as text. More
+#   #   compact.
+#   # * Bind slash to accept, so now the behavior is very similar to behavior of
+#   #   normal bash shell completion.
+#   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
+#   #   Also see manual. Here, '-1' is terminal default, not '0'.
+#   # WARNING: The completion trigger must be *set* to empty string!
+#   unset FZF_DEFAULT_COMMAND FZF_CTRL_T_COMMAND FZF_ALT_C_COMMAND FZF_COMPLETION_DIR_COMMANDS
+#   FZF_COMPLETION_TRIGGER="" # empty means tab triggers completion
+#   FZF_COMPLETION_FIND_OPTS="-maxdepth 1 -mindepth 1"
+#   FZF_COMPLETION_FIND_IGNORE=".git .svn .DS_Store .vimsession .local anaconda3 miniconda3 plugged __pycache__ .ipynb_checkpoints"
+#
+#   # Default fzf options same for all shortcuts
+#   _fzf_opts=$(tr -s $'\n' ' ' <<< '
+#     --select-1 --exit-0 --inline-info --height=6 --ansi --color=bg:-1,bg+:-1 --layout=default
+#     --bind=f1:up,f2:down,tab:accept,/:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up
+#     ')
+#   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
+#   FZF_DEFAULT_OPTS="$_fzf_opts"
+#   FZF_CTRL_T_OPTS="$_fzf_opts"
+#   FZF_ALT_C_OPTS="$_fzf_opts"
+#
+#   # Source file
+#   complete -r # reset first
+#   source ~/.fzf.bash
+#   printf "done\n"
+# fi
 
 #-----------------------------------------------------------------------------#
 # Shell integration; iTerm2 feature only
@@ -1497,6 +1465,50 @@ elif [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_I
       done
     }'
   done
+  printf "done\n"
+fi
+
+#-----------------------------------------------------------------------------#
+# Conda stuff
+# WARNING: Must come after shel integration or gets overwritten
+#-----------------------------------------------------------------------------#
+unset _conda
+if [ -d "$HOME/anaconda3" ]; then
+  _conda='anaconda3'
+elif [ -d "$HOME/miniconda3" ]; then
+  _conda='miniconda3'
+fi
+if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
+  # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
+  # The first thing creates a bunch of environment variables and functions
+  # The second part calls the 'conda' function, which calls an activation function, which does the
+  # whole solving environment thing
+  _bashrc_message "Enabling conda"
+  avail() {
+    local current latest
+    [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
+    current=$(conda list "$1" | grep '\b'"$1"'\b' | awk 'NR == 1 {print $2}')
+    latest=$(conda search "$1" | grep '\b'"$1"'\b' | awk 'END {print $2}')
+    echo "Package:         $1"
+    echo "Current version: $current"
+    echo "Latest version:  $latest"
+    }
+
+  # Initialize conda
+  __conda_setup="$("/home/ldavis/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
+  if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
+  else
+    if [ -f "/home/ldavis/$_conda/etc/profile.d/conda.sh" ]; then
+      . "/home/ldavis/$_conda/etc/profile.d/conda.sh"
+    else
+      export PATH="/home/ldavis/$_conda/bin:$PATH"
+    fi
+  fi
+  unset __conda_setup
+
+  # Activate conda
+  conda activate base
   printf "done\n"
 fi
 
@@ -1570,13 +1582,9 @@ title_update() { # fix name issues
 [[ ! "$PROMPT_COMMAND" =~ "_title_update" ]] && _prompt _title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 alias title="_title_set" # easier for user
-# alias titlereset="rm ~/.title"
 
 #-----------------------------------------------------------------------------#
 # Message
-# If github push/pulls will require password, configure with SSH (may require
-# entering password once) or configure with http (stores information in plaintext
-# but only ever have to do this once)
 #-----------------------------------------------------------------------------#
 # Fun stuff
 # TODO: This hangs when run from interactive cluster node, we test by comparing
@@ -1592,5 +1600,4 @@ $_macos && { # first the MacOS options
   }
 [ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
 _bashrc_loaded=true
-
 
