@@ -1,8 +1,9 @@
-always_yes: True
-show_channel_urls: True
-auto_update_conda: True
+always_yes: true
+show_channel_urls: true
+auto_update_conda: true
 channels:
   - defaults
 create_default_packages:
   - pip
   - ipykernel
+auto_activate_base: false
