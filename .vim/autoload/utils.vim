@@ -2,7 +2,7 @@
 " Various utils defined here
 "-----------------------------------------------------------------------------"
 " Refresh file
-function! utils#refresh() " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
+function! utils#refresh() abort " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
   filetype detect " if started with empty file, but now shebang makes filetype clear
   filetype plugin indent on
   let loaded = []
@@ -18,29 +18,29 @@ function! utils#refresh() " refresh sesssion, sometimes ~/.vimrc settings are ov
       call add(loaded, file)
     endif
   endfor
-  echom "Loaded ".join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ').'.'
+  echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
 endfunction
 
 " Vim help information
-function! utils#show_vim_help(...)
+function! utils#show_vim_help(...) abort
   if a:0
     let item = a:1
   else
     let item = input('Vim help item: ', '', 'help')
   endif
-  if item != ''
+  if len(item)
     exe 'vert help ' . item
   endif
 endfunction
 
 " --help information
-function! utils#show_cmd_help(...)
+function! utils#show_cmd_help(...) abort
   if a:0
     let cmd = a:1
   else
     let cmd = input('Get --help info: ', '', 'shellcmd')
   endif
-  if cmd != ''
+  if len(cmd)
     silent! exe '!clear; '
       \ . 'search=' . cmd . '; '
       \ . 'if [ -n $search ] && builtin help $search &>/dev/null; then '
@@ -57,7 +57,7 @@ function! utils#show_cmd_help(...)
 endfunction
 
 " Man page information
-function! utils#show_cmd_man(...)
+function! utils#show_cmd_man(...) abort
   if a:0
     let cmd = a:1
   else
@@ -68,7 +68,7 @@ function! utils#show_cmd_man(...)
     \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
     \ . '  command man $search; '
     \ . 'fi'
-  if cmd != ''
+  if len(cmd)
     if v:shell_error != 0
       echohl WarningMsg
       echom 'Warning: "' . cmd . ' --help" failed.'
@@ -78,7 +78,7 @@ function! utils#show_cmd_man(...)
 endfunction
 
 " Command mode mappings
-function! utils#wild_tab(forward)
+function! utils#wild_tab(forward) abort
   if a:forward
     call feedkeys("\<Tab>", 't')
   else
@@ -88,9 +88,9 @@ function! utils#wild_tab(forward)
 endfunction
 
 " Insert mode mappings
-function! utils#forward_delete()
+function! utils#forward_delete() abort
   let line = getline('.')
-  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(" ", &tabstop)
+  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
     return repeat("\<Delete>", &tabstop)
   else
     return "\<Delete>"
@@ -98,7 +98,7 @@ function! utils#forward_delete()
 endfunction
 
 " Toggle conceal characters on and off
-function! utils#conceal_toggle(...)
+function! utils#conceal_toggle(...) abort
   if a:0
     let conceal_on = a:1
   else
@@ -108,7 +108,7 @@ function! utils#conceal_toggle(...)
 endfunction
 
 " Toggle literal tab characters on and off
-function! utils#tab_toggle(...)
+function! utils#tab_toggle(...) abort
   if a:0
     let &l:expandtab = 1 - a:1 " toggle 'on' means literal tabs are 'on'
   else
@@ -118,7 +118,7 @@ function! utils#tab_toggle(...)
 endfunction
 
 " Eliminates special chars during copy
-function! utils#copy_toggle(...)
+function! utils#copy_toggle(...) abort
   if a:0
     let toggle = a:1
   else
@@ -143,7 +143,7 @@ function! utils#copy_toggle(...)
 endfunction
 
 " Autosave toggle
-function! utils#autosave_toggle(...)
+function! utils#autosave_toggle(...) abort
   if !exists('b:autosave_on')
     let b:autosave_on = 0
   endif
@@ -175,7 +175,7 @@ function! utils#autosave_toggle(...)
 endfunction
 
 " Either listen to input, turn on if switch not declared, or do opposite
-function! utils#gitgutter_toggle(...)
+function! utils#gitgutter_toggle(...) abort
   if a:0
     let toggle = a:1
   else
@@ -193,7 +193,7 @@ function! utils#gitgutter_toggle(...)
 endfunction
 
 " Custom codi autocommands
-function! utils#codi_setup(toggle)
+function! utils#codi_setup(toggle) abort
   if a:toggle
     let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
     exe 'augroup codi_' . bufnr('%')
@@ -208,21 +208,21 @@ function! utils#codi_setup(toggle)
 endfunction
 
 " New codi window
-function! utils#codi_new(...)
-  if a:0 && a:1 !~ '^\s*$'
+function! utils#codi_new(...) abort
+  if a:0 && a:1 !~# '^\s*$'
     let name = a:1
   else
     let name = input('Calculator name (' . getcwd() . '): ', '', 'file')
   endif
-  if name !~ '^\s*$'
+  if name !~# '^\s*$'
     exe 'tabe ' . fnamemodify(name, ':r') . '.py'
     Codi!!
   endif
 endfunction
 
 " Set up tagbar window and make sure NerdTREE is flushed to right
-function! utils#tagbar_setup()
-  if &ft=="nerdtree"
+function! utils#tagbar_setup() abort
+  if &ft ==# 'nerdtree'
     wincmd h
     wincmd h " move two places in case e.g. have help menu + nerdtree already
   endif
@@ -240,11 +240,11 @@ function! utils#tagbar_setup()
 endfunction
 
 " Closing tabs and windows
-function! utils#vim_close()
+function! utils#vim_close() abort
   qa
   " tabdo windo if &ft == 'log' | q! | else | q | endif
 endfunction
-function! utils#tab_close()
+function! utils#tab_close() abort
   let ntabs = tabpagenr('$')
   let islast = (tabpagenr('$') - tabpagenr())
   if ntabs == 1
@@ -256,7 +256,7 @@ function! utils#tab_close()
     endif
   endif
 endfunction
-function! utils#window_close()
+function! utils#window_close() abort
   let ntabs = tabpagenr('$')
   let islast = (tabpagenr('$') == tabpagenr())
   q
@@ -266,18 +266,18 @@ function! utils#window_close()
 endfunction
 
 " Move current tab to the exact place of tab number N
-function! utils#tab_list(A, L, P)
+function! utils#tab_list(A, L, P) abort
   return map(range(1, tabpagenr('$')), 'string(v:val)')
 endfunction
-function! utils#tab_move(...)
+function! utils#tab_move(...) abort
   if a:0
     let nr = a:1
   else
     let nr = input('Move tab: ', '', 'customlist,utils#tab_list')
   endif
-  if nr == tabpagenr() || nr == 0 || nr == ''
+  if nr == tabpagenr() || nr == 0 || nr ==# ''
     return
-  elseif nr > tabpagenr() && version[0] > 7
+  elseif nr > tabpagenr() && v:version[0] > 7
     exe 'tabmove ' . nr
   else
     exe 'tabmove ' . (nr - 1)
@@ -285,38 +285,38 @@ function! utils#tab_move(...)
 endfunction
 
 " Function that generates lists of tabs and their numbers
-function! utils#tab_select()
+function! utils#tab_select() abort
   if !exists('g:tabline_bufignore')
     let g:tabline_bufignore = ['qf', 'vim-plug', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] " filetypes considered 'helpers'
   endif
   let items = []
-  for i in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = i+1 " the tab number
+  for t in range(tabpagenr('$')) " iterate through each tab
+    let tabnr = t + 1 " the tab number
     let buflist = tabpagebuflist(tabnr)
     for b in buflist " get the 'primary' panel in a tab, ignore 'helper' panels even if they are in focus
-      if !In(g:tabline_bufignore, getbufvar(b, "&ft"))
+      if !In(g:tabline_bufignore, getbufvar(b, '&ft'))
         let bufnr = b " we choose this as our 'primary' file for tab title
         break
-      elseif b==buflist[-1] " occurs if e.g. entire tab is a help window; exception, and indeed use it for tab title
+      elseif b == buflist[-1] " occurs if e.g. entire tab is a help window; exception, and indeed use it for tab title
         let bufnr = b
       endif
     endfor
     if tabnr == tabpagenr()
       continue
     endif
-    let items += [tabnr.': '.fnamemodify(bufname(bufnr),'%:t')] " actual name
+    let items += [tabnr . ': ' . fnamemodify(bufname(bufnr), '%:t')] " actual name
   endfor
   return items
 endfunction
 
 " Function that jumps to the tab number from a line generated by tabselect
-function! utils#tab_jump(item)
-  exe 'normal! '.split(a:item,':')[0].'gt'
+function! utils#tab_jump(item) abort
+  exe 'normal! ' . split(a:item, ':')[0] . 'gt'
 endfunction
 
 " For popup windows
 " For location lists, enter jumps to location. Restore this behavior.
-function! utils#popup_setup(nofile)
+function! utils#popup_setup(nofile) abort
   nnoremap <silent> <buffer> <CR> <CR>
   nnoremap <silent> <buffer> <C-w> :q!<CR>
   nnoremap <silent> <buffer> q :q!<CR>
@@ -326,7 +326,7 @@ function! utils#popup_setup(nofile)
 endfunction
 
 " For help windows
-function! utils#help_setup()
+function! utils#help_setup() abort
   call utils#popup_setup(0) " argument means we do not set buftype=nofile
   wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
   vertical resize 80 " always certain size
@@ -341,7 +341,7 @@ function! utils#help_setup()
 endfunction
 
 " For command windows, make sure local maps work
-function! utils#cmdwin_setup()
+function! utils#cmdwin_setup() abort
   silent! unmap <CR>
   silent! unmap <C-c>
   nnoremap <buffer> <silent> q :q<CR>
@@ -353,32 +353,32 @@ endfunction
 
 " Miscellaneous popup windows
 " Current syntax names and regex
-function! utils#current_group()
-  echo ""
-   \ . "actual <" . synIDattr(synID(line("."), col("."), 1), "name") . "> "
-   \ . "appears <" . synIDattr(synID(line("."), col("."), 0), "name") . "> "
-   \ . "group <" . synIDattr(synIDtrans(synID(line("."), col("."), 1)), "name") . ">"
+function! utils#current_group() abort
+  echo ''
+   \ . 'actual <' . synIDattr(synID(line('.'), col('.'), 1), 'name') . '> '
+   \ . 'appears <' . synIDattr(synID(line('.'), col('.'), 0), 'name') . '> '
+   \ . 'group <' . synIDattr(synIDtrans(synID(line('.'), col('.'), 1)), 'name') . '>'
 endfunction
-function! utils#current_syntax(name)
+function! utils#current_syntax(name) abort
   if a:name
-    exe "verb syntax list " . a:name
+    exe 'verb syntax list ' . a:name
   else
-    exe "verb syntax list " . synIDattr(synID(line("."), col("."), 0), "name")
+    exe 'verb syntax list ' . synIDattr(synID(line('.'), col('.'), 0), 'name')
   endif
 endfunction
 
 " Popup windows with default ftplugin and syntax files
-function! utils#show_ftplugin()
+function! utils#show_ftplugin() abort
   execute 'split $VIMRUNTIME/ftplugin/' . &ft . '.vim'
   silent call utils#popup_setup(1)
 endfunction
-function! utils#show_syntax()
+function! utils#show_syntax() abort
   execute 'split $VIMRUNTIME/syntax/' . &ft . '.vim'
   silent call utils#popup_setup(1)
 endfunction
 
 " Popup window with color display
-function! utils#show_colors()
+function! utils#show_colors() abort
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#popup_setup(1)
 endfunction
