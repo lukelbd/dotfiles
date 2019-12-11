@@ -1464,7 +1464,7 @@ if [ -f ~/.fzf.bash ]; then
         -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
     -prune -o -type d \
     -print 2> /dev/null | cut -b3-
-  "
+    "
   FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 \
     \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
         -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
