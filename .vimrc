@@ -558,9 +558,8 @@ if g:compatible_codi | Plug 'metakirby5/codi.vim' | endif
 " Plug 'ludovicchabant/vim-gutentags' "slows shit down like crazy
 
 " Colorize Hex strings
-" Note this option is ***incompatible*** with iTerm minimum contrast above 0
-" Actually tried with minimum contrast zero and colors *still* messed up; forget it
-" Plug 'lilydjwg/colorizer'
+" Test: ~/.vim/plugged/colorizer/colortest.txt
+Plug 'lilydjwg/colorizer'
 
 " End of plugins
 " The plug#end also declares filetype plugin, syntax, and indent on
