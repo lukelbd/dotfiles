@@ -1444,6 +1444,7 @@ if [ -f ~/.fzf.bash ]; then
     --select-1 --exit-0 --inline-info --height=6 \
     --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
     "
+  FZF_COMPLETION_COMMANDS=""
   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
   FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
