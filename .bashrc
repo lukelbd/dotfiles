@@ -610,6 +610,7 @@ gdiff() {
   # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
   #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
 }
+
 # Next use builtin diff command, *different* files in 2 directories
 # The last grep command is to highlight important parts
 ddiff() {
@@ -648,6 +649,7 @@ ddiff() {
     printf "$cat"
   done
 }
+
 # *Identical* files in two directories
 idiff() {
   [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
