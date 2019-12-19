@@ -765,16 +765,21 @@ if PlugActive('vim-textobj-user')
     \   },
     \ }
   " Enable and define related maps
+  " Make sure to match [<letter> with the corresponding textobject va<letter>
   call textobj#user#plugin('universal', s:universal_textobjs_dict)
+  noremap [p {
+  noremap ]p }
+  noremap <expr> [P textobj#search_block('^\ze\s*$', 0)
+  noremap <expr> ]P textobj#search_block('^\ze\s*$', 1)
+  noremap <expr> [C textobj#search_block('^\ze\s*' . Comment() . '.*$', 0)
+  noremap <expr> ]C textobj#search_block('^\ze\s*' . Comment() . '.*$', 1)
+  noremap <expr> [i textobj#search_block('^\ze\(\s*$\\|'
+    \ . substitute(getline('.'), '^\(\s*\).*$', '\1', '')
+    \ . '\)\@!', 0)
+  noremap <expr> ]i :call textobj#search_block('^\ze\(\s*$\\|'
+    \ . substitute(getline('.'), '^\(\s*\).*$', '\1', '')
+    \ . '\)\@!', 1)
   nnoremap <CR> <C-]>
-  noremap <silent> [p {
-  noremap <silent> ]p }
-  noremap <silent> [C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 0)<CR>
-  noremap <silent> ]C :call textobj#search_block('^\ze\s*' . Comment() . '.*$', 1)<CR>
-  noremap <silent> [P :call textobj#search_block('^\ze\s*$', 0)<CR>
-  noremap <silent> ]P :call textobj#search_block('^\ze\s*$', 1)<CR>
-  noremap <silent> [I :call textobj#search_block('^\ze\s*$', 0)<CR>
-  noremap <silent> ]I :call textobj#search_block('^\ze\s*$', 1)<CR>
 endif
 
 " Fugitive command aliases

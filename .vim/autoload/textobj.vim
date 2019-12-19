@@ -77,7 +77,11 @@ function! textobj#search_block(regex, forward)
     endif
   endwhile
   let flags = (a:forward ? 'w' : 'bw') " enable wrapping
-  exe lnum
-  call search(a:regex, flags) " jumps to next match too
+  let lnum = search(a:regex, flags . 'n') " get line number
+  if lnum == 0
+    return ''
+  else
+    return lnum . 'G'
+  endif
 endfunction
 
