@@ -340,7 +340,7 @@ noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
 " Search for conflict blocks
-noremap gc /^[<>\|]\{2,}<CR>
+noremap gc /^[<>=\|]\{2,}<CR>
 
 " INSERT and COMMAND WINDOW MAPS
 " Count number of tabs in popup menu so our position is always known
