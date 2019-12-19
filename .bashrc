@@ -181,7 +181,7 @@ export PATH=$(tr -d $'\n ' <<< "
 alias brew="PATH=\"$PATH\" brew"
 
 # Various python stuff
-export PYTHONPATH="$HOME" # just use pip install -e . for cloned projects
+export PYTHONPATH="" # just use pip install -e . for cloned projects
 export MPLBACKEND="Qt5Agg" # default for python and ipython
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
@@ -931,30 +931,31 @@ _ssh() {
 # 'variable whose name is result of "$#"' --> $n where n is the number
 # of args. Also can do math inside param expansion indexing.
 rlcp() { # "copy to local (from remote); 'copy there'"
-  local port array dest
+  local port args dest
   $_macos && echo "Error: rlcp intended to be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: rlcp REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
+  [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  port=$(cat $_port_file)      # port from most recent login
-  array=${@:1:$#-1}            # result of user input glob expansion, or just one file
+  args=(${@:1:$#-1})          # flags and files
+  port=$(cat $_port_file)     # port from most recent login
   dest=$(_compressuser ${!#}) # last value
-  dest="${dest//\ /\\\ }"      # escape whitespace manually
-  echo "(Port $port) Copying ${array[@]} on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${array[@]} ${USER}@localhost:"$dest"
+  dest=${dest//\ /\\\ }       # escape whitespace manually
+  echo "(Port $port) Copying ${args[@]} on this server to home server at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P$port "${args[@]}" ${USER}@localhost:"$dest"
 }
 
 # Copy from local macbook to <this server>
 lrcp() { # "copy to remote (from local); 'copy here'"
-  local port file dest
+  local port flags file dest
   $_macos && echo "Error: lrcp intended to be called from an ssh session." && return 1
-  [ $# -ne 2 ] && echo "Usage: lrcp LOCAL_FILE REMOTE_FILE" && return 1
+  [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  port=$(cat $_port_file)   # port from most recent login
-  dest="$2"                 # last value
-  file=$(_compressuser $1) # second to last
-  file="${file//\ /\\\ }"   # escape whitespace manually
+  flags=${@:1:$#-2}                 # flags
+  port=$(cat $_port_file)           # port from most recent login
+  dest=${!#}                        # last value
+  file=$(_compressuser ${@:$#-1:1}) # second to last
+  file=${file//\ /\\\ }             # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port ${USER}@localhost:"$file" "$dest"
+  command scp -o StrictHostKeyChecking=no -P$port $flags ${USER}@localhost:"$file" "$dest"
 }
 
 # Push here and pull on remote
