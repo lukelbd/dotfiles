@@ -1,0 +1,7 @@
+#------------------------------------------------------
+# Use this file to customize settings
+# For descriptions of each key name see:
+# https://proplot.readthedocs.io/en/latest/rctools.html
+#------------------------------------------------------
+# matplotlib:
+figure.max_open_warning: 0

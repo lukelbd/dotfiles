@@ -11,10 +11,10 @@ raise() {
   exit 1
 }
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
-sd_folder="$HOME/phone/Music"
 mb_folder="$HOME/playlist"
-sync_modified=true
-[ -d "$sd_folder" ] || echo "SD card not found."
+sd_folder="$HOME/phone/Music"  # simple-mtpfs
+sync_modified=true  # include files?
+[ -d "$sd_folder" ] || raise "Phone must be mounted with simple-mtpfs."
 echo "SD playlist: $sd_folder"
 echo "MB playlist: $mb_folder"
 

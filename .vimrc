@@ -1011,6 +1011,7 @@ if PlugActive('syntastic')
   let g:syntastic_python_checkers = ['python', 'flake8']
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
+  let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
   let g:syntastic_python_flake8_post_args='--ignore=W503'
   let g:syntastic_sh_shellcheck_args='-e SC2059,SC2148'
   " Syntax colors

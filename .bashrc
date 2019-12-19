@@ -610,6 +610,7 @@ gdiff() {
   # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
   #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
 }
+
 # Next use builtin diff command, *different* files in 2 directories
 # The last grep command is to highlight important parts
 ddiff() {
@@ -648,6 +649,7 @@ ddiff() {
     printf "$cat"
   done
 }
+
 # *Identical* files in two directories
 idiff() {
   [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
@@ -1445,6 +1447,7 @@ if [ -f ~/.fzf.bash ]; then
     --select-1 --exit-0 --inline-info --height=6 \
     --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
     "
+  FZF_COMPLETION_COMMANDS=""
   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
   FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
