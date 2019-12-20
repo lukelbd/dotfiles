@@ -2,7 +2,7 @@
 " Text object functions
 "-----------------------------------------------------------------------------"
 " Helper function
-function! s:lines_helper(pnb, nnb)
+function! s:lines_helper(pnb, nnb) abort
   let start_line = (a:pnb == 0) ? 1         : a:pnb + 1
   let end_line   = (a:nnb == 0) ? line('$') : a:nnb - 1
   let start_pos = getpos('.') | let start_pos[1] = start_line
@@ -10,8 +10,8 @@ function! s:lines_helper(pnb, nnb)
   return ['V', start_pos, end_pos]
 endfunction
 
-" Blacnk line objects
-function! textobj#blank_lines()
+" Blank line objects
+function! textobj#blank_lines() abort
   normal! 0
   let pnb = prevnonblank(line('.'))
   let nnb = nextnonblank(line('.'))
@@ -22,7 +22,7 @@ function! textobj#blank_lines()
 endfunction
 
 " New and improved paragraphs
-function! textobj#nonblank_lines()
+function! textobj#nonblank_lines() abort
   normal! 0l
   let nnb = search('^\s*\zs$', 'Wnc') " the c means accept current position
   let pnb = search('^\ze\s*$', 'Wnbc') " won't work for backwards search unless to right of first column
@@ -33,7 +33,7 @@ function! textobj#nonblank_lines()
 endfunction
 
 " Uncommented lines objects
-function! textobj#uncommented_lines()
+function! textobj#uncommented_lines() abort
   normal! 0l
   let nnb = search('^\s*'.Comment().'.*\zs$', 'Wnc')
   let pnb = search('^\ze\s*'.Comment().'.*$', 'Wncb')
@@ -44,14 +44,14 @@ function! textobj#uncommented_lines()
 endfunction
 
 " Functions for current line
-function! textobj#current_line_a()
+function! textobj#current_line_a() abort
   normal! 0
   let head_pos = getpos('.')
   normal! $
   let tail_pos = getpos('.')
   return ['v', head_pos, tail_pos]
 endfunction
-function! textobj#current_line_i()
+function! textobj#current_line_i() abort
   normal! ^
   let head_pos = getpos('.')
   normal! g_
@@ -61,27 +61,17 @@ function! textobj#current_line_i()
 endfunction
 
 " Related function for searching blocks
-function! textobj#search_block(regex, forward)
-  let lnum = line('.')
-  let lnum_orig = lnum
-  while match(getline(lnum), a:regex) != -1
-    if lnum == 1 && !a:forward
-      let lnum = line('$')
-    elseif lnum == line('$') && a:forward
-      let lnum = 1
-    else
-      let lnum = lnum + (a:forward ? 1 : -1)
-    endif
-    if lnum == lnum_orig " entire file matches regex
-      break
-    endif
-  endwhile
-  let flags = (a:forward ? 'w' : 'bw') " enable wrapping
-  let lnum = search(a:regex, flags . 'n') " get line number
+function! textobj#search_block(regex, forward) abort
+  let range = '\%' . (a:forward ? '>' : '<')  . line('.') . 'l'
+  if match(a:regex, '\\ze') != -1
+    let regex = substitute(a:regex, '\\ze', '\\ze\' . range, '')
+  else
+    let regex = a:regex . range
+  endif
+  let lnum = search(regex, 'n' . repeat('b', 1 - a:forward)) " get line number
   if lnum == 0
     return ''
   else
     return lnum . 'G'
   endif
 endfunction
-
