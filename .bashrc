@@ -903,6 +903,7 @@ fi
 # port for two-way forwarding, then to ssh in over that port. If the server in question
 # *requires* password entry (e.g. Duo authentification), and cannot be configured
 # for passwordless login with ssh-copy-id, then need to skip first step.
+# Currently we do this for cheyenne server 
 _port_file=~/.port # file storing port number
 alias ssh="_ssh" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
@@ -914,17 +915,24 @@ _ssh() {
     port="$2" # custom
   elif ! [[ $1 =~ cheyenne ]]; then # dynamically find first available port
     echo "Determining port automatically."
-    port=$(command ssh "$1" "port=$port
+    port=$(command ssh "$1" "
+      port=$port
       while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
         let port=\$port+1
-      done; echo \$port")
+      done
+      echo \$port
+      ")
   fi
   port_write=$(_compressuser $_port_file)
   title_write=$(_compressuser $_title_file)
-  command ssh -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -t -R $port:localhost:$listen $1 \
-    "echo $port >$port_write; echo $_title >$title_write; \
-    echo \"Port number: ${port}.\"; /bin/bash -i" # enter bash and stay interactive
+  command ssh \
+    -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
+    -t -R $port:localhost:$listen $1 "
+    echo $port >$port_write
+    echo $_title >$title_write
+    echo \"Port number: ${port}.\"
+    /bin/bash -i
+    " # enter bash and stay interactive
 }
 
 # Copy from <this server> to local macbook

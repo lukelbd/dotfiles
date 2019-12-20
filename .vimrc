@@ -256,7 +256,7 @@ nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
-nnoremap <Leader>` :<C-u>RemoveHighlights<CR>
+nnoremap <Leader>~ :<C-u>RemoveHighlights<CR>
 nnoremap <expr> ` "`" . nr2char(97+v:count)
 nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 " Reserve lower case q for quitting popup windows
