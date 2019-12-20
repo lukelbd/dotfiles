@@ -526,7 +526,7 @@ $_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -
 # Directory sizes, normal and detailed, analagous to ls/ll
 alias df="df -h" # disk useage
 alias du='du -h -d 1' # also a better default du
-alias pmount="simple-mtpfs -f -v ~/phone"
+alias pmount="simple-mtpfs -f -v ~/Phone"
 ds() {
   local dir
   [ -z $1 ] && dir="." || dir="$1"

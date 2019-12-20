@@ -12,7 +12,7 @@ raise() {
 }
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
 mb_folder="$HOME/playlist"
-sd_folder="$HOME/phone/Music"  # simple-mtpfs
+sd_folder="$HOME/Phone/Music"  # simple-mtpfs
 sync_modified=true  # include files?
 [ -d "$sd_folder" ] || raise "Phone must be mounted with simple-mtpfs."
 echo "SD playlist: $sd_folder"
