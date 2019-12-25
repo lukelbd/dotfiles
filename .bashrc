@@ -451,7 +451,7 @@ _setup_opts() {
   shopt -u failglob                # turn off failglob; so no error message if expansion is empty
   # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
   # Related environment variables
-  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:source *:. *:bg *:fg *:history *:clear *" # don't record some commands
+  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *" # don't record some commands
   export PROMPT_DIRTRIM=2 # trim long paths in prompt
   export HISTSIZE=50000
   export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
@@ -527,6 +527,10 @@ $_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -
 alias df="df -h" # disk useage
 alias du='du -h -d 1' # also a better default du
 alias pmount="simple-mtpfs -f -v ~/Phone"
+mv() {
+  command git mv "$@" 2>/dev/null
+  [ $? -ne 0 ] && command mv "$@"
+}
 ds() {
   local dir
   [ -z $1 ] && dir="." || dir="$1"
@@ -552,8 +556,8 @@ todo() { for f in $@; do echo "File: $f"; grep -i -n '\btodo\b' "$f"; done; } # 
 note() { for f in $@; do echo "File: $f"; grep -i -n '\bnote:' "$f"; done; }
 
 # Shell scripting utilities
-calc()  { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
-join()  { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
+calc() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+join() { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
 clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
 
 # Controlling and viewing running processes
@@ -561,7 +565,8 @@ alias toc="mpstat -P ALL 1" # like top, but for each core
 alias restarts="last reboot | less"
 # List shell processes using ps
 tos() {
-  ps | sed "s/^[ \t]*//" | tr -s ' ' | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
+  ps | sed "s/^[ \t]*//" | tr -s ' ' \
+     | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
      | grep "$1" | cut -d' ' -f1,4
 }
 
