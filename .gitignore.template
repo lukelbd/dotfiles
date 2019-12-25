@@ -1,20 +1,22 @@
-# Template .gitignore #
-#######################
 # Vim session files and swap files
 tags
 .vimsession
 .*.sw[a-z]
+
 # Python stuff
 *.pyc
 __pycache__
 .ipynb*
+
 # Common temporary files
 *.log
 *.tmp
+
 # Trash
 old
 trash
 garbage
+
 # Compiled source
 *.com
 *.class
@@ -22,6 +24,7 @@ garbage
 *.exe
 *.o
 *.so
+
 # Compressed files
 *.7z
 *.dmg
@@ -31,6 +34,7 @@ garbage
 *.rar
 *.tar
 *.zip
+
 # OS-generated files
 .nfs*
 .DS_Store
