@@ -6,7 +6,7 @@ tags
 # Python stuff
 *.pyc
 __pycache__
-.ipynb*
+.ipynb_checkpoints
 
 # Common temporary files
 *.log

@@ -26,9 +26,12 @@ $_macos && date=gdate || date=date
 for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
   ! [ -r "$path" ] && continue # e.g. if glob failed
   file="${path##*/}"
-  # Alphabetical order
+  # Alphabetical order and fix carriage returns
+  # See: https://unix.stackexchange.com/a/32059/112647
   if [[ "$file" =~ '.m3u8' ]]; then
-    m3u8=$(cat "$path" | sed '1d' | tac | sed '$!N;s/\n/#/' | sort -r --ignore-case | gsed 's/\#\#/\n\#/g' | tac)
+    m3u8=$(cat "$path" | tr '\r' '\n' | sed '1d' | tac \
+      | sed '$!N;s/\n/#/' | sort -r --ignore-case \
+      | gsed 's/\#\#/\n\#/g' | tac)
     printf "#EXTM3U\n$m3u8" >"$path"
   fi
   # Copy new files downloaded
