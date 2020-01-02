@@ -27,8 +27,8 @@ if ! s:has_repeat
 endif
 
 " Global settings
+" set nocompatible " always use the vim defaults
 set encoding=utf-8
-set nocompatible " always use the vim defaults
 scriptencoding utf-8
 let mapleader = "\<Space>"
 set confirm " require confirmation if you try to quit
@@ -196,14 +196,20 @@ function! s:suppress(prefix, mode)
   endif
 endfunction
 for s:mapping in [
-    \ ['n', '<Leader>'], ['v', '<Leader>'], ['n', '<Tab>'], ['n', '\'], ['v', '\'],
-    \ ['v', '<C-s>'], ['i', '<C-s>'], ['i', '<C-z>'], ['i', '<C-b>']
+    \ ['<Tab>',    'n'],
+    \ ['<Leader>', 'nv'],
+    \ ['\',        'nv'],
+    \ ['<C-s>',    'vi'],
+    \ ['<C-z>',    'i'],
+    \ ['<C-b>',    'i']
     \ ]
-  let s:mode = s:mapping[0]
-  let s:key = s:mapping[1]
-  if ! len(mapcheck(s:key, s:mode))
-    exe s:mode . 'map <expr> ' . s:key . ' s:suppress(''' . s:key . ''', ''' . s:mode . ''')'
-  endif
+  let s:key = s:mapping[0]
+  let s:modes = split(s:mapping[1], '\zs')  " construct list
+  for s:mode in s:modes
+    if ! len(mapcheck(s:key, s:mode))
+      exe s:mode . 'map <expr> ' . s:key . ' <sid>suppress(''' . s:key . ''', ''' . s:mode . ''')'
+    endif
+  endfor
 endfor
 
 " Different cursor shape different modes
@@ -1423,7 +1429,7 @@ function! s:keywordsetup()
    syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
    hi link customURL Underlined
    if &ft !=# 'vim'
-     syn match Todo '\<\%(WARNING\|ERROR\|FIXME\|TODO\|NOTE\|XXX\)\ze:\=\>' containedin=.*Comment.* " comments
+     syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments
      syn match Special '^\%1l#!.*$' " shebangs
    else
      syn clear vimTodo " vim instead uses the Stuff: syntax

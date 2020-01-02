@@ -57,19 +57,40 @@ unalias -a
 _bashrc_message "Variables and modules"
 if $_macos; then
   # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-  # NOTE: Added ffmpeg with sudo port install ffmpeg +nonfree
-  # NOTE: Added matlab as a symlink in builds directory
-  # NOTE: Install gcc and gfortran with 'port install gcc6' then
-  # 'port select --set gcc mp-gcc6' (check 'port select --list gcc')
-  # shellcheck disable=2155
+  # NOTES:
+  # To install GNU utils see: https://apple.stackexchange.com/q/69223/214359
+  # Added ffmpeg using 'sudo port install ffmpeg +nonfree'
+  # Added matlab as a symlink in builds directory
+  # Installed gcc and gfortran with 'port install gcc6' then 'port select
+  # --set gcc mp-gcc6'. Try 'port select --list gcc'
+  # Installed various utils with 'brew install coreutils findutils gnu-sed
+  # gnutls grep gnu-tar gawk'
   export PATH=$(tr -d $'\n ' <<< "
-    $HOME/builds/ncl-6.5.0/bin:$HOME/builds/matlab/bin:
+    $HOME/builds/ncl-6.5.0/bin:
+    $HOME/builds/matlab/bin:
     /opt/pgi/osx86-64/2018/bin:
     /usr/local/bin:
-    /opt/local/bin:/opt/local/sbin:
-    /opt/X11/bin:/Library/TeX/texbin:
-    /usr/bin:/bin:/usr/sbin:/sbin:
+    /usr/local/opt/coreutils/libexec/gnubin:
+    /usr/local/opt/findutils/libexec/gnubin:
+    /usr/local/opt/gnu-sed/libexec/gnubin:
+    /usr/local/opt/gnu-tar/libexec/gnubin:
+    /usr/local/opt/grep/libexec/gnubin:
+    /opt/local/bin:
+    /opt/local/sbin:
+    /opt/X11/bin:
+    /Library/TeX/texbin:
+    /usr/bin:
+    /bin:
+    /usr/sbin:
+    /sbin:
     ")
+  export MANPATH=$(tr -d $'\n ' <<< "
+    /usr/local/opt/coreutils/libexec/gnuman:
+    /usr/local/opt/findutils/libexec/gnuman:
+    /usr/local/opt/gnu-sed/libexec/gnuman:
+    /usr/local/opt/gnu-tar/libexec/gnuman:
+    /usr/local/opt/grep/libexec/gnuman:
+  ")
   export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
   export PKG_CONFIG_PATH="/opt/local/bin/pkg-config"
 
@@ -79,7 +100,8 @@ if $_macos; then
   # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
   # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
   if [ -d ~/.rvm/bin ]; then
-    [ -s ~/.rvm/scripts/rvm ] && source ~/.rvm/scripts/rvm # Load RVM into a shell session *as a function*
+    [ -s ~/.rvm/scripts/rvm ] && \
+      source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
     export PATH="$PATH:$HOME/.rvm/bin"
     rvm use ruby 1>/dev/null
   fi
@@ -89,8 +111,8 @@ if $_macos; then
   # actually ends up in above path after brew install gcc49; and must install
   # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
   # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
-  alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl' # fix libs
-  export NCARG_ROOT="$HOME/builds/ncl-6.5.0" # critically necessary to run NCL
+  alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
+  export NCARG_ROOT="$HOME/builds/ncl-6.5.0"  # critically necessary to run NCL
 
 else
   case $HOSTNAME in
@@ -157,7 +179,7 @@ else
     read -r -a _loaded < <(module --terse list 2>&1)
     _toload=(nco tmux) # have latest greatest versions of CDO and NCL via conda
     for _module in "${_toload[@]}"; do
-      if ! [[ " ${_loaded[@]} " =~ $_module ]]; then
+      if ! [[ " ${_loaded[*]} " =~ $_module ]]; then
         module load "$_module"
       fi
     done
@@ -178,6 +200,7 @@ export PATH=$(tr -d $'\n ' <<< "
 
 # Save path before setting up conda
 # Brew conflicts with anaconda (try "brew doctor" to see)
+# shellcheck disable=2139
 alias brew="PATH=\"$PATH\" brew"
 
 # Various python stuff
@@ -204,25 +227,20 @@ _prompt() { # input argument should be new command
 
 # Neat function that splits lines into columns so they fill the terminal window
 _columnize() {
-  local cmd
-  local input output final
-  local tcols ncols maxlen nlines
-  [ $# -eq 0 ] && input=$(cat /dev/stdin) || input="$1"
-  ! $_macos && cmd=wc || cmd=gwc
-  ncols=1 # start with 1
-  tcols=$(tput cols)
-  maxlen=0 # initial
-  nlines=$(printf "$input" | $cmd -l) # check against initial line count
+  local input output final tcols ncols maxlen nlines
+  ncols=1  # start with 1
+  maxlen=0  # initial
+  input=$(cat /dev/stdin)
+  tcols=$(tput cols) || { echo "Failed to get terminal width."; return 1; }
+  nlines=$(printf "$input" | wc -l) # check against initial line count
   output="$input" # default
   while true; do
     final="$output" # record previous output, this is what we will print
     output=$(printf "$input" | xargs -n$ncols | column -t)
-    maxlen=$(printf "$output" | $cmd -L)
-    # maxlen=$(printf "$output" | awk '{print length}' | sort -nr | head -1) # or wc -L but that's unavailable on mac
-    [ $maxlen -gt $tcols ] && break # this time *do not* print latest result, will result in line break due to terminal edge
-    [ $ncols -gt $nlines ] && final="$output" && break # test *before* increment, want to use that output
-    # echo terminal $tcols ncols $ncols nlines $nlines maxlen $maxlen
-    let ncols+=1
+    maxlen=$(printf "$output" | wc -L)
+    [ "$maxlen" -gt "$tcols" ] && break  # this time *do not* print latest result, will result in line break due to terminal edge
+    [ "$ncols" -gt "$nlines" ] && final=$output && break  # test *before* increment, want to use that output
+    ncols=$((ncols + 1))
   done
   printf "$final"
 }
@@ -234,14 +252,13 @@ _columnize() {
 # so we alias that as command prefix (don't want to change global path cause it
 # messes other shit up, maybe homebrew)
 help() {
-  local arg="$@"
-  [ -z "$arg" ] && echo "Requires argument." && return 1
-  if builtin help "$arg" &>/dev/null; then
-    builtin help "$arg" 2>&1 | less
-  elif $arg --help &>/dev/null; then
-    $arg --help 2>&1 | less # combine output streams or can get weird error
+  [ $# -eq 0 ] && echo "Requires argument." && return 1
+  if builtin help "$@" &>/dev/null; then
+    builtin help "$@" 2>&1 | less
+  elif "$@" --help &>/dev/null; then
+    "$@" --help 2>&1 | less # combine output streams or can get weird error
   else
-    echo "No help information for \"$arg\"."
+    echo "No help information for \"$*\"."
   fi
 }
 
@@ -251,24 +268,22 @@ man() { # always show useful information when man is called
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
   # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
-  local search arg
-  arg="$@"
-  [[ "$arg" =~ " " ]] && arg=$(echo $arg | tr '-' ' ')
-  [ -z $1 ] && echo "Requires one argument." && return 1
-  if command man $1 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
-    if $_macos; then # mac shows truncated manpage/no extra info; need the 'bash' manpage for full info
-      [ $1 == "builtin" ] && search=$1 || search=bash
+  local search arg="$*"
+  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
+  [ $# -eq 0 ] && echo "Requires one argument." && return 1
+  if command man "$arg" 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
+    if $_macos && [ "$arg" != "builtin" ]; then
+      search=bash  # need the 'bash' manpage for full info
     else
-      search=$1 # linux shows all info necessary, just have to find it
+      search=$arg  # linux shows all info necessary, just have to find it
     fi
     echo "Searching for stuff in ${search}."
-    LESS=-p"^ *${1}.*\[.*$" command man $search
-    # LESS=-p"^ *$1 \[.*$" command man $search
-  elif command man $1 &>/dev/null; then
+    LESS=-p"^ *$arg.*\[.*$" command man "$search"
+  elif command man "$arg" &>/dev/null; then
     echo "Item has own man page."
-    command man $1
+    command man "$arg"
   else
-    echo "No man entry for \"$1\"."
+    echo "No man entry for \"$arg\"."
   fi
 }
 
@@ -278,7 +293,7 @@ man() { # always show useful information when man is called
 # re-closing every time we start a session
 # For vi command see: https://vi.stackexchange.com/a/6114
 vi() {
-  HOME=/dev/null command vim -i NONE -u NONE $@
+  HOME=/dev/null command vim -i NONE -u NONE "$@"
 }
 vim() {
   # First modify the Obsession-generated session file
@@ -314,6 +329,7 @@ vim() {
 }
 
 # Absolute path, works everywhere
+# shellcheck disable=2164
 abspath() { # abspath that works on mac, Linux, or anything with bash
   if [ -d "$1" ]; then
     (cd "$1"; pwd)
@@ -334,13 +350,12 @@ open() {
   ! $_macos && echo "Error: open() should be run from your macbook." && return 1
   local files app app_default
   while [ $# -gt 0 ]; do
-    case $1 in
+    case "$1" in
       -a|--application) app_default="$2"; shift; shift; ;;
       -*) echo "Error: Unknown flag $1." && return 1 ;;
-      *)  files+=($1); shift; ;;
+      *)  files+=("$1"); shift; ;;
     esac
   done
-  echo ${files[@]}
   for file in "${files[@]}"; do
     if [ -n "$app_default" ]; then
       app="$app_default"
@@ -366,7 +381,7 @@ open() {
       esac
     fi
     echo "Opening file \"$file\"."
-    command open -a "$app" $file
+    command open -a "$app" "$file"
   done
 }
 
@@ -489,13 +504,9 @@ env() { set; } # just prints all shell variables
 # General utilties
 #-----------------------------------------------------------------------------#
 # Configure ls behavior, define colorization using dircolors
-if [ -r "$HOME/.dircolors.ansi" ]; then
-  $_macos && _dc_command=gdircolors || _dc_command=dircolors
-  eval "$($_dc_command $HOME/.dircolors.ansi)"
-fi
-$_macos && _ls_command=gls || _ls_command=ls
-alias ls="$_ls_command --color=always -AF"   # ls useful (F differentiates directories from files)
-alias ll="$_ls_command --color=always -AFhl" # ls "list", just include details and file sizes
+[ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors $HOME/.dircolors.ansi)"
+alias ls="ls --color=always -AF"   # ls useful (F differentiates directories from files)
+alias ll="ls --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
 alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
 log() {
@@ -509,7 +520,7 @@ log() {
 # Standardize less/man/etc. colors
 # Used this: https://unix.stackexchange.com/a/329092/112647
 export LESS="--RAW-CONTROL-CHARS"
-[ -f ~/.LESS_TERMCAP ] && . ~/.LESS_TERMCAP
+[ -r ~/.LESS_TERMCAP ] && source ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
   export LESS_TERMCAP_md=$'\e[1;33m'     # begin blink
   export LESS_TERMCAP_so=$'\e[01;44;37m' # begin reverse video
@@ -521,26 +532,29 @@ if hash tput 2>/dev/null; then
 fi
 
 # Information on directories
-$_macos || alias hardware="cat /etc/*-release" # print out Debian, etc. release info
+# shellcheck disable=2142
 $_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
+$_macos || alias hardware="cat /etc/*-release" # print out Debian, etc. release info
 # Directory sizes, normal and detailed, analagous to ls/ll
-alias df="df -h" # disk useage
-alias du='du -h -d 1' # also a better default du
+# shellcheck disable=2032
+alias du='du -h -d 1'
+alias df="df -h"
 alias pmount="simple-mtpfs -f -v ~/Phone"
 mv() {
-  command git mv "$@" 2>/dev/null
-  [ $? -ne 0 ] && command mv "$@"
+  command git mv "$@" 2>/dev/null && command mv "$@"
 }
 ds() {
-  local dir
-  [ -z $1 ] && dir="." || dir="$1"
+  local dir='.'
+  [ $# -gt 1 ] && echo "Too many directories." && return 1
+  [ $# -eq 1 ] && dir="$1"
   find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
 }
+# shellcheck disable=2033
 dl() {
-  local cmd dir
-  [ -z $1 ] && dir="." || dir="$1"
-  ! $_macos && cmd=sort || cmd=gsort
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | $cmd -sh
+  local dir='.'
+  [ $# -gt 1 ] && echo "Too many directories." && return 1
+  [ $# -eq 1 ] && dir="$1"
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
 }
 # Find but ignoring hidden folders and stuff
 alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
@@ -552,13 +566,13 @@ hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status
 
 # Query files
 # awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
-todo() { for f in $@; do echo "File: $f"; grep -i -n '\btodo\b' "$f"; done; } # | sed $'s/\t/  /g' | sed 's/^\([^ ]* \) */\1/g'; done; }
-note() { for f in $@; do echo "File: $f"; grep -i -n '\bnote:' "$f"; done; }
+todo() { for f in "$@"; do echo "File: $f"; grep -i -n '\btodo\b' "$f"; done; } # | sed $'s/\t/  /g' | sed 's/^\([^ ]* \) */\1/g'; done; }
+note() { for f in "$@"; do echo "File: $f"; grep -i -n '\bnote:' "$f"; done; }
 
 # Shell scripting utilities
-calc() { bc -l <<< "$(echo $@ | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+calc() { bc -l <<< "$(echo "$*" | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 join() { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
-clear!() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
+refresh() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
 
 # Controlling and viewing running processes
 alias toc="mpstat -P ALL 1" # like top, but for each core
@@ -573,19 +587,20 @@ tos() {
 # Kill jobs by name
 pskill() {
   local strs
-  $_macos && echo "Error: GNU ps not available, and macOS grep lists not just processes started in this shell. Don't use on macOS." && return 1
+  $_macos && echo "Error: macOS ps lists not just processes started in this shell." && return 1
   [ $# -ne 0 ] && strs=("$@") || strs=(all)
   for str in "${strs[@]}"; do
     echo "Killing $str jobs..."
-    [ $str == all ] && str=""
-    kill $(tos "$str" | cut -d' ' -f1 | xargs) 2>/dev/null
+    [ "$str" == all ] && str=""
+    tos "$str" | cut -d' ' -f1 | xargs kill 2>/dev/null
   done
 }
 
- # Kill jobs with the percent sign thing; NOTE background processes started by scripts not included!
+ # Kill jobs with the percent sign thing
+ # NOTE: Background processes started by scripts not included!
 jkill() {
   local count=$(jobs | wc -l | xargs)
-  for i in $(seq 1 $count); do
+  for i in $(seq 1 "$count"); do
     echo "Killing job $i..."
     eval "kill %$i"
   done
@@ -597,7 +612,7 @@ jkill() {
 qkill() {
   local proc
   for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do
-    qdel $proc
+    qdel "$proc"
     echo "Deleted job $proc"
   done
 }
@@ -1658,7 +1673,7 @@ title_update() { # fix name issues
   _title_update $@
 }
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
-[[ ! "$PROMPT_COMMAND" =~ "_title_update" ]] && _prompt _title_update
+[[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 alias title="_title_set" # easier for user
 
@@ -1667,7 +1682,7 @@ alias title="_title_set" # easier for user
 #-----------------------------------------------------------------------------#
 # Fun stuff
 # TODO: This hangs when run from interactive cluster node, we test by comparing
-# histname variable with command (variable does not change)
+# hostname variable with command (variable does not change)
 $_macos && { # first the MacOS options
   alias artists="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
   alias forecast="curl wttr.in/Fort\ Collins" # list weather information
@@ -1679,4 +1694,3 @@ $_macos && { # first the MacOS options
   }
 [ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
 _bashrc_loaded=true
-

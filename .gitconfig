@@ -1,109 +1,95 @@
-#------------------------------------------------------------------------------;
-# Configuration file. Newlines within double quotes must be escaped.
-# See: https://stackoverflow.com/a/16136745/4970632 and https://stackoverflow.com/q/2421011/4970632
-#------------------------------------------------------------------------------;
-# PROTIPS (add to this)
-# * To rename branch use git branch -m <old_name> <new_name>
-# * To rename local and remote see: https://stackoverflow.com/q/8762601/4970632
-# * The smudge filter is run when you git add, the other one when you run
-#   git checkout/git pull/git merge/anything that 'checks out' a file.
-# * To ***test a new 'clean' filter***, try moving your file of interest to
-#   a temporary file then 'checking out' the version of the file on HEAD, i.e.
-#   git mv file tmp && git checkout tmp
-#------------------------------------------------------------------------------;
-# NBSTRIPOUT NOTE
-# * If you try to commit a file for which only the output has been changed,
-#   then nothing will happen (git will say is up to date)
-# * If you change the notebook code on one server then push/pull on another
-#   server, the *entire output will be wiped* because it would be super
-#   non-trivial to try to 'invert' the output stripping process; so you need
-#   to decide if this is acceptable (probably yes)
-#------------------------------------------------------------------------------;
+#------------------------------------------------------------------------------
+# Configuration file. For syntax help see:
+# https://stackoverflow.com/a/16136745/4970632
+# https://stackoverflow.com/q/2421011/4970632
+#------------------------------------------------------------------------------
 # NEW COMMANDS
-# 'hist':
-#   full history for a given file
-# 'exec':
-#   exec arbitrary shell command on top level
-# 'rmupstream':
-#   unset upstream branch, needed after you change the name of a local branch
-#   with git branch -m name because git tracks the old remote branch name
-# 'wtf':
-#   queries the remote server to test whether we are synced
-#   also prints current branch and remote branch, with extra info
-# 'user':
-#   fix user/email information through every commit in repository
-# 'vim':
-#   list the vim processes running inside directory
-# 'pack':
-#   shows largest 'pack' files in repo
-# 'objects':
-#   when you commit giant files (i.e. over 100MB), even after you delete them,
-#   you won't be able to push to Github because they were tracked and are found
-#   in .vim. use this to delete file/directory throughout history. from:
-#   https://stackoverflow.com/a/23657759/4970632
-# 'deleted':
-#   lists files that were deleted in git history, but were never re-created
-#   or added back in
+# 'amend':
+#   Change the name of arbitrary commit messages; just provide a SHA1 reference
+#   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
+# 'branches':
+#   List all branches. Prune dead remote branches every time.
+# 'commands':
+#   List of valid commands, used for FZF integration
 # 'delete':
-#   for more information see the script; can be passed a filename or a regular
+#   For more information see the script; can be passed a filename or a regular
 #   expresion e.g. '*.mov'
-# 'truncate':
-#   use this to truncate at given SHA
+# 'deleted':
+#   Lists files that were deleted in git history, but were never re-created
+#   or added back in
+# 'exec':
+#   Exec arbitrary shell command on top level
 # 'get':
-#   fetch all branches, even ones that don't yet exist on local
+#   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all); see
 #   https://stackoverflow.com/a/10312587/4970632
 # 'ignore':
-#   stop tracking every single regex pattern in your .gitignore
+#   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
-# 'amend':
-#   change the name of arbitrary commit messages; just provide a SHA1 reference
-#   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
-# 'update':
-#   update from one branch into this current branch. common use case may
-#   be 'git update upstream/master'. beware that stash pop may cause conflicts.
-# 'commands':
-#   list of valid commands, used for FZF integration
+# 'hist':
+#   full history for a given file
+# 'objects':
+#   When you commit giant files (i.e. over 100MB), even after you delete them,
+#   you won't be able to push to Github because they were tracked and are found
+#   in .vim. use this to delete file/directory throughout history. from:
+#   https://stackoverflow.com/a/23657759/4970632
+# 'pack':
+#   Shows largest 'pack' files in repo
+# 'rmupstream':
+#   Unset upstream branch, needed after you change the name of a local branch
+#   with git branch -m name because git tracks the old remote branch name
 # 'tree':
-#   descriptive git log
+#   Descriptive git log
+# 'truncate':
+#   Use this to truncate at given SHA
 # 'trunk':
-#   succinct git log
+#   Succinct git log
+# 'update':
+#   Update from one branch into this current branch. common use case may
+#   be 'git update upstream/master'. beware that stash pop may cause conflicts.
+# 'user':
+#   Fix user/email information through every commit in repository
+# 'vim':
+#   List the vim processes running inside directory
+# 'wtf':
+#   Queries the remote server to test whether we are synced
+#   also prints current branch and remote branch, with extra info
 #------------------------------------------------------------------------------;
 # TODO
 # 'opts':
 #   fails not just as git alias, but when calling the regex manually
 #   see: https://stackoverflow.com/a/52846422/4970632
 #   "!f(){ echo ${1}; echo /usr/local/share/doc/git-doc/git-${1}.txt; cat /usr/local/share/doc/git-doc/git-${1}.txt | ggrep --initial-tab --recursive \
-#   --binary-files=without-match --no-filename --only-matching --perl-regexp \
-#   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
+#     --binary-files=without-match --no-filename --only-matching --perl-regexp \
+#     --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 [alias]
-	tags       = push origin --tags
-	root       = rev-parse --show-toplevel
-	rmupstream = branch --unset-upstream
-	remotes    = remote --verbose
-	branches   = "!git remote prune origin; git --no-pager branch -vv --all"
-	short      = status --short --branch
-	long       = status --long --branch
-	stat       = diff --stat
-	hist       = log -p --
-	wtf        = !git-wtf $@
-	user       = !git-user $@
-	vim        = !git-vim $@
-	pack       = !git-pack $@
-	objects    = !git count-objects -H -v
-	delete     = !git-delete $@
-	truncate   = !git-truncate $@
-	get        = !get-get $@
-	deleted    = !git-deleted $@
-	ignore     = !git-ignore $@
-	exec       = "!exec "
-	update     = "!git fetch --all; git stash clear; git stash; git merge $@; git stash pop"
-	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
 	amend      = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	branches   = "!git remote prune origin; git --no-pager branch -vv --all"
+	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
+	delete     = "!git-delete $@"
+	deleted    = "!git-deleted $@"
+	exec       = "!exec "
+	get        = "!get-get $@"
+	hist       = log -p --
+	ignore     = "!git-ignore $@"
+	leaf       = "!git log $@.. --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
+	long       = status --long --branch
+	objects    = "!git count-objects -H -v"
+	pack       = "!git-pack $@"
+	remotes    = remote --verbose
+	rmupstream = branch --unset-upstream
+	root       = rev-parse --show-toplevel
+	short      = status --short --branch
+	stat       = diff --stat
+	tags       = push origin --tags
 	tree       = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
+	truncate   = "!git-truncate $@"
 	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $@ 2>/dev/null"
-	leaf       = "!git log master.. --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
+	update     = "!git fetch --all; git stash clear; git stash; git merge $@; git stash pop"
+	user       = "!git-user $@"
+	vim        = "!git-vim $@"
+	wtf        = "!git-wtf $@"
 [status]
 	branch = true
 	short = true
@@ -118,9 +104,9 @@
 	name = Luke Davis
 	email = lukelbd@gmail.com
 [core]
-	mergeoptions = --no-edit
 	attributesfile = ~/.gitattributes
 	ignorecase = false
+	mergeoptions = --no-edit
 [pager]
 	branch = false
 	tag = false
