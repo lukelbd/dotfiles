@@ -300,31 +300,28 @@ vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
   # tracking in the current session file
-  local flags files session
-  session=.vimsession
-  while [[ $# -gt 0 ]]; do
+  local flags files
+  while [ $# -gt 0 ]; do
     case "$1" in
       -*) flags+=("$1") ;;
-       *) files+=("$1")  ;;
+      *) files+=("$1") ;;
     esac
     shift
  done
-  if [[ "${#files[@]}" -eq 0 ]] && [[ -r "$session" ]]; then
+  if [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ]; then
     # Fix various Obsession bugs
-    # Unfold stuff after entering each buffer; for some reason folds are otherwise
-    # re-closed upon openening each file
-    # Also prevent double-loading, possibly Obsession expects different workflow/does
-    # not anticipate :tabedit commands, ends up loading everything *twice*
-    # Check out: cat $session | grep -n -E 'fold|zt'
-    $_macos && _sed='gsed' || _sed='sed' # only GNU sed works here
-    $_sed -i '/zt/a setlocal nofoldenable' $session
-    $_sed -i 's/^[0-9]*,[0-9]*fold$//g' $session
-    $_sed -i 's/^if bufexists.*$//g' $session
-    $_sed -i -s 'N;/normal! zo/!P;D' $session
-    $_sed -i -s 'N;/normal! zc/!P;D' $session
-    command vim "${flags[@]}" -S $session # for working with obsession
+    # Unfold stuff after entering each buffer. For some reason folds are
+    # otherwise re-closed upon openening each file. Also prevent double-loading,
+    # possibly Obsession does not anticipate :tabedit, ends up loading
+    # everything *twice*. Check out: cat .vimsession | grep -n -E 'fold|zt'
+    sed -i '/zt/a setlocal nofoldenable' .vimsession
+    sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession
+    sed -i 's/^if bufexists.*$//g' .vimsession
+    sed -i -s 'N;/normal! zo/!P;D' .vimsession
+    sed -i -s 'N;/normal! zc/!P;D' .vimsession
+    command vim "${flags[@]}" -S .vimsession  # for working with obsession
   else
-    command vim "${flags[@]}" -p "${files[@]}" # when loading specific files; also open them in separate tabs
+    command vim "${flags[@]}" -p "${files[@]}"  # when loading specific files; also open them in separate tabs
   fi
   clear # clear screen after exit
 }
@@ -353,7 +350,7 @@ open() {
     case "$1" in
       -a|--application) app_default="$2"; shift; shift; ;;
       -*) echo "Error: Unknown flag $1." && return 1 ;;
-      *)  files+=("$1"); shift; ;;
+      *) files+=("$1"); shift; ;;
     esac
   done
   for file in "${files[@]}"; do
@@ -390,10 +387,10 @@ export EDITOR=vim # default editor, nice and simple
 export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 
 #-----------------------------------------------------------------------------#
-# SHELL BEHAVIOR, KEY BINDINGS
+# Shell behavior, key bindings
 #-----------------------------------------------------------------------------#
 # Readline/inputrc settings
-# Use Ctrl-R to search previous commands
+# Use ctrl-r to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
 # bind '"\C-i":glob-expand-word' # expansion but not completion
 _setup_bindings() {
@@ -417,18 +414,15 @@ _setup_bindings() {
   bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
   bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
   bind '"\C-l": forward-char'
-  bind '"\C-s": beginning-of-line' # match vim motions
-  bind '"\C-e": end-of-line'       # match vim motions
-  bind '"\C-h": backward-char'     # match vim motions
+  bind '"\C-s": beginning-of-line'
+  bind '"\C-e": end-of-line'
+  bind '"\C-h": backward-char'
   bind '"\C-w": forward-word'      # requires
   bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
-  bind '"\eOP": menu-complete'          # history
-  bind '"\eOQ": menu-complete-backward' # history
+  bind '"\eOP": menu-complete'
+  bind '"\eOQ": menu-complete-backward'
   bind '"\C-j": next-history'
-  bind '"\C-k": previous-history'  # history
-  bind '"\C-j": next-history'
-  bind '"\C-p": previous-history'  # history
-  bind '"\C-n": next-history'
+  bind '"\C-k": previous-history'
   stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
   stty stop undef   # no more ctrl-s
   stty eof undef    # no more ctrl-d
@@ -439,15 +433,15 @@ _setup_bindings 2>/dev/null # ignore any errors
 # Check out 'shopt -p' to see possibly interesting shell options
 # Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
 _setup_opts() {
-  # Turn off history expansion, so can use '!' in strings; see: https://unix.stackexchange.com/a/33341/112647
+  # Turn off history expansion so can use '!' in strings
+  # See: https://unix.stackexchange.com/a/33341/112647
   set +H
-  # No more control-d closing terminal
+  # Never close terminal with ctrl-d
   set -o ignoreeof
-  # Disable start/stop output control
+  # Disable start stop output control
   stty -ixon # note for putty, have to edit STTY value and set ixon to zero in term options
-  # Exit this script when encounter error, and print each command; useful for debugging
-  # set -ex
   # Various shell options
+  # shopt -s nocasematch           # forget this; affects global behavior of case/esac, and [[ =~ ]] commands
   shopt -s cmdhist                 # save multi-line commands as one command in shell history
   shopt -s checkwinsize            # allow window resizing
   shopt -u nullglob                # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
@@ -457,17 +451,16 @@ _setup_opts() {
   shopt -s dirspell                # attempt spelling correction of dirname
   shopt -s cdspell                 # spelling errors during cd arguments
   shopt -s cdable_vars             # cd into shell variable directories, no $ necessary
-  shopt -s nocaseglob              # case insensitive
+  shopt -s nocaseglob              # case insensitive glob
   shopt -s autocd                  # typing naked directory name will cd into it
-  shopt -s no_empty_cmd_completion # no more completion in empty terminal!
+  shopt -u no_empty_cmd_completion # no more completion in empty terminal!
   shopt -s histappend              # append to the history file, don't overwrite it
   shopt -s cmdhist                 # save multi-line commands as one command
   shopt -s globstar                # **/ matches all subdirectories, searches recursively
-  shopt -u failglob                # turn off failglob; so no error message if expansion is empty
-  # shopt -s nocasematch # don't want this; affects global behavior of case/esac, and [[ =~ ]] commands
+  shopt -u failglob                # error message if expansion is empty
   # Related environment variables
-  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *" # don't record some commands
   export PROMPT_DIRTRIM=2 # trim long paths in prompt
+  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *" # don't record some commands
   export HISTSIZE=50000
   export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
   export HISTCONTROL="erasedups:ignoreboth" # avoid duplicate entries
@@ -479,9 +472,9 @@ _setup_opts 2>/dev/null # ignore if option unavailable
 #-----------------------------------------------------------------------------#
 # The -X show bindings bound to shell commands (i.e. not builtin readline functions, but strings specifying our own)
 # The -s show bindings 'bound to macros' (can be combination of key-presses and shell commands)
-# NOTE: Example for finding variables:
+# NOTES: See https://stackoverflow.com/a/949006/4970632
+# To find netcdf environment variables on a compute cluster try:
 # for var in $(variables | grep -i netcdf); do echo ${var}: ${!var}; done
-# NOTE: See: https://stackoverflow.com/a/949006/4970632
 alias aliases="compgen -a"
 alias variables="compgen -v"
 alias functions="compgen -A function" # show current shell functions
@@ -541,7 +534,7 @@ alias du='du -h -d 1'
 alias df="df -h"
 alias pmount="simple-mtpfs -f -v ~/Phone"
 mv() {
-  command git mv "$@" 2>/dev/null && command mv "$@"
+  git mv "$@" 2>/dev/null || command mv "$@"
 }
 ds() {
   local dir='.'
@@ -557,7 +550,7 @@ dl() {
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
 }
 # Find but ignoring hidden folders and stuff
-alias homefind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
+alias quickfind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
 
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
@@ -972,7 +965,7 @@ _ssh() {
 # of args. Also can do math inside param expansion indexing.
 rlcp() { # "copy to local (from remote); 'copy there'"
   local port args dest
-  $_macos && echo "Error: rlcp intended to be called from an ssh session." && return 1
+  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
   [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   args=("${@:1:$#-1}")          # flags and files
@@ -986,7 +979,7 @@ rlcp() { # "copy to local (from remote); 'copy there'"
 # Copy from local macbook to <this server>
 lrcp() { # "copy to remote (from local); 'copy here'"
   local port flags file dest
-  $_macos && echo "Error: lrcp intended to be called from an ssh session." && return 1
+  $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
   [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   flags=("${@:1:$#-2}")               # flags
@@ -1001,7 +994,7 @@ lrcp() { # "copy to remote (from local); 'copy here'"
 # Push here and pull on remote
 pushpull() {
   local port gdir1 gdir2
-  $_macos && echo "Error: rlcp intended to be called from an ssh session." && return 1
+  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
   [ $# -eq 0 ] && echo "Error: Message required." && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)  # port from most recent login
@@ -1603,12 +1596,11 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
   avail() {
     local avail current
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
-    read -r -a avail < <(conda search "$1" | grep '\b'"$1"'\b' | awk '!seen[$2]++ {print $2}' | tac | xargs)
+    avail=$(conda search "$1" | grep '\b'"$1"'\b' | awk '!seen[$2]++ {print $2}' | tac | xargs)
     current=$(conda list "$1" | grep '\b'"$1"'\b' | awk 'NR == 1 {print $2}')
     echo "Package:         $1"
     echo "Current version: $current"
-    echo "Latest version:  ${avail[0]}"
-    echo "All versions:    ${avail[*]:1}"
+    echo "All versions:    $avail"
   }
 
   # Initialize conda
@@ -1652,7 +1644,7 @@ fi
 _title_file=~/.title
 _title_set() {  # default way is probably using Cmd-I in iTerm2
   # Record title from user input, or as user argument
-  ! $_macos && return 1
+  $_macos || return 1
   [ -z "$TERM_SESSION_ID" ] && return 1
   if [ $# -gt 0 ]; then
     _title="$*"
@@ -1660,10 +1652,8 @@ _title_set() {  # default way is probably using Cmd-I in iTerm2
     read -r -p "Window title (window $_win_num):" _title
   fi
   [ -z "$_title" ] && _title="window $_win_num"
-  # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
-  # GNU syntax is "sed -i <pattern> <file>", which is annoying.
-  [ ! -e "$_title_file" ] && touch "$_title_file"
-  gsed -i '/^'"$_win_num"':.*$/d' "$_title_file" # remove existing title from file
+  [ -e "$_title_file" ] || touch "$_title_file"
+  sed -i '/^'"$_win_num"':.*$/d' "$_title_file" # remove existing title from file
   echo "$_win_num: $_title" >> "$_title_file" # add to file
 }
 _title_get() {
