@@ -114,7 +114,7 @@ function! utils#tab_toggle(...) abort
   else
     setlocal expandtab!
   endif
-  let b:tab_mode = &l:expandtab
+  let b:expandtab = &l:expandtab  " this overrides set expandtab in vimrc
 endfunction
 
 " Eliminates special chars during copy

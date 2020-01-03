@@ -54,7 +54,6 @@ set relativenumber
 set tabstop=2 " shoft default tabs
 set shiftwidth=2
 set softtabstop=2
-set expandtab " says to always expand \t to their length in <SPACE>'s!
 set autoindent " indents new lines
 set backspace=indent,eol,start " backspace by indent - handy
 set nostartofline " when switching buffers, doesn't move to start of line (weird default)
@@ -77,19 +76,24 @@ set foldnestmax=10 " avoids weird things
 set foldopen=tag,mark " options for opening folds on cursor movement; disallow block
 set display=lastline " displays as much of wrapped lastline as possible;
 set diffopt=vertical,foldcolumn:0,context:5
-silent! set diffopt^=filler
 set wildmenu
 set wildmode=longest:list,full
+set whichwrap=[,],<,>,h,l " <> = left/right insert, [] = left/right normal mode
+let &g:breakat = ' 	!*-+;:,./?' " break at single instances of several characters
 let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,'
   \ . '*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,'
   \ . '*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,'
-let &breakat = ' 	!*-+;:,./?' " break at single instances of several characters
-if exists('&breakindent')
-  set breakindent " map indentation when breaking
+if exists('&diffopt')
+  set diffopt^=filler
 endif
-set whichwrap=[,],<,>,h,l " <> = left/right insert, [] = left/right normal mode
-augroup escape_fix " escape repair needed when we allow h/l to change line num
+if exists('&breakindent')
+  set breakindent  " map indentation when breaking
+endif
+if !exists('b:expandtab')
+  set expandtab  " only expand if TabToggle has not been called!
+endif  " says to always expand \t to their length in <SPACE>'s!
+augroup escape_fix  " escape repair needed when we allow h/l to change line num
   au!
   au InsertLeave * normal! `^
 augroup END
@@ -105,31 +109,31 @@ exe 'setlocal ' . g:set_overrides
 let g:tab_filetypes = ['text', 'gitconfig', 'make']
 augroup tab_toggle
   au!
-  exe 'au FileType ' . join(g:tab_filetypes, ',') . 'TabToggle 1'
+  exe 'au FileType ' . join(g:tab_filetypes, ',') . ' TabToggle 1'
 augroup END
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
 nnoremap <Leader><Tab> :TabToggle<CR>
 
 " Global functions, for vim scripting
-function! In(list,item) " whether inside list
+function! In(list,item)  " whether inside list
   return index(a:list,a:item) != -1
 endfunction
-function! Reverse(text) " reverse string
+function! Reverse(text)  " reverse string
   return join(reverse(split(a:text, '.\zs')), '')
 endfunction
-function! Strip(text) " strip leading and trailing whitespace
+function! Strip(text)  " strip leading and trailing whitespace
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
 
 " Query whether plugin is loaded
 function! PlugActive(key)
-  return has_key(g:plugs, a:key) " change as needed
+  return has_key(g:plugs, a:key)  " change as needed
 endfunction
 
 " Reverse selected lines
 function! ReverseLines(l1, l2)
-  let line1 = a:l1 " cannot overwrite input var names
+  let line1 = a:l1  " cannot overwrite input var names
   let line2 = a:l2
   if line1 == line2
     let line1 = 1
@@ -140,7 +144,7 @@ endfunction
 command! -range Reverse call ReverseLines(<line1>, <line2>)
 
 " Better grep, with limited regex translation
-function! Grep(regex) " returns list of matches
+function! Grep(regex)  " returns list of matches
   let regex = a:regex
   let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g') " not sure why double backslash needed
   let regex = substitute(regex, '\\s', "[ \t]",  'g')

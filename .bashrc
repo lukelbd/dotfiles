@@ -1,5 +1,6 @@
 #!/bin/bash
 #.bashrc
+# shellcheck disable=1090,2181,2120
 #-----------------------------------------------------------------------------#
 # This file should override defaults in /etc/profile in /etc/bashrc.
 # Check out what is in the system defaults before using this, make sure your
@@ -20,8 +21,8 @@
 #-----------------------------------------------------------------------------#
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message:
-# 1) https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
-# 2) https://unix.stackexchange.com/questions/18231/scp-fails-without-error
+# 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
+# 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
 clear # first clear screen
 
@@ -69,12 +70,12 @@ if $_macos; then
     $HOME/builds/ncl-6.5.0/bin:
     $HOME/builds/matlab/bin:
     /opt/pgi/osx86-64/2018/bin:
-    /usr/local/bin:
     /usr/local/opt/coreutils/libexec/gnubin:
     /usr/local/opt/findutils/libexec/gnubin:
     /usr/local/opt/gnu-sed/libexec/gnubin:
     /usr/local/opt/gnu-tar/libexec/gnubin:
     /usr/local/opt/grep/libexec/gnubin:
+    /usr/local/bin:
     /opt/local/bin:
     /opt/local/sbin:
     /opt/X11/bin:
@@ -329,15 +330,14 @@ vim() {
 }
 
 # Absolute path, works everywhere
-# shellcheck disable=2164
 abspath() { # abspath that works on mac, Linux, or anything with bash
   if [ -d "$1" ]; then
-    (cd "$1"; pwd)
+    (cd "$1" && pwd)
   elif [ -f "$1" ]; then
     if [[ "$1" = /* ]]; then
       echo "$1"
     elif [[ "$1" == */* ]]; then
-      echo "$(cd "${1%/*}"; pwd)/${1##*/}"
+      echo "$(cd "${1%/*}" && pwd)/${1##*/}"
     else
       echo "$(pwd)/$1"
     fi
@@ -504,7 +504,7 @@ env() { set; } # just prints all shell variables
 # General utilties
 #-----------------------------------------------------------------------------#
 # Configure ls behavior, define colorization using dircolors
-[ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors $HOME/.dircolors.ansi)"
+[ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
 alias ls="ls --color=always -AF"   # ls useful (F differentiates directories from files)
 alias ll="ls --color=always -AFhl" # ls "list", just include details and file sizes
 alias cd="cd -P" # don't want this on my mac temporarily
@@ -645,11 +645,11 @@ ddiff() {
   dir1=$1
   dir2=$2
   for dir in "$dir1" "$dir2"; do
-    ! [ -d $dir ] && echo "Error: $dir does not exist or is not a directory." && return 1
-    files+=$'\n'$(find $dir -depth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
+    ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
+    files+=$'\n'$(find "$dir" -depth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
   done
-  files=($(echo "$files" | sort | uniq)) # unique files
-  for file in ${files[@]}; do # iterate
+  read -r -a files < <(echo "$files" | sort | uniq | xargs)
+  for file in "${files[@]}"; do # iterate
     file=${file##*/}
     if [ -e "$dir1/$file" ] && [ -e "$dir2/$file" ]; then
       if [ "$dir1/$file" -nt "$dir2/$file" ]; then
@@ -659,7 +659,7 @@ ddiff() {
       else
         cat3+="$file in $dir1 and $dir2 are same age."$'\n'
       fi
-    elif [ -e $dir1/$file ]; then
+    elif [ -e "$dir1/$file" ]; then
       cat4+="$file only in $dir1."$'\n'
     else
       cat5+="$file only in $dir2."$'\n'
@@ -684,17 +684,17 @@ merge() {
   [ $# -ne 2 ] && echo "Usage: merge FILE1 FILE2" && return 1
   [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
   local ext out # no extension
-  if [[ ${1##*/} =~ '.' || ${2##*/} =~ '.' ]]; then
-    [ ${1##*.} != ${2##*.} ] && echo "Error: Files must have same extension." && return 1
+  if [[ "${1##*/}" =~ \. || "${2##*/}" =~ \. ]]; then
+    [ "${1##*.}" != "${2##*.}" ] && echo "Error: Files must have same extension." && return 1
     local ext=.${1##*.}
   fi
   out=merge$ext
-  touch tmp$ext # use empty file as the 'root' of the merge
-  cp $1 backup$ext
-  git merge-file $1 tmp$ext $2 # will write to file 1
-  mv $1 $out
-  mv backup$ext $1
-  rm tmp$ext
+  touch "tmp$ext" # use empty file as the 'root' of the merge
+  cp "$1" "backup$ext"
+  git merge-file "$1" "tmp$ext" "$2" # will write to file 1
+  mv "$1" "$out"
+  mv "backup$ext" "$1"
+  rm "tmp$ext"
   echo "Files merged into \"$out\"."
 }
 
@@ -703,16 +703,16 @@ merge() {
 # NOTE: Used to use this in a couple awk scripts in git config aliases
 bytes2human() {
   if [ $# -gt 0 ]; then
-    nums="$@"
+    nums=("$@")
   else
-    nums=$(cat /dev/stdin)
+    read -r -a nums  # from stdin
   fi
-  for i in $nums; do
+  for i in "${nums[@]}"; do
     b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
     while ((b > 1024)); do
         d=$(printf ".%02d" $((b % 1024 * 100 / 1024)))
         b=$((b / 1024))
-        let s++
+        s=$((s + 1))
     done
     echo "$b$d${S[$s]}"
   done
@@ -740,8 +740,8 @@ alias server="bundle exec jekyll serve --incremental --watch --config '_config.y
 #-----------------------------------------------------------------------------#
 # Supercomputer tools
 #-----------------------------------------------------------------------------#
-alias suser="squeue -u $USER"
-alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[:alpha:]'"
+alias suser='squeue -u $USER'
+alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[:alpha:]"'
 
 #-----------------------------------------------------------------------------#
 # SSH, session management, and Github stuff
@@ -752,26 +752,32 @@ alias sjobs="squeue -u $USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d '[
 # of the 1-6 login nodes -- from testing seems node 4 is usually most
 # empty (probably human psychology thing; 3 seems random, 1-2 are obvious
 # first and second choices, 5 is nice round number, 6 is last node)
-gauss="ldavis@gauss.atmos.colostate.edu"
-monde="ldavis@monde.atmos.colostate.edu"
-cheyenne="davislu@cheyenne5.ucar.edu"
-euclid="ldavis@euclid.atmos.colostate.edu"
-olbers="ldavis@olbers.atmos.colostate.edu"
-zephyr="lukelbd@zephyr.meteo.mcgill.ca"
-lmu="Luke.Davis@login.meteo.physik.uni-muenchen.de"
-midway="t-9841aa@midway2-login1.rcc.uchicago.edu" # pass: orkalluctudg
-ldm="ldm@ldm.atmos.colostate.edu"                 # user: atmos-2012
+# shellcheck disable=2034
+{
+gauss='ldavis@gauss.atmos.colostate.edu'
+monde='ldavis@monde.atmos.colostate.edu'
+cheyenne='davislu@cheyenne5.ucar.edu'
+euclid='ldavis@euclid.atmos.colostate.edu'
+olbers='ldavis@olbers.atmos.colostate.edu'
+zephyr='lukelbd@zephyr.meteo.mcgill.ca'
+lmu='Luke.Davis@login.meteo.physik.uni-muenchen.de'
+midway='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
+ldm='ldm@ldm.atmos.colostate.edu'                 # user: atmos-2012
+}
 
 # SSH file system
 # For how to install sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
 # For pros and cons see: https://unix.stackexchange.com/q/25974/112647
 # For how to test for empty directory see: https://superuser.com/a/352387/506762
+# NOTE: Why not pipe? Because pipe creates fork *subshell* whose variables are
+# inaccessible to current shell: https://stackoverflow.com/a/13764018/4970632
 isempty() {
   if [ -d "$1" ]; then
-    local contents=($(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null))
+    local contents
+    read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
     if [ ${#contents[@]} == 0 ]; then
       return 0 # nothing inside
-    elif [ ${#contents[@]} == 1 ] && [ ${contents##*/} == .DS_Store ]; then
+    elif [ ${#contents[@]} == 1 ] && [ "${contents##*/}" == .DS_Store ]; then
       return 0 # this can happen even if you delete all files
     else
       return 1
@@ -824,17 +830,20 @@ mount() {
 }
 unmount() { # name 'unmount' more intuitive than 'umount'
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
-  server="$1"
-  [ -z "$server" ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
+  [ $# -ne 1 ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
+  local server="$1"
   echo "Server: $server"
   command umount "$HOME/$server"
+  # shellcheck disable=2181
   if [ $? -ne 0 ]; then
-    diskutil umount force "$HOME/$server"
-    [ $? -ne 0 ] && echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"." && return 1
+    diskutil umount force "$HOME/$server" || {
+      echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
+      return 1
+    }
   elif ! isempty "$HOME/$server"; then
     echo "Warning: Leftover mount folder appears to be non-empty!" && return 1
   fi
-  rm -r "$HOME/$server"
+  rm -r "${HOME:?}/$server"
 }
 
 # Short helper functions
@@ -856,22 +865,22 @@ _expanduser() { # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
   param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
-  echo $param
+  echo "$param"
 }
 _compressuser() { # turn $HOME into tilde
   local param="$*"
   param="${param/#$HOME/~}"
   param="${param/#$HOME/\~}"
-  echo $param
+  echo "$param"
 }
 # Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
 disconnect() {
   local pids port=$1
   [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
   # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
-  pids=$(lsof -i tcp:$port | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
+  pids=$(lsof -i "tcp:$port" | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
   [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
-  kill $pids # kill the SSH processes
+  echo "$pids" | xargs kill  # kill the SSH processes
   echo "Processes $pids killed. Connections over port $port removed."
 }
 
@@ -888,8 +897,8 @@ disconnect() {
 # * Now we re-use pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
 SSH_ENV="$HOME/.ssh/environment"
 killssh() {
-  # kill $(ps aux | grep ssh-agent | tr -s ' ' | cut -d' ' -f2 | xargs)
-  kill $(ps aux | grep ssh-agent | grep -v grep | awk '{print $2}')
+  # shellcheck disable=2009
+  ps aux | grep ssh-agent | grep -v grep | awk '{print $2}' | xargs kill
 }
 initssh() {
   if [ -f "$HOME/.ssh/id_rsa_github" ]; then
@@ -904,8 +913,9 @@ initssh() {
 # Source SSH settings, if applicable
 if ! $_macos; then # only do this if not on macbook
   if [ -f "$SSH_ENV" ]; then
-    . "$SSH_ENV" >/dev/null
-    ps -ef | grep $SSH_AGENT_PID | grep ssh-agent$ >/dev/null || initssh
+    source "$SSH_ENV" >/dev/null
+    # shellcheck disable=2009
+    ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent$ >/dev/null || initssh
   else
     initssh
   fi
@@ -943,11 +953,11 @@ _ssh() {
       echo \$port
       ")
   fi
-  port_write=$(_compressuser $_port_file)
-  title_write=$(_compressuser $_title_file)
+  port_write=$(_compressuser "$_port_file")
+  title_write=$(_compressuser "$_title_file")
   command ssh \
     -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -t -R $port:localhost:$listen $1 "
+    -t -R "$port:localhost:$listen" "$1" "
     echo $port >$port_write
     echo $_title >$title_write
     echo \"Port number: ${port}.\"
@@ -965,12 +975,12 @@ rlcp() { # "copy to local (from remote); 'copy there'"
   $_macos && echo "Error: rlcp intended to be called from an ssh session." && return 1
   [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  args=(${@:1:$#-1})          # flags and files
-  port=$(cat $_port_file)     # port from most recent login
+  args=("${@:1:$#-1}")          # flags and files
+  port=$(cat "$_port_file")     # port from most recent login
   dest=$(_compressuser ${!#}) # last value
   dest=${dest//\ /\\\ }       # escape whitespace manually
-  echo "(Port $port) Copying ${args[@]} on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port "${args[@]}" ${USER}@localhost:"$dest"
+  echo "(Port $port) Copying ${args[*]} on this server to home server at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P"$port" "${args[@]}" "$USER"@localhost:"$dest"
 }
 
 # Copy from local macbook to <this server>
@@ -979,13 +989,13 @@ lrcp() { # "copy to remote (from local); 'copy here'"
   $_macos && echo "Error: lrcp intended to be called from an ssh session." && return 1
   [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  flags=${@:1:$#-2}                 # flags
-  port=$(cat $_port_file)           # port from most recent login
-  dest=${!#}                        # last value
-  file=$(_compressuser ${@:$#-1:1}) # second to last
-  file=${file//\ /\\\ }             # escape whitespace manually
+  flags=("${@:1:$#-2}")               # flags
+  port=$(cat "$_port_file")           # port from most recent login
+  dest=${!#}                          # last value
+  file=$(_compressuser "${@:$#-1:1}") # second to last
+  file=${file//\ /\\\ }               # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P$port $flags ${USER}@localhost:"$file" "$dest"
+  command scp -o StrictHostKeyChecking=no -P"$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
 
 # Push here and pull on remote
@@ -995,18 +1005,18 @@ pushpull() {
   [ $# -eq 0 ] && echo "Error: Message required." && return 1
   ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
   port=$(cat $_port_file)  # port from most recent login
-  # Get git directories
-  gdir1=$(git rev-parse --show-toplevel 2>/dev/null)
-  [ $? -ne 0 ] && echo "Error: Not in git directory." && return 1
+  gdir1=$(git rev-parse --show-toplevel 2>/dev/null) || {
+    echo "Error: Not in git directory."
+    return 1
+  }
   gdir2="${gdir1/$HOME/~}"  # relative to home
   [ "$gdir1" == "$gdir2" ] && echo "Error: Not in home directory."
-  # Run commit, push, and pull
   echo "Message: $*"  # here we *do* want to interpret args as one word
   git add --all && git commit -m "$*" && git push origin master
+  # shellcheck disable=2181
   [ $? -ne 0 ] && echo "Error: Commit failed." && return 1
-  # Pull on remote
-  echo "(Port $port) Pulling on home server at: $ndir"
-  command ssh -o StrictHostKeyChecking=no -p $port $USER@localhost \
+  echo "(Port $port) Pulling on home server at: $gdir1"
+  command ssh -o StrictHostKeyChecking=no -p "$port" "$USER"@localhost \
     "cd $gdir2; git pull origin;"
 }
 
@@ -1026,13 +1036,14 @@ import numpy as np
 # NOTE: Need revise plugin https://github.com/timholy/Revise.jl to automatically
 # update modules like ipython autoreload
 alias ijulia="julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-$_macos && JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
+$_macos && export JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
 # NCL interactive environment
 # Make sure that we encapsulate any other alias; for example, on Macs, will
 # prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
 if alias ncl &>/dev/null; then
+  # shellcheck disable=2034
   _incl=$(alias ncl | cut -d= -f2- | sed "s/^\'//g;s/\'$//g")
-  alias incl="$_incl -Q -n"
+  alias incl='$_incl -Q -n'
 else
   alias incl="ncl -Q -n"
 fi
@@ -1067,7 +1078,6 @@ iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
 #-----------------------------------------------------------------------------#
 # Wrapper aroung jupyter theme function, much better
-_jt_configured=false # theme is not initially setup because takes a long time
 _jt() {
   # Choose default themes and font
   # chesterish is best; monokai has green/pink theme;
@@ -1092,11 +1102,13 @@ _jt() {
     export font="$2"
   fi
   # Make sure theme is valid
-  themes=($(jt -l | sed '1d'))
-  ! [[ " ${themes[@]} " =~ " $theme " ]] && \
-    echo "Error: Theme $theme is invalid; choose from ${themes[@]}." && return 1
-  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t $theme -f $font
+  read -r -a themes < <(jt -l | sed '1d')
+  # shellcheck disable=2076
+  ! [[ " ${themes[*]} " =~ " $theme " ]] && \
+    echo "Error: Theme $theme is invalid; choose from ${themes[*]}." && return 1
+  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font"
 }
+_jt_configured=false # theme is not initially setup because takes a long time
 
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
@@ -1106,15 +1118,17 @@ _connect() {
   local server port ports stat stats get_ports set_ports
   unset _jupyter_port
   if $_macos; then
-    ports="${@:2}"
+    ports="${*:2}"
     server=$1 # input server
     [ -z "$server" ] && echo "Error: Must input server." && return 1
   else
-    ports="$@"
-    server=$USER@$(ip) # this computer
-    [ $? -ne 0 ] && echo "Error: Could not figure out this server's ip address." && return 1
+    ports="$*"
+    server=$USER@$(ip) || {
+      "Error: Could not figure out this server's ip address."; return 1
+    }
   fi
   # Which ports to connect over
+  # shellcheck disable=2016
   set_ports='for port in $ports; do
     command ssh -t -N -f -L localhost:$port:localhost:$port '"$server"' &>/dev/null
     stats+="${port}-$? "
@@ -1125,6 +1139,7 @@ _connect() {
     for port in {30000..30020}; do
       ! netstat -an | grep "[:.]$port" &>/dev/null && ports+=" $port"
     done
+    # shellcheck disable=2016
     get_ports="for port in $ports; do"'
       ! netstat -an | grep "[:.]$port" &>/dev/null && ports=$port && break
     done'
@@ -1137,13 +1152,14 @@ _connect() {
   else
     port=$(cat $_port_file)
     [ -z "$port" ] && echo "Error: Unknown connection port. Cannot send commands to macbook." && return 1
-    stats=$(command ssh -o StrictHostKeyChecking=no -p $port $USER@localhost \
+    # shellcheck disable=2016
+    stats=$(command ssh -o StrictHostKeyChecking=no -p "$port" "$USER@localhost" \
       "$get_ports; $set_ports; printf "'"$stats"')
   fi
   # Message
   for stat in $stats; do
     echo "Exit status ${stat#*-} for connection over port ${stat%-*}."
-    [ ${stat#*-} -eq 0 ] && _jupyter_port=${stat%-*}
+    [ "${stat#*-}" -eq 0 ] && _jupyter_port=${stat%-*}
   done
   [ -n "$_jupyter_port" ] # return with this exit status
 }
@@ -1159,8 +1175,9 @@ pyconnect() {
   if $_macos; then
     server=$1
     [ -z "$server" ] && echo "Error: Must input server." && return 1
-    ports=$(command ssh -o StrictHostKeyChecking=no $server "$get_ports")
-    [ $? -ne 0 ] && echo "Error: Failed to get list of ports." && return 1
+    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$get_ports") || {
+      echo "Error: Failed to get list of ports." && return 1
+    }
   else
     ports=$(eval "$get_ports")
   fi
@@ -1168,9 +1185,9 @@ pyconnect() {
   [ -z "$ports" ] && echo "Error: No active jupyter notebooks found." && return 1
   echo "Connecting to jupyter notebook(s) over port(s) $ports."
   if $_macos; then
-    _connect $server $ports
+    _connect "$server" "$ports"
   else
-    _connect $ports
+    _connect "$ports"
   fi
 }
 
@@ -1180,16 +1197,15 @@ pyconnect() {
 notebook() {
   # Set default jupyter theme
   local port
-  ! $_jt_configured && \
-    echo "Configuring jupyter notebook theme." && _jt && _jt_configured=true
+  # shellcheck disable=2119
+  ! $_jt_configured && _jt && _jt_configured=true
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
     port="--port=$1"
   elif ! $_macos; then # remote ports will use 3XXXX   
-    _connect
-    [ $? -ne 0 ] && return 1
+    _connect || return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
   else # local ports will use 2XXXX
@@ -1199,7 +1215,7 @@ notebook() {
     echo "Initializing jupyter notebook over port $port."
     port="--port=$port"
   fi
-  jupyter notebook --no-browser $port --NotebookApp.iopub_data_rate_limit=10000000
+  jupyter notebook --no-browser "$port" --NotebookApp.iopub_data_rate_limit=10000000
 }
 
 #-----------------------------------------------------------------------------#
@@ -1207,9 +1223,11 @@ notebook() {
 #-----------------------------------------------------------------------------#
 # Fortran tools
 namelist() {
-  [ -z "$1" ] && local file="input.nml" || local file="$1"
+  local file='input.nml'
+  [ $# -gt 0 ] && file="$1"
   echo "Params in current namelist:"
-  cat "$file" | cut -d= -f1 -s | grep -v '!' | xargs
+  # shellcheck disable=
+  cut -d= -f1 -s "$file" | grep -v '!' | xargs
 }
 
 # NetCDF tools (should just remember these)
@@ -1275,10 +1293,11 @@ ncvarlist() { # only get text between variables: and linebreak before global att
   local list dmnlist varlist
   [ $# -ne 1 ] && echo "Usage: ncvarlist FILE" && return 1
   ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
-  list=($(nclist "$1"))
-  dmnlist=($(ncdimlist "$1"))
+  read -r -a list < <(nclist "$1")
+  read -r -a dmnlist < <(ncdimlist "$1")
   for item in "${list[@]}"; do
-    if [[ ! " ${dmnlist[@]} " =~ " $item " ]]; then
+    # shellcheck disable=2076
+    if ! [[ " ${dmnlist[*]} " =~ " $item " ]]; then
       varlist+=("$item")
     fi
   done
@@ -1296,9 +1315,8 @@ ncvarinfo() { # as above but just for one variable
 ncvardump() { # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && echo "Usage: ncvardump VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  $_macos && _reverse="gtac" || _reverse="tac"
-  # command ncdump -v "$1" "$2" | grep -A100 "^data:" | tail -n +3 | $_reverse | tail -n +2 | $_reverse
-  command ncdump -v "$1" "$2" | $_reverse | egrep -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | $_reverse
+  command ncdump -v "$1" "$2" | tac \
+    | grep -E -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | tac
   # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
   # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
@@ -1308,16 +1326,15 @@ ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
   # to single and the column command re-aligns columns
   [ $# -ne 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  local args=("$@")
-  local args=(${args[@]:2}) # extra arguments
-  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
+  read -r -a args <<< "${@:2}"
+  cdo -s infon "${args[@]}" -seltimestep,1 -selname,"$1" "$2" \
+    | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
 }
 ncvartable2() { # as above but show everything
   [ $# -ne 2 ] && echo "Usage: ncvartable2 VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  local args=("$@")
-  local args=(${args[@]:2}) # extra arguments
-  cdo -s infon ${args[@]} -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
+  read -r -a args <<< "${@:2}"
+  cdo -s infon "${args[@]}" -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
 }
 
 # Extract generalized files
@@ -1367,28 +1384,31 @@ gif2png() {
   done
 } # often needed because LaTeX can't read gif files
 pdf2png() {
-  density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
+  local density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args=("${args[@]:1}")
+  local flags=(-flatten -units PixelsPerInch -density "$density")
   for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.png"
+    # shellcheck disable=2086
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.pdf}.png"
   done
 } # sometimes need bitmap yo
 svg2png() {
-  pdf2png $@
-  density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density -background none"
+  pdf2png "$@"
+  local density=1200 args=("$@")
+  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args=("${args[@]:1}")
+  local flags=(-flatten -units PixelsPerInch -density "$density" -background none)
   for f in "${args[@]}"; do
-    [[ "$f" =~ .svg$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.svg}.png"
+    # shellcheck disable=2086
+    [[ "$f" =~ .svg$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.svg}.png"
   done
 }
 pdf2tiff() {
-  density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args="${args[@]:1}"
-  flags="-flatten -units PixelsPerInch -density $density"
+  local density=1200 args=("$@")
+  [[ "$1" =~ ^[0-9]+$ ]] && density=$1 args=("${args[@]:1}")
+  local flags=(-flatten -units PixelsPerInch -density "$density")
   for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert $flags "$f" "${f%.pdf}.tiff"
+    # shellcheck disable=2086
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.pdf}.tiff"
   done
 } # alternative for converting to bitmap
 pdf2eps() {
@@ -1406,7 +1426,7 @@ pdf2flat() {
   # 3. pdf2ps piping retains quality (ps uses vector graphics, but can't do transparency)
   # convert "$f" "${f}_flat.pdf"
   # pdftk "$f" output "${f}_flat.pdf" flatten
-  args=("$@")
+  local args=("$@")
   for f in "${args[@]}"; do
     [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
       pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
@@ -1416,11 +1436,8 @@ pdf2flat() {
 # Extract PDF annotations
 # Turned out kind of complicated
 unannotate() {
-  local _sed
-  local original="$1"
-  local final="${original%.pdf}_unannotated.pdf"
+  local original="$1" final="${1%.pdf}_unannotated.pdf"
   [ "${original##*.}" != "pdf" ] && echo "Error: Must input PDF file." && return 1
-  $_macos && _sed='gsed' || _sed='sed'
   # Try this from: https://superuser.com/a/428744/506762
   # Actually doesn't work, maybe relied on some particular format; need pdftk uncompression
   # cp "$original" "$final"
@@ -1431,7 +1448,7 @@ unannotate() {
   # The environment variables prevent 'Illegal byte sequence' error
   # on Linux and Mac; see: https://stackoverflow.com/a/23584470/4970632
   pdftk "$original" output uncompressed.pdf uncompress
-  LANG=C LC_ALL=C $_sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
+  LANG=C LC_ALL=C sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
   pdftk stripped.pdf output "$final" compress
   rm uncompressed.pdf stripped.pdf
 }
@@ -1439,9 +1456,8 @@ unannotate() {
 # Rudimentary wordcount with detex
 # The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
-  local detexed=$(cat "$1" \
-    | detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
-    | grep -v .pdf | grep -v 'fig[0-9]')
+  local detexed=$(detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
+    "$1" | grep -v .pdf | grep -v 'fig[0-9]')
   echo "$detexed" | xargs # print result in one giant line
   echo "$detexed" | wc -w # get word count
 }
@@ -1475,15 +1491,20 @@ if [ -f ~/.fzf.bash ]; then
     --select-1 --exit-0 --inline-info --height=6 \
     --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
     "
+  # shellcheck disable=2034
+  {
   FZF_COMPLETION_COMMANDS=""
   FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
   FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
+  }
 
   # Defualt find commands
   # The compgen ones were addd by my fork, the others are native, we adapted
   # defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+  # shellcheck disable=2034
+  {
   FZF_COMPLETION_TRIGGER=''  # WARNING: cannot be unset, must be empty string!
   export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 \
     \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
@@ -1518,6 +1539,7 @@ if [ -f ~/.fzf.bash ]; then
     -prune -o -type d -a -not -path \"\$1\" \
     -print 2> /dev/null | sed 's@^\\./@@' \
     "
+  }
 
   # Source file
   complete -r # reset first
@@ -1579,14 +1601,15 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
   # whole solving environment thing
   _bashrc_message "Enabling conda"
   avail() {
-    local current latest
+    local avail current
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
+    read -r -a avail < <(conda search "$1" | grep '\b'"$1"'\b' | awk '!seen[$2]++ {print $2}' | tac | xargs)
     current=$(conda list "$1" | grep '\b'"$1"'\b' | awk 'NR == 1 {print $2}')
-    latest=$(conda search "$1" | grep '\b'"$1"'\b' | awk 'END {print $2}')
     echo "Package:         $1"
     echo "Current version: $current"
-    echo "Latest version:  $latest"
-    }
+    echo "Latest version:  ${avail[0]}"
+    echo "All versions:    ${avail[*]:1}"
+  }
 
   # Initialize conda
   __conda_setup="$("$HOME/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
@@ -1623,25 +1646,25 @@ fi
 if [[ "$TERM_PROGRAM" =~ Apple_Terminal ]]; then
   _win_num=0
 else
-  _win_num="${TERM_SESSION_ID%%t*}"
-  _win_num="${_win_num#w}"
+  _win_num=${TERM_SESSION_ID%%t*}
+  _win_num=${_win_num#w}
 fi
 _title_file=~/.title
-_title_set() { # default way is probably using Cmd-I in iTerm2
+_title_set() {  # default way is probably using Cmd-I in iTerm2
   # Record title from user input, or as user argument
   ! $_macos && return 1
   [ -z "$TERM_SESSION_ID" ] && return 1
-  if [ -n "$1" ]; then # warning: $@ is somehow always non-empty!
-    _title="$@"
+  if [ $# -gt 0 ]; then
+    _title="$*"
   else
-    read -p "Window title (window $_win_num):" _title
+    read -r -p "Window title (window $_win_num):" _title
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   # Use gsed instead of sed, because Mac syntax is "sed -i '' <pattern> <file>" while
   # GNU syntax is "sed -i <pattern> <file>", which is annoying.
   [ ! -e "$_title_file" ] && touch "$_title_file"
-  gsed -i '/^'$_win_num':.*$/d' $_title_file # remove existing title from file
-  echo "$_win_num: $_title" >>$_title_file # add to file
+  gsed -i '/^'"$_win_num"':.*$/d' "$_title_file" # remove existing title from file
+  echo "$_win_num: $_title" >> "$_title_file" # add to file
 }
 _title_get() {
   # Simply gets the title from file
@@ -1650,7 +1673,7 @@ _title_get() {
   if ! [ -r "$_title_file" ]; then
     unset _title
   elif $_macos; then
-    _title=$(cat "$_title_file" | grep "^$_win_num:.*$" 2>/dev/null | cut -d: -f2-)
+    _title=$(grep "^$_win_num:.*$" "$_title_file" 2>/dev/null | cut -d: -f2-)
   else
     _title=$(cat "$_title_file") # only text in file, is this current session's title
   fi
@@ -1670,7 +1693,7 @@ _title_update() {
   fi
 }
 title_update() { # fix name issues
-  _title_update $@
+  _title_update "$@"
 }
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
@@ -1693,4 +1716,3 @@ $_macos && { # first the MacOS options
   fi
   }
 [ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
-_bashrc_loaded=true
