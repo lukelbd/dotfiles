@@ -93,19 +93,19 @@ endif
 if !exists('b:expandtab')
   set expandtab  " only expand if TabToggle has not been called!
 endif  " says to always expand \t to their length in <SPACE>'s!
-augroup escape_fix  " escape repair needed when we allow h/l to change line num
-  au!
-  au InsertLeave * normal! `^
-augroup END
 if has('gui_running')
   set number relativenumber guioptions= guicursor+=a:blinkon0 " no scrollbars or blinking
 endif
+
+" Special settings
 let g:set_overrides = 'linebreak wrapmargin=0 textwidth=0 formatoptions=lroj'
+exe 'setlocal ' . g:set_overrides
 augroup set_overrides
   au!
   au BufEnter * exe 'setlocal ' . g:set_overrides
 augroup END
-exe 'setlocal ' . g:set_overrides
+
+" Tab and conceal toggling
 let g:tab_filetypes = ['text', 'gitconfig', 'make']
 augroup tab_toggle
   au!
@@ -114,6 +114,12 @@ augroup END
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
 nnoremap <Leader><Tab> :TabToggle<CR>
+
+" Escape repair needed when we allow h/l to change line num
+augroup escape_fix
+  au!
+  au InsertLeave * normal! `^
+augroup END
 
 " Global functions, for vim scripting
 function! In(list,item)  " whether inside list
@@ -698,8 +704,12 @@ if PlugActive('delimitmate')
   " Vim needs to disable matching ", or everything is super slow
   augroup delims
     au!
-    au FileType vim let b:delimitMate_quotes = "'" | let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
-    au FileType tex let b:delimitMate_quotes = "$ |" | let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
+    au FileType vim
+      \ let b:delimitMate_quotes = "'" |
+      \ let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
+    au FileType tex
+      \ let b:delimitMate_quotes = "$ |" |
+      \ let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
     au FileType html let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
     au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
   augroup END
@@ -963,7 +973,10 @@ endif
 if PlugActive('nerdtree')
   augroup nerdtree
     au!
-    au BufEnter * if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+    au BufEnter *
+      \ if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) |
+      \ q |
+      \ endif
   augroup END
   let g:NERDTreeWinPos = 'right'
   let g:NERDTreeWinSize = 20 " instead of 31 default
