@@ -42,7 +42,10 @@ function! fzf#null_list(A, L, P) abort
   return []
 endfunction
 function! fzf#open_continuous(path) abort
-  let path = len(a:path) ? a:path : '.'
+  let path = substitute(a:path, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
+  if ! len(path)
+    let path = '.'
+  endif
   let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
   let path_orig = path
   while isdirectory(path)
