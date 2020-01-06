@@ -1426,6 +1426,25 @@ pdf2flat() {
   done
 }
 
+# Font conversions
+# Requires brew install fontforge
+otf2ttf() {
+  for arg in "$@"; do
+    [ "${arg##*.}" == "otf" ] || { echo "Error: File '$arg' does not have .otf extension."; return 1; }
+    fontforge -c \
+      "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
+      "${arg%.*}.otf" "${arg%.*}.ttf"
+  done
+}
+ttf2otf() {
+  for arg in "$@"; do
+    [ "${arg##*.}" == "ttf" ] || { echo "Error: File '$arg' does not have .ttf extension."; return 1; }
+    fontforge -c \
+      "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
+      "${arg%.*}.ttf" "${arg%.*}.otf"
+  done
+}
+
 # Extract PDF annotations
 # Turned out kind of complicated
 unannotate() {
