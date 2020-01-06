@@ -811,22 +811,23 @@ endif
 " TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 if PlugActive('vim-gitgutter')
   " Create command for toggling on/off; old VIM versions always show signcolumn
-  " if signs present (i.e. no signcolumn option), so GitGutterDisable will remove signcolumn.
-  " call gitgutter#disable() | silent! set signcolumn=no
-  " In newer versions, have to *also* set the signcolumn option.
-  silent! set signcolumn=no " silent ignores errors if not option
-  let g:gitgutter_map_keys = 0 " disable all maps yo
-  let g:gitgutter_enabled = 0 " whether enabled at *startup*
+  " if signs present, so GitGutterDisable will remove signcolumn.
+  let g:gitgutter_map_keys = 0  " disable all maps yo
+  if !exists('g:gitgutter_enabled')
+    let g:gitgutter_enabled = 0  " whether enabled at *startup*
+    silent! set signcolumn=no
+  endif
   " Maps for toggling gitgutter on and off
   nnoremap <silent> go :call utils#gitgutter_toggle(1)<CR>
   nnoremap <silent> gO :call utils#gitgutter_toggle(0)<CR>
   nnoremap <silent> g. :call utils#gitgutter_toggle()<CR>
   " Maps for showing/disabling changes under cursor
-  nnoremap <silent> gs :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  nnoremap <silent> gS :GitGutterUndoHunk<CR>
+  noremap <silent> gs :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  noremap <silent> gS :GitGutterUndoHunk<CR>
+  noremap <silent> gA :GitGutterStageHunk<CR>
   " Navigating between hunks
-  nnoremap <silent> gN :GitGutterPrevHunk<CR>
-  nnoremap <silent> gn :GitGutterNextHunk<CR>
+  noremap <silent> gn :GitGutterNextHunk<CR>
+  noremap <silent> gN :GitGutterPrevHunk<CR>
 endif
 
 " Codi (mathematical notepad)
