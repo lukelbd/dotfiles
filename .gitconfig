@@ -91,33 +91,35 @@
 	user       = "!git-user $@"
 	vim        = "!git-vim $@"
 	wtf        = "!git-wtf $@"
-[status]
-	branch = true
-	short = true
-[remote]
-	verbose = true
 [color]
 	ui = on
-[push]
-	default = upstream
-	followTags = true
-[user]
-	name = Luke Davis
-	email = lukelbd@gmail.com
 [core]
 	attributesfile = ~/.gitattributes
 	ignorecase = false
 	mergeoptions = --no-edit
-[pager]
-	branch = false
-	tag = false
 [diff "ipynb"]
 	textconv = nbstripout -t
 [filter "nbstripout"]
 	clean  = "f() { echo >&2 \"clean: nbstripout $1\"; nbstripout; }; f %f"
 	smudge = "f() { echo >&2 \"smudge: cat $1\"; cat; }; f %f"
 	required = true
+[interactive]
+	singleKey = true
 [merge]
 	tool = vimdiff
 [mergetool]
 	prompt = false
+[pager]
+	branch = false
+	tag = false
+[push]
+	default = upstream
+	followTags = true
+[remote]
+	verbose = true
+[status]
+	branch = true
+	short = true
+[user]
+	name = Luke Davis
+	email = lukelbd@gmail.com
