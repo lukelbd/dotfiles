@@ -439,13 +439,14 @@ Plug 'lilydjwg/colorizer'
 
 " Proper syntax highlighting for a few different things
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
+" Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
+" Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
+Plug 'tell-k/vim-autopep8'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
-" Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
-" Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
 
 " TeX utilities; better syntax highlighting, better indentation,
 " and some useful remaps. Also zotero integration.
@@ -813,6 +814,7 @@ if PlugActive('vim-gitgutter')
   " Create command for toggling on/off; old VIM versions always show signcolumn
   " if signs present, so GitGutterDisable will remove signcolumn.
   let g:gitgutter_map_keys = 0  " disable all maps yo
+  let g:gitgutter_max_signs = 5000
   if !exists('g:gitgutter_enabled')
     let g:gitgutter_enabled = 0  " whether enabled at *startup*
     silent! set signcolumn=no
