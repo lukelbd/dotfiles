@@ -1,7 +1,9 @@
-#------------------------------------------------------
-# Use this file to customize settings
-# For descriptions of each key name see:
+#---------------------------------------------------------------------
+# Use this file to change the default proplot and matplotlib settings
+# The syntax is mostly the same as for matplotlibrc files
+# For descriptions of each setting see:
 # https://proplot.readthedocs.io/en/latest/rctools.html
-#------------------------------------------------------
-# matplotlib:
+# https://matplotlib.org/3.1.1/tutorials/introductory/customizing.html
+#---------------------------------------------------------------------
+# matplotlib : None
 figure.max_open_warning: 0
