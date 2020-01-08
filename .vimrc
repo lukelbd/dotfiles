@@ -820,16 +820,15 @@ if PlugActive('vim-gitgutter')
     silent! set signcolumn=no
   endif
   " Maps for toggling gitgutter on and off
-  nnoremap <silent> go :call utils#gitgutter_toggle(1)<CR>
-  nnoremap <silent> gO :call utils#gitgutter_toggle(0)<CR>
-  nnoremap <silent> g. :call utils#gitgutter_toggle()<CR>
+  nnoremap <silent> <Leader>g :call utils#gitgutter_toggle(1)<CR>
+  nnoremap <silent> <Leader>G :call utils#gitgutter_toggle(0)<CR>
   " Maps for showing/disabling changes under cursor
-  noremap <silent> gs :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  noremap <silent> gS :GitGutterUndoHunk<CR>
-  noremap <silent> gA :GitGutterStageHunk<CR>
+  noremap <silent> <Leader>H :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  noremap <silent> <Leader>A :GitGutterUndoHunk<CR>
+  noremap <silent> <Leader>a :GitGutterStageHunk<CR>
   " Navigating between hunks
-  noremap <silent> gn :GitGutterNextHunk<CR>
-  noremap <silent> gN :GitGutterPrevHunk<CR>
+  noremap <silent> ]g :GitGutterNextHunk<CR>
+  noremap <silent> [g :GitGutterPrevHunk<CR>
 endif
 
 " Codi (mathematical notepad)
@@ -1291,10 +1290,10 @@ nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
+" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 nnoremap <silent> <Leader>h :call utils#show_cmd_help() \| redraw!<CR>
 nnoremap <silent> <Leader>m :call utils#show_cmd_man() \| redraw!<CR>
 nnoremap <silent> <Leader>v :Help<CR>
-" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 
 " SEARCHING AND FIND-REPLACE STUFF
 " Basic stuff first
@@ -1362,12 +1361,12 @@ command! LangToggle call spell#lang_toggle(<args>)
 " Toggle on and off
 nnoremap <silent> <Leader>d :call spell#spell_toggle(1)<CR>
 nnoremap <silent> <Leader>D :call spell#spell_toggle(0)<CR>
-nnoremap <silent> <Leader>l :call spell#lang_toggle(1)<CR>
-nnoremap <silent> <Leader>L :call spell#lang_toggle(0)<CR>
+nnoremap <silent> <Leader>k :call spell#lang_toggle(1)<CR>
+nnoremap <silent> <Leader>K :call spell#lang_toggle(0)<CR>
 " Add and remove from dictionary
-nnoremap <Leader>a zg
-nnoremap <Leader>A zug
-nnoremap <Leader>! \|m z=
+nnoremap <Leader>l zg
+nnoremap <Leader>L zug
+nnoremap <Leader>! z=
 " Similar to ]s and [s but also correct the word!
 nnoremap <silent> <Plug>forward_spell bh]s:call spell#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
 nnoremap <silent> <Plug>backward_spell el[s:call spell#spell_change('[')<CR>:call repeat#set("\<Plug>backward_spell")<CR>
