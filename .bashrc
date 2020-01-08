@@ -1613,10 +1613,16 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
   # whole solving environment thing
   _bashrc_message "Enabling conda"
   avail() {
-    local avail current
+    local avail current search
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
-    avail=$(conda search "$1" | grep '\b'"$1"'\b' | awk '!seen[$2]++ {print $2}' | tac | xargs)
-    current=$(conda list "$1" | grep '\b'"$1"'\b' | awk 'NR == 1 {print $2}')
+    search=$(conda search "$1" 2>/dev/null) \
+      || search=$(conda search -c conda-forge "$1" 2>/dev/null) \
+      || { echo "Error: Package \"$1\" not found."; return 1; }
+    avail=$(echo "$search" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs) \
+    current=$(conda list "$1" 2>/dev/null)
+    [[ "$current" =~ "$1" ]] \
+      && current=$(echo "$current" | grep "$1" | awk 'NR == 1 {print $2}') \
+      || current="N/A"
     echo "Package:         $1"
     echo "Current version: $current"
     echo "All versions:    $avail"
