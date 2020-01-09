@@ -823,7 +823,7 @@ if PlugActive('vim-gitgutter')
   nnoremap <silent> <Leader>g :call utils#gitgutter_toggle(1)<CR>
   nnoremap <silent> <Leader>G :call utils#gitgutter_toggle(0)<CR>
   " Maps for showing/disabling changes under cursor
-  noremap <silent> <Leader>y :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
   noremap <silent> <Leader>A :GitGutterUndoHunk<CR>
   noremap <silent> <Leader>a :GitGutterStageHunk<CR>
   " Navigating between hunks
