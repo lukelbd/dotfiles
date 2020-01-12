@@ -10,16 +10,13 @@ tags
 *tmp
 .nfs*
 
-# Vim extras
-.session.vim
+# Vim extras, binary spell files
 .vimsession
-.vimtags
 .*.sw[a-z]
+*.spl
 
 # Storage and trash
-old
 trash
-copies
 originals
 __pycache__
 
