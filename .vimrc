@@ -1376,6 +1376,18 @@ nnoremap <silent> <Plug>backward_spell el[s:call spell#spell_change('[')<CR>:cal
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
+" Automatically update binary spellfile
+" See: https://vi.stackexchange.com/a/5052/8084
+for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
+    if filereadable(s:spellfile) && (
+      \ !filereadable(s:spellfile . '.spl') ||
+      \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
+      \ )
+        echom "Update spellfile!"
+        silent! exec 'mkspell! ' . fnameescape(s:spellfile)
+    endif
+endfor
+
 " g CONFIGURATION
 " Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
 noremap m ge
