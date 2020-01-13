@@ -531,9 +531,9 @@ Plug 'raimondi/delimitmate'
 " Plug 'sgur/vim-textobj-parameter' " this conflicts with latex
 " Plug 'vim-scripts/argtextobj.vim' " issues with this too
 " Plug 'machakann/vim-textobj-functioncall' " does not work
-Plug 'kana/vim-textobj-user' " base
-Plug 'kana/vim-textobj-indent' " match indentation, object is 'i'
-Plug 'kana/vim-textobj-entire' " entire file, object is 'e'
+Plug 'kana/vim-textobj-user'  " base
+Plug 'kana/vim-textobj-indent'  " match indentation, object is 'i'
+Plug 'kana/vim-textobj-entire'  " entire file, object is 'e'
 
 " Aligning things and stuff
 " Alternative to tabular is: https://github.com/tommcdo/vim-lion
@@ -633,7 +633,7 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
   " Surround mappings
   " The bracket maps are also defined in textools but make them global and
   " do not include the delete_delims and change_delims functionality
-  function! s:add_delim(map, start, end) " if final argument passed, this is global
+  function! s:add_delim(map, start, end)  " if final argument passed, this is global
     let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
   endfunction
   nmap dsc dsB
@@ -651,7 +651,7 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
   call s:add_delim('a', '<', '>')
   call s:add_delim('\', '\"', '\"')
   call s:add_delim('p', 'print(', ')')
-  call s:add_delim('f', "\1function: \1(", ')') "initial part is for prompt, needs double quotes
+  call s:add_delim('f', "\1function: \1(", ')')  " initial part is for prompt, needs double quotes
   nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
   nnoremap <silent> cs\ :call textools#change_delims('\\["'."']", '\\["'."']")<CR>
   nnoremap <silent> dsf :call textools#delete_delims('\<\h\w*(', ')')<CR>
@@ -719,11 +719,11 @@ if PlugActive('delimitmate')
   augroup END
   " Global defaults
   let g:delimitMate_expand_space = 1
-  let g:delimitMate_expand_cr = 2 " expand even if it is not empty!
+  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
   let g:delimitMate_jump_expansion = 0
   let g:delimitMate_quotes = '" '''
   let g:delimitMate_matchpairs = '(:),{:},[:]'
-  let g:delimitMate_excluded_regions = 'String' "by default is disabled inside, don't want that
+  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
 " Text objects
@@ -826,7 +826,7 @@ if PlugActive('vim-gitgutter')
   nnoremap <silent> <Leader>g :call utils#gitgutter_toggle(1)<CR>
   nnoremap <silent> <Leader>G :call utils#gitgutter_toggle(0)<CR>
   " Maps for showing/disabling changes under cursor
-  noremap <silent> <Leader>y :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
   noremap <silent> <Leader>A :GitGutterUndoHunk<CR>
   noremap <silent> <Leader>a :GitGutterStageHunk<CR>
   " Navigating between hunks
@@ -930,12 +930,12 @@ if PlugActive('nerdcommenter')
     \ 'smarty': {'left': '<!--', 'right': '-->'},
     \ }
   " Settings
-  let g:NERDSpaceDelims = 1            " comments have leading space
-  let g:NERDCreateDefaultMappings = 0  " disable default mappings (make my own)
-  let g:NERDCompactSexyComs = 1        " compact syntax for prettified multi-line comments
-  let g:NERDTrimTrailingWhitespace = 1 " trailing whitespace deletion
-  let g:NERDCommentEmptyLines = 1      " allow commenting and inverting empty lines (useful when commenting a region)
-  let g:NERDDefaultAlign = 'left'      " align line-wise comment delimiters flush left instead of following code indentation
+  let g:NERDSpaceDelims = 1             " comments have leading space
+  let g:NERDCreateDefaultMappings = 0   " disable default mappings (make my own)
+  let g:NERDCompactSexyComs = 1         " compact syntax for prettified multi-line comments
+  let g:NERDTrimTrailingWhitespace = 1  " trailing whitespace deletion
+  let g:NERDCommentEmptyLines = 1       " allow commenting and inverting empty lines (useful when commenting a region)
+  let g:NERDDefaultAlign = 'left'       " align line-wise comment delimiters flush left instead of following code indentation
   let g:NERDCommentWholeLinesInVMode = 2
   " Mappings
   " Use NERDCommenterMinimal commenter to use left-right delimiters, or alternatively use
@@ -984,11 +984,11 @@ if PlugActive('nerdtree')
       \ endif
   augroup END
   let g:NERDTreeWinPos = 'right'
-  let g:NERDTreeWinSize = 20 " instead of 31 default
+  let g:NERDTreeWinSize = 20  " instead of 31 default
   let g:NERDTreeShowHidden = 1
-  let g:NERDTreeMinimalUI = 1 " remove annoying ? for help note
-  let g:NERDTreeMapChangeRoot = 'D' " C was annoying, because VIM will wait for CD
-  let g:NERDTreeSortOrder = [] " use default sorting
+  let g:NERDTreeMinimalUI = 1  " remove annoying ? for help note
+  let g:NERDTreeMapChangeRoot = 'D'  " C was annoying, because VIM will wait for CD
+  let g:NERDTreeSortOrder = []  " use default sorting
   let g:NERDTreeIgnore = split(&wildignore, ',')
   for s:index in range(len(g:NERDTreeIgnore))
     let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
@@ -1020,23 +1020,23 @@ if PlugActive('syntastic')
       \ 'active_filetypes': [],
       \ 'passive_filetypes': []
       \ }
-  let g:syntastic_stl_format = '' "disables statusline colors; they were ugly
-  let g:syntastic_always_populate_loc_list = 1 " necessary, or get errors
-  let g:syntastic_auto_loc_list = 1 " creates window; if 0, does not create window
+  let g:syntastic_stl_format = ''  " disables statusline colors; they were ugly
+  let g:syntastic_always_populate_loc_list = 1  " necessary, or get errors
+  let g:syntastic_auto_loc_list = 1  " creates window; if 0, does not create window
   let g:syntastic_loc_list_height = 5
-  let g:syntastic_mode = 'passive' " opens little panel
+  let g:syntastic_mode = 'passive'  " opens little panel
   let g:syntastic_check_on_open = 0
   let g:syntastic_check_on_wq = 0
-  let g:syntastic_enable_signs = 1 " disable useless signs
+  let g:syntastic_enable_signs = 1  " disable useless signs
   let g:syntastic_enable_highlighting = 1
-  let g:syntastic_auto_jump = 0 " disable jumping to errors
+  let g:syntastic_auto_jump = 0  " disable jumping to errors
   let g:syntastic_sh_checkers = ['shellcheck']  " https://github.com/koalaman/shellcheck
   let g:syntastic_tex_checkers = ['lacheck']
   let g:syntastic_python_checkers = ['python', 'flake8']
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
   let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
-  let g:syntastic_python_flake8_post_args='--ignore=W503'
+  let g:syntastic_python_flake8_post_args='--ignore=W503,E402'  " allow imports after statements
   let g:syntastic_sh_shellcheck_args='-e SC2059,SC2148'
   " Syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
@@ -1357,6 +1357,7 @@ augroup spell_toggle
   au!
   au FileType tex,html,markdown,rst call spell#spell_toggle(1)
 augroup END
+
 " Toggle spelling on and off
 command! SpellToggle call spell#spell_toggle(<args>)
 command! LangToggle call spell#lang_toggle(<args>)
@@ -1366,10 +1367,12 @@ nnoremap <silent> <Leader>d :call spell#spell_toggle(1)<CR>
 nnoremap <silent> <Leader>D :call spell#spell_toggle(0)<CR>
 nnoremap <silent> <Leader>k :call spell#lang_toggle(1)<CR>
 nnoremap <silent> <Leader>K :call spell#lang_toggle(0)<CR>
+
 " Add and remove from dictionary
 nnoremap <Leader>l zg
 nnoremap <Leader>L zug
 nnoremap <Leader>! z=
+
 " Similar to ]s and [s but also correct the word!
 nnoremap <silent> <Plug>forward_spell bh]s:call spell#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
 nnoremap <silent> <Plug>backward_spell el[s:call spell#spell_change('[')<CR>:call repeat#set("\<Plug>backward_spell")<CR>
@@ -1380,6 +1383,7 @@ nmap [d <Plug>backward_spell
 " Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
+
 " Capitalization stuff with g, a bit refined
 " not currently used in normal mode, and fits better mnemonically
 " Mnemonic is l for letter, t for title case
@@ -1391,6 +1395,7 @@ nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gl <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
+
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
 function! s:file_exists()
@@ -1403,6 +1408,7 @@ function! s:file_exists()
 endfunction
 nnoremap <Leader>F <c-w>gf
 nnoremap <silent> <Leader>f :<C-u>call <sid>file_exists()<CR>
+
 " Now remap indentation commands. Why is this here? Just go with it.
 " * Meant to mimick visual-mode > and < behavior.
 " * Note the <Esc> is needed first because it cancels application of the number operator
@@ -1415,12 +1421,14 @@ else
   nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
   nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
 endif
+
 " Simpyl settings
 let g:SimpylFold_docstring_preview = 1
 let g:SimpylFold_fold_import = 0
 let g:SimpylFold_fold_imports = 0
 let g:SimpylFold_fold_docstring = 0
 let g:SimpylFold_fold_docstrings = 0
+
 " Delete, open, close all folds, to open/close under cursor use zo/zc
 nnoremap zD zE
 nnoremap zO zR
