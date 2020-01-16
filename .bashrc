@@ -395,9 +395,14 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 # bind '"\C-i":glob-expand-word' # expansion but not completion
 _setup_bindings() {
   complete -r # remove completions
+  set -o vi
   bind -r '"\C-i"'
   bind -r '"\C-d"'
   bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
+  bind 'set keyseq-timeout 50'               # see: https://unix.stackexchange.com/a/318497/112647
+  bind 'set show-mode-in-prompt on'          # show mode
+  bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
+  bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block cursor
   bind 'set disable-completion off'          # ensure on
   bind 'set completion-ignore-case on'       # want dat
   bind 'set completion-map-case on'          # treat hyphens and underscores as same
@@ -413,16 +418,8 @@ _setup_bindings() {
   bind '"\C-i": menu-complete'               # this will not pollute scroll history; better
   bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
   bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
-  bind '"\C-l": forward-char'
-  bind '"\C-s": beginning-of-line'
-  bind '"\C-e": end-of-line'
-  bind '"\C-h": backward-char'
-  bind '"\C-w": forward-word'      # requires
-  bind '"\C-b": backward-word'     # by default c-b moves back one word, and deletes it
   bind '"\eOP": menu-complete'
   bind '"\eOQ": menu-complete-backward'
-  bind '"\C-j": next-history'
-  bind '"\C-k": previous-history'
   stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
   stty stop undef   # no more ctrl-s
   stty eof undef    # no more ctrl-d
