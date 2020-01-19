@@ -896,11 +896,21 @@ endif
 
 " Jedi vim
 if PlugActive('jedi-vim')
+  augroup jedi_fix
+    au!
+    au FileType python nnoremap <buffer> <silent> <Leader>s :Refresh<CR>
+  augroup END
   let g:jedi#completions_enabled = 0
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
   let g:jedi#goto_command = '<CR>'
-  let g:jedi#show_documentation = '<Leader>p'
+  let g:jedi#documentation_command = '<Leader>p'
+  let g:jedi#max_doc_height = 100
+  let g:jedi#goto_assignments_command = ''
+  let g:jedi#goto_definitions_command = ''
+  let g:jedi#rename_command = ''
+  let g:jedi#usages_command = '<Leader><CR>'
+  let g:jedi#show_call_signatures = 1
 endif
 
 " NERDCommenter
@@ -995,6 +1005,8 @@ if PlugActive('syntastic')
   nnoremap <silent> <Leader>X :let b:syntastic_on = 0 \| SyntasticReset<CR>
   nnoremap <silent> [x :Lprev<CR>
   nnoremap <silent> ]x :Lnext<CR>
+  nnoremap <silent> [q :Cprev<CR>
+  nnoremap <silent> ]q :Cnext<CR>
 
   " Choose syntax checkers, disable auto checking
   " flake8 pep8 pycodestyle pyflakes pylint python
@@ -1242,6 +1254,7 @@ nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10*max([1
 augroup simple
   au!
   au BufEnter * let b:recording = 0
+  au BufEnter __doc__ call utils#pager_setup()
   au FileType log,diff,man,vim-plug call utils#popup_setup(1)
   au FileType qf,gitcommit,fugitive call utils#popup_setup(0)
   au FileType help call utils#help_setup()
@@ -1316,7 +1329,7 @@ nnoremap <Leader>c :call utils#copy_toggle()<CR>
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex,html,markdown,rst call spell#spell_toggle(1)
+  au FileType tex,html,markdown,rst if @% != '__doc__' | call spell#spell_toggle(1) | endif
 augroup END
 
 " Toggle spelling on and off

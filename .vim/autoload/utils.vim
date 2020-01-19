@@ -325,6 +325,14 @@ function! utils#popup_setup(nofile) abort
   if len(tabpagebuflist()) == 1 | q | endif " exit if only one left
 endfunction
 
+function! utils#pager_setup() abort
+  call utils#popup_setup(0) " argument means we do not set buftype=nofile
+  nnoremap <nowait> <buffer> f <C-f>
+  nnoremap <nowait> <buffer> d <C-d>
+  nnoremap <buffer> u <C-u>
+  nnoremap <buffer> b <C-b>
+endfunction
+
 " For help windows
 function! utils#help_setup() abort
   call utils#popup_setup(0) " argument means we do not set buftype=nofile
