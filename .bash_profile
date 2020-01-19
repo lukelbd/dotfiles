@@ -8,4 +8,3 @@
 if [ -f "$HOME/.bashrc" ] && [ -z "$_bashrc_loaded" ]; then
   . "$HOME/.bashrc"
 fi
-

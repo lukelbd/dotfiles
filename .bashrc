@@ -1,5 +1,4 @@
 #!/bin/bash
-#.bashrc
 # shellcheck disable=1090,2181,2120
 #-----------------------------------------------------------------------------#
 # This file should override defaults in /etc/profile in /etc/bashrc.
@@ -24,14 +23,14 @@
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
-clear # first clear screen
+clear  # first clear screen
 
 # Prompt
 # Keep things minimal, just make prompt bold so more identifiable
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
-if [ -z "$_ps1_set" ]; then # don't overwrite modifications by supercomputer modules, conda environments, etc.
-  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]' # prompt string 1; shows "<comp name>:<work dir> <user>$"
+if [ -z "$_ps1_set" ]; then  # don't overwrite modifications by supercomputer modules, conda environments, etc.
+  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]'  # prompt string 1; shows "<comp name>:<work dir> <user>$"
   _ps1_set=1
 fi
 
@@ -68,7 +67,7 @@ if $_macos; then
   # gnutls grep gnu-tar gawk'
   export PATH=$(tr -d $'\n ' <<< "
     $HOME/builds/ncl-6.5.0/bin:
-    $HOME/builds/matlab/bin:
+    $HOME/builds/matlab-r2019a/bin:
     /opt/pgi/osx86-64/2018/bin:
     /usr/local/opt/coreutils/libexec/gnubin:
     /usr/local/opt/findutils/libexec/gnubin:
@@ -84,7 +83,7 @@ if $_macos; then
     /bin:
     /usr/sbin:
     /sbin:
-    ")
+  ")
   export MANPATH=$(tr -d $'\n ' <<< "
     /usr/local/opt/coreutils/libexec/gnuman:
     /usr/local/opt/findutils/libexec/gnuman:
@@ -123,7 +122,7 @@ else
     export PATH=$(tr -d $'\n ' <<< "
       /opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:
       /usr/local/bin:/usr/bin:/bin
-      ")
+    ")
     export LD_LIBRARY_PATH="/usr/local/lib"
     ;;
 
@@ -136,16 +135,16 @@ else
       /usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:
       /usr/local/bin:
       /usr/bin:/usr/local/sbin:/usr/sbin
-      ")
+    ")
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
     export PGI="/opt/pgi"
     export MANPATH="$MANPATH:/opt/pgi/linux86-64/18.10/man"
     export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
     # Isca modeling stuff
     export GFDL_BASE=$HOME/isca
-    export GFDL_ENV=monde # "environment" configuration for emps-gv4
-    export GFDL_WORK=/mdata1/ldavis/isca_work # temporary working directory used in running the model
-    export GFDL_DATA=/mdata1/ldavis/isca_data # directory for storing model output
+    export GFDL_ENV=monde  # "environment" configuration for emps-gv4
+    export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
+    export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
     # Monde has NCL installed already
     export NCARG_ROOT="/usr/local"
     ;;
@@ -158,7 +157,7 @@ else
     # NOTE: Use 'sinteractive' for interactive mode
     # module purge 2>/dev/null
     read -r -a _loaded < <(module --terse list 2>&1)
-    _toload=(Anaconda3 intel mkl) # for some reason latest CDO version is not default
+    _toload=(Anaconda3 intel mkl)  # for some reason latest CDO version is not default
     for _module in "${_toload[@]}"; do
       if ! [[ " ${_loaded[*]} " =~ $_module ]]; then
         module load "$_module"
@@ -178,7 +177,7 @@ else
     # Load some modules
     # NOTE: Use 'qinteractive' for interactive mode
     read -r -a _loaded < <(module --terse list 2>&1)
-    _toload=(nco tmux) # have latest greatest versions of CDO and NCL via conda
+    _toload=(nco tmux)  # have latest greatest versions of CDO and NCL via conda
     for _module in "${_toload[@]}"; do
       if ! [[ " ${_loaded[*]} " =~ $_module ]]; then
         module load "$_module"
@@ -197,7 +196,7 @@ export PATH=$(tr -d $'\n ' <<< "
   $HOME/bin:
   $HOME/ncparallel:$HOME/youtube-dl-music:$HOME/vim-textools:
   $PATH
-  ")
+")
 
 # Save path before setting up conda
 # Brew conflicts with anaconda (try "brew doctor" to see)
@@ -205,10 +204,10 @@ export PATH=$(tr -d $'\n ' <<< "
 alias brew="PATH=\"$PATH\" brew"
 
 # Various python stuff
-export PYTHONPATH="" # just use pip install -e . for cloned projects
-export MPLBACKEND="Qt5Agg" # default for python and ipython
+export PYTHONPATH=""  # just use pip install -e . for cloned projects
+export MPLBACKEND="Qt5Agg"  # default for python and ipython
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
-export PYTHONBREAKPOINT=IPython.embed # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
+export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing dist/*"
 
 # Matplotlib stuff
@@ -222,7 +221,7 @@ printf "done\n"
 #-----------------------------------------------------------------------------#
 _bashrc_message "Functions and aliases"
 # Append prompt command
-_prompt() { # input argument should be new command
+_prompt() {  # input argument should be new command
   export PROMPT_COMMAND=$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')
 }
 
@@ -233,10 +232,10 @@ _columnize() {
   maxlen=0  # initial
   input=$(cat /dev/stdin)
   tcols=$(tput cols) || { echo "Failed to get terminal width."; return 1; }
-  nlines=$(printf "$input" | wc -l) # check against initial line count
-  output="$input" # default
+  nlines=$(printf "$input" | wc -l)  # check against initial line count
+  output="$input"  # default
   while true; do
-    final="$output" # record previous output, this is what we will print
+    final="$output"  # record previous output, this is what we will print
     output=$(printf "$input" | xargs -n$ncols | column -t)
     maxlen=$(printf "$output" | wc -L)
     [ "$maxlen" -gt "$tcols" ] && break  # this time *do not* print latest result, will result in line break due to terminal edge
@@ -257,14 +256,14 @@ help() {
   if builtin help "$@" &>/dev/null; then
     builtin help "$@" 2>&1 | less
   elif "$@" --help &>/dev/null; then
-    "$@" --help 2>&1 | less # combine output streams or can get weird error
+    "$@" --help 2>&1 | less  # combine output streams or can get weird error
   else
     echo "No help information for \"$*\"."
   fi
 }
 
 # Man page wrapper
-man() { # always show useful information when man is called
+man() {  # always show useful information when man is called
   # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
   # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
   # show as first line BASH_BUILTINS(1); so we search the first two lines
@@ -323,11 +322,11 @@ vim() {
   else
     command vim "${flags[@]}" -p "${files[@]}"  # when loading specific files; also open them in separate tabs
   fi
-  clear # clear screen after exit
+  clear  # clear screen after exit
 }
 
 # Absolute path, works everywhere
-abspath() { # abspath that works on mac, Linux, or anything with bash
+abspath() {  # abspath that works on mac, Linux, or anything with bash
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
   elif [ -f "$1" ]; then
@@ -383,8 +382,8 @@ open() {
 }
 
 # Environment variables
-export EDITOR=vim # default editor, nice and simple
-export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
+export EDITOR=vim  # default editor, nice and simple
+export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 
 #-----------------------------------------------------------------------------#
 # Shell behavior, key bindings
@@ -392,41 +391,38 @@ export LC_ALL=en_US.UTF-8 # needed to make Vim syntastic work
 # Readline/inputrc settings
 # Use ctrl-r to search previous commands
 # Equivalent to putting lines in single quotes inside .inputrc
-# bind '"\C-i":glob-expand-word' # expansion but not completion
+# bind 'set editing-mode vi'
+# bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
+# bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block curso
 _setup_bindings() {
-  complete -r # remove completions
-  set -o vi
+  complete -r  # remove completions
   bind -r '"\C-i"'
   bind -r '"\C-d"'
-  bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
-  bind 'set keyseq-timeout 50'               # see: https://unix.stackexchange.com/a/318497/112647
-  bind 'set show-mode-in-prompt on'          # show mode
-  # set -o vi
-  bind 'set editing-mode vi'
-  bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
-  bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block cursor
-  bind 'set disable-completion off'          # ensure on
-  bind 'set completion-ignore-case on'       # want dat
-  bind 'set completion-map-case on'          # treat hyphens and underscores as same
-  bind 'set show-all-if-ambiguous on'        # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
-  bind 'set menu-complete-display-prefix on' # show string typed so far as 'member' while cycling through completion options
-  bind 'set completion-display-width 1'      # easier to read
-  bind 'set bell-style visible'              # only let readlinke/shell do visual bell; use 'none' to disable totally
-  bind 'set skip-completed-text on'          # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
-  bind 'set visible-stats off'               # extra information, e.g. whether something is executable with *
-  bind 'set page-completions off'            # no more --more-- pager when list too big
-  bind 'set completion-query-items 0'        # never ask for user confirmation if there's too much stuff
-  bind 'set mark-symlinked-directories on'   # add trailing slash to directory symlink
-  bind '"\C-i": menu-complete'               # this will not pollute scroll history; better
-  bind '"\e-1\C-i": menu-complete-backward'  # this will not pollute scroll history; better
-  bind '"\e[Z": "\e-1\C-i"'                  # shift tab to go backwards
+  bind -r '"\C-s"'  # to enable C-s in Vim (normally caught by terminal as start/stop signal)
+  bind 'set keyseq-timeout 50'                # see: https://unix.stackexchange.com/a/318497/112647
+  bind 'set show-mode-in-prompt off'          # do not show mode
+  bind 'set disable-completion off'           # ensure on
+  bind 'set completion-ignore-case on'        # want dat
+  bind 'set completion-map-case on'           # treat hyphens and underscores as same
+  bind 'set show-all-if-ambiguous on'         # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+  bind 'set menu-complete-display-prefix on'  # show string typed so far as 'member' while cycling through completion options
+  bind 'set completion-display-width 1'       # easier to read
+  bind 'set bell-style visible'               # only let readlinke/shell do visual bell; use 'none' to disable totally
+  bind 'set skip-completed-text on'           # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
+  bind 'set visible-stats off'                # extra information, e.g. whether something is executable with *
+  bind 'set page-completions off'             # no more --more-- pager when list too big
+  bind 'set completion-query-items 0'         # never ask for user confirmation if there's too much stuff
+  bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
+  bind '"\C-i": menu-complete'                # this will not pollute scroll history; better
+  bind '"\e-1\C-i": menu-complete-backward'   # this will not pollute scroll history; better
+  bind '"\e[Z": "\e-1\C-i"'                   # shift tab to go backwards
   bind '"\eOP": menu-complete'
   bind '"\eOQ": menu-complete-backward'
-  stty werase undef # no more ctrl-w word delete function; allows c-w re-binding to work
-  stty stop undef   # no more ctrl-s
-  stty eof undef    # no more ctrl-d
+  stty werase undef  # no more ctrl-w word delete function; allows c-w re-binding to work
+  stty stop undef    # no more ctrl-s
+  stty eof undef     # no more ctrl-d
 }
-_setup_bindings 2>/dev/null # ignore any errors
+_setup_bindings 2>/dev/null  # ignore any errors
 
 # Shell Options
 # Check out 'shopt -p' to see possibly interesting shell options
@@ -438,33 +434,33 @@ _setup_opts() {
   # Never close terminal with ctrl-d
   set -o ignoreeof
   # Disable start stop output control
-  stty -ixon # note for putty, have to edit STTY value and set ixon to zero in term options
+  stty -ixon  # note for putty, have to edit STTY value and set ixon to zero in term options
   # Various shell options
-  # shopt -s nocasematch           # forget this; affects global behavior of case/esac, and [[ =~ ]] commands
-  shopt -s cmdhist                 # save multi-line commands as one command in shell history
-  shopt -s checkwinsize            # allow window resizing
-  shopt -u nullglob                # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
-  shopt -u extglob                 # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -u dotglob                 # include dot patterns in glob matches
-  shopt -s direxpand               # expand dirs
-  shopt -s dirspell                # attempt spelling correction of dirname
-  shopt -s cdspell                 # spelling errors during cd arguments
-  shopt -s cdable_vars             # cd into shell variable directories, no $ necessary
-  shopt -s nocaseglob              # case insensitive glob
-  shopt -s autocd                  # typing naked directory name will cd into it
-  shopt -u no_empty_cmd_completion # no more completion in empty terminal!
-  shopt -s histappend              # append to the history file, don't overwrite it
-  shopt -s cmdhist                 # save multi-line commands as one command
-  shopt -s globstar                # **/ matches all subdirectories, searches recursively
-  shopt -u failglob                # error message if expansion is empty
+  # shopt -s nocasematch            # forget this; affects global behavior of case/esac, and [[ =~ ]] commands
+  shopt -s cmdhist                  # save multi-line commands as one command in shell history
+  shopt -s checkwinsize             # allow window resizing
+  shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+  shopt -u extglob                  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -u dotglob                  # include dot patterns in glob matches
+  shopt -s direxpand                # expand dirs
+  shopt -s dirspell                 # attempt spelling correction of dirname
+  shopt -s cdspell                  # spelling errors during cd arguments
+  shopt -s cdable_vars              # cd into shell variable directories, no $ necessary
+  shopt -s nocaseglob               # case insensitive glob
+  shopt -s autocd                   # typing naked directory name will cd into it
+  shopt -u no_empty_cmd_completion  # no more completion in empty terminal!
+  shopt -s histappend               # append to the history file, don't overwrite it
+  shopt -s cmdhist                  # save multi-line commands as one command
+  shopt -s globstar                 # **/ matches all subdirectories, searches recursively
+  shopt -u failglob                 # error message if expansion is empty
   # Related environment variables
-  export PROMPT_DIRTRIM=2 # trim long paths in prompt
-  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *" # don't record some commands
+  export PROMPT_DIRTRIM=2  # trim long paths in prompt
+  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
   export HISTSIZE=50000
-  export HISTFILESIZE=10000 # huge history -- doesn't appear to slow things down, so why not?
-  export HISTCONTROL="erasedups:ignoreboth" # avoid duplicate entries
+  export HISTFILESIZE=10000  # huge history -- doesn't appear to slow things down, so why not?
+  export HISTCONTROL="erasedups:ignoreboth"  # avoid duplicate entries
 }
-_setup_opts 2>/dev/null # ignore if option unavailable
+_setup_opts 2>/dev/null  # ignore if option unavailable
 
 #-----------------------------------------------------------------------------#
 # Aliases/functions for printing out information
@@ -476,21 +472,21 @@ _setup_opts 2>/dev/null # ignore if option unavailable
 # for var in $(variables | grep -i netcdf); do echo ${var}: ${!var}; done
 alias aliases="compgen -a"
 alias variables="compgen -v"
-alias functions="compgen -A function" # show current shell functions
-alias builtins="compgen -b" # bash builtins
+alias functions="compgen -A function"  # show current shell functions
+alias builtins="compgen -b"            # bash builtins
 alias commands="compgen -c"
 alias keywords="compgen -k"
 alias modules="module avail 2>&1 | cat "
 if $_macos; then
-  alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
-  alias bindings_stty="stty -e"                # bindings
+  alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
+  alias bindings_stty="stty -e"  # bindings
 else
-  alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort" # print keybindings
-  alias bindings_stty="stty -a"                # bindings
+  alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
+  alias bindings_stty="stty -a"  # bindings
 fi
-alias inputrc_ops="bind -v"           # the 'set' options, and their values
-alias inputrc_funcs="bind -l"         # the functions, for example 'forward-char'
-env() { set; } # just prints all shell variables
+alias inputrc_ops="bind -v"    # the 'set' options, and their values
+alias inputrc_funcs="bind -l"  # the functions, for example 'forward-char'
+env() { set; }                 # just prints all shell variables
 
 #-----------------------------------------------------------------------------#
 # General utilties
@@ -498,9 +494,9 @@ env() { set; } # just prints all shell variables
 # Configure ls behavior, define colorization using dircolors
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
 alias ls="ls --color=always -AF"   # ls useful (F differentiates directories from files)
-alias ll="ls --color=always -AFhl" # ls "list", just include details and file sizes
-alias cd="cd -P" # don't want this on my mac temporarily
-alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc" # permanent lang maps
+alias ll="ls --color=always -AFhl"  # ls "list", just include details and file sizes
+alias cd="cd -P"  # don't want this on my mac temporarily
+alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc"  # permanent lang maps
 log() {
   while ! [ -r "$1" ]; do
     echo "Waiting..."
@@ -514,19 +510,19 @@ log() {
 export LESS="--RAW-CONTROL-CHARS"
 [ -r ~/.LESS_TERMCAP ] && source ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
-  export LESS_TERMCAP_md=$'\e[1;33m'     # begin blink
-  export LESS_TERMCAP_so=$'\e[01;44;37m' # begin reverse video
-  export LESS_TERMCAP_us=$'\e[01;37m'    # begin underline
-  export LESS_TERMCAP_me=$'\e[0m'        # reset bold/blink
-  export LESS_TERMCAP_se=$'\e[0m'        # reset reverse video
-  export LESS_TERMCAP_ue=$'\e[0m'        # reset underline
-  export GROFF_NO_SGR=1                  # for konsole and gnome-terminal
+  export LESS_TERMCAP_md=$'\e[1;33m'      # begin blink
+  export LESS_TERMCAP_so=$'\e[01;44;37m'  # begin reverse video
+  export LESS_TERMCAP_us=$'\e[01;37m'     # begin underline
+  export LESS_TERMCAP_me=$'\e[0m'         # reset bold/blink
+  export LESS_TERMCAP_se=$'\e[0m'         # reset reverse video
+  export LESS_TERMCAP_ue=$'\e[0m'         # reset underline
+  export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
 # Information on directories
 # shellcheck disable=2142
 $_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
-$_macos || alias hardware="cat /etc/*-release" # print out Debian, etc. release info
+$_macos || alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
 alias du='du -h -d 1'
@@ -554,20 +550,20 @@ alias quickfind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '
 # Grepping and diffing; enable colors
 alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
 alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-hash colordiff 2>/dev/null && alias diff="command colordiff" # use --name-status to compare directories
+hash colordiff 2>/dev/null && alias diff="command colordiff"  # use --name-status to compare directories
 
 # Query files
 # awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
-todo() { for f in "$@"; do echo "File: $f"; grep -i -n '\btodo\b' "$f"; done; } # | sed $'s/\t/  /g' | sed 's/^\([^ ]* \) */\1/g'; done; }
+todo() { for f in "$@"; do echo "File: $f"; grep -i -n '\btodo\b' "$f"; done; }  # | sed $'s/\t/  /g' | sed 's/^\([^ ]* \) */\1/g'; done; }
 note() { for f in "$@"; do echo "File: $f"; grep -i -n '\bnote:' "$f"; done; }
 
 # Shell scripting utilities
-calc() { bc -l <<< "$(echo "$*" | tr 'x' '*')"; } # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+calc() { bc -l <<< "$(echo "$*" | tr 'x' '*')"; }  # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
 join() { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
-refresh() { for i in {1..100}; do echo; done; clear; } # print bunch of empty liens
+refresh() { for i in {1..100}; do echo; done; clear; }  # print bunch of empty liens
 
 # Controlling and viewing running processes
-alias toc="mpstat -P ALL 1" # like top, but for each core
+alias toc="mpstat -P ALL 1"  # like top, but for each core
 alias restarts="last reboot | less"
 # List shell processes using ps
 tos() {
@@ -609,7 +605,7 @@ qkill() {
   done
 }
 # Remove logs
-alias qrm="rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*" # remove (empty) job logs
+alias qrm="rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*"  # remove (empty) job logs
 # Better qstat command
 alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
 
@@ -641,7 +637,7 @@ ddiff() {
     files+=$'\n'$(find "$dir" -depth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
   done
   read -r -a files < <(echo "$files" | sort | uniq | xargs)
-  for file in "${files[@]}"; do # iterate
+  for file in "${files[@]}"; do  # iterate
     file=${file##*/}
     if [ -e "$dir1/$file" ] && [ -e "$dir2/$file" ]; then
       if [ "$dir1/$file" -nt "$dir2/$file" ]; then
@@ -675,15 +671,15 @@ idiff() {
 merge() {
   [ $# -ne 2 ] && echo "Usage: merge FILE1 FILE2" && return 1
   [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
-  local ext out # no extension
+  local ext out  # no extension
   if [[ "${1##*/}" =~ \. || "${2##*/}" =~ \. ]]; then
     [ "${1##*.}" != "${2##*.}" ] && echo "Error: Files must have same extension." && return 1
     local ext=.${1##*.}
   fi
   out=merge$ext
-  touch "tmp$ext" # use empty file as the 'root' of the merge
+  touch "tmp$ext"  # use empty file as the 'root' of the merge
   cp "$1" "backup$ext"
-  git merge-file "$1" "tmp$ext" "$2" # will write to file 1
+  git merge-file "$1" "tmp$ext" "$2"  # will write to file 1
   mv "$1" "$out"
   mv "backup$ext" "$1"
   rm "tmp$ext"
@@ -753,8 +749,8 @@ euclid='ldavis@euclid.atmos.colostate.edu'
 olbers='ldavis@olbers.atmos.colostate.edu'
 zephyr='lukelbd@zephyr.meteo.mcgill.ca'
 lmu='Luke.Davis@login.meteo.physik.uni-muenchen.de'
-midway='t-9841aa@midway2-login1.rcc.uchicago.edu' # pass: orkalluctudg
-ldm='ldm@ldm.atmos.colostate.edu'                 # user: atmos-2012
+midway='t-9841aa@midway2-login1.rcc.uchicago.edu'  # pass: orkalluctudg
+ldm='ldm@ldm.atmos.colostate.edu'                  # user: atmos-2012
 }
 
 # SSH file system
@@ -768,14 +764,14 @@ isempty() {
     local contents
     read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
     if [ ${#contents[@]} == 0 ]; then
-      return 0 # nothing inside
+      return 0  # nothing inside
     elif [ ${#contents[@]} == 1 ] && [ "${contents##*/}" == .DS_Store ]; then
-      return 0 # this can happen even if you delete all files
+      return 0  # this can happen even if you delete all files
     else
       return 1
     fi
   else
-    return 0 # does not exist, so is empty
+    return 0  # does not exist, so is empty
   fi
 }
 mount() {
@@ -791,7 +787,7 @@ mount() {
     mdata?) server=monde ;;
   esac
   # Get address
-  address="${!server}" # evaluates the variable name passed
+  address="${!server}"  # evaluates the variable name passed
   [ -z "$address" ] && echo "Error: Unknown server \"$server\". Consider adding it to .bashrc." && return 1
   echo "Server: $server"
   echo "Address: $address"
@@ -801,10 +797,10 @@ mount() {
   # Directory on remote server
   # NOTE: Using tilde ~ does not seem to work
   case $location in
-    glade)     location="/glade/scratch/davislu" ;;
-    mdata?)    location="/${location}/ldavis" ;; # mdata1, mdata2, ...
-    cheyenne?) location="/glade/u/home/davislu" ;;
-    *)         location="/home/ldavis" ;;
+    glade)      location="/glade/scratch/davislu" ;;
+    mdata?)     location="/${location}/ldavis"    ;;  # mdata1, mdata2, ...
+    cheyenne?)  location="/glade/u/home/davislu"  ;;
+    *)          location="/home/ldavis"           ;;
   esac
   # Options meant to help speed up connection
   # See discussion: https://superuser.com/q/344255/506762
@@ -820,7 +816,7 @@ mount() {
     -ocompression=no \
     -ovolname="$server"
 }
-unmount() { # name 'unmount' more intuitive than 'umount'
+unmount() {  # name 'unmount' more intuitive than 'umount'
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
   [ $# -ne 1 ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
   local server="$1"
@@ -853,13 +849,13 @@ ip() {
   fi
 }
 # String parsing
-_expanduser() { # turn tilde into $HOME
+_expanduser() {  # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
   param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
   echo "$param"
 }
-_compressuser() { # turn $HOME into tilde
+_compressuser() {  # turn $HOME into tilde
   local param="$*"
   param="${param/#$HOME/~}"
   param="${param/#$HOME/\~}"
@@ -897,13 +893,13 @@ initssh() {
     command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
     chmod 600 "${SSH_ENV}"
     source "${SSH_ENV}" >/dev/null
-    command ssh-add "$HOME/.ssh/id_rsa_github" &>/dev/null # add Github private key; assumes public key has been added to profile
+    command ssh-add "$HOME/.ssh/id_rsa_github" &>/dev/null  # add Github private key; assumes public key has been added to profile
   else
     echo "Warning: Github private SSH key \"$HOME/.ssh/id_rsa_github\" is not available." && return 1
   fi
 }
 # Source SSH settings, if applicable
-if ! $_macos; then # only do this if not on macbook
+if ! $_macos; then  # only do this if not on macbook
   if [ -f "$SSH_ENV" ]; then
     source "$SSH_ENV" >/dev/null
     # shellcheck disable=2009
@@ -926,16 +922,16 @@ fi
 # *requires* password entry (e.g. Duo authentification), and cannot be configured
 # for passwordless login with ssh-copy-id, then need to skip first step.
 # Currently we do this for cheyenne server 
-_port_file=~/.port # file storing port number
-alias ssh="_ssh" # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
+_port_file=~/.port  # file storing port number
+alias ssh="_ssh"  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local port listen port_write title_write
   [[ $# -gt 2 || $# -lt 1 ]] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
   listen=22  # default sshd listening port; see the link above
-  port=10000 # starting port
+  port=10000  # starting port
   if [ -n "$2" ]; then
-    port="$2" # custom
-  elif ! [[ $1 =~ cheyenne ]]; then # dynamically find first available port
+    port="$2"  # custom
+  elif ! [[ $1 =~ cheyenne ]]; then  # dynamically find first available port
     echo "Determining port automatically."
     port=$(command ssh "$1" "
       port=$port
@@ -943,7 +939,7 @@ _ssh() {
         let port=\$port+1
       done
       echo \$port
-      ")
+    ")
   fi
   port_write=$(_compressuser "$_port_file")
   title_write=$(_compressuser "$_title_file")
@@ -954,7 +950,7 @@ _ssh() {
     echo $_title >$title_write
     echo \"Port number: ${port}.\"
     /bin/bash -i
-    " # enter bash and stay interactive
+    "  # enter bash and stay interactive
 }
 
 # Copy from <this server> to local macbook
@@ -962,7 +958,7 @@ _ssh() {
 # NOTE: Below, we use the bash parameter expansion ${!#} -->
 # 'variable whose name is result of "$#"' --> $n where n is the number
 # of args. Also can do math inside param expansion indexing.
-rlcp() { # "copy to local (from remote); 'copy there'"
+rlcp() {  # "copy to local (from remote); 'copy there'"
   local port args dest
   $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
   [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
@@ -976,7 +972,7 @@ rlcp() { # "copy to local (from remote); 'copy there'"
 }
 
 # Copy from local macbook to <this server>
-lrcp() { # "copy to remote (from local); 'copy here'"
+lrcp() {  # "copy to remote (from local); 'copy here'"
   local port flags file dest
   $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
   [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
@@ -1055,9 +1051,9 @@ alias imatlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
 #   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
 #   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
 #   for success, and if not, prints the error message. This is a build-your-own eval.
-iperl() { # see this answer: https://stackoverflow.com/a/22840242/4970632
+iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
   ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
-  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@' # rlwrap stands for readline wrapper
+  rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@'  # rlwrap stands for readline wrapper
 }
 
 #-----------------------------------------------------------------------------#
@@ -1089,7 +1085,7 @@ _jt() {
     theme="$1"
   fi
   if [ $# -lt 2 ]; then
-    export font="cousine" # look up available ones online
+    export font="cousine"  # look up available ones online
   else
     export font="$2"
   fi
@@ -1100,7 +1096,7 @@ _jt() {
     echo "Error: Theme $theme is invalid; choose from ${themes[*]}." && return 1
   jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font"
 }
-_jt_configured=false # theme is not initially setup because takes a long time
+_jt_configured=false  # theme is not initially setup because takes a long time
 
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
@@ -1111,7 +1107,7 @@ _connect() {
   unset _jupyter_port
   if $_macos; then
     ports="${*:2}"
-    server=$1 # input server
+    server=$1  # input server
     [ -z "$server" ] && echo "Error: Must input server." && return 1
   else
     ports="$*"
@@ -1153,7 +1149,7 @@ _connect() {
     echo "Exit status ${stat#*-} for connection over port ${stat%-*}."
     [ "${stat#*-}" -eq 0 ] && _jupyter_port=${stat%-*}
   done
-  [ -n "$_jupyter_port" ] # return with this exit status
+  [ -n "$_jupyter_port" ]  # return with this exit status
 }
 
 # Refresh stale connections from macbook to server
@@ -1196,11 +1192,11 @@ notebook() {
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
     port="--port=$1"
-  elif ! $_macos; then # remote ports will use 3XXXX   
+  elif ! $_macos; then  # remote ports will use 3XXXX   
     _connect || return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
-  else # local ports will use 2XXXX
+  else  # local ports will use 2XXXX
     for port in $(seq 20000 20020); do
       ! netstat -an | grep "[:.]$port" &>/dev/null && break
     done
@@ -1235,17 +1231,17 @@ nchelp() {
         ncin nclist ncvarlist ncdimlist
         ncvarinfo ncvardump ncvartable ncvartable2" | column -t
 }
-ncglobal() { # show just the global attributes
+ncglobal() {  # show just the global attributes
   [ $# -ne 1 ] && echo "Usage: ncglobal FILE" && return 1
   command ncdump -h "$@" | grep -A100 ^// | less
 }
-ncinfo() { # only get text between variables: and linebreak before global attributes
+ncinfo() {  # only get text between variables: and linebreak before global attributes
   # command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
   [ $# -ne 1 ] && echo "Usage: ncinfo FILE" && return 1
   ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | sed '1,1d;$d' | less # trims first and last lines; do not need these
+  command ncdump -h "$1" | sed '1,1d;$d' | less  # trims first and last lines; do not need these
 }
-ncvars() { # the space makes sure it isn't another variable that has trailing-substring
+ncvars() {  # the space makes sure it isn't another variable that has trailing-substring
   # identical to this variable, -A prints TRAILING lines starting from FIRST match,
   # -B means prinx x PRECEDING lines starting from LAST match
   [ $# -ne 1 ] && echo "Usage: ncvars FILE" && return 1
@@ -1261,13 +1257,13 @@ ncdims() {
 }
 
 # Listing stuff
-ncin() { # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
+ncin() {  # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
   [ $# -ne 2 ] && echo "Usage: ncin VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   command ncdump -h "$2" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
 }
-nclist() { # only get text between variables: and linebreak before global attributes
+nclist() {  # only get text between variables: and linebreak before global attributes
   # note variables don't always have dimensions! (i.e. constants)
   # in this case looks like " double var ;" instead of " double var(x,y) ;"
   [ $# -ne 1 ] && echo "Usage: nclist FILE" && return 1
@@ -1275,13 +1271,13 @@ nclist() { # only get text between variables: and linebreak before global attrib
   command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
     | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncdimlist() { # get list of dimensions
+ncdimlist() {  # get list of dimensions
   [ $# -ne 1 ] && echo "Usage: ncdimlist FILE" && return 1
   ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
   command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
     | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
 }
-ncvarlist() { # only get text between variables: and linebreak before global attributes
+ncvarlist() {  # only get text between variables: and linebreak before global attributes
   local list dmnlist varlist
   [ $# -ne 1 ] && echo "Usage: ncvarlist FILE" && return 1
   ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
@@ -1293,18 +1289,18 @@ ncvarlist() { # only get text between variables: and linebreak before global att
       varlist+=("$item")
     fi
   done
-  echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort # print results
+  echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort  # print results
 }
 
 # Inquiries about specific variables
-ncvarinfo() { # as above but just for one variable
+ncvarinfo() {  # as above but just for one variable
   [ $# -ne 2 ] && echo "Usage: ncvarinfo VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
   # the space makes sure it isn't another variable that has trailing-substring
   # identical to this variable; and the $'' is how to insert literal tab
 }
-ncvardump() { # dump variable contents (first argument) from file (second argument)
+ncvardump() {  # dump variable contents (first argument) from file (second argument)
   [ $# -ne 2 ] && echo "Usage: ncvardump VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   command ncdump -v "$1" "$2" | tac \
@@ -1312,7 +1308,7 @@ ncvardump() { # dump variable contents (first argument) from file (second argume
   # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
   # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
-ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
+ncvartable() {  # parses the CDO parameter table; ncvarinfo replaces this
   # Below procedure is ideal for "sanity checks" of data; just test one
   # timestep slice at every level; the tr -s ' ' trims multiple whitespace
   # to single and the column command re-aligns columns
@@ -1322,7 +1318,7 @@ ncvartable() { # parses the CDO parameter table; ncvarinfo replaces this
   cdo -s infon "${args[@]}" -seltimestep,1 -selname,"$1" "$2" \
     | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
 }
-ncvartable2() { # as above but show everything
+ncvartable2() {  # as above but show everything
   [ $# -ne 2 ] && echo "Usage: ncvartable2 VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
   read -r -a args <<< "${@:2}"
@@ -1374,7 +1370,7 @@ gif2png() {
   for f in "$@";
     do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
   done
-} # often needed because LaTeX can't read gif files
+}  # often needed because LaTeX can't read gif files
 pdf2png() {
   local density=1200 args=("$@")
   [[ $1 =~ ^[0-9]+$ ]] && density=$1 args=("${args[@]:1}")
@@ -1383,7 +1379,7 @@ pdf2png() {
     # shellcheck disable=2086
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.pdf}.png"
   done
-} # sometimes need bitmap yo
+}  # sometimes need bitmap yo
 svg2png() {
   pdf2png "$@"
   local density=1200 args=("$@")
@@ -1402,7 +1398,7 @@ pdf2tiff() {
     # shellcheck disable=2086
     [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.pdf}.tiff"
   done
-} # alternative for converting to bitmap
+}  # alternative for converting to bitmap
 pdf2eps() {
   args=("$@")
   for f in "${args[@]}"; do
@@ -1469,8 +1465,8 @@ unannotate() {
 wctex() {
   local detexed=$(detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
     "$1" | grep -v .pdf | grep -v 'fig[0-9]')
-  echo "$detexed" | xargs # print result in one giant line
-  echo "$detexed" | wc -w # get word count
+  echo "$detexed" | xargs  # print result in one giant line
+  echo "$detexed" | wc -w  # get word count
 }
 
 # Other tools are "impressive" and "presentation", and both should be in bin
@@ -1505,7 +1501,7 @@ if [ -f ~/.fzf.bash ]; then
   # shellcheck disable=2034
   {
   FZF_COMPLETION_COMMANDS=""
-  FZF_COMPLETION_OPTS="$_fzf_opts" # tab triggers completion
+  FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
   FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
@@ -1553,7 +1549,7 @@ if [ -f ~/.fzf.bash ]; then
   }
 
   # Source file
-  complete -r # reset first
+  complete -r  # reset first
   source ~/.fzf.bash
   printf "done\n"
 fi
@@ -1581,7 +1577,7 @@ elif [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_I
       # [ -n "$TMPDIR" ] && tmpdir="$TMPDIR" || tmpdir="."
       for file in "${files[@]}"; do
         if [ "${file##*.}" == pdf ]; then
-          tmp="$tmpdir/tmp.${file%.*}.png" # convert to png
+          tmp="$tmpdir/tmp.${file%.*}.png"  # convert to png
           convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
         else
           tmp="$tmpdir/tmp.${file}"
@@ -1677,8 +1673,8 @@ _title_set() {  # default way is probably using Cmd-I in iTerm2
   fi
   [ -z "$_title" ] && _title="window $_win_num"
   [ -e "$_title_file" ] || touch "$_title_file"
-  sed -i '/^'"$_win_num"':.*$/d' "$_title_file" # remove existing title from file
-  echo "$_win_num: $_title" >> "$_title_file" # add to file
+  sed -i '/^'"$_win_num"':.*$/d' "$_title_file"  # remove existing title from file
+  echo "$_win_num: $_title" >> "$_title_file"  # add to file
 }
 _title_get() {
   # Simply gets the title from file
@@ -1689,7 +1685,7 @@ _title_get() {
   elif $_macos; then
     _title=$(grep "^$_win_num:.*$" "$_title_file" 2>/dev/null | cut -d: -f2-)
   else
-    _title=$(cat "$_title_file") # only text in file, is this current session's title
+    _title=$(cat "$_title_file")  # only text in file, is this current session's title
   fi
   _title=$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')
 }
@@ -1699,20 +1695,20 @@ _title_update() {
     echo "Error: Title file not available." && return 1
   fi
   # Read from file
-  _title_get # set _title global variable, attemp to read existing window title
+  _title_get  # set _title global variable, attemp to read existing window title
   if [ -z "$_title" ]; then
-    $_macos && _title_set # set title name
+    $_macos && _title_set  # set title name
   else
-    echo -ne "\033]0;$_title\007" # re-assert existing title, in case changed
+    echo -ne "\033]0;$_title\007"  # re-assert existing title, in case changed
   fi
 }
-title_update() { # fix name issues
+title_update() {  # fix name issues
   _title_update "$@"
 }
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
-alias title="_title_set" # easier for user
+alias title="_title_set"  # easier for user
 
 #-----------------------------------------------------------------------------#
 # Message
@@ -1720,13 +1716,13 @@ alias title="_title_set" # easier for user
 # Fun stuff
 # TODO: This hangs when run from interactive cluster node, we test by comparing
 # hostname variable with command (variable does not change)
-$_macos && { # first the MacOS options
+$_macos && {  # first the MacOS options
   alias artists="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias forecast="curl wttr.in/Fort\ Collins" # list weather information
+  alias forecast="curl wttr.in/Fort\ Collins"  # list weather information
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
-    sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells' # add Homebrew-bash to list of valid shells
+    sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add Homebrew-bash to list of valid shells
   if [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]]; then
-    chsh -s /usr/local/bin/bash # change shell to Homebrew-bash, if not in MacVim session
+    chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim session
   fi
   }
-[ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo # yay dad jokes
+[ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
