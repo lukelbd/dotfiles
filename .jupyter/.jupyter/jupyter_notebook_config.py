@@ -1,4 +1,24 @@
 # Configuration file for jupyter-notebook.
+# c = get_config()
+#-----------------------------------------------------------------------------#
+# Custom stuff
+#-----------------------------------------------------------------------------#
+# http://jupyter-notebook.readthedocs.io/en/stable/config.html
+# c.InteractiveShellApp.extensions = ['autoreload'] # any load_ext commands
+# c.InteractiveShellApp.exec_lines = ['%autoreload 2', # reload everything if modified
+#     '%matplotlib inline', # for some reason below commands fail
+#     '%config InlineBackend.figure_format=\'retina\'',
+#     '%config InlineBackend.print_figure_kwargs={\'bbox_inches\':None}',
+#     '%autosave 60', # save every 60 seconds
+#     ] # and done with the lines
+# # c.IPKernelApp.matplotlib = 'inline' # found this online
+# # c.InteractiveShellApp.matplotlib = 'inline' # but this works too
+# # c.InlineBackend.figure_formats = ['retina'] # 'svg' is an option, but very slow
+# # c.InlineBackend.print_figure_kwargs = {'bbox_inches':None} # optionally make 'tight'
+# # c.TerminalIPythonApp.display_banner = False # no banner ever
+# c.TerminalInteractiveShell.confirm_exit = False # no confirm exit
+# c.PlainTextFormatter.pprint = True # enable pretty printing (may be default)
+# c.BaseIPythonApplication.profile = 'default' # explicitly name default profile
 
 #------------------------------------------------------------------------------
 # Application(SingletonConfigurable) configuration
@@ -58,32 +78,6 @@
 #  Ignored if allow_origin is set.
 #c.NotebookApp.allow_origin_pat = ''
 
-## Allow password to be changed at login for the notebook server.
-#  
-#  While loggin in with a token, the notebook server UI will give the opportunity
-#  to the user to enter a new password at the same time that will replace the
-#  token login mechanism.
-#  
-#  This can be set to false to prevent changing password from the UI/API.
-#c.NotebookApp.allow_password_change = True
-
-## Allow requests where the Host header doesn't point to a local server
-#  
-#  By default, requests get a 403 forbidden response if the 'Host' header shows
-#  that the browser thinks it's on a non-local domain. Setting this option to
-#  True disables this check.
-#  
-#  This protects against 'DNS rebinding' attacks, where a remote web server
-#  serves you a page and then changes its DNS to send later requests to a local
-#  IP, bypassing same-origin checks.
-#  
-#  Local IP addresses (such as 127.0.0.1 and ::1) are allowed as local, along
-#  with hostnames configured in local_hostnames.
-#c.NotebookApp.allow_remote_access = False
-
-## Whether to allow the user to run the notebook as root.
-#c.NotebookApp.allow_root = False
-
 ## DEPRECATED use base_url
 #c.NotebookApp.base_project_url = '/'
 
@@ -109,7 +103,7 @@
 #c.NotebookApp.config_manager_class = 'notebook.services.config.manager.ConfigManager'
 
 ## The notebook manager class to use.
-#c.NotebookApp.contents_manager_class = 'notebook.services.contents.largefilemanager.LargeFileManager'
+#c.NotebookApp.contents_manager_class = 'notebook.services.contents.filemanager.FileContentsManager'
 
 ## Extra keyword arguments to pass to `set_secure_cookie`. See tornado's
 #  set_secure_cookie docs for details.
@@ -126,34 +120,8 @@
 ## The file where the cookie secret is stored.
 #c.NotebookApp.cookie_secret_file = ''
 
-## Override URL shown to users.
-#  
-#  Replace actual URL, including protocol, address, port and base URL, with the
-#  given value when displaying URL to the users. Do not change the actual
-#  connection URL. If authentication token is enabled, the token is added to the
-#  custom URL automatically.
-#  
-#  This option is intended to be used when the URL to display to the user cannot
-#  be determined reliably by the Jupyter notebook server (proxified or
-#  containerized setups for example).
-#c.NotebookApp.custom_display_url = ''
-
 ## The default URL to redirect to from `/`
 #c.NotebookApp.default_url = '/tree'
-
-## Disable cross-site-request-forgery protection
-#  
-#  Jupyter notebook 4.3.1 introduces protection from cross-site request
-#  forgeries, requiring API requests to either:
-#  
-#  - originate from pages served by this server (validated with XSRF cookie and
-#  token), or - authenticate with a token
-#  
-#  Some anonymous compute resources still desire the ability to run code,
-#  completely without authentication. These services can disable all
-#  authentication and security checks, with the full knowledge of what that
-#  implies.
-#c.NotebookApp.disable_check_xsrf = False
 
 ## Whether to enable MathJax for typesetting math/TeX
 #  
@@ -166,9 +134,6 @@
 
 ## extra paths to look for Javascript notebook extensions
 #c.NotebookApp.extra_nbextensions_path = []
-
-## handlers that should be loaded at higher priority than the default services
-#c.NotebookApp.extra_services = []
 
 ## Extra paths to search for serving static files.
 #  
@@ -184,21 +149,16 @@
 ## 
 #c.NotebookApp.file_to_run = ''
 
-## Extra keyword arguments to pass to `get_secure_cookie`. See tornado's
-#  get_secure_cookie docs for details.
-#c.NotebookApp.get_secure_cookie_kwargs = {}
-
-## Deprecated: Use minified JS file or not, mainly use during dev to avoid JS
-#  recompilation
+## Use minified JS file or not, mainly use during dev to avoid JS recompilation
 #c.NotebookApp.ignore_minified_js = False
 
-## (bytes/sec) Maximum rate at which stream output can be sent on iopub before
-#  they are limited.
-#c.NotebookApp.iopub_data_rate_limit = 1000000
+## (bytes/sec) Maximum rate at which messages can be sent on iopub before they
+#  are limited.
+#c.NotebookApp.iopub_data_rate_limit = 0
 
-## (msgs/sec) Maximum rate at which messages can be sent on iopub before they are
+## (msg/sec) Maximum rate at which messages can be sent on iopub before they are
 #  limited.
-#c.NotebookApp.iopub_msg_rate_limit = 1000
+#c.NotebookApp.iopub_msg_rate_limit = 0
 
 ## The IP address the notebook server will listen on.
 #c.NotebookApp.ip = 'localhost'
@@ -222,44 +182,17 @@
 ## The full path to a private key file for usage with SSL/TLS.
 #c.NotebookApp.keyfile = ''
 
-## Hostnames to allow as local when allow_remote_access is False.
-#  
-#  Local IP addresses (such as 127.0.0.1 and ::1) are automatically accepted as
-#  local as well.
-#c.NotebookApp.local_hostnames = ['localhost']
-
 ## The login handler class to use.
 #c.NotebookApp.login_handler_class = 'notebook.auth.login.LoginHandler'
 
 ## The logout handler class to use.
 #c.NotebookApp.logout_handler_class = 'notebook.auth.logout.LogoutHandler'
 
-## The MathJax.js configuration file that is to be used.
-#c.NotebookApp.mathjax_config = 'TeX-AMS-MML_HTMLorMML-full,Safe'
-
-## A custom url for MathJax.js. Should be in the form of a case-sensitive url to
-#  MathJax, for example:  /static/components/MathJax/MathJax.js
+## The url for MathJax.js.
 #c.NotebookApp.mathjax_url = ''
 
-## Sets the maximum allowed size of the client request body, specified in  the
-#  Content-Length request header field. If the size in a request  exceeds the
-#  configured value, a malformed HTTP message is returned to the client.
-#  
-#  Note: max_body_size is applied even in streaming mode.
-#c.NotebookApp.max_body_size = 536870912
-
-## Gets or sets the maximum amount of memory, in bytes, that is allocated  for
-#  use by the buffer manager.
-#c.NotebookApp.max_buffer_size = 536870912
-
-## Gets or sets a lower bound on the open file handles process resource limit.
-#  This may need to be increased if you run into an OSError: [Errno 24] Too many
-#  open files. This is not applicable when running on Windows.
-#c.NotebookApp.min_open_files_limit = 4096
-
 ## Dict of Python modules to load as notebook server extensions.Entry values can
-#  be used to enable and disable the loading ofthe extensions. The extensions
-#  will be loaded in alphabetical order.
+#  be used to enable and disable the loading ofthe extensions.
 #c.NotebookApp.nbserver_extensions = {}
 
 ## The directory to use for notebooks and kernels.
@@ -280,14 +213,6 @@
 #  The string should be of the form type:salt:hashed-password.
 #c.NotebookApp.password = ''
 
-## Forces users to use a password for the Notebook server. This is useful in a
-#  multi user environment, for instance when everybody in the LAN can access each
-#  other's machine through ssh.
-#  
-#  In such a case, server the notebook server on localhost is not secure since
-#  any user can connect to the notebook server via ssh.
-#c.NotebookApp.password_required = False
-
 ## The port the notebook server will listen on.
 #c.NotebookApp.port = 8888
 
@@ -297,12 +222,8 @@
 ## DISABLED: use %pylab or %matplotlib in the notebook to enable matplotlib.
 #c.NotebookApp.pylab = 'disabled'
 
-## If True, display a button in the dashboard to quit (shutdown the notebook
-#  server).
-#c.NotebookApp.quit_button = True
-
 ## (sec) Time window used to  check the message and data rate limits.
-#c.NotebookApp.rate_limit_window = 3
+#c.NotebookApp.rate_limit_window = 1.0
 
 ## Reraise exceptions encountered loading server extensions?
 #c.NotebookApp.reraise_server_extension_failures = False
@@ -313,36 +234,9 @@
 ## The session manager class to use.
 #c.NotebookApp.session_manager_class = 'notebook.services.sessions.sessionmanager.SessionManager'
 
-## Shut down the server after N seconds with no kernels or terminals running and
-#  no activity. This can be used together with culling idle kernels
-#  (MappingKernelManager.cull_idle_timeout) to shutdown the notebook server when
-#  it's not in use. This is not precisely timed: it may shut down up to a minute
-#  later. 0 (the default) disables this automatic shutdown.
-#c.NotebookApp.shutdown_no_activity_timeout = 0
-
 ## Supply SSL options for the tornado HTTPServer. See the tornado docs for
 #  details.
 #c.NotebookApp.ssl_options = {}
-
-## Supply overrides for terminado. Currently only supports "shell_command".
-#c.NotebookApp.terminado_settings = {}
-
-## Set to False to disable terminals.
-#  
-#  This does *not* make the notebook server more secure by itself. Anything the
-#  user can in a terminal, they can also do in a notebook.
-#  
-#  Terminals may also be automatically disabled if the terminado package is not
-#  available.
-#c.NotebookApp.terminals_enabled = True
-
-## Token used for authenticating first-time connections to the server.
-#  
-#  When no password is enabled, the default is to generate a new, random token.
-#  
-#  Setting to an empty string disables authentication altogether, which is NOT
-#  RECOMMENDED.
-#c.NotebookApp.token = '<generated>'
 
 ## Supply overrides for the tornado.web.Application that the Jupyter notebook
 #  uses.
@@ -353,44 +247,8 @@
 #  SSL
 #c.NotebookApp.trust_xheaders = False
 
-## Disable launching browser by redirect file
-#  
-#  For versions of notebook > 5.7.2, a security feature measure was added that
-#  prevented the authentication token used to launch the browser from being
-#  visible. This feature makes it difficult for other users on a multi-user
-#  system from running code in your Jupyter session as you.
-#  
-#  However, some environments (like Windows Subsystem for Linux (WSL) and
-#  Chromebooks), launching a browser using a redirect file can lead the browser
-#  failing to load.  This is because of the difference in file structures/paths
-#  between the runtime and  the browser.
-#  
-#  Disabling this setting to False will disable this behavior, allowing the
-#  browser  to launch by using a URL and visible token (as before).
-#c.NotebookApp.use_redirect_file = True
-
 ## DEPRECATED, use tornado_settings
 #c.NotebookApp.webapp_settings = {}
-
-## Specify Where to open the notebook on startup. This is the `new` argument
-#  passed to the standard library method `webbrowser.open`. The behaviour is not
-#  guaranteed, but depends on browser support. Valid values are:
-#  
-#   - 2 opens a new tab,
-#   - 1 opens a new window,
-#   - 0 opens in an existing window.
-#  
-#  See the `webbrowser.open` documentation for details.
-#c.NotebookApp.webbrowser_open_new = 2
-
-## Set the tornado compression options for websocket connections.
-#  
-#  This value will be returned from
-#  :meth:`WebSocketHandler.get_compression_options`. None (default) will disable
-#  compression. A dict (even an empty one) will enable compression.
-#  
-#  See the tornado docs for WebSocketHandler.get_compression_options for details.
-#c.NotebookApp.websocket_compression_options = None
 
 ## The base URL for websockets, if it differs from the HTTP server (hint: it
 #  almost certainly doesn't).
@@ -454,9 +312,6 @@
 #  kernel does not receive the option --debug if it given on the Jupyter command
 #  line.
 #c.KernelManager.kernel_cmd = []
-
-## Time to wait for a kernel to terminate before killing it, in seconds.
-#c.KernelManager.shutdown_wait_time = 5.0
 
 #------------------------------------------------------------------------------
 # Session(Configurable) configuration
@@ -570,65 +425,8 @@
 
 ## A KernelManager that handles notebook mapping and HTTP error handling
 
-## White list of allowed kernel message types. When the list is empty, all
-#  message types are allowed.
-#c.MappingKernelManager.allowed_message_types = []
-
-## Whether messages from kernels whose frontends have disconnected should be
-#  buffered in-memory.
-#  
-#  When True (default), messages are buffered and replayed on reconnect, avoiding
-#  lost messages due to interrupted connectivity.
-#  
-#  Disable if long-running kernels will produce too much output while no
-#  frontends are connected.
-#c.MappingKernelManager.buffer_offline_messages = True
-
-## Whether to consider culling kernels which are busy. Only effective if
-#  cull_idle_timeout > 0.
-#c.MappingKernelManager.cull_busy = False
-
-## Whether to consider culling kernels which have one or more connections. Only
-#  effective if cull_idle_timeout > 0.
-#c.MappingKernelManager.cull_connected = False
-
-## Timeout (in seconds) after which a kernel is considered idle and ready to be
-#  culled. Values of 0 or lower disable culling. Very short timeouts may result
-#  in kernels being culled for users with poor network connections.
-#c.MappingKernelManager.cull_idle_timeout = 0
-
-## The interval (in seconds) on which to check for idle kernels exceeding the
-#  cull timeout value.
-#c.MappingKernelManager.cull_interval = 300
-
-## Timeout for giving up on a kernel (in seconds).
-#  
-#  On starting and restarting kernels, we check whether the kernel is running and
-#  responsive by sending kernel_info_requests. This sets the timeout in seconds
-#  for how long the kernel can take before being presumed dead. This affects the
-#  MappingKernelManager (which handles kernel restarts) and the
-#  ZMQChannelsHandler (which handles the startup).
-#c.MappingKernelManager.kernel_info_timeout = 60
-
 ## 
 #c.MappingKernelManager.root_dir = ''
-
-#------------------------------------------------------------------------------
-# KernelSpecManager(LoggingConfigurable) configuration
-#------------------------------------------------------------------------------
-
-## If there is no Python kernelspec registered and the IPython kernel is
-#  available, ensure it is added to the spec list.
-#c.KernelSpecManager.ensure_native_kernel = True
-
-## The kernel spec class.  This is configurable to allow subclassing of the
-#  KernelSpecManager for customized behavior.
-#c.KernelSpecManager.kernel_spec_class = 'jupyter_client.kernelspec.KernelSpec'
-
-## Whitelist of allowed kernel names.
-#  
-#  By default, all installed kernels are allowed.
-#c.KernelSpecManager.whitelist = set()
 
 #------------------------------------------------------------------------------
 # ContentsManager(LoggingConfigurable) configuration
@@ -648,9 +446,6 @@
 #  - if unspecified, path defaults to '',
 #    indicating the root path.
 
-## Allow access to hidden files
-#c.ContentsManager.allow_hidden = False
-
 ## 
 #c.ContentsManager.checkpoints = None
 
@@ -659,23 +454,6 @@
 
 ## 
 #c.ContentsManager.checkpoints_kwargs = {}
-
-## handler class to use when serving raw file requests.
-#  
-#  Default is a fallback that talks to the ContentsManager API, which may be
-#  inefficient, especially for large files.
-#  
-#  Local files-based ContentsManagers can use a StaticFileHandler subclass, which
-#  will be much more efficient.
-#  
-#  Access to these files should be Authenticated.
-#c.ContentsManager.files_handler_class = 'notebook.files.handlers.FilesHandler'
-
-## Extra parameters to pass to files_handler_class.
-#  
-#  For example, StaticFileHandlers generally expect a `path` argument specifying
-#  the root directory from which to serve files.
-#c.ContentsManager.files_handler_params = {}
 
 ## Glob patterns to hide in file and directory listings.
 #c.ContentsManager.hide_globs = ['__pycache__', '*.pyc', '*.pyo', '.DS_Store', '*.so', '*.dylib', '*~']
@@ -696,9 +474,6 @@
 #  - path: the API path of the save destination
 #  - contents_manager: this ContentsManager instance
 #c.ContentsManager.pre_save_hook = None
-
-## 
-#c.ContentsManager.root_dir = '/'
 
 ## The base name used when creating untitled directories.
 #c.ContentsManager.untitled_directory = 'Untitled Folder'
@@ -728,8 +503,8 @@
 #  log : logging.Logger
 
 ## By default notebooks are saved on disk on a temporary file and then if
-#  successfully written, it replaces the old ones. This procedure, namely
-#  'atomic_writing', causes some bugs on file system without operation order
+#  succefully written, it replaces the old ones. This procedure, namely
+#  'atomic_writing', causes some bugs on file system whitout operation order
 #  enforcement (like some networked fs). If set to False, the new notebook is
 #  written directly on the old one which could fail (eg: full filesystem or quota
 #  )
@@ -738,11 +513,6 @@
 #------------------------------------------------------------------------------
 # FileContentsManager(FileManagerMixin,ContentsManager) configuration
 #------------------------------------------------------------------------------
-
-## If True (default), deleting files will send them to the platform's
-#  trash/recycle bin, where they can be recovered. If False, deleting files
-#  really deletes them.
-#c.FileContentsManager.delete_to_trash = True
 
 ## Python callable or importstring thereof
 #  
@@ -774,6 +544,10 @@
 ## The hashing algorithm used to sign notebooks.
 #c.NotebookNotary.algorithm = 'sha256'
 
+## The number of notebook signatures to cache. When the number of signatures
+#  exceeds this value, the oldest 25% of signatures will be culled.
+#c.NotebookNotary.cache_size = 65535
+
 ## The sqlite file in which to store notebook signatures. By default, this will
 #  be in your Jupyter data directory. You can set it to ':memory:' to disable
 #  sqlite writing to the filesystem.
@@ -785,92 +559,19 @@
 ## The file where the secret key is stored.
 #c.NotebookNotary.secret_file = ''
 
-## A callable returning the storage backend for notebook signatures. The default
-#  uses an SQLite database.
-#c.NotebookNotary.store_factory = traitlets.Undefined
-
 #------------------------------------------------------------------------------
-# GatewayKernelManager(MappingKernelManager) configuration
+# KernelSpecManager(LoggingConfigurable) configuration
 #------------------------------------------------------------------------------
 
-## Kernel manager that supports remote kernels hosted by Jupyter Kernel or
-#  Enterprise Gateway.
+## If there is no Python kernelspec registered and the IPython kernel is
+#  available, ensure it is added to the spec list.
+#c.KernelSpecManager.ensure_native_kernel = True
 
-#------------------------------------------------------------------------------
-# GatewayKernelSpecManager(KernelSpecManager) configuration
-#------------------------------------------------------------------------------
+## The kernel spec class.  This is configurable to allow subclassing of the
+#  KernelSpecManager for customized behavior.
+#c.KernelSpecManager.kernel_spec_class = 'jupyter_client.kernelspec.KernelSpec'
 
-#------------------------------------------------------------------------------
-# GatewayClient(SingletonConfigurable) configuration
-#------------------------------------------------------------------------------
-
-## This class manages the configuration.  It's its own singleton class so that we
-#  can share these values across all objects.  It also contains some helper methods
-#   to build request arguments out of the various config options.
-
-## The authorization token used in the HTTP headers.  (JUPYTER_GATEWAY_AUTH_TOKEN
-#  env var)
-#c.GatewayClient.auth_token = None
-
-## The filename of CA certificates or None to use defaults.
-#  (JUPYTER_GATEWAY_CA_CERTS env var)
-#c.GatewayClient.ca_certs = None
-
-## The filename for client SSL certificate, if any.  (JUPYTER_GATEWAY_CLIENT_CERT
-#  env var)
-#c.GatewayClient.client_cert = None
-
-## The filename for client SSL key, if any.  (JUPYTER_GATEWAY_CLIENT_KEY env var)
-#c.GatewayClient.client_key = None
-
-## The time allowed for HTTP connection establishment with the Gateway server.
-#  (JUPYTER_GATEWAY_CONNECT_TIMEOUT env var)
-#c.GatewayClient.connect_timeout = 60.0
-
-## A comma-separated list of environment variable names that will be included,
-#  along with their values, in the kernel startup request.  The corresponding
-#  `env_whitelist` configuration value must also be set on the Gateway server -
-#  since that configuration value indicates which environmental values to make
-#  available to the kernel. (JUPYTER_GATEWAY_ENV_WHITELIST env var)
-#c.GatewayClient.env_whitelist = ''
-
-## Additional HTTP headers to pass on the request.  This value will be converted
-#  to a dict. (JUPYTER_GATEWAY_HEADERS env var)
-#c.GatewayClient.headers = '{}'
-
-## The password for HTTP authentication.  (JUPYTER_GATEWAY_HTTP_PWD env var)
-#c.GatewayClient.http_pwd = None
-
-## The username for HTTP authentication. (JUPYTER_GATEWAY_HTTP_USER env var)
-#c.GatewayClient.http_user = None
-
-## The gateway API endpoint for accessing kernel resources
-#  (JUPYTER_GATEWAY_KERNELS_ENDPOINT env var)
-#c.GatewayClient.kernels_endpoint = '/api/kernels'
-
-## The gateway API endpoint for accessing kernelspecs
-#  (JUPYTER_GATEWAY_KERNELSPECS_ENDPOINT env var)
-#c.GatewayClient.kernelspecs_endpoint = '/api/kernelspecs'
-
-## The gateway endpoint for accessing kernelspecs resources
-#  (JUPYTER_GATEWAY_KERNELSPECS_RESOURCE_ENDPOINT env var)
-#c.GatewayClient.kernelspecs_resource_endpoint = '/kernelspecs'
-
-## The time allowed for HTTP request completion. (JUPYTER_GATEWAY_REQUEST_TIMEOUT
-#  env var)
-#c.GatewayClient.request_timeout = 60.0
-
-## The url of the Kernel or Enterprise Gateway server where kernel specifications
-#  are defined and kernel management takes place. If defined, this Notebook
-#  server acts as a proxy for all kernel management and kernel specification
-#  retrieval.  (JUPYTER_GATEWAY_URL env var)
-#c.GatewayClient.url = None
-
-## For HTTPS requests, determines if server's certificate should be validated or
-#  not. (JUPYTER_GATEWAY_VALIDATE_CERT env var)
-#c.GatewayClient.validate_cert = True
-
-## The websocket url of the Kernel or Enterprise Gateway server.  If not
-#  provided, this value will correspond to the value of the Gateway url with 'ws'
-#  in place of 'http'.  (JUPYTER_GATEWAY_WS_URL env var)
-#c.GatewayClient.ws_url = None
+## Whitelist of allowed kernel names.
+#  
+#  By default, all installed kernels are allowed.
+#c.KernelSpecManager.whitelist = set()

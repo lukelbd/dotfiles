@@ -1,13 +1,11 @@
 # Configuration file for jupyter-console.
-# c = get_config()
-#------------------------------------------------------------------------------
-# Custom stuff
-#------------------------------------------------------------------------------
-# c.IPKernelApp.extensions = ['autoreload']
-# c.TerminalIPythonApp.dispalay_banner = False
-# c.InteractiveShellApp.extensions = ['autoreload']
-# c.InteractiveShellApp.exec_lines = ['%autoreload 2']
-# c.InteractiveShellApp.exec_lines.append('print("Warning: disable autoreload in ipython_config.py to improve performance.")')
+#-----------------------------------------------------------------------------#
+# Modifications
+#-----------------------------------------------------------------------------#
+# Required for vim ipython
+c.ZMQTerminalInteractiveShell.include_other_output = True
+# Disable banner
+c.ZMQTerminalInteractiveShell.banner = ''
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration
@@ -112,13 +110,16 @@
 
 ## Callable object called via 'callable' image handler with one argument, `data`,
 #  which is `msg["content"]["data"]` where `msg` is the message from iopub
-#  channel.  For exmaple, you can find base64 encoded PNG data as
+#  channel.  For example, you can find base64 encoded PNG data as
 #  `data['image/png']`. If your function can't handle the data supplied, it
 #  should return `False` to indicate this.
 #c.ZMQTerminalInteractiveShell.callable_image_handler = None
 
 ## Shortcut style to use at the prompt. 'vi' or 'emacs'.
 #c.ZMQTerminalInteractiveShell.editing_mode = 'emacs'
+
+## Highlight matching brackets.
+#c.ZMQTerminalInteractiveShell.highlight_matching_brackets = True
 
 ## The name of a Pygments style to use for syntax highlighting
 #c.ZMQTerminalInteractiveShell.highlighting_style = ''
@@ -170,6 +171,9 @@
 #  Only relevant if include_other_output is True.
 #c.ZMQTerminalInteractiveShell.other_output_prefix = '[remote] '
 
+## Use simple fallback prompt. Features may be limited.
+#c.ZMQTerminalInteractiveShell.simple_prompt = False
+
 ## Command to invoke an image viewer program when you are using 'stream' image
 #  handler.  This option is a list of string where the first element is the
 #  command itself and reminders are the options for the command.  Raw image data
@@ -182,6 +186,11 @@
 #  {file} and {format} in the string to represent the location of the generated
 #  image file and image format.
 #c.ZMQTerminalInteractiveShell.tempfile_image_handler = []
+
+## Use 24bit colors instead of 256 colors in prompt highlighting. If your
+#  terminal supports true color, the following command should print 'TRUECOLOR'
+#  in orange: printf "\x1b[38;2;255;100;0mTRUECOLOR\x1b[0m\n"
+#c.ZMQTerminalInteractiveShell.true_color = False
 
 ## Whether to use the kernel's is_complete message handling. If False, then the
 #  frontend will use its own is_complete handler.
@@ -208,6 +217,9 @@
 #  line.
 #c.KernelManager.kernel_cmd = []
 
+## Time to wait for a kernel to terminate before killing it, in seconds.
+#c.KernelManager.shutdown_wait_time = 5.0
+
 #------------------------------------------------------------------------------
 # KernelRestarter(LoggingConfigurable) configuration
 #------------------------------------------------------------------------------
@@ -218,6 +230,9 @@
 #  
 #  Has to be set explicitly, because there will be *a lot* of output.
 #c.KernelRestarter.debug = False
+
+## Whether to choose new random ports when restarting before the kernel is alive.
+#c.KernelRestarter.random_ports_until_alive = True
 
 ## The number of consecutive autorestarts before the kernel is presumed dead.
 #c.KernelRestarter.restart_limit = 5
