@@ -12,7 +12,11 @@ raise() {
 }
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
 mb_folder="$HOME/playlist"
-sd_folder="$HOME/Phone/Music"  # simple-mtpfs
+if [ -d "$HOME/Phone/Card/Playlist" ]; then
+  sd_folder="$HOME/Phone/Card/Playlist"  # old phone
+else
+  sd_folder="$HOME/Phone/Music"  # new phone
+fi
 sync_modified=true  # include files?
 [ -d "$sd_folder" ] || raise "Phone must be mounted with simple-mtpfs."
 echo "SD playlist: $sd_folder"
@@ -23,16 +27,17 @@ copied=false  # copied anything?
 updated=false # updated anything?
 deleted=false # deleted anything?
 $_macos && date=gdate || date=date
-for path in "$mb_folder/"*.{mp3,m4a,m3u8}; do
+for path in "$mb_folder/"*.{m3u8,mp3,m4a}; do
   ! [ -r "$path" ] && continue # e.g. if glob failed
   file="${path##*/}"
   # Alphabetical order and fix carriage returns
   # See: https://unix.stackexchange.com/a/32059/112647
   # WARNING: Important to use normal sed here
+  # TODO: Make this work with GNU tools!
   if [[ "$file" =~ '.m3u8' ]]; then
-    m3u8=$(cat "$path" | tr '\r' '\n' | sed 's:.*/::g;1d' \
-      | tac | sed '$!N;s/\n/#/' | sort -r --ignore-case \
-      | gsed 's:\#\#:\n\#:g' | tac)
+    m3u8=$(/bin/cat "$path" | /usr/bin/tr '\r' '\n' | /usr/bin/sed 's:.*/::g;1d' \
+      | tac | /usr/bin/sed '$!N;s/\n/#/' | /usr/bin/sort -r --ignore-case \
+      | /usr/local/bin/gsed 's:\#\#:\n\#:g' | tac)
     printf "#EXTM3U\n$m3u8" >"$path"
   fi
   # Copy new files downloaded
