@@ -6,9 +6,10 @@ root/
 tags
 !.vim/doc/tags
 .vim/plugged
+.vim/black
 .DS_Store
-*tmp
 .nfs*
+tmp
 
 # Vim extras, binary spell files
 .vimsession

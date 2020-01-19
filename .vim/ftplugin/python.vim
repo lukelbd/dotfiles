@@ -7,7 +7,7 @@
 " Settings
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
 setlocal indentexpr=s:pyindent(v:lnum)  " new indent expression
-setlocal iskeyword-=.  " disable this
+setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python ftplugin syntax option
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 
@@ -23,7 +23,7 @@ function! s:kwtrans(mode) range
     let firstcol = 0
     let lastcol  = col('$') - 2  " col('$') is location of newline char, and strings are zero-indexed
   else
-    let firstcol = col("'<") - 1  "cause strings are zero-indexed
+    let firstcol = col("'<") - 1  " cause strings are zero-indexed
     let lastcol  = col("'>") - 1
   endif
   let fixed = []
@@ -35,20 +35,21 @@ function! s:kwtrans(mode) range
     let prefix = ''
     let suffix = ''
     if line == a:firstline && line == a:lastline
-      let prefix = (firstcol >= 1 ? string[:firstcol - 1] : '') " damn negative indexing makes this complicated
-      let suffix = string[lastcol+1:]
-      let string = string[firstcol:lastcol]
+      let prefix = (firstcol >= 1 ? string[:firstcol - 1] : '')  " damn negative indexing makes this complicated
+      let suffix = string[lastcol + 1:]
+      let string = string[firstcol : lastcol]
     elseif line == a:firstline
       let prefix = (firstcol >= 1 ? string[:firstcol - 1] : '')
       let string = string[firstcol:]
     elseif line == a:lastline
-      let suffix = string[lastcol+1:]
+      let suffix = string[lastcol + 1:]
       let string = string[:lastcol]
     endif
-    " Double check
-    if len(matchstr(string,':'))>0 && len(matchstr(string, '-'))>0
-      echom "Error: Ambiguous line." | return
+    if len(matchstr(string, ':')) > 0 && len(matchstr(string, '-')) > 0
+      echom 'Error: Ambiguous line.'
+      return
     endif
+
     " Next finally start matching shit
     " Turn colons into equals
     " echo 'line:' . a:firstline . '-' . a:lastline . ' col:' . firstcol . '-' . lastcol . ' string:' . string . ' prefix:' . prefix . ' suffix:' . suffix | sleep 2
@@ -63,6 +64,7 @@ function! s:kwtrans(mode) range
     endif
     call add(fixed, prefix . string . suffix)
   endfor
+
   " Replace lines with fixed text
   exe a:firstline . ',' . a:lastline . 'd'
   call append(a:firstline - 1, fixed)

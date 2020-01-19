@@ -435,6 +435,7 @@ Plug 'lilydjwg/colorizer'
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
+Plug 'psf/black'
 Plug 'tell-k/vim-autopep8'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
@@ -598,6 +599,10 @@ if PlugActive('vim-idetools') || &rtp =~# 'vim-idetools'
     au BufEnter * nmap <buffer> ]] ]T
   augroup END
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
+endif
+if PlugActive('black')
+  let g:black_linelength = 79
+  let g:black_skip_string_normalization = 1
 endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
@@ -1017,7 +1022,10 @@ if PlugActive('syntastic')
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
   let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
-  let g:syntastic_python_flake8_post_args='--ignore=W503,E402'  " allow imports after statements
+  " Ignore list:
+  " * Allow imports after statements (E402)
+  " * Allow multiple spaces before operators for alignment (E211)
+  let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221'
   let g:syntastic_sh_shellcheck_args='-e SC2059,SC2148'
   " Syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
@@ -1188,6 +1196,7 @@ augroup END
 command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
 " Opening file in current directory and some input directory
 nnoremap <C-o> :Open 
+nnoremap <C-y> :Open .<CR>
 nnoremap <silent> <C-p> :Files<CR>
 nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 " Tab selection and movement
@@ -1268,6 +1277,7 @@ noremap <expr> <silent> \c ''
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
 noremap <silent> \s :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
+noremap <silent> \S :s/\(\S\)\@<=\(^ \+\)\@<! //g \| noh<CR>:echom "Removed whitespace."<CR>
 noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
 " Delete empty lines
 " Replace consecutive newlines with single newline
@@ -1414,7 +1424,9 @@ endif
 " to change .*Comment to .*Comment.* since Julia has CommentL name
 function! s:keywordsetup()
    syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
+   syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
    hi link customURL Underlined
+   hi link markdownHeader Special
    if &ft !=# 'vim'
      syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments
      syn match Special '^\%1l#!.*$' " shebangs
@@ -1429,16 +1441,20 @@ augroup syntax_overrides
   au InsertEnter * highlight StatusLine ctermbg=Black ctermbg=White ctermfg=Black cterm=NONE
   au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
 augroup END
+
 " Filetype specific commands
 " highlight link htmlNoSpell
 highlight link pythonImportedObject Identifier
+
 " Popup menu
 highlight Pmenu     ctermbg=NONE    ctermfg=White cterm=NONE
 highlight PmenuSel  ctermbg=Magenta ctermfg=Black cterm=NONE
 highlight PmenuSbar ctermbg=NONE    ctermfg=Black cterm=NONE
+
 " Magenta is uncommon color, so use it for sneak and highlighting
 highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
 highlight Search ctermbg=Magenta ctermfg=NONE
+
 " Fundamental changes, move control from LightColor to Color and DarkColor,
 " because ANSI has no control over light ones it seems.
 highlight Type        ctermbg=NONE ctermfg=DarkGreen
@@ -1446,33 +1462,42 @@ highlight Constant    ctermbg=NONE ctermfg=Red
 highlight Special     ctermbg=NONE ctermfg=DarkRed
 highlight PreProc     ctermbg=NONE ctermfg=DarkCyan
 highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
+
 " Features that only work in iTerm with minimum contrast setting
 " highlight LineNR       cterm=NONE ctermbg=NONE ctermfg=Gray
 " highlight Comment    ctermfg=Gray cterm=NONE
 highlight LineNR     cterm=NONE    ctermbg=NONE  ctermfg=Black
 highlight Comment    ctermfg=Black cterm=NONE
 highlight StatusLine ctermbg=Black ctermfg=White cterm=NONE
+
 " Special characters
 highlight NonText    ctermfg=Black cterm=NONE
 highlight SpecialKey ctermfg=Black cterm=NONE
+
 " Matching parentheses
 highlight Todo       ctermfg=NONE  ctermbg=Red
 highlight MatchParen ctermfg=NONE ctermbg=Blue
+
 " Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
 " background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
 " gray, and 'ANSI black bold' to black). Note 'lightgray' is just normal white
 highlight CursorLine   cterm=NONE ctermbg=Black
 highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
+
 " Column stuff, color 80th column and after 120
 highlight ColorColumn  cterm=NONE ctermbg=Gray
 highlight SignColumn  guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
+
 " Make sure terminal background is same as main background
 highlight Terminal ctermbg=NONE ctermfg=NONE
+
 " Make Conceal highlighting group transparent so when you set the conceallevel
 " to 0, concealed elements revert to their original highlighting.
 highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
+
 " Transparent dummy group used to add @Nospell
 highlight Dummy ctermbg=NONE ctermfg=NONE
+
 " Helper commands defined in utils
 command! Group call utils#current_group()
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
