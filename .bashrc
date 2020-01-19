@@ -401,6 +401,8 @@ _setup_bindings() {
   bind -r '"\C-s"' # to enable C-s in Vim (normally caught by terminal as start/stop signal)
   bind 'set keyseq-timeout 50'               # see: https://unix.stackexchange.com/a/318497/112647
   bind 'set show-mode-in-prompt on'          # show mode
+  # set -o vi
+  bind 'set editing-mode vi'
   bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
   bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block cursor
   bind 'set disable-completion off'          # ensure on
