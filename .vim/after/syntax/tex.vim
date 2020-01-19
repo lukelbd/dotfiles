@@ -14,32 +14,36 @@
 " Custom syntax modifications
 "------------------------------------------------------------------------------"
 " Things recommended from :help tex-syntax
-" First, more lines for accuracy
-" syntax sync minlines=2000
+" First more lines for accuracy
 syntax sync minlines=500
+
 " Add math zones
 " The first arg is an identifying suffix -- must be between K and U
 " The last arg is whether environment has a 'starred' form, i.e. \begin{align*}
 " Explictly add these cause why not
-call TexNewMathZone("M","equation",1)
-call TexNewMathZone("N","align",1)
+call TexNewMathZone("M", "equation", 1)
+call TexNewMathZone("N", "align", 1)
+
 " Disable spellcheck within *yellow-highlighted curly brace commands*, but does
 " *not* disable spellcheck within environments like textbf and naked braces {}
 " Just copied the :SyntaxFile line, but removed 'transparent' flag
-syn region texMatcherNM matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]" end="}"
-    \ contains=@texMatchNMGroup,texError,@NoSpell " this is exact copy of :SyntaxFile line, but removes 'transparent' flag
+syn region texMatcherNM matchgroup=Delimiter
+  \ start="{" skip="\\\\\|\\[{}]" end="}"
+  \ contains=@texMatchNMGroup,texError,@NoSpell " this is exact copy of :SyntaxFile line, but removes 'transparent' flag
+
 " Conceal backslash commands; only matchadd works for some reason
-" * WARNING: This will make highlight searches really weird if you make the 'priority' (arg 3)
-"   higher than the :hlsearch priority (0); see manual. Default is 10.
+" Warning: This will make highlight searches really weird if you make the 'priority' (arg 3)
+" higher than the :hlsearch priority (0); see manual. Default is 10.
 " * ID of -1 (arg 4) means 'assign no id in particular; whatever is available'
 " * The regex ignores comments (preceding % sign) and newline command \\
-"   Also ignores the situation \command1\command2, which would otherwise
-"   be unreadable and is common in macros
+" Also ignores the situation \command1\command2, which would otherwise
+" be unreadable and is common in macros
 try
   call matchadd('Conceal', '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
 catch /.*/
-  " do nothing; older vim versions only accept 4 matchadd args, so concealing backslashes as above is impossible
+  " older vim versions only accept 4 matchadd args, so concealing backslashes as above is impossible
 endtry
+
 " For some reason a syn match command fails
 " * See: https://vi.stackexchange.com/q/5696/8084
 " * Appears that wherever the backslash is concealed, this one 'overwrites' existing
@@ -47,7 +51,7 @@ endtry
 " syn match Statement '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
 
 "------------------------------------------------------------------------------"
-" Original plugin found below
+" Original plugin
 "------------------------------------------------------------------------------"
 " Perform spell checking when there is no syntax
 "- This will enable spell checking e.g. in toplevel of included files

@@ -331,13 +331,8 @@ function! utils#help_setup() abort
   wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
   vertical resize 80 " always certain size
   nnoremap <buffer> <CR> <C-]>
-  if g:has_nowait
-    nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
-    nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
-  else
-    nnoremap <nowait> <buffer> <silent> [[ :<C-u>pop<CR>
-    nnoremap <nowait> <buffer> <silent> ]] :<C-u>tag<CR>
-  endif
+  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
 endfunction
 
 " For command windows, make sure local maps work

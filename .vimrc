@@ -11,16 +11,13 @@
 "     F6: 1b 5b 31 37 7e (Ctrl-;)
 " Also use Karabiner 'map Ctrl-j/k/h/l to arrow keys', so be aware that if
 " you map those keys in Vim, should also map arrows.
+" Note when installing with anaconda, you may need to run
+" conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
 " IMPORTANT STUFF and SETTINGS
-" Note g:has_nowait is needed in autoload/utils.vim
 let &t_Co=256
 exe 'runtime autoload/repeat.vim'
-let g:has_nowait = (v:version >= 704 || v:version == 703 && has('patch1261'))
-let s:has_signs = has('signs') " for git gutter and syntastic maybe
-let s:has_ctags = str2nr(system('type ctags &>/dev/null && echo 1 || echo 0'))
-let s:has_repeat = exists('*repeat#set') " start checks for function existence
-if ! s:has_repeat
+if ! exists('*repeat#set')
   echohl WarningMsg
   echom 'Warning: vim-repeat unavailable, some features will be unavailable.'
   echohl None
@@ -57,13 +54,14 @@ set softtabstop=2
 set autoindent " indents new lines
 set backspace=indent,eol,start " backspace by indent - handy
 set nostartofline " when switching buffers, doesn't move to start of line (weird default)
-set nolazyredraw  " maybe slower, but looks super cool and pretty and stuff
+set lazyredraw
 set virtualedit=  " prevent cursor from going where no actual character
 set noerrorbells visualbell t_vb= " enable internal bell, t_vb= means nothing is shown on the window
 set esckeys " make sure enabled, allows keycodes
 set notimeout timeoutlen=0 " wait forever when doing multi-key *mappings*
 set ttimeout ttimeoutlen=0 " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
-set complete-=k complete+=k " add dictionary search, as per dictionary option
+set complete+=k " enable dictionary search through 'dcitionary' setting
+set completeopt-=preview " no popup window, for now
 set splitright " splitting behavior
 set splitbelow
 set nospell spelllang=en_us spellcapcheck= " spellcheck off by default
@@ -360,33 +358,33 @@ noremap gc /^[<>=\|]\{2,}<CR>
 
 " INSERT and COMMAND WINDOW MAPS
 " Count number of tabs in popup menu so our position is always known
-augroup popuphelper
+augroup popup_opts
   au!
   au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
 function! s:tab_increase() " use this inside <expr> remaps
-  let b:menupos += 1 | return ''
+  let b:menupos += 1 | echom b:menupos | return ''
 endfunction
 function! s:tab_decrease()
-  let b:menupos -= 1 | return ''
+  let b:menupos -= 1 | echom b:menupos | return ''
 endfunction
 function! s:tab_reset()
   let b:menupos = 0 | return ''
 endfunction
-" To use abbreviations you must trigger manually with <C-]> (see :help i_Ctrl-])
-" First keystrokes that close popup menu
-inoremap <expr> <Backspace> pumvisible() ? <sid>tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
-inoremap <expr> <Space> pumvisible() ? <sid>tab_reset() . "\<C-]>\<Space>" : "\<C-]>\<Space>"
 " Enter means 'accept' only when we have explicitly scrolled down to something
 " Tab always means 'accept' and choose default menu item if necessary
-inoremap <expr> <CR> pumvisible() ? b:menupos ? "\<C-y>" . <sid>tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
+inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . <sid>tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
 inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . <sid>tab_reset() : "\<C-n>\<C-y>" . <sid>tab_reset() : "\<C-]>\<Tab>"
-" Incrementing items in menu
-inoremap <expr> <C-k> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
-inoremap <expr> <C-j> pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
-inoremap <expr> <Up> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
+" Certain keystrokes always close the popup menu
+inoremap <expr> <Backspace> pumvisible() ? <sid>tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
+inoremap <expr> <Space>     pumvisible() ? <sid>tab_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
+" Commands that increment items in the menu
+inoremap <expr> <C-k>  pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
+inoremap <expr> <C-j>  pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
+inoremap <expr> <Up>   pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
 inoremap <expr> <Down> pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
-inoremap <expr> <ScrollWheelUp> pumvisible() ? <sid>tab_decrease() . "\<C-p>" : ""
+" Disable scrolling in insert mode
+inoremap <expr> <ScrollWheelUp>   pumvisible() ? <sid>tab_decrease() . "\<C-p>" : ""
 inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tab_increase() . "\<C-n>" : ""
 " Special maps
 inoremap <silent> <expr> <Delete> utils#forward_delete()
@@ -394,12 +392,8 @@ cnoremap <expr> <F1> utils#wild_tab(0)
 cnoremap <expr> <F2> utils#wild_tab(1)
 
 " VIM-PLUG PLUGINS
-" Don't load some plugins if not compatible
-" Note: Plugin settings are defined in .vim/plugin/plugins.vim
-let s:compatible_tagbar = (s:has_ctags && (v:version >= 704 || v:version == 703 && has('patch1058')))
-let s:compatible_codi = (v:version >= 704 && has('job') && has('channel'))
-let s:compatible_workspace = (v:version >= 800) " needs Git 8.0, so not too useful
-let s:compatible_neocomplete = has('lua') && (expand('$HOSTNAME') !~# 'cheyenne\?')
+" Note: No longer worry about compatibility because we can install everything
+" from conda-forge, including vim and ctags.
 call plug#begin('~/.vim/plugged')
 
 " Custom plugins, try to load locally if possible!
@@ -450,6 +444,7 @@ Plug 'tpope/vim-liquid'
 
 " TeX utilities; better syntax highlighting, better indentation,
 " and some useful remaps. Also zotero integration.
+" For vimtex config see: https://github.com/lervag/vimtex/issues/204
 " Plug 'twsh/unite-bibtex' " python 3 version
 " Plug 'msprev/unite-bibtex' " python 2 version
 " Plug 'lervag/vimtex'
@@ -461,17 +456,16 @@ Plug 'rafaqz/citation.vim'
 Plug 'JuliaEditorSupport/julia-vim'
 
 " Python wrappers
-" Plug 'vim-scripts/Pydiction' " just changes completeopt and dictionary and stuff
-" Plug 'davidhalter/jedi-vim' " mostly autocomplete stuff
-" Plug 'cjrh/vim-conda'       " for changing anconda VIRTUALENV; probably don't need it
-" Plug 'klen/python-mode'     " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
-" Plug 'ivanov/vim-ipython'   " same problem as python-mode
+" Plug 'vim-scripts/Pydiction'  " just changes completeopt and dictionary and stuff
+" Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
+" Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
+" Plug 'ivanov/vim-ipython'  " dead
+" Plug 'jupyter-vim/jupyter-vim'  " wait until jupyter-vim#14 is merged
+Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 
 " Folding and matching
-if g:has_nowait
-  Plug 'tmhedberg/SimpylFold'
-endif
-Plug 'Konfekt/FastFold'
+" Plug 'tmhedberg/SimpylFold'
+" Plug 'Konfekt/FastFold'
 Plug 'andymass/vim-matchup'
 let g:loaded_matchparen = 1
 let g:matchup_matchparen_enabled = 1
@@ -481,9 +475,7 @@ let g:matchup_transmute_enabled = 0 " breaks latex!
 " Plug 'jistr/vim-nerdtree-tabs' "unnecessary
 " Plug 'vim-scripts/EnhancedJumps'
 Plug 'scrooloose/nerdtree'
-if s:compatible_tagbar
-  Plug 'majutsushi/tagbar'
-endif
+Plug 'majutsushi/tagbar'
 
 " Tabdrop fix for vim
 " For some reason only TabDropHere works but not TabDrop
@@ -494,33 +486,39 @@ Plug 'ohjames/tabdrop'
 Plug 'scrooloose/nerdcommenter'
 Plug 'scrooloose/syntastic'
 
-" Sessions and swap files and reloading
-" Mapped in my .bashrc vims to vim -S .vimsession and exiting vim saves the session there
-" Also vim-obsession more compatible with older versions
-" if s:compatible_workspace
-"   Plug 'thaerkh/vim-workspace'
-" endif
-" Plug 'gioele/vim-autoswap' "deals with swap files automatically; no longer use them so unnecessary
-" Plug 'xolox/vim-reload' "better to write my own simple plugin
-Plug 'tpope/vim-obsession'  " closes all folds
+" Sessions and swap files and reloading. Mapped in my .bashrc
+" to vim -S .vimsession and exiting vim saves the session there
+" Plug 'thaerkh/vim-workspace'
+" Plug 'gioele/vim-autoswap'  " deals with swap files automatically; no longer use them so unnecessary
+" Plug 'xolox/vim-reload'  " better to write my own simple plugin
+Plug 'tpope/vim-obsession'
 
 " Git wrappers and differencing tools
 Plug 'tpope/vim-fugitive'
-if s:has_signs
-  Plug 'airblade/vim-gitgutter'
-endif
+Plug 'airblade/vim-gitgutter'
 
 " Shell utilities, including Chmod and stuff
 Plug 'tpope/vim-eunuch'
 
 " Completion engines
-" Plug 'Valloric/YouCompleteMe' "broken
-" Plug 'ajh17/VimCompletesMe' "no auto-popup feature
-" Plug 'lifepillar/vim-mucomplete' "broken, seriously, cannot get it to work, don't bother! is slow anyway.
-" if s:compatible_neocomplete | Plug 'ervandew/supertab' | endif "haven't tried it
-if s:compatible_neocomplete
-  Plug 'shougo/neocomplete.vim'
-endif
+" Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
+" Plug 'lifepillar/vim-mucomplete'  " broken, seriously, cannot get it to work, don't bother! is slow anyway.
+" Plug 'Valloric/YouCompleteMe'  " broken
+" Plug 'ervandew/supertab'
+" Plug 'shougo/neocomplete.vim'  " needs lua!
+" let g:neocomplete#enable_at_startup = 1
+" Plug 'prabirshrestha/asyncomplete.vim'
+Plug 'Shougo/deoplete.nvim'  " requires pip install pynvim
+Plug 'roxma/nvim-yarp'  " required for deoplete
+Plug 'roxma/vim-hug-neovim-rpc'  " required for deoplete
+let g:deoplete#enable_at_startup = 1  " must be inside plug#begin block
+
+" Omnifunc sources, these are not provided by engines
+" See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
+Plug 'deoplete-plugins/deoplete-jedi'
+Plug 'Shougo/neco-syntax'
+Plug 'Shougo/neco-vim'
+Plug 'Shougo/echodoc.vim'
 
 " Delimiters
 Plug 'tpope/vim-surround'
@@ -535,9 +533,10 @@ Plug 'kana/vim-textobj-user'  " base
 Plug 'kana/vim-textobj-indent'  " match indentation, object is 'i'
 Plug 'kana/vim-textobj-entire'  " entire file, object is 'e'
 
-" Aligning things and stuff
-" Alternative to tabular is: https://github.com/tommcdo/vim-lion
-" But in defense tabular is *super* flexible
+" Aligning things and stuff, use Tabular because more powerful
+" even though the API is fugly AF and the docs suck
+" Plug 'tommcdo/vim-lion'
+" Plug 'junegunn/vim-easy-align'
 Plug 'godlygeek/tabular'
 
 " Better motions
@@ -549,9 +548,7 @@ Plug 'justinmk/vim-sneak'
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
-if s:compatible_codi
-  Plug 'metakirby5/codi.vim'
-endif
+Plug 'metakirby5/codi.vim'
 
 " This RST shit all failed
 " Just to simple == tables instead of fancy ++ tables
@@ -651,12 +648,12 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
   call s:add_delim('f', "\1function: \1(", ')')  " initial part is for prompt, needs double quotes
   nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
   nnoremap <silent> cs\ :call textools#change_delims('\\["'."']", '\\["'."']")<CR>
-  nnoremap <silent> dsf :call textools#delete_delims('\<\h\w*(', ')')<CR>
-  nnoremap <silent> csf :call textools#change_delims('\<\h\w*(', ')', input('function: ') . "(\r)")<CR>
+  nnoremap <silent> dsf :call textools#delete_delims('\<\K\k*(', ')')<CR>
+  nnoremap <silent> csf :call textools#change_delims('\<\K\k*(', ')', input('function: ') . "(\r)")<CR>
   nnoremap <silent> dsm :call textools#delete_delims('\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')')<CR>
   nnoremap <silent> csm :call textools#change_delims('\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')', input('method: ') . "(\r)")<CR>
-  nnoremap <silent> dsA :call textools#delete_delims('\<\h\w*\[', '\]')<CR>
-  nnoremap <silent> csA :call textools#change_delims('\<\h\w*\[', '\]', input('array: ') . "[\r]")<CR>
+  nnoremap <silent> dsA :call textools#delete_delims('\<\K\k*\[', '\]')<CR>
+  nnoremap <silent> csA :call textools#change_delims('\<\K\k*\[', '\]', input('array: ') . "[\r]")<CR>
   nnoremap <silent> dsq :call textools#delete_delims("‘", "’")<CR>
   nnoremap <silent> csq :call textools#change_delims("‘", "’")<CR>
   nnoremap <silent> dsQ :call textools#delete_delims("“", "”")<CR>
@@ -760,7 +757,7 @@ if PlugActive('vim-textobj-user')
     \     'select-i': 'iC',
     \   },
     \   'function': {
-    \     'pattern': ['\<\h\w*(', ')'],
+    \     'pattern': ['\<\K\k*(', ')'],
     \     'select-a': 'af',
     \     'select-i': 'if',
     \   },
@@ -770,7 +767,7 @@ if PlugActive('vim-textobj-user')
     \     'select-i': 'im',
     \   },
     \   'array': {
-    \     'pattern': ['\<\h\w*\[', '\]'],
+    \     'pattern': ['\<\K\k*\[', '\]'],
     \     'select-a': 'aA',
     \     'select-i': 'iA',
     \   },
@@ -877,41 +874,25 @@ if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
   vmap c= <Plug>AutoCalcReplaceWithSum
 endif
 
-" Neocomplete
-if PlugActive('neocomplete.vim') "just check if activated
-  " Enable omni completion for different filetypes
-  augroup neocomplete
-    au!
-    au FileType css setlocal omnifunc=csscomplete#CompleteCSS
-    au FileType html,markdown,rst setlocal omnifunc=htmlcomplete#CompleteTags
-    au FileType javascript setlocal omnifunc=javascriptcomplete#CompleteJS
-    au FileType python setlocal omnifunc=pythoncomplete#Complete
-    au FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
-  augroup END
-  " Settings
+" Neocomplete and deoplete
+if PlugActive('deoplete.nvim')
+  call deoplete#custom#option({
+  \ 'max_list': 15,
+  \ })
+endif
+if PlugActive('neocomplete.vim')
+  let g:neocomplete#max_list = 15
   let g:neocomplete#enable_at_startup = 1
-  let g:neocomplete#max_list = 10
   let g:neocomplete#enable_auto_select = 0
-  let g:neocomplete#auto_completion_start_length = 1
-  let g:neocomplete#sources#syntax#min_keyword_length = 2
-  let g:neocomplete#enable_smart_case = 0
-  let g:neocomplete#enable_camel_case = 0
-  let g:neocomplete#enable_ignore_case = 0
-  " Disable python omnicompletion, from the Q+A section
-  if ! exists('g:neocomplete#sources#omni#input_patterns')
-    let g:neocomplete#sources#omni#input_patterns = {}
-  endif
-  let g:neocomplete#sources#omni#input_patterns.python = ''
-  " Define dictionary and keyword options
-  if ! exists('g:neocomplete#keyword_patterns')
-    let g:neocomplete#keyword_patterns = {}
-  endif
-  let g:neocomplete#keyword_patterns['default'] = '\h\w*'
-  let g:neocomplete#sources#dictionary#dictionaries = {
-    \ 'default' : '',
-    \ 'vimshell' : $HOME . '/.vimshell_hist',
-    \ 'scheme' : $HOME . '/.gosh_completions'
-    \ }
+endif
+
+" Jedi vim
+if PlugActive('jedi-vim')
+  let g:jedi#completions_enabled = 0
+  let g:jedi#auto_vim_configuration = 0
+  let g:jedi#completions_command = ''
+  let g:jedi#goto_command = '<CR>'
+  let g:jedi#show_documentation = '<Leader>p'
 endif
 
 " NERDCommenter
@@ -1004,8 +985,8 @@ if PlugActive('syntastic')
   command! SyntasticCheckers call syntastic#syntastic_checkers(1)
   nnoremap <silent> <Leader>x :update \| call syntastic#syntastic_enable()<CR>
   nnoremap <silent> <Leader>X :let b:syntastic_on = 0 \| SyntasticReset<CR>
-  nnoremap <silent> ]x :Lnext<CR>
   nnoremap <silent> [x :Lprev<CR>
+  nnoremap <silent> ]x :Lnext<CR>
 
   " Choose syntax checkers, disable auto checking
   " flake8 pep8 pycodestyle pyflakes pylint python
@@ -1041,82 +1022,70 @@ if PlugActive('syntastic')
 endif
 
 " Tabular
-" By default, :Tabularize command provided *without range* will select the
-" contiguous lines that contain specified delimiter; so this function only makes
-" sense when applied for a visual range! So we don't need to worry about using Tabularize's
-" automatic range selection/implementing it in this special command
+" NOTE: Common approach below is to match the space 'following' the actual
+" delimiter. Useful where we do not want to put delimiter on separate column.
 if PlugActive('tabular')
-  " Command
-  " * Note odd concept (see :help args) that -nargs=1 will pass subsequent text, including
-  "   whitespace, as single argument, but -nargs=*, et cetera, will aceept multiple arguments delimited by whitespace
-  " * Be careful -- make sure to pass <args> in singly quoted string!
+  " Custom command, ignores lines in the selection that do not match delimiter
+  " This is not necessary for invocations without a range
   command! -range -nargs=1 Table <line1>,<line2>call tabularize#smart_table(<q-args>)
+
   " Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
   nnoremap <silent> <expr> \<Space> ':silent! Tabularize /' . input('Alignment regex: ') . '/l1c1<CR>'
   vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /" . input('Alignment regex: ') . '/l1c1<CR>'
-  " By commas, suitable for diag_table; does not ignore comment characters
+
+  " Commas, suitable for diag_table
   nnoremap <expr> \, ':Tabularize /,\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> \, ':Table      /,\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
-  " Dictionary, colon on left
+
+  " Dictionary, colon on left or right
   nnoremap <expr> \d ':Tabularize /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
   vnoremap <expr> \d ':Table      /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
-  nnoremap <expr> \d ':Tabularize /:\zs/l0c1<CR>'
-  vnoremap <expr> \d ':Table      /:\zs/l0c1<CR>'
-  " Dictionary, colon on right
-  nnoremap <expr> \D ':Tabularize /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
-  vnoremap <expr> \D ':Table      /\(' . RegexComment() . '.*\)\@<!\zs:/l0c1<CR>'
-  " Right-align by spaces, considering comments as one 'field'; other words are
-  " aligned by space; very hard to ignore comment-only lines here, because we specify text
-  " before the first 'field' (i.e. the entirety of non-matching lines) will get right-aligned
-  nnoremap <expr> \r ':Tabularize /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> \r ':Table      /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
-  " As above, but left align
-  " See :help non-greedy to see what braces do; it is like *, except instead of matching
-  " as many as possible, can match as few as possible in some range;
-  " with braces, a minus will mean non-greedy
+  nnoremap <expr> \D ':Tabularize /\(' . RegexComment() . '.*\)\@<!\zs:/l1c1<CR>'
+  vnoremap <expr> \D ':Table      /\(' . RegexComment() . '.*\)\@<!\zs:/l1c1<CR>'
+
+  " Left or right-align first field by spaces
   nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
   vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
+  nnoremap <expr> \r ':Tabularize /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
+  vnoremap <expr> \r ':Table      /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
+
   " Just align by spaces
-  " Check out documentation on \@<! atom; difference between that and \@! is that \@<!
-  " checks whether something doesn't match *anywhere before* what follows
-  " Also the \S has to come before the \(\) atom instead of after for some reason
-  nnoremap <expr> \\ ':Tabularize /\S\(' . RegexComment() . '.*\)\@<!\zs\ /l0<CR>'
-  vnoremap <expr> \\ ':Table      /\S\(' . RegexComment() . '.*\)\@<!\zs\ /l0<CR>'
+  " Note the :help Tabularize suggestion is *way* more complicated
+  nnoremap <expr> \\ ':Tabularize /\S\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
+  vnoremap <expr> \\ ':Table      /\S\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
+
   " Tables separted by | chars
-  nnoremap <expr> \\| ':Tabularize /\|/l1c1<CR>'
-  vnoremap <expr> \\| ':Table      /\|/l1c1<CR>'
+  nnoremap <expr> \\| ':Tabularize /\|/l1l1<CR>'
+  vnoremap <expr> \\| ':Table      /\|/l1l1<CR>'
+
+  " By comment character, ignoring comment-only lines
+  nnoremap <expr> \C ':Tabularize /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l2l1<CR>'
+  vnoremap <expr> \C ':Table      /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l2l1<CR>'
+
   " Chained && statements, common in bash
-  " Again param expansions are common so don't bother with comment detection this time
-  nnoremap <expr> \& ':Tabularize /&&/l1c1<CR>'
-  vnoremap <expr> \& ':Table      /&&/l1c1<CR>'
-  " Case/esac blocks
-  " The bottom pair don't align the double semicolons; just any comments that come after
-  " Note the extra 1 is necessary to add space before comment characters
-  " That regex following the RegexComment() is so tabularize will ignore the common
-  " parameter expansions ${param#*pattern} and ${param##*pattern}
-  " Common for this to come up: e.g. -x=*) x=${1#*=}
-  " asdfda*|asd*) asdfjioajoidfjaosi"* ;; "comment 1S asdfjio *asdfjio*
-  " a|asdfsa) asdjiofjoi""* ;; "coiasdfojiadfj asd asd asdf
-  " asdf) asdjijoiasdfjoi ;;
-  nnoremap <expr> \) ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
-  vnoremap <expr> \) ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1<CR>'
-  nnoremap <expr> \( ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
-  vnoremap <expr> \( ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l0<CR>'
-  " By comment character; ^ is start of line, . is any char, .* is any number, \zs
-  " is start match here (must escape backslash), then search for the comment
-  " nnoremap <expr> \C ':Tabularize /^.*\zs' . RegexComment() . '/l1<CR>'
-  " vnoremap <expr> \C ':Table      /^.*\zs' . RegexComment() . '/l1<CR>'
-  " By comment character, but ignore comment-only lines
-  nnoremap <expr> \C ':Tabularize /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l1<CR>'
-  vnoremap <expr> \C ':Table      /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l1<CR>'
+  nnoremap <expr> \& ':Tabularize /&&/l1l1<CR>'
+  vnoremap <expr> \& ':Table      /&&/l1l1<CR>'
+
+  " Case/esac blocks. The regex in square brackets ignores the parameter
+  " expansions ${param#*pattern} and ${param##*pattern} e.g. var=${1#*=}.
+  " Diagrams for \( maps and \) maps are as follows:
+  " <item-right-paren> <zero-width-delim> <content-semicolons> <zero-width-delim> <inline-comment>
+  " <item-right-paren> <zero-width-delim> <content>            <semicolons>       <inline-comment>
+  " asdfda*|asd*) asdfjioajoidfjaosi"* ;; " comment 1S asdfjio *asdfjio*
+  " a|asdfsa)     asdjiofjoi""* ;;        " coiasdfojiadfj asd asd asdf
+  nnoremap <expr> \( ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1l1<CR>'
+  vnoremap <expr> \( ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1l1<CR>'
+  nnoremap <expr> \) ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l1l0<CR>'
+  vnoremap <expr> \) ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l1l0<CR>'
+
   " Align by the first equals sign either keeping it to the left or not
   " The eaiser to type one (-=) puts equals signs in one column
   " This selects the *first* uncommented equals sign that does not belong to
   " a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
-  nnoremap <expr> \= ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  vnoremap <expr> \= ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1c1<CR>'
-  nnoremap <expr> \+ ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
-  vnoremap <expr> \+ ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0c1<CR>'
+  nnoremap <expr> \= ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1l1<CR>'
+  vnoremap <expr> \= ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1l1<CR>'
+  nnoremap <expr> \+ ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0l1<CR>'
+  vnoremap <expr> \+ ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0l1<CR>'
 endif
 
 " Tagbar settings
@@ -1172,6 +1141,7 @@ if PlugActive('tagbar')
 endif
 
 " Session saving
+" Obsession .vimsession triggers update on BufEnter and VimLeavePre
 if PlugActive('vim-obsession') "must manually preserve cursor position
   augroup session
     au!
@@ -1183,35 +1153,15 @@ if PlugActive('vim-obsession') "must manually preserve cursor position
   augroup END
   nnoremap <silent> <Leader>V :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
 endif
-" Related utils
+" Custom autosave plugin
 command! Refresh call utils#refresh()
 command! -nargs=? Autosave call utils#autosave_toggle(<args>)
 nnoremap <Leader>S :Autosave<CR>
+" Related utils
 nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :e<CR>
 nnoremap <silent> <Leader>R :redraw!<CR>
 
-" Vim workspace settings
-" Had issues with this! Do not remember what though
-if PlugActive('vim-workspace') "cursor positions automatically saved
-  let g:workspace_session_name = '.vimsession'
-  let g:workspace_session_disable_on_args = 1 " enter vim (without args) to load previous sessions
-  let g:workspace_persist_undo_history = 0    " don't need to save undo history
-  let g:workspace_autosave_untrailspaces = 0  " sometimes we WANT trailing spaces!
-  let g:workspace_autosave_ignore = ['help', 'qf', 'diff', 'man']
-endif
-
-" Vimtex settings
-" Turn off annoying warning; see: https://github.com/lervag/vimtex/issues/507
-" See here for viewer configuration: https://github.com/lervag/vimtex/issues/175
-if PlugActive('vimtex')
-  let g:vimtex_compiler_latexmk = {'callback' : 0}
-  let g:vimtex_mappings_enable = 0
-  let g:vimtex_view_view_method = 'skim'
-  let g:vimtex_view_general_viewer = '/Applications/Skim.app/Contents/SharedSupport/displayline'
-  let g:vimtex_view_general_options = '-r @line @pdf @tex'
-  let g:vimtex_fold_enabled = 0 " So large files can open more easily
-endif
 " BUFFER QUITTING/SAVING
 " Save and quit, also test whether the :q action closed the entire tab
 nnoremap <silent> <C-s> :update<CR>
@@ -1219,8 +1169,9 @@ nnoremap <silent> <C-a> :call utils#vim_close()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
-" WARNING: Do not map escape or cannot send iTerm-shortcuts with escape codes!
-" NOTE: Must change local directory to have term pop up in this dir: https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
+" Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
+" Note: Must change local directory to have term pop up in this dir:
+" https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
@@ -1383,7 +1334,7 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
       \ !filereadable(s:spellfile . '.spl') ||
       \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
       \ )
-        echom "Update spellfile!"
+        echom 'Update spellfile!'
         silent! exec 'mkspell! ' . fnameescape(s:spellfile)
     endif
 endfor
@@ -1419,17 +1370,11 @@ nnoremap <Leader>F <c-w>gf
 nnoremap <silent> <Leader>f :<C-u>call <sid>file_exists()<CR>
 
 " Now remap indentation commands. Why is this here? Just go with it.
-" * Meant to mimick visual-mode > and < behavior.
-" * Note the <Esc> is needed first because it cancels application of the number operator
-"   to what follows; we want to use that number operator for our own purposes
-if g:has_nowait
-  nnoremap <expr> <nowait> > (v:count) > 1 ? '<Esc>'.repeat('>>',v:count) : '>>'
-  nnoremap <expr> <nowait> < (v:count) > 1 ? '<Esc>'.repeat('<<',v:count) : '<<'
-  nnoremap <nowait> = ==
-else
-  nnoremap <expr> >> v:count ? '<Esc>'.repeat('>>',v:count) : '>>'
-  nnoremap <expr> << v:count ? '<Esc>'.repeat('<<',v:count) : '<<'
-endif
+" Note the <Esc> is needed first because it cancels application of the number operator
+" to what follows; we want to use that number operator for our own purposes
+nnoremap <expr> <nowait> > (v:count) > 1 ? '<Esc>'.repeat('>>', v:count) : '>>'
+nnoremap <expr> <nowait> < (v:count) > 1 ? '<Esc>'.repeat('<<', v:count) : '<<'
+nnoremap <nowait> = ==
 
 " Simpyl settings
 let g:SimpylFold_docstring_preview = 1
