@@ -6,8 +6,8 @@ root/
 tags
 !.vim/doc/tags
 .vim/plugged
+.vim/black
 .DS_Store
-*tmp
 .nfs*
 
 # Vim extras, binary spell files
