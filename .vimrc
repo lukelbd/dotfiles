@@ -592,8 +592,11 @@ call plug#end()
 
 " Mappings for vim-idetools command
 if PlugActive('vim-idetools') || &rtp =~# 'vim-idetools'
-  nmap [[ [t
-  nmap ]] ]t
+  augroup double_bracket
+    au!
+    au BufEnter * nmap <buffer> [[ [T
+    au BufEnter * nmap <buffer> ]] ]T
+  augroup END
   nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
 endif
 
