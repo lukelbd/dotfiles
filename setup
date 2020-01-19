@@ -1,31 +1,34 @@
 #!/bin/bash
+# shellcheck disable=2076
 ################################################################################
 # setup
-# Creates symlinks from $HOME to the committed files in $HOME/dotfiles
+# Create symlinks from $HOME to the committed files in $HOME/dotfiles
 ################################################################################
 # Files to be ignored
-exclude=(README.md setup cleanup .gitignore originals)
+exclude=(.gitignore README.md setup cleanup originals)
 
 # Setup
 root="$HOME"
 dotfiles="$HOME/dotfiles"
-cd $dotfiles
-[ $? -ne 0 ] && echo "Error: dotfiles repo should be cloned into \$HOME." && exit 1
-files=($(git ls-tree --name-only master | xargs)) # get list of committed files
+cd "$dotfiles" || {
+  echo "Error: dotfiles repo should be cloned into \$HOME."
+  exit 1
+}
+read -r -a files < <(git ls-tree --name-only master | xargs)
 storage="$dotfiles/originals"
-[ -d $storage ] || mkdir $storage
+[ -d "$storage" ] || mkdir "$storage"
 
 # Move existing stuff to storage, then create symlinks
-for file in ${files[@]}; do # iterate through files
-  if ! [[ " ${exclude[@]} " =~ " $file " ]]; then
+for file in "${files[@]}"; do  # iterate through files
+  if ! [[ " ${exclude[*]} " =~ " $file " ]]; then
     echo "Creating symlink to $file in $HOME/..."
-    if [ -L $root/$file ]; then
+    if [ -L "$root/$file" ]; then
       echo "Removing existing symlink $root/$file..."
-      rm $root/$file # remove if symlink
-    elif [ -r $root/$file ]; then
+      rm "$root/$file"  # remove if symlink
+    elif [ -r "$root/$file" ]; then
       echo "Moving existing $file file to $storage..."
-      mv $root/$file $storage/ # copy if not
+      mv "$root/$file" "$storage/"  # copy if not
     fi
-    ln -s $dotfiles/$file $root/$file
+    ln -s "$dotfiles/$file" "$root/$file"
   fi
 done
