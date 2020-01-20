@@ -2,14 +2,14 @@
 #-----------------------------------------------------------------------------#
 # Modifications
 #-----------------------------------------------------------------------------#
-# Required for vim ipython
-c.ZMQTerminalInteractiveShell.include_other_output = True
-
 # Better banner
-c.ZMQTerminalInteractiveShell.banner = 'Console {version} | {kernel_banner}'
+c.ZMQTerminalInteractiveShell.banner = 'Jupyter Console {version}\n{kernel_banner}'
 
 # Confirm exit only for console
 c.JupyterConsoleApp.confirm_exit = True
+
+# Required for vim ipython
+c.ZMQTerminalInteractiveShell.include_other_output = True
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration
