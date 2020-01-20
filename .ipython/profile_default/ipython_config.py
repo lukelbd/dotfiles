@@ -1,4 +1,36 @@
 # Configuration file for ipython.
+#-----------------------------------------------------------------------------#
+# Modifications
+#-----------------------------------------------------------------------------#
+# Succinct banner with programatic versions
+import sys
+import IPython
+c.TerminalIPythonApp.display_banner = True
+c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help\n'.format(
+    IPython.__version__,
+    sys.version.split()[0],
+)
+
+# Matplotlib backend
+# c.InteractiveShellApp.gui = 'qt'
+
+# Always pretty print
+c.PlainTextFormatter.pprint = True
+
+# Do not confirm exit
+c.TerminalInteractiveShell.confirm_exit = False
+
+# No terminal title
+c.TerminalInteractiveShell.term_title = False
+
+# Run lines
+c.InteractiveShellApp.exec_lines = [
+    '%load_ext autoreload',
+    '%autoreload 2',
+    'import os',
+    'import sys',
+    'import numpy as np',
+]
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration

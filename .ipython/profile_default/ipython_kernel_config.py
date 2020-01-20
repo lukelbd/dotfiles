@@ -1,4 +1,17 @@
 # Configuration file for ipython-kernel.
+# Kernel uses options in ipython_config.py but not vice versa
+# See: https://ipython.readthedocs.io/en/stable/config/options/kernel.html
+#-----------------------------------------------------------------------------#
+# Modifications
+#-----------------------------------------------------------------------------#
+# Copied from ipython_config.py but minus newline
+import sys
+import IPython
+c.TerminalIPythonApp.display_banner = True
+c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
+    sys.version.split()[0],
+    IPython.__version__,
+)
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration

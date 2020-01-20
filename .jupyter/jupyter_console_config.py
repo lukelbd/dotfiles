@@ -4,9 +4,11 @@
 #-----------------------------------------------------------------------------#
 # Required for vim ipython
 c.ZMQTerminalInteractiveShell.include_other_output = True
-# Disable banner
-c.ZMQTerminalInteractiveShell.banner = ''
-# Disable confirm exit
+
+# Better banner
+c.ZMQTerminalInteractiveShell.banner = 'Console {version} | {kernel_banner}'
+
+# Confirm exit only for console
 c.JupyterConsoleApp.confirm_exit = True
 
 #------------------------------------------------------------------------------
