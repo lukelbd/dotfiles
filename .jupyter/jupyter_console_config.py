@@ -6,6 +6,8 @@
 c.ZMQTerminalInteractiveShell.include_other_output = True
 # Disable banner
 c.ZMQTerminalInteractiveShell.banner = ''
+# Disable confirm exit
+c.JupyterConsoleApp.confirm_exit = True
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration
