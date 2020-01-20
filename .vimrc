@@ -461,7 +461,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
 " Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython'  " dead
-" Plug 'jupyter-vim/jupyter-vim'  " wait until jupyter-vim#14 is merged
+" Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 
 " Folding and matching
@@ -1187,7 +1187,8 @@ nnoremap <silent> <Leader>R :redraw!<CR>
 
 " BUFFER QUITTING/SAVING
 " Save and quit, also test whether the :q action closed the entire tab
-nnoremap <silent> <C-s> :update<CR>
+" SmartWrite is from tabline plugin
+nnoremap <silent> <C-s> :SmartWrite<CR>
 nnoremap <silent> <C-a> :call utils#vim_close()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#tab_close()<CR>
