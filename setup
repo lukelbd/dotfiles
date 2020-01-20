@@ -27,6 +27,10 @@ for file in "${files[@]}"; do  # iterate through files
       rm "$root/$file"  # remove if symlink
     elif [ -r "$root/$file" ]; then
       echo "Moving existing $file file to $storage..."
+      if [ -e "$storage/$file" ]; then
+        echo "Warning: Removing existing backup $storage/$file..."
+        rm -r "$storage/$file"
+      fi
       mv "$root/$file" "$storage/"  # copy if not
     fi
     ln -s "$dotfiles/$file" "$root/$file"
