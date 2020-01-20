@@ -33,7 +33,7 @@ set cursorline
 set tabpagemax=100 " allow opening shit load of tabs at once
 set redrawtime=5000 " sometimes takes a long time, let it happen
 set maxmempattern=50000 " from 1000 to 10000
-set shortmess=a " snappy messages, from the avoid press enter doc
+set shortmess=atqcT  " snappy messages; 'a' does a bunch of common stuff
 set shiftround " round to multiple of shift width
 set viminfo='100,:100,<100,@100,s10,f0 " commands, marks (e.g. jump history), exclude registers >10kB of text
 set history=100 " search history
@@ -363,10 +363,10 @@ augroup popup_opts
   au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
 function! s:tab_increase() " use this inside <expr> remaps
-  let b:menupos += 1 | echom b:menupos | return ''
+  let b:menupos += 1 | return ''
 endfunction
 function! s:tab_decrease()
-  let b:menupos -= 1 | echom b:menupos | return ''
+  let b:menupos -= 1 | return ''
 endfunction
 function! s:tab_reset()
   let b:menupos = 0 | return ''
@@ -910,7 +910,7 @@ if PlugActive('jedi-vim')
   let g:jedi#goto_definitions_command = ''
   let g:jedi#rename_command = ''
   let g:jedi#usages_command = '<Leader><CR>'
-  let g:jedi#show_call_signatures = 1
+  let g:jedi#show_call_signatures = '1'
 endif
 
 " NERDCommenter

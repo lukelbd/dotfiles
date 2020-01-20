@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=1090,2181,2120
+# shellcheck disable=1090,2181,2120,2076
 #-----------------------------------------------------------------------------#
 # This file should override defaults in /etc/profile in /etc/bashrc.
 # Check out what is in the system defaults before using this, make sure your
@@ -1011,26 +1011,15 @@ pushpull() {
 #-----------------------------------------------------------------------------#
 # REPLs
 #-----------------------------------------------------------------------------#
-# iPython wrapper -- load your favorite magics and modules on startup
-# Have to sed trim the leading spaces to avoid indentation errors
-# NOTE: MacOSX backend broken right now:
-# https://github.com/matplotlib/matplotlib/pull/11850
-alias ipython="ipython --no-term-title --no-banner --no-confirm-exit --pprint -i -c \"
-get_ipython().magic('load_ext autoreload')
-get_ipython().magic('autoreload 2')
-import numpy as np
-\""
-# Julia, simple alias
-# NOTE: Need revise plugin https://github.com/timholy/Revise.jl to automatically
-# update modules like ipython autoreload
-alias ijulia="julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
+# Julia with paths in current directory and auto update modules
+alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
 $_macos && export JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
 # NCL interactive environment
 # Make sure that we encapsulate any other alias; for example, on Macs, will
 # prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
 if alias ncl &>/dev/null; then
   # shellcheck disable=2034
-  _incl=$(alias ncl | cut -d= -f2- | sed "s/^\'//g;s/\'$//g")
+  _incl=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
   alias incl='$_incl -Q -n'
 else
   alias incl="ncl -Q -n"
@@ -1091,7 +1080,6 @@ _jt() {
   fi
   # Make sure theme is valid
   read -r -a themes < <(jt -l | sed '1d')
-  # shellcheck disable=2076
   ! [[ " ${themes[*]} " =~ " $theme " ]] && \
     echo "Error: Theme $theme is invalid; choose from ${themes[*]}." && return 1
   jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font"
@@ -1284,7 +1272,6 @@ ncvarlist() {  # only get text between variables: and linebreak before global at
   read -r -a list < <(nclist "$1")
   read -r -a dmnlist < <(ncdimlist "$1")
   for item in "${list[@]}"; do
-    # shellcheck disable=2076
     if ! [[ " ${dmnlist[*]} " =~ " $item " ]]; then
       varlist+=("$item")
     fi
