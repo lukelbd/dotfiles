@@ -205,7 +205,6 @@ alias brew="PATH=\"$PATH\" brew"
 
 # Various python stuff
 export PYTHONPATH=""  # just use pip install -e . for cloned projects
-export MPLBACKEND="Qt5Agg"  # default for python and ipython
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing dist/*"
@@ -1011,9 +1010,14 @@ pushpull() {
 #-----------------------------------------------------------------------------#
 # REPLs
 #-----------------------------------------------------------------------------#
+# Jupyter aliases
+alias console="jupyter console"
+alias qtconsole="jupyter qtconsole"
+
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
 $_macos && export JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
+
 # NCL interactive environment
 # Make sure that we encapsulate any other alias; for example, on Macs, will
 # prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
@@ -1024,16 +1028,19 @@ if alias ncl &>/dev/null; then
 else
   alias incl="ncl -Q -n"
 fi
+
 # R utilities
-# * Calling R with --slave or --interactive makes quiting totally impossible somehow.
-# * The ---always-readline prevents prompt from switching to the default prompt, but
-#   also seems to disable ctrl-d for exiting.
-# alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
+# Calling R with --slave or --interactive makes quiting totally impossible somehow.
+# The ---always-readline prevents prompt from switching to the default prompt, but
+# also seems to disable ctrl-d for exiting.
 alias r="command R -q --no-save"
 alias R="command R -q --no-save"
+# alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
+
 # Matlab
 # Just loads the startup script
 alias imatlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
+
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
 # * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
@@ -1055,6 +1062,7 @@ iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
 #-----------------------------------------------------------------------------#
 # Wrapper aroung jupyter theme function, much better
+_jt_configured=false  # theme is not initially setup because takes a long time
 _jt() {
   # Choose default themes and font
   # chesterish is best; monokai has green/pink theme;
@@ -1084,7 +1092,6 @@ _jt() {
     echo "Error: Theme $theme is invalid; choose from ${themes[*]}." && return 1
   jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font"
 }
-_jt_configured=false  # theme is not initially setup because takes a long time
 
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).

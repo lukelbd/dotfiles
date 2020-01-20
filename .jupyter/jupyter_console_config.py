@@ -5,11 +5,15 @@
 # Better banner
 c.ZMQTerminalInteractiveShell.banner = 'Jupyter Console {version}\n{kernel_banner}'
 
-# Confirm exit only for console
-c.JupyterConsoleApp.confirm_exit = True
+# Syntax highlighting
+c.ZMQTerminalInteractiveShell.highlighting_style = 'monokai'
 
 # Required for vim ipython
 c.ZMQTerminalInteractiveShell.include_other_output = True
+c.ZMQTerminalInteractiveShell.other_output_prefix = ''
+
+# Confirm exit only for console
+c.JupyterConsoleApp.confirm_exit = False
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration

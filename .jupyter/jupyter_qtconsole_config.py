@@ -2,20 +2,18 @@
 #-----------------------------------------------------------------------------#
 # Modifications
 #-----------------------------------------------------------------------------#
-# Syntax highlighting
-# from pygments.styles import get_all_styles; list(get_all_styles())
-# ['default', 'emacs', 'friendly', 'colorful', 'autumn', 'murphy', 'manni',
-# 'monokai', 'perldoc', 'pastie', 'borland', 'trac', 'native', 'fruity', 'bw',
-# 'vim', 'vs', 'tango', 'rrt', 'xcode', 'igor', 'paraiso-light', 'paraiso-dark',
-# 'lovelace', 'algol', 'algol_nu', 'arduino', 'rainbow_dash', 'abap',
-# 'solarized-dark', 'solarized-light', 'sas', 'stata', 'stata-light', 'stata-dark']
-c.JupyterWidget.syntax_style = 'monokai'  # or native
-
 # Disable banner
 c.JupyterQtConsoleApp.display_banner = True
 
+# Syntax highlighting
+# Try pygmentize -L styles
+c.JupyterWidget.syntax_style = 'monokai'
+
 # Required for vim ipython
 c.ConsoleWidget.include_other_output = True
+
+# Match iTerm2 font size
+c.ConsoleWidget.font_size = 12
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration

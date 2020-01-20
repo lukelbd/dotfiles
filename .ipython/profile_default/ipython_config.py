@@ -11,6 +11,12 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help\n'.format
     sys.version.split()[0],
 )
 
+# Highlighting
+c.TerminalInteractiveShell.highlighting_style = 'monokai'
+
+# Editing mode, but single line vi is confusing
+# c.TerminalInteractiveShell.editing_mode = 'vi'
+
 # Matplotlib backend
 # c.InteractiveShellApp.gui = 'qt'
 
