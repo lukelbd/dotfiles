@@ -21,12 +21,14 @@ trash
 originals
 __pycache__
 
-# Jupyter
-# MUST ignore json because it encodes a hardpath for particular anaconda
-# distributions (not relative path) which messes up the jupyterthemes font
-# The other json, jupyter_notebook_config.json, just tells jupyter to use
-# nbextensions. Also ignore custom so jupyterthemes can control it
-.jupyter/jupyter_nbconvert_config.json
-.jupyter/custom
-.ipython/profile_default
-
+# Jupyter and ipython
+# We are explicit here to avoid tof
+.jupyter/**/*
+.ipython/*/**/*
+!jupyter_console_config.py
+!jupyter_qtconsole_config.py
+!jupyter_notebook_config.py
+!jupyter_nbconvert_config.json
+!nbconfig
+!ipython_config.py
+!ipython_kernel_config.py
