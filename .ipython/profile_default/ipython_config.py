@@ -18,7 +18,7 @@ c.TerminalInteractiveShell.highlighting_style = 'monokai'
 # c.TerminalInteractiveShell.editing_mode = 'vi'
 
 # Matplotlib backend
-# c.InteractiveShellApp.gui = 'qt'
+c.InteractiveShellApp.matplotlib = None
 
 # Always pretty print
 c.PlainTextFormatter.pprint = True

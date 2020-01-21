@@ -207,11 +207,6 @@ alias brew="PATH=\"$PATH\" brew"
 export PYTHONPATH=""  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-alias pypi="python setup.py sdist bdist_wheel && twine upload --skip-existing dist/*"
-
-# Matplotlib stuff
-# May be necessary for rendering fonts in ipython notebooks
-# See: https://github.com/olgabot/sciencemeetproductivity.tumblr.com/blob/master/posts/2012/11/how-to-set-helvetica-as-the-default-sans-serif-font-in.md
 export MPLCONFIGDIR=$HOME/.matplotlib
 printf "done\n"
 
@@ -1011,6 +1006,7 @@ pushpull() {
 # REPLs
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
+alias matplotlib="ipython --matplotlib=qt -i -c \"import proplot as plot\""
 alias console="jupyter console"
 alias qtconsole="jupyter qtconsole"
 
