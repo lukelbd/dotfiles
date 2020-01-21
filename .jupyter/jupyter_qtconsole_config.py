@@ -11,9 +11,13 @@ c.JupyterWidget.syntax_style = 'monokai'
 
 # Required for vim ipython
 c.ConsoleWidget.include_other_output = True
+c.ConsoleWidget.other_output_prefix = ''
 
 # Match iTerm2 font size
 c.ConsoleWidget.font_size = 12
+
+# No confirm exit
+c.JupyterConsoleApp.confirm_exit = True
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration

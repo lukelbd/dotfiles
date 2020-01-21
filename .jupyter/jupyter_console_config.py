@@ -12,7 +12,7 @@ c.ZMQTerminalInteractiveShell.highlighting_style = 'monokai'
 c.ZMQTerminalInteractiveShell.include_other_output = True
 c.ZMQTerminalInteractiveShell.other_output_prefix = ''
 
-# Confirm exit only for console
+# No confirm exit
 c.JupyterConsoleApp.confirm_exit = False
 
 #------------------------------------------------------------------------------
