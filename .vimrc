@@ -1,4 +1,5 @@
 "-----------------------------------------------------------------------------"
+" vint: -ProhibitSetNoCompatible
 " A fancy vimrc that does all sorts of magical things.
 " NOTE: Have iTerm map some ctrl+key combinations that would otherwise
 " be impossible to the F1, F2 keys. Currently they are:
@@ -24,60 +25,61 @@ if ! exists('*repeat#set')
 endif
 
 " Global settings
-" set nocompatible " always use the vim defaults
+set nocompatible  " always use the vim defaults
 set encoding=utf-8
 scriptencoding utf-8
 let mapleader = "\<Space>"
-set confirm " require confirmation if you try to quit
+set confirm  " require confirmation if you try to quit
 set cursorline
-set tabpagemax=100 " allow opening shit load of tabs at once
-set redrawtime=5000 " sometimes takes a long time, let it happen
-set maxmempattern=50000 " from 1000 to 10000
+set showtabline=2
+set tabpagemax=100  " allow opening shit load of tabs at once
+set redrawtime=5000  " sometimes takes a long time, let it happen
+set maxmempattern=50000  " from 1000 to 10000
 set shortmess=atqcT  " snappy messages; 'a' does a bunch of common stuff
-set shiftround " round to multiple of shift width
-set viminfo='100,:100,<100,@100,s10,f0 " commands, marks (e.g. jump history), exclude registers >10kB of text
-set history=100 " search history
+set shiftround  " round to multiple of shift width
+set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
+set history=100  " search history
 set shell=/usr/bin/env\ bash
-set nrformats=alpha " never interpret numbers as 'octal'
+set nrformats=alpha  " never interpret numbers as 'octal'
 set scrolloff=4
 let &g:colorcolumn = (has('gui_running') ? '0' : '80,120')
-set slm= " disable 'select mode' slm, allow only visual mode for that stuff
-set background=dark " standardize colors -- need to make sure background set to dark, and should be good to go
-set updatetime=1000 " used for CursorHold autocmds
-set nobackup noswapfile noundofile " no more swap files; constantly hitting C-s so it's safe
-set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:· " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
-set number numberwidth=4 " note old versions can't combine number with relativenumber
+set slm=  " disable 'select mode' slm, allow only visual mode for that stuff
+set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
+set updatetime=1000  " used for CursorHold autocmds
+set nobackup noswapfile noundofile  " no more swap files; constantly hitting C-s so it's safe
+set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
+set number numberwidth=4  " note old versions can't combine number with relativenumber
 set relativenumber
-set tabstop=2 " shoft default tabs
+set tabstop=2  " shoft default tabs
 set shiftwidth=2
 set softtabstop=2
-set autoindent " indents new lines
-set backspace=indent,eol,start " backspace by indent - handy
-set nostartofline " when switching buffers, doesn't move to start of line (weird default)
+set autoindent  " indents new lines
+set backspace=indent,eol,start  " backspace by indent - handy
+set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
 set lazyredraw
 set virtualedit=  " prevent cursor from going where no actual character
-set noerrorbells visualbell t_vb= " enable internal bell, t_vb= means nothing is shown on the window
-set esckeys " make sure enabled, allows keycodes
-set notimeout timeoutlen=0 " wait forever when doing multi-key *mappings*
-set ttimeout ttimeoutlen=0 " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
-set complete+=k " enable dictionary search through 'dcitionary' setting
-set completeopt-=preview " no popup window, for now
-set splitright " splitting behavior
+set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
+set esckeys  " make sure enabled, allows keycodes
+set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
+set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
+set complete+=k  " enable dictionary search through 'dcitionary' setting
+set completeopt-=preview  " no popup window, for now
+set splitright  " splitting behavior
 set splitbelow
-set nospell spelllang=en_us spellcapcheck= " spellcheck off by default
-set hlsearch incsearch " show match as typed so far, and highlight as you go
-set noinfercase ignorecase smartcase " smartcase makes search case insensitive, unless has capital letter
-set foldmethod=expr " fold methods
+set nospell spelllang=en_us spellcapcheck=  " spellcheck off by default
+set hlsearch incsearch  " show match as typed so far, and highlight as you go
+set noinfercase ignorecase smartcase  " smartcase makes search case insensitive, unless has capital letter
+set foldmethod=expr  " fold methods
 set foldlevel=99
 set foldlevelstart=99
-set foldnestmax=10 " avoids weird things
-set foldopen=tag,mark " options for opening folds on cursor movement; disallow block
-set display=lastline " displays as much of wrapped lastline as possible;
+set foldnestmax=10  " avoids weird things
+set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
+set display=lastline  " displays as much of wrapped lastline as possible;
 set diffopt=vertical,foldcolumn:0,context:5
 set wildmenu
 set wildmode=longest:list,full
-set whichwrap=[,],<,>,h,l " <> = left/right insert, [] = left/right normal mode
-let &g:breakat = ' 	!*-+;:,./?' " break at single instances of several characters
+set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
+let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,'
   \ . '*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,'
@@ -92,7 +94,7 @@ if !exists('b:expandtab')
   set expandtab  " only expand if TabToggle has not been called!
 endif  " says to always expand \t to their length in <SPACE>'s!
 if has('gui_running')
-  set number relativenumber guioptions= guicursor+=a:blinkon0 " no scrollbars or blinking
+  set number relativenumber guioptions= guicursor+=a:blinkon0  " no scrollbars or blinking
 endif
 
 " Special settings
@@ -502,6 +504,7 @@ Plug 'airblade/vim-gitgutter'
 Plug 'tpope/vim-eunuch'
 
 " Completion engines
+" Note: Disable for macvim because not sure how to control its python distro
 " Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
 " Plug 'lifepillar/vim-mucomplete'  " broken, seriously, cannot get it to work, don't bother! is slow anyway.
 " Plug 'Valloric/YouCompleteMe'  " broken
@@ -509,17 +512,20 @@ Plug 'tpope/vim-eunuch'
 " Plug 'shougo/neocomplete.vim'  " needs lua!
 " let g:neocomplete#enable_at_startup = 1
 " Plug 'prabirshrestha/asyncomplete.vim'
-Plug 'Shougo/deoplete.nvim'  " requires pip install pynvim
-Plug 'roxma/nvim-yarp'  " required for deoplete
-Plug 'roxma/vim-hug-neovim-rpc'  " required for deoplete
-let g:deoplete#enable_at_startup = 1  " must be inside plug#begin block
+if ! has('gui_running')
+  " Main plugin
+  Plug 'Shougo/deoplete.nvim'  " requires pip install pynvim
+  Plug 'roxma/nvim-yarp'  " required for deoplete
+  Plug 'roxma/vim-hug-neovim-rpc'  " required for deoplete
+  let g:deoplete#enable_at_startup = 1  " must be inside plug#begin block
+  " Omnifunc sources, these are not provided by engines
+  " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
+  Plug 'deoplete-plugins/deoplete-jedi'
+  Plug 'Shougo/neco-syntax'
+  Plug 'Shougo/neco-vim'
+  Plug 'Shougo/echodoc.vim'
+endif
 
-" Omnifunc sources, these are not provided by engines
-" See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
-Plug 'deoplete-plugins/deoplete-jedi'
-Plug 'Shougo/neco-syntax'
-Plug 'Shougo/neco-vim'
-Plug 'Shougo/echodoc.vim'
 
 " Delimiters
 Plug 'tpope/vim-surround'
