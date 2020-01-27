@@ -26,19 +26,23 @@ echo "MB playlist: $mb_folder"
 copied=false  # copied anything?
 updated=false # updated anything?
 deleted=false # deleted anything?
-$_macos && date=gdate || date=date
 for path in "$mb_folder/"*.{m3u8,mp3,m4a}; do
   ! [ -r "$path" ] && continue # e.g. if glob failed
   file="${path##*/}"
   # Alphabetical order and fix carriage returns
   # See: https://unix.stackexchange.com/a/32059/112647
-  # WARNING: Important to use normal sed here
-  # TODO: Make this work with GNU tools!
   if [[ "$file" =~ '.m3u8' ]]; then
-    m3u8=$(/bin/cat "$path" | /usr/bin/tr '\r' '\n' | /usr/bin/sed 's:.*/::g;1d' \
-      | tac | /usr/bin/sed '$!N;s/\n/#/' | /usr/bin/sort -r --ignore-case \
-      | /usr/local/bin/gsed 's:\#\#:\n\#:g' | tac)
-    printf "#EXTM3U\n$m3u8" >"$path"
+    python - <<EOF
+import os
+with open("$path", 'r') as f:
+    lines = [line.strip() for line in f.readlines()]
+header = lines[0]  # should be #EXTM3U
+pairs = zip(lines[1::2], (os.path.basename(path) for path in lines[2::2]))
+pairs = sorted(pairs, key=lambda x: x[1].lower())
+file = header + '\n' + '\n'.join(line for lines in pairs for line in lines)
+with open("$path", 'w') as f:
+    f.write(file)
+EOF
   fi
   # Copy new files downloaded
   if ! [ -r "$sd_folder/$file" ]; then
@@ -53,9 +57,9 @@ for path in "$mb_folder/"*.{m3u8,mp3,m4a}; do
       [ $? -ne 0 ] && exit 1
       touch "$mb_folder/sd.log" # if doesn't exist, make
     fi
-    date_c=$(tail -n 1 "$mb_folder/sd.log") # date copied to SD
-    date_m=$($date -r "$path" +%s)           # date last modified
-    if [ -z "$date_c" ]; then # initializing directory
+    date_c=$(tail -n 1 "$mb_folder/sd.log")  # date copied to SD
+    date_m=$(date -r "$path" +%s)  # date last modified
+    if [ -z "$date_c" ]; then  # initializing directory
       if [ $date_m -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changed within 50 days
         modified=true
       else
