@@ -59,7 +59,7 @@ if $_macos; then
   # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
   # NOTES:
   # To install GNU utils see: https://apple.stackexchange.com/q/69223/214359
-  # Added ffmpeg using 'sudo port install ffmpeg +nonfree'
+  # Added ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
   # Added matlab as a symlink in builds directory
   # Installed gcc and gfortran with 'port install gcc6' then 'port select
   # --set gcc mp-gcc6'. Try 'port select --list gcc'
@@ -157,7 +157,7 @@ else
     # NOTE: Use 'sinteractive' for interactive mode
     # module purge 2>/dev/null
     read -r -a _loaded < <(module --terse list 2>&1)
-    _toload=(Anaconda3 intel mkl)  # for some reason latest CDO version is not default
+    _toload=(Anaconda3 mkl intel)  # for some reason latest CDO version is not default
     for _module in "${_toload[@]}"; do
       if ! [[ " ${_loaded[*]} " =~ $_module ]]; then
         module load "$_module"
@@ -1064,8 +1064,8 @@ _jt() {
   # chesterish is best; monokai has green/pink theme;
   # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
   # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  local theme font themes
-  if [ $# -lt 1 ]; then 
+  local font theme
+  if [ $# -eq 0 ]; then 
     echo "Choosing jupytertheme automatically based on hostname."
     case $HOSTNAME in
       uriah*)  theme=chesterish ;;
@@ -1076,42 +1076,40 @@ _jt() {
     esac
   else
     theme="$1"
+    shift
   fi
-  if [ $# -lt 2 ]; then
-    export font="cousine"  # look up available ones online
-  else
-    export font="$2"
-  fi
+  [ $# -eq 0 ] && font="cousine" || font="$1"
   # Make sure theme is valid
-  read -r -a themes < <(jt -l | sed '1d')
-  ! [[ " ${themes[*]} " =~ " $theme " ]] && \
-    echo "Error: Theme $theme is invalid; choose from ${themes[*]}." && return 1
-  jt -cellw 95% -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font"
+  jt -cellw '95%' -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font" \
+    && _jt_configured=true \
+    || return 1
 }
 
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
-_connect() {
+_jupyter_tunnel() {
   # Usage changes depending on whether on macbook
   # ssh -f (port-forwarding in background) -N (don't issue command)
-  local server port ports stat stats get_ports set_ports
+  local port ports stat stats server get_ports set_ports
   unset _jupyter_port
   if $_macos; then
+    server="$1"  # input server
     ports="${*:2}"
-    server=$1  # input server
     [ -z "$server" ] && echo "Error: Must input server." && return 1
   else
-    ports="$*"
     server=$USER@$(ip) || {
-      "Error: Could not figure out this server's ip address."; return 1
+      echo "Error: Could not figure out this server's ip address." && return 1
     }
+    ports="$*"
   fi
   # Which ports to connect over
   # shellcheck disable=2016
-  set_ports='for port in $ports; do
-    command ssh -t -N -f -L localhost:$port:localhost:$port '"$server"' &>/dev/null
-    stats+="${port}-$? "
-  done'
+  set_ports='
+    for port in $ports; do
+      command ssh -t -N -f -L localhost:$port:localhost:$port '"$server"' &>/dev/null
+      stats+="${port}-$? "
+    done
+  '
   if [ -n "$ports" ]; then
     get_ports='ports="'"$ports"'"'
   else
@@ -1119,9 +1117,11 @@ _connect() {
       ! netstat -an | grep "[:.]$port" &>/dev/null && ports+=" $port"
     done
     # shellcheck disable=2016
-    get_ports="for port in $ports; do"'
-      ! netstat -an | grep "[:.]$port" &>/dev/null && ports=$port && break
-    done'
+    get_ports="
+      for port in $ports; do"'
+        ! netstat -an | grep "[:.]$port" &>/dev/null && ports=$port && break
+      done
+    '
   fi
   # Connect specified ports
   # WARNING: Need quotes around eval or line breaks may not be preserved
@@ -1132,8 +1132,10 @@ _connect() {
     port=$(cat $_port_file)
     [ -z "$port" ] && echo "Error: Unknown connection port. Cannot send commands to macbook." && return 1
     # shellcheck disable=2016
-    stats=$(command ssh -o StrictHostKeyChecking=no -p "$port" "$USER@localhost" \
-      "$get_ports; $set_ports; printf "'"$stats"')
+    stats=$( \
+      command ssh -o StrictHostKeyChecking=no -p "$port" "$USER@localhost" \
+      "$get_ports; $set_ports; printf "'"$stats"' \
+    )
   fi
   # Message
   for stat in $stats; do
@@ -1144,29 +1146,31 @@ _connect() {
 }
 
 # Refresh stale connections from macbook to server
-# Simply calls the '_connect' function
-pyconnect() {
-  local ports get_ports
-  # Get the ports
-  # WARNING: Using pseudo-tty allocation (i.e. simulating active shell with
-  # -t flag) causes ssh command to mess up.
-  get_ports="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
+# Simply calls the '_jupyter_tunnel' function
+nbconnect() {
+  local cmd ports
+  # Find ports for *existing* jupyter notebooks
+  # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
+  # -t flag, causes ssh command to mess up.
+  cmd="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
   if $_macos; then
+    [ $# -eq 1 ] \
+      || { echo "Error: Must input server."; return 1; }
     server=$1
-    [ -z "$server" ] && echo "Error: Must input server." && return 1
-    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$get_ports") || {
-      echo "Error: Failed to get list of ports." && return 1
-    }
+    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
+      || { echo "Error: Failed to get list of ports."; return 1; }
   else
-    ports=$(eval "$get_ports")
+    ports=$(eval "$cmd")
   fi
-  # Connect
-  [ -z "$ports" ] && echo "Error: No active jupyter notebooks found." && return 1
+  [ -z "$ports" ] \
+    && { echo "Error: No active jupyter notebooks found."; return 1; }
+
+  # Connect over ports
   echo "Connecting to jupyter notebook(s) over port(s) $ports."
   if $_macos; then
-    _connect "$server" "$ports"
+    _jupyter_tunnel "$server" "$ports"
   else
-    _connect "$ports"
+    _jupyter_tunnel "$ports"
   fi
 }
 
@@ -1176,18 +1180,19 @@ pyconnect() {
 notebook() {
   # Set default jupyter theme
   local port
-  # shellcheck disable=2119
-  ! $_jt_configured && _jt && _jt_configured=true
+  $_jt_configured || _jt
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
     port="--port=$1"
-  elif ! $_macos; then  # remote ports will use 3XXXX   
-    _connect || return 1
+  # Remote ports will use 3####   
+  elif ! $_macos; then
+    _jupyter_tunnel || return 1
     echo "Initializing jupyter notebook over port $_jupyter_port."
     port="--port=$_jupyter_port"
-  else  # local ports will use 2XXXX
+  # Local ports will use 2####
+  else
     for port in $(seq 20000 20020); do
       ! netstat -an | grep "[:.]$port" &>/dev/null && break
     done
@@ -1587,9 +1592,9 @@ fi
 #-----------------------------------------------------------------------------#
 unset _conda
 if [ -d "$HOME/anaconda3" ]; then
-  _conda='anaconda3'
+  _conda=anaconda3
 elif [ -d "$HOME/miniconda3" ]; then
-  _conda='miniconda3'
+  _conda=miniconda3
 fi
 if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
   # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
@@ -1614,7 +1619,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
   }
 
   # Initialize conda
-  __conda_setup="$("$HOME/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)"
+  __conda_setup=$("$HOME/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)
   if [ $? -eq 0 ]; then
     eval "$__conda_setup"
   else
@@ -1715,4 +1720,6 @@ $_macos && {  # first the MacOS options
     chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim session
   fi
   }
-[ "$(hostname)" == "$HOSTNAME" ] && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
+[ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \
+  && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
+_bashrc_loaded=true
