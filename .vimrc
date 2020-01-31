@@ -796,17 +796,26 @@ if PlugActive('vim-textobj-user')
     \     'select-i': 'iQ',
     \   },
     \ }
+
   " Enable and define related maps
   " Make sure to match [<letter> with the corresponding textobject va<letter>
+  " Note: For some reason it is critical the '^' is outside the \(\) group
+  " Next comment block
   call textobj#user#plugin('universal', s:universal_textobjs_dict)
-  noremap <expr> [c textobj#search_block('^\(\s*' . Comment() . '.*\)\@!.*\n'
-    \ . '\s*' . Comment() . '\zs', 0)
-  noremap <expr> ]c textobj#search_block('^\(\s*' . Comment() . '.*\)\@!.*\n'
-    \ . '\s*' . Comment() . '\zs', 1)
-  noremap <expr> [i textobj#search_block('^\ze\(\s*$\\|'
-    \ . substitute(getline('.'), '^\(\s*\).*$', '\1', '') . '\)\@!', 0)
-  noremap <expr> ]i :call textobj#search_block('^\ze\(\s*$\\|'
-    \ . substitute(getline('.'), '^\(\s*\).*$', '\1', '') . '\)\@!', 1)
+  noremap <expr> [c textobj#search_block(
+    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 0)
+  noremap <expr> ]c textobj#search_block(
+    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 1)
+  " Next block at *parent indent level*
+  noremap <expr> [i textobj#search_block(
+    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 0)
+  noremap <expr> ]i textobj#search_block(
+    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 1)
+  " Next block at *lower* indent level
+  noremap <expr> [I textobj#search_block(
+    \ '^\zs\ze' . textobj#regex_parent_indent(), 0)
+  noremap <expr> ]I textobj#search_block(
+    \ '^\zs\ze' . textobj#regex_parent_indent(), 1)
   nnoremap <CR> <C-]>
 endif
 

@@ -75,3 +75,22 @@ function! textobj#search_block(regex, forward) abort
     return lnum . 'G'
   endif
 endfunction
+
+" Function that returns regexes used in navigation
+" This helps us define navigation maps for "the first line in a contiguous
+" block of matching lines".
+function! textobj#regex_comment() abort
+  return '\s*' . Comment()
+endfunction
+
+function! textobj#regex_current_indent() abort
+  return '[ ]\{0,'
+    \ . len(substitute(getline('.'), '^\(\s*\).*$', '\1', ''))
+    \ . '}\S\+'
+endfunction
+
+function! textobj#regex_parent_indent() abort
+  return '[ ]\{0,'
+    \ . max([0, len(substitute(getline('.'), '^\(\s*\).*$', '\1', '')) - &l:tabstop])
+    \ . '}\S\+'
+endfunction
