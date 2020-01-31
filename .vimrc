@@ -1189,7 +1189,7 @@ nnoremap <Leader>S :Autosave<CR>
 " Related utils
 nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :e<CR>
-nnoremap <silent> <Leader>R :redraw!<CR>
+nnoremap <silent> <Leader>R :syntax sync fromstart \| redraw!<CR>
 
 " BUFFER QUITTING/SAVING
 " Save and quit, also test whether the :q action closed the entire tab
