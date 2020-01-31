@@ -1132,10 +1132,11 @@ _jupyter_tunnel() {
     port=$(cat $_port_file)
     [ -z "$port" ] && echo "Error: Unknown connection port. Cannot send commands to macbook." && return 1
     # shellcheck disable=2016
-    stats=$( \
-      command ssh -o StrictHostKeyChecking=no -p "$port" "$USER@localhost" \
-      "$get_ports; $set_ports; printf "'"$stats"' \
-    )
+    stats=$(command ssh -o StrictHostKeyChecking=no -p "$port" "$USER@localhost" "
+      $get_ports
+      $set_ports
+      printf \"\$stats\"
+    ")
   fi
   # Message
   for stat in $stats; do
@@ -1147,23 +1148,23 @@ _jupyter_tunnel() {
 
 # Refresh stale connections from macbook to server
 # Simply calls the '_jupyter_tunnel' function
+_nb_list="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
 nbconnect() {
   local cmd ports
   # Find ports for *existing* jupyter notebooks
   # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
   # -t flag, causes ssh command to mess up.
-  cmd="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
   if $_macos; then
     [ $# -eq 1 ] \
       || { echo "Error: Must input server."; return 1; }
     server=$1
-    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
+    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$_nb_list") \
       || { echo "Error: Failed to get list of ports."; return 1; }
   else
-    ports=$(eval "$cmd")
+    ports=$(eval "$_nb_list")
   fi
-  [ -z "$ports" ] \
-    && { echo "Error: No active jupyter notebooks found."; return 1; }
+  [ -n "$ports" ] \
+    || { echo "Error: No active jupyter notebooks found."; return 1; }
 
   # Connect over ports
   echo "Connecting to jupyter notebook(s) over port(s) $ports."
