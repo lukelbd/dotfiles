@@ -925,7 +925,7 @@ _ssh() {
   port=10000  # starting port
   if [ -n "$2" ]; then
     port="$2"  # custom
-  elif ! [[ $1 =~ cheyenne ]]; then  # dynamically find first available port
+  elif ! [[ "$1" =~ cheyenne ]]; then  # dynamically find first available port
     echo "Determining port automatically."
     port=$(command ssh "$1" "
       port=$port
@@ -935,6 +935,7 @@ _ssh() {
       echo \$port
     ")
   fi
+  $_macos && nbconnect "$1"
   port_write=$(_compressuser "$_port_file")
   title_write=$(_compressuser "$_title_file")
   command ssh \
