@@ -925,7 +925,7 @@ _ssh() {
   port=10000  # starting port
   if [ -n "$2" ]; then
     port="$2"  # custom
-  elif ! [[ "$1" =~ cheyenne ]]; then  # dynamically find first available port
+  elif ! [[ $1 =~ cheyenne ]]; then  # dynamically find first available port
     echo "Determining port automatically."
     port=$(command ssh "$1" "
       port=$port
@@ -935,7 +935,6 @@ _ssh() {
       echo \$port
     ")
   fi
-  $_macos && nbconnect "$1"
   port_write=$(_compressuser "$_port_file")
   title_write=$(_compressuser "$_title_file")
   command ssh \
@@ -1279,8 +1278,8 @@ ncvarlist() {  # only get text between variables: and linebreak before global at
   local list dmnlist varlist
   [ $# -ne 1 ] && echo "Usage: ncvarlist FILE" && return 1
   ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
-  read -r -a list < <(nclist "$1")
-  read -r -a dmnlist < <(ncdimlist "$1")
+  read -r -a list < <(nclist "$1" | xargs)
+  read -r -a dmnlist < <(ncdimlist "$1" | xargs)
   for item in "${list[@]}"; do
     if ! [[ " ${dmnlist[*]} " =~ " $item " ]]; then
       varlist+=("$item")
