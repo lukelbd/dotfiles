@@ -65,7 +65,7 @@ if $_macos; then
   # --set gcc mp-gcc6'. Try 'port select --list gcc'
   # Installed various utils with 'brew install coreutils findutils gnu-sed
   # gnutls grep gnu-tar gawk'
-  export PATH=$(tr -d $'\n ' <<< "
+  export PATH=$(tr -d '\n ' <<< "
     $HOME/builds/ncl-6.5.0/bin:
     $HOME/builds/matlab-r2019a/bin:
     /opt/pgi/osx86-64/2018/bin:
@@ -84,7 +84,7 @@ if $_macos; then
     /usr/sbin:
     /sbin:
   ")
-  export MANPATH=$(tr -d $'\n ' <<< "
+  export MANPATH=$(tr -d '\n ' <<< "
     /usr/local/opt/coreutils/libexec/gnuman:
     /usr/local/opt/findutils/libexec/gnuman:
     /usr/local/opt/gnu-sed/libexec/gnuman:
@@ -119,7 +119,7 @@ else
   # Euclid options
   euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH=$(tr -d $'\n ' <<< "
+    export PATH=$(tr -d '\n ' <<< "
       /opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:
       /usr/local/bin:/usr/bin:/bin
     ")
@@ -130,7 +130,7 @@ else
   monde*)
     # All netcdf, mpich, etc. utilites are separate, must add them
     # source set_pgi.sh # or do this manually
-    export PATH=$(tr -d $'\n ' <<< "
+    export PATH=$(tr -d '\n ' <<< "
       /opt/pgi/linux86-64/18.10/bin:
       /usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:
       /usr/local/bin:
@@ -192,9 +192,9 @@ else
 fi
 
 # Access custom executables and git repos
-export PATH=$(tr -d $'\n ' <<< "
+export PATH=$(tr -d '\n ' <<< "
   $HOME/bin:
-  $HOME/ncparallel:$HOME/youtube-dl-music:$HOME/vim-textools:
+  $HOME/ncparallel:$HOME/vim-textools:$HOME/youtube-dl-music:
   $PATH
 ")
 
@@ -920,6 +920,10 @@ _port_file=~/.port  # file storing port number
 alias ssh="_ssh"  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local port listen port_write title_write
+  $_macos || {
+    ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 "$@"
+    exit $?
+  }
   [[ $# -gt 2 || $# -lt 1 ]] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
   listen=22  # default sshd listening port; see the link above
   port=10000  # starting port
@@ -935,6 +939,7 @@ _ssh() {
       echo \$port
     ")
   fi
+  nbconnect "$1"
   port_write=$(_compressuser "$_port_file")
   title_write=$(_compressuser "$_title_file")
   command ssh \
@@ -1148,9 +1153,9 @@ _jupyter_tunnel() {
 
 # Refresh stale connections from macbook to server
 # Simply calls the '_jupyter_tunnel' function
-_nb_list="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
 nbconnect() {
   local cmd ports
+  cmd="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
   # Find ports for *existing* jupyter notebooks
   # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
   # -t flag, causes ssh command to mess up.
@@ -1158,10 +1163,10 @@ nbconnect() {
     [ $# -eq 1 ] \
       || { echo "Error: Must input server."; return 1; }
     server=$1
-    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$_nb_list") \
+    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
       || { echo "Error: Failed to get list of ports."; return 1; }
   else
-    ports=$(eval "$_nb_list")
+    ports=$(eval "$cmd")
   fi
   [ -n "$ports" ] \
     || { echo "Error: No active jupyter notebooks found."; return 1; }
