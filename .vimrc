@@ -481,8 +481,11 @@ Plug 'scrooloose/nerdtree'
 Plug 'majutsushi/tagbar'
 
 " Tabdrop fix for vim
-" For some reason only TabDropHere works but not TabDrop
-Plug 'ohjames/tabdrop'
+" Plug 'ohjames/tabdrop'
+
+" Close unused buffers
+" https://github.com/Asheq/close-buffers.vim
+Plug 'Asheq/close-buffers.vim'
 
 " Commenting and syntax checking
 " Syntastic looks for checkers in $PATH, must be installed manually
@@ -1052,7 +1055,7 @@ if PlugActive('syntastic')
   " Ignore list:
   " * Allow imports after statements (E402)
   " * Allow multiple spaces before operators for alignment (E211)
-  let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221'
+  let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221,E731'
   let g:syntastic_sh_shellcheck_args='-e SC2059,SC2148'
   " Syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
