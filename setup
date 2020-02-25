@@ -33,6 +33,10 @@ for file in "${files[@]}"; do  # iterate through files
       fi
       mv "$root/$file" "$storage/"  # copy if not
     fi
-    ln -s "$dotfiles/$file" "$root/$file"
+    if [ -L "$dotfiles/$file" ]; then  # copy the symlink
+      cp -P "$dotfiles/$file" "$root/$file"
+    else
+      ln -s "$dotfiles/$file" "$root/$file"
+    fi
   fi
 done
