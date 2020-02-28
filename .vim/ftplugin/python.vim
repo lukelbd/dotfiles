@@ -27,7 +27,7 @@ function! s:kwtrans(mode) range
     let lastcol  = col("'>") - 1
   endif
   let fixed = []
-  for line in range(a:firstline,a:lastline)
+  for line in range(a:firstline, a:lastline)
     " Annoying ugly block for getting visual selection
     " Want to *ignore* stuff not in selection, but on same line as
     " the start/end of selection, because it's more flexible
@@ -51,16 +51,14 @@ function! s:kwtrans(mode) range
     endif
 
     " Next finally start matching shit
-    " Turn colons into equals
-    " echo 'line:' . a:firstline . '-' . a:lastline . ' col:' . firstcol . '-' . lastcol . ' string:' . string . ' prefix:' . prefix . ' suffix:' . suffix | sleep 2
     if a:mode == 1  " kwargs to dictionary
-      let string = substitute(string, '\<\ze\w\+\s*=', "'", 'g') "add leading quote first
+      let string = substitute(string, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
       let string = substitute(string, '\>\ze\s*=', "'", 'g')
-      let string = substitute(string, '=', ':', 'g')
+      let string = substitute(string, '\s*=\s*', ': ', 'g')
     elseif a:mode == 0  " dictionary to kwargs
-      let string = substitute(string, "\\>['\"]" . '\ze\s*:', '', 'g') "remove trailing quote first
+      let string = substitute(string, "\\>['\"]" . '\ze\s*:', '', 'g')  " remove trailing quote first
       let string = substitute(string, "['\"]\\<" . '\ze\w\+\s*:', '', 'g')
-      let string = substitute(string, ':', '=', 'g')
+      let string = substitute(string, '\s*:\s*', '=', 'g')
     endif
     call add(fixed, prefix . string . suffix)
   endfor
