@@ -554,8 +554,9 @@ Plug 'justinmk/vim-sneak'
 " Calculators and number stuff
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
-Plug 'triglav/vim-visual-increment' " visual incrementing/decrementing
+" Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
 Plug 'metakirby5/codi.vim'
+Plug 'tpope/vim-speeddating'  " dates and stuff
 
 " This RST shit all failed
 " Just to simple == tables instead of fancy ++ tables
@@ -880,16 +881,13 @@ if PlugActive('codi.vim')
     \ }
 endif
 
-" Increment plugin
-if PlugActive('vim-visual-increment')
-  vmap + <Plug>VisualIncrement
-  vmap - <Plug>VisualDecrement
-  nnoremap + <C-a>
-  nnoremap - <C-x>
+" Speed dating, support date increments
+if PlugActive('vim-speeddating')
+  map + <Plug>SpeedDatingUp
+  map - <Plug>SpeedDatingDown
 endif
 
 " The howmuch.vim plugin, currently with minor modifications in .vim folder
-" TODO: Add maps to all other versions, maybe use = key as prefix
 if hasmapto('<Plug>AutoCalcAppendWithEqAndSum', 'v')
   vmap c+ <Plug>AutoCalcAppendWithEqAndSum
 endif
@@ -1271,7 +1269,7 @@ augroup simple
   au!
   au BufEnter * let b:recording = 0
   au BufEnter __doc__ call utils#pager_setup()
-  au FileType log,diff,man,vim-plug call utils#popup_setup(1)
+  au FileType diff,man,latexmk,vim-plug call utils#popup_setup(1)
   au FileType qf,gitcommit,fugitive call utils#popup_setup(0)
   au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
