@@ -1024,16 +1024,18 @@ if PlugActive('syntastic')
   nnoremap <silent> [q :Cprev<CR>
   nnoremap <silent> ]q :Cnext<CR>
 
-  " Choose syntax checkers, disable auto checking
-  " flake8 pep8 pycodestyle pyflakes pylint python
-  " pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
-  " NOTE: Need 'python' checker in addition to these other ones, because python
-  " tests for import-time errors and others test for runtime errors!
+  " No active syntax checking; only on manual trigger
   let g:syntastic_mode_map = {
       \ 'mode': 'passive',
       \ 'active_filetypes': [],
       \ 'passive_filetypes': []
       \ }
+
+  " Choose syntax checkers, disable auto checking
+  " flake8 pep8 pycodestyle pyflakes pylint python
+  " pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
+  " NOTE: Need 'python' checker in addition to these other ones, because python
+  " tests for import-time errors and others test for runtime errors!
   let g:syntastic_stl_format = ''  " disables statusline colors; they were ugly
   let g:syntastic_always_populate_loc_list = 1  " necessary, or get errors
   let g:syntastic_auto_loc_list = 1  " creates window; if 0, does not create window
@@ -1050,12 +1052,21 @@ if PlugActive('syntastic')
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
   let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
-  " Ignore list:
+
+  " Flake8 ignore list:
   " * Allow imports after statements (E402)
   " * Allow multiple spaces before operators for alignment (E211)
   let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221,E731'
-  let g:syntastic_sh_shellcheck_args='-e SC2059,SC2148'
-  " Syntax colors
+
+  " Syntastic ignore list:
+  " * Allow sourcing from files (SC1090)
+  " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
+  " * Allow building arrays from unquoted result of command (SC2206, SC2207)
+  " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
+  " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
+  let g:syntastic_sh_shellcheck_args='-e SC1090,SC2002,SC2068,SC2086,SC2206,SC2207'
+
+  " Custom syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
   hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
