@@ -130,16 +130,17 @@ else
   monde*)
     # All netcdf, mpich, etc. utilites are separate, must add them
     # source set_pgi.sh # or do this manually
+    _pgi_version='19.10'  # increment this as needed
     export PATH=$(tr -d '\n ' <<< "
-      /opt/pgi/linux86-64/18.10/bin:
+      /opt/pgi/linux86-64/$_pgi_version/bin:
       /usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:
       /usr/local/bin:
       /usr/bin:/usr/local/sbin:/usr/sbin
     ")
     export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
     export PGI="/opt/pgi"
-    export MANPATH="$MANPATH:/opt/pgi/linux86-64/18.10/man"
-    export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
+    export MANPATH="$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man"
+    export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-$_pgi_version"
     # Isca modeling stuff
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde  # "environment" configuration for emps-gv4
