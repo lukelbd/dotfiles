@@ -1288,7 +1288,7 @@ augroup simple
   au BufEnter * let b:recording = 0
   au BufEnter __doc__ call utils#pager_setup()
   au FileType diff,man,latexmk,vim-plug call utils#popup_setup(1)
-  au FileType qf,gitcommit,fugitive call utils#popup_setup(0)
+  au FileType qf,gitcommit,fugitive,fugitiveblame call utils#popup_setup(0)
   au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2

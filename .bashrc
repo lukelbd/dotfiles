@@ -367,6 +367,8 @@ open() {
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
         *.mov|*.mp4)                    app="VLC.app" ;;
+        *.pages|*.doc|*.docx)           app="Pages.app" ;;
+        *.key|*.ppt|*.pptx)             app="Keynote.app" ;;
         *.md)                           app="Marked 2.app" ;;
         *)                              app="MacVim.app" ;;
       esac
