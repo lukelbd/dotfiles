@@ -1066,7 +1066,9 @@ if PlugActive('syntastic')
   " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
   " * Allow 'which' instead of 'command -v' (SC2230)
   " * Allow unquoted variables in for loop (SC2231)
-  let g:syntastic_sh_shellcheck_args='-e SC1090,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231'
+  " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
+  " * Allow looping through single strings
+  let g:syntastic_sh_shellcheck_args='-e SC1090,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041'
 
   " Custom syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None

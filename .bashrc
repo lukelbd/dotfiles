@@ -1314,17 +1314,15 @@ ncvartable() {  # parses the CDO parameter table; ncvarinfo replaces this
   # Below procedure is ideal for "sanity checks" of data; just test one
   # timestep slice at every level; the tr -s ' ' trims multiple whitespace
   # to single and the column command re-aligns columns
-  [ $# -ne 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
+  [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  read -r -a args <<< "${@:2}"
-  cdo -s infon "${args[@]}" -seltimestep,1 -selname,"$1" "$2" \
+  cdo -s infon -seltimestep,1 -selname,"$1" "$2" \
     | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
 }
 ncvartable2() {  # as above but show everything
   [ $# -ne 2 ] && echo "Usage: ncvartable2 VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  read -r -a args <<< "${@:2}"
-  cdo -s infon "${args[@]}" -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
+  cdo -s infon -seltimestep,1 -selname,"$1" "$2" 2>&1 | less
 }
 
 # Extract generalized files
