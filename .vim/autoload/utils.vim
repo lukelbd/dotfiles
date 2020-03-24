@@ -1,6 +1,27 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
+" Tab functions
+function! utils#tab_increase() abort  " use this inside <expr> remaps
+  let b:menupos += 1 | return ''
+endfunction
+function! utils#tab_decrease() abort
+  let b:menupos -= 1 | return ''
+endfunction
+function! utils#tab_reset() abort
+  let b:menupos = 0 | return ''
+endfunction
+
+" Test if file exists
+function! utils#file_exists() abort
+  let files = glob(expand('<cfile>'))
+  if len(files) > 0
+    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
+  else
+    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  endif
+endfunction
+
 " Refresh file
 function! utils#refresh() abort " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
   filetype detect " if started with empty file, but now shebang makes filetype clear
