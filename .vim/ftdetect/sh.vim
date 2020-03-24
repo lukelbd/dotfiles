@@ -2,5 +2,5 @@
 " diagnostic tables and experiment tables), and batch files for HPC submissions
 " with SLURM manager (Midway, Geyser, Yellowstone) or PBS system (Cheyenne)
 autocmd BufNewFile,BufRead 
-  \ .bashrc,.rvmrc,*.batch,*.sbatch,*.pbs,*.bash,*.ksh,*.zsh,*.sh,*.fish,*.cdo,*.nco,diag_table*,experiments*
+  \ .bashrc,.rvmrc,*.batch,*.sbatch,*.pbs,*.bash,*.ksh,*.zsh,*.sh,*.fish,*.cdo,*.nco,diag_table*
   \ set filetype=sh
