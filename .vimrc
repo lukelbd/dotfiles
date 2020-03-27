@@ -415,6 +415,9 @@ inoremap <CR> <C-]><C-G>u<CR>
 " Forward delete by tabs
 inoremap <silent> <expr> <Delete> utils#forward_delete()
 
+" Additional control mappings
+inoremap <silent> <C-u> <C-o>:undo<CR>
+
 " Cycle through wildmenu expansion with these keys
 cnoremap <expr> <F1> utils#wild_tab(0)
 cnoremap <expr> <F2> utils#wild_tab(1)
@@ -656,12 +659,13 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
   " Delimiter mappings
   " Note: Why is bibtextoggle_map a variable? Because otherwise we have to put
   " this in ftplugin/tex.vim or define an autocommand
-  augroup textools_settings
-    au!
-    au FileType tex
-      \ inoremap <C-s><C-s> <C-o>:SurroundShow \<Bar> echo<CR>
-      \ | inoremap <C-z><C-z> <C-o>:SnippetShow \<Bar> echo<CR>
-  augroup END
+  " Todo: Fix these mappings.
+  " augroup textools_settings
+  "   au!
+  "   au FileType tex
+  "     \ inoremap <C-s><C-s> <C-o>:SurroundShow \<Bar> echo<CR>
+  "     \ | inoremap <C-z><C-z> <C-o>:SnippetShow \<Bar> echo<CR>
+  " augroup END
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
   let g:textools_latexmk_maps = {
@@ -686,6 +690,10 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
     \ 'B': ['{', '}'],
     \ 'r': ['[', ']'],
     \ 'a': ['<', '>'],
+    \ '(': ['(', ')'],
+    \ '{': ['{', '}'],
+    \ '[': ['[', ']'],
+    \ '<': ['<', '>'],
     \ '\': ['\"', '\"'],
     \ 'p': ['print(', ')'],
     \ 'f': ["\1function: \1(", ')'],
