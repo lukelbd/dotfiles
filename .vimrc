@@ -122,13 +122,18 @@ augroup escape_fix
 augroup END
 
 " Global functions, for vim scripting
-function! In(list,item)  " whether inside list
+" Whether inside list
+function! In(list,item)
   return index(a:list,a:item) != -1
 endfunction
-function! Reverse(text)  " reverse string
+
+" Reverse string
+function! Reverse(text)
   return join(reverse(split(a:text, '.\zs')), '')
 endfunction
-function! Strip(text)  " strip leading and trailing whitespace
+
+" Strip leading and trailing whitespace
+function! Strip(text)
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
 
@@ -251,44 +256,54 @@ endif
 " Disable keys
 noremap <CR> <Nop>
 noremap <Space> <Nop>
+
 " Disable weird modes I don't understand
 noremap Q <Nop>
 noremap K <Nop>
+
 " Disable Ctrl-z and Z for exiting vim
 noremap Z <Nop>
 noremap <C-z> <Nop>
+
 " Disable extra scroll commands
 noremap <C-p> <Nop>
 noremap <C-n> <Nop>
+
 " Disable default increment maps because use + and _ instead
 noremap <C-a> <Nop>
 noremap <C-x> <Nop>
 inoremap <C-a> <Nop>
 inoremap <C-x> <Nop>
+
 " Turn off common things in normal mode
 " Also prevent Ctrl+c ringing the bell
-nnoremap <C-c> <Nop>
 nnoremap <Delete> <Nop>
 nnoremap <Backspace> <Nop>
+
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
 nnoremap <Leader>~ :<C-u>RemoveHighlights<CR>
 nnoremap <expr> ` "`" . nr2char(97+v:count)
 nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
+
 " Reserve lower case q for quitting popup windows
 nnoremap q <Nop>
+
 " Record macro by pressing Q, the escapes prevent q from triggerering
 nnoremap @ <Nop>
 nnoremap , @a
 nnoremap <silent> <expr> Q b:recording ?
   \ 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
+
 " Redo map to capital U
 nnoremap <C-r> <Nop>
 nnoremap U <C-r>
+
 " Use cc for s because use sneak plugin
 nnoremap c<Backspace> <Nop>
 nnoremap cc s
 vnoremap cc s
+
 " Swap with row above, and swap with row below
 nnoremap <silent> ck k:let g:view = winsaveview() \| d
   \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>
@@ -297,11 +312,14 @@ nnoremap <silent> cj :let g:view = winsaveview() \| d
 " Swap adjacent characters
 nnoremap cl xph
 nnoremap ch Xp
+
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
 nnoremap cL mzi<CR><Esc>`z
+
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o ox<Backspace>
 nnoremap O Ox<Backspace>
+
 " Paste from the nth previously deleted or changed text
 " Use 'yp' to paste last yanked, unchanged text, because cannot use zero
 nnoremap yp "0p
@@ -310,16 +328,20 @@ nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"'.v:count.'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"'.v:count.'P'
 " Yank until end of line, like C and D
 nnoremap Y y$
+
 " Better join behavior -- before 2J joined this line and next, now it
 " means 'join the two lines below'; more intuitive
 nnoremap <expr> J v:count > 1  ? 'JJ' : 'J'
 nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
+
 " Toggle highlighting
 nnoremap <silent> <Leader>o :noh<CR>
 nnoremap <silent> <Leader>O :set hlsearch<CR>
+
 " Move to current directory
 " Pneumonic is 'inside' just like Ctrl + i map
 nnoremap <silent> <Leader>i :lcd %:p:h<CR>:echom "Descended into file directory."<CR>
+
 " Enable left mouse click in visual mode to extend selection, normally this is impossible
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when enter visual
@@ -331,9 +353,11 @@ nnoremap <C-v> my<C-v>
 nnoremap <silent> v/ hn:noh<CR>mygn
 vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
 vnoremap <CR> <C-c>
+
 " Visual mode p/P to replace selected text with contents of register
 vnoremap p d"1P
 vnoremap P d"1P
+
 " Alias single-key builtin text objects
 for s:bracket in ['r[', 'a<', 'c{']
   exe 'onoremap i' . s:bracket[0] . ' i' . s:bracket[1]
@@ -341,12 +365,14 @@ for s:bracket in ['r[', 'a<', 'c{']
   exe 'onoremap a' . s:bracket[0] . ' a' . s:bracket[1]
   exe 'xnoremap a' . s:bracket[0] . ' a' . s:bracket[1]
 endfor
+
 " Never save single-character deletions to any register
 noremap x "_x
 noremap X "_X
 " Maps for throwaaway and clipboard register
 noremap ' "_
 noremap " "*
+
 " Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
@@ -355,41 +381,41 @@ noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
+
 " Search for conflict blocks
 noremap gc /^[<>=\|]\{2,}<CR>
 
 " INSERT and COMMAND WINDOW MAPS
-" Count number of tabs in popup menu so our position is always known
+" Helper functions
 augroup popup_opts
   au!
   au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
-function! s:tab_increase() " use this inside <expr> remaps
-  let b:menupos += 1 | return ''
-endfunction
-function! s:tab_decrease()
-  let b:menupos -= 1 | return ''
-endfunction
-function! s:tab_reset()
-  let b:menupos = 0 | return ''
-endfunction
+
 " Enter means 'accept' only when we have explicitly scrolled down to something
 " Tab always means 'accept' and choose default menu item if necessary
-inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . <sid>tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
-inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . <sid>tab_reset() : "\<C-n>\<C-y>" . <sid>tab_reset() : "\<C-]>\<Tab>"
+inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
+inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-n>\<C-y>" . utils#tab_reset() : "\<C-]>\<Tab>"
 " Certain keystrokes always close the popup menu
-inoremap <expr> <Backspace> pumvisible() ? <sid>tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
-inoremap <expr> <Space>     pumvisible() ? <sid>tab_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
+inoremap <expr> <Backspace> pumvisible() ? utils#tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
+inoremap <expr> <Space>     pumvisible() ? utils#tab_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
 " Commands that increment items in the menu
-inoremap <expr> <C-k>  pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
-inoremap <expr> <C-j>  pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
-inoremap <expr> <Up>   pumvisible() ? <sid>tab_decrease() . "\<C-p>" : "\<Up>"
-inoremap <expr> <Down> pumvisible() ? <sid>tab_increase() . "\<C-n>" : "\<Down>"
+inoremap <expr> <C-k>  pumvisible() ? utils#tab_decrease() . "\<C-p>" : "\<Up>"
+inoremap <expr> <C-j>  pumvisible() ? utils#tab_increase() . "\<C-n>" : "\<Down>"
+inoremap <expr> <Up>   pumvisible() ? utils#tab_decrease() . "\<C-p>" : "\<Up>"
+inoremap <expr> <Down> pumvisible() ? utils#tab_increase() . "\<C-n>" : "\<Down>"
 " Disable scrolling in insert mode
-inoremap <expr> <ScrollWheelUp>   pumvisible() ? <sid>tab_decrease() . "\<C-p>" : ""
-inoremap <expr> <ScrollWheelDown> pumvisible() ? <sid>tab_increase() . "\<C-n>" : ""
-" Special maps
+inoremap <expr> <ScrollWheelUp>   pumvisible() ? utils#tab_decrease() . "\<C-p>" : ""
+inoremap <expr> <ScrollWheelDown> pumvisible() ? utils#tab_increase() . "\<C-n>" : ""
+
+" Break undo sequence upon enter
+" See :help ins-special-special
+inoremap <CR> <C-]><C-G>u<CR>
+
+" Forward delete by tabs
 inoremap <silent> <expr> <Delete> utils#forward_delete()
+
+" Cycle through wildmenu expansion with these keys
 cnoremap <expr> <F1> utils#wild_tab(0)
 cnoremap <expr> <F2> utils#wild_tab(1)
 
@@ -608,7 +634,7 @@ if PlugActive('vim-idetools') || &rtp =~# 'vim-idetools'
     au BufEnter * nmap <buffer> [[ [T
     au BufEnter * nmap <buffer> ]] ]T
   augroup END
-  nnoremap <silent> <Leader>C :DisplayTags<CR>:redraw!<CR>
+  nnoremap <silent> <Leader>C :CTagsDisplay<CR>
 endif
 if PlugActive('black')
   let g:black_linelength = 79
@@ -632,7 +658,9 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
   " this in ftplugin/tex.vim or define an autocommand
   augroup textools_settings
     au!
-    au FileType tex nnoremap <silent> <buffer> <Leader>b :BibtexToggle<CR>
+    au FileType tex
+      \ inoremap <C-s><C-s> <C-o>:SurroundShow \<Bar> echo<CR>
+      \ | inoremap <C-z><C-z> <C-o>:SnippetShow \<Bar> echo<CR>
   augroup END
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
@@ -642,41 +670,31 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
     \ '<Leader>Z': '--word',
     \ }
 
-  " Command mappings
-  " Surround mappings
-  " The bracket maps are also defined in textools but make them global and
-  " do not include the delete_delims and change_delims functionality
-  function! s:add_delim(map, start, end)  " if final argument passed, this is global
-    let g:surround_{char2nr(a:map)} = a:start . "\r" . a:end
-  endfunction
-  nmap dsc dsB
-  nmap csc csB
+  " Add *global* surround maps in same style as textool surround maps
   vmap <C-s> <Plug>VSurround
-  imap <C-s> <Plug>Isurround
-  call s:add_delim("'", "'", "'")
-  call s:add_delim('"', '"', '"')
-  call s:add_delim('q', '‘', '’')
-  call s:add_delim('Q', '“', '”')
-  call s:add_delim('b', '(', ')')
-  call s:add_delim('c', '{', '}')
-  call s:add_delim('B', '{', '}')
-  call s:add_delim('r', '[', ']')
-  call s:add_delim('a', '<', '>')
-  call s:add_delim('\', '\"', '\"')
-  call s:add_delim('p', 'print(', ')')
-  call s:add_delim('f', "\1function: \1(", ')')  " initial part is for prompt, needs double quotes
-  nnoremap <silent> ds\ :call textools#delete_delims('\\["'."']", '\\["'."']")<CR>
-  nnoremap <silent> cs\ :call textools#change_delims('\\["'."']", '\\["'."']")<CR>
-  nnoremap <silent> dsf :call textools#delete_delims('\<\K\k*(', ')')<CR>
-  nnoremap <silent> csf :call textools#change_delims('\<\K\k*(', ')', input('function: ') . "(\r)")<CR>
-  nnoremap <silent> dsm :call textools#delete_delims('\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')')<CR>
-  nnoremap <silent> csm :call textools#change_delims('\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')', input('method: ') . "(\r)")<CR>
-  nnoremap <silent> dsA :call textools#delete_delims('\<\K\k*\[', '\]')<CR>
-  nnoremap <silent> csA :call textools#change_delims('\<\K\k*\[', '\]', input('array: ') . "[\r]")<CR>
-  nnoremap <silent> dsq :call textools#delete_delims("‘", "’")<CR>
-  nnoremap <silent> csq :call textools#change_delims("‘", "’")<CR>
-  nnoremap <silent> dsQ :call textools#delete_delims("“", "”")<CR>
-  nnoremap <silent> csQ :call textools#change_delims("“", "”")<CR>
+  imap <C-s> <Plug>ResetUndo<Plug>ISurround
+  nnoremap <silent> ds :call textools#delete_delims()<CR>
+  nnoremap <silent> cs :call textools#change_delims()<CR>
+  inoremap <buffer> <Plug>ResetUndo <C-g>u
+  let s:global_surround = {
+    \ "'": ["'", "'"],
+    \ '"': ['"', '"'],
+    \ 'q': ['‘', '’'],
+    \ 'Q': ['“', '”'],
+    \ 'b': ['(', ')'],
+    \ 'c': ['{', '}'],
+    \ 'B': ['{', '}'],
+    \ 'r': ['[', ']'],
+    \ 'a': ['<', '>'],
+    \ '\': ['\"', '\"'],
+    \ 'p': ['print(', ')'],
+    \ 'f': ["\1function: \1(", ')'],
+    \ 'A': ["\1array: \1[", ']'],
+  \ }
+  for [s:binding, s:pair] in items(s:global_surround)
+    let [s:left, s:right] = s:pair
+    let g:surround_{char2nr(s:binding)} = s:left . "\r" . s:right
+  endfor
 endif
 
 " *Very* expensive for large files so only ever activate manually
@@ -1417,16 +1435,8 @@ vnoremap gt mzgu<Esc>`<~h
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
-function! s:file_exists()
-  let files = glob(expand('<cfile>'))
-  if len(files) > 0
-    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
-  else
-    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
-  endif
-endfunction
 nnoremap <Leader>F <c-w>gf
-nnoremap <silent> <Leader>f :<C-u>call <sid>file_exists()<CR>
+nnoremap <silent> <Leader>f :<C-u>call utils#file_exists()<CR>
 
 " Now remap indentation commands. Why is this here? Just go with it.
 " Note the <Esc> is needed first because it cancels application of the number operator
@@ -1468,11 +1478,21 @@ endif
 " string group names are for given filetype syntax schemes. Verify that the
 " regexes will match using :Group with cursor over a comment. For example, had
 " to change .*Comment to .*Comment.* since Julia has CommentL name
-function! s:keywordsetup()
+augroup syntax_overrides
+  au!
+  au Syntax * call s:keyword_setup()
+  au BufRead * set conceallevel=2 concealcursor=
+  au InsertEnter * highlight StatusLine ctermbg=Black ctermbg=White ctermfg=Black cterm=NONE
+  au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
+augroup END
+function! s:keyword_setup()
+  " URL highlighting
    syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
-   syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
    hi link customURL Underlined
+   " Markdown headers
+   syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
    hi link markdownHeader Special
+   " Warnings, errors, and shebangs
    if &ft !=# 'vim'
      syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments
      syn match Special '^\%1l#!.*$' " shebangs
@@ -1480,13 +1500,6 @@ function! s:keywordsetup()
      syn clear vimTodo " vim instead uses the Stuff: syntax
    endif
 endfunction
-augroup syntax_overrides
-  au!
-  au Syntax * call s:keywordsetup()
-  au BufRead * set conceallevel=2 concealcursor=
-  au InsertEnter * highlight StatusLine ctermbg=Black ctermbg=White ctermfg=Black cterm=NONE
-  au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
-augroup END
 
 " Filetype specific commands
 " highlight link htmlNoSpell
