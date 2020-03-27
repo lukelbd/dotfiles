@@ -1318,7 +1318,7 @@ ncvartable() {  # parses the CDO parameter table; ncvarinfo replaces this
   # to single and the column command re-aligns columns
   [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  cdo -s infon -seltimestep,1 -selname,"$1" "$2" \
+  cdo -s infon -seltimestep,1 -selname,"$1" "$2" 2>&1 \
     | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t 2>&1 | less
 }
 ncvartable2() {  # as above but show everything
@@ -1726,7 +1726,7 @@ $_macos && {  # first the MacOS options
   if [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]]; then
     chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim session
   fi
-  }
+}
 [ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \
   && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
 _bashrc_loaded=true

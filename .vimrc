@@ -641,6 +641,7 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
     \ '<Leader>z': '--diff',
     \ '<Leader>Z': '--word',
     \ }
+
   " Command mappings
   " Surround mappings
   " The bracket maps are also defined in textools but make them global and
@@ -1059,7 +1060,7 @@ if PlugActive('syntastic')
   let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221,E731'
 
   " Syntastic ignore list:
-  " * Allow sourcing from files (SC1090)
+  " * Allow sourcing from files (SC1090, SC1091)
   " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
   " * Allow building arrays from unquoted result of command (SC2206, SC2207)
   " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
@@ -1068,7 +1069,7 @@ if PlugActive('syntastic')
   " * Allow unquoted variables in for loop (SC2231)
   " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
   " * Allow looping through single strings
-  let g:syntastic_sh_shellcheck_args='-e SC1090,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041'
+  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041'
 
   " Custom syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
