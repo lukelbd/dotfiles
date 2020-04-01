@@ -51,7 +51,7 @@ unalias -a
 # declare -F # to view current ones
 
 # Flag for if in MacOs
-[[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
+[[ "$OSTYPE" == darwin* ]] && _macos=true || _macos=false
 
 # First, the path management
 _bashrc_message "Variables and modules"
@@ -227,17 +227,17 @@ _columnize() {
   maxlen=0  # initial
   input=$(cat /dev/stdin)
   tcols=$(tput cols) || { echo "Failed to get terminal width."; return 1; }
-  nlines=$(printf "$input" | wc -l)  # check against initial line count
+  nlines=$(printf "%s" "$input" | wc -l)  # check against initial line count
   output="$input"  # default
   while true; do
     final="$output"  # record previous output, this is what we will print
-    output=$(printf "$input" | xargs -n$ncols | column -t)
-    maxlen=$(printf "$output" | wc -L)
+    output=$(printf "%s" "$input" | xargs -n$ncols | column -t)
+    maxlen=$(printf "%s" "$output" | wc -L)
     [ "$maxlen" -gt "$tcols" ] && break  # this time *do not* print latest result, will result in line break due to terminal edge
     [ "$ncols" -gt "$nlines" ] && final=$output && break  # test *before* increment, want to use that output
     ncols=$((ncols + 1))
   done
-  printf "$final"
+  printf "%s" "$final"
 }
 
 # Help page wrapper
@@ -651,7 +651,7 @@ ddiff() {
     fi
   done
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
-    printf "$cat"
+    printf "%s" "$cat"
   done
 }
 
