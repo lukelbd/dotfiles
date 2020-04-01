@@ -698,6 +698,8 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
     \ 'p': ['print(', ')'],
     \ 'f': ["\1function: \1(", ')'],
     \ 'A': ["\1array: \1[", ']'],
+    \ "\t": [' ', ' '],
+    \ '': ["\n", "\n"],
   \ }
   for [s:binding, s:pair] in items(s:global_surround)
     let [s:left, s:right] = s:pair
