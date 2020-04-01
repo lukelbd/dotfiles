@@ -492,7 +492,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
 " Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython'  " dead
-" Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
+Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 
 " Folding and matching
@@ -696,6 +696,8 @@ if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
     \ 'p': ['print(', ')'],
     \ 'f': ["\1function: \1(", ')'],
     \ 'A': ["\1array: \1[", ']'],
+    \ "\t": [' ', ' '],
+    \ '': ["\n", "\n"],
   \ }
   for [s:binding, s:pair] in items(s:global_surround)
     let [s:left, s:right] = s:pair

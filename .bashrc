@@ -564,9 +564,12 @@ alias toc="mpstat -P ALL 1"  # like top, but for each core
 alias restarts="last reboot | less"
 # List shell processes using ps
 tos() {
-  ps | sed "s/^[ \t]*//" | tr -s ' ' \
-     | grep -v -e PID -e 'bash' -e 'grep' -e 'ps' -e 'sed' -e 'tr' -e 'cut' -e 'xargs' \
-     | grep "$1" | cut -d' ' -f1,4
+  if [ -z "$1" ]; then
+    regex="\$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/"
+  else
+    regex="\$4 == \"$1\""
+  fi
+  ps | awk "NR == 1 {next}; $regex {print \$1 \" \" \$4}"
 }
 
 # Kill jobs by name
@@ -577,7 +580,10 @@ pskill() {
   for str in "${strs[@]}"; do
     echo "Killing $str jobs..."
     [ "$str" == all ] && str=""
-    tos "$str" | cut -d' ' -f1 | xargs kill 2>/dev/null
+    # tos "$str" | awk '{print $1}' | xargs kill 2>/dev/null
+    pids=($(tos "$str" | awk '{print $1}'))
+    echo "Process ids: ${pids[*]}"
+    kill "${pids[@]}"
   done
 }
 
