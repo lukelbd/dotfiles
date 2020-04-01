@@ -492,7 +492,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
 " Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython'  " dead
-" Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
+Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 
 " Folding and matching
@@ -1096,8 +1096,8 @@ if PlugActive('syntastic')
   " * Allow 'which' instead of 'command -v' (SC2230)
   " * Allow unquoted variables in for loop (SC2231)
   " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
-  " * Allow looping through single strings
-  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041'
+  " * Allow looping through single strings (SC2043)
+  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043'
 
   " Custom syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
