@@ -481,8 +481,8 @@ Plug 'tpope/vim-liquid'
 " Plug 'msprev/unite-bibtex' " python 2 version
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
-Plug 'Shougo/unite.vim'
-Plug 'rafaqz/citation.vim'
+" Plug 'Shougo/unite.vim'  " now use custom bibtex tool
+" Plug 'rafaqz/citation.vim'
 
 " Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
@@ -657,8 +657,6 @@ endif
 " mapping defaults due to Karabiner
 if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
   " Delimiter mappings
-  " Note: Why is bibtextoggle_map a variable? Because otherwise we have to put
-  " this in ftplugin/tex.vim or define an autocommand
   " Todo: Fix these mappings.
   " augroup textools_settings
   "   au!
@@ -1079,6 +1077,7 @@ if PlugActive('syntastic')
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
   let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
+  " let g:syntastic_tex_checkers = ['chktex']
 
   " Flake8 ignore list:
   " * Allow imports after statements (E402)
@@ -1086,16 +1085,17 @@ if PlugActive('syntastic')
   let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221,E731'
 
   " Syntastic ignore list:
-  " * Allow sourcing from files (SC1090, SC1091)
   " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
+  " * Allow sourcing from files (SC1090, SC1091)
   " * Allow building arrays from unquoted result of command (SC2206, SC2207)
   " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
   " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
   " * Allow 'which' instead of 'command -v' (SC2230)
   " * Allow unquoted variables in for loop (SC2231)
   " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
-  " * Allow looping through single strings
-  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041'
+  " * Allow looping through single strings (SC2043)
+  " * Allow assigning commands to variables (SC2209)
+  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043,SC2209'
 
   " Custom syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
