@@ -124,7 +124,7 @@ augroup END
 " Global functions, for vim scripting
 " Whether inside list
 function! In(list,item)
-  return index(a:list,a:item) != -1
+  return index(a:list, a:item) != -1
 endfunction
 
 " Reverse string
@@ -656,14 +656,23 @@ endif
 " Add global delims with vim-textools plugin functions and declare my weird
 " mapping defaults due to Karabiner
 if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
+  " Add related bibtex pairing
+  " Note that fzf-bibtex is not yet an official vim plugin
+  " Todo: Move this to custom .vim/ftplugin/tex.vim file? No because want
+  " to keep most of it in textools plugin.
+  augroup textools_settings
+    au!
+    au FileType tex call s:apply_tex_maps()
+  augroup END
+  function! s:apply_tex_maps()
+    inoremap <buffer> <silent> <C-s><C-s> <C-o>:echo textools#show_bindings(g:textools_surround_prefix, g:textools_surround_map)<CR>
+    inoremap <buffer> <silent> <C-z><C-z> <C-o>:echo textools#show_bindings(g:textools_snippet_prefix, g:textools_snippet_map)<CR>
+    inoremap <buffer> <expr> <C-z>; '<C-g>u' . textools#cite_select()
+    inoremap <buffer> <expr> <C-z>: '<C-g>u' . textools#graphics_select()
+  endfunction
+
   " Delimiter mappings
   " Todo: Fix these mappings.
-  " augroup textools_settings
-  "   au!
-  "   au FileType tex
-  "     \ inoremap <C-s><C-s> <C-o>:SurroundShow \<Bar> echo<CR>
-  "     \ | inoremap <C-z><C-z> <C-o>:SnippetShow \<Bar> echo<CR>
-  " augroup END
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
   let g:textools_latexmk_maps = {
@@ -1270,7 +1279,7 @@ command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
 " Opening file in current directory and some input directory
 nnoremap <C-o> :Open 
 nnoremap <C-y> :Open .<CR>
-nnoremap <silent> <C-p> :Files<CR>
+nnoremap <silent> <C-p> :Files 
 nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 " Tab selection and movement
 noremap gt <Nop>
@@ -1278,10 +1287,10 @@ noremap gT <Nop>
 nnoremap <Tab>, gT
 nnoremap <Tab>. gt
 nnoremap <silent> <Tab>' :exe "tabn ".(exists('g:lasttab') ? g:lasttab : 1)<CR>
-nnoremap <silent> <Tab><Tab> :call fzf#run({'source': utils#tab_select(), 'options': '--no-sort', 'sink':function('utils#tab_jump'), 'down':'~50%'})<CR>
-nnoremap <silent> <Tab>m :call utils#tab_move()<CR>
-nnoremap <silent> <Tab>> :call utils#tab_move(eval(tabpagenr()+1))<CR>
-nnoremap <silent> <Tab>< :call utils#tab_move(eval(tabpagenr()-1))<CR>
+nnoremap <silent> <Tab><Tab> :call fzf#tab_select()<CR>
+nnoremap <silent> <Tab>m :call fzf#tab_move()<CR>
+nnoremap <silent> <Tab>> :call fzf#tab_move(eval(tabpagenr()+1))<CR>
+nnoremap <silent> <Tab>< :call fzf#tab_move(eval(tabpagenr()-1))<CR>
 for s:num in range(1,10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor

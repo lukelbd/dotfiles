@@ -195,7 +195,9 @@ fi
 # Access custom executables and git repos
 export PATH=$(tr -d '\n ' <<< "
   $HOME/bin:
-  $HOME/ncparallel:$HOME/vim-textools:$HOME/youtube-dl-music:
+  $HOME/go/bin:
+  $HOME/ncparallel:
+  $HOME/youtube-dl-music:
   $PATH
 ")
 
@@ -1495,6 +1497,7 @@ if [ -f ~/.fzf.bash ]; then
   _bashrc_message "Enabling fzf"
   # Various default settings (export not necessary)
   # See man page for --bind information
+  # NOTE: Critical to export default options so they are used by vim.
   # * Inline info puts the number line thing on same line as text. More
   #   compact.
   # * Bind slash to accept, so now the behavior is very similar to behavior of
@@ -1510,7 +1513,7 @@ if [ -f ~/.fzf.bash ]; then
   {
   FZF_COMPLETION_COMMANDS=""
   FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
-  FZF_DEFAULT_OPTS="$_fzf_opts"
+  export FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
   }
