@@ -129,7 +129,8 @@ function! fzf#tab_select() abort
   call fzf#run({
     \ 'source': s:tab_select_source(),
     \ 'options': '--no-sort --prompt="Tab> "',
-    \ 'sink': function('s:tab_select_sink'), 'down':'~50%'
+    \ 'sink': function('s:tab_select_sink'),
+    \ 'down':'~50%'
     \ })
 endfunction
 
@@ -163,7 +164,8 @@ function! fzf#tab_move(...) abort
     call fzf#run({
       \ 'source': s:tab_select_source(),
       \ 'options': '--no-sort --prompt="Number> "',
-      \ 'sink': function('s:tab_move_sink'), 'down': '~50%'
+      \ 'sink': function('s:tab_move_sink'),
+      \ 'down': '~50%'
       \ })
   endif
 endfunction
