@@ -1,6 +1,20 @@
 "-----------------------------------------------------------------------------"
 " FZF plugin utilties
 "-----------------------------------------------------------------------------"
+" Function used with input() to prevent tab expansion
+function! fzf#null_list(A, L, P) abort
+  return []
+endfunction
+
+" Generate list of files in directory
+function! s:list_files(dir) abort
+  " Include both hidden and non-hidden
+  let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
+  let paths = map(paths, 'fnamemodify(v:val, '':t'')')
+  call insert(paths, s:newfile, 0) " highest priority
+  return paths
+endfunction
+
 " Tab drop plugin from: https://github.com/ohjames/tabdrop
 " WARNING: For some reason :tab drop and even :<bufnr>wincmd w fails
 " on monde so need to use the *tab jump* command instead!
@@ -26,21 +40,8 @@ function! s:tab_drop(file) abort
   end
 endfunction
 
-" Generate list of files in directory
-function! s:list_files(path) abort
-  let folder = substitute(fnamemodify(a:path, ':p'), '/$', '', '') " absolute path
-  let files = split(glob(folder . '/*'), '\n') + split(glob(folder . '/.?*'),'\n') " the ? ignores the current directory '.'
-  let files = map(files, '"' . fnamemodify(folder, ':t') . '/" . fnamemodify(v:val, ":t")')
-  call insert(files, s:newfile, 0) " highest priority
-  return files
-endfunction
-
-" Check if user FZF selection is directory and keep opening windows until
-" user selects a file
+" Check if user selection is directory, descend until user selects a file
 let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
-function! fzf#null_list(A, L, P) abort
-  return []
-endfunction
 function! fzf#open_continuous(path) abort
   let path = substitute(a:path, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
   if ! len(path)
@@ -49,35 +50,38 @@ function! fzf#open_continuous(path) abort
   let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
   let path_orig = path
   while isdirectory(path)
-    let pprev = path
+    " Get user selection
+    let prompt = substitute(path, '^' . expand('~'), '~', '')
     let items = fzf#run({
-        \ 'source': s:list_files(path),
-        \ 'options':'--no-sort',
-        \ 'down':'~30%'})
-    " User cancelled or entered invalid string
-    if !len(items) " length of list
+      \ 'source': s:list_files(path),
+      \ 'options': "--no-sort --prompt='" . prompt . "/'",
+      \ 'down': '~30%'
+      \ })
+    if !len(items)  " user cancelled operation
       let path = ''
       break
     endif
+
     " Build back selection into path
+    " Todo: Permit opening multiple files at once?
     let item = items[0]
     if item == s:newfile
-      let item = input('Enter new filename (' . path . '): ', '', 'customlist,fzf#null_list')
-      if ! len(item)
+      let item = input('Enter new filename (' . prompt . '): ', '', 'customlist,fzf#null_list')
+      if !len(item)
         let path = ''
       else
         let path = path . '/' . item
       endif
       break
     else
-      let tail = fnamemodify(item, ':t')
-      if tail ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+      if item ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
         let path = fnamemodify(path, ':h') " head of current directory
       else
-        let path = path . '/' . tail
+        let path = path . '/' . item
       endif
     endif
   endwhile
+
   " Open file or cancel operation
   " If it is already open just jump to that tab
   if len(path)
