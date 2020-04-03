@@ -994,26 +994,37 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   command scp -o StrictHostKeyChecking=no -P"$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
 
-# Push here and pull on remote
-pushpull() {
-  local port gdir1 gdir2
-  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
-  [ $# -eq 0 ] && echo "Error: Message required." && return 1
-  ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  port=$(cat $_port_file)  # port from most recent login
-  gdir1=$(git rev-parse --show-toplevel 2>/dev/null) || {
-    echo "Error: Not in git directory."
-    return 1
-  }
-  gdir2="${gdir1/$HOME/~}"  # relative to home
-  [ "$gdir1" == "$gdir2" ] && echo "Error: Not in home directory."
-  echo "Message: $*"  # here we *do* want to interpret args as one word
-  git add --all && git commit -m "$*" && git push origin master
-  # shellcheck disable=2181
-  [ $? -ne 0 ] && echo "Error: Commit failed." && return 1
-  echo "(Port $port) Pulling on home server at: $gdir1"
-  command ssh -o StrictHostKeyChecking=no -p "$port" "$USER"@localhost \
-    "cd $gdir2; git pull origin;"
+# Retrieve updated figures from a remote repository
+figsync() {
+  local server port cdir dest
+  # Get current directory and destination directory
+  cdir=$(git rev-parse --show-toplevel 2>/dev/null) \
+    || { echo "Error: Not in git directory."; return 1; }
+  dest=${cdir/$HOME/"~"}  # relative to home
+  [ "$cdir" == "$dest" ] \
+    && { echo "Error: Not in home directory."; return 1; }
+
+  # Sync the two directories
+  # TODO: No more subfolders?
+  if $_macos; then
+    # Update remote from macbook
+    server=$1
+    dest=${dest/sciencing\//}
+    [ -z "$server" ] && server="$monde"  # change this at your liesure
+    echo "(Server $server) Pushing from remote server at: $dest"
+    command ssh -o StrictHostKeyChecking=no "$server" \
+      "cd $dest && git add --all 'figures*' && git commit -m 'Update figures.' && git pull origin && git push origin master" \
+      && git pull origin
+  else
+    # Update macbook from remote
+    [ -r $_port_file ] || { echo "Error: Port unavailable."; return 1; }
+    port=$(cat $_port_file)  # port from most recent login
+    dest=${dest/"~"/"~/sciencing"}
+    echo "(Port $port) Pulling on home server at: $dest"
+    git add --all 'figures*' && git commit -m 'Update figures.' && git pull origin && git push origin master \
+      && command ssh -o StrictHostKeyChecking=no -p "$port" "$USER"@localhost \
+      "cd $dest && git pull https://github.com/lukelbd/${dest##*/}.git"
+  fi
 }
 
 #-----------------------------------------------------------------------------#
