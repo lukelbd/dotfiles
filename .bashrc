@@ -51,7 +51,7 @@ unalias -a
 # declare -F # to view current ones
 
 # Flag for if in MacOs
-[[ "$OSTYPE" == "darwin"* ]] && _macos=true || _macos=false
+[[ "$OSTYPE" == darwin* ]] && _macos=true || _macos=false
 
 # First, the path management
 _bashrc_message "Variables and modules"
@@ -195,7 +195,9 @@ fi
 # Access custom executables and git repos
 export PATH=$(tr -d '\n ' <<< "
   $HOME/bin:
-  $HOME/ncparallel:$HOME/vim-textools:$HOME/youtube-dl-music:
+  $HOME/go/bin:
+  $HOME/ncparallel:
+  $HOME/youtube-dl-music:
   $PATH
 ")
 
@@ -227,17 +229,17 @@ _columnize() {
   maxlen=0  # initial
   input=$(cat /dev/stdin)
   tcols=$(tput cols) || { echo "Failed to get terminal width."; return 1; }
-  nlines=$(printf "$input" | wc -l)  # check against initial line count
+  nlines=$(printf "%s" "$input" | wc -l)  # check against initial line count
   output="$input"  # default
   while true; do
     final="$output"  # record previous output, this is what we will print
-    output=$(printf "$input" | xargs -n$ncols | column -t)
-    maxlen=$(printf "$output" | wc -L)
+    output=$(printf "%s" "$input" | xargs -n$ncols | column -t)
+    maxlen=$(printf "%s" "$output" | wc -L)
     [ "$maxlen" -gt "$tcols" ] && break  # this time *do not* print latest result, will result in line break due to terminal edge
     [ "$ncols" -gt "$nlines" ] && final=$output && break  # test *before* increment, want to use that output
     ncols=$((ncols + 1))
   done
-  printf "$final"
+  printf "%s" "$final"
 }
 
 # Help page wrapper
@@ -657,7 +659,7 @@ ddiff() {
     fi
   done
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
-    printf "$cat"
+    printf "%s" "$cat"
   done
 }
 
@@ -1506,6 +1508,7 @@ if [ -f ~/.fzf.bash ]; then
   _bashrc_message "Enabling fzf"
   # Various default settings (export not necessary)
   # See man page for --bind information
+  # NOTE: Critical to export default options so they are used by vim.
   # * Inline info puts the number line thing on same line as text. More
   #   compact.
   # * Bind slash to accept, so now the behavior is very similar to behavior of
@@ -1521,7 +1524,7 @@ if [ -f ~/.fzf.bash ]; then
   {
   FZF_COMPLETION_COMMANDS=""
   FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
-  FZF_DEFAULT_OPTS="$_fzf_opts"
+  export FZF_DEFAULT_OPTS="$_fzf_opts"
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
   }

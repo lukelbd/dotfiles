@@ -124,7 +124,7 @@ augroup END
 " Global functions, for vim scripting
 " Whether inside list
 function! In(list,item)
-  return index(a:list,a:item) != -1
+  return index(a:list, a:item) != -1
 endfunction
 
 " Reverse string
@@ -481,8 +481,8 @@ Plug 'tpope/vim-liquid'
 " Plug 'msprev/unite-bibtex' " python 2 version
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
-Plug 'Shougo/unite.vim'
-Plug 'rafaqz/citation.vim'
+" Plug 'Shougo/unite.vim'  " now use custom bibtex tool
+" Plug 'rafaqz/citation.vim'
 
 " Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
@@ -656,16 +656,23 @@ endif
 " Add global delims with vim-textools plugin functions and declare my weird
 " mapping defaults due to Karabiner
 if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
+  " Add related bibtex pairing
+  " Note that fzf-bibtex is not yet an official vim plugin
+  " Todo: Move this to custom .vim/ftplugin/tex.vim file? No because want
+  " to keep most of it in textools plugin.
+  augroup textools_settings
+    au!
+    au FileType tex call s:apply_tex_maps()
+  augroup END
+  function! s:apply_tex_maps()
+    inoremap <buffer> <silent> <C-s><C-s> <C-o>:echo textools#show_bindings(g:textools_surround_prefix, g:textools_surround_map)<CR>
+    inoremap <buffer> <silent> <C-z><C-z> <C-o>:echo textools#show_bindings(g:textools_snippet_prefix, g:textools_snippet_map)<CR>
+    inoremap <buffer> <expr> <C-z>; '<C-g>u' . textools#cite_select()
+    inoremap <buffer> <expr> <C-z>: '<C-g>u' . textools#graphics_select()
+  endfunction
+
   " Delimiter mappings
-  " Note: Why is bibtextoggle_map a variable? Because otherwise we have to put
-  " this in ftplugin/tex.vim or define an autocommand
   " Todo: Fix these mappings.
-  " augroup textools_settings
-  "   au!
-  "   au FileType tex
-  "     \ inoremap <C-s><C-s> <C-o>:SurroundShow \<Bar> echo<CR>
-  "     \ | inoremap <C-z><C-z> <C-o>:SnippetShow \<Bar> echo<CR>
-  " augroup END
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
   let g:textools_latexmk_maps = {
@@ -1081,6 +1088,7 @@ if PlugActive('syntastic')
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
   let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
+  " let g:syntastic_tex_checkers = ['chktex']
 
   " Flake8 ignore list:
   " * Allow imports after statements (E402)
@@ -1088,8 +1096,8 @@ if PlugActive('syntastic')
   let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221,E731'
 
   " Syntastic ignore list:
-  " * Allow sourcing from files (SC1090, SC1091)
   " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
+  " * Allow sourcing from files (SC1090, SC1091)
   " * Allow building arrays from unquoted result of command (SC2206, SC2207)
   " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
   " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
@@ -1097,7 +1105,8 @@ if PlugActive('syntastic')
   " * Allow unquoted variables in for loop (SC2231)
   " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
   " * Allow looping through single strings (SC2043)
-  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043'
+  " * Allow assigning commands to variables (SC2209)
+  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043,SC2209'
 
   " Custom syntax colors
   hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
@@ -1270,7 +1279,7 @@ command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
 " Opening file in current directory and some input directory
 nnoremap <C-o> :Open 
 nnoremap <C-y> :Open .<CR>
-nnoremap <silent> <C-p> :Files<CR>
+nnoremap <silent> <C-p> :Files 
 nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 " Tab selection and movement
 noremap gt <Nop>
@@ -1278,10 +1287,10 @@ noremap gT <Nop>
 nnoremap <Tab>, gT
 nnoremap <Tab>. gt
 nnoremap <silent> <Tab>' :exe "tabn ".(exists('g:lasttab') ? g:lasttab : 1)<CR>
-nnoremap <silent> <Tab><Tab> :call fzf#run({'source': utils#tab_select(), 'options': '--no-sort', 'sink':function('utils#tab_jump'), 'down':'~50%'})<CR>
-nnoremap <silent> <Tab>m :call utils#tab_move()<CR>
-nnoremap <silent> <Tab>> :call utils#tab_move(eval(tabpagenr()+1))<CR>
-nnoremap <silent> <Tab>< :call utils#tab_move(eval(tabpagenr()-1))<CR>
+nnoremap <silent> <Tab><Tab> :call fzf#tab_select()<CR>
+nnoremap <silent> <Tab>m :call fzf#tab_move()<CR>
+nnoremap <silent> <Tab>> :call fzf#tab_move(eval(tabpagenr()+1))<CR>
+nnoremap <silent> <Tab>< :call fzf#tab_move(eval(tabpagenr()-1))<CR>
 for s:num in range(1,10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor

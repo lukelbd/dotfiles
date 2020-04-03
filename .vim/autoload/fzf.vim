@@ -1,6 +1,21 @@
 "-----------------------------------------------------------------------------"
-" FZF plugin utilties
+" Fuzzy selecting files by continuously descending into directories
+" and re-generating the lists.
 "-----------------------------------------------------------------------------"
+" Function used with input() to prevent tab expansion
+function! s:null_list(...) abort
+  return []
+endfunction
+
+" Generate list of files in directory
+function! s:list_files(dir) abort
+  " Include both hidden and non-hidden
+  let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
+  let paths = map(paths, 'fnamemodify(v:val, '':t'')')
+  call insert(paths, s:newfile, 0) " highest priority
+  return paths
+endfunction
+
 " Tab drop plugin from: https://github.com/ohjames/tabdrop
 " WARNING: For some reason :tab drop and even :<bufnr>wincmd w fails
 " on monde so need to use the *tab jump* command instead!
@@ -26,21 +41,8 @@ function! s:tab_drop(file) abort
   end
 endfunction
 
-" Generate list of files in directory
-function! s:list_files(path) abort
-  let folder = substitute(fnamemodify(a:path, ':p'), '/$', '', '') " absolute path
-  let files = split(glob(folder . '/*'), '\n') + split(glob(folder . '/.?*'),'\n') " the ? ignores the current directory '.'
-  let files = map(files, '"' . fnamemodify(folder, ':t') . '/" . fnamemodify(v:val, ":t")')
-  call insert(files, s:newfile, 0) " highest priority
-  return files
-endfunction
-
-" Check if user FZF selection is directory and keep opening windows until
-" user selects a file
+" Check if user selection is directory, descend until user selects a file
 let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
-function! fzf#null_list(A, L, P) abort
-  return []
-endfunction
 function! fzf#open_continuous(path) abort
   let path = substitute(a:path, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
   if ! len(path)
@@ -49,35 +51,38 @@ function! fzf#open_continuous(path) abort
   let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
   let path_orig = path
   while isdirectory(path)
-    let pprev = path
+    " Get user selection
+    let prompt = substitute(path, '^' . expand('~'), '~', '')
     let items = fzf#run({
-        \ 'source': s:list_files(path),
-        \ 'options':'--no-sort',
-        \ 'down':'~30%'})
-    " User cancelled or entered invalid string
-    if !len(items) " length of list
+      \ 'source': s:list_files(path),
+      \ 'options': "--no-sort --prompt='" . prompt . "/'",
+      \ 'down': '~30%'
+      \ })
+    if !len(items)  " user cancelled operation
       let path = ''
       break
     endif
+
     " Build back selection into path
+    " Todo: Permit opening multiple files at once?
     let item = items[0]
     if item == s:newfile
-      let item = input('Enter new filename (' . path . '): ', '', 'customlist,fzf#null_list')
-      if ! len(item)
+      let item = input('Enter new filename (' . prompt . '): ', '', 'customlist,s:null_list')
+      if !len(item)
         let path = ''
       else
         let path = path . '/' . item
       endif
       break
     else
-      let tail = fnamemodify(item, ':t')
-      if tail ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+      if item ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
         let path = fnamemodify(path, ':h') " head of current directory
       else
-        let path = path . '/' . tail
+        let path = path . '/' . item
       endif
     endif
   endwhile
+
   " Open file or cancel operation
   " If it is already open just jump to that tab
   if len(path)
@@ -86,3 +91,81 @@ function! fzf#open_continuous(path) abort
   return
 endfunction
 
+"-----------------------------------------------------------------------------"
+" Fuzzy select currently open files
+"-----------------------------------------------------------------------------"
+" Function that generates lists of tabs and their numbers
+function! s:tab_select_source() abort
+  if !exists('g:tabline_bufignore')
+    let g:tabline_bufignore = ['qf', 'vim-plug', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] " filetypes considered 'helpers'
+  endif
+  let items = []
+  for t in range(tabpagenr('$')) " iterate through each tab
+    let tabnr = t + 1 " the tab number
+    let buflist = tabpagebuflist(tabnr)
+    for b in buflist " get the 'primary' panel in a tab, ignore 'helper' panels even if they are in focus
+      if index(g:tabline_bufignore, getbufvar(b, '&ft')) == -1
+        let bufnr = b " we choose this as our 'primary' file for tab name
+        break
+      elseif b == buflist[-1] " occurs if e.g. entire tab is a help window; exception, and indeed use it for tab title
+        let bufnr = b
+      endif
+    endfor
+    if tabnr == tabpagenr()
+      continue
+    endif
+    let items += [tabnr . ': ' . fnamemodify(bufname(bufnr), '%:t')] " actual name
+  endfor
+  return items
+endfunction
+
+" Function that jumps to the tab number from a line generated by tabselect
+function! s:tab_select_sink(item) abort
+  exe 'normal! ' . split(a:item, ':')[0] . 'gt'
+endfunction
+
+" Tab selection
+function! fzf#tab_select() abort
+  call fzf#run({
+    \ 'source': s:tab_select_source(),
+    \ 'options': '--no-sort --prompt="Tab> "',
+    \ 'sink': function('s:tab_select_sink'),
+    \ 'down':'~50%'
+    \ })
+endfunction
+
+"-----------------------------------------------------------------------------"
+" Fuzzy move to tab
+" Note: We display the tab names in case we want to group this file
+" appropriately amongst similar open files.
+"-----------------------------------------------------------------------------"
+" Move current tab to the exact place of tab number N
+function! s:tab_move_sink(nr) abort
+  if type(a:nr) == 0
+    let nr = a:nr
+  else
+    let parts = split(a:nr, ':')  " fzf selection
+    let nr = str2nr(parts[0])
+  endif
+  if nr == tabpagenr() || nr == 0 || nr ==# ''
+    return
+  elseif nr > tabpagenr() && v:version[0] > 7
+    exe 'tabmove ' . nr
+  else
+    exe 'tabmove ' . (nr - 1)
+  endif
+endfunction
+
+" Move to selected tab
+function! fzf#tab_move(...) abort
+  if a:0
+    call s:tab_move_sink(a:1)
+  else
+    call fzf#run({
+      \ 'source': s:tab_select_source(),
+      \ 'options': '--no-sort --prompt="Number> "',
+      \ 'sink': function('s:tab_move_sink'),
+      \ 'down': '~50%'
+      \ })
+  endif
+endfunction
