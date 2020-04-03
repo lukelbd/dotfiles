@@ -996,39 +996,6 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   command scp -o StrictHostKeyChecking=no -P"$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
 
-# Retrieve updated figures from a remote repository
-figsync() {
-  local server port cdir dest
-  # Get current directory and destination directory
-  cdir=$(git rev-parse --show-toplevel 2>/dev/null) \
-    || { echo "Error: Not in git directory."; return 1; }
-  dest=${cdir/$HOME/"~"}  # relative to home
-  [ "$cdir" == "$dest" ] \
-    && { echo "Error: Not in home directory."; return 1; }
-
-  # Sync the two directories
-  # TODO: No more subfolders?
-  if $_macos; then
-    # Update remote from macbook
-    server=$1
-    dest=${dest/sciencing\//}
-    [ -z "$server" ] && server="$monde"  # change this at your liesure
-    echo "(Server $server) Pushing from remote server at: $dest"
-    command ssh -o StrictHostKeyChecking=no "$server" \
-      "cd $dest && git add --all 'figures*' && git commit -m 'Update figures.' && git pull origin && git push origin master" \
-      && git pull origin
-  else
-    # Update macbook from remote
-    [ -r $_port_file ] || { echo "Error: Port unavailable."; return 1; }
-    port=$(cat $_port_file)  # port from most recent login
-    dest=${dest/"~"/"~/sciencing"}
-    echo "(Port $port) Pulling on home server at: $dest"
-    git add --all 'figures*' && git commit -m 'Update figures.' && git pull origin && git push origin master \
-      && command ssh -o StrictHostKeyChecking=no -p "$port" "$USER"@localhost \
-      "cd $dest && git pull https://github.com/lukelbd/${dest##*/}.git"
-  fi
-}
-
 #-----------------------------------------------------------------------------#
 # REPLs
 #-----------------------------------------------------------------------------#
