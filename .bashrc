@@ -284,6 +284,16 @@ man() {  # always show useful information when man is called
   fi
 }
 
+# Prevent git stash from running without 'git stash push'
+# https://stackoverflow.com/q/48751491/4970632
+git() {
+  if [[ "$#" -eq 1 ]] && [[ "$1" = "stash" ]];then
+    echo 'Error: Run "git stash push" instead.' 1>&2
+  else
+    command git "$@"
+  fi
+}
+
 # Editor stuff
 # VIM command to keep track of session -- need to 'source' the sessionfile, which is
 # just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
