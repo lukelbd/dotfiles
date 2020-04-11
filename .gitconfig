@@ -4,6 +4,8 @@
 # https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------
 # NEW COMMANDS
+# 'figs':
+#   Add and push figures with simple default message.
 # 'amend':
 #   Change the name of arbitrary commit messages; just provide a SHA1 reference
 #   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
@@ -71,6 +73,7 @@
 	deleted    = "!git-deleted $@"
 	exec       = "!exec "
 	get        = "!get-get $@"
+	figs       = "!git add --all '*.pdf' '*.png' && git commit -m 'Update figures.' && git push origin master"
 	hist       = log -p --
 	ignore     = "!git-ignore $@"
 	leaf       = "!git log $@.. --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
