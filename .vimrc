@@ -656,29 +656,23 @@ endif
 " Add global delims with vim-textools plugin functions and declare my weird
 " mapping defaults due to Karabiner
 if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
-  " Add related bibtex pairing
-  " Note that fzf-bibtex is not yet an official vim plugin
-  " Todo: Move this to custom .vim/ftplugin/tex.vim file? No because want
-  " to keep most of it in textools plugin.
-  augroup textools_settings
-    au!
-    au FileType tex call s:apply_tex_maps()
-  augroup END
-  function! s:apply_tex_maps()
-    inoremap <buffer> <silent> <C-s><C-s> <C-o>:echo textools#show_bindings(g:textools_surround_prefix, g:textools_surround_map)<CR>
-    inoremap <buffer> <silent> <C-z><C-z> <C-o>:echo textools#show_bindings(g:textools_snippet_prefix, g:textools_snippet_map)<CR>
-    inoremap <buffer> <expr> <C-z>; '<C-g>u' . textools#cite_select()
-    inoremap <buffer> <expr> <C-z>: '<C-g>u' . textools#graphics_select()
-  endfunction
+  " Set the cache directory for bibtex plugin
+  let s:cache_dir = expand('~/Library/Caches/bibtex')
+  if !isdirectory(s:cache_dir)
+    echohl WarningMsg
+    echom 'Warning: Cache directory ''' . s:cache_dir . '''does not exist.'
+    echohl None
+  endif
+  let $FZF_BIBTEX_CACHEDIR = s:cache_dir
 
   " Delimiter mappings
   " Todo: Fix these mappings.
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
   let g:textools_latexmk_maps = {
-    \ '<C-z>': '',
-    \ '<Leader>z': '--diff',
-    \ '<Leader>Z': '--word',
+    \ '<C-z>': '--pull',
+    \ '<Leader>z': '--pull --diff',
+    \ '<Leader>Z': '--pull --word',
     \ }
 
   " Add *global* surround maps in same style as textool surround maps
