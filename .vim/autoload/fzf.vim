@@ -3,7 +3,7 @@
 " and re-generating the lists.
 "-----------------------------------------------------------------------------"
 " Function used with input() to prevent tab expansion
-function! s:null_list(...) abort
+function! NullList(...) abort
   return []
 endfunction
 
@@ -67,7 +67,7 @@ function! fzf#open_continuous(path) abort
     " Todo: Permit opening multiple files at once?
     let item = items[0]
     if item == s:newfile
-      let item = input('Enter new filename (' . prompt . '): ', '', 'customlist,s:null_list')
+      let item = input(prompt . '/', '', 'customlist,NullList')
       if !len(item)
         let path = ''
       else

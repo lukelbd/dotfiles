@@ -1482,8 +1482,7 @@ printf "done\n"
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ -f ~/.fzf.bash ]; then
-  _bashrc_message "Enabling fzf"
-  # Various default settings (export not necessary)
+  # Various default settings
   # See man page for --bind information
   # NOTE: Critical to export default options so they are used by vim.
   # * Inline info puts the number line thing on same line as text. More
@@ -1492,6 +1491,7 @@ if [ -f ~/.fzf.bash ]; then
   #   normal bash shell completion.
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual. Here, '-1' is terminal default, not '0'.
+  _bashrc_message "Enabling fzf"
   _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
     --select-1 --exit-0 --inline-info --height=6 \
@@ -1499,9 +1499,9 @@ if [ -f ~/.fzf.bash ]; then
     "
   # shellcheck disable=2034
   {
-  FZF_COMPLETION_COMMANDS=""
-  FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
   export FZF_DEFAULT_OPTS="$_fzf_opts"
+  FZF_COMPLETION_TRIGGER=''  # WARNING: cannot be unset, must be empty string!
+  FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
   }
@@ -1511,39 +1511,27 @@ if [ -f ~/.fzf.bash ]; then
   # defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
   # shellcheck disable=2034
   {
-  FZF_COMPLETION_TRIGGER=''  # WARNING: cannot be unset, must be empty string!
-  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 \
-    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-    -prune -o -type f -print -o -type l \
-    -print 2> /dev/null | cut -b3- \
+  _prune="\\( \
+    -path '*.git' -o -path '*.svn' \
+    -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+    -o -path '*.DS_Store' -o -path '*.vimsession' \
+    -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
+    \\) -prune \
     "
-  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 \
-    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-    -prune -o -type d \
-    -print 2> /dev/null | cut -b3-
+  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_prune \
+    -o -type f -print -o -type l -print 2>/dev/null | cut -b3- \
     "
-  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 \
-    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-    -prune -o -type f -print -o -type d -print -o -type l \
-    -print 2> /dev/null | cut -b3- \
+  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_prune \
+    -o -type d -print 2>/dev/null | cut -b3- \
+    "  # recursively search directories and cd into them
+  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_prune \
+    -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
+    "  # recursively search files
+  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_prune \
+    -o -type d -print 2>/dev/null | sed 's@^.*/@@' \
     "
-  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" \
-      -maxdepth 1 -mindepth 1 \
-      \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-          -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-      -prune -o \\( -type d -o -type f -o -type l \\) -a -not -path \"\$1\" \
-      -a -not \\( -name '*.DS_Store' -o -name '*.vimsession' \\) \
-      -print 2> /dev/null | sed 's@^\\./@@' \
-    "
-  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" \
-    -maxdepth 1 -mindepth 1 \
-    \\( -path '*.git' -o -path '*.svn' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-        -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \\) \
-    -prune -o -type d -a -not -path \"\$1\" \
-    -print 2> /dev/null | sed 's@^\\./@@' \
+  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_prune \
+    -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
     "
   }
 
@@ -1551,6 +1539,27 @@ if [ -f ~/.fzf.bash ]; then
   complete -r  # reset first
   source ~/.fzf.bash
   printf "done\n"
+
+  # FZF tab completion for non-empty line that is not preceded by word + space.
+  # https://stackoverflow.com/a/42085887/4970632
+  # https://unix.stackexchange.com/a/217916/112647
+  # NOTE: This prevents the '-o' options from getting used becuase we call the
+  # functions directly... but perhaps better to relegate everything to the
+  # functions, and not sure when -o default and -o bashdefault even get used.
+  # function _complete_override () {
+  #   local cmd func
+  #   [[ "$READLINE_LINE" =~ " " ]] && cmd="${READLINE_LINE%% *}"
+  #   if [ -z "$cmd" ]; then
+  #     func=$(complete -p | awk '$NF == "-E" {print $(NF-1)}')
+  #   else
+  #     func=$(complete -p | awk '$NF == "'"$cmd"'" {print $(NF-1)}')
+  #   fi
+  #   [ -z "$func" ] && func=$(complete -p | awk '$NF == "-D" {print $(NF-1)}')
+  #   [ -z "$func" ] && echo "Error: No default completion function." && return 1
+  #   "$func" | printf -v READLINE_LINE "%s"
+  #   READLINE_POINT=${#READLINE_LINE}
+  # }
+  # bind -x '"\C-i": _complete_override'
 fi
 
 #-----------------------------------------------------------------------------#
