@@ -481,6 +481,9 @@ alias builtins="compgen -b"            # bash builtins
 alias commands="compgen -c"
 alias keywords="compgen -k"
 alias modules="module avail 2>&1 | cat "
+# shellcheck disable=2142
+$_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
+$_macos || alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
 if $_macos; then
   alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
   alias bindings_stty="stty -e"  # bindings
@@ -492,50 +495,34 @@ alias inputrc_ops="bind -v"    # the 'set' options, and their values
 alias inputrc_funcs="bind -l"  # the functions, for example 'forward-char'
 env() { set; }                 # just prints all shell variables
 
+# Directory sizes, normal and detailed, analagous to ls/ll
+# shellcheck disable=2032
+alias du='du -h -d 1'
+alias df='df -h'
+alias pmount="simple-mtpfs -f -v ~/Phone"
+mv() {
+  git mv "$@" 2>/dev/null || command mv "$@"
+}
+ds() {
+  local dir='.'
+  [ $# -gt 1 ] && echo "Too many directories." && return 1
+  [ $# -eq 1 ] && dir="$1"
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
+}
+# shellcheck disable=2033
+dl() {
+  local dir='.'
+  [ $# -gt 1 ] && echo "Too many directories." && return 1
+  [ $# -eq 1 ] && dir="$1"
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
+}
+
 #-----------------------------------------------------------------------------#
 # General utilties
 #-----------------------------------------------------------------------------#
 # Save path before setting up conda. Brew conflicts with conda (try "brew doctor" to see)
 # shellcheck disable=2139
 alias brew="PATH=\"$PATH\" brew"
-
-# Simple zotfile doctor shorthands
-_zotfile_database="$HOME/Zotero/zotero.sqlite"
-_zotfile_storage="$HOME/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents"
-alias zotfile-doctor="command zotfile-doctor '$_zotfile_database' '$_zotfile_storage'"
-yesno() {
-  local yn
-  while true; do
-    read -n1 -r -p "$1 ([y]/n)? " yn
-    [ -z "$yn" ] && yn='y'
-    case "$yn" in
-      [Yy]*) return 0 ;;
-      [Nn]*) return 1 ;;
-      *) echo "Please answer yes or no.";;
-    esac
-  done
-  return 1
-}
-zotfile-cleanup() {
-  # Find files
-  local files
-  files=$(zotfile-doctor | awk 'trigger {print $0}; /files in zotfile directory/ {trigger=1}') \
-  || {
-    echo "zotfile-doctor failed."
-    return 1
-  }
-  [ -n "$files" ] || {
-    echo "No untracked files found."
-    return 0
-  }
-  # Delete files
-  echo $'Found untracked files:\n'"$files"
-  if yesno "Delete these files"; then
-    echo
-    echo "$files" | awk "{print \"$_zotfile_storage/\" \$0}" | tr '\n' '\0' | xargs -0 rm
-    echo "Deleted files."
-  fi
-}
 
 # Configure ls behavior, define colorization using dircolors
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
@@ -565,31 +552,6 @@ if hash tput 2>/dev/null; then
   export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
-# Information on directories
-# shellcheck disable=2142
-$_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
-$_macos || alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
-# Directory sizes, normal and detailed, analagous to ls/ll
-# shellcheck disable=2032
-alias du='du -h -d 1'
-alias df="df -h"
-alias pmount="simple-mtpfs -f -v ~/Phone"
-mv() {
-  git mv "$@" 2>/dev/null || command mv "$@"
-}
-ds() {
-  local dir='.'
-  [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -eq 1 ] && dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
-}
-# shellcheck disable=2033
-dl() {
-  local dir='.'
-  [ $# -gt 1 ] && echo "Too many directories." && return 1
-  [ $# -eq 1 ] && dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
-}
 # Find but ignoring hidden folders and stuff
 alias quickfind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
 
@@ -756,6 +718,45 @@ bytes2human() {
     done
     echo "$b$d${S[$s]}"
   done
+}
+
+# Simple zotfile doctor shorthands
+_zotfile_database="$HOME/Zotero/zotero.sqlite"
+_zotfile_storage="$HOME/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents"
+# shellcheck disable=2139
+alias zotfile-doctor="command zotfile-doctor '$_zotfile_database' '$_zotfile_storage'"
+yesno() {
+  local yn
+  while true; do
+    read -n1 -r -p "$1 ([y]/n)? " yn
+    [ -z "$yn" ] && yn='y'
+    case "$yn" in
+      [Yy]*) return 0 ;;
+      [Nn]*) return 1 ;;
+      *) echo "Please answer yes or no.";;
+    esac
+  done
+  return 1
+}
+zotfile-cleanup() {
+  # Find files
+  local files
+  files=$(zotfile-doctor | awk 'trigger {print $0}; /files in zotfile directory/ {trigger=1}') \
+  || {
+    echo "zotfile-doctor failed."
+    return 1
+  }
+  [ -n "$files" ] || {
+    echo "No untracked files found."
+    return 0
+  }
+  # Delete files
+  echo $'Found untracked files:\n'"$files"
+  if yesno "Delete these files"; then
+    echo
+    echo "$files" | awk "{print \"$_zotfile_storage/\" \$0}" | tr '\n' '\0' | xargs -0 rm
+    echo "Deleted files."
+  fi
 }
 
 #-----------------------------------------------------------------------------#
