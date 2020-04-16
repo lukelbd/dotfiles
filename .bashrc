@@ -201,11 +201,6 @@ export PATH=$(tr -d '\n ' <<< "
   $PATH
 ")
 
-# Save path before setting up conda
-# Brew conflicts with anaconda (try "brew doctor" to see)
-# shellcheck disable=2139
-alias brew="PATH=\"$PATH\" brew"
-
 # Various python stuff
 export PYTHONPATH=""  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
@@ -287,7 +282,7 @@ man() {  # always show useful information when man is called
 # Prevent git stash from running without 'git stash push'
 # https://stackoverflow.com/q/48751491/4970632
 git() {
-  if [[ "$#" -eq 1 ]] && [[ "$1" = "stash" ]];then
+  if [[ "$#" -eq 1 ]] && [[ "$1" = "stash" ]]; then
     echo 'Error: Run "git stash push" instead.' 1>&2
   else
     command git "$@"
@@ -500,6 +495,48 @@ env() { set; }                 # just prints all shell variables
 #-----------------------------------------------------------------------------#
 # General utilties
 #-----------------------------------------------------------------------------#
+# Save path before setting up conda. Brew conflicts with conda (try "brew doctor" to see)
+# shellcheck disable=2139
+alias brew="PATH=\"$PATH\" brew"
+
+# Simple zotfile doctor shorthands
+_zotfile_database="$HOME/Zotero/zotero.sqlite"
+_zotfile_storage="$HOME/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents"
+alias zotfile-doctor="command zotfile-doctor '$_zotfile_database' '$_zotfile_storage'"
+yesno() {
+  local yn
+  while true; do
+    read -n1 -r -p "$1 ([y]/n)? " yn
+    [ -z "$yn" ] && yn='y'
+    case "$yn" in
+      [Yy]*) return 0 ;;
+      [Nn]*) return 1 ;;
+      *) echo "Please answer yes or no.";;
+    esac
+  done
+  return 1
+}
+zotfile-cleanup() {
+  # Find files
+  local files
+  files=$(zotfile-doctor | awk 'trigger {print $0}; /files in zotfile directory/ {trigger=1}') \
+  || {
+    echo "zotfile-doctor failed."
+    return 1
+  }
+  [ -n "$files" ] || {
+    echo "No untracked files found."
+    return 0
+  }
+  # Delete files
+  echo $'Found untracked files:\n'"$files"
+  if yesno "Delete these files"; then
+    echo
+    echo "$files" | awk "{print \"$_zotfile_storage/\" \$0}" | tr '\n' '\0' | xargs -0 rm
+    echo "Deleted files."
+  fi
+}
+
 # Configure ls behavior, define colorization using dircolors
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
 alias ls="ls --color=always -AF"   # ls useful (F differentiates directories from files)

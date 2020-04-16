@@ -1272,8 +1272,8 @@ augroup END
 command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
 " Opening file in current directory and some input directory
 nnoremap <C-o> :Open 
-nnoremap <C-y> :Open .<CR>
-nnoremap <silent> <C-p> :Files 
+nnoremap <C-p> :Files 
+nnoremap <silent> <C-y> :Open .<CR>
 nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
 " Tab selection and movement
 noremap gt <Nop>
