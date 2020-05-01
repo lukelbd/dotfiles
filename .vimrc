@@ -98,7 +98,7 @@ if has('gui_running')
 endif
 
 " Special settings
-let g:set_overrides = 'linebreak wrapmargin=0 textwidth=0 formatoptions=lroj'
+let g:set_overrides = 'linebreak wrapmargin=0 textwidth=77 formatoptions=lrojcq'
 exe 'setlocal ' . g:set_overrides
 augroup set_overrides
   au!
@@ -494,6 +494,8 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'ivanov/vim-ipython'  " dead
 Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
+Plug 'goerz/jupytext.vim'  " edit ipython notebooks
+let g:jupytext_fmt = 'py:percent'
 
 " Folding and matching
 " Plug 'tmhedberg/SimpylFold'
@@ -1273,8 +1275,7 @@ command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
 " Opening file in current directory and some input directory
 nnoremap <C-o> :Open 
 nnoremap <C-p> :Files 
-nnoremap <silent> <C-y> :Open .<CR>
-nnoremap <silent> <F3> :exe 'Open '.expand('%:h')<CR>
+nnoremap <expr> <F3> ':Open ' . expand('%:h') . '/'
 " Tab selection and movement
 noremap gt <Nop>
 noremap gT <Nop>
@@ -1345,29 +1346,43 @@ augroup search_replace
   au InsertEnter * set noignorecase " default ignore case
   au InsertLeave * set ignorecase
 augroup END
+
 " Delete commented text. For some reason search screws up when using \(\) groups, maybe
 " because first parts of match are identical?
-noremap <expr> <silent> \c ''
-    \ . (mode() =~ '^n' ? 'V' : '') . ':<C-u>'
-    \ . "'<,'>" . 's/^\s*' . Comment() . '.*$\n//ge \| '
-    \ . "'<,'>" . 's/\s\s*' . Comment() . '.*$//ge \| noh<CR>'
+noremap <silent> \c
+  \ :call utils#replace(0, '^\s*' . Comment() . '.*$\n', '', '\s\s*' . Comment() . '.*$//ge')<CR>
+  \ :echom "Removed comments"<CR>
+
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <silent> \s :s/\(\S\)\@<=\(^ \+\)\@<! \{2,}/ /g \| noh<CR>:echom "Squeezed consecutive spaces."<CR>
-noremap <silent> \S :s/\(\S\)\@<=\(^ \+\)\@<! //g \| noh<CR>:echom "Removed whitespace."<CR>
-noremap <silent> \w :s/\s\+$//g \| noh<CR>:echom "Trimmed trailing whitespace."<CR>
+noremap <silent> \s
+  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! \{2,}', ' ')<CR>:echom "Squeezed whitespace."<CR>
+noremap <silent> \S
+  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! ', '')<CR>:echom "Removed whitespace."<CR>
+noremap <silent> \w
+  \ :call utils#replace(0, '\s\+$', '')<CR>:echom "Trimmed trailing whitespace."<CR>
+
 " Delete empty lines
 " Replace consecutive newlines with single newline
-noremap <silent> \e :s/^\s*$\n//g \| noh<CR>:echom "Removed empty lines."<CR>
-noremap <silent> \E :s/\(\n\s*\n\)\(\s*\n\)\+/\1/g \| noh<CR>:echom "Squeezed consecutive newlines."<CR>
-" Replace tabs with spaces
-noremap <expr> <silent> \<Tab> ':s/\t/'  . repeat(' ', &tabstop) . '/g \| noh<CR>'
+noremap <silent> \e
+  \ :call utils#replace(0, '\(\n\s*\n\)\(\s*\n\)\+', '\1')<CR>:echom "Squeezed consecutive newlines."<CR>
+noremap <silent> \E
+  \ :call utils#replace(0, '^\s*$\n', '')<CR>:echom "Removed empty lines."<CR>
+
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-nnoremap <silent> \' :silent! %s/‘/`/g<CR>:silent! %s/’/'/g<CR>:echom "Fixed single quotes."<CR>
-nnoremap <silent> \" :silent! %s/“/``/g<CR>:silent! %s/”/''/g<CR>:echom "Fixed double quotes."<CR>
-nnoremap <silent> \- :silent! %s/–/--/g<CR>:echom "Fixed long dashes."<CR>
-nnoremap <silent> \_ :silent! %s/\(\w\)[-–] /\1/g<CR>:echom "Fixed trailing dashes."<CR>
+nnoremap <silent> \'
+  \ :call utils#replace(1, '‘', '`', '’', "'")<CR>:echom "Fixed single quotes."<CR>
+nnoremap <silent> \"
+  \ :call utils#replace(1, '“', '``', '”', "''")<CR>:echom "Fixed double quotes."<CR>
+nnoremap <silent> \-
+  \ :call utils#replace(1, '–', '--')<CR>:echom "Fixed long dashes."<CR>
+nnoremap <silent> \_
+  \ :call utils#replace(1, '\(\w\)[-–] ', '\1')<CR>:echom "Fixed wordbreak dashes."<CR>
+
+" Replace tabs with spaces
+noremap <silent> \<Tab>
+  \ :call utils#replace(1, '\t', repeat(' ', &tabstop))<CR>:echom "Fixed tabs."<CR>
 
 " CAPS LOCK
 " See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
@@ -1499,12 +1514,12 @@ augroup syntax_overrides
   au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
 augroup END
 function! s:keyword_setup()
+   " Markdown headers
+   " syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
+   " hi link markdownHeader Special
   " URL highlighting
    syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
    hi link customURL Underlined
-   " Markdown headers
-   syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
-   hi link markdownHeader Special
    " Warnings, errors, and shebangs
    if &ft !=# 'vim'
      syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments

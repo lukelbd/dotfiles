@@ -1,6 +1,24 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
+" Search replace without polluting history
+" Undoing this command will move the cursor to the first line in the range of
+" lines that was changed: https://stackoverflow.com/a/52308371/4970632
+function! utils#replace(global, ...) range abort
+  let prevhist = @/
+  let winview = winsaveview()
+  let region = (a:global ? '%' : a:firstline . ',' . a:lastline)
+  echom join(a:000, ', ')
+  for i in range(0, a:0 - 2, 2)
+    let search = a:000[i]
+    let replace = a:000[i + 1]
+    keepjumps exe region . 's@' . search . '@' . replace . '@ge'
+    call histdel('/', -1)
+    let @/ = prevhist
+  endfor
+  call winrestview(winview)
+endfunction
+
 " Tab functions
 function! utils#tab_increase() abort  " use this inside <expr> remaps
   let b:menupos += 1 | return ''
