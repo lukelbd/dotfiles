@@ -69,31 +69,31 @@
 	amend      = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	branches   = "!git remote prune origin; git --no-pager branch -vv --all"
 	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
-	delete     = "!git-delete $@"
-	deleted    = "!git-deleted $@"
-	exec       = "!exec "
-	get        = "!get-get $@"
+	delete     = "!git-delete \"$@\""
+	deleted    = "!git-deleted \"$@\""
+	exec       = "!exec \"$@\""
+	get        = "!get-get \"$@\""
 	figs       = "!git add --all '*.pdf' '*.png' && git commit -m 'Update figures.' && git push origin master"
 	hist       = log -p --
-	ignore     = "!git-ignore $@"
-	leaf       = "!git log $@.. --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
+	ignore     = "!git-ignore \"$@\""
+	leaf       = "!git log \"$@\". --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
 	long       = status --long --branch
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
-	pack       = "!git-pack $@"
+	pack       = "!git-pack \"$@\""
 	remotes    = remote --verbose
 	rmupstream = branch --unset-upstream
 	root       = rev-parse --show-toplevel
 	short      = status --short --branch
 	stat       = diff --stat
 	tags       = push origin --tags
-	tree       = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color $@ 2>/dev/null"
-	truncate   = "!git-truncate $@"
-	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $@ 2>/dev/null"
-	update     = "!git fetch --all; git stash clear; git stash; git merge $@; git stash pop"
-	user       = "!git-user $@"
-	vim        = "!git-vim $@"
-	wtf        = "!git-wtf $@"
+	tree       = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
+	truncate   = "!git-truncate \"$@\""
+	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color \"$@\" 2>/dev/null"
+	update     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
+	user       = "!git-user \"$@\""
+	vim        = "!git-vim \"$@\""
+	wtf        = "!git-wtf \"$@\""
 [color]
 	ui = on
 [core]
