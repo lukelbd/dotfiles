@@ -552,12 +552,32 @@ if hash tput 2>/dev/null; then
   export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
-# Find but ignoring hidden folders and stuff
-alias quickfind="find . -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) -prune -o"
-
-# Grepping and diffing; enable colors
-alias grep="grep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
-alias egrep="egrep --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn --color=auto"
+# Grepping and diffing useful for refactoring or searching for files
+qfind() {
+ command find "$1" \
+   -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) \
+   -prune -o "${@:2}"
+}
+pfind() {
+  command find "$1" \
+    -type d \( \
+      -name .eggs -o -name .git -o -name .svn -o -name .ipynb_checkpoints \
+      -o -name plugged -o -name build -o -name api -o -name fabio -o -name trash \
+      -o -name externals \
+    \) -prune -o -name 'CHANGELOG*' -prune -o \
+    -type f \( \
+      -name '*.py' -o -name '*.ipynb' -o -name '*.rst' \
+    \) "${@:2}"
+}
+pgrep() {
+  command grep "$@" \
+    -E --color=auto \
+    --exclude=CHANGELOG* --include=*.py --include=*.ipynb --include=*.rst \
+    --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn \
+    --exclude=dir=\.eggs --exclude-dir=build --exclude-dir=api \
+    --exclude-dir=trash --exclude-dir=fabio \
+    --exclude-dir=.ipynb_checkpoints
+}
 hash colordiff 2>/dev/null && alias diff="command colordiff"  # use --name-status to compare directories
 
 # Query files
