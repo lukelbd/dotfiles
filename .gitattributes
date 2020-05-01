@@ -1,11 +1,9 @@
-# Notebook stuff; use filter to modify file when it is staged, use
-# the diff to modify files before comparing in git diff
+# See: https://github.com/kynan/nbstripout
 *.ipynb filter=nbstripout
 *.ipynb diff=ipynb
-# *.ipynb filter=nbstripout diff=ipynb
 
 # Mark files as binary
-# This extension list was just copied from .dircolors.ansi
+# The extension list was just copied from .dircolors.ansi
 # Image
 *.bmp  -text -diff
 *.cgm  -text -diff
