@@ -42,7 +42,7 @@ set history=100  " search history
 set shell=/usr/bin/env\ bash
 set nrformats=alpha  " never interpret numbers as 'octal'
 set scrolloff=4
-let &g:colorcolumn = (has('gui_running') ? '0' : '80,120')
+let &g:colorcolumn = (has('gui_running') ? '0' : '89,120')
 set slm=  " disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set updatetime=1000  " used for CursorHold autocmds
@@ -492,6 +492,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
 " Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython'  " dead
+" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
@@ -642,7 +643,7 @@ if PlugActive('vim-idetools') || &rtp =~# 'vim-idetools'
   nnoremap <silent> <Leader>C :CTagsDisplay<CR>
 endif
 if PlugActive('black')
-  let g:black_linelength = 79
+  let g:black_linelength = 88
   let g:black_skip_string_normalization = 1
 endif
 
@@ -1041,6 +1042,10 @@ if PlugActive('nerdtree')
   nnoremap <Leader>n :NERDTree %<CR>
 endif
 
+" Autopep8
+if PlugActive('autopep8')
+endif
+
 " Syntastic
 if PlugActive('syntastic')
   " Maps and commands for circular location-list scrolling
@@ -1086,10 +1091,14 @@ if PlugActive('syntastic')
   let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
   " let g:syntastic_tex_checkers = ['chktex']
 
-  " Flake8 ignore list:
-  " * Allow imports after statements (E402)
-  " * Allow multiple spaces before operators for alignment (E211)
-  let g:syntastic_python_flake8_post_args='--ignore=W503,E402,E221,E731'
+  " Flake8 ignore list (also apply to autopep8 while we're at it):
+  " * Allow line break before binary operator (W503)
+  " * Allow imports after statements, important for jupytext (E402)
+  " * Allow multiple spaces before operators for alignment (E221)
+  " * Allow assigning lambda expressions instead of def (E731)
+  let g:autopep8_ignore='W503,E402,E221,E731'
+  let g:autopep8_max_line_length=88
+  let g:syntastic_python_flake8_post_args='--max-line-length=88 --ignore=W503,E402,E221,E731'
 
   " Syntastic ignore list:
   " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
@@ -1304,7 +1313,7 @@ nnoremap <Tab>i zt
 nnoremap <Tab>o zb
 nnoremap <Tab>u zH
 nnoremap <Tab>p zL
-nnoremap <silent> <Tab>= :<C-u>vertical resize 80<CR>
+nnoremap <silent> <Tab>= :<C-u>vertical resize 90<CR>
 nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3*max([1, v:count]))<CR>
 nnoremap <silent> <Tab>) :<C-u>exe 'resize ' . (winheight(0) + 3*max([1, v:count]))<CR>
 nnoremap <silent> <Tab>_ :<C-u>exe 'resize ' . (winheight(0) - 5*max([1, v:count]))<CR>
@@ -1528,6 +1537,10 @@ function! s:keyword_setup()
      syn clear vimTodo " vim instead uses the Stuff: syntax
    endif
 endfunction
+
+" Helper functions when things break
+nnoremap <Leader>y :<C-u>syntax sync fromstart \| redraw!<CR>
+nnoremap <Leader>Y :<C-u>syntax sync minlines=10000 \| redraw!<CR>
 
 " Filetype specific commands
 " highlight link htmlNoSpell

@@ -90,6 +90,7 @@
 	tree       = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
 	truncate   = "!git-truncate \"$@\""
 	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color \"$@\" 2>/dev/null"
+	unstage    = reset --soft
 	update     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
 	user       = "!git-user \"$@\""
 	vim        = "!git-vim \"$@\""
