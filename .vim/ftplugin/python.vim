@@ -4,12 +4,11 @@
 " Various settings and macros for python files
 " Includes a couple mappings for converting {'a':1} to a=1
 "-----------------------------------------------------------------------------"
-" Settings
+" Misc settings
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
 setlocal indentexpr=s:pyindent(v:lnum)  " new indent expression
 setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python ftplugin syntax option
-" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 
 " Run current script in shell
 nnoremap <silent> <buffer> <C-z> :update<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
@@ -45,7 +44,7 @@ function! s:kwtrans(mode) range
       let suffix = string[lastcol + 1:]
       let string = string[:lastcol]
     endif
-    if len(matchstr(string, ':')) > 0 && len(matchstr(string, '-')) > 0
+    if len(matchstr(string, ':')) > 0 && len(matchstr(string, '=')) > 0
       echom 'Error: Ambiguous line.'
       return
     endif

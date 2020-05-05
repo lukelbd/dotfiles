@@ -12,9 +12,13 @@ elseif exists('b:current_syntax')
   finish
 endif
 
-"
+" Fix syntax highlighting sync issues. See:
+" https://stackoverflow.com/a/28114709/4970632
+" https://github.com/vim/vim/issues/2790
+" Sometimes maxlines works, sometimes minlines works. No consistency :/
+syntax sync minlines=20
+
 " Commands
-"
 command! -buffer Python2Syntax let b:python_version_2 = 1 | let &syntax = &syntax
 command! -buffer Python3Syntax let b:python_version_2 = 0 | let &syntax = &syntax
 
@@ -38,9 +42,8 @@ function! s:Python2Syntax()
   return s:Enabled('g:python_version_2')
 endfunction
 
-"
+
 " Default options
-"
 call s:EnableByDefault('g:python_slow_sync')
 
 if s:Enabled('g:python_highlight_all')
@@ -61,10 +64,8 @@ if s:Enabled('g:python_highlight_all')
   call s:EnableByDefault('g:python_highlight_operators')
 endif
 
-"
-" Keywords
-"
 
+" Keywords
 syn keyword pythonStatement     break continue del return pass yield global assert lambda with
 syn keyword pythonStatement     raise nextgroup=pythonExClass skipwhite
 syn keyword pythonStatement     def class nextgroup=pythonFunction skipwhite
@@ -100,19 +101,15 @@ else
 endif
 
 
-"
 " Operators
-"
 syn keyword pythonOperator      and in is not or
 if s:Enabled('g:python_highlight_operators')
     syn match pythonOperator        '\V=\|-\|+\|*\|@\|/\|%\|&\||\|^\|~\|<\|>\|!='
 endif
 syn match pythonError           '[$?]\|\([-+@%&|^~]\)\1\{1,}\|\([=*/<>]\)\2\{2,}\|\([+@/%&|^~<>]\)\3\@![-+*@/%&|^~<>]\|\*\*[*@/%&|^<>]\|=[*@/%&|^<>]\|-[+*@/%&|^~<]\|[<!>]\+=\{2,}\|!\{2,}=\+' display
 
-"
-" Decorators (new in Python 2.4)
-"
 
+" Decorators (new in Python 2.4)
 syn match   pythonDecorator    '^\s*\zs@' display nextgroup=pythonDottedName skipwhite
 if s:Python2Syntax()
   syn match   pythonDottedName '[a-zA-Z_][a-zA-Z0-9_]*\%(\.[a-zA-Z_][a-zA-Z0-9_]*\)*' display contained
@@ -121,10 +118,8 @@ else
 endif
 syn match   pythonDot        '\.' display containedin=pythonDottedName
 
-"
-" Comments
-"
 
+" Comments
 syn match   pythonComment       '#.*$' display contains=pythonTodo,@Spell
 if !s:Enabled('g:python_highlight_file_headers_as_comments')
   syn match   pythonRun         '\%^#!.*$'
@@ -132,10 +127,8 @@ if !s:Enabled('g:python_highlight_file_headers_as_comments')
 endif
 syn keyword pythonTodo          TODO FIXME XXX contained
 
-"
-" Errors
-"
 
+" Errors
 syn match pythonError           '\<\d\+[^0-9[:space:]]\+\>' display
 
 " Mixing spaces and tabs also may be used for pretty formatting multiline
@@ -149,10 +142,8 @@ if s:Enabled('g:python_highlight_space_errors')
   syn match pythonSpaceError    '\s\+$' display
 endif
 
-"
-" Strings
-"
 
+" Strings
 if s:Python2Syntax()
   " Python 2 strings
   syn region pythonString   start=+[bB]\='+ skip=+\\\\\|\\'\|\\$+ excludenl end=+'+ end=+$+ keepend contains=pythonBytesEscape,pythonBytesEscapeError,pythonUniEscape,pythonUniEscapeError,@Spell
@@ -281,10 +272,8 @@ if s:Enabled('g:python_highlight_doctests')
   syn region pythonDocTest2  start='^\s*>>>' skip=+\\"+ end=+"""+he=s-1 end='^\s*$' contained
 endif
 
-"
-" Numbers (ints, longs, floats, complex)
-"
 
+" Numbers (ints, longs, floats, complex)
 if s:Python2Syntax()
   syn match   pythonHexError    '\<0[xX]\x*[g-zG-Z]\+\x*[lL]\=\>' display
   syn match   pythonOctError    '\<0[oO]\=\o*\D\+\d*[lL]\=\>' display
@@ -333,10 +322,8 @@ else
   syn match   pythonFloat       '\<\d\%([_0-9]*\d\)\=\.\d\%([_0-9]*\d\)\=\%([eE][+-]\=\d\%([_0-9]*\d\)\=\)\=[jJ]\=' display
 endif
 
-"
-" Builtin objects and types
-"
 
+" Builtin objects and types
 if s:Enabled('g:python_highlight_builtin_objs')
   syn keyword pythonNone        None
   syn keyword pythonBoolean     True False
@@ -346,7 +333,7 @@ if s:Enabled('g:python_highlight_builtin_objs')
   syn keyword pythonBuiltinObj  __loader__ __spec__ __path__ __cached__
 endif
 
-"
+
 " Builtin functions
 " Note: Modified by lukelbd, added 'exit' to builtin functions
 if s:Enabled('g:python_highlight_builtin_funcs')
@@ -363,18 +350,16 @@ if s:Enabled('g:python_highlight_builtin_funcs')
 
   " Note: modified by lukelbd to only highlight when builtin functions are being *called*, otherwise
   " variables sharing same name as builtin function get highlighted
-  let s:funcs_re = 'syn match pythonBuiltinFunc ''\v\.@<!\zs<%(' . s:funcs_re . ')>\ze\('
   " let s:funcs_re .= '(\s*\=)@!'
+  let s:funcs_re = 'syn match pythonBuiltinFunc ''\v\.@<!\zs<%(' . s:funcs_re . ')>\ze\('
 
   " Note: this closes the regex string with single quote, and calls function
   execute s:funcs_re . ''''
   unlet s:funcs_re
 endif
 
-"
-" Builtin exceptions and warnings
-"
 
+" Builtin exceptions and warnings
 if s:Enabled('g:python_highlight_exceptions')
     let s:exs_re = 'BaseException|Exception|ArithmeticError|LookupError|EnvironmentError|AssertionError|AttributeError|BufferError|EOFError|FloatingPointError|GeneratorExit|IOError|ImportError|IndexError|KeyError|KeyboardInterrupt|MemoryError|NameError|NotImplementedError|OSError|OverflowError|ReferenceError|RuntimeError|StopIteration|SyntaxError|IndentationError|TabError|SystemError|SystemExit|TypeError|UnboundLocalError|UnicodeError|UnicodeEncodeError|UnicodeDecodeError|UnicodeTranslateError|ValueError|VMSError|WindowsError|ZeroDivisionError|Warning|UserWarning|BytesWarning|DeprecationWarning|PendingDepricationWarning|SyntaxWarning|RuntimeWarning|FutureWarning|ImportWarning|UnicodeWarning'
 
