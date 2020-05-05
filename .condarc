@@ -2,7 +2,7 @@ always_yes: true
 show_channel_urls: true
 auto_update_conda: true
 channels:
-  - defaults
+  - conda-forge
 create_default_packages:
   - pip
   - ipykernel
