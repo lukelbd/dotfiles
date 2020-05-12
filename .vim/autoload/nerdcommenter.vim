@@ -55,13 +55,13 @@ endfunction
 function! nerdcommenter#comment_header(fill) abort
   let cchar = Comment()
   let nspace = s:comment_indent()
-  let nfill = (match(getline('.'), '\s*$') - nspace) " location of last non-whitespace char
+  let nfill = match(getline('.'), '\s*$') - nspace " location of last non-whitespace char
   call append(line('.'), repeat(' ', nspace) . repeat(a:fill, nfill))
 endfunction
 function! nerdcommenter#comment_header_surround(fill) abort
   let cchar = Comment()
   let nspace = s:comment_indent()
-  let nfill = (match(getline('.'), '\s*$') - nspace) " location of last non-whitespace char
+  let nfill = match(getline('.'), '\s*$') - nspace " location of last non-whitespace char
   call append(line('.'), repeat(' ', nspace) . repeat(a:fill, nfill))
   call append(line('.') - 1, repeat(' ', nspace) . repeat(a:fill, nfill))
 endfunction
