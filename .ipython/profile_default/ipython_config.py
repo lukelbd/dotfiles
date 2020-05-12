@@ -30,13 +30,13 @@ c.TerminalInteractiveShell.confirm_exit = False
 c.TerminalInteractiveShell.term_title = False
 
 # Run lines
-c.InteractiveShellApp.exec_lines = [
-    '%load_ext autoreload',
-    '%autoreload 2',
-    'import os',
-    'import sys',
-    'import numpy as np',
-]
+c.InteractiveShellApp.exec_lines = """
+%load_ext autoreload
+%autoreload 2
+import os
+import sys
+import numpy as np
+""".strip().split('\n')
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration
