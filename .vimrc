@@ -493,7 +493,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython'  " dead
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
-Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
+" Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
@@ -1095,10 +1095,13 @@ if PlugActive('syntastic')
   " * Allow line break before binary operator (W503)
   " * Allow imports after statements, important for jupytext (E402)
   " * Allow multiple spaces before operators for alignment (E221)
+  " * Allow multiple spaces after commas for alignment (E221)
   " * Allow assigning lambda expressions instead of def (E731)
-  let g:autopep8_ignore='W503,E402,E221,E731'
-  let g:autopep8_max_line_length=88
-  let g:syntastic_python_flake8_post_args='--max-line-length=88 --ignore=W503,E402,E221,E731'
+  let s:len = 88
+  let s:ignore = 'W503,E402,E221,E241,E731'
+  let g:autopep8_ignore = s:ignore
+  let g:autopep8_max_line_length = s:len
+  let g:syntastic_python_flake8_post_args = '--max-line-length=' . s:len . ' --ignore=' . s:ignore
 
   " Syntastic ignore list:
   " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
