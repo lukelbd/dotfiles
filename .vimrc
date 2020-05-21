@@ -98,7 +98,7 @@ if has('gui_running')
 endif
 
 " Special settings
-let g:set_overrides = 'linebreak wrapmargin=0 textwidth=77 formatoptions=lrojcq'
+let g:set_overrides = 'linebreak wrapmargin=0 textwidth=88 formatoptions=lrojcq'
 exe 'setlocal ' . g:set_overrides
 augroup set_overrides
   au!
@@ -1088,7 +1088,7 @@ if PlugActive('syntastic')
   let g:syntastic_python_checkers = ['python', 'flake8']
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
-  let g:syntastic_json_checkers = ['jsonlint']  " https://github.com/Kuniwak/vint
+  let g:syntastic_json_checkers = ['jsonlint']
   " let g:syntastic_tex_checkers = ['chktex']
 
   " Flake8 ignore list (also apply to autopep8 while we're at it):
@@ -1097,8 +1097,9 @@ if PlugActive('syntastic')
   " * Allow multiple spaces before operators for alignment (E221)
   " * Allow multiple spaces after commas for alignment (E221)
   " * Allow assigning lambda expressions instead of def (E731)
+  " * Permit 'l' and 'I' variable names (E741)
   let s:len = 88
-  let s:ignore = 'W503,E402,E221,E241,E731'
+  let s:ignore = 'W503,E402,E221,E241,E731,E741'
   let g:autopep8_ignore = s:ignore
   let g:autopep8_max_line_length = s:len
   let g:syntastic_python_flake8_post_args = '--max-line-length=' . s:len . ' --ignore=' . s:ignore
@@ -1260,7 +1261,8 @@ nnoremap <Leader>S :Autosave<CR>
 " Related utils
 nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :e<CR>
-nnoremap <silent> <Leader>R :syntax sync fromstart \| redraw!<CR>
+command! SyncLong syntax sync fromstart
+command! SyncShort syntax sync minlines=0
 
 " BUFFER QUITTING/SAVING
 " Save and quit, also test whether the :q action closed the entire tab
@@ -1355,46 +1357,46 @@ nnoremap <silent> <Leader>v :Help<CR>
 " * Make sure 'noignorecase' turned on when in insert mode, so *autocompletion* respects case.
 augroup search_replace
   au!
-  au InsertEnter * set noignorecase " default ignore case
+  au InsertEnter * set noignorecase  " default ignore case
   au InsertLeave * set ignorecase
 augroup END
 
 " Delete commented text. For some reason search screws up when using \(\) groups, maybe
 " because first parts of match are identical?
 noremap <silent> \c
-  \ :call utils#replace(0, '^\s*' . Comment() . '.*$\n', '', '\s\s*' . Comment() . '.*$//ge')<CR>
-  \ :echom "Removed comments"<CR>
+  \ :call utils#replace(0, '^\s*' . Comment() . '.*$\n', '', '\s\+' . Comment() . '.*$', '')<CR>
+  \ :echom 'Removed comments.'<CR>
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
 noremap <silent> \s
-  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! \{2,}', ' ')<CR>:echom "Squeezed whitespace."<CR>
+  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! \{2,}', ' ')<CR>:echom 'Squeezed whitespace.'<CR>
 noremap <silent> \S
-  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! ', '')<CR>:echom "Removed whitespace."<CR>
+  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! ', '')<CR>:echom 'Removed whitespace.'<CR>
 noremap <silent> \w
-  \ :call utils#replace(0, '\s\+$', '')<CR>:echom "Trimmed trailing whitespace."<CR>
+  \ :call utils#replace(0, '\s\+$', '')<CR>:echom 'Trimmed trailing whitespace.'<CR>
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
 noremap <silent> \e
-  \ :call utils#replace(0, '\(\n\s*\n\)\(\s*\n\)\+', '\1')<CR>:echom "Squeezed consecutive newlines."<CR>
+  \ :call utils#replace(0, '\(\n\s*\n\)\(\s*\n\)\+', '\1')<CR>:echom 'Squeezed consecutive newlines.'<CR>
 noremap <silent> \E
-  \ :call utils#replace(0, '^\s*$\n', '')<CR>:echom "Removed empty lines."<CR>
+  \ :call utils#replace(0, '^\s*$\n', '')<CR>:echom 'Removed empty lines.'<CR>
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> \'
-  \ :call utils#replace(1, '‘', '`', '’', "'")<CR>:echom "Fixed single quotes."<CR>
+  \ :call utils#replace(1, '‘', '`', '’', "'")<CR>:echom 'Fixed single quotes.'<CR>
 nnoremap <silent> \"
-  \ :call utils#replace(1, '“', '``', '”', "''")<CR>:echom "Fixed double quotes."<CR>
+  \ :call utils#replace(1, '“', '``', '”', "''")<CR>:echom 'Fixed double quotes.'<CR>
 nnoremap <silent> \-
-  \ :call utils#replace(1, '–', '--')<CR>:echom "Fixed long dashes."<CR>
+  \ :call utils#replace(1, '–', '--')<CR>:echom 'Fixed long dashes.'<CR>
 nnoremap <silent> \_
-  \ :call utils#replace(1, '\(\w\)[-–] ', '\1')<CR>:echom "Fixed wordbreak dashes."<CR>
+  \ :call utils#replace(1, '\(\w\)[-–] ', '\1')<CR>:echom 'Fixed wordbreak dashes.'<CR>
 
 " Replace tabs with spaces
 noremap <silent> \<Tab>
-  \ :call utils#replace(1, '\t', repeat(' ', &tabstop))<CR>:echom "Fixed tabs."<CR>
+  \ :call utils#replace(1, '\t', repeat(' ', &tabstop))<CR>:echom 'Fixed tabs.'<CR>
 
 " CAPS LOCK
 " See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
