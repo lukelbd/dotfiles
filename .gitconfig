@@ -99,8 +99,9 @@
 	ui = on
 [core]
 	attributesfile = ~/.gitattributes
-	ignorecase = false
+	excludesfile = ~/.gitignore
 	mergeoptions = --no-edit
+	ignorecase = false
 [interactive]
 	singleKey = true
 [merge]
