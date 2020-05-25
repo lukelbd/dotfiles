@@ -5,7 +5,7 @@
 # Create symlinks from $HOME to the committed files in $HOME/dotfiles
 ################################################################################
 # Files to be ignored
-exclude=(.gitignore README.md setup cleanup originals)
+exclude=(README.md .gitignore setup cleanup backup)
 
 # Setup
 root="$HOME"
@@ -15,28 +15,29 @@ cd "$dotfiles" || {
   exit 1
 }
 read -r -a files < <(git ls-tree --name-only master | xargs)
-storage="$dotfiles/originals"
-[ -d "$storage" ] || mkdir "$storage"
+backup="$dotfiles/backup"
+[ -d "$backup" ] || mkdir "$backup"
 
 # Move existing stuff to storage, then create symlinks
 for file in "${files[@]}"; do  # iterate through files
-  if ! [[ " ${exclude[*]} " =~ " $file " ]]; then
-    echo "Creating symlink to $file in $HOME/..."
-    if [ -L "$root/$file" ]; then
-      echo "Removing existing symlink $root/$file..."
-      rm "$root/$file"  # remove if symlink
-    elif [ -r "$root/$file" ]; then
-      echo "Moving existing $file file to $storage..."
-      if [ -e "$storage/$file" ]; then
-        echo "Warning: Removing existing backup $storage/$file..."
-        rm -r "$storage/$file"
-      fi
-      mv "$root/$file" "$storage/"  # copy if not
+  [[ " ${exclude[*]} " =~ " $file " ]] && continue
+  dest="$file"
+  [ "$file" == ".gitignore.template" ] && dest=".gitignore"
+  echo "Creating symlink to $file in $HOME/..."
+  if [ -L "$root/$dest" ]; then
+    echo "Removing existing symlink $root/$dest..."
+    rm "$root/$dest"  # remove if symlink
+  elif [ -r "$root/$dest" ]; then
+    echo "Moving existing $dest file to $backup..."
+    if [ -e "$backup/$dest" ]; then
+      echo "Warning: Removing existing backup $backup/$dest..."
+      rm -r "$backup/$dest"
     fi
-    if [ -L "$dotfiles/$file" ]; then  # copy the symlink
-      cp -P "$dotfiles/$file" "$root/$file"
-    else
-      ln -s "$dotfiles/$file" "$root/$file"
-    fi
+    mv "$root/$dest" "$backup/"  # copy if not
+  fi
+  if [ -L "$dotfiles/$file" ]; then  # copy the symlink
+    cp -P "$dotfiles/$file" "$root/$dest"
+  else
+    ln -s "$dotfiles/$file" "$root/$dest"
   fi
 done

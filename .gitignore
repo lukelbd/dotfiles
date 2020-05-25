@@ -19,7 +19,7 @@ tmp
 
 # Storage and trash
 trash
-originals
+backup
 __pycache__
 
 # Jupyter and ipython
