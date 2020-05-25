@@ -340,7 +340,8 @@ nnoremap <silent> <Leader>O :set hlsearch<CR>
 
 " Move to current directory
 " Pneumonic is 'inside' just like Ctrl + i map
-nnoremap <silent> <Leader>i :lcd %:p:h<CR>:echom "Descended into file directory."<CR>
+nnoremap <silent> <Leader>i :call utils#directory_descend()<CR>
+nnoremap <silent> <Leader>I :call utils#directory_return()<CR>
 
 " Enable left mouse click in visual mode to extend selection, normally this is impossible
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632

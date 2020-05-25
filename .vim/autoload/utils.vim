@@ -9,6 +9,7 @@ function! utils#replace(global, ...) range abort
   let winview = winsaveview()
   let region = (a:global ? '%' : a:firstline . ',' . a:lastline)
   echom join(a:000, ', ')
+  " helo
   for i in range(0, a:0 - 2, 2)
     let search = a:000[i]
     let replace = a:000[i + 1]
@@ -17,6 +18,24 @@ function! utils#replace(global, ...) range abort
     let @/ = prevhist
   endfor
   call winrestview(winview)
+endfunction
+
+" Current directory change
+function! utils#directory_descend() abort
+  let cd_prev = getcwd()
+  if !exists('b:cd_prev') || b:cd_prev != cd_prev
+    let b:cd_prev = cd_prev
+  endif
+  lcd %:p:h
+  echom 'Descended into file directory.'
+endfunction
+function! utils#directory_return() abort
+  if exists('b:cd_prev')
+    exe 'lcd ' . b:cd_prev
+    unlet b:cd_prev
+    echom
+  endif
+  echom 'Returned to previous directory.'
 endfunction
 
 " Tab functions
