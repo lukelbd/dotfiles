@@ -80,7 +80,8 @@ set wildmenu
 set wildmode=longest:list,full
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
-let &g:wildignore = '*.pdf,*.doc,*.docs,*.page,*.pages,'
+let &g:wildignore =
+  \ '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,'
   \ . '*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,'
   \ . '*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,'
@@ -467,7 +468,7 @@ Plug 'lilydjwg/colorizer'
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
-Plug 'psf/black'
+Plug 'psf/black', { 'tag': '19.10b0' }
 Plug 'tell-k/vim-autopep8'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
@@ -500,8 +501,8 @@ Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
 " Folding and matching
-" Plug 'tmhedberg/SimpylFold'
 " Plug 'Konfekt/FastFold'
+Plug 'tmhedberg/SimpylFold'
 Plug 'andymass/vim-matchup'
 let g:loaded_matchparen = 1
 let g:matchup_matchparen_enabled = 1
