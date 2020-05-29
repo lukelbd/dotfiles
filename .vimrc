@@ -500,9 +500,14 @@ Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplet
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
-" Folding and matching
-" Plug 'Konfekt/FastFold'
+" Folding
+Plug 'Konfekt/FastFold'
 Plug 'tmhedberg/SimpylFold'
+let g:SimpylFold_docstring_preview = 0
+let g:SimpylFold_fold_docstring = 0
+let g:SimpylFold_fold_import = 0
+
+" Matching groups
 Plug 'andymass/vim-matchup'
 let g:loaded_matchparen = 1
 let g:matchup_matchparen_enabled = 1
@@ -1044,10 +1049,6 @@ if PlugActive('nerdtree')
   nnoremap <Leader>n :NERDTree %<CR>
 endif
 
-" Autopep8
-if PlugActive('autopep8')
-endif
-
 " Syntastic
 if PlugActive('syntastic')
   " Maps and commands for circular location-list scrolling
@@ -1489,17 +1490,17 @@ nnoremap <expr> <nowait> > (v:count) > 1 ? '<Esc>'.repeat('>>', v:count) : '>>'
 nnoremap <expr> <nowait> < (v:count) > 1 ? '<Esc>'.repeat('<<', v:count) : '<<'
 nnoremap <nowait> = ==
 
-" Simpyl settings
-let g:SimpylFold_docstring_preview = 1
-let g:SimpylFold_fold_import = 0
-let g:SimpylFold_fold_imports = 0
-let g:SimpylFold_fold_docstring = 0
-let g:SimpylFold_fold_docstrings = 0
+" Open *all* folds under cursor, not just this one
+nnoremap <expr> zo foldclosed('.') ? 'zA' : ''
 
-" Delete, open, close all folds, to open/close under cursor use zo/zc
-nnoremap zD zE
+" Open *all* folds recursively and update foldlevel
 nnoremap zO zR
+
+" Close *all* folds and update foldlevel
 nnoremap zC zM
+
+" Delete *all* manual folds
+nnoremap zD zE
 
 " GUI VIM COLORS
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
