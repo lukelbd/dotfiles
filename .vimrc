@@ -1,7 +1,7 @@
 "-----------------------------------------------------------------------------"
 " vint: -ProhibitSetNoCompatible
 " A fancy vimrc that does all sorts of magical things.
-" NOTE: Have iTerm map some ctrl+key combinations that would otherwise
+" Note: Have iTerm map some ctrl+key combinations that would otherwise
 " be impossible to the F1, F2 keys. Currently they are:
 "     F1: 1b 4f 50 (Ctrl-,)
 "     F2: 1b 4f 51 (Ctrl-.)
@@ -15,7 +15,7 @@
 " Note when installing with anaconda, you may need to run
 " conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
-" IMPORTANT STUFF and SETTINGS
+" Important stuff and settings
 let &t_Co=256
 exe 'runtime autoload/repeat.vim'
 if ! exists('*repeat#set')
@@ -252,7 +252,8 @@ if exists('&t_EI')
   let &t_EI = (exists('$TMUX') ? "\ePtmux;\e\e[2 q\e\\" : "\e[2 q")
 endif
 
-" NORMAL and VISUAL MODE MAPS
+
+" Normal and visual mode maps
 " Disable keys
 noremap <CR> <Nop>
 noremap <Space> <Nop>
@@ -386,13 +387,12 @@ noremap <Right> <C-i>
 " Search for conflict blocks
 noremap gc /^[<>=\|]\{2,}<CR>
 
-" INSERT and COMMAND WINDOW MAPS
-" Helper functions
+
+" Insert and command mode maps
 augroup popup_opts
   au!
   au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
-
 " Enter means 'accept' only when we have explicitly scrolled down to something
 " Tab always means 'accept' and choose default menu item if necessary
 inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
@@ -423,7 +423,10 @@ inoremap <silent> <C-u> <C-o>:undo<CR>
 cnoremap <expr> <F1> utils#wild_tab(0)
 cnoremap <expr> <F2> utils#wild_tab(1)
 
-" VIM-PLUG PLUGINS
+
+"-----------------------------------------------------------------------------"
+" VimPlug plugins
+"-----------------------------------------------------------------------------"
 " Note: No longer worry about compatibility because we can install everything
 " from conda-forge, including vim and ctags.
 call plug#begin('~/.vim/plugged')
@@ -544,6 +547,14 @@ Plug 'airblade/vim-gitgutter'
 " Shell utilities, including Chmod and stuff
 Plug 'tpope/vim-eunuch'
 
+" Undo
+Plug 'mbbill/undotree'
+noremap <Leader>u :UndotreeToggle<CR>
+if has('persistent_undo')
+  let &undodir=$HOME . '/.undodir'
+  set undofile
+endif
+
 " Completion engines
 " Note: Disable for macvim because not sure how to control its python distro
 " Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
@@ -566,7 +577,6 @@ if ! has('gui_running')
   Plug 'Shougo/neco-vim'
   Plug 'Shougo/echodoc.vim'
 endif
-
 
 " Delimiters
 Plug 'tpope/vim-surround'
@@ -618,7 +628,7 @@ Plug 'tpope/vim-speeddating'  " dates and stuff
 " Plug 'terryma/vim-multiple-cursors'
 
 " Indent line
-" NOTE: This completely messes up search mode. Also requires changing Conceal
+" Note: This completely messes up search mode. Also requires changing Conceal
 " group color, but doing that also messes up latex conceal backslashes (which
 " we need to stay transparent). So forget it probably
 " Plug 'yggdroot/indentline'
@@ -738,7 +748,7 @@ endif
 
 " Vim surround
 " Add shortcuts for surrounding text objects with delims
-" NOTE: More global delims are found in textools plugin because I define
+" Note: More global delims are found in textools plugin because I define
 " some complex helper funcs there
 if PlugActive('vim-surround')
   " Define text object shortcuts
@@ -872,7 +882,7 @@ if PlugActive('vim-fugitive')
 endif
 
 " Git gutter
-" TODO: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
+" Todo: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
 if PlugActive('vim-gitgutter')
   " Create command for toggling on/off; old VIM versions always show signcolumn
   " if signs present, so GitGutterDisable will remove signcolumn.
@@ -905,8 +915,8 @@ if PlugActive('codi.vim')
     au User CodiLeavePost call utils#codi_setup(0)
   augroup END
   command! -nargs=? CodiNew call utils#codi_new(<q-args>)
-  nnoremap <silent> <Leader>u :CodiNew<CR>
-  nnoremap <silent> <Leader>U :Codi!!<CR>
+  nnoremap <silent> <Leader>= :CodiNew<CR>
+  nnoremap <silent> <Leader>+ :Codi!!<CR>
   " See issue: https://github.com/metakirby5/codi.vim/issues/85
   " Interpreter without history, various settings
   let g:codi#autocmd = 'None'
@@ -1048,6 +1058,58 @@ if PlugActive('nerdtree')
   nnoremap <Leader>n :NERDTree %<CR>
 endif
 
+" Tagbar settings
+" * p jumps to tag under cursor, in code window, but remain in tagbar
+" * C-n and C-p browses by top-level tags
+" * o toggles the fold under cursor, or current one
+if PlugActive('tagbar')
+  " Customization, for more info see :help tagbar-extend
+  " To list kinds, see :!ctags --list-kinds=<filetype>
+  " The first number is whether to fold, second is whether to highlight location
+  " \ 'r:refs:1:0', "not useful
+  " \ 'p:pagerefs:1:0' "not useful
+  let g:tagbar_type_tex = {
+      \ 'ctagstype' : 'latex',
+      \ 'kinds'     : [
+          \ 's:sections',
+          \ 'g:graphics:0:1',
+          \ 'l:labels:0:1',
+      \ ],
+      \ 'sort' : 0
+  \ }
+  let g:tagbar_type_vim = {
+      \ 'ctagstype' : 'vim',
+      \ 'kinds'     : [
+          \ 'a:augroups:0',
+          \ 'f:functions:1',
+          \ 'c:commands:1:0',
+          \ 'v:variables:1:0',
+          \ 'm:maps:1:0',
+      \ ],
+      \ 'sort' : 0
+  \ }
+  " Settings
+  let g:tagbar_silent = 1 " no information echoed
+  let g:tagbar_previewwin_pos = 'bottomleft' " result of pressing 'P'
+  let g:tagbar_left = 0 " open on left; more natural this way
+  let g:tagbar_indent = -1 " only one space indent
+  let g:tagbar_show_linenumbers = 0 " not needed
+  let g:tagbar_autofocus = 0 " don't autojump to window if opened
+  let g:tagbar_sort = 1 " sort alphabetically? actually much easier to navigate, so yes
+  let g:tagbar_case_insensitive = 1 " make sorting case insensitive
+  let g:tagbar_compact = 1 " no header information in panel
+  let g:tagbar_width = 15 " better default
+  let g:tagbar_zoomwidth = 15 " don't ever 'zoom' even if text doesn't fit
+  let g:tagbar_expand = 0
+  let g:tagbar_autoshowtag = 2 " never ever open tagbar folds automatically, even when opening for first time
+  let g:tagbar_foldlevel = 1 " setting to zero will override the 'kinds' fields in below dicts
+  let g:tagbar_map_openfold = '='
+  let g:tagbar_map_closefold = '-'
+  let g:tagbar_map_closeallfolds = '_'
+  let g:tagbar_map_openallfolds = '+'
+  nnoremap <silent> <Leader>t :call utils#tagbar_setup()<CR>
+endif
+
 " Syntastic
 if PlugActive('syntastic')
   " Maps and commands for circular location-list scrolling
@@ -1125,7 +1187,7 @@ if PlugActive('syntastic')
 endif
 
 " Tabular
-" NOTE: Common approach below is to match the space 'following' the actual
+" Note: Common approach below is to match the space 'following' the actual
 " delimiter. Useful where we do not want to put delimiter on separate column.
 if PlugActive('tabular')
   " Custom command, ignores lines in the selection that do not match delimiter
@@ -1191,58 +1253,6 @@ if PlugActive('tabular')
   vnoremap <expr> \+ ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0l1<CR>'
 endif
 
-" Tagbar settings
-" * p jumps to tag under cursor, in code window, but remain in tagbar
-" * C-n and C-p browses by top-level tags
-" * o toggles the fold under cursor, or current one
-if PlugActive('tagbar')
-  " Customization, for more info see :help tagbar-extend
-  " To list kinds, see :!ctags --list-kinds=<filetype>
-  " The first number is whether to fold, second is whether to highlight location
-  " \ 'r:refs:1:0', "not useful
-  " \ 'p:pagerefs:1:0' "not useful
-  let g:tagbar_type_tex = {
-      \ 'ctagstype' : 'latex',
-      \ 'kinds'     : [
-          \ 's:sections',
-          \ 'g:graphics:0:1',
-          \ 'l:labels:0:1',
-      \ ],
-      \ 'sort' : 0
-  \ }
-  let g:tagbar_type_vim = {
-      \ 'ctagstype' : 'vim',
-      \ 'kinds'     : [
-          \ 'a:augroups:0',
-          \ 'f:functions:1',
-          \ 'c:commands:1:0',
-          \ 'v:variables:1:0',
-          \ 'm:maps:1:0',
-      \ ],
-      \ 'sort' : 0
-  \ }
-  " Settings
-  let g:tagbar_silent = 1 " no information echoed
-  let g:tagbar_previewwin_pos = 'bottomleft' " result of pressing 'P'
-  let g:tagbar_left = 0 " open on left; more natural this way
-  let g:tagbar_indent = -1 " only one space indent
-  let g:tagbar_show_linenumbers = 0 " not needed
-  let g:tagbar_autofocus = 0 " don't autojump to window if opened
-  let g:tagbar_sort = 1 " sort alphabetically? actually much easier to navigate, so yes
-  let g:tagbar_case_insensitive = 1 " make sorting case insensitive
-  let g:tagbar_compact = 1 " no header information in panel
-  let g:tagbar_width = 15 " better default
-  let g:tagbar_zoomwidth = 15 " don't ever 'zoom' even if text doesn't fit
-  let g:tagbar_expand = 0
-  let g:tagbar_autoshowtag = 2 " never ever open tagbar folds automatically, even when opening for first time
-  let g:tagbar_foldlevel = 1 " setting to zero will override the 'kinds' fields in below dicts
-  let g:tagbar_map_openfold = '='
-  let g:tagbar_map_closefold = '-'
-  let g:tagbar_map_closeallfolds = '_'
-  let g:tagbar_map_openallfolds = '+'
-  nnoremap <silent> <Leader>t :call utils#tagbar_setup()<CR>
-endif
-
 " Session saving
 " Obsession .vimsession triggers update on BufEnter and VimLeavePre
 if PlugActive('vim-obsession') "must manually preserve cursor position
@@ -1266,13 +1276,17 @@ nnoremap <silent> <Leader>r :e<CR>
 command! SyncLong syntax sync fromstart
 command! SyncShort syntax sync minlines=0
 
-" BUFFER QUITTING/SAVING
 " Save and quit, also test whether the :q action closed the entire tab
 " SmartWrite is from tabline plugin
 nnoremap <silent> <C-s> :SmartWrite<CR>
 nnoremap <silent> <C-a> :call utils#vim_close()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#tab_close()<CR>
+
+
+"-----------------------------------------------------------------------------"
+" Additional tools and mappings
+"-----------------------------------------------------------------------------"
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
 " Note: Must change local directory to have term pop up in this dir:
@@ -1281,8 +1295,7 @@ nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
-" OPENING FILES
-" TABS, WINDOWS, AND FILES
+" Tabs, windows, and file
 augroup tabs
   au!
   au TabLeave * let g:lasttab = tabpagenr()
@@ -1292,6 +1305,7 @@ command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
 nnoremap <C-o> :Open 
 nnoremap <C-p> :Files 
 nnoremap <expr> <F3> ':Open ' . expand('%:h') . '/'
+
 " Tab selection and movement
 noremap gt <Nop>
 noremap gT <Nop>
@@ -1305,6 +1319,7 @@ nnoremap <silent> <Tab>< :call fzf#tab_move(eval(tabpagenr()-1))<CR>
 for s:num in range(1,10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor
+
 " Window selection and creation
 nnoremap <Tab>; <C-w><C-p>
 nnoremap <Tab>j <C-w>j
@@ -1313,6 +1328,7 @@ nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
 nnoremap <Tab>- :split 
 nnoremap <Tab>\ :vsplit 
+
 " Moving screen and resizing windows
 " nnoremap ;0 M " center in window
 nnoremap <Tab>0 mzz.`z
@@ -1330,7 +1346,6 @@ nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5*max([1,
 nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10*max([1, v:count]))<CR>
 nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10*max([1, v:count]))<CR>
 
-" SIMPLE WINDOW SETTINGS
 " Enable quitting windows with simple 'q' press and disable line numbers
 augroup simple
   au!
@@ -1342,18 +1357,18 @@ augroup simple
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
 augroup END
+
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
 nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
-" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 nnoremap <silent> <Leader>h :call utils#show_cmd_help() \| redraw!<CR>
 nnoremap <silent> <Leader>m :call utils#show_cmd_man() \| redraw!<CR>
 nnoremap <silent> <Leader>v :Help<CR>
+" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 
-" SEARCHING AND FIND-REPLACE STUFF
-" Basic stuff first
+" Search and find-replace stuff
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
 "   because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
 " * Make sure 'noignorecase' turned on when in insert mode, so *autocompletion* respects case.
@@ -1400,7 +1415,7 @@ nnoremap <silent> \_
 noremap <silent> \<Tab>
   \ :call utils#replace(1, '\t', repeat(' ', &tabstop))<CR>:echom 'Fixed tabs.'<CR>
 
-" CAPS LOCK
+" Caps lock
 " See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
 " iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
 for s:c in range(char2nr('A'), char2nr('Z'))
@@ -1416,11 +1431,11 @@ augroup END
 inoremap <C-v> <C-^>
 cnoremap <C-v> <C-^>
 
-" COPY MODE
+" Copy mode
 command! -nargs=? CopyToggle call utils#copy_toggle(<args>)
 nnoremap <Leader>c :call utils#copy_toggle()<CR>
 
-" SPELLCHECK (really is a builtin plugin, hence why it's in this section)
+" Spellcheck (really is a builtin plugin, hence why it's in this section)
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
@@ -1460,7 +1475,7 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
     endif
 endfor
 
-" g CONFIGURATION
+" g configuration
 " Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
@@ -1501,7 +1516,7 @@ nnoremap zC zM
 " Delete *all* manual folds
 nnoremap zD zE
 
-" GUI VIM COLORS
+" GUI vim colors
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
 " gruvbox, kolor, dracula, onedark, molokai, yowish, tomorrow-night
 " atom, chlordane, papercolor, solarized, fahrenheit, slate, oceanicnext
@@ -1513,7 +1528,7 @@ if has('gui_running')
   colorscheme oceanicnext
 endif
 
-" TERMINAL VIM COLORS
+" Terminal vim colors
 " For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
 " The url regex was copied from the one used for .tmux.conf
 " Warning: Cannot use filetype specific elgl au Syntax *.tex commands to overwrite
@@ -1613,8 +1628,9 @@ command! SyntaxFile call utils#show_syntax()
 command! Colors call utils#show_colors()
 command! GroupColors vert help group-name
 
+
 "-----------------------------------------------------------------------------"
-" EXIT
+" Exit
 "-----------------------------------------------------------------------------"
 " Clear past jumps
 " Don't want stuff from plugin files and the vimrc populating jumplist after statrup
@@ -1632,10 +1648,10 @@ augroup END
 " Clear writeable registers
 " On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
 " See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
-" WARNING: On cheyenne, get lalloc error when calling WipeReg, strange
+" Warning: On cheyenne, get lalloc error when calling WipeReg, strange
 if $HOSTNAME !~# 'cheyenne'
   command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
   WipeReg
 endif
-noh " turn off highlighting at startup
-redraw! " weird issue sometimes where statusbar disappears
+noh  " turn off highlighting at startup
+redraw!  " weird issue sometimes where statusbar disappears
