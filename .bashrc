@@ -202,7 +202,7 @@ export PATH=$(tr -d '\n ' <<< "
 ")
 
 # Various python stuff
-export PYTHONPATH=""  # just use pip install -e . for cloned projects
+export PYTHONPATH="$HOME/timescales"  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
