@@ -206,6 +206,11 @@ export PYTHONPATH="$HOME/timescales"  # just use pip install -e . for cloned pro
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
+
+# Adding additional flags for building C++ stuff
+# https://github.com/matplotlib/matplotlib/issues/13609
+# https://github.com/huggingface/neuralcoref/issues/97#issuecomment-436638466
+export CFLAGS='-stdlib=libc++'
 printf "done\n"
 
 #-----------------------------------------------------------------------------#
