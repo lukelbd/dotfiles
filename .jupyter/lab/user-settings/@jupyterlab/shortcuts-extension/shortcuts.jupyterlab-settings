@@ -1,0 +1,213 @@
+{
+    "shortcuts": [
+        {
+            "command": "notebook:insert-cell-above",
+            "keys": [
+                "A"
+            ],
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:insert-cell-below",
+            "keys": [
+                "B"
+            ],
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:merge-cells",
+            "keys": [
+                "Shift M"
+            ],
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:split-cell-at-cursor",
+            "keys": [
+                "Ctrl Shift -"
+            ],
+            "selector": ".jp-Notebook.jp-mod-editMode",
+            "disabled": true
+        },
+        {
+            "command": "notebook:copy-cell",
+            "keys": [
+                "C"
+            ],
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:delete-cell",
+            "keys": [
+                "D",
+                "D"
+            ],
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:undo-cell-action",
+            "keys": [
+                "Z"
+            ],
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:paste-cell-below",
+            "keys": [
+                "V"
+            ],
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "kernelmenu:interrupt",
+            "keys": [
+                "I",
+                "I"
+            ],
+            "selector": "[data-jp-kernel-user]:focus",
+            "disabled": true
+        },
+        {
+            "command": "kernelmenu:restart",
+            "keys": [
+                "0",
+                "0"
+            ],
+            "selector": "[data-jp-kernel-user]:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:change-cell-to-code",
+            "keys": [
+                "0"
+            ],
+            "selector": ".jp-Notebook:focus",
+        },
+        {
+            "command": "notebook:change-cell-to-markdown",
+            "keys": [
+                "9"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:clear-cell-output",
+            "keys": [
+                "X"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:copy-cell",
+            "keys": [
+                "Y"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:cut-cell",
+            "keys": [
+                "D"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:undo-cell-action",
+            "keys": [
+                "U"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:paste-cell-below",
+            "keys": [
+                "P"
+            ],
+            "selector": ".jp-Notebook:focus",
+        },
+        {
+            "command": "notebook:paste-cell-below",
+            "keys": [
+                "Shift P"
+            ],
+            "selector": ".jp-Notebook:focus",
+        },
+        {
+            "command": "notebook:enter-edit-mode",
+            "keys": [
+                "I"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "kernelmenu:interrupt",
+            "keys": [
+                "Q"
+            ],
+            "selector": "[data-jp-kernel-user]:focus"
+        },
+        {
+            "command": "kernelmenu:restart",
+            "keys": [
+                "Shift R"
+            ],
+            "selector": "[data-jp-kernel-user]:focus"
+        },
+        {
+            "command": "docmanager:save",
+            "keys": [
+                "S"
+            ],
+            "selector": ".jp-Notebook:focus",
+        },
+        {
+            "command": "editmenu:find",
+            "keys": [
+                "/"
+            ],
+            "selector": ".jp-Notebook:focus",
+        },
+        {
+            "command": "editmenu:find-and-replace",
+            "keys": [
+                "?"
+            ],
+            "selector": ".jp-Notebook:focus",
+        },
+        {
+            "command": "notebook:merge-cells",
+            "keys": [
+                "M"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:split-cell-at-cursor",
+            "keys": [
+                "Ctrl -"
+            ],
+            "selector": ".jp-Notebook.jp-mod-editMode"
+        },
+        {
+            "command": "notebook:insert-cell-above",
+            "keys": [
+                "Shift O"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:insert-cell-below",
+            "keys": [
+                "O"
+            ],
+            "selector": ".jp-Notebook:focus"
+        }
+    ]
+}
