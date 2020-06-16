@@ -137,8 +137,8 @@ else
       /usr/local/bin:
       /usr/bin:/usr/local/sbin:/usr/sbin
     ")
-    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
     export PGI="/opt/pgi"
+    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
     export MANPATH="$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man"
     export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-$_pgi_version"
     # Isca modeling stuff
@@ -196,6 +196,7 @@ fi
 export PATH=$(tr -d '\n ' <<< "
   $HOME/bin:
   $HOME/go/bin:
+  $HOME/node/bin:
   $HOME/ncparallel:
   $HOME/youtube-dl-music:
   $PATH
@@ -1125,8 +1126,8 @@ iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
 #-----------------------------------------------------------------------------#
 # Wrapper aroung jupyter theme function, much better
-_jt_configured=false  # theme is not initially setup because takes a long time
-_jt() {
+_jupyter_theme_configured=false  # theme is not initially setup because takes a long time
+_jupyter_theme() {
   # Choose default themes and font
   # chesterish is best; monokai has green/pink theme;
   # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
@@ -1148,7 +1149,7 @@ _jt() {
   [ $# -eq 0 ] && font="cousine" || font="$1"
   # Make sure theme is valid
   jt -cellw '95%' -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font" \
-    && _jt_configured=true \
+    && _jupyter_theme_configured=true \
     || return 1
 }
 
@@ -1217,7 +1218,7 @@ _jupyter_tunnel() {
 # Simply calls the '_jupyter_tunnel' function
 nbconnect() {
   local cmd ports
-  cmd="ps -u | grep jupyter-notebook | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
+  cmd="ps -u | grep jupyter- | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
   # Find ports for *existing* jupyter notebooks
   # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
   # -t flag, causes ssh command to mess up.
@@ -1242,13 +1243,12 @@ nbconnect() {
   fi
 }
 
-# Fancy wrapper for declaring notebook
-# Will set up necessary port-forwarding connections on local and remote server, so
-# that you can just click the url that pops up
+# Set up notebook with necessary port-forwarding connections on local and remote
+# server, so that you can just click the url that pops up
 notebook() {
   # Set default jupyter theme
   local port
-  $_jt_configured || _jt
+  $_jupyter_theme_configured || _jupyter_theme
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
@@ -1268,6 +1268,29 @@ notebook() {
     port="--port=$port"
   fi
   jupyter notebook --no-browser "$port" --NotebookApp.iopub_data_rate_limit=10000000
+}
+
+# Set up jupyter lab with necessary port-forwarding connections
+lab() {
+  # Create the notebook
+  # Need to extend data rate limit when making some plots with lots of stuff
+  if [ -n "$1" ]; then
+    echo "Initializing jupyter notebook over port $1."
+    port="--port=$1"
+  # Remote ports will use 3####   
+  elif ! $_macos; then
+    _jupyter_tunnel || return 1
+    echo "Initializing jupyter notebook over port $_jupyter_port."
+    port="--port=$_jupyter_port"
+  # Local ports will use 2####
+  else
+    for port in $(seq 20000 20020); do
+      ! netstat -an | grep "[:.]$port" &>/dev/null && break
+    done
+    echo "Initializing jupyter notebook over port $port."
+    port="--port=$port"
+  fi
+  jupyter lab --no-browser "$port"
 }
 
 #-----------------------------------------------------------------------------#
