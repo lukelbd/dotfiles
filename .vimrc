@@ -479,8 +479,8 @@ Plug 'tpope/vim-liquid'
 " TeX utilities; better syntax highlighting, better indentation,
 " and some useful remaps. Also zotero integration.
 " For vimtex config see: https://github.com/lervag/vimtex/issues/204
-" Plug 'twsh/unite-bibtex' " python 3 version
-" Plug 'msprev/unite-bibtex' " python 2 version
+" Plug 'twsh/unite-bibtex'  " python 3 version
+" Plug 'msprev/unite-bibtex'  " python 2 version
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
 " Plug 'Shougo/unite.vim'  " now use custom bibtex tool
@@ -501,7 +501,7 @@ Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
 " Folding
-Plug 'Konfekt/FastFold'
+" Plug 'Konfekt/FastFold'  " more like SlowFold
 Plug 'tmhedberg/SimpylFold'
 let g:SimpylFold_docstring_preview = 0
 let g:SimpylFold_fold_docstring = 0
@@ -1490,17 +1490,20 @@ nnoremap <expr> <nowait> > (v:count) > 1 ? '<Esc>'.repeat('>>', v:count) : '>>'
 nnoremap <expr> <nowait> < (v:count) > 1 ? '<Esc>'.repeat('<<', v:count) : '<<'
 nnoremap <nowait> = ==
 
+" Always open all folds
+" NOTE: For some reason vim ignores foldlevelstart
+" augroup fold_open
+"   au!
+"   au BufReadPost * normal! zR
+" augroup END
 " Open *all* folds under cursor, not just this one
-nnoremap <expr> zo foldclosed('.') ? 'zA' : ''
-
+noremap <expr> zo foldclosed('.') ? 'zA' : ''
 " Open *all* folds recursively and update foldlevel
-nnoremap zO zR
-
+noremap zO zR
 " Close *all* folds and update foldlevel
-nnoremap zC zM
-
+noremap zC zM
 " Delete *all* manual folds
-nnoremap zD zE
+noremap zD zE
 
 " GUI VIM COLORS
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
