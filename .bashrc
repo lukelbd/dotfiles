@@ -206,6 +206,11 @@ export PYTHONPATH="$HOME/timescales"  # just use pip install -e . for cloned pro
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
+
+# Adding additional flags for building C++ stuff
+# https://github.com/matplotlib/matplotlib/issues/13609
+# https://github.com/huggingface/neuralcoref/issues/97#issuecomment-436638466
+export CFLAGS='-stdlib=libc++'
 printf "done\n"
 
 #-----------------------------------------------------------------------------#
@@ -574,7 +579,7 @@ pgrep() {
     -E --color=auto \
     --exclude=CHANGELOG* --include=*.py --include=*.ipynb --include=*.rst \
     --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn \
-    --exclude=dir=\.eggs --exclude-dir=build --exclude-dir=api \
+    --exclude-dir=.eggs --exclude-dir=build --exclude-dir=api \
     --exclude-dir=trash --exclude-dir=fabio \
     --exclude-dir=.ipynb_checkpoints
 }
@@ -1783,8 +1788,22 @@ alias title="_title_set"  # easier for user
 # Fun stuff
 # TODO: This hangs when run from interactive cluster node, we test by comparing
 # hostname variable with command (variable does not change)
+artist2folder() {
+  local dir base artist title
+  dir="$HOME/playlist"
+  for file in "$dir/"*.{m4a,mp3}; do
+    [[ "$file" =~ "*" ]] && continue
+    base="${file##*/}"
+    artist="${base% - *}"
+    title="${base##* - }"
+    [ -d "$dir/$artist" ] || mkdir "$dir/$artist"
+    mv "$file" "$dir/$artist/$title"
+    echo "Moved '$base' to '$artist/$title'."
+  done
+}
 $_macos && {  # first the MacOS options
-  alias artists="command ls -1 *.{mp3,m4a} 2>/dev/null | sed -e \"s/\ \-\ .*$//\" | uniq -c | sort -sn | sort -sn -r -k 2,1"
+  # alias artists="find ~/playlist -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
+  alias artists="find ~/playlist -mindepth 2 -type f -printf '%P\n' | cut -d/ -f1 | uniq -c | sort -n"
   alias forecast="curl wttr.in/Fort\ Collins"  # list weather information
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
     sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add Homebrew-bash to list of valid shells

@@ -6,8 +6,9 @@
 # SD card, so cannot check dates on them.
 #-----------------------------------------------------------------------------#
 shopt -u nullglob
+shopt -s globstar
 raise() {
-  echo "Error: $@"
+  echo "Error: $*"
   exit 1
 }
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
@@ -17,50 +18,54 @@ if [ -d "$HOME/Phone/Card/Playlist" ]; then
 else
   sd_folder="$HOME/Phone/Music"  # new phone
 fi
+sd_log="$mb_folder/sd.log"
 sync_modified=true  # include files?
+! [ -r "$sd_log" ] && confirm "Log file sd.log not found! Cancel psync?" && exit 1
 [ -d "$sd_folder" ] || raise "Phone must be mounted with simple-mtpfs."
 echo "SD playlist: $sd_folder"
 echo "MB playlist: $mb_folder"
+touch "$sd_log"  # if doesn't exist, make
+
+# Alphabetize m3u8 files, repair line endings, and remove absolute paths
+# See: https://unix.stackexchange.com/a/32059/112647
+for path in "$mb_folder"/**/*.m3u8; do
+  echo "Repairing ${path##*/}"
+  python - <<EOF
+with open('$path', 'r') as f:
+    lines = [line.strip() for line in f.readlines()]
+header = lines[0]  # should be #EXTM3U
+pairs = zip(lines[1::2], (path.replace('$path/', '') for path in lines[2::2]))
+pairs = sorted(pairs, key=lambda x: x[1].lower())
+file = header + '\n' + '\n'.join(line for lines in pairs for line in lines)
+with open('$path', 'w') as f:
+    f.write(file)
+EOF
+done
 
 # Iterate through local files
 copied=false  # copied anything?
-updated=false # updated anything?
-deleted=false # deleted anything?
-for path in "$mb_folder/"*.{m3u8,mp3,m4a}; do
-  ! [ -r "$path" ] && continue # e.g. if glob failed
-  file="${path##*/}"
-  # Alphabetical order and fix carriage returns
-  # See: https://unix.stackexchange.com/a/32059/112647
-  if [[ "$file" =~ '.m3u8' ]]; then
-    python - <<EOF
-import os
-with open("$path", 'r') as f:
-    lines = [line.strip() for line in f.readlines()]
-header = lines[0]  # should be #EXTM3U
-pairs = zip(lines[1::2], (os.path.basename(path) for path in lines[2::2]))
-pairs = sorted(pairs, key=lambda x: x[1].lower())
-file = header + '\n' + '\n'.join(line for lines in pairs for line in lines)
-with open("$path", 'w') as f:
-    f.write(file)
-EOF
-  fi
+updated=false  # updated anything?
+for path in "$mb_folder"/**/*.{m3u8,mp3,m4a}; do
   # Copy new files downloaded
-  if ! [ -r "$sd_folder/$file" ]; then
+  [ -r "$path" ] || continue  # e.g. if glob failed
+  file=${path##*/}
+  dir=${path%/*}
+  dir=${dir/${mb_folder}/${sd_folder}}
+  [ "$dir" == "$sd_folder" ] || [ -d "$dir" ] || mkdir "$dir" \
+    || raise "Failed to create subdirectory '$dir'."
+
+  # Create new file
+  if ! [ -r "$dir/$file" ]; then
     copied=true # record
-    echo "New local file: $file. Copying to SD..."
-    $cp "$path" "$sd_folder/$file"
-    [ $? -eq 0 ] || raise "Copy failed."
+    echo "New local file '${dir##*/}/${file}'. Copying to SD..."
+    $cp "$path" "$dir/$file" || raise "Copy failed."
+
   # Replace old file of same name with modified one
   elif $sync_modified; then
-    if ! [ -r "$mb_folder/sd.log" ]; then
-      confirm "Warning: sd.log not found! Cancel psync?" # call script to confirm
-      [ $? -ne 0 ] && exit 1
-      touch "$mb_folder/sd.log" # if doesn't exist, make
-    fi
-    date_c=$(tail -n 1 "$mb_folder/sd.log")  # date copied to SD
+    date_c=$(tail -n 1 "$sd_log")  # date copied to SD
     date_m=$(date -r "$path" +%s)  # date last modified
     if [ -z "$date_c" ]; then  # initializing directory
-      if [ $date_m -gt $(($(date +%s) - (50*3600*24))) ]; then # update stuff changed within 50 days
+      if [ $date_m -gt $(($(date +%s) - (50 * 3600 * 24))) ]; then  # update stuff changed within 50 days
         modified=true
       else
         modified=false
@@ -71,29 +76,30 @@ EOF
       modified=false # not modified since last copied
     fi
     if $modified; then
-      echo "Modified local file \"$file\" since previous sync."
+      echo "Modified local file '${dir##*/}/${file}' since previous sync."
       updated=true
-      $cp "$path" "$sd_folder/$file"
-      [ $? -eq 0 ] || raise "Copy failed."
+      $cp "$path" "$dir/$file" || raise "Copy failed."
     fi
   fi
 done
-$copied  || echo "No new files found."
+$copied || echo "No new files found."
 $updated || echo "No recently modified files found."
 
 # Iterate through remote files
-for path in "$sd_folder/"*.{mp3,m4a,m3u8}; do
-  ! [ -r "$path" ] && continue # e.g. if glob failed
+deleted=false  # deleted anything?
+for path in "$sd_folder"/**/*.{mp3,m4a,m3u8}; do
+  # Delete old file
+  [ -r "$path" ] || continue
   file="${path##*/}"
-  if ! [ -r "$mb_folder/$file" ]; then
-    # Delete old file
-    deleted=true # record
-    echo "Deleted local file: $file. Deleting from SD..."
+  dir=${path%/*}
+  dir=${dir/${sd_folder}/${mb_folder}}
+  if ! [ -r "$dir/$file" ]; then
+    deleted=true
+    echo "Deleted local file '${dir##*/}/${file}'. Deleting from SD..."
     rm "$path"
   fi
 done
 $deleted || echo "No old files deleted."
 
 # Record in Playlist when last sync occurred
-date +%s >> "$mb_folder/sd.log"
-
+date +%s >> "$sd_log"

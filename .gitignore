@@ -1,4 +1,5 @@
 # Misc stuff
+.proplot
 empty*
 test*
 root/
@@ -23,13 +24,15 @@ backup
 __pycache__
 
 # Jupyter and ipython
-# We are explicit here to avoid tof
-.jupyter/**/*
-.ipython/*/**/*
+# We are explicit here to avoid copying history
+# Do not copy current theme stored in apputils-extensions
+.jupyter/*
+.ipython/*
+!nbconfig/*
+!shortcuts.jupyterlab-settings
 !jupyter_console_config.py
 !jupyter_qtconsole_config.py
 !jupyter_notebook_config.py
 !jupyter_nbconvert_config.json
-!nbconfig
 !ipython_config.py
 !ipython_kernel_config.py

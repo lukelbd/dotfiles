@@ -299,6 +299,7 @@ endfunction
 
 " Closing tabs and windows
 function! utils#vim_close() abort
+  Obsession .vimsession
   qa
   " tabdo windo if &ft == 'log' | q! | else | q | endif
 endfunction
