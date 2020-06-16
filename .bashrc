@@ -1024,7 +1024,7 @@ _ssh() {
       echo \$port
     ")
   fi
-  nbconnect "$1"
+  jupyter-connect "$1"
   port_write=$(_compressuser "$_port_file")
   title_write=$(_compressuser "$_title_file")
   command ssh \
@@ -1216,7 +1216,7 @@ _jupyter_tunnel() {
 
 # Refresh stale connections from macbook to server
 # Simply calls the '_jupyter_tunnel' function
-nbconnect() {
+jupyter-connect() {
   local cmd ports
   cmd="ps -u | grep jupyter- | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
   # Find ports for *existing* jupyter notebooks
@@ -1245,7 +1245,7 @@ nbconnect() {
 
 # Set up notebook with necessary port-forwarding connections on local and remote
 # server, so that you can just click the url that pops up
-notebook() {
+jupyter-notebook() {
   # Set default jupyter theme
   local port
   $_jupyter_theme_configured || _jupyter_theme
@@ -1271,7 +1271,7 @@ notebook() {
 }
 
 # Set up jupyter lab with necessary port-forwarding connections
-lab() {
+jupyter-lab() {
   # Create the notebook
   # Need to extend data rate limit when making some plots with lots of stuff
   if [ -n "$1" ]; then
@@ -1292,6 +1292,12 @@ lab() {
   fi
   jupyter lab --no-browser "$port"
 }
+
+jupyter-name() {
+  [ $# -eq 0 ] && echo "Error: Argument(s) required." && return 1
+  jupyter lab build --name="$*"
+}
+
 
 #-----------------------------------------------------------------------------#
 # Dataset utilities
