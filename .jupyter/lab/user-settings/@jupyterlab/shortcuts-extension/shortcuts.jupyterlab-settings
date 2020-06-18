@@ -119,7 +119,7 @@
             "selector": ".jp-Notebook:focus"
         },
         {
-            "command": "notebook:undo-cell-action",
+            "command": "editmenu:undo",
             "keys": [
                 "U"
             ],
@@ -208,6 +208,34 @@
                 "O"
             ],
             "selector": ".jp-Notebook:focus"
-        }
+        },
+        {
+            "command": "jupyterlab_code_formatter:black",
+            "keys": [
+                "F"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:reconnect-to-kernel",
+            "keys": [
+                "R"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+                {
+            "command": "console:run-forced",
+            "keys": [
+                "Ctrl Enter"
+            ],
+            "selector": ".jp-CodeConsole[data-jp-interaction-mode='notebook'] .jp-CodeConsole-promptCell"
+        },
+        {
+            "command": "console:run-forced",
+            "keys": [
+                "Ctrl Enter"
+            ],
+            "selector": ".jp-CodeConsole[data-jp-interaction-mode='terminal'] .jp-CodeConsole-promptCell"
+        },
     ]
 }
