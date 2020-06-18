@@ -471,6 +471,7 @@ Plug 'lilydjwg/colorizer'
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
+Plug 'fisadev/vim-isort'
 Plug 'psf/black', { 'tag': '19.10b0' }
 Plug 'tell-k/vim-autopep8'
 Plug 'tmux-plugins/vim-tmux'
