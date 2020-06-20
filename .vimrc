@@ -1150,6 +1150,7 @@ if PlugActive('syntastic')
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0  " disable jumping to errors
   let g:syntastic_sh_checkers = ['shellcheck']  " https://github.com/koalaman/shellcheck
+  let g:syntastic_rst_checkers = ['doc8']  " https://pypi.org/project/doc8/
   let g:syntastic_tex_checkers = ['lacheck']
   let g:syntastic_python_checkers = ['python', 'flake8']
   let g:syntastic_fortran_checkers = ['gfortran']
@@ -1168,6 +1169,7 @@ if PlugActive('syntastic')
   let s:ignore = 'W503,E402,E221,E241,E731,E741'
   let g:autopep8_ignore = s:ignore
   let g:autopep8_max_line_length = s:len
+  let g:vim_isort_config_overrides = {'line_length': s:len, 'multi_line_output': 3, 'include_trailing_comma': 'true', 'force_grid_wrap': 0}
   let g:syntastic_python_flake8_post_args = '--max-line-length=' . s:len . ' --ignore=' . s:ignore
 
   " Syntastic ignore list:

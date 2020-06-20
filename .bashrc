@@ -584,7 +584,19 @@ pgrep() {
     --exclude-dir=trash --exclude-dir=fabio \
     --exclude-dir=.ipynb_checkpoints
 }
-hash colordiff 2>/dev/null && alias diff="command colordiff"  # use --name-status to compare directories
+refactor() {
+  [ $# -eq 2 ] || {
+    echo 'Error: refactor() requires search pattern and replace pattern.'
+    return 1
+  }
+  pfind . -print -a -exec gsed -E -n "s@$1@$2@gp" {} \; || {
+    echo 'Error: sed failed.'
+    return 1
+  }
+  if confirm-no 'Proceed with refactor?'; then
+    pfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
+  fi
+}
 
 # Query files
 # awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
@@ -651,6 +663,7 @@ alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine, disable color
+hash colordiff 2>/dev/null && alias diff="command colordiff"  # use --name-status to compare directories
 gdiff() {
   [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
   git diff --no-index --color=always "$1" "$2"
@@ -1074,7 +1087,7 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
 # REPLs
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
-alias matplotlib="ipython --matplotlib=qt -i -c \"import proplot as plot\""
+alias matplotlib="ipython --matplotlib=qt -i -c \"import proplot as plot; import matplotlib.pyplot as plt\""
 alias console="jupyter console"
 alias qtconsole="jupyter qtconsole"
 

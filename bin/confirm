@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-#-----------------------------------------------------------------------------#
-# Receive affirmative or negative response using input message, then
-# exit accordingly
-#-----------------------------------------------------------------------------#
+# Receive affirmative or negative response using input message, then exit accordingly.
 [[ $- == *i* ]] && action="return" || action="exit" # don't want to quit an interactive shell!
 [[ -z "$@" ]] && prompt="Confirm" || prompt="$@"
 while true; do
@@ -11,10 +8,10 @@ while true; do
     echo "Invalid response."
     continue # try again
   fi
-  if [[ "$response" =~ ^[Nn]$ ]]; then # answer is either yes, no, or blank (i.e. yes)
+  if [[ "$response" =~ ^[Nn]$ ]]; then
     $action 1 # 'bad' exit, i.e. no
   else
-    $action 0 # 'good' exit, i.e. yes
+    $action 0 # 'good' exit, i.e. yes or empty
   fi
   break
 done

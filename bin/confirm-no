@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Like confirm but default value is 'no'
+[[ $- == *i* ]] && action="return" || action="exit" # don't want to quit an interactive shell!
+[[ -z "$@" ]] && prompt="Confirm" || prompt="$@"
+while true; do
+  read -r -p "$prompt (y/[n]) " response
+  if [ -n "$response" ] && ! [[ "$response" =~  ^[NnYy]$ ]]; then
+    echo "Invalid response."
+    continue # try again
+  fi
+  if [[ "$response" =~ ^[Yy]$ ]]; then
+    $action 0 # 'good' exit, i.e. yes
+  else
+    $action 1 # 'bad' exit, i.e. no or empty
+  fi
+  break
+done
