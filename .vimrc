@@ -395,8 +395,9 @@ augroup popup_opts
   au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
 " Enter means 'accept' only when we have explicitly scrolled down to something
+" Also break undo sequence upon enter (see :help ins-special-special)
+inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
 " Tab always means 'accept' and choose default menu item if necessary
-inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-e>\<C-]>\<CR>" : "\<C-]>\<CR>"
 inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-n>\<C-y>" . utils#tab_reset() : "\<C-]>\<Tab>"
 " Certain keystrokes always close the popup menu
 inoremap <expr> <Backspace> pumvisible() ? utils#tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
@@ -409,10 +410,6 @@ inoremap <expr> <Down> pumvisible() ? utils#tab_increase() . "\<C-n>" : "\<Down>
 " Disable scrolling in insert mode
 inoremap <expr> <ScrollWheelUp>   pumvisible() ? utils#tab_decrease() . "\<C-p>" : ""
 inoremap <expr> <ScrollWheelDown> pumvisible() ? utils#tab_increase() . "\<C-n>" : ""
-
-" Break undo sequence upon enter
-" See :help ins-special-special
-inoremap <CR> <C-]><C-G>u<CR>
 
 " Forward delete by tabs
 inoremap <silent> <expr> <Delete> utils#forward_delete()
