@@ -28,6 +28,7 @@ function! syntastic#cyclic_next(count, list, ...) abort abort
   if len(items) == 0
     return 'echoerr ' . string('E42: No Errors')
   endif
+
   " Build up list of loc dictionaries
   call map(items, 'extend(v:val, {"idx": v:key + 1})')
   if reverse
@@ -42,6 +43,7 @@ function! syntastic#cyclic_next(count, list, ...) abort abort
     let current = str2nr(matchstr(capture, '(\zs\d\+\ze of \d\+)'))
   endif
   call add(context, current)
+
   " Jump to next loc circularly
   call filter(items, 'v:val.bufnr == bufnr')
   let nbuffer = len(get(items, 0, {}))
@@ -60,22 +62,30 @@ endfunction
 " Determine checkers from annoying human-friendly output; version suitable
 " for scripting does not seem available. Weirdly need 'silent' to avoid
 " printint to vim menu. The *last* value in array will be checker.
+" Note: For files not written to disk, last line of SyntasticInfo is warning
+" message that the file cannot be checked. Below filter ignores this line.
 function! syntastic#syntastic_checkers(...) abort
+  " Get available and activated checkers
   redir => output
   silent SyntasticInfo
   redir END
-  let result = split(output, "\n")
-  let checkers = split(split(result[-2], ':')[-1], '\s\+')
-  if checkers[0] ==# '-'
-    let checkers = []
-  else
-    call extend(checkers, split(split(result[-1], ':')[-1], '\s\+')[:1])
+  let result = filter(split(output, "\n"), 'v:val =~# ":"')
+  let checkers_avail = split(split(result[-2], ':')[-1], '\s\+')
+  let checkers_active = split(split(result[-1], ':')[-1], '\s\+')
+  if checkers_avail[0] ==# '-'
+    let checkers_avail = []
   endif
-  if a:0 " just echo the result
-    echo 'Checkers: '.join(checkers[:-2], ', ')
-  else
-    return checkers
+  if checkers_active[0] ==# '-'
+    let checkers_active = []
   endif
+
+  " Return active checkers and print useulf message
+  let checkers_avail = map(
+    \ checkers_avail,
+    \ 'index(checkers_active, v:val) == -1 ? v:val : "[" . v:val . "]"'
+    \ )
+  echom 'Available checker(s): ' . join(checkers_avail, ', ')
+  return checkers_active
 endfunction
 
 " Run checker
@@ -83,7 +93,7 @@ function! syntastic#syntastic_enable() abort
   let nbufs = len(tabpagebuflist())
   let checkers = syntastic#syntastic_checkers()
   if len(checkers) == 0
-    echom 'No checkers available.'
+    echom 'No checkers activated.'
   else
     SyntasticCheck
     if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
@@ -92,7 +102,7 @@ function! syntastic#syntastic_enable() abort
       let b:syntastic_on = 1
       silent! set signcolumn=no
     else
-      echom 'No errors found with checker '.checkers[-1].'.'
+      echom 'No errors found.'
       let b:syntastic_on = 0
     endif
   endif

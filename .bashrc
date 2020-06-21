@@ -1834,6 +1834,7 @@ artist2folder() {
   local dir base artist title
   dir="$HOME/playlist"
   for file in "$dir/"*.{m4a,mp3}; do
+    # shellcheck disable=SC2049
     [[ "$file" =~ "*" ]] && continue
     base="${file##*/}"
     artist="${base% - *}"

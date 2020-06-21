@@ -1134,8 +1134,8 @@ if PlugActive('syntastic')
   " Choose syntax checkers, disable auto checking
   " flake8 pep8 pycodestyle pyflakes pylint python
   " pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
-  " NOTE: Need 'python' checker in addition to these other ones, because python
-  " tests for import-time errors and others test for runtime errors!
+  " Note: Need 'python' checker in addition to these other ones, because python
+  " tests for import-time errors and others test code style and runtime errors!
   let g:syntastic_stl_format = ''  " disables statusline colors; they were ugly
   let g:syntastic_always_populate_loc_list = 1  " necessary, or get errors
   let g:syntastic_auto_loc_list = 1  " creates window; if 0, does not create window
@@ -1147,12 +1147,12 @@ if PlugActive('syntastic')
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0  " disable jumping to errors
   let g:syntastic_sh_checkers = ['shellcheck']  " https://github.com/koalaman/shellcheck
-  let g:syntastic_rst_checkers = ['doc8']  " https://pypi.org/project/doc8/
   let g:syntastic_tex_checkers = ['lacheck']
   let g:syntastic_python_checkers = ['python', 'flake8']
   let g:syntastic_fortran_checkers = ['gfortran']
   let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
   let g:syntastic_json_checkers = ['jsonlint']
+  " let g:syntastic_rst_checkers = ['doc8']  " https://pypi.org/project/doc8/
   " let g:syntastic_tex_checkers = ['chktex']
 
   " Flake8 ignore list (also apply to autopep8 while we're at it):
@@ -1512,13 +1512,18 @@ nnoremap <nowait> = ==
 "   au BufReadPost * normal! zR
 " augroup END
 " Open *all* folds under cursor, not just this one
-noremap <expr> zo foldclosed('.') ? 'zA' : ''
+" noremap <expr> zo foldclosed('.') ? 'zA' : ''
 " Open *all* folds recursively and update foldlevel
 noremap zO zR
 " Close *all* folds and update foldlevel
 noremap zC zM
 " Delete *all* manual folds
 noremap zD zE
+" Jump between folds with more consistent naming
+noremap [z zk
+noremap ]z zj
+noremap [Z [z
+noremap ]Z ]z
 
 " GUI vim colors
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
