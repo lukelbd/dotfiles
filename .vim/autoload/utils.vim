@@ -66,10 +66,10 @@ function! utils#refresh() abort " refresh sesssion, sometimes ~/.vimrc settings 
   let loaded = []
   let files = [
     \ '~/.vimrc',
-    \ '~/.vim/ftplugin/' . &ft . '.vim',
-    \ '~/.vim/syntax/' . &ft . '.vim',
-    \ '~/.vim/after/ftplugin/' . &ft . '.vim',
-    \ '~/.vim/after/syntax/' . &ft . '.vim']
+    \ '~/.vim/ftplugin/' . &filetype . '.vim',
+    \ '~/.vim/syntax/' . &filetype . '.vim',
+    \ '~/.vim/after/ftplugin/' . &filetype . '.vim',
+    \ '~/.vim/after/syntax/' . &filetype . '.vim']
   for file in files
     if !empty(glob(file))
       exe 'so '.file
@@ -237,7 +237,7 @@ function! utils#gitgutter_toggle(...) abort
   if a:0
     let toggle = a:1
   else
-    let toggle = (exists('b:gitgutter_enabled') ? 1-b:gitgutter_enabled : 1)
+    let toggle = (exists('b:gitgutter_enabled') ? 1 - b:gitgutter_enabled : 1)
   endif
   if toggle
     GitGutterEnable
@@ -245,8 +245,30 @@ function! utils#gitgutter_toggle(...) abort
     let b:gitgutter_enabled = 1
   else
     GitGutterDisable
-    silent! set signcolumn=no
+    if !(exists('b:syntastic_on') && b:syntastic_on) && !(exists('b:ale_enabled') && b:ale_enabled)
+      silent! set signcolumn=no
+    endif
     let b:gitgutter_enabled = 0
+  endif
+endfunction
+
+" Toggle ALE syntax checking
+function! utils#ale_toggle(...) abort
+  if a:0
+    let toggle = a:1
+  else
+    let toggle = (exists('b:ale_enabled') ? 1 - b:ale_enabled : 1)
+  endif
+  if toggle
+    ALEEnableBuffer
+    silent! set signcolumn=yes
+    let b:ale_enabled = 1  " also done by plugin but do this just in case
+  else
+    ALEDisableBuffer
+    if !(exists('b:gitgutter_enabled') && b:gitgutter_enabled)
+      silent! set signcolumn=no
+    endif
+    let b:ale_enabled = 0
   endif
 endfunction
 
@@ -265,6 +287,72 @@ function! utils#codi_setup(toggle) abort
   endif
 endfunction
 
+" Syntastic helper functions
+function! s:syntastic_status() abort
+  return (exists('b:syntastic_on') && b:syntastic_on)
+endfunction
+function! s:cmp(a, b) abort
+  for i in range(len(a:a))
+    if a:a[i] < a:b[i]
+      return -1
+    elseif a:a[i] > a:b[i]
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
+" Determine checkers from annoying human-friendly output; version suitable
+" for scripting does not seem available. Weirdly need 'silent' to avoid
+" printint to vim menu. The *last* value in array will be checker.
+" Note: For files not written to disk, last line of SyntasticInfo is warning
+" message that the file cannot be checked. Below filter ignores this line.
+function! utils#syntastic_checkers(...) abort
+  " Get available and activated checkers
+  redir => output
+  silent SyntasticInfo
+  redir END
+  let result = filter(split(output, "\n"), 'v:val =~# ":"')
+  let checkers_avail = split(split(result[-2], ':')[-1], '\s\+')
+  let checkers_active = split(split(result[-1], ':')[-1], '\s\+')
+  if checkers_avail[0] ==# '-'
+    let checkers_avail = []
+  endif
+  if checkers_active[0] ==# '-'
+    let checkers_active = []
+  endif
+
+  " Return active checkers and print useulf message
+  let checkers_avail = map(
+    \ checkers_avail,
+    \ 'index(checkers_active, v:val) == -1 ? v:val : "[" . v:val . "]"'
+    \ )
+  echom 'Available checker(s): ' . join(checkers_avail, ', ')
+  return checkers_active
+endfunction
+
+" Run checker
+function! utils#syntastic_enable() abort
+  let nbufs = len(tabpagebuflist())
+  let checkers = utils#syntastic_checkers()
+  if len(checkers) == 0
+    echom 'No checkers activated.'
+  else
+    SyntasticCheck
+    if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
+        \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
+      wincmd k " jump to main
+      let b:syntastic_on = 1
+      if !(exists('b:gitgutter_enabled') && b:gitgutter_enabled)
+        silent! set signcolumn=no
+      endif
+    else
+      echom 'No errors found.'
+      let b:syntastic_on = 0
+    endif
+  endif
+endfunction
+
 " New codi window
 function! utils#codi_new(...) abort
   if a:0 && a:1 !~# '^\s*$'
@@ -280,11 +368,11 @@ endfunction
 
 " Set up tagbar window and make sure NerdTREE is flushed to right
 function! utils#tagbar_setup() abort
-  if &ft ==# 'nerdtree'
+  if &filetype ==# 'nerdtree'
     wincmd h
     wincmd h " move two places in case e.g. have help menu + nerdtree already
   endif
-  let tabfts = map(tabpagebuflist(),'getbufvar(v:val, "&ft")')
+  let tabfts = map(tabpagebuflist(),'getbufvar(v:val, "&filetype")')
   if In(tabfts,'tagbar')
     TagbarClose
   else
@@ -301,7 +389,7 @@ endfunction
 function! utils#vim_close() abort
   Obsession .vimsession
   qa
-  " tabdo windo if &ft == 'log' | q! | else | q | endif
+  " tabdo windo if &filetype == 'log' | q! | else | q | endif
 endfunction
 function! utils#tab_close() abort
   let ntabs = tabpagenr('$')
@@ -382,11 +470,11 @@ endfunction
 
 " Popup windows with default ftplugin and syntax files
 function! utils#show_ftplugin() abort
-  execute 'split $VIMRUNTIME/ftplugin/' . &ft . '.vim'
+  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
   silent call utils#popup_setup(1)
 endfunction
 function! utils#show_syntax() abort
-  execute 'split $VIMRUNTIME/syntax/' . &ft . '.vim'
+  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
   silent call utils#popup_setup(1)
 endfunction
 
@@ -394,4 +482,46 @@ endfunction
 function! utils#show_colors() abort
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#popup_setup(1)
+endfunction
+
+" Cyclic next error in location list
+" Copied from: https://vi.stackexchange.com/a/14359
+function! utils#cyclic_next(count, list, ...) abort abort
+  let reverse = a:0 && a:1
+  let func = 'get' . a:list . 'list'
+  let params = a:list ==# 'loc' ? [0] : []
+  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
+  let items = call(func, params)
+  if len(items) == 0
+    return 'echoerr ' . string('E42: No Errors')
+  endif
+
+  " Build up list of loc dictionaries
+  call map(items, 'extend(v:val, {"idx": v:key + 1})')
+  if reverse
+    call reverse(items)
+  endif
+  let [bufnr, cmp] = [bufnr('%'), reverse ? 1 : -1]
+  let context = [line('.'), col('.')]
+  if v:version > 800 || has('patch-8.0.1112')
+    let current = call(func, extend(copy(params), [{'idx':1}])).idx
+  else
+    redir => capture | execute cmd | redir END
+    let current = str2nr(matchstr(capture, '(\zs\d\+\ze of \d\+)'))
+  endif
+  call add(context, current)
+
+  " Jump to next loc circularly
+  call filter(items, 'v:val.bufnr == bufnr')
+  let nbuffer = len(get(items, 0, {}))
+  call filter(items, 's:cmp(context, [v:val.lnum, v:val.col, v:val.idx]) == cmp')
+  let inext = get(get(items, 0, {}), 'idx', 'E553: No more items')
+  if type(inext) == type(0)
+    return cmd . inext
+  elseif nbuffer != 0
+    exe '' . (reverse ? line('$') : 0)
+    return utils#cyclic_next(a:count, a:list, reverse)
+  else
+    return 'echoerr' . string(inext)
+  endif
 endfunction

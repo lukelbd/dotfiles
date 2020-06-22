@@ -43,7 +43,7 @@ set shell=/usr/bin/env\ bash
 set nrformats=alpha  " never interpret numbers as 'octal'
 set scrolloff=4
 let &g:colorcolumn = (has('gui_running') ? '0' : '89,120')
-set slm=  " disable 'select mode' slm, allow only visual mode for that stuff
+set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set updatetime=1000  " used for CursorHold autocmds
 set nobackup noswapfile noundofile  " no more swap files; constantly hitting C-s so it's safe
@@ -170,7 +170,7 @@ command! -nargs=1 Grep call Grep(<q-args>)
 " Get comment character
 " The placeholder is supposed to be a
 function! Comment()
-  if &ft !=# '' && &commentstring =~# '%s'
+  if &filetype !=# '' && &commentstring =~# '%s'
     return Strip(split(&commentstring, '%s')[0])
   else
     return ''
@@ -400,8 +400,8 @@ inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : 
 " Tab always means 'accept' and choose default menu item if necessary
 inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-n>\<C-y>" . utils#tab_reset() : "\<C-]>\<Tab>"
 " Certain keystrokes always close the popup menu
-inoremap <expr> <Backspace> pumvisible() ? utils#tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
-inoremap <expr> <Space>     pumvisible() ? utils#tab_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
+inoremap <expr> <BS>    pumvisible() ? utils#tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
+inoremap <expr> <Space> pumvisible() ? utils#tab_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
 " Commands that increment items in the menu
 inoremap <expr> <C-k>  pumvisible() ? utils#tab_decrease() . "\<C-p>" : "\<Up>"
 inoremap <expr> <C-j>  pumvisible() ? utils#tab_increase() . "\<C-n>" : "\<Down>"
@@ -435,7 +435,7 @@ call plug#begin('~/.vim/plugged')
 for name in ['statusline', 'scrollwrapped', 'tabline', 'idetools', 'toggle', 'textools']
   let plug = expand('~/vim-' . name)
   if isdirectory(plug)
-    if &rtp !~ plug
+    if &runtimepath !~ plug
       exe 'set rtp^=' . plug
       exe 'set rtp+=' . plug . '/after'
     endif
@@ -529,8 +529,9 @@ Plug 'Asheq/close-buffers.vim'
 
 " Commenting and syntax checking
 " Syntastic looks for checkers in $PATH, must be installed manually
+" Plug 'scrooloose/syntastic'
+Plug 'dense-analysis/ale'
 Plug 'scrooloose/nerdcommenter'
-Plug 'scrooloose/syntastic'
 
 " Sessions and swap files and reloading. Mapped in my .bashrc
 " to vim -S .vimsession and exiting vim saves the session there
@@ -649,7 +650,7 @@ Plug 'tpope/vim-speeddating'  " dates and stuff
 call plug#end()
 
 " Mappings for vim-idetools command
-if PlugActive('vim-idetools') || &rtp =~# 'vim-idetools'
+if PlugActive('vim-idetools') || &runtimepath =~# 'vim-idetools'
   augroup double_bracket
     au!
     au BufEnter * nmap <buffer> [[ [T
@@ -663,7 +664,7 @@ if PlugActive('black')
 endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
-if PlugActive('vim-scrollwrapped') || &rtp =~# 'vim-scrollwrapped'
+if PlugActive('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   nnoremap <silent> <Leader>w :WrapToggle<CR>
   nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
   nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
@@ -673,7 +674,7 @@ endif
 
 " Add global delims with vim-textools plugin functions and declare my weird
 " mapping defaults due to Karabiner
-if PlugActive('vim-textools') || &rtp =~# 'vim-textools'
+if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
   " Set the cache directory for bibtex plugin
   let s:cache_dir = expand('~/Library/Caches/bibtex')
   if !isdirectory(s:cache_dir)
@@ -1087,7 +1088,6 @@ if PlugActive('tagbar')
       \ ],
       \ 'sort' : 0
   \ }
-  " Settings
   let g:tagbar_silent = 1 " no information echoed
   let g:tagbar_previewwin_pos = 'bottomleft' " result of pressing 'P'
   let g:tagbar_left = 0 " open on left; more natural this way
@@ -1109,33 +1109,114 @@ if PlugActive('tagbar')
   nnoremap <silent> <Leader>t :call utils#tagbar_setup()<CR>
 endif
 
+" Maps and commands for circular location-list scrolling
+command! -bar -count=1 Cnext execute utils#cyclic_next(<count>, 'qf')
+command! -bar -count=1 Cprev execute utils#cyclic_next(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute utils#cyclic_next(<count>, 'loc')
+command! -bar -count=1 Lprev execute utils#cyclic_next(<count>, 'loc', 1)
+nnoremap <silent> [x :Lprev<CR>
+nnoremap <silent> ]x :Lnext<CR>
+nnoremap <silent> [q :Cprev<CR>
+nnoremap <silent> ]q :Cnext<CR>
+
+" Error highlighting with different plugins
+hi ALEErrorLine ctermfg=White ctermbg=Red cterm=None
+hi ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
+hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
+hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
+
+" Flake8 ignore list (also apply to autopep8):
+" * Allow line break before binary operator (W503)
+" * Allow imports after statements, important for jupytext (E402)
+" * Allow multiple spaces before operators for alignment (E221)
+" * Allow multiple spaces after commas for alignment (E221)
+" * Allow assigning lambda expressions instead of def (E731)
+" * Permit 'l' and 'I' variable names (E741)
+let s:linelength = 88
+let s:pep8ignore = 'W503,E402,E221,E241,E731,E741'
+let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . s:pep8ignore
+let g:autopep8_ignore = s:pep8ignore
+let g:autopep8_max_line_length = s:linelength
+let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options
+let g:vim_isort_config_overrides = {
+  \ 'line_length': s:linelength,
+  \ 'multi_line_output': 3,
+  \ 'include_trailing_comma': 'true',
+  \ 'force_grid_wrap': 0
+  \ }
+
+" Shellcheck ignore list
+" * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
+" * Allow sourcing from files (SC1090, SC1091)
+" * Allow building arrays from unquoted result of command (SC2206, SC2207)
+" * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
+" * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
+" * Allow 'which' instead of 'command -v' (SC2230)
+" * Allow unquoted variables in for loop (SC2231)
+" * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
+" * Allow looping through single strings (SC2043)
+" * Allow assigning commands to variables (SC2209)
+let g:ale_sh_shellcheck_options = '-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043,SC2209'
+let g:syntastic_sh_shellcheck_args = g:ale_sh_shellcheck_options
+
+" Asynchronous linting engine
+if PlugActive('ale')
+  " Mappings (note that ALE works with buffer contents unlike syntastic)
+  noremap <silent> <Leader>x :<C-u>call utils#ale_toggle(1)<CR>
+  noremap <silent> <Leader>X :<C-u>call utils#ale_toggle(0)<CR>
+  map ]x <Plug>(ale_next_wrap)
+  map [x <Plug>(ale_previous_wrap)
+
+  " Settings and checkers
+  " https://github.com/koalaman/shellcheck
+  " https://github.com/Kuniwak/vint
+  " https://pypi.org/project/doc8/
+  " Todo: consider chktex and pylint
+  " Todo: Add mypy type annotation checker
+  " https://mypy.readthedocs.io/en/stable/introduction.html
+  let g:ale_linters = {
+    \ 'config': [],
+    \ 'fortran': ['gfortran'],
+    \ 'help': [],
+    \ 'json': ['jsonlint'],
+    \ 'python': ['python', 'flake8'],
+    \ 'rst': [],
+    \ 'sh': ['shellcheck'],
+    \ 'tex': ['lacheck'],
+    \ 'text': [],
+    \ 'vim': ['vint'],
+    \}
+  let g:ale_sign_column_always = 1
+  let g:ale_lint_on_save = 1
+  let g:ale_lint_on_text_changed = 1
+  let g:ale_lint_on_insert_leave = 1
+  let g:ale_lint_on_filetype_changed = 1
+  let g:ale_lint_on_enter = 0
+endif
+
 " Syntastic
 if PlugActive('syntastic')
-  " Maps and commands for circular location-list scrolling
-  command! -bar -count=1 Cnext execute syntastic#cyclic_next(<count>, 'qf')
-  command! -bar -count=1 Cprev execute syntastic#cyclic_next(<count>, 'qf', 1)
-  command! -bar -count=1 Lnext execute syntastic#cyclic_next(<count>, 'loc')
-  command! -bar -count=1 Lprev execute syntastic#cyclic_next(<count>, 'loc', 1)
-  command! SyntasticCheckers call syntastic#syntastic_checkers(1)
-  nnoremap <silent> <Leader>x :update \| call syntastic#syntastic_enable()<CR>
-  nnoremap <silent> <Leader>X :let b:syntastic_on = 0 \| SyntasticReset<CR>
-  nnoremap <silent> [x :Lprev<CR>
-  nnoremap <silent> ]x :Lnext<CR>
-  nnoremap <silent> [q :Cprev<CR>
-  nnoremap <silent> ]q :Cnext<CR>
-
   " No active syntax checking; only on manual trigger
-  let g:syntastic_mode_map = {
-      \ 'mode': 'passive',
-      \ 'active_filetypes': [],
-      \ 'passive_filetypes': []
-      \ }
+  command! SyntasticCheckers call utils#syntastic_checkers(1)
+  nnoremap <silent> <Leader>x :update \| call utils#syntastic_enable()<CR>
+  nnoremap <silent> <Leader>X :let b:syntastic_on = 0 \| SyntasticReset<CR>
 
   " Choose syntax checkers, disable auto checking
   " flake8 pep8 pycodestyle pyflakes pylint python
   " pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
   " Note: Need 'python' checker in addition to these other ones, because python
   " tests for import-time errors and others test code style and runtime errors!
+  let g:syntastic_mode_map = {
+      \ 'mode': 'passive',
+      \ 'active_filetypes': [],
+      \ 'passive_filetypes': []
+      \ }
+  let g:syntastic_fortran_checkers = ['gfortran']
+  let g:syntastic_json_checkers = ['jsonlint']
+  let g:syntastic_python_checkers = ['python', 'flake8']
+  let g:syntastic_sh_checkers = ['shellcheck']  " https://github.com/koalaman/shellcheck
+  let g:syntastic_tex_checkers = ['lacheck']
+  let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
   let g:syntastic_stl_format = ''  " disables statusline colors; they were ugly
   let g:syntastic_always_populate_loc_list = 1  " necessary, or get errors
   let g:syntastic_auto_loc_list = 1  " creates window; if 0, does not create window
@@ -1146,45 +1227,6 @@ if PlugActive('syntastic')
   let g:syntastic_enable_signs = 1  " disable useless signs
   let g:syntastic_enable_highlighting = 1
   let g:syntastic_auto_jump = 0  " disable jumping to errors
-  let g:syntastic_sh_checkers = ['shellcheck']  " https://github.com/koalaman/shellcheck
-  let g:syntastic_tex_checkers = ['lacheck']
-  let g:syntastic_python_checkers = ['python', 'flake8']
-  let g:syntastic_fortran_checkers = ['gfortran']
-  let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
-  let g:syntastic_json_checkers = ['jsonlint']
-  " let g:syntastic_rst_checkers = ['doc8']  " https://pypi.org/project/doc8/
-  " let g:syntastic_tex_checkers = ['chktex']
-
-  " Flake8 ignore list (also apply to autopep8 while we're at it):
-  " * Allow line break before binary operator (W503)
-  " * Allow imports after statements, important for jupytext (E402)
-  " * Allow multiple spaces before operators for alignment (E221)
-  " * Allow multiple spaces after commas for alignment (E221)
-  " * Allow assigning lambda expressions instead of def (E731)
-  " * Permit 'l' and 'I' variable names (E741)
-  let s:len = 88
-  let s:ignore = 'W503,E402,E221,E241,E731,E741'
-  let g:autopep8_ignore = s:ignore
-  let g:autopep8_max_line_length = s:len
-  let g:vim_isort_config_overrides = {'line_length': s:len, 'multi_line_output': 3, 'include_trailing_comma': 'true', 'force_grid_wrap': 0}
-  let g:syntastic_python_flake8_post_args = '--max-line-length=' . s:len . ' --ignore=' . s:ignore
-
-  " Syntastic ignore list:
-  " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
-  " * Allow sourcing from files (SC1090, SC1091)
-  " * Allow building arrays from unquoted result of command (SC2206, SC2207)
-  " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
-  " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
-  " * Allow 'which' instead of 'command -v' (SC2230)
-  " * Allow unquoted variables in for loop (SC2231)
-  " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
-  " * Allow looping through single strings (SC2043)
-  " * Allow assigning commands to variables (SC2209)
-  let g:syntastic_sh_shellcheck_args='-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043,SC2209'
-
-  " Custom syntax colors
-  hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
-  hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 endif
 
 " Tabular
@@ -1561,7 +1603,7 @@ function! s:keyword_setup()
    syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
    hi link customURL Underlined
    " Warnings, errors, and shebangs
-   if &ft !=# 'vim'
+   if &filetype !=# 'vim'
      syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments
      syn match Special '^\%1l#!.*$' " shebangs
    else
