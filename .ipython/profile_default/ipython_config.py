@@ -34,6 +34,7 @@ c.InteractiveShellApp.exec_lines = """
 %load_ext autoreload
 %autoreload 2
 import os
+import re
 import sys
 import numpy as np
 """.strip().split('\n')

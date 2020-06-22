@@ -39,7 +39,7 @@ function! s:kwtrans(mode) range
       let string = string[firstcol : lastcol]
     elseif line == a:firstline
       let prefix = (firstcol >= 1 ? string[:firstcol - 1] : '')
-      let string = string[firstcol:]
+      let string = string[firstcol :]
     elseif line == a:lastline
       let suffix = string[lastcol + 1:]
       let string = string[:lastcol]
