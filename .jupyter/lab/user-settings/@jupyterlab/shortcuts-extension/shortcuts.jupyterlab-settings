@@ -1,4 +1,240 @@
 {
+    // Keyboard Shortcuts
+    // @jupyterlab/shortcuts-extension:shortcuts
+    // Keyboard shortcut settings.
+    // *****************************************
+    //
+    // Note: To disable a system default shortcut,
+    // copy it to User Preferences and add the
+    // "disabled" key, for example:
+    // {
+    //     "command": "application:activate-next-tab",
+    //     "keys": [
+    //         "Ctrl Shift ]"
+    //     ],
+    //     "selector": "body",
+    //     "disabled": true
+    // }
+    //
+    // List of commands followed by keyboard shortcuts:
+    // __internal:context-menu-info
+    // apputils:activate-command-palette
+    // apputils:print
+    // apputils:run-first-enabled
+    // completer:invoke
+    // completer:select
+    // tooltip:dismiss
+    // launcher:create
+    // editmenu:undo
+    // editmenu:redo
+    // editmenu:clear-current
+    // editmenu:clear-all
+    // editmenu:go-to-line
+    // filemenu:close-and-cleanup
+    // filemenu:create-console
+    // filemenu:shutdown
+    // filemenu:logout
+    // kernelmenu:interrupt
+    // kernelmenu:restart
+    // kernelmenu:restart-and-clear
+    // kernelmenu:change
+    // kernelmenu:shutdown
+    // kernelmenu:shutdownAll
+    // runmenu:run
+    // runmenu:run-all
+    // runmenu:restart-and-run-all
+    // viewmenu:line-numbering
+    // viewmenu:match-brackets
+    // viewmenu:word-wrap
+    // tabsmenu:activate-by-id
+    // tabsmenu:activate-previously-used-tab
+    // editmenu:open
+    // filemenu:open
+    // kernelmenu:open
+    // runmenu:open
+    // viewmenu:open
+    // settingsmenu:open
+    // tabsmenu:open
+    // helpmenu:open
+    // mainmenu:open-first
+    // documentsearch:start
+    // documentsearch:startWithReplace
+    // documentsearch:highlightNext
+    // documentsearch:highlightPrevious
+    // docmanager:clone
+    // docmanager:rename
+    // docmanager:show-in-file-browser
+    // docmanager:delete-file
+    // docmanager:new-untitled
+    // docmanager:open
+    // docmanager:open-browser-tab
+    // docmanager:reload
+    // docmanager:restore-checkpoint
+    // docmanager:save
+    // docmanager:save-all
+    // docmanager:save-as
+    // docmanager:download
+    // docmanager:toggle-autosave
+    // sidebar:switch
+    // apputils:change-theme
+    // apputils:theme-scrollbars
+    // apputils:incr-font-size
+    // apputils:decr-font-size
+    // statusbar:toggle
+    // rendermime:handle-local-link
+    // application:activate-next-tab
+    // application:activate-previous-tab
+    // application:activate-next-tab-bar
+    // application:activate-previous-tab-bar
+    // application:close
+    // application:close-all
+    // application:close-other-tabs
+    // application:close-right-tabs
+    // application:toggle-left-area
+    // application:toggle-right-area
+    // application:toggle-presentation-mode
+    // application:set-mode
+    // application:toggle-mode
+    // router:tree
+    // apputils:load-statedb
+    // apputils:reset
+    // apputils:reset-on-load
+    // markdownviewer:open
+    // markdownviewer:edit
+    // settingeditor:open
+    // settingeditor:revert
+    // settingeditor:save
+    // inspector:open
+    // htmlviewer:trust-html
+    // imageviewer:zoom-in
+    // imageviewer:zoom-out
+    // imageviewer:reset-image
+    // imageviewer:rotate-clockwise
+    // imageviewer:rotate-counterclockwise
+    // imageviewer:flip-horizontal
+    // imageviewer:flip-vertical
+    // imageviewer:invert-colors
+    // filebrowser:delete
+    // filebrowser:copy
+    // filebrowser:cut
+    // filebrowser:download
+    // filebrowser:duplicate
+    // filebrowser:hide-main
+    // filebrowser:go-to-path
+    // filebrowser:open-path
+    // filebrowser:open
+    // filebrowser:open-browser-tab
+    // filebrowser:copy-download-link
+    // filebrowser:paste
+    // filebrowser:create-new-directory
+    // filebrowser:create-new-file
+    // filebrowser:create-new-markdown-file
+    // filebrowser:rename
+    // filebrowser:copy-path
+    // filebrowser:activate
+    // filebrowser:shutdown
+    // filebrowser:toggle-main
+    // filebrowser:create-main-launcher
+    // filebrowser:toggle-navigate-to-current-directory
+    // filebrowser:share-main
+    // notebook:run-cell-and-select-next
+    // notebook:run-cell
+    // notebook:run-cell-and-insert-below
+    // notebook:run-in-console
+    // notebook:run-all-cells
+    // notebook:run-all-above
+    // notebook:run-all-below
+    // notebook:render-all-markdown
+    // notebook:restart-kernel
+    // notebook:close-and-shutdown
+    // notebook:trust
+    // notebook:export-to-format
+    // notebook:restart-clear-output
+    // notebook:restart-and-run-to-selected
+    // notebook:restart-run-all
+    // notebook:clear-all-cell-outputs
+    // notebook:clear-cell-output
+    // notebook:interrupt-kernel
+    // notebook:change-cell-to-code
+    // notebook:change-cell-to-markdown
+    // notebook:change-cell-to-raw
+    // notebook:cut-cell
+    // notebook:copy-cell
+    // notebook:paste-cell-below
+    // notebook:paste-cell-above
+    // notebook:paste-and-replace-cell
+    // notebook:delete-cell
+    // notebook:split-cell-at-cursor
+    // notebook:merge-cells
+    // notebook:insert-cell-above
+    // notebook:insert-cell-below
+    // notebook:move-cursor-up
+    // notebook:move-cursor-down
+    // notebook:extend-marked-cells-above
+    // notebook:extend-marked-cells-top
+    // notebook:extend-marked-cells-below
+    // notebook:extend-marked-cells-bottom
+    // notebook:select-all
+    // notebook:deselect-all
+    // notebook:move-cell-up
+    // notebook:move-cell-down
+    // notebook:toggle-all-cell-line-numbers
+    // notebook:enter-command-mode
+    // notebook:enter-edit-mode
+    // notebook:undo-cell-action
+    // notebook:redo-cell-action
+    // notebook:change-kernel
+    // notebook:reconnect-to-kernel
+    // notebook:create-output-view
+    // notebook:create-console
+    // notebook:change-cell-to-heading-1
+    // notebook:change-cell-to-heading-2
+    // notebook:change-cell-to-heading-3
+    // notebook:change-cell-to-heading-4
+    // notebook:change-cell-to-heading-5
+    // notebook:change-cell-to-heading-6
+    // notebook:hide-cell-code
+    // notebook:show-cell-code
+    // notebook:hide-all-cell-code
+    // notebook:show-all-cell-code
+    // notebook:hide-cell-outputs
+    // notebook:show-cell-outputs
+    // notebook:hide-all-cell-outputs
+    // notebook:show-all-cell-outputs
+    // notebook:enable-output-scrolling
+    // notebook:disable-output-scrolling
+    // notebook:select-last-run-cell
+    // notebook:replace-selection
+    // notebook:create-new
+    // help:about
+    // help:open
+    // help:launch-classic-notebook
+    // terminal:create-new
+    // terminal:open
+    // terminal:refresh
+    // terminal:increase-font
+    // terminal:decrease-font
+    // terminal:set-theme
+    // completer:invoke-notebook
+    // completer:select-notebook
+    // logconsole:open
+    // logconsole:add-checkpoint
+    // logconsole:clear
+    // logconsole:set-level
+    // tooltip:launch-notebook
+    // jupytext:ipynb
+    // jupytext:auto:light
+    // jupytext:auto:percent
+    // jupytext:auto:hydrogen
+    // jupytext:auto:nomarker
+    // jupytext:md
+    // jupytext:md:myst
+    // jupytext:Rmd
+    // jupytext:custom
+    // jupytext:none
+    // jupytext_metadata
+    //
+    // List of keyboard shortcuts:
     "shortcuts": [
         {
             "command": "notebook:insert-cell-above",
@@ -88,7 +324,7 @@
             "keys": [
                 "0"
             ],
-            "selector": ".jp-Notebook:focus",
+            "selector": ".jp-Notebook:focus"
         },
         {
             "command": "notebook:change-cell-to-markdown",
@@ -119,7 +355,7 @@
             "selector": ".jp-Notebook:focus"
         },
         {
-            "command": "editmenu:undo",
+            "command": "notebook:undo-cell-action",
             "keys": [
                 "U"
             ],
@@ -130,14 +366,14 @@
             "keys": [
                 "P"
             ],
-            "selector": ".jp-Notebook:focus",
+            "selector": ".jp-Notebook:focus"
         },
         {
             "command": "notebook:paste-cell-below",
             "keys": [
                 "Shift P"
             ],
-            "selector": ".jp-Notebook:focus",
+            "selector": ".jp-Notebook:focus"
         },
         {
             "command": "notebook:enter-edit-mode",
@@ -165,21 +401,14 @@
             "keys": [
                 "S"
             ],
-            "selector": ".jp-Notebook:focus",
+            "selector": ".jp-Notebook:focus"
         },
         {
-            "command": "editmenu:find",
+            "command": "documentsearch:startWithReplace",
             "keys": [
                 "/"
             ],
-            "selector": ".jp-Notebook:focus",
-        },
-        {
-            "command": "editmenu:find-and-replace",
-            "keys": [
-                "?"
-            ],
-            "selector": ".jp-Notebook:focus",
+            "selector": ".jp-Notebook:focus"
         },
         {
             "command": "notebook:merge-cells",
@@ -236,6 +465,6 @@
                 "Ctrl Enter"
             ],
             "selector": ".jp-CodeConsole[data-jp-interaction-mode='terminal'] .jp-CodeConsole-promptCell"
-        },
+        }
     ]
 }
