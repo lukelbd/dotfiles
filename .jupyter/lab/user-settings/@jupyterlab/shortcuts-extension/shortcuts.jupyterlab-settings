@@ -404,9 +404,16 @@
             "selector": ".jp-Notebook:focus"
         },
         {
-            "command": "documentsearch:startWithReplace",
+            "command": "documentsearch:start",
             "keys": [
                 "/"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "documentsearch:startWithReplace",
+            "keys": [
+                "Shift /"
             ],
             "selector": ".jp-Notebook:focus"
         },
