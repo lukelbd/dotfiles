@@ -1,6 +1,26 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
+" Enable/disable autocomplete and jedi popups. Very useful on servers slowed to a
+" crawl by certain blonde Slovenians.
+function! utils#popup_toggle(...) abort
+  if a:0
+    let toggle = a:1
+  elseif exists('g:popup_toggle')
+    let toggle = 1 - g:popup_toggle
+  else
+    let toggle = 1
+  endif
+  let g:popup_toggle = toggle
+  if exists('*deoplete#custom#option')
+    call deoplete#custom#option('auto_complete', toggle ? v:true : v:false)
+  endif
+  if exists('*jedi#configure_call_signatures')
+    let g:jedi#show_call_signatures = toggle
+    call jedi#configure_call_signatures()
+  endif
+endfunction
+
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
@@ -9,7 +29,6 @@ function! utils#replace(global, ...) range abort
   let winview = winsaveview()
   let region = (a:global ? '%' : a:firstline . ',' . a:lastline)
   echom join(a:000, ', ')
-  " helo
   for i in range(0, a:0 - 2, 2)
     let search = a:000[i]
     let replace = a:000[i + 1]

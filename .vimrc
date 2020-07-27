@@ -106,15 +106,17 @@ augroup set_overrides
   au BufEnter * exe 'setlocal ' . g:set_overrides
 augroup END
 
-" Tab and conceal toggling
+" Tab, conceal, and popup toggling
 let g:tab_filetypes = ['text', 'gitconfig', 'make']
 augroup tab_toggle
   au!
   exe 'au FileType ' . join(g:tab_filetypes, ',') . ' TabToggle 1'
 augroup END
+command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
 nnoremap <Leader><Tab> :TabToggle<CR>
+
 
 " Escape repair needed when we allow h/l to change line num
 augroup escape_fix
@@ -1185,10 +1187,10 @@ if PlugActive('ale')
     \ 'tex': ['lacheck'],
     \ 'text': [],
     \ 'vim': ['vint'],
-    \}
+    \ }
   let g:ale_sign_column_always = 1
-  let g:ale_lint_on_save = 1
-  let g:ale_lint_on_text_changed = 1
+  let g:ale_lint_on_save = 0
+  let g:ale_lint_on_text_changed = 'normal'
   let g:ale_lint_on_insert_leave = 1
   let g:ale_lint_on_filetype_changed = 1
   let g:ale_lint_on_enter = 0
