@@ -1,6 +1,26 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
+" Enable/disable autocomplete and jedi popups. Very useful on servers slowed to a
+" crawl by certain blonde Slovenians.
+function! utils#popup_toggle(...) abort
+  if a:0
+    let toggle = a:1
+  elseif exists('g:popup_toggle')
+    let toggle = 1 - g:popup_toggle
+  else
+    let toggle = 1
+  endif
+  let g:popup_toggle = toggle
+  if exists('*deoplete#custom#option')
+    call deoplete#custom#option('auto_complete', toggle ? v:true : v:false)
+  endif
+  if exists('*jedi#configure_call_signatures')
+    let g:jedi#show_call_signatures = toggle
+    call jedi#configure_call_signatures()
+  endif
+endfunction
+
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
@@ -529,18 +549,26 @@ endfunction
 " This one fixes all lines that are too long, with special consideration for
 " bullet style lists and asterisks (does not insert new bullets and adds spaces
 " for asterisks).
-function! utils#wrap_lines() range abort
+function! utils#wrap_item_lines() range abort
+  let regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'
+  let regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s*\)'
+  let regex_tail = '\(.*\)$'
+  let regex = regex_head . regex_item . regex_tail
   for line in range(a:lastline, a:firstline, -1)
     exe line
+    let line = getline('.')
     if len(getline('.')) > &l:textwidth
+      let is_match = line =~# regex
+      let match_head = substitute(line, regex, '\1', '')
+      let match_tail = substitute(line, regex, '\2', '')
       let line1 = line('.') + 1
       normal! Vgq
       let line2 = line('.')
-      if line2 >= line1
-        exe line1 . ',' . line2 . 's/^\(\s*\)\* /\1  /ge'
-        if getline(line1 - 1) =~# '^\s*[0-9]\. '
-          exe line1 . ',' . line2 . 's/^\(\s*\)\ze\S*/\1   /ge'
-        endif
+      if line2 >= line1 && is_match
+        exe line1 . ',' . line2
+          \ . 's/' . regex_head . regex_item . '\?' . regex_tail
+          \ . '/' . match_head . repeat(' ', len(match_tail)) . '\3'
+          \ . '/ge'
       endif
     endif
   endfor

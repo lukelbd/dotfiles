@@ -269,14 +269,6 @@
             "disabled": true
         },
         {
-            "command": "notebook:copy-cell",
-            "keys": [
-                "C"
-            ],
-            "selector": ".jp-Notebook:focus",
-            "disabled": true
-        },
-        {
             "command": "notebook:delete-cell",
             "keys": [
                 "D",
@@ -289,14 +281,6 @@
             "command": "notebook:undo-cell-action",
             "keys": [
                 "Z"
-            ],
-            "selector": ".jp-Notebook:focus",
-            "disabled": true
-        },
-        {
-            "command": "notebook:paste-cell-below",
-            "keys": [
-                "V"
             ],
             "selector": ".jp-Notebook:focus",
             "disabled": true
@@ -442,6 +426,34 @@
             "command": "notebook:insert-cell-below",
             "keys": [
                 "O"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:hide-cell-code",
+            "keys": [
+                "C"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:show-cell-code",
+            "keys": [
+                "Shift C"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:hide-cell-outputs",
+            "keys": [
+                "V"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
+            "command": "notebook:show-cell-outputs",
+            "keys": [
+                "Shift V"
             ],
             "selector": ".jp-Notebook:focus"
         },
