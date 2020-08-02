@@ -9,7 +9,6 @@ function! utils#replace(global, ...) range abort
   let winview = winsaveview()
   let region = (a:global ? '%' : a:firstline . ',' . a:lastline)
   echom join(a:000, ', ')
-  " helo
   for i in range(0, a:0 - 2, 2)
     let search = a:000[i]
     let replace = a:000[i + 1]
@@ -525,3 +524,25 @@ function! utils#cyclic_next(count, list, ...) abort abort
     return 'echoerr' . string(inext)
   endif
 endfunction
+
+" Formatting tools
+" This one fixes all lines that are too long, with special consideration for
+" bullet style lists and asterisks (does not insert new bullets and adds spaces
+" for asterisks).
+function! utils#wrap_lines() range abort
+  for line in range(a:lastline, a:firstline, -1)
+    exe line
+    if len(getline('.')) > &l:textwidth
+      let line1 = line('.') + 1
+      normal! Vgq
+      let line2 = line('.')
+      if line2 >= line1
+        exe line1 . ',' . line2 . 's/^\(\s*\)\* /\1  /ge'
+        if getline(line1 - 1) =~# '^\s*[0-9]\. '
+          exe line1 . ',' . line2 . 's/^\(\s*\)\ze\S*/\1   /ge'
+        endif
+      endif
+    endif
+  endfor
+endfunction
+

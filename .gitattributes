@@ -1,6 +1,6 @@
 # See: https://github.com/kynan/nbstripout
-*.ipynb filter=nbstripout
-*.ipynb diff=ipynb
+# *.ipynb filter=nbstripout
+# *.ipynb diff=ipynb
 
 # Mark files as binary
 # The extension list was just copied from .dircolors.ansi

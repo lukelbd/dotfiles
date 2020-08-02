@@ -17,6 +17,7 @@
 "-----------------------------------------------------------------------------"
 " Important stuff and settings
 let &t_Co=256
+let s:textwidth = 88
 exe 'runtime autoload/repeat.vim'
 if ! exists('*repeat#set')
   echohl WarningMsg
@@ -62,7 +63,7 @@ set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing i
 set esckeys  " make sure enabled, allows keycodes
 set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
-set complete+=k  " enable dictionary search through 'dcitionary' setting
+set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " no popup window, for now
 set splitright  " splitting behavior
 set splitbelow
@@ -99,19 +100,20 @@ if has('gui_running')
 endif
 
 " Special settings
-let g:set_overrides = 'linebreak wrapmargin=0 textwidth=88 formatoptions=lrojcq'
+let g:set_overrides = 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq textwidth=' . s:textwidth
 exe 'setlocal ' . g:set_overrides
 augroup set_overrides
   au!
   au BufEnter * exe 'setlocal ' . g:set_overrides
 augroup END
 
-" Tab and conceal toggling
+" Tab and conceal toggling and related commands
 let g:tab_filetypes = ['text', 'gitconfig', 'make']
 augroup tab_toggle
   au!
   exe 'au FileType ' . join(g:tab_filetypes, ',') . ' TabToggle 1'
 augroup END
+command! -range -nargs=0 WrapLines <line1>,<line2>call utils#wrap_lines()
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
 nnoremap <Leader><Tab> :TabToggle<CR>
@@ -124,36 +126,36 @@ augroup END
 
 " Global functions, for vim scripting
 " Whether inside list
-function! In(list,item)
+function! In(list,item) abort
   return index(a:list, a:item) != -1
 endfunction
 
 " Reverse string
-function! Reverse(text)
+function! Reverse(text) abort
   return join(reverse(split(a:text, '.\zs')), '')
 endfunction
 
 " Strip leading and trailing whitespace
-function! Strip(text)
+function! Strip(text) abort
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
 endfunction
 
 " Query whether plugin is loaded
-function! PlugActive(key)
+function! PlugActive(key) abort
   return has_key(g:plugs, a:key)  " change as needed
 endfunction
 
 " Reverse selected lines
-function! ReverseLines(l1, l2)
-  let line1 = a:l1  " cannot overwrite input var names
-  let line2 = a:l2
+function! ReverseLines() range abort
+  let line1 = a:firstline  " cannot overwrite input var names
+  let line2 = a:lastline
   if line1 == line2
     let line1 = 1
     let line2 = line('$')
   endif
   exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
 endfunction
-command! -range Reverse call ReverseLines(<line1>, <line2>)
+command! -range Reverse <line1>,<line2>call ReverseLines()
 
 " Better grep, with limited regex translation
 function! Grep(regex)  " returns list of matches
@@ -502,7 +504,7 @@ Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
 " Folding
-" Plug 'Konfekt/FastFold'  " more like SlowFold
+Plug 'Konfekt/FastFold'  " more like SlowFold
 Plug 'tmhedberg/SimpylFold'
 let g:SimpylFold_docstring_preview = 0
 let g:SimpylFold_fold_docstring = 0
@@ -659,7 +661,7 @@ if PlugActive('vim-idetools') || &runtimepath =~# 'vim-idetools'
   nnoremap <silent> <Leader>C :CTagsDisplay<CR>
 endif
 if PlugActive('black')
-  let g:black_linelength = 88
+  let g:black_linelength = s:textwidth
   let g:black_skip_string_normalization = 1
 endif
 
@@ -1132,14 +1134,13 @@ hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 " * Allow multiple spaces after commas for alignment (E221)
 " * Allow assigning lambda expressions instead of def (E731)
 " * Permit 'l' and 'I' variable names (E741)
-let s:linelength = 88
 let s:pep8ignore = 'W503,E402,E221,E241,E731,E741'
-let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . s:pep8ignore
+let g:ale_python_flake8_options =  '--max-line-length=' . s:textwidth . ' --ignore=' . s:pep8ignore
 let g:autopep8_ignore = s:pep8ignore
-let g:autopep8_max_line_length = s:linelength
+let g:autopep8_max_line_length = s:textwidth
 let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options
 let g:vim_isort_config_overrides = {
-  \ 'line_length': s:linelength,
+  \ 'line_length': s:textwidth,
   \ 'multi_line_output': 3,
   \ 'include_trailing_comma': 'true',
   \ 'force_grid_wrap': 0
@@ -1359,7 +1360,7 @@ nnoremap <silent> <Tab><Tab> :call fzf#tab_select()<CR>
 nnoremap <silent> <Tab>m :call fzf#tab_move()<CR>
 nnoremap <silent> <Tab>> :call fzf#tab_move(eval(tabpagenr()+1))<CR>
 nnoremap <silent> <Tab>< :call fzf#tab_move(eval(tabpagenr()-1))<CR>
-for s:num in range(1,10)
+for s:num in range(1, 10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor
 
@@ -1701,7 +1702,7 @@ augroup END
 " See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
 " Warning: On cheyenne, get lalloc error when calling WipeReg, strange
 if $HOSTNAME !~# 'cheyenne'
-  command! WipeReg for i in range(34,122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
+  command! WipeReg for i in range(34, 122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
   WipeReg
 endif
 noh  " turn off highlighting at startup

@@ -14,9 +14,9 @@
 #     ~# -- Gives list of forwarded connections in this session
 #     ~? -- Gives list of these commands
 #  * Extended globbing explanations, see:
-#     http://mywiki.wooledge.org/glob
+#    http://mywiki.wooledge.org/glob
 #  * Use '<package_manager> list' for MOST PACKAGE MANAGERS to see what is installed
-#     e.g. brew list, conda list, pip list
+#    e.g. brew list, conda list, pip list
 #-----------------------------------------------------------------------------#
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message:
@@ -292,6 +292,21 @@ git() {
     echo 'Error: Run "git stash push" instead.' 1>&2
   else
     command git "$@"
+  fi
+}
+
+# Sync figures from remote repository to this repository.
+# Stop uploading figures to Github because it massively bloats
+# repository size!
+rsync-figures() {
+  base=$(git rev-parse --show-toplevel)
+  if $_macos; then
+    [ $# -eq 1 ] || { echo "Error: Must input server."; return 1; }
+    server=$1
+    command ssh -o StrictHostKeyChecking=no "$server" "$cmd" \
+      || { echo "Error: Failed to get list of ports."; return 1; }
+  else
+    ports=$(eval "$cmd")
   fi
 }
 
@@ -1236,16 +1251,14 @@ jupyter-connect() {
   # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
   # -t flag, causes ssh command to mess up.
   if $_macos; then
-    [ $# -eq 1 ] \
-      || { echo "Error: Must input server."; return 1; }
+    [ $# -eq 1 ] || { echo "Error: Must input server."; return 1; }
     server=$1
     ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
       || { echo "Error: Failed to get list of ports."; return 1; }
   else
     ports=$(eval "$cmd")
   fi
-  [ -n "$ports" ] \
-    || { echo "Error: No active jupyter notebooks found."; return 1; }
+  [ -n "$ports" ] || { echo "Error: No active jupyter notebooks found."; return 1; }
 
   # Connect over ports
   echo "Connecting to jupyter notebook(s) over port(s) $ports."
@@ -1824,36 +1837,41 @@ title_update() {  # fix name issues
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 alias title="_title_set"  # easier for user
 
+# Mac stuff
+# TODO: This hangs when run from interactive cluster node, we test by comparing
+# hostname variable with command (variable does not change)
+if $_macos; then # first the MacOS options
+  # Use Homebrew-bash for shell
+  grep '/usr/local/bin/bash' /etc/shells 1>/dev/null \
+    || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
+  [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
+    && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
+
+  # Music stuff
+  # alias artists="find ~/playlist -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
+  alias artists="find ~/playlist -mindepth 2 -type f -printf '%P\n' | cut -d/ -f1 | uniq -c | sort -n"
+  artist2folder() {
+    local dir base artist title
+    dir="$HOME/playlist"
+    for file in "$dir/"*.{m4a,mp3}; do
+      # shellcheck disable=SC2049
+      [[ "$file" =~ "*" ]] && continue
+      base="${file##*/}"
+      artist="${base% - *}"
+      title="${base##* - }"
+      [ -d "$dir/$artist" ] || mkdir "$dir/$artist"
+      mv "$file" "$dir/$artist/$title"
+      echo "Moved '$base' to '$artist/$title'."
+    done
+  }
+
+  # Meteorology stuff
+  alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information
+fi
+
 #-----------------------------------------------------------------------------#
 # Message
 #-----------------------------------------------------------------------------#
-# Fun stuff
-# TODO: This hangs when run from interactive cluster node, we test by comparing
-# hostname variable with command (variable does not change)
-artist2folder() {
-  local dir base artist title
-  dir="$HOME/playlist"
-  for file in "$dir/"*.{m4a,mp3}; do
-    # shellcheck disable=SC2049
-    [[ "$file" =~ "*" ]] && continue
-    base="${file##*/}"
-    artist="${base% - *}"
-    title="${base##* - }"
-    [ -d "$dir/$artist" ] || mkdir "$dir/$artist"
-    mv "$file" "$dir/$artist/$title"
-    echo "Moved '$base' to '$artist/$title'."
-  done
-}
-$_macos && {  # first the MacOS options
-  # alias artists="find ~/playlist -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias artists="find ~/playlist -mindepth 2 -type f -printf '%P\n' | cut -d/ -f1 | uniq -c | sort -n"
-  alias forecast="curl wttr.in/Fort\ Collins"  # list weather information
-  grep '/usr/local/bin/bash' /etc/shells 1>/dev/null || \
-    sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add Homebrew-bash to list of valid shells
-  if [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]]; then
-    chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim session
-  fi
-}
 [ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \
   && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
 _bashrc_loaded=true
