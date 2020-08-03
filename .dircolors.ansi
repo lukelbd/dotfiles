@@ -194,9 +194,9 @@ EXEC 01;35  # Unix
 # Orphaned symlinks (blinking white on red)
 # Blink may or may not work (works on iTerm dark or light, and Putty dark)
 # ORPHAN  31;47
-ORPHAN  41;37
 # ORPHAN  41;35
-# And the files that orphaned symlinks point to (blinking white on red)
+ORPHAN  41;37
+# The files that orphaned symlinks point to (blinking white on red)
 # MISSING  31;47
 MISSING 41;37
 
@@ -265,6 +265,7 @@ MISSING 41;37
 .bst    33
 .bib    33
 .aux    33
+
 ### Text files and readmes and stuff
 # LICENSE 33 # doesn't work
 # README  33
@@ -381,7 +382,7 @@ MISSING 41;37
 .webm 32
 .wmv  32
 
-# Archives, compressed
+### Archives, compressed.
 # Bright cyan, like directories are bright blue
 .7z   1;36
 .apk  1;36
@@ -411,12 +412,12 @@ MISSING 41;37
 .Z    1;36
 .zip  1;36
 
-# Log files and session files; bright white
+### Log files and session files; bright white
 .vimsession 01;37
 .log        01;37
 .nml        01;37
 
-# Database files
+### Database files
 .nc    36
 .ascii 36
 .shp   36
@@ -442,4 +443,3 @@ MISSING 41;37
 .xml   36
 .sql   36
 .mkd   36
-

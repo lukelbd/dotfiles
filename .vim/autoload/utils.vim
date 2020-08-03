@@ -544,3 +544,33 @@ function! utils#cyclic_next(count, list, ...) abort abort
     return 'echoerr' . string(inext)
   endif
 endfunction
+
+" Formatting tools
+" This one fixes all lines that are too long, with special consideration for
+" bullet style lists and asterisks (does not insert new bullets and adds spaces
+" for asterisks).
+function! utils#wrap_item_lines() range abort
+  let regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'
+  let regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s*\)'
+  let regex_tail = '\(.*\)$'
+  let regex = regex_head . regex_item . regex_tail
+  for line in range(a:lastline, a:firstline, -1)
+    exe line
+    let line = getline('.')
+    if len(getline('.')) > &l:textwidth
+      let is_match = line =~# regex
+      let match_head = substitute(line, regex, '\1', '')
+      let match_tail = substitute(line, regex, '\2', '')
+      let line1 = line('.') + 1
+      normal! Vgq
+      let line2 = line('.')
+      if line2 >= line1 && is_match
+        exe line1 . ',' . line2
+          \ . 's/' . regex_head . regex_item . '\?' . regex_tail
+          \ . '/' . match_head . repeat(' ', len(match_tail)) . '\3'
+          \ . '/ge'
+      endif
+    endif
+  endfor
+endfunction
+

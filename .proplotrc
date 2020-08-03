@@ -6,7 +6,7 @@
 #--------------------------------------------------------------------
 # Settings changed by user
 font.name: Helvetica Neue
-figure.max_open_warning: 0
+# figure.max_open_warning: 0
 
 # ProPlot settings
 # style:                      None

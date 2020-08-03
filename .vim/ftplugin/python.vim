@@ -10,12 +10,26 @@ setlocal indentexpr=s:pyindent(v:lnum)  " new indent expression
 setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python ftplugin syntax option
 
-" Run current script in shell
-nnoremap <silent> <buffer> <C-z> :update<CR>:exec("!clear; set -x; python ".shellescape(@%))<CR><CR>
+" Run current script using anaconda python, not vim python (important for macvim)
+function! s:run_python_script() abort
+  update
+  let pypath = $HOME . '/miniconda3/bin/python'
+  let projlib = $HOME . '/miniconda3/share/proj'
+  if !executable(pypath)
+    echohl WarningMsg
+    echom "Anaconda python '" . pypath . "' not found."
+    echohl None
+  else
+    exe
+        \ '!clear; set -x; PROJ_LIB=' . shellescape(projlib)
+        \ . ' ' . shellescape(pypath) . ' ' . shellescape(@%)
+  endif
+endfunction
+nnoremap <silent> <buffer> <C-z> :call <sid>run_python_script()<CR>
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
-function! s:kwtrans(mode) range
+function! s:translate_kwargs(mode) abort range
   " First get columns
   let winview = winsaveview()
   if a:firstline == a:lastline
@@ -69,7 +83,7 @@ function! s:kwtrans(mode) range
 endfunction
 
 " Mappings
-noremap <buffer> <silent> <Plug>kw2dict :call <sid>kwtrans(1)<CR>:call repeat#set("\<Plug>kw2dict")<CR>
-noremap <buffer> <silent> <Plug>dict2kw :call <sid>kwtrans(0)<CR>:call repeat#set("\<Plug>dict2kw")<CR>
+noremap <buffer> <silent> <Plug>kw2dict :call <sid>translate_kwargs(1)<CR>:call repeat#set("\<Plug>kw2dict")<CR>
+noremap <buffer> <silent> <Plug>dict2kw :call <sid>translate_kwargs(0)<CR>:call repeat#set("\<Plug>dict2kw")<CR>
 map <buffer> cd <Plug>kw2dict
 map <buffer> cD <Plug>dict2kw
