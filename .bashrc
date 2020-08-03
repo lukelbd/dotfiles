@@ -1263,6 +1263,7 @@ jupyter-lab() {
     port="--port=$port"
   fi
   jupyter lab --no-browser "$port"
+  # jupyter lab --no-browser "$port" --LabApp.token=csulmu
 }
 
 jupyter-name() {
