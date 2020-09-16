@@ -1176,34 +1176,6 @@ iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
 # * If you have issues where themes are just not changing in Chrome, open Developer tab
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
 #-----------------------------------------------------------------------------#
-# Wrapper aroung jupyter theme function, much better
-_jupyter_theme_configured=false  # theme is not initially setup because takes a long time
-_jupyter_theme() {
-  # Choose default themes and font
-  # chesterish is best; monokai has green/pink theme;
-  # gruvboxd has warm color style; other dark themes too pale (solarizedd is turquoise pale)
-  # solarizedl is really nice though; gruvboxl a bit too warm/monochrome
-  local font theme
-  if [ $# -eq 0 ]; then 
-    echo "Choosing jupytertheme automatically based on hostname."
-    case $HOSTNAME in
-      uriah*)  theme=chesterish ;;
-      euclid*) theme=gruvboxd ;;
-      monde*)  theme=onedork ;;
-      midway*) theme=onedork ;;
-      *) echo "Error: Unknown default theme for hostname \"$HOSTNAME\"." && return 1 ;;
-    esac
-  else
-    theme="$1"
-    shift
-  fi
-  [ $# -eq 0 ] && font="cousine" || font="$1"
-  # Make sure theme is valid
-  jt -cellw '95%' -fs 9 -nfs 10 -tfs 10 -ofs 10 -dfs 10 -t "$theme" -f "$font" \
-    && _jupyter_theme_configured=true \
-    || return 1
-}
-
 # This function will establish two-way connection between server and local macbook
 # with the same port number (easier to understand that way).
 _jupyter_tunnel() {
@@ -1293,32 +1265,6 @@ jupyter-connect() {
 }
 
 # Set up notebook with necessary port-forwarding connections on local and remote
-# server, so that you can just click the url that pops up
-jupyter-notebook() {
-  # Set default jupyter theme
-  local port
-  $_jupyter_theme_configured || _jupyter_theme
-  # Create the notebook
-  # Need to extend data rate limit when making some plots with lots of stuff
-  if [ -n "$1" ]; then
-    echo "Initializing jupyter notebook over port $1."
-    port="--port=$1"
-  # Remote ports will use 3####   
-  elif ! $_macos; then
-    _jupyter_tunnel || return 1
-    echo "Initializing jupyter notebook over port $_jupyter_port."
-    port="--port=$_jupyter_port"
-  # Local ports will use 2####
-  else
-    for port in $(seq 20000 20020); do
-      ! netstat -an | grep "[:.]$port" &>/dev/null && break
-    done
-    echo "Initializing jupyter notebook over port $port."
-    port="--port=$port"
-  fi
-  jupyter notebook --no-browser "$port" --NotebookApp.iopub_data_rate_limit=10000000
-}
-
 # Set up jupyter lab with necessary port-forwarding connections
 jupyter-lab() {
   # Create the notebook
