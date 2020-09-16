@@ -108,10 +108,9 @@ augroup set_overrides
 augroup END
 
 " Tab, conceal, and popup toggling
-let g:tab_filetypes = ['text', 'gitconfig', 'make']
 augroup tab_toggle
   au!
-  exe 'au FileType ' . join(g:tab_filetypes, ',') . ' TabToggle 1'
+  au FileType make,text,gitconfig TabToggle 1
 augroup END
 command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
@@ -144,8 +143,10 @@ function! Strip(text) abort
 endfunction
 
 " Query whether plugin is loaded
+" Used to just check g:plugs but now check runtimepath in case fork is loaded
 function! PlugActive(key) abort
-  return has_key(g:plugs, a:key)  " change as needed
+  " return has_key(g:plugs, a:key)
+  return &runtimepath =~# '/' . a:key . '\>'
 endfunction
 
 " Reverse selected lines
@@ -268,9 +269,8 @@ noremap <Space> <Nop>
 noremap Q <Nop>
 noremap K <Nop>
 
-" Disable Ctrl-z and Z for exiting vim
+" Disable Z shortcut
 noremap Z <Nop>
-noremap <C-z> <Nop>
 
 " Disable extra scroll commands
 noremap <C-p> <Nop>
@@ -392,7 +392,8 @@ noremap <Right> <C-i>
 
 " Search for conflict blocks
 noremap gc /^[<>=\|]\{2,}<CR>
-
+" Search for non-ASCII chars (see https://stackoverflow.com/a/16987522/4970632)
+noremap gA /[^\x00-\x7F]<CR>
 
 " Insert and command mode maps
 augroup popup_opts
@@ -430,33 +431,53 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 "-----------------------------------------------------------------------------"
 " VimPlug plugins
 "-----------------------------------------------------------------------------"
+" 'Install' a local plugin
+function! PlugLocal(path)
+  let rtp = expand(a:path)
+  if !isdirectory(rtp)
+    echohl WarningMsg
+    echo "Warning: Path '" . rtp . "' not found."
+    echohl None
+  elseif &runtimepath !~ escape(rtp, '~')
+    exe 'set rtp^=' . rtp
+    exe 'set rtp+=' . rtp . '/after'
+  endif
+endfunction
+command! -nargs=1 PlugLocal call PlugLocal(<args>)
+
 " Note: No longer worry about compatibility because we can install everything
 " from conda-forge, including vim and ctags.
 call plug#begin('~/.vim/plugged')
 
-" Custom plugins, try to load locally if possible!
+" Custom plugins or forks, try to load locally if possible!
 " See: https://github.com/junegunn/vim-plug/issues/32
 " Note ^= prepends to list, += appends
-for name in ['statusline', 'scrollwrapped', 'tabline', 'idetools', 'toggle', 'textools']
-  let plug = expand('~/vim-' . name)
-  if isdirectory(plug)
-    if &runtimepath !~ plug
-      exe 'set rtp^=' . plug
-      exe 'set rtp+=' . plug . '/after'
-    endif
+for s:name in [
+  \ 'vim-idetools',
+  \ 'vim-textools',
+  \ 'vim-scrollwrapped',
+  \ 'vim-statusline',
+  \ 'vim-tabline',
+  \ 'vim-toggle'
+  \ ]
+  let s:path = expand('~/' . s:name)
+  if isdirectory(s:path)
+    PlugLocal s:path
   else
-    Plug 'lukelbd/vim-' . name
+    Plug 'lukelbd/' . s:name
   endif
 endfor
 
 " Hard requirements
 " Plug 'tpope/vim-repeat' " now edit custom version in .vim/plugin/autoload
-Plug '~/.fzf' " fzf installation location, will add helptags and runtimepath
-Plug 'junegunn/fzf.vim' " this one depends on the main repo above, includes other tools
+Plug '~/.fzf'  " fzf installation location, will add helptags and runtimepath
+Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes other tools
 let g:fzf_layout = {'down': '~20%'} " make window smaller
-let g:fzf_action = {'ctrl-i': 'silent!',
+let g:fzf_action = {
+  \ 'ctrl-i': 'silent!',
   \ 'ctrl-m': 'tab split', 'ctrl-t': 'tab split',
-  \ 'ctrl-x': 'split', 'ctrl-v': 'vsplit'}
+  \ 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
+  \ }
 
 " Color schemes for MacVim
 " Plug 'altercation/vim-colors-solarized'
@@ -611,8 +632,10 @@ Plug 'justinmk/vim-sneak'
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 " Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
-Plug 'metakirby5/codi.vim'
+" Plug 'metakirby5/codi.vim'
+PlugLocal '~/forks/codi.vim'
 Plug 'tpope/vim-speeddating'  " dates and stuff
+let g:speeddating_no_mappings = 1
 
 " This RST shit all failed
 " Just to simple == tables instead of fancy ++ tables
@@ -622,32 +645,32 @@ Plug 'tpope/vim-speeddating'  " dates and stuff
 " noremap <silent> \s :python ReformatTable()<CR>
 " let g:riv_python_rst_hl = 1
 " Plug 'Rykka/riv.vim'
-
+"
 " Single line/multiline transition; make sure comes after surround
 " Hardly ever need this
 " Plug 'AndrewRadev/splitjoin.vim'
 " let g:splitjoin_split_mapping = 'cS' | let g:splitjoin_join_mapping  = 'cJ'
-
+"
 " Multiple cursors is awesome
 " Article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
 " Plug 'terryma/vim-multiple-cursors'
-
+"
 " Indent line
 " Note: This completely messes up search mode. Also requires changing Conceal
 " group color, but doing that also messes up latex conceal backslashes (which
 " we need to stay transparent). So forget it probably
 " Plug 'yggdroot/indentline'
-
+"
 " Miscellaneous
 " Plug 'jez/vim-superman'  " man page
 " Plug 'beloglazov/vim-online-thesaurus'  " broken
 " Plug 'dkarter/bullets.vim'  " list numbering, fails too
-
+"
 " Easy tags, for easy integration
 " Plug 'xolox/vim-misc' "depdency for easytags
 " Plug 'xolox/vim-easytags' "kinda old and not that useful honestly
 " Plug 'ludovicchabant/vim-gutentags' "slows shit down like crazy
-
+"
 " End of plugins
 " The plug#end also declares filetype plugin, syntax, and indent on
 " Note apparently every BufRead autocmd inside an ftdetect/filename.vim file
@@ -694,7 +717,7 @@ if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
   let g:textools_latexmk_maps = {
-    \ '<C-z>': '--pull',
+    \ '<Plug>Execute': '--pull',
     \ '<Leader>z': '--pull --diff',
     \ '<Leader>Z': '--pull --word',
     \ }
@@ -767,23 +790,9 @@ if PlugActive('vim-surround')
   nmap yS. ySis
 endif
 
-" Auto-generate delimiters
+" Auto-complete delimiters
+" Filetype-specific settings are in various ftplugin files
 if PlugActive('delimitmate')
-  " First filetype settings
-  " Enable carat matching for filetypes where need tags (or keycode symbols)
-  " Vim needs to disable matching ", or everything is super slow
-  augroup delims
-    au!
-    au FileType vim
-      \ let b:delimitMate_quotes = "'" |
-      \ let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
-    au FileType tex
-      \ let b:delimitMate_quotes = "$ |" |
-      \ let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
-    au FileType html let b:delimitMate_matchpairs = "(:),{:},[:],<:>"
-    au FileType markdown,rst let b:delimitMate_quotes = "\" ' $ `"
-  augroup END
-  " Global defaults
   let g:delimitMate_expand_space = 1
   let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
   let g:delimitMate_jump_expansion = 0
@@ -922,20 +931,29 @@ if PlugActive('codi.vim')
   command! -nargs=? CodiNew call utils#codi_new(<q-args>)
   nnoremap <silent> <Leader>= :CodiNew<CR>
   nnoremap <silent> <Leader>+ :Codi!!<CR>
-  " See issue: https://github.com/metakirby5/codi.vim/issues/85
+
   " Interpreter without history, various settings
+  " See: https://github.com/metakirby5/codi.vim/issues/85
+  " Note: Codi is broken for julia: https://github.com/metakirby5/codi.vim/issues/120
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
   let g:codi#width = 20
-  let g:codi#log = '' " enable when debugging
+  let g:codi#log = ''  " enable when debugging
+  let g:codi#sync = 0  " disable async
   let g:codi#interpreters = {
     \ 'python': {
-        \ 'bin': 'python',
+        \ 'bin': '/usr/bin/python',
         \ 'prompt': '^\(>>>\|\.\.\.\) ',
-        \ 'quitcmd': 'import readline; readline.clear_history(); exit()',
+        \ 'quitcmd': 'exit()',
+        \ },
+    \ 'julia': {
+        \ 'bin': $HOME . '/miniconda3/bin/python',
+        \ 'prompt': '^\(julia>\|      \)',
         \ },
     \ }
+  "        \ 'bin': $HOME . '/miniconda3/bin/python',
+  "        \ 'quitcmd': 'import readline; readline.clear_history(); exit()',
 endif
 
 " Speed dating, support date increments
@@ -1313,13 +1331,17 @@ if PlugActive('vim-obsession') "must manually preserve cursor position
   augroup END
   nnoremap <silent> <Leader>V :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
 endif
+
 " Custom autosave plugin
-command! Refresh call utils#refresh()
 command! -nargs=? Autosave call utils#autosave_toggle(<args>)
-nnoremap <Leader>S :Autosave<CR>
-" Related utils
+nnoremap <silent> <Leader>S :Autosave<CR>
+
+" Refreshing things
+command! Refresh call utils#refresh()
 nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :e<CR>
+
+" Fix syntax highlighting
 command! SyncLong syntax sync fromstart
 command! SyncShort syntax sync minlines=0
 
@@ -1330,6 +1352,8 @@ nnoremap <silent> <C-a> :call utils#vim_close()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
+" 'Execute' script (define this differently for different filetypes)
+map Z <Plug>Execute
 
 "-----------------------------------------------------------------------------"
 " Additional tools and mappings
@@ -1373,8 +1397,8 @@ nnoremap <Tab>j <C-w>j
 nnoremap <Tab>k <C-w>k
 nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
-nnoremap <Tab>- :split 
-nnoremap <Tab>\ :vsplit 
+nnoremap <Tab>- :split
+nnoremap <Tab>\ :vsplit
 
 " Moving screen and resizing windows
 " nnoremap ;0 M " center in window
@@ -1394,15 +1418,15 @@ nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10*max([1
 nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10*max([1, v:count]))<CR>
 
 " Enable quitting windows with simple 'q' press and disable line numbers
-augroup simple
+augroup popup_setup
   au!
   au BufEnter * let b:recording = 0
-  au BufEnter __doc__ call utils#pager_setup()
-  au FileType diff,man,latexmk,vim-plug call utils#popup_setup(1)
-  au FileType qf,gitcommit,fugitive,fugitiveblame call utils#popup_setup(0)
-  au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
+  au FileType qf,gitcommit,fugitive,fugitiveblame call utils#popup_setup(0)
+  au FileType diff,man,latexmk,vim-plug call utils#popup_setup(1)
+  au FileType __doc__ call utils#pager_setup()
+  au FileType help call utils#help_setup()
 augroup END
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
@@ -1434,33 +1458,43 @@ noremap <silent> \c
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
 noremap <silent> \s
-  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! \{2,}', ' ')<CR>:echom 'Squeezed whitespace.'<CR>
+  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! \{2,}', ' ')<CR>
+  \ :echom 'Squeezed whitespace.'<CR>
 noremap <silent> \S
-  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! ', '')<CR>:echom 'Removed whitespace.'<CR>
+  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! ', '')<CR>
+  \ :echom 'Removed whitespace.'<CR>
 noremap <silent> \w
-  \ :call utils#replace(0, '\s\+$', '')<CR>:echom 'Trimmed trailing whitespace.'<CR>
+  \ :call utils#replace(0, '\s\+$', '')<CR>
+  \ :echom 'Trimmed trailing whitespace.'<CR>
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
 noremap <silent> \e
-  \ :call utils#replace(0, '\(\n\s*\n\)\(\s*\n\)\+', '\1')<CR>:echom 'Squeezed consecutive newlines.'<CR>
+  \ :call utils#replace(0, '\(\n\s*\n\)\(\s*\n\)\+', '\1')<CR>
+  \ :echom 'Squeezed consecutive newlines.'<CR>
 noremap <silent> \E
-  \ :call utils#replace(0, '^\s*$\n', '')<CR>:echom 'Removed empty lines.'<CR>
+  \ :call utils#replace(0, '^\s*$\n', '')<CR>
+  \ :echom 'Removed empty lines.'<CR>
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
 nnoremap <silent> \'
-  \ :call utils#replace(1, '‘', '`', '’', "'")<CR>:echom 'Fixed single quotes.'<CR>
+  \ :call utils#replace(1, '‘', '`', '’', "'")<CR>
+  \ :echom 'Fixed single quotes.'<CR>
 nnoremap <silent> \"
-  \ :call utils#replace(1, '“', '``', '”', "''")<CR>:echom 'Fixed double quotes.'<CR>
+  \ :call utils#replace(1, '“', '``', '”', "''")<CR>
+  \ :echom 'Fixed double quotes.'<CR>
 nnoremap <silent> \-
-  \ :call utils#replace(1, '–', '--')<CR>:echom 'Fixed long dashes.'<CR>
+  \ :call utils#replace(1, '–', '--')<CR>
+  \ :echom 'Fixed long dashes.'<CR>
 nnoremap <silent> \_
-  \ :call utils#replace(1, '\(\w\)[-–] ', '\1')<CR>:echom 'Fixed wordbreak dashes.'<CR>
+  \ :call utils#replace(1, '\(\w\)[-–] ', '\1')<CR>
+  \ :echom 'Fixed wordbreak dashes.'<CR>
 
 " Replace tabs with spaces
 noremap <silent> \<Tab>
-  \ :call utils#replace(1, '\t', repeat(' ', &tabstop))<CR>:echom 'Fixed tabs.'<CR>
+  \ :call utils#replace(1, '\t', repeat(' ', &tabstop))<CR>
+  \ :echom 'Fixed tabs.'<CR>
 
 " Caps lock
 " See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
@@ -1513,13 +1547,13 @@ nmap [d <Plug>backward_spell
 " Automatically update binary spellfile
 " See: https://vi.stackexchange.com/a/5052/8084
 for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
-    if filereadable(s:spellfile) && (
-      \ !filereadable(s:spellfile . '.spl') ||
-      \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
-      \ )
-        echom 'Update spellfile!'
-        silent! exec 'mkspell! ' . fnameescape(s:spellfile)
-    endif
+  if filereadable(s:spellfile) && (
+  \ !filereadable(s:spellfile . '.spl') ||
+  \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
+  \ )
+    echom 'Update spellfile!'
+    silent! exec 'mkspell! ' . fnameescape(s:spellfile)
+  endif
 endfor
 
 " g configuration
@@ -1553,10 +1587,10 @@ nnoremap <nowait> = ==
 
 " Always open all folds
 " NOTE: For some reason vim ignores foldlevelstart
-" augroup fold_open
-"   au!
-"   au BufReadPost * normal! zR
-" augroup END
+augroup fold_open
+  au!
+  au BufReadPost * normal! zR
+augroup END
 " Open *all* folds under cursor, not just this one
 " noremap <expr> zo foldclosed('.') ? 'zA' : ''
 " Open *all* folds recursively and update foldlevel

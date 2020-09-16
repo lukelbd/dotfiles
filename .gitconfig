@@ -128,3 +128,5 @@
 	clean  = "f() { echo >&2 \"clean: nbstripout $1\"; nbstripout; }; f %f"
 	smudge = "f() { echo >&2 \"smudge: cat $1\"; cat; }; f %f"
 	required = true
+[credential]
+	helper = osxkeychain

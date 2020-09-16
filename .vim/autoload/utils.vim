@@ -237,14 +237,14 @@ function! utils#autosave_toggle(...) abort
   if toggle
     let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
     exe 'augroup autosave_' . bufnr('%')
-      au! *
+      au!
       exe 'au ' . cmds . ' <buffer> silent w'
     augroup END
     echom 'Autosave enabled.'
     let b:autosave_on = 1
   else
     exe 'augroup autosave_' . bufnr('%')
-      au! *
+      au!
     augroup END
     echom 'Autosave disabled.'
     let b:autosave_on = 0
@@ -412,7 +412,7 @@ function! utils#vim_close() abort
 endfunction
 function! utils#tab_close() abort
   let ntabs = tabpagenr('$')
-  let islast = (tabpagenr('$') - tabpagenr())
+  let islast = (tabpagenr('$') == tabpagenr())
   if ntabs == 1
     qa
   else
@@ -439,15 +439,20 @@ function! utils#popup_setup(nofile) abort
   nnoremap <silent> <buffer> q :q!<CR>
   setlocal nolist nonumber norelativenumber nospell modifiable nocursorline colorcolumn=
   if a:nofile | setlocal buftype=nofile | endif
-  if len(tabpagebuflist()) == 1 | q | endif " exit if only one left
+  if len(tabpagebuflist()) == 1 | q | endif
+  exe 'augroup popup_' . bufnr('%')
+    au!
+    exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | q | endif'
+  augroup END
 endfunction
 
+" For pager windows
 function! utils#pager_setup() abort
   call utils#popup_setup(0) " argument means we do not set buftype=nofile
-  nnoremap <nowait> <buffer> f <C-f>
-  nnoremap <nowait> <buffer> d <C-d>
   nnoremap <buffer> u <C-u>
+  nnoremap <nowait> <buffer> d <C-d>
   nnoremap <buffer> b <C-b>
+  nnoremap <nowait> <buffer> f <C-f>
 endfunction
 
 " For help windows
@@ -465,8 +470,8 @@ function! utils#cmdwin_setup() abort
   silent! unmap <CR>
   silent! unmap <C-c>
   nnoremap <buffer> <silent> q :q<CR>
-  nnoremap <buffer> <C-z> <C-c><CR>
-  inoremap <buffer> <C-z> <C-c><CR>
+  nnoremap <buffer> <Plug>Execute <C-c><CR>
+  inoremap <buffer> <Plug>Execute <C-c><CR>
   inoremap <buffer> <expr> <CR> ""
   setlocal nonumber norelativenumber nolist laststatus=0
 endfunction

@@ -16,7 +16,7 @@ function! spell#lang_toggle(...)
   if a:0
     let uk = a:1
   else
-    let uk = (&l:spelllang == 'en_gb' ? 0 : 1)
+    let uk = (&l:spelllang ==# 'en_gb' ? 0 : 1)
   endif
   if uk
     setlocal spelllang=en_gb
@@ -35,7 +35,7 @@ function! spell#spell_change(direc)
     setlocal spell
   endif
   let winview = winsaveview()
-  exe 'normal! ' . (a:direc == ']' ? 'bh' : 'el')
+  exe 'normal! ' . (a:direc ==# ']' ? 'bh' : 'el')
   exe 'normal! ' . a:direc . 's'
   normal! 1z=
   call winrestview(winview)

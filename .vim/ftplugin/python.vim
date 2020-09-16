@@ -13,19 +13,19 @@ let g:python_highlight_all = 1  " builtin python ftplugin syntax option
 " Run current script using anaconda python, not vim python (important for macvim)
 function! s:run_python_script() abort
   update
-  let pypath = $HOME . '/miniconda3/bin/python'
+  let python = $HOME . '/miniconda3/bin/python'
   let projlib = $HOME . '/miniconda3/share/proj'
-  if !executable(pypath)
+  if !executable(python)
     echohl WarningMsg
-    echom "Anaconda python '" . pypath . "' not found."
+    echom "Anaconda python '" . python . "' not found."
     echohl None
   else
     exe
         \ '!clear; set -x; PROJ_LIB=' . shellescape(projlib)
-        \ . ' ' . shellescape(pypath) . ' ' . shellescape(@%)
+        \ . ' ' . shellescape(python) . ' ' . shellescape(@%)
   endif
 endfunction
-nnoremap <silent> <buffer> <C-z> :call <sid>run_python_script()<CR>
+nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_python_script()<CR>
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection

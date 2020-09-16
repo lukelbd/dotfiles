@@ -2,16 +2,20 @@
 --fields=+k
 --fields=+t
 --excmd=number
---langmap=latex:.tex,markdown:.md,vim:+.vimrc,sh:+.bashrc
+--langmap=sh:+.bashrc
+--langmap=vim:+.vimrc
 
 --langdef=markdown
+--langmap=markdown:.md
 --regex-markdown=/^#[ \t](.*$)/\1/h,heading,headings/
 
 --langdef=latex
+--langmap=latex:.tex
 --regex-latex=/^[^%]*\\tableofcontents/.Table of Contents/s,toc/
 --regex-latex=/^[^%]*\\frontmatter/.Frontmatter/s,frontmatter/
 --regex-latex=/^[^%]*\\mainmatter/.Mainmatter/s,mainmatter/
 --regex-latex=/^[^%]*\\backmatter/.Backmatter/s,backmatter/
+--regex-latex=/^[^%]*\\appendix/.Appendix/s,appendix/
 --regex-latex=/^[^%]*\\bibliography\{/.Bibliography/s,bibliography/
 --regex-latex=/^[^%]*\\begin[[:space:]]*(\[[^]]*\])?\{block\*?\}[[:space:]]*\{([^}]+)\}/.\2/s,block/
 --regex-latex=/^[^%]*\\part[[:space:]]*(\[[^]]*\])?[[:space:]]*\{([^}]+)\}/.\2/s,part/
