@@ -35,8 +35,18 @@ if [ -z "$_ps1_set" ]; then  # don't overwrite modifications by supercomputer mo
 fi
 
 # Message constructor; modify the number to increase number of dots
-_bashrc_message() {
+_echo_bashrc() {
   printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
+}
+_load_modules() {
+  local module  # but _loaded is global
+  read -r -a _loaded_modules < <(module --terse list 2>&1)
+  # module purge 2>/dev/null
+  for module in "$@"; do
+    if ! [[ " ${_loaded_modules[*]} " =~ " $module " ]]; then
+      module load "$module"
+    fi
+  done
 }
 
 #-----------------------------------------------------------------------------#
@@ -54,45 +64,35 @@ unalias -a
 [[ "$OSTYPE" == darwin* ]] && _macos=true || _macos=false
 
 # First, the path management
-_bashrc_message "Variables and modules"
+_echo_bashrc 'Variables and modules'
 if $_macos; then
   # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-  # NOTES:
-  # To install GNU utils see: https://apple.stackexchange.com/q/69223/214359
-  # Added ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
-  # Added matlab as a symlink in builds directory
-  # Installed gcc and gfortran with 'port install gcc6' then 'port select
-  # --set gcc mp-gcc6'. Try 'port select --list gcc'
-  # Installed various utils with 'brew install coreutils findutils gnu-sed
-  # gnutls grep gnu-tar gawk'
-  export PATH=$(tr -d '\n ' <<< "
-    $HOME/builds/ncl-6.5.0/bin:
-    $HOME/builds/matlab-r2019a/bin:
-    /opt/pgi/osx86-64/2018/bin:
-    /usr/local/opt/coreutils/libexec/gnubin:
-    /usr/local/opt/findutils/libexec/gnubin:
-    /usr/local/opt/gnu-sed/libexec/gnubin:
-    /usr/local/opt/gnu-tar/libexec/gnubin:
-    /usr/local/opt/grep/libexec/gnubin:
-    /usr/local/bin:
-    /opt/local/bin:
-    /opt/local/sbin:
-    /opt/X11/bin:
-    /Library/TeX/texbin:
-    /usr/bin:
-    /bin:
-    /usr/sbin:
-    /sbin:
-  ")
-  export MANPATH=$(tr -d '\n ' <<< "
-    /usr/local/opt/coreutils/libexec/gnuman:
-    /usr/local/opt/findutils/libexec/gnuman:
-    /usr/local/opt/gnu-sed/libexec/gnuman:
-    /usr/local/opt/gnu-tar/libexec/gnuman:
-    /usr/local/opt/grep/libexec/gnuman:
-  ")
-  export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-18.10"
-  export PKG_CONFIG_PATH="/opt/local/bin/pkg-config"
+  # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
+  # * Added ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
+  # * Added matlab as a symlink in builds directory
+  # * Installed gcc and gfortran with 'port install gcc6' then 'port select
+  #   --set gcc mp-gcc6'. Try 'port select --list gcc'
+  # * Installed various utils with 'brew install coreutils findutils gnu-sed
+  #   gnutls grep gnu-tar gawk'. Found paths
+  export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+  export PATH=/Library/TeX/texbin:$PATH
+  export PATH=/opt/X11/bin:$PATH
+  export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH
+  export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH
+  export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
+  export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
+  export PATH=/usr/local/opt/findutils/libexec/gnubin:$PATH
+  export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
+  export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
+  export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
+  export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
+  export MANPATH=/usr/local/opt/grep/libexec/gnuman
+  export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
+  export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
+  export MANPATH=/usr/local/opt/findutils/libexec/gnuman:$MANPATH
+  export MANPATH=/usr/local/opt/coreutils/libexec/gnuman:$MANPATH
+  export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
+  export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
 
   # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
   # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
@@ -102,7 +102,7 @@ if $_macos; then
   if [ -d ~/.rvm/bin ]; then
     [ -s ~/.rvm/scripts/rvm ] && \
       source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
-    export PATH="$PATH:$HOME/.rvm/bin"
+    export PATH=$PATH:$HOME/.rvm/bin
     rvm use ruby 1>/dev/null
   fi
 
@@ -112,98 +112,77 @@ if $_macos; then
   # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
   # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
   alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
-  export NCARG_ROOT="$HOME/builds/ncl-6.5.0"  # critically necessary to run NCL
+  export NCARG_ROOT=$HOME/builds/ncl-6.5.0  # critically necessary to run NCL
 
 else
-  case $HOSTNAME in
+  case ${HOSTNAME%%.*} in
   # Euclid options
   euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH=$(tr -d '\n ' <<< "
-      /opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:
-      /usr/local/bin:/usr/bin:/bin
-    ")
-    export LD_LIBRARY_PATH="/usr/local/lib"
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/lib
     ;;
 
   # Monde options
-  monde*)
+  monde)
     # All netcdf, mpich, etc. utilites are separate, must add them
     # source set_pgi.sh # or do this manually
     _pgi_version='19.10'  # increment this as needed
-    export PATH=$(tr -d '\n ' <<< "
-      /opt/pgi/linux86-64/$_pgi_version/bin:
-      /usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:
-      /usr/local/bin:
-      /usr/bin:/usr/local/sbin:/usr/sbin
-    ")
-    export PGI="/opt/pgi"
-    export LD_LIBRARY_PATH="/usr/lib64/mpich/lib:/usr/local/lib"
-    export MANPATH="$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man"
-    export LM_LICENSE_FILE="/opt/pgi/license.dat-COMMUNITY-$_pgi_version"
+    export PATH=/usr/bin:/usr/local/sbin:/usr/sbin
+    export PATH=/usr/local/bin:$PATH
+    export PATH=/usr/lib64/mpich/bin:/usr/lib64/qt-3.3/bin:$PATH
+    export PATH=/opt/pgi/linux86-64/$_pgi_version/bin:$PATH
+    export PGI=/opt/pgi
+    export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
+    export MANPATH=$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man
+    export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
     # Isca modeling stuff
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde  # "environment" configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
     # Monde has NCL installed already
-    export NCARG_ROOT="/usr/local"
+    export NCARG_ROOT=/usr/local
     ;;
 
   # Chicago supercomputer, any of the login nodes
   midway*)
-    # Default bashrc setup
-    export PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
-    # Module load and stuff
-    # NOTE: Use 'sinteractive' for interactive mode
-    # module purge 2>/dev/null
-    read -r -a _loaded < <(module --terse list 2>&1)
-    _toload=(Anaconda3 mkl intel)  # for some reason latest CDO version is not default
-    for _module in "${_toload[@]}"; do
-      if ! [[ " ${_loaded[*]} " =~ $_module ]]; then
-        module load "$_module"
-      fi
-    done
+    # Modules and paths
+    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
+    _load_modules mlk intel  # for some reason latest CDO version is not default
+
     # Remove print statements from prompt
     # WARNING: Greedy glob removes commands sandwiched between print statements
     export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
     ;;
 
   # Cheyenne supercomputer, any of the login nodes
+  # NOTE: Use 'sinteractive' for interactive mode
   cheyenne*)
-    # Edit library path
+    # Modules and paths
     # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
-    export LD_LIBRARY_PATH="/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH"
     export TMPDIR=/glade/scratch/$USER/tmp
-    # Load some modules
-    # NOTE: Use 'qinteractive' for interactive mode
+    export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
+    _load_modules netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
     read -r -a _loaded < <(module --terse list 2>&1)
-    _toload=(nco tmux)  # have latest greatest versions of CDO and NCL via conda
-    for _module in "${_toload[@]}"; do
-      if ! [[ " ${_loaded[*]} " =~ $_module ]]; then
-        module load "$_module"
-      fi
-    done
     ;;
 
   *)
-    echo "\"$HOSTNAME\" does not have custom settings. You may want to edit your \".bashrc\"."
+    echo "Warning: Host '$HOSTNAME' does not have custom settings. You may want to edit your .bashrc."
     ;;
   esac
 fi
 
 # Access custom executables and git repos
-export PATH=$(tr -d '\n ' <<< "
-  $HOME/bin:
-  $HOME/go/bin:
-  $HOME/node/bin:
-  $HOME/ncparallel:
-  $HOME/youtube-dl-music:
-  $PATH
-")
+export PATH=$HOME/bin:$PATH
+export PATH=$HOME/go/bin:$PATH
+export PATH=$HOME/node/bin:$PATH
+export PATH=$HOME/ncparallel:$PATH
+export PATH=$HOME/youtube-dl-music:$PATH
 
 # Various python stuff
-export PYTHONPATH="$HOME/timescales"  # just use pip install -e . for cloned projects
+export PYTHONPATH=$HOME/timescales  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
@@ -211,13 +190,13 @@ export MPLCONFIGDIR=$HOME/.matplotlib
 # Adding additional flags for building C++ stuff
 # https://github.com/matplotlib/matplotlib/issues/13609
 # https://github.com/huggingface/neuralcoref/issues/97#issuecomment-436638466
-export CFLAGS='-stdlib=libc++'
-printf "done\n"
+export CFLAGS=-stdlib=libc++
+echo 'done'
 
 #-----------------------------------------------------------------------------#
 # Wrappers for common functions
 #-----------------------------------------------------------------------------#
-_bashrc_message "Functions and aliases"
+_echo_bashrc 'Functions and aliases'
 # Append prompt command
 _prompt() {  # input argument should be new command
   export PROMPT_COMMAND=$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')
@@ -583,11 +562,11 @@ pfind() {
   command find "$1" \
     -type d \( \
       -name .eggs -o -name .git -o -name .svn -o -name .ipynb_checkpoints \
-      -o -name plugged -o -name build -o -name api -o -name fabio -o -name trash \
+      -o -name plugged -o -name build -o -name api -o -name sources -o -name trash \
       -o -name externals \
     \) -prune -o -name 'CHANGELOG*' -prune -o \
     -type f \( \
-      -name '*.py' -o -name '*.ipynb' -o -name '*.rst' \
+      ! -name '*.*' -o -name '*.py' -o -name '*.sh' -o -name '*.rst' -o -name '*.ipynb' \
     \) "${@:2}"
 }
 pgrep() {
@@ -596,7 +575,7 @@ pgrep() {
     --exclude=CHANGELOG* --include=*.py --include=*.ipynb --include=*.rst \
     --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn \
     --exclude-dir=.eggs --exclude-dir=build --exclude-dir=api \
-    --exclude-dir=trash --exclude-dir=fabio \
+    --exclude-dir=trash --exclude-dir=sources \
     --exclude-dir=.ipynb_checkpoints
 }
 refactor() {
@@ -612,11 +591,13 @@ refactor() {
     pfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
   fi
 }
-
-# Query files
-# awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
-todo() { for f in "$@"; do echo "File: $f"; grep -i -n '\btodo\b' "$f"; done; }  # | sed $'s/\t/  /g' | sed 's/^\([^ ]* \) */\1/g'; done; }
-note() { for f in "$@"; do echo "File: $f"; grep -i -n '\bnote:' "$f"; done; }
+fixme() {
+  pfind . -print -a -exec grep -n '\bFIXME\b' {} \;
+}
+todo() {
+  # awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
+  pfind . -print -a -exec grep -n '\bTODO\b' {} \;
+}
 
 # Shell scripting utilities
 calc() { bc -l <<< "$(echo "$*" | tr 'x' '*')"; }  # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
@@ -1539,7 +1520,7 @@ wctex() {
 alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
 
 # This is *the end* of all function and alias declarations
-printf "done\n"
+echo 'done'
 
 #-----------------------------------------------------------------------------#
 # FZF fuzzy file completion tool
@@ -1557,7 +1538,7 @@ if [ -f ~/.fzf.bash ]; then
   #   normal bash shell completion.
   # * For colors, see: https://stackoverflow.com/a/33206814/4970632
   #   Also see manual. Here, '-1' is terminal default, not '0'.
-  _bashrc_message "Enabling fzf"
+  _echo_bashrc 'Enabling fzf'
   _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
     --select-1 --exit-0 --inline-info --height=6 \
@@ -1604,7 +1585,7 @@ if [ -f ~/.fzf.bash ]; then
   # Source file
   complete -r  # reset first
   source ~/.fzf.bash
-  printf "done\n"
+  echo 'done'
 
   # FZF tab completion for non-empty line that is not preceded by word + space.
   # https://stackoverflow.com/a/42085887/4970632
@@ -1637,7 +1618,7 @@ if [ -n "$VIMRUNTIME" ]; then
   unset PROMPT_COMMAND
 elif [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
   # && [ -z "$VIMRUNTIME" ]; then
-  _bashrc_message "Enabling shell integration"
+  _echo_bashrc 'Enabling shell integration'
   # First enable
   source ~/.iterm2_shell_integration.bash
   # Declare some helper functions
@@ -1662,7 +1643,7 @@ elif [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_I
       done
     }'
   done
-  printf "done\n"
+  echo 'done'
 fi
 
 #-----------------------------------------------------------------------------#
@@ -1680,7 +1661,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
   # The first thing creates a bunch of environment variables and functions
   # The second part calls the 'conda' function, which calls an activation function, which does the
   # whole solving environment thing
-  _bashrc_message "Enabling conda"
+  _echo_bashrc 'Enabling conda'
   avail() {
     local avail current search
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
@@ -1703,7 +1684,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
     eval "$__conda_setup"
   else
     if [ -f "$HOME/$_conda/etc/profile.d/conda.sh" ]; then
-      . "$HOME/$_conda/etc/profile.d/conda.sh"
+      source "$HOME/$_conda/etc/profile.d/conda.sh"
     else
       export PATH="$HOME/$_conda/bin:$PATH"
     fi
@@ -1712,7 +1693,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
 
   # Activate conda
   conda activate base
-  printf "done\n"
+  echo 'done'
 fi
 
 #-----------------------------------------------------------------------------#
