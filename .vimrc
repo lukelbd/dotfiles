@@ -473,14 +473,18 @@ Plug 'lilydjwg/colorizer'
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
-Plug 'fisadev/vim-isort'
-Plug 'psf/black', { 'tag': '19.10b0' }
+" Plug 'psf/black', { 'tag': '19.10b0' }
+" Plug 'fisadev/vim-isort'
+Plug 'Chiel92/vim-autoformat'
 Plug 'tell-k/vim-autopep8'
 Plug 'tmux-plugins/vim-tmux'
 Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
+let g:formatdef_mpython = '"isort - | black -q -"'
+let g:formatters_python = ['mpython']  " use multiple formatters
+let g:formatters_fortran = ['fprettify']
 
 " TeX utilities; better syntax highlighting, better indentation,
 " and some useful remaps. Also zotero integration.
@@ -496,19 +500,21 @@ Plug 'tpope/vim-liquid'
 Plug 'JuliaEditorSupport/julia-vim'
 
 " Python wrappers
+" Warning: jedi-vim horribly slow on monde
 " Plug 'vim-scripts/Pydiction'  " just changes completeopt and dictionary and stuff
 " Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
 " Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
 " Plug 'ivanov/vim-ipython'  " dead
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
-Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
+" Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
 " Folding
-Plug 'Konfekt/FastFold'  " more like SlowFold
-Plug 'tmhedberg/SimpylFold'
+" Warning: SimpylFold horribly slow on monde0
+" Plug 'tmhedberg/SimpylFold'
+Plug 'Konfekt/FastFold'
 let g:SimpylFold_docstring_preview = 0
 let g:SimpylFold_fold_docstring = 0
 let g:SimpylFold_fold_import = 0
