@@ -14,4 +14,4 @@ function! s:run_c_program()
     \ . '&& ' . exe_path . ' && rm ' . exe_path
   return
 endfunction
-nnoremap <silent> <buffer> <C-z> :call <sid>run_c_program()<CR>
+nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_c_program()<CR>

@@ -1,12 +1,19 @@
 "------------------------------------------------------------------------------"
 " HTML settings
 "------------------------------------------------------------------------------"
+" DelimitMate plugin
+let b:delimitMate_matchpairs = '(:),{:},[:],<:>'
+
 " Declare command to 'compile' page, i.e. show it in Safari
-nnoremap <silent> <buffer> <C-z> :exec("!clear; set -x; open -a Safari ".shellescape(@%))<CR><CR>
+function! s:open_html_file()
+  update
+  exe '!clear; set -x; open -a Safari ' . shellescape(@%)
+endfunction
+nnoremap <silent> <buffer> <Plug>Execute :call <sid>open_html_file()
 
 " Define HTML vim-surround macros
 " Todo: Why don't we put everything in textools plugin in tex.vim file?
-if &rtp =~ 'vim-surround'
+if &runtimepath =~# 'vim-surround'
   " HTML tools
   " Todo: Understand example from documentation:
   " "<div\1id: \r..*\r id=\"&\"\1>\r</div>"

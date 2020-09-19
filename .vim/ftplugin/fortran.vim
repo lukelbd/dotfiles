@@ -31,4 +31,4 @@ function! s:run_fortran_program()
     \ . g:fortran_compiler . ' ' . f90_path . ' -o ' . exe_path . ' && '
     \ . './' . exe_path . ' && rm ' . exe_path
 endfunction
-nnoremap <silent> <buffer> <C-z> :call <sid>run_fortran_program()<CR>
+nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_fortran_program()<CR>

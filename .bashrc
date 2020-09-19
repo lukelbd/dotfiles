@@ -474,32 +474,31 @@ _setup_opts 2>/dev/null  # ignore if option unavailable
 # NOTES: See https://stackoverflow.com/a/949006/4970632
 # To find netcdf environment variables on a compute cluster try:
 # for var in $(variables | grep -i netcdf); do echo ${var}: ${!var}; done
-alias aliases="compgen -a"
-alias variables="compgen -v"
-alias functions="compgen -A function"  # show current shell functions
-alias builtins="compgen -b"            # bash builtins
-alias commands="compgen -c"
-alias keywords="compgen -k"
-alias modules="module avail 2>&1 | cat "
+alias aliases='compgen -a'
+alias variables='compgen -v'
+alias functions='compgen -A function'  # show current shell functions
+alias builtins='compgen -b'            # bash builtins
+alias commands='compgen -c'
+alias keywords='compgen -k'
+alias modules='module avail 2>&1 | cat '
 # shellcheck disable=2142
 $_macos || alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
-$_macos || alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
+$_macos || alias hardware='cat /etc/*-release'  # print out Debian, etc. release info
 if $_macos; then
   alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
-  alias bindings_stty="stty -e"  # bindings
+  alias bindings_stty='stty -e'  # bindings
 else
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
-  alias bindings_stty="stty -a"  # bindings
+  alias bindings_stty='stty -a'  # bindings
 fi
-alias inputrc_ops="bind -v"    # the 'set' options, and their values
-alias inputrc_funcs="bind -l"  # the functions, for example 'forward-char'
-env() { set; }                 # just prints all shell variables
+alias inputrc_ops='bind -v'    # the 'set' options, and their values
+alias inputrc_funcs='bind -l'  # the functions, for example 'forward-char'
 
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
 alias du='du -h -d 1'
 alias df='df -h'
-alias pmount="simple-mtpfs -f -v ~/Phone"
+alias pmount='simple-mtpfs -f -v ~/Phone'
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
@@ -526,10 +525,10 @@ alias brew="PATH=\"$PATH\" brew"
 
 # Configure ls behavior, define colorization using dircolors
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
-alias ls="ls --color=always -AF"   # ls useful (F differentiates directories from files)
-alias ll="ls --color=always -AFhl"  # ls "list", just include details and file sizes
-alias cd="cd -P"  # don't want this on my mac temporarily
-alias ctags="ctags --langmap=vim:+.vimrc,sh:+.bashrc"  # permanent lang maps
+alias ls='ls --color=always -AF'   # ls useful (F differentiates directories from files)
+alias ll='ls --color=always -AFhl'  # ls "list", just include details and file sizes
+alias cd='cd -P'  # don't want this on my mac temporarily
+alias ctags='ctags --langmap=vim:+.vimrc,sh:+.bashrc'  # permanent lang maps
 log() {
   while ! [ -r "$1" ]; do
     echo "Waiting..."
@@ -551,6 +550,30 @@ if hash tput 2>/dev/null; then
   export LESS_TERMCAP_ue=$'\e[0m'         # reset underline
   export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
+
+# Rename files with matching base names into ordered numbered files
+rename() {
+  local i dir ext base file1 files1 tmp tmps file2 files2
+  base=$1
+  files1=("$base"*)
+  [[ "$base" =~ '/' ]] && dir=${base%/*} || dir=.
+  # shellcheck disable=2049
+  [[ "${files1[0]}" =~ "*" ]] && { echo "Error: No files found."; return 1; }
+  for i in $(seq 1 ${#files1[@]}); do
+    file1=${files1[i-1]}
+    ext=${file1##*.}
+    tmp=$dir/tmp$(printf %03d $i).$ext
+    file2=$dir/$base$(printf %03d $i).$ext
+    tmps+=("$tmp")
+    files2+=("$file2")
+    mv "$file1" "$tmp" || { echo "Move failed."; return 1; }
+  done
+  for i in $(seq 1 ${#files1[@]}); do
+    tmp=${tmps[i-1]}
+    file2=${files2[i-1]}
+    mv "$tmp" "$file2" || { echo "Move failed."; return 1; }
+  done
+}
 
 # Grepping and diffing useful for refactoring or searching for files
 qfind() {
@@ -605,16 +628,16 @@ join() { local IFS="$1"; shift; echo "$*"; }    # join array elements by some se
 refresh() { for i in {1..100}; do echo; done; clear; }  # print bunch of empty liens
 
 # Controlling and viewing running processes
-alias toc="mpstat -P ALL 1"  # like top, but for each core
-alias restarts="last reboot | less"
+alias toc='mpstat -P ALL 1'  # like top, but for each core
+alias restarts='last reboot | less'
 # List shell processes using ps
 tos() {
   if [ -z "$1" ]; then
-    regex="\$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/"
+    regex='$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/'
   else
-    regex="\$4 == \"$1\""
+    regex='$4 == "$1"'
   fi
-  ps | awk "NR == 1 {next}; $regex {print \$1 \" \" \$4}"
+  ps | awk 'NR == 1 {next}; '"$regex"'{print $1 " " $4}'
 }
 
 # Kill jobs by name
@@ -653,13 +676,13 @@ qkill() {
   done
 }
 # Remove logs
-alias qrm="rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*"  # remove (empty) job logs
+alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
 # Better qstat command
 alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
 
 # Differencing stuff, similar git commands stuff
 # First use git as the difference engine, disable color
-hash colordiff 2>/dev/null && alias diff="command colordiff"  # use --name-status to compare directories
+hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
 gdiff() {
   [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
   git diff --no-index --color=always "$1" "$2"
@@ -1059,7 +1082,7 @@ rlcp() {  # "copy to local (from remote); 'copy there'"
   args=("${@:1:$#-1}")          # flags and files
   port=$(cat "$_port_file")     # port from most recent login
   dest=$(_compressuser ${!#}) # last value
-  dest=${dest//\ /\\\ }       # escape whitespace manually
+  dest=${dest// /\\ }       # escape whitespace manually
   echo "(Port $port) Copying ${args[*]} on this server to home server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P"$port" "${args[@]}" "$USER"@localhost:"$dest"
 }
@@ -1074,7 +1097,7 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   port=$(cat "$_port_file")           # port from most recent login
   dest=${!#}                          # last value
   file=$(_compressuser "${@:$#-1:1}") # second to last
-  file=${file//\ /\\\ }               # escape whitespace manually
+  file=${file// /\\ }               # escape whitespace manually
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P"$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
@@ -1083,13 +1106,13 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
 # REPLs
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
-alias matplotlib="ipython --matplotlib=qt -i -c \"import proplot as plot; import matplotlib.pyplot as plt\""
-alias console="jupyter console"
-alias qtconsole="jupyter qtconsole"
+alias matplotlib='ipython --matplotlib=qt -i -c "import proplot as plot; import matplotlib.pyplot as plt"'
+alias console='jupyter console'
+alias qtconsole='jupyter qtconsole'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-$_macos && export JULIA="/Applications/Julia-1.0.app/Contents/Resources/julia"
+$_macos && export JULIA='/Applications/Julia-1.0.app/Contents/Resources/julia'
 
 # NCL interactive environment
 # Make sure that we encapsulate any other alias; for example, on Macs, will
@@ -1099,19 +1122,19 @@ if alias ncl &>/dev/null; then
   _incl=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
   alias incl='$_incl -Q -n'
 else
-  alias incl="ncl -Q -n"
+  alias incl='ncl -Q -n'
 fi
 
 # R utilities
 # Calling R with --slave or --interactive makes quiting totally impossible somehow.
 # The ---always-readline prevents prompt from switching to the default prompt, but
 # also seems to disable ctrl-d for exiting.
-alias r="command R -q --no-save"
-alias R="command R -q --no-save"
-# alias R="rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save"
+# alias R='rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save'
+alias r='command R -q --no-save'
+alias R='command R -q --no-save'
 
 # Matlab
-# Just loads the startup script
+# Load the startup script
 alias imatlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
 
 # Perl -- hard to understand, but here it goes:
@@ -1517,7 +1540,7 @@ wctex() {
 # Other tools are "impressive" and "presentation", and both should be in bin
 # Homebrew presentation software; below installs it, from http://pygobject.readthedocs.io/en/latest/getting_started.html
 # brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
-alias pympress="LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress"
+alias pympress='LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress'
 
 # This is *the end* of all function and alias declarations
 echo 'done'
@@ -1763,7 +1786,7 @@ title_update() {  # fix name issues
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
-alias title="_title_set"  # easier for user
+alias title='_title_set'  # easier for user
 
 # Mac stuff
 # TODO: This hangs when run from interactive cluster node, we test by comparing
@@ -1777,7 +1800,7 @@ if $_macos; then # first the MacOS options
 
   # Music stuff
   # alias artists="find ~/playlist -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias artists="find ~/playlist -mindepth 2 -type f -printf '%P\n' | cut -d/ -f1 | uniq -c | sort -n"
+  alias artists='find ~/playlist -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
   artist2folder() {
     local dir base artist title
     dir="$HOME/playlist"

@@ -15,4 +15,4 @@ function! s:run_shell_script() abort
   update
   exe '!clear; set -x; bash ' . shellescape(@%)
 endfunction
-nnoremap <silent> <buffer> <C-z> :call <sid>run_shell_script()<CR>
+nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_shell_script()<CR>
