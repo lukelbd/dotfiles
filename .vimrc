@@ -300,6 +300,7 @@ noremap <Backspace> <Nop>
 " * Ctrl-l used for special 'insertmode' always-insert-mode option
 " * Ctrl-h, Ctrl-d, Ctrl-t used for deleting and tabbing, but use backspace and tab
 " * Ctrl-p, Ctrl-n used for menu cycling, but use Ctrl-, and Ctrl-.
+" * Ctrl-b does nothing but inserts literal char
 augroup override_maps
   au!
   au User BufferOverrides inoremap <buffer> <S-Tab> <C-d>
@@ -311,6 +312,7 @@ inoremap <F3> <Nop>
 inoremap <F4> <Nop>
 inoremap <C-n> <Nop>
 inoremap <C-p> <Nop>
+inoremap <C-b> <Nop>
 inoremap <C-t> <Nop>
 inoremap <C-d> <Nop>
 inoremap <C-g> <Nop>
