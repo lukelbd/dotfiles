@@ -1075,7 +1075,7 @@ _ssh() {
       echo \$port
     ")
   fi
-  jupyter-connect "$1"
+  # jupyter-connect "$1"
   port_write=$(_compressuser "$_port_file")
   title_write=$(_compressuser "$_title_file")
   command ssh \

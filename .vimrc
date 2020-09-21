@@ -99,31 +99,14 @@ if has('gui_running')
   set number relativenumber guioptions= guicursor+=a:blinkon0  " no scrollbars or blinking
 endif
 
-" Special settings
-let g:set_overrides = 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq textwidth=' . s:textwidth
-exe 'setlocal ' . g:set_overrides
-augroup set_overrides
+" Always override these settings, even buffer-local settings
+let g:setting_overrides =
+  \ 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq '
+  \ . 'textwidth=' . s:textwidth
+augroup override_settings
   au!
-  au BufEnter * exe 'setlocal ' . g:set_overrides
-augroup END
-
-" Tab, conceal, and popup toggling
-augroup tab_toggle
-  au!
-  au FileType make,text,gitconfig TabToggle 1
-augroup END
-command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
-command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
-command! -nargs=? TabToggle call utils#tab_toggle(<args>)
-command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
-noremap gQ :WrapItemLines<CR>
-noremap <Leader><Tab> :TabToggle<CR>
-
-
-" Escape repair needed when we allow h/l to change line num
-augroup escape_fix
-  au!
-  au InsertLeave * normal! `^
+  au User BufferOverrides exe 'setlocal ' . g:setting_overrides
+  au BufEnter * exe 'setlocal ' . g:setting_overrides
 augroup END
 
 " Global functions, for vim scripting
@@ -140,6 +123,11 @@ endfunction
 " Strip leading and trailing whitespace
 function! Strip(text) abort
   return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
+endfunction
+
+" Character under cursor
+function! CChar() abort
+  return getline('.')[col('.') - 1]
 endfunction
 
 " Query whether plugin is loaded
@@ -193,6 +181,12 @@ function! RegexComment()
   return char
 endfunction
 
+" Escape repair needed when we allow h/l to change line num
+augroup escape_fix
+  au!
+  au InsertLeave * normal! `^
+augroup END
+
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
 if len(mapcheck('<Esc>', 'n'))
@@ -221,18 +215,19 @@ for s:mapping in [
     \ ['<Tab>',    'n'],
     \ ['<Leader>', 'nv'],
     \ ['\',        'nv'],
-    \ ['<C-s>',    'vi'],
-    \ ['<C-z>',    'i'],
-    \ ['<C-b>',    'i']
+    \ ['<C-x>',    'i'],
+    \ ['<C-j>',    'vi'],
+    \ ['<C-k>',    'i'],
     \ ]
   let s:key = s:mapping[0]
   let s:modes = split(s:mapping[1], '\zs')  " construct list
   for s:mode in s:modes
-    if ! len(mapcheck(s:key, s:mode))
+    if !len(mapcheck(s:key, s:mode))
       exe s:mode . 'map <expr> ' . s:key . ' <sid>suppress(''' . s:key . ''', ''' . s:mode . ''')'
     endif
   endfor
 endfor
+
 
 " Different cursor shape different modes
 " First mouse stuff, make sure we are using vim, not vi
@@ -259,33 +254,79 @@ if exists('&t_EI')
   let &t_EI = (exists('$TMUX') ? "\ePtmux;\e\e[2 q\e\\" : "\e[2 q")
 endif
 
+" Tab, conceal, and popup toggling
+augroup tab_toggle
+  au!
+  au FileType make,text,gitconfig TabToggle 1
+augroup END
+command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
+command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
+command! -nargs=? TabToggle call utils#tab_toggle(<args>)
+command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
+noremap gQ :WrapItemLines<CR>
+noremap <Leader><Tab> :TabToggle<CR>
 
-" Normal and visual mode maps
-" Disable keys
-noremap <CR> <Nop>
-noremap <Space> <Nop>
+" Search mappings
+command! -nargs=1 NSearch echo utils#search_maps(<q-args>, 'n')
+command! -nargs=1 ISearch echo utils#search_maps(<q-args>, 'i')
+command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
 
-" Disable weird modes I don't understand
+" Disable normal mode stuff
+" * Q and K are weird modes never used
+" * Z is save and quit shortcut, use for something else
+" * Ctrl-p and Ctrl-n used for scrolling, remap these instead
+" * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
+" * Turn off common normal mode issues
+" * q and @ are for macros, instead reserve for quitting popup windows and idetools map
+" * Ctrl-r is undo, remap this
+noremap @ <Nop>
 noremap Q <Nop>
 noremap K <Nop>
-
-" Disable Z shortcut
 noremap Z <Nop>
-
-" Disable extra scroll commands
+noremap q <Nop>
+noremap <C-r> <Nop>
 noremap <C-p> <Nop>
 noremap <C-n> <Nop>
-
-" Disable default increment maps because use + and _ instead
 noremap <C-a> <Nop>
 noremap <C-x> <Nop>
-inoremap <C-a> <Nop>
-inoremap <C-x> <Nop>
+noremap <CR> <Nop>
+noremap <Space> <Nop>
+noremap <Delete> <Nop>
+noremap <Backspace> <Nop>
 
-" Turn off common things in normal mode
-" Also prevent Ctrl+c ringing the bell
-nnoremap <Delete> <Nop>
-nnoremap <Backspace> <Nop>
+" Disable insert mode stuff
+" * Ctrl-g used for builtin, surround, delimitmate insert-mode motion (against this)
+" * Ctrl-x used for scrolling or insert-mode complection, use autocomplete instead
+" * Ctrl-l used for special 'insertmode' always-insert-mode option
+" * Ctrl-h, Ctrl-d, Ctrl-t used for deleting and tabbing, but use backspace and tab
+" * Ctrl-p, Ctrl-n used for menu cycling, but use Ctrl-, and Ctrl-.
+augroup override_maps
+  au!
+  au User BufferOverrides inoremap <buffer> <S-Tab> <C-d>
+  au BufEnter * inoremap <buffer> <S-Tab> <C-d>
+augroup END
+inoremap <F1> <Nop>
+inoremap <F2> <Nop>
+inoremap <F3> <Nop>
+inoremap <F4> <Nop>
+inoremap <C-n> <Nop>
+inoremap <C-p> <Nop>
+inoremap <C-t> <Nop>
+inoremap <C-d> <Nop>
+inoremap <C-g> <Nop>
+inoremap <C-h> <Nop>
+inoremap <C-l> <Nop>
+inoremap <Up> <Nop>
+inoremap <Down> <Nop>
+inoremap <Left> <Nop>
+inoremap <Right> <Nop>
+inoremap <C-x><C-n> <Nop>
+inoremap <C-x><C-p> <Nop>
+inoremap <C-x><C-e> <Nop>
+inoremap <C-x><C-y> <Nop>
+
+" Redo map to capital U
+nnoremap U <C-r>
 
 " Easy mark usage -- use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
@@ -293,39 +334,32 @@ nnoremap <Leader>~ :<C-u>RemoveHighlights<CR>
 nnoremap <expr> ` "`" . nr2char(97+v:count)
 nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 
-" Reserve lower case q for quitting popup windows
-nnoremap q <Nop>
-
 " Record macro by pressing Q, the escapes prevent q from triggerering
-nnoremap @ <Nop>
 nnoremap , @a
-nnoremap <silent> <expr> Q b:recording ?
-  \ 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
-
-" Redo map to capital U
-nnoremap <C-r> <Nop>
-nnoremap U <C-r>
+nnoremap <silent> <expr> Q
+  \ b:recording ? 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
 
 " Use cc for s because use sneak plugin
 nnoremap c<Backspace> <Nop>
 nnoremap cc s
 vnoremap cc s
 
-" Swap with row above, and swap with row below
-nnoremap <silent> ck k:let g:view = winsaveview() \| d
-  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>
-nnoremap <silent> cj :let g:view = winsaveview() \| d
-  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>j
-" Swap adjacent characters
-nnoremap cl xph
-nnoremap ch Xp
-
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
 nnoremap cL mzi<CR><Esc>`z
 
+" Swap adjacent characters or rows
+nnoremap <silent> ch :call utils#swap_characters(0)<CR>
+nnoremap <silent> cl :call utils#swap_characters(1)<CR>
+nnoremap <silent> ck k
+  \ :let g:view = winsaveview() \| d
+  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>
+nnoremap <silent> cj
+  \ :let g:view = winsaveview() \| d
+  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>j
+
 " Pressing enter on empty line preserves leading whitespace
-nnoremap o ox<Backspace>
-nnoremap O Ox<Backspace>
+nnoremap o oX<Backspace>
+nnoremap O OX<Backspace>
 
 " Paste from the nth previously deleted or changed text
 " Use 'yp' to paste last yanked, unchanged text, because cannot use zero
@@ -385,6 +419,7 @@ noremap " "*
 noremap <C-n> g;
 noremap <F4> g,
 " Jump to last jump
+" Note: Account for karabiner arrow key maps
 noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
@@ -427,12 +462,11 @@ inoremap <silent> <C-u> <C-o>:undo<CR>
 cnoremap <expr> <F1> utils#wild_tab(0)
 cnoremap <expr> <F2> utils#wild_tab(1)
 
-
 "-----------------------------------------------------------------------------"
 " VimPlug plugins
 "-----------------------------------------------------------------------------"
 " 'Install' a local plugin
-function! PlugLocal(path)
+function! s:plug_local(path)
   let rtp = expand(a:path)
   if !isdirectory(rtp)
     echohl WarningMsg
@@ -443,7 +477,7 @@ function! PlugLocal(path)
     exe 'set rtp+=' . rtp . '/after'
   endif
 endfunction
-command! -nargs=1 PlugLocal call PlugLocal(<args>)
+command! -nargs=1 PlugLocal call s:plug_local(<args>)
 
 " Note: No longer worry about compatibility because we can install everything
 " from conda-forge, including vim and ctags.
@@ -713,21 +747,19 @@ if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
   let $FZF_BIBTEX_CACHEDIR = s:cache_dir
 
   " Delimiter mappings
-  " Todo: Fix these mappings.
+  " Note: Account for karabiner arrow key maps
+  let g:textools_surround_prefix = '<C-s>'
+  let g:textools_snippet_prefix = '<C-d>'
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
   let g:textools_latexmk_maps = {
     \ '<Plug>Execute': '--pull',
-    \ '<Leader>z': '--pull --diff',
-    \ '<Leader>Z': '--pull --word',
+    \ '<Plug>Execute1': '--pull --diff',
+    \ '<Plug>Execute2': '--pull --word',
     \ }
 
   " Add *global* surround maps in same style as textool surround maps
-  vmap <C-s> <Plug>VSurround
-  imap <C-s> <Plug>ResetUndo<Plug>ISurround
-  nnoremap <silent> ds :call textools#delete_delims()<CR>
-  nnoremap <silent> cs :call textools#change_delims()<CR>
-  inoremap <buffer> <Plug>ResetUndo <C-g>u
+  " Todo: Make this a textools feature
   let s:global_surround = {
     \ "'": ["'", "'"],
     \ '"': ['"', '"'],
@@ -960,6 +992,11 @@ endif
 if PlugActive('vim-speeddating')
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
+  noremap <Plug>SpeedDatingFallbackUp   <C-a>
+  noremap <Plug>SpeedDatingFallbackDown <C-x>
+else
+  noremap + <C-a>
+  noremap - <C-x>
 endif
 
 " The howmuch.vim plugin, currently with minor modifications in .vim folder
@@ -1060,13 +1097,13 @@ endif
 " and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
 " 'I' toggle hidden file display, '?' toggle help
 if PlugActive('nerdtree')
-  augroup nerdtree
-    au!
-    au BufEnter *
-      \ if (winnr('$') == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) |
-      \ q |
-      \ endif
-  augroup END
+  " augroup nerdtree
+  "   au!
+  "   au BufEnter *
+  "     \ if (winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree()) |
+  "     \ q |
+  "     \ endif
+  " augroup END
   let g:NERDTreeWinPos = 'right'
   let g:NERDTreeWinSize = 20  " instead of 31 default
   let g:NERDTreeShowHidden = 1
@@ -1352,8 +1389,10 @@ nnoremap <silent> <C-a> :call utils#vim_close()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
-" 'Execute' script (define this differently for different filetypes)
+" 'Execute' script with different opts (define this differently for different filetypes)
 map Z <Plug>Execute
+map <Leader>z <Plug>Execute1
+map <Leader>Z <Plug>Execute2
 
 "-----------------------------------------------------------------------------"
 " Additional tools and mappings
@@ -1423,7 +1462,7 @@ augroup popup_setup
   au BufEnter * let b:recording = 0
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
-  au FileType qf,gitcommit,fugitive,fugitiveblame call utils#popup_setup(0)
+  au FileType qf,gitcommit,fugitive,fugitiveblame,nerdtree,tagbar,codi call utils#popup_setup(0)
   au FileType diff,man,latexmk,vim-plug call utils#popup_setup(1)
   au FileType __doc__ call utils#pager_setup()
   au FileType help call utils#help_setup()
@@ -1520,14 +1559,13 @@ nnoremap <Leader>c :call utils#copy_toggle()<CR>
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex,html,markdown,rst if @% != '__doc__' | call spell#spell_toggle(1) | endif
+  au FileType tex,html,markdown,rst
+    \ if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
 augroup END
 
 " Toggle spelling on and off
 command! SpellToggle call spell#spell_toggle(<args>)
 command! LangToggle call spell#lang_toggle(<args>)
-
-" Toggle on and off
 nnoremap <silent> <Leader>d :call spell#spell_toggle(1)<CR>
 nnoremap <silent> <Leader>D :call spell#spell_toggle(0)<CR>
 nnoremap <silent> <Leader>k :call spell#lang_toggle(1)<CR>
@@ -1557,7 +1595,8 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
 endfor
 
 " g configuration
-" Free up m keys, so ge/gE command belongs as single-keystroke words along with e/E, w/W, and b/B
+" Free up m keys, so ge/gE command belongs as single-keystroke
+" words along with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
 
@@ -1626,7 +1665,7 @@ endif
 " string group names are for given filetype syntax schemes. Verify that the
 " regexes will match using :Group with cursor over a comment. For example, had
 " to change .*Comment to .*Comment.* since Julia has CommentL name
-augroup syntax_overrides
+augroup override_syntax
   au!
   au Syntax * call s:keyword_setup()
   au BufRead * set conceallevel=2 concealcursor=
@@ -1742,5 +1781,6 @@ if $HOSTNAME !~# 'cheyenne'
   command! WipeReg for i in range(34, 122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
   WipeReg
 endif
+doautocmd User BufferOverrides  " trigger buffer-local overrides for this file
 noh  " turn off highlighting at startup
 redraw!  " weird issue sometimes where statusbar disappears

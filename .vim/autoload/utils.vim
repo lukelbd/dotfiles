@@ -1,8 +1,30 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
-" Enable/disable autocomplete and jedi popups. Very useful on servers slowed to a
-" crawl by certain blonde Slovenians.
+" Swap characters
+function! utils#swap_characters(right)
+  let line = getline('.')
+  let idx = a:right ? col('.') : col('.') - 1
+  if idx > 0 && idx < len(line)
+    let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
+    call setline('.', line)
+  endif
+endfunction
+
+" Search for mapping
+function! utils#search_maps(regex, ...)
+  let mode = a:0 ? a:1 : ''
+  redir @z
+  exe 'silent ' . mode . 'map'
+  redir END
+  let regex = '\c' . substitute(a:regex, '\cLeader', 'Space', 'g')
+  let maps = split(@z, "\n")
+  let maps = filter(maps, "v:val =~# '" . regex . "'")
+  return join(maps, "\n")
+endfunction
+
+" Enable/disable autocomplete and jedi popups. Very useful on servers slowed to
+" a crawl by certain Slovenian postdocs.
 function! utils#popup_toggle(...) abort
   if a:0
     let toggle = a:1
