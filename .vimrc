@@ -499,9 +499,9 @@ for s:name in [
   \ ]
   let s:path = expand('~/' . s:name)
   if isdirectory(s:path)
-    PlugLocal s:path
+    exe 'PlugLocal ' . s:path
   else
-    Plug 'lukelbd/' . s:name
+    exe 'Plug lukelbd/' . s:name
   endif
 endfor
 
