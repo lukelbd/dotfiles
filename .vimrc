@@ -480,7 +480,7 @@ function! s:plug_local(path)
     exe 'set rtp+=' . rtp . '/after'
   endif
 endfunction
-command! -nargs=1 PlugLocal call s:plug_local(<args>)
+command! -nargs=1 PlugLocal call s:plug_local(<q-args>)
 
 " Note: No longer worry about compatibility because we can install everything
 " from conda-forge, including vim and ctags.
