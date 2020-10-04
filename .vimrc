@@ -206,9 +206,9 @@ endif
 function! s:suppress(prefix, mode)
   let char = nr2char(getchar())
   if len(maparg(a:prefix . char, a:mode))
-    return a:prefix . char
+    return a:prefix . char  " re-direct to the active mapping
   else
-    return ''
+    return ''  " no-op
   endif
 endfunction
 for s:mapping in [
@@ -223,7 +223,8 @@ for s:mapping in [
   let s:modes = split(s:mapping[1], '\zs')  " construct list
   for s:mode in s:modes
     if !len(mapcheck(s:key, s:mode))
-      exe s:mode . 'map <expr> ' . s:key . ' <sid>suppress(''' . s:key . ''', ''' . s:mode . ''')'
+      exe s:mode . 'map <expr> ' . s:key
+        \ . " <sid>suppress('" . s:key . "', '" . s:mode . "')"
     endif
   endfor
 endfor
@@ -468,9 +469,15 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 "-----------------------------------------------------------------------------"
 " VimPlug plugins
 "-----------------------------------------------------------------------------"
+" Find runtinepath
+function! s:find_path(regex)
+  return filter(split(&runtimepath, ','), "v:val =~# '" . a:regex . "'")
+endfunction
+command! -nargs=1 FindPath echo join(s:find_path(<q-args>), ', ')
+
 " 'Install' a local plugin
 function! s:plug_local(path)
-  let rtp = expand(a:path)
+  let rtp = expand(substitute(a:path, '[''"]', '', 'g'))
   if !isdirectory(rtp)
     echohl WarningMsg
     echo "Warning: Path '" . rtp . "' not found."
@@ -480,7 +487,7 @@ function! s:plug_local(path)
     exe 'set rtp+=' . rtp . '/after'
   endif
 endfunction
-command! -nargs=1 PlugLocal call s:plug_local(<q-args>)
+command! -nargs=1 PlugLocal call s:plug_local(<args>)
 
 " Note: No longer worry about compatibility because we can install everything
 " from conda-forge, including vim and ctags.
@@ -495,13 +502,17 @@ for s:name in [
   \ 'vim-scrollwrapped',
   \ 'vim-statusline',
   \ 'vim-tabline',
-  \ 'vim-toggle'
+  \ 'vim-toggle',
+  \ 'codi.vim'
   \ ]
-  let s:path = expand('~/' . s:name)
-  if isdirectory(s:path)
-    exe 'PlugLocal ' . s:path
+  let s:path_home = expand('~/' . s:name)
+  let s:path_fork = expand('~/forks/' . s:name)
+  if isdirectory(s:path_home)
+    exe "PlugLocal '" . s:path_home . "'"
+  elseif isdirectory(s:path_fork)
+    exe "PlugLocal '" . s:path_fork . "'"
   else
-    exe 'Plug lukelbd/' . s:name
+    exe "Plug 'lukelbd/" . s:name . "'"
   endif
 endfor
 
@@ -676,7 +687,6 @@ Plug 'justinmk/vim-sneak'
 " Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 " Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
 " Plug 'metakirby5/codi.vim'
-PlugLocal '~/forks/codi.vim'
 Plug 'tpope/vim-speeddating'  " dates and stuff
 let g:speeddating_no_mappings = 1
 
@@ -761,14 +771,10 @@ if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
   let g:textools_snippet_prefix = '<C-d>'
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
-  let g:textools_latexmk_maps = {
-    \ '<Plug>Execute': '--pull',
-    \ '<Plug>Execute1': '--pull --diff',
-    \ '<Plug>Execute2': '--pull --word',
-    \ }
 
   " Add *global* surround maps in same style as textool surround maps
   " Todo: Make this a textools feature
+  " Todo: Add global snippets in exact same way
   let s:global_surround = {
     \ "'": ["'", "'"],
     \ '"': ['"', '"'],
@@ -1398,10 +1404,11 @@ nnoremap <silent> <C-a> :call utils#vim_close()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
-" 'Execute' script with different opts (define this differently for different filetypes)
-map Z <Plug>Execute
-map <Leader>z <Plug>Execute1
-map <Leader>Z <Plug>Execute2
+" 'Execute' script with different options
+" Note: Execute1 and Execute2 just defined for tex for now
+nmap Z <Plug>Execute
+nmap <Leader>z <Plug>Execute1
+nmap <Leader>Z <Plug>Execute2
 
 "-----------------------------------------------------------------------------"
 " Additional tools and mappings
@@ -1658,11 +1665,33 @@ noremap ]Z ]z
 " gruvbox, kolor, dracula, onedark, molokai, yowish, tomorrow-night
 " atom, chlordane, papercolor, solarized, fahrenheit, slate, oceanicnext
 if has('gui_running')
+  " colorscheme oceanicnext
+  colorscheme papercolor
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap     Statement
-  colorscheme oceanicnext
+  function! s:iter_colorschemes(reverse)
+    let step = (a:reverse ? 1 : -1)
+    if !exists('g:all_colorschemes')
+      let g:all_colorschemes = getcompletion('', 'color')
+    endif
+    let active_colorscheme = get(g:, 'colors_name', 'default')
+    let idx = index(g:all_colorschemes, active_colorscheme)
+    let idx = (idx < 0 ? -step : idx) + step  " if idx < 0, set to 0 by default
+    if idx < 0
+      let idx += len(g:all_colorschemes)
+    elseif idx >= len(g:all_colorschemes)
+      let idx -= len(g:all_colorschemes)
+    endif
+    let colorscheme = g:all_colorschemes[idx]
+    exe 'colorscheme ' . colorscheme
+    silent redraw
+    echom 'Colorscheme: ' . colorscheme
+    let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
+  endfunction
+  nnoremap <silent> <C-r> :call s:iter_colorschemes(0)<CR>
+  nnoremap <silent> <C-y> :call s:iter_colorschemes(1)<CR>
 endif
 
 " Terminal vim colors
