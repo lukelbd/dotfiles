@@ -1,0 +1,6 @@
+-f -
+--fields=+k
+--fields=+t
+--excmd=number
+--langmap=sh:+.bashrc
+--langmap=vim:+.vimrc

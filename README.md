@@ -29,7 +29,9 @@ prefixes.
 | `<C-s>` | `vi` | Surrounding content with delimiters. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
 | `<C-d>` | `i` | Inserting pre-defined snippets. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
 
-Also check out my [vim-idetools](https://github.com/lukelbd/vim-idetools),
+Also check out the
+[vim-textools](https://github.com/lukelbd/vim-textools),
+[vim-idetools](https://github.com/lukelbd/vim-idetools),
 [vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped),
 [vim-tabline](https://github.com/lukelbd/vim-tabline), and
 [vim-statusline](https://github.com/lukelbd/vim-statusline), and

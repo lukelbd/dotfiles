@@ -68,8 +68,11 @@ _echo_bashrc 'Variables and modules'
 if $_macos; then
   # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
   # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
-  # * Added ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
-  # * Added matlab as a symlink in builds directory
+  # * Installed ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
+  # * Installed universal ctags with (not in main repo becauase no versions yet):
+  #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
+  # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
+  #   Manage tex with homebrew using 'mactex'.
   # * Installed gcc and gfortran with 'port install gcc6' then 'port select
   #   --set gcc mp-gcc6'. Try 'port select --list gcc'
   # * Installed various utils with 'brew install coreutils findutils gnu-sed
@@ -528,7 +531,6 @@ alias brew="PATH=\"$PATH\" brew"
 alias ls='ls --color=always -AF'   # ls useful (F differentiates directories from files)
 alias ll='ls --color=always -AFhl'  # ls "list", just include details and file sizes
 alias cd='cd -P'  # don't want this on my mac temporarily
-alias ctags='ctags --langmap=vim:+.vimrc,sh:+.bashrc'  # permanent lang maps
 log() {
   while ! [ -r "$1" ]; do
     echo "Waiting..."

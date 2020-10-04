@@ -469,7 +469,7 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 "-----------------------------------------------------------------------------"
 " VimPlug plugins
 "-----------------------------------------------------------------------------"
-" Find runtinepath
+" Find runtimepath
 function! s:find_path(regex)
   return filter(split(&runtimepath, ','), "v:val =~# '" . a:regex . "'")
 endfunction
