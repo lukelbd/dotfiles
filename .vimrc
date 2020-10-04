@@ -122,7 +122,7 @@ endfunction
 
 " Strip leading and trailing whitespace
 function! Strip(text) abort
-  return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
+  return substitute(a:text, '^\_s*\(.\{-}\)\_s*$', '\1', '')
 endfunction
 
 " Character under cursor
@@ -281,10 +281,11 @@ command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
 " * q and @ are for macros, instead reserve for quitting popup windows and idetools map
 " * Ctrl-r is undo, remap this
 noremap @ <Nop>
+noremap q <Nop>
 noremap Q <Nop>
 noremap K <Nop>
-noremap Z <Nop>
-noremap q <Nop>
+noremap ZZ <Nop>
+noremap ZQ <Nop>
 noremap <C-r> <Nop>
 noremap <C-p> <Nop>
 noremap <C-n> <Nop>
@@ -1406,9 +1407,9 @@ nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
 " 'Execute' script with different options
 " Note: Execute1 and Execute2 just defined for tex for now
-nmap Z <Plug>Execute
-nmap <Leader>z <Plug>Execute1
-nmap <Leader>Z <Plug>Execute2
+nmap <nowait> Z <Plug>Execute
+nmap <Leader>z <Plug>AltExecute1
+nmap <Leader>Z <Plug>AltExecute2
 
 "-----------------------------------------------------------------------------"
 " Additional tools and mappings
