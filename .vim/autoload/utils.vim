@@ -3,12 +3,46 @@
 "-----------------------------------------------------------------------------"
 " Swap characters
 function! utils#swap_characters(right)
+  let cnum = col('.')
   let line = getline('.')
-  let idx = a:right ? col('.') : col('.') - 1
-  if idx > 0 && idx < len(line)
+  let idx = a:right ? cnum : cnum - 1
+  if (idx > 0 && idx < len(line))
     let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
     call setline('.', line)
   endif
+endfunction
+
+" Swap lines
+function! utils#swap_lines(bottom)
+  let offset = a:bottom ? 1 : -1
+  let lnum = line('.')
+  if (lnum + offset > 0 && lnum + offset < line('$'))
+    let line1 = getline(lnum)
+    let line2 = getline(lnum + offset)
+    call setline(lnum, line2)
+    call setline(lnum + offset, line1)
+  endif
+endfunction
+
+" Iterate colorschemes
+function! utils#iter_colorschemes(reverse)
+  let step = (a:reverse ? 1 : -1)
+  if !exists('g:all_colorschemes')
+    let g:all_colorschemes = getcompletion('', 'color')
+  endif
+  let active_colorscheme = get(g:, 'colors_name', 'default')
+  let idx = index(g:all_colorschemes, active_colorscheme)
+  let idx = (idx < 0 ? -step : idx) + step  " if idx < 0, set to 0 by default
+  if idx < 0
+    let idx += len(g:all_colorschemes)
+  elseif idx >= len(g:all_colorschemes)
+    let idx -= len(g:all_colorschemes)
+  endif
+  let colorscheme = g:all_colorschemes[idx]
+  exe 'colorscheme ' . colorscheme
+  silent redraw
+  echom 'Colorscheme: ' . colorscheme
+  let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 
 " Search for mapping

@@ -2,7 +2,7 @@
 " Fuzzy selecting files by continuously descending into directories
 " and re-generating the lists.
 "-----------------------------------------------------------------------------"
-" Function used with input() to prevent tab expansion
+" Function used with input() to prevent tab expansion and literal tab insertion
 function! NullList(...) abort
   return []
 endfunction
@@ -85,7 +85,7 @@ function! fzf#open_continuous(path) abort
 
   " Open file or cancel operation
   " If it is already open just jump to that tab
-  if len(path)
+  if !empty(path)
     call s:tab_drop(path)
   endif
   return
@@ -135,7 +135,7 @@ function! fzf#tab_select() abort
 endfunction
 
 "-----------------------------------------------------------------------------"
-" Fuzzy move to tab
+" Fuzzy move the tab
 " Note: We display the tab names in case we want to group this file
 " appropriately amongst similar open files.
 "-----------------------------------------------------------------------------"
