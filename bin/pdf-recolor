@@ -1,0 +1,96 @@
+#!/usr/bin/env python
+# Source:
+# https://unix.stackexchange.com/a/118492/112647
+# PDF format reference:
+# http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/pdf/pdfs/PDF32000_2008.pdf
+# pages 12 to 13 define the character sets
+
+import re
+
+WHITESPACE = '\x00\x09\x0A\x0C\x0D\x20'
+DELIMITER = '()<>[]{}/%'
+
+
+def _create_pdf_regex(pattern):
+    return re.compile(pattern.format(**REGEX_CHAR_GROUPS))
+
+
+def _to_re_char_group(charset):
+    return '[{}]'.format(re.escape(charset))
+
+
+REGEX_CHAR_GROUPS = {
+    'delimiter': _to_re_char_group(DELIMITER),
+    'float': r'(?:\+|\-)?\d*\.\d*',
+    'special': _to_re_char_group(WHITESPACE + DELIMITER),
+    'ws': _to_re_char_group(WHITESPACE),
+}
+REGEX_OBJ = _create_pdf_regex(
+    '(?<={special})obj{ws}*<<.*>>{ws}*endobj(?={special})'
+)
+REGEX_ANNOT = _create_pdf_regex(
+    '/Type{ws}*/Annot(?={special})'
+)
+REGEX_HIGH = _create_pdf_regex(
+    '/Subtype{ws}*/Highlight(?={special})'
+)
+REGEX_COLOR = _create_pdf_regex(
+    r'/C{ws}*\[{ws}*({float}){ws}+({float}){ws}+({float}){ws}*\]'
+)
+
+
+def process_color(match, replacement):
+    prefix = '/C['
+    suffix = ']'
+    diff = len(match.group(0)) - len(replacement) - len(prefix) - len(suffix)
+    if diff < 0:
+        raise NotImplementedError(
+            'Replacement is too long and would require the size of the PDF '
+            'file to change. This is not implemented.'
+        )
+    return prefix + diff * ' ' + replacement + suffix
+
+
+def process_obj(match, color_string):
+    is_annot = REGEX_ANNOT.search(match.group(0))
+    is_highlight = REGEX_HIGH.search(match.group(0))
+    if is_annot and is_highlight:
+        return REGEX_COLOR.sub(
+            lambda match: process_color(match, color_string), match.group(0)
+        )
+    else:
+        return match.group(0)
+
+
+def process_file(filename, color_string):
+    with open(filename, 'rb') as f:
+        data = f.read()
+    data = REGEX_OBJ.sub(lambda match: process_obj(match, color_string), data)
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+
+if __name__ == '__main__':
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(
+        description='Change the color of all highlights in a PDF.'
+    )
+    parser.add_argument(
+        'color',
+        nargs=1,
+        type=str,
+        help='Color to apply to the highlights. Has to be a string of 0 to 4 '
+        '(but not 2) float values. The number of values defines the color '
+        'space: 0 = transparent, 1 = gray scale, 3 = RGB, 4 = CMYK. '
+        'This argument is not validated!',
+    )
+    parser.add_argument('filename', nargs='*', type=str, help='PDF file to process.')
+    args = parser.parse_args()
+
+    for filename in args.filename:
+        try:
+            process_file(filename, args.color[0])
+        except RuntimeError as err:
+            sys.stderr.write('{}: {}\n'.format(filename, err))
