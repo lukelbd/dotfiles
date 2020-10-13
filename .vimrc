@@ -573,7 +573,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'ivanov/vim-ipython'  " dead
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
-" Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
+Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
@@ -641,7 +641,7 @@ endif
 " Plug 'shougo/neocomplete.vim'  " needs lua!
 " let g:neocomplete#enable_at_startup = 1
 " Plug 'prabirshrestha/asyncomplete.vim'
-if ! has('gui_running')
+if !has('gui_running')
   " Main plugin
   Plug 'Shougo/deoplete.nvim'  " requires pip install pynvim
   Plug 'roxma/nvim-yarp'  " required for deoplete
@@ -824,15 +824,12 @@ endif
 " Note: More global delims are found in textools plugin because I define
 " some complex helper funcs there
 if PlugActive('vim-surround')
-  " Define text object shortcuts
   nmap ysw ysiw
   nmap ysW ysiW
   nmap ysp ysip
-  nmap ys. ysis
   nmap ySw ySiw
   nmap ySW ySiW
   nmap ySp ySip
-  nmap yS. ySis
 endif
 
 " Auto-complete delimiters
