@@ -63,7 +63,7 @@ def process_file(filename, overwrite=False):
     with open(filename, 'rb') as f:
         data = f.read()
     data = REGEX_OBJ.sub(process_obj, data)
-    if overwrite:
+    if not overwrite:
         filename, _ = os.path.splitext(filename)
         filename += '_recolored.pdf'
     with open(filename, 'wb') as f:
