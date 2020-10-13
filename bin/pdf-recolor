@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+Change the color of the highlight annotations in PDF document(s).
+The destination color is hardcoded in this script.
+"""
 # Adapted from:
 # https://unix.stackexchange.com/a/118492/112647
 # PDF format reference:
@@ -6,9 +10,6 @@
 # pages 12 to 13 define the character sets
 import re
 import os
-
-# Save mode
-DRYRUN = False
 
 # Color specification
 PREFIX = b'/C ['
@@ -58,36 +59,43 @@ def process_obj(match):
         return match.group(0)
 
 
-def process_file(filename):
+def process_file(filename, overwrite=False):
     with open(filename, 'rb') as f:
         data = f.read()
     data = REGEX_OBJ.sub(process_obj, data)
-    if DRYRUN:
+    if overwrite:
         filename, _ = os.path.splitext(filename)
         filename += '_recolored.pdf'
-        with open(filename, 'wb') as f:
-            f.write(data)
-    else:
-        with open(filename, 'wb') as f:
-            f.write(data)
+    with open(filename, 'wb') as f:
+        f.write(data)
 
 
 if __name__ == '__main__':
     import argparse
-    import sys
-
-    parser = argparse.ArgumentParser(
-        description=(
-            'Change the color of all highlights in a PDF. '
-            'The destination color is hardcoded in this script.'
+    parser = argparse.ArgumentParser(description=__doc__, add_help=False)
+    parser.add_argument(
+        '-h',
+        '--help',
+        action='help',
+        help='Show this help message and exit.'
+    )
+    parser.add_argument(
+        '-o',
+        '--overwrite',
+        action='store_true',
+        help=(
+            'Whether to overwrite the files instead of creating new ones '
+            "with the suffix '_recolored.pdf'. Default behavior is the latter."
         )
     )
-    parser.add_argument('filename', nargs='*', type=str, help='PDF file(s) to process.')
+    parser.add_argument(
+        'filename',
+        nargs='*',
+        type=str,
+        help='PDF file(s) to process.'
+    )
     args = parser.parse_args()
 
     for filename in args.filename:
         print(f'Processing file: {filename!r}')
-        try:
-            process_file(filename)
-        except RuntimeError as err:
-            sys.stderr.write(f'{filename}: {err}\n')
+        process_file(filename, overwrite=args.overwrite)
