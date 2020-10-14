@@ -18,5 +18,5 @@ let g:tex_no_error = 1
 
 " Add maps to custom textools latexmk command
 noremap <buffer> <silent> <Plug>Execute :Latexmk --pull<CR>
-noremap <buffer> <silent> <Plug>Execute1 :Latexmk --pull --diff<CR>
-noremap <buffer> <silent> <Plug>Execute2 :Latexmk --pull --word<CR>
+noremap <buffer> <silent> <Plug>AltExecute1 :Latexmk --pull --diff<CR>
+noremap <buffer> <silent> <Plug>AltExecute2 :Latexmk --pull --word<CR>

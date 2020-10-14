@@ -122,7 +122,7 @@ endfunction
 
 " Strip leading and trailing whitespace
 function! Strip(text) abort
-  return substitute(a:text, '^\s*\(.\{-}\)\s*$', '\1', '')
+  return substitute(a:text, '^\_s*\(.\{-}\)\_s*$', '\1', '')
 endfunction
 
 " Character under cursor
@@ -281,10 +281,11 @@ command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
 " * q and @ are for macros, instead reserve for quitting popup windows and idetools map
 " * Ctrl-r is undo, remap this
 noremap @ <Nop>
+noremap q <Nop>
 noremap Q <Nop>
 noremap K <Nop>
-noremap Z <Nop>
-noremap q <Nop>
+noremap ZZ <Nop>
+noremap ZQ <Nop>
 noremap <C-r> <Nop>
 noremap <C-p> <Nop>
 noremap <C-n> <Nop>
@@ -354,12 +355,8 @@ nnoremap cL mzi<CR><Esc>`z
 " Swap adjacent characters or rows
 nnoremap <silent> ch :call utils#swap_characters(0)<CR>
 nnoremap <silent> cl :call utils#swap_characters(1)<CR>
-nnoremap <silent> ck k
-  \ :let g:view = winsaveview() \| d
-  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>
-nnoremap <silent> cj
-  \ :let g:view = winsaveview() \| d
-  \ \| call append(line('.'), @"[:-2]) \| call winrestview(g:view)<CR>j
+nnoremap <silent> ck :call utils#swap_lines(0)<CR>
+nnoremap <silent> cj :call utils#swap_lines(1)<CR>
 
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o oX<Backspace>
@@ -576,7 +573,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'ivanov/vim-ipython'  " dead
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
-" Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
+Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
@@ -644,7 +641,7 @@ endif
 " Plug 'shougo/neocomplete.vim'  " needs lua!
 " let g:neocomplete#enable_at_startup = 1
 " Plug 'prabirshrestha/asyncomplete.vim'
-if ! has('gui_running')
+if !has('gui_running')
   " Main plugin
   Plug 'Shougo/deoplete.nvim'  " requires pip install pynvim
   Plug 'roxma/nvim-yarp'  " required for deoplete
@@ -746,6 +743,7 @@ endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 if PlugActive('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
+  let g:scrollwrapped_wrap_filetypes = []
   nnoremap <silent> <Leader>w :WrapToggle<CR>
   nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
   nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
@@ -823,15 +821,12 @@ endif
 " Note: More global delims are found in textools plugin because I define
 " some complex helper funcs there
 if PlugActive('vim-surround')
-  " Define text object shortcuts
   nmap ysw ysiw
   nmap ysW ysiW
   nmap ysp ysip
-  nmap ys. ysis
   nmap ySw ySiw
   nmap ySW ySiW
   nmap ySp ySip
-  nmap yS. ySis
 endif
 
 " Auto-complete delimiters
@@ -1403,9 +1398,9 @@ nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
 " 'Execute' script with different options
 " Note: Execute1 and Execute2 just defined for tex for now
-nmap Z <Plug>Execute
-nmap <Leader>z <Plug>Execute1
-nmap <Leader>Z <Plug>Execute2
+nmap <nowait> Z <Plug>Execute
+nmap <Leader>z <Plug>AltExecute1
+nmap <Leader>Z <Plug>AltExecute2
 
 "-----------------------------------------------------------------------------"
 " Additional tools and mappings
@@ -1659,36 +1654,35 @@ noremap ]Z ]z
 
 " GUI vim colors
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-" gruvbox, kolor, dracula, onedark, molokai, yowish, tomorrow-night
-" atom, chlordane, papercolor, solarized, fahrenheit, slate, oceanicnext
+" gruvbox, molokai, papercolor, fahrenheit, oceanicnext, ayu, abra, badwolf,
 if has('gui_running')
+  " colorscheme abra
+  " colorscheme ayu
+  " colorscheme gruvbox
+  " colorscheme molokai
+  " colorscheme monokai  " larger variation
+  " colorscheme monokain  " slight variation of molokai
+  " colorscheme moody
+  " colorscheme nazca
+  " colorscheme northland
   " colorscheme oceanicnext
-  colorscheme papercolor
+  " colorscheme papercolor
+  " colorscheme sierra
+  " colorscheme sift
+  " colorscheme tender
+  " colorscheme turtles
+  " colorscheme underwater-mod
+  " colorscheme vilight
+  " colorscheme vim-material
+  " colorscheme vimbrains
+  " colorscheme void
+  colorscheme tender
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap     Statement
-  function! s:iter_colorschemes(reverse)
-    let step = (a:reverse ? 1 : -1)
-    if !exists('g:all_colorschemes')
-      let g:all_colorschemes = getcompletion('', 'color')
-    endif
-    let active_colorscheme = get(g:, 'colors_name', 'default')
-    let idx = index(g:all_colorschemes, active_colorscheme)
-    let idx = (idx < 0 ? -step : idx) + step  " if idx < 0, set to 0 by default
-    if idx < 0
-      let idx += len(g:all_colorschemes)
-    elseif idx >= len(g:all_colorschemes)
-      let idx -= len(g:all_colorschemes)
-    endif
-    let colorscheme = g:all_colorschemes[idx]
-    exe 'colorscheme ' . colorscheme
-    silent redraw
-    echom 'Colorscheme: ' . colorscheme
-    let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
-  endfunction
-  nnoremap <silent> <C-r> :call s:iter_colorschemes(0)<CR>
-  nnoremap <silent> <C-y> :call s:iter_colorschemes(1)<CR>
+  nnoremap <silent> <C-r> :call utils#iter_colorschemes(0)<CR>
+  nnoremap <silent> <C-y> :call utils#iter_colorschemes(1)<CR>
 endif
 
 " Terminal vim colors

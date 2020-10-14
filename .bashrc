@@ -1510,26 +1510,6 @@ ttf2otf() {
   done
 }
 
-# Extract PDF annotations
-# Turned out kind of complicated
-unannotate() {
-  local original="$1" final="${1%.pdf}_unannotated.pdf"
-  [ "${original##*.}" != "pdf" ] && echo "Error: Must input PDF file." && return 1
-  # Try this from: https://superuser.com/a/428744/506762
-  # Actually doesn't work, maybe relied on some particular format; need pdftk uncompression
-  # cp "$original" "$final"
-  # perl -pi -e 's:/Annots \[[^]]+\]::g' "$final" +
-  # See: https://stackoverflow.com/a/49614525/4970632
-  # Fix indefinite pdftk hang on macOS: https://stackoverflow.com/q/39750883/4970632
-  # Download package instead of Homebrew version; homebrew one is broked
-  # The environment variables prevent 'Illegal byte sequence' error
-  # on Linux and Mac; see: https://stackoverflow.com/a/23584470/4970632
-  pdftk "$original" output uncompressed.pdf uncompress
-  LANG=C LC_ALL=C sed -n '/^\/Annots/!p' uncompressed.pdf > stripped.pdf
-  pdftk stripped.pdf output "$final" compress
-  rm uncompressed.pdf stripped.pdf
-}
-
 # Rudimentary wordcount with detex
 # The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
