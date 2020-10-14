@@ -758,12 +758,9 @@ endif
 if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
   " Set the cache directory for bibtex plugin
   let s:cache_dir = expand('~/Library/Caches/bibtex')
-  if !isdirectory(s:cache_dir)
-    echohl WarningMsg
-    echom 'Warning: Cache directory ''' . s:cache_dir . '''does not exist.'
-    echohl None
+  if isdirectory(s:cache_dir)
+    let $FZF_BIBTEX_CACHEDIR = s:cache_dir
   endif
-  let $FZF_BIBTEX_CACHEDIR = s:cache_dir
 
   " Delimiter mappings
   " Note: Account for karabiner arrow key maps
