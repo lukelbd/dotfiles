@@ -1,0 +1,101 @@
+#!/usr/bin/env python
+"""
+Change the color of the highlight annotations in PDF document(s).
+The destination color is hardcoded in this script.
+"""
+# Adapted from:
+# https://unix.stackexchange.com/a/118492/112647
+# PDF format reference:
+# http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/pdf/pdfs/PDF32000_2008.pdf
+# pages 12 to 13 define the character sets
+import re
+import os
+
+# Color specification
+PREFIX = b'/C ['
+SUFFIX = b']'
+COLOR = b'1.0 0.969 0.416'  # match PDF Expert highlight color on iPad
+# COLOR = b'0.0 0.0 0.0'
+
+# Regular expressions
+_to_char_group = lambda chars: '[' + re.escape(chars) + ']'
+FLOAT = r'(?=\+|\-)?\d+(\.\d*)?'
+WHITESPACE = '\x00\x09\x0A\x0C\x0D\x20'
+DELIMITER = '()<>[]{}/%'
+WS = _to_char_group(WHITESPACE)
+DELIM = _to_char_group(DELIMITER)
+SPECIAL = _to_char_group(WHITESPACE + DELIMITER)
+REGEX_OBJ = re.compile(
+    fr'(?<={SPECIAL})obj{WS}*<<.*?>>{WS}*endobj(?={SPECIAL})'.encode(), re.DOTALL
+)
+REGEX_ANNOT = re.compile(
+    f'/Type{WS}*/Annot(?={SPECIAL})'.encode()
+)
+REGEX_HIGH = re.compile(
+    f'/Subtype{WS}*/Highlight(?={SPECIAL})'.encode()
+)
+REGEX_COLOR = re.compile(
+    fr'/C{WS}*\[{WS}*({FLOAT}){WS}+({FLOAT}){WS}+({FLOAT}){WS}*\]'.encode()
+)
+
+
+def process_color(match):
+    diff = len(match.group(0)) - len(COLOR) - len(PREFIX) - len(SUFFIX)
+    if diff < 0:
+        raise NotImplementedError(
+            'Replacement is too long and would require the size of the PDF '
+            'file to change. This is not implemented.'
+        )
+    result = PREFIX + diff * b' ' + COLOR + SUFFIX
+    return result
+
+
+def process_obj(match):
+    is_annot = REGEX_ANNOT.search(match.group(0))
+    is_highlight = REGEX_HIGH.search(match.group(0))
+    if is_annot and is_highlight:
+        return REGEX_COLOR.sub(process_color, match.group(0))
+    else:
+        return match.group(0)
+
+
+def process_file(filename, overwrite=False):
+    with open(filename, 'rb') as f:
+        data = f.read()
+    data = REGEX_OBJ.sub(process_obj, data)
+    if not overwrite:
+        filename, _ = os.path.splitext(filename)
+        filename += '_recolored.pdf'
+    with open(filename, 'wb') as f:
+        f.write(data)
+
+
+if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__, add_help=False)
+    parser.add_argument(
+        '-h',
+        '--help',
+        action='help',
+        help='Show this help message and exit.'
+    )
+    parser.add_argument(
+        '-o',
+        '--overwrite',
+        action='store_true',
+        help=(
+            'Whether to overwrite the files instead of creating new ones '
+            "with the suffix '_recolored.pdf'. Default behavior is the latter."
+        )
+    )
+    parser.add_argument(
+        'filename',
+        nargs='*',
+        type=str,
+        help='PDF file(s) to process.'
+    )
+    args = parser.parse_args()
+
+    for filename in args.filename:
+        print(f'Processing file: {filename!r}')
+        process_file(filename, overwrite=args.overwrite)
