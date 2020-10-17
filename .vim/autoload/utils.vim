@@ -22,6 +22,7 @@ function! utils#swap_lines(bottom)
     call setline(lnum, line2)
     call setline(lnum + offset, line1)
   endif
+  exe lnum + offset
 endfunction
 
 " Iterate colorschemes
