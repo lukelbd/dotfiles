@@ -2,6 +2,7 @@
 #-----------------------------------------------------------------------------#
 # Modifications
 #-----------------------------------------------------------------------------#
+c.LabApp.browser = '/Applications/Chromium.app/Contents/MacOS/Chromium --app=%s'
 
 #------------------------------------------------------------------------------
 # Application(SingletonConfigurable) configuration

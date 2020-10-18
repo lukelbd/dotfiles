@@ -5,18 +5,24 @@
 # Check out what is in the system defaults before using this, make sure your
 # $PATH is populated. To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# A few notes:
-#  * Prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
-#    if aliased or some 'exit' is in $PATH
-#     C-d/'exit' -- IF AVAILABLE, exit SSH session
-#     ~./~C-z -- Exit SSH session
-#     ~& -- Puts SSH into background
-#     ~# -- Gives list of forwarded connections in this session
-#     ~? -- Gives list of these commands
-#  * Extended globbing explanations, see:
-#    http://mywiki.wooledge.org/glob
-#  * Use '<package_manager> list' for MOST PACKAGE MANAGERS to see what is installed
-#    e.g. brew list, conda list, pip list
+# * Prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
+#   if aliased or some 'exit' is in $PATH
+#    C-d/'exit' -- IF AVAILABLE, exit SSH session
+#    ~./~C-z -- Exit SSH session
+#    ~& -- Puts SSH into background
+#    ~# -- Gives list of forwarded connections in this session
+#    ~? -- Gives list of these commands
+# * Extended globbing explanations, see:
+#   http://mywiki.wooledge.org/glob
+# * Use '<package_manager> list' for most package managers to see what is installed
+#   e.g. brew list, conda list, pip list.
+# * Use Platypus app to turn shell scripts, python scripts, etc. into clickable
+#   links apps. Easier than AppleScript in general.
+# * Tried to use a workflow app for JupyterLab app because had to edit Info.plist to
+#   handle URLs: https://gist.github.com/georgebrock/9ab3d83bf160b7c1c2b0
+# * In the end workflow failed with Choosy, so created a simple Platypus script
+#   instead! Platypus does not just accept valid HTTP handler apps.
+#   Also see this: http://christopherroach.com/articles/jupyterlab-desktop-app/
 #-----------------------------------------------------------------------------#
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message:
@@ -1108,9 +1114,8 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
 # REPLs
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
-alias matplotlib='ipython --matplotlib=qt -i -c "import proplot as plot; import matplotlib.pyplot as plt"'
-alias console='jupyter console'
-alias qtconsole='jupyter qtconsole'
+alias proplot='ipython --matplotlib=qt -i -c "import proplot as plot; import matplotlib.pyplot as plt"'
+alias climopy='ipython -i -c "import xarray as xr; import climopy as climo; from climopy import ureg, const"'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
