@@ -258,7 +258,7 @@ endif
 " Tab, conceal, and popup toggling
 augroup tab_toggle
   au!
-  au FileType make,text,gitconfig TabToggle 1
+  au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
 command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
@@ -647,6 +647,7 @@ if !has('gui_running')
   Plug 'roxma/nvim-yarp'  " required for deoplete
   Plug 'roxma/vim-hug-neovim-rpc'  " required for deoplete
   let g:deoplete#enable_at_startup = 1  " must be inside plug#begin block
+
   " Omnifunc sources, these are not provided by engines
   " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
   Plug 'deoplete-plugins/deoplete-jedi'
@@ -655,15 +656,21 @@ if !has('gui_running')
   Plug 'Shougo/echodoc.vim'
 endif
 
+" Snippets
+" Not really necessary because this is more useful for low-level languages
+" Plug 'SirVer/ultisnips'  " snippets actions
+" Plug 'honza/vim-snippets'  " actual snippets
+" Plug 'LucHermitte/mu-template'  " alternative
+
 " Delimiters
 Plug 'tpope/vim-surround'
 Plug 'raimondi/delimitmate'
-
+ 
 " Custom text objects (inner/outer selections)
-" Plug 'bps/vim-textobj-python' " not really ever used, just use indent objects
-" Plug 'sgur/vim-textobj-parameter' " this conflicts with latex
-" Plug 'vim-scripts/argtextobj.vim' " issues with this too
-" Plug 'machakann/vim-textobj-functioncall' " does not work
+" Plug 'bps/vim-textobj-python'  " not really ever used, just use indent objects
+" Plug 'sgur/vim-textobj-parameter'  " this conflicts with latex
+" Plug 'vim-scripts/argtextobj.vim'  " issues with this too
+" Plug 'machakann/vim-textobj-functioncall'  " does not work
 Plug 'kana/vim-textobj-user'  " base
 Plug 'kana/vim-textobj-indent'  " match indentation, object is 'i'
 Plug 'kana/vim-textobj-entire'  " entire file, object is 'e'
