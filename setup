@@ -41,3 +41,15 @@ for file in "${files[@]}"; do  # iterate through files
     ln -s "$dotfiles/$file" "$root/$dest"
   fi
 done
+
+# Create symlinks
+for link in \
+  'Library/Mobile Documents/com~apple~CloudDocs:icloud-drive' \
+  'miniconda3/lib/python3.8/site-packages:site-packages' \
+  '/usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages'
+  do
+  src=${link%:*}
+  target=${link#*:}
+  echo "Creating symlink to $src at $HOME/$target..."
+  ln -sf "$src" "$HOME/$target"
+done
