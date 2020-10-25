@@ -145,7 +145,8 @@ function! utils#refresh() abort " refresh sesssion, sometimes ~/.vimrc settings 
     \ '~/.vim/ftplugin/' . &filetype . '.vim',
     \ '~/.vim/syntax/' . &filetype . '.vim',
     \ '~/.vim/after/ftplugin/' . &filetype . '.vim',
-    \ '~/.vim/after/syntax/' . &filetype . '.vim']
+    \ '~/.vim/after/syntax/' . &filetype . '.vim'
+    \ ]
   for file in files
     if !empty(glob(file))
       exe 'so '.file

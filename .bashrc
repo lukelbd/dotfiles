@@ -45,7 +45,7 @@ _echo_bashrc() {
   printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
 }
 _load_modules() {
-  local module  # but _loaded is global
+  local module   # but _loaded_modules is global
   read -r -a _loaded_modules < <(module --terse list 2>&1)
   # module purge 2>/dev/null
   for module in "$@"; do
@@ -174,7 +174,6 @@ else
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
     _load_modules netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
-    read -r -a _loaded < <(module --terse list 2>&1)
     ;;
 
   *)
@@ -1786,11 +1785,11 @@ if $_macos; then # first the MacOS options
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
   # Music stuff
-  # alias artists="find ~/playlist -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias artists='find ~/playlist -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
+  # alias artists="find ~/icloud-drive/music -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
+  alias artists='find ~/icloud-drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
   artist2folder() {
     local dir base artist title
-    dir="$HOME/playlist"
+    dir="$HOME/icloud-drive/music"
     for file in "$dir/"*.{m4a,mp3}; do
       # shellcheck disable=SC2049
       [[ "$file" =~ "*" ]] && continue
