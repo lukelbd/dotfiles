@@ -12,12 +12,8 @@ raise() {
   exit 1
 }
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
-mb_folder="$HOME/playlist"
-if [ -d "$HOME/Phone/Card/Playlist" ]; then
-  sd_folder="$HOME/Phone/Card/Playlist"  # old phone
-else
-  sd_folder="$HOME/Phone/Music"  # new phone
-fi
+mb_folder="$HOME/icloud-drive/music"
+sd_folder="$HOME/Phone/Music"  # new phone
 sd_log="$mb_folder/sd.log"
 sync_modified=true  # include files?
 ! [ -r "$sd_log" ] && confirm "Log file sd.log not found! Cancel psync?" && exit 1
@@ -28,17 +24,17 @@ touch "$sd_log"  # if doesn't exist, make
 
 # Alphabetize m3u8 files, repair line endings, and remove absolute paths
 # See: https://unix.stackexchange.com/a/32059/112647
-for path in "$mb_folder"/**/*.m3u8; do
+for path in "$mb_folder"/**/*.m3u*; do
   echo "Repairing ${path##*/}"
   python - <<EOF
 with open('$path', 'r') as f:
-    lines = [line.strip() for line in f.readlines()]
-header = lines[0]  # should be #EXTM3U
-pairs = zip(lines[1::2], (path.replace('$path/', '') for path in lines[2::2]))
-pairs = sorted(pairs, key=lambda x: x[1].lower())
-file = header + '\n' + '\n'.join(line for lines in pairs for line in lines)
+    lines = f.readlines()
+lines = sorted(
+  (line.strip().replace('$path/', '') for line in lines if line[0] != '#'),
+  key=str.casefold
+)
 with open('$path', 'w') as f:
-    f.write(file)
+    f.write('\n'.join(lines))
 EOF
 done
 
