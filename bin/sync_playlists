@@ -20,12 +20,12 @@ import requests
 SERVER_URL = 'http://192.168.0.16:32400'
 CHECK_SSL = True  # filter warnings if False
 PLEX_TOKEN = 'oB9pnhMSHZDPVXY1yLXy'
-LOCAL_PLAYLISTS = '/Users/ldavis/icloud-drive/music/'
+LOCAL_PLAYLISTS = os.path.expanduser('~/icloud-drive/music/')
 WORKING_DIR = os.path.dirname(__file__)
 SECTION_ID = '4'
 LOCAL_PREPEND = ''  # TODO: play with these
 PLEX_PREPEND = ''  # /Users/ldavis/icloud-drive/music/'
-STRIP_PREPEND = '/Users/ldavis/Library/Mobile Documents/com~apple~CloudDocs/music/'
+STRIP_PREPEND = os.path.expanduser('~/Library/Mobile Documents/com~apple~CloudDocs/music/')  # noqa: E501
 
 
 def _process_m3u(lines, prepend, invert=False):
