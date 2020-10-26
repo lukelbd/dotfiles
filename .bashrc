@@ -1114,7 +1114,7 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
 alias proplot='ipython --matplotlib=qt -i -c "import proplot as plot; import matplotlib.pyplot as plt"'
-alias climopy='ipython -i -c "import xarray as xr; import climopy as climo; from climopy import ureg, const"'
+alias climopy='ipython -i -c "import pandas as pd; import xarray as xr; import climopy as climo; from climopy import ureg, const"'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"

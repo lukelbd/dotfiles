@@ -548,7 +548,7 @@ Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
-let g:formatdef_mpython = '"isort - | black -q -"'
+let g:formatdef_mpython = '"isort - | black -q -S -"'
 let g:formatters_python = ['mpython']  " use multiple formatters
 let g:formatters_fortran = ['fprettify']
 
