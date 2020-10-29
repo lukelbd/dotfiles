@@ -934,7 +934,7 @@ _ssh() {
   else
     ports=($(seq $port $((port + 6))))
   fi
-  flags="-t -R localhost:$port:localhost:$port"  # for rlcp etc.
+  flags="-t -R localhost:$port:localhost:22"  # for rlcp etc.
   flags+=" -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
   for port in "${ports[@]:1}"; do  # for jupyter etc.
     flags+=" -L localhost:$port:localhost:$port"
