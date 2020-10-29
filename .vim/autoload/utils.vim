@@ -537,10 +537,16 @@ endfunction
 " Miscellaneous popup windows
 " Current syntax names and regex
 function! utils#current_group() abort
-  echo ''
-   \ . 'actual <' . synIDattr(synID(line('.'), col('.'), 1), 'name') . '> '
-   \ . 'appears <' . synIDattr(synID(line('.'), col('.'), 0), 'name') . '> '
-   \ . 'group <' . synIDattr(synIDtrans(synID(line('.'), col('.'), 1)), 'name') . '>'
+  let names = []
+  for id in synstack(line('.'), col('.'))
+    let name = synIDattr(id, 'name')
+    let group = synIDattr(synIDtrans(id), 'name')
+    if name != group
+      let name .= ' (' . group . ')'
+    endif
+    let names += [name]
+  endfor
+  echo join(names, ', ')
 endfunction
 function! utils#current_syntax(name) abort
   if a:name
