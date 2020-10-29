@@ -849,10 +849,10 @@ _compressuser() {  # turn $HOME into tilde
   echo "$param"
 }
 
-# To enable passwordless login, just use "ssh-copy-id $server". For cheyenne, to hook up
-# to existing screen/tmux sessions, pick one of the 1-6 login nodes -- from testing
-# seems node 4 is usually most empty (probably human psychology thing; 3 seems random,
-# 1-2 are obvious first and second choices, 5 is nice round number, 6 is last node)
+# Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
+# For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
+# nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
+# random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
 _addressport() {
   local host  # get it?
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
@@ -883,11 +883,11 @@ _addressport() {
       port=6000
       ;;
     ldm)
-      address='ldm@ldm.atmos.colostate.edu'                  # user: atmos-2012
+      address=ldm@ldm.atmos.colostate.edu  # user: atmos-2012
       port=7000
       ;;
     zephyr)
-      address='lukelbd@zephyr.meteo.mcgill.ca'
+      address=lukelbd@zephyr.meteo.mcgill.ca
       port=8000
       ;;
     *@*)
@@ -909,33 +909,27 @@ _port() {
   res=$(_addressport "$@") && echo "${res#*:}"
 }
 
-# Big honking useful wrapper -- will *always* use this to ssh between servers
+# SSH wrapper that sets up ports used for jupyter and scp copying
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
-# For exit on forward see: https://serverfault.com/a/577830/427991
 # For why we alias the function see: https://serverfault.com/a/656535/427991
 # For enter command then remain in shell see: https://serverfault.com/q/79645/427991
-# WARNING: This function ssh's into the server twice, first to query the available
-# port for two-way forwarding, then to ssh in over that port. If the server in question
-# *requires* password entry (e.g. Duo authentification), and cannot be configured
-# for passwordless login with ssh-copy-id, then need to skip first step.
-# Currently we do this for cheyenne server 
-alias ssh='_ssh'  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
+alias ssh=_ssh  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local address port flags
   if ! $_macos; then
     ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 "$@"
-    exit $?
+    return $?
   fi
   [[ $# -gt 2 || $# -lt 1 ]] && { echo 'Usage: _ssh HOST [PORT]'; return 1; }
   address=$(_address "$1") || { echo 'Error: ssh failed.'; return 1; }
-  port=$(_port "$1")
   if [ -n "$2" ]; then
     ports=($2)  # custom
   else
+    port=$(_port "$1")
     ports=($(seq $port $((port + 6))))
   fi
-  flags="-t -R localhost:$port:localhost:22"  # for rlcp etc.
-  flags+=" -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  flags="-o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  flags+=" -t -R localhost:${ports[0]}:localhost:22"  # for rlcp etc.
   for port in "${ports[@]:1}"; do  # for jupyter etc.
     flags+=" -L localhost:$port:localhost:$port"
   done
@@ -977,6 +971,7 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
 # Stop uploading figures to Github because it massively bloats repository size!
 # TODO: Fix this function. From now use rsync for figures and PDFs.
 fsync() {
+  local base
   base=$(git rev-parse --show-toplevel)
 }
 
@@ -1691,9 +1686,7 @@ _title_get() {
 
 # Update the title
 _title_update() {
-  if ! [ -r "$_title_file" ] && ! $_macos; then
-    echo "Error: Title file not available." && return 1
-  fi
+  [ -r "$_title_file" ] || return 1
   _title_get  # set _title global variable, attemp to read existing window title
   if [ -z "$_title" ]; then
     $_macos && _title_set  # set title name
@@ -1706,8 +1699,10 @@ title_update() {  # fix name issues
 }
 
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
-[[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
-$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
+if $_macos; then
+  [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
+  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
+fi
 alias title='_title_set'  # easier for user
 
 # Mac stuff
