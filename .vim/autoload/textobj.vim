@@ -18,7 +18,7 @@ function! textobj#blank_lines() abort
   if pnb == line('.') " also will be true for nextnonblank, if on nonblank
     return 0
   endif
-  return s:lines_helper(pnb,nnb)
+  return s:lines_helper(pnb, nnb)
 endfunction
 
 " New and improved paragraphs
@@ -29,18 +29,18 @@ function! textobj#nonblank_lines() abort
   if pnb == line('.')
     return 0
   endif
-  return s:lines_helper(pnb,nnb)
+  return s:lines_helper(pnb, nnb)
 endfunction
 
 " Uncommented lines objects
 function! textobj#uncommented_lines() abort
   normal! 0l
-  let nnb = search('^\s*'.Comment().'.*\zs$', 'Wnc')
-  let pnb = search('^\ze\s*'.Comment().'.*$', 'Wncb')
+  let nnb = search('^\s*' . Comment() . '.*\zs$', 'Wnc')
+  let pnb = search('^\ze\s*' . Comment() . '.*$', 'Wncb')
   if pnb == line('.')
     return 0
   endif
-  return s:lines_helper(pnb,nnb)
+  return s:lines_helper(pnb, nnb)
 endfunction
 
 " Functions for current line

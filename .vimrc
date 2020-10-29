@@ -548,7 +548,7 @@ Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
-let g:formatdef_mpython = '"isort - | black -q -"'
+let g:formatdef_mpython = '"isort - | black -q -S -"'
 let g:formatters_python = ['mpython']  " use multiple formatters
 let g:formatters_fortran = ['fprettify']
 
@@ -880,8 +880,8 @@ if PlugActive('vim-textobj-user')
     \     'sfile': expand('<sfile>:p'),
     \     'select-a-function': 'textobj#uncommented_lines',
     \     'select-i-function': 'textobj#uncommented_lines',
-    \     'select-a': 'aC',
-    \     'select-i': 'iC',
+    \     'select-a': 'a<CR>',
+    \     'select-i': 'i<CR>',
     \   },
     \   'function': {
     \     'pattern': ['\<\K\k*(', ')'],
@@ -1390,9 +1390,12 @@ nnoremap <silent> <Leader>S :Autosave<CR>
 " Refreshing things
 command! Refresh call utils#refresh()
 nnoremap <silent> <Leader>s :Refresh<CR>
-nnoremap <silent> <Leader>r :e<CR>
+nnoremap <silent> <Leader>r :redraw!<CR>
+nnoremap <silent> <Leader>R :e<CR>
 
 " Fix syntax highlighting
+" Starting from the previous comment is pretty darn reliable
+command! Sync syntax sync ccomment
 command! SyncLong syntax sync fromstart
 command! SyncShort syntax sync minlines=0
 

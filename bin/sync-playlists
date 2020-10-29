@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+"""
+Synchronises playlists between local files and Plex server playlists.
+Also standardized
+format of local paths by stripping unnecessary extended m3u instructions, normalizing
+line endings, and ensuring paths are relative to absolute path. If there are differences
+between local and Plex playlists, both will be merged and duplicates deleted, meaning
+tracks can be added on one and updated on both. Note playlists must be deleted on both
+to remove completely.
+"""
+import argparse
+import io
+import os
+import shutil
+import socket
+import urllib
+import warnings
+from collections import OrderedDict
+from xml.etree import ElementTree
+
+import requests
+
+
+SERVER_URL = 'http://192.168.0.16:32400'
+CHECK_SSL = True  # filter warnings if False
+LIBRARY_DIR = '/Users/lukelbd/icloud-drive/music/'
+LOCAL_PLAYLISTS = os.path.expanduser('~/icloud-drive/music/')
+SECTION_ID = '5'
+if socket.gethostname() == 'uriah':
+    PLEX_TOKEN = 'zkGVy2QPF9WBy6fWKfxM'
+else:
+    PLEX_TOKEN = '6j_QisGiq3qu-QdGSxqu'
+
+
+def _process_m3u(lines):
+    """
+    Convert paths to relative paths, alphabetize playlist order, and ignore extended
+    M3U instructions (players can simply use song metadata).
+    """
+    lines = (
+        os.path.join(os.path.basename(os.path.dirname(line)), os.path.basename(line))
+        for line in lines if line[0] != '#'
+    )
+    return sorted(lines, key=str.casefold)  # case insensitive sorting
+
+
+def get_request(url):
+    """
+    Make a request to Plex server.
+    """
+    print('URL: ' + url.replace(PLEX_TOKEN, '***********'))
+    resp = requests.get(url, timeout=30, verify=CHECK_SSL)
+    if resp.ok:
+        print('Request was successful.')
+        return ElementTree.fromstring(resp.text)
+    else:
+        raise SystemError(
+            'Request failed. Return code: {resp.status_code} Reason: {resp.reason}'
+        )
+
+
+def get_playlist(key):
+    """
+    Request playlist data.
+    """
+    print('Requesting playlist data from Plex...')
+    url = SERVER_URL + key + '?X-Plex-Token=' + PLEX_TOKEN
+    root = get_request(url)
+    title = root.get('title')
+    print('Found playlist: ' + title)
+    playlist = []
+    for document in root.findall('Track'):
+        playlist.append(document[0][0].get('file'))
+
+    print(f'Found {len(playlist)} songs.')
+    return title, playlist
+
+
+def get_playlist_keys():
+    """
+    Get playlist keys.
+    """
+    print('Requesting playlists from Plex...')
+    url = SERVER_URL + '/playlists/?X-Plex-Token=' + PLEX_TOKEN
+    root = get_request(url)
+    keys = []
+    for document in root.findall('Playlist'):
+        if document.get('smart') == '0' and document.get('playlistType') == 'audio':
+            keys.append(document.get('key'))
+    print(f'Found {len(keys)} playlists.')
+    return keys
+
+
+def print_sections():
+    """
+    Print sections and IDs.
+    """
+    print('Requesting section info from Plex...')
+    url = SERVER_URL + '/library/sections/all?X-Plex-Token=' + PLEX_TOKEN
+    root = get_request(url)
+    print('ID: Section')
+    for document in root.findall('Directory'):
+        if document.get('type') == 'artist':
+            print(document.get('key') + ': ' + document.get('title').strip())
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '-setup', action='store_true', help='Force-run the setup procedure'
+    )
+    parser.add_argument(
+        '-retention',
+        metavar='n',
+        type=int,
+        nargs=1,
+        default=[10],
+        help='Number of previous local playlist backups to keep (Default 10)',
+    )
+    parser.add_argument(
+        '-nocleanup',
+        action='store_true',
+        help='Disable removal of .tmp directory (for debugging)',
+    )
+    parser.add_argument(
+        '-print',
+        action='store_true',
+        help='Print the available media sections.'
+    )
+    args = parser.parse_args()
+
+    if not CHECK_SSL:
+        warnings.filterwarnings('ignore', message='Unverified HTTPS request')
+
+    # Print data
+    if args.print:
+        print_sections()
+        exit()
+
+    # Create tmp and backup folders if required
+    _tmp = os.path.join(os.path.dirname(__file__), '.tmp')
+    _plex = os.path.join(_tmp, 'plex')
+    _local = os.path.join(_tmp, 'local')
+    _merged = os.path.join(_tmp, 'merged')
+    for dir in (_tmp, _local, _plex, _merged):
+        if not os.path.isdir(dir):
+            os.mkdir(dir)
+
+    # Get keys for all Plex music playlists
+    keys = get_playlist_keys()
+
+    # Copies Plex playlists to .tmp/plex/ folder
+    for key in keys:
+        # Copy files
+        title, playlist = get_playlist(key)
+        playlist = _process_m3u(playlist)
+
+        # Get each track and save to file
+        print('Saving Plex playlist: ' + title)
+        f = io.open(os.path.join(_plex, title + '.m3u'), 'w+', encoding='utf8')
+        for track in playlist:
+            f.write(track + '\n')
+        f.close()
+
+    # Copies local playlists to .tmp/local/ folder
+    for root, dirs, files in os.walk(LOCAL_PLAYLISTS):
+        for file in files:
+            file_path = os.path.join(root, file)
+            if file.endswith('.m3u') or file.endswith('.m3u8'):
+                # Load file and fix directory
+                playlist = io.open(file_path, 'r', encoding='utf8').read().splitlines()
+                playlist = _process_m3u(playlist)
+
+                # Get each track and save to file
+                print('Copying local playlist: ' + file_path)
+                f = io.open(os.path.join(_local, file), 'w+', encoding='utf8')
+                for track in playlist:
+                    f.write(track + '\n')
+                f.close()
+
+    # Checks for unique playlists to .tmp/plex/, and moves them to .tmp/merged/
+    for filename in os.listdir(_plex):
+        if not os.path.isfile(os.path.join(_local, filename)):
+            print('Found new Plex playlist: ' + filename)
+            os.rename(os.path.join(_plex, filename), os.path.join(_merged, filename))
+
+    # Checks for unique playlists to .tmp/local/, and copies them to .tmp/merged/
+    for filename in os.listdir(_local):
+        if not os.path.isfile(os.path.join(_plex, filename)):
+            print('Found new local playlist: ' + filename)
+            os.rename(os.path.join(_local, filename), os.path.join(_merged, filename))
+
+    # Merges playlists from .tmp/local/ and .tmp/plex/ and puts output in .tmp/merged
+    for filename in os.listdir(_local):
+        print('Merging playlist: ' + filename)
+        local_tracks = io.open(
+            os.path.join(_local, filename), 'r', encoding='utf8'
+        ).read().splitlines()
+        plex_tracks = io.open(
+            os.path.join(_plex, filename), 'r', encoding='utf8'
+        ).read().splitlines()
+
+        f = io.open(os.path.join(_merged, filename), 'w+', encoding='utf8')
+
+        for line in local_tracks:  # writes local_tracks to merged playlist
+            if not line.startswith('#'):  # skips m3u tags beginning with #
+                f.write(line + '\n')
+            if line in plex_tracks:  # remove duplicates
+                plex_tracks.remove(line)
+
+        for line in plex_tracks:  # writes plex_tracks to merged playlist
+            f.write(line + '\n')
+        f.close()
+
+    # Copy merged playlists back to LOCAL_PLAYLISTS to be synced in iCloud
+    for playlist in os.listdir(_merged):
+        print('Saving merged playlist: ' + playlist)
+        shutil.copy2(os.path.join(_merged, playlist), LOCAL_PLAYLISTS)
+
+    # POST merged playlists to Plex
+    # TODO: This might not work if iCloud on server has not updated
+    url = SERVER_URL + '/playlists/upload?'
+    headers = {'cache-control': 'no-cache'}
+    failed = 0
+    for filename in os.listdir(_plex):
+        print('Sending updated playlist to Plex: ' + filename)
+        _plex_path = os.path.join(LIBRARY_DIR, filename)
+        querystring = urllib.parse.urlencode(
+            OrderedDict(
+                [
+                    ('sectionID', SECTION_ID),
+                    ('path', _plex_path),
+                    ('X-Plex-Token', PLEX_TOKEN),
+                ]
+            )
+        )
+        print(url, querystring)
+        resp = requests.post(
+            url, data='', headers=headers, params=querystring, verify=CHECK_SSL
+        )
+        print(resp.text)
+
+        # If the post failed then print the return code and the reason for failing.
+        if not resp.ok:
+            print(
+                f'Request failed. Return code: {resp.status_code} Reason: {resp.reason}'
+            )
+            failed += 1
+
+    if failed:
+        raise RuntimeError(f'{failed} playlists failed to update to plex.')
+    if not args.nocleanup:
+        shutil.rmtree(_tmp)

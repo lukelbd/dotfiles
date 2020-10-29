@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""
+Calculate average usage statistics for each Cheyenne login node.
+"""
+import time
+from datetime import datetime
+
+import numpy as np
+import pandas as pd
+from dateutil.tz import tzlocal  # see: https://joelinoff.com/blog/?p=802
+
+url = r'https://www.cisl.ucar.edu/uss/queues_table/ch_login_table.html'
+fname = 'cheyenne_usage.txt'
+
+# Get statistics
+i = 0
+N = 100
+sleep = 60 * 5  # t minutes
+columns = pd.MultiIndex.from_product(
+    (['Users (count)', 'Usage (percent)'], [1, 2, 3, 4, 5, 6]),
+    names=('', 'Login node')
+)
+while True:  # take 100 samples
+    # Read table
+    try:
+        nodes = pd.read_csv(fname, sep='\t', index_col=[0], header=[0, 1])
+    except FileNotFoundError:
+        nodes = pd.DataFrame(index=['average'], columns=columns, dtype=np.float32)
+    nodes.drop(['average'], axis=0, inplace=True)
+    table, *_ = pd.read_html(url)  # returns list of all tables on page
+
+    # Get time
+    fmt = '%Y-%m-%d %H:%M %Z'
+    timestamp = datetime.now(tzlocal()).strftime(fmt)  # not timezone aware
+
+    # Parse table values
+    i = nodes.shape[0]  # length in that direction
+    status = [bool(stat == 'UP') for stat in table.values[2:, -3]]
+    users = [
+        float(num) if up else np.nan
+        for num, up in zip(table.values[2:, -2], status)
+    ]
+    usage = [
+        float(percent[:-1]) if up else np.nan
+        for percent, up in zip(table.values[2:, -1], status)
+    ]
+
+    # Add to table and compute average
+    print('Users:', users)
+    print('Usage:', usage)
+    nodes.loc[timestamp] = np.empty((12,))
+    nodes.iloc[i, :6] = users
+    nodes.iloc[i, 6:] = usage
+    nodes.loc['average'] = nodes.mean()
+
+    # Save data progressively in case process fails
+    i += 1
+    nodes.to_csv(fname, sep='\t', float_format='%.f')  # to npy file
+    time.sleep(sleep)

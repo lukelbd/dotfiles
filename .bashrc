@@ -45,7 +45,7 @@ _echo_bashrc() {
   printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
 }
 _load_modules() {
-  local module  # but _loaded is global
+  local module   # but _loaded_modules is global
   read -r -a _loaded_modules < <(module --terse list 2>&1)
   # module purge 2>/dev/null
   for module in "$@"; do
@@ -67,64 +67,65 @@ unalias -a
 # declare -F # to view current ones
 
 # Flag for if in MacOs
-[[ "$OSTYPE" == darwin* ]] && _macos=true || _macos=false
-
 # First, the path management
+_macos=false
 _echo_bashrc 'Variables and modules'
-if $_macos; then
-  # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-  # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
-  # * Installed ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
-  # * Installed universal ctags with (not in main repo becauase no versions yet):
-  #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
-  # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
-  #   Manage tex with homebrew using 'mactex'.
-  # * Installed gcc and gfortran with 'port install gcc6' then 'port select
-  #   --set gcc mp-gcc6'. Try 'port select --list gcc'
-  # * Installed various utils with 'brew install coreutils findutils gnu-sed
-  #   gnutls grep gnu-tar gawk'. Found paths
-  export PATH=/usr/bin:/bin:/usr/sbin:/sbin
-  export PATH=/Library/TeX/texbin:$PATH
-  export PATH=/opt/X11/bin:$PATH
-  export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH
-  export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH
-  export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
-  export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
-  export PATH=/usr/local/opt/findutils/libexec/gnubin:$PATH
-  export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
-  export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
-  export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
-  export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
-  export MANPATH=/usr/local/opt/grep/libexec/gnuman
-  export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
-  export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
-  export MANPATH=/usr/local/opt/findutils/libexec/gnuman:$MANPATH
-  export MANPATH=/usr/local/opt/coreutils/libexec/gnuman:$MANPATH
-  export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
-  export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
+case "${HOSTNAME%%.*}" in
+  # Macbook settings
+  uriah*)
+    # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
+    # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
+    # * Installed ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
+    # * Installed universal ctags with (not in main repo becauase no versions yet):
+    #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
+    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
+    #   Manage tex with homebrew using 'mactex'.
+    # * Installed gcc and gfortran with 'port install gcc6' then 'port select
+    #   --set gcc mp-gcc6'. Try 'port select --list gcc'
+    # * Installed various utils with 'brew install coreutils findutils gnu-sed
+    #   gnutls grep gnu-tar gawk'. Found paths
+    _macos=true
+    export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+    export PATH=/Library/TeX/texbin:$PATH
+    export PATH=/opt/X11/bin:$PATH
+    export PATH=/usr/local/bin:/opt/local/bin:/opt/local/sbin:$PATH
+    export PATH=/usr/local/opt/grep/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/gnu-tar/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/findutils/libexec/gnubin:$PATH
+    export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
+    export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
+    export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
+    export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
+    export MANPATH=/usr/local/opt/grep/libexec/gnuman
+    export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
+    export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
+    export MANPATH=/usr/local/opt/findutils/libexec/gnuman:$MANPATH
+    export MANPATH=/usr/local/opt/coreutils/libexec/gnuman:$MANPATH
+    export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
+    export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
 
-  # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
-  # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
-  # versions! See: https://stackoverflow.com/a/3464303/4970632
-  # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
-  # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
-  if [ -d ~/.rvm/bin ]; then
-    [ -s ~/.rvm/scripts/rvm ] && \
-      source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
-    export PATH=$PATH:$HOME/.rvm/bin
-    rvm use ruby 1>/dev/null
-  fi
+    # Add RVM to PATH for scripting. Make sure this is the last PATH variable change.
+    # WARNING: Need to install with rvm! Get endless issues with MacPorts/Homebrew
+    # versions! See: https://stackoverflow.com/a/3464303/4970632
+    # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
+    # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
+    if [ -d ~/.rvm/bin ]; then
+      [ -s ~/.rvm/scripts/rvm ] && \
+        source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
+      export PATH=$PATH:$HOME/.rvm/bin
+      rvm use ruby 1>/dev/null
+    fi
 
-  # NCL NCAR command language, had trouble getting it to work on Mac with conda
-  # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
-  # actually ends up in above path after brew install gcc49; and must install
-  # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
-  # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
-  alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
-  export NCARG_ROOT=$HOME/builds/ncl-6.5.0  # critically necessary to run NCL
+    # NCL NCAR command language, had trouble getting it to work on Mac with conda
+    # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
+    # actually ends up in above path after brew install gcc49; and must install
+    # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
+    # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
+    alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
+    export NCARG_ROOT=$HOME/builds/ncl-6.5.0  # critically necessary to run NCL
+    ;;
 
-else
-  case ${HOSTNAME%%.*} in
   # Euclid options
   euclid)
     # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
@@ -174,14 +175,12 @@ else
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
     _load_modules netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
-    read -r -a _loaded < <(module --terse list 2>&1)
     ;;
 
   *)
     echo "Warning: Host '$HOSTNAME' does not have custom settings. You may want to edit your .bashrc."
     ;;
-  esac
-fi
+esac
 
 # Access custom executables and git repos
 export PATH=$HOME/bin:$PATH
@@ -280,21 +279,6 @@ git() {
     echo 'Error: Run "git stash push" instead.' 1>&2
   else
     command git "$@"
-  fi
-}
-
-# Sync figures from remote repository to this repository.
-# Stop uploading figures to Github because it massively bloats
-# repository size!
-rsync-figures() {
-  base=$(git rev-parse --show-toplevel)
-  if $_macos; then
-    [ $# -eq 1 ] || { echo "Error: Must input server."; return 1; }
-    server=$1
-    command ssh -o StrictHostKeyChecking=no "$server" "$cmd" \
-      || { echo "Error: Failed to get list of ports."; return 1; }
-  else
-    ports=$(eval "$cmd")
   fi
 }
 
@@ -826,25 +810,6 @@ zotfile-cleanup() {
 }
 
 #-----------------------------------------------------------------------------#
-# Website tools
-#-----------------------------------------------------------------------------#
-# Use 'brew install ruby-bundler nodejs' then 'bundle install' first
-# See README.md in website directory
-# Ignore standard error because of annoying deprecation warnings; see:
-# https://github.com/academicpages/academicpages.github.io/issues/54
-# A template idea:
-# http://briancaffey.github.io/2016/03/14/ipynb-with-jekyll.html
-# Another template idea:
-# http://www.leeclemmer.com/2017/07/04/how-to-publish-jupyter-notebooks-to-your-jekyll-static-website.html
-# For fixing tiny font size in code cells see:
-# http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
-# Note CSS variables are in _sass/_variables
-# Below does live updates (watch) and incrementally builds website (incremental)
-# alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
-# Use 2>/dev/null to ignore deprecation warnings
-alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
-
-#-----------------------------------------------------------------------------#
 # Supercomputer tools
 #-----------------------------------------------------------------------------#
 alias suser='squeue -u $USER'
@@ -852,122 +817,25 @@ alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[
 
 #-----------------------------------------------------------------------------#
 # SSH, session management, and Github stuff
-# Enabling files with spaces is tricky: https://stackoverflow.com/a/20364170/4970632
 #-----------------------------------------------------------------------------#
-# To enable passwordless login, just use "ssh-copy-id $server"
-# For cheyenne, to hook up to existing screen/tmux sessions, pick one
-# of the 1-6 login nodes -- from testing seems node 4 is usually most
-# empty (probably human psychology thing; 3 seems random, 1-2 are obvious
-# first and second choices, 5 is nice round number, 6 is last node)
-# shellcheck disable=2034
-{
-gauss='ldavis@gauss.atmos.colostate.edu'
-monde='ldavis@monde.atmos.colostate.edu'
-cheyenne='davislu@cheyenne5.ucar.edu'
-euclid='ldavis@euclid.atmos.colostate.edu'
-olbers='ldavis@olbers.atmos.colostate.edu'
-zephyr='lukelbd@zephyr.meteo.mcgill.ca'
-lmu='Luke.Davis@login.meteo.physik.uni-muenchen.de'
-midway='t-9841aa@midway2-login1.rcc.uchicago.edu'  # pass: orkalluctudg
-ldm='ldm@ldm.atmos.colostate.edu'                  # user: atmos-2012
-}
-
-# SSH file system
-# For how to install sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
-# For pros and cons see: https://unix.stackexchange.com/q/25974/112647
-# For how to test for empty directory see: https://superuser.com/a/352387/506762
-# NOTE: Why not pipe? Because pipe creates fork *subshell* whose variables are
-# inaccessible to current shell: https://stackoverflow.com/a/13764018/4970632
-isempty() {
-  if [ -d "$1" ]; then
-    local contents
-    read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
-    if [ ${#contents[@]} == 0 ]; then
-      return 0  # nothing inside
-    elif [ ${#contents[@]} == 1 ] && [ "${contents##*/}" == .DS_Store ]; then
-      return 0  # this can happen even if you delete all files
-    else
-      return 1
-    fi
-  else
-    return 0  # does not exist, so is empty
-  fi
-}
-mount() {
-  # Mount remote server by name (using the names declared above)
-  local server address location
-  ! $_macos && echo "Error: This should be run from your macbook." && return 1
-  [ $# -ne 1 ] && echo "Usage: mount SERVER_NAME" && return 1
-  # Detect aliases
-  server="$1"
-  location="$server"
-  case "$server" in
-    glade)  server=cheyenne ;;
-    mdata?) server=monde ;;
-  esac
-  # Get address
-  address="${!server}"  # evaluates the variable name passed
-  [ -z "$address" ] && echo "Error: Unknown server \"$server\". Consider adding it to .bashrc." && return 1
-  echo "Server: $server"
-  echo "Address: $address"
-  if ! isempty "$HOME/$server"; then
-    echo "Error: Directory \"$HOME/$server\" already exists, and is non-empty!" && return 1
-  fi
-  # Directory on remote server
-  # NOTE: Using tilde ~ does not seem to work
-  case $location in
-    glade)      location="/glade/scratch/davislu" ;;
-    mdata?)     location="/${location}/ldavis"    ;;  # mdata1, mdata2, ...
-    cheyenne?)  location="/glade/u/home/davislu"  ;;
-    *)          location="/home/ldavis"           ;;
-  esac
-  # Options meant to help speed up connection
-  # See discussion: https://superuser.com/q/344255/506762
-  # Also see blogpost: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
-  # -ocache_timeout=115200 \
-  # -oattr_timeout=115200 \
-  # -ociphers=arcfour \
-  # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead \
-  # NOTE: The cache timeout prevents us from detecting new files!
-  # -ocache_timeout=60 -oattr_timeout=115200 \
-  command sshfs "$address:$location" "$HOME/$server" \
-    -ocache=no \
-    -ocompression=no \
-    -ovolname="$server"
-}
-unmount() {  # name 'unmount' more intuitive than 'umount'
-  ! $_macos && echo "Error: This should be run from your macbook." && return 1
-  [ $# -ne 1 ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
-  local server="$1"
-  echo "Server: $server"
-  command umount "$HOME/$server"
-  # shellcheck disable=2181
-  if [ $? -ne 0 ]; then
-    diskutil umount force "$HOME/$server" || {
-      echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
-      return 1
-    }
-  elif ! isempty "$HOME/$server"; then
-    echo "Warning: Leftover mount folder appears to be non-empty!" && return 1
-  fi
-  rm -r "${HOME:?}/$server"
-}
-
-# Short helper functions
 # See current ssh connections
 alias connections="ps aux | grep -v grep | grep 'ssh '"
-# View address
-ip() {
-  # Get the ip address; several weird options for this
-  # See this: https://stackoverflow.com/q/13322485/4970632
-  if ! $_macos; then
-    command ip route get 1 | awk '{print $NF; exit}'
-  # See this: https://apple.stackexchange.com/q/20547/214359
+SSH_ENV="$HOME/.ssh/environment"  # for below
+
+# Helper function: return if directory is empty or essentially empty
+# See: https://superuser.com/a/352387/506762
+_isempty() {
+  local contents
+  [ -d "$1" ] || return 0  # does not exist, so empty
+  read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
+  if [ ${#contents[@]} -eq 0 ] || [ ${#contents[@]} -eq 1 ] && [ "${contents##*/}" == .DS_Store ]; then
+    return 0  # this can happen even if you delete all files
   else
-    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+    return 1  # non-empty
   fi
 }
-# String parsing
+
+# Helper functions: string parsing
 _expanduser() {  # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
@@ -980,6 +848,237 @@ _compressuser() {  # turn $HOME into tilde
   param="${param/#$HOME/\~}"
   echo "$param"
 }
+
+# To enable passwordless login, just use "ssh-copy-id $server". For cheyenne, to hook up
+# to existing screen/tmux sessions, pick one of the 1-6 login nodes -- from testing
+# seems node 4 is usually most empty (probably human psychology thing; 3 seems random,
+# 1-2 are obvious first and second choices, 5 is nice round number, 6 is last node)
+_addressport() {
+  local host  # get it?
+  [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
+  [ $# -gt 1 ] && echo 'Error: Too many input args.' && return 1
+  case $host in
+    uriah)
+      address=localhost
+      port=1000
+      ;;
+    monde)
+      address=ldavis@monde.atmos.colostate.edu
+      port=2000
+      ;;
+    euclid)
+      address=ldavis@monde.atmos.colostate.edu
+      port=3000
+      ;;
+    midway*)
+      address=t-9841aa@midway2-login1.rcc.uchicago.edu  # pass: orkalluctudg
+      port=4000
+      ;;
+    cheyenne*)
+      address=davislu@cheyenne5.ucar.edu
+      port=5000
+      ;;
+    lmu*)
+      address=Luke.Davis@login.meteo.physik.uni-muenchen.dd
+      port=6000
+      ;;
+    ldm)
+      address='ldm@ldm.atmos.colostate.edu'                  # user: atmos-2012
+      port=7000
+      ;;
+    zephyr)
+      address='lukelbd@zephyr.meteo.mcgill.ca'
+      port=8000
+      ;;
+    *@*)
+      echo "Warning: Non-standard host $host. You may want to edit your .bashrc."
+      address=$host
+      port=9000
+      ;;
+    *)
+      echo "Error: Unknown host $host."
+      return 1
+      ;;
+  esac
+  echo "$address:$port"
+}
+_address() {
+  res=$(_addressport "$@") && echo "${res%:*}"
+}
+_port() {
+  res=$(_addressport "$@") && echo "${res#*:}"
+}
+
+# Big honking useful wrapper -- will *always* use this to ssh between servers
+# For initial idea see: https://stackoverflow.com/a/25486130/4970632
+# For exit on forward see: https://serverfault.com/a/577830/427991
+# For why we alias the function see: https://serverfault.com/a/656535/427991
+# For enter command then remain in shell see: https://serverfault.com/q/79645/427991
+# WARNING: This function ssh's into the server twice, first to query the available
+# port for two-way forwarding, then to ssh in over that port. If the server in question
+# *requires* password entry (e.g. Duo authentification), and cannot be configured
+# for passwordless login with ssh-copy-id, then need to skip first step.
+# Currently we do this for cheyenne server 
+alias ssh='_ssh'  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
+_ssh() {
+  local address port flags
+  if ! $_macos; then
+    ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 "$@"
+    exit $?
+  fi
+  [[ $# -gt 2 || $# -lt 1 ]] && { echo 'Usage: _ssh HOST [PORT]'; return 1; }
+  address=$(_address "$1") || { echo 'Error: ssh failed.'; return 1; }
+  port=$(_port "$1")
+  if [ -n "$2" ]; then
+    ports=($2)  # custom
+  else
+    ports=($(seq $port $((port + 6))))
+  fi
+  flags="-t -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  for port in "${ports[@]}"; do
+    flags+=" -L localhost:$port:localhost:$port"
+    # flags+="-L localhost:$port:localhost:$port -R localhost:$port:localhost$port "
+  done
+  command ssh -t $flags "$address"
+}
+
+# Copy from <this server> to local macbook
+# NOTE: Often want to copy result of glob expansion.
+# NOTE: Below, we use the bash parameter expansion ${!#} -->
+# 'variable whose name is result of "$#"' --> $n where n is the number
+# of args. Also can do math inside param expansion indexing.
+rlcp() {  # "copy to local (from remote); 'copy there'"
+  local port args dest
+  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
+  [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
+  port=$(_port) || { echo "Error: Port unknown."; return 1; }
+  args=("${@:1:$#-1}")         # flags and files
+  dest=$(_compressuser ${!#})  # last value
+  dest=${dest// /\\ }          # escape whitespace manually
+  echo "(Port $port) Copying ${args[*]} on this server to home server at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P"$port" "${args[@]}" "$USER"@localhost:"$dest"
+}
+
+# Copy from local macbook to <this server>
+lrcp() {  # "copy to remote (from local); 'copy here'"
+  local port flags file dest
+  $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
+  [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
+  port=$(_port) || { echo "Error: Port unknown."; return 1; }
+  dest=${!#}                          # last value
+  file=$(_compressuser "${@:$#-1:1}") # second to last
+  file=${file// /\\ }                 # escape whitespace manually
+  flags=("${@:1:$#-2}")               # flags
+  echo "(Port $port) Copying $file from home server to this server at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P"$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+}
+
+# Sync figures from remote repository to this repository.
+# Stop uploading figures to Github because it massively bloats repository size!
+# TODO: Fix this function. From now use rsync for figures and PDFs.
+fsync() {
+  base=$(git rev-parse --show-toplevel)
+}
+
+# Trigger ssh-agent if not already running, and add Github private key
+# Make sure to make private key passwordless, for easy login; all I want here is to avoid
+# storing plaintext username/password in ~/.git-credentials, but free private key is fine
+# * See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
+#   The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
+# * Used to just ssh-add on every login, but that starts fantom ssh-agent processes that
+#   persist when terminal is closed (all the 'eval' does is set environment variables;
+#   ssh-agent without the eval just starts the process in background). Now we re-use
+#   pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
+initssh() {
+  if [ -f "$HOME/.ssh/id_rsa_github" ]; then
+    command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
+    chmod 600 "$SSH_ENV"
+    source "$SSH_ENV" >/dev/null
+    command ssh-add "$HOME/.ssh/id_rsa_github" &>/dev/null  # add Github private key; assumes public key has been added to profile
+  else
+    echo "Warning: Github private SSH key \"$HOME/.ssh/id_rsa_github\" is not available." && return 1
+  fi
+}
+
+# Kill all ssh-agent processes
+killssh() {
+  # shellcheck disable=2009
+  ps aux | grep ssh-agent | grep -v grep | awk '{print $2}' | xargs kill
+}
+
+# Generate SSH file system
+# For pros and cons see: https://unix.stackexchange.com/q/25974/112647
+# For how to install sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
+# NOTE: Why not pipe? Because pipe creates fork *subshell* whose variables are
+# inaccessible to current shell: https://stackoverflow.com/a/13764018/4970632
+mount() {
+  local host address location
+  ! $_macos && echo "Error: This should be run from your macbook." && return 1
+  [ $# -ne 1 ] && echo "Usage: mount SERVER_NAME" && return 1
+
+  # Get address
+  location="$1"
+  case "$location" in
+    glade)  host=cheyenne ;;
+    mdata?) host=monde ;;
+    *)      host=$location ;;
+  esac
+  address=$(_address $host) || { echo "Error: Unknown host."; return 1; }
+  echo "Server: $host"
+  echo "Address: $address"
+  if ! _isempty "$HOME/$host"; then
+    echo "Error: Directory \"$HOME/$host\" already exists, and is non-empty!" && return 1
+  fi
+
+  # Directory on remote server
+  # NOTE: Using tilde ~ does not seem to work
+  case $location in
+    glade)      location="/glade/scratch/davislu" ;;
+    mdata?)     location="/${location}/ldavis"    ;;  # mdata1, mdata2, ...
+    cheyenne?)  location="/glade/u/home/davislu"  ;;
+    *)          location="/home/ldavis"           ;;
+  esac
+
+  # Initiate (objects are meant to help speed up connection)
+  # See discussion: https://superuser.com/q/344255/506762
+  # Also see blogpost: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
+  # NOTE: The cache timeout prevents us from detecting new files!
+  # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead
+  # -ocache_timeout=115200 -oattr_timeout=115200 -ociphers=arcfour
+  # -ocache_timeout=60 -oattr_timeout=115200
+  command sshfs "$address:$location" "$HOME/$host" -ocache=no -ocompression=no -ovolname="$host"
+}
+
+# Safely undo mount. Name 'unmount' is more intuitive than 'umount'
+unmount() {
+  ! $_macos && echo "Error: This should be run from your macbook." && return 1
+  [ $# -ne 1 ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
+  local server="$1"
+  echo "Server: $server"
+  command umount "$HOME/$server"
+  # shellcheck disable=2181
+  if [ $? -ne 0 ]; then
+    diskutil umount force "$HOME/$server" || {
+      echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
+      return 1
+    }
+  elif ! _isempty "$HOME/$server"; then
+    echo "Warning: Leftover mount folder appears to be non-empty!" && return 1
+  fi
+  rm -r "${HOME:?}/$server"
+}
+
+# View ip address
+# See: https://stackoverflow.com/q/13322485/4970632
+# See: https://apple.stackexchange.com/q/20547/214359
+ip() {
+  if ! $_macos; then
+    command ip route get 1 | awk '{print $NF; exit}'
+  else
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+  fi
+}
+
 # Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
 disconnect() {
   local pids port=$1
@@ -991,32 +1090,6 @@ disconnect() {
   echo "Processes $pids killed. Connections over port $port removed."
 }
 
-# Trigger ssh-agent if not already running, and add Github private key
-# Make sure to make private key passwordless, for easy login; all I want here
-# is to avoid storing plaintext username/password in ~/.git-credentials, but
-# free private key is fine
-# * See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
-#   The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
-# * Used to just ssh-add on every login, but that starts fantom ssh-agent
-#   processes that persist when terminal is closed (all the 'eval' does is
-#   set environment variables; ssh-agent without the eval just starts the
-#   process in background).
-# * Now we re-use pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
-SSH_ENV="$HOME/.ssh/environment"
-killssh() {
-  # shellcheck disable=2009
-  ps aux | grep ssh-agent | grep -v grep | awk '{print $2}' | xargs kill
-}
-initssh() {
-  if [ -f "$HOME/.ssh/id_rsa_github" ]; then
-    command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
-    chmod 600 "${SSH_ENV}"
-    source "${SSH_ENV}" >/dev/null
-    command ssh-add "$HOME/.ssh/id_rsa_github" &>/dev/null  # add Github private key; assumes public key has been added to profile
-  else
-    echo "Warning: Github private SSH key \"$HOME/.ssh/id_rsa_github\" is not available." && return 1
-  fi
-}
 # Source SSH settings, if applicable
 if ! $_macos; then  # only do this if not on macbook
   if [ -f "$SSH_ENV" ]; then
@@ -1029,108 +1102,19 @@ if ! $_macos; then  # only do this if not on macbook
 fi
 
 #-----------------------------------------------------------------------------#
-# Functions for scp-ing from local to remote, and vice versa
-#-----------------------------------------------------------------------------#
-# Big honking useful wrapper -- will *always* use this to ssh between servers
-# For initial idea see: https://stackoverflow.com/a/25486130/4970632
-# For exit on forward see: https://serverfault.com/a/577830/427991
-# For why we alias the function see: https://serverfault.com/a/656535/427991
-# For enter command then remain in shell see: https://serverfault.com/q/79645/427991
-# WARNING: This function ssh's into the server twice, first to query the available
-# port for two-way forwarding, then to ssh in over that port. If the server in question
-# *requires* password entry (e.g. Duo authentification), and cannot be configured
-# for passwordless login with ssh-copy-id, then need to skip first step.
-# Currently we do this for cheyenne server 
-_port_file=~/.port  # file storing port number
-alias ssh="_ssh"  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
-_ssh() {
-  local port listen port_write title_write
-  $_macos || {
-    ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 "$@"
-    exit $?
-  }
-  [[ $# -gt 2 || $# -lt 1 ]] && echo "Usage: _ssh ADDRESS [PORT]" && return 1
-  listen=22  # default sshd listening port; see the link above
-  port=10000  # starting port
-  if [ -n "$2" ]; then
-    port="$2"  # custom
-  elif ! [[ $1 =~ cheyenne ]]; then  # dynamically find first available port
-    echo "Determining port automatically."
-    port=$(command ssh "$1" "
-      port=$port
-      while netstat -an | grep \"[:.]\$port\" &>/dev/null; do
-        let port=\$port+1
-      done
-      echo \$port
-    ")
-  fi
-  # jupyter-connect "$1"
-  port_write=$(_compressuser "$_port_file")
-  title_write=$(_compressuser "$_title_file")
-  command ssh \
-    -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60 \
-    -t -R "$port:localhost:$listen" "$1" "
-    echo $port >$port_write
-    echo $_title >$title_write
-    echo \"Port number: ${port}.\"
-    /bin/bash -i
-    "  # enter bash and stay interactive
-}
-
-# Copy from <this server> to local macbook
-# NOTE: Often want to copy result of glob expansion.
-# NOTE: Below, we use the bash parameter expansion ${!#} -->
-# 'variable whose name is result of "$#"' --> $n where n is the number
-# of args. Also can do math inside param expansion indexing.
-rlcp() {  # "copy to local (from remote); 'copy there'"
-  local port args dest
-  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
-  ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  args=("${@:1:$#-1}")          # flags and files
-  port=$(cat "$_port_file")     # port from most recent login
-  dest=$(_compressuser ${!#}) # last value
-  dest=${dest// /\\ }       # escape whitespace manually
-  echo "(Port $port) Copying ${args[*]} on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P"$port" "${args[@]}" "$USER"@localhost:"$dest"
-}
-
-# Copy from local macbook to <this server>
-lrcp() {  # "copy to remote (from local); 'copy here'"
-  local port flags file dest
-  $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
-  ! [ -r $_port_file ] && echo "Error: Port unavailable." && return 1
-  flags=("${@:1:$#-2}")               # flags
-  port=$(cat "$_port_file")           # port from most recent login
-  dest=${!#}                          # last value
-  file=$(_compressuser "${@:$#-1:1}") # second to last
-  file=${file// /\\ }               # escape whitespace manually
-  echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P"$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
-}
-
-#-----------------------------------------------------------------------------#
-# REPLs
+# REPLs and interactive servers
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
 alias proplot='ipython --matplotlib=qt -i -c "import proplot as plot; import matplotlib.pyplot as plt"'
-alias climopy='ipython -i -c "import xarray as xr; import climopy as climo; from climopy import ureg, const"'
+alias climopy='ipython -i -c "import pandas as pd; import xarray as xr; import climopy as climo; from climopy import ureg, const"'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
 $_macos && export JULIA='/Applications/Julia-1.0.app/Contents/Resources/julia'
 
-# NCL interactive environment
-# Make sure that we encapsulate any other alias; for example, on Macs, will
-# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
-if alias ncl &>/dev/null; then
-  # shellcheck disable=2034
-  _incl=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
-  alias incl='$_incl -Q -n'
-else
-  alias incl='ncl -Q -n'
-fi
+# Matlab
+# Load the startup script
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
 
 # R utilities
 # Calling R with --slave or --interactive makes quiting totally impossible somehow.
@@ -1140,9 +1124,16 @@ fi
 alias r='command R -q --no-save'
 alias R='command R -q --no-save'
 
-# Matlab
-# Load the startup script
-alias imatlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
+# NCL interactive environment
+# Make sure that we encapsulate any other alias; for example, on Macs, will
+# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
+if alias ncl &>/dev/null; then
+  # shellcheck disable=2034
+  _incl=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
+  alias ncl='$_incl -Q -n'
+else
+  alias ncl='ncl -Q -n'
+fi
 
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
@@ -1155,126 +1146,35 @@ iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@'  # rlwrap stands for readline wrapper
 }
 
-#-----------------------------------------------------------------------------#
-# Notebook stuff
+# Set up jupyter lab with necessary port-forwarding connections
 # * Install nbstripout with 'pip install nbstripout', then add it to the
 #   global .gitattributes for automatic stripping of contents.
 # * To uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
 #   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
 # * If you have issues where themes are just not changing in Chrome, open Developer tab
 #   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
-#-----------------------------------------------------------------------------#
-# This function will establish two-way connection between server and local macbook
-# with the same port number (easier to understand that way).
-_jupyter_tunnel() {
-  # Usage changes depending on whether on macbook
-  # ssh -f (port-forwarding in background) -N (don't issue command)
-  local port ports stat stats server get_ports set_ports
-  unset _jupyter_port
-  if $_macos; then
-    server="$1"  # input server
-    ports="${*:2}"
-    [ -z "$server" ] && echo "Error: Must input server." && return 1
-  else
-    server=$USER@$(ip) || {
-      echo "Error: Could not figure out this server's ip address." && return 1
-    }
-    ports="$*"
-  fi
-  # Which ports to connect over
-  # shellcheck disable=2016
-  set_ports='
-    for port in $ports; do
-      command ssh -t -N -f -L localhost:$port:localhost:$port '"$server"' &>/dev/null
-      stats+="${port}-$? "
-    done
-  '
-  if [ -n "$ports" ]; then
-    get_ports='ports="'"$ports"'"'
-  else
-    for port in {30000..30020}; do
-      ! netstat -an | grep "[:.]$port" &>/dev/null && ports+=" $port"
-    done
-    # shellcheck disable=2016
-    get_ports="
-      for port in $ports; do"'
-        ! netstat -an | grep "[:.]$port" &>/dev/null && ports=$port && break
-      done
-    '
-  fi
-  # Connect specified ports
-  # WARNING: Need quotes around eval or line breaks may not be preserved
-  if $_macos; then
-    eval "$get_ports"
-    eval "$set_ports"
-  else
-    port=$(cat $_port_file)
-    [ -z "$port" ] && echo "Error: Unknown connection port. Cannot send commands to macbook." && return 1
-    # shellcheck disable=2016
-    stats=$(command ssh -o StrictHostKeyChecking=no -p "$port" "$USER@localhost" "
-      $get_ports
-      $set_ports
-      printf \"\$stats\"
-    ")
-  fi
-  # Message
-  for stat in $stats; do
-    echo "Exit status ${stat#*-} for connection over port ${stat%-*}."
-    [ "${stat#*-}" -eq 0 ] && _jupyter_port=${stat%-*}
-  done
-  [ -n "$_jupyter_port" ]  # return with this exit status
-}
-
-# Refresh stale connections from macbook to server
-# Simply calls the '_jupyter_tunnel' function
-jupyter-connect() {
-  local cmd ports
-  cmd="ps -u | grep jupyter- | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
-  # Find ports for *existing* jupyter notebooks
-  # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
-  # -t flag, causes ssh command to mess up.
-  if $_macos; then
-    [ $# -eq 1 ] || { echo "Error: Must input server."; return 1; }
-    server=$1
-    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
-      || { echo "Error: Failed to get list of ports."; return 1; }
-  else
-    ports=$(eval "$cmd")
-  fi
-  [ -n "$ports" ] || { echo "Error: No active jupyter notebooks found."; return 1; }
-
-  # Connect over ports
-  echo "Connecting to jupyter notebook(s) over port(s) $ports."
-  if $_macos; then
-    _jupyter_tunnel "$server" "$ports"
-  else
-    _jupyter_tunnel "$ports"
-  fi
-}
-
-# Set up notebook with necessary port-forwarding connections on local and remote
-# Set up jupyter lab with necessary port-forwarding connections
 jupyter-lab() {
-  # Create the notebook
-  # Need to extend data rate limit when making some plots with lots of stuff
+  local port flag
   if [ -n "$1" ]; then
     echo "Initializing jupyter notebook over port $1."
-    port="--port=$1"
-  # Remote ports will use 3####   
-  elif ! $_macos; then
-    _jupyter_tunnel || return 1
-    echo "Initializing jupyter notebook over port $_jupyter_port."
-    port="--port=$_jupyter_port"
-  # Local ports will use 2####
+    flag="--port=$1"
   else
-    for port in $(seq 20000 20020); do
-      ! netstat -an | grep "[:.]$port" &>/dev/null && break
-    done
-    echo "Initializing jupyter notebook over port $port."
-    port="--port=$port"
+    # Currently _ssh opens up 5 ports for possible jupyter notebooks
+    port=$(_port)
+    if [ -n "$port" ]; then
+      for port in $(seq $((port + 1)) $((port + 6))); do
+        if ! netstat -an | grep "[:.]$port" &>/dev/null; then
+          flag="--port=$port"
+          break
+        fi
+      done
+    fi
   fi
-  jupyter lab --no-browser "$port"
-  # jupyter lab --no-browser "$port" --LabApp.token=csulmu
+  if [ -z "$flag" ]; then
+    echo "Error: Unknown base port for host $HOSTNAME or all ports are filled up."
+    return 1
+  fi
+  jupyter lab $flag --no-browser
 }
 
 # Save a concise HTML snapshot of the jupyter notebook for collaboration
@@ -1298,6 +1198,23 @@ jupyter-name() {
   jupyter lab build --name="$*"
 }
 
+# Servers
+# Use 'brew install ruby-bundler nodejs' then 'bundle install' first
+# See README.md in website directory
+# Ignore standard error because of annoying deprecation warnings; see:
+# https://github.com/academicpages/academicpages.github.io/issues/54
+# A template idea:
+# http://briancaffey.github.io/2016/03/14/ipynb-with-jekyll.html
+# Another template idea:
+# http://www.leeclemmer.com/2017/07/04/how-to-publish-jupyter-notebooks-to-your-jekyll-static-website.html
+# For fixing tiny font size in code cells see:
+# http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
+# Note CSS variables are in _sass/_variables
+# Below does live updates (watch) and incrementally builds website (incremental)
+# alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
+# Use 2>/dev/null to ignore deprecation warnings
+alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
+alias server="python -m http.server"
 
 #-----------------------------------------------------------------------------#
 # Dataset utilities
@@ -1732,10 +1649,6 @@ fi
 # 2. Finally had idea to investigate environment variables -- terms out that
 #    TERM_SESSION_ID/ITERM_SESSION_ID indicate the window/tab/pane number! Just
 #    grep that, then if the title is not already set AND we are on pane zero, request title.
-# First function that sets title
-# Note, in read, if you specify number of characters, even pressing
-# enter key will be recorded as a result; break loop by checking if it
-# was pressed
 if [[ "$TERM_PROGRAM" =~ Apple_Terminal ]]; then
   _win_num=0
 else
@@ -1743,8 +1656,12 @@ else
   _win_num=${_win_num#w}
 fi
 _title_file=~/.title
+
+# First function that sets title
+# Record title from user input, or as user argument
 _title_set() {  # default way is probably using Cmd-I in iTerm2
-  # Record title from user input, or as user argument
+  # Note, in read, if you specify number of characters, even pressing enter key will be
+  # recorded as a result; break loop by checking if it was pressed
   $_macos || return 1
   [ -z "$TERM_SESSION_ID" ] && return 1
   if [ $# -gt 0 ]; then
@@ -1757,8 +1674,9 @@ _title_set() {  # default way is probably using Cmd-I in iTerm2
   sed -i '/^'"$_win_num"':.*$/d' "$_title_file"  # remove existing title from file
   echo "$_win_num: $_title" >> "$_title_file"  # add to file
 }
+
+# Get the title from file
 _title_get() {
-  # Simply gets the title from file
   # if [ -n "$_title" ]; then # this lets window have different title in different panes
     # _title="$_title" # already exists
   if ! [ -r "$_title_file" ]; then
@@ -1770,12 +1688,12 @@ _title_get() {
   fi
   _title=$(echo "$_title" | sed $'s/^[ \t]*//;s/[ \t]*$//')
 }
+
+# Update the title
 _title_update() {
-  # Check file availability
   if ! [ -r "$_title_file" ] && ! $_macos; then
     echo "Error: Title file not available." && return 1
   fi
-  # Read from file
   _title_get  # set _title global variable, attemp to read existing window title
   if [ -z "$_title" ]; then
     $_macos && _title_set  # set title name
@@ -1786,6 +1704,7 @@ _title_update() {
 title_update() {  # fix name issues
   _title_update "$@"
 }
+
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
 [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
 $_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
@@ -1802,11 +1721,11 @@ if $_macos; then # first the MacOS options
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
   # Music stuff
-  # alias artists="find ~/playlist -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias artists='find ~/playlist -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
+  # alias artists="find ~/icloud-drive/music -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
+  alias artists='find ~/icloud-drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
   artist2folder() {
     local dir base artist title
-    dir="$HOME/playlist"
+    dir="$HOME/icloud-drive/music"
     for file in "$dir/"*.{m4a,mp3}; do
       # shellcheck disable=SC2049
       [[ "$file" =~ "*" ]] && continue
