@@ -862,11 +862,11 @@ _addressport() {
       address=localhost
       port=1000
       ;;
-    monde)
+    euclid)
       address=ldavis@monde.atmos.colostate.edu
       port=2000
       ;;
-    euclid)
+    monde)
       address=ldavis@monde.atmos.colostate.edu
       port=3000
       ;;
@@ -934,10 +934,10 @@ _ssh() {
   else
     ports=($(seq $port $((port + 6))))
   fi
-  flags="-t -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
-  for port in "${ports[@]}"; do
+  flags="-t -R localhost:$port:localhost:$port"  # for rlcp etc.
+  flags+=" -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  for port in "${ports[@]:1}"; do  # for jupyter etc.
     flags+=" -L localhost:$port:localhost:$port"
-    # flags+="-L localhost:$port:localhost:$port -R localhost:$port:localhost$port "
   done
   command ssh -t $flags "$address"
 }
