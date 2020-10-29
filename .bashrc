@@ -631,8 +631,8 @@ todo() {
 }
 
 # Shell scripting utilities
-calc() { bc -l <<< "$(echo "$*" | tr 'x' '*')"; }  # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
-join() { local IFS="$1"; shift; echo "$*"; }    # join array elements by some separator
+calc() { echo "$*" | tr 'x' '*' | bc -l | awk '{printf "%f", $0}'; }  # wrapper around bc, make 'x'-->'*' so don't have to quote glob all the time!
+join() { local IFS="$1"; shift; echo "$*"; }  # join array elements by some separator
 refresh() { for i in {1..100}; do echo; done; clear; }  # print bunch of empty liens
 
 # Controlling and viewing running processes
@@ -1277,6 +1277,22 @@ jupyter-lab() {
   # jupyter lab --no-browser "$port" --LabApp.token=csulmu
 }
 
+# Save a concise HTML snapshot of the jupyter notebook for collaboration
+# NOTE: Requires xelatex. Use conda install -c conda-forge tectonic
+jupyter-convert() {
+  local fmt dir file
+  # fmt=pdf
+  fmt=html_toc
+  dir=$(git rev-parse --show-toplevel)/meetings
+  [ -d "$dir" ] || { echo "Error: Directory $dir does not exist."; return 1; }
+  for file in "$@"; do
+    [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
+    jupyter nbconvert --to "$fmt" --no-input --no-prompt \
+      --output-dir "$dir" --output "${file%.ipynb}_$(date +%Y-%m-%d).${fmt%_*}" "$file"
+  done
+}
+
+# Change JupyterLab name as it will appear in tab or browser title
 jupyter-name() {
   [ $# -eq 0 ] && echo "Error: Argument(s) required." && return 1
   jupyter lab build --name="$*"
