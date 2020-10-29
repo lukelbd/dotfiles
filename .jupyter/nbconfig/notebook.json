@@ -16,7 +16,11 @@
     "toc2/main": true,
     "collapsible_headings/main": false,
     "varInspector/main": true,
-    "code_prettify/autopep8": true
+    "code_prettify/autopep8": true,
+    "codefolding/main": true,
+    "toc": true,
+    "toc2": true,
+    "toc/main": true
   },
   "highlight_selected_word": {
     "highlight_color": "#cccccc",

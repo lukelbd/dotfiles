@@ -2,6 +2,14 @@
 #-----------------------------------------------------------------------------#
 # Modifications
 #-----------------------------------------------------------------------------#
+c = get_config()
+
+# Remote access (safe because users still need token)
+c.LabApp.allow_remote_access = True
+c.LabApp.allow_origin = '*'
+c.LabApp.ip = '0.0.0.0'
+
+# Default browser popup (normally run with --no-browser but useful anyways)
 c.LabApp.browser = '/Applications/Chromium.app/Contents/MacOS/Chromium --app=%s'
 
 #------------------------------------------------------------------------------
