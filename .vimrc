@@ -215,9 +215,6 @@ for s:mapping in [
     \ ['<Tab>',    'n'],
     \ ['<Leader>', 'nv'],
     \ ['\',        'nv'],
-    \ ['<C-x>',    'i'],
-    \ ['<C-s>',    'vi'],
-    \ ['<C-d>',    'i'],
     \ ]
   let s:key = s:mapping[0]
   let s:modes = split(s:mapping[1], '\zs')  " construct list
