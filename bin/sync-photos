@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+#-----------------------------------------------------------------------------#
+# Sync photos using this app:
+# https://agu.confex.com/agu/fm20/a/extra/index.cgi
+#-----------------------------------------------------------------------------#
+# Helper functions
+raise() {
+  echo "Error: $*"
+  exit 1
+}
+remove() {
+  [ -d "$1" ] || return 0
+  remaining=$(find "$1" -mindepth 1 -type f -name '[!.]*')
+  [ -z "$remaining" ] || raise "Failed to transfer '$1' files: "$'\n'"$remaining"
+  rm -r "$1" || raise "Failed to remove '$1'."
+}
+
+# Initial stuff
+shopt -s nullglob
+sync=$HOME/.gphotos-sync
+photos=$HOME/photos
+which pipenv &>/dev/null || raise "Command 'pipenv' not found."
+[ -d "$sync" ] || raise "Google photos sync directory '$sync' not found."
+[ -d "$photos" ] || raise "Google photos destination directory '$photos' not found."
+
+# Organize photos into expected directory structure
+# NOTE: Albums are just symlinks so no need to update them
+cd "$photos" || exit 1
+for dir in unsorted/????-??; do
+  date=${dir##*/}
+  year=${date%-*}
+  month=${date#*-}
+  [ -d photos ] || mkdir photos
+  [ -d photos/$year ] || mkdir photos/$year
+  [ -d photos/$year/$month ] && raise "Directory 'photos/$year/$month' already exists."
+  dest=photos/$year/$month
+  echo "Moving $dir to $dest..."
+  mv "$dir" "photos/$year/$month" || raise "Failed to created 'photos/$year/$month'."
+done
+
+# Update photos
+cd "$sync" || exit 1
+pipenv run gphotos-sync "$photos"
+
+# Expand photos into custom directory structure
+cd "$photos" || exit 1
+[ -d unsorted ] || mkdir unsorted
+for year in photos/????; do
+  year=${year##*/}
+  for dir in photos/$year/??; do
+    month=${dir##*/}
+    dest=unsorted/$year-$month
+    [ -d "$dest" ] && raise "Directory '$dest' already exists."
+    echo "Moving $dir to $dest..."
+    mv "$dir" "$dest" || raise "Failed to create '$dest'."
+  done
+done
+remove photos
+
+# Copy albums into root
+for year in albums/*; do
+  year=${year##*/}
+  for dir in albums/$year/*; do
+    file=${dir##*/}
+    [[ "$file" =~ ^[0-9][0-9][0-9][0-9]\ .*$ ]] || raise "Expected album to start with month-day."
+    album=${file:5}
+    month=${file:0:2}
+    day=${file:2:2}
+    dest="$year-$month-$day $album"
+    [ -d "$dest" ] && raise "Directory '$dest' already exists."
+    echo "Moving $dir to $dest..."
+    mv "$dir" "$dest" || raise "Failed to create '$dest'."
+  done
+done
+remove albums
+
+# Fix album symlinks
+for dir in ????-??-??\ *; do
+  for link in "$dir"/*; do
+    [ -L "$link" ] || continue
+    orig=$(readlink "$link") || raise "Failed to read symlink."
+    [[ "$orig" =~ /unsorted/ ]] && continue
+    file=${orig##*/}
+    part=${orig##*/photos/}
+    year=${part%%/*}
+    month=${part#*/}
+    month=${month%%/*}
+    dest=../unsorted/$year-$month/$file
+    [ -f "$dir/$dest" ] || raise "Destination '$dir/$dest' does not exist."
+    echo "Changing link from $orig to $dest"
+    echo ln -sfn "$dest" "$link" || raise "Failed to create symlink '$link'."
+  done
+done

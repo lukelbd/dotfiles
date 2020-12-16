@@ -256,6 +256,7 @@ endif
 augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
+  au FileType tex setlocal nolist nocursorline colorcolumn=
 augroup END
 command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
@@ -839,8 +840,8 @@ if PlugActive('delimitmate')
   let g:delimitMate_expand_space = 1
   let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
   let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_quotes = '" '''
-  let g:delimitMate_matchpairs = '(:),{:},[:]'
+  let g:delimitMate_quotes = "\" '"
+  let g:delimitMate_matchpairs = '(:),{:},[:]'  " exclude <> by default for use in comparison operators
   let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
@@ -1789,8 +1790,8 @@ command! Group call utils#current_group()
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
 command! PluginFile call utils#show_ftplugin()
 command! SyntaxFile call utils#show_syntax()
-command! Colors call utils#show_colors()
-command! GroupColors vert help group-name
+command! ColorTest call utils#color_test()
+command! ColorGroups vert help group-name
 
 
 "-----------------------------------------------------------------------------"

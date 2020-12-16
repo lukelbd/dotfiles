@@ -12,12 +12,9 @@ endfunction
 nnoremap <silent> <buffer> <Plug>Execute :call <sid>open_html_file()
 
 " Define HTML vim-surround macros
-" Todo: Why don't we put everything in textools plugin in tex.vim file?
+" Todo: Put everything in textools ftplugin files
 if &runtimepath =~# 'vim-surround'
-  " HTML tools
-  " Todo: Understand example from documentation:
-  " "<div\1id: \r..*\r id=\"&\"\1>\r</div>"
-  let s:htmltools_surround = {
+  let s:html_surround = {
     \ 't': ["<\1<\1>",  "</\1\1>"],
     \ 'd': ['<div>',    '</div>'],
     \ 'h': ['<head>',   '</head>'],
@@ -35,7 +32,7 @@ if &runtimepath =~# 'vim-surround'
     \ '4': ['<h4>',     '</h4>'],
     \ '5': ['<h5>',     '</h5>'],
   \ }
-  for [s:binding, s:pair] in items(s:htmltools_surround)
+  for [s:binding, s:pair] in items(s:html_surround)
     let [s:left, s:right] = s:pair
     let b:surround_{char2nr(s:binding)} = s:left . "\r" . s:right
   endfor

@@ -44,7 +44,8 @@ done
 
 # Create symlinks
 for link in \
-  'Library/Mobile Documents/com~apple~CloudDocs:icloud-drive' \
+  '/Volumes/GoogleDrive/My Drive:Google Drive' \
+  'Library/Mobile Documents/com~apple~CloudDocs:iCloud Drive' \
   'miniconda3/lib/python3.8/site-packages:site-packages' \
   '/usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages'
   do
