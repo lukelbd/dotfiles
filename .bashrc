@@ -511,6 +511,20 @@ dl() {
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
 }
 
+# Save log of directory space to home directory
+space() {
+  local log sub dir
+  log=$HOME/storage.log
+  printf 'Timestamp:\n%s\n' "$(date +%s)" >$log
+  for sub in '' '..'; do
+    for dir in ~/ ~/scratch*; do
+      [ -d "$dir" ] || continue
+      printf 'Directory: %s\n' "${dir##*/}/$sub" >>$log
+      du -h -d 1 "$dir/$sub" 2>/dev/null >>$log
+    done
+  done
+}
+
 #-----------------------------------------------------------------------------#
 # General utilties
 #-----------------------------------------------------------------------------#
@@ -851,10 +865,10 @@ _compressuser() {  # turn $HOME into tilde
   echo "$param"
 }
 
-# To enable passwordless login, just use "ssh-copy-id $server". For cheyenne, to hook up
-# to existing screen/tmux sessions, pick one of the 1-6 login nodes -- from testing
-# seems node 4 is usually most empty (probably human psychology thing; 3 seems random,
-# 1-2 are obvious first and second choices, 5 is nice round number, 6 is last node)
+# Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
+# For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
+# nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
+# random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
 _addressport() {
   local host  # get it?
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
@@ -911,39 +925,56 @@ _port() {
   res=$(_addressport "$@") && echo "${res#*:}"
 }
 
-# Big honking useful wrapper -- will *always* use this to ssh between servers
+# SSH wrapper that sets up ports used for jupyter and scp copying
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
-# For exit on forward see: https://serverfault.com/a/577830/427991
 # For why we alias the function see: https://serverfault.com/a/656535/427991
 # For enter command then remain in shell see: https://serverfault.com/q/79645/427991
-# WARNING: This function ssh's into the server twice, first to query the available
-# port for two-way forwarding, then to ssh in over that port. If the server in question
-# *requires* password entry (e.g. Duo authentification), and cannot be configured
-# for passwordless login with ssh-copy-id, then need to skip first step.
-# Currently we do this for cheyenne server 
-alias ssh='_ssh'  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
+alias ssh=_ssh  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
   local address port flags
   if ! $_macos; then
     ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 "$@"
-    exit $?
+    return $?
   fi
   [[ $# -gt 2 || $# -lt 1 ]] && { echo 'Usage: _ssh HOST [PORT]'; return 1; }
   address=$(_address "$1") || { echo 'Error: ssh failed.'; return 1; }
-  port=$(_port "$1")
   if [ -n "$2" ]; then
     ports=($2)  # custom
   else
+    port=$(_port "$1")
     ports=($(seq $port $((port + 6))))
     # ports=($(seq $port $((port + 3))))  # try fewer
   fi
-  flags="-t -R localhost:$port:localhost:22"  # for rlcp etc.
-  flags+=" -o LogLevel=error -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  flags="-o LogLevel=error -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  flags+=" -t -R localhost:${ports[0]}:localhost:22"  # for rlcp etc.
   for port in "${ports[@]:1}"; do  # for jupyter etc.
     flags+=" -L localhost:$port:localhost:$port"
   done
   echo "Connecting to $address with flags $flags..."
   command ssh -t $flags "$address"
+}
+
+# Reestablish two-way connections between server and local macbook. Use standard
+# port numbers. This function can be called on macbook or on remote server.
+# ssh -f (port-forwarding in background) -N (don't issue command)
+ssh-refresh() {
+  local host port ports address stat flags cmd
+  $_macos && [ $# -eq 0 ] && echo "Error: Must input host." && return 1
+  $_macos && host=$1 && shift
+  [ $# -gt 0 ] && echo "Error: Too many arguments." && return 1
+  address=$(_address $host)
+  port=$(_port "$1") || { echo 'Error: Unknown addrss.'; return 1; }
+  ports=($(seq $port $((port + 6))))
+  for port in "${ports[@]:1}"; do  # for jupyter etc.
+    flags+=" -L localhost:$port:localhost:$port"
+  done
+  cmd="command ssh -v -t -N -f $flags $address &>/dev/null; echo \$?"
+  if $_macos; then
+    stat=$(eval "$cmd")
+  else
+    stat=$(command ssh -o StrictHostKeyChecking=no -p "${ports[0]}" "$USER@localhost" "$cmd")
+  fi
+  echo "Exit status $stat for connection over ports: ${ports[*]:1}."
 }
 
 # Copy from <this server> to local macbook
@@ -981,6 +1012,7 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
 # Stop uploading figures to Github because it massively bloats repository size!
 # TODO: Fix this function. From now use rsync for figures and PDFs.
 fsync() {
+  local base
   base=$(git rev-parse --show-toplevel)
 }
 
@@ -1194,6 +1226,33 @@ jupyter-convert() {
     jupyter nbconvert --to "$fmt" --no-input --no-prompt \
       --output-dir "$dir" --output "${file%.ipynb}_$(date +%Y-%m-%d).${fmt%_*}" "$file"
   done
+}
+
+# Refresh stale connections from macbook to server
+# Simply calls the '_jupyter_tunnel' function
+jupyter-connect() {
+  local cmd ports
+  cmd="ps -u | grep jupyter- | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
+  # Find ports for *existing* jupyter notebooks
+  # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
+  # -t flag, causes ssh command to mess up.
+  if $_macos; then
+    [ $# -eq 1 ] || { echo "Error: Must input server."; return 1; }
+    server=$1
+    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
+      || { echo "Error: Failed to get list of ports."; return 1; }
+  else
+    ports=$(eval "$cmd")
+  fi
+  [ -n "$ports" ] || { echo "Error: No active jupyter notebooks found."; return 1; }
+
+  # Connect over ports
+  echo "Connecting to jupyter notebook(s) over port(s) $ports."
+  if $_macos; then
+    _jupyter_tunnel "$server" "$ports"
+  else
+    _jupyter_tunnel "$ports"
+  fi
 }
 
 # Change JupyterLab name as it will appear in tab or browser title
@@ -1695,9 +1754,7 @@ _title_get() {
 
 # Update the title
 _title_update() {
-  if ! [ -r "$_title_file" ] && ! $_macos; then
-    echo "Error: Title file not available." && return 1
-  fi
+  [ -r "$_title_file" ] || return 1
   _title_get  # set _title global variable, attemp to read existing window title
   if [ -z "$_title" ]; then
     $_macos && _title_set  # set title name
@@ -1710,8 +1767,10 @@ title_update() {  # fix name issues
 }
 
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
-[[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
-$_macos && [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
+if $_macos; then
+  [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
+  [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
+fi
 alias title='_title_set'  # easier for user
 
 # Mac stuff
