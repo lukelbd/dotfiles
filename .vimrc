@@ -100,13 +100,11 @@ if has('gui_running')
 endif
 
 " Always override these settings, even buffer-local settings
-let g:setting_overrides =
-  \ 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq '
-  \ . 'textwidth=' . s:textwidth
+let g:set_overrides = 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq textwidth=' . s:textwidth
 augroup override_settings
   au!
-  au User BufferOverrides exe 'setlocal ' . g:setting_overrides
-  au BufEnter * exe 'setlocal ' . g:setting_overrides
+  au User BufferOverrides exe 'setlocal ' . g:set_overrides
+  au BufEnter * exe 'setlocal ' . g:set_overrides
 augroup END
 
 " Global functions, for vim scripting
@@ -189,15 +187,17 @@ augroup END
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
-if len(mapcheck('<Esc>', 'n'))
+if !empty(mapcheck('<Esc>', 'n'))  " maps staring with escape
   silent! unmap <Esc>[3~
-  let s:insert_maps = ['[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
+  let s:insert_maps = [
+    \ '[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
     \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
     \ '[3;5~', '[2;5~', '[1;5F', '[1;5H', '[1;5B', '[1;5A', '[1;5C',
     \ '[1;5D', '[6;2~', '[5;2~', '[3;2~', '[2;2~', '[1;2F', '[1;2H',
-    \ '[1;2B', '[1;2A', '[1;2C', '[1;2D']
+    \ '[1;2B', '[1;2A', '[1;2C', '[1;2D'
+    \ ]
   for s:insert_map in s:insert_maps
-    exe 'silent! iunmap <Esc>'.s:insert_map
+    exe 'silent! iunmap <Esc>' . s:insert_map
   endfor
 endif
 
@@ -205,21 +205,21 @@ endif
 " due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
 function! s:suppress(prefix, mode)
   let char = nr2char(getchar())
-  if len(maparg(a:prefix . char, a:mode))
-    return a:prefix . char  " re-direct to the active mapping
-  else
+  if empty(maparg(a:prefix . char, a:mode))
     return ''  " no-op
+  else
+    return a:prefix . char  " re-direct to the active mapping
   endif
 endfunction
 for s:mapping in [
-    \ ['<Tab>',    'n'],
-    \ ['<Leader>', 'nv'],
-    \ ['\',        'nv'],
-    \ ]
+  \ ['<Tab>',    'n'],
+  \ ['<Leader>', 'nv'],
+  \ ['\',        'nv'],
+  \ ]
   let s:key = s:mapping[0]
   let s:modes = split(s:mapping[1], '\zs')  " construct list
   for s:mode in s:modes
-    if !len(mapcheck(s:key, s:mode))
+    if empty(maparg(s:key, s:mode))
       exe s:mode . 'map <expr> ' . s:key
         \ . " <sid>suppress('" . s:key . "', '" . s:mode . "')"
     endif
@@ -278,21 +278,15 @@ command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
 " * Turn off common normal mode issues
 " * q and @ are for macros, instead reserve for quitting popup windows and idetools map
 " * Ctrl-r is undo, remap this
-noremap @ <Nop>
-noremap q <Nop>
-noremap Q <Nop>
-noremap K <Nop>
-noremap ZZ <Nop>
-noremap ZQ <Nop>
-noremap <C-r> <Nop>
-noremap <C-p> <Nop>
-noremap <C-n> <Nop>
-noremap <C-a> <Nop>
-noremap <C-x> <Nop>
-noremap <CR> <Nop>
-noremap <Space> <Nop>
-noremap <Delete> <Nop>
-noremap <Backspace> <Nop>
+for s:key in [
+  \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
+  \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
+  \ '<CR>', '<Space>', '<Delete>', '<Backspace>',
+  \ ]
+  if empty(maparg(s:key, 'n'))
+    exe 'noremap ' . s:key . ' <Nop>'
+  endif
+endfor
 
 " Disable insert mode stuff
 " * Ctrl-g used for builtin, surround, delimitmate insert-mode motion (against this)
@@ -306,27 +300,15 @@ augroup override_maps
   au User BufferOverrides inoremap <buffer> <S-Tab> <C-d>
   au BufEnter * inoremap <buffer> <S-Tab> <C-d>
 augroup END
-inoremap <F1> <Nop>
-inoremap <F2> <Nop>
-inoremap <F3> <Nop>
-inoremap <F4> <Nop>
-inoremap <C-n> <Nop>
-inoremap <C-p> <Nop>
-inoremap <C-b> <Nop>
-inoremap <C-z> <Nop>
-inoremap <C-t> <Nop>
-inoremap <C-d> <Nop>
-inoremap <C-g> <Nop>
-inoremap <C-h> <Nop>
-inoremap <C-l> <Nop>
-inoremap <Up> <Nop>
-inoremap <Down> <Nop>
-inoremap <Left> <Nop>
-inoremap <Right> <Nop>
-inoremap <C-x><C-n> <Nop>
-inoremap <C-x><C-p> <Nop>
-inoremap <C-x><C-e> <Nop>
-inoremap <C-x><C-y> <Nop>
+for s:key in [
+  \ '<F1>', '<F2>', '<F3>', '<F4>',
+  \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-g>', '<C-h>', '<C-l>',
+  \ '<Up>', '<Down>', '<Left>', '<Right>', '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>'
+  \ ]
+  if empty(maparg(s:key, 'i'))
+    exe 'inoremap ' . s:key . ' <Nop>'
+  endif
+endfor
 
 " Redo map to capital U
 nnoremap U <C-r>

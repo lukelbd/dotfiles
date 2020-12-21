@@ -493,7 +493,7 @@ alias inputrc_funcs='bind -l'  # the functions, for example 'forward-char'
 # shellcheck disable=2032
 alias du='du -h -d 1'
 alias df='df -h'
-alias pmount='simple-mtpfs -f -v ~/Phone'
+alias phone-mount='simple-mtpfs -f -v ~/Phone'
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
@@ -864,20 +864,20 @@ _addressport() {
       address=localhost
       port=1000
       ;;
-    monde)
-      address=ldavis@monde.atmos.colostate.edu
-      port=2000
-      ;;
     euclid)
       address=ldavis@euclid.atmos.colostate.edu
-      port=3000
+      port=2000
       ;;
-    cheyenne*)
-      address=davislu@cheyenne5.ucar.edu
-      port=4000
+    monde)
+      address=ldavis@monde.atmos.colostate.edu
+      port=3000
       ;;
     midway*)
       address=t-9841aa@midway2-login1.rcc.uchicago.edu  # pass: orkalluctudg
+      port=4000
+      ;;
+    cheyenne*)
+      address=davislu@cheyenne5.ucar.edu
       port=5000
       ;;
     lmu*)
@@ -935,13 +935,14 @@ _ssh() {
     ports=($2)  # custom
   else
     ports=($(seq $port $((port + 6))))
+    # ports=($(seq $port $((port + 3))))  # try fewer
   fi
   flags="-t -R localhost:$port:localhost:22"  # for rlcp etc.
-  flags+=" -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  flags+=" -o LogLevel=error -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
   for port in "${ports[@]:1}"; do  # for jupyter etc.
     flags+=" -L localhost:$port:localhost:$port"
   done
-  echo "Connecting to $address..."
+  echo "Connecting to $address with flags $flags..."
   command ssh -t $flags "$address"
 }
 

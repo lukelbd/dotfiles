@@ -12,12 +12,13 @@ raise() {
   exit 1
 }
 cp='gcp --preserve=mode,timestamps' # simpler and faster than rsync
-mb_folder="$HOME/icloud-drive/music"
+mb_folder="$HOME/iCloud Drive/music"
 sd_folder="$HOME/Phone/Music"  # new phone
 sd_log="$mb_folder/sd.log"
 sync_modified=true  # include files?
 ! [ -r "$sd_log" ] && confirm "Log file sd.log not found! Cancel psync?" && exit 1
-[ -d "$sd_folder" ] || raise "Phone must be mounted with simple-mtpfs."
+[ -d "$mb_folder" ] || raise "Laptop music location $mb_folder not found."
+[ -d "$sd_folder" ] || raise "Phone music location $sd_folder not found."
 echo "SD playlist: $sd_folder"
 echo "MB playlist: $mb_folder"
 touch "$sd_log"  # if doesn't exist, make
@@ -41,7 +42,7 @@ done
 # Iterate through local files
 copied=false  # copied anything?
 updated=false  # updated anything?
-for path in "$mb_folder"/**/*.{m3u8,mp3,m4a}; do
+for path in "$mb_folder"/**/*.{m3u,m3u8,mp3,m4a}; do
   # Copy new files downloaded
   [ -r "$path" ] || continue  # e.g. if glob failed
   file=${path##*/}
@@ -83,7 +84,7 @@ $updated || echo "No recently modified files found."
 
 # Iterate through remote files
 deleted=false  # deleted anything?
-for path in "$sd_folder"/**/*.{mp3,m4a,m3u8}; do
+for path in "$sd_folder"/**/*.{m3u,m3u8,mp3,m4a}; do
   # Delete old file
   [ -r "$path" ] || continue
   file="${path##*/}"
