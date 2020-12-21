@@ -567,7 +567,7 @@ function! utils#show_syntax() abort
 endfunction
 
 " Popup window with color display
-function! utils#show_colors() abort
+function! utils#color_test() abort
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#popup_setup(1)
 endfunction

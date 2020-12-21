@@ -183,13 +183,15 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
-export PATH=$HOME/bin:$PATH
-export PATH=$HOME/go/bin:$PATH
-export PATH=$HOME/node/bin:$PATH
-export PATH=$HOME/ncparallel:$PATH
-export PATH=$HOME/youtube-dl-music:$PATH
+export PATH=$HOME/go/bin:$PATH  # go
+export PATH=$HOME/node/bin:$PATH  # javascript
+export PATH=$HOME/.local/bin:$PATH  # local pip install location
+export PATH=$HOME/bin:$PATH  # custom scripts
+export PATH=$HOME/ncparallel:$PATH  # custom repo
+export PATH=$HOME/youtube-dl-music:$PATH  # custom repo
 
 # Various python stuff
+# TODO: Modify PYTHONPATH while working on various projects
 export PYTHONPATH=$HOME/timescales  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
@@ -876,20 +878,20 @@ _addressport() {
       address=localhost
       port=1000
       ;;
-    euclid)
+    monde)
       address=ldavis@monde.atmos.colostate.edu
       port=2000
       ;;
-    monde)
-      address=ldavis@monde.atmos.colostate.edu
+    euclid)
+      address=ldavis@euclid.atmos.colostate.edu
       port=3000
-      ;;
-    midway*)
-      address=t-9841aa@midway2-login1.rcc.uchicago.edu  # pass: orkalluctudg
-      port=4000
       ;;
     cheyenne*)
       address=davislu@cheyenne5.ucar.edu
+      port=4000
+      ;;
+    midway*)
+      address=t-9841aa@midway2-login1.rcc.uchicago.edu  # pass: orkalluctudg
       port=5000
       ;;
     lmu*)
@@ -947,6 +949,7 @@ _ssh() {
   for port in "${ports[@]:1}"; do  # for jupyter etc.
     flags+=" -L localhost:$port:localhost:$port"
   done
+  echo "Connecting to $address..."
   command ssh -t $flags "$address"
 }
 
@@ -1781,7 +1784,7 @@ if $_macos; then # first the MacOS options
 
   # Music stuff
   # alias artists="find ~/icloud-drive/music -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias artists='find ~/icloud-drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
+  alias artists='find ~/iCloud\ Drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
   artist2folder() {
     local dir base artist title
     dir="$HOME/icloud-drive/music"
