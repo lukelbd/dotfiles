@@ -509,6 +509,20 @@ dl() {
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
 }
 
+# Save log of directory space to home directory
+space() {
+  local log sub dir
+  log=$HOME/storage.log
+  printf 'Timestamp:\n%s\n' "$(date +%s)" >$log
+  for sub in '' '..'; do
+    for dir in ~/ ~/scratch*; do
+      [ -d "$dir" ] || continue
+      printf 'Directory: %s\n' "${dir##*/}/$sub" >>$log
+      du -h -d 1 "$dir/$sub" 2>/dev/null >>$log
+    done
+  done
+}
+
 #-----------------------------------------------------------------------------#
 # General utilties
 #-----------------------------------------------------------------------------#
@@ -936,6 +950,29 @@ _ssh() {
   command ssh -t $flags "$address"
 }
 
+# Reestablish two-way connections between server and local macbook. Use standard
+# port numbers. This function can be called on macbook or on remote server.
+# ssh -f (port-forwarding in background) -N (don't issue command)
+ssh-refresh() {
+  local host port ports address stat flags cmd
+  $_macos && [ $# -eq 0 ] && echo "Error: Must input host." && return 1
+  $_macos && host=$1 && shift
+  [ $# -gt 0 ] && echo "Error: Too many arguments." && return 1
+  address=$(_address $host)
+  port=$(_port "$1") || { echo 'Error: Unknown addrss.'; return 1; }
+  ports=($(seq $port $((port + 6))))
+  for port in "${ports[@]:1}"; do  # for jupyter etc.
+    flags+=" -L localhost:$port:localhost:$port"
+  done
+  cmd="command ssh -v -t -N -f $flags $address &>/dev/null; echo \$?"
+  if $_macos; then
+    stat=$(eval "$cmd")
+  else
+    stat=$(command ssh -o StrictHostKeyChecking=no -p "${ports[0]}" "$USER@localhost" "$cmd")
+  fi
+  echo "Exit status $stat for connection over ports: ${ports[*]:1}."
+}
+
 # Copy from <this server> to local macbook
 # NOTE: Often want to copy result of glob expansion.
 # NOTE: Below, we use the bash parameter expansion ${!#} -->
@@ -1185,6 +1222,33 @@ jupyter-convert() {
     jupyter nbconvert --to "$fmt" --no-input --no-prompt \
       --output-dir "$dir" --output "${file%.ipynb}_$(date +%Y-%m-%d).${fmt%_*}" "$file"
   done
+}
+
+# Refresh stale connections from macbook to server
+# Simply calls the '_jupyter_tunnel' function
+jupyter-connect() {
+  local cmd ports
+  cmd="ps -u | grep jupyter- | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
+  # Find ports for *existing* jupyter notebooks
+  # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
+  # -t flag, causes ssh command to mess up.
+  if $_macos; then
+    [ $# -eq 1 ] || { echo "Error: Must input server."; return 1; }
+    server=$1
+    ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
+      || { echo "Error: Failed to get list of ports."; return 1; }
+  else
+    ports=$(eval "$cmd")
+  fi
+  [ -n "$ports" ] || { echo "Error: No active jupyter notebooks found."; return 1; }
+
+  # Connect over ports
+  echo "Connecting to jupyter notebook(s) over port(s) $ports."
+  if $_macos; then
+    _jupyter_tunnel "$server" "$ports"
+  else
+    _jupyter_tunnel "$ports"
+  fi
 }
 
 # Change JupyterLab name as it will appear in tab or browser title
