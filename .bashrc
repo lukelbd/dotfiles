@@ -1142,7 +1142,7 @@ fi
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
 alias proplot='ipython --matplotlib=qt -i -c "import proplot as plot; import matplotlib.pyplot as plt"'
-alias climopy='ipython -i -c "import pandas as pd; import xarray as xr; import climopy as climo; from climopy import ureg, const"'
+alias climopy='ipython -i -c "import pandas as pd; import xarray as xr; import cf_xarray; import cftime; import climopy as climo; from climopy import ureg, const"'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
@@ -1297,13 +1297,29 @@ namelist() {
 #   the homebrew install location 'brew tap homebrew/science, brew install cdo'
 # * This is bad, because the current version can't read netcdf4 files; you really don't need HDF4,
 #   so just don't install it
-# Summaries first
 nchelp() {
   echo "Available commands:"
   echo "ncinfo ncglobal ncvars ncdims
         ncin nclist ncvarlist ncdimlist
         ncvarinfo ncvardump ncvartable ncvartable2" | column -t
 }
+ncversion() {
+  local file name flag version
+  for file in "$@"; do
+    name=$(ncdump -k "$file")
+    case "$name" in
+      'classic')                version=3 flag=3 ;;
+      '64-bit offset')          version=3 flag=6 ;;
+      'cdf5')                   version=3 flag=5 ;;
+      'netCDF-4 classic model') version=4 flag=7 ;;
+      'netCDF-4')               version=4 flag=4 ;;
+      *)                        version=? flag=? ;;
+    esac
+    echo "${file##*/}: $name (version $version; nco flag $flag)"
+  done
+}
+
+# Basic summaries
 ncglobal() {  # show just the global attributes
   [ $# -ne 1 ] && echo "Usage: ncglobal FILE" && return 1
   command ncdump -h "$@" | grep -A100 ^// | less
@@ -1783,7 +1799,8 @@ if $_macos; then # first the MacOS options
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
-  # Music stuff
+  # Video stuff
+  # Audio and video stuff
   # alias artists="find ~/icloud-drive/music -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
   alias artists='find ~/iCloud\ Drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
   artist2folder() {
@@ -1800,6 +1817,13 @@ if $_macos; then # first the MacOS options
       echo "Moved '$base' to '$artist/$title'."
     done
   }
+  strip_audio() {
+    local file
+    for file in "$@"; do
+      ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"
+    done
+  }
+
 
   # Meteorology stuff
   alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information

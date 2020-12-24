@@ -1209,7 +1209,9 @@ let g:vim_isort_config_overrides = {
 " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
 " * Allow looping through single strings (SC2043)
 " * Allow assigning commands to variables (SC2209)
-let g:ale_sh_shellcheck_options = '-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043,SC2209'
+" * Allow unquoted glob pattern assignments (SC2125)
+let g:ale_sh_shellcheck_options =
+  \ '-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125'
 let g:syntastic_sh_shellcheck_args = g:ale_sh_shellcheck_options
 
 " Asynchronous linting engine
