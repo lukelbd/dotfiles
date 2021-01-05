@@ -840,7 +840,7 @@ SSH_ENV="$HOME/.ssh/environment"  # for below
 
 # Helper function: return if directory is empty or essentially empty
 # See: https://superuser.com/a/352387/506762
-_isempty() {
+_is_empty() {
   local contents
   [ -d "$1" ] || return 0  # does not exist, so empty
   read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
@@ -852,13 +852,13 @@ _isempty() {
 }
 
 # Helper functions: string parsing
-_expanduser() {  # turn tilde into $HOME
+_expand_user() {  # turn tilde into $HOME
   local param="$*"
   param="${param/#~/$HOME}"  # restore expanded tilde
   param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
   echo "$param"
 }
-_compressuser() {  # turn $HOME into tilde
+_compress_user() {  # turn $HOME into tilde
   local param="$*"
   param="${param/#$HOME/~}"
   param="${param/#$HOME/\~}"
@@ -869,7 +869,7 @@ _compressuser() {  # turn $HOME into tilde
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
 # nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
 # random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
-_addressport() {
+_address_port() {
   local host  # get it?
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
   [ $# -gt 1 ] && echo 'Error: Too many input args.' && return 1
@@ -919,10 +919,10 @@ _addressport() {
   echo "$address:$port"
 }
 _address() {
-  res=$(_addressport "$@") && echo "${res%:*}"
+  res=$(_address_port "$@") && echo "${res%:*}"
 }
 _port() {
-  res=$(_addressport "$@") && echo "${res#*:}"
+  res=$(_address_port "$@") && echo "${res#*:}"
 }
 
 # SSH wrapper that sets up ports used for jupyter and scp copying
@@ -952,6 +952,17 @@ _ssh() {
   done
   echo "Connecting to $address with flags $flags..."
   command ssh -t $flags "$address"
+}
+
+# List available ports
+ports() {
+  if [ $# -eq 0 ]; then
+    sudo lsof -iTCP -sTCP:LISTEN -n -P
+  elif [ $# -eq 1 ]; then
+    sudo lsof -iTCP -sTCP:LISTEN -n -P | grep -i --color $1
+  else
+    echo "Usage: listening [pattern]"
+  fi
 }
 
 # Reestablish two-way connections between server and local macbook. Use standard
@@ -988,7 +999,7 @@ rlcp() {  # "copy to local (from remote); 'copy there'"
   [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
   port=$(_port) || { echo "Error: Port unknown."; return 1; }
   args=("${@:1:$#-1}")         # flags and files
-  dest=$(_compressuser ${!#})  # last value
+  dest=$(_compress_user ${!#})  # last value
   dest=${dest// /\\ }          # escape whitespace manually
   echo "(Port $port) Copying ${args[*]} on this server to home server at: $dest..."
   command scp -o StrictHostKeyChecking=no -P"$port" "${args[@]}" "$USER"@localhost:"$dest"
@@ -1001,7 +1012,7 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
   port=$(_port) || { echo "Error: Port unknown."; return 1; }
   dest=${!#}                          # last value
-  file=$(_compressuser "${@:$#-1:1}") # second to last
+  file=$(_compress_user "${@:$#-1:1}") # second to last
   file=${file// /\\ }                 # escape whitespace manually
   flags=("${@:1:$#-2}")               # flags
   echo "(Port $port) Copying $file from home server to this server at: $dest..."
@@ -1062,7 +1073,7 @@ mount() {
   address=$(_address $host) || { echo "Error: Unknown host."; return 1; }
   echo "Server: $host"
   echo "Address: $address"
-  if ! _isempty "$HOME/$host"; then
+  if ! _is_empty "$HOME/$host"; then
     echo "Error: Directory \"$HOME/$host\" already exists, and is non-empty!" && return 1
   fi
 
@@ -1098,7 +1109,7 @@ unmount() {
       echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
       return 1
     }
-  elif ! _isempty "$HOME/$server"; then
+  elif ! _is_empty "$HOME/$server"; then
     echo "Warning: Leftover mount folder appears to be non-empty!" && return 1
   fi
   rm -r "${HOME:?}/$server"
