@@ -281,7 +281,7 @@ command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
 for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
   \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
-  \ '<CR>', '<Space>', '<Delete>', '<Backspace>',
+  \ '<Delete>', '<Backspace>', '<CR>',
   \ ]
   if empty(maparg(s:key, 'n'))
     exe 'noremap ' . s:key . ' <Nop>'
