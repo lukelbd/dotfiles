@@ -1152,8 +1152,25 @@ fi
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------#
 # Jupyter aliases
-alias proplot='ipython --matplotlib=qt -i -c "import proplot as plot; import matplotlib.pyplot as plt"'
-alias climopy='ipython -i -c "import pandas as pd; import xarray as xr; import cf_xarray; import cftime; import climopy as climo; from climopy import ureg, const"'
+alias proplot='ipython --matplotlib=qt -i -c "
+import math
+import numpy as np
+import proplot as plot
+import matplotlib.pyplot as plt
+'
+alias climopy='ipython -i -c "
+import math
+import numpy as np
+import pandas as pd
+import xarray as xr
+import pint
+import pint_xarray
+import cftime
+import cf_units
+import cf_xarray
+import climopy as climo
+from climopy import const, ureg, vreg
+"'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
