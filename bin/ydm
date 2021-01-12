@@ -1,0 +1,180 @@
+#!/usr/bin/env bash
+# shellcheck disable=2001,2002,2018,2019
+usage1="ydm [OPTION...] URL ARTIST - TITLE"
+usage2="ydm [OPTION...] URL ARTIST / TITLE"
+doc="
+Usage
+
+  $usage1
+  $usage2
+
+Description
+
+  This script downloads, normalizes, and tags audio from arbitrary youtube
+  videos. It performs the following 3 steps:
+
+  * Downloads youtube audio from URL into the native format with the highest
+    bitrate -- usually an OOG (webm) file.
+  * Normalizes the audio volume and re-compresses into an AAC (m4a) file -- AAC
+    is used because it matches the compression of mp3 but with improved audio
+    quality for the marginal bitrates characteristic of youtube videos.
+  * Tags the audio based on the ARTIST and TITLE. The tagging script does
+    various fuzzy searching things to get the album title, album artwork,
+    earliest release year, and album genre(s).
+
+Required arguments
+
+  URL     The youtube URL. Must begin with 'http'.
+  ARTIST  The artist name. Should be separated from TITLE with a dash surrounded
+          by spaces or with a slash *optionally* surrounded by spaces. In the
+          former case, the file is saved loose in the music directory. In the
+          latter case, the file is saved in an ARTIST subdirectory. This naming
+          convention is required for the ydm-metadata algorithm to work.
+  TITLE   The song name. The file will be saved with m4a or mp3 format
+          depending on whether the '--mp3' flag was passed.
+
+Optional arguments
+
+  -h|--help            Print this message.
+  -4|--m4a             Save as M4A. This is the default.
+  -3|--mp3             Save as MP3 instead of M4A.
+  -q|--quick           Skip the tagging step.
+  -Q|--very-quick      Skip the volume normalization and tagging steps.
+  -s=N|--start-time=N  The start time in seconds, MM:SS, or HH:MM:SS.
+  -e=N|--end-time=N    The end time in seconds, MM:SS, or HH:MM:SS.
+  -*                   Remaining flags passed to ydm-metadata.
+"
+# Helper functions
+# NOTE: Could also use afinfo for this part
+# let bits=$(afinfo "$path_dl" | grep 'bit rate' | tr -dc '[0-9]')/1000
+bitrate() {
+  ffmpeg -i "$1" -hide_banner 2>&1 | cat | grep 'bitrate' | cut -d, -f3 | tr -dc 0-9
+}
+raise() {
+  echo "$usage1"
+  echo "$usage2"
+  echo "Error: $*"
+  exit 1
+}
+cleanup() {  # remove previous download products
+  shopt -s nullglob
+  [ -n "$path_template" ] && rm "${path_template%.*}".* 2>/dev/null
+  [ -n "$path_normalized" ] && rm "$path_normalized" 2>/dev/null
+}
+trap cleanup EXIT  # remove files on exit or interruption!
+
+# Parse input
+mp3=false
+quick=0  # 1 means skip metadata, 2 means skip normalization
+ydmflags=(-q -f bestaudio --no-playlist)
+normflags=(-t -23)  # normalize to default of -23
+directory="$HOME/iCloud Drive/music"  # download directory
+[ -d "$directory" ] || raise "Output directory \"$directory\" does not exist or is not a directory."
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help)             echo "$doc" && exit 0 ;;
+    -3|--mp3)              mp3=true              ;;
+    -4|--m4a)              mp3=false             ;;
+    -q|--quick)            quick=1               ;;
+    -Q|--very-quick)       quick=2               ;;
+    -s=*|--start-time=*)   tstart=${1#*=}        ;;
+    -e=*|--end-time=*)     tend=${1#*=}       ;;
+    -[-a-zA-Z0-9]*)        metaflags+="$1 "    ;;
+    *)
+      if [ -z "$url" ]; then
+        url="$1"  # the URL
+      else
+        name+=" $1"  # the filename
+      fi
+      ;;
+  esac
+  shift 1
+done
+name=$(echo "$name" | awk '{$1=$1};1')  # trim whitespace: https://unix.stackexchange.com/questions/102008/how-do-i-trim-leading-and-trailing-whitespace-from-each-line-of-some-output
+$mp3 && ext="mp3" || ext="m4a"
+[ -n "$url" ] || raise "Must supply URL."
+echo "URL: $url"
+[ -n "$name" ] || raise "Must supply artist and title."
+echo "Name: '$name'"
+
+# Arguments for trimming time. Passed as 'extra' ffmpeg args to ffmpeg-normalize
+timeflag="-ei="  # open
+if [ -n "$tstart" ]; then
+  echo "Starting at time $tstart."
+  timeflag+="-ss $tstart "
+fi
+if [ -n "$tend" ]; then
+  echo "Ending at time $tend."
+  timeflag+="-to $tend "
+fi
+
+# Create artist directory if necessary
+if [[ "$name" =~ '/' ]]; then
+  num=$(echo "$name" | tr -cd '/' | wc -c)
+  [ "$num" -eq 1 ] || \
+    raise "Path name '$name' must have only one forward slash. Found $num slashes."
+  name=$(echo "$name" | sed 's: */ *:/:g')
+  artist=${name%/*}
+  [ -d "$directory/$artist" ] \
+    || mkdir "$directory/$artist" \
+    || raise "Failed to make directory '$directory/$artist'."
+elif ! [[ "$name" =~ ' - ' ]]; then
+  echo "Warning: To add metadata file must be in format 'ARTIST - TITLE' or 'ARTIST/TITLE'."
+fi
+
+# Paths
+# TODO: Support for downloading entire playlists or albums
+path_template="$directory/$name-download.%(ext)s"  # see youtube-dl help info; just picks whatever extension
+path_normalized="$directory/$name-normalized.$ext"
+path_final="$directory/$name.$ext"
+
+# Download with youtube-dl
+# NOTE: Previously used youtube-dl --get-filename but this causes irritating
+# delay. Easier to just query results with a glob pattern.
+echo "Downloading."
+youtube-dl "${ydmflags[@]}" "$url" -o "$path_template" # no playlist, in case user provides playlist URL
+paths_dl=("${path_template%.*}".*)
+[ ${#paths_dl[@]} -eq 0 ] && raise "Download failed."
+[ ${#paths_dl[@]} -gt 1 ] && raise "Ambiguous download results: ${paths_dl[*]}"
+[ $quick -ge 2 ] && exit 0
+path_dl="${paths_dl[0]}"
+
+# Normalize audio and re-compress into AAC. First get bitrate:
+# * The units are Loudness Units Relative to Full Scale.
+#   Refers to the target average loudness units for track; this
+#   will prevent clipping of sounds up to 26dB above this average.
+#   See: https://www.pro-tools-expert.com/home-page/2016/9/6/video-mastering-using-lufs
+# * Note default iTunes default bitrate is 256kbs. This step will save
+#   file with output bitrate roughly matching original bitrate. Save into m4a
+#   because it is better, more efficient format than mp3.
+# WARNING: For some reason ffmpeg-normalize sometimes elevates the bitrate by
+# a ton, while simple ffmpeg command (e.g. ffmpeg -i file1.m4a -c:a libfdk_aac file2.m4a)
+# does not change the bitrate much. So manually specify output bitrate.
+bitrate=$(bitrate "$path_dl")
+echo "Bitrate: ${bitrate}kbps"
+bitrate=$((bitrate*3/2))
+
+# Save to m4a, uses highest quality encoder
+if ! $mp3; then
+  echo "Normalizing volume and saving to m4a."
+  ffmpeg-normalize "$timeflag" "$path_dl" "${normflags[@]}" \
+    -f -c:a libfdk_aac -b:a ${bitrate}k -o "$path_normalized" \
+    || raise "Normalization failed."
+# Save to mp3
+else
+  echo "Normalizing volume and saving to mp3."
+  ffmpeg-normalize "$timeflag" "$path_dl" "${normflags[@]}" \
+    -f -c:a libmp3lame -b:a ${bitrate}k -o "$path_normalized" \
+    || raise "Normalization failed."
+fi
+
+# Cleanup
+echo "Bitrate: ${bitrate}kbps"
+rm "$path_dl"
+mv "$path_normalized" "$path_final"
+[ $quick -ge 1 ] && exit 0
+
+# Change metadata using python function
+echo "Adding metadata."
+ydm-metadata $metaflags --url "$url" "$path_final" \
+  || raise "Metadata script failed."
