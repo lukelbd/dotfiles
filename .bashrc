@@ -188,7 +188,6 @@ export PATH=$HOME/node/bin:$PATH  # javascript
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/bin:$PATH  # custom scripts
 export PATH=$HOME/ncparallel:$PATH  # custom repo
-export PATH=$HOME/youtube-dl-music:$PATH  # custom repo
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
