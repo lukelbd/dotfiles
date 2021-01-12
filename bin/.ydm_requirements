@@ -1,0 +1,10 @@
+# Pip requirements
+bs4
+discogs_client
+ffmpeg-normalize
+musicbrainzngs
+mutagen
+pillow
+unidecode
+youtube-dl
+lxml
