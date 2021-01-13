@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Normalize the input song
+usage="ydm-normalize [OPTION...] INPUT [OUTPUT [INPUT OUTPUT ...]]"
+doc="
+Usage
+
+  $usage
+
+Description
+
+  This script normalizes the input M4A or MP3 file volume using ffmpeg-normalize.
+"
+raise() {
+  echo "$usage"
+  echo "Error: $*"
+  exit 1
+}
+cleanup() {  # remove incomplete file
+  shopt -s nullglob
+  [ -n "$output" ] && rm "$output" 2>/dev/null
+}
+bitrate() {
+  ffmpeg -i "$1" -hide_banner 2>&1 | cat | grep 'bitrate' | cut -d, -f3 | tr -dc 0-9
+}
+trap cleanup EXIT  # remove files on exit or interruption!
+
+# Parse args
+overwrite=false
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h|--help)           echo "$doc" && exit 0 ;;
+    -r|--replace)      overwrite=true ;;
+    -s=*|--start-time=*) tstart=${1#*=} ;;
+    -e=*|--end-time=*)   tend=${1#*=} ;;
+    -*)                  raise "Unknown flag: $1" ;;
+    *)
+      if [ -z "$input" ]; then
+        input="$1"
+      elif [ -z "$output" ]; then
+        output="$1"
+      else
+        raise "Too many positional args."
+      fi
+      ;;
+  esac
+  shift 1
+done
+
+# Get output filename and extension.
+# NOTE: Main script uses this to simultaneously normalize and encode webm
+# data into the desired codec.
+# NOTE: Permit either specifying input and output file or just input file
+# and a default output name is assigned.
+if [ -z "$output" ]; then
+  output=${input%.*}-normalized.${input##*.}
+  echo "Using default output: $output"
+fi
+if [[ "$output" =~ .mp3$ ]]; then
+  mp3=true
+elif [[ "$output" =~ .m4a$ ]]; then
+  mp3=false
+else
+  raise "Unknown output file type: '$output'."
+fi
+
+# Arguments for trimming time. Passed as 'extra' ffmpeg args to ffmpeg-normalize
+timeflag="-ei="  # open
+if [ -n "$tstart" ]; then
+  echo "Starting at time $tstart."
+  timeflag+="-ss $tstart "
+fi
+if [ -n "$tend" ]; then
+  echo "Ending at time $tend."
+  timeflag+="-to $tend "
+fi
+
+# Get bitrate
+# * Default iTunes default bitrate is 256kbs. This step will save file with
+#   higher output bitrate than input bitrate, to account for re-encoding.
+# WARNING: For some reason ffmpeg-normalize sometimes elevates the bitrate by
+# a ton, while simple ffmpeg command (e.g. ffmpeg -i file1.m4a -c:a libfdk_aac file2.m4a)
+# does not change the bitrate much. So manually specify output bitrate.
+bitrate=$(bitrate "$input")
+echo "Bitrate: ${bitrate}kbps"
+
+# Normalize audio
+# * The units are Loudness Units Relative to Full Scale.
+#   Refers to the target average loudness units for track; this
+#   will prevent clipping of sounds up to 26dB above this average.
+#   See: https://www.pro-tools-expert.com/home-page/2016/9/6/video-mastering-using-lufs
+bitrate=$((bitrate * 4 / 3))
+$mp3 && codec=libmp3lame || codec=libfdk_aac
+echo "Normalizing volume and saving to $output."
+ffmpeg-normalize -t -23 "$input" "$timeflag" \
+  -f -c:a $codec -b:a ${bitrate}k -o "$output" \
+  || raise "Normalization failed."
+echo "Bitrate: ${bitrate}kbps"
+
+# Overwrite
+[ -r "$output" ] || raise "Output file does not exist."
+$overwrite && mv "$output" "$input" && echo "Moved file to '$input'."
