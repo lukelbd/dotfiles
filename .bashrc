@@ -1150,14 +1150,8 @@ fi
 #-----------------------------------------------------------------------------#
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------#
-# Jupyter aliases
-alias proplot='ipython --matplotlib=qt -i -c "
-import math
-import numpy as np
-import proplot as plot
-import matplotlib.pyplot as plt
-'
-alias climopy='ipython -i -c "
+# Ipython aliases (start sessions with various loaded modules)
+_python_climopy='
 import math
 import numpy as np
 import pandas as pd
@@ -1169,7 +1163,17 @@ import cf_units
 import cf_xarray
 import climopy as climo
 from climopy import const, ureg, vreg
-"'
+'
+_python_proplot='
+import math
+import numpy as np
+import proplot as plot
+import matplotlib.pyplot as plt
+'
+alias climopy="ipython -i -c '$_python_climopy'"
+alias proplot="ipython -i -c '$_python_proplot'"
+alias jupyter-climopy="jupyter console -i -c '$_python_climopy'"
+alias jupyter-proplot="jupyter console -i -c '$_python_proplot'"
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
