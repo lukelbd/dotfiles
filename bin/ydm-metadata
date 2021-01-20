@@ -762,16 +762,16 @@ def add_metadata(
     subdir = os.path.basename(os.path.dirname(path))
     if match:
         artist, title = match.groups()
-    elif (
-        subdir != os.path.expanduser(DIRECTORY)
-        and subdir.lower() not in ('music', 'playlist', 'songs')
-    ):
+    elif subdir != os.path.basename(DIRECTORY):
         artist, title = subdir, basename
     else:
         raise RuntimeError(
             f'File {path!r} must be formatted as '
             "'ARTIST - TITLE.ext' or 'ARTIST/TITLE.ext'."
         )
+
+    # Filter out special temporary ydm name
+    title = re.sub(r'-(download|normalized|tagged)', '', title)
 
     # Open file, for different types
     # Currently have compatibility with MP4 and ID3 tags
