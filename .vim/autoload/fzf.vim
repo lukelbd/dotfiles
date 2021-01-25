@@ -43,52 +43,55 @@ endfunction
 
 " Check if user selection is directory, descend until user selects a file
 let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
-function! fzf#open_continuous(path) abort
-  let path = substitute(a:path, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-  if ! len(path)
-    let path = '.'
-  endif
-  let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
-  let path_orig = path
-  while isdirectory(path)
-    " Get user selection
-    let prompt = substitute(path, '^' . expand('~'), '~', '')
-    let items = fzf#run({
-      \ 'source': s:list_files(path),
-      \ 'options': "--no-sort --prompt='" . prompt . "/'",
-      \ 'down': '~30%'
-      \ })
-    if !len(items)  " user cancelled operation
-      let path = ''
-      break
-    endif
-
-    " Build back selection into path
-    " Todo: Permit opening multiple files at once?
-    let item = items[0]
-    if item == s:newfile
-      let item = input(prompt . '/', '', 'customlist,NullList')
-      if !len(item)
-        let path = ''
-      else
-        let path = path . '/' . item
+function! fzf#open_continuous(...) abort
+  for pattern in a:000
+    for path in expand(pattern, 0, 1)
+      let path = substitute(path, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
+      if ! len(path)
+        let path = '.'
       endif
-      break
-    else
-      if item ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
-        let path = fnamemodify(path, ':h') " head of current directory
-      else
-        let path = path . '/' . item
-      endif
-    endif
-  endwhile
+      let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
+      let path_orig = path
+      while isdirectory(path)
+        " Get user selection
+        let prompt = substitute(path, '^' . expand('~'), '~', '')
+        let items = fzf#run({
+          \ 'source': s:list_files(path),
+          \ 'options': "--no-sort --prompt='" . prompt . "/'",
+          \ 'down': '~30%'
+          \ })
+        if !len(items)  " user cancelled operation
+          let path = ''
+          break
+        endif
 
-  " Open file or cancel operation
-  " If it is already open just jump to that tab
-  if !empty(path)
-    call s:tab_drop(path)
-  endif
-  return
+        " Build back selection into path
+        " Todo: Permit opening multiple files at once?
+        let item = items[0]
+        if item == s:newfile
+          let item = input(prompt . '/', '', 'customlist,NullList')
+          if !len(item)
+            let path = ''
+          else
+            let path = path . '/' . item
+          endif
+          break
+        else
+          if item ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+            let path = fnamemodify(path, ':h') " head of current directory
+          else
+            let path = path . '/' . item
+          endif
+        endif
+      endwhile
+
+      " Open file or cancel operation
+      " If it is already open just jump to that tab
+      if !empty(path)
+        call s:tab_drop(path)
+      endif
+    endfor
+  endfor
 endfunction
 
 "-----------------------------------------------------------------------------"

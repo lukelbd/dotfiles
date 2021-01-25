@@ -1411,7 +1411,7 @@ augroup tabs
   au!
   au TabLeave * let g:lasttab = tabpagenr()
 augroup END
-command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
+command! -nargs=* -complete=file Open call fzf#open_continuous(<f-args>)
 " Opening file in current directory and some input directory
 nnoremap <C-o> :Open 
 nnoremap <C-p> :Files 

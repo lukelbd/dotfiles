@@ -615,25 +615,43 @@ function! utils#cyclic_next(count, list, ...) abort abort
 endfunction
 
 " Formatting tools
-" This one fixes all lines that are too long, with special consideration for
-" bullet style lists and asterisks (does not insert new bullets and adds spaces
-" for asterisks).
+" This one fixes all lines that are too long, with special consideration for bullet
+" style lists and asterisks (does not insert new bullets and adds spaces for asterisks).
 function! utils#wrap_item_lines() range abort
+  " Build reges
   let regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'
   let regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s*\)'
   let regex_tail = '\(.*\)$'
   let regex = regex_head . regex_item . regex_tail
-  for line in range(a:lastline, a:firstline, -1)
-    exe line
-    let line = getline('.')
-    if len(getline('.')) > &l:textwidth
+
+  " Put lines on single bullet
+  let linenum = a:lastline
+  let lastline = a:lastline
+  let linecount = 0
+  for linenum in range(a:lastline, a:firstline, -1)
+    let line = getline(linenum)
+    let linecount += 1
+    if line =~# regex
+      exe linenum . 'join ' . linecount
+      let linecount = 0
+      if lastline == a:lastline
+        let lastline = linenum  " the new lastline
+      endif
+    endif
+  endfor
+
+  " Wrap lines
+  for linenum in range(lastline, a:firstline, -1)
+    let line = getline(linenum)
+    if len(line) > &l:textwidth
       let is_match = line =~# regex
       let match_head = substitute(line, regex, '\1', '')
       let match_tail = substitute(line, regex, '\2', '')
-      let line1 = line('.') + 1
-      normal! Vgq
-      let line2 = line('.')
-      if line2 >= line1 && is_match
+      let line1 = linenum + 1
+      exe linenum
+      normal! gqgq
+      let line2 = line('.')  " may have changed!
+      if is_match && line2 >= line1
         exe line1 . ',' . line2
           \ . 's/' . regex_head . regex_item . '\?' . regex_tail
           \ . '/' . match_head . repeat(' ', len(match_tail)) . '\3'
