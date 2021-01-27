@@ -2,7 +2,7 @@
 " Various utils defined here
 "-----------------------------------------------------------------------------"
 " Swap characters
-function! utils#swap_characters(right)
+function! utils#swap_characters(right) abort
   let cnum = col('.')
   let line = getline('.')
   let idx = a:right ? cnum : cnum - 1
@@ -13,7 +13,7 @@ function! utils#swap_characters(right)
 endfunction
 
 " Swap lines
-function! utils#swap_lines(bottom)
+function! utils#swap_lines(bottom) abort
   let offset = a:bottom ? 1 : -1
   let lnum = line('.')
   if (lnum + offset > 0 && lnum + offset < line('$'))
@@ -26,7 +26,7 @@ function! utils#swap_lines(bottom)
 endfunction
 
 " Iterate colorschemes
-function! utils#iter_colorschemes(reverse)
+function! utils#iter_colorschemes(reverse) abort
   let step = (a:reverse ? 1 : -1)
   if !exists('g:all_colorschemes')
     let g:all_colorschemes = getcompletion('', 'color')
@@ -47,7 +47,7 @@ function! utils#iter_colorschemes(reverse)
 endfunction
 
 " Search for mapping
-function! utils#search_maps(regex, ...)
+function! utils#search_maps(regex, ...) abort
   let mode = a:0 ? a:1 : ''
   redir @z
   exe 'silent ' . mode . 'map'
@@ -81,19 +81,21 @@ endfunction
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
-function! utils#replace(global, ...) range abort
+function! utils#replace_regexes(message, ...) range abort
   let prevhist = @/
   let winview = winsaveview()
-  let region = (a:global ? '%' : a:firstline . ',' . a:lastline)
-  echom join(a:000, ', ')
   for i in range(0, a:0 - 2, 2)
-    let search = a:000[i]
-    let replace = a:000[i + 1]
-    keepjumps exe region . 's@' . search . '@' . replace . '@ge'
+    keepjumps exe a:firstline . ',' . a:lastline
+      \ . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
     call histdel('/', -1)
-    let @/ = prevhist
   endfor
+  echom a:message
+  let @/ = prevhist
   call winrestview(winview)
+endfunction
+" For use with <expr>
+function! utils#replace_regexes_expr(...) range abort
+  return MotionFunc('utils#replace_regexes', a:000)
 endfunction
 
 " Current directory change
@@ -114,8 +116,8 @@ function! utils#directory_return() abort
   echom 'Returned to previous directory.'
 endfunction
 
-" Tab functions
-function! utils#tab_increase() abort  " use this inside <expr> remaps
+" Tab functions inside <expr>
+function! utils#tab_increase() abort
   let b:menupos += 1 | return ''
 endfunction
 function! utils#tab_decrease() abort
@@ -574,7 +576,7 @@ endfunction
 
 " Cyclic next error in location list
 " Copied from: https://vi.stackexchange.com/a/14359
-function! utils#cyclic_next(count, list, ...) abort abort
+function! utils#cyclic_next(count, list, ...) abort
   let reverse = a:0 && a:1
   let func = 'get' . a:list . 'list'
   let params = a:list ==# 'loc' ? [0] : []
@@ -622,13 +624,14 @@ let s:regex_tail = '\(.*\)$'  " remainder of line
 let s:regex_total = s:regex_head . s:regex_item . s:regex_tail
 
 " Remove the item indicator
-function! s:remove_item(line, line1, line2) abort
+function! s:remove_item(line, firstline_, lastline_) abort
   let match_head = substitute(a:line, s:regex_total, '\1', '')
   let match_item = substitute(a:line, s:regex_total, '\2', '')
-  exe a:line1 . ',' . a:line2
-    \ . 's/' . s:regex_head . s:regex_item . '\?' . s:regex_tail
-    \ . '/' . match_head . repeat(' ', len(match_item)) . '\3'
-    \ . '/ge'
+  keepjumps exe a:firstline_ . ',' . a:lastline_
+    \ . 's@' . s:regex_head . s:regex_item . '\?' . s:regex_tail
+    \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
+    \ . '@ge'
+  call histdel('/', -1)
 endfunction
 
 " Fix all lines that are too long, with special consideration for bullet style lists and
@@ -636,21 +639,13 @@ endfunction
 " Note: This is good example of incorporating motion support in custom functions!
 " Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
-function! utils#wrap_item_lines(...) range abort
-  " Get the lines to use
-  if a:0 == 0  " use -range range
-      let firstline = a:firstline
-      let lastline  = a:lastline
-  elseif a:0 == 1 && a:1 =~? 'line\|char\|block'  " builtin g@ type strings
-      let firstline = line("'[")
-      let lastline  = line("']")
-  else
-    echoerr 'E474: Invalid argument(s): ' . join(map(copy(a:000), 'string(v:val)'), ', ')
-    return
-  endif
-
+function! utils#wrap_item_lines() range abort
+  let prevhist = @/
+  let winview = winsaveview()
   " Put lines on single bullet
   let linecount = 0
+  let firstline = a:firstline
+  let lastline  = a:lastline
   let lastline_orig = lastline
   for linenum in range(lastline, firstline, -1)
     let line = getline(linenum)
@@ -670,7 +665,6 @@ function! utils#wrap_item_lines(...) range abort
       endif
     endif
   endfor
-
   " Wrap each line, accounting for bullet indent
   " If gqgq results in a wrapping, cursor is placed at the end of that block.
   " Then must remove the automatic item indicators that were inserted.
@@ -684,5 +678,10 @@ function! utils#wrap_item_lines(...) range abort
       endif
     endif
   endfor
+  let @/ = prevhist
+  call winrestview(winview)
 endfunction
-
+" For use with <expr>
+function! utils#wrap_item_lines_expr(...) range abort
+  return MotionFunc('utils#wrap_item_lines', a:000)
+endfunction

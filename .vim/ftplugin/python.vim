@@ -29,16 +29,18 @@ nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_python_script()<CR>
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
-function! s:translate_kwargs(mode) abort range
+function! TranslateKwargs(kw2dict, ...) abort range
   " First get columns
+  " Note: Motions sent from g@
   let winview = winsaveview()
-  if a:firstline == a:lastline
-    let firstcol = 0
-    let lastcol  = col('$') - 2  " col('$') is location of newline char, and strings are zero-indexed
+  if a:0 && a:1 ==# 'n'
+    let firstcol = col("'[") - 1  " when calling col(), ' means `
+    let lastcol  = col("']") - 1
   else
-    let firstcol = col("'<") - 1  " cause strings are zero-indexed
+    let firstcol = col("'<") - 1
     let lastcol  = col("'>") - 1
   endif
+  echom 'Range: ' . a:firstline . ':' . firstcol . ', ' . a:lastline . ':' . lastcol
   let fixed = []
   for line in range(a:firstline, a:lastline)
     " Annoying ugly block for getting visual selection
@@ -59,16 +61,16 @@ function! s:translate_kwargs(mode) abort range
       let string = string[:lastcol]
     endif
     if len(matchstr(string, ':')) > 0 && len(matchstr(string, '=')) > 0
-      echom 'Error: Ambiguous line.'
+      echoerr 'Error: Ambiguous line.'
       return
     endif
 
     " Next finally start matching shit
-    if a:mode == 1  " kwargs to dictionary
+    if a:kw2dict == 1  " kwargs to dictionary
       let string = substitute(string, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
       let string = substitute(string, '\>\ze\s*=', "'", 'g')
       let string = substitute(string, '\s*=\s*', ': ', 'g')
-    elseif a:mode == 0  " dictionary to kwargs
+    else
       let string = substitute(string, "\\>['\"]" . '\ze\s*:', '', 'g')  " remove trailing quote first
       let string = substitute(string, "['\"]\\<" . '\ze\w\+\s*:', '', 'g')
       let string = substitute(string, '\s*:\s*', '=', 'g')
@@ -77,13 +79,22 @@ function! s:translate_kwargs(mode) abort range
   endfor
 
   " Replace lines with fixed text
-  exe a:firstline . ',' . a:lastline . 'd'
+  silent exe a:firstline . ',' . a:lastline . 'd _'
   call append(a:firstline - 1, fixed)
   call winrestview(winview)
 endfunction
 
+" For use with <expr> (see utils.vim for examples)
+function! s:translate_kwargs_expr(arg) range abort
+  return MotionFunc('TranslateKwargs', [a:arg, mode()])
+endfunction
+
 " Mappings
-noremap <buffer> <silent> <Plug>kw2dict :call <sid>translate_kwargs(1)<CR>:call repeat#set("\<Plug>kw2dict")<CR>
-noremap <buffer> <silent> <Plug>dict2kw :call <sid>translate_kwargs(0)<CR>:call repeat#set("\<Plug>dict2kw")<CR>
-map <buffer> cd <Plug>kw2dict
-map <buffer> cD <Plug>dict2kw
+noremap <buffer> <expr> cd <sid>translate_kwargs_expr(1)
+noremap <buffer> <expr> cD <sid>translate_kwargs_expr(0)
+
+" With repeat (not really necessary now that command accepts motions)
+" noremap <buffer> <silent> <Plug>kw2dict :call <sid>translate_kwargs(1)<CR>:call repeat#set("\<Plug>kw2dict")<CR>
+" noremap <buffer> <silent> <Plug>dict2kw :call <sid>translate_kwargs(0)<CR>:call repeat#set("\<Plug>dict2kw")<CR>
+" map <buffer> cd <Plug>kw2dict
+" map <buffer> cD <Plug>dict2kw

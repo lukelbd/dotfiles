@@ -17,6 +17,7 @@ let g:tex_verbspell = 0
 let g:tex_no_error = 1
 
 " Add maps to custom textools latexmk command
+" Todo: Pull figures from remote location if applicable
 function! s:latexmk(...)
   exe 'Latexmk ' . join(a:000, ' ')
 endfunction
