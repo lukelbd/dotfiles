@@ -261,14 +261,18 @@ augroup END
 command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
-command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
-noremap gQ :WrapItemLines<CR>
 noremap <Leader><Tab> :TabToggle<CR>
 
 " Search mappings
 command! -nargs=1 NSearch echo utils#search_maps(<q-args>, 'n')
 command! -nargs=1 ISearch echo utils#search_maps(<q-args>, 'i')
 command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
+
+" Functions that accept motions
+command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
+nnoremap <silent> gQ :set opfunc=utils#wrap_item_lines<CR>g@
+vnoremap <silent> gQ :call utils#wrap_item_lines()<CR>
+" noremap gQ :WrapItemLines<CR>
 
 " Disable normal mode stuff
 " * Q and K are weird modes never used

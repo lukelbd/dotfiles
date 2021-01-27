@@ -17,6 +17,9 @@ let g:tex_verbspell = 0
 let g:tex_no_error = 1
 
 " Add maps to custom textools latexmk command
-noremap <buffer> <silent> <Plug>Execute :Latexmk --pull<CR>
-noremap <buffer> <silent> <Plug>AltExecute1 :Latexmk --pull --diff<CR>
-noremap <buffer> <silent> <Plug>AltExecute2 :Latexmk --pull --word<CR>
+function! s:latexmk(...)
+  exe 'Latexmk ' . join(a:000, ' ')
+endfunction
+noremap <buffer> <silent> <Plug>Execute :<C-u>call <sid>latexmk()<CR>
+noremap <buffer> <silent> <Plug>AltExecute1 :<C-u>call <sid>latexmk('--diff')<CR>
+noremap <buffer> <silent> <Plug>AltExecute2 :<C-u>call <sid>latexmk('--word')<CR>

@@ -581,7 +581,7 @@ function! utils#cyclic_next(count, list, ...) abort abort
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let items = call(func, params)
   if len(items) == 0
-    return 'echoerr ' . string('E42: No Errors')
+    return 'echoerr ' . string('E42: No Errors')  " string() adds quotes
   endif
 
   " Build up list of loc dictionaries
@@ -610,52 +610,77 @@ function! utils#cyclic_next(count, list, ...) abort abort
     exe '' . (reverse ? line('$') : 0)
     return utils#cyclic_next(a:count, a:list, reverse)
   else
-    return 'echoerr' . string(inext)
+    return 'echoerr ' . string(inext)  " string() adds quotes
   endif
 endfunction
 
 " Formatting tools
-" This one fixes all lines that are too long, with special consideration for bullet
-" style lists and asterisks (does not insert new bullets and adds spaces for asterisks).
-function! utils#wrap_item_lines() range abort
-  " Build reges
-  let regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'
-  let regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s*\)'
-  let regex_tail = '\(.*\)$'
-  let regex = regex_head . regex_item . regex_tail
+" Build regexes
+let s:regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'  " leading spaces or comment
+let s:regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s*\)'  " item indicator plus space
+let s:regex_tail = '\(.*\)$'  " remainder of line
+let s:regex_total = s:regex_head . s:regex_item . s:regex_tail
+
+" Remove the item indicator
+function! s:remove_item(line, line1, line2) abort
+  let match_head = substitute(a:line, s:regex_total, '\1', '')
+  let match_item = substitute(a:line, s:regex_total, '\2', '')
+  exe a:line1 . ',' . a:line2
+    \ . 's/' . s:regex_head . s:regex_item . '\?' . s:regex_tail
+    \ . '/' . match_head . repeat(' ', len(match_item)) . '\3'
+    \ . '/ge'
+endfunction
+
+" Fix all lines that are too long, with special consideration for bullet style lists and
+" asterisks (does not insert new bullets and adds spaces for asterisks).
+" Note: This is good example of incorporating motion support in custom functions!
+" Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
+" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
+function! utils#wrap_item_lines(...) range abort
+  " Get the lines to use
+  if a:0 == 0  " use -range range
+      let firstline = a:firstline
+      let lastline  = a:lastline
+  elseif a:0 == 1 && a:1 =~? 'line\|char\|block'  " builtin g@ type strings
+      let firstline = line("'[")
+      let lastline  = line("']")
+  else
+    echoerr 'E474: Invalid argument(s): ' . join(map(copy(a:000), 'string(v:val)'), ', ')
+    return
+  endif
 
   " Put lines on single bullet
-  let linenum = a:lastline
-  let lastline = a:lastline
   let linecount = 0
-  for linenum in range(a:lastline, a:firstline, -1)
+  let lastline_orig = lastline
+  for linenum in range(lastline, firstline, -1)
     let line = getline(linenum)
     let linecount += 1
-    if line =~# regex
-      exe linenum . 'join ' . linecount
-      let linecount = 0
-      if lastline == a:lastline
-        let lastline = linenum  " the new lastline
+    if line =~# s:regex_total
+      " Remove item indicator if line starts with
+      let match_tail = substitute(line, s:regex_total, '\3', '')
+      if match_tail =~# '^\s*[a-z]'
+        call s:remove_item(line, linenum, linenum)
+      " Otherwise join
+      else
+        exe linenum . 'join ' . linecount
+        let linecount = 0
+        if lastline == lastline_orig
+          let lastline = linenum  " the new lastline
+        endif
       endif
     endif
   endfor
 
-  " Wrap lines
-  for linenum in range(lastline, a:firstline, -1)
+  " Wrap each line, accounting for bullet indent
+  " If gqgq results in a wrapping, cursor is placed at the end of that block.
+  " Then must remove the automatic item indicators that were inserted.
+  for linenum in range(lastline, firstline, -1)
     let line = getline(linenum)
     if len(line) > &l:textwidth
-      let is_match = line =~# regex
-      let match_head = substitute(line, regex, '\1', '')
-      let match_tail = substitute(line, regex, '\2', '')
-      let line1 = linenum + 1
       exe linenum
       normal! gqgq
-      let line2 = line('.')  " may have changed!
-      if is_match && line2 >= line1
-        exe line1 . ',' . line2
-          \ . 's/' . regex_head . regex_item . '\?' . regex_tail
-          \ . '/' . match_head . repeat(' ', len(match_tail)) . '\3'
-          \ . '/ge'
+      if line =~# s:regex_total && line('.') > linenum
+        call s:remove_item(line, linenum + 1, line('.'))
       endif
     endif
   endfor
