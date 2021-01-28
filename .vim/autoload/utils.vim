@@ -685,3 +685,63 @@ endfunction
 function! utils#wrap_item_lines_expr(...) range abort
   return MotionFunc('utils#wrap_item_lines', a:000)
 endfunction
+
+
+" Easy conversion between key=value pairs and 'key': value dictionary entries
+" Do son on current line, or within visual selection
+function! utils#translate_kwargs_dict(kw2dt, ...) abort range
+  " First get columns
+  " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
+  " bug where if opening bracket is immediately followed by newline, then 'inner'
+  " bracket range incorrectly uses '1' as the final position.
+  let winview = winsaveview()
+  let lines = []
+  let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
+  let firstcol = col("'" . marks[0]) - 1  " when calling col(), ' means `
+  let lastcol = len(getline("'" . marks[1])) - 1
+  for linenum in range(a:firstline, a:lastline)
+    " Annoying ugly block for getting visual selection
+    " Want to *ignore* stuff not in selection, but on same line as
+    " the start/end of selection, because it's more flexible
+    let line = getline(linenum)
+    let prefix = ''
+    let suffix = ''
+    if linenum == a:firstline && linenum == a:lastline
+      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')  " damn negative indexing makes this complicated
+      let suffix = line[lastcol + 1:]
+      let line = line[firstcol : lastcol]
+    elseif linenum == a:firstline
+      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')
+      let line = line[firstcol :]
+    elseif linenum == a:lastline
+      let suffix = line[lastcol + 1:]
+      let line = line[:lastcol]
+    endif
+    if len(matchstr(line, ':')) > 0 && len(matchstr(line, '=')) > 0
+      echoerr 'Error: Ambiguous line.'
+      return
+    endif
+
+    " Next finally start matching shit
+    if a:kw2dt == 1  " kwargs to dictionary
+      let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
+      let line = substitute(line, '\>\ze\s*=', "'", 'g')
+      let line = substitute(line, '\s*=\s*', ': ', 'g')
+    else
+      let line = substitute(line, "\\>['\"]" . '\ze\s*:', '', 'g')  " remove trailing quote first
+      let line = substitute(line, "['\"]\\<" . '\ze\w\+\s*:', '', 'g')
+      let line = substitute(line, '\s*:\s*', '=', 'g')
+    endif
+    call add(lines, prefix . line . suffix)
+  endfor
+
+  " Replace lines with fixed lines
+  silent exe a:firstline . ',' . a:lastline . 'd _'
+  call append(a:firstline - 1, lines)
+  call winrestview(winview)
+endfunction
+
+" For use with <expr> (see utils.vim for examples)
+function! utils#translate_kwargs_dict_expr(kw2dt) range abort
+  return MotionFunc('utils#translate_kwargs_dict', [a:kw2dt, mode()])
+endfunction

@@ -583,30 +583,22 @@ rename() {
 }
 
 # Grepping and diffing useful for refactoring or searching for files
+# NOTE: No way to include extensionless executables in qgrep
+# NOTE: It's fine if conda gets expanded! Just trying to filter one name.
+_exclude_dirs=(api build trash sources plugged externals .ipynb_checkpoints __pycache__ '*conda3*')
+_include_exts=(.py .sh .jl .m .ncl .vim .rst .ipynb)
 qfind() {
- command find "$1" \
-   -type d \( -path '*/\.*' -o -path '*/*conda3' -o -path '*/[A-Z]*' \) \
-   -prune -o "${@:2}"
-}
-pfind() {
+  local _first_dir=${_exclude_dirs[0]}
+  local _other_dirs=${_exclude_dirs[@:1]}
   command find "$1" \
-    -type d \( \
-      -name .eggs -o -name .git -o -name .svn -o -name .ipynb_checkpoints \
-      -o -name plugged -o -name build -o -name api -o -name sources -o -name trash \
-      -o -name externals \
-    \) -prune -o -name 'CHANGELOG*' -prune -o \
-    -type f \( \
-      ! -name '*.*' -o -name '*.py' -o -name '*.sh' -o -name '*.rst' -o -name '*.ipynb' \
-    \) "${@:2}"
+    -name '[A-Z_.]*' -prune \
+    -o -type d \( $_first_dir ${_other_dirs[@]/#/-o -name} \) -prune \
+    -o -type f \( ! -name '*.*' ${_include_exts[@]/#/-o -name} \) "${@:2}"
 }
-pgrep() {
-  command grep "$@" \
-    -E --color=auto \
-    --exclude=CHANGELOG* --include=*.py --include=*.ipynb --include=*.rst \
-    --exclude-dir=plugged --exclude-dir=.git --exclude-dir=.svn \
-    --exclude-dir=.eggs --exclude-dir=build --exclude-dir=api \
-    --exclude-dir=trash --exclude-dir=sources \
-    --exclude-dir=.ipynb_checkpoints
+qgrep() {
+  command grep "$@" -E --color=auto --exclude='[A-Z_.]*' \
+    ${_exclude_dirs[@]/#/--exclude-dir=} \
+    ${_include_exts[@]/#/--include=*}
 }
 refactor() {
   [ $# -eq 2 ] || {
