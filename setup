@@ -47,7 +47,7 @@ for link in \
   '/Volumes/GoogleDrive/My Drive:Google Drive' \
   'Library/Mobile Documents/com~apple~CloudDocs:iCloud Drive' \
   'Library/Mobile Documents/com~apple~CloudDocs/Mackup/.iterm2:.iterm2' \
-  'Library/Mobile Documents/com~apple~CloudDocs/Mackup/.iterm2_shell_integration:.iterm2_shell_integration'
+  'Library/Mobile Documents/com~apple~CloudDocs/Mackup/.iterm2_shell_integration.bash:.iterm2_shell_integration.bash'
   do
   src=${link%:*}
   dest=$root/${link#*:}
