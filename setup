@@ -52,8 +52,8 @@ for link in \
   src=${link%:*}
   dest=$root/${link#*:}
   [ "${src:0:1}" == '/' ] || src=$HOME/$src
-  if ! [ -d "$src" ]; then
-    echo "Warning: Skipping link to '$src' (directory not found)"
+  if ! [ -r "$src" ]; then
+    echo "Warning: Skipping link to '$src' (file not found)"
     continue
   fi
   echo "Creating symlink to '$src' at '$dest'..."
