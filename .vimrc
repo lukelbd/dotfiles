@@ -134,40 +134,6 @@ function! PlugActive(key) abort
   return &runtimepath =~# '/' . a:key . '\>'
 endfunction
 
-" Call function over the visual line range or the user motion line range
-" Note: Use this approach rather than adding line range as physical arguments and
-" calling with call call(func, firstline, lastline, ...) so that funcs can still be
-" invoked manually with V<motion>:call func(). This is more standard paradigm.
-function! MotionFunc(funcname, args) abort
-  let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
-  if mode() =~# '^\(v\|V\|\)$'
-    return ":call OperatorFunc('')\<CR>"  " will call with line range!
-  elseif mode() ==# 'n'
-    set operatorfunc=OperatorFunc
-    return 'g@'
-  else
-    echoerr 'E999: Illegal mode: ' . string(mode())
-    return ''
-  endif
-endfunction
-
-" Execute the function name and call signature passed to MotionFunc.
-" This is generally invoked inside an <expr> mapping.
-function! OperatorFunc(type) range abort
-  if empty(a:type)  " default behavior
-      let firstline = a:firstline
-      let lastline  = a:lastline
-  elseif a:type =~? 'line\|char\|block'  " builtin g@ type strings
-      let firstline = line("'[")
-      let lastline  = line("']")
-  else
-    echoerr 'E474: Invalid argument: ' . string(a:type)
-    return ''
-  endif
-  exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
-  return ''
-endfunction
-
 " Better grep, with limited regex translation
 function! Grep(regex)  " returns list of matches
   let regex = a:regex

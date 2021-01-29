@@ -84,6 +84,9 @@ case "${HOSTNAME%%.*}" in
     #   --set gcc mp-gcc6'. Try 'port select --list gcc'
     # * Installed various utils with 'brew install coreutils findutils gnu-sed
     #   gnutls grep gnu-tar gawk'. Found paths
+    # * Fix permission issues after migrating macs with following command:
+    #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
+    #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
     export PATH=/Library/TeX/texbin:$PATH
@@ -1529,6 +1532,11 @@ pdf2flat() {
     [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
       pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
   done
+}
+pdfmerge() {
+  # See: https://stackoverflow.com/a/2507825/4970632
+  # NOTE: Unlike bash arrays argument arrays are 1-indexed since $0 is -bash
+  pdftk "${@:1:$#-1}" cat output ${!#}
 }
 
 # Font conversions

@@ -1,6 +1,40 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
+" Call function over the visual line range or the user motion line range
+" Note: Use this approach rather than adding line range as physical arguments and
+" calling with call call(func, firstline, lastline, ...) so that funcs can still be
+" invoked manually with V<motion>:call func(). This is more standard paradigm.
+function! utils#motion_func(funcname, args) abort
+  let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
+  if mode() =~# '^\(v\|V\|\)$'
+    return ":call utils#operator_func('')\<CR>"  " will call with line range!
+  elseif mode() ==# 'n'
+    set operatorfunc=utils#operator_func
+    return 'g@'
+  else
+    echoerr 'E999: Illegal mode: ' . string(mode())
+    return ''
+  endif
+endfunction
+
+" Execute the function name and call signature passed to utils#motion_func.
+" This is generally invoked inside an <expr> mapping.
+function! utils#operator_func(type) range abort
+  if empty(a:type)  " default behavior
+      let firstline = a:firstline
+      let lastline  = a:lastline
+  elseif a:type =~? 'line\|char\|block'  " builtin g@ type strings
+      let firstline = line("'[")
+      let lastline  = line("']")
+  else
+    echoerr 'E474: Invalid argument: ' . string(a:type)
+    return ''
+  endif
+  exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
+  return ''
+endfunction
+
 " Swap characters
 function! utils#swap_characters(right) abort
   let cnum = col('.')
@@ -95,7 +129,7 @@ function! utils#replace_regexes(message, ...) range abort
 endfunction
 " For use with <expr>
 function! utils#replace_regexes_expr(...) range abort
-  return MotionFunc('utils#replace_regexes', a:000)
+  return utils#motion_func('utils#replace_regexes', a:000)
 endfunction
 
 " Current directory change
@@ -619,7 +653,7 @@ endfunction
 " Formatting tools
 " Build regexes
 let s:regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'  " leading spaces or comment
-let s:regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s*\)'  " item indicator plus space
+let s:regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
 let s:regex_tail = '\(.*\)$'  " remainder of line
 let s:regex_total = s:regex_head . s:regex_item . s:regex_tail
 
@@ -683,9 +717,8 @@ function! utils#wrap_item_lines() range abort
 endfunction
 " For use with <expr>
 function! utils#wrap_item_lines_expr(...) range abort
-  return MotionFunc('utils#wrap_item_lines', a:000)
+  return utils#motion_func('utils#wrap_item_lines', a:000)
 endfunction
-
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
@@ -693,7 +726,7 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
   " First get columns
   " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
   " bug where if opening bracket is immediately followed by newline, then 'inner'
-  " bracket range incorrectly uses '1' as the final position.
+  " bracket range incorrectly sets the closing bracket column position to '1'.
   let winview = winsaveview()
   let lines = []
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
@@ -740,8 +773,7 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
   call append(a:firstline - 1, lines)
   call winrestview(winview)
 endfunction
-
-" For use with <expr> (see utils.vim for examples)
+" For use with <expr>
 function! utils#translate_kwargs_dict_expr(kw2dt) range abort
-  return MotionFunc('utils#translate_kwargs_dict', [a:kw2dt, mode()])
+  return utils#motion_func('utils#translate_kwargs_dict', [a:kw2dt, mode()])
 endfunction
