@@ -191,7 +191,7 @@ export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
-export PYTHONPATH=$HOME/timescales  # just use pip install -e . for cloned projects
+export PYTHONPATH=$HOME/drycore:$HOME/timescales  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
@@ -924,6 +924,28 @@ _port() {
   res=$(_address_port "$@") && echo "${res#*:}"
 }
 
+# View ip address
+# See: https://stackoverflow.com/q/13322485/4970632
+# See: https://apple.stackexchange.com/q/20547/214359
+ip() {
+  if ! $_macos; then
+    command ip route get 1 | awk '{print $NF; exit}'
+  else
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+  fi
+}
+
+# List available ports
+ports() {
+  if [ $# -eq 0 ]; then
+    sudo lsof -iTCP -sTCP:LISTEN -n -P
+  elif [ $# -eq 1 ]; then
+    sudo lsof -iTCP -sTCP:LISTEN -n -P | grep -i --color $1
+  else
+    echo "Usage: listening [pattern]"
+  fi
+}
+
 # SSH wrapper that sets up ports used for jupyter and scp copying
 # For initial idea see: https://stackoverflow.com/a/25486130/4970632
 # For why we alias the function see: https://serverfault.com/a/656535/427991
@@ -953,17 +975,6 @@ _ssh() {
   command ssh -t $flags "$address"
 }
 
-# List available ports
-ports() {
-  if [ $# -eq 0 ]; then
-    sudo lsof -iTCP -sTCP:LISTEN -n -P
-  elif [ $# -eq 1 ]; then
-    sudo lsof -iTCP -sTCP:LISTEN -n -P | grep -i --color $1
-  else
-    echo "Usage: listening [pattern]"
-  fi
-}
-
 # Reestablish two-way connections between server and local macbook. Use standard
 # port numbers. This function can be called on macbook or on remote server.
 # ssh -f (port-forwarding in background) -N (don't issue command)
@@ -987,45 +998,6 @@ ssh-refresh() {
   echo "Exit status $stat for connection over ports: ${ports[*]:1}."
 }
 
-# Copy from <this server> to local macbook
-# NOTE: Often want to copy result of glob expansion.
-# NOTE: Below, we use the bash parameter expansion ${!#} -->
-# 'variable whose name is result of "$#"' --> $n where n is the number
-# of args. Also can do math inside param expansion indexing.
-rlcp() {  # "copy to local (from remote); 'copy there'"
-  local port args dest
-  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
-  port=$(_port) || { echo "Error: Port unknown."; return 1; }
-  args=("${@:1:$#-1}")         # flags and files
-  dest=$(_compress_user ${!#})  # last value
-  dest=${dest// /\\ }          # escape whitespace manually
-  echo "(Port $port) Copying ${args[*]} on this server to home server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P"$port" "${args[@]}" "$USER"@localhost:"$dest"
-}
-
-# Copy from local macbook to <this server>
-lrcp() {  # "copy to remote (from local); 'copy here'"
-  local port flags file dest
-  $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
-  port=$(_port) || { echo "Error: Port unknown."; return 1; }
-  dest=${!#}                          # last value
-  file=$(_compress_user "${@:$#-1:1}") # second to last
-  file=${file// /\\ }                 # escape whitespace manually
-  flags=("${@:1:$#-2}")               # flags
-  echo "(Port $port) Copying $file from home server to this server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P"$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
-}
-
-# Sync figures from remote repository to this repository.
-# Stop uploading figures to Github because it massively bloats repository size!
-# TODO: Fix this function. From now use rsync for figures and PDFs.
-fsync() {
-  local base
-  base=$(git rev-parse --show-toplevel)
-}
-
 # Trigger ssh-agent if not already running, and add Github private key
 # Make sure to make private key passwordless, for easy login; all I want here is to avoid
 # storing plaintext username/password in ~/.git-credentials, but free private key is fine
@@ -1035,7 +1007,7 @@ fsync() {
 #   persist when terminal is closed (all the 'eval' does is set environment variables;
 #   ssh-agent without the eval just starts the process in background). Now we re-use
 #   pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
-initssh() {
+ssh-init() {
   if [ -f "$HOME/.ssh/id_rsa_github" ]; then
     command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
     chmod 600 "$SSH_ENV"
@@ -1047,9 +1019,73 @@ initssh() {
 }
 
 # Kill all ssh-agent processes
-killssh() {
+ssh-kill() {
   # shellcheck disable=2009
   ps aux | grep ssh-agent | grep -v grep | awk '{print $2}' | xargs kill
+}
+
+# Copy from <this server> to local macbook ("copy there")
+# NOTE: Below we use the bash parameter expansion ${!#} --> 'variable whose name is
+# result of "$#"' --> $n where n is the number of args.
+rlcp() {
+  local port args dest
+  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
+  [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
+  port=$(_port) || { echo "Error: Port unknown."; return 1; }
+  args=("${@:1:$#-1}")          # flags and files
+  dest=$(_compress_user ${!#})  # last value
+  dest=${dest// /\\ }           # escape whitespace manually
+  echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
+}
+
+# Copy from local macbook to <this server> ("copy here")
+lrcp() {  # "copy to remote (from local); 'copy here'"
+  local port flags file dest
+  $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
+  [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
+  port=$(_port) || { echo "Error: Port unknown."; return 1; }
+  dest=${!#}                            # last value
+  file=$(_compress_user "${@:$#-1:1}")  # second to last
+  file=${file// /\\ }                   # escape whitespace manually
+  flags=("${@:1:$#-2}")                 # flags
+  echo "(Port $port) Copying $file from laptop to server at: $dest..."
+  command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+}
+
+# Sync figures from remote repository to laptop. Stop uploading figures to Github
+# because it massively bloats repository size! Also ignore hidden folders and folders
+# starting with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
+# TODO: Finish this. And support macOS invocation for lrcp and rlcp.
+# NOTE: Previous git alias was:
+# figs = "!git add --all ':/fig*' ':/vid*' ':/note*' ':/meet*' && git commit -m 'Update figures and notebooks.' && git push origin master"
+figcp() {
+  local ssh src dest address
+  # Get source and destination
+  if $_macos; then
+    [ $# -eq 1 ] || { echo "Error: Input host required unknown."; return 1; }
+    address=$(_address "$1") || { echo "Error: Host unknown."; return 1; }
+    dest=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
+    src=$(_compress_user "$src")
+    src=${src/\~\/science/\~\/}
+    src="$address":"$src"
+    ssh=ssh
+  else
+    [ $# -eq 0 ] || { echo "Error: Zero arguments accepted."; return 1; }
+    port=$(_port) || { echo "Error: Port unknown."; return 1; }
+    src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
+    dest=$(_compress_user "$src")
+    dest=${dest/\~/\~\/science}
+    dest="$USER"@localhost:"$dest"
+    ssh="ssh -o StrictHostKeyChecking=no -p \"$port\""
+  fi
+  echo "(Port $port) Copying figures from server to laptop at: ${dest#*:}..."
+  echo "$src $dest"
+  # Sync using all components of -a arfchive mode except user/owner changes
+  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' \
+  rsync -vhi -rlpt --delete \
+    --dry-run --include={fig,vid,note}'*/***' --exclude='*' --exclude='.*/' \
+    -e "$ssh" "$src" "$dest"
 }
 
 # Generate SSH file system
@@ -1114,17 +1150,6 @@ unmount() {
   rm -r "${HOME:?}/$server"
 }
 
-# View ip address
-# See: https://stackoverflow.com/q/13322485/4970632
-# See: https://apple.stackexchange.com/q/20547/214359
-ip() {
-  if ! $_macos; then
-    command ip route get 1 | awk '{print $NF; exit}'
-  else
-    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
-  fi
-}
-
 # Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
 disconnect() {
   local pids port=$1
@@ -1141,9 +1166,9 @@ if ! $_macos; then  # only do this if not on macbook
   if [ -f "$SSH_ENV" ]; then
     source "$SSH_ENV" >/dev/null
     # shellcheck disable=2009
-    ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent$ >/dev/null || initssh
+    ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent$ >/dev/null || ssh-init
   else
-    initssh
+    ssh-init
   fi
 fi
 
@@ -1155,6 +1180,8 @@ _python_climopy='
 import math
 import numpy as np
 import pandas as pd
+import dask.array as da
+import netCDF4 as nc4
 import xarray as xr
 import pint
 import pint_xarray
@@ -1162,7 +1189,9 @@ import cftime
 import cf_units
 import cf_xarray
 import climopy as climo
+import metpy
 from climopy import const, ureg, vreg
+from metpy import calc
 '
 _python_proplot='
 import math

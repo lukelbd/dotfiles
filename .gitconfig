@@ -73,8 +73,7 @@
 	deleted    = "!git-deleted \"$@\""
 	exec       = "!exec \"$@\""
 	get        = "!get-get \"$@\""
-	figs       = "!git add --all ':/fig*' ':/note*' && git commit -m 'Update figures and notebooks.' && git push origin master"
-	hist       = log -p --
+	figs       = "!git add --all ':/fig*' ':/vid*' ':/note*' && git commit -m 'Update figures and notebooks.' && git push origin master"
 	ignore     = "!git-ignore \"$@\""
 	leaf       = "!git log \"$@\". --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
 	long       = status --long --branch
