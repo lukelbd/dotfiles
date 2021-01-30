@@ -116,7 +116,6 @@ path_dl=${paths_dl[0]}
 # Normalize audio
 if [ $quick -ge 2 ]; then
   mv "$path_dl" "$path_final"
-  cleanup
   exit 0
 fi
 echo "Normalizing."
@@ -126,7 +125,6 @@ ydm-normalize $normflags "$path_dl" "$path_normalized" \
 # Add metadata with tagging function
 if [ $quick -ge 1 ]; then
   mv "$path_normalized" "$path_final"
-  cleanup
   exit 0
 fi
 echo "Adding metadata."
@@ -136,4 +134,4 @@ ydm-metadata $metaflags --url "$url" "$path_tagged" \
 
 # Cleanup
 mv "$path_tagged" "$path_final"
-cleanup
+exit 0

@@ -1,8 +1,42 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
+" Call function over the visual line range or the user motion line range
+" Note: Use this approach rather than adding line range as physical arguments and
+" calling with call call(func, firstline, lastline, ...) so that funcs can still be
+" invoked manually with V<motion>:call func(). This is more standard paradigm.
+function! utils#motion_func(funcname, args) abort
+  let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
+  if mode() =~# '^\(v\|V\|\)$'
+    return ":call utils#operator_func('')\<CR>"  " will call with line range!
+  elseif mode() ==# 'n'
+    set operatorfunc=utils#operator_func
+    return 'g@'
+  else
+    echoerr 'E999: Illegal mode: ' . string(mode())
+    return ''
+  endif
+endfunction
+
+" Execute the function name and call signature passed to utils#motion_func.
+" This is generally invoked inside an <expr> mapping.
+function! utils#operator_func(type) range abort
+  if empty(a:type)  " default behavior
+      let firstline = a:firstline
+      let lastline  = a:lastline
+  elseif a:type =~? 'line\|char\|block'  " builtin g@ type strings
+      let firstline = line("'[")
+      let lastline  = line("']")
+  else
+    echoerr 'E474: Invalid argument: ' . string(a:type)
+    return ''
+  endif
+  exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
+  return ''
+endfunction
+
 " Swap characters
-function! utils#swap_characters(right)
+function! utils#swap_characters(right) abort
   let cnum = col('.')
   let line = getline('.')
   let idx = a:right ? cnum : cnum - 1
@@ -13,7 +47,7 @@ function! utils#swap_characters(right)
 endfunction
 
 " Swap lines
-function! utils#swap_lines(bottom)
+function! utils#swap_lines(bottom) abort
   let offset = a:bottom ? 1 : -1
   let lnum = line('.')
   if (lnum + offset > 0 && lnum + offset < line('$'))
@@ -26,7 +60,7 @@ function! utils#swap_lines(bottom)
 endfunction
 
 " Iterate colorschemes
-function! utils#iter_colorschemes(reverse)
+function! utils#iter_colorschemes(reverse) abort
   let step = (a:reverse ? 1 : -1)
   if !exists('g:all_colorschemes')
     let g:all_colorschemes = getcompletion('', 'color')
@@ -47,7 +81,7 @@ function! utils#iter_colorschemes(reverse)
 endfunction
 
 " Search for mapping
-function! utils#search_maps(regex, ...)
+function! utils#search_maps(regex, ...) abort
   let mode = a:0 ? a:1 : ''
   redir @z
   exe 'silent ' . mode . 'map'
@@ -81,19 +115,21 @@ endfunction
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
-function! utils#replace(global, ...) range abort
+function! utils#replace_regexes(message, ...) range abort
   let prevhist = @/
   let winview = winsaveview()
-  let region = (a:global ? '%' : a:firstline . ',' . a:lastline)
-  echom join(a:000, ', ')
   for i in range(0, a:0 - 2, 2)
-    let search = a:000[i]
-    let replace = a:000[i + 1]
-    keepjumps exe region . 's@' . search . '@' . replace . '@ge'
+    keepjumps exe a:firstline . ',' . a:lastline
+      \ . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
     call histdel('/', -1)
-    let @/ = prevhist
   endfor
+  echom a:message
+  let @/ = prevhist
   call winrestview(winview)
+endfunction
+" For use with <expr>
+function! utils#replace_regexes_expr(...) range abort
+  return utils#motion_func('utils#replace_regexes', a:000)
 endfunction
 
 " Current directory change
@@ -114,8 +150,8 @@ function! utils#directory_return() abort
   echom 'Returned to previous directory.'
 endfunction
 
-" Tab functions
-function! utils#tab_increase() abort  " use this inside <expr> remaps
+" Tab functions inside <expr>
+function! utils#tab_increase() abort
   let b:menupos += 1 | return ''
 endfunction
 function! utils#tab_decrease() abort
@@ -574,14 +610,14 @@ endfunction
 
 " Cyclic next error in location list
 " Copied from: https://vi.stackexchange.com/a/14359
-function! utils#cyclic_next(count, list, ...) abort abort
+function! utils#cyclic_next(count, list, ...) abort
   let reverse = a:0 && a:1
   let func = 'get' . a:list . 'list'
   let params = a:list ==# 'loc' ? [0] : []
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let items = call(func, params)
   if len(items) == 0
-    return 'echoerr ' . string('E42: No Errors')
+    return 'echoerr ' . string('E42: No Errors')  " string() adds quotes
   endif
 
   " Build up list of loc dictionaries
@@ -610,36 +646,134 @@ function! utils#cyclic_next(count, list, ...) abort abort
     exe '' . (reverse ? line('$') : 0)
     return utils#cyclic_next(a:count, a:list, reverse)
   else
-    return 'echoerr' . string(inext)
+    return 'echoerr ' . string(inext)  " string() adds quotes
   endif
 endfunction
 
 " Formatting tools
-" This one fixes all lines that are too long, with special consideration for
-" bullet style lists and asterisks (does not insert new bullets and adds spaces
-" for asterisks).
+" Build regexes
+let s:regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'  " leading spaces or comment
+let s:regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
+let s:regex_tail = '\(.*\)$'  " remainder of line
+let s:regex_total = s:regex_head . s:regex_item . s:regex_tail
+
+" Remove the item indicator
+function! s:remove_item(line, firstline_, lastline_) abort
+  let match_head = substitute(a:line, s:regex_total, '\1', '')
+  let match_item = substitute(a:line, s:regex_total, '\2', '')
+  keepjumps exe a:firstline_ . ',' . a:lastline_
+    \ . 's@' . s:regex_head . s:regex_item . '\?' . s:regex_tail
+    \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
+    \ . '@ge'
+  call histdel('/', -1)
+endfunction
+
+" Fix all lines that are too long, with special consideration for bullet style lists and
+" asterisks (does not insert new bullets and adds spaces for asterisks).
+" Note: This is good example of incorporating motion support in custom functions!
+" Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
+" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
 function! utils#wrap_item_lines() range abort
-  let regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'
-  let regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s*\)'
-  let regex_tail = '\(.*\)$'
-  let regex = regex_head . regex_item . regex_tail
-  for line in range(a:lastline, a:firstline, -1)
-    exe line
-    let line = getline('.')
-    if len(getline('.')) > &l:textwidth
-      let is_match = line =~# regex
-      let match_head = substitute(line, regex, '\1', '')
-      let match_tail = substitute(line, regex, '\2', '')
-      let line1 = line('.') + 1
-      normal! Vgq
-      let line2 = line('.')
-      if line2 >= line1 && is_match
-        exe line1 . ',' . line2
-          \ . 's/' . regex_head . regex_item . '\?' . regex_tail
-          \ . '/' . match_head . repeat(' ', len(match_tail)) . '\3'
-          \ . '/ge'
+  let prevhist = @/
+  let winview = winsaveview()
+  " Put lines on single bullet
+  let linecount = 0
+  let firstline = a:firstline
+  let lastline  = a:lastline
+  let lastline_orig = lastline
+  for linenum in range(lastline, firstline, -1)
+    let line = getline(linenum)
+    let linecount += 1
+    if line =~# s:regex_total
+      " Remove item indicator if line starts with
+      let match_tail = substitute(line, s:regex_total, '\3', '')
+      if match_tail =~# '^\s*[a-z]'
+        call s:remove_item(line, linenum, linenum)
+      " Otherwise join
+      else
+        exe linenum . 'join ' . linecount
+        let linecount = 0
+        if lastline == lastline_orig
+          let lastline = linenum  " the new lastline
+        endif
       endif
     endif
   endfor
+  " Wrap each line, accounting for bullet indent
+  " If gqgq results in a wrapping, cursor is placed at the end of that block.
+  " Then must remove the automatic item indicators that were inserted.
+  for linenum in range(lastline, firstline, -1)
+    let line = getline(linenum)
+    if len(line) > &l:textwidth
+      exe linenum
+      normal! gqgq
+      if line =~# s:regex_total && line('.') > linenum
+        call s:remove_item(line, linenum + 1, line('.'))
+      endif
+    endif
+  endfor
+  let @/ = prevhist
+  call winrestview(winview)
+endfunction
+" For use with <expr>
+function! utils#wrap_item_lines_expr(...) range abort
+  return utils#motion_func('utils#wrap_item_lines', a:000)
 endfunction
 
+" Easy conversion between key=value pairs and 'key': value dictionary entries
+" Do son on current line, or within visual selection
+function! utils#translate_kwargs_dict(kw2dt, ...) abort range
+  " First get columns
+  " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
+  " bug where if opening bracket is immediately followed by newline, then 'inner'
+  " bracket range incorrectly sets the closing bracket column position to '1'.
+  let winview = winsaveview()
+  let lines = []
+  let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
+  let firstcol = col("'" . marks[0]) - 1  " when calling col(), ' means `
+  let lastcol = len(getline("'" . marks[1])) - 1
+  for linenum in range(a:firstline, a:lastline)
+    " Annoying ugly block for getting visual selection
+    " Want to *ignore* stuff not in selection, but on same line as
+    " the start/end of selection, because it's more flexible
+    let line = getline(linenum)
+    let prefix = ''
+    let suffix = ''
+    if linenum == a:firstline && linenum == a:lastline
+      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')  " damn negative indexing makes this complicated
+      let suffix = line[lastcol + 1:]
+      let line = line[firstcol : lastcol]
+    elseif linenum == a:firstline
+      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')
+      let line = line[firstcol :]
+    elseif linenum == a:lastline
+      let suffix = line[lastcol + 1:]
+      let line = line[:lastcol]
+    endif
+    if len(matchstr(line, ':')) > 0 && len(matchstr(line, '=')) > 0
+      echoerr 'Error: Ambiguous line.'
+      return
+    endif
+
+    " Next finally start matching shit
+    if a:kw2dt == 1  " kwargs to dictionary
+      let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
+      let line = substitute(line, '\>\ze\s*=', "'", 'g')
+      let line = substitute(line, '\s*=\s*', ': ', 'g')
+    else
+      let line = substitute(line, "\\>['\"]" . '\ze\s*:', '', 'g')  " remove trailing quote first
+      let line = substitute(line, "['\"]\\<" . '\ze\w\+\s*:', '', 'g')
+      let line = substitute(line, '\s*:\s*', '=', 'g')
+    endif
+    call add(lines, prefix . line . suffix)
+  endfor
+
+  " Replace lines with fixed lines
+  silent exe a:firstline . ',' . a:lastline . 'd _'
+  call append(a:firstline - 1, lines)
+  call winrestview(winview)
+endfunction
+" For use with <expr>
+function! utils#translate_kwargs_dict_expr(kw2dt) range abort
+  return utils#motion_func('utils#translate_kwargs_dict', [a:kw2dt, mode()])
+endfunction

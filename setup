@@ -8,49 +8,61 @@
 exclude=(README.md REGEXES.md .gitignore setup cleanup backup)
 
 # Setup
-root="$HOME"
-dotfiles="$HOME/dotfiles"
+root=$HOME
+dotfiles=$HOME/dotfiles
 cd "$dotfiles" || {
   echo "Error: dotfiles repo should be cloned into \$HOME."
   exit 1
 }
 read -r -a files < <(git ls-tree --name-only master | xargs)
-backup="$dotfiles/backup"
+backup=$dotfiles/backup
 [ -d "$backup" ] || mkdir "$backup"
 
 # Move existing stuff to storage, then create symlinks
 for file in "${files[@]}"; do  # iterate through files
   [[ " ${exclude[*]} " =~ " $file " ]] && continue
-  dest="$file"
   [ "$file" == ".gitignore.template" ] && dest=".gitignore"
-  echo "Creating symlink to $file in $HOME/..."
-  if [ -L "$root/$dest" ]; then
-    echo "Removing existing symlink $root/$dest..."
-    rm "$root/$dest"  # remove if symlink
-  elif [ -r "$root/$dest" ]; then
-    echo "Moving existing $dest file to $backup..."
-    if [ -e "$backup/$dest" ]; then
-      echo "Warning: Removing existing backup $backup/$dest..."
-      rm -r "${backup:?}/$dest"
+  dest=$root/$file
+  bakdest=$backup/$dest
+  echo "Creating symlink to '$file' in '$root'..."
+  if [ -L "$dest" ]; then
+    echo "Removing existing symlink..."
+    rm "$dest"  # remove if symlink
+  elif [ -r "$dest" ]; then
+    echo "Moving existing '$file' file to '$backup'..."
+    if [ -e "$bakdest" ]; then
+      echo "Warning: Removing existing backup..."
+      rm -r "$bakdest"
     fi
-    mv "$root/$dest" "$backup/"  # copy if not
+    mv "$dest" "$backup/"  # copy if not
   fi
-  if [ -L "$dotfiles/$file" ]; then  # copy the symlink
-    cp -P "$dotfiles/$file" "$root/$dest"
-  else
-    ln -s "$dotfiles/$file" "$root/$dest"
-  fi
+  ln -s "$dotfiles/$file" "$dest"
 done
 
-# Create symlinks
+# Create variety of symlinks in home directory
 for link in \
+  'Library/Services:workflows' \
+  'miniconda3/lib/python3.8/site-packages:site-packages' \
+  '/usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages' \
   '/Volumes/GoogleDrive/My Drive:Google Drive' \
   'Library/Mobile Documents/com~apple~CloudDocs:iCloud Drive' \
-  'miniconda3/lib/python3.8/site-packages:site-packages' \
-  '/usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages'
+  'Library/Mobile Documents/com~apple~CloudDocs/Mackup/.iterm2:.iterm2' \
+  'Library/Mobile Documents/com~apple~CloudDocs/Mackup/.iterm2_shell_integration.bash:.iterm2_shell_integration.bash'
   do
   src=${link%:*}
-  target=${link#*:}
-  echo "Creating symlink to $src at $HOME/$target..."
-  ln -sf "$src" "$HOME/$target"
+  dest=$root/${link#*:}
+  [ "${src:0:1}" == '/' ] || src=$HOME/$src
+  if ! [ -r "$src" ]; then
+    echo "Warning: Skipping link to '$src' (file not found)"
+    continue
+  fi
+  echo "Creating symlink to '$src' at '$dest'..."
+  if [ -L "$dest" ]; then
+    echo "Removing existing symlink..."
+    rm "$dest"  # remove if symlink
+  elif [ -r "$dest" ]; then
+    echo "Warning: Skipping link to '$src' (non-symlink exists)"
+    continue
+  fi
+  ln -sf "$src" "$dest"
 done

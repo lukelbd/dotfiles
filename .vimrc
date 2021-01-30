@@ -129,23 +129,10 @@ function! CChar() abort
 endfunction
 
 " Query whether plugin is loaded
-" Used to just check g:plugs but now check runtimepath in case fork is loaded
+" Used to use has_key(g:plugs) but now check runtimepath in case fork is loaded
 function! PlugActive(key) abort
-  " return has_key(g:plugs, a:key)
   return &runtimepath =~# '/' . a:key . '\>'
 endfunction
-
-" Reverse selected lines
-function! ReverseLines() range abort
-  let line1 = a:firstline  " cannot overwrite input var names
-  let line2 = a:lastline
-  if line1 == line2
-    let line1 = 1
-    let line2 = line('$')
-  endif
-  exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
-endfunction
-command! -range Reverse <line1>,<line2>call ReverseLines()
 
 " Better grep, with limited regex translation
 function! Grep(regex)  " returns list of matches
@@ -178,6 +165,18 @@ function! RegexComment()
   endif
   return char
 endfunction
+
+" Reverse selected lines
+function! ReverseLines() range abort
+  let line1 = a:firstline  " cannot overwrite input var names
+  let line2 = a:lastline
+  if line1 == line2
+    let line1 = 1
+    let line2 = line('$')
+  endif
+  exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
+endfunction
+command! -range Reverse <line1>,<line2>call ReverseLines()
 
 " Escape repair needed when we allow h/l to change line num
 augroup escape_fix
@@ -261,14 +260,16 @@ augroup END
 command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
-command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
-noremap gQ :WrapItemLines<CR>
 noremap <Leader><Tab> :TabToggle<CR>
 
 " Search mappings
 command! -nargs=1 NSearch echo utils#search_maps(<q-args>, 'n')
 command! -nargs=1 ISearch echo utils#search_maps(<q-args>, 'i')
 command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
+
+" Functions that accept motions
+command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
+noremap <expr> <silent> gQ utils#wrap_item_lines_expr()
 
 " Disable normal mode stuff
 " * Q and K are weird modes never used
@@ -715,11 +716,15 @@ let g:speeddating_no_mappings = 1
 call plug#end()
 
 " Mappings for vim-idetools command
+" Also use ctag brackets mapping for default double bracket motion, except never
+" overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
 if PlugActive('vim-idetools') || &runtimepath =~# 'vim-idetools'
   augroup double_bracket
     au!
-    au BufEnter * nmap <buffer> [[ [T
-    au BufEnter * nmap <buffer> ]] ]T
+    au BufEnter *
+      \ if empty(maparg('[')) && empty(maparg(']'))
+      \ | nmap <buffer> [[ [T | nmap <buffer> ]] ]T
+      \ | endif
   augroup END
   nnoremap <silent> <Leader>C :CTagsDisplay<CR>
 endif
@@ -1411,7 +1416,7 @@ augroup tabs
   au!
   au TabLeave * let g:lasttab = tabpagenr()
 augroup END
-command! -nargs=? -complete=file Open call fzf#open_continuous(<q-args>)
+command! -nargs=* -complete=file Open call fzf#open_continuous(<f-args>)
 " Opening file in current directory and some input directory
 nnoremap <C-o> :Open 
 nnoremap <C-p> :Files 
@@ -1490,52 +1495,31 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
-" Delete commented text. For some reason search screws up when using \(\) groups, maybe
-" because first parts of match are identical?
-noremap <silent> \c
-  \ :call utils#replace(0, '^\s*' . Comment() . '.*$\n', '', '\s\+' . Comment() . '.*$', '')<CR>
-  \ :echom 'Removed comments.'<CR>
+" Delete commented text. For some reason search screws up when using \(\) groups,
+" maybe because first parts of match are identical?
+" Note: Comment() doesn't get invoked either until entire expression is run
+noremap <expr> \c utils#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.*$\n', '', '\s\+' . Comment() . '.*$', '')
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <silent> \s
-  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! \{2,}', ' ')<CR>
-  \ :echom 'Squeezed whitespace.'<CR>
-noremap <silent> \S
-  \ :call utils#replace(0, '\(\S\)\@<=\(^ \+\)\@<! ', '')<CR>
-  \ :echom 'Removed whitespace.'<CR>
-noremap <silent> \w
-  \ :call utils#replace(0, '\s\+$', '')<CR>
-  \ :echom 'Trimmed trailing whitespace.'<CR>
+noremap <expr> \s utils#replace_regexes_expr('Squeezed whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S utils#replace_regexes_expr('Removed whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
-noremap <silent> \e
-  \ :call utils#replace(0, '\(\n\s*\n\)\(\s*\n\)\+', '\1')<CR>
-  \ :echom 'Squeezed consecutive newlines.'<CR>
-noremap <silent> \E
-  \ :call utils#replace(0, '^\s*$\n', '')<CR>
-  \ :echom 'Removed empty lines.'<CR>
+noremap <expr> \e utils#replace_regexes_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
+noremap <expr> \E utils#replace_regexes_expr('Removed empty lines.', '^\s*$\n', '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-nnoremap <silent> \'
-  \ :call utils#replace(1, '‘', '`', '’', "'")<CR>
-  \ :echom 'Fixed single quotes.'<CR>
-nnoremap <silent> \"
-  \ :call utils#replace(1, '“', '``', '”', "''")<CR>
-  \ :echom 'Fixed double quotes.'<CR>
-nnoremap <silent> \-
-  \ :call utils#replace(1, '–', '--')<CR>
-  \ :echom 'Fixed long dashes.'<CR>
-nnoremap <silent> \_
-  \ :call utils#replace(1, '\(\w\)[-–] ', '\1')<CR>
-  \ :echom 'Fixed wordbreak dashes.'<CR>
+noremap <expr> \' utils#replace_regexes_expr('Fixed single quotes.', '‘', '`', '’', "'")
+noremap <expr> \" utils#replace_regexes_expr('Fixed double quotes.', '“', '``', '”', "''")
+noremap <expr> \- utils#replace_regexes_expr('Fixed long dashes.', '–', '--')
+noremap <expr> \_ utils#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
 
 " Replace tabs with spaces
-noremap <silent> \<Tab>
-  \ :call utils#replace(1, '\t', repeat(' ', &tabstop))<CR>
-  \ :echom 'Fixed tabs.'<CR>
+noremap <expr> \<Tab>
+  \ utils#replace_regexes('Fixed tabs.', '\t', repeat(' ', &tabstop))
 
 " Caps lock
 " See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
