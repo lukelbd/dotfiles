@@ -45,9 +45,7 @@ for link in \
   'miniconda3/lib/python3.8/site-packages:site-packages' \
   '/usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages' \
   '/Volumes/GoogleDrive/My Drive:Google Drive' \
-  'Library/Mobile Documents/com~apple~CloudDocs:iCloud Drive' \
-  'Library/Mobile Documents/com~apple~CloudDocs/Mackup/.iterm2:.iterm2' \
-  'Library/Mobile Documents/com~apple~CloudDocs/Mackup/.iterm2_shell_integration.bash:.iterm2_shell_integration.bash'
+  'Library/Mobile Documents/com~apple~CloudDocs:iCloud Drive'
   do
   src=${link%:*}
   dest=$root/${link#*:}
