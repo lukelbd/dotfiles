@@ -745,6 +745,7 @@ for s:name in [
   \ 'vim-statusline',
   \ 'vim-tabline',
   \ 'vim-toggle',
+  \ 'highlightMarks',
   \ 'codi.vim'
   \ ]
   let s:path_home = expand('~/' . s:name)
@@ -765,8 +766,10 @@ Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes oth
 let g:fzf_layout = {'down': '~20%'} " make window smaller
 let g:fzf_action = {
   \ 'ctrl-i': 'silent!',
-  \ 'ctrl-m': 'tab split', 'ctrl-t': 'tab split',
-  \ 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
+  \ 'ctrl-m': 'tab split',
+  \ 'ctrl-t': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit'
   \ }
 
 " Color schemes for MacVim
@@ -872,9 +875,9 @@ Plug 'tpope/vim-eunuch'
 " Undo
 Plug 'mbbill/undotree'
 
-" Marks
+" Marks (use custom fork, too many changes to merge with PR)
 " Plug 'Tumbler/highlightMarks'
-Plug 'lukelbd/highlightMarks', {'branch': 'global-highlightmarks-function'}
+" Plug 'lukelbd/highlightMarks'
 
 " Calculators and number stuff
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
