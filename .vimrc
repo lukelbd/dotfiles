@@ -391,17 +391,27 @@ nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 noremap <C-n> g;
 noremap <F4> g,
 
-" Free up m keys, so ge/gE command belongs as single-keystroke
-" words along with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
-
 " Jump to last jump
 " Note: Account for karabiner arrow key maps
 noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
+
+" Free up m keys, so ge/gE command belongs as single-keystroke
+" words along with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
+
+" Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
+" and use ' or [1-8]' to jump to a mark.
+" let g:highlightmark_colors = ['magenta']
+" let g:highlightmark_cterm_colors = [5]
+command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
+command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
+nnoremap <Leader>` :<C-u>RemoveHighlights<CR>
+nnoremap <expr> ` "`" . nr2char(97+v:count)
+nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 
 " Alias single-key builtin text objects
 for s:bracket in ['r[', 'a<', 'c{']
@@ -745,7 +755,6 @@ for s:name in [
   \ 'vim-statusline',
   \ 'vim-tabline',
   \ 'vim-toggle',
-  \ 'highlightMarks',
   \ 'codi.vim'
   \ ]
   let s:path_home = expand('~/' . s:name)
@@ -874,10 +883,6 @@ Plug 'tpope/vim-eunuch'
 
 " Undo
 Plug 'mbbill/undotree'
-
-" Marks (use custom fork, too many changes to merge with PR)
-" Plug 'Tumbler/highlightMarks'
-" Plug 'lukelbd/highlightMarks'
 
 " Calculators and number stuff
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
@@ -1074,16 +1079,6 @@ if PlugActive('undotree')
     let &undodir=$HOME . '/.undodir'
     set undofile
   endif
-endif
-
-" Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
-" and use ' or [1-8]' to jump to a mark.
-if PlugActive('highlightMarks')
-  let g:highlightMarks_colors = ['magenta']
-  let g:highlightMarks_cterm_colors = [5]
-  nnoremap <Leader>` :<C-u>RemoveHighlights<CR>
-  nnoremap <expr> ` "`" . nr2char(97+v:count)
-  nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
 endif
 
 " Speed dating, support date increments
