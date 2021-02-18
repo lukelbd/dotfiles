@@ -304,7 +304,7 @@ augroup END
 for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
   \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-g>', '<C-h>', '<C-l>',
-  \ '<Up>', '<Down>', '<Left>', '<Right>', '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>'
+  \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>'
   \ ]
   if empty(maparg(s:key, 'i'))
     exe 'inoremap ' . s:key . ' <Nop>'
@@ -669,9 +669,10 @@ Plug 'justinmk/vim-sneak'
 
 " Calculators and number stuff
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
-" Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
 " Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
 " Plug 'metakirby5/codi.vim'
+" Plug 'sk1418/HowMuch' "adds stuff together in tables; took this over so i can override mappings
+Plug 'lukelbd/HowMuch', {'branch': 'add-nomappings-option'}
 Plug 'tpope/vim-speeddating'  " dates and stuff
 let g:speeddating_no_mappings = 1
 
@@ -998,12 +999,18 @@ else
   noremap - <C-x>
 endif
 
-" The howmuch.vim plugin, currently with minor modifications in .vim folder
-if hasmapto('<Plug>AutoCalcAppendWithEqAndSum', 'v')
-  vmap c+ <Plug>AutoCalcAppendWithEqAndSum
-endif
-if hasmapto('<Plug>AutoCalcReplaceWithSum', 'v')
-  vmap c= <Plug>AutoCalcReplaceWithSum
+" The howmuch.vim plugin. Pneumonic for mapping is the straight line at bottom of
+" sum table. Mapping options are:
+" AutoCalcReplace
+" AutoCalcReplaceWithSum
+" AutoCalcAppend
+" AutoCalcAppendWithEq
+" AutoCalcAppendWithSum
+" AutoCalcAppendWithEqAndSum
+if PlugActive('HowMuch')
+  echom 'How Much!'
+  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
+  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
 endif
 
 " Neocomplete and deoplete
@@ -1381,6 +1388,9 @@ nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
 nnoremap <silent> <Leader>R :e<CR>
 
+" Renaming things
+command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', '<bang>')
+
 " Fix syntax highlighting
 " Starting from the previous comment is pretty darn reliable
 command! Sync syntax sync ccomment
@@ -1390,9 +1400,11 @@ command! SyncShort syntax sync minlines=0
 " Save and quit, also test whether the :q action closed the entire tab
 " SmartWrite is from tabline plugin
 nnoremap <silent> <C-s> :SmartWrite<CR>
-nnoremap <silent> <C-a> :call utils#vim_close()<CR>
-nnoremap <silent> <C-w> :call utils#window_close()<CR>
-nnoremap <silent> <C-q> :call utils#tab_close()<CR>
+nnoremap <silent> <C-w> :call utils#tab_close()<CR>
+nnoremap <silent> <C-q> :call utils#vim_close()<CR>
+" nnoremap <silent> <C-a> :call utils#vim_close()<CR>
+" nnoremap <silent> <C-w> :call utils#window_close()<CR>
+" nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
 " 'Execute' script with different options
 " Note: Execute1 and Execute2 just defined for tex for now
@@ -1501,9 +1513,11 @@ augroup END
 noremap <expr> \c utils#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.*$\n', '', '\s\+' . Comment() . '.*$', '')
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
+noremap <expr> \w utils#replace_regexes_expr('Removed trailing whitespace.', '\s\+\ze$', '')
+
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <expr> \s utils#replace_regexes_expr('Squeezed whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S utils#replace_regexes_expr('Removed whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
+noremap <expr> \s utils#replace_regexes_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S utils#replace_regexes_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
@@ -1552,14 +1566,14 @@ augroup END
 " Toggle spelling on and off
 command! SpellToggle call spell#spell_toggle(<args>)
 command! LangToggle call spell#lang_toggle(<args>)
-nnoremap <silent> <Leader>d :call spell#spell_toggle(1)<CR>
-nnoremap <silent> <Leader>D :call spell#spell_toggle(0)<CR>
+nnoremap <silent> <Leader>l :call spell#spell_toggle(1)<CR>
+nnoremap <silent> <Leader>L :call spell#spell_toggle(0)<CR>
 nnoremap <silent> <Leader>k :call spell#lang_toggle(1)<CR>
 nnoremap <silent> <Leader>K :call spell#lang_toggle(0)<CR>
 
 " Add and remove from dictionary
-nnoremap <Leader>l zg
-nnoremap <Leader>L zug
+nnoremap <Leader>d zg
+nnoremap <Leader>D zug
 nnoremap <Leader>! z=
 
 " Similar to ]s and [s but also correct the word!

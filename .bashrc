@@ -113,10 +113,11 @@ case "${HOSTNAME%%.*}" in
     # versions! See: https://stackoverflow.com/a/3464303/4970632
     # Test with: ruby -ropen-uri -e 'eval open("https://git.io/vQhWq").read'
     # Install rvm with: \curl -sSL https://get.rvm.io | bash -s stable --ruby
+    # export PATH=$PATH:$HOME/.rvm/bin
     if [ -d ~/.rvm/bin ]; then
-      [ -s ~/.rvm/scripts/rvm ] && \
-        source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
-      export PATH=$PATH:$HOME/.rvm/bin
+      [ -s ~/.rvm/scripts/rvm ] && source ~/.rvm/scripts/rvm  # load RVM into a shell session *as a function*
+      export PATH=$PATH:$HOME/.rvm/bin:$HOME/.rvm/gems/default/bin
+      export rvm_silence_path_mismatch_check_flag=1
       rvm use ruby 1>/dev/null
     fi
 

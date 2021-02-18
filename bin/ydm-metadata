@@ -22,25 +22,8 @@ import musicbrainzngs as mb
 import requests
 from bs4 import BeautifulSoup
 from musicbrainzngs.musicbrainz import ResponseError
-from mutagen.id3 import (
-    APIC,
-    COMM,
-    ID3,
-    TALB,
-    TCON,
-    TDOR,
-    TDRC,
-    TDRL,
-    TIT2,
-    TOAL,
-    TPE1,
-    ID3NoHeaderError,
-)
-from mutagen.mp4 import (
-    MP4,
-    MP4Cover,
-    MP4StreamInfoError
-)
+from mutagen import id3 as id3
+from mutagen import mp4 as mp4
 from PIL import Image
 
 # Configure MusicBrainz Discogs
@@ -775,15 +758,14 @@ def add_metadata(
 
     # Open file, for different types
     # Currently have compatibility with MP4 and ID3 tags
-    try:  # read AAC info
-        id3 = False  # aac
-        tags = MP4(path)
-    except MP4StreamInfoError:
-        id3 = True  # mp3
-        try:  # check header presence
-            tags = ID3(path)
-        except ID3NoHeaderError:
-            raise RuntimeError('File {path!r} format is invalid.')
+    tags = None
+    for t, exc in ((id3.ID3, id3.ID3NoHeaderError), (mp4.MP4, mp4.MP4StreamInfoError)):
+        try:
+            tags = t(path)
+        except exc:
+            pass
+    if tags is None:
+        raise RuntimeError(f'File {path!r} format is invalid.')
 
     # Call functions and apply metadata
     # TODO: Use recording artist and title from *album*? Think these
@@ -818,22 +800,22 @@ def add_metadata(
 
     # Edit the ID3 header, if file has one
     # Below are ID3v2, not ID3v2.4 (default format of mutagen)
-    if id3:
-        tags['TPE1'] = TPE1(text=artist)
-        tags['TIT2'] = TIT2(text=title)  # track name
-        tags['TDOR'] = TDOR(text=data['year'])  # original release time
-        tags['TDRC'] = TDRC(text=data['year'])  # recording time
-        tags['TDRL'] = TDRL(text=data['year'])  # release time
-        tags['TALB'] = TALB(text=data['album'])  # album
-        tags['TOAL'] = TOAL(text=data['album'])  # original album
+    if isinstance(tags, id3.ID3):
+        tags['TPE1'] = id3.TPE1(text=artist)
+        tags['TIT2'] = id3.TIT2(text=title)  # track name
+        tags['TDOR'] = id3.TDOR(text=data['year'])  # original release time
+        tags['TDRC'] = id3.TDRC(text=data['year'])  # recording time
+        tags['TDRL'] = id3.TDRL(text=data['year'])  # release time
+        tags['TALB'] = id3.TALB(text=data['album'])  # album
+        tags['TOAL'] = id3.TOAL(text=data['album'])  # original album
         if url:
-            tags['COMM'] = COMM(text=url, lang='eng', desc='URL')
+            tags['COMM'] = id3.COMM(text=url, lang='eng', desc='URL')
         if data['genres']:
-            tags['TCON'] = TCON(text=data['genres'][0], genres=data['genres'])
+            tags['TCON'] = id3.TCON(text=data['genres'][0], genres=data['genres'])
         elif 'TCON' in tags:
             del tags['TCON']
         if data['image']:
-            tags['APIC'] = APIC(
+            tags['APIC'] = id3.APIC(
                 data=data['image'],
                 desc='Cover',
                 mime='image/jpeg',
@@ -859,7 +841,9 @@ def add_metadata(
         elif '\xa9gen' in tags:
             del tags['\xa9gen']
         if data['image']:
-            tags['covr'] = [MP4Cover(data['image'], imageformat=MP4Cover.FORMAT_JPEG)]
+            tags['covr'] = [
+                mp4.MP4Cover(data['image'], imageformat=mp4.MP4Cover.FORMAT_JPEG)
+            ]
         elif 'covr' in tags:
             del tags['covr']
         tags.save()

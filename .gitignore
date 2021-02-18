@@ -1,16 +1,14 @@
 # Misc stuff
 .proplot
-empty*
-test*
-root/
-!root/README*
-*.log
-tags
-!.vim/doc/tags
 .vim/plugged
 .vim/black
+empty*
+test*
+*.log
+*.bib
 .DS_Store
 .nfs*
+tags
 tmp
 
 # Vim extras, binary spell files

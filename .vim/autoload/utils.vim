@@ -1,6 +1,16 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
+" Sort lines
+function! s:sort_lines(line1, line2) abort
+  let line1 = a:line1
+  let line2 = a:line2
+  if line1 > line2
+    let [line2, line1] = [line1, line2]
+  endif
+  return [line1, line2]
+endfunction
+
 " Call function over the visual line range or the user motion line range
 " Note: Use this approach rather than adding line range as physical arguments and
 " calling with call call(func, firstline, lastline, ...) so that funcs can still be
@@ -31,6 +41,7 @@ function! utils#operator_func(type) range abort
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
   endif
+  let [firstline, lastline] = s:sort_lines(firstline, lastline)
   exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
   return ''
 endfunction
@@ -118,9 +129,9 @@ endfunction
 function! utils#replace_regexes(message, ...) range abort
   let prevhist = @/
   let winview = winsaveview()
+  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
   for i in range(0, a:0 - 2, 2)
-    keepjumps exe a:firstline . ',' . a:lastline
-      \ . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
+    keepjumps exe firstline . ',' . lastline . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
     call histdel('/', -1)
   endfor
   echom a:message
@@ -128,7 +139,7 @@ function! utils#replace_regexes(message, ...) range abort
   call winrestview(winview)
 endfunction
 " For use with <expr>
-function! utils#replace_regexes_expr(...) range abort
+function! utils#replace_regexes_expr(...) abort
   return utils#motion_func('utils#replace_regexes', a:000)
 endfunction
 
@@ -525,6 +536,30 @@ function! utils#window_close() abort
   endif
 endfunction
 
+" Rename2.vim  -  Rename a buffer within Vim and on disk
+" Copyright July 2009 by Manni Heumann <vim at lxxi.org>
+" based on Rename.vim
+" Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
+" Usage:
+" :Rename[!] {newname}
+function! utils#rename_file(name, bang)
+  let curfile = expand('%:p')
+  let curfilepath = expand('%:p:h')
+  let newname = curfilepath . '/' . a:name
+  let v:errmsg = ''
+  silent! exe 'saveas' . a:bang . ' ' . newname
+  if v:errmsg =~# '^$\|^E329'
+    if expand('%:p') !=# curfile && filewritable(expand('%:p'))
+      silent exe 'bwipe! ' . curfile
+      if delete(curfile)
+        echoerr 'Could not delete ' . curfile
+      endif
+    endif
+  else
+    echoerr v:errmsg
+  endif
+endfunction
+
 " For popup windows
 " For location lists, enter jumps to location. Restore this behavior.
 function! utils#popup_setup(nofile) abort
@@ -678,8 +713,7 @@ function! utils#wrap_item_lines() range abort
   let winview = winsaveview()
   " Put lines on single bullet
   let linecount = 0
-  let firstline = a:firstline
-  let lastline  = a:lastline
+  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
   let lastline_orig = lastline
   for linenum in range(lastline, firstline, -1)
     let line = getline(linenum)
@@ -716,7 +750,7 @@ function! utils#wrap_item_lines() range abort
   call winrestview(winview)
 endfunction
 " For use with <expr>
-function! utils#wrap_item_lines_expr(...) range abort
+function! utils#wrap_item_lines_expr(...) abort
   return utils#motion_func('utils#wrap_item_lines', a:000)
 endfunction
 
@@ -732,21 +766,22 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
   let firstcol = col("'" . marks[0]) - 1  " when calling col(), ' means `
   let lastcol = len(getline("'" . marks[1])) - 1
-  for linenum in range(a:firstline, a:lastline)
+  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
+  for linenum in range(firstline, lastline)
     " Annoying ugly block for getting visual selection
     " Want to *ignore* stuff not in selection, but on same line as
     " the start/end of selection, because it's more flexible
     let line = getline(linenum)
     let prefix = ''
     let suffix = ''
-    if linenum == a:firstline && linenum == a:lastline
+    if linenum == firstline && linenum == lastline
       let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')  " damn negative indexing makes this complicated
       let suffix = line[lastcol + 1:]
       let line = line[firstcol : lastcol]
-    elseif linenum == a:firstline
+    elseif linenum == firstline
       let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')
       let line = line[firstcol :]
-    elseif linenum == a:lastline
+    elseif linenum == lastline
       let suffix = line[lastcol + 1:]
       let line = line[:lastcol]
     endif
@@ -769,11 +804,11 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
   endfor
 
   " Replace lines with fixed lines
-  silent exe a:firstline . ',' . a:lastline . 'd _'
-  call append(a:firstline - 1, lines)
+  silent exe firstline . ',' . lastline . 'd _'
+  call append(firstline - 1, lines)
   call winrestview(winview)
 endfunction
 " For use with <expr>
-function! utils#translate_kwargs_dict_expr(kw2dt) range abort
+function! utils#translate_kwargs_dict_expr(kw2dt) abort
   return utils#motion_func('utils#translate_kwargs_dict', [a:kw2dt, mode()])
 endfunction
