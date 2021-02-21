@@ -891,10 +891,10 @@ Plug 'mbbill/undotree'
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
 " Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
 " Plug 'metakirby5/codi.vim'
-" Plug 'sk1418/HowMuch'
-Plug 'lukelbd/HowMuch', {'branch': 'add-nomappings-option'}
+Plug 'sk1418/HowMuch'
 Plug 'tpope/vim-speeddating'  " dates and stuff
 let g:speeddating_no_mappings = 1
+let g:HowMuch_no_mappings = 1
 
 " Completion engines
 " Note: Disable for macvim because not sure how to control its python distro
@@ -1042,29 +1042,28 @@ if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
   " Todo: Make this a textools feature
   " Todo: Add global snippets in exact same way
   let s:global_surround = {
-    \ "'": ["'", "'"],
-    \ '"': ['"', '"'],
-    \ 'q': ['‘', '’'],
-    \ 'Q': ['“', '”'],
-    \ 'b': ['(', ')'],
-    \ 'c': ['{', '}'],
-    \ 'B': ['{', '}'],
-    \ 'r': ['[', ']'],
-    \ 'a': ['<', '>'],
-    \ '(': ['(', ')'],
-    \ '{': ['{', '}'],
-    \ '[': ['[', ']'],
-    \ '<': ['<', '>'],
-    \ '\': ['\"', '\"'],
-    \ 'p': ['print(', ')'],
-    \ 'f': ["\1function: \1(", ')'],
-    \ 'A': ["\1array: \1[", ']'],
-    \ "\t": [' ', ' '],
-    \ '': ["\n", "\n"],
+    \ "'": "'\r'",
+    \ '"': "\"\r\"",
+    \ 'q': "‘\r’",
+    \ 'Q': "“\r”",
+    \ 'b': "(\r)",
+    \ 'c': "{\r}",
+    \ 'B': "{\r}",
+    \ 'r': "[\r]",
+    \ 'a': "<\r>",
+    \ '(': "(\r)",
+    \ '{': "{\r}",
+    \ '[': "[\r]",
+    \ '<': "<\r>",
+    \ '\': "\\\"\r\\\"",
+    \ 'p': "print(\r)",
+    \ 'f': "\1function: \1(\r)",
+    \ 'A': "\1array: \1[\r]",
+    \ "\t": " \r ",
+    \ '': "\n\r\n",
   \ }
   for [s:binding, s:pair] in items(s:global_surround)
-    let [s:left, s:right] = s:pair
-    let g:surround_{char2nr(s:binding)} = s:left . "\r" . s:right
+    let g:surround_{char2nr(s:binding)} = s:pair
   endfor
 endif
 
