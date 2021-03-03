@@ -617,7 +617,7 @@ noremap gc /^[<>=\|]\{2,}<CR>
 " Delete commented text. For some reason search screws up when using \(\) groups,
 " maybe because first parts of match are identical?
 " Note: Comment() doesn't get invoked either until entire expression is run
-noremap <expr> \c utils#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.*$\n', '', '\s\+' . Comment() . '.*$', '')
+noremap <expr> \c utils#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.\+$\n', '', '\s\+' . Comment() . '.\+$', '')
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 noremap <expr> \w utils#replace_regexes_expr('Removed trailing whitespace.', '\s\+\ze$', '')
@@ -1672,6 +1672,8 @@ endif
 command! Sync syntax sync ccomment
 command! SyncLong syntax sync fromstart
 command! SyncShort syntax sync minlines=0
+noremap <Leader>y :<C-u>SyncShort<CR>
+noremap <Leader>Y :<C-u>SyncLong<CR>
 
 " GUI vim colors
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
@@ -1689,7 +1691,6 @@ if has('gui_running')
   " colorscheme oceanicnext
   " colorscheme papercolor
   " colorscheme sierra
-  " colorscheme sift
   " colorscheme tender
   " colorscheme turtles
   " colorscheme underwater-mod
@@ -1697,7 +1698,7 @@ if has('gui_running')
   " colorscheme vim-material
   " colorscheme vimbrains
   " colorscheme void
-  colorscheme tender
+  colorscheme papercolor
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
@@ -1723,24 +1724,20 @@ augroup override_syntax
   au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
 augroup END
 function! s:keyword_setup()
-   " Markdown headers
-   " syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
-   " hi link markdownHeader Special
+  " Warnings, errors, and shebangs
+  if &filetype ==# 'vim'
+    syn clear vimTodo " vim instead uses the Stuff: syntax
+  else
+    syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments
+    syn match Special '^\%1l#!.*$' " shebangs
+  endif
   " URL highlighting
-   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^'  <>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
-   hi link customURL Underlined
-   " Warnings, errors, and shebangs
-   if &filetype !=# 'vim'
-     syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments
-     syn match Special '^\%1l#!.*$' " shebangs
-   else
-     syn clear vimTodo " vim instead uses the Stuff: syntax
-   endif
+  syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
+  hi link customURL Underlined
+  " Markdown headers
+  " syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
+  " hi link markdownHeader Special
 endfunction
-
-" Helper functions when things break
-nnoremap <Leader>y :<C-u>syntax sync fromstart \| redraw!<CR>
-nnoremap <Leader>Y :<C-u>syntax sync minlines=10000 \| redraw!<CR>
 
 " Filetype specific commands
 " highlight link htmlNoSpell
