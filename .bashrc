@@ -1500,56 +1500,41 @@ extract() {
 # Utilities related to preparing PDF documents
 # Converting figures between different types, other pdf tools, word counts
 #-----------------------------------------------------------------------------#
-# First some simple convsersions
+# Converting between things
 # * Flatten gets rid of transparency/renders it against white background, and
 #   the units/density specify a <N>dpi resulting bitmap file. Another option
 #   is "-background white -alpha remove", try this.
-# * Note the PNAS journal says 1000-1200dpi recommended for line art images
-#   and stuff with text.
 # * Note imagemagick does *not* handle vector formats; will rasterize output
 #   image and embed in a pdf, so cannot flatten transparent components with
 #   convert -flatten in.pdf out.pdf
-gif2png() {
+# * Note the PNAS journal says 1000-1200dpi recommended for line art images
+#   and stuff with text.
+gif2png() {  # often needed because LaTeX can't read gif files
+  local f
   for f in "$@";
     do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
   done
-}  # often needed because LaTeX can't read gif files
+}
 pdf2png() {
-  local density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args=("${args[@]:1}")
-  local flags=(-flatten -units PixelsPerInch -density "$density")
+  local f args=("$@")
   for f in "${args[@]}"; do
-    # shellcheck disable=2086
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.pdf}.png"
+    [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." \
+      && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
   done
-}  # sometimes need bitmap yo
+}
 svg2png() {
-  pdf2png "$@"
-  local density=1200 args=("$@")
-  [[ $1 =~ ^[0-9]+$ ]] && density=$1 args=("${args[@]:1}")
-  local flags=(-flatten -units PixelsPerInch -density "$density" -background none)
+  # NOTE: python is much faster and 'dpi' for some reason is ignored
+  # See: https://stackoverflow.com/a/50300526/4970632
+  local f args=("$@")
   for f in "${args[@]}"; do
-    # shellcheck disable=2086
-    [[ "$f" =~ .svg$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.svg}.png"
+    [[ "$f" =~ .svg$ ]] && echo "Converting $f..." \
+      && python -c "import cairosvg; cairosvg.svg2png(url='$f', write_to='${f%.svg}.png', scale=3, background_color='white')"
+      # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
   done
 }
-pdf2tiff() {
-  local density=1200 args=("$@")
-  [[ "$1" =~ ^[0-9]+$ ]] && density=$1 args=("${args[@]:1}")
-  local flags=(-flatten -units PixelsPerInch -density "$density")
-  for f in "${args[@]}"; do
-    # shellcheck disable=2086
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f with ${density}dpi..." && convert "${flags[@]}" "$f" "${f%.pdf}.tiff"
-  done
-}  # alternative for converting to bitmap
-pdf2eps() {
-  args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." && \
-      pdf2ps "$f" "${f%.pdf}.ps" && ps2eps "${f%.pdf}.ps" "${f%.pdf}.eps" && rm "${f%.pdf}.ps"
-  done
-}
-pdf2flat() {
+
+# Modifying and merging pdfs
+pdfflatten() {
   # This page is helpful:
   # https://unix.stackexchange.com/a/358157/112647
   # 1. pdftk keeps vector graphics
