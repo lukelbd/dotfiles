@@ -1,35 +1,37 @@
 dotfiles
 ========
 
-This syncs various tools/plugins/settings for for `bash`, `vim`, `tmux`, and `jupyter`,
-along with some `bin` scripts.
+This repo is used to synchronize various tools and settings for `bash`, `vim`, `tmux`,
+and `jupyter`. It also includes some handy shell functions and shell scripts.
 
 Bash config
 -----------
 
-Check out the `nc<suffix>` functions in my `.bashrc` for a bunch of super useful tools
-that parse `ncdump` output/summarize NetCDF files. You will also find some handy tools
-for maintaining connections to remote `jupyter notebook` sessions. Try out my
-`.dircolors.ansi` for useful color-coding of `ls` results. 
+The `.bashrc` file is utterly massive. Among other things, it provides `nc<suffix>`
+functions that summarize NetCDF files by parsing `ncdump`, provides tools for working
+over SSH connections and maintaining connections to remote `jupyter` sessions, and
+configures FZF fuzzy autocompletion and the conda environment. It also evaluates
+`.dircolors.ansi` to keep color-coding of `ls` results consistent between workstations.
 
 Vim config
 ----------
 
-Check out `.vimrc` for my plugin usage and some handy functions and remaps. Instead of
-just using `<Leader>` for custom maps, I use several different keys for custom map
-prefixes.
+The `.vimrc` is even more utterly massive. Among other things, it configures a few
+dozen vim plugins, configures FZF fuzzy autocompletion integration features, and
+configures nearly every conceivable key mapping as I see fit. Instead of just using
+`<Leader>` for custom normal mode maps, I use few different prefixes:
 
 | Prefix | Mode(s) | Description |
 | ---- | ---- | ---- |
-| `<Leader>` | `n` | Miscellaneous and complex tasks. Mapped to `<Space>`. |
+| `<Leader>` | `n` | Miscellaneous and complex tasks. Set to `<Space>`. |
+| `<Tab>` | `n` | Window and tab management and resizing. |
 | `\` | `n` | Complex regex replacements and tabular alignment. |
 | `c` | `n` | Toggling comments and inserting comment headers. |
 | `g` | `n` | Git-gutter commands and other git-related things. |
-| `<Tab>` | `n` | Window and tab management and resizing. |
 | `<C-s>` | `vi` | Surrounding content with delimiters. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
 | `<C-d>` | `i` | Inserting pre-defined snippets. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
 
-Also check out the
+Also check out the vim plugins I've written over the years:
 [vim-textools](https://github.com/lukelbd/vim-textools),
 [vim-idetools](https://github.com/lukelbd/vim-idetools),
 [vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped),
@@ -51,7 +53,6 @@ You can also find the following filetype-specific features in the `ftplugin`, `s
 Other config
 ------------
 
-You can find various functions in `bin`, and handy `git` commands in my `.gitconfig`
-file. Note `.jupyter` is synced just to preserve my custom key bindings in
-`notebook.json`, along with some `nbextension` settings in `tree.json`, `common.json`,
-and `jupyter_notebook_config.json`.
+You can find various utilities in `bin`, and handy `git` commands in `.gitconfig`.
+Also, `.jupyter` is synced just to preserve custom key binding and extension settings
+across jupyter notebook and jupyter lab sessions.
