@@ -37,7 +37,7 @@ Also check out the vim plugins I've written over the years:
 [vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped),
 [vim-tabline](https://github.com/lukelbd/vim-tabline), and
 [vim-statusline](https://github.com/lukelbd/vim-statusline), and
-[vim-toggle](https://github.com/lukelbd/vim-toggle) vim plugins.
+[vim-toggle](https://github.com/lukelbd/vim-toggle).
 
 You can also find the following filetype-specific features in the `ftplugin`, `syntax`,
 `after/ftplugin`, and `after/syntax` folders:
