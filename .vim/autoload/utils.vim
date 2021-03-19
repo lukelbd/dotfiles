@@ -560,22 +560,26 @@ function! utils#rename_file(name, bang)
   endif
 endfunction
 
+function! s:no_buffer_map(map)
+  let dict = maparg(a:map, 'n', v:false, v:true)
+  return empty(dict) || !dict['buffer']
+endfunction
 " For popup windows
-" For location lists, enter jumps to location. Restore this behavior.
+" For location lists, <CR> jumps to location. Restore this behavior.
 function! utils#popup_setup(nofile) abort
-  " Easy quit
-  nnoremap <silent> <buffer> <C-w> :quit!<CR>
-  nnoremap <silent> <buffer> q :quit!<CR>
-  " Easy navigation
-  nnoremap <buffer> u <C-u>
-  nnoremap <buffer> <nowait> d <C-d>
-  nnoremap <buffer> b <C-b>
-  nnoremap <buffer> <nowait> f <C-f>
   " Quick settings
-  setlocal nolist nonumber norelativenumber nospell modifiable nocursorline colorcolumn= statusline=%{''}
+  setlocal modifiable nolist nonumber norelativenumber nospell nocursorline
+  setlocal colorcolumn= statusline=%{''}
   if a:nofile
     setlocal buftype=nofile
   endif
+  " Quick mappings
+  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
+  if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
+  if s:no_buffer_map('u') | nnoremap <buffer> u <C-u> | endif
+  if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
+  if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
+  if s:no_buffer_map('f') | nnoremap <buffer> <nowait> f <C-f> | endif
   " Delete if only one left
   if len(tabpagebuflist()) == 1 | quit | endif
   exe 'augroup popup_' . bufnr('%')
