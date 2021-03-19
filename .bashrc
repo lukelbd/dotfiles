@@ -562,11 +562,12 @@ if hash tput 2>/dev/null; then
   export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
-# Rename files with matching base names into ordered numbered files
+# Rename files with matching base names or having 3-digit numbers into
+# ordered numbered files.
 rename() {
   local i dir ext base file1 files1 tmp tmps file2 files2
   base=$1
-  files1=("$base"*)
+  files1=("$base"*[0-9][0-9][0-9]*)
   [[ "$base" =~ '/' ]] && dir=${base%/*} || dir=.
   # shellcheck disable=2049
   [[ "${files1[0]}" =~ "*" ]] && { echo "Error: No files found."; return 1; }
