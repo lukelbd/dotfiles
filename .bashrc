@@ -494,9 +494,9 @@ alias inputrc_funcs='bind -l'  # the functions, for example 'forward-char'
 
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
+# alias phone-mount='simple-mtpfs -f -v ~/Phone'
 alias du='du -h -d 1'
 alias df='df -h'
-alias phone-mount='simple-mtpfs -f -v ~/Phone'
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
