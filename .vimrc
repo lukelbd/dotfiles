@@ -556,7 +556,7 @@ vnoremap gt mzgu<Esc>`<~h
 " NOTE: For some reason vim ignores foldlevelstart
 augroup fold_open
   au!
-  au BufReadPost * normal! zR
+  au BufReadPost * silent! foldopen!
 augroup END
 
 " Open *all* folds under cursor, not just this one
