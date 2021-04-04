@@ -54,7 +54,7 @@ trap cleanup EXIT  # remove files on exit or interruption!
 # Parse input
 ext=m4a
 quick=0  # 1 means skip metadata, 2 means skip normalization
-directory="$HOME/iCloud Drive/music"  # download directory
+directory=$HOME/Music  # download directory
 [ -d "$directory" ] || raise "Output directory \"$directory\" does not exist or is not a directory."
 while [ $# -gt 0 ]; do
   case "$1" in
