@@ -353,6 +353,7 @@ augroup popup_setup
   exe 'au FileType ' . join(s:popup_filetypes_nofile, ',') . ' call utils#popup_setup(1)'
 augroup END
 let g:idetools_filetypes_skip = s:popup_filetypes_file + s:popup_filetypes_nofile
+let g:tabline_filetypes_ignore = s:popup_filetypes_file + s:popup_filetypes_nofile
 
 " Window view and basic behavior
 augroup tab_toggle
@@ -555,7 +556,7 @@ vnoremap gt mzgu<Esc>`<~h
 " NOTE: For some reason vim ignores foldlevelstart
 augroup fold_open
   au!
-  au BufReadPost * normal! zR
+  au BufReadPost * silent! foldopen!
 augroup END
 
 " Open *all* folds under cursor, not just this one
