@@ -256,10 +256,11 @@ augroup tabs
   au TabLeave * let g:lasttab = tabpagenr()
 augroup END
 command! -nargs=* -complete=file Open call fzf#open_continuous(<f-args>)
-nnoremap <C-o> :Open 
-nnoremap <C-p> :Files 
-nnoremap <expr> <F3> ':Open ' . expand('%:h') . '/'
-nnoremap <expr> <C-y> ':Files ' . expand('%:h') . '/'
+noremap <C-o> :<C-u>Open 
+noremap <C-p> :<C-u>Files 
+noremap <C-g> :<C-u>GFiles<CR>
+noremap <expr> <F3> ":\<C-u>Open " . expand('%:h') . '/'
+noremap <expr> <C-y> ":\<C-u>Files " . expand('%:h') . '/'
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
@@ -391,6 +392,10 @@ nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 "-----------------------------------------------------------------------------"
 " Editing utiltiies
 "-----------------------------------------------------------------------------"
+" Jump to points with FZF
+noremap <silent> <Leader>' :<C-u>Marks<CR>
+noremap <silent> <Leader>" :<C-u>BLines<CR>
+
 " Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
