@@ -44,7 +44,7 @@ fi
 _echo_bashrc() {
   printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
 }
-_load_modules() {
+_load_unloaded() {
   local module   # but _loaded_modules is global
   read -r -a _loaded_modules < <(module --terse list 2>&1)
   # module purge 2>/dev/null
@@ -164,7 +164,7 @@ case "${HOSTNAME%%.*}" in
   midway*)
     # Modules and paths
     export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
-    _load_modules mlk intel  # for some reason latest CDO version is not default
+    _load_unloaded mlk intel  # for some reason latest CDO version is not default
 
     # Remove print statements from prompt
     # WARNING: Greedy glob removes commands sandwiched between print statements
@@ -178,7 +178,7 @@ case "${HOSTNAME%%.*}" in
     # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
-    _load_modules netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
+    _load_unloaded netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
     ;;
 
   *)
