@@ -43,7 +43,7 @@ set history=100  " search history
 set shell=/usr/bin/env\ bash
 set nrformats=alpha  " never interpret numbers as 'octal'
 set scrolloff=4
-let &g:colorcolumn = (has('gui_running') ? '0' : '89,120')
+let &g:colorcolumn = has('gui_running') ? '0' : '89,120'
 set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set updatetime=1000  " used for CursorHold autocmds
@@ -256,10 +256,11 @@ augroup tabs
   au TabLeave * let g:lasttab = tabpagenr()
 augroup END
 command! -nargs=* -complete=file Open call fzf#open_continuous(<f-args>)
-nnoremap <C-o> :Open 
-nnoremap <C-p> :Files 
-nnoremap <expr> <F3> ':Open ' . expand('%:h') . '/'
-nnoremap <expr> <C-y> ':Files ' . expand('%:h') . '/'
+noremap <C-o> :<C-u>Open 
+noremap <C-p> :<C-u>Files 
+noremap <C-g> :<C-u>GFiles<CR>
+noremap <expr> <F3> ":\<C-u>Open " . expand('%:h') . '/'
+noremap <expr> <C-y> ":\<C-u>Files " . expand('%:h') . '/'
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
@@ -304,11 +305,11 @@ noremap gt <Nop>
 noremap gT <Nop>
 nnoremap <Tab>, gT
 nnoremap <Tab>. gt
-nnoremap <silent> <Tab>' :exe "tabn ".(exists('g:lasttab') ? g:lasttab : 1)<CR>
+nnoremap <silent> <Tab>' :exe 'tabn ' . (exists('g:lasttab') ? g:lasttab : 1)<CR>
 nnoremap <silent> <Tab><Tab> :call fzf#tab_select()<CR>
 nnoremap <silent> <Tab>m :call fzf#tab_move()<CR>
-nnoremap <silent> <Tab>> :call fzf#tab_move(eval(tabpagenr()+1))<CR>
-nnoremap <silent> <Tab>< :call fzf#tab_move(eval(tabpagenr()-1))<CR>
+nnoremap <silent> <Tab>> :call fzf#tab_move(tabpagenr() + 1)<CR>
+nnoremap <silent> <Tab>< :call fzf#tab_move(tabpagenr() - 1)<CR>
 for s:num in range(1, 10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor
@@ -330,26 +331,30 @@ nnoremap <Tab>o zb
 nnoremap <Tab>u zH
 nnoremap <Tab>p zL
 nnoremap <silent> <Tab>= :<C-u>vertical resize 90<CR>
-nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3*max([1, v:count]))<CR>
-nnoremap <silent> <Tab>) :<C-u>exe 'resize ' . (winheight(0) + 3*max([1, v:count]))<CR>
-nnoremap <silent> <Tab>_ :<C-u>exe 'resize ' . (winheight(0) - 5*max([1, v:count]))<CR>
-nnoremap <silent> <Tab>+ :<C-u>exe 'resize ' . (winheight(0) + 5*max([1, v:count]))<CR>
-nnoremap <silent> <Tab>[ :<C-u>exe 'vertical resize ' . (winwidth(0) - 5*max([1, v:count]))<CR>
-nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5*max([1, v:count]))<CR>
-nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10*max([1, v:count]))<CR>
-nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10*max([1, v:count]))<CR>
+nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>) :<C-u>exe 'resize ' . (winheight(0) + 3 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>_ :<C-u>exe 'resize ' . (winheight(0) - 5 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>+ :<C-u>exe 'resize ' . (winheight(0) + 5 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>[ :<C-u>exe 'vertical resize ' . (winwidth(0) - 5 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * max([1, v:count]))<CR>
 
 " Enable quitting windows with simple 'q' press and disable line numbers
+" Note: Some popups require buftype==file for writing temporary files. Used trial and error.
+let s:popup_filetypes_file = ['__doc__', 'codi', 'fugitive', 'fugitiveblame', 'gitcommit', 'help', 'man', 'nerdtree', 'qf', 'tagbar']
+let s:popup_filetypes_nofile = ['diff', 'latexmk', 'vim-plug']
 augroup popup_setup
   au!
   au BufEnter * let b:recording = 0
+  au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
-  au FileType qf,gitcommit,fugitive,fugitiveblame,nerdtree,tagbar,codi call utils#popup_setup(0)
-  au FileType diff,man,latexmk,vim-plug call utils#popup_setup(1)
-  au FileType __doc__ call utils#pager_setup()
-  au FileType help call utils#help_setup()
+  exe 'au FileType ' . join(s:popup_filetypes_file, ',') . ' call utils#popup_setup(0)'
+  exe 'au FileType ' . join(s:popup_filetypes_nofile, ',') . ' call utils#popup_setup(1)'
 augroup END
+let g:idetools_filetypes_skip = s:popup_filetypes_file + s:popup_filetypes_nofile
+let g:tabline_filetypes_ignore = s:popup_filetypes_file + s:popup_filetypes_nofile
 
 " Window view and basic behavior
 augroup tab_toggle
@@ -387,6 +392,10 @@ nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 "-----------------------------------------------------------------------------"
 " Editing utiltiies
 "-----------------------------------------------------------------------------"
+" Jump to points with FZF
+noremap <silent> <Leader>' :<C-u>Marks<CR>
+noremap <silent> <Leader>" :<C-u>BLines<CR>
+
 " Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
@@ -552,7 +561,7 @@ vnoremap gt mzgu<Esc>`<~h
 " NOTE: For some reason vim ignores foldlevelstart
 augroup fold_open
   au!
-  au BufReadPost * normal! zR
+  au BufReadPost * silent! foldopen!
 augroup END
 
 " Open *all* folds under cursor, not just this one
@@ -770,6 +779,13 @@ for s:name in [
     exe "Plug 'lukelbd/" . s:name . "'"
   endif
 endfor
+let g:idetools_filetypes_all_tags = ['fortran']
+let g:idetools_filetypes_top_tags = {
+  \ 'vim'     : 'afc',
+  \ 'tex'     : 'bs',
+  \ 'python'  : 'fcm',
+  \ 'fortran' : 'smfp',
+  \ }
 
 " Hard requirements
 " Plug 'tpope/vim-repeat' " now edit custom version in .vim/plugin/autoload
@@ -1071,6 +1087,7 @@ endif
 " Mapping is # for hex string
 if PlugActive('colorizer')
   let g:colorizer_startup = 0
+  let g:colorizer_nomap = 1
   nnoremap <Leader># :<C-u>ColorToggle<CR>
 endif
 
@@ -1439,20 +1456,22 @@ if PlugActive('tagbar')
       \ ],
       \ 'sort' : 0
   \ }
-  let g:tagbar_silent = 1 " no information echoed
-  let g:tagbar_previewwin_pos = 'bottomleft' " result of pressing 'P'
-  let g:tagbar_left = 0 " open on left; more natural this way
-  let g:tagbar_indent = -1 " only one space indent
-  let g:tagbar_show_linenumbers = 0 " not needed
-  let g:tagbar_autofocus = 0 " don't autojump to window if opened
-  let g:tagbar_sort = 1 " sort alphabetically? actually much easier to navigate, so yes
-  let g:tagbar_case_insensitive = 1 " make sorting case insensitive
-  let g:tagbar_compact = 1 " no header information in panel
-  let g:tagbar_width = 15 " better default
-  let g:tagbar_zoomwidth = 15 " don't ever 'zoom' even if text doesn't fit
+  let g:no_status_line = 1
+  let g:tagbar_no_status_line = 1  " not sure which
+  let g:tagbar_silent = 1  " no information echoed
+  let g:tagbar_previewwin_pos = 'bottomleft'  " result of pressing 'P'
+  let g:tagbar_left = 0  " open on left; more natural this way
+  let g:tagbar_indent = -1  " only one space indent
+  let g:tagbar_show_linenumbers = 0  " not needed
+  let g:tagbar_autofocus = 0  " don't autojump to window if opened
+  let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
+  let g:tagbar_case_insensitive = 1  " make sorting case insensitive
+  let g:tagbar_compact = 1  " no header information in panel
+  let g:tagbar_width = 15  " better default
+  let g:tagbar_zoomwidth = 15  " don't ever 'zoom' even if text doesn't fit
   let g:tagbar_expand = 0
-  let g:tagbar_autoshowtag = 2 " never ever open tagbar folds automatically, even when opening for first time
-  let g:tagbar_foldlevel = 1 " setting to zero will override the 'kinds' fields in below dicts
+  let g:tagbar_autoshowtag = 2  " never ever open tagbar folds automatically, even when opening for first time
+  let g:tagbar_foldlevel = 1  " setting to zero will override the 'kinds' fields in below dicts
   let g:tagbar_map_openfold = '='
   let g:tagbar_map_closefold = '-'
   let g:tagbar_map_closeallfolds = '_'

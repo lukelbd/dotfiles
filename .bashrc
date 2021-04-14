@@ -100,6 +100,9 @@ case "${HOSTNAME%%.*}" in
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
     export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
+    export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
+    export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
+    export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export MANPATH=/usr/local/opt/grep/libexec/gnuman
     export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
     export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
@@ -494,9 +497,9 @@ alias inputrc_funcs='bind -l'  # the functions, for example 'forward-char'
 
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
+# alias phone-mount='simple-mtpfs -f -v ~/Phone'
 alias du='du -h -d 1'
 alias df='df -h'
-alias phone-mount='simple-mtpfs -f -v ~/Phone'
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
@@ -562,11 +565,12 @@ if hash tput 2>/dev/null; then
   export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
-# Rename files with matching base names into ordered numbered files
+# Rename files with matching base names or having 3-digit numbers into
+# ordered numbered files.
 rename() {
   local i dir ext base file1 files1 tmp tmps file2 files2
   base=$1
-  files1=("$base"*)
+  files1=("$base"*[0-9][0-9][0-9]*)
   [[ "$base" =~ '/' ]] && dir=${base%/*} || dir=.
   # shellcheck disable=2049
   [[ "${files1[0]}" =~ "*" ]] && { echo "Error: No files found."; return 1; }
@@ -1850,16 +1854,15 @@ if $_macos; then # first the MacOS options
   # alias artists="find ~/icloud-drive/music -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
   alias artists='find ~/iCloud\ Drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
   artist2folder() {
-    local dir base artist title
-    dir="$HOME/icloud-drive/music"
-    for file in "$dir/"*.{m4a,mp3}; do
+    local base artist title
+    for file in *.{m4a,mp3}; do
       # shellcheck disable=SC2049
       [[ "$file" =~ "*" ]] && continue
-      base="${file##*/}"
-      artist="${base% - *}"
-      title="${base##* - }"
-      [ -d "$dir/$artist" ] || mkdir "$dir/$artist"
-      mv "$file" "$dir/$artist/$title"
+      base=${file##*/}
+      artist=${base% - *}
+      title=${base##* - }
+      [ -d "$artist" ] || mkdir "$artist"
+      mv "$file" "$artist/$title"
       echo "Moved '$base' to '$artist/$title'."
     done
   }

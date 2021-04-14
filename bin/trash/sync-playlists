@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Synchronises playlists between local files and Plex server playlists.
-Also standardized
+Synchronises playlists between local files and Plex server playlists. Also standardizes
 format of local paths by stripping unnecessary extended m3u instructions, normalizing
 line endings, and ensuring paths are relative to absolute path. If there are differences
 between local and Plex playlists, both will be merged and duplicates deleted, meaning

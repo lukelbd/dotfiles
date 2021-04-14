@@ -304,6 +304,20 @@
             "disabled": true
         },
         {
+            "command": "application:activate-previous-tab",
+            "keys": [
+                "Accel Shift ,"
+            ],
+            "selector": "body"
+        },
+        {
+            "command": "application:activate-next-tab",
+            "keys": [
+                "Accel Shift ."
+            ],
+            "selector": "body"
+        },
+        {
             "command": "notebook:change-cell-to-code",
             "keys": [
                 "0"

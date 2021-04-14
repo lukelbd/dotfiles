@@ -18,14 +18,14 @@ remove() {
 # Initial stuff
 shopt -s nullglob
 sync=$HOME/.gphotos-sync
-photos=$HOME/photos
+pictures=$HOME/Pictures
 which pipenv &>/dev/null || raise "Command 'pipenv' not found."
 [ -d "$sync" ] || raise "Google photos sync directory '$sync' not found."
-[ -d "$photos" ] || raise "Google photos destination directory '$photos' not found."
+[ -d "$pictures" ] || raise "Google photos destination directory '$pictures' not found."
 
 # Organize photos into expected directory structure
 # NOTE: Albums are just symlinks so no need to update them
-cd "$photos" || exit 1
+cd "$pictures" || exit 1
 for dir in unsorted/????-??; do
   date=${dir##*/}
   year=${date%-*}
@@ -40,10 +40,10 @@ done
 
 # Update photos
 cd "$sync" || exit 1
-pipenv run gphotos-sync "$photos"
+pipenv run gphotos-sync "$pictures"
 
 # Expand photos into custom directory structure
-cd "$photos" || exit 1
+cd "$pictures" || exit 1
 [ -d unsorted ] || mkdir unsorted
 for year in photos/????; do
   year=${year##*/}

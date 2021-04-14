@@ -496,12 +496,12 @@ function! utils#tagbar_setup() abort
     wincmd h
     wincmd h " move two places in case e.g. have help menu + nerdtree already
   endif
-  let tabfts = map(tabpagebuflist(),'getbufvar(v:val, "&filetype")')
-  if In(tabfts,'tagbar')
+  let tabfts = map(tabpagebuflist(), 'getbufvar(v:val, "&filetype")')
+  if In(tabfts, 'tagbar')
     TagbarClose
   else
     TagbarOpen
-    if In(tabfts,'nerdtree')
+    if In(tabfts, 'nerdtree')
       wincmd l
       wincmd L
       wincmd p
@@ -512,14 +512,14 @@ endfunction
 " Closing tabs and windows
 function! utils#vim_close() abort
   Obsession .vimsession
-  qa
-  " tabdo windo if &filetype == 'log' | q! | else | q | endif
+  qall
+  " tabdo windo if &filetype == 'log' | quit! | else | quit | endif
 endfunction
 function! utils#tab_close() abort
   let ntabs = tabpagenr('$')
-  let islast = (tabpagenr('$') == tabpagenr())
+  let islast = tabpagenr('$') == tabpagenr()
   if ntabs == 1
-    qa
+    qall
   else
     tabclose
     if !islast
@@ -529,8 +529,8 @@ function! utils#tab_close() abort
 endfunction
 function! utils#window_close() abort
   let ntabs = tabpagenr('$')
-  let islast = (tabpagenr('$') == tabpagenr())
-  q
+  let islast = tabpagenr('$') == tabpagenr()
+  quit
   if ntabs != tabpagenr('$') && !islast
     silent! tabp
   endif
@@ -560,33 +560,36 @@ function! utils#rename_file(name, bang)
   endif
 endfunction
 
+function! s:no_buffer_map(map)
+  let dict = maparg(a:map, 'n', v:false, v:true)
+  return empty(dict) || !dict['buffer']
+endfunction
 " For popup windows
-" For location lists, enter jumps to location. Restore this behavior.
+" For location lists, <CR> jumps to location. Restore this behavior.
 function! utils#popup_setup(nofile) abort
-  nnoremap <silent> <buffer> <CR> <CR>
-  nnoremap <silent> <buffer> <C-w> :q!<CR>
-  nnoremap <silent> <buffer> q :q!<CR>
-  setlocal nolist nonumber norelativenumber nospell modifiable nocursorline colorcolumn=
-  if a:nofile | setlocal buftype=nofile | endif
-  if len(tabpagebuflist()) == 1 | q | endif
+  " Quick settings
+  setlocal modifiable nolist nonumber norelativenumber nospell nocursorline
+  setlocal colorcolumn= statusline=%{''}
+  if a:nofile
+    setlocal buftype=nofile
+  endif
+  " Quick mappings
+  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
+  if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
+  if s:no_buffer_map('u') | nnoremap <buffer> u <C-u> | endif
+  if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
+  if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
+  if s:no_buffer_map('f') | nnoremap <buffer> <nowait> f <C-f> | endif
+  " Delete if only one left
+  if len(tabpagebuflist()) == 1 | quit | endif
   exe 'augroup popup_' . bufnr('%')
     au!
-    exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | q | endif'
+    exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | quit | endif'
   augroup END
-endfunction
-
-" For pager windows
-function! utils#pager_setup() abort
-  call utils#popup_setup(0) " argument means we do not set buftype=nofile
-  nnoremap <buffer> u <C-u>
-  nnoremap <nowait> <buffer> d <C-d>
-  nnoremap <buffer> b <C-b>
-  nnoremap <nowait> <buffer> f <C-f>
 endfunction
 
 " For help windows
 function! utils#help_setup() abort
-  call utils#popup_setup(0) " argument means we do not set buftype=nofile
   wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
   vertical resize 80 " always certain size
   nnoremap <buffer> <CR> <C-]>
@@ -598,7 +601,7 @@ endfunction
 function! utils#cmdwin_setup() abort
   silent! unmap <CR>
   silent! unmap <C-c>
-  nnoremap <buffer> <silent> q :q<CR>
+  nnoremap <buffer> <silent> q :quit<CR>
   nnoremap <buffer> <Plug>Execute <C-c><CR>
   inoremap <buffer> <Plug>Execute <C-c><CR>
   inoremap <buffer> <expr> <CR> ""
