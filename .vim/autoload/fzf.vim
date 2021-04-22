@@ -44,53 +44,46 @@ endfunction
 " Check if user selection is directory, descend until user selects a file
 let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
 function! fzf#open_continuous(...) abort
+  let paths = []
   for pattern in a:000
-    for path in expand(pattern, 0, 1)
-      let path = substitute(path, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-      if ! len(path)
-        let path = '.'
+    let pattern = substitute(pattern, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
+    call extend(paths, expand(pattern, 0, 1))
+  endfor
+  while empty(paths) || len(paths) == 1 && isdirectory(paths[0])
+    " Format directory name
+    let path = empty(paths) ? '.' : paths[0]
+    let path = fnamemodify(path, ':p')
+    let path = substitute(path, '/$', '', '')
+    " Get user selection
+    " Note: Start of old while isdirectory loop
+    let prompt = substitute(path, '^' . expand('~'), '~', '')
+    let items = fzf#run({
+      \ 'source': s:list_files(path),
+      \ 'options': "--multi --no-sort --prompt='" . prompt . "/'",
+      \ 'down': '~30%'
+      \ })
+    " Build user selections into paths
+    let paths = []
+    for item in items
+      if item == s:newfile
+        let item = input(prompt . '/', '', 'customlist,NullList')
       endif
-      let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
-      let path_orig = path
-      while isdirectory(path)
-        " Get user selection
-        let prompt = substitute(path, '^' . expand('~'), '~', '')
-        let items = fzf#run({
-          \ 'source': s:list_files(path),
-          \ 'options': "--no-sort --prompt='" . prompt . "/'",
-          \ 'down': '~30%'
-          \ })
-        if !len(items)  " user cancelled operation
-          let path = ''
-          break
-        endif
-
-        " Build back selection into path
-        " Todo: Permit opening multiple files at once?
-        let item = items[0]
-        if item == s:newfile
-          let item = input(prompt . '/', '', 'customlist,NullList')
-          if !len(item)
-            let path = ''
-          else
-            let path = path . '/' . item
-          endif
-          break
-        else
-          if item ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
-            let path = fnamemodify(path, ':h') " head of current directory
-          else
-            let path = path . '/' . item
-          endif
-        endif
-      endwhile
-
-      " Open file or cancel operation
-      " If it is already open just jump to that tab
-      if !empty(path)
-        call s:tab_drop(path)
+      if item ==# '..'  " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+        call add(paths, fnamemodify(path, ':h'))  " head of current directory
+      elseif !empty(item)
+        call add(paths, path . '/' . item)
       endif
     endfor
+  endwhile
+  " Open file(s), or if it is already open just jump to that tab
+  for path in paths
+    if isdirectory(path)  " false for empty string
+      echohl WarningMsg
+      echom "Warning: Skipping directory '" . path . "'."
+      echohl None
+    elseif !empty(path)
+      call s:tab_drop(path)
+    endif
   endfor
 endfunction
 
