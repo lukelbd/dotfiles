@@ -342,7 +342,7 @@ nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * max(
 
 " Enable quitting windows with simple 'q' press and disable line numbers
 " Note: Some popups require buftype==file for writing temporary files. Used trial and error.
-let s:popup_filetypes_file = ['__doc__', 'codi', 'fugitive', 'fugitiveblame', 'gitcommit', 'help', 'man', 'nerdtree', 'qf', 'tagbar']
+let s:popup_filetypes_file = ['__doc__', 'codi', 'fugitive', 'fugitiveblame', 'gitcommit', 'help', 'man', 'nerdtree', 'qf', 'tagbar', 'undotree']
 let s:popup_filetypes_nofile = ['diff', 'latexmk', 'vim-plug']
 augroup popup_setup
   au!
@@ -1093,6 +1093,8 @@ endif
 
 " Undo tree
 if PlugActive('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
   noremap <Leader>u :UndotreeToggle<CR>
   if has('persistent_undo')
     let &undodir=$HOME . '/.undodir'
