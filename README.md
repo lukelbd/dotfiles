@@ -28,15 +28,15 @@ configures nearly every conceivable key mapping as I see fit. Instead of just us
 | `\` | `n` | Complex regex replacements and tabular alignment. |
 | `c` | `n` | Toggling comments and inserting comment headers. |
 | `g` | `n` | Git-gutter commands and other git-related things. |
-| `<C-s>` | `vi` | Surrounding content with delimiters. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
-| `<C-d>` | `i` | Inserting pre-defined snippets. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
+| `<C-s>` | `vi` | Surrounding content with delimiters. See the [shortcuts](https://github.com/lukelbd/vim-shortcuts) plugin. |
+| `<C-d>` | `i` | Inserting pre-defined snippets. See the [shortcuts](https://github.com/lukelbd/vim-shortcuts) plugin. |
 
 Also check out the vim plugins I've written over the years:
-[vim-textools](https://github.com/lukelbd/vim-textools),
-[vim-idetools](https://github.com/lukelbd/vim-idetools),
-[vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped),
+[vim-shortcuts](https://github.com/lukelbd/vim-templates),
+[vim-tagtools](https://github.com/lukelbd/vim-tagtools),
 [vim-tabline](https://github.com/lukelbd/vim-tabline), and
 [vim-statusline](https://github.com/lukelbd/vim-statusline), and
+[vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped),
 [vim-toggle](https://github.com/lukelbd/vim-toggle).
 
 You can also find the following filetype-specific features in the `ftplugin`, `syntax`,

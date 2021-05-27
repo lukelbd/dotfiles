@@ -12,6 +12,9 @@
 "     F6: 1b 5b 31 37 7e (Ctrl-;)
 " Also use Karabiner 'map Ctrl-j/k/h/l to arrow keys', so be aware that if
 " you map those keys in Vim, should also map arrows.
+" Also we use 'x' for insert-related marks, 'y' for visual-related marks, and 'z'
+" for normal-related marks in various complex maps.
+" 'z' marks in various complicated remaps.
 " Note when installing with anaconda, you may need to run
 " conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
@@ -189,7 +192,7 @@ endfor
 " * Ctrl-p and Ctrl-n used for scrolling, remap these instead
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
 " * Turn off common normal mode issues
-" * q and @ are for macros, instead reserve for quitting popup windows and idetools map
+" * q and @ are for macros, instead reserve for quitting popup windows and tagtools map
 " * Ctrl-r is undo, remap this
 for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
@@ -320,15 +323,15 @@ nnoremap <Tab>j <C-w>j
 nnoremap <Tab>k <C-w>k
 nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
-nnoremap <Tab>- :split
-nnoremap <Tab>\ :vsplit
+nnoremap <Tab>- :split 
+nnoremap <Tab>\ :vsplit 
 
 " Moving screen and resizing windows
 " nnoremap ;0 M " center in window
-nnoremap <Tab>0 mzz.`z
-nnoremap <Tab>i zt
+nnoremap <Tab>y zH
+nnoremap <Tab>u zt
+nnoremap <Tab>i mzz.`z
 nnoremap <Tab>o zb
-nnoremap <Tab>u zH
 nnoremap <Tab>p zL
 nnoremap <silent> <Tab>= :<C-u>vertical resize 90<CR>
 nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3 * max([1, v:count]))<CR>
@@ -353,7 +356,7 @@ augroup popup_setup
   exe 'au FileType ' . join(s:popup_filetypes_file, ',') . ' call utils#popup_setup(0)'
   exe 'au FileType ' . join(s:popup_filetypes_nofile, ',') . ' call utils#popup_setup(1)'
 augroup END
-let g:idetools_filetypes_skip = s:popup_filetypes_file + s:popup_filetypes_nofile
+let g:tagtools_filetypes_skip = s:popup_filetypes_file + s:popup_filetypes_nofile
 let g:tabline_filetypes_ignore = s:popup_filetypes_file + s:popup_filetypes_nofile
 
 " Window view and basic behavior
@@ -373,8 +376,9 @@ nnoremap <Leader>: q:
 nnoremap <Leader>/ q/
 nnoremap <Leader>? q?
 nnoremap <silent> <Leader>h :call utils#show_cmd_help() \| redraw!<CR>
-nnoremap <silent> <Leader>m :call utils#show_cmd_man() \| redraw!<CR>
+nnoremap <silent> <Leader>H :call utils#show_cmd_man() \| redraw!<CR>
 nnoremap <silent> <Leader>v :Help<CR>
+nnoremap <silent> <Leader>m :Maps<CR>
 " nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 
 " Cycle through wildmenu expansion with these keys
@@ -418,9 +422,9 @@ noremap M gE
 " let g:highlightmark_cterm_colors = [5]
 command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
-nnoremap <Leader>` :<C-u>RemoveHighlights<CR>
 nnoremap <expr> ` "`" . nr2char(97+v:count)
 nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
+nnoremap <Leader>~ :<C-u>RemoveHighlights<CR>
 
 " Alias single-key builtin text objects
 for s:bracket in ['r[', 'a<', 'c{']
@@ -430,11 +434,11 @@ for s:bracket in ['r[', 'a<', 'c{']
   exe 'xnoremap a' . s:bracket[0] . ' a' . s:bracket[1]
 endfor
 
-" Insert mode undo map
-inoremap <silent> <C-u> <C-o>:undo<CR>
-
-" Redo map to capital U
+" Insert and mormal mode undo and redo. Also permit toggling blocks while in insert mode
 nnoremap U <C-r>
+nnoremap <C-r> <Nop>
+inoremap <silent> <C-u> <C-o>mx<C-o>u
+inoremap <silent> <C-y> <C-o><C-r><C-o>`x<Right>
 
 " Record macro by pressing Q, the escapes prevent q from triggerering
 " Avoid q mapping because we use that to quit popup windows
@@ -464,15 +468,15 @@ nnoremap O OX<Backspace>
 " Use 'yp' to paste last yanked, unchanged text, because cannot use zero
 nnoremap yp "0p
 nnoremap yP "0P
-nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"'.v:count.'p'
-nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"'.v:count.'P'
+nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
+nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
 
 " Yank until end of line, like C and D
 nnoremap Y y$
 
 " Better join behavior -- before 2J joined this line and next, now it
 " means 'join the two lines below'; more intuitive
-nnoremap <expr> J v:count > 1  ? 'JJ' : 'J'
+nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
 nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 
 " Maps to functions that accept motions
@@ -761,11 +765,11 @@ call plug#begin('~/.vim/plugged')
 " See: https://github.com/junegunn/vim-plug/issues/32
 " Note ^= prepends to list, += appends
 for s:name in [
-  \ 'vim-idetools',
-  \ 'vim-textools',
-  \ 'vim-scrollwrapped',
+  \ 'vim-shortcuts',
+  \ 'vim-tagtools',
   \ 'vim-statusline',
   \ 'vim-tabline',
+  \ 'vim-scrollwrapped',
   \ 'vim-toggle',
   \ 'codi.vim'
   \ ]
@@ -779,8 +783,8 @@ for s:name in [
     exe "Plug 'lukelbd/" . s:name . "'"
   endif
 endfor
-let g:idetools_filetypes_all_tags = ['fortran']
-let g:idetools_filetypes_top_tags = {
+let g:tagtools_filetypes_all_tags = ['fortran']
+let g:tagtools_filetypes_top_tags = {
   \ 'vim'     : 'afc',
   \ 'tex'     : 'bs',
   \ 'python'  : 'fcm',
@@ -1010,10 +1014,10 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" Mappings for vim-idetools command
+" Mappings for vim-tagtools command
 " Also use ctag brackets mapping for default double bracket motion, except never
 " overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
-if PlugActive('vim-idetools') || &runtimepath =~# 'vim-idetools'
+if PlugActive('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
   augroup double_bracket
     au!
     au BufEnter *
@@ -1036,6 +1040,32 @@ if PlugActive('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
   vnoremap <silent> <expr> <Down> (winheight(0)/4) . '<C-e>' . (winheight(0)/4) . 'gj'
   vnoremap <silent> <expr> <Up>   (winheight(0)/4) . '<C-y>' . (winheight(0)/4) . 'gk'
+endif
+
+" Vim surround
+" Add shortcuts for surrounding text objects with delims
+" Note: More global delims are found in textools plugin because I define
+" some complex helper funcs there
+if PlugActive('vim-surround')
+  " nmap ySS ySS  " wrap inner line
+  " nmap yss yss  " wrap whole line
+  nmap ysw ysiw
+  nmap ysW ysiW
+  nmap ysp ysip
+  nmap ySw ySiw
+  nmap ySW ySiW
+  nmap ySp ySip
+endif
+
+" Auto-complete delimiters
+" Filetype-specific settings are in various ftplugin files
+if PlugActive('delimitmate')
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
+  let g:delimitMate_jump_expansion = 0
+  let g:delimitMate_quotes = "\" '"
+  let g:delimitMate_matchpairs = '(:),{:},[:]'  " exclude <> by default for use in comparison operators
+  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
 " Add global delims with vim-textools plugin functions and declare my weird
@@ -1081,6 +1111,98 @@ if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
   for [s:binding, s:pair] in items(s:global_surround)
     let g:surround_{char2nr(s:binding)} = s:pair
   endfor
+endif
+
+" Text objects
+" Many of these just copied, some ideas for future:
+" https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
+" Note: Method definition needs that fancy regex instead of just \< because
+" textobj looks for *narrowest* possible match so only catches tail of
+" method call. Note that \@! fails but \zs works for some reason.
+if PlugActive('vim-textobj-user')
+  let s:universal_textobjs_dict = {
+    \   'line': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 'textobj#current_line_a',
+    \     'select-a': 'al',
+    \     'select-i-function': 'textobj#current_line_i',
+    \     'select-i': 'il',
+    \   },
+    \   'blanklines': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 'textobj#blank_lines',
+    \     'select-a': 'a<Space>',
+    \     'select-i-function': 'textobj#blank_lines',
+    \     'select-i': 'i<Space>',
+    \   },
+    \   'nonblanklines': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 'textobj#nonblank_lines',
+    \     'select-a': 'aP',
+    \     'select-i-function': 'textobj#nonblank_lines',
+    \     'select-i': 'iP',
+    \   },
+    \   'uncommented': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 'textobj#uncommented_lines',
+    \     'select-i-function': 'textobj#uncommented_lines',
+    \     'select-a': 'a<CR>',
+    \     'select-i': 'i<CR>',
+    \   },
+    \   'function': {
+    \     'pattern': ['\<\K\k*(', ')'],
+    \     'select-a': 'af',
+    \     'select-i': 'if',
+    \   },
+    \   'method': {
+    \     'pattern': ['\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')'],
+    \     'select-a': 'am',
+    \     'select-i': 'im',
+    \   },
+    \   'array': {
+    \     'pattern': ['\<\K\k*\[', '\]'],
+    \     'select-a': 'aA',
+    \     'select-i': 'iA',
+    \   },
+    \  'curly': {
+    \     'pattern': ['‘', '’'],
+    \     'select-a': 'aq',
+    \     'select-i': 'iq',
+    \   },
+    \  'curly-double': {
+    \     'pattern': ['“', '”'],
+    \     'select-a': 'aQ',
+    \     'select-i': 'iQ',
+    \   },
+    \ }
+
+  " Enable and define related maps
+  " Make sure to match [<letter> with the corresponding textobject va<letter>
+  " Note: For some reason it is critical the '^' is outside the \(\) group
+  " Next comment block
+  call textobj#user#plugin('universal', s:universal_textobjs_dict)
+  nnoremap <CR> <C-]>
+  " Next block of contiguous comments
+  noremap <expr> [c textobj#search_block(
+    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 0
+    \ )
+  noremap <expr> ]c textobj#search_block(
+    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 1
+    \ )
+  " Next block at *parent indent level*
+  noremap <expr> [i textobj#search_block(
+    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 0
+    \ )
+  noremap <expr> ]i textobj#search_block(
+    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 1
+    \ )
+  " Next block at *lower* indent level
+  noremap <expr> [I textobj#search_block(
+    \ '^\zs\ze' . textobj#regex_parent_indent(), 0
+    \ )
+  noremap <expr> ]I textobj#search_block(
+    \ '^\zs\ze' . textobj#regex_parent_indent(), 1
+    \ )
 endif
 
 " *Very* expensive for large files so only ever activate manually
@@ -1206,115 +1328,6 @@ if PlugActive('vim-sneak')
   map T <Plug>Sneak_T
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
-endif
-
-" Vim surround
-" Add shortcuts for surrounding text objects with delims
-" Note: More global delims are found in textools plugin because I define
-" some complex helper funcs there
-if PlugActive('vim-surround')
-  nmap ysw ysiw
-  nmap ysW ysiW
-  nmap ysp ysip
-  nmap ySw ySiw
-  nmap ySW ySiW
-  nmap ySp ySip
-endif
-
-" Auto-complete delimiters
-" Filetype-specific settings are in various ftplugin files
-if PlugActive('delimitmate')
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
-  let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_quotes = "\" '"
-  let g:delimitMate_matchpairs = '(:),{:},[:]'  " exclude <> by default for use in comparison operators
-  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
-endif
-
-" Text objects
-" Many of these just copied, some ideas for future:
-" https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
-" Note: Method definition needs that fancy regex instead of just \< because
-" textobj looks for *narrowest* possible match so only catches tail of
-" method call. Note that \@! fails but \zs works for some reason.
-if PlugActive('vim-textobj-user')
-  let s:universal_textobjs_dict = {
-    \   'line': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#current_line_a',
-    \     'select-a': 'al',
-    \     'select-i-function': 'textobj#current_line_i',
-    \     'select-i': 'il',
-    \   },
-    \   'blanklines': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#blank_lines',
-    \     'select-a': 'a<Space>',
-    \     'select-i-function': 'textobj#blank_lines',
-    \     'select-i': 'i<Space>',
-    \   },
-    \   'nonblanklines': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#nonblank_lines',
-    \     'select-a': 'aP',
-    \     'select-i-function': 'textobj#nonblank_lines',
-    \     'select-i': 'iP',
-    \   },
-    \   'uncommented': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#uncommented_lines',
-    \     'select-i-function': 'textobj#uncommented_lines',
-    \     'select-a': 'a<CR>',
-    \     'select-i': 'i<CR>',
-    \   },
-    \   'function': {
-    \     'pattern': ['\<\K\k*(', ')'],
-    \     'select-a': 'af',
-    \     'select-i': 'if',
-    \   },
-    \   'method': {
-    \     'pattern': ['\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')'],
-    \     'select-a': 'am',
-    \     'select-i': 'im',
-    \   },
-    \   'array': {
-    \     'pattern': ['\<\K\k*\[', '\]'],
-    \     'select-a': 'aA',
-    \     'select-i': 'iA',
-    \   },
-    \  'curly': {
-    \     'pattern': ['‘', '’'],
-    \     'select-a': 'aq',
-    \     'select-i': 'iq',
-    \   },
-    \  'curly-double': {
-    \     'pattern': ['“', '”'],
-    \     'select-a': 'aQ',
-    \     'select-i': 'iQ',
-    \   },
-    \ }
-
-  " Enable and define related maps
-  " Make sure to match [<letter> with the corresponding textobject va<letter>
-  " Note: For some reason it is critical the '^' is outside the \(\) group
-  " Next comment block
-  call textobj#user#plugin('universal', s:universal_textobjs_dict)
-  noremap <expr> [c textobj#search_block(
-    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 0)
-  noremap <expr> ]c textobj#search_block(
-    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 1)
-  " Next block at *parent indent level*
-  noremap <expr> [i textobj#search_block(
-    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 0)
-  noremap <expr> ]i textobj#search_block(
-    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 1)
-  " Next block at *lower* indent level
-  noremap <expr> [I textobj#search_block(
-    \ '^\zs\ze' . textobj#regex_parent_indent(), 0)
-  noremap <expr> ]I textobj#search_block(
-    \ '^\zs\ze' . textobj#regex_parent_indent(), 1)
-  nnoremap <CR> <C-]>
 endif
 
 " Neocomplete and deoplete

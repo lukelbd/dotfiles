@@ -51,7 +51,7 @@ function! utils#swap_characters(right) abort
   let cnum = col('.')
   let line = getline('.')
   let idx = a:right ? cnum : cnum - 1
-  if (idx > 0 && idx < len(line))
+  if idx > 0 && idx < len(line)
     let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
     call setline('.', line)
   endif
@@ -175,10 +175,10 @@ endfunction
 " Test if file exists
 function! utils#file_exists() abort
   let files = glob(expand('<cfile>'))
-  if len(files) > 0
-    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
-  else
+  if empty(files)
     echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  else
+    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
   endif
 endfunction
 
@@ -210,7 +210,7 @@ function! utils#show_vim_help(...) abort
   else
     let item = input('Vim help item: ', '', 'help')
   endif
-  if len(item)
+  if !empty(item)
     exe 'vert help ' . item
   endif
 endfunction
@@ -222,7 +222,7 @@ function! utils#show_cmd_help(...) abort
   else
     let cmd = input('Get --help info: ', '', 'shellcmd')
   endif
-  if len(cmd)
+  if !empty(cmd)
     silent! exe '!clear; '
       \ . 'search=' . cmd . '; '
       \ . 'if [ -n $search ] && builtin help $search &>/dev/null; then '
@@ -245,12 +245,12 @@ function! utils#show_cmd_man(...) abort
   else
     let cmd = input('Get man page: ', '', 'shellcmd')
   endif
-  silent! exe '!clear; '
-    \ . 'search=' . cmd . '; '
-    \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
-    \ . '  command man $search; '
-    \ . 'fi'
-  if len(cmd)
+  if !empty(cmd)
+    silent! exe '!clear; '
+      \ . 'search=' . cmd . '; '
+      \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
+      \ . '  command man $search; '
+      \ . 'fi'
     if v:shell_error != 0
       echohl WarningMsg
       echom 'Warning: "' . cmd . ' --help" failed.'
@@ -459,12 +459,12 @@ endfunction
 function! utils#syntastic_enable() abort
   let nbufs = len(tabpagebuflist())
   let checkers = utils#syntastic_checkers()
-  if len(checkers) == 0
+  if empty(checkers)
     echom 'No checkers activated.'
   else
     SyntasticCheck
     if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
-        \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
+  \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
       wincmd k " jump to main
       let b:syntastic_on = 1
       if !(exists('b:gitgutter_enabled') && b:gitgutter_enabled)
@@ -654,7 +654,7 @@ function! utils#cyclic_next(count, list, ...) abort
   let params = a:list ==# 'loc' ? [0] : []
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let items = call(func, params)
-  if len(items) == 0
+  if empty(items)
     return 'echoerr ' . string('E42: No Errors')  " string() adds quotes
   endif
 

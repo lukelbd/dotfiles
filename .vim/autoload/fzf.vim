@@ -44,25 +44,26 @@ endfunction
 " Check if user selection is directory, descend until user selects a file
 let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
 function! fzf#open_continuous(...) abort
+  " Expand input paths
   let paths = []
   for pattern in a:000
     let pattern = substitute(pattern, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
     call extend(paths, expand(pattern, 0, 1))
   endfor
+  " Fuzzy selection inside directories
   while empty(paths) || len(paths) == 1 && isdirectory(paths[0])
     " Format directory name
     let path = empty(paths) ? '.' : paths[0]
     let path = fnamemodify(path, ':p')
     let path = substitute(path, '/$', '', '')
     " Get user selection
-    " Note: Start of old while isdirectory loop
     let prompt = substitute(path, '^' . expand('~'), '~', '')
     let items = fzf#run({
       \ 'source': s:list_files(path),
       \ 'options': "--multi --no-sort --prompt='" . prompt . "/'",
       \ 'down': '~30%'
       \ })
-    " Build user selections into paths
+    " Build user selections into paths, possibly requesting input file names
     let paths = []
     for item in items
       if item == s:newfile
@@ -81,6 +82,8 @@ function! fzf#open_continuous(...) abort
       echohl WarningMsg
       echom "Warning: Skipping directory '" . path . "'."
       echohl None
+    elseif path =~# '[*?[\]]'  " failed glob search so do nothing
+      :
     elseif !empty(path)
       call s:tab_drop(path)
     endif

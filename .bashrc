@@ -74,12 +74,12 @@ case "${HOSTNAME%%.*}" in
   # Macbook settings
   uriah*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
+    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
     # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
     # * Installed ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
+    # * Installed tex using: brew install --cask mactex
     # * Installed universal ctags with (not in main repo becauase no versions yet):
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
-    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
-    #   Manage tex with homebrew using 'mactex'.
     # * Installed gcc and gfortran with 'port install gcc6' then 'port select
     #   --set gcc mp-gcc6'. Try 'port select --list gcc'
     # * Installed various utils with 'brew install coreutils findutils gnu-sed
@@ -362,15 +362,7 @@ open() {
       app="Finder.app"
     else
       case "$file" in
-        # Special considerations for PDF figure files
-        *.pdf)
-          path=$(abspath "$file")
-          if [[ "$path" =~ "figs-" ]] || [[ "$path" =~ "figures-" ]]; then
-            app="Preview.app"
-          else
-            app="PDF Expert.app"
-          fi ;;
-        # Other simpler filetypes
+        *.pdf)                          app="PDFOpen.app" ;;
         *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
@@ -1580,8 +1572,10 @@ ttf2otf() {
 # Rudimentary wordcount with detex
 # The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
-  local detexed=$(detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
-    "$1" | grep -v .pdf | grep -v 'fig[0-9]')
+  local detexed=$( \
+    detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' "$1" \
+    | grep -v .pdf | grep -v 'fig[0-9]' \
+  )
   echo "$detexed" | xargs  # print result in one giant line
   echo "$detexed" | wc -w  # get word count
 }
