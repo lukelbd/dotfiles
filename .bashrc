@@ -1763,7 +1763,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
 fi
 
 #-----------------------------------------------------------------------------#
-# iTerm2 title management
+# Window title management
 #-----------------------------------------------------------------------------#
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762
 # 1. First was idea to make title match the working directory; but fails/not useful
@@ -1800,8 +1800,6 @@ _title_set() {  # default way is probably using Cmd-I in iTerm2
 
 # Get the title from file
 _title_get() {
-  # if [ -n "$_title" ]; then # this lets window have different title in different panes
-    # _title="$_title" # already exists
   if ! [ -r "$_title_file" ]; then
     unset _title
   elif $_macos; then
@@ -1833,21 +1831,22 @@ if $_macos; then
 fi
 alias title='_title_set'  # easier for user
 
+#-----------------------------------------------------------------------------#
 # Mac stuff
+#-----------------------------------------------------------------------------#
 # TODO: This hangs when run from interactive cluster node, we test by comparing
 # hostname variable with command (variable does not change)
 if $_macos; then # first the MacOS options
-  # Use Homebrew-bash for shell
+  # Homebrew-bash as default shell
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null \
     || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
+  alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information
 
-  # Video stuff
-  # Audio and video stuff
-  # alias artists="find ~/icloud-drive/music -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias artists='find ~/iCloud\ Drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
-  artist2folder() {
+  # Audio and video
+  alias artists='find ~/Music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | grep -v ^Media$ | uniq -c | sort -n'
+  artistfolder() {
     local base artist title
     for file in *.{m4a,mp3}; do
       # shellcheck disable=SC2049
@@ -1860,16 +1859,12 @@ if $_macos; then # first the MacOS options
       echo "Moved '$base' to '$artist/$title'."
     done
   }
-  strip_audio() {
+  audiostrip() {
     local file
     for file in "$@"; do
       ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"
     done
   }
-
-
-  # Meteorology stuff
-  alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information
 fi
 
 #-----------------------------------------------------------------------------#
