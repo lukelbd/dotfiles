@@ -487,13 +487,6 @@ noremap <expr> <silent> gQ utils#wrap_item_lines_expr()
 nnoremap <silent> <Leader>o :noh<CR>
 nnoremap <silent> <Leader>O :set hlsearch<CR>
 
-" Map indentation commands
-" Note the <Esc> is needed first because it cancels application of the number operator
-" to what follows; we want to use that number operator for our own purposes
-nnoremap <expr> <nowait> > (v:count) > 1 ? '<Esc>'.repeat('>>', v:count) : '>>'
-nnoremap <expr> <nowait> < (v:count) > 1 ? '<Esc>'.repeat('<<', v:count) : '<<'
-nnoremap <nowait> = ==
-
 " Never save single-character deletions to any register
 noremap x "_x
 noremap X "_X
@@ -619,13 +612,13 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
+" Search for git conflict blocks
+noremap gG /^[<>=\|]\{2,}<CR>
 " Search for non-ASCII chars
 " Fails: https://stackoverflow.com/a/16987522/4970632
 " noremap gA /[^\x00-\x7F]<CR>
 " Works: https://stackoverflow.com/a/41168966/4970632
 noremap gA /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-" Search for conflict blocks
-noremap gc /^[<>=\|]\{2,}<CR>
 
 " Delete commented text. For some reason search screws up when using \(\) groups,
 " maybe because first parts of match are identical?
@@ -709,16 +702,6 @@ function! Comment()
   else
     return ''
   endif
-endfunction
-
-" As above but return a character that is never matched if no comment char found
-" This is for use in Tabular regex statements
-function! RegexComment()
-  let char = Comment()
-  if ! len(char)  " empty
-    let char = nr2char(0) " null string, never matched
-  endif
-  return char
 endfunction
 
 " Reverse selected lines
@@ -946,28 +929,38 @@ endif
 " Plug 'honza/vim-snippets'  " actual snippets
 " Plug 'LucHermitte/mu-template'  " alternative
 
-" Delimiters
+" Delimiters, use vim-surround rather than vim-sandwich because key mappings
+" are better and API is simpler. Only miss adding numbers to operators, otherwise
+" feature set is same (e.g. cannot delete and change arbitrary text objects)
+" See discussion: https://www.reddit.com/r/vim/comments/esrfno/why_vimsandwich_and_not_surroundvim/
+" See also: https://github.com/wellle/targets.vim/issues/225
+" Plug 'wellle/targets.vim'
+" Plug 'machakann/vim-sandwich'
 Plug 'tpope/vim-surround'
 Plug 'raimondi/delimitmate'
- 
+
 " Custom text objects (inner/outer selections)
 " Plug 'bps/vim-textobj-python'  " not really ever used, just use indent objects
 " Plug 'sgur/vim-textobj-parameter'  " this conflicts with latex
 " Plug 'vim-scripts/argtextobj.vim'  " issues with this too
 " Plug 'machakann/vim-textobj-functioncall'  " does not work
-Plug 'kana/vim-textobj-user'  " base
+Plug 'kana/vim-textobj-user' " base
 Plug 'kana/vim-textobj-indent'  " match indentation, object is 'i'
 Plug 'kana/vim-textobj-entire'  " entire file, object is 'e'
 
-" Aligning things and stuff, use Tabular because more powerful
-" even though the API is fugly AF and the docs suck
-" Plug 'tommcdo/vim-lion'
-" Plug 'junegunn/vim-easy-align'
-Plug 'godlygeek/tabular'
 
-" Better motions
-" Sneak plugin; see the link for helpful discussion:
-" https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+" Aligning things and stuff, use vim-easy-align because more tabular API is fugly AF
+" and requires individual maps and docs suck. Also does not have built-in feature for
+" ignoring comments or built-in aligning within motions or textobj blocks.
+" Plug 'vim-scripts/Align'
+" Plug 'tommcdo/vim-lion'
+" Plug 'godlygeek/tabular'
+Plug 'junegunn/vim-easy-align'
+
+" Better motions with sneak plugin. Do not use easymotion because extremely slow
+" over remote connections and overkill.
+" See discussion: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+" Plug 'easymotion/vim-easymotion'
 Plug 'justinmk/vim-sneak'
 
 " This RST shit all failed
@@ -1581,107 +1574,55 @@ if PlugActive('ale')
   let g:ale_lint_on_enter = 0
 endif
 
-" Syntastic
-if PlugActive('syntastic')
-  " No active syntax checking; only on manual trigger
-  command! SyntasticCheckers call utils#syntastic_checkers(1)
-  nnoremap <silent> <Leader>x :update \| call utils#syntastic_enable()<CR>
-  nnoremap <silent> <Leader>X :let b:syntastic_on = 0 \| SyntasticReset<CR>
-
-  " Choose syntax checkers, disable auto checking
-  " flake8 pep8 pycodestyle pyflakes pylint python
-  " pylint adds style checks, flake8 is pep8 plus pyflakes, pyflakes is pure syntax
-  " Note: Need 'python' checker in addition to these other ones, because python
-  " tests for import-time errors and others test code style and runtime errors!
-  let g:syntastic_mode_map = {
-      \ 'mode': 'passive',
-      \ 'active_filetypes': [],
-      \ 'passive_filetypes': []
+" Easy-align
+if PlugActive('vim-easy-align')
+  " Align map (nice mnemonic similar to gq for wrapping)
+  " Note: Use <Left> to stick delimiter to left instead of right
+  nmap ga <Plug>(EasyAlign)
+  " Custom alignment delimiters. Include aligning case/esac blocks, chained && and
+  " || symbols, and trailing comments (with two spaces, ignoring commented lines).
+  let g:easy_align_delimiters = {
+      \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
+      \   '&': {'pattern': '\(&&\|||\)'},
+      \   ';': {'pattern': ';\+'},
       \ }
-  let g:syntastic_fortran_checkers = ['gfortran']
-  let g:syntastic_json_checkers = ['jsonlint']
-  let g:syntastic_python_checkers = ['python', 'flake8']
-  let g:syntastic_sh_checkers = ['shellcheck']  " https://github.com/koalaman/shellcheck
-  let g:syntastic_tex_checkers = ['lacheck']
-  let g:syntastic_vim_checkers = ['vint']  " https://github.com/Kuniwak/vint
-  let g:syntastic_stl_format = ''  " disables statusline colors; they were ugly
-  let g:syntastic_always_populate_loc_list = 1  " necessary, or get errors
-  let g:syntastic_auto_loc_list = 1  " creates window; if 0, does not create window
-  let g:syntastic_loc_list_height = 5
-  let g:syntastic_mode = 'passive'  " opens little panel
-  let g:syntastic_check_on_open = 0
-  let g:syntastic_check_on_wq = 0
-  let g:syntastic_enable_signs = 1  " disable useless signs
-  let g:syntastic_enable_highlighting = 1
-  let g:syntastic_auto_jump = 0  " disable jumping to errors
+  augroup easy_align
+    au!
+    au BufEnter * call extend(g:easy_align_delimiters, {
+      \   'c': {'pattern': '\s' . (empty(Comment()) ? nr2char(0) : Comment())},
+      \ })  " use null character if no comment char defined (never matches)
+  augroup END
 endif
 
-" Tabular
-" Note: Common approach below is to match the space 'following' the actual
-" delimiter. Useful where we do not want to put delimiter on separate column.
-if PlugActive('tabular')
-  " Custom command, ignores lines in the selection that do not match delimiter
-  " This is not necessary for invocations without a range
-  command! -range -nargs=1 Table <line1>,<line2>call tabularize#smart_table(<q-args>)
-
-  " Align arbitrary character, and suppress error message if user Ctrl-c's out of input line
-  nnoremap <silent> <expr> \<Space> ':silent! Tabularize /' . input('Alignment regex: ') . '/l1c1<CR>'
-  vnoremap <silent> <expr> \<Space> "<Esc>:silent! '<,'>Table /" . input('Alignment regex: ') . '/l1c1<CR>'
-
-  " Commas, suitable for diag_table
-  nnoremap <expr> \, ':Tabularize /,\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \, ':Table      /,\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
-
-  " Dictionary, colon on left or right
-  nnoremap <expr> \d ':Tabularize /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
-  vnoremap <expr> \d ':Table      /:\(' . RegexComment() . '.*\)\@<!\zs/l0c1<CR>'
-  nnoremap <expr> \D ':Tabularize /\(' . RegexComment() . '.*\)\@<!\zs:/l1c1<CR>'
-  vnoremap <expr> \D ':Table      /\(' . RegexComment() . '.*\)\@<!\zs:/l1c1<CR>'
-
-  " Left or right-align first field by spaces
-  nnoremap <expr> \l ':Tabularize /^\s*\S\{-1,}\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> \l ':Table      /^\s*\S\{-1,}\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
-  nnoremap <expr> \r ':Tabularize /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
-  vnoremap <expr> \r ':Table      /^\s*[^\t ' . RegexComment() . ']\+\zs\ /r0l0l0<CR>'
-
-  " Just align by spaces
-  " Note the :help Tabularize suggestion is *way* more complicated
-  nnoremap <expr> \\ ':Tabularize /\S\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
-  vnoremap <expr> \\ ':Table      /\S\(' . RegexComment() . '.*\)\@<!\zs\s/l0<CR>'
-
-  " Tables separted by | chars
-  nnoremap <expr> \\| ':Tabularize /\|/l1l1<CR>'
-  vnoremap <expr> \\| ':Table      /\|/l1l1<CR>'
-
-  " By comment character, ignoring comment-only lines
-  nnoremap <expr> \C ':Tabularize /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l2l1<CR>'
-  vnoremap <expr> \C ':Table      /^\s*[^ \t' . RegexComment() . '].*\zs' . RegexComment() . '/l2l1<CR>'
-
-  " Chained && statements, common in bash
-  nnoremap <expr> \& ':Tabularize /&&/l1l1<CR>'
-  vnoremap <expr> \& ':Table      /&&/l1l1<CR>'
-
-  " Case/esac blocks. The regex in square brackets ignores the parameter
-  " expansions ${param#*pattern} and ${param##*pattern} e.g. var=${1#*=}.
-  " Diagrams for \( maps and \) maps are as follows:
-  " <item-right-paren> <zero-width-delim> <content-semicolons> <zero-width-delim> <inline-comment>
-  " <item-right-paren> <zero-width-delim> <content>            <semicolons>       <inline-comment>
-  " asdfda*|asd*) asdfjioajoidfjaosi"* ;; " comment 1S asdfjio *asdfjio*
-  " a|asdfsa)     asdjiofjoi""* ;;        " coiasdfojiadfj asd asd asdf
-  nnoremap <expr> \( ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1l1<CR>'
-  vnoremap <expr> \( ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|\zs;;\)/l1l0l1l1<CR>'
-  nnoremap <expr> \) ':Tabularize /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l1l0<CR>'
-  vnoremap <expr> \) ':Table      /\(' . RegexComment() . '[^*' . RegexComment() . '].*\)\@<!\(\S\+)\zs\\|;;\zs\)/l1l0l1l0<CR>'
-
-  " Align by the first equals sign either keeping it to the left or not
-  " The eaiser to type one (-=) puts equals signs in one column
-  " This selects the *first* uncommented equals sign that does not belong to
-  " a logical operator or incrementer <=, >=, ==, %=, -=, +=, /=, *= (have to escape dash in square brackets)
-  nnoremap <expr> \= ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1l1<CR>'
-  vnoremap <expr> \= ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!\zs==\@!/l1l1<CR>'
-  nnoremap <expr> \+ ':Tabularize /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0l1<CR>'
-  vnoremap <expr> \+ ':Table      /^[^' . RegexComment() . ']\{-}[=<>+\-%*]\@<!=\zs=\@!/l0l1<CR>'
-endif
+" Test lines (uncomment when testing)
+" foo, baasrdaasdfdas, asdfjoijiaosdfjioadsjoias, asdfasfasf
+" asdfasdf, " hello world this is me
+" asdfasdfsad, asfdjioasdjfioasda, asdfsadfasdfsa, asfd
+"
+" asdfas = asdfsadjfoaisdjfa
+" sdfasfiojasdjigoads = asdfasd = asdfasdfk
+"
+" apple    = red = asdfjioajfd
+" grasses += green = fdasjfaiofjaisofijasdf
+" sky     -= blue = asdf
+"
+" asdsfad && asdfiojaojdfjaosdf && afsdiojjioa
+" asdf && asdfjiaosdf && asd
+"
+" {
+"   hello: goodbye
+"   asdfasdfasdf: asdjioaidfoajisdf,
+"   foi: asdfoijiaosdfjoasiojfaojidsa
+" }
+"
+" asdfa) bar ;;
+" asfdijadfjsioaoidf) fooo ;;
+" asdfijas) foo bar ;;
+"
+" asfdiojiasod " yoyoyo
+" " ahoasdfjioa
+" asdfasdas " hello
+" asdfjioadijoadjofiadoisf " world
 
 " Session saving
 " Obsession .vimsession triggers update on BufEnter and VimLeavePre
