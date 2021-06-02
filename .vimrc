@@ -873,6 +873,11 @@ Plug 'Asheq/close-buffers.vim'
 Plug 'dense-analysis/ale'
 Plug 'scrooloose/nerdcommenter'
 
+" Inline code handling
+" Use :InlineEdit within blocks to open temporary buffer for editing; buffer
+" will have all filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
+Plug 'AndrewRadev/inline_edit.vim'
+
 " Sessions and swap files and reloading. Mapped in my .bashrc
 " to vim -S .vimsession and exiting vim saves the session there
 " Plug 'thaerkh/vim-workspace'
@@ -1357,7 +1362,7 @@ endif
 " NERDCommenter
 if PlugActive('nerdcommenter')
   " Custom delimiter overwrites, default python includes space for some reason
-  " TODO: Why can't this just use &commentstring?
+  " Todo: Why can't this just use &commentstring?
   let g:NERDCustomDelimiters = {
     \ 'julia':  {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
     \ 'python': {'left': '#'},
@@ -1413,13 +1418,6 @@ endif
 " and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
 " 'I' toggle hidden file display, '?' toggle help
 if PlugActive('nerdtree')
-  " augroup nerdtree
-  "   au!
-  "   au BufEnter *
-  "     \ if (winnr('$') == 1 && exists('b:NERDTree') && b:NERDTree.isTabTree()) |
-  "     \ q |
-  "     \ endif
-  " augroup END
   let g:NERDTreeWinPos = 'right'
   let g:NERDTreeWinSize = 20  " instead of 31 default
   let g:NERDTreeShowHidden = 1
@@ -1578,14 +1576,16 @@ endif
 if PlugActive('vim-easy-align')
   " Align map (nice mnemonic similar to gq for wrapping)
   " Note: Use <Left> to stick delimiter to left instead of right
+  " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
+  " and use <Tab> in interactive mode to cycle through these.
   nmap ga <Plug>(EasyAlign)
   " Custom alignment delimiters. Include aligning case/esac blocks, chained && and
   " || symbols, and trailing comments (with two spaces, ignoring commented lines).
   let g:easy_align_delimiters = {
-      \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
-      \   '&': {'pattern': '\(&&\|||\)'},
-      \   ';': {'pattern': ';\+'},
-      \ }
+    \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
+    \   '&': {'pattern': '\(&&\|||\)'},
+    \   ';': {'pattern': ';\+'},
+    \ }
   augroup easy_align
     au!
     au BufEnter * call extend(g:easy_align_delimiters, {
@@ -1603,8 +1603,8 @@ endif
 " sdfasfiojasdjigoads = asdfasd = asdfasdfk
 "
 " apple    = red = asdfjioajfd
-" grasses += green = fdasjfaiofjaisofijasdf
-" sky     -= blue = asdf
+"    grasses += green = fdasjfaiofjaisofijasdf
+"    sky     -= blue = asdf
 "
 " asdsfad && asdfiojaojdfjaosdf && afsdiojjioa
 " asdf && asdfjiaosdf && asd
