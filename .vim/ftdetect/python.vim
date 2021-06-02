@@ -1,4 +1,2 @@
-" Custom filetype declarations, with auto commands specified in .vim/ftplugin
-" Declaration for Vimscript-type files
-" au BufRead,BufNewFile,TabEnter,WinEnter *.py set filetype=python
-au BufRead,BufNewFile *.py set filetype=python
+" Filetype declarations. Include control files and cython files
+au BufRead,BufNewFile *.py,*.pyc,*.pyx set filetype=python
