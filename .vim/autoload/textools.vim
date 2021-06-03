@@ -195,7 +195,7 @@ endfunction
 " Note: Check syntax of point to *left* of cursor because that's the environment
 " where we are inserting text. Does not wrap if in first column.
 function! s:ensure_math(...) abort
-  let output = call('textools#make_snippet_driver', a:000)
+  let output = call('shortcuts#make_snippet_driver', a:000)
   if empty(filter(synstack(line('.'), col('.') - 1), 'synIDattr(v:val, "name") =~? "math"'))
     let output = '$' . output . '$'
   endif
@@ -207,7 +207,7 @@ endfunction
 
 " Format unit string for LaTeX for LaTeX for LaTeX for LaTeX
 function! s:format_units(...) abort
-  let input = call('textools#make_snippet_driver', a:000)
+  let input = call('shortcuts#make_snippet_driver', a:000)
   if empty(input)
     return ''
   endif
