@@ -750,6 +750,9 @@ noremap gG /^[<>=\|]\{2,}<CR>
 " Works: https://stackoverflow.com/a/41168966/4970632
 noremap gA /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
+" Run replacement on this line alone
+nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
+
 " Delete commented text. For some reason search screws up when using \(\) groups,
 " maybe because first parts of match are identical?
 " Note: Comment() doesn't get invoked either until entire expression is run
