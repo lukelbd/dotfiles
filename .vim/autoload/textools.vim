@@ -1,6 +1,7 @@
 "-----------------------------------------------------------------------------"
 " Advanced TeX configuration of shortcuts.vim
-" Warning: File name cannot match shortcuts.vim file name
+" Warning: File name cannot be shortcuts.vim. Maybe this only works with
+" vim-plug plugins, not local plugins manually added to rtp?
 "-----------------------------------------------------------------------------"
 function! s:sed_cmd() abort
   if has('macunix')

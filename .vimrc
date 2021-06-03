@@ -716,21 +716,21 @@ nnoremap <silent> <Plug>comment_bar :call comments#comment_bar('-', 77, 1)<CR>:c
 nnoremap <silent> gc: :call comments#comment_bar_surround('-', 77, 1)<CR>A
 nmap gc; <Plug>comment_bar
 
-" Author information, date insert, misc inserts
+" Author information, date insert, inserts matching weird style of unknown authors
 nnoremap <silent> gcA :call comments#comment_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
 nnoremap <silent> gcY :call comments#comment_message('Date: '.strftime('%Y-%m-%d'))<CR>
-nnoremap <silent> gcC :call comments#comment_double()<CR>i
 nnoremap <silent> gcI :call comments#comment_inline(5)<CR>i
+nnoremap <silent> gcC :call comments#comment_double()<CR>i
 
 " ReST section comment headers
-nnoremap <silent> gc- :call comments#comment_header('-')<CR>
-nnoremap <silent> gc_ :call comments#comment_header_surround('-')<CR>
-nnoremap <silent> gc= :call comments#comment_header('=')<CR>
-nnoremap <silent> gc+ :call comments#comment_header_surround('=')<CR>
+nnoremap <silent> g- :call comments#comment_header('-')<CR>
+nnoremap <silent> g_ :call comments#comment_header_surround('-')<CR>
+nnoremap <silent> g= :call comments#comment_header('=')<CR>
+nnoremap <silent> g+ :call comments#comment_header_surround('=')<CR>
 
 " Python docstring
-nnoremap gc' :call comments#insert_docstring("'")<CR>A
-nnoremap gc" :call comments#insert_docstring('"')<CR>A
+nnoremap g' :call comments#insert_docstring("'")<CR>A
+nnoremap g" :call comments#insert_docstring('"')<CR>A
 
 " Search and find-replace stuff
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
@@ -1144,10 +1144,10 @@ if PlugActive('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
   endif
   " Custom delimiter mappings
   " Note: Account for karabiner arrow key maps
-  let g:textools_surround_prefix = '<C-s>'
-  let g:textools_snippet_prefix = '<C-d>'
-  let g:textools_prevdelim_map = '<F1>'
-  let g:textools_nextdelim_map = '<F2>'
+  let g:shortcuts_surround_prefix = '<C-s>'
+  let g:shortcuts_snippet_prefix = '<C-d>'
+  let g:shortcuts_prevdelim_map = '<F1>'
+  let g:shortcuts_nextdelim_map = '<F2>'
 endif
 
 " *Very* expensive for large files so only ever activate manually

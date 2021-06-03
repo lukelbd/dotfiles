@@ -295,10 +295,7 @@ call textobj#user#plugin('latex', s:tex_textobjs_map)
 "   call textobj#user#plugin('latex', s:tex_textobjs_map)
 " endif
 
-" Running latexmk in background
-" The `latexmk` script included with this package typesets the document and opens the
-" file in the [Skim PDF viewer](https://en.wikipedia.org/wiki/Skim_(software)).
-" This script has the following features:
+" Running custom or default latexmk command in background
 let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
 let s:path = expand('<sfile>:p:h')
 function! s:latexmk(...) abort
@@ -325,7 +322,7 @@ function! s:latexmk(...) abort
   " Run job in realtime
   let num = bufnr(logfile)
   let g:tex_job = job_start(
-    \ s:path . '/../bin/latexmk ' . texfile . ' ' . opts,
+    \ 'latexmk ' . texfile . ' ' . opts,
     \ {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
     \ )
 endfunction
