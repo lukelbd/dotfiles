@@ -18,7 +18,7 @@ function! comments#comment_bar(fill, nfill, suffix) abort " inserts above by def
   let cchar = Comment()
   let nspace = s:comment_indent()
   let suffix = (a:suffix ? cchar : '')
-  let nfill = (a:nfill - nspace)/len(a:fill) " divide by length of fill character
+  let nfill = (a:nfill - nspace) / len(a:fill) " divide by length of fill character
   normal! k
   call append(line('.'), repeat(' ', nspace) . cchar . repeat(a:fill, nfill) . suffix)
   normal! jj

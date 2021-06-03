@@ -650,18 +650,50 @@ noremap ]z zj
 noremap [Z [z
 noremap ]Z ]z
 
+" Text objects. Many of these just copied, some ideas for future:
+" https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
+" Note: Method definition needs that fancy regex instead of just \< because
+" textobj looks for *narrowest* possible match so only catches tail of
+" method call. Note that \@! fails but \zs works for some reason.
+nnoremap <CR> <C-]>
+" Next block of contiguous comments
+noremap <expr> [c shortcuts#search_block(
+  \ '^\(' . shortcuts#regex_comment() . '\)\@!.*\n' . shortcuts#regex_comment(), 0
+  \ )
+noremap <expr> ]c shortcuts#search_block(
+  \ '^\(' . shortcuts#regex_comment() . '\)\@!.*\n' . shortcuts#regex_comment(), 1
+  \ )
+" Next block at *parent indent level*
+noremap <expr> [i shortcuts#search_block(
+  \ '^\(' . shortcuts#regex_current_indent() . '\)\@!.*\n^\zs\ze' . shortcuts#regex_current_indent(), 0
+  \ )
+noremap <expr> ]i shortcuts#search_block(
+  \ '^\(' . shortcuts#regex_current_indent() . '\)\@!.*\n^\zs\ze' . shortcuts#regex_current_indent(), 1
+  \ )
+" Next block at *lower* indent level
+noremap <expr> [I shortcuts#search_block(
+  \ '^\zs\ze' . shortcuts#regex_parent_indent(), 0
+  \ )
+noremap <expr> ]I shortcuts#search_block(
+  \ '^\zs\ze' . shortcuts#regex_parent_indent(), 1
+  \ )
+
 " Popup-aware insert mode behavior
 augroup popup_opts
   au!
   au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
+
 " Enter is 'accept' only when we have explicitly scrolled down. Also break undo history (see :help ins-special-special)
 inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
+
 " Tab always means 'accept' and choose default menu item if necessary
 inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-n>\<C-y>" . utils#tab_reset() : "\<C-]>\<Tab>"
+
 " Certain keystrokes always close the popup menu
 inoremap <expr> <BS>    pumvisible() ? utils#tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
 inoremap <expr> <Space> pumvisible() ? utils#tab_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
+
 " Commands that increment items in the menu
 inoremap <expr> <C-k>  pumvisible() ? utils#tab_decrease() . "\<C-p>" : "\<Up>"
 inoremap <expr> <C-j>  pumvisible() ? utils#tab_increase() . "\<C-n>" : "\<Down>"
@@ -1080,6 +1112,7 @@ endif
 " Note: More global delims are found in textools plugin because I define
 " some complex helper funcs there
 if PlugActive('vim-surround')
+  " Text object shorthands
   " nmap ySS ySS  " wrap inner line
   " nmap yss yss  " wrap whole line
   nmap ysw ysiw
@@ -1101,141 +1134,20 @@ if PlugActive('delimitmate')
   let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
-" Add global delims with vim-textools plugin functions and declare my weird
+" Add global delims with vim-shortcuts plugin functions and declare my weird
 " mapping defaults due to Karabiner
-if PlugActive('vim-textools') || &runtimepath =~# 'vim-textools'
+if PlugActive('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
   " Set the cache directory for bibtex plugin
   let s:cache_dir = expand('~/Library/Caches/bibtex')
   if isdirectory(s:cache_dir)
     let $FZF_BIBTEX_CACHEDIR = s:cache_dir
   endif
-
-  " Delimiter mappings
+  " Custom delimiter mappings
   " Note: Account for karabiner arrow key maps
   let g:textools_surround_prefix = '<C-s>'
   let g:textools_snippet_prefix = '<C-d>'
   let g:textools_prevdelim_map = '<F1>'
   let g:textools_nextdelim_map = '<F2>'
-
-  " Add *global* surround maps in same style as textool surround maps
-  " Todo: Make this a textools feature
-  " Todo: Add global snippets in exact same way
-  let s:global_surround = {
-    \ "'": "'\r'",
-    \ '"': "\"\r\"",
-    \ 'q': "‘\r’",
-    \ 'Q': "“\r”",
-    \ 'b': "(\r)",
-    \ 'c': "{\r}",
-    \ 'B': "{\r}",
-    \ 'r': "[\r]",
-    \ 'a': "<\r>",
-    \ '(': "(\r)",
-    \ '{': "{\r}",
-    \ '[': "[\r]",
-    \ '<': "<\r>",
-    \ '\': "\\\"\r\\\"",
-    \ 'p': "print(\r)",
-    \ 'f': "\1function: \1(\r)",
-    \ 'A': "\1array: \1[\r]",
-    \ "\t": " \r ",
-    \ '': "\n\r\n",
-  \ }
-  for [s:binding, s:pair] in items(s:global_surround)
-    let g:surround_{char2nr(s:binding)} = s:pair
-  endfor
-endif
-
-" Text objects
-" Many of these just copied, some ideas for future:
-" https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
-" Note: Method definition needs that fancy regex instead of just \< because
-" textobj looks for *narrowest* possible match so only catches tail of
-" method call. Note that \@! fails but \zs works for some reason.
-if PlugActive('vim-textobj-user')
-  let s:universal_textobjs_dict = {
-    \   'line': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#current_line_a',
-    \     'select-a': 'al',
-    \     'select-i-function': 'textobj#current_line_i',
-    \     'select-i': 'il',
-    \   },
-    \   'blanklines': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#blank_lines',
-    \     'select-a': 'a<Space>',
-    \     'select-i-function': 'textobj#blank_lines',
-    \     'select-i': 'i<Space>',
-    \   },
-    \   'nonblanklines': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#nonblank_lines',
-    \     'select-a': 'aP',
-    \     'select-i-function': 'textobj#nonblank_lines',
-    \     'select-i': 'iP',
-    \   },
-    \   'uncommented': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'textobj#uncommented_lines',
-    \     'select-i-function': 'textobj#uncommented_lines',
-    \     'select-a': 'a<CR>',
-    \     'select-i': 'i<CR>',
-    \   },
-    \   'function': {
-    \     'pattern': ['\<\K\k*(', ')'],
-    \     'select-a': 'af',
-    \     'select-i': 'if',
-    \   },
-    \   'method': {
-    \     'pattern': ['\_[^A-Za-z_.]\zs\h[0-9A-Za-z_.]*(', ')'],
-    \     'select-a': 'am',
-    \     'select-i': 'im',
-    \   },
-    \   'array': {
-    \     'pattern': ['\<\K\k*\[', '\]'],
-    \     'select-a': 'aA',
-    \     'select-i': 'iA',
-    \   },
-    \  'curly': {
-    \     'pattern': ['‘', '’'],
-    \     'select-a': 'aq',
-    \     'select-i': 'iq',
-    \   },
-    \  'curly-double': {
-    \     'pattern': ['“', '”'],
-    \     'select-a': 'aQ',
-    \     'select-i': 'iQ',
-    \   },
-    \ }
-
-  " Enable and define related maps
-  " Make sure to match [<letter> with the corresponding textobject va<letter>
-  " Note: For some reason it is critical the '^' is outside the \(\) group
-  " Next comment block
-  call textobj#user#plugin('universal', s:universal_textobjs_dict)
-  nnoremap <CR> <C-]>
-  " Next block of contiguous comments
-  noremap <expr> [c textobj#search_block(
-    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 0
-    \ )
-  noremap <expr> ]c textobj#search_block(
-    \ '^\(' . textobj#regex_comment() . '\)\@!.*\n' . textobj#regex_comment(), 1
-    \ )
-  " Next block at *parent indent level*
-  noremap <expr> [i textobj#search_block(
-    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 0
-    \ )
-  noremap <expr> ]i textobj#search_block(
-    \ '^\(' . textobj#regex_current_indent() . '\)\@!.*\n^\zs\ze' . textobj#regex_current_indent(), 1
-    \ )
-  " Next block at *lower* indent level
-  noremap <expr> [I textobj#search_block(
-    \ '^\zs\ze' . textobj#regex_parent_indent(), 0
-    \ )
-  noremap <expr> ]I textobj#search_block(
-    \ '^\zs\ze' . textobj#regex_parent_indent(), 1
-    \ )
 endif
 
 " *Very* expensive for large files so only ever activate manually
