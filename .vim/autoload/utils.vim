@@ -123,6 +123,16 @@ function! utils#popup_toggle(...) abort
   endif
 endfunction
 
+" Indent multiple times
+function! utils#multi_indent(dedent, count) range abort
+  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
+  exe firstline . ',' . lastline . repeat(a:dedent ? '<' : '>', a:count > 1 ? a:count : 1)
+endfunction
+" For <expr> map accepting motion
+function! utils#multi_indent_expr(...) abort
+  return utils#motion_func('utils#multi_indent', a:000)
+endfunction
+
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
@@ -138,7 +148,7 @@ function! utils#replace_regexes(message, ...) range abort
   let @/ = prevhist
   call winrestview(winview)
 endfunction
-" For use with <expr>
+" For <expr> map accepting motion
 function! utils#replace_regexes_expr(...) abort
   return utils#motion_func('utils#replace_regexes', a:000)
 endfunction
@@ -343,7 +353,7 @@ function! utils#autosave_toggle(...) abort
     let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
     exe 'augroup autosave_' . bufnr('%')
       au!
-      exe 'au ' . cmds . ' <buffer> silent w'
+      exe 'au ' . cmds . ' <buffer> silent SmartWrite'
     augroup END
     echom 'Autosave enabled.'
     let b:autosave_on = 1
@@ -752,14 +762,14 @@ function! utils#wrap_item_lines() range abort
   let @/ = prevhist
   call winrestview(winview)
 endfunction
-" For use with <expr>
+" For <expr> map accepting motion
 function! utils#wrap_item_lines_expr(...) abort
   return utils#motion_func('utils#wrap_item_lines', a:000)
 endfunction
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
-function! utils#translate_kwargs_dict(kw2dt, ...) abort range
+function! utils#translate_kwargs_dict(kw2dc, ...) abort range
   " First get columns
   " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
   " bug where if opening bracket is immediately followed by newline, then 'inner'
@@ -778,23 +788,23 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
     let prefix = ''
     let suffix = ''
     if linenum == firstline && linenum == lastline
-      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')  " damn negative indexing makes this complicated
+      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''  " damn negative indexing makes this complicated
       let suffix = line[lastcol + 1:]
       let line = line[firstcol : lastcol]
     elseif linenum == firstline
-      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')
+      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''
       let line = line[firstcol :]
     elseif linenum == lastline
       let suffix = line[lastcol + 1:]
       let line = line[:lastcol]
     endif
-    if len(matchstr(line, ':')) > 0 && len(matchstr(line, '=')) > 0
+    if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echoerr 'Error: Ambiguous line.'
       return
     endif
 
     " Next finally start matching shit
-    if a:kw2dt == 1  " kwargs to dictionary
+    if a:kw2dc == 1  " kwargs to dictionary
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
       let line = substitute(line, '\>\ze\s*=', "'", 'g')
       let line = substitute(line, '\s*=\s*', ': ', 'g')
@@ -811,7 +821,7 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
   call append(firstline - 1, lines)
   call winrestview(winview)
 endfunction
-" For use with <expr>
-function! utils#translate_kwargs_dict_expr(kw2dt) abort
-  return utils#motion_func('utils#translate_kwargs_dict', [a:kw2dt, mode()])
+" For <expr> map accepting motion
+function! utils#translate_kwargs_dict_expr(kw2dc) abort
+  return utils#motion_func('utils#translate_kwargs_dict', [a:kw2dc, mode()])
 endfunction

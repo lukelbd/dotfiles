@@ -121,6 +121,7 @@ else
   set ttymouse=xterm2
 endif
 
+
 "-----------------------------------------------------------------------------"
 " Repair unexpected behavior
 "-----------------------------------------------------------------------------"
@@ -250,6 +251,71 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
   endif
 endfor
 
+
+"-----------------------------------------------------------------------------"
+" Vim scripting utilities
+"-----------------------------------------------------------------------------"
+" Search mappings
+command! -nargs=1 NSearch echo utils#search_maps(<q-args>, 'n')
+command! -nargs=1 ISearch echo utils#search_maps(<q-args>, 'i')
+command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
+
+" Whether inside list
+function! In(list,item) abort
+  return index(a:list, a:item) != -1
+endfunction
+
+" Reverse string
+function! Reverse(text) abort
+  return join(reverse(split(a:text, '.\zs')), '')
+endfunction
+
+" Strip leading and trailing whitespace
+function! Strip(text) abort
+  return substitute(a:text, '^\_s*\(.\{-}\)\_s*$', '\1', '')
+endfunction
+
+" Query whether plugin is loaded
+" Used to use has_key(g:plugs) but now check runtimepath in case fork is loaded
+function! PlugActive(key) abort
+  return &runtimepath =~# '/' . a:key . '\>'
+endfunction
+
+" Better grep, with limited regex translation
+function! Grep(regex)  " returns list of matches
+  let regex = a:regex
+  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g') " not sure why double backslash needed
+  let regex = substitute(regex, '\\s', "[ \t]",  'g')
+  let regex = substitute(regex, '\\S', "[^ \t]", 'g')
+  let result = split(system("grep '" . regex . "' " . shellescape(@%) . ' 2>/dev/null'), "\n")
+  echo result
+  return result
+endfunction
+command! -nargs=1 Grep call Grep(<q-args>)
+
+" Get comment character
+" The placeholder is supposed to be a
+function! Comment()
+  if &filetype !=# '' && &commentstring =~# '%s'
+    return Strip(split(&commentstring, '%s')[0])
+  else
+    return ''
+  endif
+endfunction
+
+" Reverse selected lines
+function! ReverseLines() range abort
+  let line1 = a:firstline  " cannot overwrite input var names
+  let line2 = a:lastline
+  if line1 == line2
+    let line1 = 1
+    let line2 = line('$')
+  endif
+  exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
+endfunction
+command! -range Reverse <line1>,<line2>call ReverseLines()
+
+
 "-----------------------------------------------------------------------------"
 " File and window utilities
 "-----------------------------------------------------------------------------"
@@ -293,15 +359,15 @@ nnoremap <silent> <C-q> :call utils#vim_close()<CR>
 " Renaming things
 command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', '<bang>')
 
-" Custom autosave plugin
-command! -nargs=? Autosave call utils#autosave_toggle(<args>)
-nnoremap <silent> <Leader>S :Autosave<CR>
-
 " Refreshing things
 command! Refresh call utils#refresh()
 nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
 nnoremap <silent> <Leader>R :e<CR>
+
+" Autosave with SmartWrite using utils function
+command! -nargs=? Autosave call utils#autosave_toggle(<args>)
+nnoremap <silent> <Leader>S :Autosave<CR>
 
 " Tab selection and movement
 noremap gt <Nop>
@@ -345,7 +411,7 @@ nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * max(
 
 " Enable quitting windows with simple 'q' press and disable line numbers
 " Note: Some popups require buftype==file for writing temporary files. Used trial and error.
-let s:popup_filetypes_file = ['__doc__', 'codi', 'fugitive', 'fugitiveblame', 'gitcommit', 'help', 'man', 'nerdtree', 'qf', 'tagbar', 'undotree']
+let s:popup_filetypes_file = ['__doc__', 'codi', 'fugitive', 'fugitiveblame', 'gitcommit', 'help', 'man', 'qf', 'tagbar', 'undotree']
 let s:popup_filetypes_nofile = ['diff', 'latexmk', 'vim-plug']
 augroup popup_setup
   au!
@@ -393,6 +459,7 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
+
 "-----------------------------------------------------------------------------"
 " Editing utiltiies
 "-----------------------------------------------------------------------------"
@@ -422,8 +489,8 @@ noremap M gE
 " let g:highlightmark_cterm_colors = [5]
 command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
-nnoremap <expr> ` "`" . nr2char(97+v:count)
-nnoremap <expr> ~ 'm' . nr2char(97+v:count) . ':HighlightMark ' . nr2char(97+v:count) . '<CR>'
+nnoremap <expr> ` "`" . nr2char(97 + v:count)
+nnoremap <expr> ~ 'm' . nr2char(97 + v:count) . ':HighlightMark ' . nr2char(97 + v:count) . '<CR>'
 nnoremap <Leader>~ :<C-u>RemoveHighlights<CR>
 
 " Alias single-key builtin text objects
@@ -464,8 +531,8 @@ nnoremap <silent> cj :call utils#swap_lines(1)<CR>
 nnoremap o oX<Backspace>
 nnoremap O OX<Backspace>
 
-" Paste from the nth previously deleted or changed text
-" Use 'yp' to paste last yanked, unchanged text, because cannot use zero
+" Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
+" unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
 nnoremap yp "0p
 nnoremap yP "0P
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
@@ -474,10 +541,17 @@ nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
 " Yank until end of line, like C and D
 nnoremap Y y$
 
-" Better join behavior -- before 2J joined this line and next, now it
-" means 'join the two lines below'; more intuitive
+" Joining counts improvement. Before 2J joined this line and next, now it
+" means 'join the two lines below'
 nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
 nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
+
+" Indenting counts improvement. Before 2> indented this line or this motion repeated,
+" now it means 'indent multiple times'. Press <Esc> to remove count from motion.
+nnoremap <expr> >> '<Esc>' . repeat('>>', v:count > 1 ? v:count : 1)
+nnoremap <expr> << '<Esc>' . repeat('<<', v:count > 1 ? v:count : 1)
+nnoremap <expr> > '<Esc>' . utils#multi_indent_expr(0, v:count)
+nnoremap <expr> < '<Esc>' . utils#multi_indent_expr(1, v:count)
 
 " Maps to functions that accept motions
 command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
@@ -581,8 +655,7 @@ augroup popup_opts
   au!
   au BufEnter,InsertLeave * let b:menupos = 0
 augroup END
-" Enter means 'accept' only when we have explicitly scrolled down to something
-" Also break undo sequence upon enter (see :help ins-special-special)
+" Enter is 'accept' only when we have explicitly scrolled down. Also break undo history (see :help ins-special-special)
 inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
 " Tab always means 'accept' and choose default menu item if necessary
 inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-n>\<C-y>" . utils#tab_reset() : "\<C-]>\<Tab>"
@@ -601,6 +674,31 @@ inoremap <expr> <ScrollWheelDown> pumvisible() ? utils#tab_increase() . "\<C-n>"
 
 " Forward delete by tabs
 inoremap <silent> <expr> <Delete> utils#forward_delete()
+
+" Comment-related stuff
+" Insert comment
+inoremap <expr> <C-c> comments#comment_insert()
+
+" Section headers and dividers
+nnoremap <silent> <Plug>comment_bar :call comments#comment_bar('-', 77, 1)<CR>:call repeat#set("\<Plug>bar1")<CR>
+nnoremap <silent> gc: :call comments#comment_bar_surround('-', 77, 1)<CR>A
+nmap gc; <Plug>comment_bar
+
+" Author information, date insert, misc inserts
+nnoremap <silent> gcA :call comments#comment_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap <silent> gcY :call comments#comment_message('Date: '.strftime('%Y-%m-%d'))<CR>
+nnoremap <silent> gcC :call comments#comment_double()<CR>i
+nnoremap <silent> gcI :call comments#comment_inline(5)<CR>i
+
+" ReST section comment headers
+nnoremap <silent> gc- :call comments#comment_header('-')<CR>
+nnoremap <silent> gc_ :call comments#comment_header_surround('-')<CR>
+nnoremap <silent> gc= :call comments#comment_header('=')<CR>
+nnoremap <silent> gc+ :call comments#comment_header_surround('=')<CR>
+
+" Python docstring
+nnoremap gc' :call comments#insert_docstring("'")<CR>A
+nnoremap gc" :call comments#insert_docstring('"')<CR>A
 
 " Search and find-replace stuff
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
@@ -646,75 +744,6 @@ noremap <expr> \_ utils#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[
 
 " Replace tabs with spaces
 noremap <expr> \<Tab> utils#replace_regexes('Fixed tabs.', '\t', repeat(' ', &tabstop))
-
-
-"-----------------------------------------------------------------------------"
-" Vim scripting utilities
-"-----------------------------------------------------------------------------"
-" Search mappings
-command! -nargs=1 NSearch echo utils#search_maps(<q-args>, 'n')
-command! -nargs=1 ISearch echo utils#search_maps(<q-args>, 'i')
-command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
-
-" Whether inside list
-function! In(list,item) abort
-  return index(a:list, a:item) != -1
-endfunction
-
-" Reverse string
-function! Reverse(text) abort
-  return join(reverse(split(a:text, '.\zs')), '')
-endfunction
-
-" Strip leading and trailing whitespace
-function! Strip(text) abort
-  return substitute(a:text, '^\_s*\(.\{-}\)\_s*$', '\1', '')
-endfunction
-
-" Character under cursor
-function! CChar() abort
-  return getline('.')[col('.') - 1]
-endfunction
-
-" Query whether plugin is loaded
-" Used to use has_key(g:plugs) but now check runtimepath in case fork is loaded
-function! PlugActive(key) abort
-  return &runtimepath =~# '/' . a:key . '\>'
-endfunction
-
-" Better grep, with limited regex translation
-function! Grep(regex)  " returns list of matches
-  let regex = a:regex
-  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g') " not sure why double backslash needed
-  let regex = substitute(regex, '\\s', "[ \t]",  'g')
-  let regex = substitute(regex, '\\S', "[^ \t]", 'g')
-  let result = split(system("grep '".regex."' ".@%.' 2>/dev/null'), "\n")
-  echo result
-  return result
-endfunction
-command! -nargs=1 Grep call Grep(<q-args>)
-
-" Get comment character
-" The placeholder is supposed to be a
-function! Comment()
-  if &filetype !=# '' && &commentstring =~# '%s'
-    return Strip(split(&commentstring, '%s')[0])
-  else
-    return ''
-  endif
-endfunction
-
-" Reverse selected lines
-function! ReverseLines() range abort
-  let line1 = a:firstline  " cannot overwrite input var names
-  let line2 = a:lastline
-  if line1 == line2
-    let line1 = 1
-    let line2 = line('$')
-  endif
-  exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
-endfunction
-command! -range Reverse <line1>,<line2>call ReverseLines()
 
 
 "-----------------------------------------------------------------------------"
@@ -852,26 +881,33 @@ let g:SimpylFold_fold_import = 0
 Plug 'andymass/vim-matchup'
 let g:loaded_matchparen = 1
 let g:matchup_matchparen_enabled = 1
-let g:matchup_transmute_enabled = 0 " breaks latex!
+let g:matchup_transmute_enabled = 0  " breaks latex!
 
-" Files and directories
-" Plug 'jistr/vim-nerdtree-tabs' "unnecessary
+" Useful panels
+" For nerdtree-like file navigation see: https://shapeshed.com/vim-netrw/
 " Plug 'vim-scripts/EnhancedJumps'
-Plug 'scrooloose/nerdtree'
+" Plug 'jistr/vim-nerdtree-tabs'  " unnecessary
+" Plug 'scrooloose/nerdtree'
 Plug 'majutsushi/tagbar'
-
-" Tabdrop fix for vim
-" Plug 'ohjames/tabdrop'
+Plug 'mbbill/undotree'
 
 " Close unused buffers
 " https://github.com/Asheq/close-buffers.vim
 Plug 'Asheq/close-buffers.vim'
 
+" Tabdrop fix for vim
+" Note: Now apply similar solution in tabline#smart_write
+" Plug 'ohjames/tabdrop'
+
 " Commenting and syntax checking
-" Syntastic looks for checkers in $PATH, must be installed manually
+" Note: syntastic looks for checkers in $PATH, must be installed manually
+" Note: tcomment_vim is nice minimal extension of vim-commentary, include explicit
+" commenting and uncommenting and 'blockwise' commenting with g>b and g<b
 " Plug 'scrooloose/syntastic'
+" Plug 'scrooloose/nerdcommenter'
+" Plug 'tpope/vim-commentary'  " too simple
 Plug 'dense-analysis/ale'
-Plug 'scrooloose/nerdcommenter'
+Plug 'tomtom/tcomment_vim'
 
 " Inline code handling
 " Use :InlineEdit within blocks to open temporary buffer for editing; buffer
@@ -886,14 +922,14 @@ Plug 'AndrewRadev/inline_edit.vim'
 Plug 'tpope/vim-obsession'
 
 " Git wrappers and differencing tools
-Plug 'tpope/vim-fugitive'
+" vim-flog and gv.vim are heavyweight and lightweight commit viewing plugins
 Plug 'airblade/vim-gitgutter'
+Plug 'tpope/vim-fugitive'
+Plug 'junegunn/gv.vim'  " view commit graphs with :GV
+" Plug 'rbong/vim-flog'  " view commit graphs with :Flog
 
 " Shell utilities, including Chmod and stuff
 Plug 'tpope/vim-eunuch'
-
-" Undo
-Plug 'mbbill/undotree'
 
 " Calculators and number stuff
 " Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
@@ -929,10 +965,9 @@ if !has('gui_running')
 endif
 
 " Snippets
-" Not really necessary because this is more useful for low-level languages
-" Plug 'SirVer/ultisnips'  " snippets actions
 " Plug 'honza/vim-snippets'  " actual snippets
 " Plug 'LucHermitte/mu-template'  " alternative
+" Plug 'SirVer/ultisnips'  " snippets actions
 
 " Delimiters, use vim-surround rather than vim-sandwich because key mappings
 " are better and API is simpler. Only miss adding numbers to operators, otherwise
@@ -1357,79 +1392,6 @@ if PlugActive('jedi-vim')
   let g:jedi#rename_command = ''
   let g:jedi#usages_command = '<Leader><CR>'
   let g:jedi#show_call_signatures = '1'
-endif
-
-" NERDCommenter
-if PlugActive('nerdcommenter')
-  " Custom delimiter overwrites, default python includes space for some reason
-  " Todo: Why can't this just use &commentstring?
-  let g:NERDCustomDelimiters = {
-    \ 'julia':  {'left': '#', 'leftAlt': '#=', 'rightAlt': '=#'},
-    \ 'python': {'left': '#'},
-    \ 'cython': {'left': '#'},
-    \ 'pyrex':  {'left': '#'},
-    \ 'ncl':    {'left': ';'},
-    \ 'smarty': {'left': '<!--', 'right': '-->'},
-    \ }
-  " Settings
-  let g:NERDSpaceDelims = 1             " comments have leading space
-  let g:NERDCreateDefaultMappings = 0   " disable default mappings (make my own)
-  let g:NERDCompactSexyComs = 1         " compact syntax for prettified multi-line comments
-  let g:NERDTrimTrailingWhitespace = 1  " trailing whitespace deletion
-  let g:NERDCommentEmptyLines = 1       " allow commenting and inverting empty lines (useful when commenting a region)
-  let g:NERDDefaultAlign = 'left'       " align line-wise comment delimiters flush left instead of following code indentation
-  let g:NERDCommentWholeLinesInVMode = 2
-  " Mappings
-  " Use NERDCommenterMinimal commenter to use left-right delimiters, or alternatively use
-  " NERDCommenterSexy commenter for better alignment
-  inoremap <expr> <C-c> nerdcommenter#comment_insert()
-  map c. <Plug>NERDCommenterToggle
-  map co <Plug>NERDCommenterSexy
-  map cO <Plug>NERDCommenterUncomment
-  " Section headers and dividers
-  nnoremap <silent> <Plug>bar1 :call nerdcommenter#comment_bar('-', 77, 1)<CR>:call repeat#set("\<Plug>bar1")<CR>
-  nnoremap <silent> <Plug>bar2 :call nerdcommenter#comment_bar('-', 71, 0)<CR>:call repeat#set("\<Plug>bar2")<CR>
-  nnoremap <silent> c: :call nerdcommenter#comment_bar_surround('-', 77, 1)<CR>A
-  nmap c; <Plug>bar1
-  nmap c, <Plug>bar2
-  " Author information, date insert, misc inserts
-  nnoremap <silent> cA :call nerdcommenter#comment_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-  nnoremap <silent> cY :call nerdcommenter#comment_message('Date: '.strftime('%Y-%m-%d'))<CR>
-  nnoremap <silent> cC :call nerdcommenter#comment_double()<CR>i
-  nnoremap <silent> cI :call nerdcommenter#comment_inline(5)<CR>i
-  " Add ReST section levels
-  nnoremap <silent> c- :call nerdcommenter#comment_header('-')<CR>
-  nnoremap <silent> c_ :call nerdcommenter#comment_header_surround('-')<CR>
-  nnoremap <silent> c= :call nerdcommenter#comment_header('=')<CR>
-  nnoremap <silent> c+ :call nerdcommenter#comment_header_surround('=')<CR>
-  " Python docstring
-  nnoremap c' :call nerdcommenter#insert_docstring("'")<CR>A
-  nnoremap c" :call nerdcommenter#insert_docstring('"')<CR>A
-endif
-
-" NERDTree
-" Most important commands: 'o' to view contents, 'u' to move up directory,
-" 't' open in new tab, 'T' open in new tab but retain focus, 'i' open file in
-" split window below, 's' open file in new split window VERTICAL, 'O' recursive open,
-" 'x' close current nodes parent, 'X' recursive cose, 'p' jump
-" to current nodes parent, 'P' jump to root node, 'K' jump to first file in
-" current tree, 'J' jump to last file in current tree, <C-j> <C-k> scroll direct children
-" of current directory, 'C' change tree root to selected dir, 'u' move up, 'U' move up
-" and leave old root node open, 'r' recursive refresh, 'm' show menu, 'cd' change CWD,
-" 'I' toggle hidden file display, '?' toggle help
-if PlugActive('nerdtree')
-  let g:NERDTreeWinPos = 'right'
-  let g:NERDTreeWinSize = 20  " instead of 31 default
-  let g:NERDTreeShowHidden = 1
-  let g:NERDTreeMinimalUI = 1  " remove annoying ? for help note
-  let g:NERDTreeMapChangeRoot = 'D'  " C was annoying, because VIM will wait for CD
-  let g:NERDTreeSortOrder = []  " use default sorting
-  let g:NERDTreeIgnore = split(&wildignore, ',')
-  for s:index in range(len(g:NERDTreeIgnore))
-    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '*.', '\\.', '')
-    let g:NERDTreeIgnore[s:index] = substitute(g:NERDTreeIgnore[s:index], '$', '\$', '')
-  endfor
-  nnoremap <Leader>n :NERDTree %<CR>
 endif
 
 " Tagbar settings
