@@ -2,11 +2,11 @@
 # shellcheck disable=2076
 usage="latexmk [OPTIONS] FILE"
 doc="
-Auto-typeset LaTeX documents, similar to the famous PERL program latexmk, but with
-custom features and designed for use with vim. Opens the resulting typeset file in a
-PDF viewer then brings the terminal from which this script was invoked back to the
-foreground. This is perfect for split-window workflow, with left terminal on left side
-of screen and PDF viewer on right side.
+Auto-typeset LaTeX documents. This is similar to the famous PERL latexmk program, but
+with some unique features. Opens the resulting typeset file in a macOS PDF viewer then
+brings the terminal from which latexmk was invoked back to the foreground. This is
+perfect for a split-window workflow, with the terminal on one half of the screen and the
+PDF viewer on the other half.
 
 Usage
 
@@ -33,12 +33,18 @@ Optional arguments
 
 Additional features
 
-  * Never generate random extra files again. We query existing files before and
-    after compilation, then remove the new ones. This is implemented with an
-    EXIT signal trap, and so works if latexmk is interrupted.
-  * If you add custom style and theme files to a '~/latex' folder, this script
-    will try to copy relevant files to the working directory when they are
-    not found in the TeX distro with 'kpsewhich'.
+  * Automatically copies custom style and theme files from the '~/templates' folder to
+    the working directory when they are requested in the tex document.
+  * Automatically figures out which typesetting engine to use based on the imported
+    packages (i.e. pdflatex, xelatex, etc.) and automatically figures out the
+    number of times the command must be called, just like the original latexmk.
+  * Deletes every extra file generated during typesetting except for .bbl and .pdf.
+    Works by simply querying existing files before and after compilation. Implemented
+    with an EXIT signal trap, so this also works if latexmk is interrupted.
+
+See also
+
+  https://mg.readthedocs.io/latexmk.html
 "
 # Function for raising error
 echoerr() {
