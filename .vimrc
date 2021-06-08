@@ -778,7 +778,7 @@ noremap <expr> \- utils#replace_regexes_expr('Fixed long dashes.', '–', '--')
 noremap <expr> \_ utils#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
 
 " Replace tabs with spaces
-noremap <expr> \<Tab> utils#replace_regexes('Fixed tabs.', '\t', repeat(' ', &tabstop))
+noremap <expr> \<Tab> utils#replace_regexes_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
 
 
 "-----------------------------------------------------------------------------"

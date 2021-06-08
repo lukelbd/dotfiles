@@ -1506,31 +1506,32 @@ extract() {
 # * Note the PNAS journal says 1000-1200dpi recommended for line art images
 #   and stuff with text.
 gif2png() {  # often needed because LaTeX can't read gif files
-  local f
-  for f in "$@";
-    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
+  for f in "$@"; do
+    ! [[ "$f" =~ .gif$ ]] && echo "Warning: Skipping ${f##*/} (must be .gif)" && continue
+    echo "Converting ${f##*/}..."
+    convert "$f" "${f%.gif}.png"
   done
 }
 pdf2png() {
-  local f args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." \
-      && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
+  for f in "$@"; do
+    ! [[ "$f" =~ .pdf$ ]] && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
+    echo "Converting ${f##*/}..."
+    convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
   done
 }
 svg2png() {
   # NOTE: python is much faster and 'dpi' for some reason is ignored
   # See: https://stackoverflow.com/a/50300526/4970632
-  local f args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .svg$ ]] && echo "Converting $f..." \
-      && python -c "import cairosvg; cairosvg.svg2png(url='$f', write_to='${f%.svg}.png', scale=3, background_color='white')"
-      # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
+  for f in "$@"; do
+    ! [[ "$f" =~ .svg$ ]] && echo "Warning: Skipping ${f##*/} (must be .svg)" && continue
+    echo "Converting ${f##*/}..."
+    python -c "import cairosvg; cairosvg.svg2png(url='$f', write_to='${f%.svg}.png', scale=3, background_color='white')"
+    # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
   done
 }
 
 # Modifying and merging pdfs
-pdfflatten() {
+pdf2flat() {
   # This page is helpful:
   # https://unix.stackexchange.com/a/358157/112647
   # 1. pdftk keeps vector graphics
@@ -1538,10 +1539,18 @@ pdfflatten() {
   # 3. pdf2ps piping retains quality (ps uses vector graphics, but can't do transparency)
   # convert "$f" "${f}_flat.pdf"
   # pdftk "$f" output "${f}_flat.pdf" flatten
-  local args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
-      pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
+  for f in "$@"; do
+    ! [[ "$f" =~ .pdf$ ]] && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
+    [[ "$f" =~ _flat ]] && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
+    echo "Converting $f..." && pdf2ps "$f" - | ps2pdf - "${f%.pdf}_flat.pdf"
+  done
+}
+png2flat() {
+  # See: https://stackoverflow.com/questions/46467523/how-to-change-picture-background-color-using-imagemagick
+  for f in "$@"; do
+    ! [[ "$f" =~ .png$ ]] && echo "Warning: Skipping ${f##*/} (must be .png)" && continue
+    [[ "$f" =~ _flat ]] && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
+    convert "$f" -opaque white -flatten "${f%.png}_flat.png"
   done
 }
 pdfmerge() {
@@ -1553,19 +1562,20 @@ pdfmerge() {
 # Font conversions
 # Requires brew install fontforge
 otf2ttf() {
-  for arg in "$@"; do
-    [ "${arg##*.}" == "otf" ] || { echo "Error: File '$arg' does not have .otf extension."; return 1; }
+  for f in "$@"; do
+    ! [[ "$f" =~ .otf$ ]] && echo "Warning: Skipping ${f##*/} (must be .otf)" && continue
+    echo "Converting ${f##*/}..."
     fontforge -c \
       "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
-      "${arg%.*}.otf" "${arg%.*}.ttf"
+      "${f%.*}.otf" "${f%.*}.ttf"
   done
 }
 ttf2otf() {
-  for arg in "$@"; do
-    [ "${arg##*.}" == "ttf" ] || { echo "Error: File '$arg' does not have .ttf extension."; return 1; }
+  for f in "$@"; do
+    ! [[ "$f" =~ .ttf$ ]] && echo "Warning: Skipping ${f##*/} (must be .ttf)" && continue
     fontforge -c \
       "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
-      "${arg%.*}.ttf" "${arg%.*}.otf"
+      "${f%.*}.ttf" "${f%.*}.otf"
   done
 }
 
