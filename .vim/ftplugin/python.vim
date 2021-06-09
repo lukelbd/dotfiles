@@ -25,8 +25,8 @@ function! s:run_python_script() abort
     echohl None
   else
     exe
-        \ '!clear; set -x; PROJ_LIB=' . shellescape(projlib)
-        \ . ' ' . shellescape(python) . ' ' . shellescape(@%)
+      \ '!clear; set -x; PROJ_LIB=' . shellescape(projlib)
+      \ . ' ' . shellescape(python) . ' ' . shellescape(@%)
   endif
 endfunction
 nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_python_script()<CR>

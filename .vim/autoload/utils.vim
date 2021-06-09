@@ -46,6 +46,82 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
+" Special behavior when popup menu is open
+" See: https://github.com/lukelbd/dotfiles/blob/master/.vimrc
+function! utils#pum_next() abort
+  let b:pum_pos += 1 | return "\<C-n>"
+endfunction
+function! utils#pum_prev() abort
+  let b:pum_pos -= 1 | return "\<C-p>"
+endfunction
+function! utils#pum_reset() abort
+  let b:pum_pos = 0 | return ''
+endfunction
+
+" Set up temporary paste mode
+function! utils#setup_paste() abort
+  let s:paste = &paste
+  let s:mouse = &mouse
+  set paste
+  set mouse=
+  augroup insert_paste
+    au!
+    au InsertLeave *
+      \ if exists('s:paste') |
+      \   let &paste = s:paste |
+      \   let &mouse = s:mouse |
+      \   unlet s:paste |
+      \   unlet s:mouse |
+      \ endif |
+      \ autocmd! insert_paste
+  augroup END
+  return ''
+endfunction
+
+" Inserting blank lines
+" See: https://github.com/tpope/vim-unimpaired
+function! utils#blank_up(count) abort
+  put!=repeat(nr2char(10), a:count)
+  ']+1
+  silent! call repeat#set("\<Plug>BlankUp", a:count)
+endfunction
+function! utils#blank_down(count) abort
+  put =repeat(nr2char(10), a:count)
+  '[-1
+  silent! call repeat#set("\<Plug>BlankDown", a:count)
+endfunction
+
+" Searching between blocks
+function! utils#search_block(regex, forward) abort
+  let range = '\%' . (a:forward ? '>' : '<')  . line('.') . 'l'
+  if match(a:regex, '\\ze') != -1
+    let regex = substitute(a:regex, '\\ze', '\\ze\' . range, '')
+  else
+    let regex = a:regex . range
+  endif
+  let lnum = search(regex, 'n' . repeat('b', 1 - a:forward))  " get line number
+  if lnum == 0
+    return ''
+  else
+    return lnum . 'G'
+  endif
+endfunction
+
+" Function that returns regexes used in navigation. This helps us define navigation maps
+" for 'the first line in a contiguous block of matching lines'.
+function! utils#current_indent() abort
+  return
+    \ '[ ]\{0,'
+    \ . len(substitute(getline('.'), '^\(\s*\).*$', '\1', ''))
+    \ . '}\S\+'
+endfunction
+function! utils#parent_indent() abort
+  return
+    \ '[ ]\{0,'
+    \ . max([0, len(substitute(getline('.'), '^\(\s*\).*$', '\1', '')) - &l:tabstop])
+    \ . '}\S\+'
+endfunction
+
 " Swap characters
 function! utils#swap_characters(right) abort
   let cnum = col('.')
@@ -91,18 +167,6 @@ function! utils#iter_colorschemes(reverse) abort
   let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 
-" Search for mapping
-function! utils#search_maps(regex, ...) abort
-  let mode = a:0 ? a:1 : ''
-  redir @z
-  exe 'silent ' . mode . 'map'
-  redir END
-  let regex = '\c' . substitute(a:regex, '\cLeader', 'Space', 'g')
-  let maps = split(@z, "\n")
-  let maps = filter(maps, "v:val =~# '" . regex . "'")
-  return join(maps, "\n")
-endfunction
-
 " Enable/disable autocomplete and jedi popups. Very useful on servers slowed to
 " a crawl by certain Slovenian postdocs.
 function! utils#popup_toggle(...) abort
@@ -126,7 +190,7 @@ endfunction
 " Indent multiple times
 function! utils#multi_indent(dedent, count) range abort
   let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
-  exe firstline . ',' . lastline . repeat(a:dedent ? '<' : '>', a:count > 1 ? a:count : 1)
+  exe firstline . ',' . lastline . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
 " For <expr> map accepting motion
 function! utils#multi_indent_expr(...) abort
@@ -169,17 +233,6 @@ function! utils#directory_return() abort
     echom
   endif
   echom 'Returned to previous directory.'
-endfunction
-
-" Tab functions inside <expr>
-function! utils#tab_increase() abort
-  let b:menupos += 1 | return ''
-endfunction
-function! utils#tab_decrease() abort
-  let b:menupos -= 1 | return ''
-endfunction
-function! utils#tab_reset() abort
-  let b:menupos = 0 | return ''
 endfunction
 
 " Test if file exists
@@ -497,25 +550,6 @@ function! utils#codi_new(...) abort
   if name !~# '^\s*$'
     exe 'tabe ' . fnamemodify(name, ':r') . '.py'
     Codi!!
-  endif
-endfunction
-
-" Set up tagbar window and make sure NerdTREE is flushed to right
-function! utils#tagbar_setup() abort
-  if &filetype ==# 'nerdtree'
-    wincmd h
-    wincmd h " move two places in case e.g. have help menu + nerdtree already
-  endif
-  let tabfts = map(tabpagebuflist(), 'getbufvar(v:val, "&filetype")')
-  if In(tabfts, 'tagbar')
-    TagbarClose
-  else
-    TagbarOpen
-    if In(tabfts, 'nerdtree')
-      wincmd l
-      wincmd L
-      wincmd p
-    endif
   endif
 endfunction
 

@@ -22,7 +22,7 @@
 let &t_Co=256
 let s:textwidth = 88
 exe 'runtime autoload/repeat.vim'
-if ! exists('*repeat#set')
+if !exists('*repeat#set')
   echohl WarningMsg
   echom 'Warning: vim-repeat unavailable, some features will be unavailable.'
   echohl None
@@ -33,62 +33,63 @@ set nocompatible  " always use the vim defaults
 set encoding=utf-8
 scriptencoding utf-8
 let mapleader = "\<Space>"
-set confirm  " require confirmation if you try to quit
-set cursorline
-set showtabline=2
-set tabpagemax=100  " allow opening shit load of tabs at once
-set redrawtime=5000  " sometimes takes a long time, let it happen
-set maxmempattern=50000  " from 1000 to 10000
-set shortmess=atqcT  " snappy messages; 'a' does a bunch of common stuff
-set shiftround  " round to multiple of shift width
-set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
-set history=100  " search history
-set shell=/usr/bin/env\ bash
-set nrformats=alpha  " never interpret numbers as 'octal'
-set scrolloff=4
 let &g:colorcolumn = has('gui_running') ? '0' : '89,120'
-set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
-set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
-set updatetime=1000  " used for CursorHold autocmds
-set nobackup noswapfile noundofile  " no more swap files; constantly hitting C-s so it's safe
-set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
-set number numberwidth=4  " note old versions can't combine number with relativenumber
-set relativenumber
-set tabstop=2  " shoft default tabs
-set shiftwidth=2
-set softtabstop=2
 set autoindent  " indents new lines
+set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
-set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
-set lazyredraw
-set virtualedit=  " prevent cursor from going where no actual character
-set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
-set esckeys  " make sure enabled, allows keycodes
-set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
-set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " no popup window, for now
-set splitright  " splitting behavior
-set splitbelow
-set nospell spelllang=en_us spellcapcheck=  " spellcheck off by default
-set hlsearch incsearch  " show match as typed so far, and highlight as you go
-set noinfercase ignorecase smartcase  " smartcase makes search case insensitive, unless has capital letter
-set foldmethod=expr  " fold methods
+set confirm  " require confirmation if you try to quit
+set cursorline
+set diffopt=vertical,foldcolumn:0,context:5
+set display=lastline  " displays as much of wrapped lastline as possible;
+set esckeys  " make sure enabled, allows keycodes
 set foldlevel=99
 set foldlevelstart=99
+set foldmethod=expr  " fold methods
 set foldnestmax=10  " avoids weird things
 set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
-set display=lastline  " displays as much of wrapped lastline as possible;
-set diffopt=vertical,foldcolumn:0,context:5
+set history=100  " search history
+set hlsearch incsearch  " show match as typed so far, and highlight as you go
+set lazyredraw
+set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
+set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
+set maxmempattern=50000  " from 1000 to 10000
+set nobackup noswapfile noundofile  " no more swap files; constantly hitting C-s so it's safe
+set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
+set noinfercase ignorecase smartcase  " smartcase makes search case insensitive, unless has capital letter
+set nospell spelllang=en_us spellcapcheck=  " spellcheck off by default
+set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
+set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
+set nrformats=alpha  " never interpret numbers as 'octal'
+set number numberwidth=4  " note old versions can't combine number with relativenumber
+set redrawtime=5000  " sometimes takes a long time, let it happen
+set relativenumber
+set scrolloff=4
+set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
+set shell=/usr/bin/env\ bash
+set shiftround  " round to multiple of shift width
+set shiftwidth=2
+set shortmess=atqcT  " snappy messages; 'a' does a bunch of common stuff
+set showtabline=2
+set softtabstop=2
+set splitbelow
+set splitright  " splitting behavior
+set tabpagemax=100  " allow opening shit load of tabs at once
+set tabstop=2  " shoft default tabs
+set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
+set updatetime=1000  " used for CursorHold autocmds
+set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
+set virtualedit=  " prevent cursor from going where no actual character
+set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu
 set wildmode=longest:list,full
-set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:wildignore =
   \ '*.pdf,*.doc,*.docs,*.page,*.pages,'
-  \ . '*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.svg,*.pyc,*.o,*.mod,'
-  \ . '*.mp3,*.m4a,*.mp4,*.mov,*.flac,*.wav,*.mk4,'
-  \ . '*.dmg,*.zip,*.sw[a-z],*.tmp,*.nc,*.DS_Store,'
+  \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
+  \ . '*.mp3,*.m4a,*.mk4,*.mp4,*.mov,*.flac,*.wav,'
+  \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store,'
 if exists('&diffopt')
   set diffopt^=filler
 endif
@@ -194,11 +195,16 @@ endfor
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
 " * Turn off common normal mode issues
 " * q and @ are for macros, instead reserve for quitting popup windows and tagtools map
+" * [p, ]p, [P, ]P pastes matching indent, remap this
+" * ][ and [] can get hit accidentally
+" * gt and gT replaced with <Tab> mappings
 " * Ctrl-r is undo, remap this
 for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
   \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
   \ '<Delete>', '<Backspace>', '<CR>',
+  \ '[p', ']p', '[P', ']P', '][', '[]',
+  \ 'gt', 'gT',
   \ ]
   if empty(maparg(s:key, 'n'))
     exe 'noremap ' . s:key . ' <Nop>'
@@ -220,7 +226,7 @@ augroup END
 for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
   \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-g>', '<C-h>', '<C-l>',
-  \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>'
+  \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
   \ ]
   if empty(maparg(s:key, 'i'))
     exe 'inoremap ' . s:key . ' <Nop>'
@@ -255,56 +261,32 @@ endfor
 "-----------------------------------------------------------------------------"
 " Vim scripting utilities
 "-----------------------------------------------------------------------------"
-" Search mappings
-command! -nargs=1 NSearch echo utils#search_maps(<q-args>, 'n')
-command! -nargs=1 ISearch echo utils#search_maps(<q-args>, 'i')
-command! -nargs=1 VSearch echo utils#search_maps(<q-args>, 'v')
-
-" Whether inside list
-function! In(list,item) abort
-  return index(a:list, a:item) != -1
-endfunction
-
-" Reverse string
-function! Reverse(text) abort
-  return join(reverse(split(a:text, '.\zs')), '')
-endfunction
-
-" Strip leading and trailing whitespace
-function! Strip(text) abort
-  return substitute(a:text, '^\_s*\(.\{-}\)\_s*$', '\1', '')
-endfunction
-
 " Query whether plugin is loaded
 " Used to use has_key(g:plugs) but now check runtimepath in case fork is loaded
-function! PlugActive(key) abort
+function! Active(key) abort
   return &runtimepath =~# '/' . a:key . '\>'
 endfunction
 
+" Get comment character
+function! Comment() abort
+  let string = substitute(&commentstring, '%s.*', '', '')
+  return substitute(string, '\s\+', '', 'g')
+endfunction
+
 " Better grep, with limited regex translation
-function! Grep(regex)  " returns list of matches
+function! Grep(regex) abort 
   let regex = a:regex
   let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g') " not sure why double backslash needed
   let regex = substitute(regex, '\\s', "[ \t]",  'g')
   let regex = substitute(regex, '\\S', "[^ \t]", 'g')
   let result = split(system("grep '" . regex . "' " . shellescape(@%) . ' 2>/dev/null'), "\n")
-  echo result
+  echo "Results:\n" . join(result, "\n")
   return result
 endfunction
 command! -nargs=1 Grep call Grep(<q-args>)
 
-" Get comment character
-" The placeholder is supposed to be a
-function! Comment()
-  if &filetype !=# '' && &commentstring =~# '%s'
-    return Strip(split(&commentstring, '%s')[0])
-  else
-    return ''
-  endif
-endfunction
-
 " Reverse selected lines
-function! ReverseLines() range abort
+function! Reverse() range abort
   let line1 = a:firstline  " cannot overwrite input var names
   let line2 = a:lastline
   if line1 == line2
@@ -313,7 +295,7 @@ function! ReverseLines() range abort
   endif
   exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
 endfunction
-command! -range Reverse <line1>,<line2>call ReverseLines()
+command! -range Reverse <line1>,<line2>call Reverse()
 
 
 "-----------------------------------------------------------------------------"
@@ -370,8 +352,6 @@ command! -nargs=? Autosave call utils#autosave_toggle(<args>)
 nnoremap <silent> <Leader>S :Autosave<CR>
 
 " Tab selection and movement
-noremap gt <Nop>
-noremap gT <Nop>
 nnoremap <Tab>, gT
 nnoremap <Tab>. gt
 nnoremap <silent> <Tab>' :exe 'tabn ' . (exists('g:lasttab') ? g:lasttab : 1)<CR>
@@ -400,14 +380,14 @@ nnoremap <Tab>i mzz.`z
 nnoremap <Tab>o zb
 nnoremap <Tab>p zL
 nnoremap <silent> <Tab>= :<C-u>vertical resize 90<CR>
-nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3 * max([1, v:count]))<CR>
-nnoremap <silent> <Tab>) :<C-u>exe 'resize ' . (winheight(0) + 3 * max([1, v:count]))<CR>
-nnoremap <silent> <Tab>_ :<C-u>exe 'resize ' . (winheight(0) - 5 * max([1, v:count]))<CR>
-nnoremap <silent> <Tab>+ :<C-u>exe 'resize ' . (winheight(0) + 5 * max([1, v:count]))<CR>
-nnoremap <silent> <Tab>[ :<C-u>exe 'vertical resize ' . (winwidth(0) - 5 * max([1, v:count]))<CR>
-nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5 * max([1, v:count]))<CR>
-nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * max([1, v:count]))<CR>
-nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * max([1, v:count]))<CR>
+nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
+nnoremap <silent> <Tab>) :<C-u>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
+nnoremap <silent> <Tab>_ :<C-u>exe 'resize ' . (winheight(0) - 5 * v:count1)<CR>
+nnoremap <silent> <Tab>+ :<C-u>exe 'resize ' . (winheight(0) + 5 * v:count1)<CR>
+nnoremap <silent> <Tab>[ :<C-u>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
+nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
+nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
+nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
 " Enable quitting windows with simple 'q' press and disable line numbers
 " Note: Some popups require buftype==file for writing temporary files. Used trial and error.
@@ -503,7 +483,6 @@ endfor
 
 " Insert and mormal mode undo and redo. Also permit toggling blocks while in insert mode
 nnoremap U <C-r>
-nnoremap <C-r> <Nop>
 inoremap <silent> <C-u> <C-o>mx<C-o>u
 inoremap <silent> <C-y> <C-o><C-r><C-o>`x<Right>
 
@@ -535,8 +514,11 @@ nnoremap O OX<Backspace>
 " unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
 nnoremap yp "0p
 nnoremap yP "0P
+nnoremap <silent> <Leader>v :Help<CR>
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
+nnoremap <Leader>p ]p
+nnoremap <Leader>P ]P
 
 " Yank until end of line, like C and D
 nnoremap Y y$
@@ -548,10 +530,10 @@ nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 
 " Indenting counts improvement. Before 2> indented this line or this motion repeated,
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
-nnoremap <expr> >> '<Esc>' . repeat('>>', v:count > 1 ? v:count : 1)
-nnoremap <expr> << '<Esc>' . repeat('<<', v:count > 1 ? v:count : 1)
-nnoremap <expr> > '<Esc>' . utils#multi_indent_expr(0, v:count)
-nnoremap <expr> < '<Esc>' . utils#multi_indent_expr(1, v:count)
+nnoremap <expr> >> '<Esc>' . repeat('>>', v:count1)
+nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
+nnoremap <expr> > '<Esc>' . utils#multi_indent_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . utils#multi_indent_expr(1, v:count1)
 
 " Maps to functions that accept motions
 command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
@@ -650,64 +632,74 @@ noremap ]z zj
 noremap [Z [z
 noremap ]Z ]z
 
-" Text objects. Many of these just copied, some ideas for future:
-" https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
-" Note: Method definition needs that fancy regex instead of just \< because
-" textobj looks for *narrowest* possible match so only catches tail of
-" method call. Note that \@! fails but \zs works for some reason.
-nnoremap <CR> <C-]>
-" Next block of contiguous comments
-noremap <expr> [c shortcuts#search_block(
-  \ '^\(' . shortcuts#regex_comment() . '\)\@!.*\n' . shortcuts#regex_comment(), 0
-  \ )
-noremap <expr> ]c shortcuts#search_block(
-  \ '^\(' . shortcuts#regex_comment() . '\)\@!.*\n' . shortcuts#regex_comment(), 1
-  \ )
-" Next block at *parent indent level*
-noremap <expr> [i shortcuts#search_block(
-  \ '^\(' . shortcuts#regex_current_indent() . '\)\@!.*\n^\zs\ze' . shortcuts#regex_current_indent(), 0
-  \ )
-noremap <expr> ]i shortcuts#search_block(
-  \ '^\(' . shortcuts#regex_current_indent() . '\)\@!.*\n^\zs\ze' . shortcuts#regex_current_indent(), 1
-  \ )
-" Next block at *lower* indent level
-noremap <expr> [I shortcuts#search_block(
-  \ '^\zs\ze' . shortcuts#regex_parent_indent(), 0
-  \ )
-noremap <expr> ]I shortcuts#search_block(
-  \ '^\zs\ze' . shortcuts#regex_parent_indent(), 1
-  \ )
+" Unimpaired blank lines
+nnoremap <silent> <Plug>BlankUp :call utils#blank_up(v:count1)<CR>
+nnoremap <silent> <Plug>BlankDown :call utils#blank_down(v:count1)<CR>
+nmap [e <Plug>BlankUp
+nmap ]e <Plug>BlankDown
 
-" Popup-aware insert mode behavior
-augroup popup_opts
+" Maps and commands for circular location-list scrolling
+command! -bar -count=1 Cnext execute utils#cyclic_next(<count>, 'qf')
+command! -bar -count=1 Cprev execute utils#cyclic_next(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute utils#cyclic_next(<count>, 'loc')
+command! -bar -count=1 Lprev execute utils#cyclic_next(<count>, 'loc', 1)
+nnoremap <silent> [x :Lprev<CR>
+nnoremap <silent> ]x :Lnext<CR>
+nnoremap <silent> [q :Cprev<CR>
+nnoremap <silent> ]q :Cnext<CR>
+
+" Insert mode with paste toggling
+nnoremap <expr> gii utils#setup_paste() . 'i'
+nnoremap <expr> gia utils#setup_paste() . 'a'
+nnoremap <expr> gic utils#setup_paste() . 'c'
+nnoremap <expr> gio utils#setup_paste() . 'o'
+nnoremap <expr> giO utils#setup_paste() . 'O'
+
+" Jump to definition of keyword under cursor, and show first line of occurence
+" nnoremap <CR> <C-]>  " fails most of the time
+nnoremap <CR> [<C-i>
+nnoremap <Leader><CR> [I
+
+" Navigation between regions
+" See: https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
+" Blocks at *parent indent level*
+noremap <expr> [<Space> utils#search_block('^\(' . utils#current_indent() . '\)\@!.*\n^\zs\ze' . utils#current_indent(), 0)
+noremap <expr> ]<Space> utils#search_block('^\(' . utils#current_indent() . '\)\@!.*\n^\zs\ze' . utils#current_indent(), 1)
+" Blocks at *lower* indent level
+noremap <expr> [<Tab> utils#search_block('^\zs\ze' . utils#parent_indent(), 0)
+noremap <expr> ]<Tab> utils#search_block('^\zs\ze' . utils#parent_indent(), 1)
+" Blocks of contiguous comments
+noremap <expr> [C utils#search_block('^\(' . Comment() . '\)\@!.*\n' . Comment(), 0)
+noremap <expr> ]C utils#search_block('^\(' . Comment() . '\)\@!.*\n' . Comment(), 1)
+
+" Improved popup menu navigation
+augroup pum_navigation
   au!
-  au BufEnter,InsertLeave * let b:menupos = 0
+  au BufEnter,InsertLeave * let b:pum_pos = 0
 augroup END
 
-" Enter is 'accept' only when we have explicitly scrolled down. Also break undo history (see :help ins-special-special)
-inoremap <expr> <CR>  pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
+" Keystrokes that always close the popup menu
+inoremap <expr> <BS>    pumvisible() ? utils#pum_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
+inoremap <expr> <Space> pumvisible() ? utils#pum_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
 
-" Tab always means 'accept' and choose default menu item if necessary
-inoremap <expr> <Tab> pumvisible() ? b:menupos ? "\<C-y>" . utils#tab_reset() : "\<C-n>\<C-y>" . utils#tab_reset() : "\<C-]>\<Tab>"
+" Enter is 'accept' only if we explicitly scrolled down, tab is always 'accept' and
+" choose default menu item if necessary. Also break undo history when adding linebreaks.
+" See: :help ins-special-special
+inoremap <expr> <CR>  pumvisible() ? b:pum_pos ? "\<C-y>" . utils#pum_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
+inoremap <expr> <Tab> pumvisible() ? b:pum_pos ? "\<C-y>" . utils#pum_reset() : "\<C-n>\<C-y>" . utils#pum_reset() : "\<C-]>\<Tab>"
 
-" Certain keystrokes always close the popup menu
-inoremap <expr> <BS>    pumvisible() ? utils#tab_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
-inoremap <expr> <Space> pumvisible() ? utils#tab_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
-
-" Commands that increment items in the menu
-inoremap <expr> <C-k>  pumvisible() ? utils#tab_decrease() . "\<C-p>" : "\<Up>"
-inoremap <expr> <C-j>  pumvisible() ? utils#tab_increase() . "\<C-n>" : "\<Down>"
-inoremap <expr> <Up>   pumvisible() ? utils#tab_decrease() . "\<C-p>" : "\<Up>"
-inoremap <expr> <Down> pumvisible() ? utils#tab_increase() . "\<C-n>" : "\<Down>"
-
-" Disable scrolling in insert mode
-inoremap <expr> <ScrollWheelUp>   pumvisible() ? utils#tab_decrease() . "\<C-p>" : ""
-inoremap <expr> <ScrollWheelDown> pumvisible() ? utils#tab_increase() . "\<C-n>" : ""
+" Keystrokes that increment items in the menu
+" Also disable scrolling in insert mode
+inoremap <expr> <ScrollWheelUp>   pumvisible() ? utils#pum_prev() : ''
+inoremap <expr> <ScrollWheelDown> pumvisible() ? utils#pum_next() : ''
+inoremap <expr> <C-k>  pumvisible() ? utils#pum_prev() : "\<Up>"
+inoremap <expr> <C-j>  pumvisible() ? utils#pum_next() : "\<Down>"
+inoremap <expr> <Up>   pumvisible() ? utils#pum_prev() : "\<Up>"
+inoremap <expr> <Down> pumvisible() ? utils#pum_next() : "\<Down>"
 
 " Forward delete by tabs
 inoremap <silent> <expr> <Delete> utils#forward_delete()
 
-" Comment-related stuff
 " Insert comment
 inoremap <expr> <C-c> comments#comment_insert()
 
@@ -1085,7 +1077,7 @@ call plug#end()
 " Mappings for vim-tagtools command
 " Also use ctag brackets mapping for default double bracket motion, except never
 " overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
-if PlugActive('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
+if Active('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
   augroup double_bracket
     au!
     au BufEnter *
@@ -1095,13 +1087,13 @@ if PlugActive('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
   augroup END
   nnoremap <silent> <Leader>C :CTagsDisplay<CR>
 endif
-if PlugActive('black')
+if Active('black')
   let g:black_linelength = s:textwidth
   let g:black_skip_string_normalization = 1
 endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
-if PlugActive('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
+if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   let g:scrollwrapped_wrap_filetypes = []
   nnoremap <silent> <Leader>w :WrapToggle<CR>
   nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
@@ -1114,7 +1106,7 @@ endif
 " Add shortcuts for surrounding text objects with delims
 " Note: More global delims are found in textools plugin because I define
 " some complex helper funcs there
-if PlugActive('vim-surround')
+if Active('vim-surround')
   " Text object shorthands
   " nmap ySS ySS  " wrap inner line
   " nmap yss yss  " wrap whole line
@@ -1128,18 +1120,16 @@ endif
 
 " Auto-complete delimiters
 " Filetype-specific settings are in various ftplugin files
-if PlugActive('delimitmate')
-  let g:delimitMate_expand_space = 1
+if Active('delimitmate')
   let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
+  let g:delimitMate_expand_space = 1
   let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_quotes = "\" '"
-  let g:delimitMate_matchpairs = '(:),{:},[:]'  " exclude <> by default for use in comparison operators
   let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
 " Add global delims with vim-shortcuts plugin functions and declare my weird
 " mapping defaults due to Karabiner
-if PlugActive('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
+if Active('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
   " Set the cache directory for bibtex plugin
   let s:cache_dir = expand('~/Library/Caches/bibtex')
   if isdirectory(s:cache_dir)
@@ -1155,14 +1145,14 @@ endif
 
 " *Very* expensive for large files so only ever activate manually
 " Mapping is # for hex string
-if PlugActive('colorizer')
+if Active('colorizer')
   let g:colorizer_startup = 0
   let g:colorizer_nomap = 1
   nnoremap <Leader># :<C-u>ColorToggle<CR>
 endif
 
 " Undo tree
-if PlugActive('undotree')
+if Active('undotree')
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
   noremap <Leader>u :UndotreeToggle<CR>
@@ -1173,7 +1163,7 @@ if PlugActive('undotree')
 endif
 
 " Speed dating, support date increments
-if PlugActive('vim-speeddating')
+if Active('vim-speeddating')
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp   <C-a>
@@ -1191,13 +1181,13 @@ endif
 " AutoCalcAppendWithEq
 " AutoCalcAppendWithSum
 " AutoCalcAppendWithEqAndSum
-if PlugActive('HowMuch')
+if Active('HowMuch')
   vmap <Leader>- <Plug>AutoCalcReplaceWithSum
   vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
 endif
 
 " Codi (mathematical notepad)
-if PlugActive('codi.vim')
+if Active('codi.vim')
   " See issue: https://github.com/metakirby5/codi.vim/issues/90
   " We want TextChanged and InsertLeave, not TextChangedI which is enabled
   " when setting g:codi#autocmd to 'TextChanged'
@@ -1237,7 +1227,7 @@ endif
 " Fugitive command aliases
 " Used to alias G commands to lower case but upper case is more consistent
 " with Tim Pope eunuch commands
-if PlugActive('vim-fugitive')
+if Active('vim-fugitive')
   cnoreabbrev Gdiff Gdiffsplit!
   cnoreabbrev Ghdiff Ghdiffsplit!
   cnoreabbrev Gvdiff Gvdiffsplit!
@@ -1245,7 +1235,7 @@ endif
 
 " Git gutter
 " Todo: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
-if PlugActive('vim-gitgutter')
+if Active('vim-gitgutter')
   " Create command for toggling on/off; old VIM versions always show signcolumn
   " if signs present, so GitGutterDisable will remove signcolumn.
   let g:gitgutter_map_keys = 0  " disable all maps yo
@@ -1267,7 +1257,7 @@ if PlugActive('vim-gitgutter')
 endif
 
 " Vim sneak
-if PlugActive('vim-sneak')
+if Active('vim-sneak')
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
   map f <Plug>Sneak_f
@@ -1279,19 +1269,19 @@ if PlugActive('vim-sneak')
 endif
 
 " Neocomplete and deoplete
-if PlugActive('deoplete.nvim')
+if Active('deoplete.nvim')
   call deoplete#custom#option({
   \ 'max_list': 15,
   \ })
 endif
-if PlugActive('neocomplete.vim')
+if Active('neocomplete.vim')
   let g:neocomplete#max_list = 15
   let g:neocomplete#enable_at_startup = 1
   let g:neocomplete#enable_auto_select = 0
 endif
 
 " Jedi vim
-if PlugActive('jedi-vim')
+if Active('jedi-vim')
   augroup jedi_fix
     au!
     au FileType python nnoremap <buffer> <silent> <Leader>s :Refresh<CR>
@@ -1313,7 +1303,7 @@ endif
 " * p jumps to tag under cursor, in code window, but remain in tagbar
 " * C-n and C-p browses by top-level tags
 " * o toggles the fold under cursor, or current one
-if PlugActive('tagbar')
+if Active('tagbar')
   " Customization, for more info see :help tagbar-extend
   " To list kinds, see :!ctags --list-kinds=<filetype>
   " The first number is whether to fold, second is whether to highlight location
@@ -1359,18 +1349,8 @@ if PlugActive('tagbar')
   let g:tagbar_map_closefold = '-'
   let g:tagbar_map_closeallfolds = '_'
   let g:tagbar_map_openallfolds = '+'
-  nnoremap <silent> <Leader>t :call utils#tagbar_setup()<CR>
+  nnoremap <silent> <Leader>t :TagbarToggle<CR>
 endif
-
-" Maps and commands for circular location-list scrolling
-command! -bar -count=1 Cnext execute utils#cyclic_next(<count>, 'qf')
-command! -bar -count=1 Cprev execute utils#cyclic_next(<count>, 'qf', 1)
-command! -bar -count=1 Lnext execute utils#cyclic_next(<count>, 'loc')
-command! -bar -count=1 Lprev execute utils#cyclic_next(<count>, 'loc', 1)
-nnoremap <silent> [x :Lprev<CR>
-nnoremap <silent> ]x :Lnext<CR>
-nnoremap <silent> [q :Cprev<CR>
-nnoremap <silent> ]q :Cnext<CR>
 
 " Error highlighting with different plugins
 hi ALEErrorLine ctermfg=White ctermbg=Red cterm=None
@@ -1415,7 +1395,7 @@ let g:ale_sh_shellcheck_options =
 let g:syntastic_sh_shellcheck_args = g:ale_sh_shellcheck_options
 
 " Asynchronous linting engine
-if PlugActive('ale')
+if Active('ale')
   " Mappings (note that ALE works with buffer contents unlike syntastic)
   noremap <silent> <Leader>x :<C-u>call utils#ale_toggle(1)<CR>
   noremap <silent> <Leader>X :<C-u>call utils#ale_toggle(0)<CR>
@@ -1450,7 +1430,7 @@ if PlugActive('ale')
 endif
 
 " Easy-align
-if PlugActive('vim-easy-align')
+if Active('vim-easy-align')
   " Align map (nice mnemonic similar to gq for wrapping)
   " Note: Use <Left> to stick delimiter to left instead of right
   " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
@@ -1503,7 +1483,7 @@ endif
 
 " Session saving
 " Obsession .vimsession triggers update on BufEnter and VimLeavePre
-if PlugActive('vim-obsession') "must manually preserve cursor position
+if Active('vim-obsession') "must manually preserve cursor position
   augroup session
     au!
     au BufReadPost *
