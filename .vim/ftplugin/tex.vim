@@ -26,13 +26,16 @@ let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 " * \chi looks like an x, pronounced 'kai'
 " * the 'u' used for {-} and {+} is for 'unary'
 " Rejected maps:
-" \ "'": shortcuts#make_snippet(shortcuts#graphic_select(), '\includegraphics{', '}'),
-" \ '"': shortcuts#make_snippet(shortcuts#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
-" \ '/': shortcuts#make_snippet(shortcuts#label_select(), '\cref{', '}'),
-" \ '?': shortcuts#make_snippet(shortcuts#label_select(), '\ref{', '}'),
-" \ ':': shortcuts#make_snippet(shortcuts#cite_select(), '\citet{', '}'),
-" \ ';': shortcuts#make_snippet(shortcuts#cite_select(), '\citep{', '}'),
-let s:snippet_map = {
+" \ "'": textools#make_snippet(textools#graphic_select(), '\includegraphics{', '}'),
+" \ '"': textools#make_snippet(textools#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
+" \ '/': textools#make_snippet(textools#label_select(), '\cref{', '}'),
+" \ '?': textools#make_snippet(textools#label_select(), '\ref{', '}'),
+" \ ':': textools#make_snippet(textools#cite_select(), '\citet{', '}'),
+" \ ';': textools#make_snippet(textools#cite_select(), '\citep{', '}'),
+" \ 'k': textools#ensure_math("^{\1Superscript: \1}"),
+" \ 'j': textools#ensure_math("_{\1Subscript: \1}"),
+" \ 'E': textools#ensure_math("\\times 10^{\1Exponent: \1}"),
+call shortcuts#add_snippets({
   \ "\<CR>": " \\textCR\r",
   \ "'": textools#graphic_select(),
   \ '*': '\item',
@@ -40,7 +43,7 @@ let s:snippet_map = {
   \ ',': textools#ensure_math('\Leftarrow'),
   \ '-': '\pause',
   \ '.': textools#ensure_math('\Rightarrow'),
-  \ '/': textools#format_units(shortcuts#user_input('Units'), ''),
+  \ '/': textools#format_units("\1Units: \1"),
   \ '0': '\Huge',
   \ '1': '\tiny',
   \ '2': '\scriptsize',
@@ -59,7 +62,7 @@ let s:snippet_map = {
   \ '_': textools#ensure_math('\prod'),
   \ 'C': textools#ensure_math('\Xi'),
   \ 'D': textools#ensure_math('\Delta'),
-  \ 'E': textools#ensure_math(shortcuts#user_input('Exponent'), '\times 10^{', '}'),
+  \ 'E': textools#ensure_math("\1Exponent: \r..*\r\\\\times 10^{&}\1"),
   \ 'F': textools#ensure_math('\Phi'),
   \ 'G': textools#ensure_math('\Gamma'),
   \ 'I': textools#ensure_math('\iint'),
@@ -85,8 +88,8 @@ let s:snippet_map = {
   \ 'g': textools#ensure_math('\gamma'),
   \ 'h': textools#ensure_math('\eta'),
   \ 'i': textools#ensure_math('\int'),
-  \ 'j': textools#ensure_math(shortcuts#user_input('Subscript'), '_{', '}'),
-  \ 'k': textools#ensure_math(shortcuts#user_input('Supersript'), '^{', '}'),
+  \ 'j': textools#ensure_math("\1Subscript: \r..*\r_{&}\1"),
+  \ 'k': textools#ensure_math("\1Superscript: \r..*\r^{&}\1"),
   \ 'l': textools#ensure_math('\lambda'),
   \ 'm': textools#ensure_math('\mu'),
   \ 'n': textools#ensure_math('\nabla'),
@@ -103,16 +106,18 @@ let s:snippet_map = {
   \ 'y': textools#ensure_math('\psi'),
   \ 'z': textools#ensure_math('\zeta'),
   \ '~': textools#ensure_math('\sim'),
-\ }
-
-" Define snippet variables (analogous to vim-surround approach)
-for [s:key, s:snippet] in items(s:snippet_map)
-  let b:snippet_{char2nr(s:key)} = s:snippet
-endfor
+  \ }, 1)
 
 " Surround tools. Currently only overwrite 'r' and 'a' global bracket surrounds
 " the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds
-let s:surround_map = {
+" Delimiters should also not overlap common text objects like 'w' and 'p'
+" Rejected maps:
+" \ 'p': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
+" \ 'F': "\\begin{wrapfigure}{r}{0.5\\textwidth}\n\\centering\r\\end{wrapfigure}",
+" \ ',': "\\begin{\1\\begin{\1}\r\\end{\1\1}",
+" \ '.': "\\\1\\\1{\r}",
+" \ 'L': "\\href{\1Link: \1}{\r}",
+call shortcuts#add_delims({
   \ "'": "`\r'",
   \ '!': "\\frametitle{\r}",
   \ '"': "``\r''",
@@ -125,8 +130,8 @@ let s:surround_map = {
   \ '*': "\\begin{itemize}\r\\end{itemize}",
   \ '-': "\\overline{\r}",
   \ '/': "\\frac{\r}{}",
-  \ ',': "\\begin{\1\\begin{\1}\r\\end{\1\1}",
-  \ '.': "\\\1\\\1{\r}",
+  \ ',': "\1Environment: \r..*\r\\\\begin{&}\1\r\1\r..*\r\\\\end{&}\1",
+  \ '.': "\1Command: \r..*\r\\\\&{\1\r\1\r..*\r}\1",
   \ '0': "\\tag{\r}",
   \ '1': "\\section{\r}",
   \ '2': "\\subsection{\r}",
@@ -151,7 +156,7 @@ let s:surround_map = {
   \ 'I': "\\texttt{\r}",
   \ 'J': "\\underset{}{\r}",
   \ 'K': "\\overset{}{\r}",
-  \ 'L': "\\href{\1Link: \1}{\r}",
+  \ 'L': "\1Link: \r..*\r\\\\href{&}{\1\r\1\r..*\r}\1",
   \ 'M': "\\mathbb{\r}",
   \ 'O': "\\mathbf{\r}",
   \ 'R': "\\citet{\r}",
@@ -181,13 +186,11 @@ let s:surround_map = {
   \ 'm': "\\mathrm{\r}",
   \ 'n': "\\pdfcomment{%\r}",
   \ 'o': "\\textbf{\r}",
-  \ 'p': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
   \ 'r': "\\citep{\r}",
   \ 's': "\\begin{frame}\r\\end{frame}",
   \ 't': "\\begin{tabular}{\r}\\end{tabular}",
   \ 'u': "\\underline{\r}",
   \ 'v': "\\verb$\r$",
-  \ 'w': "\\begin{wrapfigure}{r}{0.5\\textwidth}\n\\centering\r\\end{wrapfigure}",
   \ 'x': "\\boxed{\r}",
   \ 'y': "\\pyth$\r$",
   \ 'z': "\\begin{column}{0.5\\textwidth}\r\\end{column}",
@@ -195,99 +198,22 @@ let s:surround_map = {
   \ '|': "\\left\\|\r\\right\\|",
   \ '}': "\\left\\{\\begin{array}{ll}\r\\end{array}\\right.",
   \ '~': "\\title{\r}",
-\ }
+  \ }, 1)
 
-" Define surround variables
-for [s:key, s:pair] in items(s:surround_map)
-  let b:surround_{char2nr(s:key)} = s:pair
-endfor
-
-" Text object integration
-" " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
-" " Also changed begin end modes so they make more sense.
-let s:tex_textobjs_map = {
-  \   'environment': {
-  \     'pattern': ['\\begin{[^}]\+}', '\\end{[^}]\+}'],
-  \     'select-a': '<buffer> a,',
-  \     'select-i': '<buffer> i,',
-  \   },
-  \  'command': {
-  \     'pattern': ['\\\S\+{', '}'],
-  \     'select-a': '<buffer> a.',
-  \     'select-i': '<buffer> i.',
-  \   },
-  \  'paren-math': {
-  \     'pattern': ['\\left(', '\\right)'],
-  \     'select-a': '<buffer> a(',
-  \     'select-i': '<buffer> i(',
-  \   },
-  \  'bracket-math': {
-  \     'pattern': ['\\left\[', '\\right\]'],
-  \     'select-a': '<buffer> a[',
-  \     'select-i': '<buffer> i[',
-  \   },
-  \  'curly-math': {
-  \     'pattern': ['\\left\\{', '\\right\\}'],
-  \     'select-a': '<buffer> a{',
-  \     'select-i': '<buffer> i{',
-  \   },
-  \  'angle-math': {
-  \     'pattern': ['\\left\\langle ', '\\right\\rangle'],
-  \     'select-a': '<buffer> a<',
-  \     'select-i': '<buffer> i<',
-  \   },
-  \  'abs-math': {
-  \     'pattern': ['\\left\\|', '\\right\\|'],
-  \     'select-a': '<buffer> a\|',
-  \     'select-i': '<buffer> i\|',
-  \   },
-  \  'dollar-math-a': {
-  \     'pattern': '[$][^$]*[$]',
-  \     'select': '<buffer> a$',
-  \   },
-  \  'dollar-math-i': {
-  \     'pattern': '[$]\zs[^$]*\ze[$]',
-  \     'select': '<buffer> i$',
-  \   },
-  \  'quote': {
-  \     'pattern': ['`', "'"],
-  \     'select-a': "<buffer> a'",
-  \     'select-i': "<buffer> i'",
-  \   },
-  \  'quote-double': {
-  \     'pattern': ['``', "''"],
-  \     'select-a': '<buffer> a"',
-  \     'select-i': '<buffer> i"',
-  \   },
-  \ }
-call textobj#user#plugin('latex', s:tex_textobjs_map)
-
-" " Text object integration harmonized with vim-surround (also permit lists or \r strings)
-" " Todo: Finish this! You can do it! :) Also define general function and split things up
-" " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
-" " Also changed begin end modes so they make more sense.
-" function! s:pair_regex(pair)
-"   let pair = escape(a:pair, '.*~$\')
-"   let pair = substitute(pair, "\\([\1\2\3\4\5\6]\\).\\{-}\\1", '.\\{-}', 'g')  " replace user prompt indicators
-"   let pair = substitute(pair, "\n", '\_s*', 'g')  " translate literal newline
-"   return split(pair, "\r")
-" endfunction
-" if exists('*textobj#user#plugin')
-"   let s:tex_textobjs_map = {}
-"   for [s:key, s:pair] in items(s:surround_map)
-"     echom s:key
-"     echom 'Pair:'
-"     echom s:pair
-"     echom 'Fixed:'
-"     echom s:pair_regex(s:pair)
-"     let s:tex_textobjs_map[s:key] = {
-"       \ 'pattern': s:pair_regex(s:pair),
-"       \ 'select-a': '<buffer> a' . s:key,
-"       \ 'select-i': '<buffer> i' . s:key,
-"       \ }
-"   endfor
-"   call textobj#user#plugin('latex', s:tex_textobjs_map)
-" endif
+" " Text object integration
+" " " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
+" " " Also changed begin end modes so they make more sense.
+" let s:tex_textobjs_map = {
+"   \  'dollar-math-a': {
+"   \     'pattern': '[$][^$]*[$]',
+"   \     'select': '<buffer> a$',
+"   \   },
+"   \  'dollar-math-i': {
+"   \     'pattern': '[$]\zs[^$]*\ze[$]',
+"   \     'select': '<buffer> i$',
+"   \   },
+"   \ }
+" call textobj#user#plugin('latex', s:tex_textobjs_map)
 
 " Running custom or default latexmk command in background
 let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim

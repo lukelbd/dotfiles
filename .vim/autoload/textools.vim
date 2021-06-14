@@ -194,8 +194,11 @@ endfunction
 " Use TeX syntax to detect any and every math environment
 " Note: Check syntax of point to *left* of cursor because that's the environment
 " where we are inserting text. Does not wrap if in first column.
-function! s:ensure_math(...) abort
-  let output = call('shortcuts#make_snippet_driver', a:000)
+function! s:ensure_math(value) abort
+  let output = shortcuts#process_value(a:value)
+  if empty(output)
+    return output
+  endif
   if empty(filter(synstack(line('.'), col('.') - 1), 'synIDattr(v:val, "name") =~? "math"'))
     let output = '$' . output . '$'
   endif
@@ -206,8 +209,8 @@ function! textools#ensure_math(...) abort
 endfunction
 
 " Format unit string for LaTeX for LaTeX for LaTeX for LaTeX
-function! s:format_units(...) abort
-  let input = call('shortcuts#make_snippet_driver', a:000)
+function! s:format_units(value) abort
+  let input = shortcuts#process_value(a:value)
   if empty(input)
     return ''
   endif
