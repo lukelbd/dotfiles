@@ -1098,24 +1098,8 @@ if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   nnoremap <silent> <Leader>w :WrapToggle<CR>
   nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
   nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
-  vnoremap <silent> <expr> <Down> (winheight(0)/4) . '<C-e>' . (winheight(0)/4) . 'gj'
-  vnoremap <silent> <expr> <Up>   (winheight(0)/4) . '<C-y>' . (winheight(0)/4) . 'gk'
-endif
-
-" Vim surround
-" Add shortcuts for surrounding text objects with delims
-" Note: More global delims are found in textools plugin because I define
-" some complex helper funcs there
-if Active('vim-surround')
-  " Text object shorthands
-  " nmap ySS ySS  " wrap inner line
-  " nmap yss yss  " wrap whole line
-  nmap ysw ysiw
-  nmap ysW ysiW
-  nmap ysp ysip
-  nmap ySw ySiw
-  nmap ySW ySiW
-  nmap ySp ySip
+  vnoremap <silent> <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
+  vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
 endif
 
 " Auto-complete delimiters
