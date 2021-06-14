@@ -703,26 +703,29 @@ inoremap <silent> <expr> <Delete> utils#forward_delete()
 " Insert comment
 inoremap <expr> <C-c> comments#comment_insert()
 
-" Section headers and dividers
-nnoremap <silent> <Plug>comment_bar :call comments#comment_bar('-', 77, 1)<CR>:call repeat#set("\<Plug>bar1")<CR>
-nnoremap <silent> gc: :call comments#comment_bar_surround('-', 77, 1)<CR>A
-nmap gc; <Plug>comment_bar
-
-" Author information, date insert, inserts matching weird style of unknown authors
-nnoremap <silent> gcA :call comments#comment_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap <silent> gcY :call comments#comment_message('Date: '.strftime('%Y-%m-%d'))<CR>
-nnoremap <silent> gcI :call comments#comment_inline(5)<CR>i
-nnoremap <silent> gcC :call comments#comment_double()<CR>i
+" Section headers, dividers, and other information
+nnoremap <silent> gcA :call comments#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap <silent> gcY :call comments#message('Date: ' . strftime('%Y-%m-%d'))<CR>
+nnoremap <silent> gc" :call comments#header_inline(5)<CR>
+nnoremap <silent> gc' :call comments#header_incomment()<CR>
+nnoremap <silent> gc: :call comments#header_line('-', 77, 1, 1)<CR>
+nnoremap <silent> <Plug>CommentBar :call comments#header_line('-', 77, 1, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
+nmap gc; <Plug>CommentBar
 
 " ReST section comment headers
-nnoremap <silent> g- :call comments#comment_header('-')<CR>
-nnoremap <silent> g_ :call comments#comment_header_surround('-')<CR>
-nnoremap <silent> g= :call comments#comment_header('=')<CR>
-nnoremap <silent> g+ :call comments#comment_header_surround('=')<CR>
+" Warninb: <Plug> name should not be subset of other name or results in delay!
+nnoremap <silent> <Plug>SectionSingle :call comments#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
+nnoremap <silent> <Plug>SubsectionSingle :call comments#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
+nnoremap <silent> <Plug>SectionDouble :call comments#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
+nnoremap <silent> <Plug>SubsectionDouble :call comments#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
+nmap g= <Plug>SectionSingle
+nmap g- <Plug>SubsectionSingle
+nmap g+ <Plug>SectionDouble
+nmap g_ <Plug>SubsectionDouble
 
 " Python docstring
-nnoremap g' :call comments#insert_docstring("'")<CR>A
-nnoremap g" :call comments#insert_docstring('"')<CR>A
+nnoremap g' :call comments#python_docstring("'")<CR>A
+nnoremap g" :call comments#python_docstring('"')<CR>A
 
 " Search and find-replace stuff
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
