@@ -2,8 +2,8 @@
 " Fuzzy selecting files by continuously descending into directories
 " and re-generating the lists.
 "-----------------------------------------------------------------------------"
-" Function used with input() to prevent tab expansion and literal tab insertion
-function! NullList(...) abort
+" Used with input() to prevent tab expansion and literal tab insertion
+function! fzf#null_list(...) abort
   return []
 endfunction
 
@@ -67,7 +67,7 @@ function! fzf#open_continuous(...) abort
     let paths = []
     for item in items
       if item == s:newfile
-        let item = input(prompt . '/', '', 'customlist,NullList')
+        let item = input(prompt . '/', '', 'customlist,fzf#null_list')
       endif
       if item ==# '..'  " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
         call add(paths, fnamemodify(path, ':h'))  " head of current directory
