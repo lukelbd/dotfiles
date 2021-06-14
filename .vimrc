@@ -649,11 +649,14 @@ nnoremap <silent> [q :Cprev<CR>
 nnoremap <silent> ]q :Cnext<CR>
 
 " Insert mode with paste toggling
-nnoremap <expr> gii utils#setup_paste() . 'i'
-nnoremap <expr> gia utils#setup_paste() . 'a'
-nnoremap <expr> gic utils#setup_paste() . 'c'
-nnoremap <expr> gio utils#setup_paste() . 'o'
-nnoremap <expr> giO utils#setup_paste() . 'O'
+nnoremap <expr> gi utils#setup_paste() . 'i'
+nnoremap <expr> gI utils#setup_paste() . 'I'
+nnoremap <expr> ga utils#setup_paste() . 'a'
+nnoremap <expr> gA utils#setup_paste() . 'A'
+nnoremap <expr> go utils#setup_paste() . 'o'
+nnoremap <expr> gO utils#setup_paste() . 'O'
+nnoremap <expr> gc utils#setup_paste() . 'c'
+nnoremap <expr> gR utils#setup_paste() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
 " nnoremap <CR> <C-]>  " fails most of the time
@@ -723,7 +726,7 @@ nmap g- <Plug>SubsectionSingle
 nmap g+ <Plug>SectionDouble
 nmap g_ <Plug>SubsectionDouble
 
-" Python docstring
+" Python docstrings
 nnoremap g' :call comments#python_docstring("'")<CR>A
 nnoremap g" :call comments#python_docstring('"')<CR>A
 
@@ -1014,10 +1017,11 @@ Plug 'raimondi/delimitmate'
 " Plug 'sgur/vim-textobj-parameter'  " this conflicts with latex
 " Plug 'vim-scripts/argtextobj.vim'  " issues with this too
 " Plug 'machakann/vim-textobj-functioncall'  " does not work
-Plug 'kana/vim-textobj-user' " base
+Plug 'kana/vim-textobj-user'  " base requirement
 Plug 'kana/vim-textobj-indent'  " match indentation, object is 'i'
 Plug 'kana/vim-textobj-entire'  " entire file, object is 'e'
-
+Plug 'kana/vim-textobj-line'  " the line
+Plug 'sgur/vim-textobj-parameter'
 
 " Aligning things and stuff, use vim-easy-align because more tabular API is fugly AF
 " and requires individual maps and docs suck. Also does not have built-in feature for
@@ -1253,6 +1257,28 @@ if Active('vim-sneak')
   map T <Plug>Sneak_T
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
+endif
+
+" Text objects not associated with delimiters (analogous to 'w', 'p', etc.)
+" Todo: Auto-define ] and [ navigation of text objects and delimiters?
+if Active('vim')
+  call textobj#user#plugin(
+    \ 'extrashortcuts', {
+    \   'blanklines': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 'shortcuts#utils#blank_lines',
+    \     'select-i-function': 'shortcuts#utils#blank_lines',
+    \     'select-a': 'a<Space>',
+    \     'select-i': 'i<Space>',
+    \   },
+    \   'uncommented': {
+    \     'sfile': expand('<sfile>:p'),
+    \     'select-a-function': 'shortcuts#utils#uncommented_lines',
+    \     'select-i-function': 'shortcuts#utils#uncommented_lines',
+    \     'select-a': 'aC',
+    \     'select-i': 'iC',
+    \   },
+    \ })
 endif
 
 " Neocomplete and deoplete
