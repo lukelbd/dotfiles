@@ -276,7 +276,7 @@ endfunction
 " Better grep, with limited regex translation
 function! Grep(regex) abort 
   let regex = a:regex
-  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g') " not sure why double backslash needed
+  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g')
   let regex = substitute(regex, '\\s', "[ \t]",  'g')
   let regex = substitute(regex, '\\S', "[^ \t]", 'g')
   let result = split(system("grep '" . regex . "' " . shellescape(@%) . ' 2>/dev/null'), "\n")
@@ -649,31 +649,19 @@ nnoremap <silent> [q :Cprev<CR>
 nnoremap <silent> ]q :Cnext<CR>
 
 " Insert mode with paste toggling
+" nnoremap <expr> gc utils#setup_paste() . 'c'
 nnoremap <expr> gi utils#setup_paste() . 'i'
 nnoremap <expr> gI utils#setup_paste() . 'I'
 nnoremap <expr> ga utils#setup_paste() . 'a'
 nnoremap <expr> gA utils#setup_paste() . 'A'
 nnoremap <expr> go utils#setup_paste() . 'o'
 nnoremap <expr> gO utils#setup_paste() . 'O'
-nnoremap <expr> gc utils#setup_paste() . 'c'
 nnoremap <expr> gR utils#setup_paste() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
 " nnoremap <CR> <C-]>  " fails most of the time
 nnoremap <CR> [<C-i>
 nnoremap <Leader><CR> [I
-
-" Navigation between regions
-" See: https://github.com/kana/vim-textobj-lastpat/tree/master/plugin/textobj
-" Blocks at *parent indent level*
-noremap <expr> [<Space> utils#search_block('^\(' . utils#current_indent() . '\)\@!.*\n^\zs\ze' . utils#current_indent(), 0)
-noremap <expr> ]<Space> utils#search_block('^\(' . utils#current_indent() . '\)\@!.*\n^\zs\ze' . utils#current_indent(), 1)
-" Blocks at *lower* indent level
-noremap <expr> [<Tab> utils#search_block('^\zs\ze' . utils#parent_indent(), 0)
-noremap <expr> ]<Tab> utils#search_block('^\zs\ze' . utils#parent_indent(), 1)
-" Blocks of contiguous comments
-noremap <expr> [C utils#search_block('^\(' . Comment() . '\)\@!.*\n' . Comment(), 0)
-noremap <expr> ]C utils#search_block('^\(' . Comment() . '\)\@!.*\n' . Comment(), 1)
 
 " Improved popup menu navigation
 augroup pum_navigation
@@ -864,7 +852,7 @@ Plug 'lilydjwg/colorizer'
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
-" Plug 'psf/black', { 'tag': '19.10b0' }
+" Plug 'psf/black', {'tag': '19.10b0'}
 " Plug 'fisadev/vim-isort'
 Plug 'Chiel92/vim-autoformat'
 Plug 'tell-k/vim-autopep8'
@@ -890,7 +878,7 @@ let g:formatters_fortran = ['fprettify']
 " Julia support and syntax highlighting
 Plug 'JuliaEditorSupport/julia-vim'
 
-" Python wrappers
+" Python utilities
 " Warning: jedi-vim horribly slow on monde
 " Plug 'vim-scripts/Pydiction'  " just changes completeopt and dictionary and stuff
 " Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
@@ -898,17 +886,19 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'ivanov/vim-ipython'  " dead
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
+Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
+let g:braceless_block_key = ':'  " captures if, for, def, etc.
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'
 
 " Folding
-" Warning: SimpylFold horribly slow on monde0
-" Plug 'tmhedberg/SimpylFold'
+" Warning: SimpylFold horribly slow on monde, instead use braceless
 Plug 'Konfekt/FastFold'
-let g:SimpylFold_docstring_preview = 0
-let g:SimpylFold_fold_docstring = 0
-let g:SimpylFold_fold_import = 0
+" Plug 'tmhedberg/SimpylFold'
+" let g:SimpylFold_docstring_preview = 0
+" let g:SimpylFold_fold_docstring = 0
+" let g:SimpylFold_fold_import = 0
 
 " Matching groups
 Plug 'andymass/vim-matchup'
@@ -965,7 +955,7 @@ Plug 'junegunn/gv.vim'  " view commit graphs with :GV
 Plug 'tpope/vim-eunuch'
 
 " Calculators and number stuff
-" Plug 'vim-scripts/Toggle' "toggling stuff on/off; modified this myself
+" Plug 'vim-scripts/Toggle'  " toggling stuff on/off, modified this myself
 " Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
 " Plug 'metakirby5/codi.vim'
 Plug 'sk1418/HowMuch'
@@ -998,9 +988,10 @@ if !has('gui_running')
 endif
 
 " Snippets
-" Plug 'honza/vim-snippets'  " actual snippets
-" Plug 'LucHermitte/mu-template'  " alternative
-" Plug 'SirVer/ultisnips'  " snippets actions
+" Todo: Investigate further, but so far primitive vim-shortcuts snippets are fine
+" Plug 'SirVer/ultisnips'  " fancy snippet actions
+" Plug 'honza/vim-snippets'  " reference snippet files supplied to e.g. ultisnips
+" Plug 'LucHermitte/mu-template'  " file template and snippet engine mashup, not popular
 
 " Delimiters, use vim-surround rather than vim-sandwich because key mappings
 " are better and API is simpler. Only miss adding numbers to operators, otherwise
@@ -1013,15 +1004,19 @@ Plug 'tpope/vim-surround'
 Plug 'raimondi/delimitmate'
 
 " Custom text objects (inner/outer selections)
+" Todo: Generalized function converting text objects into navigation commands?
+" Unsustainable to try to reproduce diverse plugin-supplied text objects as
+" navigation commands... need to do this automatically!!!
 " Plug 'bps/vim-textobj-python'  " not really ever used, just use indent objects
-" Plug 'sgur/vim-textobj-parameter'  " this conflicts with latex
 " Plug 'vim-scripts/argtextobj.vim'  " issues with this too
 " Plug 'machakann/vim-textobj-functioncall'  " does not work
+" Plug 'glts/vim-textobj-comment'  " does not work
 Plug 'kana/vim-textobj-user'  " base requirement
-Plug 'kana/vim-textobj-indent'  " match indentation, object is 'i'
 Plug 'kana/vim-textobj-entire'  " entire file, object is 'e'
-Plug 'kana/vim-textobj-line'  " the line
-Plug 'sgur/vim-textobj-parameter'
+Plug 'kana/vim-textobj-line'  " entire line, object is 'l'
+Plug 'kana/vim-textobj-indent'  " matching indentation, object is 'i' for deeper indents and 'I' for just contiguous blocks, and using 'a' includes blanklines
+Plug 'sgur/vim-textobj-parameter'  " function parameter
+let g:vim_textobj_parameter_mapping = '='  " avoid ',' conflict with latex
 
 " Aligning things and stuff, use vim-easy-align because more tabular API is fugly AF
 " and requires individual maps and docs suck. Also does not have built-in feature for
@@ -1055,11 +1050,13 @@ Plug 'justinmk/vim-sneak'
 " Article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
 " Plug 'terryma/vim-multiple-cursors'
 "
-" Indent line
-" Note: This completely messes up search mode. Also requires changing Conceal
+" Indent guides
+" Note: Indentline completely messes up search mode. Also requires changing Conceal
 " group color, but doing that also messes up latex conceal backslashes (which
-" we need to stay transparent). So forget it probably
+" we need to stay transparent). Also indent-guides looks too busy and obtrusive.
+" Instead use braceless.vim highlighting, appears only when cursor is there.
 " Plug 'yggdroot/indentline'
+" Plug 'nathanaelkane/vim-indent-guides'
 "
 " Miscellaneous
 " Plug 'jez/vim-superman'  " man page
@@ -1067,9 +1064,9 @@ Plug 'justinmk/vim-sneak'
 " Plug 'dkarter/bullets.vim'  " list numbering, fails too
 "
 " Easy tags, for easy integration
-" Plug 'xolox/vim-misc' "depdency for easytags
-" Plug 'xolox/vim-easytags' "kinda old and not that useful honestly
-" Plug 'ludovicchabant/vim-gutentags' "slows shit down like crazy
+" Plug 'xolox/vim-misc'  "depdency for easytags
+" Plug 'xolox/vim-easytags'  "kinda old and not that useful honestly
+" Plug 'ludovicchabant/vim-gutentags'  "slows shit down like crazy
 "
 " End of plugins
 " The plug#end also declares filetype plugin, syntax, and indent on
@@ -1259,28 +1256,6 @@ if Active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
-" Text objects not associated with delimiters (analogous to 'w', 'p', etc.)
-" Todo: Auto-define ] and [ navigation of text objects and delimiters?
-if Active('vim')
-  call textobj#user#plugin(
-    \ 'extrashortcuts', {
-    \   'blanklines': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'shortcuts#utils#blank_lines',
-    \     'select-i-function': 'shortcuts#utils#blank_lines',
-    \     'select-a': 'a<Space>',
-    \     'select-i': 'i<Space>',
-    \   },
-    \   'uncommented': {
-    \     'sfile': expand('<sfile>:p'),
-    \     'select-a-function': 'shortcuts#utils#uncommented_lines',
-    \     'select-i-function': 'shortcuts#utils#uncommented_lines',
-    \     'select-a': 'aC',
-    \     'select-i': 'iC',
-    \   },
-    \ })
-endif
-
 " Neocomplete and deoplete
 if Active('deoplete.nvim')
   call deoplete#custom#option({
@@ -1320,8 +1295,8 @@ if Active('tagbar')
   " Customization, for more info see :help tagbar-extend
   " To list kinds, see :!ctags --list-kinds=<filetype>
   " The first number is whether to fold, second is whether to highlight location
-  " \ 'r:refs:1:0', "not useful
-  " \ 'p:pagerefs:1:0' "not useful
+  " \ 'r:refs:1:0',  "not useful
+  " \ 'p:pagerefs:1:0'  "not useful
   let g:tagbar_type_tex = {
       \ 'ctagstype' : 'latex',
       \ 'kinds'     : [
@@ -1464,7 +1439,7 @@ if Active('vim-easy-align')
   augroup END
 endif
 
-" Test lines (uncomment when testing)
+" Test lines for easy-align (uncomment when testing)
 " foo, baasrdaasdfdas, asdfjoijiaosdfjioadsjoias, asdfasfasf
 " asdfasdf, " hello world this is me
 " asdfasdfsad, asfdjioasdjfioasda, asdfsadfasdfsa, asfd
@@ -1571,10 +1546,10 @@ augroup END
 function! s:keyword_setup()
   " Warnings, errors, and shebangs
   if &filetype ==# 'vim'
-    syn clear vimTodo " vim instead uses the Stuff: syntax
+    syn clear vimTodo  " vim instead uses the Stuff: syntax
   else
-    syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.* " comments
-    syn match Special '^\%1l#!.*$' " shebangs
+    syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.*  " comments
+    syn match Special '^\%1l#!.*$'  " shebangs
   endif
   " URL highlighting
   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
@@ -1587,6 +1562,7 @@ endfunction
 " Filetype specific commands
 " highlight link htmlNoSpell
 highlight link pythonImportedObject Identifier
+highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 
 " Popup menu
 highlight Pmenu     ctermbg=NONE    ctermfg=White cterm=NONE
@@ -1660,7 +1636,7 @@ command! ColorGroups vert help group-name
 augroup clear_jumps
   au!
   if exists(':clearjumps')
-    au BufRead * clearjumps "see help info on exists()
+    au BufRead * clearjumps  "see help info on exists()
   else
     au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
   endif

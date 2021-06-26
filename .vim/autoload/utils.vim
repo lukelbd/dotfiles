@@ -91,37 +91,6 @@ function! utils#blank_down(count) abort
   silent! call repeat#set("\<Plug>BlankDown", a:count)
 endfunction
 
-" Searching between blocks
-function! utils#search_block(regex, forward) abort
-  let range = '\%' . (a:forward ? '>' : '<')  . line('.') . 'l'
-  if match(a:regex, '\\ze') != -1
-    let regex = substitute(a:regex, '\\ze', '\\ze\' . range, '')
-  else
-    let regex = a:regex . range
-  endif
-  let lnum = search(regex, 'n' . repeat('b', 1 - a:forward))  " get line number
-  if lnum == 0
-    return ''
-  else
-    return lnum . 'G'
-  endif
-endfunction
-
-" Function that returns regexes used in navigation. This helps us define navigation maps
-" for 'the first line in a contiguous block of matching lines'.
-function! utils#current_indent() abort
-  return
-    \ '[ ]\{0,'
-    \ . len(substitute(getline('.'), '^\(\s*\).*$', '\1', ''))
-    \ . '}\S\+'
-endfunction
-function! utils#parent_indent() abort
-  return
-    \ '[ ]\{0,'
-    \ . max([0, len(substitute(getline('.'), '^\(\s*\).*$', '\1', '')) - &l:tabstop])
-    \ . '}\S\+'
-endfunction
-
 " Swap characters
 function! utils#swap_characters(right) abort
   let cnum = col('.')

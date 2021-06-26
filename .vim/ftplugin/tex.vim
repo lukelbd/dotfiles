@@ -188,7 +188,7 @@ call shortcuts#add_delims({
   \ 'o': "\\textbf{\r}",
   \ 'r': "\\citep{\r}",
   \ 's': "\\begin{frame}\r\\end{frame}",
-  \ 't': "\\begin{tabular}{\r}\\end{tabular}",
+  \ 't': "\1Alignment: \r..*\r\\\\begin{tabular}{&}\1\r\1\r..*\r\\\\end{tabular}\1",
   \ 'u': "\\underline{\r}",
   \ 'v': "\\verb$\r$",
   \ 'x': "\\boxed{\r}",

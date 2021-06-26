@@ -10,6 +10,9 @@ setlocal indentexpr=s:pyindent(v:lnum)  " new indent expression
 setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python ftplugin syntax option
 
+" Enable braceless
+BracelessEnable +indent +highlight
+
 " Custom mappings
 noremap <expr> <buffer> cd utils#translate_kwargs_dict_expr(1)
 noremap <expr> <buffer> cD utils#translate_kwargs_dict_expr(0)
