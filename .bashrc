@@ -624,19 +624,27 @@ rename() {
 
 # Grepping and diffing useful for refactoring or searching for files
 # NOTE: No way to include extensionless executables in qgrep
-# NOTE: It's fine if conda gets expanded! Just trying to filter one name.
-_exclude_dirs=(api build trash sources plugged externals .ipynb_checkpoints __pycache__ '*conda3*')
+# NOTE: In find, if dotglob is unset, cannot match hidden files with [.]*
+# NOTE: In grep, using --exclude=.* also excludes current directory
 _include_exts=(.py .sh .jl .m .ncl .vim .rst .ipynb)
+_exclude_dirs=(api build trash sources plugged externals '*conda3*')
 qfind() {
-  local _first_dir=${_exclude_dirs[0]}
-  local _other_dirs=${_exclude_dirs[@:1]}
+  local _include _exclude
+  [ $# -lt 2 ] && echo 'Error: qfind() requires at least 2 args (path and command).' && return 1
+  _exclude=(${_exclude_dirs[@]/#/-o -name })  # expand into commands *and* names
+  _include=(${_include_exts[@]/#/-o -name })
+  _include=("${_include[@]//./*.}")  # add glob patterns
   command find "$1" \
-    -name '[A-Z_.]*' -prune \
-    -o -type d \( $_first_dir ${_other_dirs[@]/#/-o -name} \) -prune \
-    -o -type f \( ! -name '*.*' ${_include_exts[@]/#/-o -name} \) "${@:2}"
+    -path '*/.*' -prune -o -name '[A-Z_]*' -prune \
+    -o -type d \( ${_exclude[@]:1} \) -prune \
+    -o -type f \( ! -name '*.*' "${_include[@]}" \) \
+    "${@:2}"
 }
 qgrep() {
-  command grep "$@" -E --color=auto --exclude='[A-Z_.]*' \
+  [ $# -lt 2 ] && echo 'Error: qgrep() requires at least 2 args (pattern and path).' && return 1
+  command grep "$@" \
+    -E --color=auto --exclude='[A-Z_.]*' \
+    --exclude-dir='.[^.]*' --exclude-dir='_*' \
     ${_exclude_dirs[@]/#/--exclude-dir=} \
     ${_include_exts[@]/#/--include=*}
 }
