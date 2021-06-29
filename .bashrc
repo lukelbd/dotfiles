@@ -557,6 +557,46 @@ if hash tput 2>/dev/null; then
   export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
+# Receive affirmative or negative response using input message, then exit accordingly.
+confirm() {
+  [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
+  [[ $# -eq 0 ]] && prompt=Confirm || prompt=$*
+  while true; do
+    read -r -p "$prompt ([y]/n) " response
+    if [ -n "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
+      echo "Invalid response."
+      continue # try again
+    fi
+    if [[ "$response" =~ ^[Nn]$ ]]; then
+      $action 1  # 'bad' exit, i.e. no
+    else
+      $action 0  # 'good' exit, i.e. yes or empty
+    fi
+    break
+  done
+}
+#!/usr/bin/env bash
+# Like confirm but default value is 'no'
+confirm-no() {
+  [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
+  [[ $# -eq 0 ]] && prompt=Confirm || prompt=$*
+  while true; do
+    read -r -p "$prompt (y/[n]) " response
+    if [ -n "$response" ] && ! [[ "$response" =~  ^[NnYy]$ ]]; then
+      echo "Invalid response."
+      continue # try again
+    fi
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+      $action 0 # 'good' exit, i.e. yes
+    else
+      $action 1 # 'bad' exit, i.e. no or empty
+    fi
+    break
+  done
+}
+
+
+
 # Rename files with matching base names or having 3-digit numbers into
 # ordered numbered files.
 rename() {
@@ -605,20 +645,20 @@ refactor() {
     echo 'Error: refactor() requires search pattern and replace pattern.'
     return 1
   }
-  pfind . -print -a -exec gsed -E -n "s@$1@$2@gp" {} \; || {
+  qfind . -print -a -exec gsed -E -n "s@$1@$2@gp" {} \; || {
     echo 'Error: sed failed.'
     return 1
   }
   if confirm-no 'Proceed with refactor?'; then
-    pfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
+    qfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
   fi
 }
 fixme() {
-  pfind . -print -a -exec grep -n '\bFIXME\b' {} \;
+  qfind . -print -a -exec grep -n '\bFIXME\b' {} \;
 }
 todo() {
   # awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
-  pfind . -print -a -exec grep -n '\bTODO\b' {} \;
+  qfind . -print -a -exec grep -n '\bTODO\b' {} \;
 }
 
 # Shell scripting utilities

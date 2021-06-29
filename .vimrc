@@ -269,8 +269,9 @@ endfunction
 
 " Get comment character
 function! Comment() abort
-  let string = substitute(&commentstring, '%s.*', '', '')
-  return substitute(string, '\s\+', '', 'g')
+  let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
+  let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
+  return escape(string, '[]\.*$~')  " escape magic characters
 endfunction
 
 " Better grep, with limited regex translation
@@ -887,7 +888,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
-let g:braceless_block_key = ':'  " captures if, for, def, etc.
+let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'

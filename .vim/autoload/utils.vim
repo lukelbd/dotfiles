@@ -737,6 +737,7 @@ function! utils#wrap_item_lines() range abort
     if line =~# s:regex_total
       " Remove item indicator if line starts with
       let match_tail = substitute(line, s:regex_total, '\3', '')
+      echom 'Hello!!! ' . match_tail
       if match_tail =~# '^\s*[a-z]'
         call s:remove_item(line, linenum, linenum)
       " Otherwise join

@@ -11,7 +11,10 @@ setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python ftplugin syntax option
 
 " Enable braceless
-BracelessEnable +indent +highlight
+if exists(':BracelessEnable')
+  " BracelessEnable +indent +highlight  " highlight slows things down, even on mac
+  BracelessEnable +indent
+endif
 
 " Custom mappings
 noremap <expr> <buffer> cd utils#translate_kwargs_dict_expr(1)
