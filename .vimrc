@@ -513,6 +513,8 @@ nnoremap O OX<Backspace>
 
 " Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
 " unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
+" vnoremap yp "0p  " causes delay
+" vnoremap yP "0P
 nnoremap yp "0p
 nnoremap yP "0P
 nnoremap <silent> <Leader>v :Help<CR>
@@ -715,10 +717,6 @@ nmap g- <Plug>SubsectionSingle
 nmap g+ <Plug>SectionDouble
 nmap g_ <Plug>SubsectionDouble
 
-" Python docstrings
-nnoremap g' :call comments#python_docstring("'")<CR>A
-nnoremap g" :call comments#python_docstring('"')<CR>A
-
 " Search and find-replace stuff
 " * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
 "   because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
@@ -862,6 +860,7 @@ Plug 'plasticboy/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
+Plug 'cespare/vim-toml'
 let g:formatdef_mpython = '"isort - | black -q -S -"'
 let g:formatters_python = ['mpython']  " use multiple formatters
 let g:formatters_fortran = ['fprettify']
@@ -889,6 +888,7 @@ Plug 'JuliaEditorSupport/julia-vim'
 " Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
+let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:jupytext_fmt = 'py:percent'

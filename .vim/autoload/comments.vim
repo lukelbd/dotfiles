@@ -67,10 +67,3 @@ function! comments#message(message) abort
   let cchar = Comment()
   call append(line('.') - 1, indent . cchar . ' ' . a:message)
 endfunction
-
-" Docstring
-function! comments#python_docstring(char) abort
-  let indent = s:indent_spaces()
-  call append(line('.') - 1, [indent . repeat(a:char, 3), indent, indent . repeat(a:char, 3)])
-  normal! kk$
-endfunction

@@ -1237,6 +1237,7 @@ _python_proplot='
 import math
 import numpy as np
 import proplot as plot
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 '
 alias climopy="ipython -i -c '$_python_climopy'"
@@ -1568,13 +1569,20 @@ pdf2png() {
   done
 }
 svg2png() {
-  # NOTE: python is much faster and 'dpi' for some reason is ignored
-  # See: https://stackoverflow.com/a/50300526/4970632
+  # See: https://stackoverflow.com/a/50300526/4970632 (python is faster and convert 'dpi' is ignored)
   for f in "$@"; do
     ! [[ "$f" =~ .svg$ ]] && echo "Warning: Skipping ${f##*/} (must be .svg)" && continue
     echo "Converting ${f##*/}..."
     python -c "import cairosvg; cairosvg.svg2png(url='$f', write_to='${f%.svg}.png', scale=3, background_color='white')"
     # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
+  done
+}
+webm2mp4() {
+  for f in "$@"; do
+    # See: https://stackoverflow.com/a/49379904/4970632
+    ! [[ "$f" =~ .webm$ ]] && echo "Warning: Skipping ${f##*/} (must be .webm)" && continue
+    echo "Converting ${f##*/}..."
+    ffmpeg -i "$f" -crf 18 -c:v libx264 "${f%.webm}.mp4"
   done
 }
 
@@ -1773,6 +1781,10 @@ fi
 #-----------------------------------------------------------------------------#
 # Conda stuff
 # WARNING: Must come after shell integration or gets overwritten
+# WARNING: Making conda environments work with jupyter is complicated! Have to
+# remove stuff from ipykernel and install them manually.
+# See: https://stackoverflow.com/a/54985829/4970632
+# See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
 unset _conda
 if [ -d "$HOME/anaconda3" ]; then
