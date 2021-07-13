@@ -74,12 +74,12 @@ case "${HOSTNAME%%.*}" in
   # Macbook settings
   uriah*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
+    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
     # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
     # * Installed ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
+    # * Installed tex using: brew install --cask mactex
     # * Installed universal ctags with (not in main repo becauase no versions yet):
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
-    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
-    #   Manage tex with homebrew using 'mactex'.
     # * Installed gcc and gfortran with 'port install gcc6' then 'port select
     #   --set gcc mp-gcc6'. Try 'port select --list gcc'
     # * Installed various utils with 'brew install coreutils findutils gnu-sed
@@ -362,15 +362,7 @@ open() {
       app="Finder.app"
     else
       case "$file" in
-        # Special considerations for PDF figure files
-        *.pdf)
-          path=$(abspath "$file")
-          if [[ "$path" =~ "figs-" ]] || [[ "$path" =~ "figures-" ]]; then
-            app="Preview.app"
-          else
-            app="PDF Expert.app"
-          fi ;;
-        # Other simpler filetypes
+        *.pdf)                          app="PDFOpen.app" ;;
         *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
@@ -565,6 +557,46 @@ if hash tput 2>/dev/null; then
   export GROFF_NO_SGR=1                   # for konsole and gnome-terminal
 fi
 
+# Receive affirmative or negative response using input message, then exit accordingly.
+confirm() {
+  [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
+  [[ $# -eq 0 ]] && prompt=Confirm || prompt=$*
+  while true; do
+    read -r -p "$prompt ([y]/n) " response
+    if [ -n "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
+      echo "Invalid response."
+      continue # try again
+    fi
+    if [[ "$response" =~ ^[Nn]$ ]]; then
+      $action 1  # 'bad' exit, i.e. no
+    else
+      $action 0  # 'good' exit, i.e. yes or empty
+    fi
+    break
+  done
+}
+#!/usr/bin/env bash
+# Like confirm but default value is 'no'
+confirm-no() {
+  [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
+  [[ $# -eq 0 ]] && prompt=Confirm || prompt=$*
+  while true; do
+    read -r -p "$prompt (y/[n]) " response
+    if [ -n "$response" ] && ! [[ "$response" =~  ^[NnYy]$ ]]; then
+      echo "Invalid response."
+      continue # try again
+    fi
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+      $action 0 # 'good' exit, i.e. yes
+    else
+      $action 1 # 'bad' exit, i.e. no or empty
+    fi
+    break
+  done
+}
+
+
+
 # Rename files with matching base names or having 3-digit numbers into
 # ordered numbered files.
 rename() {
@@ -592,19 +624,27 @@ rename() {
 
 # Grepping and diffing useful for refactoring or searching for files
 # NOTE: No way to include extensionless executables in qgrep
-# NOTE: It's fine if conda gets expanded! Just trying to filter one name.
-_exclude_dirs=(api build trash sources plugged externals .ipynb_checkpoints __pycache__ '*conda3*')
+# NOTE: In find, if dotglob is unset, cannot match hidden files with [.]*
+# NOTE: In grep, using --exclude=.* also excludes current directory
 _include_exts=(.py .sh .jl .m .ncl .vim .rst .ipynb)
+_exclude_dirs=(api build trash sources plugged externals '*conda3*')
 qfind() {
-  local _first_dir=${_exclude_dirs[0]}
-  local _other_dirs=${_exclude_dirs[@:1]}
+  local _include _exclude
+  [ $# -lt 2 ] && echo 'Error: qfind() requires at least 2 args (path and command).' && return 1
+  _exclude=(${_exclude_dirs[@]/#/-o -name })  # expand into commands *and* names
+  _include=(${_include_exts[@]/#/-o -name })
+  _include=("${_include[@]//./*.}")  # add glob patterns
   command find "$1" \
-    -name '[A-Z_.]*' -prune \
-    -o -type d \( $_first_dir ${_other_dirs[@]/#/-o -name} \) -prune \
-    -o -type f \( ! -name '*.*' ${_include_exts[@]/#/-o -name} \) "${@:2}"
+    -path '*/.*' -prune -o -name '[A-Z_]*' -prune \
+    -o -type d \( ${_exclude[@]:1} \) -prune \
+    -o -type f \( ! -name '*.*' "${_include[@]}" \) \
+    "${@:2}"
 }
 qgrep() {
-  command grep "$@" -E --color=auto --exclude='[A-Z_.]*' \
+  [ $# -lt 2 ] && echo 'Error: qgrep() requires at least 2 args (pattern and path).' && return 1
+  command grep "$@" \
+    -E --color=auto --exclude='[A-Z_.]*' \
+    --exclude-dir='.[^.]*' --exclude-dir='_*' \
     ${_exclude_dirs[@]/#/--exclude-dir=} \
     ${_include_exts[@]/#/--include=*}
 }
@@ -613,20 +653,20 @@ refactor() {
     echo 'Error: refactor() requires search pattern and replace pattern.'
     return 1
   }
-  pfind . -print -a -exec gsed -E -n "s@$1@$2@gp" {} \; || {
+  qfind . -print -a -exec gsed -E -n "s@$1@$2@gp" {} \; || {
     echo 'Error: sed failed.'
     return 1
   }
   if confirm-no 'Proceed with refactor?'; then
-    pfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
+    qfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
   fi
 }
 fixme() {
-  pfind . -print -a -exec grep -n '\bFIXME\b' {} \;
+  qfind . -print -a -exec grep -n '\bFIXME\b' {} \;
 }
 todo() {
   # awk '/TODO/ {todo=1; print}; todo; !/^\s*#/ && todo {todo=0;}' axes.py
-  pfind . -print -a -exec grep -n '\bTODO\b' {} \;
+  qfind . -print -a -exec grep -n '\bTODO\b' {} \;
 }
 
 # Shell scripting utilities
@@ -1197,6 +1237,7 @@ _python_proplot='
 import math
 import numpy as np
 import proplot as plot
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 '
 alias climopy="ipython -i -c '$_python_climopy'"
@@ -1514,31 +1555,39 @@ extract() {
 # * Note the PNAS journal says 1000-1200dpi recommended for line art images
 #   and stuff with text.
 gif2png() {  # often needed because LaTeX can't read gif files
-  local f
-  for f in "$@";
-    do [[ "$f" =~ .gif$ ]] && echo "Converting $f..." && convert "$f" "${f%.gif}.png"
+  for f in "$@"; do
+    ! [[ "$f" =~ .gif$ ]] && echo "Warning: Skipping ${f##*/} (must be .gif)" && continue
+    echo "Converting ${f##*/}..."
+    convert "$f" "${f%.gif}.png"
   done
 }
 pdf2png() {
-  local f args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && echo "Converting $f..." \
-      && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
+  for f in "$@"; do
+    ! [[ "$f" =~ .pdf$ ]] && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
+    echo "Converting ${f##*/}..."
+    convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
   done
 }
 svg2png() {
-  # NOTE: python is much faster and 'dpi' for some reason is ignored
-  # See: https://stackoverflow.com/a/50300526/4970632
-  local f args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .svg$ ]] && echo "Converting $f..." \
-      && python -c "import cairosvg; cairosvg.svg2png(url='$f', write_to='${f%.svg}.png', scale=3, background_color='white')"
-      # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
+  # See: https://stackoverflow.com/a/50300526/4970632 (python is faster and convert 'dpi' is ignored)
+  for f in "$@"; do
+    ! [[ "$f" =~ .svg$ ]] && echo "Warning: Skipping ${f##*/} (must be .svg)" && continue
+    echo "Converting ${f##*/}..."
+    python -c "import cairosvg; cairosvg.svg2png(url='$f', write_to='${f%.svg}.png', scale=3, background_color='white')"
+    # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
+  done
+}
+webm2mp4() {
+  for f in "$@"; do
+    # See: https://stackoverflow.com/a/49379904/4970632
+    ! [[ "$f" =~ .webm$ ]] && echo "Warning: Skipping ${f##*/} (must be .webm)" && continue
+    echo "Converting ${f##*/}..."
+    ffmpeg -i "$f" -crf 18 -c:v libx264 "${f%.webm}.mp4"
   done
 }
 
 # Modifying and merging pdfs
-pdfflatten() {
+pdf2flat() {
   # This page is helpful:
   # https://unix.stackexchange.com/a/358157/112647
   # 1. pdftk keeps vector graphics
@@ -1546,10 +1595,18 @@ pdfflatten() {
   # 3. pdf2ps piping retains quality (ps uses vector graphics, but can't do transparency)
   # convert "$f" "${f}_flat.pdf"
   # pdftk "$f" output "${f}_flat.pdf" flatten
-  local args=("$@")
-  for f in "${args[@]}"; do
-    [[ "$f" =~ .pdf$ ]] && [[ ! "$f" =~ "flat" ]] && echo "Converting $f..." && \
-      pdf2ps "$f" - | ps2pdf - "${f}_flat.pdf"
+  for f in "$@"; do
+    ! [[ "$f" =~ .pdf$ ]] && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
+    [[ "$f" =~ _flat ]] && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
+    echo "Converting $f..." && pdf2ps "$f" - | ps2pdf - "${f%.pdf}_flat.pdf"
+  done
+}
+png2flat() {
+  # See: https://stackoverflow.com/questions/46467523/how-to-change-picture-background-color-using-imagemagick
+  for f in "$@"; do
+    ! [[ "$f" =~ .png$ ]] && echo "Warning: Skipping ${f##*/} (must be .png)" && continue
+    [[ "$f" =~ _flat ]] && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
+    convert "$f" -opaque white -flatten "${f%.png}_flat.png"
   done
 }
 pdfmerge() {
@@ -1561,27 +1618,30 @@ pdfmerge() {
 # Font conversions
 # Requires brew install fontforge
 otf2ttf() {
-  for arg in "$@"; do
-    [ "${arg##*.}" == "otf" ] || { echo "Error: File '$arg' does not have .otf extension."; return 1; }
+  for f in "$@"; do
+    ! [[ "$f" =~ .otf$ ]] && echo "Warning: Skipping ${f##*/} (must be .otf)" && continue
+    echo "Converting ${f##*/}..."
     fontforge -c \
       "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
-      "${arg%.*}.otf" "${arg%.*}.ttf"
+      "${f%.*}.otf" "${f%.*}.ttf"
   done
 }
 ttf2otf() {
-  for arg in "$@"; do
-    [ "${arg##*.}" == "ttf" ] || { echo "Error: File '$arg' does not have .ttf extension."; return 1; }
+  for f in "$@"; do
+    ! [[ "$f" =~ .ttf$ ]] && echo "Warning: Skipping ${f##*/} (must be .ttf)" && continue
     fontforge -c \
       "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
-      "${arg%.*}.ttf" "${arg%.*}.otf"
+      "${f%.*}.ttf" "${f%.*}.otf"
   done
 }
 
 # Rudimentary wordcount with detex
 # The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
-  local detexed=$(detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' \
-    "$1" | grep -v .pdf | grep -v 'fig[0-9]')
+  local detexed=$( \
+    detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' "$1" \
+    | grep -v .pdf | grep -v 'fig[0-9]' \
+  )
   echo "$detexed" | xargs  # print result in one giant line
   echo "$detexed" | wc -w  # get word count
 }
@@ -1721,6 +1781,10 @@ fi
 #-----------------------------------------------------------------------------#
 # Conda stuff
 # WARNING: Must come after shell integration or gets overwritten
+# WARNING: Making conda environments work with jupyter is complicated! Have to
+# remove stuff from ipykernel and install them manually.
+# See: https://stackoverflow.com/a/54985829/4970632
+# See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
 unset _conda
 if [ -d "$HOME/anaconda3" ]; then
@@ -1769,7 +1833,7 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
 fi
 
 #-----------------------------------------------------------------------------#
-# iTerm2 title management
+# Window title management
 #-----------------------------------------------------------------------------#
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762
 # 1. First was idea to make title match the working directory; but fails/not useful
@@ -1806,8 +1870,6 @@ _title_set() {  # default way is probably using Cmd-I in iTerm2
 
 # Get the title from file
 _title_get() {
-  # if [ -n "$_title" ]; then # this lets window have different title in different panes
-    # _title="$_title" # already exists
   if ! [ -r "$_title_file" ]; then
     unset _title
   elif $_macos; then
@@ -1839,21 +1901,22 @@ if $_macos; then
 fi
 alias title='_title_set'  # easier for user
 
+#-----------------------------------------------------------------------------#
 # Mac stuff
+#-----------------------------------------------------------------------------#
 # TODO: This hangs when run from interactive cluster node, we test by comparing
 # hostname variable with command (variable does not change)
 if $_macos; then # first the MacOS options
-  # Use Homebrew-bash for shell
+  # Homebrew-bash as default shell
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null \
     || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
+  alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information
 
-  # Video stuff
-  # Audio and video stuff
-  # alias artists="find ~/icloud-drive/music -name '*.mp3' -o -name '*.m4a' | sed -e 's/ - .*$//' | uniq -c | sort -sn | sort -sn -r -k 2,1"
-  alias artists='find ~/iCloud\ Drive/music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | uniq -c | sort -n'
-  artist2folder() {
+  # Audio and video
+  alias artists='find ~/Music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | grep -v ^Media$ | uniq -c | sort -n'
+  artistfolder() {
     local base artist title
     for file in *.{m4a,mp3}; do
       # shellcheck disable=SC2049
@@ -1866,16 +1929,12 @@ if $_macos; then # first the MacOS options
       echo "Moved '$base' to '$artist/$title'."
     done
   }
-  strip_audio() {
+  audiostrip() {
     local file
     for file in "$@"; do
       ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"
     done
   }
-
-
-  # Meteorology stuff
-  alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information
 fi
 
 #-----------------------------------------------------------------------------#

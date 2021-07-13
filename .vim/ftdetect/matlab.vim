@@ -1,4 +1,2 @@
-" Custom filetype declarations, with auto commands specified in .vim/ftplugin
-" Declaration for Vimscript-type files
-" au BufRead,BufNewFile,TabEnter,WinEnter *.m set filetype=matlab
+" Filetype declarations
 au BufRead,BufNewFile *.m set filetype=matlab

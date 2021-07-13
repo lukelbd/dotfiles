@@ -72,8 +72,9 @@
 	delete     = "!git-delete \"$@\""
 	deleted    = "!git-deleted \"$@\""
 	exec       = "!exec \"$@\""
-	get        = "!get-get \"$@\""
 	figs       = "!git add --all ':/fig*' ':/vid*' ':/note*' && git commit -m 'Update figures and notebooks.' && git push origin master"
+	files      = ls-tree -r master --name-only
+	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
 	leaf       = "!git log \"$@\". --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
 	long       = status --long --branch

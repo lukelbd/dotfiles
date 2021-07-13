@@ -2,8 +2,8 @@
 " Fuzzy selecting files by continuously descending into directories
 " and re-generating the lists.
 "-----------------------------------------------------------------------------"
-" Function used with input() to prevent tab expansion and literal tab insertion
-function! NullList(...) abort
+" Used with input() to prevent tab expansion and literal tab insertion
+function! fzf#null_list(...) abort
   return []
 endfunction
 
@@ -44,53 +44,52 @@ endfunction
 " Check if user selection is directory, descend until user selects a file
 let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
 function! fzf#open_continuous(...) abort
+  " Expand input paths
+  let paths = []
   for pattern in a:000
-    for path in expand(pattern, 0, 1)
-      let path = substitute(path, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-      if ! len(path)
-        let path = '.'
+    let pattern = substitute(pattern, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
+    call extend(paths, expand(pattern, 0, 1))
+  endfor
+  " Fuzzy selection inside directories
+  while empty(paths) || len(paths) == 1 && isdirectory(paths[0])
+    " Format directory name
+    let path = empty(paths) ? '.' : paths[0]
+    let path = fnamemodify(path, ':p')
+    let path = substitute(path, '/$', '', '')
+    " Get user selection
+    let prompt = substitute(path, '^' . expand('~'), '~', '')
+    let items = fzf#run({
+      \ 'source': s:list_files(path),
+      \ 'options': "--multi --no-sort --prompt='" . prompt . "/'",
+      \ 'down': '~30%'
+      \ })
+    " Build user selections into paths, possibly requesting input file names
+    let paths = []
+    if empty(items)
+      break
+    endif
+    for item in items
+      if item == s:newfile
+        let item = input(prompt . '/', '', 'customlist,fzf#null_list')
       endif
-      let path = substitute(fnamemodify(path, ':p'), '/$', '', '')
-      let path_orig = path
-      while isdirectory(path)
-        " Get user selection
-        let prompt = substitute(path, '^' . expand('~'), '~', '')
-        let items = fzf#run({
-          \ 'source': s:list_files(path),
-          \ 'options': "--no-sort --prompt='" . prompt . "/'",
-          \ 'down': '~30%'
-          \ })
-        if !len(items)  " user cancelled operation
-          let path = ''
-          break
-        endif
-
-        " Build back selection into path
-        " Todo: Permit opening multiple files at once?
-        let item = items[0]
-        if item == s:newfile
-          let item = input(prompt . '/', '', 'customlist,NullList')
-          if !len(item)
-            let path = ''
-          else
-            let path = path . '/' . item
-          endif
-          break
-        else
-          if item ==# '..' " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
-            let path = fnamemodify(path, ':h') " head of current directory
-          else
-            let path = path . '/' . item
-          endif
-        endif
-      endwhile
-
-      " Open file or cancel operation
-      " If it is already open just jump to that tab
-      if !empty(path)
-        call s:tab_drop(path)
+      if item ==# '..'  " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
+        call add(paths, fnamemodify(path, ':h'))  " head of current directory
+      elseif !empty(item)
+        call add(paths, path . '/' . item)
       endif
     endfor
+  endwhile
+  " Open file(s), or if it is already open just jump to that tab
+  for path in paths
+    if isdirectory(path)  " false for empty string
+      echohl WarningMsg
+      echom "Warning: Skipping directory '" . path . "'."
+      echohl None
+    elseif path =~# '[*?[\]]'  " failed glob search so do nothing
+      :
+    elseif !empty(path)
+      call s:tab_drop(path)
+    endif
   endfor
 endfunction
 
@@ -102,24 +101,33 @@ function! s:tab_select_source() abort
   if !exists('g:tabline_bufignore')
     let g:tabline_bufignore = ['qf', 'vim-plug', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] " filetypes considered 'helpers'
   endif
-  let items = []
+  let unsorted = []
   for t in range(tabpagenr('$')) " iterate through each tab
     let tabnr = t + 1 " the tab number
     let buflist = tabpagebuflist(tabnr)
-    for b in buflist " get the 'primary' panel in a tab, ignore 'helper' panels even if they are in focus
+    for b in buflist
+      " Get the 'primary' panel in a tab, ignore 'helper' panels even when in focus
+      " If there is *only* a 'helper' panel, use it for the title
       if index(g:tabline_bufignore, getbufvar(b, '&ft')) == -1
-        let bufnr = b " we choose this as our 'primary' file for tab name
+        let bufnr = b
         break
-      elseif b == buflist[-1] " occurs if e.g. entire tab is a help window; exception, and indeed use it for tab title
+      elseif b == buflist[-1]
         let bufnr = b
       endif
     endfor
-    if tabnr == tabpagenr()
-      continue
-    endif
-    let items += [tabnr . ': ' . fnamemodify(bufname(bufnr), '%:t')] " actual name
+    call add(unsorted, tabnr . ': ' . fnamemodify(bufname(bufnr), '%:t'))  " name
   endfor
-  return items
+  let ctab = tabpagenr()
+  let sorted = []
+  for offset in range(1, tabpagenr('$'))
+    if ctab + offset <= len(unsorted)
+      call add(sorted, unsorted[ctab + offset - 1])
+    endif
+    if ctab - offset > 0
+      call add(sorted, unsorted[ctab - offset - 1])
+    endif
+  endfor
+  return sorted
 endfunction
 
 " Function that jumps to the tab number from a line generated by tabselect

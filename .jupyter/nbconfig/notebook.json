@@ -1,6 +1,6 @@
 {
   "load_extensions": {
-    "jupyter-js-widgets/extension": false,
+    "jupyter-js-widgets/extension": true,
     "nbextensions_configurator/config_menu/main": true,
     "contrib_nbextensions_help_item/main": true,
     "highlight_selected_word/main": false,

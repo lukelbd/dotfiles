@@ -46,12 +46,57 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
+" Special behavior when popup menu is open
+" See: https://github.com/lukelbd/dotfiles/blob/master/.vimrc
+function! utils#pum_next() abort
+  let b:pum_pos += 1 | return "\<C-n>"
+endfunction
+function! utils#pum_prev() abort
+  let b:pum_pos -= 1 | return "\<C-p>"
+endfunction
+function! utils#pum_reset() abort
+  let b:pum_pos = 0 | return ''
+endfunction
+
+" Set up temporary paste mode
+function! utils#setup_paste() abort
+  let s:paste = &paste
+  let s:mouse = &mouse
+  set paste
+  set mouse=
+  augroup insert_paste
+    au!
+    au InsertLeave *
+      \ if exists('s:paste') |
+      \   let &paste = s:paste |
+      \   let &mouse = s:mouse |
+      \   unlet s:paste |
+      \   unlet s:mouse |
+      \ endif |
+      \ autocmd! insert_paste
+  augroup END
+  return ''
+endfunction
+
+" Inserting blank lines
+" See: https://github.com/tpope/vim-unimpaired
+function! utils#blank_up(count) abort
+  put!=repeat(nr2char(10), a:count)
+  ']+1
+  silent! call repeat#set("\<Plug>BlankUp", a:count)
+endfunction
+function! utils#blank_down(count) abort
+  put =repeat(nr2char(10), a:count)
+  '[-1
+  silent! call repeat#set("\<Plug>BlankDown", a:count)
+endfunction
+
 " Swap characters
 function! utils#swap_characters(right) abort
   let cnum = col('.')
   let line = getline('.')
   let idx = a:right ? cnum : cnum - 1
-  if (idx > 0 && idx < len(line))
+  if idx > 0 && idx < len(line)
     let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
     call setline('.', line)
   endif
@@ -91,18 +136,6 @@ function! utils#iter_colorschemes(reverse) abort
   let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 
-" Search for mapping
-function! utils#search_maps(regex, ...) abort
-  let mode = a:0 ? a:1 : ''
-  redir @z
-  exe 'silent ' . mode . 'map'
-  redir END
-  let regex = '\c' . substitute(a:regex, '\cLeader', 'Space', 'g')
-  let maps = split(@z, "\n")
-  let maps = filter(maps, "v:val =~# '" . regex . "'")
-  return join(maps, "\n")
-endfunction
-
 " Enable/disable autocomplete and jedi popups. Very useful on servers slowed to
 " a crawl by certain Slovenian postdocs.
 function! utils#popup_toggle(...) abort
@@ -123,6 +156,16 @@ function! utils#popup_toggle(...) abort
   endif
 endfunction
 
+" Indent multiple times
+function! utils#multi_indent(dedent, count) range abort
+  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
+  exe firstline . ',' . lastline . repeat(a:dedent ? '<' : '>', a:count)
+endfunction
+" For <expr> map accepting motion
+function! utils#multi_indent_expr(...) abort
+  return utils#motion_func('utils#multi_indent', a:000)
+endfunction
+
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
@@ -138,7 +181,7 @@ function! utils#replace_regexes(message, ...) range abort
   let @/ = prevhist
   call winrestview(winview)
 endfunction
-" For use with <expr>
+" For <expr> map accepting motion
 function! utils#replace_regexes_expr(...) abort
   return utils#motion_func('utils#replace_regexes', a:000)
 endfunction
@@ -161,24 +204,13 @@ function! utils#directory_return() abort
   echom 'Returned to previous directory.'
 endfunction
 
-" Tab functions inside <expr>
-function! utils#tab_increase() abort
-  let b:menupos += 1 | return ''
-endfunction
-function! utils#tab_decrease() abort
-  let b:menupos -= 1 | return ''
-endfunction
-function! utils#tab_reset() abort
-  let b:menupos = 0 | return ''
-endfunction
-
 " Test if file exists
 function! utils#file_exists() abort
   let files = glob(expand('<cfile>'))
-  if len(files) > 0
-    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
-  else
+  if empty(files)
     echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  else
+    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
   endif
 endfunction
 
@@ -210,7 +242,7 @@ function! utils#show_vim_help(...) abort
   else
     let item = input('Vim help item: ', '', 'help')
   endif
-  if len(item)
+  if !empty(item)
     exe 'vert help ' . item
   endif
 endfunction
@@ -222,7 +254,7 @@ function! utils#show_cmd_help(...) abort
   else
     let cmd = input('Get --help info: ', '', 'shellcmd')
   endif
-  if len(cmd)
+  if !empty(cmd)
     silent! exe '!clear; '
       \ . 'search=' . cmd . '; '
       \ . 'if [ -n $search ] && builtin help $search &>/dev/null; then '
@@ -245,12 +277,12 @@ function! utils#show_cmd_man(...) abort
   else
     let cmd = input('Get man page: ', '', 'shellcmd')
   endif
-  silent! exe '!clear; '
-    \ . 'search=' . cmd . '; '
-    \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
-    \ . '  command man $search; '
-    \ . 'fi'
-  if len(cmd)
+  if !empty(cmd)
+    silent! exe '!clear; '
+      \ . 'search=' . cmd . '; '
+      \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
+      \ . '  command man $search; '
+      \ . 'fi'
     if v:shell_error != 0
       echohl WarningMsg
       echom 'Warning: "' . cmd . ' --help" failed.'
@@ -343,7 +375,7 @@ function! utils#autosave_toggle(...) abort
     let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
     exe 'augroup autosave_' . bufnr('%')
       au!
-      exe 'au ' . cmds . ' <buffer> silent w'
+      exe 'au ' . cmds . ' <buffer> silent SmartWrite'
     augroup END
     echom 'Autosave enabled.'
     let b:autosave_on = 1
@@ -459,12 +491,12 @@ endfunction
 function! utils#syntastic_enable() abort
   let nbufs = len(tabpagebuflist())
   let checkers = utils#syntastic_checkers()
-  if len(checkers) == 0
+  if empty(checkers)
     echom 'No checkers activated.'
   else
     SyntasticCheck
     if (len(tabpagebuflist()) > nbufs && !s:syntastic_status())
-        \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
+  \ || (len(tabpagebuflist()) == nbufs && s:syntastic_status())
       wincmd k " jump to main
       let b:syntastic_on = 1
       if !(exists('b:gitgutter_enabled') && b:gitgutter_enabled)
@@ -487,25 +519,6 @@ function! utils#codi_new(...) abort
   if name !~# '^\s*$'
     exe 'tabe ' . fnamemodify(name, ':r') . '.py'
     Codi!!
-  endif
-endfunction
-
-" Set up tagbar window and make sure NerdTREE is flushed to right
-function! utils#tagbar_setup() abort
-  if &filetype ==# 'nerdtree'
-    wincmd h
-    wincmd h " move two places in case e.g. have help menu + nerdtree already
-  endif
-  let tabfts = map(tabpagebuflist(), 'getbufvar(v:val, "&filetype")')
-  if In(tabfts, 'tagbar')
-    TagbarClose
-  else
-    TagbarOpen
-    if In(tabfts, 'nerdtree')
-      wincmd l
-      wincmd L
-      wincmd p
-    endif
   endif
 endfunction
 
@@ -654,7 +667,7 @@ function! utils#cyclic_next(count, list, ...) abort
   let params = a:list ==# 'loc' ? [0] : []
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let items = call(func, params)
-  if len(items) == 0
+  if empty(items)
     return 'echoerr ' . string('E42: No Errors')  " string() adds quotes
   endif
 
@@ -724,6 +737,7 @@ function! utils#wrap_item_lines() range abort
     if line =~# s:regex_total
       " Remove item indicator if line starts with
       let match_tail = substitute(line, s:regex_total, '\3', '')
+      echom 'Hello!!! ' . match_tail
       if match_tail =~# '^\s*[a-z]'
         call s:remove_item(line, linenum, linenum)
       " Otherwise join
@@ -752,14 +766,14 @@ function! utils#wrap_item_lines() range abort
   let @/ = prevhist
   call winrestview(winview)
 endfunction
-" For use with <expr>
+" For <expr> map accepting motion
 function! utils#wrap_item_lines_expr(...) abort
   return utils#motion_func('utils#wrap_item_lines', a:000)
 endfunction
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
-function! utils#translate_kwargs_dict(kw2dt, ...) abort range
+function! utils#translate_kwargs_dict(kw2dc, ...) abort range
   " First get columns
   " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
   " bug where if opening bracket is immediately followed by newline, then 'inner'
@@ -778,23 +792,23 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
     let prefix = ''
     let suffix = ''
     if linenum == firstline && linenum == lastline
-      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')  " damn negative indexing makes this complicated
+      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''  " damn negative indexing makes this complicated
       let suffix = line[lastcol + 1:]
       let line = line[firstcol : lastcol]
     elseif linenum == firstline
-      let prefix = (firstcol >= 1 ? line[:firstcol - 1] : '')
+      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''
       let line = line[firstcol :]
     elseif linenum == lastline
       let suffix = line[lastcol + 1:]
       let line = line[:lastcol]
     endif
-    if len(matchstr(line, ':')) > 0 && len(matchstr(line, '=')) > 0
+    if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echoerr 'Error: Ambiguous line.'
       return
     endif
 
     " Next finally start matching shit
-    if a:kw2dt == 1  " kwargs to dictionary
+    if a:kw2dc == 1  " kwargs to dictionary
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
       let line = substitute(line, '\>\ze\s*=', "'", 'g')
       let line = substitute(line, '\s*=\s*', ': ', 'g')
@@ -811,7 +825,7 @@ function! utils#translate_kwargs_dict(kw2dt, ...) abort range
   call append(firstline - 1, lines)
   call winrestview(winview)
 endfunction
-" For use with <expr>
-function! utils#translate_kwargs_dict_expr(kw2dt) abort
-  return utils#motion_func('utils#translate_kwargs_dict', [a:kw2dt, mode()])
+" For <expr> map accepting motion
+function! utils#translate_kwargs_dict_expr(kw2dc) abort
+  return utils#motion_func('utils#translate_kwargs_dict', [a:kw2dc, mode()])
 endfunction

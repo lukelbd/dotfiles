@@ -5,13 +5,13 @@
 shopt -s nullglob
 found=false
 pattern="$1"
-[ $# -ne 1 ] && echo "Usage: find-fonts PATTERN" && exit 1
+[ $# -ne 1 ] && echo "Usage: ${0##*/} PATTERN" && exit 1
 for dir in ~/Library/Fonts /System/Library/Fonts /Library/Fonts /Library/Fonts/Microsoft /opt/local/share/fonts; do
   files=($dir/$pattern)
-  if [ ${#files[@]} -gt 0 ]; then
-    echo "$dir: ${files[@]##*/}"
-    found=true
-  fi
+  [ ${#files[@]} -eq 0 ] && continue
+  [ -f "${files[0]}" ] || continue  # e.g. if you pass non-glob pattern
+  echo "$dir: ${files[*]##*/}"
+  found=true
 done
 ! $found && echo "No $pattern files found." && exit 1
 exit 0

@@ -3,9 +3,6 @@
     "nbserver_extensions": {
       "jupyter_nbextensions_configurator": true,
       "jupyterlab_code_formatter": true
-    },
-    "server_extensions": [
-      "jupyter_nbextensions_configurator"
-    ]
+    }
   }
 }

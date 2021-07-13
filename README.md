@@ -16,27 +16,25 @@ configures FZF fuzzy autocompletion and the conda environment. It also evaluates
 Vim config
 ----------
 
-The `.vimrc` is even more utterly massive. Among other things, it configures a few
-dozen vim plugins, configures FZF fuzzy autocompletion integration features, and
-configures nearly every conceivable key mapping as I see fit. Instead of just using
-`<Leader>` for custom normal mode maps, I use few different prefixes:
+The `.vimrc` is even more utterly massive. Among other things, it configures a few dozen
+vim plugins, configures FZF fuzzy autocompletion integration features, and configures a
+billion key mappings as I see fit. I use a few different standard prefixes:
 
-| Prefix | Mode(s) | Description |
-| ---- | ---- | ---- |
-| `<Leader>` | `n` | Miscellaneous and complex tasks. Set to `<Space>`. |
-| `<Tab>` | `n` | Window and tab management and resizing. |
-| `\` | `n` | Complex regex replacements and tabular alignment. |
-| `c` | `n` | Toggling comments and inserting comment headers. |
-| `g` | `n` | Git-gutter commands and other git-related things. |
-| `<C-s>` | `vi` | Surrounding content with delimiters. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
-| `<C-d>` | `i` | Inserting pre-defined snippets. See the [textools](https://github.com/lukelbd/vim-textools) plugin. |
+| Prefix     | Mode(s) | Description                                                    |
+| ----       | ----    | ----                                                           |
+| `<Leader>` | `n`     | Miscellaneous and complex tasks. Set to `<Space>`.             |
+| `<Tab>`    | `n`     | Window and tab management and resizing.                        |
+| `\`        | `n`     | Preset search and replaces with motions.                       |
+| `g`        | `n`     | Various plugin-specific extensions.                            |
+| `<C-s>`    | `vi`    | Surrounding content with delimiters. See the [shortcuts](https://github.com/lukelbd/vim-shortcuts) plugin. |
+| `<C-d>`    | `i`     | Inserting pre-defined snippets. See the [shortcuts](https://github.com/lukelbd/vim-shortcuts) plugin.      |
 
 Also check out the vim plugins I've written over the years:
-[vim-textools](https://github.com/lukelbd/vim-textools),
-[vim-idetools](https://github.com/lukelbd/vim-idetools),
-[vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped),
+[vim-shortcuts](https://github.com/lukelbd/vim-templates),
+[vim-tagtools](https://github.com/lukelbd/vim-tagtools),
 [vim-tabline](https://github.com/lukelbd/vim-tabline), and
 [vim-statusline](https://github.com/lukelbd/vim-statusline), and
+[vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped),
 [vim-toggle](https://github.com/lukelbd/vim-toggle).
 
 You can also find the following filetype-specific features in the `ftplugin`, `syntax`,

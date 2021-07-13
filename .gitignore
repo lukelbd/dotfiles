@@ -8,6 +8,7 @@ test*
 *.bib
 .DS_Store
 .nfs*
+syntax
 tags
 tmp
 

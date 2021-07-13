@@ -1,8 +1,10 @@
 "------------------------------------------------------------------------------"
 " NCL settings
 "------------------------------------------------------------------------------"
-" Highlight builtin NCL commands as keyword by adding dictionary
+" Comment string
 setlocal commentstring=;%s
+
+" Highlight builtin NCL commands as keyword by adding dictionary
 setlocal dictionary+=~/.vim/words/ncl.dic
 
 " Run NCL script

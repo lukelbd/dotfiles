@@ -10,7 +10,14 @@ setlocal indentexpr=s:pyindent(v:lnum)  " new indent expression
 setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python ftplugin syntax option
 
-" Custom mappings
+" Enable braceless
+if exists(':BracelessEnable')
+  " BracelessEnable +indent +highlight  " highlight slows things down, even on mac
+  " BracelessEnable +indent  " weird bug causes screen view to jump
+  BracelessEnable
+endif
+
+" Translating dictionaries to keyword input
 noremap <expr> <buffer> cd utils#translate_kwargs_dict_expr(1)
 noremap <expr> <buffer> cD utils#translate_kwargs_dict_expr(0)
 
@@ -25,8 +32,16 @@ function! s:run_python_script() abort
     echohl None
   else
     exe
-        \ '!clear; set -x; PROJ_LIB=' . shellescape(projlib)
-        \ . ' ' . shellescape(python) . ' ' . shellescape(@%)
+      \ '!clear; set -x; PROJ_LIB=' . shellescape(projlib)
+      \ . ' ' . shellescape(python) . ' ' . shellescape(@%)
   endif
 endfunction
 nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_python_script()<CR>
+
+" Define python vim-surround macros
+call shortcuts#add_delims({
+  \ 'd': "\"\"\"\r\"\"\"",
+  \ 'D': "'''\r'''",
+  \ 'l': "list(\r)",
+  \ 't': "tuple(\r)",
+  \ }, 1)

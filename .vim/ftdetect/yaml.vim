@@ -1,2 +1,2 @@
-" Interpret some config files as YAML
+" Filetype declarations
 autocmd BufNewFile,BufRead *matplotlibrc,*proplotrc,*.yaml,*.yml set filetype=yaml

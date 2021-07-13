@@ -1,0 +1,354 @@
+#!/usr/bin/env bash
+# shellcheck disable=2076
+usage="latexmk [OPTIONS] FILE"
+doc="
+Auto-typeset LaTeX documents. This is similar to the famous PERL latexmk program, but
+with some unique features. Opens the resulting typeset file in a macOS PDF viewer then
+brings the terminal from which latexmk was invoked back to the foreground. This is
+perfect for a split-window workflow, with the terminal on one half of the screen and the
+PDF viewer on the other half.
+
+Usage
+
+  $usage
+
+Positional arguments
+
+  FILE
+
+Optional arguments
+
+  -h|--help      Print this message.
+  -r|--raw       Print raw, unfiltered error messages. By default this script
+                 filters and parses the latex engine output so it is much easier
+                 to peruse.
+  -d|--diff      Run latexdiff on most 'recent' file. Requires files in your
+                 directory are otherwise identically named, but end with unique
+                 date strings YYYY-MM.tex or YYYY-MM-DD.tex
+  -w|--word      Pass -w or --word to automatically convert latex to the Microsoft
+                 Word format using pandoc. Useful for colaborating with peers that
+                 do not use latex.
+  [-l|--line]=N  The line number in the LaTeX document. If the viewer is Skim then
+                 we will jump to this line in the PDF document.
+
+Additional features
+
+  * Automatically copies custom style and theme files from the '~/templates' folder to
+    the working directory when they are requested in the tex document.
+  * Automatically figures out which typesetting engine to use based on the imported
+    packages (i.e. pdflatex, xelatex, etc.) and automatically figures out the
+    number of times the command must be called, just like the original latexmk.
+  * Deletes every extra file generated during typesetting except for .bbl and .pdf.
+    Works by simply querying existing files before and after compilation. Implemented
+    with an EXIT signal trap, so this also works if latexmk is interrupted.
+
+See also
+
+  https://mg.readthedocs.io/latexmk.html
+"
+# Function for raising error
+echoerr() {
+  echo "$*" 1>&2
+}
+raise() {
+  echoerr "Usage: $usage"
+  echoerr "Error: $*"
+  exit 1
+}
+# Exit trap function
+cleanup() {
+  local files_rm files_new
+  [ -n "$files_old" ] || return 0
+  files_new=(*)  # new files
+  ext_ignore=(tex bbl pdf docx png jpg jpeg eps gif)
+  for file_new in "${files_new[@]}"; do
+    [[ " ${files_old[*]} " =~ " $file_new " ]] && continue
+    [[ " ${ext_ignore[*]} " =~ " ${file_new##*.} " ]] && continue
+    files_rm+=("$file_new")
+  done
+  rm "${files_rm[@]}"
+  echo "Removed files: ${files_rm[*]}"
+}
+
+# Commands
+[[ "$OSTYPE" =~ darwin* ]] && macos=true || macos=false
+which gsed &>/dev/null && sedcmd=gsed || sedcmd=sed
+$macos && [ "$sedcmd" == sed ] && \
+  raise "GNU sed needed when running this script on OSX. Can be installed from Homebrew with 'brew install gnu-sed'."
+
+# Parse args
+trap cleanup EXIT  # remove files on exit or interruption!
+shopt -s nullglob  # glob-expand into zero entries
+raw=false
+latex=pdflatex  # by default use pdflatex
+bibtex=bibtex   # for compiling bibliographies
+texdiff=false   # get difference pdf?
+tex2docx=false  # option
+while [ $# -gt 0 ]; do
+  case $1 in
+    -h|--help)     echo "$doc" && exit 0 ;;
+    -r|--raw)      raw=true ;;
+    -d|--diff)     texdiff=true ;;
+    -w|--word)     tex2docx=true ;;
+    -l=*|--line=*) line=${1#*=} ;;
+    [^-]*)
+      [ -n "$filename" ] && raise "Got multiple filenames."
+      filename="$1"
+      ;;
+    *) raise "Unknown arg $1."
+  esac
+  shift
+done
+[ -n "$filename" ] || raise "Must pass filename."
+[ -r "$filename" ] || raise "File '$filename' does not exist."
+
+# Get terminal program
+if [ -z "$TERM_PROGRAM" ]; then
+  terminal=MacVim
+elif [[ "$TERM_PROGRAM" =~ 'Apple_Terminal' ]]; then  # or e.g. Apple_Terminal2.0
+  terminal=Terminal
+else
+  terminal=$TERM_PROGRAM
+fi
+
+# Get paths
+src=$HOME/templates  # location of LaTeX style files and templates
+echo "Filename: $filename"
+if [[ "$filename" =~ / ]]; then  # i.e. contains directory specifier
+  directory=${filename%/*}  # trim shortest pattern matching <stuff>/*, keep "stuff"
+  filename=${filename##*/}  # trim longest pattern matching */<stuff>, keep "stuff"
+  cd "$directory" || raise "Directory $directory does not exist."
+fi
+filestem=${filename%.tex}  # simple
+diffname=${filename%.tex}_changes.tex
+
+#-----------------------------------------------------------------------------#
+# Get compile options and required packages for file
+#-----------------------------------------------------------------------------#
+# General utilities
+inbraces() {  # get content inside braces
+  cut -s -d'{' -f2 | cut -s -d'}' -f1 | tr ',' $'\n'
+}
+nocomments() {  # ignore comments. TODO: Maybe awk is better?
+  [ $# -eq 1 ] || raise "Incorrect usage of nocomments()."
+  grep -o '^[^%]*' "$1"
+}
+packages() {
+  local file string
+  for file in "$@"; do
+    nocomments "$file" | grep -E '\\RequirePackage|\\usepackage|\\bibliographystyle' | $sedcmd 's/\[[^][]*\]//g;s/AtEndOfClass{//g;/#\|\[\|\]\|newcommand/d' | inbraces
+    for string in '' font color; do
+      nocomments "$file" | grep '\\use'$string'theme' | inbraces | sed 's/^/beamer'$string'theme/'
+    done
+  done
+}
+texfind() {  # find files with kpsewhich and copy from folders it not present
+  local ext name names file files
+  ext=$1
+  names=("${@:2}")
+  [ "${#names[@]}" -eq 0 ] && return
+  # Distro files
+  read -r -a files < <(kpsewhich "${names[@]/%/.${ext}}" | xargs)
+  for file in "${files[@]}"; do
+    ! [[ " ${texfiles[*]##*/} " =~ " ${file##*/} " ]] && ! [[ " ${files[*]} " =~ " ./${file##*/} " ]] && texfiles+=("$file")
+  done
+  # Local files
+  for name in "${names[@]}"; do
+    name=${name}.${ext}  # file we want
+    [[ " ${texfiles[*]##*/} " =~ " $name " ]] && continue
+    file="$src/$name"
+    if [ -r "$file" ]; then
+      cp "$file" ./ 2>/dev/null  # ignore 'same file' error e.g. when inside templates directory
+      [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("$file")
+    fi
+    if [[ " ${files[*]} " =~ " ./$name " ]]; then
+      localfiles+=("./$name")
+    elif ! [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]]; then
+      raise "${name} not found"  # do not raise error if failed to re-copy file
+    fi
+  done
+}
+
+# Change from Skim to Adobe if GIF or animation is in file
+nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
+  && viewer='Adobe Acrobat Reader DC' || viewer='Skim'
+
+# Choose xelatex for tex files that load fontspec, or use modules that load fontspec
+nocomments "$filename" | grep -E 'fontspec|xltxtra' &>/dev/null \
+  && latex=xelatex
+
+# Choose Lua if beamer present, for speed (required for beamerposter)
+nocomments "$filename" | grep 'documentclass.*{beamer}' &>/dev/null \
+  && latex=lualatex
+
+# Get class file
+read -r -a classes < <(nocomments "$filename" | grep '\\documentclass' | inbraces)
+[ ${#classes[@]} -eq 0 ] && raise "Unknown document class."
+[ ${#classes[@]} -gt 1 ] && raise "Ambiguous document class: '${classes[*]}'."
+
+# Get top-level and second-level style and theme files
+read -r -a packages < <(packages "$filename" | sort | uniq | xargs)
+texfind sty "${packages[@]}"
+read -r -a packages < <(packages "${localfiles[@]}" | sort | uniq | xargs)
+texfind sty "${packages[@]}"
+[ ${#texfiles[@]} -gt 0 ] && echo "Files found in TeX distro: ${texfiles[*]##*/}"
+[ ${#localfiles[@]} -gt 0 ] && echo "Files copied from local sources: ${localfiles[*]##*/}"
+
+# Get .bib file(s) or resource(s) for pandoc
+read -r -a bibnames < <(nocomments "$filename" | grep -E '\\bibliography|\\nobibliography|\\addbibresource' | inbraces)
+[ "${#bibnames[@]}" -eq 0 ] && bibliography=false || bibliography=true
+if $bibliography; then
+  bibnames=("${bibnames[@]%.bib}")  # remove extension, if present
+  bibfiles=("${bibnames[@]/%/.bib}")  # add back extension
+  echo "Bib files: ${bibfiles[*]}"
+fi
+
+#------------------------------------------------------------------------------#
+# Compile the document(s) as many times as necessary and display them
+#------------------------------------------------------------------------------#
+# Run and filter output of latex comand
+# First arg is 1 or 0, indicates whether to always print message
+errfilt() {  # show only error messages separated by blank lines
+  $sedcmd -E '/^! |^l\./!d' | $sedcmd $'s/^! /\\\n/g'
+}
+errcat() {  # ignore messages about packages and remove empty lines
+  errfilt | grep -A2 '^$' | $sedcmd '/^$/d'
+}
+run() {
+  local res cmd
+  res=$("${@:2}" 2>&1)
+  # shellcheck disable=2181
+  if [ $? -ne 0 ] || [ "$1" -eq 1 ]; then
+    if $raw || [[ "${*:2}" =~ "bibtex" ]]; then
+      cmd=cat
+    else
+      cmd=errcat
+    fi
+    echo "$res" | $cmd | $sedcmd 's/^/  /'
+  fi
+}
+
+# Open the file(s) on specific page if possible
+# See: https://sourceforge.net/p/skim-app/wiki/TeX_and_PDF_Synchronization/#setting-up-vim
+# See also: https://stackoverflow.com/a/2058251/4970632
+open() {
+  ! $macos && echoerr 'Warning: Can only automatically open PDF files on macOS.' && return 1
+  local appname fileview
+  appname="$1"
+  fileview="$2"
+  if [ "$appname" == 'Skim' ] && [ -n "$line" ]; then
+    echo "Opening \"$fileview\" and jumping to line $line (source $filename)"
+    /Applications/Skim.app/Contents/SharedSupport/displayline -r "$line" "$fileview" "$filename"
+  else
+    echo "Opening \"$fileview\""
+    command open -a "$appname" "$fileview" &
+  fi
+}
+
+# Set the flags for compiling
+# * Nonstop mode means no interaction, but keep trying to compile if encounter errors.
+# * The shellescape option helps use eps figures that aren't in actual .tex directory.
+#   See: https://www.scivision.co/pdflatex-error-epstopdf-output-filename-not-allowed-in-restricted-mode/
+flags=('-interaction=nonstopmode' '--shell-escape')
+files_old=(*)  # glob expansion to every filename
+case $latex in
+  xelatex)  stylized=XeLaTeX ;;
+  pdflatex) stylized=PDFLaTeX ;;
+  lualatex) stylized=LuaLaTeX ;;
+  *) raise "Unknown compiler \"$latex\"." ;;
+esac
+echo 'Running with '"${stylized}..."
+
+# Standard run
+# WARNING: To keep exit code from pdflatex, pipe later on
+# run 0 $latex $flags "$filestem"
+if ! $texdiff && ! $tex2docx; then
+  echo 'Generating aux file...'  # maybe just need to generate glossary!
+  run 0 "$latex" -draftmode "${flags[@]}" "$filestem"
+  if "$bibliography"; then
+    echo 'Generating bibliography...'
+    run 0 "$bibtex" "$filestem"
+    echo 'Incorporating bbl file...'
+    run 0 "$latex" -draftmode "${flags[@]}" "$filestem"
+  fi
+  echo 'Generating PDF...'
+  run 1 "$latex" "${flags[@]}" "$filestem"
+  [ -r "$filestem.pdf" ] || raise "PDF not produced."
+fi
+
+# Difference-LaTeX file, with track changes
+if $texdiff; then
+  # Get files that come *before* current one in alphanumeric sorting
+  prefix=$(sed -E 's/_([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}\.tex//g' <<< "$filename")
+  prevnames=("$prefix"*-[0-9][0-9].tex)  # sorted manuscript files (glob is sorted by default)
+  for index in "${!prevnames[@]}"; do  # expands to array of indices
+    [ "${prevnames[index]}" == "$filename" ] && break
+  done
+  if [ "$prefix" == "$filename" ]; then
+    # Invalid format
+    echoerr "Warning: Invalid filename for generating difference file: $filename"
+    texdiff=false
+  elif [ "$index" -eq 0 ]; then
+    # Need at least one file with date before this file
+    echoerr "Warning: Failed to find earlier version of current file: $filename"
+    texdiff=false
+  else
+    # Get difference PDF, with changes highlighted
+    prevname=${prevnames[index - 1]}
+    echo "Running latexdiff on ${filename##*/} minus ${prevname##*/}"
+    [ -e "$diffname" ] && rm "$diffname"
+    latexdiff --append-context2cmd=abstract "$prevname" "$filename" > "$diffname"
+    # Finish the the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
+    if ! [ -r $diffname ]; then
+      echoerr 'Warning: Failed to produce difference file.'
+      texdiff=false
+    else
+      diffstem=${diffname%.tex}
+      if $bibliography; then
+        $latex -draftmode "${flags[@]}" "$diffstem" &>/dev/null
+        $bibtex "$diffstem"  #&>/dev/null
+      fi
+      # $latex "${flags[@]}" "$diffstem" | errfilt | tail +2
+      $latex -draftmode "${flags[@]}" "$diffstem" &>/dev/null
+      $latex "${flags[@]}" "$diffstem" | errcat
+      if ! [ -r "$diffstem.pdf" ]; then
+        echoerr 'Warning: Failed to produce difference PDF.'
+        texdiff=false
+      fi
+    fi
+  fi
+fi
+
+# Convert to docx with pandoc; keeps figures and formats sections with Word styling
+# * For citeproc see: https://github.com/jgm/citeproc
+# * For xnos see: https://github.com/tomduck/pandoc-xnos
+# Unfortunately neither xnos nor crossref work for numbering equations and figures
+if $tex2docx; then
+  if ! type pandoc &>/dev/null; then
+    echoerr "Warning: Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
+  else
+    # flags=(-M cref=true --citeproc)
+    # flags=(--citeproc --filter=pandoc-crossref)
+    # flags=(-M cref=true)
+    # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
+    flags=(-M cref=true --citeproc)
+    flags=(-M cref=true --filter pandoc-xnos)
+    flags=(-M cref=true --filter pandoc-crossref --citeproc)
+    [[ " ${packages[*]} " =~ natbib ]] && flags+=(--natbib)
+    [[ " ${packages[*]} " =~ biblatex ]] && flags+=(--biblatex)
+    $bibliography && flags+=("${bibfiles[@]/#/--bibliography=}")
+    # if $bibliography && ! [[ " ${flags[*]} " =~ ' --natbib ' ]] && ! [[ " ${flags[*]} " =~ ' --biblatex ' ]]; then
+    if false; then
+      echoerr "Warning: Cannot convert to docx because bibliography package is unknown. Found packages: ${packages[*]}"
+      # echo "Error: Cannot convert to docx because bibliography package is unknown."
+    else
+      echo "Running pandoc to convert tex --> docx with flags ${flags[*]}"
+      pandoc --output="$filestem.docx" "${flags[@]}" "$filename"
+    fi
+  fi
+fi
+
+! $texdiff && ! $tex2docx && open "$viewer" "$filestem.pdf"  # too jumpy if open everything!
+$texdiff && open "$viewer" "$diffstem.pdf"
+$tex2docx && open "Pages" "$filestem.docx"
+$macos && command open -a "$terminal" &  # bring terminal back into focus
