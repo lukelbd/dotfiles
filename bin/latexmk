@@ -143,29 +143,32 @@ packages() {
   done
 }
 texfind() {  # find files with kpsewhich and copy from folders it not present
-  local ext name names file files
-  ext=$1
-  names=("${@:2}")
+  local name names file files
+  names=("$@")
   [ "${#names[@]}" -eq 0 ] && return
-  # Distro files
-  read -r -a files < <(kpsewhich "${names[@]/%/.${ext}}" | xargs)
+  # Detect files and add to lists if not already present
+  read -r -a files < <(kpsewhich "${names[@]/%/.sty}" "${names[@]/%/.bst}" | xargs)
   for file in "${files[@]}"; do
-    ! [[ " ${texfiles[*]##*/} " =~ " ${file##*/} " ]] && ! [[ " ${files[*]} " =~ " ./${file##*/} " ]] && texfiles+=("$file")
+    if [[ " ${files[*]} " =~ " ./${file##*/} " ]]; then
+      [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
+    else
+      [[ " ${texfiles[*]##*/} " =~ " ${file##*/} " ]] || texfiles+=("$file")
+    fi
   done
-  # Local files
+  # Try to copy files from templates directory if they weren't found
   for name in "${names[@]}"; do
-    name=${name}.${ext}  # file we want
-    [[ " ${texfiles[*]##*/} " =~ " $name " ]] && continue
-    file="$src/$name"
-    if [ -r "$file" ]; then
-      cp "$file" ./ 2>/dev/null  # ignore 'same file' error e.g. when inside templates directory
-      [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("$file")
-    fi
-    if [[ " ${files[*]} " =~ " ./$name " ]]; then
-      localfiles+=("./$name")
-    elif ! [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]]; then
-      raise "${name} not found"  # do not raise error if failed to re-copy file
-    fi
+    found=false
+    for ext in sty bst; do
+      file=${src}/${name}.${ext}
+      if [[ " ${files[*]##*/} " =~ " ${file##*/} " ]]; then
+        found=true
+      elif [ -r "$file" ]; then
+        cp "$file" ./ 2>/dev/null  # ignore 'same file' error e.g. when inside templates directory
+        [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
+        found=true
+      fi
+    done
+    $found || raise "${name} not found"  # do not raise error if failed to re-copy file
   done
 }
 
@@ -188,11 +191,11 @@ read -r -a classes < <(nocomments "$filename" | grep '\\documentclass' | inbrace
 
 # Get top-level and second-level style and theme files
 read -r -a packages < <(packages "$filename" | sort | uniq | xargs)
-texfind sty "${packages[@]}"
+texfind "${packages[@]}"
 read -r -a packages < <(packages "${localfiles[@]}" | sort | uniq | xargs)
-texfind sty "${packages[@]}"
+texfind "${packages[@]}"
 [ ${#texfiles[@]} -gt 0 ] && echo "Files found in TeX distro: ${texfiles[*]##*/}"
-[ ${#localfiles[@]} -gt 0 ] && echo "Files copied from local sources: ${localfiles[*]##*/}"
+[ ${#localfiles[@]} -gt 0 ] && echo "Files found locally: ${localfiles[*]##*/}"
 
 # Get .bib file(s) or resource(s) for pandoc
 read -r -a bibnames < <(nocomments "$filename" | grep -E '\\bibliography|\\nobibliography|\\addbibresource' | inbraces)
