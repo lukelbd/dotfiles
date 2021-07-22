@@ -333,10 +333,10 @@ nmap <Leader>Z <Plug>AltExecute2
 " Save and quit, also test whether the :q action closed the entire tab
 " SmartWrite is from tabline plugin
 nnoremap <silent> <C-s> :SmartWrite<CR>
-nnoremap <silent> <C-w> :call utils#tab_close()<CR>
+nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#vim_close()<CR>
+" nnoremap <silent> <C-w> :call utils#tab_close()<CR>
 " nnoremap <silent> <C-a> :call utils#vim_close()<CR>
-" nnoremap <silent> <C-w> :call utils#window_close()<CR>
 " nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
 " Renaming things
@@ -591,9 +591,12 @@ nnoremap <silent> <Leader>k :call spell#lang_toggle(1)<CR>
 nnoremap <silent> <Leader>K :call spell#lang_toggle(0)<CR>
 
 " Add and remove from dictionary
-nnoremap <Leader>d zg
-nnoremap <Leader>D zug
-nnoremap <Leader>! z=
+nnoremap <Leader>j zg
+nnoremap <Leader>J zug
+
+" Fix spelling under cursor
+nnoremap <Leader>d 1z=
+nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also correct the word!
 nnoremap <silent> <Plug>forward_spell bh]s:call spell#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
@@ -849,10 +852,12 @@ Plug 'lilydjwg/colorizer'
 
 " Proper syntax highlighting for a few different things
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
+" Plug 'psf/black', {'tag': '19.10b0'}
+" Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
-" Plug 'psf/black', {'tag': '19.10b0'}
 " Plug 'fisadev/vim-isort'
+" Plug 'vim-python/python-syntax'
 Plug 'Chiel92/vim-autoformat'
 Plug 'tell-k/vim-autopep8'
 Plug 'tmux-plugins/vim-tmux'
@@ -1492,7 +1497,7 @@ endif
 " Starting from the previous comment is pretty darn reliable
 command! Sync syntax sync ccomment
 command! SyncLong syntax sync fromstart
-command! SyncShort syntax sync minlines=0
+command! SyncShort exe 'syntax sync minlines=' . v:count . ' maxlines=' . v:count
 noremap <Leader>y :<C-u>SyncShort<CR>
 noremap <Leader>Y :<C-u>SyncLong<CR>
 
@@ -1618,10 +1623,10 @@ highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
 highlight Dummy ctermbg=NONE ctermfg=NONE
 
 " Helper commands defined in utils
-command! Group call utils#current_group()
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
 command! PluginFile call utils#show_ftplugin()
 command! SyntaxFile call utils#show_syntax()
+command! SyntaxGroup call utils#current_group()
 command! ColorTest call utils#color_test()
 command! ColorGroups vert help group-name
 

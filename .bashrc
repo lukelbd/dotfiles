@@ -1236,7 +1236,7 @@ from metpy import calc
 _python_proplot='
 import math
 import numpy as np
-import proplot as plot
+import proplot as pplt
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 '
