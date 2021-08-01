@@ -122,6 +122,10 @@ fi
 filestem=${filename%.tex}  # simple
 diffname=${filename%.tex}_changes.tex
 
+# Update repo
+# NOTE: This is useful e.g. for pulling remote figure changes
+git pull 2>/dev/null
+
 #-----------------------------------------------------------------------------#
 # Get compile options and required packages for file
 #-----------------------------------------------------------------------------#
