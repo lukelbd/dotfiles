@@ -538,9 +538,13 @@ nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
 nnoremap <expr> > '<Esc>' . utils#multi_indent_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . utils#multi_indent_expr(1, v:count1)
 
-" Maps to functions that accept motions
-command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
-noremap <expr> <silent> gQ utils#wrap_item_lines_expr()
+" Wrapping lines with arbitrary textwidth
+command! -range -nargs=? WrapLines <line1>,<line2>call utils#wrap_lines(<args>)
+noremap <silent> <expr> gq '<Esc>' . utils#wrap_lines_expr(v:count)
+
+" Wrapping lines accounting for bullet indentation and with arbitraty textwidth
+command! -range -nargs=? WrapItems <line1>,<line2>call utils#wrap_items(<args>)
+noremap <silent> <expr> gQ '<Esc>' . utils#wrap_items_expr(v:count)
 
 " Toggle highlighting
 nnoremap <silent> <Leader>o :noh<CR>

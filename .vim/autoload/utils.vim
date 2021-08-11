@@ -18,10 +18,10 @@ endfunction
 function! utils#motion_func(funcname, args) abort
   let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
   if mode() =~# '^\(v\|V\|\)$'
-    return ":call utils#operator_func('')\<CR>"  " will call with line range!
+    return ":\<C-u>'<,'>call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'
     set operatorfunc=utils#operator_func
-    return 'g@'
+    return 'g@'  " uses the input line range
   else
     echoerr 'E999: Illegal mode: ' . string(mode())
     return ''
@@ -719,12 +719,33 @@ function! s:remove_item(line, firstline_, lastline_) abort
   call histdel('/', -1)
 endfunction
 
+" Wrap the lines to 'count' columns rather than 'textwidth'
+" Note: Could put all commands in feedkeys() but then would get multiple
+" commands flashing at bottom of screen. Also need feedkeys() because normal
+" doesn't work inside an expression mapping.
+function! utils#wrap_lines(...) range abort
+  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
+  let textwidth = &l:textwidth
+  let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
+  let cmd =
+    \ lastline . 'gggq' . firstline . 'gg'
+    \ . ':silent let &l:textwidth = ' . textwidth . " | echom 'Wrapped lines to "
+    \ . &l:textwidth . " characters.'\<CR>"
+  call feedkeys(cmd, 'n')
+endfunction
+" For <expr> map accepting motion
+function! utils#wrap_lines_expr(...) abort
+  return utils#motion_func('utils#wrap_lines', a:000)
+endfunction
+
 " Fix all lines that are too long, with special consideration for bullet style lists and
 " asterisks (does not insert new bullets and adds spaces for asterisks).
 " Note: This is good example of incorporating motion support in custom functions!
 " Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
-function! utils#wrap_item_lines() range abort
+function! utils#wrap_items(...) range abort
+  let textwidth = &l:textwidth
+  let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let prevhist = @/
   let winview = winsaveview()
   " Put lines on single bullet
@@ -737,7 +758,6 @@ function! utils#wrap_item_lines() range abort
     if line =~# s:regex_total
       " Remove item indicator if line starts with
       let match_tail = substitute(line, s:regex_total, '\3', '')
-      echom 'Hello!!! ' . match_tail
       if match_tail =~# '^\s*[a-z]'
         call s:remove_item(line, linenum, linenum)
       " Otherwise join
@@ -754,21 +774,21 @@ function! utils#wrap_item_lines() range abort
   " If gqgq results in a wrapping, cursor is placed at the end of that block.
   " Then must remove the automatic item indicators that were inserted.
   for linenum in range(lastline, firstline, -1)
-    let line = getline(linenum)
-    if len(line) > &l:textwidth
-      exe linenum
-      normal! gqgq
-      if line =~# s:regex_total && line('.') > linenum
-        call s:remove_item(line, linenum + 1, line('.'))
-      endif
+    exe linenum
+    let line = getline('.')
+    normal! gqgq
+    if line =~# s:regex_total && line('.') > linenum
+      call s:remove_item(line, linenum + 1, line('.'))
     endif
   endfor
   let @/ = prevhist
   call winrestview(winview)
+  let &l:textwidth = textwidth
 endfunction
+
 " For <expr> map accepting motion
-function! utils#wrap_item_lines_expr(...) abort
-  return utils#motion_func('utils#wrap_item_lines', a:000)
+function! utils#wrap_items_expr(...) abort
+  return utils#motion_func('utils#wrap_items', a:000)
 endfunction
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
