@@ -1,10 +1,10 @@
 #--------------------------------------------------------------------
 # Use this file to change the default proplot and matplotlib settings.
 # The syntax is identical to matplotlibrc syntax. For details see:
-# https://proplot.readthedocs.io/en/latest/configuration.html
+# https://proplot.readthedocs.io/en/stable/configuration.html
 # https://matplotlib.org/stable/tutorials/introductory/customizing.html
 #--------------------------------------------------------------------
-# Settings changed by user
+# Changed settings
 font.name: Helvetica Neue
 # figure.max_open_warning: 0
 
