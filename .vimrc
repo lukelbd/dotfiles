@@ -1497,13 +1497,13 @@ endif
 "-----------------------------------------------------------------------------"
 " Syntax stuff
 "-----------------------------------------------------------------------------"
-" Fix syntax highlighting
-" Starting from the previous comment is pretty darn reliable
-command! Sync syntax sync ccomment
-command! SyncLong syntax sync fromstart
-command! SyncShort exe 'syntax sync minlines=' . v:count . ' maxlines=' . v:count
-noremap <Leader>y :<C-u>SyncShort<CR>
-noremap <Leader>Y :<C-u>SyncLong<CR>
+" Fix syntax highlighting. Leverage ctags integration to almost always fix syncing
+" Note: str2nr() apparently ignores invalid characters (here the 'G' instruction)
+command! -nargs=1 Sync syntax sync minlines=<args> maxlines=<args>
+command! SyncStart syntax sync fromstart
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tagtools#ctag_jump(0, 1, 0, line('w0')))])
+noremap <Leader>y :<C-u>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
+noremap <Leader>Y :<C-u>SyncStart<CR>
 
 " GUI vim colors
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/

@@ -6,19 +6,21 @@ load_subconfig('ipython_config.py', profile='default')
 
 # Add proplot development lines
 lines = """
-%matplotlib qt
 import proplot as pplt
+import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.cm as mcm
 import matplotlib.colors as mcolors
 import matplotlib.ticker as mticker
 import matplotlib.font_manager as mfonts
-import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.mpl.geoaxes as geoaxes
 """
+# %matplotlib osx
 lines = lines.strip().split('\n')
 c.InteractiveShellApp.exec_lines.extend(lines)
+# c.TerminalIPythonApp.pylab = 'iterm'  # use MPLBACKEND to avoid error
+# # c.TerminalIPythonApp.pylab = 'imgcat'  # use MPLBACKEND to avoid error
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration
