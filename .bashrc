@@ -1215,35 +1215,11 @@ fi
 #-----------------------------------------------------------------------------#
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------#
-# Ipython aliases (start sessions with various loaded modules)
-_python_climopy='
-import math
-import numpy as np
-import pandas as pd
-import dask.array as da
-import netCDF4 as nc4
-import xarray as xr
-import pint
-import pint_xarray
-import cftime
-import cf_units
-import cf_xarray
-import climopy as climo
-import metpy
-from climopy import const, ureg, vreg
-from metpy import calc
-'
-_python_proplot='
-import math
-import numpy as np
-import proplot as plot
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-'
-alias climopy="ipython -i -c '$_python_climopy'"
-alias proplot="ipython -i -c '$_python_proplot'"
-alias jupyter-climopy="jupyter console -i -c '$_python_climopy'"
-alias jupyter-proplot="jupyter console -i -c '$_python_proplot'"
+# Ipython profile shorthands (see ipython_config.py in .ipython profile subfolders)
+alias climopy='ipython -i --profile=climopy'
+alias proplot='ipython -i --profile=proplot'
+alias jupyter-climopy='jupyter console -i --profile=climopy'
+alias jupyter-proplot='jupyter console -i --profile=proplot'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"

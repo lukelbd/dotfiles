@@ -1,6 +1,5 @@
-# Configuration file for ipython.
 #-----------------------------------------------------------------------------#
-# Modifications
+# Configuration file for ipython.
 #-----------------------------------------------------------------------------#
 # Succinct banner with programatic versions
 import sys
@@ -30,14 +29,21 @@ c.TerminalInteractiveShell.confirm_exit = False
 c.TerminalInteractiveShell.term_title = False
 
 # Run lines
-c.InteractiveShellApp.exec_lines = """
+lines = """
 %load_ext autoreload
 %autoreload 2
 import os
 import re
 import sys
+import math
+import pathlib
+import itertools
+import functools
+import collections
 import numpy as np
-""".strip().split('\n')
+import numpy.ma as ma
+"""
+c.InteractiveShellApp.exec_lines = lines.strip().split('\n')
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration

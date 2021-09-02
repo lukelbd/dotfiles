@@ -333,10 +333,10 @@ nmap <Leader>Z <Plug>AltExecute2
 " Save and quit, also test whether the :q action closed the entire tab
 " SmartWrite is from tabline plugin
 nnoremap <silent> <C-s> :SmartWrite<CR>
-nnoremap <silent> <C-w> :call utils#tab_close()<CR>
+nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#vim_close()<CR>
+" nnoremap <silent> <C-w> :call utils#tab_close()<CR>
 " nnoremap <silent> <C-a> :call utils#vim_close()<CR>
-" nnoremap <silent> <C-w> :call utils#window_close()<CR>
 " nnoremap <silent> <C-q> :call utils#tab_close()<CR>
 
 " Renaming things
@@ -538,9 +538,13 @@ nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
 nnoremap <expr> > '<Esc>' . utils#multi_indent_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . utils#multi_indent_expr(1, v:count1)
 
-" Maps to functions that accept motions
-command! -range -nargs=0 WrapItemLines <line1>,<line2>call utils#wrap_item_lines()
-noremap <expr> <silent> gQ utils#wrap_item_lines_expr()
+" Wrapping lines with arbitrary textwidth
+command! -range -nargs=? WrapLines <line1>,<line2>call utils#wrap_lines(<args>)
+noremap <silent> <expr> gq '<Esc>' . utils#wrap_lines_expr(v:count)
+
+" Wrapping lines accounting for bullet indentation and with arbitraty textwidth
+command! -range -nargs=? WrapItems <line1>,<line2>call utils#wrap_items(<args>)
+noremap <silent> <expr> gQ '<Esc>' . utils#wrap_items_expr(v:count)
 
 " Toggle highlighting
 nnoremap <silent> <Leader>o :noh<CR>
@@ -591,9 +595,12 @@ nnoremap <silent> <Leader>k :call spell#lang_toggle(1)<CR>
 nnoremap <silent> <Leader>K :call spell#lang_toggle(0)<CR>
 
 " Add and remove from dictionary
-nnoremap <Leader>d zg
-nnoremap <Leader>D zug
-nnoremap <Leader>! z=
+nnoremap <Leader>j zg
+nnoremap <Leader>J zug
+
+" Fix spelling under cursor
+nnoremap <Leader>d 1z=
+nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also correct the word!
 nnoremap <silent> <Plug>forward_spell bh]s:call spell#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
@@ -849,10 +856,12 @@ Plug 'lilydjwg/colorizer'
 
 " Proper syntax highlighting for a few different things
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
+" Plug 'psf/black', {'tag': '19.10b0'}
+" Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
-" Plug 'psf/black', {'tag': '19.10b0'}
 " Plug 'fisadev/vim-isort'
+" Plug 'vim-python/python-syntax'
 Plug 'Chiel92/vim-autoformat'
 Plug 'tell-k/vim-autopep8'
 Plug 'tmux-plugins/vim-tmux'
@@ -1492,7 +1501,7 @@ endif
 " Starting from the previous comment is pretty darn reliable
 command! Sync syntax sync ccomment
 command! SyncLong syntax sync fromstart
-command! SyncShort syntax sync minlines=0
+command! SyncShort exe 'syntax sync minlines=' . v:count . ' maxlines=' . v:count
 noremap <Leader>y :<C-u>SyncShort<CR>
 noremap <Leader>Y :<C-u>SyncLong<CR>
 
@@ -1618,10 +1627,10 @@ highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
 highlight Dummy ctermbg=NONE ctermfg=NONE
 
 " Helper commands defined in utils
-command! Group call utils#current_group()
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
 command! PluginFile call utils#show_ftplugin()
 command! SyntaxFile call utils#show_syntax()
+command! SyntaxGroup call utils#current_group()
 command! ColorTest call utils#color_test()
 command! ColorGroups vert help group-name
 

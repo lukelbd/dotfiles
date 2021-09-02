@@ -12,11 +12,11 @@ elseif exists('b:current_syntax')
   finish
 endif
 
-" Fix syntax highlighting sync issues. See:
-" https://stackoverflow.com/a/28114709/4970632
-" https://github.com/vim/vim/issues/2790
-" Sometimes maxlines works, sometimes minlines works. No consistency :/
-syntax sync minlines=20
+" Fix syntax highlighting sync issues. Sometimes maxlines works, sometimes
+" minlines works. No consistency :/
+" See: https://stackoverflow.com/a/28114709/4970632
+" See: https://github.com/vim/vim/issues/2790
+syntax sync minlines=100
 
 " Commands
 command! -buffer Python2Syntax let b:python_version_2 = 1 | let &syntax = &syntax
