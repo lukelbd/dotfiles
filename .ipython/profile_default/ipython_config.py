@@ -10,11 +10,20 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help\n'.format
     sys.version.split()[0],
 )
 
+# Inline iterm backend
+# See: https://github.com/oselivanov/matplotlib_iterm2
+from IPython.core import shellapp
+from IPython.core import pylabtools
+from IPython.terminal import pt_inputhooks
+backends = {
+    'iterm': 'module://itermplot',
+    'imgcat': 'module://matplotlib_iterm2.backend_iterm2',
+}
+shellapp.backend_keys.extend(backends)
+pylabtools.backends.update(backends)
+
 # Highlighting
 c.TerminalInteractiveShell.highlighting_style = 'monokai'
-
-# Editing mode, but single line vi is confusing
-# c.TerminalInteractiveShell.editing_mode = 'vi'
 
 # Matplotlib backend
 c.InteractiveShellApp.matplotlib = None

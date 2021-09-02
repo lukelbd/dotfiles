@@ -30,6 +30,7 @@ __pycache__
 !nbconfig/*
 !hidecode.tplx
 !shortcuts.jupyterlab-settings
+!jupyter_config.json
 !jupyter_console_config.py
 !jupyter_qtconsole_config.py
 !jupyter_notebook_config.py

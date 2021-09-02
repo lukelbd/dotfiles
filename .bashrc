@@ -16,13 +16,8 @@
 #   http://mywiki.wooledge.org/glob
 # * Use '<package_manager> list' for most package managers to see what is installed
 #   e.g. brew list, conda list, pip list.
-# * Use Platypus app to turn shell scripts, python scripts, etc. into clickable
-#   links apps. Easier than AppleScript in general.
-# * Tried to use a workflow app for JupyterLab app because had to edit Info.plist to
-#   handle URLs: https://gist.github.com/georgebrock/9ab3d83bf160b7c1c2b0
-# * In the end workflow failed with Choosy, so created a simple Platypus script
-#   instead! Platypus does not just accept valid HTTP handler apps.
-#   Also see this: http://christopherroach.com/articles/jupyterlab-desktop-app/
+# * Swap between jupyter kernels in a lab session by installing nb_conda_kernels:
+#   https://github.com/Anaconda-Platform/nb_conda_kernels
 #-----------------------------------------------------------------------------#
 # Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug, scp/rsync fail without this line due to greeting message:
@@ -100,9 +95,10 @@ case "${HOSTNAME%%.*}" in
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
     export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
-    export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
+    export PATH=$HOME/.iterm2:$PATH
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
+    export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
     export MANPATH=/usr/local/opt/grep/libexec/gnuman
     export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
     export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
@@ -198,10 +194,14 @@ export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
+# NOTE: Could not get itermplot to work. Inline figures too small.
 export PYTHONPATH=$HOME/drycore:$HOME/timescales  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
+export MPLBACKEND=module://matplotlib_iterm2.backend_iterm2
+# export MPLBACKEND=module://itermplot
+# export ITERMPLOT_PLOTFILE=plot.png  # use PNG instead of PDF so pdi is controllable! see: https://github.com/daleroberts/itermplot/issues/27
 
 # Adding additional flags for building C++ stuff
 # https://github.com/matplotlib/matplotlib/issues/13609
@@ -1290,21 +1290,6 @@ jupyter-lab() {
   jupyter lab $flag --no-browser
 }
 
-# Save a concise HTML snapshot of the jupyter notebook for collaboration
-# NOTE: Requires xelatex. Use conda install -c conda-forge tectonic
-jupyter-convert() {
-  local fmt dir file
-  # fmt=pdf
-  fmt=html_toc
-  dir=$(git rev-parse --show-toplevel)/meetings
-  [ -d "$dir" ] || { echo "Error: Directory $dir does not exist."; return 1; }
-  for file in "$@"; do
-    [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
-    jupyter nbconvert --to "$fmt" --no-input --no-prompt \
-      --output-dir "$dir" --output "${file%.ipynb}_$(date +%Y-%m-%d).${fmt%_*}" "$file"
-  done
-}
-
 # Refresh stale connections from macbook to server
 # Simply calls the '_jupyter_tunnel' function
 jupyter-connect() {
@@ -1330,6 +1315,38 @@ jupyter-connect() {
   else
     _jupyter_tunnel "$ports"
   fi
+}
+
+# Save a concise HTML snapshot of the jupyter notebook for collaboration
+# NOTE: Requires xelatex. Use conda install -c conda-forge tectonic
+jupyter-convert() {
+  local fmt dir file
+  # fmt=pdf
+  fmt=html_toc
+  dir=$(git rev-parse --show-toplevel)/meetings
+  [ -d "$dir" ] || { echo "Error: Directory $dir does not exist."; return 1; }
+  for file in "$@"; do
+    [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
+    jupyter nbconvert --to "$fmt" --no-input --no-prompt \
+      --output-dir "$dir" --output "${file%.ipynb}_$(date +%Y-%m-%d).${fmt%_*}" "$file"
+  done
+}
+
+# Change the kernel for all notebooks
+jupyter-kernel() {
+  local file files
+  kernel=$1
+  [ $# -eq 0 ] && echo "Error: Kernel must be provided. Try 'python3'." && return 1
+  shift
+  files=("$@")
+  [ $# -eq 1 ] && [ -d "$1" ] && files=("$1/"*.py)
+  for file in "${files[@]}"; do
+    [[ "$file" =~ .*conf.py ]] && continue
+    [[ "$file" =~ .*.py ]] || { echo "Warning: Ignoring file $file."; continue; }
+    [ -e "$file" ] || { echo "Warning: File $file is missing."; continue; }
+    echo "Setting '$file' kernel to '$kernel'."
+    jupytext --set-kernel "$kernel" "$file"
+  done
 }
 
 # Change JupyterLab name as it will appear in tab or browser title
@@ -1720,30 +1737,27 @@ fi
 #-----------------------------------------------------------------------------#
 # Shell integration; iTerm2 feature only
 #-----------------------------------------------------------------------------#
-# Make sure it was not already installed, and we are not inside vim :terminal
+# Show inline figures with fixed 300dpi
+# Make sure it was not already installed and we are not inside vim :terminal
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-if [ -n "$VIMRUNTIME" ]; then
-  unset PROMPT_COMMAND
-elif [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
-  # && [ -z "$VIMRUNTIME" ]; then
+if [ -z "$VIMRUNTIME" ] && [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
+  # Shell integration
   _echo_bashrc 'Enabling shell integration'
-  # First enable
   source ~/.iterm2_shell_integration.bash
-  # Declare some helper functions
+
+  # Helper functions
   for func in imgcat imgls; do
     unalias $func
     eval 'function '$func'() {
-      local i tmp tmpdir files
+      local i tmp files
       i=0
-      files=($@)
-      tmpdir="."
-      # [ -n "$TMPDIR" ] && tmpdir="$TMPDIR" || tmpdir="."
+      files=("$@")
       for file in "${files[@]}"; do
         if [ "${file##*.}" == pdf ]; then
-          tmp="$tmpdir/tmp.${file%.*}.png"  # convert to png
+          tmp=./tmp.${file%.*}.png  # convert to png
           convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
         else
-          tmp="$tmpdir/tmp.${file}"
+          tmp=./tmp.${file}
           convert -flatten "$file" "$tmp"
         fi
         $HOME/.iterm2/'$func' "$tmp"
@@ -1916,6 +1930,8 @@ fi
 #-----------------------------------------------------------------------------#
 # Message
 #-----------------------------------------------------------------------------#
+[ -n "$VIMRUNTIME" ] \
+  && unset PROMPT_COMMAND
 [ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \
   && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
 _bashrc_loaded=true
