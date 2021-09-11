@@ -177,19 +177,19 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
 }
 
 # Change from Skim to Adobe if GIF or animation is in file
-nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
+nocomments "$filename" | grep -E '\\animategraphics\b' &>/dev/null \
   && viewer='Adobe Acrobat Reader DC' || viewer='Skim'
 
 # Choose xelatex for tex files that load fontspec, or use modules that load fontspec
-nocomments "$filename" | grep -E 'fontspec|xltxtra' &>/dev/null \
+nocomments "$filename" | grep -E '\\fontspec\b|\\xltxtra\b' &>/dev/null \
   && latex=xelatex
 
 # Choose Lua if beamer present, for speed (required for beamerposter)
-nocomments "$filename" | grep 'documentclass.*{beamer}' &>/dev/null \
+nocomments "$filename" | grep '\\documentclass\b.*{beamer}' &>/dev/null \
   && latex=lualatex
 
 # Get class file
-read -r -a classes < <(nocomments "$filename" | grep '\\documentclass' | inbraces)
+read -r -a classes < <(nocomments "$filename" | grep '\\documentclass\b' | inbraces)
 [ ${#classes[@]} -eq 0 ] && raise "Unknown document class."
 [ ${#classes[@]} -gt 1 ] && raise "Ambiguous document class: '${classes[*]}'."
 
@@ -202,7 +202,7 @@ texfind "${packages[@]}"
 [ ${#localfiles[@]} -gt 0 ] && echo "Files found locally: ${localfiles[*]##*/}"
 
 # Get .bib file(s) or resource(s) for pandoc
-read -r -a bibnames < <(nocomments "$filename" | grep -E '\\bibliography|\\nobibliography|\\addbibresource' | inbraces)
+read -r -a bibnames < <(nocomments "$filename" | grep -E '\\bibliography\b|\\nobibliography\b|\\addbibresource\b' | inbraces)
 [ "${#bibnames[@]}" -eq 0 ] && bibliography=false || bibliography=true
 if $bibliography; then
   bibnames=("${bibnames[@]%.bib}")  # remove extension, if present
@@ -286,8 +286,8 @@ fi
 # Difference-LaTeX file, with track changes
 if $texdiff; then
   # Get files that come *before* current one in alphanumeric sorting
-  prefix=$(sed -E 's/_([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}\.tex//g' <<< "$filename")
-  prevnames=("$prefix"*-[0-9][0-9].tex)  # sorted manuscript files (glob is sorted by default)
+  prefix=$(sed -E 's/[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}\.tex//g' <<< "$filename")
+  prevnames=("$prefix"*[_-][0-9][0-9].tex)  # sorted manuscript files (glob is sorted by default)
   for index in "${!prevnames[@]}"; do  # expands to array of indices
     [ "${prevnames[index]}" == "$filename" ] && break
   done

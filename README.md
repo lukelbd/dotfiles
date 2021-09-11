@@ -1,8 +1,8 @@
 dotfiles
 ========
 
-This repo is used to synchronize various tools and settings for `bash`, `vim`, `tmux`,
-and `jupyter`. It also includes some handy shell functions and shell scripts.
+This repo synchronizes various settings for `bash`, `vim`, `tmux`, and `jupyter`.
+It also includes some handy shell functions and shell scripts.
 
 Bash config
 -----------
@@ -51,6 +51,6 @@ You can also find the following filetype-specific features in the `ftplugin`, `s
 Other config
 ------------
 
-You can find various utilities in `bin`, and handy `git` commands in `.gitconfig`.
+You can find various shell script utilities in `bin` and `git` commands in `.gitconfig`.
 Also, `.jupyter` is synced just to preserve custom key binding and extension settings
 across jupyter notebook and jupyter lab sessions.

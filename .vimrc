@@ -261,17 +261,29 @@ endfor
 "-----------------------------------------------------------------------------"
 " Vim scripting utilities
 "-----------------------------------------------------------------------------"
-" Query whether plugin is loaded
+" Return whether plugin is loaded
 " Used to use has_key(g:plugs) but now check runtimepath in case fork is loaded
 function! Active(key) abort
   return &runtimepath =~# '/' . a:key . '\>'
 endfunction
 
-" Get comment character
+" Return comment character
 function! Comment() abort
   let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
   let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
   return escape(string, '[]\.*$~')  " escape magic characters
+endfunction
+
+" Return list of buffers
+function! Buffers() abort
+  let nrs = range(0, bufnr('$'))
+  let res = []
+  for nr in nrs
+    if buflisted(nr)
+      call add(res, bufname(nr))
+    endif
+  endfor
+  return res
 endfunction
 
 " Better grep, with limited regex translation
@@ -297,7 +309,6 @@ function! Reverse() range abort
   exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
 endfunction
 command! -range Reverse <line1>,<line2>call Reverse()
-
 
 "-----------------------------------------------------------------------------"
 " File and window utilities
@@ -926,6 +937,7 @@ Plug 'mbbill/undotree'
 
 " Close unused buffers
 " https://github.com/Asheq/close-buffers.vim
+" Example: Bdelete hidden
 Plug 'Asheq/close-buffers.vim'
 
 " Tabdrop fix for vim
@@ -1499,7 +1511,7 @@ endif
 "-----------------------------------------------------------------------------"
 " Fix syntax highlighting. Leverage ctags integration to almost always fix syncing
 " Note: str2nr() apparently ignores invalid characters (here the 'G' instruction)
-command! -nargs=1 Sync syntax sync minlines=<args> maxlines=<args>
+command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
 command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tagtools#ctag_jump(0, 1, 0, line('w0')))])
 noremap <Leader>y :<C-u>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>

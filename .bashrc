@@ -24,7 +24,6 @@
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
-clear  # first clear screen
 
 # Prompt
 # Keep things minimal, just make prompt bold so more identifiable
@@ -194,7 +193,9 @@ export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
+# NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
+export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 export PYTHONPATH=$HOME/drycore:$HOME/timescales  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
@@ -1771,9 +1772,10 @@ fi
 #-----------------------------------------------------------------------------#
 # Conda stuff
 # WARNING: Must come after shell integration or gets overwritten
-# WARNING: Making conda environments work with jupyter is complicated! Have to
-# remove stuff from ipykernel and install them manually.
+# WARNING: Making conda environments work with jupyter is complicated!
+# Have to remove stuff from ipykernel and install them manually.
 # See: https://stackoverflow.com/a/54985829/4970632
+# See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
 unset _conda
@@ -1783,11 +1785,8 @@ elif [ -d "$HOME/miniconda3" ]; then
   _conda=miniconda3
 fi
 if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
-  # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
-  # The first thing creates a bunch of environment variables and functions
-  # The second part calls the 'conda' function, which calls an activation function, which does the
-  # whole solving environment thing
   _echo_bashrc 'Enabling conda'
+  # List available packages
   avail() {
     local avail current search
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
@@ -1812,7 +1811,8 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
     if [ -f "$HOME/$_conda/etc/profile.d/conda.sh" ]; then
       source "$HOME/$_conda/etc/profile.d/conda.sh"
     else
-      export PATH="$HOME/$_conda/bin:$PATH"
+      export PATH=$HOME/$_conda/bin:$PATH
+      export PATH=$HOME/$_conda/condabin:$PATH
     fi
   fi
   unset __conda_setup
@@ -1902,10 +1902,18 @@ if $_macos; then # first the MacOS options
     || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
-  alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information
 
   # Audio and video
-  alias artists='find ~/Music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | grep -v ^Media$ | uniq -c | sort -n'
+  forecast() {
+    curl 'wttr.in/Fort Collins'
+  }
+  artists() {
+    find ~/Music -mindepth 2 -type f -printf "%P\n" \
+      | cut -d/ -f1 \
+      | grep -v ^Media$ \
+      | uniq -c \
+      | sort -n
+  }
   artistfolder() {
     local base artist title
     for file in *.{m4a,mp3}; do

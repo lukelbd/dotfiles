@@ -15,8 +15,8 @@ import matplotlib.ticker as mticker
 import matplotlib.font_manager as mfonts
 import cartopy.crs as ccrs
 import cartopy.mpl.geoaxes as geoaxes
+pplt.rc['figure.dpi'] = 200
 """
-# %matplotlib osx
 lines = lines.strip().split('\n')
 c.InteractiveShellApp.exec_lines.extend(lines)
 # c.TerminalIPythonApp.pylab = 'iterm'  # use MPLBACKEND to avoid error
