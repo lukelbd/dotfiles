@@ -12,9 +12,11 @@ import matplotlib as mpl
 import matplotlib.cm as mcm
 import matplotlib.colors as mcolors
 import matplotlib.ticker as mticker
+import matplotlib.scale as mscale
 import matplotlib.font_manager as mfonts
 import cartopy.crs as ccrs
-import cartopy.mpl.geoaxes as geoaxes
+from cartopy.mpl import gridliner
+from cartopy.mpl import geoaxes
 pplt.rc['figure.dpi'] = 200
 """
 lines = lines.strip().split('\n')
