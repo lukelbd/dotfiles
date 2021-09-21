@@ -40,14 +40,14 @@ for file in "${files[@]}"; do  # iterate through files
 done
 
 # Create variety of symlinks in home directory
-opts=(~/miniconda3/lib/python3.*)
-python=${opts[0]:?$HOME/miniconda3/lib/python3.*}  # raise error later error later
+opts=(~/miniconda3/lib/python3.*/site-packages)
+python=${opts[0]:?$HOME/miniconda3/lib/python3.*/site-packages}  # raise warning later
 for pair in \
   $python:site-packages \
-  $HOME/Library/Services:workflows \
-  $HOME/Library/Mobile\ Documents/com~apple~CloudDocs:iCloud\ Drive \
+  /usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages \
   /Volumes/GoogleDrive/My\ Drive:Google\ Drive \
-  /usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages
+  $HOME/Library/Mobile\ Documents/com~apple~CloudDocs:iCloud\ Drive \
+  $HOME/Library/Services:workflows
   do
   src=${pair%:*}
   if ! [ -r "$src" ]; then
