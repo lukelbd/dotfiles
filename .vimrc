@@ -306,7 +306,7 @@ function! Reverse() range abort
     let line1 = 1
     let line2 = line('$')
   endif
-  exec 'silent '.line1.','.line2.'g/^/m'.(line1 - 1)
+  exec 'silent ' . line1 . ',' . line2 . 'g/^/m' . (line1 - 1)
 endfunction
 command! -range Reverse <line1>,<line2>call Reverse()
 
@@ -1100,6 +1100,14 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
+" *Very* expensive for large files so only ever activate manually
+" Mapping is # for hex string
+if Active('colorizer')
+  let g:colorizer_startup = 0
+  let g:colorizer_nomap = 1
+  nnoremap <Leader># :<C-u>ColorToggle<CR>
+endif
+
 " Mappings for vim-tagtools command
 " Also use ctag brackets mapping for default double bracket motion, except never
 " overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
@@ -1137,6 +1145,18 @@ if Active('delimitmate')
   let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
+" Vim sneak
+if Active('vim-sneak')
+  map s <Plug>Sneak_s
+  map S <Plug>Sneak_S
+  map f <Plug>Sneak_f
+  map F <Plug>Sneak_F
+  map t <Plug>Sneak_t
+  map T <Plug>Sneak_T
+  map <F1> <Plug>Sneak_,
+  map <F2> <Plug>Sneak_;
+endif
+
 " Add global delims with vim-shortcuts plugin functions and declare my weird
 " mapping defaults due to Karabiner
 if Active('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
@@ -1153,85 +1173,39 @@ if Active('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
   let g:shortcuts_nextdelim_map = '<F2>'
 endif
 
-" *Very* expensive for large files so only ever activate manually
-" Mapping is # for hex string
-if Active('colorizer')
-  let g:colorizer_startup = 0
-  let g:colorizer_nomap = 1
-  nnoremap <Leader># :<C-u>ColorToggle<CR>
+" T commenter
+if Active('tcomment_vim')
+  nmap g>> g>c
+  nmap g<< g<c
 endif
 
-" Undo tree
-if Active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  noremap <Leader>u :UndotreeToggle<CR>
-  if has('persistent_undo')
-    let &undodir=$HOME . '/.undodir'
-    set undofile
-  endif
+" Neocomplete and deoplete
+if Active('deoplete.nvim')
+  call deoplete#custom#option({'max_list': 15})
+endif
+if Active('neocomplete.vim')
+  let g:neocomplete#max_list = 15
+  let g:neocomplete#enable_at_startup = 1
+  let g:neocomplete#enable_auto_select = 0
 endif
 
-" Speed dating, support date increments
-if Active('vim-speeddating')
-  map + <Plug>SpeedDatingUp
-  map - <Plug>SpeedDatingDown
-  noremap <Plug>SpeedDatingFallbackUp   <C-a>
-  noremap <Plug>SpeedDatingFallbackDown <C-x>
-else
-  noremap + <C-a>
-  noremap - <C-x>
-endif
-
-" The howmuch.vim plugin. Pneumonic for mapping is the straight line at bottom of
-" sum table. Mapping options are:
-" AutoCalcReplace
-" AutoCalcReplaceWithSum
-" AutoCalcAppend
-" AutoCalcAppendWithEq
-" AutoCalcAppendWithSum
-" AutoCalcAppendWithEqAndSum
-if Active('HowMuch')
-  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
-  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
-endif
-
-" Codi (mathematical notepad)
-if Active('codi.vim')
-  " See issue: https://github.com/metakirby5/codi.vim/issues/90
-  " We want TextChanged and InsertLeave, not TextChangedI which is enabled
-  " when setting g:codi#autocmd to 'TextChanged'
-  augroup math
+" Jedi vim
+if Active('jedi-vim')
+  augroup jedi_fix
     au!
-    au User CodiEnterPre call utils#codi_setup(1)
-    au User CodiLeavePost call utils#codi_setup(0)
+    au FileType python nnoremap <buffer> <silent> <Leader>s :Refresh<CR>
   augroup END
-  command! -nargs=? CodiNew call utils#codi_new(<q-args>)
-  nnoremap <silent> <Leader>= :CodiNew<CR>
-  nnoremap <silent> <Leader>+ :Codi!!<CR>
-
-  " Interpreter without history, various settings
-  " See: https://github.com/metakirby5/codi.vim/issues/85
-  " Note: Codi is broken for julia: https://github.com/metakirby5/codi.vim/issues/120
-  let g:codi#autocmd = 'None'
-  let g:codi#rightalign = 0
-  let g:codi#rightsplit = 0
-  let g:codi#width = 20
-  let g:codi#log = ''  " enable when debugging
-  let g:codi#sync = 0  " disable async
-  let g:codi#interpreters = {
-    \ 'python': {
-        \ 'bin': '/usr/bin/python',
-        \ 'prompt': '^\(>>>\|\.\.\.\) ',
-        \ 'quitcmd': 'exit()',
-        \ },
-    \ 'julia': {
-        \ 'bin': $HOME . '/miniconda3/bin/python',
-        \ 'prompt': '^\(julia>\|      \)',
-        \ },
-    \ }
-  "        \ 'bin': $HOME . '/miniconda3/bin/python',
-  "        \ 'quitcmd': 'import readline; readline.clear_history(); exit()',
+  let g:jedi#completions_enabled = 0
+  let g:jedi#auto_vim_configuration = 0
+  let g:jedi#completions_command = ''
+  let g:jedi#goto_command = '<CR>'
+  let g:jedi#documentation_command = '<Leader>p'
+  let g:jedi#max_doc_height = 100
+  let g:jedi#goto_assignments_command = ''
+  let g:jedi#goto_definitions_command = ''
+  let g:jedi#rename_command = ''
+  let g:jedi#usages_command = '<Leader><CR>'
+  let g:jedi#show_call_signatures = '1'
 endif
 
 " Fugitive command aliases
@@ -1264,49 +1238,6 @@ if Active('vim-gitgutter')
   " Navigating between hunks
   noremap <silent> ]g :GitGutterNextHunk<CR>
   noremap <silent> [g :GitGutterPrevHunk<CR>
-endif
-
-" Vim sneak
-if Active('vim-sneak')
-  map s <Plug>Sneak_s
-  map S <Plug>Sneak_S
-  map f <Plug>Sneak_f
-  map F <Plug>Sneak_F
-  map t <Plug>Sneak_t
-  map T <Plug>Sneak_T
-  map <F1> <Plug>Sneak_,
-  map <F2> <Plug>Sneak_;
-endif
-
-" Neocomplete and deoplete
-if Active('deoplete.nvim')
-  call deoplete#custom#option({
-  \ 'max_list': 15,
-  \ })
-endif
-if Active('neocomplete.vim')
-  let g:neocomplete#max_list = 15
-  let g:neocomplete#enable_at_startup = 1
-  let g:neocomplete#enable_auto_select = 0
-endif
-
-" Jedi vim
-if Active('jedi-vim')
-  augroup jedi_fix
-    au!
-    au FileType python nnoremap <buffer> <silent> <Leader>s :Refresh<CR>
-  augroup END
-  let g:jedi#completions_enabled = 0
-  let g:jedi#auto_vim_configuration = 0
-  let g:jedi#completions_command = ''
-  let g:jedi#goto_command = '<CR>'
-  let g:jedi#documentation_command = '<Leader>p'
-  let g:jedi#max_doc_height = 100
-  let g:jedi#goto_assignments_command = ''
-  let g:jedi#goto_definitions_command = ''
-  let g:jedi#rename_command = ''
-  let g:jedi#usages_command = '<Leader><CR>'
-  let g:jedi#show_call_signatures = '1'
 endif
 
 " Tagbar settings
@@ -1362,47 +1293,16 @@ if Active('tagbar')
   nnoremap <silent> <Leader>t :TagbarToggle<CR>
 endif
 
-" Error highlighting with different plugins
-hi ALEErrorLine ctermfg=White ctermbg=Red cterm=None
-hi ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
-hi SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
-hi SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
-
-" Flake8 ignore list (also apply to autopep8):
-" * Allow line break before binary operator (W503)
-" * Allow imports after statements, important for jupytext (E402)
-" * Allow multiple spaces before operators for alignment (E221)
-" * Allow multiple spaces after commas for alignment (E221)
-" * Allow assigning lambda expressions instead of def (E731)
-" * Permit 'l' and 'I' variable names (E741)
-let s:pep8ignore = 'W503,E402,E221,E241,E731,E741'
-let g:ale_python_flake8_options =  '--max-line-length=' . s:textwidth . ' --ignore=' . s:pep8ignore
-let g:autopep8_ignore = s:pep8ignore
-let g:autopep8_max_line_length = s:textwidth
-let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options
-let g:vim_isort_config_overrides = {
-  \ 'line_length': s:textwidth,
-  \ 'multi_line_output': 3,
-  \ 'include_trailing_comma': 'true',
-  \ 'force_grid_wrap': 0
-  \ }
-
-" Shellcheck ignore list
-" * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
-" * Allow sourcing from files (SC1090, SC1091)
-" * Allow building arrays from unquoted result of command (SC2206, SC2207)
-" * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
-" * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
-" * Allow 'which' instead of 'command -v' (SC2230)
-" * Allow unquoted variables in for loop (SC2231)
-" * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
-" * Allow looping through single strings (SC2043)
-" * Allow assigning commands to variables (SC2209)
-" * Allow unquoted glob pattern assignments (SC2125)
-" * Allow defining aliases with .bashrc variables (SC2139)
-let g:ale_sh_shellcheck_options =
-  \ '-e SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
-let g:syntastic_sh_shellcheck_args = g:ale_sh_shellcheck_options
+" Undo tree settings
+if Active('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
+  noremap <Leader>u :UndotreeToggle<CR>
+  if has('persistent_undo')
+    let &undodir=$HOME . '/.undodir'
+    set undofile
+  endif
+endif
 
 " Asynchronous linting engine
 if Active('ale')
@@ -1437,6 +1337,44 @@ if Active('ale')
   let g:ale_lint_on_insert_leave = 1
   let g:ale_lint_on_filetype_changed = 1
   let g:ale_lint_on_enter = 0
+
+  " Flake8 ignore list (also apply to autopep8):
+  " * Allow line break before binary operator (W503)
+  " * Allow imports after statements, important for jupytext (E402)
+  " * Allow multiple spaces before operators for alignment (E221)
+  " * Allow multiple spaces after commas for alignment (E221)
+  " * Allow assigning lambda expressions instead of def (E731)
+  " * Permit 'l' and 'I' variable names (E741)
+  let s:flake8_ignore_list = ['W503', 'E402', 'E221', 'E241', 'E731', 'E741']
+  let g:ale_python_flake8_options =  '--max-line-length=' . s:textwidth . ' --ignore=' . join(s:flake8_ignore_list, ',')
+  let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options
+  let g:vim_isort_config_overrides = {
+    \ 'line_length': s:textwidth,
+    \ 'multi_line_output': 3,
+    \ 'include_trailing_comma': 'true',
+    \ 'force_grid_wrap': 0
+    \ }
+  let g:autopep8_ignore = join(s:flake8_ignore_list, ',')
+  let g:autopep8_max_line_length = s:textwidth
+
+  " Shellcheck ignore list
+  " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
+  " * Allow sourcing from files (SC1090, SC1091)
+  " * Allow building arrays from unquoted result of command (SC2206, SC2207)
+  " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
+  " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
+  " * Allow 'which' instead of 'command -v' (SC2230)
+  " * Allow unquoted variables in for loop (SC2231)
+  " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
+  " * Allow looping through single strings (SC2043)
+  " * Allow assigning commands to variables (SC2209)
+  " * Allow unquoted glob pattern assignments (SC2125)
+  " * Allow defining aliases with .bashrc variables (SC2139)
+  let g:shellcheck_ignore_list = [
+    \ 'SC1090', 'SC1091', 'SC2002', 'SC2068', 'SC2086', 'SC2206', 'SC2207',
+    \ 'SC2230', 'SC2231', 'SC2016', 'SC2041', 'SC2043', 'SC2209', 'SC2125', 'SC2139',
+    \ ]
+  let g:ale_sh_shellcheck_options = '-e ' . join(g:shellcheck_ignore_list, ',')
 endif
 
 " Easy-align
@@ -1490,6 +1428,66 @@ endif
 " " ahoasdfjioa
 " asdfasdas " hello
 " asdfjioadijoadjofiadoisf " world
+
+" The howmuch.vim plugin. Pneumonic for mapping is the straight line at bottom of
+" sum table. Mapping options are:
+" AutoCalcReplace
+" AutoCalcReplaceWithSum
+" AutoCalcAppend
+" AutoCalcAppendWithEq
+" AutoCalcAppendWithSum
+" AutoCalcAppendWithEqAndSum
+if Active('HowMuch')
+  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
+  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
+endif
+
+" Speed dating, support date increments
+if Active('vim-speeddating')
+  map + <Plug>SpeedDatingUp
+  map - <Plug>SpeedDatingDown
+  noremap <Plug>SpeedDatingFallbackUp   <C-a>
+  noremap <Plug>SpeedDatingFallbackDown <C-x>
+else
+  noremap + <C-a>
+  noremap - <C-x>
+endif
+
+" Codi (mathematical notepad)
+if Active('codi.vim')
+  " See issue: https://github.com/metakirby5/codi.vim/issues/90
+  " We want TextChanged and InsertLeave, not TextChangedI which is enabled
+  " when setting g:codi#autocmd to 'TextChanged'
+  augroup math
+    au!
+    au User CodiEnterPre call utils#codi_setup(1)
+    au User CodiLeavePost call utils#codi_setup(0)
+  augroup END
+  command! -nargs=? CodiNew call utils#codi_new(<q-args>)
+  nnoremap <silent> <Leader>= :CodiNew<CR>
+  nnoremap <silent> <Leader>+ :Codi!!<CR>
+
+  " Interpreter without history, various settings
+  " See: https://github.com/metakirby5/codi.vim/issues/85
+  " Note: Codi is broken for julia: https://github.com/metakirby5/codi.vim/issues/120
+  let g:codi#autocmd = 'None'
+  let g:codi#rightalign = 0
+  let g:codi#rightsplit = 0
+  let g:codi#width = 20
+  let g:codi#log = ''  " enable when debugging
+  let g:codi#sync = 0  " disable async
+  let g:codi#interpreters = {
+    \ 'python': {
+        \ 'bin': '/usr/bin/python',
+        \ 'prompt': '^\(>>>\|\.\.\.\) ',
+        \ 'quitcmd': 'exit()',
+        \ },
+    \ 'julia': {
+        \ 'bin': $HOME . '/miniconda3/bin/python',
+        \ 'prompt': '^\(julia>\|      \)',
+        \ },
+    \ }
+endif
 
 " Session saving
 " Obsession .vimsession triggers update on BufEnter and VimLeavePre
@@ -1577,8 +1575,8 @@ function! s:keyword_setup()
   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
   hi link customURL Underlined
   " Markdown headers
-  " syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
-  " hi link markdownHeader Special
+  syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
+  hi link markdownHeader Special
 endfunction
 
 " Filetype specific commands
@@ -1637,6 +1635,14 @@ highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
 
 " Transparent dummy group used to add @Nospell
 highlight Dummy ctermbg=NONE ctermfg=NONE
+
+" Error highlighting with Syntastic
+highlight SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
+highlight SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
+
+" Error highlighting with ALE
+highlight ALEErrorLine ctermfg=White ctermbg=Red cterm=None
+highlight ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
 
 " Helper commands defined in utils
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
