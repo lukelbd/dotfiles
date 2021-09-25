@@ -37,7 +37,8 @@ let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 " \ 'E': textools#ensure_math("\\times 10^{\1Exponent: \1}"),
 call shortcuts#add_snippets({
   \ "\<CR>": " \\textCR\r",
-  \ "'": textools#ensure_math('\mathrm{D}'),
+  \ "'": textools#ensure_math('\mathrm{d}'),
+  \ '"': textools#ensure_math('\mathrm{D}'),
   \ '*': '\item',
   \ '+': textools#ensure_math('\sum'),
   \ ',': textools#ensure_math('\Leftarrow'),
@@ -57,7 +58,6 @@ call shortcuts#add_snippets({
   \ '8': '\LARGE',
   \ '9': textools#label_select(),
   \ ';': textools#ensure_math('\partial'),
-  \ ':': textools#ensure_math('\mathrm{d}'),
   \ '<': textools#ensure_math('\Longleftarrow'),
   \ '=': textools#ensure_math('\equiv'),
   \ '>': textools#ensure_math('\Longrightarrow'),
