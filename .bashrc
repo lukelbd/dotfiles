@@ -195,14 +195,12 @@ export PATH=$HOME/ncparallel:$PATH  # custom repo
 # TODO: Modify PYTHONPATH while working on various projects
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
+unset MPLBACKEND  # in case set
 export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 export PYTHONPATH=$HOME/drycore:$HOME/timescales  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
-export MPLBACKEND=module://matplotlib_iterm2.backend_iterm2
-# export MPLBACKEND=module://itermplot
-# export ITERMPLOT_PLOTFILE=plot.png  # use PNG instead of PDF so pdi is controllable! see: https://github.com/daleroberts/itermplot/issues/27
 
 # Adding additional flags for building C++ stuff
 # https://github.com/matplotlib/matplotlib/issues/13609
@@ -728,21 +726,26 @@ alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
 # Better qstat command
 alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
 
-# Differencing stuff, similar git commands stuff
-# First use git as the difference engine, disable color
+# Differencing with git as the difference engine. Need --textconv to read from textconv
+# See: https://stackoverflow.com/a/52201926/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
 gdiff() {
   [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
-  git diff --no-index --color=always "$1" "$2"
-  # git --no-pager diff --no-index "$1" "$2"
-  # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
-  #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
+  git diff --textconv --no-index --color=always "$1" "$2"
 }
 
-# Next use builtin diff command, *different* files in 2 directories
-# The last grep command is to highlight important parts
+# Differencing with builtin diff command, *identical* files in two directories
+idiff() {
+  [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
+  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+    --brief --strip-trailing-cr -r "$1" "$2" | \
+    grep identical | grep -E '(Only in.*:|Files | and | differ| identical)'
+}
+
+# Differencing based on builtin diff command, *different* files in 2 directories
 ddiff() {
   # Builtin method
+  # The last grep command is to highlight important parts
   # command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
   #   --exclude='*.git*' --exclude='*.svn*' \
   #   --strip-trailing-cr -r "$1" "$2" \
@@ -776,14 +779,6 @@ ddiff() {
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
     printf "%s" "$cat"
   done
-}
-
-# *Identical* files in two directories
-idiff() {
-  [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
-  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
-    --brief --strip-trailing-cr -r "$1" "$2" | \
-    grep identical | grep -E '(Only in.*:|Files | and | differ| identical)'
 }
 
 # Merge fileA and fileB into merge.{ext}
