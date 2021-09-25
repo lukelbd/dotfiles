@@ -340,13 +340,11 @@ if $tex2docx; then
   if ! type pandoc &>/dev/null; then
     echoerr "Warning: Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
   else
-    # flags=(-M cref=true --citeproc)
     # flags=(--citeproc --filter=pandoc-crossref)
-    # flags=(-M cref=true)
     # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
     flags=(-M cref=true --citeproc)
     flags=(-M cref=true --filter pandoc-xnos)
-    flags=(-M cref=true --filter pandoc-crossref --citeproc)
+    # flags=(-M cref=true --filter pandoc-crossref --citeproc)
     [[ " ${packages[*]} " =~ natbib ]] && flags+=(--natbib)
     [[ " ${packages[*]} " =~ biblatex ]] && flags+=(--biblatex)
     $bibliography && flags+=("${bibfiles[@]/#/--bibliography=}")
