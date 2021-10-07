@@ -25,6 +25,7 @@ import matplotlib as mpl
 import matplotlib.axes as maxes
 import matplotlib.cm as mcm
 import matplotlib.colors as mcolors
+import matplotlib.collections as mcollections
 import matplotlib.container as mcontainer
 import matplotlib.contour as mcontour
 import matplotlib.dates as mdates
