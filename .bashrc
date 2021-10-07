@@ -94,7 +94,6 @@ case "${HOSTNAME%%.*}" in
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
     export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
-    export PATH=$HOME/.iterm2:$PATH
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
@@ -185,11 +184,12 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
-export PATH=$HOME/go/bin:$PATH  # go
-export PATH=$HOME/node/bin:$PATH  # javascript
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
-export PATH=$HOME/bin:$PATH  # custom scripts
+export PATH=$HOME/.iterm2:$PATH  # iterm utilities
+export PATH=$HOME/node/bin:$PATH  # javascript
+export PATH=$HOME/go/bin:$PATH  # go
 export PATH=$HOME/ncparallel:$PATH  # custom repo
+export PATH=$HOME/bin:$PATH  # custom scripts
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
