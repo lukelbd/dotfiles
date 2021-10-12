@@ -20,10 +20,9 @@ import metpy
 from climopy import const, ureg, vreg
 from metpy import calc
 """
-lines = lines.strip().split('\n')
 
 # Update ipython
-c.InteractiveShellApp.exec_lines.extend(lines)
+c.InteractiveShellApp.exec_lines.append(lines)
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration

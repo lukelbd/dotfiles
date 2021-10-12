@@ -40,7 +40,7 @@ import numpy.ma as ma
 """
 
 # Update ipython
-c.InteractiveShellApp.exec_lines = lines.strip().split('\n')
+c.InteractiveShellApp.exec_lines.append(lines)
 c.InteractiveShellApp.matplotlib = None  # disable backend
 c.PlainTextFormatter.pprint = True  # always pretty print
 c.TerminalInteractiveShell.highlighting_style = 'monokai'  # highlighting

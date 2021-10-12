@@ -18,8 +18,6 @@ os.environ.setdefault('MPLBACKEND', 'module://matplotlib_iterm2.backend_iterm2')
 import proplot as pplt
 pplt.rc['figure.dpi'] = 200 if 'iterm' in os.environ['MPLBACKEND'] else 100
 # Import modules for development
-import cartopy.feature as cfeature
-import cartopy.crs as ccrs
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.axes as maxes
@@ -32,6 +30,7 @@ import matplotlib.dates as mdates
 import matplotlib.figure as mfigure
 import matplotlib.font_manager as mfonts
 import matplotlib.gridspec as mgridspec
+import matplotlib.image as mimage
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import matplotlib.path as mpath
@@ -41,13 +40,20 @@ import matplotlib.scale as mscale
 import matplotlib.text as mtext
 import matplotlib.ticker as mticker
 import matplotlib.transforms as mtransforms
-from cartopy.mpl import gridliner
-from cartopy.mpl import geoaxes
+try:
+    import cartopy
+except ImportError:
+    pass
+else:
+    import cartopy.feature as cfeature
+    import cartopy.crs as ccrs
+    from cartopy.mpl import gridliner
+    from cartopy.mpl import geoaxes
 """
-lines = lines.strip().split('\n')
 
 # Update ipython
-c.InteractiveShellApp.exec_lines.extend(lines)
+c.InteractiveShellApp.exec_lines.append(lines)
+# c.InteractiveShellApp.exec_lines.extend(lines)
 # c.TerminalIPythonApp.pylab = 'iterm'  # use MPLBACKEND to avoid error message
 # c.TerminalIPythonApp.pylab = 'imgcat'  # use MPLBACKEND to avoid error message
 
