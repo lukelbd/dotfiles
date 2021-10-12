@@ -188,19 +188,19 @@ export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities
 export PATH=$HOME/node/bin:$PATH  # javascript
 export PATH=$HOME/go/bin:$PATH  # go
-export PATH=$HOME/ncparallel:$PATH  # custom repo
 export PATH=$HOME/bin:$PATH  # custom scripts
+export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
 unset MPLBACKEND  # in case set
-export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
-export PYTHONPATH=$HOME/drycore:$HOME/timescales  # just use pip install -e . for cloned projects
+export MPLCONFIGDIR=$HOME/.matplotlib
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-export MPLCONFIGDIR=$HOME/.matplotlib
+export PYTHONPATH=$HOME/cmip:$HOME/drycore:$HOME/experiments:$HOME/timescales  # just use pip install -e . for cloned projects
+export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 
 # Adding additional flags for building C++ stuff
 # https://github.com/matplotlib/matplotlib/issues/13609
