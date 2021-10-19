@@ -1,4 +1,6 @@
 # See: https://github.com/kynan/nbstripout
+*.pdf diff=pdf
+*.zip diff=zip
 # *.ipynb filter=nbstripout
 # *.ipynb diff=ipynb
 

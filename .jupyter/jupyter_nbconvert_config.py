@@ -14,5 +14,5 @@ c.PDFExporter.latex_command = [
 
 # Previously tried to use hidecode.tplx template but this is obsolete
 # See: https://stackoverflow.com/a/46251213/4970632
-# c.TemplateExporter.template_path = ['.', os.path.expanduser('~/.jupyter')]
-# c.LatexExporter.template_path = ['.', os.path.expanduser('~/.jupyter')]
+# c.LatexExporter.template_paths = ['.', os.path.expanduser('~/.jupyter')]
+# c.TemplateExporter.template_paths = ['.', os.path.expanduser('~/.jupyter')]

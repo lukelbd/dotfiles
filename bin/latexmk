@@ -138,20 +138,20 @@ nocomments() {  # ignore comments. TODO: Maybe awk is better?
   grep -o '^[^%]*' "$1"
 }
 packages() {
-  local file string
+  local sub file
   for file in "$@"; do
     nocomments "$file" | grep -E '\\RequirePackage|\\usepackage|\\bibliographystyle' | $sedcmd 's/\[[^][]*\]//g;s/AtEndOfClass{//g;/#\|\[\|\]\|newcommand/d' | inbraces
-    for string in '' font color; do
-      nocomments "$file" | grep '\\use'$string'theme' | inbraces | sed 's/^/beamer'$string'theme/'
+    for sub in '' font color; do
+      nocomments "$file" | grep '\\use'$sub'theme' | inbraces | sed 's/^/beamer'$sub'theme/'
     done
   done
 }
 texfind() {  # find files with kpsewhich and copy from folders it not present
-  local name names file files
+  local ext name names file files
   names=("$@")
   [ "${#names[@]}" -eq 0 ] && return
   # Detect files and add to lists if not already present
-  read -r -a files < <(kpsewhich "${names[@]/%/.sty}" "${names[@]/%/.bst}" | xargs)
+  files=($(kpsewhich "${names[@]/%/.sty}" "${names[@]/%/.bst}"))
   for file in "${files[@]}"; do
     if [[ " ${files[*]} " =~ " ./${file##*/} " ]]; then
       [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
@@ -176,33 +176,39 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
   done
 }
 
-# Change from Skim to Adobe if GIF or animation is in file
-nocomments "$filename" | grep '\\animategraphics' &>/dev/null \
-  && viewer='Adobe Acrobat Reader DC' || viewer='Skim'
+# Get subfiles
+filenames=("$filename")
+filenames+=($(nocomments "$filename" | grep -E '\\import\b|\\include\b|\\input\b' | inbraces))
+echo "Checking files: ${filenames[*]}"
 
-# Choose xelatex for tex files that load fontspec, or use modules that load fontspec
-nocomments "$filename" | grep -E 'fontspec|xltxtra' &>/dev/null \
-  && latex=xelatex
+for file in "${filenames[@]}"; do
+  # Run 'nocomments' only once for speed
+  nocomments=$(nocomments "$file")
+  # Change from Skim to Adobe if GIF or animation is in file
+  echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null \
+    && viewer='Adobe Acrobat Reader DC' || viewer='Skim'
+  # Choose xelatex for tex files that load fontspec or use modules that load fontspec
+  echo "$nocomments" | grep -E '\\fontspec\b|\\xltxtra\b' &>/dev/null \
+    && latex=xelatex
+  # Choose Lua if beamer present for improved speed (required for beamerposter)
+  echo "$nocomments" | grep '\\documentclass\b.*{beamer}' &>/dev/null \
+    && latex=lualatex
+  # Get class file
+  classes+=($(echo "$nocomments" | grep '\\documentclass\b' | inbraces))
+  # Get top-level style and theme files
+  packages+=($(packages "$filename" | sort | uniq))  # first level
+  texfind "${packages[@]}"
+  # Get second-level style and theme files
+  packages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level
+  texfind "${packages[@]}"
+  # Get .bib file(s) or resource(s) for pandoc
+  bibnames+=($(echo "$nocomments" | grep -E '\\bibliography\b|\\nobibliography\b|\\addbibresource\b' | inbraces))
+done
 
-# Choose Lua if beamer present, for speed (required for beamerposter)
-nocomments "$filename" | grep 'documentclass.*{beamer}' &>/dev/null \
-  && latex=lualatex
-
-# Get class file
-read -r -a classes < <(nocomments "$filename" | grep '\\documentclass' | inbraces)
-[ ${#classes[@]} -eq 0 ] && raise "Unknown document class."
-[ ${#classes[@]} -gt 1 ] && raise "Ambiguous document class: '${classes[*]}'."
-
-# Get top-level and second-level style and theme files
-read -r -a packages < <(packages "$filename" | sort | uniq | xargs)
-texfind "${packages[@]}"
-read -r -a packages < <(packages "${localfiles[@]}" | sort | uniq | xargs)
-texfind "${packages[@]}"
+# Error and info messages
+[ ${#classes[@]} -eq 0 ] && echo "Warning: Unknown document class."
 [ ${#texfiles[@]} -gt 0 ] && echo "Files found in TeX distro: ${texfiles[*]##*/}"
 [ ${#localfiles[@]} -gt 0 ] && echo "Files found locally: ${localfiles[*]##*/}"
-
-# Get .bib file(s) or resource(s) for pandoc
-read -r -a bibnames < <(nocomments "$filename" | grep -E '\\bibliography|\\nobibliography|\\addbibresource' | inbraces)
 [ "${#bibnames[@]}" -eq 0 ] && bibliography=false || bibliography=true
 if $bibliography; then
   bibnames=("${bibnames[@]%.bib}")  # remove extension, if present
@@ -286,8 +292,8 @@ fi
 # Difference-LaTeX file, with track changes
 if $texdiff; then
   # Get files that come *before* current one in alphanumeric sorting
-  prefix=$(sed -E 's/_([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}\.tex//g' <<< "$filename")
-  prevnames=("$prefix"*-[0-9][0-9].tex)  # sorted manuscript files (glob is sorted by default)
+  prefix=$(sed -E 's/[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}\.tex//g' <<< "$filename")
+  prevnames=("$prefix"*[_-][0-9][0-9].tex)  # sorted manuscript files (glob is sorted by default)
   for index in "${!prevnames[@]}"; do  # expands to array of indices
     [ "${prevnames[index]}" == "$filename" ] && break
   done
@@ -334,13 +340,11 @@ if $tex2docx; then
   if ! type pandoc &>/dev/null; then
     echoerr "Warning: Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
   else
-    # flags=(-M cref=true --citeproc)
     # flags=(--citeproc --filter=pandoc-crossref)
-    # flags=(-M cref=true)
     # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
     flags=(-M cref=true --citeproc)
     flags=(-M cref=true --filter pandoc-xnos)
-    flags=(-M cref=true --filter pandoc-crossref --citeproc)
+    # flags=(-M cref=true --filter pandoc-crossref --citeproc)
     [[ " ${packages[*]} " =~ natbib ]] && flags+=(--natbib)
     [[ " ${packages[*]} " =~ biblatex ]] && flags+=(--biblatex)
     $bibliography && flags+=("${bibfiles[@]/#/--bibliography=}")

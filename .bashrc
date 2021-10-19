@@ -24,7 +24,6 @@
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
-clear  # first clear screen
 
 # Prompt
 # Keep things minimal, just make prompt bold so more identifiable
@@ -95,7 +94,6 @@ case "${HOSTNAME%%.*}" in
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
     export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
-    export PATH=$HOME/.iterm2:$PATH
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
@@ -186,22 +184,23 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
-export PATH=$HOME/go/bin:$PATH  # go
-export PATH=$HOME/node/bin:$PATH  # javascript
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
-export PATH=$HOME/bin:$PATH  # custom scripts
+export PATH=$HOME/.iterm2:$PATH  # iterm utilities
+export PATH=$HOME/node/bin:$PATH  # javascript
+export PATH=$HOME/go/bin:$PATH  # go
 export PATH=$HOME/ncparallel:$PATH  # custom repo
+export PATH=$HOME/bin:$PATH  # custom scripts
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
+# NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
+unset MPLBACKEND  # in case set
+export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 export PYTHONPATH=$HOME/drycore:$HOME/timescales  # just use pip install -e . for cloned projects
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib
-export MPLBACKEND=module://matplotlib_iterm2.backend_iterm2
-# export MPLBACKEND=module://itermplot
-# export ITERMPLOT_PLOTFILE=plot.png  # use PNG instead of PDF so pdi is controllable! see: https://github.com/daleroberts/itermplot/issues/27
 
 # Adding additional flags for building C++ stuff
 # https://github.com/matplotlib/matplotlib/issues/13609
@@ -727,21 +726,26 @@ alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
 # Better qstat command
 alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
 
-# Differencing stuff, similar git commands stuff
-# First use git as the difference engine, disable color
+# Differencing with git as the difference engine. Need --textconv to read from textconv
+# See: https://stackoverflow.com/a/52201926/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
 gdiff() {
   [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
-  git diff --no-index --color=always "$1" "$2"
-  # git --no-pager diff --no-index "$1" "$2"
-  # git --no-pager diff --no-index --no-color "$1" "$2" 2>&1 | sed '/^diff --git/d;/^index/d' \
-  #   | grep -E '(files|differ|$|@@.*|^\+*|^-*)' # add to these
+  git diff --textconv --no-index --color=always "$1" "$2"
 }
 
-# Next use builtin diff command, *different* files in 2 directories
-# The last grep command is to highlight important parts
+# Differencing with builtin diff command, *identical* files in two directories
+idiff() {
+  [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
+  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+    --brief --strip-trailing-cr -r "$1" "$2" | \
+    grep identical | grep -E '(Only in.*:|Files | and | differ| identical)'
+}
+
+# Differencing based on builtin diff command, *different* files in 2 directories
 ddiff() {
   # Builtin method
+  # The last grep command is to highlight important parts
   # command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
   #   --exclude='*.git*' --exclude='*.svn*' \
   #   --strip-trailing-cr -r "$1" "$2" \
@@ -775,14 +779,6 @@ ddiff() {
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
     printf "%s" "$cat"
   done
-}
-
-# *Identical* files in two directories
-idiff() {
-  [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
-  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
-    --brief --strip-trailing-cr -r "$1" "$2" | \
-    grep identical | grep -E '(Only in.*:|Files | and | differ| identical)'
 }
 
 # Merge fileA and fileB into merge.{ext}
@@ -1771,9 +1767,10 @@ fi
 #-----------------------------------------------------------------------------#
 # Conda stuff
 # WARNING: Must come after shell integration or gets overwritten
-# WARNING: Making conda environments work with jupyter is complicated! Have to
-# remove stuff from ipykernel and install them manually.
+# WARNING: Making conda environments work with jupyter is complicated!
+# Have to remove stuff from ipykernel and install them manually.
 # See: https://stackoverflow.com/a/54985829/4970632
+# See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
 unset _conda
@@ -1783,11 +1780,8 @@ elif [ -d "$HOME/miniconda3" ]; then
   _conda=miniconda3
 fi
 if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
-  # For info on what's going on see: https://stackoverflow.com/a/48591320/4970632
-  # The first thing creates a bunch of environment variables and functions
-  # The second part calls the 'conda' function, which calls an activation function, which does the
-  # whole solving environment thing
   _echo_bashrc 'Enabling conda'
+  # List available packages
   avail() {
     local avail current search
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
@@ -1812,7 +1806,8 @@ if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
     if [ -f "$HOME/$_conda/etc/profile.d/conda.sh" ]; then
       source "$HOME/$_conda/etc/profile.d/conda.sh"
     else
-      export PATH="$HOME/$_conda/bin:$PATH"
+      export PATH=$HOME/$_conda/bin:$PATH
+      export PATH=$HOME/$_conda/condabin:$PATH
     fi
   fi
   unset __conda_setup
@@ -1902,10 +1897,18 @@ if $_macos; then # first the MacOS options
     || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
-  alias forecast="curl 'wttr.in/Fort Collins'"  # list weather information
 
   # Audio and video
-  alias artists='find ~/Music -mindepth 2 -type f -printf "%P\n" | cut -d/ -f1 | grep -v ^Media$ | uniq -c | sort -n'
+  forecast() {
+    curl 'wttr.in/Fort Collins'
+  }
+  artists() {
+    find ~/Music -mindepth 2 -type f -printf "%P\n" \
+      | cut -d/ -f1 \
+      | grep -v ^Media$ \
+      | uniq -c \
+      | sort -n
+  }
   artistfolder() {
     local base artist title
     for file in *.{m4a,mp3}; do

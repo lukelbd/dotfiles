@@ -122,6 +122,10 @@
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com
+[diff "pdf"]
+	textconv = pdfinfo
+[diff "zip"]
+	textconv = unzip -v
 [diff "ipynb"]
 	textconv = nbstripout -t
 [filter "nbstripout"]
