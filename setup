@@ -14,29 +14,30 @@ cd "$dotfiles" || {
   echo "Error: dotfiles repo should be cloned into \$HOME."
   exit 1
 }
-read -r -a files < <(git ls-tree --name-only master | xargs)
+read -r -a names < <(git ls-tree --name-only master | xargs)
 backup=$dotfiles/backup
 [ -d "$backup" ] || mkdir "$backup"
 
 # Move existing stuff to storage, then create symlinks
-for file in "${files[@]}"; do  # iterate through files
-  [[ " ${exclude[*]} " =~ " $file " ]] && continue
-  [ "$file" == ".gitignore.template" ] && dest=".gitignore"
-  dest=$HOME/$file
-  bakdest=$backup/$dest
-  echo "Creating symlink to '$file' in '$HOME'..."
+for name in "${names[@]}"; do  # iterate through files
+  [[ " ${exclude[*]} " =~ " $name " ]] && continue
+  file=$dotfiles/$name
+  [ "$name" == .gitignore.default ] && name=.gitgnore  # change destination name?
+  dest=$HOME/$name
+  bakdest=$backup/$name
+  echo "Creating symlink to '${file##*/}' in '$HOME'..."
   if [ -L "$dest" ]; then
     echo "Removing existing symlink..."
     rm "$dest"  # remove if symlink
   elif [ -r "$dest" ]; then
-    echo "Moving existing '$file' file to '$backup'..."
+    echo "Moving existing file '${file##*/}' to '$backup'..."
     if [ -e "$bakdest" ]; then
       echo "Warning: Removing existing backup..."
       rm -r "$bakdest"
     fi
     mv "$dest" "$backup/"  # copy if not
   fi
-  ln -s "$dotfiles/$file" "$dest"
+  ln -s "$file" "$dest"
 done
 
 # Create variety of symlinks in home directory
