@@ -579,13 +579,12 @@ function! s:no_buffer_map(map)
 endfunction
 " For popup windows
 " For location lists, <CR> jumps to location. Restore this behavior.
-function! utils#popup_setup(nofile) abort
+function! utils#popup_setup(nofile, noquit) abort
   " Quick settings
-  setlocal modifiable nolist nonumber norelativenumber nospell nocursorline
-  setlocal colorcolumn= statusline=%{''}
-  if a:nofile
-    setlocal buftype=nofile
-  endif
+  if a:nofile | setlocal buftype=nofile | endif
+  setlocal modifiable
+  setlocal nolist nospell nonumber norelativenumber
+  setlocal nocursorline colorcolumn= statusline=%{''}
   " Quick mappings
   if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
   if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
@@ -593,7 +592,8 @@ function! utils#popup_setup(nofile) abort
   if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
   if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
   if s:no_buffer_map('f') | nnoremap <buffer> <nowait> f <C-f> | endif
-  " Delete if only one left
+  " Quit if only one left
+  if a:noquit | return | endif
   if len(tabpagebuflist()) == 1 | quit | endif
   exe 'augroup popup_' . bufnr('%')
     au!

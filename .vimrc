@@ -402,20 +402,34 @@ nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * v:co
 nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
 " Enable quitting windows with simple 'q' press and disable line numbers
-" Note: Some popups require buftype==file for writing temporary files. Used trial and error.
-let s:popup_filetypes_file = ['__doc__', 'codi', 'fugitive', 'fugitiveblame', 'gitcommit', 'help', 'man', 'qf', 'tagbar', 'undotree']
-let s:popup_filetypes_nofile = ['diff', 'latexmk', 'vim-plug']
+" Note: Some popups require buftype==file for updating temporary files
+" shown in the window. Used trial and error to figure out which ones.
+let s:popup_filetypes = {
+\   'codi': [0, 0],
+\   'diff': [1, 0],
+\   'fugitive': [0, 0],
+\   'fugitiveblame': [0, 0],
+\   'gitcommit': [0, 1],
+\   'qf': [0, 0],
+\   'latexmk': [1, 0],
+\   'man': [0, 0],
+\   'help': [0, 0],
+\   'tagbar': [0, 0],
+\   'undotree': [0, 0],
+\   'vim-plug': [1, 0],
+\ }
 augroup popup_setup
   au!
   au BufEnter * let b:recording = 0
   au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
-  exe 'au FileType ' . join(s:popup_filetypes_file, ',') . ' call utils#popup_setup(0)'
-  exe 'au FileType ' . join(s:popup_filetypes_nofile, ',') . ' call utils#popup_setup(1)'
+  for [s:key, s:args] in items(s:popup_filetypes)
+    exe 'au FileType ' . s:key . ' call utils#popup_setup(' . join(s:args, ', ') . ')'
+  endfor
 augroup END
-let g:tagtools_filetypes_skip = s:popup_filetypes_file + s:popup_filetypes_nofile
-let g:tabline_filetypes_ignore = s:popup_filetypes_file + s:popup_filetypes_nofile
+let g:tagtools_filetypes_skip = keys(s:popup_filetypes)
+let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 
 " Window view and basic behavior
 augroup tab_toggle
