@@ -1494,13 +1494,10 @@ endif
 if Active('vim-obsession') "must manually preserve cursor position
   augroup session
     au!
-    au BufReadPost *
-      \ if line("'\"") > 0 && line("'\"") <= line("$") |
-      \ exe "normal! g`\"" |
-      \ endif
-    au VimEnter * Obsession .vimsession
+    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
+    au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
   augroup END
-  nnoremap <silent> <Leader>V :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
+  nnoremap <silent> <Leader>V :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session \| endif<CR>
 endif
 
 
