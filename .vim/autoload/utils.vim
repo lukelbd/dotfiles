@@ -136,8 +136,7 @@ function! utils#iter_colorschemes(reverse) abort
   let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 
-" Enable/disable autocomplete and jedi popups. Very useful on servers slowed to
-" a crawl by certain Slovenian postdocs.
+" Enable/disable autocomplete and jedi popups
 function! utils#popup_toggle(...) abort
   if a:0
     let toggle = a:1
@@ -550,11 +549,9 @@ function! utils#window_close() abort
 endfunction
 
 " Rename2.vim  -  Rename a buffer within Vim and on disk
-" Copyright July 2009 by Manni Heumann <vim at lxxi.org>
-" based on Rename.vim
+" Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
 " Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
-" Usage:
-" :Rename[!] {newname}
+" Usage: Rename[!] {newname}
 function! utils#rename_file(name, bang)
   let curfile = expand('%:p')
   let curfilepath = expand('%:p:h')
@@ -573,32 +570,25 @@ function! utils#rename_file(name, bang)
   endif
 endfunction
 
+" For popup windows
+" Optional arguments configure behavior
 function! s:no_buffer_map(map)
   let dict = maparg(a:map, 'n', v:false, v:true)
   return empty(dict) || !dict['buffer']
 endfunction
-" For popup windows
-" For location lists, <CR> jumps to location. Restore this behavior.
-function! utils#popup_setup(nofile, noquit) abort
-  " Quick settings
-  if a:nofile | setlocal buftype=nofile | endif
-  setlocal modifiable
-  setlocal nolist nospell nonumber norelativenumber
-  setlocal nocursorline colorcolumn= statusline=%{''}
-  " Quick mappings
-  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
+function! utils#popup_setup(filemode) abort
   if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
+  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
+  setlocal nonumber norelativenumber nocursorline colorcolumn=
+  if a:filemode == 0 | setlocal buftype=nofile | endif  " this has no file
+  if a:filemode == 2 | return | endif  " this is an editable file
+  setlocal nolist nospell statusline=%{''}
   if s:no_buffer_map('u') | nnoremap <buffer> u <C-u> | endif
   if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
   if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
   if s:no_buffer_map('f') | nnoremap <buffer> <nowait> f <C-f> | endif
-  " Quit if only one left
-  if a:noquit | return | endif
   if len(tabpagebuflist()) == 1 | quit | endif
-  exe 'augroup popup_' . bufnr('%')
-    au!
-    exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | quit | endif'
-  augroup END
+  exe 'augroup popup_' . bufnr('%') | au! | exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | quit | endif' | augroup END
 endfunction
 
 " For help windows

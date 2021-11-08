@@ -345,10 +345,7 @@ nmap <Leader>Z <Plug>AltExecute2
 " SmartWrite is from tabline plugin
 nnoremap <silent> <C-s> :SmartWrite<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
-nnoremap <silent> <C-q> :call utils#vim_close()<CR>
-" nnoremap <silent> <C-w> :call utils#tab_close()<CR>
-" nnoremap <silent> <C-a> :call utils#vim_close()<CR>
-" nnoremap <silent> <C-q> :call utils#tab_close()<CR>
+nnoremap <silent> <C-q> :quitall<CR>
 
 " Renaming things
 command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', '<bang>')
@@ -401,22 +398,23 @@ nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5 * v:cou
 nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
 nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
-" Enable quitting windows with simple 'q' press and disable line numbers
-" Note: Some popups require buftype==file for updating temporary files
-" shown in the window. Used trial and error to figure out which ones.
+" Popup window style adjustments with less-like shortcuts
+" Note: Arguments indicate the 'file mode' where 0 means this is so-not-a-file that
+" we can set buftype=nofile 1 means this is a read-only file and 2 means this is
+" an editable file to be handled by the user.
 let s:popup_filetypes = {
-\   'codi': [0, 0],
-\   'diff': [1, 0],
-\   'fugitive': [0, 0],
-\   'fugitiveblame': [0, 0],
-\   'gitcommit': [0, 1],
-\   'qf': [0, 0],
-\   'latexmk': [1, 0],
-\   'man': [0, 0],
-\   'help': [0, 0],
-\   'tagbar': [0, 0],
-\   'undotree': [0, 0],
-\   'vim-plug': [1, 0],
+\   'codi': 1,
+\   'diff': 0,
+\   'fugitive': 1,
+\   'fugitiveblame': 1,
+\   'gitcommit': 2,
+\   'qf': 1,
+\   'latexmk': 0,
+\   'man': 1,
+\   'help': 1,
+\   'tagbar': 1,
+\   'undotree': 1,
+\   'vim-plug': 0,
 \ }
 augroup popup_setup
   au!
@@ -424,18 +422,19 @@ augroup popup_setup
   au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
   au CmdwinLeave * setlocal laststatus=2
-  for [s:key, s:args] in items(s:popup_filetypes)
-    exe 'au FileType ' . s:key . ' call utils#popup_setup(' . join(s:args, ', ') . ')'
+  for [s:key, s:val] in items(s:popup_filetypes)
+    exe 'au FileType ' . s:key . ' call utils#popup_setup(' . s:val . ')'
   endfor
 augroup END
 let g:tagtools_filetypes_skip = keys(s:popup_filetypes)
 let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 
-" Window view and basic behavior
+" Other adjustments for particular filetypes. Includes commands for 'toggling'
+" character literal tabs, conceal chars, and autocompletion and syntax checking.
 augroup tab_toggle
   au!
-  au FileType xml,make,text,gitconfig TabToggle 1
   au FileType tex setlocal nolist nocursorline colorcolumn=
+  au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
 command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
@@ -1144,8 +1143,8 @@ endif
 if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   let g:scrollwrapped_wrap_filetypes = []
   nnoremap <silent> <Leader>w :WrapToggle<CR>
-  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
-  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
+  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
+  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   vnoremap <silent> <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
   vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
 endif
