@@ -342,8 +342,7 @@ nmap <Leader>z <Plug>AltExecute1
 nmap <Leader>Z <Plug>AltExecute2
 
 " Save and quit, also test whether the :q action closed the entire tab
-" SmartWrite is from tabline plugin
-nnoremap <silent> <C-s> :SmartWrite<CR>
+nnoremap <silent> <C-s> :call tabline#write()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-q> :call utils#vim_close()<CR>
 " nnoremap <silent> <C-w> :call utils#tab_close()<CR>

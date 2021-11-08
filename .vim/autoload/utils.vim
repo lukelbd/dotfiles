@@ -375,7 +375,7 @@ function! utils#autosave_toggle(...) abort
     let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
     exe 'augroup autosave_' . bufnr('%')
       au!
-      exe 'au ' . cmds . ' <buffer> silent SmartWrite'
+      exe 'au ' . cmds . ' <buffer> silent call tabline#write()'
     augroup END
     echom 'Autosave enabled.'
     let b:autosave_on = 1
