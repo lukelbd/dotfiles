@@ -145,7 +145,6 @@ EOTs
 equatorward
 equilibria
 ERI
-eri_adjusted_010
 error
 ERSST
 ERSSTv4
@@ -247,7 +246,6 @@ levelwise
 Lewy
 LH
 LHS
-Lindgren
 linearization
 linearize
 linearized
@@ -372,7 +370,6 @@ SVD
 Sverdrup
 T42
 tackled
-TDAMP
 teleconnection
 teleconnections
 TEM
@@ -391,7 +388,6 @@ TOA
 topog
 tradeoff
 tradewind
-tranposrt
 tropopause
 tropopauses
 underpredict
@@ -406,8 +402,6 @@ upslope
 upwelling
 upwelling
 Vallis
-varaibility
-vert
 volcanism
 vorticities
 vorticity
@@ -455,11 +449,6 @@ CMIP
 TODO
 EBM
 Eliassan
-#uiltin
-#uiltin
-#oldlevelstart
-#oldlevelstart
-#oldlevelstart
 as
 larger
 subplots
