@@ -51,6 +51,7 @@ set foldnestmax=10  " avoids weird things
 set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
 set history=100  " search history
 set hlsearch incsearch  " show match as typed so far, and highlight as you go
+set iminsert=0  " disable language maps (used for caps lock)
 set lazyredraw
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
@@ -578,7 +579,6 @@ for s:c in range(char2nr('A'), char2nr('Z'))
   exe 'lnoremap ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
   exe 'lnoremap ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
 endfor
-set iminsert=0
 augroup caps_lock
   au!
   au InsertLeave * setlocal iminsert=0
@@ -1559,8 +1559,6 @@ augroup override_syntax
   au!
   au Syntax * call s:keyword_setup()
   au BufRead * set conceallevel=2 concealcursor=
-  au InsertEnter * highlight StatusLine ctermbg=Black ctermbg=White ctermfg=Black cterm=NONE
-  au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
 augroup END
 function! s:keyword_setup()
   " Warnings, errors, and shebangs
@@ -1605,7 +1603,6 @@ highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 " highlight Comment    ctermfg=Gray cterm=NONE
 highlight LineNR     cterm=NONE    ctermbg=NONE  ctermfg=Black
 highlight Comment    ctermfg=Black cterm=NONE
-highlight StatusLine ctermbg=Black ctermfg=White cterm=NONE
 
 " Special characters
 highlight NonText    ctermfg=Black cterm=NONE
