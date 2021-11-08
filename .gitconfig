@@ -102,6 +102,7 @@
 	excludesfile = ~/.gitignore
 	mergeoptions = --no-edit
 	ignorecase = false
+	editor = vi
 [interactive]
 	singleKey = true
 [merge]
