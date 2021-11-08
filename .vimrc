@@ -1675,5 +1675,5 @@ if $HOSTNAME !~# 'cheyenne'
   WipeReg
 endif
 doautocmd User BufferOverrides  " trigger buffer-local overrides for this file
-noh  " turn off highlighting at startup
+nohlsearch  " turn off highlighting at startup
 redraw!  " weird issue sometimes where statusbar disappears
