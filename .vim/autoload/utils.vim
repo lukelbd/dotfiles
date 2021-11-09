@@ -137,15 +137,15 @@ function! utils#iter_colorschemes(reverse) abort
 endfunction
 
 " Enable/disable autocomplete and jedi popups
-function! utils#popup_toggle(...) abort
+function! utils#plugin_toggle(...) abort
   if a:0
     let toggle = a:1
-  elseif exists('g:popup_toggle')
-    let toggle = 1 - g:popup_toggle
+  elseif exists('g:plugin_toggle')
+    let toggle = 1 - g:plugin_toggle
   else
     let toggle = 1
   endif
-  let g:popup_toggle = toggle
+  let g:plugin_toggle = toggle
   if exists('*deoplete#custom#option')
     call deoplete#custom#option('auto_complete', toggle ? v:true : v:false)
   endif
@@ -602,13 +602,8 @@ endfunction
 
 " For command windows, make sure local maps work
 function! utils#cmdwin_setup() abort
-  silent! unmap <CR>
-  silent! unmap <C-c>
-  nnoremap <buffer> <silent> q :quit<CR>
-  nnoremap <buffer> <Plug>Execute <C-c><CR>
-  inoremap <buffer> <Plug>Execute <C-c><CR>
   inoremap <buffer> <expr> <CR> ""
-  setlocal nonumber norelativenumber nolist laststatus=0
+  nnoremap <buffer> <Plug>Execute <C-c><CR>
 endfunction
 
 " Miscellaneous popup windows
