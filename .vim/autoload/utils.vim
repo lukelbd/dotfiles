@@ -603,6 +603,7 @@ endfunction
 " For command windows, make sure local maps work
 function! utils#cmdwin_setup() abort
   inoremap <buffer> <expr> <CR> ""
+  nnoremap <buffer> <CR> <C-c><CR>
   nnoremap <buffer> <Plug>Execute <C-c><CR>
 endfunction
 
