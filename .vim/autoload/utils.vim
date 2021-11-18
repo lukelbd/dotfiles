@@ -571,17 +571,18 @@ function! utils#rename_file(name, bang)
 endfunction
 
 " For popup windows
-" Optional arguments configure behavior
+" File mode can be 0 (no file) 1 (simple file) or 2 (editable file)
 function! s:no_buffer_map(map)
   let dict = maparg(a:map, 'n', v:false, v:true)
   return empty(dict) || !dict['buffer']
 endfunction
-function! utils#popup_setup(filemode) abort
+function! utils#popup_setup(...) abort
+  let filemode = a:0 ? a:1 : 1
   if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
   if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
   setlocal nonumber norelativenumber nocursorline colorcolumn=
-  if a:filemode == 0 | setlocal buftype=nofile | endif  " this has no file
-  if a:filemode == 2 | return | endif  " this is an editable file
+  if filemode == 0 | setlocal buftype=nofile | endif  " this has no file
+  if filemode == 2 | return | endif  " this is an editable file
   setlocal nolist nospell statusline=%{''}
   if s:no_buffer_map('u') | nnoremap <buffer> u <C-u> | endif
   if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
@@ -598,6 +599,7 @@ function! utils#help_setup() abort
   nnoremap <buffer> <CR> <C-]>
   nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+  silent call utils#popup_setup()
 endfunction
 
 " For command windows, make sure local maps work
@@ -605,6 +607,21 @@ function! utils#cmdwin_setup() abort
   inoremap <buffer> <expr> <CR> ""
   nnoremap <buffer> <CR> <C-c><CR>
   nnoremap <buffer> <Plug>Execute <C-c><CR>
+  silent call utils#popup_setup()
+endfunction
+
+" Popup windows showing ftplugin files, syntax files, color display
+function! utils#show_ftplugin() abort
+  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
+  silent call utils#popup_setup()
+endfunction
+function! utils#show_syntax() abort
+  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
+  silent call utils#popup_setup()
+endfunction
+function! utils#color_test() abort
+  source $VIMRUNTIME/syntax/colortest.vim
+  silent call utils#popup_setup()
 endfunction
 
 " Miscellaneous popup windows
@@ -627,22 +644,6 @@ function! utils#current_syntax(name) abort
   else
     exe 'verb syntax list ' . synIDattr(synID(line('.'), col('.'), 0), 'name')
   endif
-endfunction
-
-" Popup windows with default ftplugin and syntax files
-function! utils#show_ftplugin() abort
-  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
-  silent call utils#popup_setup(1)
-endfunction
-function! utils#show_syntax() abort
-  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
-  silent call utils#popup_setup(1)
-endfunction
-
-" Popup window with color display
-function! utils#color_test() abort
-  source $VIMRUNTIME/syntax/colortest.vim
-  silent call utils#popup_setup(1)
 endfunction
 
 " Cyclic next error in location list

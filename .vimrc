@@ -411,7 +411,6 @@ let s:popup_filetypes = {
 \   'qf': 1,
 \   'latexmk': 0,
 \   'man': 1,
-\   'help': 1,
 \   'tagbar': 1,
 \   'undotree': 1,
 \   'vim-plug': 0,
@@ -419,10 +418,9 @@ let s:popup_filetypes = {
 augroup popup_setup
   au!
   au FileType help call utils#help_setup()
-  au CmdwinEnter * call utils#popup_setup(1)
-  au CmdWinEnter * call utils#cmdwin_setup()
-  if exists('#TerminalWinOpen')
-    au TerminalWinOpen * call utils#popup_setup(1)
+  au CmdwinEnter * call utils#cmdwin_setup()
+  if exists('##TerminalWinOpen')
+    au TerminalWinOpen * call utils#popup_setup()
   endif
   for [s:key, s:val] in items(s:popup_filetypes)
     exe 'au FileType ' . s:key . ' call utils#popup_setup(' . s:val . ')'
@@ -1656,11 +1654,11 @@ highlight ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
 
 " Helper commands defined in utils
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
-command! PluginFile call utils#show_ftplugin()
+command! FileFile call utils#show_ftplugin()
 command! SyntaxFile call utils#show_syntax()
 command! SyntaxGroup call utils#current_group()
 command! ColorTest call utils#color_test()
-command! ColorGroups vert help group-name
+command! ColorGroup vert help group-name
 
 
 "-----------------------------------------------------------------------------"
