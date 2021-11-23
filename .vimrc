@@ -411,17 +411,17 @@ let s:popup_filetypes = {
 \   'qf': 1,
 \   'latexmk': 0,
 \   'man': 1,
-\   'help': 1,
 \   'tagbar': 1,
 \   'undotree': 1,
 \   'vim-plug': 0,
 \ }
 augroup popup_setup
   au!
-  au BufEnter * let b:recording = 0
   au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
-  au CmdwinLeave * setlocal laststatus=2
+  if exists('##TerminalWinOpen')
+    au TerminalWinOpen * call utils#popup_setup()
+  endif
   for [s:key, s:val] in items(s:popup_filetypes)
     exe 'au FileType ' . s:key . ' call utils#popup_setup(' . s:val . ')'
   endfor
@@ -436,7 +436,7 @@ augroup tab_toggle
   au FileType tex setlocal nolist nocursorline colorcolumn=
   au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
-command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
+command! -nargs=? PluginToggle call utils#plugin_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
 noremap <Leader><Tab> :TabToggle<CR>
@@ -462,6 +462,7 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 " https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 silent! tnoremap <expr> <C-c> "\<C-c>"
+silent! tnoremap <nowait> <Esc> <C-\><C-n>
 nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
 
 
@@ -511,11 +512,15 @@ nnoremap U <C-r>
 inoremap <silent> <C-u> <C-o>mx<C-o>u
 inoremap <silent> <C-y> <C-o><C-r><C-o>`x<Right>
 
-" Record macro by pressing Q, the escapes prevent q from triggerering
-" Avoid q mapping because we use that to quit popup windows
-nnoremap , @a
-nnoremap <silent> <expr> Q
-  \ b:recording ? 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
+" Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
+" multi-window recordings. The <Esc> below prevents q from retriggering a recording.
+nnoremap , @z
+nnoremap <silent> <expr> Q b:recording ? 'q<Esc>:let b:recording = 0<CR>' : 'qz<Esc>:let b:recording = 1<CR>'
+augroup recording_tests
+  au!
+  au BufEnter * let b:recording = 0
+  au BufLeave,WinLeave * exe 'normal! qzq' | let b:recording = 0
+augroup END
 
 " Use cc for s because use sneak plugin
 nnoremap c<Backspace> <Nop>
@@ -603,10 +608,7 @@ cnoremap <C-v> <C-^>
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex,html,markdown,rst
-    \ if expand('<afile>') != '__doc__' |
-    \ call spell#spell_toggle(1) |
-    \ endif
+  au FileType tex,html,markdown,rst if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
 augroup END
 
 " Toggle spelling on and off
@@ -1502,12 +1504,12 @@ if Active('codi.vim')
 endif
 
 " Session saving
-" Obsession .vimsession triggers update on BufEnter and VimLeavePre
-if Active('vim-obsession') "must manually preserve cursor position
+" Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre autocommands
+if Active('vim-obsession')  " must manually preserve cursor position
   augroup session
     au!
-    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
+    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
   nnoremap <silent> <Leader>V :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session \| endif<CR>
 endif
@@ -1652,11 +1654,11 @@ highlight ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
 
 " Helper commands defined in utils
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
-command! PluginFile call utils#show_ftplugin()
+command! FileFile call utils#show_ftplugin()
 command! SyntaxFile call utils#show_syntax()
 command! SyntaxGroup call utils#current_group()
 command! ColorTest call utils#color_test()
-command! ColorGroups vert help group-name
+command! ColorGroup vert help group-name
 
 
 "-----------------------------------------------------------------------------"

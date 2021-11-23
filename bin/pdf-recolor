@@ -8,13 +8,14 @@ The destination color is hardcoded in this script.
 # PDF format reference:
 # http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/pdf/pdfs/PDF32000_2008.pdf
 # pages 12 to 13 define the character sets
+import pathlib
 import re
-import os
 
 # Color specification
 PREFIX = b'/C ['
 SUFFIX = b']'
 COLOR = b'1.0 0.969 0.416'  # match PDF Expert highlight color on iPad
+# COLOR b'254 245 142'  # this is what color dropper should show
 # COLOR = b'0.0 0.0 0.0'
 
 # Regular expressions
@@ -59,15 +60,35 @@ def process_obj(match):
         return match.group(0)
 
 
-def process_file(filename, overwrite=False):
-    with open(filename, 'rb') as f:
-        data = f.read()
-    data = REGEX_OBJ.sub(process_obj, data)
-    if not overwrite:
-        filename, _ = os.path.splitext(filename)
-        filename += '_recolored.pdf'
-    with open(filename, 'wb') as f:
-        f.write(data)
+def process_file(path, dryrun=False, overwrite=False):
+    # Skip file
+    name = path.name[:10] + '...'
+    suffix = '_recolored'
+    if path.suffix != '.pdf':
+        print(f'File {name!r} is not a PDF.')
+        return
+    if suffix in path.name:
+        print(f'File {name!r} was already fixed.')
+        return
+    # Repair data
+    with open(path, 'rb') as f:
+        old = f.read()
+    try:
+        new, count = REGEX_OBJ.subn(process_obj, old)
+    except NotImplementedError:
+        print(f'File {name!r} replacement failed.')
+        return
+    # Save results
+    if count == 0:
+        print(f'File {name!r} does not have highlighting.')
+    elif dryrun:
+        print(f'File {name!r} has highlighting.')
+    else:
+        if not overwrite:
+            path = path.parent / (path.stem + suffix + '.pdf')
+        print(f'Enforcing highlight color for file {name!r}')
+        with open(path, 'wb') as f:
+            f.write(new)
 
 
 if __name__ == '__main__':
@@ -80,22 +101,28 @@ if __name__ == '__main__':
         help='Show this help message and exit.'
     )
     parser.add_argument(
+        '-d',
+        '--dryrun',
+        action='store_true',
+        help='Print file names without editing them.'
+    )
+    parser.add_argument(
         '-o',
         '--overwrite',
         action='store_true',
         help=(
-            'Whether to overwrite the files instead of creating new ones '
-            "with the suffix '_recolored.pdf'. Default behavior is the latter."
+            'Overwrite the files instead of creating new ones with the suffix '
+            "'_recolored.pdf'. Default behavior is the latter."
         )
     )
     parser.add_argument(
-        'filename',
+        'paths',
         nargs='*',
         type=str,
         help='PDF file(s) to process.'
     )
     args = parser.parse_args()
 
-    for filename in args.filename:
-        print(f'Processing file: {filename!r}')
-        process_file(filename, overwrite=args.overwrite)
+    for path in args.paths:
+        path = pathlib.Path(path)
+        process_file(path, dryrun=args.dryrun, overwrite=args.overwrite)

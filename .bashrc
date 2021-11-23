@@ -1610,7 +1610,12 @@ png2flat() {
 pdfmerge() {
   # See: https://stackoverflow.com/a/2507825/4970632
   # NOTE: Unlike bash arrays argument arrays are 1-indexed since $0 is -bash
-  pdftk "${@:1:$#-1}" cat output ${!#}
+  [ $# -lt 2 ] && echo "Error: At least 3 arguments required." && return 1
+  for file in "$@"; do
+    ! [[ "$file" =~ .pdf$ ]] && echo "Error: Files must be PDFs." && return 1
+    ! [ -r "$file" ] && echo "Error: File '$file' does not exist." && return 1
+  done
+  pdftk "$@" cat output "${1%.pdf} (merged).pdf"
 }
 
 # Font conversions
@@ -1658,16 +1663,11 @@ echo 'done'
 #-----------------------------------------------------------------------------#
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
-if [ -f ~/.fzf.bash ]; then
-  # Various default settings
-  # See man page for --bind information
-  # NOTE: Critical to export default options so they are used by vim.
-  # * Inline info puts the number line thing on same line as text. More
-  #   compact.
-  # * Bind slash to accept, so now the behavior is very similar to behavior of
-  #   normal bash shell completion.
-  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-  #   Also see manual. Here, '-1' is terminal default, not '0'.
+if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
+  # Various default settings (see man page for --bind information)
+  # * Inline info puts the number line thing on same line as text.
+  # * Gind slash to accept so behavior matches shell completion behavior.
+  # * Color -1 is terminal default. See: https://stackoverflow.com/a/33206814/4970632
   _echo_bashrc 'Enabling fzf'
   _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
@@ -1676,38 +1676,37 @@ if [ -f ~/.fzf.bash ]; then
     "
   # shellcheck disable=2034
   {
-  export FZF_DEFAULT_OPTS="$_fzf_opts"
-  FZF_COMPLETION_TRIGGER=''  # WARNING: cannot be unset, must be empty string!
+  export FZF_DEFAULT_OPTS="$_fzf_opts"  # critical to export so used by vim
+  FZF_COMPLETION_TRIGGER=''  # must be literal empty string rather than unset
   FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
   }
 
-  # Defualt find commands
-  # The compgen ones were addd by my fork, the others are native, we adapted
-  # defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+  # Defualt find commands. The compgen ones were addd by my fork, others are native, we
+  # adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
   # shellcheck disable=2034
   {
-  _prune="\\( \
+  _fzf_prune="\\( \
     -path '*.git' -o -path '*.svn' \
     -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
     -o -path '*.DS_Store' -o -path '*.vimsession' \
     -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
     \\) -prune \
     "
-  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_prune \
+  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_prune \
     -o -type f -print -o -type l -print 2>/dev/null | cut -b3- \
     "
-  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_prune \
+  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_prune \
     -o -type d -print 2>/dev/null | cut -b3- \
     "  # recursively search directories and cd into them
-  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_prune \
+  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_prune \
     -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
     "  # recursively search files
-  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_prune \
+  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune \
     -o -type d -print 2>/dev/null | sed 's@^.*/@@' \
     "
-  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_prune \
+  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune \
     -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
     "
   }
@@ -1718,11 +1717,11 @@ if [ -f ~/.fzf.bash ]; then
   echo 'done'
 
   # FZF tab completion for non-empty line that is not preceded by word + space.
-  # https://stackoverflow.com/a/42085887/4970632
-  # https://unix.stackexchange.com/a/217916/112647
-  # NOTE: This prevents the '-o' options from getting used becuase we call the
-  # functions directly... but perhaps better to relegate everything to the
-  # functions, and not sure when -o default and -o bashdefault even get used.
+  # See: https://stackoverflow.com/a/42085887/4970632
+  # See: https://unix.stackexchange.com/a/217916/112647
+  # NOTE: This prevents '-o' options from getting used becuase we call the functions
+  # directly... but perhaps better to relegate everything to the functions, and not
+  # sure when -o default and -o bashdefault even get used.
   # function _complete_override () {
   #   local cmd func
   #   [[ "$READLINE_LINE" =~ " " ]] && cmd="${READLINE_LINE%% *}"
@@ -1745,12 +1744,13 @@ fi
 # Show inline figures with fixed 300dpi
 # Make sure it was not already installed and we are not inside vim :terminal
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-if [ -z "$VIMRUNTIME" ] && [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
-  # Shell integration
+if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
+  && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
+  && [ -f ~/.iterm2_shell_integration.bash ] \
+  && [ -z "$VIMRUNTIME" ]; then
+  # Shell integration with helper functions
   _echo_bashrc 'Enabling shell integration'
   source ~/.iterm2_shell_integration.bash
-
-  # Helper functions
   for func in imgcat imgls; do
     unalias $func
     eval 'function '$func'() {
@@ -1788,9 +1788,9 @@ if [ -d "$HOME/anaconda3" ]; then
 elif [ -d "$HOME/miniconda3" ]; then
   _conda=miniconda3
 fi
-if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
-  _echo_bashrc 'Enabling conda'
+if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; then
   # List available packages
+  _echo_bashrc 'Enabling conda'
   avail() {
     local avail current search
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1

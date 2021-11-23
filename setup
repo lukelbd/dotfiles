@@ -48,6 +48,7 @@ for pair in \
   /usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages \
   /Volumes/GoogleDrive/My\ Drive:Google\ Drive \
   $HOME/Library/Mobile\ Documents/com~apple~CloudDocs:iCloud\ Drive \
+  $HOME/Library/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/:iCloud\ PDFs \
   $HOME/Library/Services:workflows
   do
   src=${pair%:*}
