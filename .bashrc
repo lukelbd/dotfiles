@@ -199,7 +199,7 @@ unset MPLBACKEND  # in case set
 export MPLCONFIGDIR=$HOME/.matplotlib
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-export PYTHONPATH=$HOME/cmip:$HOME/drycore:$HOME/experiments:$HOME/timescales  # just use pip install -e . for cloned projects
+export PYTHONPATH=$HOME/constraints:$HOME/drycore:$HOME/experiments:$HOME/timescales  # just use pip install -e . for cloned projects
 export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 
 # Adding additional flags for building C++ stuff
@@ -648,6 +648,15 @@ qgrep() {
     ${_include_exts[@]/#/--include=*}
 }
 refactor() {
+  local cmd
+  if ! $_macos; then
+    cmd=sed
+  elif which gsed 2>/dev/null; then
+    cmd=gsed
+  else
+    echo 'Error: command gsed not found.'
+    return 1
+  fi
   [ $# -eq 2 ] || {
     echo 'Error: refactor() requires search pattern and replace pattern.'
     return 1
