@@ -661,12 +661,12 @@ refactor() {
     echo 'Error: refactor() requires search pattern and replace pattern.'
     return 1
   }
-  qfind . -print -a -exec gsed -E -n "s@$1@$2@gp" {} \; || {
+  qfind . -print -a -exec $cmd -E -n "s@$1@$2@gp" {} \; || {
     echo 'Error: sed failed.'
     return 1
   }
   if confirm-no 'Proceed with refactor?'; then
-    qfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
+    qfind . -print -a -exec $cmd -E -i "s@$1@$2@g" {} \;
   fi
 }
 fixme() {
