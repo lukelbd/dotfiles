@@ -5,6 +5,7 @@ tags
 
 # Python stuff
 *.pyc
+*.ipynb
 __pycache__
 .ipynb_checkpoints
 
