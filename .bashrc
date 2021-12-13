@@ -756,8 +756,9 @@ ddiff() {
   dir1=$1
   dir2=$2
   for dir in "$dir1" "$dir2"; do
+    echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
-    files+=$'\n'$(find "$dir" -depth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
+    files+=$'\n'$(find "$dir" -maxdepth 1 -mindepth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
   done
   read -r -a files < <(echo "$files" | sort | uniq | xargs)
   for file in "${files[@]}"; do  # iterate
