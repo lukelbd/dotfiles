@@ -18,6 +18,7 @@ os.environ.setdefault('MPLBACKEND', 'module://matplotlib_iterm2.backend_iterm2')
 import proplot as pplt
 pplt.rc['figure.dpi'] = 200 if 'iterm' in os.environ['MPLBACKEND'] else 100
 # Import modules for development
+import cycler
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.axes as maxes

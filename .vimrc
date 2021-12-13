@@ -33,7 +33,7 @@ set nocompatible  " always use the vim defaults
 set encoding=utf-8
 scriptencoding utf-8
 let mapleader = "\<Space>"
-let &g:colorcolumn = has('gui_running') ? '0' : '89,120'
+let &g:colorcolumn = has('gui_running') ? '0' : '89,121'
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
@@ -433,8 +433,9 @@ let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 " character literal tabs, conceal chars, and autocompletion and syntax checking.
 augroup tab_toggle
   au!
-  au FileType tex setlocal nolist nocursorline colorcolumn=
   au FileType xml,make,text,gitconfig TabToggle 1
+  au FileType tex setlocal nolist nocursorline colorcolumn=
+  au FileType gitcommit setlocal colorcolumn=73
 augroup END
 command! -nargs=? PluginToggle call utils#plugin_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
@@ -458,12 +459,12 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
-" Note: Must change local directory to have term pop up in this dir:
+" Note: Must change local dir or use environment variable to make term pop up here:
 " https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
+" silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-silent! tnoremap <nowait> <Esc> <C-\><C-n>
-nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
+nnoremap <Leader>T :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMDIR<CR>
 
 
 "-----------------------------------------------------------------------------"

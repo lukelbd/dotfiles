@@ -580,10 +580,10 @@ function! utils#popup_setup(...) abort
   let filemode = a:0 ? a:1 : 1
   if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
   if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
-  setlocal nonumber norelativenumber nocursorline colorcolumn=
+  setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
   if filemode == 0 | setlocal buftype=nofile | endif  " this has no file
   if filemode == 2 | return | endif  " this is an editable file
-  setlocal nolist nospell statusline=%{''}
+  setlocal nospell statusline=%{''}
   if s:no_buffer_map('u') | nnoremap <buffer> u <C-u> | endif
   if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
   if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
