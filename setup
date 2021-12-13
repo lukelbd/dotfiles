@@ -22,7 +22,7 @@ backup=$dotfiles/backup
 for name in "${names[@]}"; do  # iterate through files
   [[ " ${exclude[*]} " =~ " $name " ]] && continue
   file=$dotfiles/$name
-  [ "$name" == .gitignore.default ] && name=.gitgnore  # change destination name?
+  [ "$name" == .gitignore.default ] && name=.gitignore  # change destination name?
   dest=$HOME/$name
   bakdest=$backup/$name
   echo "Creating symlink to '${file##*/}' in '$HOME'..."
