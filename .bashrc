@@ -195,17 +195,26 @@ export PATH=$HOME/ncparallel:$PATH  # custom repo
 # TODO: Modify PYTHONPATH while working on various projects
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
-unset MPLBACKEND  # in case set
-export MPLCONFIGDIR=$HOME/.matplotlib
+unset PYTHONPATH
+unset MPLBACKEND
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-export PYTHONPATH=$HOME/constraints:$HOME/drycore:$HOME/experiments:$HOME/timescales  # just use pip install -e . for cloned projects
-export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
+export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
+_local_projects=(timescales transport constraints autocorrelation)
+_shared_projects=(drycore experiments cmip-downloads reanalysis-downloads)
+for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
+    if [ -r "$HOME/science/$_project" ]; then
+      export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
+    elif [ -r "$HOME/$_project" ]; then
+      export PYTHONPATH=$HOME/$_project:$PYTHONPATH
+    fi
+done
 
 # Adding additional flags for building C++ stuff
 # https://github.com/matplotlib/matplotlib/issues/13609
 # https://github.com/huggingface/neuralcoref/issues/97#issuecomment-436638466
 export CFLAGS=-stdlib=libc++
+export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
 #-----------------------------------------------------------------------------#
