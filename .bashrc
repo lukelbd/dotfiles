@@ -66,7 +66,7 @@ _macos=false
 _echo_bashrc 'Variables and modules'
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  uriah*)
+  uriah*|velouria*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
     # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
@@ -1338,7 +1338,12 @@ jupyter-convert() {
   done
 }
 
-# Change the kernel for all notebooks
+# Change the jupytext kernel for all notebooks
+# NOTE: To install and use jupytext do the following
+# pip install jupytext
+# jupyter nbextension install --py jupytext --user
+# jupyter nbextension enable --py jupytext --user
+# jupyter labextension install jupyterlab-jupytext
 jupyter-kernel() {
   local file files
   kernel=$1
