@@ -1359,14 +1359,17 @@ if Active('ale')
   " * Allow multiple spaces before operators for easy-align segments (E221)
   " * Allow multiple spaces after commas for easy-align segments (E241)
   " * Allow assigning lambda expressions instead of def (E731)
+  " * Allow no docstring on public methods (e.g. overrides) (D102) (flakei-docstrings)
+  " * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
   " * Allow single-line docstring with multi-line quotes (D200) (flake8-docstrings)
+  " * Allow no blank line after class docstring (D204) (flake8-docstrings)
   " * Allow no blank line between summary and description (D205) (flake8-docstrings)
   " * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
   " * Allow unused keyword arguments (U100) (flake8-unused-arguments)
   " * Permit 'l' and 'I' variable names (E741)
   let s:flake8_ignore_list = [
     \ 'W503', 'E402', 'E221', 'E241', 'E731', 'E741',
-    \ 'D200', 'D205', 'D400'
+    \ 'D102', 'D105', 'D200', 'D204', 'D205', 'D400'
     \ ]
   let g:ale_python_flake8_options =  '--max-line-length=' . s:textwidth . ' --ignore=' . join(s:flake8_ignore_list, ',')
   let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options

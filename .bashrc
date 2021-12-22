@@ -66,7 +66,7 @@ _macos=false
 _echo_bashrc 'Variables and modules'
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  uriah*)
+  uriah*|velouria*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
     # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
@@ -1091,7 +1091,8 @@ rlcp() {
   dest=$(_compress_user ${!#})  # last value
   dest=${dest// /\\ }           # escape whitespace manually
   echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
+  command rsync --port "$port" "${args[@]}" "$USER"@localhost:"$dest"
+  # command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
 }
 
 # Copy from local macbook to <this server> ("copy here")
@@ -1105,7 +1106,8 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   file=${file// /\\ }                   # escape whitespace manually
   flags=("${@:1:$#-2}")                 # flags
   echo "(Port $port) Copying $file from laptop to server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  command rsync --port "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  # command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
 
 # Sync figures from remote repository to laptop. Stop uploading figures to Github
@@ -1347,7 +1349,12 @@ jupyter-convert() {
   done
 }
 
-# Change the kernel for all notebooks
+# Change the jupytext kernel for all notebooks
+# NOTE: To install and use jupytext do the following
+# pip install jupytext
+# jupyter nbextension install --py jupytext --user
+# jupyter nbextension enable --py jupytext --user
+# jupyter labextension install jupyterlab-jupytext
 jupyter-kernel() {
   local file files
   kernel=$1

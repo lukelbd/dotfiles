@@ -40,8 +40,8 @@ nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_python_script()<CR>
 
 " Define python vim-surround macros
 call shortcuts#add_delims({
-  \ 'd': "\"\"\"\r\"\"\"",
-  \ 'D': "'''\r'''",
+  \ 'd': "'''\r'''",
+  \ 'D': "\"\"\"\r\"\"\"",
   \ 'l': "list(\r)",
   \ 't': "tuple(\r)",
   \ }, 1)
