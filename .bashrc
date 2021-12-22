@@ -1091,7 +1091,8 @@ rlcp() {
   dest=$(_compress_user ${!#})  # last value
   dest=${dest// /\\ }           # escape whitespace manually
   echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
+  command rsync --port "$port" "${args[@]}" "$USER"@localhost:"$dest"
+  # command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
 }
 
 # Copy from local macbook to <this server> ("copy here")
@@ -1105,7 +1106,8 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   file=${file// /\\ }                   # escape whitespace manually
   flags=("${@:1:$#-2}")                 # flags
   echo "(Port $port) Copying $file from laptop to server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  command rsync --port "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  # command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
 
 # Sync figures from remote repository to laptop. Stop uploading figures to Github
