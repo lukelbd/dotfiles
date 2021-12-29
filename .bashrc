@@ -1082,6 +1082,12 @@ ssh-kill() {
 # Copy from <this server> to local macbook ("copy there")
 # NOTE: Below we use the bash parameter expansion ${!#} --> 'variable whose name is
 # result of "$#"' --> $n where n is the number of args.
+# NOTE: Use rsync with -a (archive mode) which includes -r (recursive), -l (copy
+# symlinks as symlinks), -p (preserve permissions), -t (preserve modification times),
+# except ignore -g (preserve group member), -o (preserve owner), -D (preserve devices
+# and specials) to permit transfer across computer systems and add user-friendly
+# options -v (verbose), -h (human readable), -i (itemize changes). Consider using
+# -z (compress data during transfer) to improve speed.
 rlcp() {
   local port args dest
   $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
@@ -1091,11 +1097,13 @@ rlcp() {
   dest=$(_compress_user ${!#})  # last value
   dest=${dest// /\\ }           # escape whitespace manually
   echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
-  command rsync --port "$port" "${args[@]}" "$USER"@localhost:"$dest"
+  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -p $port" --progress "${args[@]}" "$USER"@localhost:"$dest"
   # command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
 }
 
 # Copy from local macbook to <this server> ("copy here")
+# NOTE: So far cannot copy multiple files because need to prepend $USER@localhost
+# to only file arguments while skipping flags but cannot yet parse arguments.
 lrcp() {  # "copy to remote (from local); 'copy here'"
   local port flags file dest
   $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
@@ -1106,19 +1114,17 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   file=${file// /\\ }                   # escape whitespace manually
   flags=("${@:1:$#-2}")                 # flags
   echo "(Port $port) Copying $file from laptop to server at: $dest..."
-  command rsync --port "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -P $port" --progress "${flags[@]}" "$USER"@localhost:"$file" "$dest"
   # command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
 
 # Sync figures from remote repository to laptop. Stop uploading figures to Github
-# because it massively bloats repository size! Also ignore hidden folders and folders
+# because it massively bloats repository size. Also ignore hidden folders and folders
 # starting with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
-# TODO: Finish this. And support macOS invocation for lrcp and rlcp.
-# NOTE: Previous git alias was:
-# figs = "!git add --all ':/fig*' ':/vid*' ':/note*' ':/meet*' && git commit -m 'Update figures and notebooks.' && git push origin master"
+# NOTE: Previous git alias was figs = "!git add --all ':/fig*' ':/vid*' &&
+# git commit -m 'Update figures and notebooks.' && git push origin master"
 figcp() {
   local ssh src dest address
-  # Get source and destination
   if $_macos; then
     [ $# -eq 1 ] || { echo "Error: Input host required unknown."; return 1; }
     address=$(_address "$1") || { echo "Error: Host unknown."; return 1; }
@@ -1138,11 +1144,8 @@ figcp() {
   fi
   echo "(Port $port) Copying figures from server to laptop at: ${dest#*:}..."
   echo "$src $dest"
-  # Sync using all components of -a arfchive mode except user/owner changes
-  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' \
-  rsync -vhi -rlpt --delete \
-    --dry-run --include={fig,vid,note}'*/***' --exclude='*' --exclude='.*/' \
-    -e "$ssh" "$src" "$dest"
+  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' -e "$ssh" "$src" "$dest"
+  rsync -vhi -rlpt --include={fig,vid}'*/***' --exclude='*' --exclude='.*/' -e "$ssh" "$src" "$dest"
 }
 
 # Generate SSH file system
