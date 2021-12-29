@@ -119,7 +119,7 @@ case "${HOSTNAME%%.*}" in
     fi
 
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
-    # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
+    # NOTE: By default, NCL tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
     # actually ends up in above path after brew install gcc49; and must install
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
@@ -370,7 +370,7 @@ open() {
       app="Finder.app"
     else
       case "$file" in
-        *.pdf)                          app="PDFOpen.app" ;;
+        *.pdf)                          app="Open PDFs.app" ;;
         *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
@@ -1243,7 +1243,7 @@ alias jupyter-proplot='jupyter console -i --profile=proplot'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-$_macos && export JULIA='/Applications/Julia-1.0.app/Contents/Resources/julia'
+$_macos && export JULIA='/Applications/Julia-1.7.app/Contents/Resources/julia'
 
 # Matlab
 # Load the startup script
@@ -1258,12 +1258,12 @@ alias r='command R -q --no-save'
 alias R='command R -q --no-save'
 
 # NCL interactive environment
-# Make sure that we encapsulate any other alias; for example, on Macs, will
-# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
+# Make sure that we encapsulate any other alias; for example, on Macs,
+# will prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
 if alias ncl &>/dev/null; then
   # shellcheck disable=2034
-  _incl=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
-  alias ncl='$_incl -Q -n'
+  _ncl_dyld=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
+  alias ncl='$_ncl_dyld -Q -n'
 else
   alias ncl='ncl -Q -n'
 fi
