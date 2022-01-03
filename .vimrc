@@ -761,7 +761,7 @@ augroup search_replace
 augroup END
 
 " Search for git commit conflict blocks
-noremap gG /^[<>=\|]\{2,}<CR>
+noremap gG /^[<>=\|]\{7}<CR>
 " Search for non-ASCII chars
 " Fails: https://stackoverflow.com/a/16987522/4970632
 " noremap gA /[^\x00-\x7F]<CR>
