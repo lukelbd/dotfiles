@@ -68,16 +68,19 @@ case "${HOSTNAME%%.*}" in
   # Macbook settings
   uriah*|velouria*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
-    # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
-    # * Installed ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
-    # * Installed tex using: brew install --cask mactex
+    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'.
+    #   List macports installs with 'port installed requested'.
+    # * Installed tex using: brew install --cask mactex: https://tex.stackexchange.com/q/97183/73149
+    #   Installed ffmpeg using: sudo port install ffmpeg +nonfree: https://stackoverflow.com/q/55092608/4970632
     # * Installed universal ctags with (not in main repo becauase no versions yet):
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
-    # * Installed gcc and gfortran with 'port install gcc6' then 'port select
-    #   --set gcc mp-gcc6'. Try 'port select --list gcc'
-    # * Installed various utils with 'brew install coreutils findutils gnu-sed
-    #   gnutls grep gnu-tar gawk'. Found paths
+    # * Installed cdo, nco, and R with macports. Installed ncl by installing compilers
+    #   with macports and downloading pre-compiled binary from ncar.
+    # * Installed gcc and gfortran with 'port install gcc7' then 'port select
+    #   --set gcc mp-gcc7' (earlier and later versions fail with ncl).
+    #   need to swtich between versions and retry). Try 'port select --list gcc'.
+    # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
+    #   gnu-tar gawk'. Then found paths with: https://apple.stackexchange.com/q/69223/214359
     # * Fix permission issues after migrating macs with following command:
     #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
     #   https://stackoverflow.com/a/50219099/4970631
@@ -93,7 +96,7 @@ case "${HOSTNAME%%.*}" in
     export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
-    export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
+    export PATH=$HOME/builds/ncl-6.6.2/bin:$PATH
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
@@ -118,21 +121,27 @@ case "${HOSTNAME%%.*}" in
       rvm use ruby 1>/dev/null
     fi
 
+    # Julia language
+    # NOTE: Installing Julia using conda not recommended. Instead use their internal
+    # package manager and download compiled binaries into home folder on remote stations.
+    # See discussion here: https://discourse.julialang.org/t/installation-on-linux-without-sudo-root/22121
+    export JULIA='/Applications/Julia-1.7.app/Contents/Resources/julia'
+    export PATH=/Applications/Julia-1.7.app/Contents/Resources/julia/bin:$PATH
+
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
     # NOTE: By default, NCL tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
-    # actually ends up in above path after brew install gcc49; and must install
+    # actually ends up in above path after brew install gcc49. And must install
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
     alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
-    export NCARG_ROOT=$HOME/builds/ncl-6.5.0  # critically necessary to run NCL
-    ;;
+    export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically necessary to run NCL
 
-  # Euclid options
-  euclid)
-    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
-    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
-    export LD_LIBRARY_PATH=/usr/local/lib
+    # CDO HDF5 setting. See the following note after port install cdo:
+    # Mac users may need to set the environment variable "HDF5_USE_FILE_LOCKING" to the
+    # five-character string "FALSE" when accessing network mounted files. This is an
+    # application run-time setting, not a configure or build setting. Otherwise errors
+    # such as "unable to open file" or "HDF5 error" may be encountered.
+    export HDF5_USE_FILE_LOCKING=FALSE
     ;;
 
   # Monde options
@@ -148,13 +157,15 @@ case "${HOSTNAME%%.*}" in
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
     export MANPATH=$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
-    # Isca modeling stuff
+
+    # ISCA modeling
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde  # "environment" configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
-    # Monde has NCL installed already
-    export NCARG_ROOT=/usr/local
+
+    # NCAR NCL root
+    export NCARG_ROOT=/usr/local  # ncl location
     ;;
 
   # Chicago supercomputer, any of the login nodes
@@ -176,6 +187,14 @@ case "${HOSTNAME%%.*}" in
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
     _load_unloaded netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
+    ;;
+
+  # Euclid options
+  euclid)
+    # All netcdf, mpich, etc. utilites already in in /usr/local/bin
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/lib
     ;;
 
   *)
