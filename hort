@@ -1,0 +1,13 @@
+[1mdiff --git a/.vimrc b/.vimrc[m
+[1mindex fdef508..86a5535 100644[m
+[1m--- a/.vimrc[m
+[1m+++ b/.vimrc[m
+[36m@@ -761,7 +761,7 @@[m [maugroup search_replace[m
+ augroup END[m
+ [m
+ " Search for git commit conflict blocks[m
+[31m-noremap gG /^[<>=\|]\{7}<CR>[m
+[32m+[m[32mnoremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>[m
+ " Search for non-ASCII chars[m
+ " Fails: https://stackoverflow.com/a/16987522/4970632[m
+ " noremap gA /[^\x00-\x7F]<CR>[m
