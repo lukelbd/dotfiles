@@ -38,7 +38,7 @@ fi
 _echo_bashrc() {
   printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
 }
-_load_modules() {
+_load_unloaded() {
   local module   # but _loaded_modules is global
   read -r -a _loaded_modules < <(module --terse list 2>&1)
   # module purge 2>/dev/null
@@ -66,7 +66,7 @@ _macos=false
 _echo_bashrc 'Variables and modules'
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  uriah*)
+  uriah*|velouria*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
     # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
@@ -119,7 +119,7 @@ case "${HOSTNAME%%.*}" in
     fi
 
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
-    # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
+    # NOTE: By default, NCL tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
     # actually ends up in above path after brew install gcc49; and must install
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
@@ -161,7 +161,7 @@ case "${HOSTNAME%%.*}" in
   midway*)
     # Modules and paths
     export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
-    _load_modules mlk intel  # for some reason latest CDO version is not default
+    _load_unloaded mlk intel  # for some reason latest CDO version is not default
 
     # Remove print statements from prompt
     # WARNING: Greedy glob removes commands sandwiched between print statements
@@ -175,7 +175,7 @@ case "${HOSTNAME%%.*}" in
     # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
-    _load_modules netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
+    _load_unloaded netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
     ;;
 
   *)
@@ -188,24 +188,33 @@ export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities
 export PATH=$HOME/node/bin:$PATH  # javascript
 export PATH=$HOME/go/bin:$PATH  # go
-export PATH=$HOME/ncparallel:$PATH  # custom repo
 export PATH=$HOME/bin:$PATH  # custom scripts
+export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
 # TODO: Modify PYTHONPATH while working on various projects
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
-unset MPLBACKEND  # in case set
-export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
-export PYTHONPATH=$HOME/drycore:$HOME/timescales  # just use pip install -e . for cloned projects
+unset PYTHONPATH
+unset MPLBACKEND
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-export MPLCONFIGDIR=$HOME/.matplotlib
+export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
+_local_projects=(timescales transport constraints autocorrelation)
+_shared_projects=(drycore experiments cmip-downloads reanalysis-downloads)
+for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
+    if [ -r "$HOME/science/$_project" ]; then
+      export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
+    elif [ -r "$HOME/$_project" ]; then
+      export PYTHONPATH=$HOME/$_project:$PYTHONPATH
+    fi
+done
 
 # Adding additional flags for building C++ stuff
 # https://github.com/matplotlib/matplotlib/issues/13609
 # https://github.com/huggingface/neuralcoref/issues/97#issuecomment-436638466
 export CFLAGS=-stdlib=libc++
+export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
 #-----------------------------------------------------------------------------#
@@ -361,7 +370,7 @@ open() {
       app="Finder.app"
     else
       case "$file" in
-        *.pdf)                          app="PDFOpen.app" ;;
+        *.pdf)                          app="Open PDFs.app" ;;
         *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
@@ -648,16 +657,25 @@ qgrep() {
     ${_include_exts[@]/#/--include=*}
 }
 refactor() {
+  local cmd
+  if ! $_macos; then
+    cmd=sed
+  elif which gsed 2>/dev/null; then
+    cmd=gsed
+  else
+    echo 'Error: command gsed not found.'
+    return 1
+  fi
   [ $# -eq 2 ] || {
     echo 'Error: refactor() requires search pattern and replace pattern.'
     return 1
   }
-  qfind . -print -a -exec gsed -E -n "s@$1@$2@gp" {} \; || {
+  qfind . -print -a -exec $cmd -E -n "s@$1@$2@gp" {} \; || {
     echo 'Error: sed failed.'
     return 1
   }
   if confirm-no 'Proceed with refactor?'; then
-    qfind . -print -a -exec gsed -E -i "s@$1@$2@g" {} \;
+    qfind . -print -a -exec $cmd -E -i "s@$1@$2@g" {} \;
   fi
 }
 fixme() {
@@ -756,6 +774,7 @@ ddiff() {
   dir1=$1
   dir2=$2
   for dir in "$dir1" "$dir2"; do
+    echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
     files+=$'\n'$(find "$dir" -maxdepth 1 -mindepth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
   done
@@ -1063,6 +1082,12 @@ ssh-kill() {
 # Copy from <this server> to local macbook ("copy there")
 # NOTE: Below we use the bash parameter expansion ${!#} --> 'variable whose name is
 # result of "$#"' --> $n where n is the number of args.
+# NOTE: Use rsync with -a (archive mode) which includes -r (recursive), -l (copy
+# symlinks as symlinks), -p (preserve permissions), -t (preserve modification times),
+# except ignore -g (preserve group member), -o (preserve owner), -D (preserve devices
+# and specials) to permit transfer across computer systems and add user-friendly
+# options -v (verbose), -h (human readable), -i (itemize changes). Consider using
+# -z (compress data during transfer) to improve speed.
 rlcp() {
   local port args dest
   $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
@@ -1072,10 +1097,13 @@ rlcp() {
   dest=$(_compress_user ${!#})  # last value
   dest=${dest// /\\ }           # escape whitespace manually
   echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
+  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -p $port" --progress "${args[@]}" "$USER"@localhost:"$dest"
+  # command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
 }
 
 # Copy from local macbook to <this server> ("copy here")
+# NOTE: So far cannot copy multiple files because need to prepend $USER@localhost
+# to only file arguments while skipping flags but cannot yet parse arguments.
 lrcp() {  # "copy to remote (from local); 'copy here'"
   local port flags file dest
   $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
@@ -1086,18 +1114,17 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   file=${file// /\\ }                   # escape whitespace manually
   flags=("${@:1:$#-2}")                 # flags
   echo "(Port $port) Copying $file from laptop to server at: $dest..."
-  command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -P $port" --progress "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  # command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
 }
 
 # Sync figures from remote repository to laptop. Stop uploading figures to Github
-# because it massively bloats repository size! Also ignore hidden folders and folders
+# because it massively bloats repository size. Also ignore hidden folders and folders
 # starting with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
-# TODO: Finish this. And support macOS invocation for lrcp and rlcp.
-# NOTE: Previous git alias was:
-# figs = "!git add --all ':/fig*' ':/vid*' ':/note*' ':/meet*' && git commit -m 'Update figures and notebooks.' && git push origin master"
+# NOTE: Previous git alias was figs = "!git add --all ':/fig*' ':/vid*' &&
+# git commit -m 'Update figures and notebooks.' && git push origin master"
 figcp() {
   local ssh src dest address
-  # Get source and destination
   if $_macos; then
     [ $# -eq 1 ] || { echo "Error: Input host required unknown."; return 1; }
     address=$(_address "$1") || { echo "Error: Host unknown."; return 1; }
@@ -1117,11 +1144,8 @@ figcp() {
   fi
   echo "(Port $port) Copying figures from server to laptop at: ${dest#*:}..."
   echo "$src $dest"
-  # Sync using all components of -a arfchive mode except user/owner changes
-  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' \
-  rsync -vhi -rlpt --delete \
-    --dry-run --include={fig,vid,note}'*/***' --exclude='*' --exclude='.*/' \
-    -e "$ssh" "$src" "$dest"
+  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' -e "$ssh" "$src" "$dest"
+  rsync -vhi -rlpt --include={fig,vid}'*/***' --exclude='*' --exclude='.*/' -e "$ssh" "$src" "$dest"
 }
 
 # Generate SSH file system
@@ -1219,7 +1243,7 @@ alias jupyter-proplot='jupyter console -i --profile=proplot'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-$_macos && export JULIA='/Applications/Julia-1.0.app/Contents/Resources/julia'
+$_macos && export JULIA='/Applications/Julia-1.7.app/Contents/Resources/julia'
 
 # Matlab
 # Load the startup script
@@ -1234,12 +1258,12 @@ alias r='command R -q --no-save'
 alias R='command R -q --no-save'
 
 # NCL interactive environment
-# Make sure that we encapsulate any other alias; for example, on Macs, will
-# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
+# Make sure that we encapsulate any other alias; for example, on Macs,
+# will prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
 if alias ncl &>/dev/null; then
   # shellcheck disable=2034
-  _incl=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
-  alias ncl='$_incl -Q -n'
+  _ncl_dyld=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
+  alias ncl='$_ncl_dyld -Q -n'
 else
   alias ncl='ncl -Q -n'
 fi
@@ -1328,7 +1352,12 @@ jupyter-convert() {
   done
 }
 
-# Change the kernel for all notebooks
+# Change the jupytext kernel for all notebooks
+# NOTE: To install and use jupytext do the following
+# pip install jupytext
+# jupyter nbextension install --py jupytext --user
+# jupyter nbextension enable --py jupytext --user
+# jupyter labextension install jupyterlab-jupytext
 jupyter-kernel() {
   local file files
   kernel=$1
@@ -1601,7 +1630,12 @@ png2flat() {
 pdfmerge() {
   # See: https://stackoverflow.com/a/2507825/4970632
   # NOTE: Unlike bash arrays argument arrays are 1-indexed since $0 is -bash
-  pdftk "${@:1:$#-1}" cat output ${!#}
+  [ $# -lt 2 ] && echo "Error: At least 3 arguments required." && return 1
+  for file in "$@"; do
+    ! [[ "$file" =~ .pdf$ ]] && echo "Error: Files must be PDFs." && return 1
+    ! [ -r "$file" ] && echo "Error: File '$file' does not exist." && return 1
+  done
+  pdftk "$@" cat output "${1%.pdf} (merged).pdf"
 }
 
 # Font conversions
@@ -1649,16 +1683,11 @@ echo 'done'
 #-----------------------------------------------------------------------------#
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
-if [ -f ~/.fzf.bash ]; then
-  # Various default settings
-  # See man page for --bind information
-  # NOTE: Critical to export default options so they are used by vim.
-  # * Inline info puts the number line thing on same line as text. More
-  #   compact.
-  # * Bind slash to accept, so now the behavior is very similar to behavior of
-  #   normal bash shell completion.
-  # * For colors, see: https://stackoverflow.com/a/33206814/4970632
-  #   Also see manual. Here, '-1' is terminal default, not '0'.
+if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
+  # Various default settings (see man page for --bind information)
+  # * Inline info puts the number line thing on same line as text.
+  # * Gind slash to accept so behavior matches shell completion behavior.
+  # * Color -1 is terminal default. See: https://stackoverflow.com/a/33206814/4970632
   _echo_bashrc 'Enabling fzf'
   _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
@@ -1667,38 +1696,37 @@ if [ -f ~/.fzf.bash ]; then
     "
   # shellcheck disable=2034
   {
-  export FZF_DEFAULT_OPTS="$_fzf_opts"
-  FZF_COMPLETION_TRIGGER=''  # WARNING: cannot be unset, must be empty string!
+  export FZF_DEFAULT_OPTS="$_fzf_opts"  # critical to export so used by vim
+  FZF_COMPLETION_TRIGGER=''  # must be literal empty string rather than unset
   FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
   FZF_CTRL_T_OPTS="$_fzf_opts"
   FZF_ALT_C_OPTS="$_fzf_opts"
   }
 
-  # Defualt find commands
-  # The compgen ones were addd by my fork, the others are native, we adapted
-  # defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+  # Defualt find commands. The compgen ones were addd by my fork, others are native, we
+  # adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
   # shellcheck disable=2034
   {
-  _prune="\\( \
+  _fzf_prune="\\( \
     -path '*.git' -o -path '*.svn' \
     -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
     -o -path '*.DS_Store' -o -path '*.vimsession' \
     -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
     \\) -prune \
     "
-  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_prune \
+  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_prune \
     -o -type f -print -o -type l -print 2>/dev/null | cut -b3- \
     "
-  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_prune \
+  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_prune \
     -o -type d -print 2>/dev/null | cut -b3- \
     "  # recursively search directories and cd into them
-  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_prune \
+  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_prune \
     -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
     "  # recursively search files
-  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_prune \
+  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune \
     -o -type d -print 2>/dev/null | sed 's@^.*/@@' \
     "
-  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_prune \
+  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune \
     -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
     "
   }
@@ -1709,11 +1737,11 @@ if [ -f ~/.fzf.bash ]; then
   echo 'done'
 
   # FZF tab completion for non-empty line that is not preceded by word + space.
-  # https://stackoverflow.com/a/42085887/4970632
-  # https://unix.stackexchange.com/a/217916/112647
-  # NOTE: This prevents the '-o' options from getting used becuase we call the
-  # functions directly... but perhaps better to relegate everything to the
-  # functions, and not sure when -o default and -o bashdefault even get used.
+  # See: https://stackoverflow.com/a/42085887/4970632
+  # See: https://unix.stackexchange.com/a/217916/112647
+  # NOTE: This prevents '-o' options from getting used becuase we call the functions
+  # directly... but perhaps better to relegate everything to the functions, and not
+  # sure when -o default and -o bashdefault even get used.
   # function _complete_override () {
   #   local cmd func
   #   [[ "$READLINE_LINE" =~ " " ]] && cmd="${READLINE_LINE%% *}"
@@ -1736,12 +1764,13 @@ fi
 # Show inline figures with fixed 300dpi
 # Make sure it was not already installed and we are not inside vim :terminal
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-if [ -z "$VIMRUNTIME" ] && [ -f ~/.iterm2_shell_integration.bash ] && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ]; then
-  # Shell integration
+if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
+  && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
+  && [ -f ~/.iterm2_shell_integration.bash ] \
+  && [ -z "$VIMRUNTIME" ]; then
+  # Shell integration with helper functions
   _echo_bashrc 'Enabling shell integration'
   source ~/.iterm2_shell_integration.bash
-
-  # Helper functions
   for func in imgcat imgls; do
     unalias $func
     eval 'function '$func'() {
@@ -1779,9 +1808,9 @@ if [ -d "$HOME/anaconda3" ]; then
 elif [ -d "$HOME/miniconda3" ]; then
   _conda=miniconda3
 fi
-if [ -n "$_conda" ] && ! [[ "$PATH" =~ "conda" ]]; then
-  _echo_bashrc 'Enabling conda'
+if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; then
   # List available packages
+  _echo_bashrc 'Enabling conda'
   avail() {
     local avail current search
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1

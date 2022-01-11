@@ -20,7 +20,8 @@
     "codefolding/main": true,
     "toc": true,
     "toc2": true,
-    "toc/main": true
+    "toc/main": true,
+    "jupytext/index": true
   },
   "highlight_selected_word": {
     "highlight_color": "#cccccc",

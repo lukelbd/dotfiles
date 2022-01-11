@@ -33,7 +33,7 @@ set nocompatible  " always use the vim defaults
 set encoding=utf-8
 scriptencoding utf-8
 let mapleader = "\<Space>"
-let &g:colorcolumn = has('gui_running') ? '0' : '89,120'
+let &g:colorcolumn = has('gui_running') ? '0' : '89,121'
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
@@ -51,6 +51,7 @@ set foldnestmax=10  " avoids weird things
 set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
 set history=100  " search history
 set hlsearch incsearch  " show match as typed so far, and highlight as you go
+set iminsert=0  " disable language maps (used for caps lock)
 set lazyredraw
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
@@ -342,13 +343,9 @@ nmap <Leader>z <Plug>AltExecute1
 nmap <Leader>Z <Plug>AltExecute2
 
 " Save and quit, also test whether the :q action closed the entire tab
-" SmartWrite is from tabline plugin
-nnoremap <silent> <C-s> :SmartWrite<CR>
+nnoremap <silent> <C-s> :call tabline#write()<CR>
 nnoremap <silent> <C-w> :call utils#window_close()<CR>
-nnoremap <silent> <C-q> :call utils#vim_close()<CR>
-" nnoremap <silent> <C-w> :call utils#tab_close()<CR>
-" nnoremap <silent> <C-a> :call utils#vim_close()<CR>
-" nnoremap <silent> <C-q> :call utils#tab_close()<CR>
+nnoremap <silent> <C-q> :quitall<CR>
 
 " Renaming things
 command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', '<bang>')
@@ -401,29 +398,46 @@ nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5 * v:cou
 nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
 nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
-" Enable quitting windows with simple 'q' press and disable line numbers
-" Note: Some popups require buftype==file for writing temporary files. Used trial and error.
-let s:popup_filetypes_file = ['__doc__', 'codi', 'fugitive', 'fugitiveblame', 'gitcommit', 'help', 'man', 'qf', 'tagbar', 'undotree']
-let s:popup_filetypes_nofile = ['diff', 'latexmk', 'vim-plug']
+" Popup window style adjustments with less-like shortcuts
+" Note: Arguments indicate the 'file mode' where 0 means this is so-not-a-file that
+" we can set buftype=nofile 1 means this is a read-only file and 2 means this is
+" an editable file to be handled by the user.
+let s:popup_filetypes = {
+\   'codi': 1,
+\   'diff': 0,
+\   'fugitive': 1,
+\   'fugitiveblame': 1,
+\   'gitcommit': 2,
+\   'qf': 1,
+\   'latexmk': 0,
+\   'man': 1,
+\   'tagbar': 1,
+\   'undotree': 1,
+\   'vim-plug': 0,
+\ }
 augroup popup_setup
   au!
-  au BufEnter * let b:recording = 0
   au FileType help call utils#help_setup()
   au CmdwinEnter * call utils#cmdwin_setup()
-  au CmdwinLeave * setlocal laststatus=2
-  exe 'au FileType ' . join(s:popup_filetypes_file, ',') . ' call utils#popup_setup(0)'
-  exe 'au FileType ' . join(s:popup_filetypes_nofile, ',') . ' call utils#popup_setup(1)'
+  if exists('##TerminalWinOpen')
+    au TerminalWinOpen * call utils#popup_setup()
+  endif
+  for [s:key, s:val] in items(s:popup_filetypes)
+    exe 'au FileType ' . s:key . ' call utils#popup_setup(' . s:val . ')'
+  endfor
 augroup END
-let g:tagtools_filetypes_skip = s:popup_filetypes_file + s:popup_filetypes_nofile
-let g:tabline_filetypes_ignore = s:popup_filetypes_file + s:popup_filetypes_nofile
+let g:tagtools_filetypes_skip = keys(s:popup_filetypes)
+let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 
-" Window view and basic behavior
+" Other adjustments for particular filetypes. Includes commands for 'toggling'
+" character literal tabs, conceal chars, and autocompletion and syntax checking.
 augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
   au FileType tex setlocal nolist nocursorline colorcolumn=
+  au FileType gitcommit setlocal colorcolumn=73
 augroup END
-command! -nargs=? PopupToggle call utils#popup_toggle(<args>)
+command! -nargs=? PluginToggle call utils#plugin_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
 command! -nargs=? TabToggle call utils#tab_toggle(<args>)
 noremap <Leader><Tab> :TabToggle<CR>
@@ -445,11 +459,12 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
-" Note: Must change local directory to have term pop up in this dir:
+" Note: Must change local dir or use environment variable to make term pop up here:
 " https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
+" silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>T :silent! lcd %:p:h<CR>:terminal<CR>
+nnoremap <Leader>T :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMDIR<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -498,11 +513,15 @@ nnoremap U <C-r>
 inoremap <silent> <C-u> <C-o>mx<C-o>u
 inoremap <silent> <C-y> <C-o><C-r><C-o>`x<Right>
 
-" Record macro by pressing Q, the escapes prevent q from triggerering
-" Avoid q mapping because we use that to quit popup windows
-nnoremap , @a
-nnoremap <silent> <expr> Q
-  \ b:recording ? 'q<Esc>:let b:recording = 0<CR>' : 'qa<Esc>:let b:recording = 1<CR>'
+" Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
+" multi-window recordings. The <Esc> below prevents q from retriggering a recording.
+nnoremap , @z
+nnoremap <silent> <expr> Q b:recording ? 'q<Esc>:let b:recording = 0<CR>' : 'qz<Esc>:let b:recording = 1<CR>'
+augroup recording_tests
+  au!
+  au BufEnter * let b:recording = 0
+  au BufLeave,WinLeave * exe 'normal! qzq' | let b:recording = 0
+augroup END
 
 " Use cc for s because use sneak plugin
 nnoremap c<Backspace> <Nop>
@@ -579,7 +598,6 @@ for s:c in range(char2nr('A'), char2nr('Z'))
   exe 'lnoremap ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
   exe 'lnoremap ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
 endfor
-set iminsert=0
 augroup caps_lock
   au!
   au InsertLeave * setlocal iminsert=0
@@ -591,10 +609,7 @@ cnoremap <C-v> <C-^>
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex,html,markdown,rst
-    \ if expand('<afile>') != '__doc__' |
-    \ call spell#spell_toggle(1) |
-    \ endif
+  au FileType tex,html,markdown,rst if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
 augroup END
 
 " Toggle spelling on and off
@@ -745,7 +760,7 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
-" Search for git conflict blocks
+" Search for git commit conflict blocks
 noremap gG /^[<>=\|]\{2,}<CR>
 " Search for non-ASCII chars
 " Fails: https://stackoverflow.com/a/16987522/4970632
@@ -1130,8 +1145,8 @@ endif
 if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   let g:scrollwrapped_wrap_filetypes = []
   nnoremap <silent> <Leader>w :WrapToggle<CR>
-  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0)/4, 'd', 1)<CR>
-  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0)/4, 'u', 1)<CR>
+  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
+  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   vnoremap <silent> <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
   vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
 endif
@@ -1339,20 +1354,33 @@ if Active('ale')
   let g:ale_lint_on_enter = 0
 
   " Flake8 ignore list (also apply to autopep8):
-  " * Allow line break before binary operator (W503)
-  " * Allow imports after statements, important for jupytext (E402)
-  " * Allow multiple spaces before operators for alignment (E221)
-  " * Allow multiple spaces after commas for alignment (E221)
+  " * Allow line breaks before binary operators (W503)
+  " * Allow imports after statements for jupytext files (E402)
+  " * Allow multiple spaces before operators for easy-align segments (E221)
+  " * Allow multiple spaces after commas for easy-align segments (E241)
   " * Allow assigning lambda expressions instead of def (E731)
+  " * Allow no docstring on public methods (e.g. overrides) (D102) (flakei-docstrings)
+  " * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
+  " * Allow empty docstring after __init__ (D107) (flake8-docstrings)
+  " * Allow single-line docstring with multi-line quotes (D200) (flake8-docstrings)
+  " * Allow no blank line after class docstring (D204) (flake8-docstrings)
+  " * Allow no blank line between summary and description (D205) (flake8-docstrings)
+  " * Allow backslashes in docstring (D301) (flake8-docstring)
+  " * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
+  " * Allow imperative mood properties (D401) (flake8-docstring)
+  " * Allow unused keyword arguments (U100) (flake8-unused-arguments)
   " * Permit 'l' and 'I' variable names (E741)
-  let s:flake8_ignore_list = ['W503', 'E402', 'E221', 'E241', 'E731', 'E741']
+  let s:flake8_ignore_list = [
+    \ 'W503', 'E402', 'E221', 'E241', 'E731', 'E741',
+    \ 'D102', 'D107', 'D105', 'D200', 'D204', 'D205', 'D301', 'D400', 'D401'
+    \ ]
   let g:ale_python_flake8_options =  '--max-line-length=' . s:textwidth . ' --ignore=' . join(s:flake8_ignore_list, ',')
   let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options
   let g:vim_isort_config_overrides = {
+    \ 'include_trailing_comma': 'true',
+    \ 'force_grid_wrap': 0,
     \ 'line_length': s:textwidth,
     \ 'multi_line_output': 3,
-    \ 'include_trailing_comma': 'true',
-    \ 'force_grid_wrap': 0
     \ }
   let g:autopep8_ignore = join(s:flake8_ignore_list, ',')
   let g:autopep8_max_line_length = s:textwidth
@@ -1490,17 +1518,14 @@ if Active('codi.vim')
 endif
 
 " Session saving
-" Obsession .vimsession triggers update on BufEnter and VimLeavePre
-if Active('vim-obsession') "must manually preserve cursor position
+" Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre autocommands
+if Active('vim-obsession')  " must manually preserve cursor position
   augroup session
     au!
-    au BufReadPost *
-      \ if line("'\"") > 0 && line("'\"") <= line("$") |
-      \ exe "normal! g`\"" |
-      \ endif
-    au VimEnter * Obsession .vimsession
+    au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
+    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  nnoremap <silent> <Leader>V :Obsession .vimsession<CR>:echom 'Manually refreshed .vimsession.'<CR>
+  nnoremap <silent> <Leader>V :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session \| endif<CR>
 endif
 
 
@@ -1560,8 +1585,6 @@ augroup override_syntax
   au!
   au Syntax * call s:keyword_setup()
   au BufRead * set conceallevel=2 concealcursor=
-  au InsertEnter * highlight StatusLine ctermbg=Black ctermbg=White ctermfg=Black cterm=NONE
-  au InsertLeave * highlight StatusLine ctermbg=White ctermbg=Black ctermfg=White cterm=NONE
 augroup END
 function! s:keyword_setup()
   " Warnings, errors, and shebangs
@@ -1606,7 +1629,6 @@ highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 " highlight Comment    ctermfg=Gray cterm=NONE
 highlight LineNR     cterm=NONE    ctermbg=NONE  ctermfg=Black
 highlight Comment    ctermfg=Black cterm=NONE
-highlight StatusLine ctermbg=Black ctermfg=White cterm=NONE
 
 " Special characters
 highlight NonText    ctermfg=Black cterm=NONE
@@ -1646,11 +1668,11 @@ highlight ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
 
 " Helper commands defined in utils
 command! -nargs=? Syntax call utils#current_syntax(<q-args>)
-command! PluginFile call utils#show_ftplugin()
+command! FileFile call utils#show_ftplugin()
 command! SyntaxFile call utils#show_syntax()
 command! SyntaxGroup call utils#current_group()
 command! ColorTest call utils#color_test()
-command! ColorGroups vert help group-name
+command! ColorGroup vert help group-name
 
 
 "-----------------------------------------------------------------------------"
@@ -1678,5 +1700,5 @@ if $HOSTNAME !~# 'cheyenne'
   WipeReg
 endif
 doautocmd User BufferOverrides  " trigger buffer-local overrides for this file
-noh  " turn off highlighting at startup
+nohlsearch  " turn off highlighting at startup
 redraw!  " weird issue sometimes where statusbar disappears

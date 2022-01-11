@@ -136,17 +136,16 @@ function! utils#iter_colorschemes(reverse) abort
   let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 
-" Enable/disable autocomplete and jedi popups. Very useful on servers slowed to
-" a crawl by certain Slovenian postdocs.
-function! utils#popup_toggle(...) abort
+" Enable/disable autocomplete and jedi popups
+function! utils#plugin_toggle(...) abort
   if a:0
     let toggle = a:1
-  elseif exists('g:popup_toggle')
-    let toggle = 1 - g:popup_toggle
+  elseif exists('g:plugin_toggle')
+    let toggle = 1 - g:plugin_toggle
   else
     let toggle = 1
   endif
-  let g:popup_toggle = toggle
+  let g:plugin_toggle = toggle
   if exists('*deoplete#custom#option')
     call deoplete#custom#option('auto_complete', toggle ? v:true : v:false)
   endif
@@ -375,7 +374,7 @@ function! utils#autosave_toggle(...) abort
     let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
     exe 'augroup autosave_' . bufnr('%')
       au!
-      exe 'au ' . cmds . ' <buffer> silent SmartWrite'
+      exe 'au ' . cmds . ' <buffer> silent call tabline#write()'
     augroup END
     echom 'Autosave enabled.'
     let b:autosave_on = 1
@@ -550,11 +549,9 @@ function! utils#window_close() abort
 endfunction
 
 " Rename2.vim  -  Rename a buffer within Vim and on disk
-" Copyright July 2009 by Manni Heumann <vim at lxxi.org>
-" based on Rename.vim
+" Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
 " Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
-" Usage:
-" :Rename[!] {newname}
+" Usage: Rename[!] {newname}
 function! utils#rename_file(name, bang)
   let curfile = expand('%:p')
   let curfilepath = expand('%:p:h')
@@ -573,32 +570,26 @@ function! utils#rename_file(name, bang)
   endif
 endfunction
 
+" For popup windows
+" File mode can be 0 (no file) 1 (simple file) or 2 (editable file)
 function! s:no_buffer_map(map)
   let dict = maparg(a:map, 'n', v:false, v:true)
   return empty(dict) || !dict['buffer']
 endfunction
-" For popup windows
-" For location lists, <CR> jumps to location. Restore this behavior.
-function! utils#popup_setup(nofile) abort
-  " Quick settings
-  setlocal modifiable nolist nonumber norelativenumber nospell nocursorline
-  setlocal colorcolumn= statusline=%{''}
-  if a:nofile
-    setlocal buftype=nofile
-  endif
-  " Quick mappings
-  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
+function! utils#popup_setup(...) abort
+  let filemode = a:0 ? a:1 : 1
   if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
+  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
+  setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
+  if filemode == 0 | setlocal buftype=nofile | endif  " this has no file
+  if filemode == 2 | return | endif  " this is an editable file
+  setlocal nospell statusline=%{''}
   if s:no_buffer_map('u') | nnoremap <buffer> u <C-u> | endif
   if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
   if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
   if s:no_buffer_map('f') | nnoremap <buffer> <nowait> f <C-f> | endif
-  " Delete if only one left
   if len(tabpagebuflist()) == 1 | quit | endif
-  exe 'augroup popup_' . bufnr('%')
-    au!
-    exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | quit | endif'
-  augroup END
+  exe 'augroup popup_' . bufnr('%') | au! | exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | quit | endif' | augroup END
 endfunction
 
 " For help windows
@@ -608,17 +599,29 @@ function! utils#help_setup() abort
   nnoremap <buffer> <CR> <C-]>
   nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+  silent call utils#popup_setup()
 endfunction
 
 " For command windows, make sure local maps work
 function! utils#cmdwin_setup() abort
-  silent! unmap <CR>
-  silent! unmap <C-c>
-  nnoremap <buffer> <silent> q :quit<CR>
-  nnoremap <buffer> <Plug>Execute <C-c><CR>
-  inoremap <buffer> <Plug>Execute <C-c><CR>
   inoremap <buffer> <expr> <CR> ""
-  setlocal nonumber norelativenumber nolist laststatus=0
+  nnoremap <buffer> <CR> <C-c><CR>
+  nnoremap <buffer> <Plug>Execute <C-c><CR>
+  silent call utils#popup_setup()
+endfunction
+
+" Popup windows showing ftplugin files, syntax files, color display
+function! utils#show_ftplugin() abort
+  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
+  silent call utils#popup_setup()
+endfunction
+function! utils#show_syntax() abort
+  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
+  silent call utils#popup_setup()
+endfunction
+function! utils#color_test() abort
+  source $VIMRUNTIME/syntax/colortest.vim
+  silent call utils#popup_setup()
 endfunction
 
 " Miscellaneous popup windows
@@ -641,22 +644,6 @@ function! utils#current_syntax(name) abort
   else
     exe 'verb syntax list ' . synIDattr(synID(line('.'), col('.'), 0), 'name')
   endif
-endfunction
-
-" Popup windows with default ftplugin and syntax files
-function! utils#show_ftplugin() abort
-  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
-  silent call utils#popup_setup(1)
-endfunction
-function! utils#show_syntax() abort
-  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
-  silent call utils#popup_setup(1)
-endfunction
-
-" Popup window with color display
-function! utils#color_test() abort
-  source $VIMRUNTIME/syntax/colortest.vim
-  silent call utils#popup_setup(1)
 endfunction
 
 " Cyclic next error in location list
