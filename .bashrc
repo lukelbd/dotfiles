@@ -757,7 +757,7 @@ ddiff() {
   dir2=$2
   for dir in "$dir1" "$dir2"; do
     ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
-    files+=$'\n'$(find "$dir" -depth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
+    files+=$'\n'$(find "$dir" -maxdepth 1 -mindepth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession' -exec basename {} \;)
   done
   read -r -a files < <(echo "$files" | sort | uniq | xargs)
   for file in "${files[@]}"; do  # iterate
@@ -1899,21 +1899,31 @@ if $_macos; then # first the MacOS options
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
   # Audio and video
-  forecast() {
+  enable_sleep() {
+    sudo pmset -a sleep 1
+    sudo pmset -a hibernatemode 1
+    sudo pmset -a disablesleep 0
+  }
+  disable_sleep() {  # see: https://gist.github.com/pwnsdx/2ae98341e7e5e64d32b734b871614915
+    sudo pmset -a sleep 0
+    sudo pmset -a hibernatemode 0
+    sudo pmset -a disablesleep 1
+  }
+  print_weather() {
     curl 'wttr.in/Fort Collins'
   }
-  artists() {
+  print_artists() {
     find ~/Music -mindepth 2 -type f -printf "%P\n" \
       | cut -d/ -f1 \
       | grep -v ^Media$ \
       | uniq -c \
       | sort -n
   }
-  artistfolder() {
+  sort_artists() {
     local base artist title
-    for file in *.{m4a,mp3}; do
+    for file in "$@"; do
       # shellcheck disable=SC2049
-      [[ "$file" =~ "*" ]] && continue
+      [[ "$file" =~ \.m4a$|\.mp3$ ]] || continue
       base=${file##*/}
       artist=${base% - *}
       title=${base##* - }
@@ -1922,7 +1932,7 @@ if $_macos; then # first the MacOS options
       echo "Moved '$base' to '$artist/$title'."
     done
   }
-  audiostrip() {
+  strip_audio() {
     local file
     for file in "$@"; do
       ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"
