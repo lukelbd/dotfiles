@@ -215,9 +215,9 @@ function! s:format_units(value) abort
     return ''
   endif
   let input = substitute(input, '/', ' / ', 'g')  " pre-process
-  let parts = split(input)
+  let parts = split(input, '\s\+', 1)  " keep empty parts e.g. leading spaces
   let regex = '^\([a-zA-Z0-9.]\+\)\%(\^\|\*\*\)\?\([-+]\?[0-9.]\+\)\?$'
-  let output = '\, '  " add space between number and unit
+  let output = ''  " add space between number and unit
   for idx in range(len(parts))
     if parts[idx] ==# '/'
       let part = parts[idx]
