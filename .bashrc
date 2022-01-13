@@ -100,11 +100,6 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
-    export MANPATH=/usr/local/opt/grep/libexec/gnuman
-    export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/findutils/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/coreutils/libexec/gnuman:$MANPATH
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
 
@@ -129,7 +124,7 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Julia-1.7.app/Contents/Resources/julia/bin:$PATH
 
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
-    # NOTE: By default, NCL tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
+    # NOTE: NCL originally tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
     # actually ends up in above path after brew install gcc49. And must install
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
@@ -146,8 +141,11 @@ case "${HOSTNAME%%.*}" in
 
   # Monde options
   monde)
-    # All netcdf, mpich, etc. utilites are separate, must add them
-    # source set_pgi.sh # or do this manually
+    # All netcdf, mpich, etc. utilites are separate so we add them
+    # NOTE: Should not need to edit $MANPATH since man is intelligent and should detect
+    # 'man' folders automatically even for custom utilities. However if the resuilt of
+    # 'manpath' is missing something follow these notes: https://unix.stackexchange.com/q/344603/112647
+    # source set_pgi.sh  # instead do this manually
     _pgi_version='19.10'  # increment this as needed
     export PATH=/usr/bin:/usr/local/sbin:/usr/sbin
     export PATH=/usr/local/bin:$PATH
@@ -155,7 +153,6 @@ case "${HOSTNAME%%.*}" in
     export PATH=/opt/pgi/linux86-64/$_pgi_version/bin:$PATH
     export PGI=/opt/pgi
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
-    export MANPATH=$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
 
     # ISCA modeling
