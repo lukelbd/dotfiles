@@ -227,7 +227,7 @@ function! s:format_units(value) abort
         echohl WarningMsg | echom 'Warning: Invalid units string.' | echohl None
         return ''
       endif
-      let part = '\textnormal{' . items[1] . '}'
+      let part = '\mathrm{' . items[1] . '}'
       if !empty(items[2])
         let part .= '^{' . items[2] . '}'
       endif

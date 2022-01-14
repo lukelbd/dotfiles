@@ -85,6 +85,7 @@ case "${HOSTNAME%%.*}" in
     #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
     #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
+    unset MANPATH
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
     export PATH=/Library/TeX/texbin:$PATH
     export PATH=/opt/X11/bin:$PATH

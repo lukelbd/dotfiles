@@ -191,12 +191,11 @@ endfor
 
 " Disable normal mode stuff
 " * Q and K are weird modes never used
-" * Z is save and quit shortcut, use for something else
+" * Z is save and quit shortcut, use for executing
 " * Ctrl-p and Ctrl-n used for scrolling, remap these instead
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
 " * Turn off common normal mode issues
 " * q and @ are for macros, instead reserve for quitting popup windows and tagtools map
-" * [p, ]p, [P, ]P pastes matching indent, remap this
 " * ][ and [] can get hit accidentally
 " * gt and gT replaced with <Tab> mappings
 " * Ctrl-r is undo, remap this
@@ -204,8 +203,7 @@ for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
   \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
   \ '<Delete>', '<Backspace>', '<CR>',
-  \ '[p', ']p', '[P', ']P', '][', '[]',
-  \ 'gt', 'gT',
+  \ '][', '[]', 'gt', 'gT',
   \ ]
   if empty(maparg(s:key, 'n'))
     exe 'noremap ' . s:key . ' <Nop>'
@@ -543,6 +541,7 @@ nnoremap O OX<Backspace>
 
 " Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
 " unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
+" Note: Use [p or ]p for P and p but adjusting to the current indent
 " vnoremap yp "0p  " causes delay
 " vnoremap yP "0P
 nnoremap yp "0p
@@ -550,8 +549,12 @@ nnoremap yP "0P
 nnoremap <silent> <Leader>v :Help<CR>
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
-nnoremap <Leader>p ]p
-nnoremap <Leader>P ]P
+silent! unmap <Leader>p
+silent! unmap <Leader>P
+silent! unmap <Leader>p
+silent! unmap <Leader>P
+silent! unmap <Leader>p
+silent! unmap <Leader>P
 
 " Yank until end of line, like C and D
 nnoremap Y y$
@@ -1328,12 +1331,14 @@ if Active('ale')
   map [x <Plug>(ale_previous_wrap)
 
   " Settings and checkers
-  " https://github.com/koalaman/shellcheck
-  " https://github.com/Kuniwak/vint
-  " https://pypi.org/project/doc8/
-  " Todo: consider chktex and pylint
-  " Todo: Add mypy type annotation checker
-  " https://mypy.readthedocs.io/en/stable/introduction.html
+  " https://github.com/koalaman/shellcheck  # shell linter
+  " https://github.com/Kuniwak/vint  # vim linter
+  " https://pypi.org/project/doc8/  # python linter
+  " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
+  " Note: use :ALEInfo to verify linting is successfully enabled
+  " for the file.
+  " Note: chktex is awful (e.g. raises errors for any command not followed
+  " by curly braces) so lacheck is best you are going to get.
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
