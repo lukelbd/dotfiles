@@ -398,8 +398,8 @@ nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:co
 
 " Popup window style adjustments with less-like shortcuts
 " Note: Arguments indicate the 'file mode' where 0 means this is so-not-a-file that
-" we can set buftype=nofile 1 means this is a read-only file and 2 means this is
-" an editable file to be handled by the user.
+" we can set buftype=nofile 1 means this is a read-only file and 2 means this is an
+" editable file to be handled by the user (currently just used for commit messages).
 let s:popup_filetypes = {
 \   'codi': 1,
 \   'diff': 0,
@@ -432,8 +432,6 @@ let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
-  au FileType tex setlocal nolist nocursorline colorcolumn=
-  au FileType gitcommit setlocal colorcolumn=73
 augroup END
 command! -nargs=? PluginToggle call utils#plugin_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
@@ -612,7 +610,9 @@ cnoremap <C-v> <C-^>
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex,html,markdown,rst if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
+  au FileType tex setlocal nolist nocursorline colorcolumn=
+  au FileType tex,html,markdown,rst
+    \ if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
 augroup END
 
 " Toggle spelling on and off

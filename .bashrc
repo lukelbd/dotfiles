@@ -209,7 +209,6 @@ export PATH=$HOME/bin:$PATH  # custom scripts
 export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
-# TODO: Modify PYTHONPATH while working on various projects
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
 unset PYTHONPATH
@@ -1819,29 +1818,30 @@ fi
 # See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
-unset _conda
 if [ -d "$HOME/anaconda3" ]; then
   _conda=anaconda3
 elif [ -d "$HOME/miniconda3" ]; then
   _conda=miniconda3
+else
+  unset _conda
 fi
-if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; then
+if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
   # List available packages
   _echo_bashrc 'Enabling conda'
-  avail() {
-    local avail current search
+  conda-avail() {
+    local current options
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
-    search=$(conda search "$1" 2>/dev/null) \
-      || search=$(conda search -c conda-forge "$1" 2>/dev/null) \
-      || { echo "Error: Package \"$1\" not found."; return 1; }
-    avail=$(echo "$search" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs) \
+    echo "Package:            $1"
     current=$(conda list "$1" 2>/dev/null)
     [[ "$current" =~ "$1" ]] \
       && current=$(echo "$current" | grep "$1" | awk 'NR == 1 {print $2}') \
       || current="N/A"
-    echo "Package:         $1"
-    echo "Current version: $current"
-    echo "All versions:    $avail"
+    echo "Current version:    $current"
+    options=$(conda search "$1" 2>/dev/null) \
+      || options=$(conda search -c conda-forge "$1" 2>/dev/null) \
+      || { echo "Error: Package \"$1\" not found."; return 1; }
+    options=$(echo "$options" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs)
+    echo "Available versions: $options"
   }
 
   # Initialize conda
@@ -1853,8 +1853,10 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; 
       source "$HOME/$_conda/etc/profile.d/conda.sh"
     else
       export PATH=$HOME/$_conda/bin:$PATH
-      export PATH=$HOME/$_conda/condabin:$PATH
     fi
+  fi
+  if ! [[ "$PATH" =~ condabin ]]; then
+    export PATH=$HOME/$_conda/condabin:$PATH
   fi
   unset __conda_setup
 
