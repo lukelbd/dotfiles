@@ -1522,7 +1522,7 @@ if Active('codi.vim')
     \ }
 endif
 
-" Session saving
+" Session saving and updating
 " Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre autocommands
 if Active('vim-obsession')  " must manually preserve cursor position
   augroup session
@@ -1530,7 +1530,9 @@ if Active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  nnoremap <silent> <Leader>V :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session \| endif<CR>
+  nnoremap <silent> <Leader>V
+      \ :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session
+      \ \| else \| exe 'Obsession .vimsession' \| endif<CR>
 endif
 
 

@@ -304,14 +304,23 @@ man() {  # always show useful information when man is called
   fi
 }
 
-# Prevent git stash from running without 'git stash push'
+# Prevent git stash from running without 'git stash push' and test message length
 # https://stackoverflow.com/q/48751491/4970632
 git() {
-  if [[ "$#" -eq 1 ]] && [[ "$1" = "stash" ]]; then
+  if [ "$#" -eq 1 ] && [ "$1" == stash ]; then
     echo 'Error: Run "git stash push" instead.' 1>&2
-  else
-    command git "$@"
+    return 1
   fi
+  if [ "$#" -ge 3 ] && [ "$1" == commit ]; then
+    for i in $(seq 2 $#); do
+      local arg1=${*:$i:1} arg2=${*:$((i+1)):1}
+      if [ "$arg1" == '-m' ] && [ "${#arg2}" -gt 50 ]; then
+        echo "Error: Commit message has length ${#arg2}. Must be less than or equal to 50."
+        return 1
+      fi
+    done
+  fi
+  command git "$@"
 }
 
 # Editor stuff
