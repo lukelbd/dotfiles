@@ -44,7 +44,7 @@ function! s:label_select() abort
   let items = map(items, 'substitute(v:val, " (.*)$", "", "")')
   return join(items, ',')
 endfunction
-function! textools#label_select(...) abort
+function! tex#label_select(...) abort
   return function('s:label_select', a:000)
 endfunction
 
@@ -115,7 +115,7 @@ function! s:cite_select() abort
   endif
   return result
 endfunction
-function! textools#cite_select(...) abort
+function! tex#cite_select(...) abort
   return function('s:cite_select', a:000)
 endfunction
 
@@ -183,7 +183,7 @@ function! s:graphic_select() abort
   let items = map(items, 'fnamemodify(v:val, ":t")')
   return join(items, ',')
 endfunction
-function! textools#graphic_select(...) abort
+function! tex#graphic_select(...) abort
   return function('s:graphic_select', a:000)
 endfunction
 
@@ -195,7 +195,7 @@ endfunction
 " Note: Check syntax of point to *left* of cursor because that's the environment
 " where we are inserting text. Does not wrap if in first column.
 function! s:ensure_math(value) abort
-  let output = shortcuts#process_value(a:value)
+  let output = swift#process_value(a:value)
   if empty(output)
     return output
   endif
@@ -204,13 +204,13 @@ function! s:ensure_math(value) abort
   endif
   return output
 endfunction
-function! textools#ensure_math(...) abort
+function! tex#ensure_math(...) abort
   return function('s:ensure_math', a:000)
 endfunction
 
 " Format unit string for LaTeX for LaTeX for LaTeX for LaTeX
 function! s:format_units(value) abort
-  let input = shortcuts#process_value(a:value)
+  let input = swift#process_value(a:value)
   if empty(input)
     return ''
   endif
@@ -239,6 +239,6 @@ function! s:format_units(value) abort
   endfor
   return s:ensure_math(output)
 endfunction
-function! textools#format_units(...) abort
+function! tex#format_units(...) abort
   return function('s:format_units', a:000)
 endfunction

@@ -195,7 +195,7 @@ endfor
 " * Ctrl-p and Ctrl-n used for scrolling, remap these instead
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
 " * Turn off common normal mode issues
-" * q and @ are for macros, instead reserve for quitting popup windows and tagtools map
+" * q and @ are for macros, instead reserve for quitting popup windows and tags map
 " * ][ and [] can get hit accidentally
 " * gt and gT replaced with <Tab> mappings
 " * Ctrl-r is undo, remap this
@@ -350,13 +350,13 @@ command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', 
 
 " Refreshing things
 command! Refresh call utils#refresh()
-nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
-nnoremap <silent> <Leader>R :e<CR>
+nnoremap <silent> <Leader>R :Refresh<CR>
 
 " Autosave with SmartWrite using utils function
 command! -nargs=? Autosave call utils#autosave_toggle(<args>)
-nnoremap <silent> <Leader>S :Autosave<CR>
+nnoremap <silent> <Leader>s :Autosave<CR>
+nnoremap <silent> <Leader>S :e<CR>
 
 " Tab selection and movement
 nnoremap <Tab>, gT
@@ -424,7 +424,7 @@ augroup popup_setup
     exe 'au FileType ' . s:key . ' call utils#popup_setup(' . s:val . ')'
   endfor
 augroup END
-let g:tagtools_filetypes_skip = keys(s:popup_filetypes)
+let g:tags_filetypes_skip = keys(s:popup_filetypes)
 let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 
 " Other adjustments for particular filetypes. Includes commands for 'toggling'
@@ -460,7 +460,7 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 " silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>T :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMDIR<CR>
+nnoremap <Leader>C :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMDIR<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -833,8 +833,8 @@ call plug#begin('~/.vim/plugged')
 " See: https://github.com/junegunn/vim-plug/issues/32
 " Note ^= prepends to list, += appends
 for s:name in [
-  \ 'vim-shortcuts',
-  \ 'vim-tagtools',
+  \ 'vim-swift',
+  \ 'vim-tags',
   \ 'vim-statusline',
   \ 'vim-tabline',
   \ 'vim-scrollwrapped',
@@ -851,8 +851,8 @@ for s:name in [
     exe "Plug 'lukelbd/" . s:name . "'"
   endif
 endfor
-let g:tagtools_filetypes_all_tags = ['fortran']
-let g:tagtools_filetypes_top_tags = {
+let g:tags_nofilter_filetypes = ['fortran']
+let g:tags_scope_filetypes = {
   \ 'vim'     : 'afc',
   \ 'tex'     : 'bs',
   \ 'python'  : 'fcm',
@@ -1028,7 +1028,7 @@ if !has('gui_running')
 endif
 
 " Snippets
-" Todo: Investigate further, but so far primitive vim-shortcuts snippets are fine
+" Todo: Investigate further, but so far primitive vim-swift snippets are fine
 " Plug 'SirVer/ultisnips'  " fancy snippet actions
 " Plug 'honza/vim-snippets'  " reference snippet files supplied to e.g. ultisnips
 " Plug 'LucHermitte/mu-template'  " file template and snippet engine mashup, not popular
@@ -1126,10 +1126,10 @@ if Active('colorizer')
   nnoremap <Leader># :<C-u>ColorToggle<CR>
 endif
 
-" Mappings for vim-tagtools command
+" Mappings for vim-tags command
 " Also use ctag brackets mapping for default double bracket motion, except never
 " overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
-if Active('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
+if Active('vim-tags') || &runtimepath =~# 'vim-tags'
   augroup double_bracket
     au!
     au BufEnter *
@@ -1137,7 +1137,7 @@ if Active('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
       \ nmap <buffer> [[ [T | nmap <buffer> ]] ]T |
       \ endif
   augroup END
-  nnoremap <silent> <Leader>C :CTagsDisplay<CR>
+  nnoremap <silent> <Leader>T :ShowTags<CR>
 endif
 if Active('black')
   let g:black_linelength = s:textwidth
@@ -1175,9 +1175,9 @@ if Active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
-" Add global delims with vim-shortcuts plugin functions and declare my weird
+" Add global delims with vim-swift plugin functions and declare my weird
 " mapping defaults due to Karabiner
-if Active('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
+if Active('vim-swift') || &runtimepath =~# 'vim-swift'
   " Set the cache directory for bibtex plugin
   let s:cache_dir = expand('~/Library/Caches/bibtex')
   if isdirectory(s:cache_dir)
@@ -1185,10 +1185,10 @@ if Active('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
   endif
   " Custom delimiter mappings
   " Note: Account for karabiner arrow key maps
-  let g:shortcuts_surround_prefix = '<C-s>'
-  let g:shortcuts_snippet_prefix = '<C-d>'
-  let g:shortcuts_prevdelim_map = '<F1>'
-  let g:shortcuts_nextdelim_map = '<F2>'
+  let g:swift_surround_prefix = '<C-s>'
+  let g:swift_snippet_prefix = '<C-d>'
+  let g:swift_prevdelim_map = '<F1>'
+  let g:swift_nextdelim_map = '<F2>'
 endif
 
 " T commenter
@@ -1295,7 +1295,7 @@ if Active('tagbar')
   let g:tagbar_left = 0  " open on left; more natural this way
   let g:tagbar_indent = -1  " only one space indent
   let g:tagbar_show_linenumbers = 0  " not needed
-  let g:tagbar_autofocus = 0  " don't autojump to window if opened
+  let g:tagbar_autofocus = 1  " don't autojump to window if opened
   let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
   let g:tagbar_case_insensitive = 1  " make sorting case insensitive
   let g:tagbar_compact = 1  " no header information in panel
@@ -1541,7 +1541,7 @@ endif
 " Note: str2nr() apparently ignores invalid characters (here the 'G' instruction)
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tagtools#ctag_jump(0, 1, 0, line('w0')))])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#ctag_jump(0, 1, 0, line('w0')))])
 noremap <Leader>y :<C-u>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y :<C-u>SyncStart<CR>
 
@@ -1650,7 +1650,7 @@ highlight CursorLine   cterm=NONE ctermbg=Black
 highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 
 " Column stuff, color 80th column and after 120
-highlight ColorColumn  cterm=NONE ctermbg=Gray
+highlight ColorColumn cterm=NONE ctermbg=Gray
 highlight SignColumn  guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 
 " Make sure terminal background is same as main background
