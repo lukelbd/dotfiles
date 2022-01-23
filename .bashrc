@@ -211,11 +211,12 @@ export PATH=$HOME/ncparallel:$PATH  # custom repo
 # Various python stuff
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
-unset PYTHONPATH
 unset MPLBACKEND
+unset PYTHONPATH
+export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
+export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 _local_projects=(timescales transport constraints autocorrelation)
 _shared_projects=(drycore experiments cmip-downloads reanalysis-downloads)
 for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
