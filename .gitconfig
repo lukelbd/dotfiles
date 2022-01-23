@@ -102,7 +102,7 @@
 	excludesfile = ~/.gitignore
 	mergeoptions = --no-edit
 	ignorecase = false
-	editor = "command vim -c 'Autosave' -c 'startinsert'"
+	editor = "command vim -c 'Autosave' -c 'startinsert' -c 'set colorcolumn=73'"
 [interactive]
 	singleKey = true
 [merge]
