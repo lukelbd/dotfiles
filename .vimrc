@@ -352,11 +352,12 @@ command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', 
 command! Refresh call utils#refresh()
 nnoremap <silent> <Leader>r :redraw!<CR>
 nnoremap <silent> <Leader>R :Refresh<CR>
+nnoremap <silent> <Leader>e :edit<CR>
 
 " Autosave with SmartWrite using utils function
 command! -nargs=? Autosave call utils#autosave_toggle(<args>)
 nnoremap <silent> <Leader>s :Autosave<CR>
-nnoremap <silent> <Leader>S :e<CR>
+nnoremap <silent> <Leader>S :Autosave 0<CR>
 
 " Tab selection and movement
 nnoremap <Tab>, gT
@@ -1211,7 +1212,7 @@ endif
 if Active('jedi-vim')
   augroup jedi_fix
     au!
-    au FileType python nnoremap <buffer> <silent> <Leader>s :Refresh<CR>
+    au FileType python nnoremap <buffer> <silent> <Leader>s :Autosave<CR>
   augroup END
   let g:jedi#completions_enabled = 0
   let g:jedi#auto_vim_configuration = 0
