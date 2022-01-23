@@ -356,7 +356,7 @@ nnoremap <silent> <Leader>e :edit<CR>
 
 " Autosave with SmartWrite using utils function
 command! -nargs=? Autosave call utils#autosave_toggle(<args>)
-nnoremap <silent> <Leader>s :Autosave<CR>
+nnoremap <silent> <Leader>s :Autosave 1<CR>
 nnoremap <silent> <Leader>S :Autosave 0<CR>
 
 " Tab selection and movement
