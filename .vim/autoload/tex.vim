@@ -219,8 +219,8 @@ function! s:format_units(value) abort
   let regex = '^\([a-zA-Z0-9.]\+\)\%(\^\|\*\*\)\?\([-+]\?[0-9.]\+\)\?$'
   let output = ''  " add space between number and unit
   for idx in range(len(parts))
-    if parts[idx] ==# '/'
-      let part = parts[idx]
+    if empty(parts[idx]) || parts[idx] ==# '/'
+      let part = parts[idx]  " empty indicates space added below
     else
       let items = matchlist(parts[idx], regex)
       if empty(items)

@@ -1544,7 +1544,7 @@ endif
 " Note: str2nr() apparently ignores invalid characters (here the 'G' instruction)
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#ctag_jump(0, 1, 0, line('w0')))])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#jump_tag(0, 1, 0, line('w0')))])
 noremap <Leader>y :<C-u>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y :<C-u>SyncStart<CR>
 
