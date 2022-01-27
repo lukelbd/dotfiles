@@ -72,7 +72,7 @@
 	delete     = "!git-delete \"$@\""
 	deleted    = "!git-deleted \"$@\""
 	exec       = "!exec \"$@\""
-	figs       = "!git add --all ':/fig*' ':/vid*' ':/note*' && git commit -m 'Update figures and notebooks.' && git push origin master"
+	figs       = "!find $(git rev-parse --show-toplevel) -type f -name '[^.]*' \\( -name '*.pdf' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.avi' -o -name '*.mp4' \\) -exec git add {} + && git commit -m 'Update figures and notebooks.' && git push origin master"
 	files      = ls-tree -r master --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""

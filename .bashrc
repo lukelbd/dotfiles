@@ -129,7 +129,7 @@ case "${HOSTNAME%%.*}" in
 
   # Euclid options
   euclid)
-    # Basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
+    # The basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
     export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
     export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
     export LD_LIBRARY_PATH=/usr/local/lib
@@ -201,7 +201,7 @@ export PYTHONUNBUFFERED=1  # must set this or python prevents print statements f
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 _local_projects=(timescales transport constraints autocorrelation)
-_shared_projects=(drycore experiments cmip-downloads reanalysis-downloads)
+_shared_projects=(drycore common cmip-downloads reanalysis-downloads)
 for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
     if [ -r "$HOME/science/$_project" ]; then
       export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
@@ -1097,8 +1097,9 @@ rlcp() {
   dest=$(_compress_user ${!#})  # last value
   dest=${dest// /\\ }           # escape whitespace manually
   echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
-  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -p $port" --progress "${args[@]}" "$USER"@localhost:"$dest"
   # command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
+  command rsync -vhi -rlpt --progress \
+    -e "ssh -o StrictHostKeyChecking=no -p $port" "${args[@]}" "$USER"@localhost:"$dest"
 }
 
 # Copy from local macbook to <this server> ("copy here")
@@ -1114,8 +1115,9 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
   file=${file// /\\ }                   # escape whitespace manually
   flags=("${@:1:$#-2}")                 # flags
   echo "(Port $port) Copying $file from laptop to server at: $dest..."
-  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -P $port" --progress "${flags[@]}" "$USER"@localhost:"$file" "$dest"
   # command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
+  command rsync -vhi -lrpt --progress "${flags[@]}" \
+    -e "ssh -o StrictHostKeyChecking=no -p $port" "$USER"@localhost:"$file" "$dest"
 }
 
 # Sync figures from remote repository to laptop. Stop uploading figures to Github
@@ -1124,15 +1126,16 @@ lrcp() {  # "copy to remote (from local); 'copy here'"
 # NOTE: Previous git alias was figs = "!git add --all ':/fig*' ':/vid*' &&
 # git commit -m 'Update figures and notebooks.' && git push origin master"
 figcp() {
-  local ssh src dest address
+  local src dest flags address
+  flags=(-vhi -rlpt --progress --include={fig,vid}'*/***' --exclude='*' --exclude='.*/')
+  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' -e "$ssh" "$src" "$dest"
   if $_macos; then
     [ $# -eq 1 ] || { echo "Error: Input host required unknown."; return 1; }
-    address=$(_address "$1") || { echo "Error: Host unknown."; return 1; }
     dest=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
     src=$(_compress_user "$src")
     src=${src/\~\/science/\~\/}
-    src="$address":"$src"
-    ssh=ssh
+    src=$(_address "$1"):$src || { echo "Error: Host unknown."; return 1; }
+    flags+=(-e "ssh -o StrictHostKeyChecking=no")
   else
     [ $# -eq 0 ] || { echo "Error: Zero arguments accepted."; return 1; }
     port=$(_port) || { echo "Error: Port unknown."; return 1; }
@@ -1140,12 +1143,10 @@ figcp() {
     dest=$(_compress_user "$src")
     dest=${dest/\~/\~\/science}
     dest="$USER"@localhost:"$dest"
-    ssh="ssh -o StrictHostKeyChecking=no -p \"$port\""
+    flags+=(-e "ssh -o StrictHostKeyChecking=no -P $port")
   fi
-  echo "(Port $port) Copying figures from server to laptop at: ${dest#*:}..."
-  echo "$src $dest"
-  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' -e "$ssh" "$src" "$dest"
-  rsync -vhi -rlpt --include={fig,vid}'*/***' --exclude='*' --exclude='.*/' -e "$ssh" "$src" "$dest"
+  echo "(Port $port) Copying figures from $src to $dest"
+  command rsync "${flags[@]}" "$src" "$dest"
 }
 
 # Generate SSH file system
@@ -1243,10 +1244,8 @@ alias jupyter-proplot='jupyter console -i --profile=proplot'
 
 # Julia with paths in current directory and auto update modules
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-$_macos && export JULIA='/Applications/Julia-1.0.app/Contents/Resources/julia'
 
-# Matlab
-# Load the startup script
+# Matlab just load the startup script and skip the gui stuff
 alias matlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
 
 # R utilities
