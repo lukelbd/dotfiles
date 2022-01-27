@@ -68,20 +68,24 @@ case "${HOSTNAME%%.*}" in
   # Macbook settings
   uriah*|velouria*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'
-    # * Found GNU paths with: https://apple.stackexchange.com/q/69223/214359
-    # * Installed ffmpeg using: https://stackoverflow.com/questions/55092608/enabling-libfdk-aac-in-ffmpeg-installed-with-homebrew
-    # * Installed tex using: brew install --cask mactex
+    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'.
+    #   List macports installs with 'port installed requested'.
+    # * Installed tex using: brew install --cask mactex: https://tex.stackexchange.com/q/97183/73149
+    #   Installed ffmpeg using: sudo port install ffmpeg +nonfree: https://stackoverflow.com/q/55092608/4970632
     # * Installed universal ctags with (not in main repo becauase no versions yet):
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
-    # * Installed gcc and gfortran with 'port install gcc6' then 'port select
-    #   --set gcc mp-gcc6'. Try 'port select --list gcc'
-    # * Installed various utils with 'brew install coreutils findutils gnu-sed
-    #   gnutls grep gnu-tar gawk'. Found paths
+    # * Installed cdo, nco, and R with macports. Installed ncl by installing compilers
+    #   with macports and downloading pre-compiled binary from ncar.
+    # * Installed gcc and gfortran with 'port install gcc7' then 'port select
+    #   --set gcc mp-gcc7' (earlier and later versions fail with ncl).
+    #   need to swtich between versions and retry). Try 'port select --list gcc'.
+    # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
+    #   gnu-tar gawk'. Then found paths with: https://apple.stackexchange.com/q/69223/214359
     # * Fix permission issues after migrating macs with following command:
     #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
     #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
+    unset MANPATH
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
     export PATH=/Library/TeX/texbin:$PATH
     export PATH=/opt/X11/bin:$PATH
@@ -93,15 +97,10 @@ case "${HOSTNAME%%.*}" in
     export PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
     export PATH=/opt/pgi/osx86-64/2018/bin:$PATH
     export PATH=$HOME/builds/matlab-r2019a/bin:$PATH
-    export PATH=$HOME/builds/ncl-6.5.0/bin:$PATH
+    export PATH=$HOME/builds/ncl-6.6.2/bin:$PATH
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
-    export MANPATH=/usr/local/opt/grep/libexec/gnuman
-    export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/findutils/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/coreutils/libexec/gnuman:$MANPATH
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
 
@@ -118,27 +117,36 @@ case "${HOSTNAME%%.*}" in
       rvm use ruby 1>/dev/null
     fi
 
+    # Julia language
+    # NOTE: Installing Julia using conda not recommended. Instead use their internal
+    # package manager and download compiled binaries into home folder on remote stations.
+    # See discussion here: https://discourse.julialang.org/t/installation-on-linux-without-sudo-root/22121
+    export JULIA='/Applications/Julia-1.7.app/Contents/Resources/julia'
+    export PATH=/Applications/Julia-1.7.app/Contents/Resources/julia/bin:$PATH
+
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
-    # NOTE: By default, ncl tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
-    # actually ends up in above path after brew install gcc49; and must install
+    # NOTE: NCL originally tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
+    # actually ends up in above path after brew install gcc49. And must install
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
     alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
-    export NCARG_ROOT=$HOME/builds/ncl-6.5.0  # critically necessary to run NCL
-    ;;
+    export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically necessary to run NCL
 
-  # Euclid options
-  euclid)
-    # The basics; all netcdf, mpich, etc. utilites already in in /usr/local/bin
-    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
-    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
-    export LD_LIBRARY_PATH=/usr/local/lib
+    # CDO HDF5 setting. See the following note after port install cdo:
+    # Mac users may need to set the environment variable "HDF5_USE_FILE_LOCKING" to the
+    # five-character string "FALSE" when accessing network mounted files. This is an
+    # application run-time setting, not a configure or build setting. Otherwise errors
+    # such as "unable to open file" or "HDF5 error" may be encountered.
+    export HDF5_USE_FILE_LOCKING=FALSE
     ;;
 
   # Monde options
   monde)
-    # All netcdf, mpich, etc. utilites are separate, must add them
-    # source set_pgi.sh # or do this manually
+    # All netcdf, mpich, etc. utilites are separate so we add them
+    # NOTE: Should not need to edit $MANPATH since man is intelligent and should detect
+    # 'man' folders automatically even for custom utilities. However if the resuilt of
+    # 'manpath' is missing something follow these notes: https://unix.stackexchange.com/q/344603/112647
+    # source set_pgi.sh  # instead do this manually
     _pgi_version='19.10'  # increment this as needed
     export PATH=/usr/bin:/usr/local/sbin:/usr/sbin
     export PATH=/usr/local/bin:$PATH
@@ -146,15 +154,16 @@ case "${HOSTNAME%%.*}" in
     export PATH=/opt/pgi/linux86-64/$_pgi_version/bin:$PATH
     export PGI=/opt/pgi
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
-    export MANPATH=$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
-    # Isca modeling stuff
+
+    # ISCA modeling
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde  # "environment" configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
-    # Monde has NCL installed already
-    export NCARG_ROOT=/usr/local
+
+    # NCAR NCL root
+    export NCARG_ROOT=/usr/local  # ncl location
     ;;
 
   # Chicago supercomputer, any of the login nodes
@@ -178,6 +187,14 @@ case "${HOSTNAME%%.*}" in
     _load_unloaded netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
     ;;
 
+  # Euclid options
+  euclid)
+    # All netcdf, mpich, etc. utilites already in in /usr/local/bin
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/lib
+    ;;
+
   *)
     echo "Warning: Host '$HOSTNAME' does not have custom settings. You may want to edit your .bashrc."
     ;;
@@ -192,14 +209,14 @@ export PATH=$HOME/bin:$PATH  # custom scripts
 export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
-# TODO: Modify PYTHONPATH while working on various projects
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
-unset PYTHONPATH
 unset MPLBACKEND
+unset PYTHONPATH
+export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
+export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 _local_projects=(timescales transport constraints autocorrelation)
 _shared_projects=(drycore common cmip-downloads reanalysis-downloads)
 for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
@@ -288,14 +305,23 @@ man() {  # always show useful information when man is called
   fi
 }
 
-# Prevent git stash from running without 'git stash push'
+# Prevent git stash from running without 'git stash push' and test message length
 # https://stackoverflow.com/q/48751491/4970632
 git() {
-  if [[ "$#" -eq 1 ]] && [[ "$1" = "stash" ]]; then
+  if [ "$#" -eq 1 ] && [ "$1" == stash ]; then
     echo 'Error: Run "git stash push" instead.' 1>&2
-  else
-    command git "$@"
+    return 1
   fi
+  if [ "$#" -ge 3 ] && [ "$1" == commit ]; then
+    for i in $(seq 2 $#); do
+      local arg1=${*:$i:1} arg2=${*:$((i+1)):1}
+      if [ "$arg1" == '-m' ] && [ "${#arg2}" -gt 50 ]; then
+        echo "Error: Commit message has length ${#arg2}. Must be less than or equal to 50."
+        return 1
+      fi
+    done
+  fi
+  command git "$@"
 }
 
 # Editor stuff
@@ -370,7 +396,7 @@ open() {
       app="Finder.app"
     else
       case "$file" in
-        *.pdf)                          app="PDFOpen.app" ;;
+        *.pdf)                          app="Open PDFs.app" ;;
         *.svg|*.jpg|*.jpeg|*.png|*.eps) app="Preview.app" ;;
         *.nc|*.nc[1-7]|*.df|*.hdf[1-5]) app="Panoply.app" ;;
         *.html|*.xml|*.htm|*.gif)       app="Safari.app" ;;
@@ -1257,12 +1283,12 @@ alias r='command R -q --no-save'
 alias R='command R -q --no-save'
 
 # NCL interactive environment
-# Make sure that we encapsulate any other alias; for example, on Macs, will
-# prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
+# Make sure that we encapsulate any other alias; for example, on Macs,
+# will prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
 if alias ncl &>/dev/null; then
   # shellcheck disable=2034
-  _incl=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
-  alias ncl='$_incl -Q -n'
+  _ncl_dyld=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
+  alias ncl='$_ncl_dyld -Q -n'
 else
   alias ncl='ncl -Q -n'
 fi
@@ -1801,29 +1827,30 @@ fi
 # See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
-unset _conda
 if [ -d "$HOME/anaconda3" ]; then
   _conda=anaconda3
 elif [ -d "$HOME/miniconda3" ]; then
   _conda=miniconda3
+else
+  unset _conda
 fi
-if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; then
+if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
   # List available packages
   _echo_bashrc 'Enabling conda'
-  avail() {
-    local avail current search
+  conda-avail() {
+    local current options
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
-    search=$(conda search "$1" 2>/dev/null) \
-      || search=$(conda search -c conda-forge "$1" 2>/dev/null) \
-      || { echo "Error: Package \"$1\" not found."; return 1; }
-    avail=$(echo "$search" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs) \
+    echo "Package:            $1"
     current=$(conda list "$1" 2>/dev/null)
     [[ "$current" =~ "$1" ]] \
       && current=$(echo "$current" | grep "$1" | awk 'NR == 1 {print $2}') \
       || current="N/A"
-    echo "Package:         $1"
-    echo "Current version: $current"
-    echo "All versions:    $avail"
+    echo "Current version:    $current"
+    options=$(conda search "$1" 2>/dev/null) \
+      || options=$(conda search -c conda-forge "$1" 2>/dev/null) \
+      || { echo "Error: Package \"$1\" not found."; return 1; }
+    options=$(echo "$options" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs)
+    echo "Available versions: $options"
   }
 
   # Initialize conda
@@ -1835,8 +1862,10 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; 
       source "$HOME/$_conda/etc/profile.d/conda.sh"
     else
       export PATH=$HOME/$_conda/bin:$PATH
-      export PATH=$HOME/$_conda/condabin:$PATH
     fi
+  fi
+  if ! [[ "$PATH" =~ condabin ]]; then
+    export PATH=$HOME/$_conda/condabin:$PATH
   fi
   unset __conda_setup
 
@@ -1927,21 +1956,31 @@ if $_macos; then # first the MacOS options
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
   # Audio and video
-  forecast() {
+  enable_sleep() {
+    sudo pmset -a sleep 1
+    sudo pmset -a hibernatemode 1
+    sudo pmset -a disablesleep 0
+  }
+  disable_sleep() {  # see: https://gist.github.com/pwnsdx/2ae98341e7e5e64d32b734b871614915
+    sudo pmset -a sleep 0
+    sudo pmset -a hibernatemode 0
+    sudo pmset -a disablesleep 1
+  }
+  print_weather() {
     curl 'wttr.in/Fort Collins'
   }
-  artists() {
+  print_artists() {
     find ~/Music -mindepth 2 -type f -printf "%P\n" \
       | cut -d/ -f1 \
       | grep -v ^Media$ \
       | uniq -c \
       | sort -n
   }
-  artistfolder() {
+  sort_artists() {
     local base artist title
-    for file in *.{m4a,mp3}; do
+    for file in "$@"; do
       # shellcheck disable=SC2049
-      [[ "$file" =~ "*" ]] && continue
+      [[ "$file" =~ \.m4a$|\.mp3$ ]] || continue
       base=${file##*/}
       artist=${base% - *}
       title=${base##* - }
@@ -1950,7 +1989,7 @@ if $_macos; then # first the MacOS options
       echo "Moved '$base' to '$artist/$title'."
     done
   }
-  audiostrip() {
+  strip_audio() {
     local file
     for file in "$@"; do
       ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"

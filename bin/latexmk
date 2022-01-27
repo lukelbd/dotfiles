@@ -82,6 +82,7 @@ shopt -s nullglob  # glob-expand into zero entries
 raw=false
 latex=pdflatex  # by default use pdflatex
 bibtex=bibtex   # for compiling bibliographies
+viewer=Skim     # default PDF viewer
 texdiff=false   # get difference pdf?
 tex2docx=false  # option
 while [ $# -gt 0 ]; do
@@ -176,43 +177,33 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
   done
 }
 
-# Get subfiles
+# Iterate over subfiles
 filenames=("$filename")
 filenames+=($(nocomments "$filename" | grep -E '\\import\b|\\include\b|\\input\b' | inbraces))
 echo "Checking files: ${filenames[*]}"
-
 for file in "${filenames[@]}"; do
-  # Run 'nocomments' only once for speed
+  # Find class files, package files, bibliography names
   nocomments=$(nocomments "$file")
-  # Change from Skim to Adobe if GIF or animation is in file
-  echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null \
-    && viewer='Adobe Acrobat Reader DC' || viewer='Skim'
-  # Choose xelatex for tex files that load fontspec or use modules that load fontspec
-  echo "$nocomments" | grep -E '\\fontspec\b|\\xltxtra\b' &>/dev/null \
-    && latex=xelatex
-  # Choose Lua if beamer present for improved speed (required for beamerposter)
-  echo "$nocomments" | grep '\\documentclass\b.*{beamer}' &>/dev/null \
-    && latex=lualatex
-  # Get class file
+  bibs+=($(echo "$nocomments" | grep -E '\\bibliography\b|\\nobibliography\b|\\addbibresource\b' | inbraces))
   classes+=($(echo "$nocomments" | grep '\\documentclass\b' | inbraces))
-  # Get top-level style and theme files
-  packages+=($(packages "$filename" | sort | uniq))  # first level
+  packages+=($(packages "$filename" | sort | uniq))  # first level deep
   texfind "${packages[@]}"
-  # Get second-level style and theme files
-  packages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level
+  packages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level deep
   texfind "${packages[@]}"
-  # Get .bib file(s) or resource(s) for pandoc
-  bibnames+=($(echo "$nocomments" | grep -E '\\bibliography\b|\\nobibliography\b|\\addbibresource\b' | inbraces))
+  # Set compiler and viewer options
+  echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe Acrobat Reader DC'
+  echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
+  echo "${packages[*]}" | grep -E '\bfontspec\b|\bxltxtra\b' &>/dev/null && latex=xelatex
 done
 
 # Error and info messages
 [ ${#classes[@]} -eq 0 ] && echo "Warning: Unknown document class."
 [ ${#texfiles[@]} -gt 0 ] && echo "Files found in TeX distro: ${texfiles[*]##*/}"
 [ ${#localfiles[@]} -gt 0 ] && echo "Files found locally: ${localfiles[*]##*/}"
-[ "${#bibnames[@]}" -eq 0 ] && bibliography=false || bibliography=true
+[ "${#bibs[@]}" -eq 0 ] && bibliography=false || bibliography=true
 if $bibliography; then
-  bibnames=("${bibnames[@]%.bib}")  # remove extension, if present
-  bibfiles=("${bibnames[@]/%/.bib}")  # add back extension
+  bibs=("${bibs[@]%.bib}")  # remove extension if present
+  bibfiles=("${bibs[@]/%/.bib}")  # add back extension
   echo "Bib files: ${bibfiles[*]}"
 fi
 

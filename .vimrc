@@ -191,12 +191,11 @@ endfor
 
 " Disable normal mode stuff
 " * Q and K are weird modes never used
-" * Z is save and quit shortcut, use for something else
+" * Z is save and quit shortcut, use for executing
 " * Ctrl-p and Ctrl-n used for scrolling, remap these instead
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
 " * Turn off common normal mode issues
-" * q and @ are for macros, instead reserve for quitting popup windows and tagtools map
-" * [p, ]p, [P, ]P pastes matching indent, remap this
+" * q and @ are for macros, instead reserve for quitting popup windows and tags map
 " * ][ and [] can get hit accidentally
 " * gt and gT replaced with <Tab> mappings
 " * Ctrl-r is undo, remap this
@@ -204,8 +203,7 @@ for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
   \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
   \ '<Delete>', '<Backspace>', '<CR>',
-  \ '[p', ']p', '[P', ']P', '][', '[]',
-  \ 'gt', 'gT',
+  \ '][', '[]', 'gt', 'gT',
   \ ]
   if empty(maparg(s:key, 'n'))
     exe 'noremap ' . s:key . ' <Nop>'
@@ -352,13 +350,14 @@ command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', 
 
 " Refreshing things
 command! Refresh call utils#refresh()
-nnoremap <silent> <Leader>s :Refresh<CR>
 nnoremap <silent> <Leader>r :redraw!<CR>
-nnoremap <silent> <Leader>R :e<CR>
+nnoremap <silent> <Leader>R :Refresh<CR>
+nnoremap <silent> <Leader>e :edit<CR>
 
 " Autosave with SmartWrite using utils function
 command! -nargs=? Autosave call utils#autosave_toggle(<args>)
-nnoremap <silent> <Leader>S :Autosave<CR>
+nnoremap <silent> <Leader>s :Autosave 1<CR>
+nnoremap <silent> <Leader>S :Autosave 0<CR>
 
 " Tab selection and movement
 nnoremap <Tab>, gT
@@ -400,8 +399,8 @@ nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:co
 
 " Popup window style adjustments with less-like shortcuts
 " Note: Arguments indicate the 'file mode' where 0 means this is so-not-a-file that
-" we can set buftype=nofile 1 means this is a read-only file and 2 means this is
-" an editable file to be handled by the user.
+" we can set buftype=nofile 1 means this is a read-only file and 2 means this is an
+" editable file to be handled by the user (currently just used for commit messages).
 let s:popup_filetypes = {
 \   'codi': 1,
 \   'diff': 0,
@@ -426,7 +425,7 @@ augroup popup_setup
     exe 'au FileType ' . s:key . ' call utils#popup_setup(' . s:val . ')'
   endfor
 augroup END
-let g:tagtools_filetypes_skip = keys(s:popup_filetypes)
+let g:tags_filetypes_skip = keys(s:popup_filetypes)
 let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 
 " Other adjustments for particular filetypes. Includes commands for 'toggling'
@@ -434,8 +433,6 @@ let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
 augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
-  au FileType tex setlocal nolist nocursorline colorcolumn=
-  au FileType gitcommit setlocal colorcolumn=73
 augroup END
 command! -nargs=? PluginToggle call utils#plugin_toggle(<args>)
 command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
@@ -464,7 +461,7 @@ cnoremap <expr> <F2> utils#wild_tab(1)
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 " silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>T :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMDIR<CR>
+nnoremap <Leader>C :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMDIR<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -543,6 +540,7 @@ nnoremap O OX<Backspace>
 
 " Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
 " unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
+" Note: Use [p or ]p for P and p but adjusting to the current indent
 " vnoremap yp "0p  " causes delay
 " vnoremap yP "0P
 nnoremap yp "0p
@@ -550,8 +548,12 @@ nnoremap yP "0P
 nnoremap <silent> <Leader>v :Help<CR>
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
-nnoremap <Leader>p ]p
-nnoremap <Leader>P ]P
+silent! unmap <Leader>p
+silent! unmap <Leader>P
+silent! unmap <Leader>p
+silent! unmap <Leader>P
+silent! unmap <Leader>p
+silent! unmap <Leader>P
 
 " Yank until end of line, like C and D
 nnoremap Y y$
@@ -609,7 +611,9 @@ cnoremap <C-v> <C-^>
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex,html,markdown,rst if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
+  au FileType tex setlocal nolist nocursorline colorcolumn=
+  au FileType tex,html,markdown,rst
+    \ if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
 augroup END
 
 " Toggle spelling on and off
@@ -761,7 +765,7 @@ augroup search_replace
 augroup END
 
 " Search for git commit conflict blocks
-noremap gG /^[<>=\|]\{2,}<CR>
+noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
 " Search for non-ASCII chars
 " Fails: https://stackoverflow.com/a/16987522/4970632
 " noremap gA /[^\x00-\x7F]<CR>
@@ -830,8 +834,8 @@ call plug#begin('~/.vim/plugged')
 " See: https://github.com/junegunn/vim-plug/issues/32
 " Note ^= prepends to list, += appends
 for s:name in [
-  \ 'vim-shortcuts',
-  \ 'vim-tagtools',
+  \ 'vim-swift',
+  \ 'vim-tags',
   \ 'vim-statusline',
   \ 'vim-tabline',
   \ 'vim-scrollwrapped',
@@ -848,8 +852,8 @@ for s:name in [
     exe "Plug 'lukelbd/" . s:name . "'"
   endif
 endfor
-let g:tagtools_filetypes_all_tags = ['fortran']
-let g:tagtools_filetypes_top_tags = {
+let g:tags_nofilter_filetypes = ['fortran']
+let g:tags_scope_filetypes = {
   \ 'vim'     : 'afc',
   \ 'tex'     : 'bs',
   \ 'python'  : 'fcm',
@@ -1025,7 +1029,7 @@ if !has('gui_running')
 endif
 
 " Snippets
-" Todo: Investigate further, but so far primitive vim-shortcuts snippets are fine
+" Todo: Investigate further, but so far primitive vim-swift snippets are fine
 " Plug 'SirVer/ultisnips'  " fancy snippet actions
 " Plug 'honza/vim-snippets'  " reference snippet files supplied to e.g. ultisnips
 " Plug 'LucHermitte/mu-template'  " file template and snippet engine mashup, not popular
@@ -1123,10 +1127,10 @@ if Active('colorizer')
   nnoremap <Leader># :<C-u>ColorToggle<CR>
 endif
 
-" Mappings for vim-tagtools command
+" Mappings for vim-tags command
 " Also use ctag brackets mapping for default double bracket motion, except never
 " overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
-if Active('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
+if Active('vim-tags') || &runtimepath =~# 'vim-tags'
   augroup double_bracket
     au!
     au BufEnter *
@@ -1134,7 +1138,7 @@ if Active('vim-tagtools') || &runtimepath =~# 'vim-tagtools'
       \ nmap <buffer> [[ [T | nmap <buffer> ]] ]T |
       \ endif
   augroup END
-  nnoremap <silent> <Leader>C :CTagsDisplay<CR>
+  nnoremap <silent> <Leader>T :ShowTags<CR>
 endif
 if Active('black')
   let g:black_linelength = s:textwidth
@@ -1172,9 +1176,9 @@ if Active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
-" Add global delims with vim-shortcuts plugin functions and declare my weird
+" Add global delims with vim-swift plugin functions and declare my weird
 " mapping defaults due to Karabiner
-if Active('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
+if Active('vim-swift') || &runtimepath =~# 'vim-swift'
   " Set the cache directory for bibtex plugin
   let s:cache_dir = expand('~/Library/Caches/bibtex')
   if isdirectory(s:cache_dir)
@@ -1182,10 +1186,10 @@ if Active('vim-shortcuts') || &runtimepath =~# 'vim-shortcuts'
   endif
   " Custom delimiter mappings
   " Note: Account for karabiner arrow key maps
-  let g:shortcuts_surround_prefix = '<C-s>'
-  let g:shortcuts_snippet_prefix = '<C-d>'
-  let g:shortcuts_prevdelim_map = '<F1>'
-  let g:shortcuts_nextdelim_map = '<F2>'
+  let g:swift_surround_prefix = '<C-s>'
+  let g:swift_snippet_prefix = '<C-d>'
+  let g:swift_prevdelim_map = '<F1>'
+  let g:swift_nextdelim_map = '<F2>'
 endif
 
 " T commenter
@@ -1208,7 +1212,7 @@ endif
 if Active('jedi-vim')
   augroup jedi_fix
     au!
-    au FileType python nnoremap <buffer> <silent> <Leader>s :Refresh<CR>
+    au FileType python nnoremap <buffer> <silent> <Leader>s :Autosave<CR>
   augroup END
   let g:jedi#completions_enabled = 0
   let g:jedi#auto_vim_configuration = 0
@@ -1292,7 +1296,7 @@ if Active('tagbar')
   let g:tagbar_left = 0  " open on left; more natural this way
   let g:tagbar_indent = -1  " only one space indent
   let g:tagbar_show_linenumbers = 0  " not needed
-  let g:tagbar_autofocus = 0  " don't autojump to window if opened
+  let g:tagbar_autofocus = 1  " don't autojump to window if opened
   let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
   let g:tagbar_case_insensitive = 1  " make sorting case insensitive
   let g:tagbar_compact = 1  " no header information in panel
@@ -1328,12 +1332,14 @@ if Active('ale')
   map [x <Plug>(ale_previous_wrap)
 
   " Settings and checkers
-  " https://github.com/koalaman/shellcheck
-  " https://github.com/Kuniwak/vint
-  " https://pypi.org/project/doc8/
-  " Todo: consider chktex and pylint
-  " Todo: Add mypy type annotation checker
-  " https://mypy.readthedocs.io/en/stable/introduction.html
+  " https://github.com/koalaman/shellcheck  # shell linter
+  " https://github.com/Kuniwak/vint  # vim linter
+  " https://pypi.org/project/doc8/  # python linter
+  " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
+  " Note: use :ALEInfo to verify linting is successfully enabled
+  " for the file.
+  " Note: chktex is awful (e.g. raises errors for any command not followed
+  " by curly braces) so lacheck is best you are going to get.
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
@@ -1361,23 +1367,26 @@ if Active('ale')
   " * Allow assigning lambda expressions instead of def (E731)
   " * Allow no docstring on public methods (e.g. overrides) (D102) (flakei-docstrings)
   " * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
+  " * Allow empty docstring after __init__ (D107) (flake8-docstrings)
   " * Allow single-line docstring with multi-line quotes (D200) (flake8-docstrings)
   " * Allow no blank line after class docstring (D204) (flake8-docstrings)
   " * Allow no blank line between summary and description (D205) (flake8-docstrings)
+  " * Allow backslashes in docstring (D301) (flake8-docstring)
   " * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
+  " * Allow imperative mood properties (D401) (flake8-docstring)
   " * Allow unused keyword arguments (U100) (flake8-unused-arguments)
   " * Permit 'l' and 'I' variable names (E741)
   let s:flake8_ignore_list = [
     \ 'W503', 'E402', 'E221', 'E241', 'E731', 'E741',
-    \ 'D102', 'D105', 'D200', 'D204', 'D205', 'D400'
+    \ 'D102', 'D107', 'D105', 'D200', 'D204', 'D205', 'D301', 'D400', 'D401'
     \ ]
   let g:ale_python_flake8_options =  '--max-line-length=' . s:textwidth . ' --ignore=' . join(s:flake8_ignore_list, ',')
   let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options
   let g:vim_isort_config_overrides = {
+    \ 'include_trailing_comma': 'true',
+    \ 'force_grid_wrap': 0,
     \ 'line_length': s:textwidth,
     \ 'multi_line_output': 3,
-    \ 'include_trailing_comma': 'true',
-    \ 'force_grid_wrap': 0
     \ }
   let g:autopep8_ignore = join(s:flake8_ignore_list, ',')
   let g:autopep8_max_line_length = s:textwidth
@@ -1514,7 +1523,7 @@ if Active('codi.vim')
     \ }
 endif
 
-" Session saving
+" Session saving and updating
 " Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre autocommands
 if Active('vim-obsession')  " must manually preserve cursor position
   augroup session
@@ -1522,7 +1531,9 @@ if Active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  nnoremap <silent> <Leader>V :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session \| endif<CR>
+  nnoremap <silent> <Leader>V
+      \ :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session
+      \ \| else \| exe 'Obsession .vimsession' \| endif<CR>
 endif
 
 
@@ -1533,7 +1544,7 @@ endif
 " Note: str2nr() apparently ignores invalid characters (here the 'G' instruction)
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tagtools#ctag_jump(0, 1, 0, line('w0')))])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#jump_tag(0, 1, 0, line('w0')))])
 noremap <Leader>y :<C-u>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y :<C-u>SyncStart<CR>
 
@@ -1642,7 +1653,7 @@ highlight CursorLine   cterm=NONE ctermbg=Black
 highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 
 " Column stuff, color 80th column and after 120
-highlight ColorColumn  cterm=NONE ctermbg=Gray
+highlight ColorColumn cterm=NONE ctermbg=Gray
 highlight SignColumn  guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 
 " Make sure terminal background is same as main background

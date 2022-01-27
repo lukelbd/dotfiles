@@ -5,7 +5,7 @@
 # https://matplotlib.org/stable/tutorials/introductory/customizing.html
 #--------------------------------------------------------------------
 # Changed settings
-font.name: Helvetica Neue
+# font.name: Helvetica Neue
 # figure.max_open_warning: 0
 
 # ProPlot settings

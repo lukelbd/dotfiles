@@ -44,7 +44,7 @@ function! s:label_select() abort
   let items = map(items, 'substitute(v:val, " (.*)$", "", "")')
   return join(items, ',')
 endfunction
-function! textools#label_select(...) abort
+function! tex#label_select(...) abort
   return function('s:label_select', a:000)
 endfunction
 
@@ -115,7 +115,7 @@ function! s:cite_select() abort
   endif
   return result
 endfunction
-function! textools#cite_select(...) abort
+function! tex#cite_select(...) abort
   return function('s:cite_select', a:000)
 endfunction
 
@@ -183,7 +183,7 @@ function! s:graphic_select() abort
   let items = map(items, 'fnamemodify(v:val, ":t")')
   return join(items, ',')
 endfunction
-function! textools#graphic_select(...) abort
+function! tex#graphic_select(...) abort
   return function('s:graphic_select', a:000)
 endfunction
 
@@ -195,7 +195,7 @@ endfunction
 " Note: Check syntax of point to *left* of cursor because that's the environment
 " where we are inserting text. Does not wrap if in first column.
 function! s:ensure_math(value) abort
-  let output = shortcuts#process_value(a:value)
+  let output = swift#process_value(a:value)
   if empty(output)
     return output
   endif
@@ -204,30 +204,30 @@ function! s:ensure_math(value) abort
   endif
   return output
 endfunction
-function! textools#ensure_math(...) abort
+function! tex#ensure_math(...) abort
   return function('s:ensure_math', a:000)
 endfunction
 
 " Format unit string for LaTeX for LaTeX for LaTeX for LaTeX
 function! s:format_units(value) abort
-  let input = shortcuts#process_value(a:value)
+  let input = swift#process_value(a:value)
   if empty(input)
     return ''
   endif
   let input = substitute(input, '/', ' / ', 'g')  " pre-process
-  let parts = split(input)
+  let parts = split(input, '\s\+', 1)  " keep empty parts e.g. leading spaces
   let regex = '^\([a-zA-Z0-9.]\+\)\%(\^\|\*\*\)\?\([-+]\?[0-9.]\+\)\?$'
-  let output = '\, '  " add space between number and unit
+  let output = ''  " add space between number and unit
   for idx in range(len(parts))
-    if parts[idx] ==# '/'
-      let part = parts[idx]
+    if empty(parts[idx]) || parts[idx] ==# '/'
+      let part = parts[idx]  " empty indicates space added below
     else
       let items = matchlist(parts[idx], regex)
       if empty(items)
         echohl WarningMsg | echom 'Warning: Invalid units string.' | echohl None
         return ''
       endif
-      let part = '\textnormal{' . items[1] . '}'
+      let part = '\mathrm{' . items[1] . '}'
       if !empty(items[2])
         let part .= '^{' . items[2] . '}'
       endif
@@ -239,6 +239,6 @@ function! s:format_units(value) abort
   endfor
   return s:ensure_math(output)
 endfunction
-function! textools#format_units(...) abort
+function! tex#format_units(...) abort
   return function('s:format_units', a:000)
 endfunction
