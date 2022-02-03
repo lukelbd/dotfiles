@@ -203,8 +203,8 @@ esac
 # Access custom executables and git repos
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities
-export PATH=$HOME/node/bin:$PATH  # javascript
-export PATH=$HOME/go/bin:$PATH  # go
+export PATH=$HOME/node/bin:$PATH  # javascript commands
+export PATH=$HOME/go/bin:$PATH  # go scripts
 export PATH=$HOME/bin:$PATH  # custom scripts
 export PATH=$HOME/ncparallel:$PATH  # custom repo
 
@@ -263,29 +263,30 @@ _columnize() {
   printf "%s" "$final"
 }
 
-# Help page wrapper
-# See this page for how to avoid recursion when wrapping shell builtins and commands:
-# http://blog.jpalardy.com/posts/wrapping-command-line-tools/
-# Don't want to use aliases, e.g. because ncl requires DYLD_LIBRARY_PATH to open
-# so we alias that as command prefix (don't want to change global path cause it
-# messes other shit up, maybe homebrew)
+# Help page display
+# Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
+# test line length to guess if it is an error message stub or contains desired info.
+# To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 help() {
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
     builtin help "$@" 2>&1 | less
-  elif "$@" --help &>/dev/null; then
-    "$@" --help 2>&1 | less  # combine output streams or can get weird error
   else
-    echo "No help information for \"$*\"."
+    local help=$("$@" --help 2>&1)
+    if [ "$(echo "$help" | wc -l)" -gt 2 ]; then
+      command less <<< "$help"
+    else
+      echo "No help information for $*."
+    fi
   fi
 }
 
-# Man page wrapper
-man() {  # always show useful information when man is called
-  # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-  # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
-  # show as first line BASH_BUILTINS(1); so we search the first two lines
-  # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+# Man page display with auto jumping to relevant info
+# See this answer and comments: https://unix.stackexchange.com/a/18092/112647
+# Note Mac will have empty line then BUILTIN(1) on second line, but linux will
+# show as first line BASH_BUILTINS(1); so we search the first two lines
+# if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+man() {
   local search arg="$*"
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
@@ -295,14 +296,21 @@ man() {  # always show useful information when man is called
     else
       search=$arg  # linux shows all info necessary, just have to find it
     fi
-    echo "Searching for stuff in ${search}."
     LESS=-p"^ *$arg.*\[.*$" command man "$search"
-  elif command man "$arg" &>/dev/null; then
-    echo "Item has own man page."
-    command man "$arg"
   else
-    echo "No man entry for \"$arg\"."
+    command man "$arg"  # could display error message
   fi
+}
+
+# Vim man page command
+vman() {
+  if [ $# -eq 0 ]; then
+    echo "What manual page do you want?";
+    return 0
+  elif ! man -w "$@" > /dev/null; then
+    return 1
+  fi
+  command vim -c "SuperMan $*"
 }
 
 # Prevent git stash from running without 'git stash push' and test message length
@@ -413,7 +421,7 @@ open() {
 }
 
 # Environment variables
-export EDITOR=vim  # default editor, nice and simple
+export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 
 #-----------------------------------------------------------------------------#
@@ -1284,7 +1292,7 @@ alias r='command R -q --no-save'
 alias R='command R -q --no-save'
 
 # NCL interactive environment
-# Make sure that we encapsulate any other alias; for example, on Macs,
+# Make sure that we encapsulate any other alias -- for example, on Macs,
 # will prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
 if alias ncl &>/dev/null; then
   # shellcheck disable=2034

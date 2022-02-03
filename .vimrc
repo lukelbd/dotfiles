@@ -20,7 +20,7 @@
 "-----------------------------------------------------------------------------"
 " Critical stuff
 let &t_Co=256
-let s:textwidth = 88
+let s:linelength = 88
 exe 'runtime autoload/repeat.vim'
 if !exists('*repeat#set')
   echohl WarningMsg
@@ -105,7 +105,7 @@ if has('gui_running')
 endif
 
 " Always override these settings, even buffer-local settings
-let g:set_overrides = 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq textwidth=' . s:textwidth
+let g:set_overrides = 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq textwidth=' . s:linelength
 augroup override_settings
   au!
   au User BufferOverrides exe 'setlocal ' . g:set_overrides
@@ -341,8 +341,9 @@ nmap <Leader>z <Plug>AltExecute1
 nmap <Leader>Z <Plug>AltExecute2
 
 " Save and quit, also test whether the :q action closed the entire tab
+" nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-s> :call tabline#write()<CR>
-nnoremap <silent> <C-w> :call utils#window_close()<CR>
+nnoremap <silent> <C-w> :call utils#tab_close()<CR>
 nnoremap <silent> <C-q> :quitall<CR>
 
 " Renaming things
@@ -398,10 +399,12 @@ nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * v:co
 nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
 " Popup window style adjustments with less-like shortcuts
+" Note: Man config generally used with superman
 " Note: Arguments indicate the 'file mode' where 0 means this is so-not-a-file that
-" we can set buftype=nofile 1 means this is a read-only file and 2 means this is an
-" editable file to be handled by the user (currently just used for commit messages).
+" we can set buftype=nofile, 1 means this is a read-only file, and 2 means this is
+" an editable file to be handled by the user (currently just used for commit messages).
 let s:popup_filetypes = {
+\   'man': 1,
 \   'codi': 1,
 \   'diff': 0,
 \   'fugitive': 1,
@@ -409,7 +412,6 @@ let s:popup_filetypes = {
 \   'gitcommit': 2,
 \   'qf': 1,
 \   'latexmk': 0,
-\   'man': 1,
 \   'tagbar': 1,
 \   'undotree': 1,
 \   'vim-plug': 0,
@@ -574,7 +576,7 @@ nnoremap <expr> < '<Esc>' . utils#multi_indent_expr(1, v:count1)
 command! -range -nargs=? WrapLines <line1>,<line2>call utils#wrap_lines(<args>)
 noremap <silent> <expr> gq '<Esc>' . utils#wrap_lines_expr(v:count)
 
-" Wrapping lines accounting for bullet indentation and with arbitraty textwidth
+" Wrapping lines accounting for bullet indentation and with arbitrary textwidth
 command! -range -nargs=? WrapItems <line1>,<line2>call utils#wrap_items(<args>)
 noremap <silent> <expr> gQ '<Esc>' . utils#wrap_items_expr(v:count)
 
@@ -826,8 +828,8 @@ function! s:plug_local(path)
 endfunction
 command! -nargs=1 PlugLocal call s:plug_local(<args>)
 
-" Note: No longer worry about compatibility because we can install everything
-" from conda-forge, including vim and ctags.
+" Initial plugins. Note we no longer worry about compatibility because we can install
+" everything from conda-forge, including vim and ctags.
 call plug#begin('~/.vim/plugged')
 
 " Custom plugins or forks, try to load locally if possible!
@@ -884,55 +886,7 @@ Plug 'KabbAmine/yowish.vim'
 " Works only in MacVim or when &t_Co == 256
 Plug 'lilydjwg/colorizer'
 
-" Proper syntax highlighting for a few different things
-" Note impsort sorts import statements, and highlights modules with an after/syntax script
-" Plug 'psf/black', {'tag': '19.10b0'}
-" Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
-" Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
-" Plug 'hdima/python-syntax' " this failed for me; had to manually add syntax file; f-strings not highlighted, and other stuff!
-" Plug 'fisadev/vim-isort'
-" Plug 'vim-python/python-syntax'
-Plug 'Chiel92/vim-autoformat'
-Plug 'tell-k/vim-autopep8'
-Plug 'tmux-plugins/vim-tmux'
-Plug 'plasticboy/vim-markdown'
-Plug 'vim-scripts/applescript.vim'
-Plug 'anntzer/vim-cython'
-Plug 'tpope/vim-liquid'
-Plug 'cespare/vim-toml'
-let g:formatdef_mpython = '"isort - | black -q -S -"'
-let g:formatters_python = ['mpython']  " use multiple formatters
-let g:formatters_fortran = ['fprettify']
-
-" TeX utilities; better syntax highlighting, better indentation,
-" and some useful remaps. Also zotero integration.
-" For vimtex config see: https://github.com/lervag/vimtex/issues/204
-" Plug 'twsh/unite-bibtex'  " python 3 version
-" Plug 'msprev/unite-bibtex'  " python 2 version
-" Plug 'lervag/vimtex'
-" Plug 'chrisbra/vim-tex-indent'
-" Plug 'Shougo/unite.vim'  " now use custom bibtex tool
-" Plug 'rafaqz/citation.vim'
-
-" Julia support and syntax highlighting
-Plug 'JuliaEditorSupport/julia-vim'
-
-" Python utilities
-" Warning: jedi-vim horribly slow on monde
-" Plug 'vim-scripts/Pydiction'  " just changes completeopt and dictionary and stuff
-" Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
-" Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
-" Plug 'ivanov/vim-ipython'  " dead
-" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
-" Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
-Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
-let g:braceless_block_key = 'm'  " captures if, for, def, etc.
-let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
-Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
-Plug 'goerz/jupytext.vim'  " edit ipython notebooks
-let g:jupytext_fmt = 'py:percent'
-
-" Folding
+" Folding speedups
 " Warning: SimpylFold horribly slow on monde, instead use braceless
 Plug 'Konfekt/FastFold'
 " Plug 'tmhedberg/SimpylFold'
@@ -959,19 +913,29 @@ Plug 'mbbill/undotree'
 " Example: Bdelete hidden
 Plug 'Asheq/close-buffers.vim'
 
-" Tabdrop fix for vim
-" Note: Now apply similar solution in tabline#smart_write
-" Plug 'ohjames/tabdrop'
+" Shell utilities, including chmod, renaming, moving
+Plug 'tpope/vim-eunuch'
+Plug 'jez/vim-superman'  " simply add 'vman' command-line tool
 
-" Commenting and syntax checking
+" Syntax checking and formatting
 " Note: syntastic looks for checkers in $PATH, must be installed manually
+" Plug 'scrooloose/syntastic'  " out of date:
+Plug 'dense-analysis/ale'
+Plug 'fisadev/vim-isort'
+Plug 'Chiel92/vim-autoformat'
+Plug 'tell-k/vim-autopep8'
+Plug 'psf/black'
+
+" Commenting stuff
 " Note: tcomment_vim is nice minimal extension of vim-commentary, include explicit
 " commenting and uncommenting and 'blockwise' commenting with g>b and g<b
-" Plug 'scrooloose/syntastic'
 " Plug 'scrooloose/nerdcommenter'
 " Plug 'tpope/vim-commentary'  " too simple
-Plug 'dense-analysis/ale'
 Plug 'tomtom/tcomment_vim'
+
+" Running tests
+" Note: This works for every filetype (simliar to ale)
+Plug 'vim-test/vim-test'
 
 " Inline code handling
 " Use :InlineEdit within blocks to open temporary buffer for editing; buffer
@@ -992,9 +956,6 @@ Plug 'tpope/vim-fugitive'
 Plug 'junegunn/gv.vim'  " view commit graphs with :GV
 " Plug 'rbong/vim-flog'  " view commit graphs with :Flog
 
-" Shell utilities, including Chmod and stuff
-Plug 'tpope/vim-eunuch'
-
 " Calculators and number stuff
 " Plug 'vim-scripts/Toggle'  " toggling stuff on/off, modified this myself
 " Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
@@ -1005,7 +966,7 @@ let g:speeddating_no_mappings = 1
 let g:HowMuch_no_mappings = 1
 
 " Completion engines
-" Note: Disable for macvim because not sure how to control its python distro
+" Note: Disable for macvim because not sure how to control its python distribution
 " Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
 " Plug 'lifepillar/vim-mucomplete'  " broken, seriously, cannot get it to work, don't bother! is slow anyway.
 " Plug 'Valloric/YouCompleteMe'  " broken
@@ -1014,7 +975,7 @@ let g:HowMuch_no_mappings = 1
 " let g:neocomplete#enable_at_startup = 1
 " Plug 'prabirshrestha/asyncomplete.vim'
 if !has('gui_running')
-  " Main plugin
+  " Main complete plugin
   Plug 'Shougo/deoplete.nvim'  " requires pip install pynvim
   Plug 'roxma/nvim-yarp'  " required for deoplete
   Plug 'roxma/vim-hug-neovim-rpc'  " required for deoplete
@@ -1028,13 +989,19 @@ if !has('gui_running')
   Plug 'Shougo/echodoc.vim'
 endif
 
-" Snippets
+" Improve motions with sneak plugin. Do not use easymotion because extremely slow
+" over remote connections and overkill.
+" See discussion: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+" Plug 'easymotion/vim-easymotion'
+Plug 'justinmk/vim-sneak'
+
+" Snippets and stuff
 " Todo: Investigate further, but so far primitive vim-swift snippets are fine
 " Plug 'SirVer/ultisnips'  " fancy snippet actions
 " Plug 'honza/vim-snippets'  " reference snippet files supplied to e.g. ultisnips
 " Plug 'LucHermitte/mu-template'  " file template and snippet engine mashup, not popular
 
-" Delimiters, use vim-surround rather than vim-sandwich because key mappings
+" Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
 " are better and API is simpler. Only miss adding numbers to operators, otherwise
 " feature set is same (e.g. cannot delete and change arbitrary text objects)
 " See discussion: https://www.reddit.com/r/vim/comments/esrfno/why_vimsandwich_and_not_surroundvim/
@@ -1067,13 +1034,32 @@ let g:vim_textobj_parameter_mapping = '='  " avoid ',' conflict with latex
 " Plug 'godlygeek/tabular'
 Plug 'junegunn/vim-easy-align'
 
-" Better motions with sneak plugin. Do not use easymotion because extremely slow
-" over remote connections and overkill.
-" See discussion: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-" Plug 'easymotion/vim-easymotion'
-Plug 'justinmk/vim-sneak'
+" Python utilities
+" Warning: jedi-vim horribly slow on monde
+" Plug 'vim-scripts/Pydiction'  " just changes completeopt and dictionary and stuff
+" Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
+" Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
+" Plug 'ivanov/vim-ipython'  " dead
+" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
+" Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
+Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
+let g:braceless_block_key = 'm'  " captures if, for, def, etc.
+let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
+Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
+Plug 'goerz/jupytext.vim'  " edit ipython notebooks
+let g:jupytext_fmt = 'py:percent'
 
-" This RST shit all failed
+" TeX utilities; better syntax highlighting, better indentation,
+" and some useful remaps. Also zotero integration.
+" For vimtex config see: https://github.com/lervag/vimtex/issues/204
+" Plug 'twsh/unite-bibtex'  " python 3 version
+" Plug 'msprev/unite-bibtex'  " python 2 version
+" Plug 'lervag/vimtex'
+" Plug 'chrisbra/vim-tex-indent'
+" Plug 'Shougo/unite.vim'  " now use custom bibtex tool
+" Plug 'rafaqz/citation.vim'
+
+" RST utilities
 " Just to simple == tables instead of fancy ++ tables
 " Plug 'nvie/vim-rst-tables'
 " Plug 'ossobv/vim-rst-tables-py3'
@@ -1081,16 +1067,13 @@ Plug 'justinmk/vim-sneak'
 " noremap <silent> \s :python ReformatTable()<CR>
 " let g:riv_python_rst_hl = 1
 " Plug 'Rykka/riv.vim'
-"
-" Single line/multiline transition; make sure comes after surround
-" Hardly ever need this
-" Plug 'AndrewRadev/splitjoin.vim'
-" let g:splitjoin_split_mapping = 'cS' | let g:splitjoin_join_mapping  = 'cJ'
-"
-" Multiple cursors is awesome
-" Article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
-" Plug 'terryma/vim-multiple-cursors'
-"
+
+" Easy tags for ctags integration
+" Now use custom integration plugin
+" Plug 'xolox/vim-misc'  " dependency for easytags
+" Plug 'xolox/vim-easytags'  " kind of old and not that useful honestly
+" Plug 'ludovicchabant/vim-gutentags'  " slows shit down like crazy
+
 " Indent guides
 " Note: Indentline completely messes up search mode. Also requires changing Conceal
 " group color, but doing that also messes up latex conceal backslashes (which
@@ -1098,21 +1081,33 @@ Plug 'justinmk/vim-sneak'
 " Instead use braceless.vim highlighting, appears only when cursor is there.
 " Plug 'yggdroot/indentline'
 " Plug 'nathanaelkane/vim-indent-guides'
-"
-" Miscellaneous
-" Plug 'jez/vim-superman'  " man page
-" Plug 'beloglazov/vim-online-thesaurus'  " broken
-" Plug 'dkarter/bullets.vim'  " list numbering, fails too
-"
-" Easy tags, for easy integration
-" Plug 'xolox/vim-misc'  "depdency for easytags
-" Plug 'xolox/vim-easytags'  "kinda old and not that useful honestly
-" Plug 'ludovicchabant/vim-gutentags'  "slows shit down like crazy
-"
-" End of plugins
-" The plug#end also declares filetype plugin, syntax, and indent on
-" Note apparently every BufRead autocmd inside an ftdetect/filename.vim file
-" is automatically made part of the 'filetypedetect' augroup; that's why it exists!
+
+" Syntax highlighting for a few different things
+" Note impsort sorts import statements, and highlights modules with an after/syntax script
+" Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
+" Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
+" Plug 'hdima/python-syntax'  " this failed for me, had to manually add syntax file (f-strings not highlighted and other stuff)
+" Plug 'vim-python/python-syntax'  " alternative syntax 
+Plug 'tmux-plugins/vim-tmux'
+Plug 'plasticboy/vim-markdown'
+Plug 'vim-scripts/applescript.vim'
+Plug 'anntzer/vim-cython'
+Plug 'tpope/vim-liquid'
+Plug 'cespare/vim-toml'
+Plug 'JuliaEditorSupport/julia-vim'
+
+" Misellaneous plugins
+" Plug 'dkarter/bullets.vim'  " list numbering but completely fails
+" Plug 'ohjames/tabdrop'  " now apply similar solution with tabline#write
+" Plug 'beloglazov/vim-online-thesaurus'  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
+" Plug 'terryma/vim-multiple-cursors'  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
+Plug 'AndrewRadev/splitjoin.vim'  " single-line multi-line transition hardly every needed
+let g:splitjoin_split_mapping = 'cK'
+let g:splitjoin_join_mapping  = 'cJ'
+
+" End plugins and declare filetype plugin, syntax, and indent on
+" Note every BufRead autocmd inside an ftdetect/filename.vim file is
+" automatically made part of the 'filetypedetect' augroup (that's why it exists!)
 call plug#end()
 
 
@@ -1139,10 +1134,6 @@ if Active('vim-tags') || &runtimepath =~# 'vim-tags'
       \ endif
   augroup END
   nnoremap <silent> <Leader>T :ShowTags<CR>
-endif
-if Active('black')
-  let g:black_linelength = s:textwidth
-  let g:black_skip_string_normalization = 1
 endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
@@ -1225,6 +1216,21 @@ if Active('jedi-vim')
   let g:jedi#rename_command = ''
   let g:jedi#usages_command = '<Leader><CR>'
   let g:jedi#show_call_signatures = '1'
+endif
+
+" Undo tree settings
+if Active('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
+  noremap <Leader>u :UndotreeToggle<CR>
+  if has('persistent_undo')
+    let &undodir=$HOME . '/.undodir'
+    set undofile
+  endif
+endif
+
+" Vim tests
+if Active('vim-test')
 endif
 
 " Fugitive command aliases
@@ -1312,17 +1318,6 @@ if Active('tagbar')
   nnoremap <silent> <Leader>t :TagbarToggle<CR>
 endif
 
-" Undo tree settings
-if Active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  noremap <Leader>u :UndotreeToggle<CR>
-  if has('persistent_undo')
-    let &undodir=$HOME . '/.undodir'
-    set undofile
-  endif
-endif
-
 " Asynchronous linting engine
 if Active('ale')
   " Mappings (note that ALE works with buffer contents unlike syntastic)
@@ -1336,8 +1331,9 @@ if Active('ale')
   " https://github.com/Kuniwak/vint  # vim linter
   " https://pypi.org/project/doc8/  # python linter
   " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
-  " Note: use :ALEInfo to verify linting is successfully enabled
-  " for the file.
+  " Note: use :ALEInfo to verify linting is successfully enabled for the file.
+  " Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
+  " with :ALEFix black. Or can use the black plugin and use :Black of course.
   " Note: chktex is awful (e.g. raises errors for any command not followed
   " by curly braces) so lacheck is best you are going to get.
   let g:ale_linters = {
@@ -1358,6 +1354,25 @@ if Active('ale')
   let g:ale_lint_on_insert_leave = 1
   let g:ale_lint_on_filetype_changed = 1
   let g:ale_lint_on_enter = 0
+
+  " Shellcheck ignore list
+  " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
+  " * Allow sourcing from files (SC1090, SC1091)
+  " * Allow building arrays from unquoted result of command (SC2206, SC2207)
+  " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
+  " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
+  " * Allow 'which' instead of 'command -v' (SC2230)
+  " * Allow unquoted variables in for loop (SC2231)
+  " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
+  " * Allow looping through single strings (SC2043)
+  " * Allow assigning commands to variables (SC2209)
+  " * Allow unquoted glob pattern assignments (SC2125)
+  " * Allow defining aliases with .bashrc variables (SC2139)
+  let g:shellcheck_ignore_list = [
+    \ 'SC1090', 'SC1091', 'SC2002', 'SC2068', 'SC2086', 'SC2206', 'SC2207',
+    \ 'SC2230', 'SC2231', 'SC2016', 'SC2041', 'SC2043', 'SC2209', 'SC2125', 'SC2139',
+    \ ]
+  let g:ale_sh_shellcheck_options = '-e ' . join(g:shellcheck_ignore_list, ',')
 
   " Flake8 ignore list (also apply to autopep8):
   " * Allow line breaks before binary operators (W503)
@@ -1380,35 +1395,30 @@ if Active('ale')
     \ 'W503', 'E402', 'E221', 'E241', 'E731', 'E741',
     \ 'D102', 'D107', 'D105', 'D200', 'D204', 'D205', 'D301', 'D400', 'D401'
     \ ]
-  let g:ale_python_flake8_options =  '--max-line-length=' . s:textwidth . ' --ignore=' . join(s:flake8_ignore_list, ',')
-  let g:syntastic_python_flake8_post_args = g:ale_python_flake8_options
+  let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . join(s:flake8_ignore_list, ',')
+
+  " Related plugins
+  " Isort plugin docs: https://github.com/fisadev/vim-isort
+  " Black plugin docs: https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
+  " Autopep8 plugin docs (or :help autopep8): https://github.com/tell-k/vim-autopep8 (includes a few global variables)
+  " Autoformat plugin docs: https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
+  let g:autopep8_ignore = join(s:flake8_ignore_list, ',')
+  let g:autopep8_max_line_length = s:linelength
+  let g:autopep8_disable_show_diff = 1
+  let g:black_linelength = s:linelength
+  let g:black_skip_string_normalization = 1
+  let g:vim_isort_python_version = 'python3'
   let g:vim_isort_config_overrides = {
     \ 'include_trailing_comma': 'true',
     \ 'force_grid_wrap': 0,
-    \ 'line_length': s:textwidth,
     \ 'multi_line_output': 3,
+    \ 'line_length': s:linelength,
     \ }
-  let g:autopep8_ignore = join(s:flake8_ignore_list, ',')
-  let g:autopep8_max_line_length = s:textwidth
-
-  " Shellcheck ignore list
-  " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
-  " * Allow sourcing from files (SC1090, SC1091)
-  " * Allow building arrays from unquoted result of command (SC2206, SC2207)
-  " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
-  " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
-  " * Allow 'which' instead of 'command -v' (SC2230)
-  " * Allow unquoted variables in for loop (SC2231)
-  " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
-  " * Allow looping through single strings (SC2043)
-  " * Allow assigning commands to variables (SC2209)
-  " * Allow unquoted glob pattern assignments (SC2125)
-  " * Allow defining aliases with .bashrc variables (SC2139)
-  let g:shellcheck_ignore_list = [
-    \ 'SC1090', 'SC1091', 'SC2002', 'SC2068', 'SC2086', 'SC2206', 'SC2207',
-    \ 'SC2230', 'SC2231', 'SC2016', 'SC2041', 'SC2043', 'SC2209', 'SC2125', 'SC2139',
-    \ ]
-  let g:ale_sh_shellcheck_options = '-e ' . join(g:shellcheck_ignore_list, ',')
+  let g:formatdef_mpython =
+    \ '"isort --trailing-comma --force-grid-wrap 0 --multi-line 3 --line-length ' . s:linelength . ' - | '
+    \ . 'black --quiet --skip-string-normalization --line-length ' . s:linelength . ' -"'
+  let g:formatters_python = ['mpython']  " multiple formatters
+  let g:formatters_fortran = ['fprettify']
 endif
 
 " Easy-align
@@ -1524,7 +1534,9 @@ if Active('codi.vim')
 endif
 
 " Session saving and updating
-" Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre autocommands
+" Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
+" autocommands and saved session files call let v:this_session=expand("<sfile>:p")
+" (so that v:this_session is always set when initializing with vim -S .vimsession)
 if Active('vim-obsession')  " must manually preserve cursor position
   augroup session
     au!
@@ -1575,7 +1587,7 @@ if has('gui_running')
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
-  hi! link vimMap     Statement
+  hi! link vimMap Statement
   command! SchemePrev call utils#iter_colorschemes(0)
   command! SchemeNext call utils#iter_colorschemes(1)
 endif
@@ -1616,9 +1628,9 @@ highlight link pythonImportedObject Identifier
 highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 
 " Popup menu
-highlight Pmenu     ctermbg=NONE    ctermfg=White cterm=NONE
-highlight PmenuSel  ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE    ctermfg=Black cterm=NONE
+highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
 
 " Magenta is uncommon color, so use it for sneak and highlighting
 highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
@@ -1626,30 +1638,30 @@ highlight Search ctermbg=Magenta ctermfg=NONE
 
 " Fundamental changes, move control from LightColor to Color and DarkColor,
 " because ANSI has no control over light ones it seems.
-highlight Type        ctermbg=NONE ctermfg=DarkGreen
-highlight Constant    ctermbg=NONE ctermfg=Red
-highlight Special     ctermbg=NONE ctermfg=DarkRed
-highlight PreProc     ctermbg=NONE ctermfg=DarkCyan
+highlight Type ctermbg=NONE ctermfg=DarkGreen
+highlight Constant ctermbg=NONE ctermfg=Red
+highlight Special ctermbg=NONE ctermfg=DarkRed
+highlight PreProc ctermbg=NONE ctermfg=DarkCyan
 highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 
 " Features that only work in iTerm with minimum contrast setting
 " highlight LineNR       cterm=NONE ctermbg=NONE ctermfg=Gray
 " highlight Comment    ctermfg=Gray cterm=NONE
-highlight LineNR     cterm=NONE    ctermbg=NONE  ctermfg=Black
-highlight Comment    ctermfg=Black cterm=NONE
+highlight LineNR cterm=NONE ctermbg=NONE ctermfg=Black
+highlight Comment ctermfg=Black cterm=NONE
 
 " Special characters
-highlight NonText    ctermfg=Black cterm=NONE
+highlight NonText ctermfg=Black cterm=NONE
 highlight SpecialKey ctermfg=Black cterm=NONE
 
 " Matching parentheses
-highlight Todo       ctermfg=NONE  ctermbg=Red
+highlight Todo ctermfg=NONE ctermbg=Red
 highlight MatchParen ctermfg=NONE ctermbg=Blue
 
 " Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
 " background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
 " gray, and 'ANSI black bold' to black). Note 'lightgray' is just normal white
-highlight CursorLine   cterm=NONE ctermbg=Black
+highlight CursorLine cterm=NONE ctermbg=Black
 highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 
 " Column stuff, color 80th column and after 120
