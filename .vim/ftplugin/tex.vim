@@ -250,6 +250,9 @@ endfunction
 
 " Latexmk command and shortcuts
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
+noremap <buffer> <silent> <Leader>\ :<C-u>call system(
+  \ 'synctex view ' . @% . ' displayline -r ' . line('.') . ' ' . expand('%:r') . '.pdf ' . @%
+  \ )<CR>
 noremap <buffer> <silent> <Plug>Execute :<C-u>call <sid>latexmk()<CR>
 noremap <buffer> <silent> <Plug>AltExecute1 :<C-u>call <sid>latexmk('--diff')<CR>
 noremap <buffer> <silent> <Plug>AltExecute2 :<C-u>call <sid>latexmk('--word')<CR>

@@ -20,17 +20,17 @@ The `.vimrc` is even more utterly massive. Among other things, it configures a f
 vim plugins, configures FZF fuzzy autocompletion integration features, and configures a
 billion key mappings as I see fit. I use a few different standard prefixes:
 
-| Prefix   | Mode(s) | Description                                                    |
-| ------   | ------- | -----------                                                    |
-| `<Leader>` | `n`       | Miscellaneous and complex tasks. Set to `<Space>`.               |
-| `<Tab>`    | `n`       | Window and tab management and resizing.                        |
-| `\`        | `n`       | Preset search and replaces with motions.                       |
-| `g`        | `n`       | Various plugin-specific extensions.                            |
-| `<C-s>`    | `vi`      | Surrounding content with delimiters. See the [vim-swift](https://github.com/lukelbd/vim-swift) plugin. |
-| `<C-d>`    | `i`       | Inserting pre-defined snippets. See the [vim-swift](https://github.com/lukelbd/vim-swift) plugin.      |
+| Prefix   | Mode(s) | Description                                                       |
+| ------   | ------- | -----------                                                       |
+| `<Leader>` | `n`       | Miscellaneous and complex tasks. Set to `<Space>`.                  |
+| `<Tab>`    | `n`       | Window and tab management and resizing.                           |
+| `\`        | `n`       | Preset search and replaces with motions.                          |
+| `g`        | `n`       | Various plugin-specific extensions.                               |
+| `<C-s>`    | `vi`      | Surrounding content with delimiters. See the [vim-succinct](https://github.com/lukelbd/vim-succinct) plugin. |
+| `<C-d>`    | `i`       | Inserting pre-defined snippets. See the [vim-succinct](https://github.com/lukelbd/vim-succinct) plugin.      |
 
 Also check out the vim plugins I've written over the years:
-[vim-swift](https://github.com/lukelbd/vim-templates),
+[vim-succinct](https://github.com/lukelbd/vim-templates),
 [vim-tags](https://github.com/lukelbd/vim-tags),
 [vim-statusline](https://github.com/lukelbd/vim-statusline),
 [vim-tabline](https://github.com/lukelbd/vim-tabline),
