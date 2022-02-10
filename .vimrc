@@ -542,20 +542,17 @@ nnoremap O OX<Backspace>
 
 " Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
 " unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
+" Note: For visual pasting without overwriting see https://stackoverflow.com/a/31411902/4970632
 " Note: Use [p or ]p for P and p but adjusting to the current indent
-" vnoremap yp "0p  " causes delay
-" vnoremap yP "0P
 nnoremap yp "0p
 nnoremap yP "0P
 nnoremap <silent> <Leader>v :Help<CR>
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
-silent! unmap <Leader>p
-silent! unmap <Leader>P
-silent! unmap <Leader>p
-silent! unmap <Leader>P
-silent! unmap <Leader>p
-silent! unmap <Leader>P
+" vnoremap p "_dP  " flickers and does not include special v_p handling
+" vnoremap P "_dP
+vnoremap <silent> p p:let @+=@0<CR>:let @"=@0<CR>
+vnoremap <silent> P P:let @+=@0<CR>:let @"=@0<CR>
 
 " Yank until end of line, like C and D
 nnoremap Y y$
