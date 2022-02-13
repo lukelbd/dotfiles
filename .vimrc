@@ -993,7 +993,7 @@ endif
 Plug 'justinmk/vim-sneak'
 
 " Snippets and stuff
-" Todo: Investigate further, but so far primitive vim-swift snippets are fine
+" Todo: Investigate further, but so far primitive vim-succinct snippets are fine
 " Plug 'SirVer/ultisnips'  " fancy snippet actions
 " Plug 'honza/vim-snippets'  " reference snippet files supplied to e.g. ultisnips
 " Plug 'LucHermitte/mu-template'  " file template and snippet engine mashup, not popular
@@ -1164,9 +1164,9 @@ if Active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
-" Add global delims with vim-swift plugin functions and declare my weird
+" Add global delims with vim-succinct plugin functions and declare my weird
 " mapping defaults due to Karabiner
-if Active('vim-swift') || &runtimepath =~# 'vim-swift'
+if Active('vim-succinct') || &runtimepath =~# 'vim-succinct'
   " Set the cache directory for bibtex plugin
   let s:cache_dir = expand('~/Library/Caches/bibtex')
   if isdirectory(s:cache_dir)
@@ -1174,10 +1174,10 @@ if Active('vim-swift') || &runtimepath =~# 'vim-swift'
   endif
   " Custom delimiter mappings
   " Note: Account for karabiner arrow key maps
-  let g:swift_surround_prefix = '<C-s>'
-  let g:swift_snippet_prefix = '<C-d>'
-  let g:swift_prevdelim_map = '<F1>'
-  let g:swift_nextdelim_map = '<F2>'
+  let g:succinct_surround_prefix = '<C-s>'
+  let g:succinct_snippet_prefix = '<C-d>'
+  let g:succinct_prevdelim_map = '<F1>'
+  let g:succinct_nextdelim_map = '<F2>'
 endif
 
 " T commenter

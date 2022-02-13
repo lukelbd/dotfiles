@@ -12,7 +12,7 @@ endfunction
 nnoremap <silent> <buffer> <Plug>Execute :call <sid>open_html_file()
 
 " Define HTML vim-surround macros
-call swift#add_delims({
+call succinct#add_delims({
   \ 't': "<\1<\1>\r</\1\1>",
   \ 'd': "<div>\r</div>",
   \ 'h': "<head>\r</head>",

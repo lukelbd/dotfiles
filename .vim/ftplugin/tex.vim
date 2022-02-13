@@ -35,7 +35,7 @@ let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 " \ 'k': tex#ensure_math("^{\1Superscript: \1}"),
 " \ 'j': tex#ensure_math("_{\1Subscript: \1}"),
 " \ 'E': tex#ensure_math("\\times 10^{\1Exponent: \1}"),
-call swift#add_snippets({
+call succinct#add_snippets({
   \ "\<CR>": " \\textCR\r",
   \ "'": tex#ensure_math('\mathrm{d}'),
   \ '"': tex#ensure_math('\mathrm{D}'),
@@ -118,7 +118,7 @@ call swift#add_snippets({
 " \ ',': "\\begin{\1\\begin{\1}\r\\end{\1\1}",
 " \ '.': "\\\1\\\1{\r}",
 " \ 'L': "\\href{\1Link: \1}{\r}",
-call swift#add_delims({
+call succinct#add_delims({
   \ "'": "`\r'",
   \ '!': "\\frametitle{\r}",
   \ '"': "``\r''",
