@@ -43,7 +43,7 @@ endfunction
 nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_python_script()<CR>
 
 " Define python vim-surround macros
-call swift#add_delims({
+call succinct#add_delims({
   \ 'd': "'''\r'''",
   \ 'D': "\"\"\"\r\"\"\"",
   \ 'l': "list(\r)",

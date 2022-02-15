@@ -195,7 +195,7 @@ endfunction
 " Note: Check syntax of point to *left* of cursor because that's the environment
 " where we are inserting text. Does not wrap if in first column.
 function! s:ensure_math(value) abort
-  let output = swift#process_value(a:value)
+  let output = succinct#process_value(a:value)
   if empty(output)
     return output
   endif
@@ -210,7 +210,7 @@ endfunction
 
 " Format unit string for LaTeX for LaTeX for LaTeX for LaTeX
 function! s:format_units(value) abort
-  let input = swift#process_value(a:value)
+  let input = succinct#process_value(a:value)
   if empty(input)
     return ''
   endif
