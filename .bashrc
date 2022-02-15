@@ -617,7 +617,7 @@ confirm() {
     break
   done
 }
-#!/usr/bin/env bash
+
 # Like confirm but default value is 'no'
 confirm-no() {
   [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
@@ -636,8 +636,6 @@ confirm-no() {
     break
   done
 }
-
-
 
 # Rename files with matching base names or having 3-digit numbers into
 # ordered numbered files.
@@ -783,10 +781,11 @@ alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
 gdiff() {
   [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
-  git diff --textconv --no-index --color=always "$1" "$2"
+  command git diff --textconv --no-index --color=always "$1" "$2"
 }
 
 # Differencing with builtin diff command, *identical* files in two directories
+# Compare to 'ddiff' below
 idiff() {
   [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
   command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
@@ -795,14 +794,12 @@ idiff() {
 }
 
 # Differencing based on builtin diff command, *different* files in 2 directories
+# Builtin method is below (last grep command is to highlight important parts)
+# command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
+#   --exclude='*.git*' --exclude='*.svn*' \
+#   --strip-trailing-cr -r "$1" "$2" \
+#   | grep -E '(Only in.*:|Files | and |differ| identical)'
 ddiff() {
-  # Builtin method
-  # The last grep command is to highlight important parts
-  # command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
-  #   --exclude='*.git*' --exclude='*.svn*' \
-  #   --strip-trailing-cr -r "$1" "$2" \
-  #   | grep -E '(Only in.*:|Files | and |differ| identical)'
-  # Manual method with more info
   [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
   dir1=$1
@@ -914,14 +911,12 @@ zotfile-cleanup() {
 }
 
 #-----------------------------------------------------------------------------#
-# Supercomputer tools
+# Sessions, supercomputers, and github
 #-----------------------------------------------------------------------------#
+# Shortcuts for queue
 alias suser='squeue -u $USER'
 alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[:alpha:]"'
 
-#-----------------------------------------------------------------------------#
-# SSH, session management, and Github stuff
-#-----------------------------------------------------------------------------#
 # See current ssh connections
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 SSH_ENV="$HOME/.ssh/environment"  # for below
@@ -939,18 +934,22 @@ _is_empty() {
   fi
 }
 
-# Helper functions: string parsing
+# Compress or expand user string for copying between machines
 _expand_user() {  # turn tilde into $HOME
-  local param="$*"
-  param="${param/#~/$HOME}"  # restore expanded tilde
-  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
-  echo "$param"
+  local param
+  for param in "$@"; do
+    param=${param/#~/$HOME}  # restore expanded tilde
+    param=${param/#\~/$HOME}  # if previous failed or was re-expanded need to escape the tilde
+    echo "$param"
+  done
 }
 _compress_user() {  # turn $HOME into tilde
-  local param="$*"
-  param="${param/#$HOME/~}"
-  param="${param/#$HOME/\~}"
-  echo "$param"
+  local param
+  for param in "$@"; do
+    param=${param/#$HOME/~}
+    param=${param/#$HOME/\~}
+    echo "$param"
+  done
 }
 
 # Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
@@ -1047,7 +1046,7 @@ _ssh() {
     return $?
   fi
   [[ $# -gt 2 || $# -lt 1 ]] && { echo 'Usage: _ssh HOST [PORT]'; return 1; }
-  address=$(_address "$1") || { echo 'Error: ssh failed.'; return 1; }
+  address=$(_address "$1") || { echo 'Error: Invalid address.'; return 1; }
   if [ -n "$2" ]; then
     ports=($2)  # custom
   else
@@ -1087,15 +1086,11 @@ ssh-refresh() {
   echo "Exit status $stat for connection over ports: ${ports[*]:1}."
 }
 
-# Trigger ssh-agent if not already running, and add Github private key
-# Make sure to make private key passwordless, for easy login; all I want here is to avoid
-# storing plaintext username/password in ~/.git-credentials, but free private key is fine
-# * See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
-#   The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
-# * Used to just ssh-add on every login, but that starts fantom ssh-agent processes that
-#   persist when terminal is closed (all the 'eval' does is set environment variables;
-#   ssh-agent without the eval just starts the process in background). Now we re-use
-#   pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
+# Trigger ssh-agent if not already running and add the Github private key. Make sure
+# to make private key passwordless for easy login. All we want is to avoid storing
+# plaintext username/password in ~/.git-credentials, but free private key is fine.
+# See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
+# For AUTH_SOCK see: https://unix.stackexchange.com/a/90869/112647
 ssh-init() {
   if [ -f "$HOME/.ssh/id_rsa_github" ]; then
     command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
@@ -1107,80 +1102,116 @@ ssh-init() {
   fi
 }
 
-# Kill all ssh-agent processes
-ssh-kill() {
-  # shellcheck disable=2009
-  ps aux | grep ssh-agent | grep -v grep | awk '{print $2}' | xargs kill
+# Source the github SSH settings if on remote server
+# NOTE: Used to use ssh-add on every login, but that starts phantom ssh-agent processes
+# that persist when terminal is closed (the 'eval' just sets environment variables;
+# ssh-agent without eval just starts the process in background). Now we re-use
+# pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
+if ! $_macos; then
+  if [ -f "$SSH_ENV" ]; then
+    source "$SSH_ENV" >/dev/null
+    # shellcheck disable=2009
+    ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent$ >/dev/null || ssh-init
+  else
+    ssh-init
+  fi
+fi
+
+# Kill all ssh-agent processes or port connection processes
+# For latter see: https://stackoverflow.com/a/20240445/4970632
+kill-agent() {
+  pkill aux ssh-agent  # simply kill processes matching ssh-agent
+}
+kill-port() {
+  local pids port=$1
+  [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
+  # lsof -t -i tcp:$port | xargs kill  # this can kill chrome instances
+  pids=$(lsof -i "tcp:$port" | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
+  [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
+  echo "$pids" | xargs kill  # kill the ssh processes
+  echo "Processes $pids killed. Connections over port $port removed."
 }
 
-# Copy from <this server> to local macbook ("copy there")
+# Copy files between macbook and servers. When on remote server use the ssh tunnel set
+# up by _ssh. When on macbook use prestored address name (should have passwordless login).
 # NOTE: Below we use the bash parameter expansion ${!#} --> 'variable whose name is
 # result of "$#"' --> $n where n is the number of args.
 # NOTE: Use rsync with -a (archive mode) which includes -r (recursive), -l (copy
 # symlinks as symlinks), -p (preserve permissions), -t (preserve modification times),
 # except ignore -g (preserve group member), -o (preserve owner), -D (preserve devices
-# and specials) to permit transfer across computer systems and add user-friendly
-# options -v (verbose), -h (human readable), -i (itemize changes). Consider using
-# -z (compress data during transfer) to improve speed.
-rlcp() {
-  local port args dest
-  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
-  port=$(_port) || { echo "Error: Port unknown."; return 1; }
-  args=("${@:1:$#-1}")          # flags and files
-  dest=$(_compress_user ${!#})  # last value
-  dest=${dest// /\\ }           # escape whitespace manually
-  echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
-  # command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
-  command rsync -vhi -rlpt --progress \
-    -e "ssh -o StrictHostKeyChecking=no -p $port" "${args[@]}" "$USER"@localhost:"$dest"
+# and specials) to permit transfer across computer systems, and add user-friendly
+# options -v (verbose), -h (human readable), -i (itemize changes), -u (update newer
+# files only). Consider using -z (compress data during transfer) to improve speed.
+_scp_bulk() {
+  local cmd port flags forward remote address paths srcs dest
+  # Parse arguments
+  flags=(-vhi -rlpt --update --progress)  # default flags
+  $_macos && remote=0 || remote=1  # whether on remote
+  while [ $# -gt 0 ]; do
+    if [[ "$1" =~ ^\- ]]; then
+      flags+=("$1")  # flag arguments must be specified with equals
+    elif [ -z "$forward" ]; then
+      forward=$1
+    elif [ $remote -eq 0 ] && [ -z "$address" ]; then
+      address=$(_address "$1") || { echo "Error: Invalid address $1."; return 1; }
+    else
+      paths+=("$(_compress_user "$1")")  # convert $HOME into tilde
+    fi
+    shift
+  done
+  if [ "$remote" -eq 1 ]; then  # handle ssh tunnel
+    address=$USER@localhost  # use port tunnel for copying on remote server
+    port=$(_port) || { echo 'Error: Port unknown.'; return 1; }
+    flags+=(-e "ssh -o StrictHostKeyChecking=no -p $port")
+  fi
+  # Sanitize paths and execute
+  [ ${#paths[@]} -lt 2 ] && echo "Usage: _scp_bulk [FLAGS] SOURCE_PATH1 [SOURCE_PATH2 ...] DEST_PATH" && return 1
+  [[ "$forward" =~ ^[01]$ ]] || { echo "Error: Invalid forward $forward."; return 1; }
+  paths=("${paths[@]/#/$address:}")  # prepend with address: then possibly remove below
+  srcs=("${paths[@]::${#paths[@]}-1}")  # source paths
+  dest=${paths[${#paths[@]}-1]}  # destination path
+  if [ $((remote ^ forward)) -eq 0 ]; then
+    dest=${dest#*:}  # on remote and copying to remote or on local and copying to local
+    srcs=("${srcs[@]// /\\ }")  # escape whitespace manually
+  else
+    srcs=("${srcs[@]#*:}")  # on local and copying to remote or on remote and copying to local
+    dest=${dest// /\\ }  # escape whitespace manually
+  fi
+  echo "Copying path(s) ${srcs[*]} to path ${dest} (flags ${flags[*]})..."
+  command rsync "${flags[@]}" "${srcs[@]}" "$dest"
 }
 
-# Copy from local macbook to <this server> ("copy here")
-# NOTE: So far cannot copy multiple files because need to prepend $USER@localhost
-# to only file arguments while skipping flags but cannot yet parse arguments.
-lrcp() {  # "copy to remote (from local); 'copy here'"
-  local port flags file dest
-  $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
-  port=$(_port) || { echo "Error: Port unknown."; return 1; }
-  dest=${!#}                            # last value
-  file=$(_compress_user "${@:$#-1:1}")  # second to last
-  file=${file// /\\ }                   # escape whitespace manually
-  flags=("${@:1:$#-2}")                 # flags
-  echo "(Port $port) Copying $file from laptop to server at: $dest..."
-  # command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
-  command rsync -vhi -lrpt --progress "${flags[@]}" \
-    -e "ssh -o StrictHostKeyChecking=no -p $port" "$USER"@localhost:"$file" "$dest"
-}
-
-# Sync figures from remote repository to laptop. Stop uploading figures to Github
-# because it massively bloats repository size. Also ignore hidden folders and folders
-# starting with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
+# Worker functions powered by _scp_bulk(). Copies local to remote, remote to local,
+# or figure files in this directory to remote. Stop uploading figures to Github because
+# massively bloats repository size. Also ignore hidden folders and folders starting
+# with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
 # NOTE: Previous git alias was figs = "!git add --all ':/fig*' ':/vid*' &&
 # git commit -m 'Update figures and notebooks.' && git push origin master"
+rlcp() {
+  _scp_bulk 0 "$@"
+}
+lrcp() {
+  _scp_bulk 1 "$@"
+}
 figcp() {
-  local src dest flags address
-  flags=(-vhi -rlpt --progress --include={fig,vid}'*/***' --exclude='*' --exclude='.*/')
-  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' -e "$ssh" "$src" "$dest"
+  local flags forward address src dest
+  flags=(--dry-run --include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*/')
   if $_macos; then
     [ $# -eq 1 ] || { echo "Error: Input host required unknown."; return 1; }
-    dest=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
+    forward=1
+    address=$1
     src=$(_compress_user "$src")
     src=${src/\~\/science/\~\/}
-    src=$(_address "$1"):$src || { echo "Error: Host unknown."; return 1; }
-    flags+=(-e "ssh -o StrictHostKeyChecking=no")
+    dest=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
   else
     [ $# -eq 0 ] || { echo "Error: Zero arguments accepted."; return 1; }
-    port=$(_port) || { echo "Error: Port unknown."; return 1; }
+    forward=0
     src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
     dest=$(_compress_user "$src")
     dest=${dest/\~/\~\/science}
-    dest="$USER"@localhost:"$dest"
-    flags+=(-e "ssh -o StrictHostKeyChecking=no -P $port")
+    foreward
   fi
-  echo "(Port $port) Copying figures from $src to $dest"
-  command rsync "${flags[@]}" "$src" "$dest"
+  _scp_bulk "${flags[@]}" "$forward" $address "$src" "$dest"  # address may expand to nothing
 }
 
 # Generate SSH file system
@@ -1245,32 +1276,11 @@ unmount() {
   rm -r "${HOME:?}/$server"
 }
 
-# Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
-disconnect() {
-  local pids port=$1
-  [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
-  # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
-  pids=$(lsof -i "tcp:$port" | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
-  [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
-  echo "$pids" | xargs kill  # kill the SSH processes
-  echo "Processes $pids killed. Connections over port $port removed."
-}
-
-# Source SSH settings, if applicable
-if ! $_macos; then  # only do this if not on macbook
-  if [ -f "$SSH_ENV" ]; then
-    source "$SSH_ENV" >/dev/null
-    # shellcheck disable=2009
-    ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent$ >/dev/null || ssh-init
-  else
-    ssh-init
-  fi
-fi
-
 #-----------------------------------------------------------------------------#
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------#
 # Ipython profile shorthands (see ipython_config.py in .ipython profile subfolders)
+alias pytest='pytest -s -v'  # show print output and use verbose mode
 alias climopy='ipython -i --profile=climopy'
 alias proplot='ipython -i --profile=proplot'
 alias jupyter-climopy='jupyter console -i --profile=climopy'
