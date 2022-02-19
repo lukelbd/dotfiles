@@ -389,13 +389,14 @@ abspath() {  # abspath that works on mac, Linux, or anything with bash
 # if -a specified
 open() {
   ! $_macos && echo "Error: open() should be run from your macbook." && return 1
-  local files app app_default
+  local files flags app app_default
   while [ $# -gt 0 ]; do
     case "$1" in
-      -a|--application) app_default="$2"; shift; shift; ;;
-      -*) echo "Error: Unknown flag $1." && return 1 ;;
-      *) files+=("$1"); shift; ;;
+      -a|--application) shift && app_default=$1 ;;
+      -*) flags+=("$1") ;;
+      *) files+=("$1"); ;;
     esac
+    shift
   done
   for file in "${files[@]}"; do
     if [ -n "$app_default" ]; then
@@ -416,7 +417,7 @@ open() {
       esac
     fi
     echo "Opening file \"$file\"."
-    command open -a "$app" "$file"
+    command open -a "$app" "${flags[@]}" "$file"
   done
 }
 
