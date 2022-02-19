@@ -19,6 +19,51 @@ let g:tex_no_error = 1
 let b:delimitMate_quotes = '$ |'
 let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 
+" Bibtex cache directory
+let s:cache_dir = expand('~/Library/Caches/bibtex')
+if isdirectory(s:cache_dir)
+  let $FZF_BIBTEX_CACHEDIR = s:cache_dir
+endif
+
+" Running custom or default latexmk command in background
+" Warning: Trailing space will be escaped as flag! So trim unless we have any options
+let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
+let s:path = expand('<sfile>:p:h')
+function! s:latexmk(...) abort
+  if !s:vim8
+    echohl ErrorMsg
+    echom 'Error: Latex compilation requires vim >= 8.0'
+    echohl None
+    return 1
+  endif
+  let opts = trim(a:0 ? a:1 : '') . ' -l=' . string(line('.'))
+  let texfile = expand('%')
+  let logfile = expand('%:t:r') . '.latexmk'
+  let lognum = bufwinnr(logfile)
+  if lognum == -1  " open a logfile window
+    silent! exe string(winheight('.') / 4) . 'split ' . logfile
+    silent! exe winnr('#') . 'wincmd w'
+  else  " jump to logfile window and clean its contents
+    silent! exe bufwinnr(logfile) . 'wincmd w'
+    silent! 1,$d _
+    silent! exe winnr('#') . 'wincmd w'
+  endif
+  let num = bufnr(logfile)
+  let g:tex_job = job_start(
+    \ 'latexmk ' . texfile . ' ' . opts,
+    \ {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
+    \ )  " run job in realtime
+endfunction
+
+" Latexmk command and shortcuts
+command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
+noremap <buffer> <silent> <Leader>\ :<C-u>call system(
+  \ 'synctex view ' . @% . ' displayline -r ' . line('.') . ' ' . expand('%:r') . '.pdf ' . @%
+  \ )<CR>
+noremap <buffer> <silent> <Plug>Execute :<C-u>call <sid>latexmk()<CR>
+noremap <buffer> <silent> <Plug>AltExecute1 :<C-u>call <sid>latexmk('--diff')<CR>
+noremap <buffer> <silent> <Plug>AltExecute2 :<C-u>call <sid>latexmk('--word')<CR>
+
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending
 " and appending the strings with single quotes. This lets us make input()
 " dependent snippets as shown for the 'j', 'k', and 'E' mappings.
@@ -202,8 +247,8 @@ call succinct#add_delims({
   \ }, 1)
 
 " " Text object integration
-" " " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
-" " " Also changed begin end modes so they make more sense.
+" " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
+" " Also changed begin end modes so they make more sense.
 " let s:tex_textobjs_map = {
 "   \  'dollar-math-a': {
 "   \     'pattern': '[$][^$]*[$]',
@@ -215,44 +260,3 @@ call succinct#add_delims({
 "   \   },
 "   \ }
 " call textobj#user#plugin('latex', s:tex_textobjs_map)
-
-" Running custom or default latexmk command in background
-let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
-let s:path = expand('<sfile>:p:h')
-function! s:latexmk(...) abort
-  if !s:vim8
-    echohl ErrorMsg
-    echom 'Error: Latex compilation requires vim >= 8.0'
-    echohl None
-    return 1
-  endif
-  " Jump to logfile if it is open, else open one
-  " Warning: Trailing space will be escaped as flag! So trim unless we have any options
-  let opts = trim(a:0 ? a:1 : '') . ' -l=' . string(line('.'))
-  let texfile = expand('%')
-  let logfile = expand('%:t:r') . '.latexmk'
-  let lognum = bufwinnr(logfile)
-  if lognum == -1
-    silent! exe string(winheight('.') / 4) . 'split ' . logfile
-    silent! exe winnr('#') . 'wincmd w'
-  else
-    silent! exe bufwinnr(logfile) . 'wincmd w'
-    silent! 1,$d _
-    silent! exe winnr('#') . 'wincmd w'
-  endif
-  " Run job in realtime
-  let num = bufnr(logfile)
-  let g:tex_job = job_start(
-    \ 'latexmk ' . texfile . ' ' . opts,
-    \ {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
-    \ )
-endfunction
-
-" Latexmk command and shortcuts
-command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <buffer> <silent> <Leader>\ :<C-u>call system(
-  \ 'synctex view ' . @% . ' displayline -r ' . line('.') . ' ' . expand('%:r') . '.pdf ' . @%
-  \ )<CR>
-noremap <buffer> <silent> <Plug>Execute :<C-u>call <sid>latexmk()<CR>
-noremap <buffer> <silent> <Plug>AltExecute1 :<C-u>call <sid>latexmk('--diff')<CR>
-noremap <buffer> <silent> <Plug>AltExecute2 :<C-u>call <sid>latexmk('--word')<CR>

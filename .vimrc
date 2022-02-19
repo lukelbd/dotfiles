@@ -1164,14 +1164,9 @@ if Active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
-" Add global delims with vim-succinct plugin functions and declare my weird
-" mapping defaults due to Karabiner
+" Add global delims with vim-succinct plugin functions and declare
+" weird mapping defaults due to Karabiner
 if Active('vim-succinct') || &runtimepath =~# 'vim-succinct'
-  " Set the cache directory for bibtex plugin
-  let s:cache_dir = expand('~/Library/Caches/bibtex')
-  if isdirectory(s:cache_dir)
-    let $FZF_BIBTEX_CACHEDIR = s:cache_dir
-  endif
   " Custom delimiter mappings
   " Note: Account for karabiner arrow key maps
   let g:succinct_surround_prefix = '<C-s>'
@@ -1180,7 +1175,7 @@ if Active('vim-succinct') || &runtimepath =~# 'vim-succinct'
   let g:succinct_nextdelim_map = '<F2>'
 endif
 
-" T commenter
+" Comment toggling stuff
 if Active('tcomment_vim')
   nmap g>> g>c
   nmap g<< g<c
@@ -1197,22 +1192,20 @@ if Active('neocomplete.vim')
 endif
 
 " Jedi vim
+" Note: Most mappings override custom ones so critical to change all settings.
 if Active('jedi-vim')
-  augroup jedi_fix
-    au!
-    au FileType python nnoremap <buffer> <silent> <Leader>s :Autosave<CR>
-  augroup END
-  let g:jedi#completions_enabled = 0
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
-  let g:jedi#goto_command = '<CR>'
+  let g:jedi#completions_enabled = 0
   let g:jedi#documentation_command = '<Leader>p'
-  let g:jedi#max_doc_height = 100
-  let g:jedi#goto_assignments_command = ''
+  let g:jedi#goto_command = '<CR>'
   let g:jedi#goto_definitions_command = ''
+  let g:jedi#goto_assignments_command = ''
+  let g:jedi#goto_stubs_command = ''
+  let g:jedi#max_doc_height = 100
   let g:jedi#rename_command = ''
-  let g:jedi#usages_command = '<Leader><CR>'
   let g:jedi#show_call_signatures = '1'
+  let g:jedi#usages_command = '<Leader><CR>'
 endif
 
 " Undo tree settings
@@ -1220,14 +1213,15 @@ if Active('undotree')
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
   noremap <Leader>u :UndotreeToggle<CR>
-  if has('persistent_undo')
-    let &undodir=$HOME . '/.undodir'
-    set undofile
-  endif
+  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
 endif
 
-" Vim tests
+" Vim test settings
+" Run tests near cursor or throughout file
 if Active('vim-test')
+  let s:test_options = '--verbose'
+  nnoremap <silent> <Leader>p :exe 'TestNearest ' . s:test_options<CR>
+  nnoremap <silent> <Leader>P :exe 'TestFile ' . s:test_options<CR>
 endif
 
 " Fugitive command aliases
@@ -1317,7 +1311,7 @@ endif
 
 " Asynchronous linting engine
 if Active('ale')
-  " Mappings (note that ALE works with buffer contents unlike syntastic)
+  " Buffer-local toggling (note ALE works with buffer contents unlike syntastic)
   noremap <silent> <Leader>x :<C-u>call utils#ale_toggle(1)<CR>
   noremap <silent> <Leader>X :<C-u>call utils#ale_toggle(0)<CR>
   map ]x <Plug>(ale_next_wrap)
