@@ -243,7 +243,6 @@ open() {
   texname=${pdfname%.pdf}.tex
   if [ "$appname" == 'Skim' ] && which displayline &>/dev/null && [ -n "$line" ]; then
     echoerr "Opening \"$pdfname\" and jumping to line $line (source $texname)"
-    echoerr displayline -r "$line" "$pdfname" "$texname"
     displayline -r "$line" "$pdfname" "$texname"
   else
     echoerr "Opening \"$pdfname\""
