@@ -48,4 +48,5 @@ call succinct#add_delims({
   \ 'D': "\"\"\"\r\"\"\"",
   \ 'l': "list(\r)",
   \ 't': "tuple(\r)",
-  \ }, 1)
+  \ },
+  \ 1)

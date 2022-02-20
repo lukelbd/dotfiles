@@ -152,7 +152,8 @@ call succinct#add_snippets({
   \ 'y': tex#ensure_math('\psi'),
   \ 'z': tex#ensure_math('\zeta'),
   \ '~': tex#ensure_math('\sim'),
-  \ }, 1)
+  \ },
+  \ 1)
 
 " Surround tools. Currently only overwrite 'r' and 'a' global bracket surrounds
 " the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds
@@ -244,7 +245,8 @@ call succinct#add_delims({
   \ '|': "\\left\\|\r\\right\\|",
   \ '}': "\\left\\{\\begin{array}{ll}\r\\end{array}\\right.",
   \ '~': "\\title{\r}",
-  \ }, 1)
+  \ },
+  \ 1)
 
 " " Text object integration
 " " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim

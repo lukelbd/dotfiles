@@ -1,16 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Various utils defined here
 "-----------------------------------------------------------------------------"
-" Sort lines
-function! s:sort_lines(line1, line2) abort
-  let line1 = a:line1
-  let line2 = a:line2
-  if line1 > line2
-    let [line2, line1] = [line1, line2]
-  endif
-  return [line1, line2]
-endfunction
-
 " Call function over the visual line range or the user motion line range
 " Note: Use this approach rather than adding line range as physical arguments and
 " calling with call call(func, firstline, lastline, ...) so that funcs can still be
@@ -41,7 +31,6 @@ function! utils#operator_func(type) range abort
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
   endif
-  let [firstline, lastline] = s:sort_lines(firstline, lastline)
   exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
   return ''
 endfunction
@@ -157,8 +146,7 @@ endfunction
 
 " Indent multiple times
 function! utils#multi_indent(dedent, count) range abort
-  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
-  exe firstline . ',' . lastline . repeat(a:dedent ? '<' : '>', a:count)
+  exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
 " For <expr> map accepting motion
 function! utils#multi_indent_expr(...) abort
@@ -171,9 +159,8 @@ endfunction
 function! utils#replace_regexes(message, ...) range abort
   let prevhist = @/
   let winview = winsaveview()
-  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
   for i in range(0, a:0 - 2, 2)
-    keepjumps exe firstline . ',' . lastline . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
+    keepjumps exe a:firstline . ',' . a:lastline . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
     call histdel('/', -1)
   endfor
   echom a:message
@@ -686,17 +673,17 @@ endfunction
 
 " Formatting tools
 " Build regexes
-let s:regex_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'  " leading spaces or comment
-let s:regex_item = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
-let s:regex_tail = '\(.*\)$'  " remainder of line
-let s:regex_total = s:regex_head . s:regex_item . s:regex_tail
+let s:item_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'  " leading spaces or comment
+let s:item_indicator = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
+let s:item_tail = '\(.*\)$'  " remainder of line
+let s:item_total = s:item_head . s:item_indicator . s:item_tail
 
 " Remove the item indicator
 function! s:remove_item(line, firstline_, lastline_) abort
-  let match_head = substitute(a:line, s:regex_total, '\1', '')
-  let match_item = substitute(a:line, s:regex_total, '\2', '')
+  let match_head = substitute(a:line, s:item_total, '\1', '')
+  let match_item = substitute(a:line, s:item_total, '\2', '')
   keepjumps exe a:firstline_ . ',' . a:lastline_
-    \ . 's@' . s:regex_head . s:regex_item . '\?' . s:regex_tail
+    \ . 's@' . s:item_head . s:item_indicator . '\?' . s:item_tail
     \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
     \ . '@ge'
   call histdel('/', -1)
@@ -707,11 +694,10 @@ endfunction
 " commands flashing at bottom of screen. Also need feedkeys() because normal
 " doesn't work inside an expression mapping.
 function! utils#wrap_lines(...) range abort
-  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
   let textwidth = &l:textwidth
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let cmd =
-    \ lastline . 'gggq' . firstline . 'gg'
+    \ a:lastline . 'gggq' . a:firstline . 'gg'
     \ . ':silent let &l:textwidth = ' . textwidth . " | echom 'Wrapped lines to "
     \ . &l:textwidth . " characters.'\<CR>"
   call feedkeys(cmd, 'n')
@@ -731,36 +717,31 @@ function! utils#wrap_items(...) range abort
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let prevhist = @/
   let winview = winsaveview()
-  " Put lines on single bullet
+  " Put lines on a single bullet
   let linecount = 0
-  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
-  let lastline_orig = lastline
-  for linenum in range(lastline, firstline, -1)
+  let lastline = a:lastline
+  for linenum in range(a:lastline, a:firstline, -1)
     let line = getline(linenum)
     let linecount += 1
-    if line =~# s:regex_total
-      " Remove item indicator if line starts with
-      let match_tail = substitute(line, s:regex_total, '\3', '')
-      if match_tail =~# '^\s*[a-z]'
+    if line =~# s:item_total
+      let tail = substitute(line, s:item_total, '\3', '')
+      if tail =~# '^\s*[a-z]'  " remove item indicator if starts with lowercase
         call s:remove_item(line, linenum, linenum)
-      " Otherwise join
-      else
+      else  " otherwise join count lines and adjust lastline
         exe linenum . 'join ' . linecount
+        let lastline -= linecount - 1
         let linecount = 0
-        if lastline == lastline_orig
-          let lastline = linenum  " the new lastline
-        endif
       endif
     endif
   endfor
-  " Wrap each line, accounting for bullet indent
-  " If gqgq results in a wrapping, cursor is placed at the end of that block.
-  " Then must remove the automatic item indicators that were inserted.
-  for linenum in range(lastline, firstline, -1)
+  " Wrap each line, accounting for bullet indent. If gqgq results in a wrapping, cursor
+  " is placed at end of that block. Then must remove auto-inserted item indicators.
+  echom lastline . ', ' . a:firstline
+  for linenum in range(lastline, a:firstline, -1)
     exe linenum
     let line = getline('.')
     normal! gqgq
-    if line =~# s:regex_total && line('.') > linenum
+    if line =~# s:item_total && line('.') > linenum
       call s:remove_item(line, linenum + 1, line('.'))
     endif
   endfor

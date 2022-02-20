@@ -96,14 +96,14 @@ let &g:wildignore =
 if exists('&diffopt')
   set diffopt^=filler
 endif
-if exists('&breakindent')
-  set breakindent  " map indentation when breaking
+if exists('&breakindent')  " map indentation when breaking
+  set breakindent
 endif
-if !exists('b:expandtab')
-  set expandtab  " only expand if TabToggle has not been called!
-endif  " says to always expand \t to their length in <SPACE>'s!
-if has('gui_running')
-  set number relativenumber guioptions= guicursor+=a:blinkon0  " no scrollbars or blinking
+if !exists('b:expandtab')  " only apply if TabToggle has not been used
+  set expandtab
+endif
+if has('gui_running')  " do not source $VIMRUNTIME/menu.vim for speedup (see https://vi.stackexchange.com/q/10348/8084)
+  set number relativenumber guioptions=M guicursor+=a:blinkon0  " no scrollbars or blinking
 endif
 
 " Always override these settings, even buffer-local settings
@@ -301,13 +301,9 @@ command! -nargs=1 Grep call Grep(<q-args>)
 
 " Reverse selected lines
 function! Reverse() range abort
-  let line1 = a:firstline  " cannot overwrite input var names
-  let line2 = a:lastline
-  if line1 == line2
-    let line1 = 1
-    let line2 = line('$')
-  endif
-  exec 'silent ' . line1 . ',' . line2 . 'g/^/m' . (line1 - 1)
+  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
+  let num = empty(range) ? 0 : a:firstline - 1
+  exec 'silent ' . range . 'g/^/m' . num
 endfunction
 command! -range Reverse <line1>,<line2>call Reverse()
 

@@ -155,32 +155,28 @@ case "${HOSTNAME%%.*}" in
     export PGI=/opt/pgi
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
-
     # ISCA modeling
     export GFDL_BASE=$HOME/isca
     export GFDL_ENV=monde  # "environment" configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
-
-    # NCAR NCL root
-    export NCARG_ROOT=/usr/local  # ncl location
+    # NCAR NCL root location
+    export NCARG_ROOT=/usr/local
     ;;
 
   # Chicago supercomputer, any of the login nodes
   midway*)
-    # Modules and paths
-    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
-    _load_unloaded mlk intel  # for some reason latest CDO version is not default
-
-    # Remove print statements from prompt
+    # Add modules and paths and remove print statements from prompt
     # WARNING: Greedy glob removes commands sandwiched between print statements
+    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
     export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
+    _load_unloaded mlk intel  # latest CDO version is not default
     ;;
 
   # Cheyenne supercomputer, any of the login nodes
   # NOTE: Use 'sinteractive' for interactive mode
   cheyenne*)
-    # Modules and paths
+    # Add modules and paths
     # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
@@ -189,7 +185,8 @@ case "${HOSTNAME%%.*}" in
 
   # Euclid options
   euclid)
-    # All netcdf, mpich, etc. utilites already in in /usr/local/bin
+    # Add basic paths
+    # Note all netcdf and mpich utilites are already in in /usr/local/bin
     export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
     export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
     export LD_LIBRARY_PATH=/usr/local/lib
