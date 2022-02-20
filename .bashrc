@@ -342,8 +342,8 @@ vi() {
 }
 vim() {
   # First modify the Obsession-generated session file
-  # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
-  # tracking in the current session file
+  # Then restore the session; in .vimrc specify same file for writing,
+  # so this 'resumes' tracking in the current session file
   local flags files
   while [ $# -gt 0 ]; do
     case "$1" in
@@ -351,9 +351,10 @@ vim() {
       *) files+=("$1") ;;
     esac
     shift
- done
-  if [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ]; then
-    # Fix various Obsession bugs
+  done
+  if [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ] \
+    && ! [[ " ${flags[*]} " =~ (--version|--help|-h) ]]; then
+    # Open session and fix various bugs
     # Unfold stuff after entering each buffer. For some reason folds are
     # otherwise re-closed upon openening each file. Also prevent double-loading,
     # possibly Obsession does not anticipate :tabedit, ends up loading
@@ -365,9 +366,10 @@ vim() {
     sed -i -s 'N;/normal! zc/!P;D' .vimsession
     command vim "${flags[@]}" -S .vimsession  # for working with obsession
   else
-    command vim "${flags[@]}" -p "${files[@]}"  # when loading specific files; also open them in separate tabs
+    # Open specific files
+    # The -p flag says to use single tab for each file
+    command vim "${flags[@]}" -p "${files[@]}"
   fi
-  clear  # clear screen after exit
 }
 
 # Absolute path, works everywhere
