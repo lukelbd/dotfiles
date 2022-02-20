@@ -19,6 +19,8 @@
 " conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
 " Critical stuff
+" Note: Since repeat#set is used everywhere we copy repeat.vim to autoload folder
+" instead of Plug 'tpope/vim-repeat' or else get errors running vim on new installs.
 let &t_Co=256
 let s:linelength = 88
 exe 'runtime autoload/repeat.vim'
@@ -731,23 +733,23 @@ inoremap <expr> <Down> pumvisible() ? utils#pum_next() : "\<Down>"
 inoremap <silent> <expr> <Delete> utils#forward_delete()
 
 " Insert comment
-inoremap <expr> <C-c> comments#comment_insert()
+inoremap <expr> <C-c> comment#comment_insert()
 
 " Section headers, dividers, and other information
-nnoremap <silent> gcA :call comments#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap <silent> gcY :call comments#message('Date: ' . strftime('%Y-%m-%d'))<CR>
-nnoremap <silent> gc" :call comments#header_inline(5)<CR>
-nnoremap <silent> gc' :call comments#header_incomment()<CR>
-nnoremap <silent> gc: :call comments#header_line('-', 77, 1, 1)<CR>
-nnoremap <silent> <Plug>CommentBar :call comments#header_line('-', 77, 1, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
+nnoremap <silent> gcA :call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap <silent> gcY :call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
+nnoremap <silent> gc" :call comment#header_inline(5)<CR>
+nnoremap <silent> gc' :call comment#header_incomment()<CR>
+nnoremap <silent> gc: :call comment#header_line('-', 77, 1, 1)<CR>
+nnoremap <silent> <Plug>CommentBar :call comment#header_line('-', 77, 1, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
 nmap gc; <Plug>CommentBar
 
 " ReST section comment headers
 " Warninb: <Plug> name should not be subset of other name or results in delay!
-nnoremap <silent> <Plug>SectionSingle :call comments#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
-nnoremap <silent> <Plug>SubsectionSingle :call comments#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
-nnoremap <silent> <Plug>SectionDouble :call comments#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
-nnoremap <silent> <Plug>SubsectionDouble :call comments#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
+nnoremap <silent> <Plug>SectionSingle :call comment#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
+nnoremap <silent> <Plug>SubsectionSingle :call comment#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
+nnoremap <silent> <Plug>SectionDouble :call comment#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
+nnoremap <silent> <Plug>SubsectionDouble :call comment#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
 nmap g= <Plug>SectionSingle
 nmap g- <Plug>SubsectionSingle
 nmap g+ <Plug>SectionDouble
