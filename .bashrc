@@ -198,6 +198,9 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
+# NOTE: Used https://github.com/denoland/deno/issues/1658#issuecomment-632986792
+# for CentOS 7 compatible install. See cat /etc/os-release for the release.
+alias release='cat /etc/os-release'
 export DENO_INSTALL=$HOME/.deno  # ddc.vim typescript dependency
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities
