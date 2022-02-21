@@ -1278,13 +1278,17 @@ if Active('ddc.vim')
     \     'maxSize': 500
     \    }
     \ })
-  call popup_preview#enable()
   call ddc#enable()
 endif
 
-" Language-specific settings
+" Language server settings
 " Note: Most mappings override custom ones so critical to change all settings.
 " Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
+if Active('vim-lsp')
+  let g:lsp_fold_enabled = 0  " not yet tested
+  let g:lsp_diagnostics_enabled = 0  " use ale instead
+  let g:lsp_document_highlight_enabled = 0  " disable highlighting reference
+endif
 if Active('jedi-vim')
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
@@ -1301,8 +1305,10 @@ if Active('jedi-vim')
 endif
 
 " Asynchronous linting engine
+" Use :ALEInfo to verify linting is enabled
 if Active('ale')
-  " Buffer-local toggling (note ALE works with buffer contents unlike syntastic)
+  " Buffer-local toggling
+  " Note: ale works with buffer contents unlike syntastic
   noremap <silent> <Leader>x :<C-u>call utils#ale_toggle(1)<CR>
   noremap <silent> <Leader>X :<C-u>call utils#ale_toggle(0)<CR>
   map ]x <Plug>(ale_next_wrap)
@@ -1314,7 +1320,6 @@ if Active('ale')
   " https://pypi.org/project/doc8/  # python linter
   " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
   " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
-  " Note: use :ALEInfo to verify linting is successfully enabled for the file.
   " Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
   " with :ALEFix black. Or can use the black plugin and use :Black of course.
   " Note: chktex is awful (e.g. raises errors for any command not followed
@@ -1390,7 +1395,7 @@ if Active('ale')
     \ ]
   let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . join(s:flake8_ignore_list, ',')
 
-  " Related plugins
+  " Related plugins requiring similar exceptions
   " Isort plugin docs: https://github.com/fisadev/vim-isort
   " Black plugin docs: https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
   " Autopep8 plugin docs (or :help autopep8): https://github.com/tell-k/vim-autopep8 (includes a few global variables)
