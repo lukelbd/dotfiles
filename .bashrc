@@ -155,13 +155,11 @@ case "${HOSTNAME%%.*}" in
     export PGI=/opt/pgi
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
-    # ISCA modeling
-    export GFDL_BASE=$HOME/isca
-    export GFDL_ENV=monde  # "environment" configuration for emps-gv4
+    export GFDL_BASE=$HOME/isca  # isca environment
+    export GFDL_ENV=monde  # configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
-    # NCAR NCL root location
-    export NCARG_ROOT=/usr/local
+    export NCARG_ROOT=/usr/local  # ncl root
     ;;
 
   # Chicago supercomputer, any of the login nodes
@@ -198,6 +196,8 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
+# NOTE: Install deno with mamba to get correct binaries. Using install script
+# can have issues with CentOS 7: https://github.com/denoland/deno/issues/1658
 export DENO_INSTALL=$HOME/.deno  # ddc.vim typescript dependency
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities

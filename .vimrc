@@ -1018,7 +1018,7 @@ if !has('gui_running')
   Plug 'matsui54/ddc-buffer'  " matching words from buffer (as in neocomplete)
   Plug 'LumaKernel/ddc-file'  " matching file names
   Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
-  Plug 'matsui54/denops-popup-preview.vim'  " show documentation popups
+  Plug 'matsui54/denops-popup-preview.vim'  " show previews for popup window
 endif
 
 " Snippets and stuff
