@@ -81,7 +81,7 @@ set splitright  " splitting behavior
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " shoft default tabs
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
-set updatetime=1000  " used for CursorHold autocmds
+set updatetime=5000  " used for CursorHold autocmds and default is 4000ms
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=  " prevent cursor from going where no actual character
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
@@ -742,7 +742,7 @@ nnoremap <silent> <Plug>CommentBar :call comment#header_line('-', 77, 1, 0)<CR>:
 nmap gc; <Plug>CommentBar
 
 " ReST section comment headers
-" Warninb: <Plug> name should not be subset of other name or results in delay!
+" Warning: <Plug> name should not be subset of other name or results in delay!
 nnoremap <silent> <Plug>SectionSingle :call comment#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
 nnoremap <silent> <Plug>SubsectionSingle :call comment#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
 nnoremap <silent> <Plug>SectionDouble :call comment#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
@@ -1484,22 +1484,22 @@ if Active('tagbar')
   \   ],
   \   'sort': 0
   \ }
-  let g:no_status_line = 1
-  let g:tagbar_no_status_line = 1  " not sure which
-  let g:tagbar_silent = 1  " no information echoed
-  let g:tagbar_previewwin_pos = 'bottomleft'  " result of pressing 'P'
-  let g:tagbar_left = 0  " open on left; more natural this way
-  let g:tagbar_indent = -1  " only one space indent
-  let g:tagbar_show_linenumbers = 0  " not needed
-  let g:tagbar_autofocus = 1  " don't autojump to window if opened
-  let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
+  let g:tagbar_autofocus = 0  " don't autojump to window if opened
+  let g:tagbar_autopreview = 0  " don't show preview window
+  let g:tagbar_autoshowtag = 2  " never ever open tagbar folds automatically, even when opening for first time
   let g:tagbar_case_insensitive = 1  " make sorting case insensitive
   let g:tagbar_compact = 1  " no header information in panel
+  let g:tagbar_expand = 0  " don't exapand window in gvim
+  let g:tagbar_foldlevel = 1  " setting to zero will override the 'kinds' fields in below dicts
+  let g:tagbar_indent = -1  " only one space indent
+  let g:tagbar_left = 0  " open on right
+  let g:tagbar_no_status_line = 1  " use custom status line
+  let g:tagbar_previewwin_pos = 'bottomleft'  " result of pressing 'P'
+  let g:tagbar_show_linenumbers = 0  " not needed
+  let g:tagbar_silent = 1  " do not echo information
+  let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
   let g:tagbar_width = 15  " better default
   let g:tagbar_zoomwidth = 15  " don't ever 'zoom' even if text doesn't fit
-  let g:tagbar_expand = 0
-  let g:tagbar_autoshowtag = 2  " never ever open tagbar folds automatically, even when opening for first time
-  let g:tagbar_foldlevel = 1  " setting to zero will override the 'kinds' fields in below dicts
   let g:tagbar_map_openfold = '='
   let g:tagbar_map_closefold = '-'
   let g:tagbar_map_closeallfolds = '_'

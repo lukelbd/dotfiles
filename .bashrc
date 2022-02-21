@@ -1442,8 +1442,8 @@ jupyter-name() {
 # Below does live updates (watch) and incrementally builds website (incremental)
 # alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 # Use 2>/dev/null to ignore deprecation warnings
-alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 alias server="python -m http.server"
+alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 
 #-----------------------------------------------------------------------------#
 # Dataset utilities
@@ -1453,7 +1453,6 @@ namelist() {
   local file='input.nml'
   [ $# -gt 0 ] && file="$1"
   echo "Params in current namelist:"
-  # shellcheck disable=
   cut -d= -f1 -s "$file" | grep -v '!' | xargs
 }
 
@@ -1563,8 +1562,8 @@ ncvardump() {  # dump variable contents (first argument) from file (second argum
   # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
 ncvartable() {  # parses the CDO parameter table; ncvarinfo replaces this
-  # Below procedure is ideal for "sanity checks" of data; just test one
-  # timestep slice at every level; the tr -s ' ' trims multiple whitespace
+  # procedure is ideal for "sanity checks" of data; just test one timestep
+  # slice at every level; the tr -s ' ' trims multiple whitespace
   # to single and the column command re-aligns columns
   [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
