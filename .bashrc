@@ -343,7 +343,7 @@ vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing,
   # so this 'resumes' tracking in the current session file
-  local flags files
+  local flags files interactive multiplex
   while [ $# -gt 0 ]; do
     case "$1" in
       -*) flags+=("$1") ;;
@@ -351,8 +351,9 @@ vim() {
     esac
     shift
   done
-  if [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ] \
-    && ! [[ " ${flags[*]} " =~ (--version|--help|-h) ]]; then
+  [[ " ${flags[*]} " =~ (--version|--help|-h) ]] && interactive=false || interactive=true
+  [[ "$TERM" =~ screen ]] && multiplex=true || multiplex=false  # detect tmux or screen
+  if $interactive && [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ]; then
     # Open session and fix various bugs
     # Unfold stuff after entering each buffer. For some reason folds are
     # otherwise re-closed upon openening each file. Also prevent double-loading,
@@ -365,10 +366,11 @@ vim() {
     sed -i -s 'N;/normal! zc/!P;D' .vimsession
     command vim "${flags[@]}" -S .vimsession  # for working with obsession
   else
-    # Open specific files
+    # Open specific files or pass non-interactive flags
     # The -p flag says to use single tab for each file
     command vim "${flags[@]}" -p "${files[@]}"
   fi
+  $interactive && ! $multiplex && clear
 }
 
 # Absolute path, works everywhere
