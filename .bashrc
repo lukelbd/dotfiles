@@ -370,7 +370,7 @@ vim() {
     # The -p flag says to use single tab for each file
     command vim "${flags[@]}" -p "${files[@]}"
   fi
-  $interactive && ! $multiplex && clear
+  $interactive && $multiplex && clear
 }
 
 # Absolute path, works everywhere
