@@ -343,7 +343,7 @@ vim() {
   # First modify the Obsession-generated session file
   # Then restore the session; in .vimrc specify same file for writing,
   # so this 'resumes' tracking in the current session file
-  local flags files interactive multiplex
+  local flags files interactive
   while [ $# -gt 0 ]; do
     case "$1" in
       -*) flags+=("$1") ;;
@@ -352,25 +352,25 @@ vim() {
     shift
   done
   [[ " ${flags[*]} " =~ (--version|--help|-h) ]] && interactive=false || interactive=true
-  [[ "$TERM" =~ screen ]] && multiplex=true || multiplex=false  # detect tmux or screen
   if $interactive && [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ]; then
-    # Open session and fix various bugs
-    # Unfold stuff after entering each buffer. For some reason folds are
-    # otherwise re-closed upon openening each file. Also prevent double-loading,
-    # possibly Obsession does not anticipate :tabedit, ends up loading
-    # everything *twice*. Check out: cat .vimsession | grep -n -E 'fold|zt'
-    sed -i '/zt/a setlocal nofoldenable' .vimsession
-    sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession
-    sed -i 's/^if bufexists.*$//g' .vimsession
-    sed -i -s 'N;/normal! zo/!P;D' .vimsession
-    sed -i -s 'N;/normal! zc/!P;D' .vimsession
+    # Open session and fix various bugs. For some reason folds are
+    # otherwise re-closed upon openening each file.
+    sed -i '/zt/a setlocal nofoldenable' .vimsession  # unfold everything
+    sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession  # remove folds
+    sed -i -s 'N;/normal! zo/!P;D' .vimsession  # remove folds
+    sed -i -s 'N;/normal! zc/!P;D' .vimsession  # remove folds
     command vim "${flags[@]}" -S .vimsession  # for working with obsession
   else
     # Open specific files or pass non-interactive flags
     # The -p flag says to use single tab for each file
     command vim "${flags[@]}" -p "${files[@]}"
   fi
-  $interactive && $multiplex && clear
+  # Clear screen and delete scollback: https://apple.stackexchange.com/q/31872/214359
+  # NOTE: Unable get scrollback to ignore vim windows in iTerm.
+  if $interactive; then
+    clear
+    printf '\e[3J'
+  fi
 }
 
 # Absolute path, works everywhere

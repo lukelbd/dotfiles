@@ -21,6 +21,7 @@
 " Critical stuff
 " Note: Since repeat#set is used everywhere we copy repeat.vim to autoload folder
 " instead of Plug 'tpope/vim-repeat' or else get errors running vim on new installs.
+let &t_te=''
 let &t_Co=256
 let s:linelength = 88
 exe 'runtime autoload/repeat.vim'
@@ -1493,9 +1494,10 @@ if Active('tagbar')
   let g:tagbar_foldlevel = 1  " setting to zero will override the 'kinds' fields in below dicts
   let g:tagbar_indent = -1  " only one space indent
   let g:tagbar_left = 0  " open on right
+  let g:tagbar_no_autocmds = 0  " use custom command
   let g:tagbar_no_status_line = 1  " use custom status line
   let g:tagbar_previewwin_pos = 'bottomleft'  " result of pressing 'P'
-  let g:tagbar_show_linenumbers = 0  " not needed
+  let g:tagbar_show_balloon = 0  " no ballon in gvim
   let g:tagbar_silent = 1  " do not echo information
   let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
   let g:tagbar_width = 15  " better default
