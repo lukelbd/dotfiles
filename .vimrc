@@ -40,7 +40,7 @@ set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
 set complete+=k  " enable dictionary search through 'dictionary' setting
-set completeopt-=preview  " no popup window, for now
+set completeopt-=preview  " use custom preview window
 set confirm  " require confirmation if you try to quit
 set cursorline
 set diffopt=vertical,foldcolumn:0,context:5
@@ -989,6 +989,7 @@ if !has('gui_running')
   " Plug 'Shougo/neocomplete.vim'  " second generation (requires lua)
   " let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
   " Plug 'Shougo/deoplete.nvim'  " third generation (requires pynvim)
+  " Plug 'Shougo/neco-vim'  " deoplete dependency
   " Plug 'roxma/nvim-yarp'  " deoplete dependency
   " Plug 'roxma/vim-hug-neovim-rpc'  " deoplete dependency
   " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
@@ -1004,10 +1005,11 @@ if !has('gui_running')
   " Plug 'deoplete-plugins/deoplete-jedi'  " old language-specific completion
   " Plug 'Shougo/neco-syntax'  " old language-specific completion
   " Plug 'Shougo/echodoc.vim'  " old language-specific completion
-  " Plug 'Shougo/ddc-nvim-lsp'  " language server protocoal completion for neovim
-  " Plug 'Shougo/neco-vim'  " vim script
+  " Plug 'Shougo/ddc-nvim-lsp'  " language server protocoal completion for neovim only
   " Plug 'Shougo/ddc-matcher_head'  " filter for heading match
   " Plug 'Shougo/ddc-sorter_rank'  " filter for sorting rank
+  " Plug 'natebosch/vim-lsc'  " alternative lsp client
+  " Plug 'rhysd/vim-lsp-ale'  " ale compatibility if want vim-lsp error checking
   Plug 'prabirshrestha/vim-lsp'  " ddc-vim-lsp requirement
   Plug 'mattn/vim-lsp-settings'  " auto vim-lsp settings
   Plug 'shun/ddc-vim-lsp'  " language server protocol completion for vim 8+
@@ -1187,6 +1189,14 @@ if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
 endif
 
+" Undo tree settings
+if Active('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
+  noremap <Leader>u :UndotreeToggle<CR>
+  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
+endif
+
 " Comment toggling stuff
 " Note: For once we actually like most of the default maps.
 if Active('tcomment_vim')
@@ -1216,9 +1226,10 @@ if Active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
-" Completion engine (see :help ddc-options)
+" Completion engine settings (see :help ddc-options)
 " See: https://github.com/Shougo/ddc.vim#configuration
 " Note: Inspired by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/
+" Note: Currently use pylsp instead of pylsp-all to prevent conflicts with ale.
 " Note: Underscore key seems to indicate all sources, used for global filter options,
 " and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
 if Active('ddc.vim')
@@ -1267,13 +1278,11 @@ if Active('ddc.vim')
     \     'maxSize': 500
     \    }
     \ })
-  if exists('*popup_preview#enable')
-    call popup_preview#enable()
-  endif
+  call popup_preview#enable()
   call ddc#enable()
 endif
 
-" Jedi vim settings
+" Language-specific settings
 " Note: Most mappings override custom ones so critical to change all settings.
 " Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
 if Active('jedi-vim')
@@ -1291,107 +1300,6 @@ if Active('jedi-vim')
   let g:jedi#usages_command = '<Leader><CR>'
 endif
 
-" Vim test settings
-" Run tests near cursor or throughout file
-if Active('vim-test')
-  let s:test_options = '--verbose'
-  nnoremap <silent> <Leader>p :exe 'TestNearest ' . s:test_options<CR>
-  nnoremap <silent> <Leader>P :exe 'TestFile ' . s:test_options<CR>
-endif
-
-" Undo tree settings
-if Active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  noremap <Leader>u :UndotreeToggle<CR>
-  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
-endif
-
-" Fugitive command aliases
-" Used to alias G commands to lower case but upper case is more consistent
-" with Tim Pope eunuch commands
-if Active('vim-fugitive')
-  cnoreabbrev Gdiff Gdiffsplit!
-  cnoreabbrev Ghdiff Ghdiffsplit!
-  cnoreabbrev Gvdiff Gvdiffsplit!
-endif
-
-" Git gutter
-" Todo: Note we had to overwrite the gitgutter autocmds with a file in 'after'.
-if Active('vim-gitgutter')
-  " Create command for toggling on/off; old VIM versions always show signcolumn
-  " if signs present, so GitGutterDisable will remove signcolumn.
-  let g:gitgutter_map_keys = 0  " disable all maps yo
-  let g:gitgutter_max_signs = 5000
-  if !exists('g:gitgutter_enabled')
-    let g:gitgutter_enabled = 0  " whether enabled at *startup*
-    silent! set signcolumn=no
-  endif
-  " Maps for toggling gitgutter on and off
-  nnoremap <silent> <Leader>g :call utils#gitgutter_toggle(1)<CR>
-  nnoremap <silent> <Leader>G :call utils#gitgutter_toggle(0)<CR>
-  " Maps for showing/disabling changes under cursor
-  noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  noremap <silent> <Leader>A :GitGutterUndoHunk<CR>
-  noremap <silent> <Leader>a :GitGutterStageHunk<CR>
-  " Navigating between hunks
-  noremap <silent> ]g :GitGutterNextHunk<CR>
-  noremap <silent> [g :GitGutterPrevHunk<CR>
-endif
-
-" Tagbar settings
-" * p jumps to tag under cursor, in code window, but remain in tagbar
-" * C-n and C-p browses by top-level tags
-" * o toggles the fold under cursor, or current one
-if Active('tagbar')
-  " Customization, for more info see :help tagbar-extend
-  " To list kinds, see :!ctags --list-kinds=<filetype>
-  " The first number is whether to fold, second is whether to highlight location
-  " \ 'r:refs:1:0',  "not useful
-  " \ 'p:pagerefs:1:0'  "not useful
-  let g:tagbar_type_tex = {
-      \ 'ctagstype' : 'latex',
-      \ 'kinds'     : [
-          \ 's:sections',
-          \ 'g:graphics:0:1',
-          \ 'l:labels:0:1',
-      \ ],
-      \ 'sort' : 0
-  \ }
-  let g:tagbar_type_vim = {
-      \ 'ctagstype' : 'vim',
-      \ 'kinds'     : [
-          \ 'a:augroups:0',
-          \ 'f:functions:1',
-          \ 'c:commands:1:0',
-          \ 'v:variables:1:0',
-          \ 'm:maps:1:0',
-      \ ],
-      \ 'sort' : 0
-  \ }
-  let g:no_status_line = 1
-  let g:tagbar_no_status_line = 1  " not sure which
-  let g:tagbar_silent = 1  " no information echoed
-  let g:tagbar_previewwin_pos = 'bottomleft'  " result of pressing 'P'
-  let g:tagbar_left = 0  " open on left; more natural this way
-  let g:tagbar_indent = -1  " only one space indent
-  let g:tagbar_show_linenumbers = 0  " not needed
-  let g:tagbar_autofocus = 1  " don't autojump to window if opened
-  let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
-  let g:tagbar_case_insensitive = 1  " make sorting case insensitive
-  let g:tagbar_compact = 1  " no header information in panel
-  let g:tagbar_width = 15  " better default
-  let g:tagbar_zoomwidth = 15  " don't ever 'zoom' even if text doesn't fit
-  let g:tagbar_expand = 0
-  let g:tagbar_autoshowtag = 2  " never ever open tagbar folds automatically, even when opening for first time
-  let g:tagbar_foldlevel = 1  " setting to zero will override the 'kinds' fields in below dicts
-  let g:tagbar_map_openfold = '='
-  let g:tagbar_map_closefold = '-'
-  let g:tagbar_map_closeallfolds = '_'
-  let g:tagbar_map_openallfolds = '+'
-  nnoremap <silent> <Leader>t :TagbarToggle<CR>
-endif
-
 " Asynchronous linting engine
 if Active('ale')
   " Buffer-local toggling (note ALE works with buffer contents unlike syntastic)
@@ -1405,6 +1313,7 @@ if Active('ale')
   " https://github.com/Kuniwak/vint  # vim linter
   " https://pypi.org/project/doc8/  # python linter
   " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
+  " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
   " Note: use :ALEInfo to verify linting is successfully enabled for the file.
   " Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
   " with :ALEFix black. Or can use the black plugin and use :Black of course.
@@ -1422,12 +1331,22 @@ if Active('ale')
     \ 'text': [],
     \ 'vim': ['vint'],
     \ }
-  let g:ale_sign_column_always = 1
+  let g:ale_completion_enabled = 0
+  let g:ale_completion_autoimport = 0
+  let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
+  let g:ale_echo_msg_format = '[%linter%] %s [%severity%]'
+  let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
+  let g:ale_hover_cursor = 0
+  let g:ale_linters_explicit = 1
+  let g:ale_lint_on_enter = 1
+  let g:ale_lint_on_filetype_changed = 1
+  let g:ale_lint_on_insert_leave = 1
   let g:ale_lint_on_save = 0
   let g:ale_lint_on_text_changed = 'normal'
-  let g:ale_lint_on_insert_leave = 1
-  let g:ale_lint_on_filetype_changed = 1
-  let g:ale_lint_on_enter = 0
+  let g:ale_sign_column_always = 1
+  let g:ale_sign_error = 'E>'
+  let g:ale_sign_warning = 'W>'
+  let g:ale_sign_info = 'I>'
 
   " Shellcheck ignore list
   " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
@@ -1495,6 +1414,94 @@ if Active('ale')
   let g:formatters_fortran = ['fprettify']
 endif
 
+" Vim test settings
+" Run tests near cursor or throughout file
+if Active('vim-test')
+  let s:test_options = '--verbose'
+  nnoremap <silent> <Leader>p :exe 'TestNearest ' . s:test_options<CR>
+  nnoremap <silent> <Leader>P :exe 'TestFile ' . s:test_options<CR>
+endif
+
+" Fugitive command aliases
+" Used to alias G commands to lower case but upper case is more consistent
+" with Tim Pope eunuch commands
+if Active('vim-fugitive')
+  cnoreabbrev Gdiff Gdiffsplit!
+  cnoreabbrev Ghdiff Ghdiffsplit!
+  cnoreabbrev Gvdiff Gvdiffsplit!
+endif
+
+" Git gutter
+" Note: Use custom command for toggling on/off. Older vim versions always show
+" signcolumn if signs present, so GitGutterDisable will remove signcolumn.
+if Active('vim-gitgutter')
+  let g:gitgutter_map_keys = 0  " disable all maps yo
+  let g:gitgutter_max_signs = 5000
+  if !exists('g:gitgutter_enabled')
+    let g:gitgutter_enabled = 0  " whether enabled at *startup*
+    silent! set signcolumn=no
+  endif
+  nnoremap <silent> <Leader>g :call utils#gitgutter_toggle(1)<CR>
+  nnoremap <silent> <Leader>G :call utils#gitgutter_toggle(0)<CR>
+  noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
+  noremap <silent> <Leader>A :GitGutterUndoHunk<CR>
+  noremap <silent> <Leader>a :GitGutterStageHunk<CR>
+  noremap <silent> ]g :GitGutterNextHunk<CR>
+  noremap <silent> [g :GitGutterPrevHunk<CR>
+endif
+
+" Tagbar settings (see :help tagbar-extend)
+" * use :!ctags --list-kinds=<filetype> to list kinds
+" * first number is whether to fold, second is whether to highlight location
+" * p jumps to tag under cursor, in code window, but remain in tagbar
+" * ctrl-n and ctrl-p browses by top-level tags
+" * o toggles the fold under cursor, or current one
+if Active('tagbar')
+  " \ 'r:refs:1:0',  " not useful
+  " \ 'p:pagerefs:1:0'  " not useful
+  let g:tagbar_type_tex = {
+  \   'ctagstype': 'latex',
+  \   'kinds': [
+  \       's:sections',
+  \       'g:graphics:0:1',
+  \       'l:labels:0:1',
+  \   ],
+  \   'sort': 0
+  \ }
+  let g:tagbar_type_vim = {
+  \   'ctagstype': 'vim',
+  \   'kinds': [
+  \       'a:augroups:0',
+  \       'f:functions:1',
+  \       'c:commands:1:0',
+  \       'v:variables:1:0',
+  \       'm:maps:1:0',
+  \   ],
+  \   'sort': 0
+  \ }
+  let g:no_status_line = 1
+  let g:tagbar_no_status_line = 1  " not sure which
+  let g:tagbar_silent = 1  " no information echoed
+  let g:tagbar_previewwin_pos = 'bottomleft'  " result of pressing 'P'
+  let g:tagbar_left = 0  " open on left; more natural this way
+  let g:tagbar_indent = -1  " only one space indent
+  let g:tagbar_show_linenumbers = 0  " not needed
+  let g:tagbar_autofocus = 1  " don't autojump to window if opened
+  let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
+  let g:tagbar_case_insensitive = 1  " make sorting case insensitive
+  let g:tagbar_compact = 1  " no header information in panel
+  let g:tagbar_width = 15  " better default
+  let g:tagbar_zoomwidth = 15  " don't ever 'zoom' even if text doesn't fit
+  let g:tagbar_expand = 0
+  let g:tagbar_autoshowtag = 2  " never ever open tagbar folds automatically, even when opening for first time
+  let g:tagbar_foldlevel = 1  " setting to zero will override the 'kinds' fields in below dicts
+  let g:tagbar_map_openfold = '='
+  let g:tagbar_map_closefold = '-'
+  let g:tagbar_map_closeallfolds = '_'
+  let g:tagbar_map_openallfolds = '+'
+  nnoremap <silent> <Leader>t :TagbarToggle<CR>
+endif
+
 " Easy-align with custom delimiters for case/esac block parens and seimcolons, chained
 " && and || symbols, and trailing comments (with two spaces ignoring commented lines)
 " Note: Use <Left> to stick delimiter to left instead of right
@@ -1509,61 +1516,40 @@ if Active('vim-easy-align')
     \ }
   augroup easy_align
     au!
-    au BufEnter * call extend(g:easy_align_delimiters, {
-      \   'c': {'pattern': '\s' . (empty(Comment()) ? nr2char(0) : Comment())},
-      \ })  " search null character if no comment char defined (never matches)
+    au BufEnter * call extend(
+      \   g:easy_align_delimiters, {
+      \     'c': {'pattern': '\s' . (empty(Comment()) ? nr2char(0) : Comment())},
+      \   }
+      \ )  " search null character if no comment char defined (never matches)
   augroup END
-endif
-
-" Test lines for easy-align (uncomment when testing)
-" foo, baasrdaasdfdas, asdfjoijiaosdfjioadsjoias, asdfasfasf
-" asdfasdf, " hello world this is me
-" asdfasdfsad, asfdjioasdjfioasda, asdfsadfasdfsa, asfd
-"
-" asdfas = asdfsadjfoaisdjfa
-" sdfasfiojasdjigoads = asdfasd = asdfasdfk
-"
-" apple    = red = asdfjioajfd
-"    grasses += green = fdasjfaiofjaisofijasdf
-"    sky     -= blue = asdf
-"
-" asdsfad && asdfiojaojdfjaosdf && afsdiojjioa
-" asdf && asdfjiaosdf && asd
-"
-" {
-"   hello: goodbye
-"   asdfasdfasdf: asdjioaidfoajisdf,
-"   foi: asdfoijiaosdfjoasiojfaojidsa
-" }
-"
-" asdfa) bar ;;
-" asfdijadfjsioaoidf) fooo ;;
-" asdfijas) foo bar ;;
-"
-" asfdiojiasod " yoyoyo
-" " ahoasdfjioa
-" asdfasdas " hello
-" asdfjioadijoadjofiadoisf " world
-
-" Speed dating, support date increments
-if Active('vim-speeddating')
-  map + <Plug>SpeedDatingUp
-  map - <Plug>SpeedDatingDown
-  noremap <Plug>SpeedDatingFallbackUp   <C-a>
-  noremap <Plug>SpeedDatingFallbackDown <C-x>
-else
-  noremap + <C-a>
-  noremap - <C-x>
-endif
-
-" The howmuch.vim plugin. Pneumonic for mapping is the straight line at
-" bottom of sum table. Mapping options are:
-" AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend,
-" AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
-if Active('HowMuch')
-  vmap <Leader>) <Plug>AutoCalcAppendWithEq
-  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
-  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
+  " foo, baasrdaasdfdas, asdfjoijiaosdfjioadsjoias, asdfasfasf
+  " asdfasdf, " hello world this is me
+  " asdfasdfsad, asfdjioasdjfioasda, asdfsadfasdfsa, asfd
+  "
+  " asdfas = asdfsadjfoaisdjfa
+  " sdfasfiojasdjigoads = asdfasd = asdfasdfk
+  "
+  " apple    = red = asdfjioajfd
+  "    grasses += green = fdasjfaiofjaisofijasdf
+  "    sky     -= blue = asdf
+  "
+  " asdsfad && asdfiojaojdfjaosdf && afsdiojjioa
+  " asdf && asdfjiaosdf && asd
+  "
+  " {
+  "   hello: goodbye
+  "   asdfasdfasdf: asdjioaidfoajisdf,
+  "   foi: asdfoijiaosdfjoasiojfaojidsa
+  " }
+  "
+  " asdfa) bar ;;
+  " asfdijadfjsioaoidf) fooo ;;
+  " asdfijas) foo bar ;;
+  "
+  " asfdiojiasod " yoyoyo
+  " " ahoasdfjioa
+  " asdfasdas " hello
+  " asdfjioadijoadjofiadoisf " world
 endif
 
 " Codi (mathematical notepad)
@@ -1599,6 +1585,27 @@ if Active('codi.vim')
         \ 'prompt': '^\(julia>\|      \)',
         \ },
     \ }
+endif
+
+" Speed dating, support date increments
+if Active('vim-speeddating')
+  map + <Plug>SpeedDatingUp
+  map - <Plug>SpeedDatingDown
+  noremap <Plug>SpeedDatingFallbackUp   <C-a>
+  noremap <Plug>SpeedDatingFallbackDown <C-x>
+else
+  noremap + <C-a>
+  noremap - <C-x>
+endif
+
+" The howmuch.vim plugin. Pneumonic for mapping is the straight line at
+" bottom of sum table. Mapping options are:
+" AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend,
+" AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
+if Active('HowMuch')
+  vmap <Leader>) <Plug>AutoCalcAppendWithEq
+  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
+  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
 endif
 
 " Colorizer is very expensive for large files so only ever activate
