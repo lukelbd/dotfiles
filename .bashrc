@@ -198,9 +198,11 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
+export DENO_INSTALL=$HOME/.deno  # ddc.vim typescript dependency
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities
 export PATH=$HOME/node/bin:$PATH  # javascript commands
+export PATH=$DENO_INSTALL/bin:$PATH  # deno commands (see https://deno.land)
 export PATH=$HOME/go/bin:$PATH  # go scripts
 export PATH=$HOME/bin:$PATH  # custom scripts
 export PATH=$HOME/ncparallel:$PATH  # custom repo

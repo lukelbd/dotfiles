@@ -268,13 +268,6 @@ function! Active(key) abort
   return &runtimepath =~# '/' . a:key . '\>'
 endfunction
 
-" Return comment character
-function! Comment() abort
-  let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
-  let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
-  return escape(string, '[]\.*$~')  " escape magic characters
-endfunction
-
 " Return list of buffers
 function! Buffers() abort
   let nrs = range(0, bufnr('$'))
@@ -285,6 +278,13 @@ function! Buffers() abort
     endif
   endfor
   return res
+endfunction
+
+" Return comment character
+function! Comment() abort
+  let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
+  let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
+  return escape(string, '[]\.*$~')  " escape magic characters
 endfunction
 
 " Better grep, with limited regex translation
@@ -629,21 +629,21 @@ nnoremap <Leader>J zug
 nnoremap <Leader>d 1z=
 nnoremap <Leader>D z=
 
-" Similar to ]s and [s but also correct the word!
+" Similar to ]s and [s but also corrects the word
 nnoremap <silent> <Plug>forward_spell bh]s:call spell#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
 nnoremap <silent> <Plug>backward_spell el[s:call spell#spell_change('[')<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
-" Capitalization stuff with g, a bit refined
-" not currently used in normal mode, and fits better mnemonically
-" Mnemonic is l for letter, t for title case
+" Capitalization stuff with g, a bit refined. Not currently
+" used in normal mode, and fits better mnemonically
+" Mnemonic is y next to u, t for title case
 nnoremap gu guiw
 nnoremap gU gUiw
-vnoremap gl ~
+vnoremap gy ~
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-nmap gl <Plug>cap1
+nmap gy <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gt mzgu<Esc>`<~h
 
@@ -686,11 +686,12 @@ nnoremap <silent> [q :Cprev<CR>
 nnoremap <silent> ]q :Cnext<CR>
 
 " Insert mode with paste toggling
-" nnoremap <expr> gc utils#setup_paste() . 'c'
-nnoremap <expr> gi utils#setup_paste() . 'i'
-nnoremap <expr> gI utils#setup_paste() . 'I'
+" Note: switched easy-align mapping from ga to ge for consistency here
 nnoremap <expr> ga utils#setup_paste() . 'a'
 nnoremap <expr> gA utils#setup_paste() . 'A'
+nnoremap <expr> gc utils#setup_paste() . 'c'
+nnoremap <expr> gi utils#setup_paste() . 'i'
+nnoremap <expr> gI utils#setup_paste() . 'I'
 nnoremap <expr> go utils#setup_paste() . 'o'
 nnoremap <expr> gO utils#setup_paste() . 'O'
 nnoremap <expr> gR utils#setup_paste() . 'R'
@@ -761,15 +762,17 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
+" Search for non-ASCII escape chars
+" Fails: https://stackoverflow.com/a/16987522/4970632
+" noremap gE /[^\x00-\x7F]<CR>
+" Works: https://stackoverflow.com/a/41168966/4970632
+noremap gE /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+
 " Search for git commit conflict blocks
 noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
-" Search for non-ASCII chars
-" Fails: https://stackoverflow.com/a/16987522/4970632
-" noremap gA /[^\x00-\x7F]<CR>
-" Works: https://stackoverflow.com/a/41168966/4970632
-noremap gA /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Run replacement on this line alone
+" Note: This works recursively with the below maps
 nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
 " Delete commented text. For some reason search screws up when using \(\) groups,
@@ -801,30 +804,35 @@ noremap <expr> \<Tab> utils#replace_regexes_expr('Fixed tabs.', '\t', repeat(' '
 
 
 "-----------------------------------------------------------------------------"
-" VimPlug plugins
+" External plugins
 "-----------------------------------------------------------------------------"
-" Find runtimepath
+" Function to find runtimepath
 function! s:find_path(regex)
   return filter(split(&runtimepath, ','), "v:val =~# '" . a:regex . "'")
 endfunction
 command! -nargs=1 FindPath echo join(s:find_path(<q-args>), ', ')
 
-" 'Install' a local plugin
+" Function to install a local plugin
 function! s:plug_local(path)
-  let rtp = expand(substitute(a:path, '[''"]', '', 'g'))
+  let rtp = substitute(a:path, '[''"]', '', 'g')
+  let rtp = expand(rtp)
   if !isdirectory(rtp)
     echohl WarningMsg
     echo "Warning: Path '" . rtp . "' not found."
     echohl None
-  elseif &runtimepath !~ escape(rtp, '~')
+  elseif &runtimepath !~# escape(rtp, '~')
     exe 'set rtp^=' . rtp
     exe 'set rtp+=' . rtp . '/after'
   endif
 endfunction
 command! -nargs=1 PlugLocal call s:plug_local(<args>)
 
-" Initial plugins. Note we no longer worry about compatibility because we can install
-" everything from conda-forge, including vim and ctags.
+" Initialize plugin manager. Note we no longer worry about compatibility
+" because we can install everything from conda-forge, including vim and ctags.
+" Note: See https://vi.stackexchange.com/q/388/8084 for a comparison of plugin
+" managers. Currently use junegunn/vim-plug but could switch to Shougo/dein.vim
+" (with haya14busa/dein-command.vim for commands instead of functions) which was
+" derived from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
 call plug#begin('~/.vim/plugged')
 
 " Custom plugins or forks, try to load locally if possible!
@@ -857,29 +865,11 @@ let g:tags_scope_filetypes = {
   \ 'fortran' : 'smfp',
   \ }
 
-" Hard requirements
-" Plug 'tpope/vim-repeat' " now edit custom version in .vim/plugin/autoload
-Plug '~/.fzf'  " fzf installation location, will add helptags and runtimepath
-Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes other tools
-let g:fzf_layout = {'down': '~20%'} " make window smaller
-let g:fzf_action = {
-  \ 'ctrl-i': 'silent!',
-  \ 'ctrl-m': 'tab split',
-  \ 'ctrl-t': 'tab split',
-  \ 'ctrl-x': 'split',
-  \ 'ctrl-v': 'vsplit'
-  \ }
-
-" Color schemes for MacVim
-" Plug 'altercation/vim-colors-solarized'
-Plug 'flazz/vim-colorschemes'
-Plug 'fcpg/vim-fahrenheit'
-Plug 'KabbAmine/yowish.vim'
-
-" Colorize Hex strings
-" Test: ~/.vim/plugged/colorizer/colortest.txt
-" Works only in MacVim or when &t_Co == 256
-Plug 'lilydjwg/colorizer'
+" Improve motions. Do not use easymotion because
+" extremely slow over remote connections and overkill.
+" Discussion: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+" Plug 'easymotion/vim-easymotion'
+Plug 'justinmk/vim-sneak'
 
 " Folding speedups
 " Warning: SimpylFold horribly slow on monde, instead use braceless
@@ -895,7 +885,7 @@ let g:loaded_matchparen = 1
 let g:matchup_matchparen_enabled = 1
 let g:matchup_transmute_enabled = 0  " breaks latex!
 
-" Useful panels
+" Useful panel plugins
 " For nerdtree-like file navigation see: https://shapeshed.com/vim-netrw/
 " Plug 'vim-scripts/EnhancedJumps'
 " Plug 'jistr/vim-nerdtree-tabs'  " unnecessary
@@ -903,18 +893,22 @@ let g:matchup_transmute_enabled = 0  " breaks latex!
 Plug 'majutsushi/tagbar'
 Plug 'mbbill/undotree'
 
-" Close unused buffers
-" https://github.com/Asheq/close-buffers.vim
-" Example: Bdelete hidden
+" Close unused buffers with Bdelete
+" See: https://github.com/Asheq/close-buffers.vim
+" Example: Bdelete all, Bdelete other, Bdelete hidden
 Plug 'Asheq/close-buffers.vim'
 
-" Shell utilities, including chmod, renaming, moving
-Plug 'tpope/vim-eunuch'
-Plug 'jez/vim-superman'  " simply add 'vman' command-line tool
+" Various utilitize
+" Plug 'Shougo/vimshell.vim'  " first generation :terminal add-ons
+" Plug 'Shougo/deol.nvim'  " second generation :terminal add-ons
+Plug 'jez/vim-superman'  " add the 'vman' command-line tool
+Plug 'tpope/vim-eunuch'  " shell utils like chmod rename and move
+Plug 'tpope/vim-characterize'  " print character info (mnemonic is l for letter)
+nmap gl <Plug>(characterize)
 
 " Syntax checking and formatting
 " Note: syntastic looks for checkers in $PATH, must be installed manually
-" Plug 'scrooloose/syntastic'  " out of date:
+" Plug 'scrooloose/syntastic'  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
 Plug 'dense-analysis/ale'
 Plug 'fisadev/vim-isort'
 Plug 'Chiel92/vim-autoformat'
@@ -928,14 +922,14 @@ Plug 'psf/black'
 " Plug 'tpope/vim-commentary'  " too simple
 Plug 'tomtom/tcomment_vim'
 
-" Running tests
+" Running tests and stuff
 " Note: This works for every filetype (simliar to ale)
 Plug 'vim-test/vim-test'
 
 " Inline code handling
-" Use :InlineEdit within blocks to open temporary buffer for editing; buffer
+" Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
 " will have all filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
-Plug 'AndrewRadev/inline_edit.vim'
+" Plug 'AndrewRadev/inline_edit.vim'
 
 " Sessions and swap files and reloading. Mapped in my .bashrc
 " to vim -S .vimsession and exiting vim saves the session there
@@ -960,41 +954,80 @@ Plug 'tpope/vim-speeddating'  " dates and stuff
 let g:speeddating_no_mappings = 1
 let g:HowMuch_no_mappings = 1
 
+" User interface selection stuff
+" Note: Shuogo claims "unite provides an integration interface for several sources
+" and you can create new interfaces" but fzf permits integration too.
+" Discussion: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
+" Plug 'Shougo/unite.vim'  " first generation
+" Plug 'Shougo/denite.vim'  " second generation
+" Plug 'Shougo/ddu.vim'  " third generation
+" Plug 'ctrlpvim/ctrlp.vim'  " replaced with fzf
+Plug '~/.fzf'  " fzf installation location, will add helptags and runtimepath
+Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes other tools
+let g:fzf_layout = {'down': '~20%'} " make window smaller
+let g:fzf_action = {
+  \ 'ctrl-i': 'silent!',
+  \ 'ctrl-m': 'tab split',
+  \ 'ctrl-t': 'tab split',
+  \ 'ctrl-x': 'split',
+  \ 'ctrl-v': 'vsplit'
+  \ }
+
 " Completion engines
 " Note: Disable for macvim because not sure how to control its python distribution
-" Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
-" Plug 'lifepillar/vim-mucomplete'  " broken, seriously, cannot get it to work, don't bother! is slow anyway.
-" Plug 'Valloric/YouCompleteMe'  " broken
-" Plug 'ervandew/supertab'
-" Plug 'shougo/neocomplete.vim'  " needs lua!
-" let g:neocomplete#enable_at_startup = 1
-" Plug 'prabirshrestha/asyncomplete.vim'
 if !has('gui_running')
-  " Main complete plugin
-  Plug 'Shougo/deoplete.nvim'  " requires pip install pynvim
-  Plug 'roxma/nvim-yarp'  " required for deoplete
-  Plug 'roxma/vim-hug-neovim-rpc'  " required for deoplete
-  let g:deoplete#enable_at_startup = 1  " must be inside plug#begin block
-
-  " Omnifunc sources, these are not provided by engines
+  " Completion engines sources
+  " Note: Install pynvim with 'mamba install pynvim'
+  " Note: Install deno with 'curl -fsSL https://deno.land/install.sh | sh'
+  " Plug 'neoclide/coc.nvim"  " vscode inspired
+  " Plug 'ervandew/supertab'  " oldschool, don't bother!
+  " Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
+  " Plug 'hrsh7th/nvim-cmp'  " lua version
+  " Plug 'Valloric/YouCompleteMe'  " broken, don't bother!
+  " Plug 'prabirshrestha/asyncomplete.vim'  " alternative engine
+  " Plug 'Shougo/neocomplcache.vim'  " first generation (no requirements)
+  " Plug 'Shougo/neocomplete.vim'  " second generation (requires lua)
+  " let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
+  " Plug 'Shougo/deoplete.nvim'  " third generation (requires pynvim)
+  " Plug 'roxma/nvim-yarp'  " deoplete dependency
+  " Plug 'roxma/vim-hug-neovim-rpc'  " deoplete dependency
+  " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
+  Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
+  Plug 'vim-denops/denops.vim'  " ddc dependency
+  " Omnifunc sources not provided by engines
   " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
-  Plug 'deoplete-plugins/deoplete-jedi'
-  Plug 'Shougo/neco-syntax'
-  Plug 'Shougo/neco-vim'
-  Plug 'Shougo/echodoc.vim'
+  " Plug 'neovim/nvim-lspconfig'  " nvim-cmp source
+  " Plug 'hrsh7th/cmp-nvim-lsp'  " nvim-cmp source
+  " Plug 'hrsh7th/cmp-buffer'  " nvim-cmp source
+  " Plug 'hrsh7th/cmp-path'  " nvim-cmp source
+  " Plug 'hrsh7th/cmp-cmdline'  " nvim-cmp source
+  " Plug 'deoplete-plugins/deoplete-jedi'  " old language-specific completion
+  " Plug 'Shougo/neco-syntax'  " old language-specific completion
+  " Plug 'Shougo/echodoc.vim'  " old language-specific completion
+  " Plug 'Shougo/ddc-nvim-lsp'  " language server protocoal completion for neovim
+  " Plug 'Shougo/neco-vim'  " vim script
+  " Plug 'Shougo/ddc-matcher_head'  " filter for heading match
+  " Plug 'Shougo/ddc-sorter_rank'  " filter for sorting rank
+  Plug 'prabirshrestha/vim-lsp'  " ddc-vim-lsp requirement
+  Plug 'mattn/vim-lsp-settings'  " auto vim-lsp settings
+  Plug 'shun/ddc-vim-lsp'  " language server protocol completion for vim 8+
+  Plug 'Shougo/ddc-around'  " matching words near cursor
+  Plug 'matsui54/ddc-buffer'  " matching words from buffer (as in neocomplete)
+  Plug 'LumaKernel/ddc-file'  " matching file names
+  Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
+  Plug 'matsui54/denops-popup-preview.vim'  " show documentation popups
 endif
-
-" Improve motions with sneak plugin. Do not use easymotion because extremely slow
-" over remote connections and overkill.
-" See discussion: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-" Plug 'easymotion/vim-easymotion'
-Plug 'justinmk/vim-sneak'
 
 " Snippets and stuff
 " Todo: Investigate further, but so far primitive vim-succinct snippets are fine
 " Plug 'SirVer/ultisnips'  " fancy snippet actions
 " Plug 'honza/vim-snippets'  " reference snippet files supplied to e.g. ultisnips
 " Plug 'LucHermitte/mu-template'  " file template and snippet engine mashup, not popular
+" Plug 'Shougo/neosnippet.vim'  " snippets consistent with ddc
+" Plug 'Shougo/neosnippet-snippets'  " standard snippet library
+" Plug 'Shougo/deoppet.nvim'  " next generation snippets (does not work in vim8)
+Plug 'hrsh7th/vim-vsnip'  " snippets
+Plug 'hrsh7th/vim-vsnip-integ'  " integration with ddc.vim
 
 " Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
 " are better and API is simpler. Only miss adding numbers to operators, otherwise
@@ -1030,28 +1063,29 @@ let g:vim_textobj_parameter_mapping = '='  " avoid ',' conflict with latex
 Plug 'junegunn/vim-easy-align'
 
 " Python utilities
-" Warning: jedi-vim horribly slow on monde
 " Plug 'vim-scripts/Pydiction'  " just changes completeopt and dictionary and stuff
-" Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV; probably don't need it
-" Plug 'klen/python-mode'  " incompatible with jedi-vim; also must make vim compiled with anaconda for this to work
-" Plug 'ivanov/vim-ipython'  " dead
+" Plug 'cjrh/vim-conda'  " for changing anconda VIRTUALENV but probably don't need it
+" Plug 'klen/python-mode'  " incompatible with jedi-vim and outdated
+" Plug 'ivanov/vim-ipython'  " replaced by jupyter-vim
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
-" Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
+Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
-let g:braceless_block_key = 'm'  " captures if, for, def, etc.
-let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
+let g:braceless_block_key = 'm'  " captures if, for, def, etc.
+let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 let g:jupytext_fmt = 'py:percent'
 
-" TeX utilities; better syntax highlighting, better indentation,
-" and some useful remaps. Also zotero integration.
-" For vimtex config see: https://github.com/lervag/vimtex/issues/204
+" TeX utilities with better syntax highlighting, better
+" indentation, and some useful remaps. Also zotero integration.
+" Note: For better configuration see https://github.com/lervag/vimtex/issues/204
+" Note: Now use https://github.com/msprev/fzf-bibtex with vim integration inside
+" autoload/tex.vim rather than unite versions. This is consistent with our choice
+" of using fzf over the shuogo unite/denite/ddu plugin series.
 " Plug 'twsh/unite-bibtex'  " python 3 version
 " Plug 'msprev/unite-bibtex'  " python 2 version
 " Plug 'lervag/vimtex'
 " Plug 'chrisbra/vim-tex-indent'
-" Plug 'Shougo/unite.vim'  " now use custom bibtex tool
 " Plug 'rafaqz/citation.vim'
 
 " RST utilities
@@ -1091,6 +1125,15 @@ Plug 'tpope/vim-liquid'
 Plug 'cespare/vim-toml'
 Plug 'JuliaEditorSupport/julia-vim'
 
+" Colorful stuff
+" Test: ~/.vim/plugged/colorizer/colortest.txt
+" Note: colorizer very expensive so disabled by default and toggled with shortcut
+" Plug 'altercation/vim-colors-solarized'
+Plug 'flazz/vim-colorschemes'  " for macvim
+Plug 'fcpg/vim-fahrenheit'  " for macvim
+Plug 'KabbAmine/yowish.vim'  " for macvim
+Plug 'lilydjwg/colorizer'  " works only in macvim or when &t_Co == 256
+
 " Misellaneous plugins
 " Plug 'dkarter/bullets.vim'  " list numbering but completely fails
 " Plug 'ohjames/tabdrop'  " now apply similar solution with tabline#write
@@ -1100,23 +1143,15 @@ Plug 'AndrewRadev/splitjoin.vim'  " single-line multi-line transition hardly eve
 let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_join_mapping  = 'cJ'
 
-" End plugins and declare filetype plugin, syntax, and indent on
-" Note every BufRead autocmd inside an ftdetect/filename.vim file is
-" automatically made part of the 'filetypedetect' augroup (that's why it exists!)
+" End plugin manager. Also declares filetype plugin, syntax, and indent on
+" Note every BufRead autocmd inside an ftdetect/filename.vim file is automatically
+" made part of the 'filetypedetect' augroup (that's why it exists!).
 call plug#end()
 
 
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" *Very* expensive for large files so only ever activate manually
-" Mapping is # for hex string
-if Active('colorizer')
-  let g:colorizer_startup = 0
-  let g:colorizer_nomap = 1
-  nnoremap <Leader># :<C-u>ColorToggle<CR>
-endif
-
 " Mappings for vim-tags command
 " Also use ctag brackets mapping for default double bracket motion, except never
 " overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
@@ -1131,37 +1166,6 @@ if Active('vim-tags') || &runtimepath =~# 'vim-tags'
   nnoremap <silent> <Leader>T :ShowTags<CR>
 endif
 
-" Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
-if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
-  let g:scrollwrapped_wrap_filetypes = []
-  nnoremap <silent> <Leader>w :WrapToggle<CR>
-  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
-  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
-  vnoremap <silent> <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
-  vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
-endif
-
-" Auto-complete delimiters
-" Filetype-specific settings are in various ftplugin files
-if Active('delimitmate')
-  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
-endif
-
-" Vim sneak
-if Active('vim-sneak')
-  map s <Plug>Sneak_s
-  map S <Plug>Sneak_S
-  map f <Plug>Sneak_f
-  map F <Plug>Sneak_F
-  map t <Plug>Sneak_t
-  map T <Plug>Sneak_T
-  map <F1> <Plug>Sneak_,
-  map <F2> <Plug>Sneak_;
-endif
-
 " Add global delims with vim-succinct plugin functions and declare
 " weird mapping defaults due to Karabiner
 if Active('vim-succinct') || &runtimepath =~# 'vim-succinct'
@@ -1173,24 +1177,105 @@ if Active('vim-succinct') || &runtimepath =~# 'vim-succinct'
   let g:succinct_nextdelim_map = '<F2>'
 endif
 
+" Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
+if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
+  let g:scrollwrapped_wrap_filetypes = []
+  nnoremap <silent> <Leader>w :WrapToggle<CR>
+  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
+  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
+  vnoremap <silent> <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
+  vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
+endif
+
 " Comment toggling stuff
+" Note: For once we actually like most of the default maps.
 if Active('tcomment_vim')
   nmap g>> g>c
   nmap g<< g<c
 endif
 
-" Neocomplete and deoplete
-if Active('deoplete.nvim')
-  call deoplete#custom#option({'max_list': 15})
-endif
-if Active('neocomplete.vim')
-  let g:neocomplete#max_list = 15
-  let g:neocomplete#enable_at_startup = 1
-  let g:neocomplete#enable_auto_select = 0
+" Auto-complete delimiters
+" Filetype-specific settings are in various ftplugin files
+if Active('delimitmate')
+  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_jump_expansion = 0
+  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
-" Jedi vim
+" Vim sneak motion
+" Note: easymotion is way too complicated
+if Active('vim-sneak')
+  map s <Plug>Sneak_s
+  map S <Plug>Sneak_S
+  map f <Plug>Sneak_f
+  map F <Plug>Sneak_F
+  map t <Plug>Sneak_t
+  map T <Plug>Sneak_T
+  map <F1> <Plug>Sneak_,
+  map <F2> <Plug>Sneak_;
+endif
+
+" Completion engine (see :help ddc-options)
+" See: https://github.com/Shougo/ddc.vim#configuration
+" Note: Inspired by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/
+" Note: Underscore key seems to indicate all sources, used for global filter options,
+" and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
+if Active('ddc.vim')
+  " inoremap <expr> <C-y> pumvisible() ? (vsnip#expandable() ? "\<Plug>(vsnip-expand)" : "\<C-y>") : "\<C-y>"
+  " inoremap <expr> <C-Space> ddc#map#manual_complete()
+  " '_': {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']},
+  call ddc#custom#patch_global(
+    \ 'sources',
+    \ ['around', 'buffer', 'file', 'vim-lsp', 'vsnip']
+    \ )
+  call ddc#custom#patch_global(
+    \ 'sourceOptions', {
+    \   '_': {
+    \     'matchers': ['matcher_fuzzy'],
+    \     'sorters': ['sorter_fuzzy'],
+    \     'converters': ['converter_fuzzy']
+    \   },
+    \   'around': {
+    \     'mark': 'A',
+    \     'maxCandidates': 5,
+    \   },
+    \   'buffer': {
+    \     'mark': 'B',
+    \     'maxCandidates': 5,
+    \   },
+    \   'file': {
+    \     'mark': 'F',
+    \     'isVolatile': v:true,
+    \     'forceCompletionPattern': '\S/\S*',
+    \     'maxCandidates': 5,
+    \   },
+    \   'vim-lsp': {
+    \     'mark': 'L',
+    \     'isVolatile': v:true,
+    \     'forceCompletionPattern': '\\.|:|->',
+    \     'maxCandidates': 15,
+    \   },
+    \   'vsnip': {
+    \     'mark': 'S',
+    \     'maxCandidates': 5,
+    \   },
+    \ })
+  call ddc#custom#patch_global(
+    \ 'sourceParams', {
+    \   'around': {
+    \     'maxSize': 500
+    \    }
+    \ })
+  if exists('*popup_preview#enable')
+    call popup_preview#enable()
+  endif
+  call ddc#enable()
+endif
+
+" Jedi vim settings
 " Note: Most mappings override custom ones so critical to change all settings.
+" Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
 if Active('jedi-vim')
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
@@ -1206,20 +1291,20 @@ if Active('jedi-vim')
   let g:jedi#usages_command = '<Leader><CR>'
 endif
 
-" Undo tree settings
-if Active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  noremap <Leader>u :UndotreeToggle<CR>
-  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
-endif
-
 " Vim test settings
 " Run tests near cursor or throughout file
 if Active('vim-test')
   let s:test_options = '--verbose'
   nnoremap <silent> <Leader>p :exe 'TestNearest ' . s:test_options<CR>
   nnoremap <silent> <Leader>P :exe 'TestFile ' . s:test_options<CR>
+endif
+
+" Undo tree settings
+if Active('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
+  noremap <Leader>u :UndotreeToggle<CR>
+  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
 endif
 
 " Fugitive command aliases
@@ -1410,15 +1495,13 @@ if Active('ale')
   let g:formatters_fortran = ['fprettify']
 endif
 
-" Easy-align
+" Easy-align with custom delimiters for case/esac block parens and seimcolons, chained
+" && and || symbols, and trailing comments (with two spaces ignoring commented lines)
+" Note: Use <Left> to stick delimiter to left instead of right
+" Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
+" and use <Tab> in interactive mode to cycle through these.
 if Active('vim-easy-align')
-  " Align map (nice mnemonic similar to gq for wrapping)
-  " Note: Use <Left> to stick delimiter to left instead of right
-  " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
-  " and use <Tab> in interactive mode to cycle through these.
-  nmap ga <Plug>(EasyAlign)
-  " Custom alignment delimiters. Include aligning case/esac blocks, chained && and
-  " || symbols, and trailing comments (with two spaces, ignoring commented lines).
+  nmap ge <Plug>(EasyAlign)
   let g:easy_align_delimiters = {
     \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
     \   '&': {'pattern': '\(&&\|||\)'},
@@ -1428,7 +1511,7 @@ if Active('vim-easy-align')
     au!
     au BufEnter * call extend(g:easy_align_delimiters, {
       \   'c': {'pattern': '\s' . (empty(Comment()) ? nr2char(0) : Comment())},
-      \ })  " use null character if no comment char defined (never matches)
+      \ })  " search null character if no comment char defined (never matches)
   augroup END
 endif
 
@@ -1462,19 +1545,6 @@ endif
 " asdfasdas " hello
 " asdfjioadijoadjofiadoisf " world
 
-" The howmuch.vim plugin. Pneumonic for mapping is the straight line at bottom of
-" sum table. Mapping options are:
-" AutoCalcReplace
-" AutoCalcReplaceWithSum
-" AutoCalcAppend
-" AutoCalcAppendWithEq
-" AutoCalcAppendWithSum
-" AutoCalcAppendWithEqAndSum
-if Active('HowMuch')
-  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
-  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
-endif
-
 " Speed dating, support date increments
 if Active('vim-speeddating')
   map + <Plug>SpeedDatingUp
@@ -1484,6 +1554,16 @@ if Active('vim-speeddating')
 else
   noremap + <C-a>
   noremap - <C-x>
+endif
+
+" The howmuch.vim plugin. Pneumonic for mapping is the straight line at
+" bottom of sum table. Mapping options are:
+" AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend,
+" AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
+if Active('HowMuch')
+  vmap <Leader>) <Plug>AutoCalcAppendWithEq
+  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
+  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
 endif
 
 " Codi (mathematical notepad)
@@ -1499,7 +1579,6 @@ if Active('codi.vim')
   command! -nargs=? CodiNew call utils#codi_new(<q-args>)
   nnoremap <silent> <Leader>= :CodiNew<CR>
   nnoremap <silent> <Leader>+ :Codi!!<CR>
-
   " Interpreter without history, various settings
   " See: https://github.com/metakirby5/codi.vim/issues/85
   " Note: Codi is broken for julia: https://github.com/metakirby5/codi.vim/issues/120
@@ -1520,6 +1599,14 @@ if Active('codi.vim')
         \ 'prompt': '^\(julia>\|      \)',
         \ },
     \ }
+endif
+
+" Colorizer is very expensive for large files so only ever activate
+" manually. Mapping mnemonic is # for hex string
+if Active('colorizer')
+  let g:colorizer_startup = 0
+  let g:colorizer_nomap = 1
+  nnoremap <Leader># :<C-u>ColorToggle<CR>
 endif
 
 " Session saving and updating
@@ -1666,10 +1753,6 @@ highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
 
 " Transparent dummy group used to add @Nospell
 highlight Dummy ctermbg=NONE ctermfg=NONE
-
-" Error highlighting with Syntastic
-highlight SyntasticErrorLine ctermfg=White ctermbg=Red cterm=None
-highlight SyntasticWarningLine ctermfg=White ctermbg=Magenta cterm=None
 
 " Error highlighting with ALE
 highlight ALEErrorLine ctermfg=White ctermbg=Red cterm=None
