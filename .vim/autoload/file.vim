@@ -1,15 +1,107 @@
 "-----------------------------------------------------------------------------"
-" Fuzzy selecting files by continuously descending into directories
-" and re-generating the lists.
+" Utilities for managing files
 "-----------------------------------------------------------------------------"
-" Used with input() to prevent tab expansion and literal tab insertion
-function! fzf#null_list(...) abort
-  return []
+" Test if file exists
+function! file#exists() abort
+  let files = glob(expand('<cfile>'))
+  if empty(files)
+    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  else
+    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
+  endif
 endfunction
 
+" Refresh file
+function! file#refresh() abort " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
+  filetype detect " if started with empty file, but now shebang makes filetype clear
+  filetype plugin indent on
+  let loaded = []
+  let files = [
+    \ '~/.vimrc',
+    \ '~/.vim/ftplugin/' . &filetype . '.vim',
+    \ '~/.vim/syntax/' . &filetype . '.vim',
+    \ '~/.vim/after/ftplugin/' . &filetype . '.vim',
+    \ '~/.vim/after/syntax/' . &filetype . '.vim'
+    \ ]
+  for file in files
+    if !empty(glob(file))
+      exe 'so '.file
+      call add(loaded, file)
+    endif
+  endfor
+  echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
+endfunction
+
+" Rename2.vim  -  Rename a buffer within Vim and on disk
+" Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
+" Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
+" Usage: Rename[!] {newname}
+function! file#rename(name, bang)
+  let curfile = expand('%:p')
+  let curfilepath = expand('%:p:h')
+  let newname = curfilepath . '/' . a:name
+  let v:errmsg = ''
+  silent! exe 'saveas' . a:bang . ' ' . newname
+  if v:errmsg =~# '^$\|^E329'
+    if expand('%:p') !=# curfile && filewritable(expand('%:p'))
+      silent exe 'bwipe! ' . curfile
+      if delete(curfile)
+        echoerr 'Could not delete ' . curfile
+      endif
+    endif
+  else
+    echoerr v:errmsg
+  endif
+endfunction
+
+" Safely closing tabs and windows
+" Note: This moves to the left tab after closure
+function! file#close_window() abort
+  let ntabs = tabpagenr('$')
+  let islast = tabpagenr('$') == tabpagenr()
+  quit
+  if ntabs != tabpagenr('$') && !islast
+    silent! tabp
+  endif
+endfunction
+function! file#close_tab() abort
+  let ntabs = tabpagenr('$')
+  let islast = tabpagenr('$') == tabpagenr()
+  if ntabs == 1
+    qall
+  else
+    tabclose
+    if !islast
+      silent! tabp
+    endif
+  endif
+endfunction
+
+" Current directory change
+function! file#directory_descend() abort
+  let cd_prev = getcwd()
+  if !exists('b:cd_prev') || b:cd_prev != cd_prev
+    let b:cd_prev = cd_prev
+  endif
+  lcd %:p:h
+  echom 'Descended into file directory.'
+endfunction
+function! file#directory_return() abort
+  if exists('b:cd_prev')
+    exe 'lcd ' . b:cd_prev
+    unlet b:cd_prev
+    echom 'Returned to previous directory.'
+  else
+    echom 'Previous directory is unset.'
+  endif
+endfunction
+
+"-----------------------------------------------------------------------------"
+" Opening files
+"-----------------------------------------------------------------------------"
 " Generate list of files in directory
+" Include both hidden and non-hidden files
 function! s:list_files(dir) abort
-  " Include both hidden and non-hidden
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, 'fnamemodify(v:val, '':t'')')
   call insert(paths, s:newfile, 0) " highest priority
@@ -41,9 +133,13 @@ function! s:tab_drop(file) abort
   end
 endfunction
 
-" Check if user selection is directory, descend until user selects a file
+" Check if user selection is directory, descend until user selects a file. This
+" is similar to default shell tab expansion.
 let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
-function! fzf#open_continuous(...) abort
+function! file#null_list(...) abort
+  return []
+endfunction
+function! file#open_continuous(...) abort
   " Expand input paths
   let paths = []
   for pattern in a:000
@@ -70,7 +166,7 @@ function! fzf#open_continuous(...) abort
     endif
     for item in items
       if item == s:newfile
-        let item = input(prompt . '/', '', 'customlist,fzf#null_list')
+        let item = input(prompt . '/', '', 'customlist,file#null_list')
       endif
       if item ==# '..'  " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
         call add(paths, fnamemodify(path, ':h'))  " head of current directory
@@ -94,10 +190,10 @@ function! fzf#open_continuous(...) abort
 endfunction
 
 "-----------------------------------------------------------------------------"
-" Fuzzy select currently open files
+" Tab management
 "-----------------------------------------------------------------------------"
 " Function that generates lists of tabs and their numbers
-function! s:tab_select_source() abort
+function! s:tab_source() abort
   if !exists('g:tabline_bufignore')
     let g:tabline_bufignore = ['qf', 'vim-plug', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] " filetypes considered 'helpers'
   endif
@@ -135,21 +231,16 @@ function! s:tab_select_sink(item) abort
   exe 'normal! ' . split(a:item, ':')[0] . 'gt'
 endfunction
 
-" Tab selection
-function! fzf#tab_select() abort
+" Select from open tabs
+function! file#tab_select() abort
   call fzf#run({
-    \ 'source': s:tab_select_source(),
+    \ 'source': s:tab_source(),
     \ 'options': '--no-sort --prompt="Tab> "',
     \ 'sink': function('s:tab_select_sink'),
     \ 'down':'~50%'
     \ })
 endfunction
 
-"-----------------------------------------------------------------------------"
-" Fuzzy move the tab
-" Note: We display the tab names in case we want to group this file
-" appropriately amongst similar open files.
-"-----------------------------------------------------------------------------"
 " Move current tab to the exact place of tab number N
 function! s:tab_move_sink(nr) abort
   if type(a:nr) == 0
@@ -168,12 +259,14 @@ function! s:tab_move_sink(nr) abort
 endfunction
 
 " Move to selected tab
-function! fzf#tab_move(...) abort
+" Note: We display the tab names in case we want to group this
+" file appropriately amongst similar open files.
+function! file#tab_move(...) abort
   if a:0
     call s:tab_move_sink(a:1)
   else
     call fzf#run({
-      \ 'source': s:tab_select_source(),
+      \ 'source': s:tab_source(),
       \ 'options': '--no-sort --prompt="Number> "',
       \ 'sink': function('s:tab_move_sink'),
       \ 'down': '~50%'

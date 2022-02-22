@@ -68,5 +68,5 @@ endfunction
 
 " For <expr> map accepting motion
 function! python#translate_kwargs_dict_expr(kw2dc) abort
-  return python#motion_func('python#translate_kwargs_dict', [a:kw2dc, mode()])
+  return utils#motion_func('python#translate_kwargs_dict', [a:kw2dc, mode()])
 endfunction

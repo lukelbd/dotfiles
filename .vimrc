@@ -316,7 +316,7 @@ augroup tabs
   au!
   au TabLeave * let g:lasttab = tabpagenr()
 augroup END
-command! -nargs=* -complete=file Open call fzf#open_continuous(<f-args>)
+command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
 noremap <C-o> :<C-u>Open 
 noremap <C-p> :<C-u>Files 
 noremap <C-g> :<C-u>GFiles<CR>
@@ -326,12 +326,12 @@ noremap <expr> <C-y> ":\<C-u>Files " . expand('%:h') . '/'
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
 nnoremap <Leader>F <c-w>gf
-nnoremap <silent> <Leader>f :<C-u>call utils#file_exists()<CR>
+nnoremap <silent> <Leader>f :<C-u>call file#exists()<CR>
 
 " Move to current directory
 " Pneumonic is 'inside' just like Ctrl + i map
-nnoremap <silent> <Leader>i :call utils#directory_descend()<CR>
-nnoremap <silent> <Leader>I :call utils#directory_return()<CR>
+nnoremap <silent> <Leader>i :call file#directory_descend()<CR>
+nnoremap <silent> <Leader>I :call file#directory_return()<CR>
 
 " 'Execute' script with different options
 " Note: Execute1 and Execute2 just defined for tex for now
@@ -340,22 +340,22 @@ nmap <Leader>z <Plug>AltExecute1
 nmap <Leader>Z <Plug>AltExecute2
 
 " Save and quit, also test whether the :q action closed the entire tab
-" nnoremap <silent> <C-w> :call utils#window_close()<CR>
 nnoremap <silent> <C-s> :call tabline#write()<CR>
-nnoremap <silent> <C-w> :call utils#tab_close()<CR>
+nnoremap <silent> <C-w> :call file#close_tab()<CR>
+" nnoremap <silent> <C-w> :call file#close_window()<CR>
 nnoremap <silent> <C-q> :quitall<CR>
 
 " Renaming things
-command! -nargs=* -complete=file -bang Rename :call utils#rename_file('<args>', '<bang>')
+command! -nargs=* -complete=file -bang Rename :call file#rename('<args>', '<bang>')
 
 " Refreshing things
-command! Refresh call utils#refresh()
+command! Refresh call file#refresh()
 nnoremap <silent> <Leader>r :redraw!<CR>
 nnoremap <silent> <Leader>R :Refresh<CR>
 nnoremap <silent> <Leader>e :edit<CR>
 
 " Autosave with SmartWrite using utils function
-command! -nargs=? Autosave call utils#autosave_toggle(<args>)
+command! -nargs=? Autosave call switch#autosave(<args>)
 nnoremap <silent> <Leader>s :Autosave 1<CR>
 nnoremap <silent> <Leader>S :Autosave 0<CR>
 
@@ -363,10 +363,10 @@ nnoremap <silent> <Leader>S :Autosave 0<CR>
 nnoremap <Tab>, gT
 nnoremap <Tab>. gt
 nnoremap <silent> <Tab>' :exe 'tabn ' . (exists('g:lasttab') ? g:lasttab : 1)<CR>
-nnoremap <silent> <Tab><Tab> :call fzf#tab_select()<CR>
-nnoremap <silent> <Tab>m :call fzf#tab_move()<CR>
-nnoremap <silent> <Tab>> :call fzf#tab_move(tabpagenr() + 1)<CR>
-nnoremap <silent> <Tab>< :call fzf#tab_move(tabpagenr() - 1)<CR>
+nnoremap <silent> <Tab><Tab> :call file#tab_select()<CR>
+nnoremap <silent> <Tab>m :call file#tab_move()<CR>
+nnoremap <silent> <Tab>> :call file#tab_move(tabpagenr() + 1)<CR>
+nnoremap <silent> <Tab>< :call file#tab_move(tabpagenr() - 1)<CR>
 for s:num in range(1, 10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor
@@ -417,13 +417,13 @@ let s:popup_filetypes = {
 \ }
 augroup popup_setup
   au!
-  au FileType help call utils#help_setup()
-  au CmdwinEnter * call utils#cmdwin_setup()
+  au FileType help call setup#help()
+  au CmdwinEnter * call setup#cmdwin()
   if exists('##TerminalWinOpen')
-    au TerminalWinOpen * call utils#popup_setup()
+    au TerminalWinOpen * call setup#popup()
   endif
   for [s:key, s:val] in items(s:popup_filetypes)
-    exe 'au FileType ' . s:key . ' call utils#popup_setup(' . s:val . ')'
+    exe 'au FileType ' . s:key . ' call setup#popup(' . s:val . ')'
   endfor
 augroup END
 let g:tags_filetypes_skip = keys(s:popup_filetypes)
@@ -435,9 +435,9 @@ augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
-command! -nargs=? PluginToggle call utils#plugin_toggle(<args>)
-command! -nargs=? ConcealToggle call utils#conceal_toggle(<args>)
-command! -nargs=? TabToggle call utils#tab_toggle(<args>)
+command! -nargs=? PopupToggle call switch#popup(<args>)
+command! -nargs=? ConcealToggle call switch#conceal(<args>)
+command! -nargs=? TabToggle call switch#tab(<args>)
 noremap <Leader><Tab> :TabToggle<CR>
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
@@ -448,14 +448,16 @@ nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>< q?
 nnoremap <Leader>> q/
-nnoremap <silent> <Leader>h :call utils#show_cmd_help() \| redraw!<CR>
-nnoremap <silent> <Leader>H :call utils#show_cmd_man() \| redraw!<CR>
-nnoremap <silent> <Leader>v :Help<CR>
+nnoremap <silent> <Leader>h :call utils#help_sh() \| redraw!<CR>
+nnoremap <silent> <Leader>H :call utils#help_man() \| redraw!<CR>
+nnoremap <silent> <Leader>v :call utils#help_vim()<CR>
+nnoremap <silent> <Leader>V :Help<CR>
 nnoremap <silent> <Leader>m :Maps<CR>
 
 " Cycle through wildmenu expansion with these keys
-cnoremap <expr> <F1> utils#wild_tab(0)
-cnoremap <expr> <F2> utils#wild_tab(1)
+" Note: Mapping without <expr> will type those literal keys
+cnoremap <expr> <F1> "\<Tab>"
+cnoremap <expr> <F2> "\<S-Tab>"
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
@@ -532,10 +534,10 @@ vnoremap cc s
 nnoremap cL mzi<CR><Esc>`z
 
 " Swap adjacent characters or rows
-nnoremap <silent> ch :call utils#swap_characters(0)<CR>
-nnoremap <silent> cl :call utils#swap_characters(1)<CR>
-nnoremap <silent> ck :call utils#swap_lines(0)<CR>
-nnoremap <silent> cj :call utils#swap_lines(1)<CR>
+nnoremap <silent> ch :call insert#swap_characters(0)<CR>
+nnoremap <silent> cl :call insert#swap_characters(1)<CR>
+nnoremap <silent> ck :call insert#swap_lines(0)<CR>
+nnoremap <silent> cj :call insert#swap_lines(1)<CR>
 
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o oX<Backspace>
@@ -547,7 +549,6 @@ nnoremap O OX<Backspace>
 " Note: Use [p or ]p for P and p but adjusting to the current indent
 nnoremap yp "0p
 nnoremap yP "0P
-nnoremap <silent> <Leader>v :Help<CR>
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
 " vnoremap p "_dP  " flickers and does not include special v_p handling
@@ -567,16 +568,16 @@ nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
 nnoremap <expr> >> '<Esc>' . repeat('>>', v:count1)
 nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
-nnoremap <expr> > '<Esc>' . utils#multi_indent_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . utils#multi_indent_expr(1, v:count1)
+nnoremap <expr> > '<Esc>' . change#multi_indent_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . change#multi_indent_expr(1, v:count1)
 
 " Wrapping lines with arbitrary textwidth
-command! -range -nargs=? WrapLines <line1>,<line2>call utils#wrap_lines(<args>)
-noremap <silent> <expr> gq '<Esc>' . utils#wrap_lines_expr(v:count)
+command! -range -nargs=? WrapLines <line1>,<line2>call change#wrap_lines(<args>)
+noremap <silent> <expr> gq '<Esc>' . change#wrap_lines_expr(v:count)
 
 " Wrapping lines accounting for bullet indentation and with arbitrary textwidth
-command! -range -nargs=? WrapItems <line1>,<line2>call utils#wrap_items(<args>)
-noremap <silent> <expr> gQ '<Esc>' . utils#wrap_items_expr(v:count)
+command! -range -nargs=? WrapItems <line1>,<line2>call change#wrap_items(<args>)
+noremap <silent> <expr> gQ '<Esc>' . change#wrap_items_expr(v:count)
 
 " Toggle highlighting
 nnoremap <silent> <Leader>o :noh<CR>
@@ -590,8 +591,8 @@ noremap ' "_
 noremap " "*
 
 " Copy mode ('paste mode' accessible with [v and ]v via unimpaired.vim)
-command! -nargs=? CopyToggle call utils#copy_toggle(<args>)
-nnoremap <Leader>c :call utils#copy_toggle()<CR>
+command! -nargs=? CopyToggle call switch#copy(<args>)
+nnoremap <Leader>c :call switch#copy()<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
 " See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
@@ -613,16 +614,16 @@ augroup spell_toggle
   au!
   au FileType tex setlocal nolist nocursorline colorcolumn=
   au FileType tex,html,markdown,rst
-    \ if expand('<afile>') != '__doc__' | call spell#spell_toggle(1) | endif
+    \ if expand('<afile>') != '__doc__' | call switch#spell(1) | endif
 augroup END
 
 " Toggle spelling on and off
-command! SpellToggle call spell#spell_toggle(<args>)
-command! LangToggle call spell#lang_toggle(<args>)
-nnoremap <silent> <Leader>l :call spell#spell_toggle(1)<CR>
-nnoremap <silent> <Leader>L :call spell#spell_toggle(0)<CR>
-nnoremap <silent> <Leader>k :call spell#lang_toggle(1)<CR>
-nnoremap <silent> <Leader>K :call spell#lang_toggle(0)<CR>
+command! SpellToggle call switch#spell(<args>)
+command! LangToggle call switch#lang(<args>)
+nnoremap <silent> <Leader>l :call switch#spell(1)<CR>
+nnoremap <silent> <Leader>L :call switch#spell(0)<CR>
+nnoremap <silent> <Leader>k :call switch#lang(1)<CR>
+nnoremap <silent> <Leader>K :call switch#lang(0)<CR>
 
 " Add and remove from dictionary
 nnoremap <Leader>j zg
@@ -633,8 +634,8 @@ nnoremap <Leader>d 1z=
 nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also corrects the word
-nnoremap <silent> <Plug>forward_spell bh]s:call spell#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[s:call spell#spell_change('[')<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nnoremap <silent> <Plug>forward_spell bh]s:call switch#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[s:call switch#spell_change('[')<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
@@ -673,16 +674,16 @@ noremap [Z [z
 noremap ]Z ]z
 
 " Unimpaired blank lines
-nnoremap <silent> <Plug>BlankUp :call utils#blank_up(v:count1)<CR>
-nnoremap <silent> <Plug>BlankDown :call utils#blank_down(v:count1)<CR>
+nnoremap <silent> <Plug>BlankUp :call insert#blank_up(v:count1)<CR>
+nnoremap <silent> <Plug>BlankDown :call insert#blank_down(v:count1)<CR>
 nmap [e <Plug>BlankUp
 nmap ]e <Plug>BlankDown
 
 " Maps and commands for circular location-list scrolling
-command! -bar -count=1 Cnext execute utils#cyclic_next(<count>, 'qf')
-command! -bar -count=1 Cprev execute utils#cyclic_next(<count>, 'qf', 1)
-command! -bar -count=1 Lnext execute utils#cyclic_next(<count>, 'loc')
-command! -bar -count=1 Lprev execute utils#cyclic_next(<count>, 'loc', 1)
+command! -bar -count=1 Cnext execute utils#iter_cyclic(<count>, 'qf')
+command! -bar -count=1 Cprev execute utils#iter_cyclic(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute utils#iter_cyclic(<count>, 'loc')
+command! -bar -count=1 Lprev execute utils#iter_cyclic(<count>, 'loc', 1)
 nnoremap <silent> [x :Lprev<CR>
 nnoremap <silent> ]x :Lnext<CR>
 nnoremap <silent> [q :Cprev<CR>
@@ -690,14 +691,14 @@ nnoremap <silent> ]q :Cnext<CR>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
-nnoremap <expr> ga utils#setup_paste() . 'a'
-nnoremap <expr> gA utils#setup_paste() . 'A'
-nnoremap <expr> gc utils#setup_paste() . 'c'
-nnoremap <expr> gi utils#setup_paste() . 'i'
-nnoremap <expr> gI utils#setup_paste() . 'I'
-nnoremap <expr> go utils#setup_paste() . 'o'
-nnoremap <expr> gO utils#setup_paste() . 'O'
-nnoremap <expr> gR utils#setup_paste() . 'R'
+nnoremap <expr> ga insert#paste_mode() . 'a'
+nnoremap <expr> gA insert#paste_mode() . 'A'
+nnoremap <expr> gc insert#paste_mode() . 'c'
+nnoremap <expr> gi insert#paste_mode() . 'i'
+nnoremap <expr> gI insert#paste_mode() . 'I'
+nnoremap <expr> go insert#paste_mode() . 'o'
+nnoremap <expr> gO insert#paste_mode() . 'O'
+nnoremap <expr> gR insert#paste_mode() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
 " nnoremap <CR> <C-]>  " fails most of the time
@@ -711,26 +712,26 @@ augroup pum_navigation
 augroup END
 
 " Keystrokes that always close the popup menu
-inoremap <expr> <BS>    pumvisible() ? utils#pum_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
-inoremap <expr> <Space> pumvisible() ? utils#pum_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
+inoremap <expr> <BS>    pumvisible() ? insert#pum_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
+inoremap <expr> <Space> pumvisible() ? insert#pum_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
 
 " Enter is 'accept' only if we explicitly scrolled down, tab is always 'accept' and
 " choose default menu item if necessary. Also break undo history when adding linebreaks.
 " See: :help ins-special-special
-inoremap <expr> <CR>  pumvisible() ? b:pum_pos ? "\<C-y>" . utils#pum_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
-inoremap <expr> <Tab> pumvisible() ? b:pum_pos ? "\<C-y>" . utils#pum_reset() : "\<C-n>\<C-y>" . utils#pum_reset() : "\<C-]>\<Tab>"
+inoremap <expr> <CR>  pumvisible() ? b:pum_pos ? "\<C-y>" . insert#pum_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
+inoremap <expr> <Tab> pumvisible() ? b:pum_pos ? "\<C-y>" . insert#pum_reset() : "\<C-n>\<C-y>" . insert#pum_reset() : "\<C-]>\<Tab>"
 
 " Keystrokes that increment items in the menu
 " Also disable scrolling in insert mode
-inoremap <expr> <ScrollWheelUp>   pumvisible() ? utils#pum_prev() : ''
-inoremap <expr> <ScrollWheelDown> pumvisible() ? utils#pum_next() : ''
-inoremap <expr> <C-k>  pumvisible() ? utils#pum_prev() : "\<Up>"
-inoremap <expr> <C-j>  pumvisible() ? utils#pum_next() : "\<Down>"
-inoremap <expr> <Up>   pumvisible() ? utils#pum_prev() : "\<Up>"
-inoremap <expr> <Down> pumvisible() ? utils#pum_next() : "\<Down>"
+inoremap <expr> <ScrollWheelUp>   pumvisible() ? insert#pum_prev() : ''
+inoremap <expr> <ScrollWheelDown> pumvisible() ? insert#pum_next() : ''
+inoremap <expr> <C-k>  pumvisible() ? insert#pum_prev() : "\<Up>"
+inoremap <expr> <C-j>  pumvisible() ? insert#pum_next() : "\<Down>"
+inoremap <expr> <Up>   pumvisible() ? insert#pum_prev() : "\<Up>"
+inoremap <expr> <Down> pumvisible() ? insert#pum_next() : "\<Down>"
 
 " Forward delete by tabs
-inoremap <silent> <expr> <Delete> utils#forward_delete()
+inoremap <silent> <expr> <Delete> insert#forward_delete()
 
 " Insert comment
 inoremap <expr> <C-c> comment#comment_insert()
@@ -781,29 +782,29 @@ nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 " Delete commented text. For some reason search screws up when using \(\) groups,
 " maybe because first parts of match are identical?
 " Note: Comment() doesn't get invoked either until entire expression is run
-noremap <expr> \c utils#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.\+$\n', '', '\s\+' . Comment() . '.\+$', '')
+noremap <expr> \c change#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.\+$\n', '', '\s\+' . Comment() . '.\+$', '')
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-noremap <expr> \w utils#replace_regexes_expr('Removed trailing whitespace.', '\s\+\ze$', '')
+noremap <expr> \w change#replace_regexes_expr('Removed trailing whitespace.', '\s\+\ze$', '')
 
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <expr> \s utils#replace_regexes_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S utils#replace_regexes_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
+noremap <expr> \s change#replace_regexes_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S change#replace_regexes_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
-noremap <expr> \e utils#replace_regexes_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
-noremap <expr> \E utils#replace_regexes_expr('Removed empty lines.', '^\s*$\n', '')
+noremap <expr> \e change#replace_regexes_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
+noremap <expr> \E change#replace_regexes_expr('Removed empty lines.', '^\s*$\n', '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-noremap <expr> \' utils#replace_regexes_expr('Fixed single quotes.', '‘', '`', '’', "'")
-noremap <expr> \" utils#replace_regexes_expr('Fixed double quotes.', '“', '``', '”', "''")
-noremap <expr> \- utils#replace_regexes_expr('Fixed long dashes.', '–', '--')
-noremap <expr> \_ utils#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
+noremap <expr> \' change#replace_regexes_expr('Fixed single quotes.', '‘', '`', '’', "'")
+noremap <expr> \" change#replace_regexes_expr('Fixed double quotes.', '“', '``', '”', "''")
+noremap <expr> \- change#replace_regexes_expr('Fixed long dashes.', '–', '--')
+noremap <expr> \_ change#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
 
 " Replace tabs with spaces
-noremap <expr> \<Tab> utils#replace_regexes_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
+noremap <expr> \<Tab> change#replace_regexes_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
 
 
 "-----------------------------------------------------------------------------"
@@ -1314,8 +1315,8 @@ endif
 if Active('ale')
   " Buffer-local toggling
   " Note: ale works with buffer contents unlike syntastic
-  noremap <silent> <Leader>x :<C-u>call utils#ale_toggle(1)<CR>
-  noremap <silent> <Leader>X :<C-u>call utils#ale_toggle(0)<CR>
+  noremap <silent> <Leader>x :<C-u>call switch#ale(1)<CR>
+  noremap <silent> <Leader>X :<C-u>call switch#ale(0)<CR>
   map ]x <Plug>(ale_next_wrap)
   map [x <Plug>(ale_previous_wrap)
 
@@ -1454,8 +1455,8 @@ if Active('vim-gitgutter')
     let g:gitgutter_enabled = 0  " whether enabled at *startup*
     silent! set signcolumn=no
   endif
-  nnoremap <silent> <Leader>g :call utils#gitgutter_toggle(1)<CR>
-  nnoremap <silent> <Leader>G :call utils#gitgutter_toggle(0)<CR>
+  nnoremap <silent> <Leader>g :call switch#gitgutter(1)<CR>
+  nnoremap <silent> <Leader>G :call switch#gitgutter(0)<CR>
   noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
   noremap <silent> <Leader>A :GitGutterUndoHunk<CR>
   noremap <silent> <Leader>a :GitGutterStageHunk<CR>
@@ -1493,10 +1494,10 @@ endif
 if Active('codi.vim')
   augroup math
     au!
-    au User CodiEnterPre call utils#codi_setup(1)
-    au User CodiLeavePost call utils#codi_setup(0)
+    au User CodiEnterPre call setup#codi_window(1)
+    au User CodiLeavePost call setup#codi_window(0)
   augroup END
-  command! -nargs=? CodiNew call utils#codi_new(<q-args>)
+  command! -nargs=? CodiNew call setup#codi_new(<q-args>)
   nnoremap <silent> <Leader>= :CodiNew<CR>
   nnoremap <silent> <Leader>+ :Codi!!<CR>
   let g:codi#autocmd = 'None'
@@ -1547,7 +1548,7 @@ if Active('colorizer')
   nnoremap <Leader># :<C-u>ColorToggle<CR>
 endif
 
-" Session saving and updating
+" Session saving and updating (the $ matches marker used in statusline)
 " Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
 " autocommands and saved session files call let v:this_session=expand("<sfile>:p")
 " (so that v:this_session is always set when initializing with vim -S .vimsession)
@@ -1557,7 +1558,7 @@ if Active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  nnoremap <silent> <Leader>V
+  nnoremap <silent> <Leader>$
       \ :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session
       \ \| else \| exe 'Obsession .vimsession' \| endif<CR>
 endif
@@ -1697,12 +1698,12 @@ highlight ALEErrorLine ctermfg=White ctermbg=Red cterm=None
 highlight ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
 
 " Helper commands defined in utils
-command! -nargs=? Syntax call utils#current_syntax(<q-args>)
-command! FileFile call utils#show_ftplugin()
-command! SyntaxFile call utils#show_syntax()
-command! SyntaxGroup call utils#current_group()
-command! ColorTest call utils#color_test()
-command! ColorGroup vert help group-name
+command! CurrentColor vert help group-name
+command! CurrentGroup call utils#current_group()
+command! -nargs=? CurrentSyntax call utils#current_syntax(<q-args>)
+command! ShowColors call utils#show_colors()
+command! ShowPlugin call utils#show_plugin()
+command! ShowSyntax call utils#show_syntax()
 
 
 "-----------------------------------------------------------------------------"
