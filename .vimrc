@@ -441,17 +441,17 @@ command! -nargs=? TabToggle call utils#tab_toggle(<args>)
 noremap <Leader><Tab> :TabToggle<CR>
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
+" Note: Mapping for 'repeat last search' is unnecessary, just press n or N.
+" Note: Help and man info is also shown by ddc popups. Similar to pydoc and pylsp.
+" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 nnoremap <Leader>; :<Up><CR>
-nnoremap <Leader>/ :<Up><CR>
-nnoremap <Leader>? :<Up><CR>
 nnoremap <Leader>: q:
-nnoremap <Leader>> q/
 nnoremap <Leader>< q?
+nnoremap <Leader>> q/
 nnoremap <silent> <Leader>h :call utils#show_cmd_help() \| redraw!<CR>
 nnoremap <silent> <Leader>H :call utils#show_cmd_man() \| redraw!<CR>
 nnoremap <silent> <Leader>v :Help<CR>
 nnoremap <silent> <Leader>m :Maps<CR>
-" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 
 " Cycle through wildmenu expansion with these keys
 cnoremap <expr> <F1> utils#wild_tab(0)
@@ -1428,8 +1428,11 @@ endif
 " Run tests near cursor or throughout file
 if Active('vim-test')
   let s:test_options = '--verbose'
-  nnoremap <silent> <Leader>p :exe 'TestNearest ' . s:test_options<CR>
-  nnoremap <silent> <Leader>P :exe 'TestFile ' . s:test_options<CR>
+  noremap <silent> <Leader>] :<C-u>exe 'TestNearest ' . s:test_options<CR>
+  noremap <silent> <Leader>[ :<C-u>exe 'TestLast ' . s:test_options<CR>
+  noremap <silent> <Leader>{ :<C-u>exe 'TestSuite ' . s:test_options<CR>
+  noremap <silent> <Leader>} :<C-u>exe 'TestSuite ' . s:test_options<CR>
+  noremap <silent> <Leader>\ :<C-u>TestVisit<CR>
 endif
 
 " Fugitive command aliases
