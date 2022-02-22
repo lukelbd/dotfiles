@@ -4,6 +4,6 @@
 "------------------------------------------------------------------------------"
 augroup gitgutter
   au!
-  let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
-  exe 'au BufReadPost,BufWritePost,' . cmds . ' * GitGutter'
+  let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
+  exe 'au BufEnter,BufReadPost,' . cmds . ' * GitGutter'
 augroup END

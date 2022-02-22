@@ -364,7 +364,7 @@ function! utils#autosave_toggle(...) abort
   " Toggle autocommands local to buffer as with codi
   " We use augroups with buffer-specific names to prevent conflict
   if toggle
-    let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
+    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
     exe 'augroup autosave_' . bufnr('%')
       au!
       exe 'au ' . cmds . ' <buffer> silent call tabline#write()'
@@ -423,7 +423,7 @@ endfunction
 " Custom codi autocommands
 function! utils#codi_setup(toggle) abort
   if a:toggle
-    let cmds = (exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave')
+    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
     exe 'augroup codi_' . bufnr('%')
       au!
       exe 'au ' . cmds . ' <buffer> call codi#update()'

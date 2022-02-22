@@ -1490,7 +1490,7 @@ if Active('tagbar')
   let g:tagbar_case_insensitive = 1  " make sorting case insensitive
   let g:tagbar_compact = 1  " no header information in panel
   let g:tagbar_expand = 0  " don't exapand window in gvim
-  let g:tagbar_indent = -1  " only one space indent
+  let g:tagbar_indent = 1  " one space indent
   let g:tagbar_left = 0  " open on right
   let g:tagbar_no_autocmds = 1  " use custom command
   let g:tagbar_no_status_line = 1  " use custom status line
