@@ -442,9 +442,11 @@ noremap <Leader><Tab> :TabToggle<CR>
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
 nnoremap <Leader>; :<Up><CR>
+nnoremap <Leader>/ :<Up><CR>
+nnoremap <Leader>? :<Up><CR>
 nnoremap <Leader>: q:
-nnoremap <Leader>/ q/
-nnoremap <Leader>? q?
+nnoremap <Leader>> q/
+nnoremap <Leader>< q?
 nnoremap <silent> <Leader>h :call utils#show_cmd_help() \| redraw!<CR>
 nnoremap <silent> <Leader>H :call utils#show_cmd_man() \| redraw!<CR>
 nnoremap <silent> <Leader>v :Help<CR>
@@ -858,13 +860,6 @@ for s:name in [
     exe "Plug 'lukelbd/" . s:name . "'"
   endif
 endfor
-let g:tags_nofilter_filetypes = ['fortran']
-let g:tags_scope_filetypes = {
-  \ 'vim'     : 'afc',
-  \ 'tex'     : 'bs',
-  \ 'python'  : 'fcm',
-  \ 'fortran' : 'smfp',
-  \ }
 
 " Improve motions. Do not use easymotion because
 " extremely slow over remote connections and overkill.
@@ -887,11 +882,11 @@ let g:matchup_matchparen_enabled = 1
 let g:matchup_transmute_enabled = 0  " breaks latex!
 
 " Useful panel plugins
-" For nerdtree-like file navigation see: https://shapeshed.com/vim-netrw/
-" Plug 'vim-scripts/EnhancedJumps'
+" Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
+" Plug 'vim-scripts/EnhancedJumps'  " unnecessary
 " Plug 'jistr/vim-nerdtree-tabs'  " unnecessary
-" Plug 'scrooloose/nerdtree'
-Plug 'majutsushi/tagbar'
+" Plug 'scrooloose/nerdtree'  " unnecessary
+" Plug 'preservim/tagbar'  " unnecessary
 Plug 'mbbill/undotree'
 
 " Close unused buffers with Bdelete
@@ -962,6 +957,7 @@ let g:HowMuch_no_mappings = 1
 " Plug 'Shougo/unite.vim'  " first generation
 " Plug 'Shougo/denite.vim'  " second generation
 " Plug 'Shougo/ddu.vim'  " third generation
+" Plug 'Shougo/ddu-ui-filer.vim'  " successor to Shuogo/vimfiler and Shuogo/defx.nvim
 " Plug 'ctrlpvim/ctrlp.vim'  " replaced with fzf
 Plug '~/.fzf'  " fzf installation location, will add helptags and runtimepath
 Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes other tools
@@ -1121,7 +1117,7 @@ let g:jupytext_fmt = 'py:percent'
 " Plug 'hdima/python-syntax'  " this failed for me, had to manually add syntax file (f-strings not highlighted and other stuff)
 " Plug 'vim-python/python-syntax'  " alternative syntax 
 Plug 'tmux-plugins/vim-tmux'
-Plug 'plasticboy/vim-markdown'
+Plug 'preservim/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
 Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
@@ -1155,25 +1151,9 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" Mappings for vim-tags command
-" Also use ctag brackets mapping for default double bracket motion, except never
-" overwrite potential single bracket mappings (e.g. in help mode)mapping of single bracket
-if Active('vim-tags') || &runtimepath =~# 'vim-tags'
-  augroup double_bracket
-    au!
-    au BufEnter *
-      \ if empty(maparg('[')) && empty(maparg(']')) |
-      \ nmap <buffer> [[ [T | nmap <buffer> ]] ]T |
-      \ endif
-  augroup END
-  nnoremap <silent> <Leader>T :ShowTags<CR>
-endif
-
-" Add global delims with vim-succinct plugin functions and declare
-" weird mapping defaults due to Karabiner
+" Add weird mappings powered by Karabiner. Note that custom delimiters
+" are declared inside vim-succinct plugin functions rather than here.
 if Active('vim-succinct') || &runtimepath =~# 'vim-succinct'
-  " Custom delimiter mappings
-  " Note: Account for karabiner arrow key maps
   let g:succinct_surround_prefix = '<C-s>'
   let g:succinct_snippet_prefix = '<C-d>'
   let g:succinct_prevdelim_map = '<F1>'
@@ -1190,12 +1170,29 @@ if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
 endif
 
-" Undo tree settings
-if Active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  noremap <Leader>u :UndotreeToggle<CR>
-  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
+" Add maps for vim-tags command and use tag bracket mapping for default double bracket
+" motion, except never overwrite potential single bracket mappings (e.g. help mode)
+" Note: Here we also use vim-tags fzf finder similar to file fzf finder as
+" low-level alternative to BTags and Files.
+if Active('vim-tags') || &runtimepath =~# 'vim-tags'
+  augroup double_bracket
+    au!
+    au BufEnter *
+      \ if empty(maparg('[')) && empty(maparg(']')) |
+      \ nmap <buffer> [[ [T | nmap <buffer> ]] ]T |
+      \ endif
+  augroup END
+  nnoremap <silent> <Leader>t :<C-u>ShowTags<CR>
+  nnoremap <silent> <Leader>T :<C-u>UpdateTags<CR>
+  nnoremap <silent> <Leader>, :<C-u>BTags<CR>
+  let g:tags_jump_map = '<Leader>.'
+  let g:tags_nofilter_filetypes = ['fortran']
+  let g:tags_scope_filetypes = {
+    \ 'vim'     : 'afc',
+    \ 'tex'     : 'bs',
+    \ 'python'  : 'fcm',
+    \ 'fortran' : 'smfp',
+    \ }
 endif
 
 " Comment toggling stuff
@@ -1227,6 +1224,16 @@ if Active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
+" Undo tree settings
+" Note: This sort of seems against the anti-nerdtree anti-tagbar minimalist
+" principal but think unique utilities that briefly pop up on left are exception.
+if Active('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
+  noremap <Leader>u :UndotreeToggle<CR>
+  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
+endif
+
 " Completion engine settings (see :help ddc-options)
 " See: https://github.com/Shougo/ddc.vim#configuration
 " Note: Inspired by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/
@@ -1234,6 +1241,7 @@ endif
 " Note: Underscore key seems to indicate all sources, used for global filter options,
 " and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
 if Active('ddc.vim')
+  " Engine settings and sources
   " inoremap <expr> <C-y> pumvisible() ? (vsnip#expandable() ? "\<Plug>(vsnip-expand)" : "\<C-y>") : "\<C-y>"
   " inoremap <expr> <C-Space> ddc#map#manual_complete()
   " '_': {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']},
@@ -1280,17 +1288,13 @@ if Active('ddc.vim')
     \    }
     \ })
   call ddc#enable()
-endif
 
-" Language server settings
-" Note: Most mappings override custom ones so critical to change all settings.
-" Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
-if Active('vim-lsp')
+  " Language server settings
+  " Note: Most mappings override custom ones so critical to change all settings.
+  " Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
   let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_diagnostics_enabled = 0  " use ale instead
   let g:lsp_document_highlight_enabled = 0  " disable highlighting reference
-endif
-if Active('jedi-vim')
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
   let g:jedi#completions_enabled = 0
@@ -1456,111 +1460,34 @@ if Active('vim-gitgutter')
   noremap <silent> [g :GitGutterPrevHunk<CR>
 endif
 
-" Tagbar settings (see :help tagbar-extend)
-" * use :!ctags --list-kinds=<filetype> to list kinds
-" * first number is whether to fold, second is whether to highlight location
-" * p jumps to tag under cursor, in code window, but remain in tagbar
-" * ctrl-n and ctrl-p browses by top-level tags
-" * o toggles the fold under cursor, or current one
-if Active('tagbar')
-  " \ 'r:refs:1:0',  " not useful
-  " \ 'p:pagerefs:1:0'  " not useful
-  let g:tagbar_type_tex = {
-  \   'ctagstype': 'latex',
-  \   'kinds': [
-  \       's:sections',
-  \       'g:graphics:0:1',
-  \       'l:labels:0:1',
-  \   ],
-  \   'sort': 0
-  \ }
-  let g:tagbar_type_vim = {
-  \   'ctagstype': 'vim',
-  \   'kinds': [
-  \       'a:augroups:0',
-  \       'f:functions:1',
-  \       'c:commands:1:0',
-  \       'v:variables:1:0',
-  \       'm:maps:1:0',
-  \   ],
-  \   'sort': 0
-  \ }
-  let g:tagbar_autofocus = 0  " don't autojump to window if opened
-  let g:tagbar_autopreview = 0  " don't show preview window
-  let g:tagbar_case_insensitive = 1  " make sorting case insensitive
-  let g:tagbar_compact = 1  " no header information in panel
-  let g:tagbar_expand = 0  " don't exapand window in gvim
-  let g:tagbar_indent = 1  " one space indent
-  let g:tagbar_left = 0  " open on right
-  let g:tagbar_no_autocmds = 1  " use custom command
-  let g:tagbar_no_status_line = 1  " use custom status line
-  let g:tagbar_show_balloon = 0  " no ballon in gvim
-  let g:tagbar_silent = 1  " do not echo information
-  let g:tagbar_sort = 1  " sort alphabetically? actually much easier to navigate, so yes
-  let g:tagbar_width = 15  " better default
-  let g:tagbar_zoomwidth = 15  " don't ever 'zoom' even if text doesn't fit
-  let g:tagbar_map_openfold = '='
-  let g:tagbar_map_closefold = '-'
-  let g:tagbar_map_closeallfolds = '_'
-  let g:tagbar_map_openallfolds = '+'
-  nnoremap <silent> <Leader>t :TagbarToggle<CR>
-endif
-
-" Easy-align with custom delimiters for case/esac block parens and seimcolons, chained
+" Easy-align with delimiters for case/esac block parens and seimcolons, chained
 " && and || symbols, and trailing comments (with two spaces ignoring commented lines)
-" Note: Use <Left> to stick delimiter to left instead of right
+" Note: See test.txt for easy-align tests.
+" Note: Use <Left> to stick delimiter to left instead of right and use * to align
+" by all delimiters instead of the default of 1 delimiter.
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
 if Active('vim-easy-align')
-  nmap ge <Plug>(EasyAlign)
-  let g:easy_align_delimiters = {
-    \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
-    \   '&': {'pattern': '\(&&\|||\)'},
-    \   ';': {'pattern': ';\+'},
-    \ }
   augroup easy_align
     au!
     au BufEnter * call extend(
       \   g:easy_align_delimiters, {
       \     'c': {'pattern': '\s' . (empty(Comment()) ? nr2char(0) : Comment())},
       \   }
-      \ )  " search null character if no comment char defined (never matches)
+      \ )  " use null character if no comment char is defined (never matches)
   augroup END
-  " foo, baasrdaasdfdas, asdfjoijiaosdfjioadsjoias, asdfasfasf
-  " asdfasdf, " hello world this is me
-  " asdfasdfsad, asfdjioasdjfioasda, asdfsadfasdfsa, asfd
-  "
-  " asdfas = asdfsadjfoaisdjfa
-  " sdfasfiojasdjigoads = asdfasd = asdfasdfk
-  "
-  " apple    = red = asdfjioajfd
-  "    grasses += green = fdasjfaiofjaisofijasdf
-  "    sky     -= blue = asdf
-  "
-  " asdsfad && asdfiojaojdfjaosdf && afsdiojjioa
-  " asdf && asdfjiaosdf && asd
-  "
-  " {
-  "   hello: goodbye
-  "   asdfasdfasdf: asdjioaidfoajisdf,
-  "   foi: asdfoijiaosdfjoasiojfaojidsa
-  " }
-  "
-  " asdfa) bar ;;
-  " asfdijadfjsioaoidf) fooo ;;
-  " asdfijas) foo bar ;;
-  "
-  " asfdiojiasod " yoyoyo
-  " " ahoasdfjioa
-  " asdfasdas " hello
-  " asdfjioadijoadjofiadoisf " world
+  nmap ge <Plug>(EasyAlign)
+  let g:easy_align_delimiters = {
+    \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
+    \   '&': {'pattern': '\(&&\|||\)'},
+    \   ';': {'pattern': ';\+'},
+    \ }
 endif
 
-" Codi (mathematical notepad)
+" Configure codi (mathematical notepad) interpreter without history and settings
+" See: https://github.com/metakirby5/codi.vim/issues/85
+" Note: Codi is broken for julia: https://github.com/metakirby5/codi.vim/issues/120
 if Active('codi.vim')
-  " See issue: https://github.com/metakirby5/codi.vim/issues/90
-  " We want TextChanged and InsertLeave, not TextChangedI which is enabled
-  " when setting g:codi#autocmd to 'TextChanged'
   augroup math
     au!
     au User CodiEnterPre call utils#codi_setup(1)
@@ -1569,9 +1496,6 @@ if Active('codi.vim')
   command! -nargs=? CodiNew call utils#codi_new(<q-args>)
   nnoremap <silent> <Leader>= :CodiNew<CR>
   nnoremap <silent> <Leader>+ :Codi!!<CR>
-  " Interpreter without history, various settings
-  " See: https://github.com/metakirby5/codi.vim/issues/85
-  " Note: Codi is broken for julia: https://github.com/metakirby5/codi.vim/issues/120
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
