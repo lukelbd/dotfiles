@@ -1487,14 +1487,12 @@ if Active('tagbar')
   \ }
   let g:tagbar_autofocus = 0  " don't autojump to window if opened
   let g:tagbar_autopreview = 0  " don't show preview window
-  let g:tagbar_autoshowtag = 2  " never ever open tagbar folds automatically, even when opening for first time
   let g:tagbar_case_insensitive = 1  " make sorting case insensitive
   let g:tagbar_compact = 1  " no header information in panel
   let g:tagbar_expand = 0  " don't exapand window in gvim
-  let g:tagbar_foldlevel = 99  " setting to zero will override the 'kinds' fields in below dicts
   let g:tagbar_indent = -1  " only one space indent
   let g:tagbar_left = 0  " open on right
-  let g:tagbar_no_autocmds = 0  " use custom command
+  let g:tagbar_no_autocmds = 1  " use custom command
   let g:tagbar_no_status_line = 1  " use custom status line
   let g:tagbar_show_balloon = 0  " no ballon in gvim
   let g:tagbar_silent = 1  " do not echo information
