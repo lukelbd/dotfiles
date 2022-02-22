@@ -388,13 +388,13 @@ function! utils#gitgutter_toggle(...) abort
     let toggle = (exists('b:gitgutter_enabled') ? 1 - b:gitgutter_enabled : 1)
   endif
   if toggle
-    GitGutterEnable
-    silent! set signcolumn=yes
+    GitGutterBufferEnable
+    silent! setlocal signcolumn=yes
     let b:gitgutter_enabled = 1
   else
-    GitGutterDisable
+    GitGutterBufferDisable
     if !(exists('b:syntastic_on') && b:syntastic_on) && !(exists('b:ale_enabled') && b:ale_enabled)
-      silent! set signcolumn=no
+      silent! setlocal signcolumn=no
     endif
     let b:gitgutter_enabled = 0
   endif
