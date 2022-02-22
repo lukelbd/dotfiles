@@ -560,6 +560,11 @@ endfunction
 
 " For popup windows
 " File mode can be 0 (no file) 1 (simple file) or 2 (editable file)
+" Warning: Critical error happens if try to auto-quite when only popup window is
+" left... fzf will take up the whole window in small terminals, and even when fzf
+" immediately runs and closes as e.g. with non-tex BufNewFile template detection,
+" this causes vim to crash and breaks the terminal. Instead never auto-close windows
+" and simply get in habit of closing entire tabs with utils#tab_close().
 function! s:no_buffer_map(map)
   let dict = maparg(a:map, 'n', v:false, v:true)
   return empty(dict) || !dict['buffer']
@@ -576,8 +581,6 @@ function! utils#popup_setup(...) abort
   if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
   if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
   if s:no_buffer_map('f') | nnoremap <buffer> <nowait> f <C-f> | endif
-  if len(tabpagebuflist()) == 1 | quit | endif
-  exe 'augroup popup_' . bufnr('%') | au! | exe 'au BufEnter <buffer> if len(tabpagebuflist()) == 1 | quit | endif' | augroup END
 endfunction
 
 " For help windows
@@ -703,8 +706,8 @@ function! utils#wrap_lines(...) range abort
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let cmd =
     \ a:lastline . 'gggq' . a:firstline . 'gg'
-    \ . ':silent let &l:textwidth = ' . textwidth . " | echom 'Wrapped lines to "
-    \ . &l:textwidth . " characters.'\<CR>"
+    \ . ':silent let &l:textwidth = ' . textwidth
+    \ . " | echom 'Wrapped lines to " . &l:textwidth . " characters.'\<CR>"
   call feedkeys(cmd, 'n')
 endfunction
 " For <expr> map accepting motion
