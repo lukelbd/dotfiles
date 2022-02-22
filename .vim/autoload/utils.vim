@@ -18,8 +18,10 @@ function! utils#motion_func(funcname, args) abort
   endif
 endfunction
 
-" Execute the function name and call signature passed to utils#motion_func.
-" This is generally invoked inside an <expr> mapping.
+" Execute the function name and call signature passed to utils#motion_func. This
+" is generally invoked inside an <expr> mapping.
+" Note: Only motions can cause backwards firstline to lastline order. Manual
+" calls to the function will have sorted lines.
 function! utils#operator_func(type) range abort
   if empty(a:type)  " default behavior
       let firstline = a:firstline
@@ -30,6 +32,9 @@ function! utils#operator_func(type) range abort
   else
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
+  endif
+  if firstline > lastline
+    let [firstline, lastline] = [lastline, firstline]
   endif
   exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
   return ''
