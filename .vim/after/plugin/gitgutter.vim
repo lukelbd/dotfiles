@@ -4,7 +4,7 @@
 "------------------------------------------------------------------------------"
 augroup gitgutter
   au!
-  let autocmds = 'InsertLeave'
+  let autocmds = 'BufRead,BufWritePost,InsertLeave'
   if exists('##TextChanged') | let autocmds .= ',TextChanged' | endif
   exe 'au ' . autocmds . ' * GitGutter'
 augroup END

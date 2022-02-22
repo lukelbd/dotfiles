@@ -12,6 +12,6 @@ if exists('g:tagbar_no_autocmds') && g:tagbar_no_autocmds
   augroup tagbar  " native is TagbarAutoCmds
     au!
     au BufRead,BufWritePost * call tagbar#Update()  " same events as vim-tags plugin
-    au CursorMoved,CursorMovedI * call tagbar#Update()  " instead of do_delayed_update
+    au CursorMoved,CursorMovedI * call tagbar#Update() | tagbar#highlighttag()
   augroup END
 endif
