@@ -101,7 +101,7 @@ function! switch#gitgutter(...) abort
     let b:gitgutter_enabled = 1
   else
     GitGutterBufferDisable
-    if !(exists('b:syntastic_on') && b:syntastic_on) && !(exists('b:ale_enabled') && b:ale_enabled)
+    if !exists('b:ale_enabled') || !b:ale_enabled
       silent! setlocal signcolumn=no
     endif
     let b:gitgutter_enabled = 0
