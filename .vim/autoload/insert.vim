@@ -1,16 +1,17 @@
 "-----------------------------------------------------------------------------"
 " Utilities for inserting text
 "-----------------------------------------------------------------------------"
-" Special behavior when popup menu is open
-" See: https://github.com/lukelbd/dotfiles/blob/master/.vimrc
-function! insert#pum_next() abort
-  let b:pum_pos += 1 | return "\<C-n>"
+" Inserting blank lines
+" See: https://github.com/tpope/vim-unimpaired
+function! insert#blank_up(count) abort
+  put!=repeat(nr2char(10), a:count)
+  ']+1
+  silent! call repeat#set("\<Plug>BlankUp", a:count)
 endfunction
-function! insert#pum_prev() abort
-  let b:pum_pos -= 1 | return "\<C-p>"
-endfunction
-function! insert#pum_reset() abort
-  let b:pum_pos = 0 | return ''
+function! insert#blank_down(count) abort
+  put =repeat(nr2char(10), a:count)
+  '[-1
+  silent! call repeat#set("\<Plug>BlankDown", a:count)
 endfunction
 
 " Set up temporary paste mode
@@ -33,17 +34,26 @@ function! insert#paste_mode() abort
   return ''
 endfunction
 
-" Inserting blank lines
-" See: https://github.com/tpope/vim-unimpaired
-function! insert#blank_up(count) abort
-  put!=repeat(nr2char(10), a:count)
-  ']+1
-  silent! call repeat#set("\<Plug>BlankUp", a:count)
+" Special behavior when popup menu is open
+" See: https://github.com/lukelbd/dotfiles/blob/master/.vimrc
+function! insert#pum_next() abort
+  let b:pum_pos += 1 | return "\<C-n>"
 endfunction
-function! insert#blank_down(count) abort
-  put =repeat(nr2char(10), a:count)
-  '[-1
-  silent! call repeat#set("\<Plug>BlankDown", a:count)
+function! insert#pum_prev() abort
+  let b:pum_pos -= 1 | return "\<C-p>"
+endfunction
+function! insert#pum_reset() abort
+  let b:pum_pos = 0 | return ''
+endfunction
+
+" Forward delete by tabs
+function! insert#forward_delete() abort
+  let line = getline('.')
+  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
+    return repeat("\<Delete>", &tabstop)
+  else
+    return "\<Delete>"
+  endif
 endfunction
 
 " Swap characters
@@ -69,14 +79,3 @@ function! insert#swap_lines(bottom) abort
   endif
   exe lnum + offset
 endfunction
-
-" Forward delete by tabs
-function! insert#forward_delete() abort
-  let line = getline('.')
-  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
-    return repeat("\<Delete>", &tabstop)
-  else
-    return "\<Delete>"
-  endif
-endfunction
-
