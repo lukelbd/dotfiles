@@ -1171,22 +1171,25 @@ if Active('vim-scrollwrapped') || &runtimepath =~# 'vim-scrollwrapped'
   vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
 endif
 
-" Add maps for vim-tags command and use tag bracket mapping for default double bracket
-" motion, except never overwrite potential single bracket mappings (e.g. help mode)
+" Add maps for vim-tags command and use tags for default double bracket motion, except
+" never overwrite potential single bracket mappings (e.g. help mode).
 " Note: Here we also use vim-tags fzf finder similar to file fzf finder as
 " low-level alternative to BTags and Files.
 if Active('vim-tags') || &runtimepath =~# 'vim-tags'
   augroup double_bracket
     au!
-    au BufEnter *
-      \ if empty(maparg('[')) && empty(maparg(']')) |
-      \ nmap <buffer> [[ [T | nmap <buffer> ]] ]T |
-      \ endif
+    au BufEnter * call s:bracket_maps()
   augroup END
+  function! s:bracket_maps()  " defining inside autocommand not possible
+    if empty(maparg('[')) && empty(maparg(']'))
+      nmap <buffer> [[ <Plug>TagsBackwardTop
+      nmap <buffer> ]] <Plug>TagsForwardTop
+    endif
+  endfunction
   nnoremap <silent> <Leader>t :<C-u>ShowTags<CR>
   nnoremap <silent> <Leader>T :<C-u>UpdateTags<CR>
-  nnoremap <silent> <Leader>, :<C-u>BTags<CR>
-  let g:tags_jump_map = '<Leader>.'
+  nnoremap <silent> <Leader>, :<C-u>Tags<CR>
+  nnoremap <silent> <Leader>. :<C-u>BTags<CR>
   let g:tags_nofilter_filetypes = ['fortran']
   let g:tags_scope_filetypes = {
     \ 'vim'     : 'afc',
@@ -1608,31 +1611,29 @@ if has('gui_running')
 endif
 
 " Terminal vim colors
-" For adding keywords, see: https://vi.stackexchange.com/a/11547/8084
-" The url regex was copied from the one used for .tmux.conf
+augroup override_syntax
+  au!
+  au Syntax * call s:keyword_setup()
+  au BufRead * set conceallevel=2 concealcursor=
+augroup END
+
+" Set up universal keywords. See: https://vi.stackexchange.com/a/11547/8084
+" The URL regex was copied from the one used for .tmux.conf
 " Warning: Cannot use filetype specific elgl au Syntax *.tex commands to overwrite
 " existing highlighting. An after/syntax/tex.vim file is necessary.
 " Warning: The containedin just tries to *guess* what particular comment and
 " string group names are for given filetype syntax schemes. Verify that the
 " regexes will match using :Group with cursor over a comment. For example, had
 " to change .*Comment to .*Comment.* since Julia has CommentL name
-augroup override_syntax
-  au!
-  au Syntax * call s:keyword_setup()
-  au BufRead * set conceallevel=2 concealcursor=
-augroup END
 function! s:keyword_setup()
-  " Warnings, errors, and shebangs
   if &filetype ==# 'vim'
     syn clear vimTodo  " vim instead uses the Stuff: syntax
   else
     syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.*  " comments
     syn match Special '^\%1l#!.*$'  " shebangs
   endif
-  " URL highlighting
   syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
   hi link customURL Underlined
-  " Markdown headers
   syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
   hi link markdownHeader Special
 endfunction
