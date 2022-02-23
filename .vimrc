@@ -1455,9 +1455,16 @@ if Active('vim-fugitive')
 endif
 
 " Git gutter
+" Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
+" therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
 " signcolumn if signs present, so GitGutterDisable will remove signcolumn.
 if Active('vim-gitgutter')
+  augroup gitgutter_refresh
+    au!
+    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
+    exe 'au ' . cmds . ' * GitGutter'
+  augroup END
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = 5000
   if !exists('g:gitgutter_enabled')
