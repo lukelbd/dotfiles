@@ -130,22 +130,22 @@ endfunction
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
 function! utils#iter_colorschemes(reverse) abort
-  let step = (a:reverse ? 1 : -1)
+  let step = a:reverse ? 1 : -1
   if !exists('g:all_colorschemes')
     let g:all_colorschemes = getcompletion('', 'color')
   endif
   let active_colorscheme = get(g:, 'colors_name', 'default')
   let idx = index(g:all_colorschemes, active_colorscheme)
-  let idx = (idx < 0 ? -step : idx) + step  " if idx < 0, set to 0 by default
+  let idx = step + (idx < 0 ? -step : idx)   " if idx < 0, set to 0 by default
   if idx < 0
     let idx += len(g:all_colorschemes)
   elseif idx >= len(g:all_colorschemes)
     let idx -= len(g:all_colorschemes)
   endif
   let colorscheme = g:all_colorschemes[idx]
+  echom 'Colorscheme: ' . colorscheme
   exe 'colorscheme ' . colorscheme
   silent redraw
-  echom 'Colorscheme: ' . colorscheme
   let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 

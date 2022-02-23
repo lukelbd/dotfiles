@@ -1549,11 +1549,11 @@ if Active('HowMuch')
   vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
 endif
 
-" Colorizer is very expensive for large files so only ever activate
-" manually. Mapping mnemonic is # for hex string
+" Colorizer is very expensive for large files so only ever
+" activate manually. Mapping mnemonic is # for hex string
 if Active('colorizer')
-  let g:colorizer_startup = 0
   let g:colorizer_nomap = 1
+  let g:colorizer_startup = 0
   nnoremap <Leader># :<C-u>ColorToggle<CR>
 endif
 
@@ -1612,6 +1612,8 @@ if has('gui_running')
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap Statement
+  nnoremap <Leader>n :<C-u>SchemeNext<CR>
+  nnoremap <Leader>N :<C-u>SchemePrev<CR>
   command! SchemePrev call utils#iter_colorschemes(0)
   command! SchemeNext call utils#iter_colorschemes(1)
 endif
