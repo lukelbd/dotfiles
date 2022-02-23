@@ -568,16 +568,16 @@ nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
 nnoremap <expr> >> '<Esc>' . repeat('>>', v:count1)
 nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
-nnoremap <expr> > '<Esc>' . change#multi_indent_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . change#multi_indent_expr(1, v:count1)
+nnoremap <expr> > '<Esc>' . format#indent_items_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . format#indent_items_expr(1, v:count1)
 
 " Wrapping lines with arbitrary textwidth
-command! -range -nargs=? WrapLines <line1>,<line2>call change#wrap_lines(<args>)
-noremap <silent> <expr> gq '<Esc>' . change#wrap_lines_expr(v:count)
+command! -range -nargs=? WrapLines <line1>,<line2>call format#wrap_lines(<args>)
+noremap <silent> <expr> gq '<Esc>' . format#wrap_lines_expr(v:count)
 
 " Wrapping lines accounting for bullet indentation and with arbitrary textwidth
-command! -range -nargs=? WrapItems <line1>,<line2>call change#wrap_items(<args>)
-noremap <silent> <expr> gQ '<Esc>' . change#wrap_items_expr(v:count)
+command! -range -nargs=? WrapItems <line1>,<line2>call format#wrap_items(<args>)
+noremap <silent> <expr> gQ '<Esc>' . format#wrap_items_expr(v:count)
 
 " Toggle highlighting
 nnoremap <silent> <Leader>o :noh<CR>
@@ -782,29 +782,29 @@ nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 " Delete commented text. For some reason search screws up when using \(\) groups,
 " maybe because first parts of match are identical?
 " Note: Comment() doesn't get invoked either until entire expression is run
-noremap <expr> \c change#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.\+$\n', '', '\s\+' . Comment() . '.\+$', '')
+noremap <expr> \c format#replace_regexes_expr('Removed comments.', '^\s*' . Comment() . '.\+$\n', '', '\s\+' . Comment() . '.\+$', '')
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-noremap <expr> \w change#replace_regexes_expr('Removed trailing whitespace.', '\s\+\ze$', '')
+noremap <expr> \w format#replace_regexes_expr('Removed trailing whitespace.', '\s\+\ze$', '')
 
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <expr> \s change#replace_regexes_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S change#replace_regexes_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
+noremap <expr> \s format#replace_regexes_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S format#replace_regexes_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
-noremap <expr> \e change#replace_regexes_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
-noremap <expr> \E change#replace_regexes_expr('Removed empty lines.', '^\s*$\n', '')
+noremap <expr> \e format#replace_regexes_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
+noremap <expr> \E format#replace_regexes_expr('Removed empty lines.', '^\s*$\n', '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-noremap <expr> \' change#replace_regexes_expr('Fixed single quotes.', '‘', '`', '’', "'")
-noremap <expr> \" change#replace_regexes_expr('Fixed double quotes.', '“', '``', '”', "''")
-noremap <expr> \- change#replace_regexes_expr('Fixed long dashes.', '–', '--')
-noremap <expr> \_ change#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
+noremap <expr> \' format#replace_regexes_expr('Fixed single quotes.', '‘', '`', '’', "'")
+noremap <expr> \" format#replace_regexes_expr('Fixed double quotes.', '“', '``', '”', "''")
+noremap <expr> \- format#replace_regexes_expr('Fixed long dashes.', '–', '--')
+noremap <expr> \_ format#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
 
 " Replace tabs with spaces
-noremap <expr> \<Tab> change#replace_regexes_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
+noremap <expr> \<Tab> format#replace_regexes_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
 
 
 "-----------------------------------------------------------------------------"
@@ -962,7 +962,7 @@ let g:HowMuch_no_mappings = 1
 " Plug 'ctrlpvim/ctrlp.vim'  " replaced with fzf
 Plug '~/.fzf'  " fzf installation location, will add helptags and runtimepath
 Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes other tools
-let g:fzf_layout = {'down': '~20%'} " make window smaller
+let g:fzf_layout = {'down': '~33%'}  " nice beefy window
 let g:fzf_action = {
   \ 'ctrl-i': 'silent!',
   \ 'ctrl-m': 'tab split',

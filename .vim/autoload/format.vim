@@ -1,5 +1,5 @@
 "-----------------------------------------------------------------------------"
-" Utilities for changing text
+" Utilities for formatting text
 "-----------------------------------------------------------------------------"
 " Build regexes
 let s:item_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'  " leading spaces or comment
@@ -19,18 +19,18 @@ function! s:remove_item(line, firstline_, lastline_) abort
 endfunction
 
 " Indent multiple times
-function! change#multi_indent(dedent, count) range abort
+function! format#indent_items(dedent, count) range abort
   exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
 " For <expr> map accepting motion
-function! change#multi_indent_expr(...) abort
-  return utils#motion_func('change#multi_indent', a:000)
+function! format#indent_items_expr(...) abort
+  return utils#motion_func('format#indent_items', a:000)
 endfunction
 
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
-function! change#replace_regexes(message, ...) range abort
+function! format#replace_regexes(message, ...) range abort
   let prevhist = @/
   let winview = winsaveview()
   for i in range(0, a:0 - 2, 2)
@@ -42,8 +42,8 @@ function! change#replace_regexes(message, ...) range abort
   call winrestview(winview)
 endfunction
 " For <expr> map accepting motion
-function! change#replace_regexes_expr(...) abort
-  return utils#motion_func('change#replace_regexes', a:000)
+function! format#replace_regexes_expr(...) abort
+  return utils#motion_func('format#replace_regexes', a:000)
 endfunction
 
 " Correct next misspelled word
@@ -68,7 +68,7 @@ endfunction
 " Note: Could put all commands in feedkeys() but then would get multiple
 " commands flashing at bottom of screen. Also need feedkeys() because normal
 " doesn't work inside an expression mapping.
-function! change#wrap_lines(...) range abort
+function! format#wrap_lines(...) range abort
   let textwidth = &l:textwidth
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let cmd =
@@ -78,8 +78,8 @@ function! change#wrap_lines(...) range abort
   call feedkeys(cmd, 'n')
 endfunction
 " For <expr> map accepting motion
-function! change#wrap_lines_expr(...) abort
-  return utils#motion_func('change#wrap_lines', a:000)
+function! format#wrap_lines_expr(...) abort
+  return utils#motion_func('format#wrap_lines', a:000)
 endfunction
 
 " Fix all lines that are too long, with special consideration for bullet style lists and
@@ -87,7 +87,7 @@ endfunction
 " Note: This is good example of incorporating motion support in custom functions!
 " Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
-function! change#wrap_items(...) range abort
+function! format#wrap_items(...) range abort
   let textwidth = &l:textwidth
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let prevhist = @/
@@ -125,6 +125,6 @@ function! change#wrap_items(...) range abort
   let &l:textwidth = textwidth
 endfunction
 " For <expr> map accepting motion
-function! change#wrap_items_expr(...) abort
-  return utils#motion_func('change#wrap_items', a:000)
+function! format#wrap_items_expr(...) abort
+  return utils#motion_func('format#wrap_items', a:000)
 endfunction
