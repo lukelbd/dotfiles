@@ -3,6 +3,9 @@
 "------------------------------------------------------------------------------"
 " DelimitMate plugin
 let b:delimitMate_matchpairs = '(:),{:},[:],<:>'
+if &filetype !=# 'html'  " skip html-derived types e.g. markdown
+  finish
+endif
 
 " Declare command to "compile' page, i.e. show it in Safari
 function! s:open_html_file()
