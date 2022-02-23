@@ -14,8 +14,8 @@ function! file#exists() abort
   endif
 endfunction
 
-" Refresh file
-function! file#refresh() abort " refresh sesssion, sometimes ~/.vimrc settings are overridden by ftplugin stuff
+" Refresh settings
+function! file#refresh() abort
   filetype detect " if started with empty file, but now shebang makes filetype clear
   filetype plugin indent on
   let loaded = []
@@ -28,7 +28,7 @@ function! file#refresh() abort " refresh sesssion, sometimes ~/.vimrc settings a
     \ ]
   for file in files
     if !empty(glob(file))
-      exe 'so '.file
+      exe 'so ' . file
       call add(loaded, file)
     endif
   endfor

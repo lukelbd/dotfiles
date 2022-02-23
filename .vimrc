@@ -409,8 +409,8 @@ let s:popup_filetypes = {
 \   'fugitive': 1,
 \   'fugitiveblame': 1,
 \   'gitcommit': 2,
+\   'popup': 0,
 \   'qf': 1,
-\   'latexmk': 0,
 \   'tagbar': 1,
 \   'undotree': 1,
 \   'vim-plug': 0,
@@ -453,6 +453,7 @@ nnoremap <silent> <Leader>H :call utils#help_man() \| redraw!<CR>
 nnoremap <silent> <Leader>v :call utils#help_vim()<CR>
 nnoremap <silent> <Leader>V :Help<CR>
 nnoremap <silent> <Leader>m :Maps<CR>
+nnoremap <silent> <Leader>M :Commands<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -952,6 +953,8 @@ let g:speeddating_no_mappings = 1
 let g:HowMuch_no_mappings = 1
 
 " User interface selection stuff
+" Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
+" centered on bottom for consistency. Also global layout doesn't work for some reason.
 " Note: Shuogo claims "unite provides an integration interface for several sources
 " and you can create new interfaces" but fzf permits integration too.
 " Discussion: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
@@ -1317,7 +1320,10 @@ endif
 " Use :ALEInfo to verify linting is enabled
 if Active('ale')
   " Buffer-local toggling
-  " Note: ale works with buffer contents unlike syntastic
+  " Note: unlike syntastic ale works with buffer contents
+  noremap <silent> <Leader>@ :<C-u>ALEInfo<CR>
+  noremap <silent> <Leader>% :<C-u>LspStatus<CR>
+  noremap <silent> <Leader>^ :<C-u>tabnew \| LspManage<CR>
   noremap <silent> <Leader>x :<C-u>call switch#ale(1)<CR>
   noremap <silent> <Leader>X :<C-u>call switch#ale(0)<CR>
   map ]x <Plug>(ale_next_wrap)

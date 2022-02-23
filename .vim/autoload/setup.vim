@@ -14,8 +14,8 @@ function! s:no_buffer_map(map)
 endfunction
 function! setup#popup(...) abort
   let filemode = a:0 ? a:1 : 1
-  if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :quit!<CR> | endif
-  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :quit!<CR> | endif
+  if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :call file#close_window()<CR> | endif
+  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR> | endif
   setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
   if filemode == 0 | setlocal buftype=nofile | endif  " this has no file
   if filemode == 2 | return | endif  " this is editable file
