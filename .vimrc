@@ -634,8 +634,8 @@ nnoremap <Leader>d 1z=
 nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also corrects the word
-nnoremap <silent> <Plug>forward_spell bh]s:call switch#spell_change(']')<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[s:call switch#spell_change('[')<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nnoremap <silent> <Plug>forward_spell bh]s:call format#spell_fix(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[s:call format#spell_fix(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
