@@ -21,11 +21,8 @@ endif
 noremap <expr> <buffer> cd python#translate_kwargs_dict_expr(1)
 noremap <expr> <buffer> cD python#translate_kwargs_dict_expr(0)
 
-" Run test under cursor
-" Todo: Finish writing this... or use vim-test.
-" noremap <buffer> <Leader>t python#run_current_test()
-
 " Run current script using anaconda python, not vim python (important for macvim)
+" Todo: Pair with persistent python session using vim-jupyter? See julia.vim.
 function! s:run_python_script() abort
   update
   let python = $HOME . '/miniconda3/bin/python'

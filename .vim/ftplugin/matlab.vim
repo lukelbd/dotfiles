@@ -2,4 +2,4 @@
 " Matlab settings
 "-----------------------------------------------------------------------------"
 " Just set the comment string
-set commentstring=%%s
+setlocal commentstring=%%s

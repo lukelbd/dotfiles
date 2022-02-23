@@ -111,7 +111,6 @@ function! format#wrap_items(...) range abort
   endfor
   " Wrap each line, accounting for bullet indent. If gqgq results in a wrapping, cursor
   " is placed at end of that block. Then must remove auto-inserted item indicators.
-  echom lastline . ', ' . a:firstline
   for linenum in range(lastline, a:firstline, -1)
     exe linenum
     let line = getline('.')

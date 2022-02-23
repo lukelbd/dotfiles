@@ -14,7 +14,7 @@ endfunction
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
 function! python#translate_kwargs_dict(kw2dc, ...) abort range
-  " First get columns
+  " First get selection columns
   " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
   " bug where if opening bracket is immediately followed by newline, then 'inner'
   " bracket range incorrectly sets the closing bracket column position to '1'.
@@ -25,14 +25,12 @@ function! python#translate_kwargs_dict(kw2dc, ...) abort range
   let lastcol = len(getline("'" . marks[1])) - 1
   let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
   for linenum in range(firstline, lastline)
-    " Annoying ugly block for getting visual selection
-    " Want to *ignore* stuff not in selection, but on same line as
-    " the start/end of selection, because it's more flexible
+    " Get selection text ignoring unselected parts of first and last line
     let line = getline(linenum)
     let prefix = ''
     let suffix = ''
     if linenum == firstline && linenum == lastline
-      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''  " damn negative indexing makes this complicated
+      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''
       let suffix = line[lastcol + 1:]
       let line = line[firstcol : lastcol]
     elseif linenum == firstline
@@ -42,12 +40,11 @@ function! python#translate_kwargs_dict(kw2dc, ...) abort range
       let suffix = line[lastcol + 1:]
       let line = line[:lastcol]
     endif
+    " Run fancy translation substitutions
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
-      echoerr 'Error: Ambiguous line.'
+      echoerr 'Error: Text is both dictionary-like and kwarg-like.'
       return
     endif
-
-    " Next finally start matching shit
     if a:kw2dc == 1  " kwargs to dictionary
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
       let line = substitute(line, '\>\ze\s*=', "'", 'g')
@@ -59,7 +56,6 @@ function! python#translate_kwargs_dict(kw2dc, ...) abort range
     endif
     call add(lines, prefix . line . suffix)
   endfor
-
   " Replace lines with fixed lines
   silent exe firstline . ',' . lastline . 'd _'
   call append(firstline - 1, lines)

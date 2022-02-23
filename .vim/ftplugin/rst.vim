@@ -1,8 +1,7 @@
 "-----------------------------------------------------------------------------"
 " ReST settings
-" This is in after for consistency with markdown.vim
 "-----------------------------------------------------------------------------"
-" DelimitMate delimiters
+" DelimitMate plugin
 let b:delimitMate_quotes = "\" ' $ `"
 
 " Opening files. Install viewer script with pip install restview.

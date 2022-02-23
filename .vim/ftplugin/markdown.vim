@@ -1,7 +1,5 @@
 "-----------------------------------------------------------------------------"
 " Markdown settings
-" HTML ftplugin file gets sourced after markdown syntax file is sourced, so put
-" this in after so we can override HTML settings.
 "-----------------------------------------------------------------------------"
 " Vim-markdown settings
 let g:tex_conceal = ''  " disable math conceal
@@ -28,17 +26,11 @@ endfunction
 nnoremap <silent> <buffer> <Plug>Execute :call <sid>open_markdown_file()<CR>
 
 " Define markdown vim-surround macros
-" Todo: Put everything in textools ftplugin files
-" Todo: Understand example from documentation:
-" "<div\1id: \r..*\r id=\"&\"\1>\r</div>"
-if &runtimepath =~# 'vim-surround'
-  let s:markdown_surround = {
-    \ 'i': ['*',  '*'],
-    \ 'o': ['**', '**'],
-    \ '-': ['~~',  '~~'],
-  \ }
-  for [s:binding, s:pair] in items(s:markdown_surround)
-    let [s:left, s:right] = s:pair
-    let b:surround_{char2nr(s:binding)} = s:left . "\r" . s:right
-  endfor
-endif
+" Note: Some of these copied from html.vim
+call succinct#add_delims({
+  \ 't': "<\1<\1>\r</\1\1>",
+  \ 'i': "*\r*",
+  \ 'o': "**\r**",
+  \ '-': "~~\r~~",
+  \ },
+  \ 1)

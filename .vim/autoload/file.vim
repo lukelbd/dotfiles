@@ -1,6 +1,9 @@
 "-----------------------------------------------------------------------------"
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
+" Global settinsg
+let s:newfile = '[new file]'  " dummy entry for requesting new file in current directory
+
 " Test if file exists
 function! file#exists() abort
   let files = glob(expand('<cfile>'))
@@ -99,8 +102,9 @@ endfunction
 "-----------------------------------------------------------------------------"
 " Opening files
 "-----------------------------------------------------------------------------"
-" Generate list of files in directory
-" Include both hidden and non-hidden files
+" Generate list of files in directory including hidden and non-hidden
+" Warning: For some reason including 'down' in fzf#run prevents it from returning a
+" list in latest version. Think list-returning behavior is fragile and undocumented.
 function! s:list_files(dir) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, 'fnamemodify(v:val, '':t'')')
@@ -109,7 +113,7 @@ function! s:list_files(dir) abort
 endfunction
 
 " Tab drop plugin from: https://github.com/ohjames/tabdrop
-" WARNING: For some reason :tab drop and even :<bufnr>wincmd w fails
+" Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
 " on monde so need to use the *tab jump* command instead!
 function! s:tab_drop(file) abort
   let visible = {}
@@ -124,18 +128,15 @@ function! s:tab_drop(file) abort
       endif
     endfor
   endfor
-  if bufname('%') ==# '' && &modified == 0
-    " Fill this window
+  if bufname('%') ==# '' && &modified == 0  " fill this window
     exec 'edit ' . a:file
-  else
-    " Create new tab
+  else  " create new tab
     exec 'tabnew ' . a:file
   end
 endfunction
 
 " Check if user selection is directory, descend until user selects a file. This
 " is similar to default shell tab expansion.
-let s:newfile = '[new file]' " dummy entry for requesting new file in current directory
 function! file#null_list(...) abort
   return []
 endfunction
@@ -146,7 +147,6 @@ function! file#open_continuous(...) abort
     let pattern = substitute(pattern, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
     call extend(paths, expand(pattern, 0, 1))
   endfor
-  " Fuzzy selection inside directories
   while empty(paths) || len(paths) == 1 && isdirectory(paths[0])
     " Format directory name
     let path = empty(paths) ? '.' : paths[0]
@@ -156,14 +156,13 @@ function! file#open_continuous(...) abort
     let prompt = substitute(path, '^' . expand('~'), '~', '')
     let items = fzf#run({
       \ 'source': s:list_files(path),
-      \ 'options': "--multi --no-sort --prompt='" . prompt . "/'",
-      \ 'down': '~30%'
+      \ 'options': "--no-sort --prompt='" . prompt . "/'",
       \ })
-    " Build user selections into paths, possibly requesting input file names
-    let paths = []
+    " Turn user selections into paths, possibly requesting input file names
     if empty(items)
       break
     endif
+    let paths = []
     for item in items
       if item == s:newfile
         let item = input(prompt . '/', '', 'customlist,file#null_list')
@@ -237,7 +236,6 @@ function! file#tab_select() abort
     \ 'source': s:tab_source(),
     \ 'options': '--no-sort --prompt="Tab> "',
     \ 'sink': function('s:tab_select_sink'),
-    \ 'down':'~50%'
     \ })
 endfunction
 
@@ -269,7 +267,6 @@ function! file#tab_move(...) abort
       \ 'source': s:tab_source(),
       \ 'options': '--no-sort --prompt="Number> "',
       \ 'sink': function('s:tab_move_sink'),
-      \ 'down': '~50%'
       \ })
   endif
 endfunction
