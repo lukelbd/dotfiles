@@ -2,11 +2,8 @@
 " Utilities for inserting comments
 "-----------------------------------------------------------------------------"
 " Helper functions
-function! comment#null_list(...) abort
-  return []
-endfunction
 function! s:input_title()
-  return input('Title: ', '', 'customlist,comment#null_list')
+  return input('Title: ', '', 'customlist,utils#null_list')
 endfunction
 function! s:indent_spaces() abort  " match current indent level
   let col = match(getline('.'), '^\s*\S\zs')  " location of first non-whitespace char
@@ -24,7 +21,6 @@ function! comment#section_line(fill, ...) abort
   let cchar = Comment()
   let indent = s:indent_spaces()
   let nfill = match(getline('.'), '\s*$') - len(indent)  " location of last non-whitespace char
-  " let nfill = len(getline('.')) - len(indent)
   call append(line('.'), indent . repeat(a:fill, nfill))
   if a:0 && a:1
     call append(line('.') - 1, indent . repeat(a:fill, nfill))

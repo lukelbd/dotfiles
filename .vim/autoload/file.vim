@@ -1,8 +1,11 @@
 "-----------------------------------------------------------------------------"
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
-" Global settinsg
+" Helper functions and variables
 let s:newfile = '[new file]'  " dummy entry for requesting new file in current directory
+function! s:make_prompt(dir) abort
+  return substitute(a:dir, '^' . expand('~'), '~', '') . '/'  " remove user folder
+endfunction
 
 " Test if file exists
 function! file#exists() abort
@@ -39,7 +42,7 @@ endfunction
 " Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
 " Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
 " Usage: Rename[!] {newname}
-function! file#rename(name, bang)
+function! file#rename(name, bang) abort
   let curfile = expand('%:p')
   let curfilepath = expand('%:p:h')
   let newname = curfilepath . '/' . a:name
@@ -103,12 +106,13 @@ endfunction
 " Opening files
 "-----------------------------------------------------------------------------"
 " Generate list of files in directory including hidden and non-hidden
-" Warning: For some reason including 'down' in fzf#run prevents it from returning a
-" list in latest version. Think list-returning behavior is fragile and undocumented.
+" Warning: For some reason including 'down' in fzf#run prevents fzf from returning a
+" list (version 0.29). However exluding it produces weird behavior that blacks out
+" rest of screen. Workaround is to factor out an unnecessary source function.
 function! s:list_files(dir) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, 'fnamemodify(v:val, '':t'')')
-  call insert(paths, s:newfile, 0) " highest priority
+  call insert(paths, s:newfile, 0)  " highest priority
   return paths
 endfunction
 
@@ -135,45 +139,56 @@ function! s:tab_drop(file) abort
   end
 endfunction
 
-" Check if user selection is directory, descend until user selects a file. This
-" is similar to default shell tab expansion.
-function! file#null_list(...) abort
-  return []
-endfunction
+" Check if user selection is directory, descend until user selects a file.
+" This is similar to default shell tab expansion.
+" Note: FZF executes asynchronously so cannot do loop recursion inside driver
+" function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 function! file#open_continuous(...) abort
-  " Expand input paths
   let paths = []
   for pattern in a:000
     let pattern = substitute(pattern, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-    call extend(paths, expand(pattern, 0, 1))
+    call extend(paths, glob(pattern, 0, 1))  " expand glob patterns
   endfor
-  while empty(paths) || len(paths) == 1 && isdirectory(paths[0])
-    " Format directory name
-    let path = empty(paths) ? '.' : paths[0]
-    let path = fnamemodify(path, ':p')
-    let path = substitute(path, '/$', '', '')
-    " Get user selection
-    let prompt = substitute(path, '^' . expand('~'), '~', '')
-    let items = fzf#run({
-      \ 'source': s:list_files(path),
-      \ 'options': "--no-sort --prompt='" . prompt . "/'",
-      \ })
-    " Turn user selections into paths, possibly requesting input file names
-    if empty(items)
-      break
+  call s:open_continuous(paths)  " call fzf sink function
+endfunction
+function! s:open_continuous(...) abort
+  " Parse arguments
+  if a:0 == 1  " user invocation
+    let base = ''
+    let items = a:1
+  else  " fzf invocation
+    let base = a:1
+    let items = a:2
+  endif
+  " Process paths input manually or from fzf
+  let paths = []
+  for item in items
+    if item == s:newfile  " should be recursed at least one level
+      let base = empty(base) ? '.' : base  " should be impossible but just in case
+      let item = input(s:make_prompt(base), '', 'customlist,utils#null_list')
     endif
-    let paths = []
-    for item in items
-      if item == s:newfile
-        let item = input(prompt . '/', '', 'customlist,file#null_list')
-      endif
-      if item ==# '..'  " fnamemodify :p does not expand the previous direcotry sign, so must do this instead
-        call add(paths, fnamemodify(path, ':h'))  " head of current directory
-      elseif !empty(item)
-        call add(paths, path . '/' . item)
-      endif
-    endfor
-  endwhile
+    if empty(item)  " e.g. cancelled input
+      :
+    elseif empty(base)
+      call add(paths, item)
+    elseif item ==# '..'  " fnamemodify :p does not expand .. so must do this instead
+      call add(paths, fnamemodify(base, ':h'))  " head of current directory
+    elseif !empty(item)
+      call add(paths, base . '/' . item)
+    endif
+  endfor
+  " Possibly activate or re-activate fzf
+  if empty(paths) || len(paths) == 1 && isdirectory(paths[0])
+    let base = empty(paths) ? '.' : paths[0]
+    let base = fnamemodify(base, ':p')  " full directory name
+    let base = substitute(base, '/$', '', '')  " remove trailing slash
+    let paths = []  " only continue in recursion
+    call fzf#run(fzf#wrap({
+      \ 'source': s:list_files(base),
+      \ 'sinklist': function('s:open_continuous', [base]),
+      \ 'options': "--multi --no-sort --prompt='" . s:make_prompt(base) . "'",
+      \ }))
+  endif
   " Open file(s), or if it is already open just jump to that tab
   for path in paths
     if isdirectory(path)  " false for empty string
@@ -232,11 +247,11 @@ endfunction
 
 " Select from open tabs
 function! file#tab_select() abort
-  call fzf#run({
+  call fzf#run(fzf#wrap({
     \ 'source': s:tab_source(),
     \ 'options': '--no-sort --prompt="Tab> "',
     \ 'sink': function('s:tab_select_sink'),
-    \ })
+    \ }))
 endfunction
 
 " Move current tab to the exact place of tab number N
@@ -263,10 +278,10 @@ function! file#tab_move(...) abort
   if a:0
     call s:tab_move_sink(a:1)
   else
-    call fzf#run({
+    call fzf#run(fzf#wrap({
       \ 'source': s:tab_source(),
       \ 'options': '--no-sort --prompt="Number> "',
       \ 'sink': function('s:tab_move_sink'),
-      \ })
+      \ }))
   endif
 endfunction

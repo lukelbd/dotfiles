@@ -953,11 +953,13 @@ let g:speeddating_no_mappings = 1
 let g:HowMuch_no_mappings = 1
 
 " User interface selection stuff
+" Note: Shuogo claims "unite provides an integration interface for several
+" sources and you can create new interfaces" but fzf permits integration too.
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
-" centered on bottom for consistency. Also global layout doesn't work for some reason.
-" Note: Shuogo claims "unite provides an integration interface for several sources
-" and you can create new interfaces" but fzf permits integration too.
-" Discussion: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
+" centered on bottom. Note fzf#wrap is required to apply global settings and cannot
+" rely on fzf#run return values (will result in weird hard-to-debug issues).
+" See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
+" See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " Plug 'Shougo/unite.vim'  " first generation
 " Plug 'Shougo/denite.vim'  " second generation
 " Plug 'Shougo/ddu.vim'  " third generation
@@ -965,7 +967,7 @@ let g:HowMuch_no_mappings = 1
 " Plug 'ctrlpvim/ctrlp.vim'  " replaced with fzf
 Plug '~/.fzf'  " fzf installation location, will add helptags and runtimepath
 Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes other tools
-let g:fzf_layout = {'down': '~33%'}  " nice beefy window
+let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_action = {
   \ 'ctrl-i': 'silent!',
   \ 'ctrl-m': 'tab split',

@@ -1,6 +1,12 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
+" Empty list. This is used to prevent input() from returning literal
+" tabs and where no tab completion is desired.
+function! utils#null_list(...) abort
+  return []
+endfunction
+
 " Call function over the visual line range or the user motion line range
 " Note: Use this approach rather than adding line range as physical arguments and
 " calling with call call(func, firstline, lastline, ...) so that funcs can still be

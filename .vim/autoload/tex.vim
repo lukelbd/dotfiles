@@ -36,11 +36,10 @@ endfunction
 " Return label text
 " Note: To get multiple items hit <Shift><Tab>
 function! s:label_select() abort
-  let items = fzf#run({
+  let items = fzf#run(fzf#wrap({
     \ 'source': s:label_source(),
     \ 'options': '--multi --prompt="Label> "',
-    \ 'down': '~50%',
-    \ })
+    \ }))
   let items = map(items, 'substitute(v:val, " (.*)$", "", "")')
   return join(items, ',')
 endfunction
@@ -100,11 +99,10 @@ endfunction
 " We can them use this function as an insert mode <expr> mapping
 " Note: To get multiple items hit <Shift><Tab>
 function! s:cite_select() abort
-  let items = fzf#run({
+  let items = fzf#run(fzf#wrap({
     \ 'source': s:cite_source(),
     \ 'options': '--multi --prompt="Source> "',
-    \ 'down': '~50%',
-    \ })
+    \ }))
   let result = ''
   if ! executable('bibtex-cite')
   " Note: See https://github.com/msprev/fzf-bibtex
@@ -175,11 +173,10 @@ endfunction
 " Return graphics text
 " We can them use this function as an insert mode <expr> mapping
 function! s:graphic_select() abort
-  let items = fzf#run({
+  let items = fzf#run(fzf#wrap({
     \ 'source': s:graphic_source(),
     \ 'options': '--prompt="Figure> "',
-    \ 'down': '~50%',
-    \ })
+    \ }))
   let items = map(items, 'fnamemodify(v:val, ":t")')
   return join(items, ',')
 endfunction
