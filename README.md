@@ -51,6 +51,7 @@ You can also find the following filetype-specific features in the `ftplugin`, `s
 Other config
 ------------
 
-You can find various shell script utilities in `bin` and `git` commands in `.gitconfig`.
-Also, `.jupyter` is synced just to preserve custom key binding and extension settings
-across jupyter notebook and jupyter lab sessions.
+You can find various shell script utilities in `bin` and `git` commands in `.gitconfig`,
+including a `latexmk` shell script integrated with `ftplugin` for convenient LaTeX
+document rendering and viewing. Also, `.jupyter` files are synced to preserve custom
+key binding and extension settings across jupyter notebook and jupyter lab sessions.

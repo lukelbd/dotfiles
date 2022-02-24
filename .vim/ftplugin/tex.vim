@@ -36,30 +36,30 @@ function! s:latexmk(...) abort
     echohl None
     return 1
   endif
-  let opts = trim(a:0 ? a:1 : '') . ' -l=' . string(line('.'))
+  let opts = {}  " job options, empty by default
+  let flags = trim(a:0 ? a:1 : '') . ' --line=' . string(line('.'))
   let texfile = expand('%')
-  let logfile = expand('%:t:r') . '.latexmk'
-  let lognum = bufwinnr(logfile)
-  if lognum == -1  " open a logfile window
-    silent! exe string(winheight('.') / 4) . 'split ' . logfile
-    silent! exe winnr('#') . 'wincmd w'
-  else  " jump to logfile window and clean its contents
-    silent! exe bufwinnr(logfile) . 'wincmd w'
-    silent! 1,$d _
-    silent! exe winnr('#') . 'wincmd w'
+  if flags !~# '\(--quick\|-q\)'
+    let logfile = expand('%:t:r') . '.latexmk'
+    let lognum = bufwinnr(logfile)
+    let num = bufnr(logfile)
+    if lognum == -1  " open a logfile window
+      silent! exe string(winheight('.') / 4) . 'split ' . logfile
+      silent! exe winnr('#') . 'wincmd w'
+    else  " jump to logfile window and clean its contents
+      silent! exe bufwinnr(logfile) . 'wincmd w'
+      silent! 1,$d _
+      silent! exe winnr('#') . 'wincmd w'
+    endif
+    let opts = {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
   endif
-  let num = bufnr(logfile)
-  let g:tex_job = job_start(
-    \ 'latexmk ' . texfile . ' ' . opts,
-    \ {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
-    \ )  " run job in realtime
+  let g:tex_job = job_start('latexmk ' . texfile . ' ' . flags, opts)  " run in realtime
 endfunction
 
 " Latexmk command and shortcuts
+" Note: This map overwrites :TestVisit but no harm for tex files.
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <buffer> <silent> <Leader>\ :<C-u>call system(
-  \ 'synctex view ' . @% . ' displayline -r ' . line('.') . ' ' . expand('%:r') . '.pdf ' . @%
-  \ )<CR>
+noremap <buffer> <silent> <Leader>\ :<C-u>call <sid>latexmk('--quick')<CR>
 noremap <buffer> <silent> <Plug>Execute :<C-u>call <sid>latexmk()<CR>
 noremap <buffer> <silent> <Plug>AltExecute1 :<C-u>call <sid>latexmk('--diff')<CR>
 noremap <buffer> <silent> <Plug>AltExecute2 :<C-u>call <sid>latexmk('--word')<CR>
