@@ -306,10 +306,12 @@ vman() {
   if [ $# -eq 0 ]; then
     echo "What manual page do you want?";
     return 0
-  elif ! man -w "$@" > /dev/null; then
+  elif ! command man -w "$@" > /dev/null; then
     return 1
   fi
   command vim -c "SuperMan $*"
+  clear
+  printf '\e[3J'
 }
 
 # Prevent git stash from running without 'git stash push' and test message length
@@ -363,10 +365,11 @@ vim() {
   else
     # Open specific files or pass non-interactive flags
     # The -p flag says to use single tab for each file
-    command vim "${flags[@]}" -p "${files[@]}"
+    [ "${#files[@]}" -gt 0 ] && flags+=(-p)
+    command vim "${flags[@]}" "${files[@]}"
   fi
   # Clear screen and delete scollback: https://apple.stackexchange.com/q/31872/214359
-  # NOTE: Unable get scrollback to ignore vim windows in iTerm.
+  # NOTE: Unable to get iTerm to automatically delete vim scrollback
   if $interactive; then
     clear
     printf '\e[3J'
