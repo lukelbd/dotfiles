@@ -325,8 +325,8 @@ noremap <expr> <C-y> ":\<C-u>Files " . expand('%:h') . '/'
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
-nnoremap <Leader>F <c-w>gf
-nnoremap <silent> <Leader>f :<C-u>call file#exists()<CR>
+nnoremap <Leader>J <c-w>gf
+nnoremap <silent> <Leader>j :<C-u>call file#exists()<CR>
 
 " Move to current directory
 " Pneumonic is 'inside' just like Ctrl + i map
@@ -443,7 +443,6 @@ noremap <Leader><Tab> :TabToggle<CR>
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary, just press n or N.
 " Note: Help and man info is also shown by ddc popups. Similar to pydoc and pylsp.
-" nnoremap <silent> <Leader>h :call utils#show_vim_help()<CR>
 nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>< q?
@@ -627,8 +626,8 @@ nnoremap <silent> <Leader>k :call switch#lang(1)<CR>
 nnoremap <silent> <Leader>K :call switch#lang(0)<CR>
 
 " Add and remove from dictionary
-nnoremap <Leader>j zg
-nnoremap <Leader>J zug
+nnoremap <Leader>f zg
+nnoremap <Leader>F zug
 
 " Fix spelling under cursor
 nnoremap <Leader>d 1z=
