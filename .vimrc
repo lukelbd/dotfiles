@@ -595,18 +595,8 @@ command! -nargs=? CopyToggle call switch#copy(<args>)
 nnoremap <Leader>c :call switch#copy()<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
-" See <http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock>, instead uses
-" iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
-for s:c in range(char2nr('A'), char2nr('Z'))
-  exe 'lnoremap ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
-  exe 'lnoremap ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
-endfor
-augroup caps_lock
-  au!
-  au InsertLeave * setlocal iminsert=0
-augroup END
-inoremap <C-v> <C-^>
-cnoremap <C-v> <C-^>
+inoremap <expr> <C-v> insert#lang_map()
+cnoremap <expr> <C-v> insert#lang_map()
 
 " Spellcheck (really is a builtin plugin, hence why it's in this section)
 " Turn on for certain filetypes

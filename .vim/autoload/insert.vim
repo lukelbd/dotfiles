@@ -14,6 +14,34 @@ function! insert#blank_down(count) abort
   silent! call repeat#set("\<Plug>BlankDown", a:count)
 endfunction
 
+" Forward delete by tabs
+function! insert#forward_delete() abort
+  let line = getline('.')
+  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
+    return repeat("\<Delete>", &tabstop)
+  else
+    return "\<Delete>"
+  endif
+endfunction
+
+" Toggle insert and command-mode caps lock
+" See: http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock which uses
+" iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
+function! insert#lang_map()
+  let b:caps_lock = exists('b:caps_lock') ? b:caps_lock - 1 : 1
+  if b:caps_lock
+    for s:c in range(char2nr('A'), char2nr('Z'))
+      exe 'lnoremap <buffer> ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
+      exe 'lnoremap <buffer> ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
+    endfor
+    augroup caps_lock
+      au!
+      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | autocmd! caps_lock
+    augroup END
+  endif
+  return "\<C-^>"
+endfunction
+
 " Set up temporary paste mode
 function! insert#paste_mode() abort
   let s:paste = &paste
@@ -44,16 +72,6 @@ function! insert#pum_prev() abort
 endfunction
 function! insert#pum_reset() abort
   let b:pum_pos = 0 | return ''
-endfunction
-
-" Forward delete by tabs
-function! insert#forward_delete() abort
-  let line = getline('.')
-  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
-    return repeat("\<Delete>", &tabstop)
-  else
-    return "\<Delete>"
-  endif
 endfunction
 
 " Swap characters
