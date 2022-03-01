@@ -437,7 +437,7 @@ augroup tab_toggle
 augroup END
 command! -nargs=? PopupToggle call switch#popup(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)
-command! -nargs=? TabToggle call switch#tab(<args>)
+command! -nargs=? TabToggle call switch#expandtab(<args>)
 noremap <Leader><Tab> :TabToggle<CR>
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
@@ -604,16 +604,16 @@ augroup spell_toggle
   au!
   au FileType tex setlocal nolist nocursorline colorcolumn=
   au FileType tex,html,markdown,rst
-    \ if expand('<afile>') != '__doc__' | call switch#spell(1) | endif
+    \ if expand('<afile>') != '__doc__' | call switch#spellcheck(1) | endif
 augroup END
 
 " Toggle spelling on and off
-command! SpellToggle call switch#spell(<args>)
-command! LangToggle call switch#lang(<args>)
-nnoremap <silent> <Leader>l :call switch#spell(1)<CR>
-nnoremap <silent> <Leader>L :call switch#spell(0)<CR>
-nnoremap <silent> <Leader>k :call switch#lang(1)<CR>
-nnoremap <silent> <Leader>K :call switch#lang(0)<CR>
+command! SpellToggle call switch#spellcheck(<args>)
+command! LangToggle call switch#spelllang(<args>)
+nnoremap <silent> <Leader>l :call switch#spellcheck(1)<CR>
+nnoremap <silent> <Leader>L :call switch#spellcheck(0)<CR>
+nnoremap <silent> <Leader>k :call switch#spelllang(1)<CR>
+nnoremap <silent> <Leader>K :call switch#spelllang(0)<CR>
 
 " Add and remove from dictionary
 nnoremap <Leader>f zg

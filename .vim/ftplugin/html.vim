@@ -3,7 +3,7 @@
 "------------------------------------------------------------------------------"
 " DelimitMate plugin
 let b:delimitMate_matchpairs = '(:),{:},[:],<:>'
-if &filetype !=# 'html'  " skip html-derived types e.g. markdown
+if &filetype !=# 'html'  " skip html-derived types, e.g. markdown
   finish
 endif
 

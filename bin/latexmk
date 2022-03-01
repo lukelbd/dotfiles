@@ -273,9 +273,9 @@ flags_tex=(${flags[@]})  # flags for pre-compilation steps
 flags_pdf=(${flags[@]})  # flags for compilation step
 files_old=(*)  # glob expansion to every filename
 case $latex in
-  xelatex)  stylized=XeLaTeX flags_tex+=(-draftmode) ;;
+  pdflatex) stylized=PDFLaTeX flags_tex+=(-draftmode) ;;
   lualatex) stylized=LuaLaTeX flags_tex+=(-draftmode) ;;
-  pdflatex) stylized=PDFLaTeX flags_tex+=(-no-pdf) ;;
+  xelatex)  stylized=XeLaTeX flags_tex+=(-no-pdf) ;;
   *) raise "Unknown compiler \"$latex\"." ;;
 esac
 if $quick; then

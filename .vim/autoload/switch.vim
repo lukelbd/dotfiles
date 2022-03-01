@@ -6,16 +6,16 @@ function! switch#ale(...) abort
   if a:0
     let toggle = a:1
   else
-    let toggle = (exists('b:ale_enabled') ? 1 - b:ale_enabled : 1)
+    let toggle = exists('b:ale_enabled') ? 1 - b:ale_enabled : 1
   endif
   if toggle
     ALEEnableBuffer
-    silent! set signcolumn=yes
+    silent! setlocal signcolumn=yes
     let b:ale_enabled = 1  " also done by plugin but do this just in case
   else
     ALEDisableBuffer
-    if !(exists('b:gitgutter_enabled') && b:gitgutter_enabled)
-      silent! set signcolumn=no
+    if !exists('b:gitgutter_enabled') || !b:gitgutter_enabled
+      silent! setlocal signcolumn=no
     endif
     let b:ale_enabled = 0
   endif
@@ -88,6 +88,16 @@ function! switch#conceal(...) abort
   exe 'set conceallevel=' . (conceal_on ? 2 : 0)
 endfunction
 
+" Toggle literal tab characters on and off
+function! switch#expandtab(...) abort
+  if a:0
+    let &l:expandtab = 1 - a:1 " toggle 'on' means literal tabs are 'on'
+  else
+    setlocal expandtab!
+  endif
+  let b:expandtab = &l:expandtab  " this overrides set expandtab in vimrc
+endfunction
+
 " Either listen to input, turn on if switch not declared, or do opposite
 function! switch#gitgutter(...) abort
   if a:0
@@ -127,8 +137,18 @@ function! switch#popup(...) abort
   endif
 endfunction
 
+" Toggle spell check on and off
+function! switch#spellcheck(...)
+  if a:0
+    let toggle = a:1
+  else
+    let toggle = 1 - &l:spell
+  endif
+  let &l:spell = toggle
+endfunction
+
 " Toggle between UK and US English
-function! switch#lang(...)
+function! switch#spelllang(...)
   if a:0
     let uk = a:1
   else
@@ -141,24 +161,4 @@ function! switch#lang(...)
     setlocal spelllang=en_us
     echo 'Current language: US english'
   endif
-endfunction
-
-" Toggle spell check on and off
-function! switch#spell(...)
-  if a:0
-    let toggle = a:1
-  else
-    let toggle = 1 - &l:spell
-  endif
-  let &l:spell = toggle
-endfunction
-
-" Toggle literal tab characters on and off
-function! switch#tab(...) abort
-  if a:0
-    let &l:expandtab = 1 - a:1 " toggle 'on' means literal tabs are 'on'
-  else
-    setlocal expandtab!
-  endif
-  let b:expandtab = &l:expandtab  " this overrides set expandtab in vimrc
 endfunction

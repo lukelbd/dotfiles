@@ -41,6 +41,9 @@ REGEX_COLOR = re.compile(
 
 
 def process_color(match):
+    """
+    Replace colors in the input string.
+    """
     diff = len(match.group(0)) - len(COLOR) - len(PREFIX) - len(SUFFIX)
     if diff < 0:
         raise NotImplementedError(
@@ -52,6 +55,9 @@ def process_color(match):
 
 
 def process_obj(match):
+    """
+    Replace colors in the input text.
+    """
     is_annot = REGEX_ANNOT.search(match.group(0))
     is_highlight = REGEX_HIGH.search(match.group(0))
     if is_annot and is_highlight:
@@ -61,6 +67,9 @@ def process_obj(match):
 
 
 def process_file(path, dryrun=False, overwrite=False):
+    """
+    Replace colors in the input file and overwrite or create new file.
+    """
     # Skip file
     name = path.name[:10] + '...'
     suffix = '_recolored'
