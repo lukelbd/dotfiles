@@ -2,7 +2,7 @@
 # Configuration file for ipython.
 #-----------------------------------------------------------------------------#
 # Load default profile
-load_subconfig('ipython_config.py', profile='default')
+load_subconfig('ipython_config.py', profile='default')  # breaks kernel conf
 
 # Add proplot development lines
 lines = """
@@ -23,6 +23,7 @@ from metpy import calc
 
 # Update ipython
 c.InteractiveShellApp.exec_lines.append(lines)
+# c.InteractiveShellApp.exec_lines.extend(lines.split('\n'))
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration

@@ -1,16 +1,17 @@
+#-----------------------------------------------------------------------------#
 # Configuration file for jupyter-console.
 #-----------------------------------------------------------------------------#
-# Modifications
-#-----------------------------------------------------------------------------#
-# Better banner
+# Improve banner
 c.ZMQTerminalInteractiveShell.banner = 'Jupyter Console {version}\n{kernel_banner}'
 
-# Syntax highlighting
+# Syntax highlighting (try pygmentize -L styles)
 c.ZMQTerminalInteractiveShell.highlighting_style = 'monokai'
 
-# Required for vim ipython
+# Required for jupyter-vim
 c.ZMQTerminalInteractiveShell.include_other_output = True
-c.ZMQTerminalInteractiveShell.other_output_prefix = ''
+
+# Message for jupyter-vim
+c.ZMQTerminalInteractiveShell.other_output_prefix = '[jupyter-vim] '
 
 # No confirm exit
 c.JupyterConsoleApp.confirm_exit = False

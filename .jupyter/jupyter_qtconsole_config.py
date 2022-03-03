@@ -1,17 +1,17 @@
+#-----------------------------------------------------------------------------#
 # Configuration file for jupyter-qtconsole.
 #-----------------------------------------------------------------------------#
-# Modifications
-#-----------------------------------------------------------------------------#
-# Disable banner
+# Display banner
 c.JupyterQtConsoleApp.display_banner = True
 
-# Syntax highlighting
-# Try pygmentize -L styles
+# Syntax highlighting (try pygmentize -L styles)
 c.JupyterWidget.syntax_style = 'monokai'
 
-# Required for vim ipython
+# Required for jupyter-vim
 c.ConsoleWidget.include_other_output = True
-c.ConsoleWidget.other_output_prefix = ''
+
+# Message for jupyter-vim
+c.ConsoleWidget.other_output_prefix = '[jupyter-vim] '
 
 # Match iTerm2 font size
 c.ConsoleWidget.font_size = 12

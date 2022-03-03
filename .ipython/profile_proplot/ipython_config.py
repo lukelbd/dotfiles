@@ -4,19 +4,21 @@
 # Load default profile
 load_subconfig('ipython_config.py', profile='default')
 
-# Add proplot development lines. For iterm use PNG so DPI is controllable!
-# In the end could not get itermplot to work. Inline figures are too small.
+# Add proplot development lines. For iterm use PNG so DPI is controllable! In the
+# end could not get itermplot or imgcat to work. Inline figures are too small. Also
+# installing imgcat messes up matplotlib_iterm2 in ipython but fixes jupyter console.
+# See: https://github.com/wookayin/python-imgcat
 # See: https://github.com/daleroberts/itermplot/issues/27
 # See: https://github.com/oselivanov/matplotlib_iterm2
-# os.environ.setdefault('MPLBACKEND', 'module://itermplot')
-# os.environ.setdefault('ITERMPLOT_PLOTFILE', 'plot.png')
 lines = """
 # Set up backend
 import os
-os.environ.setdefault('MPLBACKEND', 'module://matplotlib_iterm2.backend_iterm2')
+# backend = os.environ.setdefault('MPLBACKEND', 'module://imgcat')
+# backend = os.environ.setdefault('MPLBACKEND', 'module://itermplot')
+backend = os.environ.setdefault('MPLBACKEND', 'module://matplotlib_iterm2.backend_iterm2')
 # Set up proplot
 import proplot as pplt
-pplt.rc['figure.dpi'] = 200 if 'iterm' in os.environ['MPLBACKEND'] else 100
+pplt.rc['figure.dpi'] = 200 if 'img' in backend or 'iterm' in backend else 100
 # Import modules for development
 import cycler
 import matplotlib.pyplot as plt
@@ -54,9 +56,9 @@ else:
 
 # Update ipython
 c.InteractiveShellApp.exec_lines.append(lines)
-# c.InteractiveShellApp.exec_lines.extend(lines)
-# c.TerminalIPythonApp.pylab = 'iterm'  # use MPLBACKEND to avoid error message
+# c.InteractiveShellApp.exec_lines.extend(lines.split('\n'))
 # c.TerminalIPythonApp.pylab = 'imgcat'  # use MPLBACKEND to avoid error message
+# c.TerminalIPythonApp.pylab = 'iterm'  # use MPLBACKEND to avoid error message
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration
