@@ -75,9 +75,11 @@ case "${HOSTNAME%%.*}" in
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
     # * Installed cdo, nco, and R with macports. Installed ncl by installing compilers
     #   with macports and downloading pre-compiled binary from ncar.
-    # * Installed gcc and gfortran with 'port install gcc7' then 'port select
+    # * Installed gcc and gfortran with 'port install libgcc7' then 'port select
     #   --set gcc mp-gcc7' (earlier and later versions fail with ncl).
     #   need to swtich between versions and retry). Try 'port select --list gcc'.
+    # * Actually in latest versions had issues installing gcc7... listed gcc9 as
+    #   dependency then failed... so now have used 'brew install gcc@7'.
     # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
     #   gnu-tar gawk'. Then found paths with: https://apple.stackexchange.com/q/69223/214359
     # * Fix permission issues after migrating macs with following command:
@@ -128,7 +130,8 @@ case "${HOSTNAME%%.*}" in
     # actually ends up in above path after brew install gcc49. And must install
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
-    alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
+    # alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # port libs
+    alias ncl='DYLD_LIBRARY_PATH="/usr/local/lib/gcc/7/" ncl'  # brew libs
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically necessary to run NCL
 
     # CDO HDF5 setting. See the following note after port install cdo:
@@ -1319,10 +1322,9 @@ alias R='command R -q --no-save'
 # NCL interactive environment
 # Make sure that we encapsulate any other alias -- for example, on Macs,
 # will prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
-if alias ncl &>/dev/null; then
-  # shellcheck disable=2034
-  _ncl_dyld=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
-  alias ncl='$_ncl_dyld -Q -n'
+_ncl_dyld=$(alias ncl 2>/dev/null | cut -d= -f2- | cut -d\' -f2)
+if [ -n "$_ncl_dyld" ]; then
+  alias ncl="$_ncl_dyld -Q -n"  # must be evaluated literally
 else
   alias ncl='ncl -Q -n'
 fi
