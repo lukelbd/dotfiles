@@ -10,6 +10,7 @@ setlocal dictionary+=~/.vim/words/ncl.dic
 " Run NCL script
 function! s:run_ncl_script()
   update
-  exe '!clear; set -x; ncl -n -Q ' . shellescape(@%)
+  let cmd = 'ncl -n -Q ' . shellescape(@%)
+  call setup#job_win(cmd)
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_ncl_script()<CR>
+nnoremap <silent> <buffer> <Plug>Execute0 :call <sid>run_ncl_script()<CR>

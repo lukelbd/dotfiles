@@ -27,42 +27,22 @@ endif
 
 " Running custom or default latexmk command in background
 " Warning: Trailing space will be escaped as flag! So trim unless we have any options
-let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
-let s:path = expand('<sfile>:p:h')
 function! s:latexmk(...) abort
-  if !s:vim8
-    echohl ErrorMsg
-    echom 'Error: Latex compilation requires vim >= 8.0'
-    echohl None
-    return 1
-  endif
   let opts = {}  " job options, empty by default
   let flags = trim(a:0 ? a:1 : '') . ' --line=' . string(line('.'))
-  let texfile = expand('%')
-  if flags !~# '\(--quick\|-q\)'
-    let logfile = expand('%:t:r') . '.latexmk'
-    let lognum = bufwinnr(logfile)
-    let num = bufnr(logfile)
-    if lognum == -1  " open a logfile window
-      silent! exe string(winheight('.') / 4) . 'split ' . logfile
-      silent! exe winnr('#') . 'wincmd w'
-    else  " jump to logfile window and clean its contents
-      silent! exe bufwinnr(logfile) . 'wincmd w'
-      silent! 1,$d _
-      silent! exe winnr('#') . 'wincmd w'
-    endif
-    let opts = {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
-  endif
-  let g:tex_job = job_start('latexmk ' . texfile . ' ' . flags, opts)  " run in realtime
+  call setup#job_win(
+    \ 'latexmk ' . flags . ' ' . shellescape(expand('%')),
+    \ flags !~# '\(--quick\|-q\)'
+    \ )
 endfunction
 
 " Latexmk command and shortcuts
 " Note: This map overwrites :TestVisit but no harm for tex files.
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <buffer> <silent> <Leader>\ :<C-u>call <sid>latexmk('--quick')<CR>
-noremap <buffer> <silent> <Plug>Execute :<C-u>call <sid>latexmk()<CR>
-noremap <buffer> <silent> <Plug>AltExecute1 :<C-u>call <sid>latexmk('--diff')<CR>
-noremap <buffer> <silent> <Plug>AltExecute2 :<C-u>call <sid>latexmk('--word')<CR>
+noremap <silent> <buffer> <Leader>\ :<C-u>call <sid>latexmk('--quick')<CR>
+noremap <silent> <buffer> <Plug>Execute0 :<C-u>call <sid>latexmk()<CR>
+noremap <silent> <buffer> <Plug>Execute1 :<C-u>call <sid>latexmk('--diff')<CR>
+noremap <silent> <buffer> <Plug>Execute2 :<C-u>call <sid>latexmk('--word')<CR>
 
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending
 " and appending the strings with single quotes. This lets us make input()

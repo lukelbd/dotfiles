@@ -9,6 +9,7 @@ let b:delimitMate_quotes = "\" ' $ `"
 " process hangs and freezes the window!
 function! s:open_rst_file()
   update
-  exe '!~/miniconda3/bin/restview -b -l 40000 ' . shellescape(@%)
+  let cmd = '~/miniconda3/bin/restview -b -l 40000 ' . shellescape(@%)
+  call setup#job_win(cmd, 0)  " without display window
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute :call <sid>open_rst_file()<CR>
+nnoremap <silent> <buffer> <Plug>Execute0 :call <sid>open_rst_file()<CR>

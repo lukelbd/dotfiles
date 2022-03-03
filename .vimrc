@@ -335,14 +335,17 @@ nnoremap <silent> <Leader>I :call file#directory_return()<CR>
 
 " 'Execute' script with different options
 " Note: Execute1 and Execute2 just defined for tex for now
-nmap <nowait> Z <Plug>Execute
-nmap <Leader>z <Plug>AltExecute1
-nmap <Leader>Z <Plug>AltExecute2
+" Note: Should include visual mode e.g. for running blocks
+" Warning: Critical to label these maps so one is not a prefix of another
+" or else we can get a delay. For example do not define <Plug>Execute
+map <nowait> Z <Plug>Execute0
+map <Leader>z <Plug>Execute1
+map <Leader>Z <Plug>Execute2
 
 " Save and quit, also test whether the :q action closed the entire tab
+" nnoremap <silent> <C-w> :call file#close_window()<CR>
 nnoremap <silent> <C-s> :call tabline#write()<CR>
 nnoremap <silent> <C-w> :call file#close_tab()<CR>
-" nnoremap <silent> <C-w> :call file#close_window()<CR>
 nnoremap <silent> <C-q> :quitall<CR>
 
 " Renaming things
@@ -417,13 +420,13 @@ let s:popup_filetypes = {
 \ }
 augroup popup_setup
   au!
-  au FileType help call setup#help()
-  au CmdwinEnter * call setup#cmdwin()
+  au FileType help call setup#help_win()
+  au CmdwinEnter * call setup#cmd_win()
   if exists('##TerminalWinOpen')
-    au TerminalWinOpen * call setup#popup()
+    au TerminalWinOpen * call setup#popup_win()
   endif
   for [s:key, s:val] in items(s:popup_filetypes)
-    exe 'au FileType ' . s:key . ' call setup#popup(' . s:val . ')'
+    exe 'au FileType ' . s:key . ' call setup#popup_win(' . s:val . ')'
   endfor
 augroup END
 let g:tags_filetypes_skip = keys(s:popup_filetypes)
@@ -435,7 +438,7 @@ augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
-command! -nargs=? PopupToggle call switch#popup(<args>)
+command! -nargs=? PopupToggle call switch#popup_win(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 noremap <Leader><Tab> :TabToggle<CR>
@@ -852,12 +855,11 @@ for s:name in [
   endif
 endfor
 
-" Improve navigation. Do not use easymotion because
-" extremely slow over remote connections and overkill.
-" Discussion: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-" Plug 'easymotion/vim-easymotion'
+" Improve navigation.
+" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
+" Plug 'easymotion/vim-easymotion'  " extremely slow and overkill
+" Plug 'kshenoy/vim-signature'  " experimental
 Plug 'justinmk/vim-sneak'
-Plug 'kshenoy/vim-signature'
 
 " Folding speedups
 " Warning: SimpylFold horribly slow on monde, instead use braceless
@@ -1069,6 +1071,8 @@ Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplet
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
+let g:jupyter_cell_separators = ['# %%', '# <codecell>']
+let g:jupyter_mapkeys = 0
 let g:jupytext_fmt = 'py:percent'
 
 " TeX utilities with better syntax highlighting, better
@@ -1226,6 +1230,33 @@ if Active('vim-sneak')
   map T <Plug>Sneak_T
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
+endif
+
+" Vim marks in sign column
+if Active('vim-signature')
+  let g:SignatureMap = {
+    \ 'Leader': '~',
+    \ 'PlaceNextMark': '~,',
+    \ 'ToggleMarkAtLine': '~.',
+    \ 'PurgeMarksAtLine': '~-',
+    \ 'DeleteMark': 'dm',
+    \ 'PurgeMarks': '~<Space>',
+    \ 'PurgeMarkers': '~<BS>',
+    \ 'GotoNextLineAlpha': "']",
+    \ 'GotoPrevLineAlpha': "'[",
+    \ 'GotoNextSpotAlpha': '`]',
+    \ 'GotoPrevSpotAlpha': '`[',
+    \ 'GotoNextLineByPos': "]'",
+    \ 'GotoPrevLineByPos': "['",
+    \ 'GotoNextSpotByPos': ']`',
+    \ 'GotoPrevSpotByPos': '[`',
+    \ 'GotoNextMarker': ']-',
+    \ 'GotoPrevMarker': '[-',
+    \ 'GotoNextMarkerAny': ']=',
+    \ 'GotoPrevMarkerAny': '[=',
+    \ 'ListBufferMarks': '~/',
+    \ 'ListBufferMarkers': '~?'
+    \ }
 endif
 
 " Undo tree settings
@@ -1470,6 +1501,7 @@ if Active('vim-gitgutter')
   augroup END
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = 5000
+  if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
   nnoremap <silent> <Leader>g :call switch#gitgutter(1)<CR>
   nnoremap <silent> <Leader>G :call switch#gitgutter(0)<CR>
   noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
@@ -1509,8 +1541,8 @@ endif
 if Active('codi.vim')
   augroup math
     au!
-    au User CodiEnterPre call setup#codi_window(1)
-    au User CodiLeavePost call setup#codi_window(0)
+    au User CodiEnterPre call setup#codi_win(1)
+    au User CodiLeavePost call setup#codi_win(0)
   augroup END
   command! -nargs=? CodiNew call setup#codi_new(<q-args>)
   nnoremap <silent> <Leader>= :CodiNew<CR>

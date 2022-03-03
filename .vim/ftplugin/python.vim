@@ -25,19 +25,45 @@ noremap <expr> <buffer> cD python#translate_kwargs_dict_expr(0)
 " Todo: Pair with persistent python session using vim-jupyter? See julia.vim.
 function! s:run_python_script() abort
   update
-  let python = $HOME . '/miniconda3/bin/python'
-  let projlib = $HOME . '/miniconda3/share/proj'
-  if !executable(python)
+  let exe = $HOME . '/miniconda3/bin/python'
+  let proj = $HOME . '/miniconda3/share/proj'
+  if !executable(exe)
     echohl WarningMsg
-    echom "Anaconda python '" . python . "' not found."
+    echom "Miniconda python '" . exe . "' not found."
     echohl None
   else
-    exe
-      \ '!clear; set -x; PROJ_LIB=' . shellescape(projlib)
-      \ . ' ' . shellescape(python) . ' ' . shellescape(@%)
+    update
+    let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
+    call setup#job_win(cmd)
   endif
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_python_script()<CR>
+
+" Run the jupyter file or block of code
+" Warning: Monitor private variable _jupyter_session for changes
+function! s:run_jupyter_vim() range abort
+  let active = str2nr(py3eval('int('
+    \ . '"_jupyter_session" in globals() and '
+    \ . '_jupyter_session.kernel_client.check_connection()'
+    \ . ')'))
+  if !active
+    echom 'Running python script.'
+    call s:run_python_script()
+  elseif v:count
+    echom 'Sending ' . v:count . ' lines.'
+    exe 'JupyterSendCount ' . v:count
+  elseif a:firstline != a:lastline
+    echom 'Sending lines ' . a:firstline . ' to ' . a:lastline . '.'
+    exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
+  else
+    echom 'Sending entire file.'
+    exe 'JupyterRunFile'
+  endif
+endfunction
+
+" Add mappings
+noremap <silent> <buffer> <Plug>Execute0 :call <sid>run_jupyter_vim()<CR>
+noremap <silent> <buffer> <Plug>Execute1 :call <sid>run_jupyter_vim()<CR>
+noremap <silent> <buffer> <Plug>Execute2 :call <sid>run_jupyter_vim()<CR>
 
 " Define python vim-surround macros
 call succinct#add_delims({
