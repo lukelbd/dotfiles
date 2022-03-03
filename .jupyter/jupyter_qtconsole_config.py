@@ -26,7 +26,7 @@ c.JupyterConsoleApp.confirm_exit = True
 ## Mixin for configurable classes that work with connection files
 
 ## JSON file in which to store connection info [default: kernel-<pid>.json]
-#  
+#
 #  This file will contain the IP, ports, and authentication key needed to connect
 #  clients to this kernel. By default, this file will be created in the security
 #  dir of the current profile, but can be specified by absolute path.
@@ -52,7 +52,7 @@ c.JupyterConsoleApp.confirm_exit = True
 ## set the stdin (ROUTER) port [default: random]
 #c.ConnectionFileMixin.stdin_port = 0
 
-## 
+##
 #c.ConnectionFileMixin.transport = 'tcp'
 
 #------------------------------------------------------------------------------
@@ -133,13 +133,13 @@ c.JupyterConsoleApp.confirm_exit = True
 
 ## An abstract base class for console-type widgets. This class has functionality
 #  for:
-#  
+#
 #      * Maintaining a prompt and editing region
 #      * Providing the traditional Unix-style console keyboard shortcuts
 #      * Performing tab completion
 #      * Paging text
 #      * Handling ANSI escape codes
-#  
+#
 #  ConsoleWidget also provides a number of utility methods that will be
 #  convenient to implementors of a console-style widget.
 
@@ -159,7 +159,7 @@ c.JupyterConsoleApp.confirm_exit = True
 #c.ConsoleWidget.console_width = 81
 
 ## Whether to automatically execute on syntactically complete input.
-#  
+#
 #  If False, Shift-Enter is required to submit each execution. Disabling this is
 #  mainly useful for non-Python kernels, where the completion check would be
 #  wrong.
@@ -175,7 +175,7 @@ c.JupyterConsoleApp.confirm_exit = True
 #c.ConsoleWidget.font_size = 0
 
 ## The type of completer to use. Valid values are:
-#  
+#
 #  'plain'   : Show the available completion as a text list
 #              Below the editing area.
 #  'droplist': Show the completion in a drop down list navigable
@@ -187,7 +187,7 @@ c.JupyterConsoleApp.confirm_exit = True
 
 ## Whether to include output from clients other than this one sharing the same
 #  kernel.
-#  
+#
 #  Outputs are not displayed until enter is pressed.
 #c.ConsoleWidget.include_other_output = False
 
@@ -196,12 +196,12 @@ c.JupyterConsoleApp.confirm_exit = True
 #c.ConsoleWidget.kind = 'plain'
 
 ## Prefix to add to outputs coming from clients other than this one.
-#  
+#
 #  Only relevant if include_other_output is True.
 #c.ConsoleWidget.other_output_prefix = '[remote] '
 
 ## The type of paging to use. Valid values are:
-#  
+#
 #  'inside'
 #     The widget pages like a traditional terminal.
 #  'hsplit'
@@ -226,7 +226,7 @@ c.JupyterConsoleApp.confirm_exit = True
 ## A ConsoleWidget that keeps a history of the commands that have been executed
 #  and provides a readline-esque interface to this history.
 
-## 
+##
 #c.HistoryConsoleWidget.history_lock = False
 
 #------------------------------------------------------------------------------
@@ -235,7 +235,7 @@ c.JupyterConsoleApp.confirm_exit = True
 
 ## A Qt frontend for a generic Python kernel.
 
-## 
+##
 #c.FrontendWidget.banner = ''
 
 ## Whether to clear the console when the kernel is restarted
@@ -273,19 +273,19 @@ c.JupyterConsoleApp.confirm_exit = True
 #  is not specified, the line number option to the %edit magic will be ignored.
 #c.JupyterWidget.editor_line = ''
 
-## 
+##
 #c.JupyterWidget.in_prompt = 'In [<span class="in-prompt-number">%i</span>]: '
 
-## 
+##
 #c.JupyterWidget.input_sep = '\n'
 
-## 
+##
 #c.JupyterWidget.out_prompt = 'Out[<span class="out-prompt-number">%i</span>]: '
 
-## 
+##
 #c.JupyterWidget.output_sep = ''
 
-## 
+##
 #c.JupyterWidget.output_sep2 = ''
 
 ## A CSS stylesheet. The stylesheet can contain classes for:
@@ -303,14 +303,14 @@ c.JupyterConsoleApp.confirm_exit = True
 #------------------------------------------------------------------------------
 
 ## Manages a single kernel in a subprocess on this host.
-#  
+#
 #  This version starts kernels with Popen.
 
 ## Should we autorestart the kernel if it dies.
 #c.KernelManager.autorestart = True
 
 ## DEPRECATED: Use kernel_name instead.
-#  
+#
 #  The Popen Command to launch the kernel. Override this if you have a custom
 #  kernel. If kernel_cmd is specified in a configuration file, Jupyter does not
 #  pass any arguments to the kernel, because it cannot make any assumptions about
@@ -329,7 +329,7 @@ c.JupyterConsoleApp.confirm_exit = True
 ## Monitor and autorestart a kernel.
 
 ## Whether to include every poll event in debugging output.
-#  
+#
 #  Has to be set explicitly, because there will be *a lot* of output.
 #c.KernelRestarter.debug = False
 
@@ -347,27 +347,27 @@ c.JupyterConsoleApp.confirm_exit = True
 #------------------------------------------------------------------------------
 
 ## Object for handling serialization and sending of messages.
-#  
+#
 #  The Session object handles building messages and sending them with ZMQ sockets
 #  or ZMQStream objects.  Objects can communicate with each other over the
 #  network via Session objects, and only need to work with the dict-based IPython
 #  message spec. The Session will handle serialization/deserialization, security,
 #  and metadata.
-#  
+#
 #  Sessions support configurable serialization via packer/unpacker traits, and
 #  signing with HMAC digests via the key/keyfile traits.
-#  
+#
 #  Parameters ----------
-#  
+#
 #  debug : bool
 #      whether to trigger extra debugging statements
 #  packer/unpacker : str : 'json', 'pickle' or import_string
 #      importstrings for methods to serialize message parts.  If just
 #      'json' or 'pickle', predefined JSON and pickle packers will be used.
 #      Otherwise, the entire importstring must be used.
-#  
+#
 #      The functions must accept at least valid JSON input, and output *bytes*.
-#  
+#
 #      For example, to use msgpack:
 #      packer = 'msgpack.packb', unpacker='msgpack.unpackb'
 #  pack/unpack : callables
@@ -388,7 +388,7 @@ c.JupyterConsoleApp.confirm_exit = True
 #c.Session.buffer_threshold = 1024
 
 ## Whether to check PID to protect against calls after fork.
-#  
+#
 #  This check can be disabled if fork-safety is handled elsewhere.
 #c.Session.check_pid = True
 
@@ -399,7 +399,7 @@ c.JupyterConsoleApp.confirm_exit = True
 #c.Session.debug = False
 
 ## The maximum number of digests to remember.
-#  
+#
 #  The digest history will be culled when it exceeds this value.
 #c.Session.digest_history_size = 65536
 
