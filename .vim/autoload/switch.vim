@@ -10,13 +10,9 @@ function! switch#ale(...) abort
   endif
   if toggle
     ALEEnableBuffer
-    silent! setlocal signcolumn=yes
     let b:ale_enabled = 1  " also done by plugin but do this just in case
   else
     ALEDisableBuffer
-    if !exists('b:gitgutter_enabled') || !b:gitgutter_enabled
-      silent! setlocal signcolumn=no
-    endif
     let b:ale_enabled = 0
   endif
 endfunction
@@ -107,13 +103,9 @@ function! switch#gitgutter(...) abort
   endif
   if toggle
     GitGutterBufferEnable
-    silent! setlocal signcolumn=yes
     let b:gitgutter_enabled = 1
   else
     GitGutterBufferDisable
-    if !exists('b:ale_enabled') || !b:ale_enabled
-      silent! setlocal signcolumn=no
-    endif
     let b:gitgutter_enabled = 0
   endif
 endfunction

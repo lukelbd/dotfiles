@@ -852,11 +852,12 @@ for s:name in [
   endif
 endfor
 
-" Improve motions. Do not use easymotion because
+" Improve navigation. Do not use easymotion because
 " extremely slow over remote connections and overkill.
 " Discussion: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " Plug 'easymotion/vim-easymotion'
 Plug 'justinmk/vim-sneak'
+Plug 'kshenoy/vim-signature'
 
 " Folding speedups
 " Warning: SimpylFold horribly slow on monde, instead use braceless
@@ -1469,10 +1470,6 @@ if Active('vim-gitgutter')
   augroup END
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = 5000
-  if !exists('g:gitgutter_enabled')
-    let g:gitgutter_enabled = 0  " whether enabled at *startup*
-    silent! set signcolumn=no
-  endif
   nnoremap <silent> <Leader>g :call switch#gitgutter(1)<CR>
   nnoremap <silent> <Leader>G :call switch#gitgutter(0)<CR>
   noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
