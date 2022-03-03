@@ -1655,65 +1655,59 @@ function! s:keyword_setup()
   hi link markdownHeader Special
 endfunction
 
-" Filetype specific commands
-" highlight link htmlNoSpell
+" Filetype specific
 highlight link pythonImportedObject Identifier
 highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 
-" Popup menu
-highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
-
 " Magenta is uncommon color, so use it for sneak and highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-highlight Search ctermbg=Magenta ctermfg=NONE
+highlight Sneak ctermbg=DarkMagenta ctermfg=None
+highlight Search ctermbg=Magenta ctermfg=None
 
-" Fundamental changes, move control from LightColor to Color and DarkColor,
+" Popup menu
+highlight Pmenu ctermbg=None ctermfg=White cterm=None
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None
+highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
+
+" Move control from LightColor to Color and DarkColor
 " because ANSI has no control over light ones it seems.
-highlight Type ctermbg=NONE ctermfg=DarkGreen
-highlight Constant ctermbg=NONE ctermfg=Red
-highlight Special ctermbg=NONE ctermfg=DarkRed
-highlight PreProc ctermbg=NONE ctermfg=DarkCyan
-highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
+highlight Type ctermbg=None ctermfg=DarkGreen
+highlight Constant ctermbg=None ctermfg=Red
+highlight Special ctermbg=None ctermfg=DarkRed
+highlight PreProc ctermbg=None ctermfg=DarkCyan
+highlight Indentifier ctermbg=None ctermfg=Cyan cterm=Bold
 
-" Features that only work in iTerm with minimum contrast setting
-" highlight LineNR       cterm=NONE ctermbg=NONE ctermfg=Gray
-" highlight Comment    ctermfg=Gray cterm=NONE
-highlight LineNR cterm=NONE ctermbg=NONE ctermfg=Black
-highlight Comment ctermfg=Black cterm=NONE
+" Only works in iTerm with minimum contrast setting (otherwise use Gray)
+highlight LineNR cterm=None ctermbg=None ctermfg=Black
+highlight Comment ctermfg=Black cterm=None
 
 " Special characters
-highlight NonText ctermfg=Black cterm=NONE
-highlight SpecialKey ctermfg=Black cterm=NONE
+highlight NonText ctermfg=Black cterm=None
+highlight SpecialKey ctermfg=Black cterm=None
 
 " Matching parentheses
-highlight Todo ctermfg=NONE ctermbg=Red
-highlight MatchParen ctermfg=NONE ctermbg=Blue
+highlight Todo ctermfg=None ctermbg=Red
+highlight MatchParen ctermfg=None ctermbg=Blue
 
-" Cursor line or column highlighting using color mapping set by CTerm (PuTTY lets me set
-" background to darker gray, bold background to black, 'ANSI black' to a slightly lighter
-" gray, and 'ANSI black bold' to black). Note 'lightgray' is just normal white
-highlight CursorLine cterm=NONE ctermbg=Black
-highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
+" Cursor line or column highlighting using cterm color mapping
+highlight CursorLine cterm=None ctermbg=Black
+highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
+
+" Error highlighting (use Red and Magenta for increased prominence)
+highlight ALEErrorLine ctermfg=None ctermbg=None cterm=None
+highlight ALEWarningLine ctermfg=None ctermbg=None cterm=None
 
 " Column stuff, color 80th column and after 120
-highlight ColorColumn cterm=NONE ctermbg=Gray
-highlight SignColumn  guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
+highlight ColorColumn cterm=None ctermbg=Gray
+highlight SignColumn  guibg=None cterm=None ctermfg=Black ctermbg=None
 
-" Make sure terminal background is same as main background
-highlight Terminal ctermbg=NONE ctermfg=NONE
-
-" Make Conceal highlighting group transparent so when you set the conceallevel
-" to 0, concealed elements revert to their original highlighting.
-highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
+" Make terminal background same as main background
+highlight Terminal ctermbg=None ctermfg=None
 
 " Transparent dummy group used to add @Nospell
-highlight Dummy ctermbg=NONE ctermfg=NONE
+highlight Dummy ctermbg=None ctermfg=None
 
-" Error highlighting with ALE
-highlight ALEErrorLine ctermfg=White ctermbg=Red cterm=None
-highlight ALEWarningLine ctermfg=White ctermbg=Magenta cterm=None
+" Transparent conceal group so when conceallevel=0 elements revert to original colors
+highlight Conceal ctermbg=None ctermfg=None ctermbg=None ctermfg=None
 
 " Helper commands defined in utils
 command! CurrentColor vert help group-name
