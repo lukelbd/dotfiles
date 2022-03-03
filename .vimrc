@@ -1660,54 +1660,54 @@ highlight link pythonImportedObject Identifier
 highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 
 " Magenta is uncommon color, so use it for sneak and highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=None
-highlight Search ctermbg=Magenta ctermfg=None
+highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
+highlight Search ctermbg=Magenta ctermfg=NONE
 
 " Popup menu
-highlight Pmenu ctermbg=None ctermfg=White cterm=None
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None
-highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
+highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
 
 " Move control from LightColor to Color and DarkColor
 " because ANSI has no control over light ones it seems.
-highlight Type ctermbg=None ctermfg=DarkGreen
-highlight Constant ctermbg=None ctermfg=Red
-highlight Special ctermbg=None ctermfg=DarkRed
-highlight PreProc ctermbg=None ctermfg=DarkCyan
-highlight Indentifier ctermbg=None ctermfg=Cyan cterm=Bold
+highlight Type ctermbg=NONE ctermfg=DarkGreen
+highlight Constant ctermbg=NONE ctermfg=Red
+highlight Special ctermbg=NONE ctermfg=DarkRed
+highlight PreProc ctermbg=NONE ctermfg=DarkCyan
+highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 
 " Only works in iTerm with minimum contrast setting (otherwise use Gray)
-highlight LineNR cterm=None ctermbg=None ctermfg=Black
-highlight Comment ctermfg=Black cterm=None
+highlight LineNR cterm=NONE ctermbg=NONE ctermfg=Black
+highlight Comment ctermfg=Black cterm=NONE
 
 " Special characters
-highlight NonText ctermfg=Black cterm=None
-highlight SpecialKey ctermfg=Black cterm=None
+highlight NonText ctermfg=Black cterm=NONE
+highlight SpecialKey ctermfg=Black cterm=NONE
 
 " Matching parentheses
-highlight Todo ctermfg=None ctermbg=Red
-highlight MatchParen ctermfg=None ctermbg=Blue
+highlight Todo ctermfg=NONE ctermbg=Red
+highlight MatchParen ctermfg=NONE ctermbg=Blue
 
 " Cursor line or column highlighting using cterm color mapping
-highlight CursorLine cterm=None ctermbg=Black
-highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
+highlight CursorLine cterm=NONE ctermbg=Black
+highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 
 " Error highlighting (use Red and Magenta for increased prominence)
-highlight ALEErrorLine ctermfg=None ctermbg=None cterm=None
-highlight ALEWarningLine ctermfg=None ctermbg=None cterm=None
+highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 
 " Column stuff, color 80th column and after 120
-highlight ColorColumn cterm=None ctermbg=Gray
-highlight SignColumn  guibg=None cterm=None ctermfg=Black ctermbg=None
+highlight ColorColumn cterm=NONE ctermbg=Gray
+highlight SignColumn guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 
 " Make terminal background same as main background
-highlight Terminal ctermbg=None ctermfg=None
+highlight Terminal ctermbg=NONE ctermfg=NONE
 
 " Transparent dummy group used to add @Nospell
-highlight Dummy ctermbg=None ctermfg=None
+highlight Dummy ctermbg=NONE ctermfg=NONE
 
 " Transparent conceal group so when conceallevel=0 elements revert to original colors
-highlight Conceal ctermbg=None ctermfg=None ctermbg=None ctermfg=None
+highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
 
 " Helper commands defined in utils
 command! CurrentColor vert help group-name
