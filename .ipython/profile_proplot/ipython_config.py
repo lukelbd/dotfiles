@@ -18,6 +18,7 @@ import os
 backend = os.environ.setdefault('MPLBACKEND', 'module://matplotlib_iterm2.backend_iterm2')
 # Set up proplot
 import proplot as pplt
+pplt.ion()
 pplt.rc['figure.dpi'] = 200 if 'img' in backend or 'iterm' in backend else 100
 # Import modules for development
 import cycler

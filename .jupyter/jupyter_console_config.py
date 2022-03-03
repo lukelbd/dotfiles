@@ -11,7 +11,7 @@ c.ZMQTerminalInteractiveShell.highlighting_style = 'monokai'
 c.ZMQTerminalInteractiveShell.include_other_output = True
 
 # Message for jupyter-vim
-c.ZMQTerminalInteractiveShell.other_output_prefix = '[jupyter-vim] '
+c.ZMQTerminalInteractiveShell.other_output_prefix = '[jupyter-vim]\n'
 
 # No confirm exit
 c.JupyterConsoleApp.confirm_exit = False
