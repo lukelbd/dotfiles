@@ -3,6 +3,7 @@
     // @ryantam626/jupyterlab_code_formatter:settings
     // See https://jupyterlab-code-formatter.readthedocs.io/en/latest/how-to-use.html
     // *****************************************
+    "formatOnSave": false,
     "black": {
         "line_length": 88,
         "string_normalization": false

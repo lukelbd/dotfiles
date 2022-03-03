@@ -141,13 +141,14 @@ endfunction
 
 " Check if user selection is directory, descend until user selects a file.
 " This is similar to default shell tab expansion.
-" Note: FZF executes asynchronously so cannot do loop recursion inside driver
+" Warning: Must use expand() rather than glob() or new file names are not completed.
+" Warning: FZF executes asynchronously so cannot do loop recursion inside driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 function! file#open_continuous(...) abort
   let paths = []
   for pattern in a:000
     let pattern = substitute(pattern, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-    call extend(paths, glob(pattern, 0, 1))  " expand glob patterns
+    call extend(paths, expand(pattern, 0, 1))  " expand glob patterns
   endfor
   call s:open_continuous(paths)  " call fzf sink function
 endfunction

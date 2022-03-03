@@ -1194,10 +1194,15 @@ if Active('vim-tags') || &runtimepath =~# 'vim-tags'
 endif
 
 " Comment toggling stuff
-" Note: For once we actually like most of the default maps.
+" Note: For once we like some of the default maps but disable others.
 if Active('tcomment_vim')
   nmap g>> g>c
   nmap g<< g<c
+  let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
+  let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
+  let g:tcomment_opleader1 = 'gc'
+  let g:tcomment_mapleader_uncomment_anyway = 'g<'
+  let g:tcomment_mapleader_comment_anyway = 'g>'
 endif
 
 " Auto-complete delimiters
@@ -1228,8 +1233,11 @@ endif
 if Active('undotree')
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
+  if has('persistent_undo')
+    let &undodir=$HOME . '/.undodir'
+    set undofile
+  endif
   noremap <Leader>u :UndotreeToggle<CR>
-  if has('persistent_undo') | let &undodir=$HOME . '/.undodir' | set undofile | endif
 endif
 
 " Completion engine settings (see :help ddc-options)
@@ -1431,11 +1439,11 @@ endif
 " Vim test settings
 " Run tests near cursor or throughout file
 if Active('vim-test')
-  let s:test_options = '--verbose'
-  noremap <silent> <Leader>] :<C-u>exe 'TestNearest ' . s:test_options<CR>
-  noremap <silent> <Leader>[ :<C-u>exe 'TestLast ' . s:test_options<CR>
-  noremap <silent> <Leader>{ :<C-u>exe 'TestSuite ' . s:test_options<CR>
-  noremap <silent> <Leader>} :<C-u>exe 'TestSuite ' . s:test_options<CR>
+  let g:test#python#pytest#options = '--mpl --verbose'
+  noremap <silent> <Leader>[ :<C-u>TestLast<CR>
+  noremap <silent> <Leader>] :<C-u>TestNearest<CR>
+  noremap <silent> <Leader>{ :<C-u>TestSuite<CR>
+  noremap <silent> <Leader>} :<C-u>TestSuite<CR>
   noremap <silent> <Leader>\ :<C-u>TestVisit<CR>
 endif
 

@@ -1,26 +1,25 @@
 #!/bin/bash
 # shellcheck disable=1090,2181,2120,2076
 #-----------------------------------------------------------------------------#
-# This file should override defaults in /etc/profile in /etc/bashrc.
-# Check out what is in the system defaults before using this, make sure your
+# This file should override defaults in /etc/profile in /etc/bashrc. Check
+# out what is in the system defaults before using this and make sure your
 # $PATH is populated. To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# * Prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
-#   if aliased or some 'exit' is in $PATH
+# * Use '<package_manager> list' for most package managers to see what is installed
+#   e.g. brew list, conda list, pip list, jupyter kernelspec list.
+# * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
+#   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
+#   requires ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
+# * Prefix key for issuing SSH-session commands is '~' ('exit' sometimes doesn't work,
+#   perhaps because it is aliased or some 'exit' is defined in $PATH).
 #    C-d/'exit' -- IF AVAILABLE, exit SSH session
 #    ~./~C-z -- Exit SSH session
 #    ~& -- Puts SSH into background
 #    ~# -- Gives list of forwarded connections in this session
 #    ~? -- Gives list of these commands
-# * Extended globbing explanations, see:
-#   http://mywiki.wooledge.org/glob
-# * Use '<package_manager> list' for most package managers to see what is installed
-#   e.g. brew list, conda list, pip list.
-# * Swap between jupyter kernels in a lab session by installing nb_conda_kernels:
-#   https://github.com/Anaconda-Platform/nb_conda_kernels
 #-----------------------------------------------------------------------------#
-# Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
-# Known bug, scp/rsync fail without this line due to greeting message:
+# Bail out if not running interactively (e.g. when sending data packets over with scp/rsync)
+# Known bug: scp/rsync fail without this line due to greeting message:
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
@@ -212,10 +211,10 @@ export PATH=$HOME/ncparallel:$PATH  # custom repo
 # NOTE: Could not get itermplot to work. Inline figures too small.
 unset MPLBACKEND
 unset PYTHONPATH
-export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
-export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
+export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
+export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
 _local_projects=(timescales transport constraints autocorrelation)
 _shared_projects=(drycore common cmip-downloads reanalysis-downloads)
 for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
@@ -1287,25 +1286,35 @@ unmount() {
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------#
 # Ipython profile shorthands (see ipython_config.py in .ipython profile subfolders)
-alias pytest='pytest -s -v'  # show print output and use verbose mode
-alias climopy='ipython -i --profile=climopy'
-alias proplot='ipython -i --profile=proplot'
-alias jupyter-climopy='jupyter console -i --profile=climopy'
-alias jupyter-proplot='jupyter console -i --profile=proplot'
+# For tests we automatically print output and increase verbosity
+alias pytest='pytest -s -v'
+alias ipython-climopy='ipython --profile=climopy'
+alias ipython-proplot='ipython --profile=proplot'
 
-# Julia with paths in current directory and auto update modules
+# Jupyter profile shorthands requiring custom kernels that launch ipykernel
+# with a --profile argument... otherwise only the default profile is run and the
+# file run by --config is confusingly not used in the resulting ipython session.
+# See: https://github.com/minrk/a2km
+# See: https://stackoverflow.com/a/46370853/4970632
+# See: https://stackoverflow.com/a/50294374/4970632
+# jupyter kernelspec list  # then navigate to kernel.json files in directories
+# a2km clone python3 python3-climopy && a2km add-argv python3-climopy -- --profile=climopy
+# a2km clone python3 python3-proplot && a2km add-argv python3-proplot -- --profile=proplot
+alias jupyter-climopy='jupyter console --kernel=python3-climopy'
+alias jupyter-proplot='jupyter console --kernel=python3-proplot'
+
+# Matlab and julia
+# For matlab just load the startup script and skip the gui stuff
+# For julia include paths in current directory and auto update modules
+alias matlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
 alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
 
-# Matlab just load the startup script and skip the gui stuff
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
-
 # R utilities
-# Calling R with --slave or --interactive makes quiting totally impossible somehow.
-# The ---always-readline prevents prompt from switching to the default prompt, but
-# also seems to disable ctrl-d for exiting.
-# alias R='rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save'
+# Note using --slave or --interactive makes quiting impossible. And ---always-readline
+# prevents prompt from switching to default prompt but disables ctrl-d from exiting.
 alias r='command R -q --no-save'
 alias R='command R -q --no-save'
+# alias R='rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save'
 
 # NCL interactive environment
 # Make sure that we encapsulate any other alias -- for example, on Macs,
