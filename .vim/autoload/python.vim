@@ -55,13 +55,15 @@ function! python#run_jupyter() range abort
   endif
 endfunction
 " For <expr> map accepting motion
+" Todo: Support this for *all* filetypes by creating temporary files from
+" motion functions and passing *those* files to arbitrary execution commands.
 function! python#run_jupyter_expr(...) abort
   return utils#motion_func('python#run_jupyter', a:000)
 endfunction
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
-function! python#translate_kwargs_dict(kw2dc, ...) abort range
+function! python#kwargs_dict(kw2dc, ...) abort range
   " First get selection columns
   " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
   " bug where if opening bracket is immediately followed by newline, then 'inner'
@@ -111,6 +113,6 @@ function! python#translate_kwargs_dict(kw2dc, ...) abort range
 endfunction
 
 " For <expr> map accepting motion
-function! python#translate_kwargs_dict_expr(kw2dc) abort
-  return utils#motion_func('python#translate_kwargs_dict', [a:kw2dc, mode()])
+function! python#kwargs_dict_expr(kw2dc) abort
+  return utils#motion_func('python#kwargs_dict', [a:kw2dc, mode()])
 endfunction

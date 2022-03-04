@@ -18,12 +18,13 @@ if exists(':BracelessEnable')
 endif
 
 " Translating dictionaries to keyword input
-noremap <expr> <buffer> cd python#translate_kwargs_dict_expr(1)
-noremap <expr> <buffer> cD python#translate_kwargs_dict_expr(0)
+noremap <expr> <buffer> cd python#kwargs_dict_expr(1)
+noremap <expr> <buffer> cD python#kwargs_dict_expr(0)
 
 " Add mappings
 noremap <expr> <buffer> <Plug>Execute0 python#run_jupyter_expr()
-" noremap <silent> <buffer> <Plug>Execute0 :call python#run_jupyter()<CR>
+noremap <silent> <buffer> <Plug>Execute1 :<C-u>JupyterConnect<CR>
+noremap <silent> <buffer> <Plug>Execute2 :<C-u>JupyterDisconnect<CR>
 
 " Define python vim-surround macros
 call succinct#add_delims({

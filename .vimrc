@@ -334,8 +334,8 @@ nnoremap <silent> <Leader>i :call file#directory_descend()<CR>
 nnoremap <silent> <Leader>I :call file#directory_return()<CR>
 
 " 'Execute' script with different options
-" Note: Execute1 and Execute2 just defined for tex for now
-" Note: These maps include visual mode for e.g. running selected blocks.
+" Note: Execute1 and Execute2 just defined for tex for now. These maps are
+" also defined in visual mode for e.g. running selected blocks.
 " Note: Due to <nowait> the 'ZZ' map is only ever triggered in practice if Z does
 " not forward to an <expr> mapping requiring a motion. So far this is just python.
 " Note: Critical to label these maps so one is not a prefix of another
@@ -1618,10 +1618,11 @@ endif
 " Syntax stuff
 "-----------------------------------------------------------------------------"
 " Fix syntax highlighting. Leverage ctags integration to almost always fix syncing
-" Note: str2nr() apparently ignores invalid characters (here the 'G' instruction)
+" Note: This says get the closest tag to the first line in the window, all tags
+" rather than top-level only, searching backward, and without circular wrapping.
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#jump_tag(0, 1, 0, line('w0')))])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
 noremap <Leader>y :<C-u>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y :<C-u>SyncStart<CR>
 
