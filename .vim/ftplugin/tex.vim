@@ -32,7 +32,7 @@ function! s:latexmk(...) abort
   let flags = trim(a:0 ? a:1 : '') . ' --line=' . string(line('.'))
   call setup#job_win(
     \ 'latexmk ' . flags . ' ' . shellescape(expand('%')),
-    \ flags !~# '\(--quick\|-q\)'
+    \ flags !~# '--quick\|-q'
     \ )
 endfunction
 

@@ -14,7 +14,6 @@ endfunction
 " Run current script using anaconda python, not vim python (important for macvim)
 " Todo: Pair with persistent python session using vim-jupyter? See julia.vim.
 function! python#run_script() abort
-  update
   let exe = $HOME . '/miniconda3/bin/python'
   let proj = $HOME . '/miniconda3/share/proj'
   if !executable(exe)
@@ -22,7 +21,6 @@ function! python#run_script() abort
     echom "Miniconda python '" . exe . "' not found."
     echohl None
   else
-    update
     let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
     call setup#job_win(cmd)
   endif
@@ -40,6 +38,7 @@ endfunction
 " Run the jupyter file or block of code
 " Warning: Important that 'count' comes first so range is ignored
 function! python#run_jupyter() range abort
+  update
   if !python#has_jupyter()
     echom 'Running python script.'
     call python#run_script()

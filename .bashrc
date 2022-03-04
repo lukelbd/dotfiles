@@ -335,47 +335,32 @@ git() {
   command git "$@"
 }
 
-# Editor stuff
-# VIM command to keep track of session -- need to 'source' the sessionfile, which is
-# just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
-# re-closing every time we start a session
-# For vi command see: https://vi.stackexchange.com/a/6114
+# Simple pseudo-vi editor
+# See: https://vi.stackexchange.com/a/6114
 vi() {
   HOME=/dev/null command vim -i NONE -u NONE "$@"
 }
+
+# Open one tab per file, then clear screen and delete scrollback.
+# See: https://apple.stackexchange.com/q/31872/214359
+# NOTE: Unable to get iTerm to automatically delete vim scrollback
 vim() {
-  # First modify the Obsession-generated session file
-  # Then restore the session; in .vimrc specify same file for writing,
-  # so this 'resumes' tracking in the current session file
-  local flags files interactive
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      -*) flags+=("$1") ;;
-      *) files+=("$1") ;;
-    esac
-    shift
-  done
-  [[ " ${flags[*]} " =~ (--version|--help|-h) ]] && interactive=false || interactive=true
-  if $interactive && [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ]; then
-    # Open session and fix various bugs. For some reason folds are
-    # otherwise re-closed upon openening each file.
-    sed -i '/zt/a setlocal nofoldenable' .vimsession  # unfold everything
-    sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession  # remove folds
-    sed -i -s 'N;/normal! zo/!P;D' .vimsession  # remove folds
-    sed -i -s 'N;/normal! zc/!P;D' .vimsession  # remove folds
-    command vim "${flags[@]}" -S .vimsession  # for working with obsession
-  else
-    # Open specific files or pass non-interactive flags
-    # The -p flag says to use single tab for each file
-    [ "${#files[@]}" -gt 0 ] && flags+=(-p)
-    command vim "${flags[@]}" "${files[@]}"
-  fi
-  # Clear screen and delete scollback: https://apple.stackexchange.com/q/31872/214359
-  # NOTE: Unable to get iTerm to automatically delete vim scrollback
-  if $interactive; then
-    clear
-    printf '\e[3J'
-  fi
+  [ "${#files[@]}" -gt 0 ] && flags+=(-p)
+  command vim -p "$@"
+  [[ " $* " =~ (--version|--help|-h) ]] && return
+  clear
+  printf '\e[3J'
+}
+
+# Open session and fix various bugs. For some reason folds
+# are otherwise re-closed upon openening each file.
+vim-session() {
+  [ -r .vimsession ] || { echo "Error: .vimsession file not found."; return 1; }
+  sed -i '/zt/a setlocal nofoldenable' .vimsession  # unfold everything
+  sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession  # remove folds
+  sed -i -s 'N;/normal! zo/!P;D' .vimsession  # remove folds
+  sed -i -s 'N;/normal! zc/!P;D' .vimsession  # remove folds
+  vim -S .vimsession "$@"  # use above function
 }
 
 # Absolute path, works everywhere
