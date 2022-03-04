@@ -1,2 +1,2 @@
 " Filetype declarations
-au BufNewFile,BufRead __*,*__,*.info,*.log set filetype=popup
+au BufNewFile,BufRead __doc__*,__LSP_SETTINGS__*,*.info,*.log set filetype=popup

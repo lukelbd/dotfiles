@@ -363,8 +363,8 @@ vim-session() {
   vim -S .vimsession "$@"  # use above function
 }
 
-# Absolute path, works everywhere
-abspath() {  # abspath that works on mac, Linux, or anything with bash
+# Absolute path, works everywhere (mac, linux, or anything with bash)
+abspath() {
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
   elif [ -f "$1" ]; then
@@ -378,13 +378,13 @@ abspath() {  # abspath that works on mac, Linux, or anything with bash
   fi
 }
 
-# Open files optionally based on name, or revert to default behavior
-# if -a specified
+# Open files optionally based on name, or revert to default behavior if -a specified
 open() {
   ! $_macos && echo "Error: open() should be run from your macbook." && return 1
   local files flags app app_default
   while [ $# -gt 0 ]; do
     case "$1" in
+      -a=*|--application=*) app_default=${1#*=} ;;
       -a|--application) shift && app_default=$1 ;;
       -*) flags+=("$1") ;;
       *) files+=("$1"); ;;
