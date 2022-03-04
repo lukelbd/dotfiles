@@ -335,9 +335,12 @@ nnoremap <silent> <Leader>I :call file#directory_return()<CR>
 
 " 'Execute' script with different options
 " Note: Execute1 and Execute2 just defined for tex for now
-" Note: Should include visual mode e.g. for running blocks
-" Warning: Critical to label these maps so one is not a prefix of another
+" Note: These maps include visual mode for e.g. running selected blocks.
+" Note: Due to <nowait> the 'ZZ' map is only ever triggered in practice if Z does
+" not forward to an <expr> mapping requiring a motion. So far this is just python.
+" Note: Critical to label these maps so one is not a prefix of another
 " or else we can get a delay. For example do not define <Plug>Execute
+map ZZ Zae
 map <nowait> Z <Plug>Execute0
 map <Leader>z <Plug>Execute1
 map <Leader>Z <Plug>Execute2

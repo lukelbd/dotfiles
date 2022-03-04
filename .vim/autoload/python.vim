@@ -11,6 +11,54 @@ function! s:sort_lines(line1, line2) abort
   return [line1, line2]
 endfunction
 
+" Run current script using anaconda python, not vim python (important for macvim)
+" Todo: Pair with persistent python session using vim-jupyter? See julia.vim.
+function! python#run_script() abort
+  update
+  let exe = $HOME . '/miniconda3/bin/python'
+  let proj = $HOME . '/miniconda3/share/proj'
+  if !executable(exe)
+    echohl WarningMsg
+    echom "Miniconda python '" . exe . "' not found."
+    echohl None
+  else
+    update
+    let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
+    call setup#job_win(cmd)
+  endif
+endfunction
+
+" Return indication whether a jupyter connection is active
+" Warning: Monitor private variable _jupyter_session for changes
+function! python#has_jupyter() abort
+  let check = ''
+    \ . '"_jupyter_session" in globals() '
+    \ . ' and _jupyter_session.kernel_client.check_connection()'
+  return str2nr(py3eval('int(' . check . ')'))
+endfunction
+
+" Run the jupyter file or block of code
+" Warning: Important that 'count' comes first so range is ignored
+function! python#run_jupyter() range abort
+  if !python#has_jupyter()
+    echom 'Running python script.'
+    call python#run_script()
+  elseif v:count
+    echom 'Sending ' . v:count . ' lines.'
+    exe 'JupyterSendCount ' . v:count
+  elseif a:firstline != a:lastline
+    echom 'Sending lines ' . a:firstline . ' to ' . a:lastline . '.'
+    exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
+  else
+    echom 'Sending entire file.'
+    exe 'JupyterRunFile'
+  endif
+endfunction
+" For <expr> map accepting motion
+function! python#run_jupyter_expr(...) abort
+  return utils#motion_func('python#run_jupyter', a:000)
+endfunction
+
 " Easy conversion between key=value pairs and 'key': value dictionary entries
 " Do son on current line, or within visual selection
 function! python#translate_kwargs_dict(kw2dc, ...) abort range

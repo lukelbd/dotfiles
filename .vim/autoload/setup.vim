@@ -48,9 +48,10 @@ function! setup#help_win() abort
 endfunction
 
 " Setup job popup window
-" Note: The '.log' extension should trigger popup
-" Warning: The '/bin/sh' is critical to permit chained commands
-" e.g. with && or || otherwise they are interpreted as literals.
+" Note: The '.log' extension should trigger popup.
+" Note: Add 'set -x' to display commands and no-op ':' to signal completion.
+" Note: The '/bin/sh' is critical to permit chained commands e.g. with && or
+" || otherwise they are interpreted as literals.
 let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
 function! setup#job_win(cmd, ...) abort
   if !s:vim8
@@ -75,7 +76,7 @@ function! setup#job_win(cmd, ...) abort
     let num = bufnr(logfile)
     let opts = {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
   endif
-  let b:run_job = job_start(['/bin/sh', '-c', 'set -x; ' . a:cmd], opts)  " run in realtime
+  let b:run_job = job_start(['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :'], opts)
 endfunction
 
 " Setup new codi window
