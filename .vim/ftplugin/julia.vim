@@ -9,6 +9,6 @@ setlocal commentstring=#%s
 function! s:run_julia_script()
   update
   let cmd = 'julia ' . shellescape(@%)
-  call setup#job_win(cmd)
+  call popup#job_win(cmd)
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute0 :call <sid>run_julia_script()<CR>
+nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>run_julia_script()<CR>

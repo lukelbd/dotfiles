@@ -1,10 +1,52 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
-" Empty list. This is used to prevent input() from returning literal
-" tabs and where no tab completion is desired.
+" Comment character
+function! utils#comment_char() abort
+  let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
+  let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
+  return escape(string, '[]\.*$~')  " escape magic characters
+endfunction
+
+" Better grep, with limited regex translation
+function! utils#grep_pattern(regex) abort 
+  let regex = a:regex
+  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g')
+  let regex = substitute(regex, '\\s', "[ \t]",  'g')
+  let regex = substitute(regex, '\\S', "[^ \t]", 'g')
+  let result = split(system("grep '" . regex . "' " . shellescape(@%) . ' 2>/dev/null'), "\n")
+  echo join(result, "\n")
+  return result
+endfunction
+
+" List the active buffer names
+function! utils#open_bufs() abort
+  let result = {}
+  for nr in range(0, bufnr('$'))
+    if buflisted(nr) | let result[nr] = bufname(nr) | endif
+  endfor
+  echo join(values(map(result, "v:key . ': ' . v:val")), "\n")
+  return result
+endfunction
+
+" Reverse the selected lines
+function! utils#reverse_lines() range abort
+  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
+  let num = empty(range) ? 0 : a:firstline - 1
+  exec 'silent ' . range . 'g/^/m' . num
+endfunction
+
+" Null input() completion function to prevent unexpected insertion of literal tabs
 function! utils#null_list(...) abort
   return []
+endfunction
+
+" Null operator motion function to gobble up the motion and prevent unexpected behavior
+function! utils#null_operator(...) range abort
+  return ''
+endfunction
+function! utils#null_operator_expr(...) abort
+  return utils#motion_func('utils#null_operator', a:000)
 endfunction
 
 " Call function over the visual line range or the user motion line range
@@ -45,94 +87,6 @@ function! utils#operator_func(type) range abort
   exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
   return ''
 endfunction
-
-" Vim help, command --help, and man command information
-" Note: These are low-level companions to higher-level vim-lsp and fzf features
-function! utils#help_vim(...) abort
-  if a:0
-    let item = a:1
-  else
-    let item = input('Vim help item: ', '', 'help')
-  endif
-  if !empty(item)
-    exe 'vert help ' . item
-  endif
-endfunction
-function! utils#help_sh(...) abort
-  if a:0
-    let cmd = a:1
-  else
-    let cmd = input('Get --help info: ', expand('<cword>'), 'shellcmd')
-  endif
-  if !empty(cmd)
-    silent! exe '!clear; '
-      \ . 'search=' . cmd . '; '
-      \ . 'if [ -n $search ] && builtin help $search &>/dev/null; then '
-      \ . '  builtin help $search 2>&1 | less; '
-      \ . 'elif $search --help &>/dev/null; then '
-      \ . '  $search --help 2>&1 | less; '
-      \ . 'fi'
-    if v:shell_error != 0
-      echohl WarningMsg
-      echom 'Warning: "man ' . cmd . '" failed.'
-      echohl None
-    endif
-  endif
-endfunction
-function! utils#help_man(...) abort
-  if a:0
-    let cmd = a:1
-  else
-    let cmd = input('Get man page: ', expand('<cword>'), 'shellcmd')
-  endif
-  if !empty(cmd)
-    silent! exe '!clear; '
-      \ . 'search=' . cmd . '; '
-      \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
-      \ . '  command man $search; '
-      \ . 'fi'
-    if v:shell_error != 0
-      echohl WarningMsg
-      echom 'Warning: "' . cmd . ' --help" failed.'
-      echohl None
-    endif
-  endif
-endfunction
-
-" Information about syntax and colors
-" The show commands produce popup windows
-function! utils#current_syntax(name) abort
-  if a:name
-    exe 'verb syntax list ' . a:name
-  else
-    exe 'verb syntax list ' . synIDattr(synID(line('.'), col('.'), 0), 'name')
-  endif
-endfunction
-function! utils#current_group() abort
-  let names = []
-  for id in synstack(line('.'), col('.'))
-    let name = synIDattr(id, 'name')
-    let group = synIDattr(synIDtrans(id), 'name')
-    if name != group
-      let name .= ' (' . group . ')'
-    endif
-    let names += [name]
-  endfor
-  echo join(names, ', ')
-endfunction
-function! utils#show_plugin() abort
-  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
-  silent call utils#popup_setup()
-endfunction
-function! utils#show_syntax() abort
-  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
-  silent call utils#popup_setup()
-endfunction
-function! utils#show_colors() abort
-  source $VIMRUNTIME/syntax/colortest.vim
-  silent call utils#popup_setup()
-endfunction
-
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
 function! utils#iter_colorschemes(reverse) abort
@@ -158,6 +112,7 @@ endfunction
 " Cyclic next error in location list
 " Copied from: https://vi.stackexchange.com/a/14359
 function! utils#iter_cyclic(count, list, ...) abort
+  " Initial stuff
   let reverse = a:0 && a:1
   let func = 'get' . a:list . 'list'
   let params = a:list ==# 'loc' ? [0] : []
@@ -166,7 +121,6 @@ function! utils#iter_cyclic(count, list, ...) abort
   if empty(items)
     return 'echoerr ' . string('E42: No Errors')  " string() adds quotes
   endif
-
   " Build up list of loc dictionaries
   call map(items, 'extend(v:val, {"idx": v:key + 1})')
   if reverse
@@ -181,7 +135,6 @@ function! utils#iter_cyclic(count, list, ...) abort
     let current = str2nr(matchstr(capture, '(\zs\d\+\ze of \d\+)'))
   endif
   call add(context, current)
-
   " Jump to next loc circularly
   call filter(items, 'v:val.bufnr == bufnr')
   let nbuffer = len(get(items, 0, {}))

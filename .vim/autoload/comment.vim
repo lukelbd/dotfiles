@@ -18,7 +18,7 @@ endfunction
 
 " Separator of dashes matching current line length
 function! comment#section_line(fill, ...) abort
-  let cchar = Comment()
+  let cchar = utils#comment_char()
   let indent = s:indent_spaces()
   let nfill = match(getline('.'), '\s*$') - len(indent)  " location of last non-whitespace char
   call append(line('.'), indent . repeat(a:fill, nfill))
@@ -29,7 +29,7 @@ endfunction
 
 " Separators of arbitrary length
 function! comment#header_line(fill, nfill, suffix, ...) abort " inserts above by default; most common use
-  let cchar = Comment()
+  let cchar = utils#comment_char()
   let indent = s:indent_spaces()
   let suffix = a:suffix ? cchar : ''
   let nfill = (a:nfill - len(indent)) / len(a:fill) " divide by length of fill character
@@ -44,7 +44,7 @@ endfunction
 
 " Inline style of format '# ---- Hello world! ----'
 function! comment#header_inline(ndash) abort
-  let cchar = Comment()
+  let cchar = utils#comment_char()
   let indent = s:indent_spaces()
   let title = s:input_title()
   if empty(title) | return | endif
@@ -54,7 +54,7 @@ endfunction
 " Inline style of format '# Hello world! #'
 function! comment#header_incomment() abort
   let indent = s:indent_spaces()
-  let cchar = Comment()
+  let cchar = utils#comment_char()
   let title = s:input_title()
   if empty(title) | return | endif
   call append(line('.'), indent . cchar . ' ' . title . ' ' . cchar)
@@ -63,6 +63,6 @@ endfunction
 " Arbtirary message above this line, matching indentation level
 function! comment#message(message) abort
   let indent = s:indent_spaces()
-  let cchar = Comment()
+  let cchar = utils#comment_char()
   call append(line('.') - 1, indent . cchar . ' ' . a:message)
 endfunction

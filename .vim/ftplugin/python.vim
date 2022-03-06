@@ -22,9 +22,10 @@ noremap <expr> <buffer> cd python#kwargs_dict_expr(1)
 noremap <expr> <buffer> cD python#kwargs_dict_expr(0)
 
 " Add mappings
-noremap <expr> <buffer> <Plug>Execute0 python#run_jupyter_expr()
-noremap <silent> <buffer> <Plug>Execute1 :<C-u>JupyterConnect<CR>
-noremap <silent> <buffer> <Plug>Execute2 :<C-u>JupyterDisconnect<CR>
+noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()
+noremap <silent> <buffer> <Plug>ExecuteFile1 :<C-u>call python#run_file()<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile2 :<C-u>JupyterConnect<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile3 :<C-u>JupyterDisconnect<CR>
 
 " Define python vim-surround macros
 call succinct#add_delims({
