@@ -267,6 +267,7 @@ endfor
 " Useful commands
 " Note: This is analogous to :scriptnames
 command! -nargs=0 Bufs call utils#open_bufs()
+command! -nargs=? Abspath call utils#abs_path(<f-args>)
 
 " Opening file in current directory and some input directory
 augroup tabs
@@ -1364,7 +1365,7 @@ if s:active('ale')
   let g:ale_lint_on_insert_leave = 1
   let g:ale_lint_on_save = 0
   let g:ale_lint_on_text_changed = 'normal'
-  let g:ale_sign_column_always = 1
+  let g:ale_sign_column_always = 0
   let g:ale_sign_error = 'E>'
   let g:ale_sign_warning = 'W>'
   let g:ale_sign_info = 'I>'
@@ -1508,7 +1509,7 @@ endif
 
 " Configure codi (mathematical notepad) interpreter without history and settings
 " History bug: https://github.com/metakirby5/codi.vim/issues/85
-" Juia settings: https://github.com/metakirby5/codi.vim/issues/120
+" Julia settings: https://github.com/metakirby5/codi.vim/issues/120
 if s:active('codi.vim')
   augroup codi
     au!
@@ -1523,7 +1524,7 @@ if s:active('codi.vim')
   let g:codi#rightsplit = 0
   let g:codi#width = 20
   let g:codi#log = ''  " enable when debugging
-  let g:codi#sync = 0  " disable async
+  let g:codi#sync = 0  " enable async
   let g:codi#interpreters = {
     \ 'python': {
         \ 'bin': ['python3', '-i', '-c', "'import readline; readline.set_auto_history(False)'"],

@@ -1,6 +1,12 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
+" Absolute path
+function! utils#abs_path(...) abort
+  let path = a:0 ? a:1 : @%
+  echom 'Path: ' . fnamemodify(path, ':p')
+endfunction
+
 " Comment character
 function! utils#comment_char() abort
   let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
