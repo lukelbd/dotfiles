@@ -345,10 +345,17 @@ nnoremap <Tab>- :split
 nnoremap <Tab>\ :vsplit 
 
 " Moving screen and resizing windows
-" nnoremap ;0 M " center in window
+" Note: Disable old maps to force-remember the more consistent maps
+nnoremap zh <Nop>
+nnoremap zH <Nop>
+nnoremap zl <Nop>
+nnoremap zL <Nop>
+nnoremap zt <Nop>
+nnoremap zb <Nop>
+nnoremap z. <Nop>
 nnoremap <Tab>y zH
 nnoremap <Tab>u zt
-nnoremap <Tab>i mzz.`z
+nnoremap <Tab>i z.
 nnoremap <Tab>o zb
 nnoremap <Tab>p zL
 nnoremap <silent> <Tab>= :<C-u>vertical resize 90<CR>
@@ -367,27 +374,27 @@ nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:co
 " we can set buftype=nofile, 1 means this is a read-only file, and 2 means this is
 " an editable file to be handled by the user (currently just used for commit messages).
 let s:popup_filetypes = {
-\   'man': 1,
-\   'codi': 1,
+\   'codi': 0,
 \   'diff': 0,
+\   'popup': 0,
+\   'vim-plug': 0,
+\   'git': 1,
 \   'fugitive': 1,
 \   'fugitiveblame': 1,
-\   'gitcommit': 2,
-\   'popup': 0,
+\   'man': 1,
 \   'qf': 1,
-\   'tagbar': 1,
 \   'undotree': 1,
-\   'vim-plug': 0,
+\   'gitcommit': 2,
 \ }
 augroup popup_setup
   au!
-  au FileType help call popup#help_win()
-  au CmdwinEnter * call popup#cmd_win()
+  au FileType help call popup#help_setup()
+  au CmdwinEnter * call popup#cmd_setup()
   if exists('##TerminalWinOpen')
-    au TerminalWinOpen * call popup#popup_win()
+    au TerminalWinOpen * call popup#popup_setup()
   endif
   for [s:key, s:val] in items(s:popup_filetypes)
-    exe 'au FileType ' . s:key . ' call popup#popup_win(' . s:val . ')'
+    exe 'au FileType ' . s:key . ' call popup#popup_setup(' . s:val . ')'
   endfor
 augroup END
 let g:tags_filetypes_skip = keys(s:popup_filetypes)
@@ -399,7 +406,7 @@ augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
-command! -nargs=? PopupToggle call switch#popup_win(<args>)
+command! -nargs=? PopupToggle call switch#popup_setup(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 noremap <Leader><Tab> :TabToggle<CR>
@@ -413,7 +420,7 @@ nnoremap <Leader>< q?
 nnoremap <Leader>> q/
 nnoremap <silent> <Leader>h :call popup#help_flag() \| redraw!<CR>
 nnoremap <silent> <Leader>H :call popup#help_man() \| redraw!<CR>
-nnoremap <silent> <Leader>v :call popup#help_vim()<CR>
+nnoremap <silent> <Leader>v :call popup#help_win()<CR>
 nnoremap <silent> <Leader>V :Help<CR>
 nnoremap <silent> <Leader>m :Maps<CR>
 nnoremap <silent> <Leader>M :Commands<CR>
@@ -971,7 +978,7 @@ if !has('gui_running')
   " Plug 'Shougo/ddc-matcher_head'  " filter for heading match
   " Plug 'Shougo/ddc-sorter_rank'  " filter for sorting rank
   " Plug 'natebosch/vim-lsc'  " alternative lsp client
-  " Plug 'rhysd/vim-lsp-ale'  " ale compatibility if want vim-lsp error checking
+  Plug 'rhysd/vim-lsp-ale'  " prevents duplicate language servers, zero config needed!
   Plug 'prabirshrestha/vim-lsp'  " ddc-vim-lsp requirement
   Plug 'mattn/vim-lsp-settings'  " auto vim-lsp settings
   Plug 'shun/ddc-vim-lsp'  " language server protocol completion for vim 8+
@@ -1323,10 +1330,12 @@ endif
 " Use :ALEInfo to verify linting is enabled
 if s:active('ale')
   " Buffer-local toggling
-  " Note: unlike syntastic ale works with buffer contents
+  " Note: Unlike syntastic ale works with buffer contents
+  " Note: LspManage fills the current buffer and for some reason does not trigger
+  " filetype autocommand so must also do it manually.
   noremap <silent> <Leader>@ :<C-u>ALEInfo<CR>
   noremap <silent> <Leader>% :<C-u>LspStatus<CR>
-  noremap <silent> <Leader>^ :<C-u>tabnew \| LspManage<CR>
+  noremap <silent> <Leader>^ :<C-u>tabnew \| LspManage<CR>:call popup#popup_setup()<CR>
   noremap <silent> <Leader>x :<C-u>call switch#ale(1)<CR>
   noremap <silent> <Leader>X :<C-u>call switch#ale(0)<CR>
   map ]x <Plug>(ale_next_wrap)
@@ -1354,6 +1363,7 @@ if s:active('ale')
     \ 'text': [],
     \ 'vim': ['vint'],
     \ }
+  command! -nargs=0 LspStartServer call lsp#activate()
   let g:ale_completion_enabled = 0
   let g:ale_completion_autoimport = 0
   let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
@@ -1451,16 +1461,9 @@ if s:active('vim-test')
   noremap <silent> <Leader>\ :<C-u>TestVisit<CR>
 endif
 
-" Fugitive command aliases
-" Used to alias G commands to lower case but upper case is more consistent
-" with Tim Pope eunuch commands
-if s:active('vim-fugitive')
-  cnoreabbrev Gdiff Gdiffsplit!
-  cnoreabbrev Ghdiff Ghdiffsplit!
-  cnoreabbrev Gvdiff Gvdiffsplit!
-endif
-
-" Git gutter
+" Fugitive aliases and git gutter settings
+" Note: Gdiff redirects to default Gdiffsplit and 'delcommand' fails for some weird
+" reason (get undefined command errors trying to use :Gdiff) so intead overwrite this.
 " Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
 " therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
@@ -1481,6 +1484,10 @@ if s:active('vim-gitgutter')
   noremap <silent> <Leader>a :GitGutterStageHunk<CR>
   noremap <silent> ]g :GitGutterNextHunk<CR>
   noremap <silent> [g :GitGutterPrevHunk<CR>
+  silent! delcommand Gdiffsplit
+  command! -nargs=* Gsplit Gvsplit
+  command! -nargs=* -bang Gdiffsplit Git diff <args>
+  command! -nargs=* Gstatus Git status <args>
 endif
 
 " Easy-align with delimiters for case/esac block parens and seimcolons, chained
@@ -1508,13 +1515,17 @@ if s:active('vim-easy-align')
 endif
 
 " Configure codi (mathematical notepad) interpreter without history and settings
-" History bug: https://github.com/metakirby5/codi.vim/issues/85
-" Julia settings: https://github.com/metakirby5/codi.vim/issues/120
+" Julia usage bug: https://github.com/metakirby5/codi.vim/issues/120
+" Python history bug: https://github.com/metakirby5/codi.vim/issues/85
+" Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
 if s:active('codi.vim')
-  augroup codi
+  augroup codi_mods
     au!
-    au User CodiEnterPre call popup#codi_win(1)
-    au User CodiLeavePost call popup#codi_win(0)
+    au User CodiUpdatePre call popup#codi_kludge(1)
+    au User CodiUpdatePost call popup#codi_kludge(0)
+    au User CodiEnterPre call popup#codi_setup(1)
+    au User CodiLeavePost call popup#codi_setup(0)
+    au User CodiEnterPost,CodiLeavePre silent! unlet b:codi_view
   augroup END
   command! -nargs=? CodiNew call popup#codi_new(<q-args>)
   nnoremap <silent> <Leader>= :CodiNew<CR>
@@ -1717,12 +1728,12 @@ highlight Dummy ctermbg=NONE ctermfg=NONE
 highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
 
 " Helper commands defined in utils
-command! CurrentColor vert help group-name
-command! CurrentGroup call popup#current_group()
-command! -nargs=? CurrentSyntax call popup#current_syntax(<q-args>)
-command! ShowColors call popup#show_colors()
-command! ShowPlugin call popup#show_plugin()
-command! ShowSyntax call popup#show_syntax()
+command! -nargs=0 CurrentColor vert help group-name
+command! -nargs=0 CurrentGroup call popup#syntax_group()
+command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
+command! -nargs=0 ShowColors call popup#colors_win()
+command! -nargs=0 ShowPlugin call popup#plugin_win()
+command! -nargs=0 ShowSyntax call popup#syntax_win()
 
 
 "-----------------------------------------------------------------------------"

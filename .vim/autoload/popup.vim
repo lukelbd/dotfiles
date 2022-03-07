@@ -1,40 +1,34 @@
 "-----------------------------------------------------------------------------"
 " Utilities for setting up windows
 "-----------------------------------------------------------------------------"
-" Helper function
-function! s:no_buffer_map(map)
-  let dict = maparg(a:map, 'n', v:false, v:true)
-  return empty(dict) || !dict['buffer']
-endfunction
-
 " Setup popup windows
 " File mode can be 0 (no file) 1 (simple file) or 2 (editable file)
-" Warning: Critical error happens if try to auto-quite when only popup window is
+" Warning: Critical error happens if try to auto-quit when only popup window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
-" and simply get in habit of closing entire tabs with file#tab_close().
-function! popup#popup_win(...) abort
+" and simply get in habit of closing entire tabs with file#close_tab().
+function! popup#popup_setup(...) abort
   let filemode = a:0 ? a:1 : 1
-  if s:no_buffer_map('q') | nnoremap <silent> <buffer> q :call file#close_window()<CR> | endif
-  if s:no_buffer_map('<C-w>') | nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR> | endif
+  nnoremap <silent> <buffer> q :call file#close_window()<CR>
+  nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR>
   setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
   if filemode == 0 | setlocal buftype=nofile | endif  " this has no file
   if filemode == 2 | return | endif  " this is editable file
-  setlocal nospell statusline=%{'[Popup\ Window]'}%=%{PrintLoc()}  " additional settings
-  if s:no_buffer_map('u') | nnoremap <buffer> u <C-u> | endif
-  if s:no_buffer_map('d') | nnoremap <buffer> <nowait> d <C-d> | endif
-  if s:no_buffer_map('b') | nnoremap <buffer> b <C-b> | endif
-  if s:no_buffer_map('f') | nnoremap <buffer> <nowait> f <C-f> | endif
+  setlocal nospell statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
+  nnoremap <buffer> u <C-u>
+  nnoremap <buffer> <nowait> d <C-d>
+  nnoremap <buffer> b <C-b>
+  nnoremap <buffer> <nowait> f <C-f>
 endfunction
 
 " Setup command windows and ensure local maps work
 " Note: Here 'execute' means run the selected line
-function! popup#cmd_win() abort
+function! popup#cmd_setup() abort
   inoremap <buffer> <expr> <CR> ""
   nnoremap <buffer> <CR> <C-c><CR>
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
-  silent call popup#popup_win()
+  silent call popup#popup_setup()
 endfunction
 
 " Setup new codi window
@@ -53,7 +47,8 @@ endfunction
 " Custom codi window autocommands Want TextChanged,InsertLeave, not
 " TextChangedI which is enabled with g:codi#autocmd = 'TextChanged'
 " See: https://github.com/metakirby5/codi.vim/issues/90
-function! popup#codi_win(toggle) abort
+" Note: This sets up the calculator window not the display window
+function! popup#codi_setup(toggle) abort
   if a:toggle
     let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
     exe 'augroup codi_' . bufnr('%')
@@ -75,51 +70,74 @@ endfunction
 
 " Rephraser to remove comment characters before passing to interpreter. For the
 " 1000 char limit issue see: https://github.com/metakirby5/codi.vim/issues/88
+" Note: Warning message will be gobbled so don't bother. Just silent failure.
 " Warning: Vim substitute() function works differently fron :substitute command, with
 " escape characters disallowed in [] (requires literals) and '.' matching newlines.
 " Also codi silently fials if rephrased input lines don't match original line count.
 function! popup#codi_rephrase(text) abort
   let text = substitute(a:text, utils#comment_char() . "[^\n]*\\(\n\\|$\\)", '\1', 'g')
-  if len(text) > 1000
-    echohl WarningMsg
-    echom 'Warning: Too many characters for calculator. Truncating the input.'
-    echohl None
-  endif
+  let lmax = 1000
+  let index = lmax
+  while len(text) > lmax && line('$') < lmax && (!exists('lprev') || lprev != len(text))
+    let lprev = len(text)
+    let index -= count(text[index:], "\n")
+    let text = ''
+      \ . substitute(text[:index - 1], "\n[^\n]*$", "\n", '')
+      \ . substitute(text[index:], "[^\n]", '', 'g')
+  endwhile
   return text
 endfunction
 
-" Information about syntax and colors
-" The show commands produce popup windows
-function! popup#current_syntax(name) abort
+" Kludgy function to prevent issue where (1) window alignment is messed up if
+" below first line and (2) offset of ~2 lines is present until cursor moves.
+" See issue for updates: https://github.com/metakirby5/codi.vim/issues/106
+function! popup#codi_kludge(trigger)
+  if a:trigger
+    let winline = line('w0')
+    if winline > 1
+      let s:codi_view = winsaveview()
+      1  " jump to first line
+    endif
+  else
+    if exists('s:codi_view')
+      call winrestview(s:codi_view)
+      unlet s:codi_view
+      normal! kj
+    endif
+  endif
+endfunction
+
+" Popup windows with filetype and color information
+function! popup#colors_win() abort
+  source $VIMRUNTIME/syntax/colortest.vim
+  silent call popup#popup_setup()
+endfunction
+function! popup#plugin_win() abort
+  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
+  silent call popup#popup_setup()
+endfunction
+function! popup#syntax_win() abort
+  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
+  silent call popup#popup_setup()
+endfunction
+
+" Print information about syntax group
+function! popup#syntax_list(name) abort
   if a:name
     exe 'verb syntax list ' . a:name
   else
     exe 'verb syntax list ' . synIDattr(synID(line('.'), col('.'), 0), 'name')
   endif
 endfunction
-function! popup#current_group() abort
+function! popup#syntax_group() abort
   let names = []
   for id in synstack(line('.'), col('.'))
     let name = synIDattr(id, 'name')
     let group = synIDattr(synIDtrans(id), 'name')
-    if name != group
-      let name .= ' (' . group . ')'
-    endif
+    if name != group | let name .= ' (' . group . ')' | endif
     let names += [name]
   endfor
-  echo join(names, ', ')
-endfunction
-function! popup#show_plugin() abort
-  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
-  silent call popup#popup_setup()
-endfunction
-function! popup#show_syntax() abort
-  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
-  silent call popup#popup_setup()
-endfunction
-function! popup#show_colors() abort
-  source $VIMRUNTIME/syntax/colortest.vim
-  silent call popup#popup_setup()
+  echom 'Syntax Group: ' . join(names, ', ')
 endfunction
 
 " Show command help
@@ -168,9 +186,19 @@ function! popup#help_man(...) abort
   endif
 endfunction
 
+" Setup help windows
+function! popup#help_setup() abort
+  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
+  vertical resize 80 " always certain size
+  nnoremap <buffer> <CR> <C-]>
+  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+  silent call popup#popup_setup()
+endfunction
+
 " Show vim help window
 " Note: This is low-level companions to fzf feature
-function! popup#help_vim(...) abort
+function! popup#help_win(...) abort
   if a:0
     let item = a:1
   else
@@ -179,16 +207,6 @@ function! popup#help_vim(...) abort
   if !empty(item)
     exe 'vert help ' . item
   endif
-endfunction
-
-" Setup help windows
-function! popup#help_win() abort
-  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
-  vertical resize 80 " always certain size
-  nnoremap <buffer> <CR> <C-]>
-  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
-  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
-  silent call popup#popup_win()
 endfunction
 
 " Setup job popup window
