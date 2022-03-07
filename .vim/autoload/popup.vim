@@ -64,26 +64,34 @@ endfunction
 
 " Pre-processor fixes escapes returned by interpreters. For the
 " escape issue see: https://github.com/metakirby5/codi.vim/issues/120
-function! popup#codi_preprocess(line) abort
-  return substitute(a:line, '�[?2004l', '', '')
-endfunction
-
 " Rephraser to remove comment characters before passing to interpreter. For the
 " 1000 char limit issue see: https://github.com/metakirby5/codi.vim/issues/88
 " Note: Warning message will be gobbled so don't bother. Just silent failure.
-" Warning: Vim substitute() function works differently fron :substitute command, with
-" escape characters disallowed in [] (requires literals) and '.' matching newlines.
-" Also codi silently fials if rephrased input lines don't match original line count.
+" Note: Vim substitute() function '.' matches newlines and codi silently fails
+" if the rephrased input lines don't match original line count so be careful.
+function! popup#codi_preprocess(line) abort
+  return substitute(a:line, '�[?2004l', '', '')
+endfunction
 function! popup#codi_rephrase(text) abort
-  let text = substitute(a:text, utils#comment_char() . "[^\n]*\\(\n\\|$\\)", '\1', 'g')
-  let lmax = 1000
-  let index = lmax
-  while len(text) > lmax && line('$') < lmax && (!exists('lprev') || lprev != len(text))
-    let lprev = len(text)
+  let pat = '\s*' . utils#comment_char() . '[^\n]*\(\n\|$\)'  " remove comments
+  let text = substitute(a:text, pat, '\1', 'g')
+  let pat = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
+  let text = substitute(text, pat, '\1', 'g')
+  let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
+  let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
+  if &filetype ==# 'julia'  " prepend repr functions
+    let text = '_r=k->print(k*" = "*repr(eval(k)));' . text
+  else
+    let text = '_r=lambda k:print(k+" = "+repr(eval(k)));' . text
+  endif
+  let maxlen = 950  " too close to 1000 gets risky even if under 1000
+  let index = maxlen
+  while len(text) > maxlen && line('$') < maxlen && (!exists('curlen') || curlen != len(text))
+    let curlen = len(text)
     let index -= count(text[index:], "\n")
     let text = ''
-      \ . substitute(text[:index - 1], "\n[^\n]*$", "\n", '')
-      \ . substitute(text[index:], "[^\n]", '', 'g')
+      \ . substitute(text[:index - 1], '\(^\|\n\)[^\n]*$', '\n', '')
+      \ . substitute(text[index:], '[^\n]', '', 'g')
   endwhile
   return text
 endfunction

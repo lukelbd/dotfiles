@@ -1534,7 +1534,7 @@ if s:active('codi.vim')
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
-  let g:codi#width = 20
+  let g:codi#width = 30
   let g:codi#log = ''  " enable when debugging
   let g:codi#sync = 0  " enable async
   let g:codi#interpreters = {
