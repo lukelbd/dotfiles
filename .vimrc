@@ -70,6 +70,7 @@ set number numberwidth=4  " note old versions can't combine number with relative
 set redrawtime=5000  " sometimes takes a long time, let it happen
 set relativenumber
 set scrolloff=4
+set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
 set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
 set signcolumn=auto  " auto may cause lag after startup but unsure
 set shell=/usr/bin/env\ bash
