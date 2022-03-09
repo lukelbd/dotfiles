@@ -239,14 +239,14 @@ endfor
 
 " Enable left mouse click in visual mode to extend selection, normally this is impossible
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
-" Want to be able to *temporarily turn scrolloff to infinity* when enter visual
-" mode, to do that need to map vi and va stuff
+" Want to be able to *temporarily turn scrolloff to infinity* when
+" enter visual mode, to do that need to map vi and va stuff.
 nnoremap v myv
 nnoremap V myV
 nnoremap vc myvlh
 nnoremap <C-v> my<C-v>
-nnoremap <silent> v/ hn:noh<CR>mygn
-vnoremap <silent> <LeftMouse> <LeftMouse>mx`y:exe "normal! ".visualmode()<CR>`x
+nnoremap v/ hn<Cmd>noh<CR>mygn
+vnoremap <LeftMouse> <LeftMouse>mx`y<Cmd>exe 'normal! ' . visualmode()<CR>`x
 vnoremap <CR> <C-c>
 
 " Automatically update binary spellfile
@@ -276,21 +276,21 @@ augroup tabs
   au TabLeave * let g:lasttab = tabpagenr()
 augroup END
 command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
-noremap <C-o> :<C-u>Open 
-noremap <C-p> :<C-u>Files 
-noremap <C-g> :<C-u>GFiles<CR>
-noremap <expr> <F3> ":\<C-u>Open " . expand('%:h') . '/'
-noremap <expr> <C-y> ":\<C-u>Files " . expand('%:h') . '/'
+noremap <C-o> <Cmd>Open 
+noremap <C-p> <Cmd>Files 
+noremap <C-g> <Cmd>GFiles<CR>
+noremap <expr> <F3> "\<Cmd>Open " . expand('%:h') . '/'
+noremap <expr> <C-y> "\<Cmd>Files " . expand('%:h') . '/'
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
 nnoremap <Leader>J <c-w>gf
-nnoremap <silent> <Leader>j :<C-u>call file#exists()<CR>
+nnoremap <Leader>j <Cmd>call file#exists()<CR>
 
 " Move to current directory
 " Pneumonic is 'inside' just like Ctrl + i map
-nnoremap <silent> <Leader>i :call file#directory_descend()<CR>
-nnoremap <silent> <Leader>I :call file#directory_return()<CR>
+nnoremap <Leader>i <Cmd>call file#directory_descend()<CR>
+nnoremap <Leader>I <Cmd>call file#directory_return()<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -304,34 +304,34 @@ nmap <Leader>Z <Plug>ExecuteFile3
 noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Save and quit, also test whether the :q action closed the entire tab
-" nnoremap <silent> <C-w> :call file#close_window()<CR>
-nnoremap <silent> <C-s> :call tabline#write()<CR>
-nnoremap <silent> <C-w> :call file#close_tab()<CR>
-nnoremap <silent> <C-q> :quitall<CR>
+nnoremap <C-s> <Cmd>call tabline#write()<CR>
+nnoremap <C-w> <Cmd>call file#close_window()<CR>
+nnoremap <C-e> <Cmd>call file#close_tab()<CR>
+nnoremap <C-q> <Cmd>quitall<CR>
 
 " Renaming things
-command! -nargs=* -complete=file -bang Rename :call file#rename('<args>', '<bang>')
+command! -nargs=* -complete=file -bang Rename call file#rename('<args>', '<bang>')
 
 " Refreshing things
 command! Refresh call file#refresh()
-nnoremap <silent> <Leader>r :redraw!<CR>
-nnoremap <silent> <Leader>R :Refresh<CR>
-nnoremap <silent> <Leader>e :edit<CR>
+nnoremap <Leader>r <Cmd>redraw!<CR>
+nnoremap <Leader>R <Cmd>Refresh<CR>
+nnoremap <Leader>e <Cmd>edit<CR>
 
 " Autosave with SmartWrite using utils function
 command! -nargs=? Autosave call switch#autosave(<args>)
-nnoremap <silent> <Leader>s :Autosave 1<CR>
-nnoremap <silent> <Leader>S :Autosave 0<CR>
+nnoremap <Leader>s <Cmd>Autosave 1<CR>
+nnoremap <Leader>S <Cmd>Autosave 0<CR>
 
 " Tab selection and movement
 nnoremap <Tab>, gT
 nnoremap <Tab>. gt
-nnoremap <silent> <Tab>' :exe 'tabn ' . (exists('g:lasttab') ? g:lasttab : 1)<CR>
-nnoremap <silent> <Tab><Tab> :call file#tab_select()<CR>
-nnoremap <silent> <Tab><Space> :Buffers<CR>
-nnoremap <silent> <Tab>m :call file#tab_move()<CR>
-nnoremap <silent> <Tab>> :call file#tab_move(tabpagenr() + 1)<CR>
-nnoremap <silent> <Tab>< :call file#tab_move(tabpagenr() - 1)<CR>
+nnoremap <Tab>' <Cmd>exe 'tabn ' . (exists('g:lasttab') ? g:lasttab : 1)<CR>
+nnoremap <Tab><Tab> <Cmd>call file#tab_select()<CR>
+nnoremap <Tab><Space> <Cmd>Buffers<CR>
+nnoremap <Tab>m <Cmd>call file#tab_move()<CR>
+nnoremap <Tab>> <Cmd>call file#tab_move(tabpagenr() + 1)<CR>
+nnoremap <Tab>< <Cmd>call file#tab_move(tabpagenr() - 1)<CR>
 for s:num in range(1, 10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor
@@ -359,34 +359,37 @@ nnoremap <Tab>u zt
 nnoremap <Tab>i z.
 nnoremap <Tab>o zb
 nnoremap <Tab>p zL
-nnoremap <silent> <Tab>= :<C-u>vertical resize 90<CR>
-nnoremap <silent> <Tab>( :<C-u>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
-nnoremap <silent> <Tab>) :<C-u>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
-nnoremap <silent> <Tab>_ :<C-u>exe 'resize ' . (winheight(0) - 5 * v:count1)<CR>
-nnoremap <silent> <Tab>+ :<C-u>exe 'resize ' . (winheight(0) + 5 * v:count1)<CR>
-nnoremap <silent> <Tab>[ :<C-u>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
-nnoremap <silent> <Tab>] :<C-u>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
-nnoremap <silent> <Tab>{ :<C-u>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
-nnoremap <silent> <Tab>} :<C-u>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
+nnoremap <Tab>= <Cmd>vertical resize 90<CR>
+nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
+nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
+nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 5 * v:count1)<CR>
+nnoremap <Tab>+ <Cmd>exe 'resize ' . (winheight(0) + 5 * v:count1)<CR>
+nnoremap <Tab>[ <Cmd>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
+nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
+nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
+nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
 " Popup window style adjustments with less-like shortcuts
-" Note: Man config generally used with superman
+" Note: The 'man' format is generally used with superman, the 'diff' format is
+" used with GitGutterPreviewHunk rather than fugitive commands, the 'git' format is
+" used with fugitive show and diff displays, and 'fugitive' is used for other stuff.
 " Note: Arguments indicate the 'file mode' where 0 means this is so-not-a-file that
 " we can set buftype=nofile, 1 means this is a read-only file, and 2 means this is
 " an editable file to be handled by the user (currently just used for commit messages).
 let s:popup_filetypes = {
-\   'codi': 0,
-\   'diff': 0,
-\   'popup': 0,
-\   'vim-plug': 0,
-\   'git': 1,
-\   'fugitive': 1,
-\   'fugitiveblame': 1,
-\   'man': 1,
-\   'qf': 1,
-\   'undotree': 1,
-\   'gitcommit': 2,
-\ }
+  \ 'ale-preview': 0,
+  \ 'codi': 0,
+  \ 'diff': 0,
+  \ 'popup': 0,
+  \ 'vim-plug': 0,
+  \ 'fugitive': 1,
+  \ 'fugitiveblame': 1,
+  \ 'git': 1,
+  \ 'man': 1,
+  \ 'qf': 1,
+  \ 'undotree': 1,
+  \ 'gitcommit': 2,
+  \ }
 augroup popup_setup
   au!
   au FileType help call popup#help_setup()
@@ -410,7 +413,7 @@ augroup END
 command! -nargs=? PopupToggle call switch#popup_setup(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)
 command! -nargs=? TabToggle call switch#expandtab(<args>)
-noremap <Leader><Tab> :TabToggle<CR>
+nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary, just press n or N.
@@ -419,12 +422,12 @@ nnoremap <Leader>; :<Up><CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>< q?
 nnoremap <Leader>> q/
-nnoremap <silent> <Leader>h :call popup#help_flag() \| redraw!<CR>
-nnoremap <silent> <Leader>H :call popup#help_man() \| redraw!<CR>
-nnoremap <silent> <Leader>v :call popup#help_win()<CR>
-nnoremap <silent> <Leader>V :Help<CR>
-nnoremap <silent> <Leader>m :Maps<CR>
-nnoremap <silent> <Leader>M :Commands<CR>
+nnoremap <Leader>h <Cmd>call popup#help_flag() \| redraw!<CR>
+nnoremap <Leader>H <Cmd>call popup#help_man() \| redraw!<CR>
+nnoremap <Leader>v <Cmd>call popup#help_win()<CR>
+nnoremap <Leader>V <Cmd>Help<CR>
+nnoremap <Leader>m <Cmd>Maps<CR>
+nnoremap <Leader>M <Cmd>Commands<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -438,7 +441,7 @@ cnoremap <expr> <F2> "\<S-Tab>"
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 " silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>C :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMDIR<CR>
+nnoremap <Leader>C <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -447,10 +450,6 @@ nnoremap <Leader>C :let $VIMTERMDIR=expand('%:p:h')<CR>:terminal<CR>cd $VIMTERMD
 " Useful commands
 command! -nargs=1 Grep call utils#grep_pattern(<q-args>)
 command! -range Reverse <line1>,<line2>call utils#reverse_lines()
-
-" Jump to points with FZF
-noremap <silent> <Leader>' :<C-u>Marks<CR>
-noremap <silent> <Leader>" :<C-u>BLines<CR>
 
 " Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
@@ -468,6 +467,10 @@ noremap <Right> <C-i>
 noremap m ge
 noremap M gE
 
+" Navigate to marks or lines with FZF
+nnoremap <Leader>' <Cmd>Marks<CR>
+nnoremap <Leader>" <Cmd>BLines<CR>
+
 " Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
 " let g:highlightmark_colors = ['magenta']
@@ -476,7 +479,7 @@ command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
 nnoremap <expr> ` "`" . nr2char(97 + v:count)
 nnoremap <expr> ~ 'm' . nr2char(97 + v:count) . ':HighlightMark ' . nr2char(97 + v:count) . '<CR>'
-nnoremap <Leader>~ :<C-u>RemoveHighlights<CR>
+nnoremap <Leader>~ <Cmd>RemoveHighlights<CR>
 
 " Alias single-key builtin text objects
 for s:bracket in ['r[', 'a<', 'c{']
@@ -494,7 +497,9 @@ inoremap <silent> <C-y> <C-o><C-r><C-o>`x<Right>
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
 nnoremap , @z
-nnoremap <silent> <expr> Q b:recording ? 'q<Esc>:let b:recording = 0<CR>' : 'qz<Esc>:let b:recording = 1<CR>'
+nnoremap <expr> Q b:recording
+  \ ? 'q<Esc><Cmd>let b:recording = 0<CR>'
+  \ : 'qz<Esc><Cmd>let b:recording = 1<CR>'
 augroup recording_tests
   au!
   au BufEnter * let b:recording = 0
@@ -510,10 +515,10 @@ vnoremap cc s
 nnoremap cL mzi<CR><Esc>`z
 
 " Swap adjacent characters or rows
-nnoremap <silent> ch :call insert#swap_characters(0)<CR>
-nnoremap <silent> cl :call insert#swap_characters(1)<CR>
-nnoremap <silent> ck :call insert#swap_lines(0)<CR>
-nnoremap <silent> cj :call insert#swap_lines(1)<CR>
+nnoremap ch <Cmd>call format#swap_characters(0)<CR>
+nnoremap cl <Cmd>call format#swap_characters(1)<CR>
+nnoremap ck <Cmd>call format#swap_lines(0)<CR>
+nnoremap cj <Cmd>call format#swap_lines(1)<CR>
 
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o oX<Backspace>
@@ -521,16 +526,16 @@ nnoremap O OX<Backspace>
 
 " Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
 " unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
-" Note: For visual pasting without overwriting see https://stackoverflow.com/a/31411902/4970632
 " Note: Use [p or ]p for P and p but adjusting to the current indent
+" Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
 nnoremap yp "0p
 nnoremap yP "0P
 nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
 nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
+vnoremap p p<Cmd>let @+=@0<CR><Cmd>let @"=@0<CR>
+vnoremap P P<Cmd>let @+=@0<CR><Cmd>let @"=@0<CR>
 " vnoremap p "_dP  " flickers and does not include special v_p handling
 " vnoremap P "_dP
-vnoremap <silent> p p:let @+=@0<CR>:let @"=@0<CR>
-vnoremap <silent> P P:let @+=@0<CR>:let @"=@0<CR>
 
 " Yank until end of line, like C and D
 nnoremap Y y$
@@ -549,30 +554,31 @@ nnoremap <expr> < '<Esc>' . format#indent_items_expr(1, v:count1)
 
 " Wrapping lines with arbitrary textwidth
 command! -range -nargs=? WrapLines <line1>,<line2>call format#wrap_lines(<args>)
-noremap <silent> <expr> gq '<Esc>' . format#wrap_lines_expr(v:count)
+noremap <expr> gq '<Esc>' . format#wrap_lines_expr(v:count)
 
 " Wrapping lines accounting for bullet indentation and with arbitrary textwidth
 command! -range -nargs=? WrapItems <line1>,<line2>call format#wrap_items(<args>)
-noremap <silent> <expr> gQ '<Esc>' . format#wrap_items_expr(v:count)
+noremap <expr> gQ '<Esc>' . format#wrap_items_expr(v:count)
 
 " Toggle highlighting
-nnoremap <silent> <Leader>o :noh<CR>
-nnoremap <silent> <Leader>O :set hlsearch<CR>
+noremap <Leader>o <Cmd>noh<CR>
+noremap <Leader>O <Cmd>set hlsearch<CR>
 
 " Never save single-character deletions to any register
 noremap x "_x
 noremap X "_X
+
 " Maps for throwaaway and clipboard register
 noremap ' "_
 noremap " "*
 
 " Copy mode ('paste mode' accessible with [v and ]v via unimpaired.vim)
 command! -nargs=? CopyToggle call switch#copy(<args>)
-nnoremap <Leader>c :call switch#copy()<CR>
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
-inoremap <expr> <C-v> insert#lang_map()
-cnoremap <expr> <C-v> insert#lang_map()
+inoremap <expr> <C-v> format#lang_map()
+cnoremap <expr> <C-v> format#lang_map()
 
 " Spellcheck (really is a builtin plugin, hence why it's in this section)
 " Turn on for certain filetypes
@@ -586,10 +592,10 @@ augroup END
 " Toggle spelling on and off
 command! SpellToggle call switch#spellcheck(<args>)
 command! LangToggle call switch#spelllang(<args>)
-nnoremap <silent> <Leader>l :call switch#spellcheck(1)<CR>
-nnoremap <silent> <Leader>L :call switch#spellcheck(0)<CR>
-nnoremap <silent> <Leader>k :call switch#spelllang(1)<CR>
-nnoremap <silent> <Leader>K :call switch#spelllang(0)<CR>
+nnoremap <Leader>l <Cmd>call switch#spellcheck(1)<CR>
+nnoremap <Leader>L <Cmd>call switch#spellcheck(0)<CR>
+nnoremap <Leader>k <Cmd>call switch#spelllang(1)<CR>
+nnoremap <Leader>K <Cmd>call switch#spelllang(0)<CR>
 
 " Add and remove from dictionary
 nnoremap <Leader>f zg
@@ -600,25 +606,25 @@ nnoremap <Leader>d 1z=
 nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also corrects the word
-nnoremap <silent> <Plug>forward_spell bh]s:call format#spell_fix(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[s:call format#spell_fix(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nnoremap <Plug>forward_spell bh]s<Cmd>call format#spell_apply(1)<CR><Cmd>call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <Plug>backward_spell el[s<Cmd>call format#spell_apply(0)<CR><Cmd>call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
 " Capitalization stuff with g, a bit refined. Not currently
 " used in normal mode, and fits better mnemonically
 " Mnemonic is y next to u, t for title case
-nnoremap gu guiw
-nnoremap gU gUiw
-vnoremap gy ~
-nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
+nnoremap <nowait> gu guiw
+nnoremap <nowait> gU gUiw
+nnoremap <Plug>cap1 ~h<Cmd>call repeat#set("\<Plug>cap1")<CR>
+nnoremap <Plug>cap2 mzguiw~h`z<Cmd>call repeat#set("\<Plug>cap2")<CR>
 nmap gy <Plug>cap1
 nmap gt <Plug>cap2
+vnoremap gy ~
 vnoremap gt mzgu<Esc>`<~h
 
-" Always open all folds
-" NOTE: For some reason vim ignores foldlevelstart
+" Always open folds when starting files
+" Note: For some reason vim ignores foldlevelstart
 augroup fold_open
   au!
   au BufReadPost * silent! foldopen!
@@ -640,84 +646,59 @@ noremap [Z [z
 noremap ]Z ]z
 
 " Unimpaired blank lines
-nnoremap <silent> <Plug>BlankUp :call insert#blank_up(v:count1)<CR>
-nnoremap <silent> <Plug>BlankDown :call insert#blank_down(v:count1)<CR>
-nmap [e <Plug>BlankUp
-nmap ]e <Plug>BlankDown
+noremap <Plug>BlankUp <Cmd>call format#blank_up(v:count1)<CR>
+noremap <Plug>BlankDown <Cmd>call format#blank_down(v:count1)<CR>
+map [e <Plug>BlankUp
+map ]e <Plug>BlankDown
 
 " Maps and commands for circular location-list scrolling
 command! -bar -count=1 Cnext execute utils#iter_cyclic(<count>, 'qf')
 command! -bar -count=1 Cprev execute utils#iter_cyclic(<count>, 'qf', 1)
 command! -bar -count=1 Lnext execute utils#iter_cyclic(<count>, 'loc')
 command! -bar -count=1 Lprev execute utils#iter_cyclic(<count>, 'loc', 1)
-nnoremap <silent> [x :Lprev<CR>
-nnoremap <silent> ]x :Lnext<CR>
-nnoremap <silent> [q :Cprev<CR>
-nnoremap <silent> ]q :Cnext<CR>
+noremap [x <Cmd>Lprev<CR>
+noremap ]x <Cmd>Lnext<CR>
+noremap [q <Cmd>Cprev<CR>
+noremap ]q <Cmd>Cnext<CR>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
-nnoremap <expr> ga insert#paste_mode() . 'a'
-nnoremap <expr> gA insert#paste_mode() . 'A'
-nnoremap <expr> gc insert#paste_mode() . 'c'
-nnoremap <expr> gi insert#paste_mode() . 'i'
-nnoremap <expr> gI insert#paste_mode() . 'I'
-nnoremap <expr> go insert#paste_mode() . 'o'
-nnoremap <expr> gO insert#paste_mode() . 'O'
-nnoremap <expr> gR insert#paste_mode() . 'R'
+nnoremap <expr> ga format#paste_mode() . 'a'
+nnoremap <expr> gA format#paste_mode() . 'A'
+nnoremap <expr> gc format#paste_mode() . 'c'
+nnoremap <expr> gi format#paste_mode() . 'i'
+nnoremap <expr> gI format#paste_mode() . 'I'
+nnoremap <expr> go format#paste_mode() . 'o'
+nnoremap <expr> gO format#paste_mode() . 'O'
+nnoremap <expr> gR format#paste_mode() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
 " nnoremap <CR> <C-]>  " fails most of the time
 nnoremap <CR> [<C-i>
 nnoremap <Leader><CR> [I
 
-" Improved popup menu navigation
-augroup pum_navigation
-  au!
-  au BufEnter,InsertLeave * let b:pum_pos = 0
-augroup END
-
-" Keystrokes that always close the popup menu
-inoremap <expr> <BS>    pumvisible() ? insert#pum_reset() . "\<C-e>\<Backspace>" : "\<Backspace>"
-inoremap <expr> <Space> pumvisible() ? insert#pum_reset() . "\<C-e>\<C-]>\<Space>" : "\<C-]>\<Space>"
-
-" Enter is 'accept' only if we explicitly scrolled down, tab is always 'accept' and
-" choose default menu item if necessary. Also break undo history when adding linebreaks.
-" See: :help ins-special-special
-inoremap <expr> <CR>  pumvisible() ? b:pum_pos ? "\<C-y>" . insert#pum_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
-inoremap <expr> <Tab> pumvisible() ? b:pum_pos ? "\<C-y>" . insert#pum_reset() : "\<C-n>\<C-y>" . insert#pum_reset() : "\<C-]>\<Tab>"
-
-" Keystrokes that increment items in the menu
-" Also disable scrolling in insert mode
-inoremap <expr> <ScrollWheelUp>   pumvisible() ? insert#pum_prev() : ''
-inoremap <expr> <ScrollWheelDown> pumvisible() ? insert#pum_next() : ''
-inoremap <expr> <C-k>  pumvisible() ? insert#pum_prev() : "\<Up>"
-inoremap <expr> <C-j>  pumvisible() ? insert#pum_next() : "\<Down>"
-inoremap <expr> <Up>   pumvisible() ? insert#pum_prev() : "\<Up>"
-inoremap <expr> <Down> pumvisible() ? insert#pum_next() : "\<Down>"
-
 " Forward delete by tabs
-inoremap <silent> <expr> <Delete> insert#forward_delete()
+inoremap <expr> <Delete> format#forward_delete()
 
 " Insert comment with <Ctr-I>
 " Todo: Add more control insert mappings?
 inoremap <expr> <F3> comment#comment_insert()
 
 " Section headers, dividers, and other information
-nnoremap <silent> gcA :call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap <silent> gcY :call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
-nnoremap <silent> gc" :call comment#header_inline(5)<CR>
-nnoremap <silent> gc' :call comment#header_incomment()<CR>
-nnoremap <silent> gc: :call comment#header_line('-', 77, 1, 1)<CR>
-nnoremap <silent> <Plug>CommentBar :call comment#header_line('-', 77, 1, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
+nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap gcY <Cmd>call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
+nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
+nnoremap gc' <Cmd>call comment#header_incomment()<CR>
+nnoremap gc: <Cmd>call comment#header_line('-', 77, 1, 1)<CR>
+nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 1, 0)<CR><Cmd>call repeat#set("\<Plug>CommentBar")<CR>
 nmap gc; <Plug>CommentBar
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-nnoremap <silent> <Plug>SectionSingle :call comment#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
-nnoremap <silent> <Plug>SubsectionSingle :call comment#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
-nnoremap <silent> <Plug>SectionDouble :call comment#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
-nnoremap <silent> <Plug>SubsectionDouble :call comment#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
+nnoremap <Plug>SectionSingle <Cmd>call comment#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
+nnoremap <Plug>SubsectionSingle <Cmd>call comment#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
+nnoremap <Plug>SectionDouble <Cmd>call comment#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
+nnoremap <Plug>SubsectionDouble <Cmd>call comment#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
 nmap g= <Plug>SectionSingle
 nmap g- <Plug>SubsectionSingle
 nmap g+ <Plug>SectionDouble
@@ -750,29 +731,29 @@ nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 " groups, maybe because first parts of match are identical?
 " Note: utils#comment_char() doesn't get invoked either until expression
 " is run so comment character will reflect it sbuffer-local value.
-noremap <expr> \c format#replace_regexes_expr('Removed comments.', '^\s*' . utils#comment_char() . '.\+$\n', '', '\s\+' . utils#comment_char() . '.\+$', '')
+noremap <expr> \c format#replace_regex_expr('Removed comments.', '^\s*' . utils#comment_char() . '.\+$\n', '', '\s\+' . utils#comment_char() . '.\+$', '')
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-noremap <expr> \w format#replace_regexes_expr('Removed trailing whitespace.', '\s\+\ze$', '')
+noremap <expr> \w format#replace_regex_expr('Removed trailing whitespace.', '\s\+\ze$', '')
 
 " Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <expr> \s format#replace_regexes_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S format#replace_regexes_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
+noremap <expr> \s format#replace_regex_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S format#replace_regex_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
-noremap <expr> \e format#replace_regexes_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
-noremap <expr> \E format#replace_regexes_expr('Removed empty lines.', '^\s*$\n', '')
+noremap <expr> \e format#replace_regex_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
+noremap <expr> \E format#replace_regex_expr('Removed empty lines.', '^\s*$\n', '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-noremap <expr> \' format#replace_regexes_expr('Fixed single quotes.', '‘', '`', '’', "'")
-noremap <expr> \" format#replace_regexes_expr('Fixed double quotes.', '“', '``', '”', "''")
-noremap <expr> \- format#replace_regexes_expr('Fixed long dashes.', '–', '--')
-noremap <expr> \_ format#replace_regexes_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
+noremap <expr> \' format#replace_regex_expr('Fixed single quotes.', '‘', '`', '’', "'")
+noremap <expr> \" format#replace_regex_expr('Fixed double quotes.', '“', '``', '”', "''")
+noremap <expr> \- format#replace_regex_expr('Fixed long dashes.', '–', '--')
+noremap <expr> \_ format#replace_regex_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
 
 " Replace tabs with spaces
-noremap <expr> \<Tab> format#replace_regexes_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
+noremap <expr> \<Tab> format#replace_regex_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
 
 
 "-----------------------------------------------------------------------------"
@@ -863,7 +844,7 @@ Plug 'mbbill/undotree'
 " Example: Bdelete all, Bdelete other, Bdelete hidden
 Plug 'Asheq/close-buffers.vim'
 
-" Various utilitize
+" Various utilities
 " Plug 'Shougo/vimshell.vim'  " first generation :terminal add-ons
 " Plug 'Shougo/deol.nvim'  " second generation :terminal add-ons
 Plug 'jez/vim-superman'  " add the 'vman' command-line tool
@@ -965,6 +946,7 @@ if !has('gui_running')
   " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
   Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
   Plug 'vim-denops/denops.vim'  " ddc dependency
+  " Plug 'Shougo/pum.vim'  " pum completion mappings
   " Omnifunc sources not provided by engines
   " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
   " Plug 'neovim/nvim-lspconfig'  " nvim-cmp source
@@ -1135,19 +1117,19 @@ endfunction
 " are declared inside vim-succinct plugin functions rather than here.
 if s:active('vim-succinct')
   let g:succinct_surround_prefix = '<C-s>'
-  let g:succinct_snippet_prefix = '<C-d>'
+  let g:succinct_snippet_prefix = '<C-a>'
   let g:succinct_prevdelim_map = '<F1>'
   let g:succinct_nextdelim_map = '<F2>'
 endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 if s:active('vim-scrollwrapped')
-  let g:scrollwrapped_wrap_filetypes = []
-  nnoremap <silent> <Leader>w :WrapToggle<CR>
-  nnoremap <silent> <Down> :call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
-  nnoremap <silent> <Up>   :call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
-  vnoremap <silent> <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
-  vnoremap <silent> <expr> <Up>   (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
+  let g:scrollwrapped_wrap_filetypes = ['ale-preview', 'tex', 'rst', 'md']
+  nnoremap <Leader>w <Cmd>WrapToggle<CR>
+  nnoremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
+  nnoremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
+  vnoremap <expr> <Up> (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
+  vnoremap <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
 endif
 
 " Add maps for vim-tags command and use tags for default double bracket motion, except
@@ -1165,10 +1147,10 @@ if s:active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
-  nnoremap <silent> <Leader>t :<C-u>ShowTags<CR>
-  nnoremap <silent> <Leader>T :<C-u>UpdateTags<CR>
-  nnoremap <silent> <Leader>, :<C-u>Tags<CR>
-  nnoremap <silent> <Leader>. :<C-u>BTags<CR>
+  nnoremap <Leader>t <Cmd>ShowTags<CR>
+  nnoremap <Leader>T <Cmd>UpdateTags<CR>
+  nnoremap <Leader>, <Cmd>Tags<CR>
+  nnoremap <Leader>. <Cmd>BTags<CR>
   let g:tags_nofilter_filetypes = ['fortran']
   let g:tags_scope_filetypes = {
     \ 'vim'     : 'afc',
@@ -1249,7 +1231,7 @@ if s:active('undotree')
     let &undodir=$HOME . '/.undodir'
     set undofile
   endif
-  noremap <Leader>u :UndotreeToggle<CR>
+  nnoremap <Leader>u <Cmd>UndotreeToggle<CR>
 endif
 
 " Completion engine settings (see :help ddc-options)
@@ -1260,8 +1242,6 @@ endif
 " and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
 if s:active('ddc.vim')
   " Engine settings and sources
-  " inoremap <expr> <C-y> pumvisible() ? (vsnip#expandable() ? "\<Plug>(vsnip-expand)" : "\<C-y>") : "\<C-y>"
-  " inoremap <expr> <C-Space> ddc#map#manual_complete()
   " '_': {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']},
   call ddc#custom#patch_global(
     \ 'sources',
@@ -1273,6 +1253,16 @@ if s:active('ddc.vim')
     \     'matchers': ['matcher_fuzzy'],
     \     'sorters': ['sorter_fuzzy'],
     \     'converters': ['converter_fuzzy']
+    \   },
+    \   'vim-lsp': {
+    \     'mark': 'L',
+    \     'maxCandidates': 15,
+    \     'isVolatile': v:true,
+    \     'forceCompletionPattern': '\\.|:|->',
+    \   },
+    \   'vsnip': {
+    \     'mark': 'S',
+    \     'maxCandidates': 5,
     \   },
     \   'around': {
     \     'mark': 'A',
@@ -1288,16 +1278,6 @@ if s:active('ddc.vim')
     \     'forceCompletionPattern': '\S/\S*',
     \     'maxCandidates': 5,
     \   },
-    \   'vim-lsp': {
-    \     'mark': 'L',
-    \     'isVolatile': v:true,
-    \     'forceCompletionPattern': '\\.|:|->',
-    \     'maxCandidates': 15,
-    \   },
-    \   'vsnip': {
-    \     'mark': 'S',
-    \     'maxCandidates': 5,
-    \   },
     \ })
   call ddc#custom#patch_global(
     \ 'sourceParams', {
@@ -1306,6 +1286,38 @@ if s:active('ddc.vim')
     \    }
     \ })
   call ddc#enable()
+
+  " Popup mappings. Note enter is 'accept' only if we explicitly scrolled down, tab
+  " is always 'accept' and choose default menu item if necessary. Also break undo
+  " history when adding newlines. See: :help ins-special-special
+  augroup pum_navigation
+    au!
+    au BufEnter,InsertLeave * let b:pum_pos = 0
+  augroup END
+  inoremap <expr> <ScrollWheelUp> format#pum_prev()
+  inoremap <expr> <ScrollWheelDown> format#pum_next()
+  inoremap <expr> <Up> format#pum_prev()
+  inoremap <expr> <Down> format#pum_next()
+  inoremap <expr> <C-k> format#pum_prev()
+  inoremap <expr> <C-j> format#pum_next()
+  inoremap <expr> <C-u> format#pum_prev(2)
+  inoremap <expr> <C-d> format#pum_next(2)
+  inoremap <expr> <C-f> format#pum_prev(1)
+  inoremap <expr> <C-b> format#pum_next(1)
+  inoremap <expr> <Backspace> format#pum_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
+  inoremap <expr> <Space> format#pum_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
+  inoremap <expr> <CR>
+    \ pumvisible() ? b:pum_pos ?
+    \ "\<C-y>" . format#pum_reset()
+    \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
+    \ : "\<C-]>\<C-g>u\<CR>"
+  inoremap <expr> <Tab>
+    \ pumvisible() ? b:pum_pos ?
+    \ "\<C-y>" . format#pum_reset()
+    \ : "\<C-n>\<C-y>" . format#pum_reset()
+    \ : "\<C-]>\<Tab>"
 
   " Language server settings
   " Note: Most mappings override custom ones so critical to change all settings.
@@ -1332,13 +1344,13 @@ endif
 if s:active('ale')
   " Buffer-local toggling
   " Note: Unlike syntastic ale works with buffer contents
-  " Note: LspManage fills the current buffer and for some reason does not trigger
-  " filetype autocommand so must also do it manually.
-  noremap <silent> <Leader>@ :<C-u>ALEInfo<CR>
-  noremap <silent> <Leader>% :<C-u>LspStatus<CR>
-  noremap <silent> <Leader>^ :<C-u>tabnew \| LspManage<CR>:call popup#popup_setup()<CR>
-  noremap <silent> <Leader>x :<C-u>call switch#ale(1)<CR>
-  noremap <silent> <Leader>X :<C-u>call switch#ale(0)<CR>
+  " Note: LspManage fills the current buffer and for some reason does
+  " not trigger filetype autocommand so must also do it manually.
+  nnoremap <Leader>@ <Cmd>ALEInfo<CR>
+  nnoremap <Leader>% <Cmd>LspStatus<CR>
+  nnoremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup()<CR>
+  nnoremap <Leader>x <Cmd>call switch#ale(1)<CR>
+  nnoremap <Leader>X <Cmd>call switch#ale(0)<CR>
   map ]x <Plug>(ale_next_wrap)
   map [x <Plug>(ale_previous_wrap)
 
@@ -1455,11 +1467,11 @@ endif
 " Run tests near cursor or throughout file
 if s:active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap <silent> <Leader>[ :<C-u>TestLast<CR>
-  noremap <silent> <Leader>] :<C-u>TestNearest<CR>
-  noremap <silent> <Leader>{ :<C-u>TestSuite<CR>
-  noremap <silent> <Leader>} :<C-u>TestSuite<CR>
-  noremap <silent> <Leader>\ :<C-u>TestVisit<CR>
+  nnoremap <Leader>[ <Cmd>TestLast<CR>
+  nnoremap <Leader>] <Cmd>TestNearest<CR>
+  nnoremap <Leader>{ <Cmd>TestSuite<CR>
+  nnoremap <Leader>} <Cmd>TestSuite<CR>
+  nnoremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
 " Fugitive aliases and git gutter settings
@@ -1478,13 +1490,13 @@ if s:active('vim-gitgutter')
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = 5000
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
-  nnoremap <silent> <Leader>g :call switch#gitgutter(1)<CR>
-  nnoremap <silent> <Leader>G :call switch#gitgutter(0)<CR>
-  noremap <silent> <Leader>q :GitGutterPreviewHunk<CR>:wincmd j<CR>
-  noremap <silent> <Leader>A :GitGutterUndoHunk<CR>
-  noremap <silent> <Leader>a :GitGutterStageHunk<CR>
-  noremap <silent> ]g :GitGutterNextHunk<CR>
-  noremap <silent> [g :GitGutterPrevHunk<CR>
+  noremap ]g <Cmd>GitGutterNextHunk<CR>
+  noremap [g <Cmd>GitGutterPrevHunk<CR>
+  nnoremap <Leader>g <Cmd>call switch#gitgutter(1)<CR>
+  nnoremap <Leader>G <Cmd>call switch#gitgutter(0)<CR>
+  nnoremap <Leader>q <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
+  nnoremap <Leader>A <Cmd>GitGutterUndoHunk<CR>
+  nnoremap <Leader>a <Cmd>GitGutterStageHunk<CR>
   silent! delcommand Gdiffsplit
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
@@ -1529,8 +1541,8 @@ if s:active('codi.vim')
     au User CodiEnterPost,CodiLeavePre silent! unlet b:codi_view
   augroup END
   command! -nargs=? CodiNew call popup#codi_new(<q-args>)
-  nnoremap <silent> <Leader>= :CodiNew<CR>
-  nnoremap <silent> <Leader>+ :Codi!!<CR>
+  nnoremap <Leader>= <Cmd>CodiNew<CR>
+  nnoremap <Leader>+ <Cmd>Codi!!<CR>
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
@@ -1581,7 +1593,7 @@ endif
 if s:active('colorizer')
   let g:colorizer_nomap = 1
   let g:colorizer_startup = 0
-  nnoremap <Leader># :<C-u>ColorToggle<CR>
+  nnoremap <Leader># <Cmd>ColorToggle<CR>
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
@@ -1594,8 +1606,8 @@ if s:active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  nnoremap <silent> <Leader>$
-      \ :if !empty(v:this_session) \| exe 'Obsession ' . v:this_session
+  nnoremap <Leader>$
+      \ <Cmd>if !empty(v:this_session) \| exe 'Obsession ' . v:this_session
       \ \| else \| exe 'Obsession .vimsession' \| endif<CR>
 endif
 
@@ -1609,8 +1621,8 @@ endif
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
 command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
-noremap <Leader>y :<C-u>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
-noremap <Leader>Y :<C-u>SyncStart<CR>
+nnoremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
+nnoremap <Leader>Y <Cmd>SyncStart<CR>
 
 " GUI vim colors
 " See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
@@ -1640,8 +1652,8 @@ if has('gui_running')
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap Statement
-  nnoremap <Leader>n :<C-u>SchemeNext<CR>
-  nnoremap <Leader>N :<C-u>SchemePrev<CR>
+  nnoremap <Leader>n <Cmd>SchemeNext<CR>
+  nnoremap <Leader>N <Cmd>SchemePrev<CR>
   command! SchemePrev call utils#iter_colorschemes(0)
   command! SchemeNext call utils#iter_colorschemes(1)
 endif
