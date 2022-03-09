@@ -32,11 +32,12 @@ endfunction
 " Run current file using either popup window or jupyter session
 function! python#run_file() abort
   update
-  echom 'Running entire file.'
-  if python#has_jupyter()
-    JupyterRunFile
-  else
+  if !python#has_jupyter()
+    echom 'Running entire file.'
     call python#run_win()
+  else
+    echom 'Running code block.'
+    JupyterRunCell
   endif
 endfunction
 
