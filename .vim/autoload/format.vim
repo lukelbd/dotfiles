@@ -95,6 +95,27 @@ function! format#paste_mode() abort
   return ''
 endfunction
 
+" Insert next or previous popup menu
+function! s:pum_scroll(...) abort
+  if !pumvisible() | return 0 | endif
+  let info = pum_getpos()
+  return a:0 ? info['height'] / a:1 : 1
+endfunction
+function! format#pum_reset() abort
+  let b:pum_pos = 0
+  return ''
+endfunction
+function! format#pum_next(...) abort
+  let scroll = call('s:pum_scroll', a:000)
+  let b:pum_pos += scroll
+  return repeat("\<C-n>", scroll)
+endfunction
+function! format#pum_prev(...) abort
+  let scroll = call('s:pum_scroll', a:000)
+  let b:pum_pos -= scroll
+  return repeat("\<C-p>", scroll)
+endfunction
+
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632

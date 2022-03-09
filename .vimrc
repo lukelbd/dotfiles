@@ -946,7 +946,7 @@ if !has('gui_running')
   " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
   Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
   Plug 'vim-denops/denops.vim'  " ddc dependency
-  Plug 'Shougo/pum.vim'  " nice pum completion mappings
+  " Plug 'Shougo/pum.vim'  " pum completion mappings
   " Omnifunc sources not provided by engines
   " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
   " Plug 'neovim/nvim-lspconfig'  " nvim-cmp source
@@ -1117,7 +1117,7 @@ endfunction
 " are declared inside vim-succinct plugin functions rather than here.
 if s:active('vim-succinct')
   let g:succinct_surround_prefix = '<C-s>'
-  let g:succinct_snippet_prefix = '<C-d>'
+  let g:succinct_snippet_prefix = '<C-a>'
   let g:succinct_prevdelim_map = '<F1>'
   let g:succinct_nextdelim_map = '<F2>'
 endif
@@ -1286,6 +1286,38 @@ if s:active('ddc.vim')
     \    }
     \ })
   call ddc#enable()
+
+  " Popup mappings. Note enter is 'accept' only if we explicitly scrolled down, tab
+  " is always 'accept' and choose default menu item if necessary. Also break undo
+  " history when adding newlines. See: :help ins-special-special
+  augroup pum_navigation
+    au!
+    au BufEnter,InsertLeave * let b:pum_pos = 0
+  augroup END
+  inoremap <expr> <ScrollWheelUp> format#pum_prev()
+  inoremap <expr> <ScrollWheelDown> format#pum_next()
+  inoremap <expr> <Up> format#pum_prev()
+  inoremap <expr> <Down> format#pum_next()
+  inoremap <expr> <C-k> format#pum_prev()
+  inoremap <expr> <C-j> format#pum_next()
+  inoremap <expr> <C-u> format#pum_prev(2)
+  inoremap <expr> <C-d> format#pum_next(2)
+  inoremap <expr> <C-f> format#pum_prev(1)
+  inoremap <expr> <C-b> format#pum_next(1)
+  inoremap <expr> <Backspace> format#pum_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
+  inoremap <expr> <Space> format#pum_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
+  inoremap <expr> <CR>
+    \ pumvisible() ? b:pum_pos ?
+    \ "\<C-y>" . format#pum_reset()
+    \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
+    \ : "\<C-]>\<C-g>u\<CR>"
+  inoremap <expr> <Tab>
+    \ pumvisible() ? b:pum_pos ?
+    \ "\<C-y>" . format#pum_reset()
+    \ : "\<C-n>\<C-y>" . format#pum_reset()
+    \ : "\<C-]>\<Tab>"
 
   " Language server settings
   " Note: Most mappings override custom ones so critical to change all settings.
