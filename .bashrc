@@ -928,24 +928,6 @@ _is_empty() {
   fi
 }
 
-# Compress or expand user string for copying between machines
-_expand_user() {  # turn tilde into $HOME
-  local param
-  for param in "$@"; do
-    param=${param/#~/$HOME}  # restore expanded tilde
-    param=${param/#\~/$HOME}  # if previous failed or was re-expanded need to escape the tilde
-    echo "$param"
-  done
-}
-_compress_user() {  # turn $HOME into tilde
-  local param
-  for param in "$@"; do
-    param=${param/#$HOME/~}
-    param=${param/#$HOME/\~}
-    echo "$param"
-  done
-}
-
 # Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
 # nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
@@ -1145,11 +1127,11 @@ _scp_bulk() {
     if [[ "$1" =~ ^\- ]]; then
       flags+=("$1")  # flag arguments must be specified with equals
     elif [ -z "$forward" ]; then
-      forward=$1
+      forward=$1; [[ "$forward" =~ ^[01]$ ]] || { echo "Error: Invalid forward $forward."; return 1; }
     elif [ $remote -eq 0 ] && [ -z "$address" ]; then
       address=$(_address "$1") || { echo "Error: Invalid address $1."; return 1; }
     else
-      paths+=("$(_compress_user "$1")")  # convert $HOME into tilde
+      paths+=("$1")  # the source and destination paths
     fi
     shift
   done
@@ -1160,16 +1142,19 @@ _scp_bulk() {
   fi
   # Sanitize paths and execute
   [ ${#paths[@]} -lt 2 ] && echo "Usage: _scp_bulk [FLAGS] SOURCE_PATH1 [SOURCE_PATH2 ...] DEST_PATH" && return 1
-  [[ "$forward" =~ ^[01]$ ]] || { echo "Error: Invalid forward $forward."; return 1; }
   paths=("${paths[@]/#/$address:}")  # prepend with address: then possibly remove below
   srcs=("${paths[@]::${#paths[@]}-1}")  # source paths
   dest=${paths[${#paths[@]}-1]}  # destination path
   if [ $((remote ^ forward)) -eq 0 ]; then
-    dest=${dest#*:}  # on remote and copying to remote or on local and copying to local
+    dest=${dest#*:}  # on remote and copying from local or on local and copying from remote
     srcs=("${srcs[@]// /\\ }")  # escape whitespace manually
+    srcs=("${srcs[@]/$HOME/~}")  # escape tilde (some bash versions)
+    srcs=("${srcs[@]/$HOME/\~}")  # escape tilde (other bash versions)
   else
-    srcs=("${srcs[@]#*:}")  # on local and copying to remote or on remote and copying to local
+    srcs=("${srcs[@]#*:}")  # on remote and copying to local or on local and copying to remote
     dest=${dest// /\\ }  # escape whitespace manually
+    dest=${dest/$HOME/~}  # escape tilde (some bash versions)
+    dest=${dest/$HOME/\~}  # escape tilde (other bash versions)
   fi
   echo "Copying path(s) ${srcs[*]} to path ${dest} (flags ${flags[*]})..."
   command rsync "${flags[@]}" "${srcs[@]}" "$dest"
@@ -1189,23 +1174,12 @@ lrcp() {
 }
 figcp() {
   local flags forward address src dest
-  flags=(--dry-run --include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*/')
-  if $_macos; then
-    [ $# -eq 1 ] || { echo "Error: Input host required unknown."; return 1; }
-    forward=1
-    address=$1
-    src=$(_compress_user "$src")
-    src=${src/\~\/science/\~\/}
-    dest=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
-  else
-    [ $# -eq 0 ] || { echo "Error: Zero arguments accepted."; return 1; }
-    forward=0
-    src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
-    dest=$(_compress_user "$src")
-    dest=${dest/\~/\~\/science}
-    foreward
-  fi
-  _scp_bulk "${flags[@]}" "$forward" $address "$src" "$dest"  # address may expand to nothing
+  flags=(--include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
+  $_macos && forward=1 || forward=0
+  [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
+  src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
+  $_macos && dest=${src/$HOME\/science/$HOME} || dest=${src/$HOME/$HOME\/science}
+  _scp_bulk "${flags[@]}" "$forward" $@ "$src" "$dest"  # address may expand to nothing
 }
 
 # Generate SSH file system
