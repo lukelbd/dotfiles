@@ -30,7 +30,7 @@ endif
 function! s:latexmk(...) abort
   let opts = {}  " job options, empty by default
   let flags = trim(a:0 ? a:1 : '') . ' --line=' . string(line('.'))
-  call setup#job_win(
+  call popup#job_win(
     \ 'latexmk ' . flags . ' ' . shellescape(expand('%')),
     \ flags !~# '--quick\|-q'
     \ )
@@ -40,9 +40,9 @@ endfunction
 " Note: This map overwrites :TestVisit but no harm for tex files.
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
 noremap <silent> <buffer> <Leader>\ :<C-u>call <sid>latexmk('--quick')<CR>
-noremap <silent> <buffer> <Plug>Execute0 :<C-u>call <sid>latexmk()<CR>
-noremap <silent> <buffer> <Plug>Execute1 :<C-u>call <sid>latexmk('--diff')<CR>
-noremap <silent> <buffer> <Plug>Execute2 :<C-u>call <sid>latexmk('--word')<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile1 :<C-u>call <sid>latexmk()<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile2 :<C-u>call <sid>latexmk('--diff')<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile3 :<C-u>call <sid>latexmk('--word')<CR>
 
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending
 " and appending the strings with single quotes. This lets us make input()

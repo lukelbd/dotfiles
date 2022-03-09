@@ -11,21 +11,6 @@ function! s:sort_lines(line1, line2) abort
   return [line1, line2]
 endfunction
 
-" Run current script using anaconda python, not vim python (important for macvim)
-" Todo: Pair with persistent python session using vim-jupyter? See julia.vim.
-function! python#run_script() abort
-  let exe = $HOME . '/miniconda3/bin/python'
-  let proj = $HOME . '/miniconda3/share/proj'
-  if !executable(exe)
-    echohl WarningMsg
-    echom "Miniconda python '" . exe . "' not found."
-    echohl None
-  else
-    let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
-    call setup#job_win(cmd)
-  endif
-endfunction
-
 " Return indication whether a jupyter connection is active
 " Warning: Monitor private variable _jupyter_session for changes
 function! python#has_jupyter() abort
@@ -35,29 +20,43 @@ function! python#has_jupyter() abort
   return str2nr(py3eval('int(' . check . ')'))
 endfunction
 
-" Run the jupyter file or block of code
-" Warning: Important that 'count' comes first so range is ignored
-function! python#run_jupyter() range abort
+" Run with popup window using conda python, not vim python (important for macvim)
+" Todo: More robust checking for anaconda python in other places.
+function! python#run_win()
+  let exe = $HOME . '/miniconda3/bin/python'
+  let proj = $HOME . '/miniconda3/share/proj'
+  let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
+  call popup#job_win(cmd)
+endfunction
+
+" Run current file using either popup window or jupyter session
+function! python#run_file() abort
   update
-  if !python#has_jupyter()
-    echom 'Running python script.'
-    call python#run_script()
-  elseif v:count
-    echom 'Sending ' . v:count . ' lines.'
-    exe 'JupyterSendCount ' . v:count
-  elseif a:firstline != a:lastline
-    echom 'Sending lines ' . a:firstline . ' to ' . a:lastline . '.'
-    exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
+  echom 'Running entire file.'
+  if python#has_jupyter()
+    JupyterRunFile
   else
-    echom 'Sending entire file.'
-    exe 'JupyterRunFile'
+    call python#run_win()
+  endif
+endfunction
+
+" Run input motion using jupyter session
+" Note: Warning will be issued if connection not established.
+" Todo: Add generalization for running chunks of arbitrary filetypes?
+" Warning: Important that 'count' comes first so range is ignored
+function! python#run_motion() range abort
+  update
+  if v:count
+    echom 'Running ' . v:count . ' lines.'
+    exe 'JupyterSendCount ' . v:count
+  else
+    echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
+    exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
   endif
 endfunction
 " For <expr> map accepting motion
-" Todo: Support this for *all* filetypes by creating temporary files from
-" motion functions and passing *those* files to arbitrary execution commands.
-function! python#run_jupyter_expr(...) abort
-  return utils#motion_func('python#run_jupyter', a:000)
+function! python#run_motion_expr(...) abort
+  return utils#motion_func('python#run_motion', a:000)
 endfunction
 
 " Easy conversion between key=value pairs and 'key': value dictionary entries

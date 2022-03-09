@@ -1,18 +1,25 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Build regexes
-let s:item_head = '^\(\s*\%(' . Comment() . '\s*\)\?\)'  " leading spaces or comment
-let s:item_indicator = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
-let s:item_tail = '\(.*\)$'  " remainder of line
-let s:item_total = s:item_head . s:item_indicator . s:item_tail
+" Return regexes for search
+function! s:search_item(optional)
+  let head = '^\(\s*\%(' . utils#comment_char() . '\s*\)\?\)'  " leading spaces or comment
+  let indicator = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
+  let tail = '\(.*\)$'  " remainder of line
+  if a:optional
+    let indicator = indicator . '\?'
+  endif
+  return head . indicator . tail
+endfunction
 
 " Utilitify for removing the item indicator
 function! s:remove_item(line, firstline_, lastline_) abort
-  let match_head = substitute(a:line, s:item_total, '\1', '')
-  let match_item = substitute(a:line, s:item_total, '\2', '')
+  let pattern = s:search_item(0)
+  let pattern_optional = s:search_item(1)
+  let match_head = substitute(a:line, pattern, '\1', '')
+  let match_item = substitute(a:line, pattern, '\2', '')
   keepjumps exe a:firstline_ . ',' . a:lastline_
-    \ . 's@' . s:item_head . s:item_indicator . '\?' . s:item_tail
+    \ . 's@' . pattern_optional
     \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
     \ . '@ge'
   call histdel('/', -1)
@@ -88,18 +95,20 @@ endfunction
 " Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
 function! format#wrap_items(...) range abort
+  " Initial stuff
   let textwidth = &l:textwidth
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let prevhist = @/
   let winview = winsaveview()
+  let pattern = s:search_item(0)
   " Put lines on a single bullet
   let linecount = 0
   let lastline = a:lastline
   for linenum in range(a:lastline, a:firstline, -1)
     let line = getline(linenum)
     let linecount += 1
-    if line =~# s:item_total
-      let tail = substitute(line, s:item_total, '\3', '')
+    if line =~# pattern
+      let tail = substitute(line, pattern, '\3', '')
       if tail =~# '^\s*[a-z]'  " remove item indicator if starts with lowercase
         call s:remove_item(line, linenum, linenum)
       else  " otherwise join count lines and adjust lastline
@@ -115,7 +124,7 @@ function! format#wrap_items(...) range abort
     exe linenum
     let line = getline('.')
     normal! gqgq
-    if line =~# s:item_total && line('.') > linenum
+    if line =~# pattern && line('.') > linenum
       call s:remove_item(line, linenum + 1, line('.'))
     endif
   endfor

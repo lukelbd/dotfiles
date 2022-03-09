@@ -10,6 +10,6 @@ let b:delimitMate_quotes = "\" ' $ `"
 function! s:open_rst_file()
   update
   let cmd = '~/miniconda3/bin/restview -b -l 40000 ' . shellescape(@%)
-  call setup#job_win(cmd, 0)  " without display window
+  call popup#job_win(cmd, 0)  " without display window
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute0 :call <sid>open_rst_file()<CR>
+nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>open_rst_file()<CR>

@@ -15,4 +15,4 @@ function! s:run_shell_script() abort
   update
   let cmd = 'bash ' . shellescape(@%)
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute0 :call <sid>run_shell_script()<CR>
+nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>run_shell_script()<CR>

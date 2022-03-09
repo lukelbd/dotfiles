@@ -10,6 +10,6 @@ function! s:run_c_program()
   let src = shellescape(expand('%'))
   let exe = shellescape(expand('%:r'))
   let cmd = g:c_compiler . ' -o ' . exe . ' ' . src . ' && ' . exe . ' && rm ' . exe
-  call setup#job_win(cmd)
+  call popup#job_win(cmd)
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute0 :call <sid>run_c_program()<CR>
+nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>run_c_program()<CR>
