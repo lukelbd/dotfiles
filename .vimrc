@@ -276,11 +276,11 @@ augroup tabs
   au TabLeave * let g:lasttab = tabpagenr()
 augroup END
 command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
-noremap <C-o> <Cmd>Open 
-noremap <C-p> <Cmd>Files 
 noremap <C-g> <Cmd>GFiles<CR>
-noremap <expr> <F3> "\<Cmd>Open " . expand('%:h') . '/'
-noremap <expr> <C-y> "\<Cmd>Files " . expand('%:h') . '/'
+noremap <expr> <F3> "\<Cmd>Open " . expand('%:h') . "/\<CR>"
+noremap <expr> <C-o> "\<Cmd>Open " . input('Open: ', '', 'file') . "\<CR>"
+noremap <expr> <C-y> "\<Cmd>Files " . expand('%:h') . "/\<CR>"
+noremap <expr> <C-p> "\<Cmd>Files " . input('Files: ', '', 'dir') . "\<CR>"
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
@@ -1652,6 +1652,7 @@ if has('gui_running')
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap Statement
+  nnoremap <Leader>B <Cmd>Colors<CR>
   nnoremap <Leader>n <Cmd>SchemeNext<CR>
   nnoremap <Leader>N <Cmd>SchemePrev<CR>
   command! SchemePrev call utils#iter_colorschemes(0)
