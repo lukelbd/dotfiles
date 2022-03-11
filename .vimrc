@@ -216,7 +216,6 @@ for s:key in [
 endfor
 
 " Disable insert mode stuff
-" * Ctrl-g used for builtin, surround, delimitmate insert-mode motion (against this)
 " * Ctrl-x used for scrolling or insert-mode complection, use autocomplete instead
 " * Ctrl-l used for special 'insertmode' always-insert-mode option
 " * Ctrl-h, Ctrl-d, Ctrl-t used for deleting and tabbing, but use backspace and tab
@@ -229,7 +228,7 @@ augroup override_maps
 augroup END
 for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
-  \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-g>', '<C-h>', '<C-l>',
+  \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-h>', '<C-l>',
   \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
   \ ]
   if empty(maparg(s:key, 'i'))
@@ -277,10 +276,10 @@ augroup tabs
 augroup END
 command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
 noremap <C-g> <Cmd>GFiles<CR>
-noremap <expr> <F3> "\<Cmd>Open " . expand('%:h') . "/\<CR>"
-noremap <expr> <C-o> "\<Cmd>Open " . input('Open: ', '', 'file') . "\<CR>"
-noremap <expr> <C-y> "\<Cmd>Files " . expand('%:h') . "/\<CR>"
-noremap <expr> <C-p> "\<Cmd>Files " . input('Files: ', '', 'dir') . "\<CR>"
+noremap <expr> <F3> "\<Cmd>Open " . input('Open: ', expand('%:p:h') . '/', 'file') . "\<CR>"
+noremap <expr> <C-o> "\<Cmd>Open " . input('Open: ', fnamemodify(getcwd(), ':p'), 'file') . "\<CR>"
+noremap <expr> <C-y> "\<Cmd>Files " . input('Files: ', expand('%:p:h') . '/', 'dir') . "\<CR>"
+noremap <expr> <C-p> "\<Cmd>Files " . input('Files: ', fnamemodify(getcwd(), ':p'), 'dir') . "\<CR>"
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
@@ -490,9 +489,13 @@ for s:bracket in ['r[', 'a<', 'c{']
 endfor
 
 " Insert and mormal mode undo and redo. Also permit toggling blocks while in insert mode
+" Note: Here use <C-g> prefix similar to comment insert, and 'break squence' is
+" capital. Must use manual methods that actually remove inserted text.
+" inoremap <C-g>u <C-o><C-r><C-g>u
+" inoremap <C-g>U <C-g>u
+inoremap <C-g>u <C-o>mx<C-o>u
+inoremap <C-g>U <C-o><C-r><C-o>`x<Right>
 nnoremap U <C-r>
-inoremap <silent> <C-u> <C-o>mx<C-o>u
-inoremap <silent> <C-y> <C-o><C-r><C-o>`x<Right>
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
@@ -680,9 +683,9 @@ nnoremap <Leader><CR> [I
 " Forward delete by tabs
 inoremap <expr> <Delete> format#forward_delete()
 
-" Insert comment with <Ctr-I>
+" Insert comment similar to gc
 " Todo: Add more control insert mappings?
-inoremap <expr> <F3> comment#comment_insert()
+inoremap <expr> <C-g>c comment#comment_insert()
 
 " Section headers, dividers, and other information
 nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
