@@ -70,6 +70,8 @@ case "${HOSTNAME%%.*}" in
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'.
     #   List macports installs with 'port installed requested'.
+    # * Installed vim using: conda install vim. Also must incall ncurses with
+    #   conda install -y conda-forge::ncurses. See: https://github.com/conda-forge/rabbitmq-server-feedstock/issues/14
     # * Installed tex using: brew install --cask mactex: https://tex.stackexchange.com/q/97183/73149
     #   Installed ffmpeg using: sudo port install ffmpeg +nonfree: https://stackoverflow.com/q/55092608/4970632
     # * Installed universal ctags with (not in main repo becauase no versions yet):
