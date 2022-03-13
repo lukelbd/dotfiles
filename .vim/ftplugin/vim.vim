@@ -11,4 +11,4 @@ function! s:source_vim_script()
   source %
   echo 'Sourced ' . expand('%:p:t')
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute :call <sid>source_vim_script()<CR>
+nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>source_vim_script()<CR>

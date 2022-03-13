@@ -13,6 +13,6 @@ let g:sh_maxlines = 5000
 " Run bash script with simple command
 function! s:run_shell_script() abort
   update
-  exe '!clear; set -x; bash ' . shellescape(@%)
+  let cmd = 'bash ' . shellescape(@%)
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_shell_script()<CR>
+nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>run_shell_script()<CR>

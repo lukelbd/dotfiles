@@ -472,11 +472,11 @@
             "selector": ".jp-Notebook:focus"
         },
         {
-            "command": "jupyterlab_code_formatter:black",
+            "command": "jupyterlab_code_formatter:format",
             "keys": [
-                "F"
+                "Ctrl F"
             ],
-            "selector": ".jp-Notebook:focus"
+            "selector": ".jp-Notebook.jp-mod-editMode"
         },
         {
             "command": "notebook:reconnect-to-kernel",

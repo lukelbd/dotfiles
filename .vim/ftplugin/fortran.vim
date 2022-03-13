@@ -22,13 +22,9 @@ function! s:run_fortran_program()
   if !exists('g:fortran_compiler')
     let g:fortran_compiler = 'gfortran'
   endif
-  let dir_path = shellescape(expand('%:h'))
-  let f90_path = shellescape(expand('%:t'))
-  let exe_path = shellescape(expand('%:t:r'))
-  exe
-    \ '!clear; set -x; '
-    \ . 'cd ' . dir_path . '; '
-    \ . g:fortran_compiler . ' ' . f90_path . ' -o ' . exe_path . ' && '
-    \ . './' . exe_path . ' && rm ' . exe_path
+  let src = shellescape(expand('%'))
+  let exe = shellescape(expand('%:r'))
+  let cmd = g:fortran_compiler . ' -o ' . exe . ' ' . src . ' && ' . exe . ' && rm ' . exe
+  call popup#job_win(cmd)
 endfunction
-nnoremap <silent> <buffer> <Plug>Execute :call <sid>run_fortran_program()<CR>
+nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>run_fortran_program()<CR>

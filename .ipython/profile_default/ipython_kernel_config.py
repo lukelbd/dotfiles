@@ -1,16 +1,13 @@
+#-----------------------------------------------------------------------------#
 # Configuration file for ipython-kernel.
-# Kernel uses options in ipython_config.py but not vice versa
-# See: https://ipython.readthedocs.io/en/stable/config/options/kernel.html
 #-----------------------------------------------------------------------------#
-# Modifications
-#-----------------------------------------------------------------------------#
-# Copied from ipython_config.py but minus newline
+# Succinct banner with programatic versions
 import sys
 import IPython
 c.TerminalIPythonApp.display_banner = True
 c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
-    sys.version.split()[0],
     IPython.__version__,
+    sys.version.split()[0],
 )
 
 #------------------------------------------------------------------------------
@@ -20,7 +17,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 ## Mixin for configurable classes that work with connection files
 
 ## JSON file in which to store connection info [default: kernel-<pid>.json]
-#  
+#
 #  This file will contain the IP, ports, and authentication key needed to connect
 #  clients to this kernel. By default, this file will be created in the security
 #  dir of the current profile, but can be specified by absolute path.
@@ -46,7 +43,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 ## set the stdin (ROUTER) port [default: random]
 #c.ConnectionFileMixin.stdin_port = 0
 
-## 
+##
 #c.ConnectionFileMixin.transport = 'tcp'
 
 #------------------------------------------------------------------------------
@@ -54,13 +51,13 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #------------------------------------------------------------------------------
 
 ## A Mixin for applications that start InteractiveShell instances.
-#  
+#
 #  Provides configurables for loading extensions and executing files as part of
 #  configuring a Shell environment.
-#  
+#
 #  The following methods should be called by the :meth:`initialize` method of the
 #  subclass:
-#  
+#
 #    - :meth:`init_path`
 #    - :meth:`init_shell` (to be implemented by the subclass)
 #    - :meth:`init_gui_pylab`
@@ -110,7 +107,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 
 ## If true, IPython will populate the user namespace with numpy, pylab, etc. and
 #  an ``import *`` is done from numpy and pylab, when using pylab mode.
-#  
+#
 #  When False, pylab mode should not import any names into the user namespace.
 #c.InteractiveShellApp.pylab_import_all = True
 
@@ -148,7 +145,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #c.BaseIPythonApplication.copy_config_files = False
 
 ## Path to an extra config file to load.
-#  
+#
 #  If specified, load this config file in addition to any other IPython config.
 #c.BaseIPythonApplication.extra_config_file = ''
 
@@ -181,7 +178,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #c.IPKernelApp.interrupt = 0
 
 ## The Kernel subclass to be used.
-#  
+#
 #  This should allow easy re-use of the IPKernelApp entry point to configure and
 #  launch kernels other than IPython's own.
 #c.IPKernelApp.kernel_class = 'ipykernel.ipkernel.IPythonKernel'
@@ -207,21 +204,21 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #------------------------------------------------------------------------------
 
 ## Whether to use appnope for compatibility with OS X App Nap.
-#  
+#
 #  Only affects OS X >= 10.9.
 #c.Kernel._darwin_app_nap = True
 
-## 
+##
 #c.Kernel._execute_sleep = 0.0005
 
-## 
+##
 #c.Kernel._poll_interval = 0.01
 
 ## time (in seconds) to wait for messages to arrive when aborting queued requests
 #  after an error.
-#  
+#
 #  Requests that arrive within this window after an error will be cancelled.
-#  
+#
 #  Increase in the event of unusually slow network causing significant delays,
 #  which can manifest as e.g. "Run all" in a notebook aborting some, but not all,
 #  messages after an error.
@@ -231,7 +228,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 # IPythonKernel(Kernel) configuration
 #------------------------------------------------------------------------------
 
-## 
+##
 #c.IPythonKernel.help_links = [{'text': 'Python Reference', 'url': 'https://docs.python.org/3.7'}, {'text': 'IPython Reference', 'url': 'https://ipython.org/documentation.html'}, {'text': 'NumPy Reference', 'url': 'https://docs.scipy.org/doc/numpy/reference/'}, {'text': 'SciPy Reference', 'url': 'https://docs.scipy.org/doc/scipy/reference/'}, {'text': 'Matplotlib Reference', 'url': 'https://matplotlib.org/contents.html'}, {'text': 'SymPy Reference', 'url': 'http://docs.sympy.org/latest/index.html'}, {'text': 'pandas Reference', 'url': 'https://pandas.pydata.org/pandas-docs/stable/'}]
 
 ## Set this flag to False to deactivate the use of experimental IPython
@@ -291,7 +288,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 ## Set the color scheme (NoColor, Neutral, Linux, or LightBG).
 #c.InteractiveShell.colors = 'Neutral'
 
-## 
+##
 #c.InteractiveShell.debug = False
 
 ## Don't call post-execute functions that have failed in the past.
@@ -311,7 +308,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #  startup.
 #c.InteractiveShell.history_load_length = 1000
 
-## 
+##
 #c.InteractiveShell.ipython_dir = ''
 
 ## Start logging to the given file in append mode. Use `logfile` to specify a log
@@ -329,7 +326,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #  code
 #c.InteractiveShell.loop_runner = 'IPython.core.interactiveshell._asyncio_runner'
 
-## 
+##
 #c.InteractiveShell.object_info_string_level = 0
 
 ## Automatically call the pdb debugger after every exception.
@@ -351,16 +348,16 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #  TerminalInteractiveShell.prompts object directly.
 #c.InteractiveShell.prompts_pad_left = True
 
-## 
+##
 #c.InteractiveShell.quiet = False
 
-## 
+##
 #c.InteractiveShell.separate_in = '\n'
 
-## 
+##
 #c.InteractiveShell.separate_out = ''
 
-## 
+##
 #c.InteractiveShell.separate_out2 = ''
 
 ## Show rewritten input, e.g. for autocall.
@@ -370,7 +367,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #  module).
 #c.InteractiveShell.sphinxify_docstring = False
 
-## 
+##
 #c.InteractiveShell.wildcards_case_sensitive = True
 
 ## Switch modes for the IPython exception handlers.
@@ -387,10 +384,10 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #------------------------------------------------------------------------------
 
 ## An object to manage the profile directory and its resources.
-#  
+#
 #  The profile directory is used by all IPython applications, to manage
 #  configuration, logging and security.
-#  
+#
 #  This object knows how to find, create and manage these directories. This
 #  should be used by any code that wants to handle profiles.
 
@@ -403,27 +400,27 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #------------------------------------------------------------------------------
 
 ## Object for handling serialization and sending of messages.
-#  
+#
 #  The Session object handles building messages and sending them with ZMQ sockets
 #  or ZMQStream objects.  Objects can communicate with each other over the
 #  network via Session objects, and only need to work with the dict-based IPython
 #  message spec. The Session will handle serialization/deserialization, security,
 #  and metadata.
-#  
+#
 #  Sessions support configurable serialization via packer/unpacker traits, and
 #  signing with HMAC digests via the key/keyfile traits.
-#  
+#
 #  Parameters ----------
-#  
+#
 #  debug : bool
 #      whether to trigger extra debugging statements
 #  packer/unpacker : str : 'json', 'pickle' or import_string
 #      importstrings for methods to serialize message parts.  If just
 #      'json' or 'pickle', predefined JSON and pickle packers will be used.
 #      Otherwise, the entire importstring must be used.
-#  
+#
 #      The functions must accept at least valid JSON input, and output *bytes*.
-#  
+#
 #      For example, to use msgpack:
 #      packer = 'msgpack.packb', unpacker='msgpack.unpackb'
 #  pack/unpack : callables
@@ -444,7 +441,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #c.Session.buffer_threshold = 1024
 
 ## Whether to check PID to protect against calls after fork.
-#  
+#
 #  This check can be disabled if fork-safety is handled elsewhere.
 #c.Session.check_pid = True
 
@@ -455,7 +452,7 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help'.format(
 #c.Session.debug = False
 
 ## The maximum number of digests to remember.
-#  
+#
 #  The digest history will be culled when it exceeds this value.
 #c.Session.digest_history_size = 65536
 

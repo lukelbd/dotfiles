@@ -1,26 +1,25 @@
 #!/bin/bash
 # shellcheck disable=1090,2181,2120,2076
 #-----------------------------------------------------------------------------#
-# This file should override defaults in /etc/profile in /etc/bashrc.
-# Check out what is in the system defaults before using this, make sure your
+# This file should override defaults in /etc/profile in /etc/bashrc. Check
+# out what is in the system defaults before using this and make sure your
 # $PATH is populated. To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# * Prefix key for issuing SSH-session commands is '~'; 'exit' sometimes doesn't work (perhaps because
-#   if aliased or some 'exit' is in $PATH
+# * Use '<package_manager> list' for most package managers to see what is installed
+#   e.g. brew list, conda list, pip list, jupyter kernelspec list.
+# * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
+#   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
+#   requires ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
+# * Prefix key for issuing SSH-session commands is '~' ('exit' sometimes doesn't work,
+#   perhaps because it is aliased or some 'exit' is defined in $PATH).
 #    C-d/'exit' -- IF AVAILABLE, exit SSH session
 #    ~./~C-z -- Exit SSH session
 #    ~& -- Puts SSH into background
 #    ~# -- Gives list of forwarded connections in this session
 #    ~? -- Gives list of these commands
-# * Extended globbing explanations, see:
-#   http://mywiki.wooledge.org/glob
-# * Use '<package_manager> list' for most package managers to see what is installed
-#   e.g. brew list, conda list, pip list.
-# * Swap between jupyter kernels in a lab session by installing nb_conda_kernels:
-#   https://github.com/Anaconda-Platform/nb_conda_kernels
 #-----------------------------------------------------------------------------#
-# Bail out, if not running interactively (e.g. when sending data packets over with scp/rsync)
-# Known bug, scp/rsync fail without this line due to greeting message:
+# Bail out if not running interactively (e.g. when sending data packets over with scp/rsync)
+# Known bug: scp/rsync fail without this line due to greeting message:
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
@@ -78,15 +77,18 @@ case "${HOSTNAME%%.*}" in
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
     # * Installed cdo, nco, and R with macports. Installed ncl by installing compilers
     #   with macports and downloading pre-compiled binary from ncar.
-    # * Installed gcc and gfortran with 'port install gcc7' then 'port select
+    # * Installed gcc and gfortran with 'port install libgcc7' then 'port select
     #   --set gcc mp-gcc7' (earlier and later versions fail with ncl).
     #   need to swtich between versions and retry). Try 'port select --list gcc'.
+    # * Actually in latest versions had issues installing gcc7... listed gcc9 as
+    #   dependency then failed... so now have used 'brew install gcc@7'.
     # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
     #   gnu-tar gawk'. Then found paths with: https://apple.stackexchange.com/q/69223/214359
     # * Fix permission issues after migrating macs with following command:
     #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
     #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
+    unset MANPATH
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
     export PATH=/Library/TeX/texbin:$PATH
     export PATH=/opt/X11/bin:$PATH
@@ -102,11 +104,6 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Skim.app/Contents/MacOS:$PATH
     export PATH=/Applications/Skim.app/Contents/SharedSupport:$PATH
     export PATH=/Applications/Calibre.app/Contents/MacOS:$PATH
-    export MANPATH=/usr/local/opt/grep/libexec/gnuman
-    export MANPATH=/usr/local/opt/gnu-tar/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/gnu-sed/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/findutils/libexec/gnuman:$MANPATH
-    export MANPATH=/usr/local/opt/coreutils/libexec/gnuman:$MANPATH
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-18.10
     export PKG_CONFIG_PATH=/opt/local/bin/pkg-config
 
@@ -131,11 +128,12 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Julia-1.7.app/Contents/Resources/julia/bin:$PATH
 
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
-    # NOTE: By default, NCL tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
+    # NOTE: NCL originally tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
     # actually ends up in above path after brew install gcc49. And must install
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
-    alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # fix libs
+    # alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # port libs
+    alias ncl='DYLD_LIBRARY_PATH="/usr/local/lib/gcc/7/" ncl'  # brew libs
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically necessary to run NCL
 
     # CDO HDF5 setting. See the following note after port install cdo:
@@ -148,8 +146,11 @@ case "${HOSTNAME%%.*}" in
 
   # Monde options
   monde)
-    # All netcdf, mpich, etc. utilites are separate, must add them
-    # source set_pgi.sh # or do this manually
+    # All netcdf, mpich, etc. utilites are separate so we add them
+    # NOTE: Should not need to edit $MANPATH since man is intelligent and should detect
+    # 'man' folders automatically even for custom utilities. However if the resuilt of
+    # 'manpath' is missing something follow these notes: https://unix.stackexchange.com/q/344603/112647
+    # source set_pgi.sh  # instead do this manually
     _pgi_version='19.10'  # increment this as needed
     export PATH=/usr/bin:/usr/local/sbin:/usr/sbin
     export PATH=/usr/local/bin:$PATH
@@ -157,34 +158,27 @@ case "${HOSTNAME%%.*}" in
     export PATH=/opt/pgi/linux86-64/$_pgi_version/bin:$PATH
     export PGI=/opt/pgi
     export LD_LIBRARY_PATH=/usr/lib64/mpich/lib:/usr/local/lib
-    export MANPATH=$MANPATH:/opt/pgi/linux86-64/$_pgi_version/man
     export LM_LICENSE_FILE=/opt/pgi/license.dat-COMMUNITY-$_pgi_version
-
-    # ISCA modeling
-    export GFDL_BASE=$HOME/isca
-    export GFDL_ENV=monde  # "environment" configuration for emps-gv4
+    export GFDL_BASE=$HOME/isca  # isca environment
+    export GFDL_ENV=monde  # configuration for emps-gv4
     export GFDL_WORK=/mdata1/ldavis/isca_work  # temporary working directory used in running the model
     export GFDL_DATA=/mdata1/ldavis/isca_data  # directory for storing model output
-
-    # NCAR NCL root
-    export NCARG_ROOT=/usr/local  # ncl location
+    export NCARG_ROOT=/usr/local  # ncl root
     ;;
 
   # Chicago supercomputer, any of the login nodes
   midway*)
-    # Modules and paths
-    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
-    _load_unloaded mlk intel  # for some reason latest CDO version is not default
-
-    # Remove print statements from prompt
+    # Add modules and paths and remove print statements from prompt
     # WARNING: Greedy glob removes commands sandwiched between print statements
+    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
     export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
+    _load_unloaded mlk intel  # latest CDO version is not default
     ;;
 
   # Cheyenne supercomputer, any of the login nodes
   # NOTE: Use 'sinteractive' for interactive mode
   cheyenne*)
-    # Modules and paths
+    # Add modules and paths
     # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
@@ -193,7 +187,8 @@ case "${HOSTNAME%%.*}" in
 
   # Euclid options
   euclid)
-    # All netcdf, mpich, etc. utilites already in in /usr/local/bin
+    # Add basic paths
+    # Note all netcdf and mpich utilites are already in in /usr/local/bin
     export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
     export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
     export LD_LIBRARY_PATH=/usr/local/lib
@@ -205,24 +200,28 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
+# NOTE: Install deno with mamba to get correct binaries. Using install script
+# can have issues with CentOS 7: https://github.com/denoland/deno/issues/1658
+export DENO_INSTALL=$HOME/.deno  # ddc.vim typescript dependency
 export PATH=$HOME/.local/bin:$PATH  # local pip install location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities
-export PATH=$HOME/node/bin:$PATH  # javascript
-export PATH=$HOME/go/bin:$PATH  # go
+export PATH=$HOME/node/bin:$PATH  # javascript commands
+export PATH=$DENO_INSTALL/bin:$PATH  # deno commands (see https://deno.land)
+export PATH=$HOME/go/bin:$PATH  # go scripts
 export PATH=$HOME/bin:$PATH  # custom scripts
 export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
-# TODO: Modify PYTHONPATH while working on various projects
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
-unset PYTHONPATH
 unset MPLBACKEND
+unset PYTHONPATH
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
-_local_projects=(timescales transport constraints autocorrelation)
-_shared_projects=(drycore experiments cmip-downloads reanalysis-downloads)
+export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
+_local_projects=(timescales transport constraints persistence)
+_shared_projects=(drycore idealized cmip-data reanalysis-data)
 for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
     if [ -r "$HOME/science/$_project" ]; then
       export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
@@ -267,29 +266,30 @@ _columnize() {
   printf "%s" "$final"
 }
 
-# Help page wrapper
-# See this page for how to avoid recursion when wrapping shell builtins and commands:
-# http://blog.jpalardy.com/posts/wrapping-command-line-tools/
-# Don't want to use aliases, e.g. because ncl requires DYLD_LIBRARY_PATH to open
-# so we alias that as command prefix (don't want to change global path cause it
-# messes other shit up, maybe homebrew)
+# Help page display
+# Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
+# test line length to guess if it is an error message stub or contains desired info.
+# To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 help() {
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
     builtin help "$@" 2>&1 | less
-  elif "$@" --help &>/dev/null; then
-    "$@" --help 2>&1 | less  # combine output streams or can get weird error
   else
-    echo "No help information for \"$*\"."
+    local help=$("$@" --help 2>&1)
+    if [ "$(echo "$help" | wc -l)" -gt 2 ]; then
+      command less <<< "$help"
+    else
+      echo "No help information for $*."
+    fi
   fi
 }
 
-# Man page wrapper
-man() {  # always show useful information when man is called
-  # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-  # Note Mac will have empty line then BUILTIN(1) on second line, but linux will
-  # show as first line BASH_BUILTINS(1); so we search the first two lines
-  # if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+# Man page display with auto jumping to relevant info
+# See this answer and comments: https://unix.stackexchange.com/a/18092/112647
+# Note Mac will have empty line then BUILTIN(1) on second line, but linux will
+# show as first line BASH_BUILTINS(1); so we search the first two lines
+# if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
+man() {
   local search arg="$*"
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
@@ -299,66 +299,74 @@ man() {  # always show useful information when man is called
     else
       search=$arg  # linux shows all info necessary, just have to find it
     fi
-    echo "Searching for stuff in ${search}."
     LESS=-p"^ *$arg.*\[.*$" command man "$search"
-  elif command man "$arg" &>/dev/null; then
-    echo "Item has own man page."
-    command man "$arg"
   else
-    echo "No man entry for \"$arg\"."
+    command man "$arg"  # could display error message
   fi
 }
 
-# Prevent git stash from running without 'git stash push'
+# Vim man page command
+vman() {
+  if [ $# -eq 0 ]; then
+    echo "What manual page do you want?";
+    return 0
+  elif ! command man -w "$@" > /dev/null; then
+    return 1
+  fi
+  command vim -c "SuperMan $*"
+  clear
+  printf '\e[3J'
+}
+
+# Prevent git stash from running without 'git stash push' and test message length
 # https://stackoverflow.com/q/48751491/4970632
 git() {
-  if [[ "$#" -eq 1 ]] && [[ "$1" = "stash" ]]; then
+  if [ "$#" -eq 1 ] && [ "$1" == stash ]; then
     echo 'Error: Run "git stash push" instead.' 1>&2
-  else
-    command git "$@"
+    return 1
   fi
+  if [ "$#" -ge 3 ] && [ "$1" == commit ]; then
+    for i in $(seq 2 $#); do
+      local arg1=${*:$i:1} arg2=${*:$((i+1)):1}
+      if [ "$arg1" == '-m' ] && [ "${#arg2}" -gt 50 ]; then
+        echo "Error: Commit message has length ${#arg2}. Must be less than or equal to 50."
+        return 1
+      fi
+    done
+  fi
+  command git "$@"
 }
 
-# Editor stuff
-# VIM command to keep track of session -- need to 'source' the sessionfile, which is
-# just a bunch of commands in Vimscript. Also make a *patch* to stop folds from
-# re-closing every time we start a session
-# For vi command see: https://vi.stackexchange.com/a/6114
+# Simple pseudo-vi editor
+# See: https://vi.stackexchange.com/a/6114
 vi() {
   HOME=/dev/null command vim -i NONE -u NONE "$@"
 }
+
+# Open one tab per file, then clear screen and delete scrollback.
+# See: https://apple.stackexchange.com/q/31872/214359
+# NOTE: Unable to get iTerm to automatically delete vim scrollback
 vim() {
-  # First modify the Obsession-generated session file
-  # Then restore the session; in .vimrc specify same file for writing, so this 'resumes'
-  # tracking in the current session file
-  local flags files
-  while [ $# -gt 0 ]; do
-    case "$1" in
-      -*) flags+=("$1") ;;
-      *) files+=("$1") ;;
-    esac
-    shift
- done
-  if [ "${#files[@]}" -eq 0 ] && [ -r .vimsession ]; then
-    # Fix various Obsession bugs
-    # Unfold stuff after entering each buffer. For some reason folds are
-    # otherwise re-closed upon openening each file. Also prevent double-loading,
-    # possibly Obsession does not anticipate :tabedit, ends up loading
-    # everything *twice*. Check out: cat .vimsession | grep -n -E 'fold|zt'
-    sed -i '/zt/a setlocal nofoldenable' .vimsession
-    sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession
-    sed -i 's/^if bufexists.*$//g' .vimsession
-    sed -i -s 'N;/normal! zo/!P;D' .vimsession
-    sed -i -s 'N;/normal! zc/!P;D' .vimsession
-    command vim "${flags[@]}" -S .vimsession  # for working with obsession
-  else
-    command vim "${flags[@]}" -p "${files[@]}"  # when loading specific files; also open them in separate tabs
-  fi
-  clear  # clear screen after exit
+  [ "${#files[@]}" -gt 0 ] && flags+=(-p)
+  command vim -p "$@"
+  [[ " $* " =~ (--version|--help|-h) ]] && return
+  clear
+  printf '\e[3J'
 }
 
-# Absolute path, works everywhere
-abspath() {  # abspath that works on mac, Linux, or anything with bash
+# Open session and fix various bugs. For some reason folds
+# are otherwise re-closed upon openening each file.
+vim-session() {
+  [ -r .vimsession ] || { echo "Error: .vimsession file not found."; return 1; }
+  sed -i '/zt/a setlocal nofoldenable' .vimsession  # unfold everything
+  sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession  # remove folds
+  sed -i -s 'N;/normal! zo/!P;D' .vimsession  # remove folds
+  sed -i -s 'N;/normal! zc/!P;D' .vimsession  # remove folds
+  vim -S .vimsession "$@"  # use above function
+}
+
+# Absolute path, works everywhere (mac, linux, or anything with bash)
+abspath() {
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
   elif [ -f "$1" ]; then
@@ -372,17 +380,18 @@ abspath() {  # abspath that works on mac, Linux, or anything with bash
   fi
 }
 
-# Open files optionally based on name, or revert to default behavior
-# if -a specified
+# Open files optionally based on name, or revert to default behavior if -a specified
 open() {
   ! $_macos && echo "Error: open() should be run from your macbook." && return 1
-  local files app app_default
+  local files flags app app_default
   while [ $# -gt 0 ]; do
     case "$1" in
-      -a|--application) app_default="$2"; shift; shift; ;;
-      -*) echo "Error: Unknown flag $1." && return 1 ;;
-      *) files+=("$1"); shift; ;;
+      -a=*|--application=*) app_default=${1#*=} ;;
+      -a|--application) shift && app_default=$1 ;;
+      -*) flags+=("$1") ;;
+      *) files+=("$1"); ;;
     esac
+    shift
   done
   for file in "${files[@]}"; do
     if [ -n "$app_default" ]; then
@@ -403,12 +412,12 @@ open() {
       esac
     fi
     echo "Opening file \"$file\"."
-    command open -a "$app" "$file"
+    command open -a "$app" "${flags[@]}" "$file"
   done
 }
 
 # Environment variables
-export EDITOR=vim  # default editor, nice and simple
+export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 
 #-----------------------------------------------------------------------------#
@@ -604,7 +613,7 @@ confirm() {
     break
   done
 }
-#!/usr/bin/env bash
+
 # Like confirm but default value is 'no'
 confirm-no() {
   [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
@@ -623,8 +632,6 @@ confirm-no() {
     break
   done
 }
-
-
 
 # Rename files with matching base names or having 3-digit numbers into
 # ordered numbered files.
@@ -770,10 +777,11 @@ alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
 gdiff() {
   [ $# -ne 2 ] && echo "Usage: gdiff DIR_OR_FILE1 DIR_OR_FILE2" && return 1
-  git diff --textconv --no-index --color=always "$1" "$2"
+  command git diff --textconv --no-index --color=always "$1" "$2"
 }
 
 # Differencing with builtin diff command, *identical* files in two directories
+# Compare to 'ddiff' below
 idiff() {
   [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
   command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
@@ -782,14 +790,12 @@ idiff() {
 }
 
 # Differencing based on builtin diff command, *different* files in 2 directories
+# Builtin method is below (last grep command is to highlight important parts)
+# command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
+#   --exclude='*.git*' --exclude='*.svn*' \
+#   --strip-trailing-cr -r "$1" "$2" \
+#   | grep -E '(Only in.*:|Files | and |differ| identical)'
 ddiff() {
-  # Builtin method
-  # The last grep command is to highlight important parts
-  # command diff -x '.vimsession' -x '*.sw[a-z]' --brief \
-  #   --exclude='*.git*' --exclude='*.svn*' \
-  #   --strip-trailing-cr -r "$1" "$2" \
-  #   | grep -E '(Only in.*:|Files | and |differ| identical)'
-  # Manual method with more info
   [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
   dir1=$1
@@ -901,14 +907,12 @@ zotfile-cleanup() {
 }
 
 #-----------------------------------------------------------------------------#
-# Supercomputer tools
+# Sessions, supercomputers, and github
 #-----------------------------------------------------------------------------#
+# Shortcuts for queue
 alias suser='squeue -u $USER'
 alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[:alpha:]"'
 
-#-----------------------------------------------------------------------------#
-# SSH, session management, and Github stuff
-#-----------------------------------------------------------------------------#
 # See current ssh connections
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 SSH_ENV="$HOME/.ssh/environment"  # for below
@@ -924,20 +928,6 @@ _is_empty() {
   else
     return 1  # non-empty
   fi
-}
-
-# Helper functions: string parsing
-_expand_user() {  # turn tilde into $HOME
-  local param="$*"
-  param="${param/#~/$HOME}"  # restore expanded tilde
-  param="${param/#\~/$HOME}" # if previous one failed/was re-expanded, need to escape the tilde
-  echo "$param"
-}
-_compress_user() {  # turn $HOME into tilde
-  local param="$*"
-  param="${param/#$HOME/~}"
-  param="${param/#$HOME/\~}"
-  echo "$param"
 }
 
 # Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
@@ -1034,7 +1024,7 @@ _ssh() {
     return $?
   fi
   [[ $# -gt 2 || $# -lt 1 ]] && { echo 'Usage: _ssh HOST [PORT]'; return 1; }
-  address=$(_address "$1") || { echo 'Error: ssh failed.'; return 1; }
+  address=$(_address "$1") || { echo 'Error: Invalid address.'; return 1; }
   if [ -n "$2" ]; then
     ports=($2)  # custom
   else
@@ -1074,15 +1064,11 @@ ssh-refresh() {
   echo "Exit status $stat for connection over ports: ${ports[*]:1}."
 }
 
-# Trigger ssh-agent if not already running, and add Github private key
-# Make sure to make private key passwordless, for easy login; all I want here is to avoid
-# storing plaintext username/password in ~/.git-credentials, but free private key is fine
-# * See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
-#   The AUTH_SOCK idea came from: https://unix.stackexchange.com/a/90869/112647
-# * Used to just ssh-add on every login, but that starts fantom ssh-agent processes that
-#   persist when terminal is closed (all the 'eval' does is set environment variables;
-#   ssh-agent without the eval just starts the process in background). Now we re-use
-#   pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
+# Trigger ssh-agent if not already running and add the Github private key. Make sure
+# to make private key passwordless for easy login. All we want is to avoid storing
+# plaintext username/password in ~/.git-credentials, but free private key is fine.
+# See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
+# For AUTH_SOCK see: https://unix.stackexchange.com/a/90869/112647
 ssh-init() {
   if [ -f "$HOME/.ssh/id_rsa_github" ]; then
     command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
@@ -1094,79 +1080,108 @@ ssh-init() {
   fi
 }
 
-# Kill all ssh-agent processes
-ssh-kill() {
-  # shellcheck disable=2009
-  ps aux | grep ssh-agent | grep -v grep | awk '{print $2}' | xargs kill
+# Source the github SSH settings if on remote server
+# NOTE: Used to use ssh-add on every login, but that starts phantom ssh-agent processes
+# that persist when terminal is closed (the 'eval' just sets environment variables;
+# ssh-agent without eval just starts the process in background). Now we re-use
+# pre-existing agents with: https://stackoverflow.com/a/18915067/4970632
+if ! $_macos; then
+  if [ -f "$SSH_ENV" ]; then
+    source "$SSH_ENV" >/dev/null
+    # shellcheck disable=2009
+    ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent$ >/dev/null || ssh-init
+  else
+    ssh-init
+  fi
+fi
+
+# Kill all ssh-agent processes or port connection processes
+# For latter see: https://stackoverflow.com/a/20240445/4970632
+kill-agent() {
+  pkill aux ssh-agent  # simply kill processes matching ssh-agent
+}
+kill-port() {
+  local pids port=$1
+  [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
+  # lsof -t -i tcp:$port | xargs kill  # this can kill chrome instances
+  pids=$(lsof -i "tcp:$port" | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
+  [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
+  echo "$pids" | xargs kill  # kill the ssh processes
+  echo "Processes $pids killed. Connections over port $port removed."
 }
 
-# Copy from <this server> to local macbook ("copy there")
+# Copy files between macbook and servers. When on remote server use the ssh tunnel set
+# up by _ssh. When on macbook use prestored address name (should have passwordless login).
 # NOTE: Below we use the bash parameter expansion ${!#} --> 'variable whose name is
 # result of "$#"' --> $n where n is the number of args.
 # NOTE: Use rsync with -a (archive mode) which includes -r (recursive), -l (copy
 # symlinks as symlinks), -p (preserve permissions), -t (preserve modification times),
 # except ignore -g (preserve group member), -o (preserve owner), -D (preserve devices
-# and specials) to permit transfer across computer systems and add user-friendly
-# options -v (verbose), -h (human readable), -i (itemize changes). Consider using
-# -z (compress data during transfer) to improve speed.
-rlcp() {
-  local port args dest
-  $_macos && echo "Error: rlcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: rlcp [FLAGS] REMOTE_FILE1 [REMOTE_FILE2 ...] LOCAL_FILE" && return 1
-  port=$(_port) || { echo "Error: Port unknown."; return 1; }
-  args=("${@:1:$#-1}")          # flags and files
-  dest=$(_compress_user ${!#})  # last value
-  dest=${dest// /\\ }           # escape whitespace manually
-  echo "(Port $port) Copying ${args[*]} on server to laptop at: $dest..."
-  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -p $port" --progress "${args[@]}" "$USER"@localhost:"$dest"
-  # command scp -o StrictHostKeyChecking=no -P "$port" "${args[@]}" "$USER"@localhost:"$dest"
+# and specials) to permit transfer across computer systems, and add user-friendly
+# options -v (verbose), -h (human readable), -i (itemize changes), -u (update newer
+# files only). Consider using -z (compress data during transfer) to improve speed.
+_scp_bulk() {
+  local cmd port flags forward remote address paths srcs dest
+  # Parse arguments
+  flags=(-vhi -rlpt --update --progress)  # default flags
+  $_macos && remote=0 || remote=1  # whether on remote
+  while [ $# -gt 0 ]; do
+    if [[ "$1" =~ ^\- ]]; then
+      flags+=("$1")  # flag arguments must be specified with equals
+    elif [ -z "$forward" ]; then
+      forward=$1; [[ "$forward" =~ ^[01]$ ]] || { echo "Error: Invalid forward $forward."; return 1; }
+    elif [ $remote -eq 0 ] && [ -z "$address" ]; then
+      address=$(_address "$1") || { echo "Error: Invalid address $1."; return 1; }
+    else
+      paths+=("$1")  # the source and destination paths
+    fi
+    shift
+  done
+  if [ "$remote" -eq 1 ]; then  # handle ssh tunnel
+    address=$USER@localhost  # use port tunnel for copying on remote server
+    port=$(_port) || { echo 'Error: Port unknown.'; return 1; }
+    flags+=(-e "ssh -o StrictHostKeyChecking=no -p $port")
+  fi
+  # Sanitize paths and execute
+  [ ${#paths[@]} -lt 2 ] && echo "Usage: _scp_bulk [FLAGS] SOURCE_PATH1 [SOURCE_PATH2 ...] DEST_PATH" && return 1
+  paths=("${paths[@]/#/$address:}")  # prepend with address: then possibly remove below
+  srcs=("${paths[@]::${#paths[@]}-1}")  # source paths
+  dest=${paths[${#paths[@]}-1]}  # destination path
+  if [ $((remote ^ forward)) -eq 0 ]; then
+    dest=${dest#*:}  # on remote and copying from local or on local and copying from remote
+    srcs=("${srcs[@]// /\\ }")  # escape whitespace manually
+    srcs=("${srcs[@]/$HOME/~}")  # escape tilde (some bash versions)
+    srcs=("${srcs[@]/$HOME/\~}")  # escape tilde (other bash versions)
+  else
+    srcs=("${srcs[@]#*:}")  # on remote and copying to local or on local and copying to remote
+    dest=${dest// /\\ }  # escape whitespace manually
+    dest=${dest/$HOME/~}  # escape tilde (some bash versions)
+    dest=${dest/$HOME/\~}  # escape tilde (other bash versions)
+  fi
+  echo "Copying path(s) ${srcs[*]} to path ${dest} (flags ${flags[*]})..."
+  command rsync "${flags[@]}" "${srcs[@]}" "$dest"
 }
 
-# Copy from local macbook to <this server> ("copy here")
-# NOTE: So far cannot copy multiple files because need to prepend $USER@localhost
-# to only file arguments while skipping flags but cannot yet parse arguments.
-lrcp() {  # "copy to remote (from local); 'copy here'"
-  local port flags file dest
-  $_macos && echo "Error: lrcp should be called from an ssh session." && return 1
-  [ $# -lt 2 ] && echo "Usage: lrcp [FLAGS] LOCAL_FILE REMOTE_FILE" && return 1
-  port=$(_port) || { echo "Error: Port unknown."; return 1; }
-  dest=${!#}                            # last value
-  file=$(_compress_user "${@:$#-1:1}")  # second to last
-  file=${file// /\\ }                   # escape whitespace manually
-  flags=("${@:1:$#-2}")                 # flags
-  echo "(Port $port) Copying $file from laptop to server at: $dest..."
-  command rsync -vhi -rlpt -e "ssh -o StrictHostKeyChecking=no -P $port" --progress "${flags[@]}" "$USER"@localhost:"$file" "$dest"
-  # command scp -o StrictHostKeyChecking=no -P "$port" "${flags[@]}" "$USER"@localhost:"$file" "$dest"
-}
-
-# Sync figures from remote repository to laptop. Stop uploading figures to Github
-# because it massively bloats repository size. Also ignore hidden folders and folders
-# starting with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
+# Worker functions powered by _scp_bulk(). Copies local to remote, remote to local,
+# or figure files in this directory to remote. Stop uploading figures to Github because
+# massively bloats repository size. Also ignore hidden folders and folders starting
+# with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
 # NOTE: Previous git alias was figs = "!git add --all ':/fig*' ':/vid*' &&
 # git commit -m 'Update figures and notebooks.' && git push origin master"
+rlcp() {
+  _scp_bulk 0 "$@"
+}
+lrcp() {
+  _scp_bulk 1 "$@"
+}
 figcp() {
-  local ssh src dest address
-  if $_macos; then
-    [ $# -eq 1 ] || { echo "Error: Input host required unknown."; return 1; }
-    address=$(_address "$1") || { echo "Error: Host unknown."; return 1; }
-    dest=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
-    src=$(_compress_user "$src")
-    src=${src/\~\/science/\~\/}
-    src="$address":"$src"
-    ssh=ssh
-  else
-    [ $# -eq 0 ] || { echo "Error: Zero arguments accepted."; return 1; }
-    port=$(_port) || { echo "Error: Port unknown."; return 1; }
-    src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
-    dest=$(_compress_user "$src")
-    dest=${dest/\~/\~\/science}
-    dest="$USER"@localhost:"$dest"
-    ssh="ssh -o StrictHostKeyChecking=no -p \"$port\""
-  fi
-  echo "(Port $port) Copying figures from server to laptop at: ${dest#*:}..."
-  echo "$src $dest"
-  # --include='**/*.'{pdf,png,svg,ipynb} --include='[^._]*/' --exclude='*' -e "$ssh" "$src" "$dest"
-  rsync -vhi -rlpt --include={fig,vid}'*/***' --exclude='*' --exclude='.*/' -e "$ssh" "$src" "$dest"
+  local flags forward address src dest
+  flags=(--include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
+  $_macos && forward=1 || forward=0
+  [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
+  src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
+  $_macos && dest=${src/$HOME\/science/$HOME} || dest=${src/$HOME/$HOME\/science}
+  _scp_bulk "${flags[@]}" "$forward" $@ "$src" "$dest"  # address may expand to nothing
 }
 
 # Generate SSH file system
@@ -1231,60 +1246,46 @@ unmount() {
   rm -r "${HOME:?}/$server"
 }
 
-# Disable connection over some port; see: https://stackoverflow.com/a/20240445/4970632
-disconnect() {
-  local pids port=$1
-  [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
-  # lsof -t -i tcp:$port | xargs kill # this can accidentally kill Chrome instance
-  pids=$(lsof -i "tcp:$port" | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
-  [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
-  echo "$pids" | xargs kill  # kill the SSH processes
-  echo "Processes $pids killed. Connections over port $port removed."
-}
-
-# Source SSH settings, if applicable
-if ! $_macos; then  # only do this if not on macbook
-  if [ -f "$SSH_ENV" ]; then
-    source "$SSH_ENV" >/dev/null
-    # shellcheck disable=2009
-    ps -ef | grep "$SSH_AGENT_PID" | grep ssh-agent$ >/dev/null || ssh-init
-  else
-    ssh-init
-  fi
-fi
-
 #-----------------------------------------------------------------------------#
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------#
 # Ipython profile shorthands (see ipython_config.py in .ipython profile subfolders)
-alias climopy='ipython -i --profile=climopy'
-alias proplot='ipython -i --profile=proplot'
-alias jupyter-climopy='jupyter console -i --profile=climopy'
-alias jupyter-proplot='jupyter console -i --profile=proplot'
+# For tests we automatically print output and increase verbosity
+alias pytest='pytest -s -v'
+alias ipython-climopy='ipython --profile=climopy'
+alias ipython-proplot='ipython --profile=proplot'
 
-# Julia with paths in current directory and auto update modules
-alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-$_macos && export JULIA='/Applications/Julia-1.7.app/Contents/Resources/julia'
+# Jupyter profile shorthands requiring custom kernels that launch ipykernel
+# with a --profile argument... otherwise only the default profile is run and the
+# file run by --config is confusingly not used in the resulting ipython session.
+# See: https://github.com/minrk/a2km
+# See: https://stackoverflow.com/a/46370853/4970632
+# See: https://stackoverflow.com/a/50294374/4970632
+# jupyter kernelspec list  # then navigate to kernel.json files in directories
+# a2km clone python3 python3-climopy && a2km add-argv python3-climopy -- --profile=climopy
+# a2km clone python3 python3-proplot && a2km add-argv python3-proplot -- --profile=proplot
+alias jupyter-climopy='jupyter console --kernel=python3-climopy'
+alias jupyter-proplot='jupyter console --kernel=python3-proplot'
 
-# Matlab
-# Load the startup script
+# Matlab and julia
+# For matlab just load the startup script and skip the gui stuff
+# For julia include paths in current directory and auto update modules
 alias matlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
+alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
 
 # R utilities
-# Calling R with --slave or --interactive makes quiting totally impossible somehow.
-# The ---always-readline prevents prompt from switching to the default prompt, but
-# also seems to disable ctrl-d for exiting.
-# alias R='rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save'
+# Note using --slave or --interactive makes quiting impossible. And ---always-readline
+# prevents prompt from switching to default prompt but disables ctrl-d from exiting.
 alias r='command R -q --no-save'
 alias R='command R -q --no-save'
+# alias R='rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save'
 
 # NCL interactive environment
-# Make sure that we encapsulate any other alias; for example, on Macs,
+# Make sure that we encapsulate any other alias -- for example, on Macs,
 # will prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
-if alias ncl &>/dev/null; then
-  # shellcheck disable=2034
-  _ncl_dyld=$(alias ncl | cut -d= -f2- | sed "s/^'//g;s/'$//g")
-  alias ncl='$_ncl_dyld -Q -n'
+_ncl_dyld=$(alias ncl 2>/dev/null | cut -d= -f2- | cut -d\' -f2)
+if [ -n "$_ncl_dyld" ]; then
+  alias ncl="$_ncl_dyld -Q -n"  # must be evaluated literally
 else
   alias ncl='ncl -Q -n'
 fi
@@ -1416,8 +1417,8 @@ jupyter-name() {
 # Below does live updates (watch) and incrementally builds website (incremental)
 # alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 # Use 2>/dev/null to ignore deprecation warnings
-alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 alias server="python -m http.server"
+alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 
 #-----------------------------------------------------------------------------#
 # Dataset utilities
@@ -1427,7 +1428,6 @@ namelist() {
   local file='input.nml'
   [ $# -gt 0 ] && file="$1"
   echo "Params in current namelist:"
-  # shellcheck disable=
   cut -d= -f1 -s "$file" | grep -v '!' | xargs
 }
 
@@ -1537,8 +1537,8 @@ ncvardump() {  # dump variable contents (first argument) from file (second argum
   # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
 }
 ncvartable() {  # parses the CDO parameter table; ncvarinfo replaces this
-  # Below procedure is ideal for "sanity checks" of data; just test one
-  # timestep slice at every level; the tr -s ' ' trims multiple whitespace
+  # procedure is ideal for "sanity checks" of data; just test one timestep
+  # slice at every level; the tr -s ' ' trims multiple whitespace
   # to single and the column command re-aligns columns
   [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
@@ -1823,29 +1823,30 @@ fi
 # See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
-unset _conda
 if [ -d "$HOME/anaconda3" ]; then
   _conda=anaconda3
 elif [ -d "$HOME/miniconda3" ]; then
   _conda=miniconda3
+else
+  unset _conda
 fi
-if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; then
+if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
   # List available packages
   _echo_bashrc 'Enabling conda'
-  avail() {
-    local avail current search
+  conda-avail() {
+    local current options
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
-    search=$(conda search "$1" 2>/dev/null) \
-      || search=$(conda search -c conda-forge "$1" 2>/dev/null) \
-      || { echo "Error: Package \"$1\" not found."; return 1; }
-    avail=$(echo "$search" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs) \
+    echo "Package:            $1"
     current=$(conda list "$1" 2>/dev/null)
     [[ "$current" =~ "$1" ]] \
       && current=$(echo "$current" | grep "$1" | awk 'NR == 1 {print $2}') \
       || current="N/A"
-    echo "Package:         $1"
-    echo "Current version: $current"
-    echo "All versions:    $avail"
+    echo "Current version:    $current"
+    options=$(conda search "$1" 2>/dev/null) \
+      || options=$(conda search -c conda-forge "$1" 2>/dev/null) \
+      || { echo "Error: Package \"$1\" not found."; return 1; }
+    options=$(echo "$options" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs)
+    echo "Available versions: $options"
   }
 
   # Initialize conda
@@ -1857,8 +1858,10 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda ]]; 
       source "$HOME/$_conda/etc/profile.d/conda.sh"
     else
       export PATH=$HOME/$_conda/bin:$PATH
-      export PATH=$HOME/$_conda/condabin:$PATH
     fi
+  fi
+  if ! [[ "$PATH" =~ condabin ]]; then
+    export PATH=$HOME/$_conda/condabin:$PATH
   fi
   unset __conda_setup
 

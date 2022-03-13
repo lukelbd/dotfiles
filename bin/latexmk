@@ -19,15 +19,16 @@ Positional arguments
 Optional arguments
 
   -h|--help      Print this message.
-  -r|--raw       Print raw, unfiltered error messages. By default this script
-                 filters and parses the latex engine output so it is much easier
-                 to peruse.
+  -r|--raw       Print the raw unfiltered error messages. By default this script
+                 parses and filters the latex engine output so it is easier to peruse.
+  -q|--quick     Enable quick mode and skip rendering the PDF if it is newer than the
+                 TeX file. This can be used with '-l' to jump to a line.
   -d|--diff      Run latexdiff on most 'recent' file. Requires files in your
                  directory are otherwise identically named, but end with unique
                  date strings YYYY-MM.tex or YYYY-MM-DD.tex
   -w|--word      Pass -w or --word to automatically convert latex to the Microsoft
-                 Word format using pandoc. Useful for colaborating with peers that
-                 do not use latex.
+                 Word format using pandoc. This can be useful for collaborating
+                 with peers that do not know latex.
   [-l|--line]=N  The line number in the LaTeX document. If the viewer is Skim then
                  we will jump to this line in the PDF document.
 
@@ -67,7 +68,7 @@ cleanup() {
     files_rm+=("$file_new")
   done
   rm "${files_rm[@]}"
-  echo "Removed files: ${files_rm[*]}"
+  echoerr "Removed files: ${files_rm[*]}"
 }
 
 # Commands
@@ -83,14 +84,16 @@ raw=false
 latex=pdflatex  # by default use pdflatex
 bibtex=bibtex   # for compiling bibliographies
 viewer=Skim     # default PDF viewer
+quick=false     # quick mode active?
 texdiff=false   # get difference pdf?
 tex2docx=false  # option
 while [ $# -gt 0 ]; do
   case $1 in
-    -h|--help)     echo "$doc" && exit 0 ;;
+    -h|--help)     echoerr "$doc" && exit 0 ;;
     -r|--raw)      raw=true ;;
     -d|--diff)     texdiff=true ;;
     -w|--word)     tex2docx=true ;;
+    -q|--quick)    quick=true ;;
     -l=*|--line=*) line=${1#*=} ;;
     [^-]*)
       [ -n "$filename" ] && raise "Got multiple filenames."
@@ -114,7 +117,7 @@ fi
 
 # Get paths
 src=$HOME/templates  # location of LaTeX style files and templates
-echo "Filename: $filename"
+echoerr "Filename: $filename"
 if [[ "$filename" =~ / ]]; then  # i.e. contains directory specifier
   directory=${filename%/*}  # trim shortest pattern matching <stuff>/*, keep "stuff"
   filename=${filename##*/}  # trim longest pattern matching */<stuff>, keep "stuff"
@@ -124,8 +127,16 @@ filestem=${filename%.tex}  # simple
 diffname=${filename%.tex}_changes.tex
 
 # Update repo
+# TODO: Remove this after finishing figcp implementation
 # NOTE: This is useful e.g. for pulling remote figure changes
 git pull 2>/dev/null
+
+# Quick mode adjustment
+# WARNING: Cannot auto-enable quick mode in case e.g. user wants to
+# update figures or re-compile after an error. Only auto-disable.
+if ! [ -r "$filestem.pdf" ] || [ "$filename" -nt "$filestem.pdf" ]; then
+  quick=false
+fi
 
 #-----------------------------------------------------------------------------#
 # Get compile options and required packages for file
@@ -180,7 +191,7 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
 # Iterate over subfiles
 filenames=("$filename")
 filenames+=($(nocomments "$filename" | grep -E '\\import\b|\\include\b|\\input\b' | inbraces))
-echo "Checking files: ${filenames[*]}"
+echoerr "Checking files: ${filenames[*]}"
 for file in "${filenames[@]}"; do
   # Find class files, package files, bibliography names
   nocomments=$(nocomments "$file")
@@ -197,14 +208,14 @@ for file in "${filenames[@]}"; do
 done
 
 # Error and info messages
-[ ${#classes[@]} -eq 0 ] && echo "Warning: Unknown document class."
-[ ${#texfiles[@]} -gt 0 ] && echo "Files found in TeX distro: ${texfiles[*]##*/}"
-[ ${#localfiles[@]} -gt 0 ] && echo "Files found locally: ${localfiles[*]##*/}"
+[ ${#classes[@]} -eq 0 ] && echoerr "Warning: Unknown document class."
+[ ${#texfiles[@]} -gt 0 ] && echoerr "Files found in TeX distro: ${texfiles[*]##*/}"
+[ ${#localfiles[@]} -gt 0 ] && echoerr "Files found locally: ${localfiles[*]##*/}"
 [ "${#bibs[@]}" -eq 0 ] && bibliography=false || bibliography=true
 if $bibliography; then
   bibs=("${bibs[@]%.bib}")  # remove extension if present
   bibfiles=("${bibs[@]/%/.bib}")  # add back extension
-  echo "Bib files: ${bibfiles[*]}"
+  echoerr "Bib files: ${bibfiles[*]}"
 fi
 
 #------------------------------------------------------------------------------#
@@ -228,7 +239,7 @@ run() {
     else
       cmd=errcat
     fi
-    echo "$res" | $cmd | $sedcmd 's/^/  /'
+    echo "$res" | $cmd | $sedcmd 's/^/  /' 1>&2
   fi
 }
 
@@ -237,89 +248,103 @@ run() {
 # See also: https://stackoverflow.com/a/2058251/4970632
 open() {
   ! $macos && echoerr 'Warning: Can only automatically open PDF files on macOS.' && return 1
-  local appname fileview
-  appname="$1"
-  fileview="$2"
-  if [ "$appname" == 'Skim' ] && [ -n "$line" ]; then
-    echo "Opening \"$fileview\" and jumping to line $line (source $filename)"
-    /Applications/Skim.app/Contents/SharedSupport/displayline -r "$line" "$fileview" "$filename"
+  local appname pdfname texname
+  appname=$1
+  pdfname=$2
+  texname=${pdfname%.pdf}.tex
+  if [ "$appname" == 'Skim' ] && which displayline &>/dev/null && [ -n "$line" ]; then
+    echoerr "Opening \"$pdfname\" and jumping to line $line (source $texname)"
+    displayline -r "$line" "$pdfname" "$texname"
   else
-    echo "Opening \"$fileview\""
-    command open -a "$appname" "$fileview" &
+    echoerr "Opening \"$pdfname\""
+    command open -a "$appname" "$pdfname" &
   fi
 }
 
 # Set the flags for compiling
-# * Nonstop mode means no interaction, but keep trying to compile if encounter errors.
-# * The shellescape option helps use eps figures that aren't in actual .tex directory.
+# * Setting synctex=1 is *required* for skim displayline to work.
+#   See: https://atom.io/packages/skim-displayline
+# * Nonstop mode means no interaction, but will keep trying to compile if
+#   encounter errors. This is default.
+# * The shellescape option helps use figures that aren't in actual .tex directory.
 #   See: https://www.scivision.co/pdflatex-error-epstopdf-output-filename-not-allowed-in-restricted-mode/
-flags=('-interaction=nonstopmode' '--shell-escape')
+flags=(-interaction=nonstopmode -shell-escape -synctex=1)
+flags_tex=(${flags[@]})  # flags for pre-compilation steps
+flags_pdf=(${flags[@]})  # flags for compilation step
 files_old=(*)  # glob expansion to every filename
 case $latex in
-  xelatex)  stylized=XeLaTeX ;;
-  pdflatex) stylized=PDFLaTeX ;;
-  lualatex) stylized=LuaLaTeX ;;
+  pdflatex) stylized=PDFLaTeX flags_tex+=(-draftmode) ;;
+  lualatex) stylized=LuaLaTeX flags_tex+=(-draftmode) ;;
+  xelatex)  stylized=XeLaTeX flags_tex+=(-no-pdf) ;;
   *) raise "Unknown compiler \"$latex\"." ;;
 esac
-echo 'Running with '"${stylized}..."
+if $quick; then
+  flags_tex+=(-synctex=1)  # synctex on first (only) run
+else
+  flags_pdf+=(-synctex=1)  # synctex on last run
+fi
 
 # Standard run
+# TODO: Support synctex for difference files by determining difference
+# file line number corresponding to current file line number.
+# WARNING: XeLaTeX does not have a draft mode so compilation will be
+# generally slower: https://tex.stackexchange.com/q/219811/73149
 # WARNING: To keep exit code from pdflatex, pipe later on
 # run 0 $latex $flags "$filestem"
+echoerr "Running with ${stylized}..."
 if ! $texdiff && ! $tex2docx; then
-  echo 'Generating aux file...'  # maybe just need to generate glossary!
-  run 0 "$latex" -draftmode "${flags[@]}" "$filestem"
-  if "$bibliography"; then
-    echo 'Generating bibliography...'
-    run 0 "$bibtex" "$filestem"
-    echo 'Incorporating bbl file...'
-    run 0 "$latex" -draftmode "${flags[@]}" "$filestem"
+  echoerr 'Generating aux file...'  # maybe just need to generate glossary!
+  run 0 "$latex" "${flags_tex[@]}" "$filestem"
+  if ! $quick; then
+    if $bibliography; then
+      echoerr 'Generating bibliography...'
+      run 0 "$bibtex" "$filestem"
+      echoerr 'Incorporating bbl file...'
+      run 0 "$latex" "${flags_tex[@]}" "$filestem"
+    fi
+    echoerr 'Generating PDF...'
+    run 1 "$latex" "${flags_pdf[@]}" "$filestem"
+    [ -r "$filestem.pdf" ] || raise "PDF not produced."
   fi
-  echo 'Generating PDF...'
-  run 1 "$latex" "${flags[@]}" "$filestem"
-  [ -r "$filestem.pdf" ] || raise "PDF not produced."
 fi
 
 # Difference-LaTeX file, with track changes
 if $texdiff; then
-  # Get files that come *before* current one in alphanumeric sorting
+  # Find files that come *before* current one in alphanumeric sorting
   prefix=$(sed -E 's/[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}\.tex//g' <<< "$filename")
   prevnames=("$prefix"*[_-][0-9][0-9].tex)  # sorted manuscript files (glob is sorted by default)
   for index in "${!prevnames[@]}"; do  # expands to array of indices
     [ "${prevnames[index]}" == "$filename" ] && break
   done
-  if [ "$prefix" == "$filename" ]; then
-    # Invalid format
-    echoerr "Warning: Invalid filename for generating difference file: $filename"
-    texdiff=false
-  elif [ "$index" -eq 0 ]; then
-    # Need at least one file with date before this file
-    echoerr "Warning: Failed to find earlier version of current file: $filename"
-    texdiff=false
-  else
-    # Get difference PDF, with changes highlighted
-    prevname=${prevnames[index - 1]}
-    echo "Running latexdiff on ${filename##*/} minus ${prevname##*/}"
-    [ -e "$diffname" ] && rm "$diffname"
-    latexdiff --append-context2cmd=abstract "$prevname" "$filename" > "$diffname"
-    # Finish the the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
-    if ! [ -r $diffname ]; then
-      echoerr 'Warning: Failed to produce difference file.'
-      texdiff=false
-    else
-      diffstem=${diffname%.tex}
-      if $bibliography; then
-        $latex -draftmode "${flags[@]}" "$diffstem" &>/dev/null
-        $bibtex "$diffstem"  #&>/dev/null
-      fi
-      # $latex "${flags[@]}" "$diffstem" | errfilt | tail +2
-      $latex -draftmode "${flags[@]}" "$diffstem" &>/dev/null
-      $latex "${flags[@]}" "$diffstem" | errcat
-      if ! [ -r "$diffstem.pdf" ]; then
-        echoerr 'Warning: Failed to produce difference PDF.'
-        texdiff=false
-      fi
+  [ "$prefix" == "$filename" ] && raise "Invalid filename for generating difference file: $filename"
+  [ "$index" -eq 0 ] && raise "Failed to find earlier version of current file: $filename"
+
+  # Make the difference tex file and support line jumping
+  # NOTE: skim-displayline will be prepended with '%DIF > ' in difference file
+  prevname=${prevnames[index - 1]}
+  echoerr "Running latexdiff on ${filename##*/} minus ${prevname##*/}"
+  [ -e "$diffname" ] && rm "$diffname"  # previous file name
+  tmpfile="$filestem.tmp"  # will be deleted by cleanup()
+  cp "$filename" "$tmpfile"
+  [ -n "$line" ] && $sedcmd -i "${line}s/$/  % skim-displayline/" "$tmpfile"
+  latexdiff --append-context2cmd=abstract "$prevname" "$tmpfile" > "$diffname"
+  [ -r $diffname ] || raise 'Difference file not produced.'
+  line=$(grep -n -m 1 'skim-displayline$' "$diffname" | sed 's/\([0-9]*\).*/\1/')
+  if [ $? -ne 0 ] || ! [[ "$line" =~ ^[0-9]+$ ]]; then
+    echoerr 'Warning: Failed to detect difference file line.'
+    unset line
+  fi
+
+  # Make the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
+  diffstem=${diffname%.tex}
+  $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
+  if ! $quick; then
+    if $bibliography; then
+      $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
+      $bibtex "$diffstem" 1>&2  #&>/dev/null
     fi
+    $latex "${flags_pdf[@]}" "$diffstem" | errcat 1>&2
+    [ -r "$diffstem.pdf" ] || raise "Difference PDF not produced."
   fi
 fi
 
@@ -328,28 +353,28 @@ fi
 # * For xnos see: https://github.com/tomduck/pandoc-xnos
 # Unfortunately neither xnos nor crossref work for numbering equations and figures
 if $tex2docx; then
-  if ! type pandoc &>/dev/null; then
-    echoerr "Warning: Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
-  else
-    # flags=(--citeproc --filter=pandoc-crossref)
-    # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
-    flags=(-M cref=true --citeproc)
-    flags=(-M cref=true --filter pandoc-xnos)
-    # flags=(-M cref=true --filter pandoc-crossref --citeproc)
-    [[ " ${packages[*]} " =~ natbib ]] && flags+=(--natbib)
-    [[ " ${packages[*]} " =~ biblatex ]] && flags+=(--biblatex)
-    $bibliography && flags+=("${bibfiles[@]/#/--bibliography=}")
-    # if $bibliography && ! [[ " ${flags[*]} " =~ ' --natbib ' ]] && ! [[ " ${flags[*]} " =~ ' --biblatex ' ]]; then
-    if false; then
-      echoerr "Warning: Cannot convert to docx because bibliography package is unknown. Found packages: ${packages[*]}"
-      # echo "Error: Cannot convert to docx because bibliography package is unknown."
+  type pandoc &>/dev/null || raise "Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
+  # flags=(--citeproc --filter=pandoc-crossref)
+  # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
+  # flags=(-M cref=true --filter pandoc-crossref --citeproc)
+  flags=(-M cref=true --filter pandoc-xnos)
+  if $bibliography; then
+    if [[ " ${packages[*]} " =~ natbib ]]; then
+      flags+=(--natbib)
+    elif [[ " ${packages[*]} " =~ biblatex ]]; then
+      flags+=(--biblatex)
     else
-      echo "Running pandoc to convert tex --> docx with flags ${flags[*]}"
-      pandoc --output="$filestem.docx" "${flags[@]}" "$filename"
+      echoerr "Warning: Cannot convert to docx because bib package is unknown. Found packages: ${packages[*]}"
+      bibliography=false
     fi
+    $bibliography && flags+=("${bibfiles[@]/#/--bibliography=}")
   fi
+  echoerr "Running pandoc to convert tex --> docx with flags ${flags[*]}"
+  pandoc --output="$filestem.docx" "${flags[@]}" "$filename"
+  [ -r "$filestem.docx" ] || raise "Docx file not produced."
 fi
 
+# Open the relevant file
 ! $texdiff && ! $tex2docx && open "$viewer" "$filestem.pdf"  # too jumpy if open everything!
 $texdiff && open "$viewer" "$diffstem.pdf"
 $tex2docx && open "Pages" "$filestem.docx"

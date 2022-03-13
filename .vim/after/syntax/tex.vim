@@ -7,7 +7,6 @@
 " elseif b:current_syntax !=# 'tex'
 "   finish
 " endif
-
 "------------------------------------------------------------------------------"
 " Author: Luke Davis (lukelbd@gmail.com)
 " Date: 2018-07-26

@@ -1,25 +1,25 @@
 #------------------------------------------------------------------------------#
-# Basic
+# Screen configuration
 #------------------------------------------------------------------------------#
-utf8 on on # character set make standard
-#escape a # C-z as escape character instead of C-a; don't think I will use this after all; hard to remember
-  # see man screen for explanation; the second char 'a' is the 'character generating a literal command character'
-termcapinfo xterm* ti@:te@ # enable scrolling
-#------------------------------------------------------------------------------#
-# Status line and window/session names (super neat formatting with this mysterious string!)
-#------------------------------------------------------------------------------#
-# HardStatuses
+# See man screen for explanation. The second char 'a' is the 'character generating
+# a literal command character' escape a ctrl-z as escape character instead of
+# ctrl-a. Don't think I will use this after all... hard to remember
+utf8 on on  # character set make standard
+termcapinfo xterm* ti@:te@  # enable scrolling
+
+# Statusline
 hardstatus on
 hardstatus alwayslastline 
-#hardstatus string '%{= kg}[ %{G}%H %{g}][%= %{= kB}%?%-Lw%?%{+b r}(%{G}%n*%f %t%?(%u)%?%{r})%{-b B}%?%+Lw%?%?%= %{g}%]'
-  # source: http://tilde.club/~jonathan/screen/
-#hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{=kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B}%Y-%m-%d%{W}%{g}]'
-  # source: http://secopsmonkey.com/my-not-so-fancy-screenrc.html
-#hardstatus string '%{BW}%17=%l %{BW}%50=%d/%m/%Y %{BW}%80=%c%='
-  # not sure where this is from
+# source: http://tilde.club/~jonathan/screen/
+# hardstatus string '%{= kg}[ %{G}%H %{g}][%= %{= kB}%?%-Lw%?%{+b r}(%{G}%n*%f %t%?(%u)%?%{r})%{-b B}%?%+Lw%?%?%= %{g}%]'
+# source: http://secopsmonkey.com/my-not-so-fancy-screenrc.html
+# hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{=kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B}%Y-%m-%d%{W}%{g}]'
+# source: hybrid with changed colors (clearly %{g} is green, %{G} is bold-green, etc.)
 hardstatus string '%{= kg}[ %{g}%H %{g}][%= %{= kb}%?%-Lw%?%{+b g}(%{g}%n*%f %t%?(%u)%?%{g})%{-b b}%?%+Lw%?%?%= %{g}%][%{g}%d.%m.%Y %0c%{g}]'
-  # my hybrid from top 2; also changed some colors (clearly %{g} is green, %{G} is bold-green, etc.)
+
 # Captions
-#caption always 
-#caption string "%{= kc}%H (system load: %l)%-21=%{= .m}%D %d.%m.%Y %0c"
-#caption string "%{kB}%?%-Lw%?%{bw}%n*%f %t%?(%u)%?%{kB}%?%+Lw%?"
+# caption always
+# source: unknown
+# caption string "%{= kc}%H (system load: %l)%-21=%{= .m}%D %d.%m.%Y %0c"
+# source: unknown
+# caption string "%{kB}%?%-Lw%?%{bw}%n*%f %t%?(%u)%?%{kB}%?%+Lw%?"

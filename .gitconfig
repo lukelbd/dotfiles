@@ -4,11 +4,12 @@
 # https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------
 # NEW COMMANDS
-# 'figs':
-#   Add and push figures with simple default message.
 # 'amend':
 #   Change the name of arbitrary commit messages; just provide a SHA1 reference
 #   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
+# 'blame':
+#   Add nice coloring according to date of commit.
+#   see: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
 # 'branches':
 #   List all branches. Prune dead remote branches every time.
 # 'commands':
@@ -21,15 +22,18 @@
 #   or added back in
 # 'exec':
 #   Exec arbitrary shell command on top level
+# 'figs':
+#   Add and push figures with simple default message.
+#   TODO: Remove this and use figcp for figure syncing instead.
 # 'get':
 #   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all); see
 #   https://stackoverflow.com/a/10312587/4970632
+# 'hist':
+#   full history for a given file
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
-# 'hist':
-#   full history for a given file
 # 'objects':
 #   When you commit giant files (i.e. over 100MB), even after you delete them,
 #   you won't be able to push to Github because they were tracked and are found
@@ -72,7 +76,7 @@
 	delete     = "!git-delete \"$@\""
 	deleted    = "!git-deleted \"$@\""
 	exec       = "!exec \"$@\""
-	figs       = "!git add --all ':/fig*' ':/vid*' ':/note*' && git commit -m 'Update figures and notebooks.' && git push origin master"
+	figs       = "!find $(git rev-parse --show-toplevel) -type f -name '[^.]*' \\( -name '*.pdf' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.avi' -o -name '*.mp4' \\) -exec git add {} + && git commit -m 'Update figures and notebooks.' && git push origin master"
 	files      = ls-tree -r master --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
@@ -95,14 +99,31 @@
 	user       = "!git-user \"$@\""
 	vim        = "!git-vim \"$@\""
 	wtf        = "!git-wtf \"$@\""
+[blame]
+	date = human
+	coloring = highlightRecent
 [color]
 	ui = on
+[color "blame"]
+	highlightRecent = 237, 20 month ago, 238, 19 month ago, 239, 18 month ago, 240, 17 month ago, 241, 16 month ago, 242, 15 month ago, 243, 14 month ago, 244, 13 month ago, 245, 12 month ago, 246, 11 month ago, 247, 10 month ago, 248, 9 month ago, 249, 8 month ago, 250, 7 month ago, 251, 6 month ago, 252, 5 month ago, 253, 4 month ago, 254, 3 month ago, 231, 2 month ago, 230, 1 month ago, 229, 3 weeks ago, 228, 2 weeks ago, 227, 1 week ago, 226
 [core]
 	attributesfile = ~/.gitattributes
 	excludesfile = ~/.gitignore
 	mergeoptions = --no-edit
 	ignorecase = false
-	editor = "command vim -c 'Autosave' -c 'startinsert'"
+	editor = "command vim -c 'goto' -c 'startinsert' -c 'Autosave' -c 'let &colorcolumn=73'"
+[credential]
+	helper = osxkeychain
+[diff "pdf"]
+	textconv = pdfinfo
+[diff "zip"]
+	textconv = unzip -v
+[diff "ipynb"]
+	textconv = nbstripout -t
+[filter "nbstripout"]
+	clean  = "f() { echo >&2 \"clean: nbstripout $1\"; nbstripout; }; f %f"
+	smudge = "f() { echo >&2 \"smudge: cat $1\"; cat; }; f %f"
+	required = true
 [interactive]
 	singleKey = true
 [merge]
@@ -123,15 +144,3 @@
 [user]
 	name = Luke Davis
 	email = lukelbd@gmail.com
-[diff "pdf"]
-	textconv = pdfinfo
-[diff "zip"]
-	textconv = unzip -v
-[diff "ipynb"]
-	textconv = nbstripout -t
-[filter "nbstripout"]
-	clean  = "f() { echo >&2 \"clean: nbstripout $1\"; nbstripout; }; f %f"
-	smudge = "f() { echo >&2 \"smudge: cat $1\"; cat; }; f %f"
-	required = true
-[credential]
-	helper = osxkeychain

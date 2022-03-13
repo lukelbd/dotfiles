@@ -19,6 +19,31 @@ let g:tex_no_error = 1
 let b:delimitMate_quotes = '$ |'
 let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 
+" Bibtex cache directory
+let s:cache_dir = expand('~/Library/Caches/bibtex')
+if isdirectory(s:cache_dir)
+  let $FZF_BIBTEX_CACHEDIR = s:cache_dir
+endif
+
+" Running custom or default latexmk command in background
+" Warning: Trailing space will be escaped as flag! So trim unless we have any options
+function! s:latexmk(...) abort
+  let opts = {}  " job options, empty by default
+  let flags = trim(a:0 ? a:1 : '') . ' --line=' . string(line('.'))
+  call popup#job_win(
+    \ 'latexmk ' . flags . ' ' . shellescape(expand('%')),
+    \ flags !~# '--quick\|-q'
+    \ )
+endfunction
+
+" Latexmk command and shortcuts
+" Note: This map overwrites :TestVisit but no harm for tex files.
+command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
+noremap <silent> <buffer> <Leader>\ :<C-u>call <sid>latexmk('--quick')<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile1 :<C-u>call <sid>latexmk()<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile2 :<C-u>call <sid>latexmk('--diff')<CR>
+noremap <silent> <buffer> <Plug>ExecuteFile3 :<C-u>call <sid>latexmk('--word')<CR>
+
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending
 " and appending the strings with single quotes. This lets us make input()
 " dependent snippets as shown for the 'j', 'k', and 'E' mappings.
@@ -26,28 +51,28 @@ let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 " * \chi looks like an x, pronounced 'kai'
 " * the 'u' used for {-} and {+} is for 'unary'
 " Rejected maps:
-" \ "'": textools#make_snippet(textools#graphic_select(), '\includegraphics{', '}'),
-" \ '"': textools#make_snippet(textools#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
-" \ '/': textools#make_snippet(textools#label_select(), '\cref{', '}'),
-" \ '?': textools#make_snippet(textools#label_select(), '\ref{', '}'),
-" \ ':': textools#make_snippet(textools#cite_select(), '\citet{', '}'),
-" \ ';': textools#make_snippet(textools#cite_select(), '\citep{', '}'),
-" \ 'k': textools#ensure_math("^{\1Superscript: \1}"),
-" \ 'j': textools#ensure_math("_{\1Subscript: \1}"),
-" \ 'E': textools#ensure_math("\\times 10^{\1Exponent: \1}"),
-call shortcuts#add_snippets({
+" \ "'": tex#make_snippet(tex#graphic_select(), '\includegraphics{', '}'),
+" \ '"': tex#make_snippet(tex#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
+" \ '/': tex#make_snippet(tex#label_select(), '\cref{', '}'),
+" \ '?': tex#make_snippet(tex#label_select(), '\ref{', '}'),
+" \ ':': tex#make_snippet(tex#cite_select(), '\citet{', '}'),
+" \ ';': tex#make_snippet(tex#cite_select(), '\citep{', '}'),
+" \ 'k': tex#ensure_math("^{\1Superscript: \1}"),
+" \ 'j': tex#ensure_math("_{\1Subscript: \1}"),
+" \ 'E': tex#ensure_math("\\times 10^{\1Exponent: \1}"),
+call succinct#add_snippets({
   \ "\<CR>": " \\textCR\r",
-  \ "'": textools#ensure_math('\mathrm{d}'),
-  \ '"': textools#ensure_math('\mathrm{D}'),
+  \ "'": tex#ensure_math('\mathrm{d}'),
+  \ '"': tex#ensure_math('\mathrm{D}'),
   \ '*': '\item',
-  \ '+': textools#ensure_math('\sum'),
-  \ ',': textools#ensure_math('\Leftarrow'),
+  \ '+': tex#ensure_math('\sum'),
+  \ ',': tex#ensure_math('\Leftarrow'),
   \ '-': '\pause',
-  \ '.': textools#ensure_math('\Rightarrow'),
-  \ '/': textools#format_units("\1Units: \1"),
-  \ '[': textools#ensure_math('{-}'),
-  \ ']': textools#ensure_math('{+}'),
-  \ '0': textools#label_select(),
+  \ '.': tex#ensure_math('\Rightarrow'),
+  \ '/': tex#format_units("\1Units: \1"),
+  \ '[': tex#ensure_math('{-}'),
+  \ ']': tex#ensure_math('{+}'),
+  \ '0': tex#label_select(),
   \ '1': '\tiny',
   \ '2': '\scriptsize',
   \ '3': '\footnotesize',
@@ -56,58 +81,59 @@ call shortcuts#add_snippets({
   \ '6': '\large',
   \ '7': '\Large',
   \ '8': '\LARGE',
-  \ '9': textools#label_select(),
-  \ ';': textools#ensure_math('\partial'),
-  \ '<': textools#ensure_math('\Longleftarrow'),
-  \ '=': textools#ensure_math('\equiv'),
-  \ '>': textools#ensure_math('\Longrightarrow'),
-  \ '_': textools#ensure_math('\prod'),
-  \ 'C': textools#ensure_math('\Xi'),
-  \ 'D': textools#ensure_math('\Delta'),
-  \ 'E': textools#ensure_math("\1Exponent: \r..*\r\\\\times 10^{&}\1"),
-  \ 'F': textools#ensure_math('\Phi'),
-  \ 'G': textools#graphic_select(),
-  \ 'H': textools#ensure_math('\rho'),
-  \ 'I': textools#ensure_math('\iint'),
-  \ 'K': textools#ensure_math('\kappa'),
-  \ 'L': textools#ensure_math('\Lambda'),
-  \ 'O': textools#ensure_math('^\circ'),
-  \ 'P': textools#ensure_math('\Pi'),
-  \ 'Q': textools#ensure_math('\Theta'),
-  \ 'R': textools#cite_select(),
-  \ 'S': textools#ensure_math('\Sigma'),
-  \ 'U': textools#ensure_math('\Gamma'),
-  \ 'W': textools#ensure_math('\Omega'),
-  \ 'X': textools#ensure_math('\times'),
-  \ 'Y': textools#ensure_math('\Psi'),
-  \ 'a': textools#ensure_math('\alpha'),
-  \ 'b': textools#ensure_math('\beta'),
-  \ 'c': textools#ensure_math('\xi'),
-  \ 'd': textools#ensure_math('\delta'),
-  \ 'e': textools#ensure_math('\epsilon'),
-  \ 'f': textools#ensure_math('\phi'),
-  \ 'g': textools#graphic_select(),
-  \ 'h': textools#ensure_math('\eta'),
-  \ 'i': textools#ensure_math('\int'),
-  \ 'j': textools#ensure_math("\1Subscript: \r..*\r_{&}\1"),
-  \ 'k': textools#ensure_math("\1Superscript: \r..*\r^{&}\1"),
-  \ 'l': textools#ensure_math('\lambda'),
-  \ 'm': textools#ensure_math('\mu'),
-  \ 'n': textools#ensure_math('\nabla'),
-  \ 'o': textools#ensure_math('\cdot'),
-  \ 'p': textools#ensure_math('\pi'),
-  \ 'q': textools#ensure_math('\theta'),
-  \ 'r': textools#cite_select(),
-  \ 's': textools#ensure_math('\sigma'),
-  \ 't': textools#ensure_math('\tau'),
-  \ 'u': textools#ensure_math('\gamma'),
-  \ 'v': textools#ensure_math('\nu'),
-  \ 'w': textools#ensure_math('\omega'),
-  \ 'x': textools#ensure_math('\chi'),
-  \ 'y': textools#ensure_math('\psi'),
-  \ 'z': textools#ensure_math('\zeta'),
-  \ '~': textools#ensure_math('\sim'),
-  \ }, 1)
+  \ '9': tex#label_select(),
+  \ ';': tex#ensure_math('\partial'),
+  \ '<': tex#ensure_math('\Longleftarrow'),
+  \ '=': tex#ensure_math('\equiv'),
+  \ '>': tex#ensure_math('\Longrightarrow'),
+  \ '_': tex#ensure_math('\prod'),
+  \ 'C': tex#ensure_math('\Xi'),
+  \ 'D': tex#ensure_math('\Delta'),
+  \ 'E': tex#ensure_math("\1Exponent: \r..*\r\\\\times 10^{&}\1"),
+  \ 'F': tex#ensure_math('\Phi'),
+  \ 'G': tex#graphic_select(),
+  \ 'H': tex#ensure_math('\rho'),
+  \ 'I': tex#ensure_math('\iint'),
+  \ 'K': tex#ensure_math('\kappa'),
+  \ 'L': tex#ensure_math('\Lambda'),
+  \ 'O': tex#ensure_math('^\circ'),
+  \ 'P': tex#ensure_math('\Pi'),
+  \ 'Q': tex#ensure_math('\Theta'),
+  \ 'R': tex#cite_select(),
+  \ 'S': tex#ensure_math('\Sigma'),
+  \ 'U': tex#ensure_math('\Gamma'),
+  \ 'W': tex#ensure_math('\Omega'),
+  \ 'X': tex#ensure_math('\times'),
+  \ 'Y': tex#ensure_math('\Psi'),
+  \ 'a': tex#ensure_math('\alpha'),
+  \ 'b': tex#ensure_math('\beta'),
+  \ 'c': tex#ensure_math('\xi'),
+  \ 'd': tex#ensure_math('\delta'),
+  \ 'e': tex#ensure_math('\epsilon'),
+  \ 'f': tex#ensure_math('\phi'),
+  \ 'g': tex#graphic_select(),
+  \ 'h': tex#ensure_math('\eta'),
+  \ 'i': tex#ensure_math('\int'),
+  \ 'j': tex#ensure_math("\1Subscript: \r..*\r_{&}\1"),
+  \ 'k': tex#ensure_math("\1Superscript: \r..*\r^{&}\1"),
+  \ 'l': tex#ensure_math('\lambda'),
+  \ 'm': tex#ensure_math('\mu'),
+  \ 'n': tex#ensure_math('\nabla'),
+  \ 'o': tex#ensure_math('\cdot'),
+  \ 'p': tex#ensure_math('\pi'),
+  \ 'q': tex#ensure_math('\theta'),
+  \ 'r': tex#cite_select(),
+  \ 's': tex#ensure_math('\sigma'),
+  \ 't': tex#ensure_math('\tau'),
+  \ 'u': tex#ensure_math('\gamma'),
+  \ 'v': tex#ensure_math('\nu'),
+  \ 'w': tex#ensure_math('\omega'),
+  \ 'x': tex#ensure_math('\chi'),
+  \ 'y': tex#ensure_math('\psi'),
+  \ 'z': tex#ensure_math('\zeta'),
+  \ '~': tex#ensure_math('\sim'),
+  \ },
+  \ 1)
 
 " Surround tools. Currently only overwrite 'r' and 'a' global bracket surrounds
 " the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds
@@ -118,7 +144,7 @@ call shortcuts#add_snippets({
 " \ ',': "\\begin{\1\\begin{\1}\r\\end{\1\1}",
 " \ '.': "\\\1\\\1{\r}",
 " \ 'L': "\\href{\1Link: \1}{\r}",
-call shortcuts#add_delims({
+call succinct#add_delims({
   \ "'": "`\r'",
   \ '!': "\\frametitle{\r}",
   \ '"': "``\r''",
@@ -131,8 +157,8 @@ call shortcuts#add_delims({
   \ '*': "\\begin{itemize}\r\\end{itemize}",
   \ '-': "\\overline{\r}",
   \ '/': "\\frac{\r}{}",
-  \ ',': "\1Environment: \r..*\r\\\\begin{&}\1\r\1\r..*\r\\\\end{&}\1",
-  \ '.': "\1Command: \r..*\r\\\\&{\1\r\1\r..*\r}\1",
+  \ ',': "\1Environment: \\begin{\r..*\r\\\\begin{&}\1\r\1\r..*\r\\\\end{&}\1",
+  \ '.': "\1Command: \\\r..*\r\\\\&{\1\r\1\r..*\r}\1",
   \ '0': "\\cref{\r}",
   \ '1': "\\section{\r}",
   \ '2': "\\subsection{\r}",
@@ -199,11 +225,12 @@ call shortcuts#add_delims({
   \ '|': "\\left\\|\r\\right\\|",
   \ '}': "\\left\\{\\begin{array}{ll}\r\\end{array}\\right.",
   \ '~': "\\title{\r}",
-  \ }, 1)
+  \ },
+  \ 1)
 
 " " Text object integration
-" " " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
-" " " Also changed begin end modes so they make more sense.
+" " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
+" " Also changed begin end modes so they make more sense.
 " let s:tex_textobjs_map = {
 "   \  'dollar-math-a': {
 "   \     'pattern': '[$][^$]*[$]',
@@ -215,41 +242,3 @@ call shortcuts#add_delims({
 "   \   },
 "   \ }
 " call textobj#user#plugin('latex', s:tex_textobjs_map)
-
-" Running custom or default latexmk command in background
-let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
-let s:path = expand('<sfile>:p:h')
-function! s:latexmk(...) abort
-  if !s:vim8
-    echohl ErrorMsg
-    echom 'Error: Latex compilation requires vim >= 8.0'
-    echohl None
-    return 1
-  endif
-  " Jump to logfile if it is open, else open one
-  " Warning: Trailing space will be escaped as flag! So trim unless we have any options
-  let opts = trim(a:0 ? a:1 : '') . ' -l=' . string(line('.'))
-  let texfile = expand('%')
-  let logfile = expand('%:t:r') . '.latexmk'
-  let lognum = bufwinnr(logfile)
-  if lognum == -1
-    silent! exe string(winheight('.') / 4) . 'split ' . logfile
-    silent! exe winnr('#') . 'wincmd w'
-  else
-    silent! exe bufwinnr(logfile) . 'wincmd w'
-    silent! 1,$d _
-    silent! exe winnr('#') . 'wincmd w'
-  endif
-  " Run job in realtime
-  let num = bufnr(logfile)
-  let g:tex_job = job_start(
-    \ 'latexmk ' . texfile . ' ' . opts,
-    \ {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
-    \ )
-endfunction
-
-" Latexmk command and shortcuts
-command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <buffer> <silent> <Plug>Execute :<C-u>call <sid>latexmk()<CR>
-noremap <buffer> <silent> <Plug>AltExecute1 :<C-u>call <sid>latexmk('--diff')<CR>
-noremap <buffer> <silent> <Plug>AltExecute2 :<C-u>call <sid>latexmk('--word')<CR>
