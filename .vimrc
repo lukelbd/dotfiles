@@ -609,18 +609,19 @@ nnoremap <Leader>d 1z=
 nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also corrects the word
-nnoremap <Plug>forward_spell bh]s<Cmd>call format#spell_apply(1)<CR><Cmd>call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <Plug>backward_spell el[s<Cmd>call format#spell_apply(0)<CR><Cmd>call repeat#set("\<Plug>backward_spell")<CR>
+" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
+nnoremap <silent> <Plug>forward_spell bh]s:call format#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[s:call format#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
-" Capitalization stuff with g, a bit refined. Not currently
-" used in normal mode, and fits better mnemonically
-" Mnemonic is y next to u, t for title case
+" Capitalization stuff with g, a bit refined. Not currently used in normal mode, and
+" fits better mnemonically (here y next to u, and t is for title case).
+" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 nnoremap <nowait> gu guiw
 nnoremap <nowait> gU gUiw
-nnoremap <Plug>cap1 ~h<Cmd>call repeat#set("\<Plug>cap1")<CR>
-nnoremap <Plug>cap2 mzguiw~h`z<Cmd>call repeat#set("\<Plug>cap2")<CR>
+nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
+nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gy <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gy ~

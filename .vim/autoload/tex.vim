@@ -11,9 +11,7 @@ function! s:sed_cmd() abort
   else
     let gsed = ''
   endif
-  if empty(gsed) || !executable(gsed)
-    throw 'GNU sed not available.'
-  endif
+  if !executable(gsed) | echoerr 'GNU sed not available.' | let gsed = '' | endif
   return gsed
 endfunction
 
@@ -23,14 +21,14 @@ endfunction
 " Return graphics paths
 function! s:label_source() abort
   if !exists('b:ctags_alph')
-    return []
+    echoerr 'No tags present in file.'
+    let tags = []
+  else
+    let tags = filter(copy(b:ctags_alph), 'v:val[2] ==# "l"')
+    let tags = map(tags, 'v:val[0] . " (" . v:val[1] . ")"')  " label (line number)
+    if empty(tags) | echoerr 'No tex labels found.' | endif
   endif
-  let ctags = filter(copy(b:ctags_alph), 'v:val[2] ==# "l"')
-  let ctags = map(ctags, 'v:val[0] . " (" . v:val[1] . ")"')  " label (line number)
-  if empty(ctags)
-    echoerr 'No ctag labels found.'
-  endif
-  return ctags
+  return tags
 endfunction
 
 " Return label text
@@ -82,17 +80,16 @@ function! s:cite_source() abort
 
   " Set the environment variable and return command-line command used to
   " generate fuzzy list from the selected files.
-  let result = []
   if len(biblist) == 0
-    echoerr 'Bib files were not defined or do not exist.'
-  elseif ! executable('bibtex-ls')
-    " Note: See https://github.com/msprev/fzf-bibtex
+    echoerr 'Bibliography files not found.'
+    return []
+  elseif ! executable('bibtex-ls')  " see https://github.com/msprev/fzf-bibtex
     echoerr 'Command bibtex-ls not found.'
+    return []
   else
     let $FZF_BIBTEX_SOURCES = join(biblist, ':')
-    let result = 'bibtex-ls ' . join(biblist, ' ')
+    return 'bibtex-ls ' . join(biblist, ' ')
   endif
-  return result
 endfunction
 
 " Return citation text
@@ -103,15 +100,13 @@ function! s:cite_select() abort
     \ 'source': s:cite_source(),
     \ 'options': '--multi --prompt="Source> "',
     \ }))
-  let result = ''
-  if ! executable('bibtex-cite')
-  " Note: See https://github.com/msprev/fzf-bibtex
+  if !executable('bibtex-cite')  " see https://github.com/msprev/fzf-bibtex
     echoerr 'Command bibtex-cite not found.'
+    return ''
   else
     let result = system("bibtex-cite -prefix='@' -postfix='' -separator=','", items)
-    let result = substitute(result, '@', '', 'g')
+    return substitute(result, '@', '', 'g')
   endif
-  return result
 endfunction
 function! tex#cite_select(...) abort
   return function('s:cite_select', a:000)
@@ -153,21 +148,17 @@ function! s:graphic_source() abort
     endif
   endfor
 
-  " Get graphics files in each path
-  let figlist = []
+  " List graphics files in each path
+  let figs = []
   call add(pathlist, expand('%:h'))
   for path in pathlist
     for ext in ['png', 'jpg', 'jpeg', 'pdf', 'eps']
-      call extend(figlist, globpath(path, '*.' . ext, v:true, v:true))
+      call extend(figs, globpath(path, '*.' . ext, v:true, v:true))
     endfor
   endfor
-  let figlist = map(figlist, 'fnamemodify(v:val, ":p:h:t") . "/" . fnamemodify(v:val, ":t")')
-
-  " Return figure files
-  if len(figlist) == 0
-    echoerr 'No graphics files found.'
-  endif
-  return figlist
+  let figs = map(figs, 'fnamemodify(v:val, ":p:h:t") . "/" . fnamemodify(v:val, ":t")')
+  if empty(figs) | echoerr 'No graphics files found.' | endif
+  return figs
 endfunction
 
 " Return graphics text

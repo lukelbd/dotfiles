@@ -91,8 +91,9 @@ function! python#kwargs_dict(kw2dc, ...) abort range
     endif
     " Run fancy translation substitutions
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
-      echoerr 'Error: Text is both dictionary-like and kwarg-like.'
-      return
+      echohl WarningMsg
+      echom 'Warning: Text is both dictionary-like and kwarg-like.'
+      echohl None
     endif
     if a:kw2dc == 1  " kwargs to dictionary
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first

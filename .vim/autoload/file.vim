@@ -52,11 +52,11 @@ function! file#rename(name, bang) abort
     if expand('%:p') !=# curfile && filewritable(expand('%:p'))
       silent exe 'bwipe! ' . curfile
       if delete(curfile)
-        echoerr 'Could not delete ' . curfile
+        throw 'Could not delete ' . curfile
       endif
     endif
   else
-    echoerr v:errmsg
+    throw v:errmsg
   endif
 endfunction
 
