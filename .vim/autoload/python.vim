@@ -30,6 +30,7 @@ function! python#run_win()
 endfunction
 
 " Run current file using either popup window or jupyter session
+" Note: Running 'cell' in file without cells still works
 function! python#run_file() abort
   update
   if !python#has_jupyter()
@@ -37,7 +38,7 @@ function! python#run_file() abort
     call python#run_win()
   else
     echom 'Running code block.'
-    JupyterRunCell
+    JupyterSendCell
   endif
 endfunction
 
