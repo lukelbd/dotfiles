@@ -75,6 +75,16 @@ function! format#lang_map()
   return "\<C-^>"
 endfunction
 
+" Attempt to remove markdown markings in preview window
+" See: https://github.com/prabirshrestha/vim-lsp/pull/1086
+function! format#lsp_get_supported_capabilities() abort
+  let fmt = ['plaintext']  " default is ['markdown', 'plaintext']
+  let opts = lsp#default_get_supported_capabilities(0)
+  let opts['textDocument']['hover']['contentFormat'] = fmt
+  let opts['textDocument']['completion']['completionItem']['documentationFormat'] = fmt
+  return opts
+endfunction
+
 " Set up temporary paste mode
 function! format#paste_mode() abort
   let s:paste = &paste

@@ -1291,15 +1291,19 @@ if s:active('ddc.vim')
     \ })
   call ddc#enable()
 
-  " Popup mappings. Note enter is 'accept' only if we explicitly scrolled down, tab
+  " Popup and preview mappings. Note enter is 'accept' only if we scrolled down, tab
   " is always 'accept' and choose default menu item if necessary. Also break undo
   " history when adding newlines. See: :help ins-special-special
+  " Note: See https://github.com/prabirshrestha/vim-lsp/issues/865#issuecomment-719476089
+  " Todo: Consider using Shuogo's pum maps? Hard to implement <CR>/<Tab> features.
   augroup pum_navigation
     au!
     au BufEnter,InsertLeave * let b:pum_pos = 0
   augroup END
-  inoremap <expr> <ScrollWheelUp> format#pum_prev()
-  inoremap <expr> <ScrollWheelDown> format#pum_next()
+  nnoremap <expr> <C-e> lsp#scroll(-5)
+  inoremap <expr> <C-e> lsp#scroll(-5)
+  nnoremap <expr> <C-y> lsp#scroll(5)
+  inoremap <expr> <C-y> lsp#scroll(5)
   inoremap <expr> <Up> format#pum_prev()
   inoremap <expr> <Down> format#pum_next()
   inoremap <expr> <C-k> format#pum_prev()
@@ -1326,6 +1330,9 @@ if s:active('ddc.vim')
   " Language server settings
   " Note: Most mappings override custom ones so critical to change all settings.
   " Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
+  " Note: Attempted to enable markdown rendering in preview window but fails. See:
+  " https://github.com/prabirshrestha/vim-lsp/issues/865#issuecomment-719476089
+  let g:lsp_get_supported_capabilities = [function('format#lsp_get_supported_capabilities')]
   let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_diagnostics_enabled = 0  " use ale instead
   let g:lsp_document_highlight_enabled = 0  " disable highlighting reference
