@@ -77,9 +77,9 @@ endfunction
 
 " Attempt to remove markdown markings in preview window
 " See: https://github.com/prabirshrestha/vim-lsp/pull/1086
-function! format#lsp_get_supported_capabilities() abort
+function! format#lsp_get_supported_capabilities(...) abort
   let fmt = ['plaintext']  " default is ['markdown', 'plaintext']
-  let opts = lsp#default_get_supported_capabilities(0)
+  let opts = call('lsp#default_get_supported_capabilities', a:000)
   let opts['textDocument']['hover']['contentFormat'] = fmt
   let opts['textDocument']['completion']['completionItem']['documentationFormat'] = fmt
   return opts

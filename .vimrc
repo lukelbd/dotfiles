@@ -587,9 +587,7 @@ cnoremap <expr> <C-v> format#lang_map()
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex setlocal nolist nocursorline colorcolumn=
-  au FileType tex,html,markdown,rst
-    \ if expand('<afile>') != '__doc__' | call switch#spellcheck(1) | endif
+  au FileType tex,html,markdown,rst if expand('<afile>') != '__doc__' | call switch#spellcheck(1) | endif
 augroup END
 
 " Toggle spelling on and off
@@ -973,7 +971,7 @@ if !has('gui_running')
   Plug 'matsui54/ddc-buffer'  " matching words from buffer (as in neocomplete)
   Plug 'LumaKernel/ddc-file'  " matching file names
   Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
-  Plug 'matsui54/denops-popup-preview.vim'  " show previews for popup window
+  Plug 'matsui54/denops-popup-preview.vim'  " show previews during pmenu selection
 endif
 
 " Snippets and stuff
@@ -1334,8 +1332,8 @@ if s:active('ddc.vim')
   " https://github.com/prabirshrestha/vim-lsp/issues/865#issuecomment-719476089
   let g:lsp_get_supported_capabilities = [function('format#lsp_get_supported_capabilities')]
   let g:lsp_fold_enabled = 0  " not yet tested
-  let g:lsp_diagnostics_enabled = 0  " use ale instead
-  let g:lsp_document_highlight_enabled = 0  " disable highlighting reference
+  let g:lsp_diagnostics_enabled = 0  " redundant with ale
+  let g:lsp_document_highlight_enabled = 0  " reundant with *, &, etc.
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
   let g:jedi#completions_enabled = 0
