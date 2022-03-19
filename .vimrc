@@ -409,7 +409,7 @@ augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
-command! -nargs=? PopupToggle call switch#popup_setup(<args>)
+command! -nargs=? PopupToggle call switch#popup(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
@@ -1126,7 +1126,7 @@ endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 if s:active('vim-scrollwrapped')
-  let g:scrollwrapped_wrap_filetypes = ['ale-preview', 'tex', 'rst', 'md']
+  let g:scrollwrapped_wrap_filetypes = ['ale-preview', 'bib', 'liquid', 'markdown', 'rst', 'tex']
   nnoremap <Leader>w <Cmd>WrapToggle<CR>
   nnoremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   nnoremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>

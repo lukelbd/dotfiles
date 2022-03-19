@@ -80,18 +80,18 @@ function! popup#codi_rephrase(text) abort
   let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
   let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
   if &filetype ==# 'julia'  " prepend repr functions
-    let text = '_r=k->print(k*" = "*repr(eval(k)));' . text
+    let text = '_r=s->print(s*" = "*repr(eval(s)));' . text
   else
-    let text = '_r=lambda k:print(k+" = "+repr(eval(k)));' . text
+    let text = '_r=lambda s:print(s+" = "+repr(eval(s)));' . text
   endif
   let maxlen = 950  " too close to 1000 gets risky even if under 1000
-  let index = maxlen
-  while len(text) > maxlen && line('$') < maxlen && (!exists('curlen') || curlen != len(text))
-    let curlen = len(text)
-    let index -= count(text[index:], "\n")
+  let cutoff = maxlen
+  while len(text) > maxlen && (!exists('prevlen') || prevlen != len(text))
+    let prevlen = len(text)
+    let cutoff -= count(text[cutoff:], "\n")
     let text = ''
-      \ . substitute(text[:index - 1], '\(^\|\n\)[^\n]*$', '\n', '')
-      \ . substitute(text[index:], '[^\n]', '', 'g')
+      \ . substitute(text[:cutoff - 1], '\(^\|\n\)[^\n]*$', '\n', '')
+      \ . substitute(text[cutoff:], '[^\n]', '', 'g')
   endwhile
   return text
 endfunction

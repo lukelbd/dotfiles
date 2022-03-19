@@ -1832,19 +1832,18 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
   # List available packages
   _echo_bashrc 'Enabling conda'
   conda-avail() {
-    local current options
+    local version versions
     [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
     echo "Package:            $1"
-    current=$(conda list "$1" 2>/dev/null)
-    [[ "$current" =~ "$1" ]] \
-      && current=$(echo "$current" | grep "$1" | awk 'NR == 1 {print $2}') \
-      || current="N/A"
-    echo "Current version:    $current"
-    options=$(conda search "$1" 2>/dev/null) \
-      || options=$(conda search -c conda-forge "$1" 2>/dev/null) \
+    version=$(mamba list "^$1$" 2>/dev/null)
+    [[ "$version" =~ "$1" ]] \
+      && version=$(echo "$version" | grep "$1" | awk 'NR == 1 {print $2}') \
+      || version="N/A"  # get N/A if not installed
+    echo "Current version:    $version"
+    versions=$(mamba search -c conda-forge "$1" 2>/dev/null) \
       || { echo "Error: Package \"$1\" not found."; return 1; }
-    options=$(echo "$options" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | xargs)
-    echo "Available versions: $options"
+    versions=$(echo "$versions" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | sort | xargs)
+    echo "Available versions: $versions"
   }
 
   # Initialize conda
