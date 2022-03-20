@@ -1543,11 +1543,8 @@ endif
 if s:active('codi.vim')
   augroup codi_mods
     au!
-    au User CodiUpdatePre call popup#codi_kludge(1)
-    au User CodiUpdatePost call popup#codi_kludge(0)
     au User CodiEnterPre call popup#codi_setup(1)
     au User CodiLeavePost call popup#codi_setup(0)
-    au User CodiEnterPost,CodiLeavePre silent! unlet b:codi_view
   augroup END
   command! -nargs=? CodiNew call popup#codi_new(<q-args>)
   nnoremap <Leader>= <Cmd>CodiNew<CR>
@@ -1557,7 +1554,7 @@ if s:active('codi.vim')
   let g:codi#rightsplit = 0
   let g:codi#width = 30
   let g:codi#log = ''  " enable when debugging
-  let g:codi#sync = 0  " enable async
+  let g:codi#sync = 0  " enable async mode
   let g:codi#interpreters = {
     \ 'python': {
         \ 'bin': ['python3', '-i', '-c', "'import readline; readline.set_auto_history(False)'"],

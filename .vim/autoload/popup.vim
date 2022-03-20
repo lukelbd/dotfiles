@@ -96,25 +96,6 @@ function! popup#codi_rephrase(text) abort
   return text
 endfunction
 
-" Kludgy function to prevent issue where (1) window alignment is messed up if
-" below first line and (2) offset of ~2 lines is present until cursor moves.
-" See issue for updates: https://github.com/metakirby5/codi.vim/issues/106
-function! popup#codi_kludge(trigger)
-  if a:trigger
-    let winline = line('w0')
-    if winline > 1
-      let s:codi_view = winsaveview()
-      1  " jump to first line
-    endif
-  else
-    if exists('s:codi_view')
-      call winrestview(s:codi_view)
-      unlet s:codi_view
-      normal! kj
-    endif
-  endif
-endfunction
-
 " Popup windows with filetype and color information
 function! popup#colors_win() abort
   source $VIMRUNTIME/syntax/colortest.vim
