@@ -1161,9 +1161,11 @@ _scp_bulk() {
 }
 
 # Worker functions powered by _scp_bulk(). Copies local to remote, remote to local,
-# or figure files in this directory to remote. Stop uploading figures to Github because
-# massively bloats repository size. Also ignore hidden folders and folders starting
-# with underscores like __pycache__. See: https://stackoverflow.com/q/28439393/4970632
+# or figure and manuscript files between local and remote. Stop uploading figures to
+# Github because massively bloats repository size and stop uploading manuscripts
+# because we track versions manually for simpler revision iteration with non-Github
+# users (otherwise manuscript tracking would get mixed up with code tracking in git
+# history so hard to folow). See: https://stackoverflow.com/q/28439393/4970632
 # NOTE: Previous git alias was figs = "!git add --all ':/fig*' ':/vid*' &&
 # git commit -m 'Update figures and notebooks.' && git push origin master"
 rlcp() {
@@ -1174,12 +1176,13 @@ lrcp() {
 }
 figcp() {
   local flags forward address src dest
-  flags=(--include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
+  flags=(--include='man*/***' --include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
   $_macos && forward=1 || forward=0
   [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
   src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
   $_macos && dest=${src/$HOME\/science/$HOME} || dest=${src/$HOME/$HOME\/science}
   _scp_bulk "${flags[@]}" "$forward" $@ "$src" "$dest"  # address may expand to nothing
+  _scp_bulk "${flags[@]}" "$((1 - forward))" $@ "$dest" "$src"  # address may expand to nothing
 }
 
 # Generate SSH file system
