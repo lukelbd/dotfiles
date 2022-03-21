@@ -80,39 +80,20 @@ function! popup#codi_rephrase(text) abort
   let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
   let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
   if &filetype ==# 'julia'  " prepend repr functions
-    let text = '_r=k->print(k*" = "*repr(eval(k)));' . text
+    let text = '_r=s->print(s*" = "*repr(eval(s)));' . text
   else
-    let text = '_r=lambda k:print(k+" = "+repr(eval(k)));' . text
+    let text = '_r=lambda s:print(s+" = "+repr(eval(s)));' . text
   endif
   let maxlen = 950  " too close to 1000 gets risky even if under 1000
-  let index = maxlen
-  while len(text) > maxlen && line('$') < maxlen && (!exists('curlen') || curlen != len(text))
-    let curlen = len(text)
-    let index -= count(text[index:], "\n")
+  let cutoff = maxlen
+  while len(text) > maxlen && (!exists('prevlen') || prevlen != len(text))
+    let prevlen = len(text)
+    let cutoff -= count(text[cutoff:], "\n")
     let text = ''
-      \ . substitute(text[:index - 1], '\(^\|\n\)[^\n]*$', '\n', '')
-      \ . substitute(text[index:], '[^\n]', '', 'g')
+      \ . substitute(text[:cutoff - 1], '\(^\|\n\)[^\n]*$', '\n', '')
+      \ . substitute(text[cutoff:], '[^\n]', '', 'g')
   endwhile
   return text
-endfunction
-
-" Kludgy function to prevent issue where (1) window alignment is messed up if
-" below first line and (2) offset of ~2 lines is present until cursor moves.
-" See issue for updates: https://github.com/metakirby5/codi.vim/issues/106
-function! popup#codi_kludge(trigger)
-  if a:trigger
-    let winline = line('w0')
-    if winline > 1
-      let s:codi_view = winsaveview()
-      1  " jump to first line
-    endif
-  else
-    if exists('s:codi_view')
-      call winrestview(s:codi_view)
-      unlet s:codi_view
-      normal! kj
-    endif
-  endif
 endfunction
 
 " Popup windows with filetype and color information

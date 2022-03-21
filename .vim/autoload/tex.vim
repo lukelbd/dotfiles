@@ -11,37 +11,49 @@ function! s:sed_cmd() abort
   else
     let gsed = ''
   endif
-  if empty(gsed) || !executable(gsed)
-    throw 'GNU sed not available.'
-  endif
+  if !executable(gsed) | echoerr 'GNU sed not available.' | let gsed = '' | endif
   return gsed
 endfunction
 
 "-----------------------------------------------------------------------------"
 " Selecting from tex labels (integration with idetools)
 "-----------------------------------------------------------------------------"
-" Return graphics paths
+" Source for tex labels
 function! s:label_source() abort
-  if !exists('b:ctags_alph')
-    return []
+  if !exists('b:tags_by_name')
+    echoerr 'No tags present in file.'
+    let tags = []
+  else
+    let tags = filter(copy(b:tags_by_name), 'v:val[2] ==# "l"')
+    let tags = map(tags, 'v:val[0] . " (" . v:val[1] . ")"')  " label (line number)
+    if empty(tags) | echoerr 'No tex labels found.' | endif
   endif
-  let ctags = filter(copy(b:ctags_alph), 'v:val[2] ==# "l"')
-  let ctags = map(ctags, 'v:val[0] . " (" . v:val[1] . ")"')  " label (line number)
-  if empty(ctags)
-    echoerr 'No ctag labels found.'
-  endif
-  return ctags
+  return tags
 endfunction
 
-" Return label text
+" Sink for tex labels
+function! s:label_sink(items) abort
+  echom 'Result!!!! ' . string(a:items)
+  let items = map(copy(a:items), 'substitute(v:val, " (.*)$", "", "")')
+  if mode() =~# 'i'
+    call feedkeys(succinct#process_value(join(items, ',')), 'tni')
+  else
+    echohl WarningMsg
+    echom 'Warning: No longer in insert mode. Not inserting labels.'
+    echohl None
+  endif
+endfunction
+
+" Fuzzy select tex labels
 " Note: To get multiple items hit <Shift><Tab>
+" Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
 function! s:label_select() abort
-  let items = fzf#run(fzf#wrap({
+  call fzf#run({
+    \ 'sinklist': function('s:label_sink'),
     \ 'source': s:label_source(),
-    \ 'options': '--multi --prompt="Label> "',
-    \ }))
-  let items = map(items, 'substitute(v:val, " (.*)$", "", "")')
-  return join(items, ',')
+    \ 'options': '--multi --height=100% --prompt="Label> "',
+    \ })
+  return ''  " text inserted by sink function
 endfunction
 function! tex#label_select(...) abort
   return function('s:label_select', a:000)
@@ -61,7 +73,6 @@ function! s:cite_source() abort
     \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | '
     \ . s:sed_cmd() . ' -n ''s@^\s*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}@\2@p'''
     \ )
-
   " Check that files all exist
   if v:shell_error == 0
     let filedir = expand('%:h')
@@ -79,39 +90,46 @@ function! s:cite_source() abort
       endif
     endfor
   endif
-
   " Set the environment variable and return command-line command used to
   " generate fuzzy list from the selected files.
-  let result = []
   if len(biblist) == 0
-    echoerr 'Bib files were not defined or do not exist.'
-  elseif ! executable('bibtex-ls')
-    " Note: See https://github.com/msprev/fzf-bibtex
+    echoerr 'Bibliography files not found.'
+    return []
+  elseif ! executable('bibtex-ls')  " see https://github.com/msprev/fzf-bibtex
     echoerr 'Command bibtex-ls not found.'
+    return []
   else
     let $FZF_BIBTEX_SOURCES = join(biblist, ':')
-    let result = 'bibtex-ls ' . join(biblist, ' ')
+    return 'bibtex-ls ' . join(biblist, ' ')
   endif
-  return result
 endfunction
 
-" Return citation text
-" We can them use this function as an insert mode <expr> mapping
-" Note: To get multiple items hit <Shift><Tab>
-function! s:cite_select() abort
-  let items = fzf#run(fzf#wrap({
-    \ 'source': s:cite_source(),
-    \ 'options': '--multi --prompt="Source> "',
-    \ }))
-  let result = ''
-  if ! executable('bibtex-cite')
-  " Note: See https://github.com/msprev/fzf-bibtex
-    echoerr 'Command bibtex-cite not found.'
-  else
-    let result = system("bibtex-cite -prefix='@' -postfix='' -separator=','", items)
-    let result = substitute(result, '@', '', 'g')
+" Sink for citations
+function! s:cite_sink(items) abort
+  if !executable('bibtex-cite')  " see https://github.com/msprev/fzf-bibtex
+    throw 'Command bibtex-cite not found.'
   endif
-  return result
+  let result = system("bibtex-cite -prefix='@' -postfix='' -separator=','", a:items)
+  let result = substitute(result, '@', '', 'g')  " remove label markers
+  if mode() =~# 'i'
+    call feedkeys(succinct#process_value(result), 'tni')
+  else
+    echohl WarningMsg
+    echom 'Warning: No longer in insert mode. Not inserting citations.'
+    echohl None
+  endif
+endfunction
+
+" Fuzzy select citation
+" Note: To get multiple items hit <Shift><Tab>
+" Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
+function! s:cite_select() abort
+  call fzf#run({
+    \ 'sinklist': function('s:cite_sink'),
+    \ 'source': s:cite_source(),
+    \ 'options': '--multi --height=100% --prompt="Source> "',
+    \ })
+  return ''  " text inserted by sink function
 endfunction
 function! tex#cite_select(...) abort
   return function('s:cite_select', a:000)
@@ -126,18 +144,15 @@ function! s:graphic_source() abort
   " Note: Negative indexing evidently does not work with strings
   " Todo: Make this work when \graphicspath takes up more than one line
   " Not high priority because latexmk rarely accounts for this anyway
-  let paths = system(
-    \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | '
-    \ . s:sed_cmd() . ' -n ''s@\\graphicspath{\(.*\)}@\1@p'''
-    \ )
+  let paths = system('grep -o ''^[^%]*'' ' . shellescape(@%) . ' | '
+    \ . s:sed_cmd() . ' -n ''s@\\graphicspath{\(.*\)}@\1@p''')
   let paths = substitute(paths, "\n", '', 'g')  " in case multiple \graphicspath calls, even though this is illegal
   if !empty(paths) && (paths[0] !=# '{' || paths[len(paths) - 1] !=# '}')
     echohl WarningMsg
-    echom "Incorrect syntax '" . paths . "'. Surround paths with curly braces."
+    echom "Warning: Incorrect syntax '" . paths . "'. Surround paths with curly braces."
     echohl None
     let paths = '{' . paths . '}'
   endif
-
   " Check syntax
   " Make paths relative to *latex file* not cwd
   let filedir = expand('%:h')
@@ -152,33 +167,40 @@ function! s:graphic_source() abort
       echohl None
     endif
   endfor
-
-  " Get graphics files in each path
-  let figlist = []
+  " List graphics files in each path
+  let figs = []
   call add(pathlist, expand('%:h'))
   for path in pathlist
     for ext in ['png', 'jpg', 'jpeg', 'pdf', 'eps']
-      call extend(figlist, globpath(path, '*.' . ext, v:true, v:true))
+      call extend(figs, globpath(path, '*.' . ext, v:true, v:true))
     endfor
   endfor
-  let figlist = map(figlist, 'fnamemodify(v:val, ":p:h:t") . "/" . fnamemodify(v:val, ":t")')
-
-  " Return figure files
-  if len(figlist) == 0
-    echoerr 'No graphics files found.'
-  endif
-  return figlist
+  let figs = map(figs, 'fnamemodify(v:val, ":p:h:t") . "/" . fnamemodify(v:val, ":t")')
+  if empty(figs) | echoerr 'No graphics files found.' | endif
+  return figs
 endfunction
 
-" Return graphics text
-" We can them use this function as an insert mode <expr> mapping
+" Sink for graphics
+function! s:graphic_sink(items) abort
+  let items = map(copy(a:items), 'fnamemodify(v:val, ":t")')
+  if mode() =~# 'i'
+    call feedkeys(succinct#process_value(join(items, ',')), 'tni')
+  else
+    echohl WarningMsg
+    echom 'Warning: No longer in insert mode. Not inserting graphics.'
+    echohl None
+  endif
+endfunction
+
+" Fuzzy select graphics
+" Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
 function! s:graphic_select() abort
-  let items = fzf#run(fzf#wrap({
+  call fzf#run({
+    \ 'sink': function('s:graphic_sink'),
     \ 'source': s:graphic_source(),
-    \ 'options': '--prompt="Figure> "',
-    \ }))
-  let items = map(items, 'fnamemodify(v:val, ":t")')
-  return join(items, ',')
+    \ 'options': '--height=100% --prompt="Figure> "',
+    \ })
+  return ''  " text inserted by sink function
 endfunction
 function! tex#graphic_select(...) abort
   return function('s:graphic_select', a:000)
@@ -221,7 +243,9 @@ function! s:format_units(value) abort
     else
       let items = matchlist(parts[idx], regex)
       if empty(items)
-        echohl WarningMsg | echom 'Warning: Invalid units string.' | echohl None
+        echohl WarningMsg
+        echom 'Warning: Invalid units string.'
+        echohl None
         return ''
       endif
       let part = '\mathrm{' . items[1] . '}'

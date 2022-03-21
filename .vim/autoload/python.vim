@@ -30,6 +30,7 @@ function! python#run_win()
 endfunction
 
 " Run current file using either popup window or jupyter session
+" Note: Running 'cell' in file without cells still works
 function! python#run_file() abort
   update
   if !python#has_jupyter()
@@ -37,7 +38,7 @@ function! python#run_file() abort
     call python#run_win()
   else
     echom 'Running code block.'
-    JupyterRunCell
+    JupyterSendCell
   endif
 endfunction
 
@@ -91,8 +92,9 @@ function! python#kwargs_dict(kw2dc, ...) abort range
     endif
     " Run fancy translation substitutions
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
-      echoerr 'Error: Text is both dictionary-like and kwarg-like.'
-      return
+      echohl WarningMsg
+      echom 'Warning: Text is both dictionary-like and kwarg-like.'
+      echohl None
     endif
     if a:kw2dc == 1  " kwargs to dictionary
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first

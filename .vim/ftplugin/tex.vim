@@ -44,9 +44,9 @@ noremap <silent> <buffer> <Plug>ExecuteFile1 :<C-u>call <sid>latexmk()<CR>
 noremap <silent> <buffer> <Plug>ExecuteFile2 :<C-u>call <sid>latexmk('--diff')<CR>
 noremap <silent> <buffer> <Plug>ExecuteFile3 :<C-u>call <sid>latexmk('--word')<CR>
 
-" Snippet dictionaries. Each snippet is made into an <expr> map by prepending
-" and appending the strings with single quotes. This lets us make input()
-" dependent snippets as shown for the 'j', 'k', and 'E' mappings.
+" Snippet dictionaries. Each snippet is made into an <expr> map by prepending and
+" appending the strings with single quotes. This lets us make input() dependent
+" snippets as shown for the 'j', 'k', and 'E' mappings.
 " * \xi is the weird curly one, pronounced 'zai'
 " * \chi looks like an x, pronounced 'kai'
 " * the 'u' used for {-} and {+} is for 'unary'

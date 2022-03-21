@@ -216,7 +216,6 @@ for s:key in [
 endfor
 
 " Disable insert mode stuff
-" * Ctrl-g used for builtin, surround, delimitmate insert-mode motion (against this)
 " * Ctrl-x used for scrolling or insert-mode complection, use autocomplete instead
 " * Ctrl-l used for special 'insertmode' always-insert-mode option
 " * Ctrl-h, Ctrl-d, Ctrl-t used for deleting and tabbing, but use backspace and tab
@@ -229,7 +228,7 @@ augroup override_maps
 augroup END
 for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
-  \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-g>', '<C-h>', '<C-l>',
+  \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-h>', '<C-l>',
   \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
   \ ]
   if empty(maparg(s:key, 'i'))
@@ -277,10 +276,10 @@ augroup tabs
 augroup END
 command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
 noremap <C-g> <Cmd>GFiles<CR>
-noremap <expr> <F3> "\<Cmd>Open " . expand('%:h') . "/\<CR>"
-noremap <expr> <C-o> "\<Cmd>Open " . input('Open: ', '', 'file') . "\<CR>"
-noremap <expr> <C-y> "\<Cmd>Files " . expand('%:h') . "/\<CR>"
-noremap <expr> <C-p> "\<Cmd>Files " . input('Files: ', '', 'dir') . "\<CR>"
+noremap <expr> <F3> "\<Cmd>Open " . input('Open: ', expand('%:p:h') . '/', 'file') . "\<CR>"
+noremap <expr> <C-o> "\<Cmd>Open " . input('Open: ', fnamemodify(getcwd(), ':p'), 'file') . "\<CR>"
+noremap <expr> <C-y> "\<Cmd>Files " . input('Files: ', expand('%:p:h') . '/', 'dir') . "\<CR>"
+noremap <expr> <C-p> "\<Cmd>Files " . input('Files: ', fnamemodify(getcwd(), ':p'), 'dir') . "\<CR>"
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
@@ -410,7 +409,7 @@ augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
-command! -nargs=? PopupToggle call switch#popup_setup(<args>)
+command! -nargs=? PopupToggle call switch#popup(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
@@ -490,9 +489,13 @@ for s:bracket in ['r[', 'a<', 'c{']
 endfor
 
 " Insert and mormal mode undo and redo. Also permit toggling blocks while in insert mode
+" Note: Here use <C-g> prefix similar to comment insert, and 'break squence' is
+" capital. Must use manual methods that actually remove inserted text.
+" inoremap <C-g>u <C-o><C-r><C-g>u
+" inoremap <C-g>U <C-g>u
+inoremap <C-g>u <C-o>mx<C-o>u
+inoremap <C-g>U <C-o><C-r><C-o>`x<Right>
 nnoremap U <C-r>
-inoremap <silent> <C-u> <C-o>mx<C-o>u
-inoremap <silent> <C-y> <C-o><C-r><C-o>`x<Right>
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
@@ -584,9 +587,7 @@ cnoremap <expr> <C-v> format#lang_map()
 " Turn on for certain filetypes
 augroup spell_toggle
   au!
-  au FileType tex setlocal nolist nocursorline colorcolumn=
-  au FileType tex,html,markdown,rst
-    \ if expand('<afile>') != '__doc__' | call switch#spellcheck(1) | endif
+  au FileType tex,html,markdown,rst if expand('<afile>') != '__doc__' | call switch#spellcheck(1) | endif
 augroup END
 
 " Toggle spelling on and off
@@ -606,18 +607,19 @@ nnoremap <Leader>d 1z=
 nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also corrects the word
-nnoremap <Plug>forward_spell bh]s<Cmd>call format#spell_apply(1)<CR><Cmd>call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <Plug>backward_spell el[s<Cmd>call format#spell_apply(0)<CR><Cmd>call repeat#set("\<Plug>backward_spell")<CR>
+" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
+nnoremap <silent> <Plug>forward_spell bh]s:call format#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[s:call format#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
-" Capitalization stuff with g, a bit refined. Not currently
-" used in normal mode, and fits better mnemonically
-" Mnemonic is y next to u, t for title case
+" Capitalization stuff with g, a bit refined. Not currently used in normal mode, and
+" fits better mnemonically (here y next to u, and t is for title case).
+" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 nnoremap <nowait> gu guiw
 nnoremap <nowait> gU gUiw
-nnoremap <Plug>cap1 ~h<Cmd>call repeat#set("\<Plug>cap1")<CR>
-nnoremap <Plug>cap2 mzguiw~h`z<Cmd>call repeat#set("\<Plug>cap2")<CR>
+nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
+nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
 nmap gy <Plug>cap1
 nmap gt <Plug>cap2
 vnoremap gy ~
@@ -680,9 +682,9 @@ nnoremap <Leader><CR> [I
 " Forward delete by tabs
 inoremap <expr> <Delete> format#forward_delete()
 
-" Insert comment with <Ctr-I>
+" Insert comment similar to gc
 " Todo: Add more control insert mappings?
-inoremap <expr> <F3> comment#comment_insert()
+inoremap <expr> <C-g>c comment#comment_insert()
 
 " Section headers, dividers, and other information
 nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
@@ -969,7 +971,7 @@ if !has('gui_running')
   Plug 'matsui54/ddc-buffer'  " matching words from buffer (as in neocomplete)
   Plug 'LumaKernel/ddc-file'  " matching file names
   Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
-  Plug 'matsui54/denops-popup-preview.vim'  " show previews for popup window
+  Plug 'matsui54/denops-popup-preview.vim'  " show previews during pmenu selection
 endif
 
 " Snippets and stuff
@@ -1124,7 +1126,7 @@ endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 if s:active('vim-scrollwrapped')
-  let g:scrollwrapped_wrap_filetypes = ['ale-preview', 'tex', 'rst', 'md']
+  let g:scrollwrapped_wrap_filetypes = ['ale-preview', 'bib', 'liquid', 'markdown', 'rst', 'tex']
   nnoremap <Leader>w <Cmd>WrapToggle<CR>
   nnoremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   nnoremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
@@ -1287,15 +1289,19 @@ if s:active('ddc.vim')
     \ })
   call ddc#enable()
 
-  " Popup mappings. Note enter is 'accept' only if we explicitly scrolled down, tab
+  " Popup and preview mappings. Note enter is 'accept' only if we scrolled down, tab
   " is always 'accept' and choose default menu item if necessary. Also break undo
   " history when adding newlines. See: :help ins-special-special
+  " Note: See https://github.com/prabirshrestha/vim-lsp/issues/865#issuecomment-719476089
+  " Todo: Consider using Shuogo's pum maps? Hard to implement <CR>/<Tab> features.
   augroup pum_navigation
     au!
     au BufEnter,InsertLeave * let b:pum_pos = 0
   augroup END
-  inoremap <expr> <ScrollWheelUp> format#pum_prev()
-  inoremap <expr> <ScrollWheelDown> format#pum_next()
+  nnoremap <expr> <C-e> lsp#scroll(-5)
+  inoremap <expr> <C-e> lsp#scroll(-5)
+  nnoremap <expr> <C-y> lsp#scroll(5)
+  inoremap <expr> <C-y> lsp#scroll(5)
   inoremap <expr> <Up> format#pum_prev()
   inoremap <expr> <Down> format#pum_next()
   inoremap <expr> <C-k> format#pum_prev()
@@ -1322,9 +1328,12 @@ if s:active('ddc.vim')
   " Language server settings
   " Note: Most mappings override custom ones so critical to change all settings.
   " Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
+  " Note: Attempted to enable markdown rendering in preview window but fails. See:
+  " https://github.com/prabirshrestha/vim-lsp/issues/865#issuecomment-719476089
+  let g:lsp_get_supported_capabilities = [function('format#lsp_get_supported_capabilities')]
   let g:lsp_fold_enabled = 0  " not yet tested
-  let g:lsp_diagnostics_enabled = 0  " use ale instead
-  let g:lsp_document_highlight_enabled = 0  " disable highlighting reference
+  let g:lsp_diagnostics_enabled = 0  " redundant with ale
+  let g:lsp_document_highlight_enabled = 0  " reundant with *, &, etc.
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
   let g:jedi#completions_enabled = 0
@@ -1534,11 +1543,8 @@ endif
 if s:active('codi.vim')
   augroup codi_mods
     au!
-    au User CodiUpdatePre call popup#codi_kludge(1)
-    au User CodiUpdatePost call popup#codi_kludge(0)
     au User CodiEnterPre call popup#codi_setup(1)
     au User CodiLeavePost call popup#codi_setup(0)
-    au User CodiEnterPost,CodiLeavePre silent! unlet b:codi_view
   augroup END
   command! -nargs=? CodiNew call popup#codi_new(<q-args>)
   nnoremap <Leader>= <Cmd>CodiNew<CR>
@@ -1548,7 +1554,7 @@ if s:active('codi.vim')
   let g:codi#rightsplit = 0
   let g:codi#width = 30
   let g:codi#log = ''  " enable when debugging
-  let g:codi#sync = 0  " enable async
+  let g:codi#sync = 0  " enable async mode
   let g:codi#interpreters = {
     \ 'python': {
         \ 'bin': ['python3', '-i', '-c', "'import readline; readline.set_auto_history(False)'"],
