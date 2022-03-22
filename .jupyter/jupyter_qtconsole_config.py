@@ -11,7 +11,7 @@ c.JupyterWidget.syntax_style = 'monokai'
 c.ConsoleWidget.include_other_output = True
 
 # Message for jupyter-vim
-c.ConsoleWidget.other_output_prefix = '[jupyter-vim] '
+c.ConsoleWidget.other_output_prefix = '[jupyter-vim]\n'
 
 # Match iTerm2 font size
 c.ConsoleWidget.font_size = 12

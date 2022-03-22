@@ -10,12 +10,13 @@ load_subconfig('ipython_config.py', profile='default')
 # See: https://github.com/wookayin/python-imgcat
 # See: https://github.com/daleroberts/itermplot/issues/27
 # See: https://github.com/oselivanov/matplotlib_iterm2
+default = 'module://imgcat'
+default = 'module://itermplot'
+default = 'module://matplotlib_iterm2.backend_iterm2'
 lines = """
 # Set up backend
 import os
-# backend = os.environ.setdefault('MPLBACKEND', 'module://imgcat')
-# backend = os.environ.setdefault('MPLBACKEND', 'module://itermplot')
-backend = os.environ.setdefault('MPLBACKEND', 'module://matplotlib_iterm2.backend_iterm2')
+backend = os.environ.setdefault('MPLBACKEND', {})
 # Set up proplot
 import proplot as pplt
 pplt.ion()
@@ -53,7 +54,7 @@ else:
     import cartopy.crs as ccrs
     from cartopy.mpl import gridliner
     from cartopy.mpl import geoaxes
-"""
+""".format(default)
 
 # Update ipython
 c.InteractiveShellApp.exec_lines.append(lines)
