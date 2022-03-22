@@ -27,8 +27,8 @@
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
-if [ -z "$_ps1_set" ]; then  # don't overwrite modifications by supercomputer modules, conda environments, etc.
-  _ps1_set=1
+if [ -z "$_prompt_set" ]; then  # don't overwrite modifications by supercomputer modules, conda environments, etc.
+  _prompt_set=1
   _prompt_dirs() {
     local paths
     IFS=$'\n' read -d '' -r -a paths < <(dirs -p -l | tac)
