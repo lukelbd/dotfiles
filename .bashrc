@@ -65,7 +65,7 @@ _macos=false
 _echo_bashrc 'Variables and modules'
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  uriah*|velouria*)
+  uriah*|velouria*|enceladus*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'.
     #   List macports installs with 'port installed requested'.
@@ -901,7 +901,7 @@ _address_port() {
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
   [ $# -gt 1 ] && echo 'Error: Too many input args.' && return 1
   case $host in
-    uriah)
+    uriah*|velouria*|enceladus*)
       address=localhost
       port=1000
       ;;
@@ -1808,18 +1808,34 @@ fi
 # See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
+# Find cond base
+# NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
+alias brew="PATH=\"$PATH\" brew"
+if [ -d "$HOME/anaconda3" ]; then
+  _conda=anaconda3
+elif [ -d "$HOME/miniconda3" ]; then
+  _conda=miniconda3
+else
+  unset _conda
+fi
+
 if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
-  # Find cond base
-  # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
+  # Initialize conda
   _echo_bashrc 'Enabling conda'
-  alias brew="PATH=\"$PATH\" brew"
-  if [ -d "$HOME/anaconda3" ]; then
-    _conda=anaconda3
-  elif [ -d "$HOME/miniconda3" ]; then
-    _conda=miniconda3
+  __conda_setup=$("$HOME/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)
+  if [ $? -eq 0 ]; then
+    eval "$__conda_setup"
   else
-    unset _conda
+    if [ -f "$HOME/$_conda/etc/profile.d/conda.sh" ]; then
+      source "$HOME/$_conda/etc/profile.d/conda.sh"
+    else
+      export PATH=$HOME/$_conda/bin:$PATH
+    fi
   fi
+  if ! [[ "$PATH" =~ condabin ]]; then
+    export PATH=$HOME/$_conda/condabin:$PATH
+  fi
+  unset __conda_setup
 
   # Function to list available packages
   conda-avail() {
@@ -1836,22 +1852,6 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
     versions=$(echo "$versions" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | sort | xargs)
     echo "Available versions: $versions"
   }
-
-  # Initialize conda
-  __conda_setup=$("$HOME/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)
-  if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-  else
-    if [ -f "$HOME/$_conda/etc/profile.d/conda.sh" ]; then
-      source "$HOME/$_conda/etc/profile.d/conda.sh"
-    else
-      export PATH=$HOME/$_conda/bin:$PATH
-    fi
-  fi
-  if ! [[ "$PATH" =~ condabin ]]; then
-    export PATH=$HOME/$_conda/condabin:$PATH
-  fi
-  unset __conda_setup
 
   # Activate conda
   conda activate base

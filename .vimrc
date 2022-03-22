@@ -91,8 +91,8 @@ set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu
 set wildmode=longest:list,full
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
-let &g:wildignore =
-  \ '*.pdf,*.doc,*.docs,*.page,*.pages,'
+let &g:wildignore = ''
+  \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
   \ . '*.mp3,*.m4a,*.mk4,*.mp4,*.mov,*.flac,*.wav,'
   \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store,'
