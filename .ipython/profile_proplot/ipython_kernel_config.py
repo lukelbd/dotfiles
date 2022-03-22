@@ -1,7 +1,7 @@
 #-----------------------------------------------------------------------------#
 # Configuration file for ipython-kernel.
 #-----------------------------------------------------------------------------#
-# Set backend early to prevent jupyter from using its own inline backend
+# Set matplotlib backend early to prevent jupyter from using its own inline backend
 # See ipython_config.py for details on the terminal inline backends
 import os
 default = 'module://imgcat'
