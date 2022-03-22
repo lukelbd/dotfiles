@@ -24,13 +24,18 @@
 # 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
 
-# Prompt
-# Keep things minimal, just make prompt bold so more identifiable
+# Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
 if [ -z "$_ps1_set" ]; then  # don't overwrite modifications by supercomputer modules, conda environments, etc.
-  export PS1='\[\033[1;37m\]\h[\j]:\W\$ \[\033[0m\]'  # prompt string 1; shows "<comp name>:<work dir> <user>$"
   _ps1_set=1
+  _prompt_dirs() {
+    local paths
+    IFS=$'\n' read -d '' -r -a paths < <(dirs -p -l | tac)
+    paths=("${paths[@]##*/}")
+    IFS=: eval 'echo "${paths[*]}"'
+  }
+  export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 fi
 
 # Message constructor; modify the number to increase number of dots
