@@ -765,31 +765,30 @@ rdiff() {
 tdiff() {  # print statements are formatted like rdiff
   [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
-  dir1=$1
-  dir2=$2
+  dir1=${1%/}
+  dir2=${2%/}
   for dir in "$dir1" "$dir2"; do
     echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
     files+=$'\n'$(find "$dir" -mindepth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession')
   done
-  read -r -a files < <(echo "$files" | sort | uniq | xargs)
-  for file in "${files[@]}"; do
-    file=${file#$dir1/}
-    file=${file#$dir2/}
-    if [ -e "$dir1/$file" ] && [ -e "$dir2/$file" ]; then
-      if [ "$dir1/$file" -nt "$dir2/$file" ]; then
-        cat1+="File $dir1/$file is newer."$'\n'
-      elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
-        cat2+="File $dir2/$file is newer."$'\n'
-      else
-        cat3+="Files $dir1/$file in $dir2/$file are same age."$'\n'
-      fi
-    elif [ -e "$dir1/$file" ]; then
-      cat4+="File $dir1/$file is not in $dir2."$'\n'
+  while read -r file; do
+    file=${file/$dir1\//}
+    file=${file/$dir2\//}
+    if ! [ -e "$dir1/$file" ]; then
+      cat2+="File $dir2/$file is not in $dir1."$'\n'
+    elif ! [ -e "$dir2/$file" ]; then
+      cat1+="File $dir1/$file is not in $dir2."$'\n'
     else
-      cat5+="File $dir2/$file is not in $dir1."$'\n'
+      if [ "$dir1/$file" -nt "$dir2/$file" ]; then
+        cat3+="File $dir1/$file is newer."$'\n'
+      elif [ "$dir1/$file" -ot "$dir2/$file" ]; then
+        cat4+="File $dir2/$file is newer."$'\n'
+      else
+        cat5+="Files $dir1/$file in $dir2/$file are same age."$'\n'
+      fi
     fi
-  done
+  done < <(echo "$files" | sort)
   for cat in "$cat1" "$cat2" "$cat3" "$cat4" "$cat5"; do
     printf "%s" "$cat"
   done
