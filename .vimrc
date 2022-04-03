@@ -1047,15 +1047,6 @@ let g:jupytext_fmt = 'py:percent'
 " Plug 'yggdroot/indentline'
 " Plug 'nathanaelkane/vim-indent-guides'
 
-" Colorful stuff
-" Test: ~/.vim/plugged/colorizer/colortest.txt
-" Note: colorizer very expensive so disabled by default and toggled with shortcut
-" Plug 'altercation/vim-colors-solarized'
-Plug 'flazz/vim-colorschemes'  " for macvim
-Plug 'fcpg/vim-fahrenheit'  " for macvim
-Plug 'KabbAmine/yowish.vim'  " for macvim
-Plug 'lilydjwg/colorizer'  " only in macvim or when &t_Co == 256
-
 " Syntax highlighting
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 " Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
@@ -1069,6 +1060,15 @@ Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
 Plug 'cespare/vim-toml'
 Plug 'JuliaEditorSupport/julia-vim'
+
+" Colorful stuff
+" Test: ~/.vim/plugged/colorizer/colortest.txt
+" Note: colorizer very expensive so disabled by default and toggled with shortcut
+" Plug 'altercation/vim-colors-solarized'
+Plug 'flazz/vim-colorschemes'  " for macvim
+Plug 'fcpg/vim-fahrenheit'  " for macvim
+Plug 'KabbAmine/yowish.vim'  " for macvim
+Plug 'lilydjwg/colorizer'  " only in macvim or when &t_Co == 256
 
 " Helpful stuff
 " Plug 'dkarter/bullets.vim'  " list numbering but completely fails
