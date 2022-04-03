@@ -1078,6 +1078,10 @@ Plug 'JuliaEditorSupport/julia-vim'
 Plug 'AndrewRadev/splitjoin.vim'  " single-line multi-line transition hardly every needed
 let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_join_mapping  = 'cJ'
+let g:splitjoin_trailing_comma = 1
+let g:splitjoin_normalize_whitespace = 1
+let g:splitjoin_python_brackets_on_standard_indents = 1
+let g:splitjoin_python_brackets_on_separate_lines = 1
 
 " Custom plugins or forks, try to load locally if possible!
 " See: https://github.com/junegunn/vim-plug/issues/32
