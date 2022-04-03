@@ -72,17 +72,18 @@ case "${HOSTNAME%%.*}" in
   # Macbook settings
   uriah*|velouria*|enceladus*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-    # * List homewbrew installs with 'brew list' and casks with 'brew list --cask'.
-    #   List macports installs with 'port installed requested'.
-    # * Installed tex using: brew install --cask mactex: https://tex.stackexchange.com/q/97183/73149
-    #   Installed ffmpeg using: sudo port install ffmpeg +nonfree: https://stackoverflow.com/q/55092608/4970632
+    # * List homewbrew installs with 'brew list' (narrow with --formulae or --casks).
+    #   packages with 'brew info package', macports with 'port installed [package]'.
+    # * Installed tex using: brew install --cask mactex
+    #   See: https://tex.stackexchange.com/q/97183/73149
+    # * Installed ffmpeg using: sudo port install ffmpeg +nonfree
+    #   See: https://stackoverflow.com/q/55092608/4970632
     # * Installed universal ctags with (not in main repo becauase no versions yet):
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
     # * Installed cdo, nco, and R with macports. Installed ncl by installing compilers
     #   with macports and downloading pre-compiled binary from ncar.
     # * Installed gcc and gfortran with 'port install libgcc7' then 'port select
-    #   --set gcc mp-gcc7' (earlier and later versions fail with ncl).
-    #   need to swtich between versions and retry). Try 'port select --list gcc'.
+    #   --set gcc mp-gcc7' (needed for ncl). Try 'port select --list gcc'.
     # * Actually in latest versions had issues installing gcc7... listed gcc9 as
     #   dependency then failed... so now have used 'brew install gcc@7'.
     # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep

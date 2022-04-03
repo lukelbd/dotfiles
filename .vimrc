@@ -1100,6 +1100,10 @@ Plug 'lilydjwg/colorizer'  " works only in macvim or when &t_Co == 256
 Plug 'AndrewRadev/splitjoin.vim'  " single-line multi-line transition hardly every needed
 let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_join_mapping  = 'cJ'
+let g:splitjoin_trailing_comma = 1
+let g:splitjoin_normalize_whitespace = 1
+let g:splitjoin_python_brackets_on_standard_indents = 1
+let g:splitjoin_python_brackets_on_separate_lines = 1
 
 " End plugin manager. Also declares filetype plugin, syntax, and indent on
 " Note every BufRead autocmd inside an ftdetect/filename.vim file is automatically
