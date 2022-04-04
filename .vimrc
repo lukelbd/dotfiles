@@ -1024,6 +1024,8 @@ Plug 'junegunn/vim-easy-align'
 " Plug 'klen/python-mode'  " incompatible with jedi-vim and outdated
 " Plug 'ivanov/vim-ipython'  " replaced by jupyter-vim
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
+" Plug 'Vimjas/vim-python-pep8-indent'  " pep8 style indentexpr
+Plug 'jeetsukumaran/vim-python-indent-black'  " black style indentexpr
 Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
@@ -1102,7 +1104,6 @@ let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_join_mapping  = 'cJ'
 let g:splitjoin_trailing_comma = 1
 let g:splitjoin_normalize_whitespace = 1
-let g:splitjoin_python_brackets_on_standard_indents = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
 
 " End plugin manager. Also declares filetype plugin, syntax, and indent on
