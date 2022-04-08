@@ -288,23 +288,22 @@ _setup_opts() {
   set +H  # turn off history expand so can have '!' in strings: https://unix.stackexchange.com/a/33341/112647
   set -o ignoreeof  # never close terminal with ctrl-d
   stty -ixon  # disable start stop output control to alloew ctrl-s
-  shopt -s cmdhist                  # save multi-line commands as one command in shell history
-  shopt -s checkwinsize             # allow window resizing
-  shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
-  shopt -u extglob                  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -u dotglob                  # include dot patterns in glob matches
-  shopt -s direxpand                # expand dirs
-  shopt -s dirspell                 # attempt spelling correction of dirname
-  shopt -s cdspell                  # spelling errors during cd arguments
-  shopt -s cdable_vars              # cd into shell variable directories, no $ necessary
-  shopt -s nocaseglob               # case insensitive glob
   shopt -s autocd                   # typing naked directory name will cd into it
-  shopt -u no_empty_cmd_completion  # no more completion in empty terminal!
-  shopt -s histappend               # append to the history file, don't overwrite it
-  shopt -s cmdhist                  # save multi-line commands as one command
+  shopt -s cdspell                  # attempt spelling correction of cd arguments
+  shopt -s cdable_vars              # cd into shell variable directories, no $ necessary
+  shopt -s checkwinsize             # allow window resizing
+  shopt -s cmdhist                  # save multi-line commands as one command in history
+  shopt -s direxpand                # expand directories
+  shopt -s dirspell                 # attempt spelling correction of dirname
   shopt -s globstar                 # **/ matches all subdirectories, searches recursively
-  shopt -u failglob                 # error message if expansion is empty
-  # shopt -s nocasematch            # affects global behavior of case/esac, and [[ =~ ]] commands
+  shopt -s histappend               # append to the history file, don't overwrite it
+  shopt -u dotglob                  # include dot patterns in glob matches
+  shopt -u extglob                  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -u failglob                 # no error message if expansion is empty
+  shopt -u nocaseglob               # match case in glob expressions
+  shopt -u nocasematch              # match case in case/esac and [[ =~ ]] instances
+  shopt -u no_empty_cmd_completion  # enable empty command completion
+  shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
   export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
   export HISTSIZE=50000
@@ -999,7 +998,7 @@ _ssh() {
     ports=($(seq $port $((port + 6))))
     # ports=($(seq $port $((port + 3))))  # try fewer
   fi
-  flags="-o LogLevel=error -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
+  flags="-o LogLevel=error -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
   flags+=" -t -R localhost:${ports[0]}:localhost:22"  # for rlcp etc.
   for port in "${ports[@]:1}"; do  # for jupyter etc.
     flags+=" -L localhost:$port:localhost:$port"

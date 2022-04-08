@@ -33,7 +33,6 @@ endfunction
 
 " Sink for tex labels
 function! s:label_sink(items) abort
-  echom 'Result!!!! ' . string(a:items)
   let items = map(copy(a:items), 'substitute(v:val, " (.*)$", "", "")')
   if mode() =~# 'i'
     call feedkeys(succinct#process_value(join(items, ',')), 'tni')
@@ -196,9 +195,9 @@ endfunction
 " Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
 function! s:graphic_select() abort
   call fzf#run({
-    \ 'sink': function('s:graphic_sink'),
+    \ 'sinklist': function('s:graphic_sink'),
     \ 'source': s:graphic_source(),
-    \ 'options': '--height=100% --prompt="Figure> "',
+    \ 'options': '--multi --height=100% --prompt="Figure> "',
     \ })
   return ''  " text inserted by sink function
 endfunction
