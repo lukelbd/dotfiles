@@ -379,6 +379,7 @@ let s:popup_filetypes = {
   \ 'ale-preview': 0,
   \ 'codi': 0,
   \ 'diff': 0,
+  \ 'log': 0,
   \ 'popup': 0,
   \ 'vim-plug': 0,
   \ 'fugitive': 1,
@@ -1131,7 +1132,9 @@ endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 if s:active('vim-scrollwrapped')
-  let g:scrollwrapped_wrap_filetypes = ['ale-preview', 'bib', 'liquid', 'markdown', 'rst', 'tex']
+  let g:scrollwrapped_wrap_filetypes = [
+    \ 'ale-preview', 'bib', 'liquid', 'log', 'markdown', 'rst', 'tex'
+    \ ]
   nnoremap <Leader>w <Cmd>WrapToggle<CR>
   nnoremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   nnoremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
