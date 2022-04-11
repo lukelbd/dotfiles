@@ -12,6 +12,7 @@ __pycache__
 # Common temporary files
 *.log
 *.tmp
+*.bak
 
 # Trash
 old
