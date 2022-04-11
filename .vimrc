@@ -303,6 +303,7 @@ nmap <Leader>Z <Plug>ExecuteFile3
 noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Save and quit, also test whether the :q action closed the entire tab
+" hello[goodbye]
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
 nnoremap <C-w> <Cmd>call file#close_window()<CR>
 nnoremap <C-e> <Cmd>call file#close_tab()<CR>
@@ -791,29 +792,6 @@ command! -nargs=1 PlugLocal call s:plug_local(<args>)
 " derived from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
 call plug#begin('~/.vim/plugged')
 
-" Custom plugins or forks, try to load locally if possible!
-" See: https://github.com/junegunn/vim-plug/issues/32
-" Note: ^= prepends to list and += appends. Also previously added forks here but
-" probably simpler/consistent to simply source files.
-for s:name in [
-  \ 'vim-succinct',
-  \ 'vim-tags',
-  \ 'vim-statusline',
-  \ 'vim-tabline',
-  \ 'vim-scrollwrapped',
-  \ 'vim-toggle',
-  \ ]
-  let s:path_home = expand('~/' . s:name)
-  let s:path_fork = expand('~/forks/' . s:name)
-  if isdirectory(s:path_home)
-    exe "PlugLocal '" . s:path_home . "'"
-  elseif isdirectory(s:path_fork)
-    exe "PlugLocal '" . s:path_fork . "'"
-  else
-    exe "Plug 'lukelbd/" . s:name . "'"
-  endif
-endfor
-
 " Improve navigation.
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " Plug 'easymotion/vim-easymotion'  " extremely slow and overkill
@@ -1072,7 +1050,7 @@ let g:jupytext_fmt = 'py:percent'
 " Plug 'yggdroot/indentline'
 " Plug 'nathanaelkane/vim-indent-guides'
 
-" Syntax highlighting for a few different things
+" Syntax highlighting
 " Note impsort sorts import statements, and highlights modules with an after/syntax script
 " Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
@@ -1093,9 +1071,9 @@ Plug 'JuliaEditorSupport/julia-vim'
 Plug 'flazz/vim-colorschemes'  " for macvim
 Plug 'fcpg/vim-fahrenheit'  " for macvim
 Plug 'KabbAmine/yowish.vim'  " for macvim
-Plug 'lilydjwg/colorizer'  " works only in macvim or when &t_Co == 256
+Plug 'lilydjwg/colorizer'  " only in macvim or when &t_Co == 256
 
-" Misellaneous plugins
+" Helpful stuff
 " Plug 'dkarter/bullets.vim'  " list numbering but completely fails
 " Plug 'ohjames/tabdrop'  " now apply similar solution with tabline#write
 " Plug 'beloglazov/vim-online-thesaurus'  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
@@ -1106,6 +1084,31 @@ let g:splitjoin_join_mapping  = 'cJ'
 let g:splitjoin_trailing_comma = 1
 let g:splitjoin_normalize_whitespace = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
+
+" Custom plugins or forks, try to load locally if possible!
+" See: https://github.com/junegunn/vim-plug/issues/32
+" Note: This needs to come after or else vim-succinct will not be able to use
+" textobj#user#plugin and (possibly) initial statusline will be complete.
+" Note: ^= prepends to list and += appends. Also previously added forks here but
+" probably simpler/consistent to simply source files.
+for s:name in [
+  \ 'vim-succinct',
+  \ 'vim-tags',
+  \ 'vim-statusline',
+  \ 'vim-tabline',
+  \ 'vim-scrollwrapped',
+  \ 'vim-toggle',
+  \ ]
+  let s:path_home = expand('~/' . s:name)
+  let s:path_fork = expand('~/forks/' . s:name)
+  if isdirectory(s:path_home)
+    exe "PlugLocal '" . s:path_home . "'"
+  elseif isdirectory(s:path_fork)
+    exe "PlugLocal '" . s:path_fork . "'"
+  else
+    exe "Plug 'lukelbd/" . s:name . "'"
+  endif
+endfor
 
 " End plugin manager. Also declares filetype plugin, syntax, and indent on
 " Note every BufRead autocmd inside an ftdetect/filename.vim file is automatically
