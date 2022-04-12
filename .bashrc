@@ -1412,7 +1412,7 @@ nchelp() {
   echo "Available commands:"
   echo "ncenv ncinfo ncglobal ncvars ncdims
         ncin nclist ncvarlist ncdimlist
-        ncvarinfo ncvardump ncvarsummary ncvardetails" | column -t
+        ncvarinfo ncvardump ncvartable ncvardetails" | column -t
 }
 ncenv() {  # show variables on a compute cluster
   echo "Environment variables:"
@@ -1439,70 +1439,85 @@ ncversion() {
 # General summaries
 ncglobal() {
   # show just the global attributes
-  [ $# -ne 1 ] && echo "Usage: ncglobal FILE" && return 1
-  command ncdump -h "$@" | grep -A100 ^// | less
+  local file
+  [ $# -lt 1 ] && echo "Usage: ncglobal FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" | grep -A100 ^// | less
+  done
 }
 ncdims() {
   # show just the dimension header
-  [ $# -ne 1 ] && echo "Usage: ncdims FILE" && return 1
-  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
-  command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q'  | sed '1d;$d' \
+  local file
+  [ $# -lt 1 ] && echo "Usage: ncdims FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" \
+      | sed -n '/dimensions:/,$p' | sed '/variables:/q'  | sed '1d;$d' \
       | tr -d ';' | tr -s ' ' | column -t
+  done
 }
 ncinfo() {
   # show just the variable info (and linebreak before global attributes)
   # command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
-  [ $# -ne 1 ] && echo "Usage: ncinfo FILE" && return 1
-  ! [ -r "$1" ] && { echo "File \"$1\" not found."; return 1; }
-  command ncdump -h "$1" | sed '1,1d;$d' | less  # trims first and last lines; do not need these
+  local file
+  [ $# -lt 1 ] && echo "Usage: ncinfo FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" | sed '1,1d;$d'  # trims first and last lines; do not need these
+  done
 }
 ncvars() {
   # the space makes sure it isn't another variable that has trailing-substring
   # identical to this variable, -A prints TRAILING lines starting from FIRST match,
   # -B means prinx x PRECEDING lines starting from LAST match
-  [ $# -ne 1 ] && echo "Usage: ncvars FILE" && return 1
-  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
-  command ncdump -h "$1" | grep -A100 "^variables:$" | sed '/^$/q' | \
-    sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$" | less
+  local file
+  [ $# -lt 1 ] && echo "Usage: ncvars FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" | grep -A100 "^variables:$" | sed '/^$/q' | \
+      sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+  done
 }
 
 # Listing stuff
-ncin() {
-  # simply test membership; exit code zero means variable exists, exit code 1 means it doesn't
-  [ $# -ne 2 ] && echo "Usage: ncin VAR FILE" && return 1
-  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  command ncdump -h "$2" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | grep "$1" &>/dev/null
-}
 nclist() {
   # only get text between variables: and linebreak before global attributes
   # note variables don't always have dimensions! (i.e. constants) -- in this case
   # looks like " double var ;" instead of " double var(x,y) ;"
-  [ $# -ne 1 ] && echo "Usage: nclist FILE" && return 1
-  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
-  command ncdump -h "$1" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-    | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+  local file
+  [ $# -lt 1 ] && echo "Usage: nclist FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
+      | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+  done
 }
 ncdimlist() {
   # get list of dimensions
-  [ $# -ne 1 ] && echo "Usage: ncdimlist FILE" && return 1
-  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
-  command ncdump -h "$1" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
-    | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+  local file
+  [ $# -lt 1 ] && echo "Usage: ncdimlist FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" | sed -n '/dimensions:/,$p' | sed '/variables:/q' \
+      | cut -d'=' -f1 -s | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+  done
 }
 ncvarlist() {
   # only get text between variables: and linebreak before global attributes
-  local list dmnlist varlist
-  [ $# -ne 1 ] && echo "Usage: ncvarlist FILE" && return 1
-  ! [ -r "$1" ] && echo "Error: File \"$1\" not found." && return 1
-  read -r -a list < <(nclist "$1" | xargs)
-  read -r -a dmnlist < <(ncdimlist "$1" | xargs)
-  for item in "${list[@]}"; do
-    if ! [[ " ${dmnlist[*]} " =~ " $item " ]]; then
-      varlist+=("$item")
-    fi
+  local file list dmnlist varlist
+  [ $# -lt 1 ] && echo "Usage: ncvarlist FILE" && return 1
+  for file in "$@"; do
+    read -r -a list < <(nclist "$file" | xargs)
+    read -r -a dmnlist < <(ncdimlist "$file" | xargs)
+    for item in "${list[@]}"; do
+      if ! [[ " ${dmnlist[*]} " =~ " $item " ]]; then
+        varlist+=("$item")
+      fi
+    done
+    echo "File: $file"
+    echo "${varlist[*]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort  # print results
   done
-  echo "${varlist[@]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort  # print results
 }
 
 # Inquiries about specific variables
@@ -1510,36 +1525,51 @@ ncvarinfo() {
   # as above but just for one variable
   # the space makes sure it isn't another variable that has trailing-substring
   # identical to this variable; and the $'' is how to insert literal tab
-  [ $# -ne 2 ] && echo "Usage: ncvarinfo VAR FILE" && return 1
-  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  command ncdump -h "$2" | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" | sed "s/$1://g" | sed $'s/^\t//g'
+  local file
+  [ $# -lt 2 ] && echo "Usage: ncvarinfo VAR FILE" && return 1
+  for file in "${@:2}"; do
+    echo "File: $file"
+    command ncdump -h "$file" \
+      | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" \
+      | sed "s/$1://g" | sed $'s/^\t//g'
+  done
 }
 ncvardump() {
   # dump variable contents (first argument) from file (second argument)
   # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
   # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
-  [ $# -ne 2 ] && echo "Usage: ncvardump VAR FILE" && return 1
-  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  command ncdump -v "$1" "$2" | tac \
-    | grep -E -m 1 -B100 "[[:space:]]$1[[:space:]]" | sed '1,1d' | tac
+  local file
+  [ $# -lt 2 ] && echo "Usage: ncvardump VAR FILE" && return 1
+  for file in "${@:2}"; do
+    echo "File: $file"
+    command ncdump -v "$1" "$file" | tac \
+      | grep -E -m 1 -B100 "[[:space:]]$1[[:space:]]" \
+      | sed '1,1d' | tac
+  done
 }
-ncvarsummary() {
+ncvartable() {
   # parse the CDO parameter table; ncvarinfo replaces this
   # procedure is ideal for "sanity checks" of data; just test one timestep
   # slice at every level; the tr -s ' ' trims multiple whitespace
   # to single and the column command re-aligns columns
-  [ $# -lt 2 ] && echo "Usage: ncvarsummary VAR FILE" && return 1
-  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null \
-    | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t | less
+  local file
+  [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
+  for file in "${@:2}"; do
+    echo "File: $file"
+    cdo infon -seltimestep,1 -selname,"$1" "$file" 2>/dev/null \
+      | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
+  done
 }
 ncvardetails() {
   # as above but show everything
   # note we show every column instead of hiding stuff
-  [ $# -ne 2 ] && echo "Usage: ncvartable2 VAR FILE" && return 1
-  ! [ -r "$2" ] && echo "Error: File \"$2\" not found." && return 1
-  cdo infon -seltimestep,1 -selname,"$1" "$2" 2>/dev/null \
-    | tr -s ' ' | column -t | less
+  local file
+  [ $# -lt 2 ] && echo "Usage: ncvardetails VAR FILE" && return 1
+  for file in "${@:2}"; do
+    echo "File: $file"
+    cdo infon -seltimestep,1 -selname,"$1" "$file" 2>/dev/null \
+      | tr -s ' ' | column -t | less
+    done
 }
 
 # Extract generalized files
