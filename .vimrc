@@ -270,10 +270,6 @@ command! -nargs=0 Bufs call utils#open_bufs()
 command! -nargs=? Abspath call utils#abs_path(<f-args>)
 
 " Opening file in current directory and some input directory
-augroup tabs
-  au!
-  au TabLeave * let g:lasttab = tabpagenr()
-augroup END
 command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
 noremap <C-g> <Cmd>GFiles<CR>
 noremap <expr> <F3> "\<Cmd>Open " . input('Open: ', expand('%:p:h') . '/', 'file') . "\<CR>"
@@ -324,14 +320,14 @@ nnoremap <Leader>s <Cmd>Autosave 1<CR>
 nnoremap <Leader>S <Cmd>Autosave 0<CR>
 
 " Tab selection and movement
-nnoremap <Tab>, gT
-nnoremap <Tab>. gt
-nnoremap <Tab>' <Cmd>exe 'tabn ' . (exists('g:lasttab') ? g:lasttab : 1)<CR>
-nnoremap <Tab><Tab> <Cmd>call file#tab_select()<CR>
-nnoremap <Tab><Space> <Cmd>Buffers<CR>
+nnoremap <Tab>' <Cmd>tabnext #<CR>
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
+nnoremap <Tab>> <Cmd>call file#tab_move(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call file#tab_move(tabpagenr() - v:count1)<CR>
 nnoremap <Tab>m <Cmd>call file#tab_move()<CR>
-nnoremap <Tab>> <Cmd>call file#tab_move(tabpagenr() + 1)<CR>
-nnoremap <Tab>< <Cmd>call file#tab_move(tabpagenr() - 1)<CR>
+nnoremap <Tab><Space> <Cmd>Buffers<CR>
+nnoremap <Tab><Tab> <Cmd>call file#tab_select()<CR>
 for s:num in range(1, 10)
   exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
 endfor
