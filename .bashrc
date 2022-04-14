@@ -1530,7 +1530,7 @@ ncvarinfo() {
   for file in "${@:2}"; do
     echo "File: $file"
     command ncdump -h "$file" \
-      | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]]$1:" \
+      | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]][[:space:]]$1:" \
       | sed "s/$1://g" | sed $'s/^\t//g'
   done
 }
