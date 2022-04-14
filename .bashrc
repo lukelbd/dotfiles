@@ -1443,7 +1443,7 @@ ncglobal() {
   [ $# -lt 1 ] && echo "Usage: ncglobal FILE" && return 1
   for file in "$@"; do
     echo "File: $file"
-    command ncdump -h "$file" | grep -A100 ^// | less
+    command ncdump -h "$file" | grep -A100 ^//
   done
 }
 ncdims() {
