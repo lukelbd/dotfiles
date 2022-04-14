@@ -438,7 +438,11 @@ help() {
   if builtin help "$@" &>/dev/null; then
     builtin help "$@" 2>&1 | less
   else
-    local help=$("$@" --help 2>&1)
+    if [ "$1" == cdo ]; then
+      local help=$("$1" --help "${@:2}" 2>&1)
+    else
+      local help=$("$@" --help 2>&1)
+    fi
     if [ "$(echo "$help" | wc -l)" -gt 2 ]; then
       command less <<< "$help"
     else
