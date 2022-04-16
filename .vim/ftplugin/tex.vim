@@ -39,10 +39,10 @@ endfunction
 " Latexmk command and shortcuts
 " Note: This map overwrites :TestVisit but no harm for tex files.
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <silent> <buffer> <Leader>\ :<C-u>call <sid>latexmk('--quick')<CR>
-noremap <silent> <buffer> <Plug>ExecuteFile1 :<C-u>call <sid>latexmk()<CR>
-noremap <silent> <buffer> <Plug>ExecuteFile2 :<C-u>call <sid>latexmk('--diff')<CR>
-noremap <silent> <buffer> <Plug>ExecuteFile3 :<C-u>call <sid>latexmk('--word')<CR>
+noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--quick')<CR>
+noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk()<CR>
+noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--diff')<CR>
+noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--word')<CR>
 
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending and
 " appending the strings with single quotes. This lets us make input() dependent

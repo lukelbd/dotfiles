@@ -13,4 +13,4 @@ function! s:run_ncl_script()
   let cmd = 'ncl -n -Q ' . shellescape(@%)
   call popup#job_win(cmd)
 endfunction
-nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>run_ncl_script()<CR>
+nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>run_ncl_script()<CR>
