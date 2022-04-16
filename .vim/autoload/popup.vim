@@ -211,21 +211,22 @@ function! popup#job_win(cmd, ...) abort
     echohl None
     return 1
   endif
+  let cmds = ['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :']
+  let hght = winheight('.') / 4
   let opts = {}  " job options, empty by default
-  let show = a:0 ? a:1 : 1
-  if show  " show popup window
+  if (a:0 ? a:1 : 1)  " whether to show popup window
     let logfile = expand('%:t:r') . '.log'
     let lognum = bufwinnr(logfile)
     if lognum == -1  " open a logfile window
-      silent! exe string(winheight('.') / 4) . 'split ' . logfile
-      silent! exe winnr('#') . 'wincmd w'
+      exe hght . 'split ' . logfile
+      exe winnr('#') . 'wincmd w'
     else  " jump to logfile window and clean its contents
-      silent! exe bufwinnr(logfile) . 'wincmd w'
-      silent! 1,$d _
-      silent! exe winnr('#') . 'wincmd w'
+      exe bufwinnr(logfile) . 'wincmd w'
+      1,$d _
+      exe winnr('#') . 'wincmd w'
     endif
     let num = bufnr(logfile)
     let opts = {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
   endif
-  let b:popup_job = job_start(['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :'], opts)
+  let b:popup_job = job_start(cmds, opts)
 endfunction

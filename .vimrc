@@ -478,14 +478,6 @@ nnoremap <expr> ` "`" . nr2char(97 + v:count)
 nnoremap <expr> ~ 'm' . nr2char(97 + v:count) . ':HighlightMark ' . nr2char(97 + v:count) . '<CR>'
 nnoremap <Leader>~ <Cmd>RemoveHighlights<CR>
 
-" Alias single-key builtin text objects
-for s:bracket in ['r[', 'a<', 'c{']
-  exe 'onoremap i' . s:bracket[0] . ' i' . s:bracket[1]
-  exe 'xnoremap i' . s:bracket[0] . ' i' . s:bracket[1]
-  exe 'onoremap a' . s:bracket[0] . ' a' . s:bracket[1]
-  exe 'xnoremap a' . s:bracket[0] . ' a' . s:bracket[1]
-endfor
-
 " Insert and mormal mode undo and redo. Also permit toggling blocks while in insert mode
 " Note: Here use <C-g> prefix similar to comment insert, and 'break squence' is
 " capital. Must use manual methods that actually remove inserted text.
@@ -1001,7 +993,7 @@ Plug 'junegunn/vim-easy-align'
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'Vimjas/vim-python-pep8-indent'  " pep8 style indentexpr
 Plug 'jeetsukumaran/vim-python-indent-black'  " black style indentexpr
-Plug 'jupyter-vim/jupyter-vim'  " hard to use jupyter console with proplot
+Plug 'lukelbd/jupyter-vim', {'branch': 'fix-screen-refresh'}  " pairing with jupyter consoles
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
@@ -1174,9 +1166,10 @@ endif
 if s:active('tcomment_vim')
   nmap g>> g>c
   nmap g<< g<c
+  let g:tcomment_opleader1 = 'gc'  " default is 'gc'
   let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
   let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
-  let g:tcomment_opleader1 = 'gc'
+  let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
   let g:tcomment_mapleader_uncomment_anyway = 'g<'
   let g:tcomment_mapleader_comment_anyway = 'g>'
 endif
