@@ -12,12 +12,31 @@ function! s:sort_lines(line1, line2) abort
 endfunction
 
 " Return indication whether a jupyter connection is active
-" Warning: Monitor private variable _jupyter_session for changes
+" Warning: This uses private variable _jupyter_session. Should monitor for changes.
 function! python#has_jupyter() abort
   let check = ''
     \ . '"_jupyter_session" in globals() '
     \ . ' and _jupyter_session.kernel_client.check_connection()'
   return str2nr(py3eval('int(' . check . ')'))
+endfunction
+
+" Initiate a jupyter-vim connection using the file matching this directory or a parent
+" Note: This relies on automatic connection file naming in jupyter_[qt|]console.py
+" Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
+" find_connection_file(), which selects the most recently accessed file from the glob
+" pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
+function! python#start_jupyter() abort
+  let parent = 0
+  let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
+  while !exists('folder') || !empty(folder)  " note default scope is l: (g: is ignored)
+    let parent += 1
+    let folder = expand('%:p' . repeat(':h', parent) . ':t')
+    let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
+    if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
+  endwhile
+  echohl WarningMsg
+  echom "Warning: No connection files found for path '" . expand('%:p:h') . "'."
+  echohl None
 endfunction
 
 " Run with popup window using conda python, not vim python (important for macvim)
@@ -26,19 +45,22 @@ function! python#run_win()
   let exe = $HOME . '/miniconda3/bin/python'
   let proj = $HOME . '/miniconda3/share/proj'
   let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
-  call popup#job_win(cmd)
+  silent call popup#job_win(cmd)
 endfunction
 
 " Run current file using either popup window or jupyter session
 " Note: Running 'cell' in file without cells still works
-function! python#run_file() abort
+function! python#run_content() abort
   update
   if !python#has_jupyter()
-    echom 'Running entire file.'
     call python#run_win()
-  else
-    echom 'Running code block.'
+    echom 'Running file with python.'
+  elseif search('^# %%', 'n')  " returns line number if match found, zero if none found
     JupyterSendCell
+    echom 'Running block with jupyter.'
+  else
+    JupyterRunFile
+    echom 'Running file with jupyter.'
   endif
 endfunction
 
@@ -108,7 +130,7 @@ function! python#kwargs_dict(kw2dc, ...) abort range
     call add(lines, prefix . line . suffix)
   endfor
   " Replace lines with fixed lines
-  silent exe firstline . ',' . lastline . 'd _'
+  exe firstline . ',' . lastline . 'd _'
   call append(firstline - 1, lines)
   call winrestview(winview)
 endfunction

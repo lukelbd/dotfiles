@@ -1,11 +1,13 @@
 #-----------------------------------------------------------------------------#
 # Configuration file for jupyter-qtconsole.
 #-----------------------------------------------------------------------------#
-# Display banner
-c.JupyterQtConsoleApp.display_banner = True
-
-# Syntax highlighting (try pygmentize -L styles)
-c.JupyterWidget.syntax_style = 'monokai'
+# Auto connection file
+from jupyter_core.paths import jupyter_runtime_dir, Path
+index = 1
+while (Path(jupyter_runtime_dir()) / (file := f'kernel-{Path().absolute().name}-{index:02d}.json')).is_file():
+    index += 1
+else:
+    c.JupyterConsoleApp.connection_file = print(f'Connection {file}') or file
 
 # Required for jupyter-vim
 c.ConsoleWidget.include_other_output = True
@@ -13,11 +15,14 @@ c.ConsoleWidget.include_other_output = True
 # Message for jupyter-vim
 c.ConsoleWidget.other_output_prefix = '[jupyter-vim]\n'
 
-# Match iTerm2 font size
-c.ConsoleWidget.font_size = 12
+# Display banner
+c.JupyterQtConsoleApp.display_banner = True
 
-# No confirm exit
-c.JupyterConsoleApp.confirm_exit = True
+# Syntax highlighting (try pygmentize -L styles)
+c.JupyterWidget.syntax_style = 'monokai'
+
+# Never confirm exit
+c.JupyterConsoleApp.confirm_exit = False
 
 #------------------------------------------------------------------------------
 # ConnectionFileMixin(LoggingConfigurable) configuration
