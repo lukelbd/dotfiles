@@ -431,7 +431,7 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 
 # Pipe result into a pager. Could do this automatically depending on output
 # length. See discussion: https://unix.stackexchange.com/a/245321/112647
-page() {
+pg() {
   "$@" 2>&1 | less
 }
 
