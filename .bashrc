@@ -429,6 +429,12 @@ space() {
 export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 
+# Pipe result into a pager. Could do this automatically depending on output
+# length. See discussion: https://unix.stackexchange.com/a/245321/112647
+page() {
+  "$@" 2>&1 | less
+}
+
 # Help page display
 # Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
