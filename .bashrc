@@ -429,12 +429,6 @@ space() {
 export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 
-# Pipe result into a pager. Could do this automatically depending on output
-# length. See discussion: https://unix.stackexchange.com/a/245321/112647
-pg() {
-  "$@" 2>&1 | less
-}
-
 # Help page display
 # Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
@@ -1420,7 +1414,7 @@ namelist() {
 #   don't need HDF4, so just don't install it.
 nchelp() {
   echo "Available commands:"
-  echo "ncenv ncinfo ncglobal ncvars ncdims
+  echo "ncenv ncinfo ncdims ncvars ncglobals
         ncin nclist ncvarlist ncdimlist
         ncvarinfo ncvardump ncvartable ncvardetails" | column -t
 }
@@ -1447,10 +1441,10 @@ ncversion() {
 }
 
 # General summaries
-ncglobal() {
+ncglobals() {
   # show just the global attributes
   local file
-  [ $# -lt 1 ] && echo "Usage: ncglobal FILE" && return 1
+  [ $# -lt 1 ] && echo "Usage: ncglobals FILE" && return 1
   for file in "$@"; do
     echo "File: $file"
     command ncdump -h "$file" | grep -A100 ^//
