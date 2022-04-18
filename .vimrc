@@ -270,12 +270,13 @@ command! -nargs=0 Bufs call utils#open_bufs()
 command! -nargs=? Abspath call utils#abs_path(<f-args>)
 
 " Opening file in current directory and some input directory
+" Note: These are just convenience functions (see file#open_from) for details.
 command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
 noremap <C-g> <Cmd>GFiles<CR>
-noremap <expr> <F3> "\<Cmd>Open " . input('Open: ', expand('%:p:h') . '/', 'file') . "\<CR>"
-noremap <expr> <C-o> "\<Cmd>Open " . input('Open: ', fnamemodify(getcwd(), ':p'), 'file') . "\<CR>"
-noremap <expr> <C-y> "\<Cmd>Files " . input('Files: ', expand('%:p:h') . '/', 'dir') . "\<CR>"
-noremap <expr> <C-p> "\<Cmd>Files " . input('Files: ', fnamemodify(getcwd(), ':p'), 'dir') . "\<CR>"
+noremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
+noremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
+noremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
+noremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
@@ -1339,7 +1340,7 @@ if s:active('ddc.vim')
   let g:jedi#completions_command = ''
   let g:jedi#completions_enabled = 0
   let g:jedi#documentation_command = '<Leader>p'
-  let g:jedi#goto_command = '<CR>'
+  let g:jedi#goto_command = ''
   let g:jedi#goto_definitions_command = ''
   let g:jedi#goto_assignments_command = ''
   let g:jedi#goto_stubs_command = ''

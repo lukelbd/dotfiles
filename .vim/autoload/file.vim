@@ -139,8 +139,19 @@ function! s:tab_drop(file) abort
   end
 endfunction
 
+" Open from local or current directory
+" Note: Using <expr> instead of this tiny helper function causes <C-c> to display
+" annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
+function! file#open_from(files, local) abort
+  let command = a:files ? 'Files' : 'Open'
+  let default = a:local ? expand('%:p:h') . '/' : fnamemodify(getcwd(), ':p')
+  let result = input(command . ': ', default, 'file')
+  if !empty(result)
+    exe command . ' ' . result
+  endif
+endfunction
+
 " Check if user selection is directory, descend until user selects a file.
-" This is similar to default shell tab expansion.
 " Warning: Must use expand() rather than glob() or new file names are not completed.
 " Warning: FZF executes asynchronously so cannot do loop recursion inside driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
