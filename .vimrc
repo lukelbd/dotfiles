@@ -993,8 +993,7 @@ Plug 'junegunn/vim-easy-align'
 " Plug 'ivanov/vim-ipython'  " replaced by jupyter-vim
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'Vimjas/vim-python-pep8-indent'  " pep8 style indentexpr
-" Plug 'jupyter-vim/jupyter-vim'  " pairing with jupyter consoles
-Plug 'lukelbd/jupyter-vim', { 'branch': 'origin/fix-screen-refresh' }  " pairing with jupyter consoles
+Plug 'jupyter-vim/jupyter-vim'  " pairing with jupyter consoles
 Plug 'jeetsukumaran/vim-python-indent-black'  " black style indentexpr
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
 Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
