@@ -1526,15 +1526,15 @@ ncvarlist() {
 
 # Inquiries about specific variables
 ncvarinfo() {
-  # as above but just for one variable
-  # the space makes sure it isn't another variable that has trailing-substring
-  # identical to this variable; and the $'' is how to insert literal tab
-  local file
+  # as above but just for one variable (for the official CDL data types see
+  # https://docs.unidata.ucar.edu/nug/current/_c_d_l.html#cdl_data_types)
+  local file types
+  types='(char|byte|short|int|long|float|real|double)'
   [ $# -lt 2 ] && echo "Usage: ncvarinfo VAR FILE" && return 1
   for file in "${@:2}"; do
     echo "File: $file"
     command ncdump -h "$file" \
-      | grep -A100 "[[:space:]]$1(" | grep -B100 "[[:space:]][[:space:]]$1:" \
+      | grep -E -A100 "$types $1\\(" | grep -E -B100 $'\t\t'"$1:" \
       | sed "s/$1://g" | sed $'s/^\t//g'
   done
 }
@@ -1547,7 +1547,7 @@ ncvardump() {
   for file in "${@:2}"; do
     echo "File: $file"
     command ncdump -v "$1" "$file" | tac \
-      | grep -E -m 1 -B100 "[[:space:]]$1[[:space:]]" \
+      | grep -m 1 -B100 " $1 " \
       | sed '1,1d' | tac
   done
 }
