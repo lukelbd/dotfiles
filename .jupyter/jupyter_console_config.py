@@ -2,7 +2,8 @@
 # Configuration file for jupyter-console.
 #-----------------------------------------------------------------------------#
 # Auto connection file
-from jupyter_core.paths import jupyter_runtime_dir, Path
+from jupyter_core.paths import jupyter_runtime_dir
+from pathlib import Path
 index = 1
 while (Path(jupyter_runtime_dir()) / (file := f'kernel-{Path().absolute().name}-{index:02d}.json')).is_file():
     index += 1
