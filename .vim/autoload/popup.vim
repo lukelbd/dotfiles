@@ -11,7 +11,6 @@
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with file#close_tab().
 function! popup#popup_setup(...) abort
-  echom 'Configuring popup window for filetype: ' . &filetype
   let filemode = a:0 ? a:1 : 1
   nnoremap <silent> <buffer> q :call file#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR>

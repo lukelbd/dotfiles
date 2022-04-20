@@ -119,7 +119,12 @@ endif
 " existing highlighting. An after/syntax/tex.vim file is necessary.
 " Warning: The containedin just tries to *guess* what particular comment and string
 " group names are for given filetype syntax schemes (use :Group for testing).
-function! s:setting_overrides() abort
+augroup buffer_overrides
+  au!
+  au User BufferOverrides call s:buffer_overrides()
+  au BufEnter * call s:buffer_overrides()
+augroup END
+function! s:buffer_overrides() abort
   setlocal concealcursor=
   setlocal conceallevel=2
   setlocal formatoptions=lrojcq
@@ -127,8 +132,6 @@ function! s:setting_overrides() abort
   setlocal linebreak
   let &l:textwidth = s:linelength
   let &l:wrapmargin = 0
-endfunction
-function! s:syntax_overrides() abort
   syntax match customShebang '^\%1l#!.*$'  " shebang highlighting
   syntax match customHeader =^# \zs#\+.*$= containedin=.*Comment.*
   syntax match customTodo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.*  " comments
@@ -138,12 +141,6 @@ function! s:syntax_overrides() abort
   highlight link customTodo Todo
   highlight link customURL Underlined
 endfunction
-augroup buffer_overrides
-  au!
-  au BufEnter * call s:setting_overrides()
-  au Syntax * call s:syntax_overrides()
-  au User BufferOverrides call s:setting_overrides() | call s:syntax_overrides()
-augroup END
 
 " Different cursor shape different modes
 if v:version >= 500
@@ -415,7 +412,7 @@ nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 " Note: For some reason compound filetype 'markdown.lsp-hover' fails to apply
 " highlighting (seems unrelated to vim-markdown). So have to set filetype=markdown.
 let s:filetypes = [
-  \ 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
+  \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
   \ 'gitcommit', 'log', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
   \ ]
 let [g:tags_skip_filetypes, g:tabline_skip_filetypes] = [s:filetypes, s:filetypes]
@@ -688,6 +685,7 @@ nnoremap <expr> gR format#paste_mode() . 'R'
 " nnoremap <CR> <C-]>  " fails most of the time
 " nnoremap <CR> [<C-i>  " jump to vim definition
 " nnoremap \<Space> [I  " display occurences
+nnoremap <Leader>P <Cmd>LspSignatureHelp<CR>
 nnoremap <Leader><CR> <Cmd>LspPeekDefinition<CR>
 nnoremap <CR> <Cmd>LspDefinition<CR>
 
@@ -774,7 +772,10 @@ noremap <expr> \<Tab> format#replace_regex_expr('Fixed tabs.', '\t', repeat(' ',
 " External plugins
 "-----------------------------------------------------------------------------"
 " Functions to find runtimepath and install plugins
-function! s:plug_search(regex)
+function! s:plug_active(key) abort
+  return &runtimepath =~# '/' . a:key . '\>'
+endfunction
+function! s:plug_find(regex)
   return filter(split(&runtimepath, ','), "v:val =~# '" . a:regex . "'")
 endfunction
 function! s:plug_local(path)
@@ -789,8 +790,8 @@ function! s:plug_local(path)
     exe 'set rtp+=' . rtp . '/after'
   endif
 endfunction
+command! -nargs=1 PlugFind echo join(s:plug_find(<q-args>), ', ')
 command! -nargs=1 PlugLocal call s:plug_local(<args>)
-command! -nargs=1 PlugSearch echo join(s:plug_search(<q-args>), ', ')
 
 " Initialize plugin manager. Note we no longer worry about compatibility
 " because we can install everything from conda-forge, including vim and ctags.
@@ -960,11 +961,15 @@ if !has('gui_running')
   Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
   Plug 'matsui54/denops-popup-preview.vim'  " show previews during pmenu selection
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+  let g:lsp_diagnostics_enabled = 0  " redundant with ale
+  let g:lsp_document_highlight_enabled = 0  " reundant with *, &, etc.
+  let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let b:lsp_hover_conceal = 1
   let g:lsp_preview_float = 1
   let g:lsp_preview_max_width = 80
   let g:lsp_preview_max_height = 30
+  let g:lsp_signature_help_delay = 100  " milliseconds
 endif
 
 " Snippets and stuff
@@ -1018,10 +1023,10 @@ Plug 'junegunn/vim-easy-align'
 " Plug 'ivanov/vim-ipython'  " replaced by jupyter-vim
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'Vimjas/vim-python-pep8-indent'  " pep8 style indentexpr
+Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'jupyter-vim/jupyter-vim'  " pairing with jupyter consoles
 Plug 'jeetsukumaran/vim-python-indent-black'  " black style indentexpr
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
-Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
@@ -1135,14 +1140,9 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" Temporary helper function
-function! s:active(key) abort
-  return &runtimepath =~# '/' . a:key . '\>'
-endfunction
-
 " Add weird mappings powered by Karabiner. Note that custom delimiters
 " are declared inside vim-succinct plugin functions rather than here.
-if s:active('vim-succinct')
+if s:plug_active('vim-succinct')
   let g:succinct_surround_prefix = '<C-s>'
   let g:succinct_snippet_prefix = '<C-a>'
   let g:succinct_prevdelim_map = '<F1>'
@@ -1150,7 +1150,7 @@ if s:active('vim-succinct')
 endif
 
 " Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
-if s:active('vim-scrollwrapped')
+if s:plug_active('vim-scrollwrapped')
   let g:scrollwrapped_wrap_filetypes = [
     \ 'ale-preview', 'bib', 'liquid', 'log', 'markdown', 'rst', 'tex'
     \ ]
@@ -1161,11 +1161,11 @@ if s:active('vim-scrollwrapped')
   vnoremap <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
 endif
 
-" Add maps for vim-tags command and use tags for default double bracket motion, except
-" never overwrite potential single bracket mappings (e.g. help mode).
+" Add maps for vim-tags command and use tags for default double bracket motion,
+" except never overwrite potential single bracket mappings (e.g. help mode).
 " Note: Here we also use vim-tags fzf finder similar to file fzf finder as
 " low-level alternative to BTags and Files.
-if s:active('vim-tags')
+if s:plug_active('vim-tags')
   augroup double_bracket
     au!
     au BufEnter * call s:bracket_maps()
@@ -1191,7 +1191,7 @@ endif
 
 " Comment toggling stuff
 " Note: For once we like some of the default maps but disable others.
-if s:active('tcomment_vim')
+if s:plug_active('tcomment_vim')
   nmap g>> g>c
   nmap g<< g<c
   let g:tcomment_opleader1 = 'gc'  " default is 'gc'
@@ -1204,7 +1204,7 @@ endif
 
 " Auto-complete delimiters
 " Filetype-specific settings are in various ftplugin files
-if s:active('delimitmate')
+if s:plug_active('delimitmate')
   let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
   let g:delimitMate_expand_space = 1
   let g:delimitMate_jump_expansion = 0
@@ -1213,7 +1213,7 @@ endif
 
 " Vim sneak motion
 " Note: easymotion is way too complicated
-if s:active('vim-sneak')
+if s:plug_active('vim-sneak')
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
   map f <Plug>Sneak_f
@@ -1225,7 +1225,7 @@ if s:active('vim-sneak')
 endif
 
 " Vim marks in sign column
-if s:active('vim-signature')
+if s:plug_active('vim-signature')
   let g:SignatureMap = {
     \ 'Leader': '~',
     \ 'PlaceNextMark': '~,',
@@ -1254,7 +1254,7 @@ endif
 " Undo tree settings
 " Note: This sort of seems against the anti-nerdtree anti-tagbar minimalist
 " principal but think unique utilities that briefly pop up on left are exception.
-if s:active('undotree')
+if s:plug_active('undotree')
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
   if has('persistent_undo')
@@ -1264,21 +1264,20 @@ if s:active('undotree')
   nnoremap <Leader>u <Cmd>UndotreeToggle<CR>
 endif
 
-" Completion engine settings (see :help ddc-options)
-" See: https://github.com/Shougo/ddc.vim#configuration
-" Note: Inspired by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/
-" Note: Currently use pylsp instead of pylsp-all to prevent conflicts with ale.
-" Note: Underscore key seems to indicate all sources, used for global filter options,
+" Completion engine settings (see :help ddc-options). Configuration was inspired
+" by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/. For
+" configuration help see https://github.com/Shougo/ddc.vim#configuration.
+" Note: Currently use jedi-language-server instead of pylsp-all to prevent conflicts
+" with ale. Otherwise use default servers for all filetypes.
+" Note: Underscore seems to indicate all sources, used for global filter options,
 " and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
-if s:active('ddc.vim')
+if s:plug_active('ddc.vim')
   " Engine settings and sources
-  " '_': {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']},
-  call ddc#custom#patch_global(
-    \ 'sources',
-    \ ['around', 'buffer', 'file', 'vim-lsp', 'vsnip']
-    \ )
-  call ddc#custom#patch_global(
-    \ 'sourceOptions', {
+  " Alternative: '_': {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']},
+  call ddc#custom#patch_global({
+    \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
+    \ 'sourceParams': {'around': {'maxSize': 500}},
+    \ 'sourceOptions': {
     \   '_': {
     \     'matchers': ['matcher_fuzzy'],
     \     'sorters': ['sorter_fuzzy'],
@@ -1308,13 +1307,7 @@ if s:active('ddc.vim')
     \     'forceCompletionPattern': '\S/\S*',
     \     'maxCandidates': 5,
     \   },
-    \ })
-  call ddc#custom#patch_global(
-    \ 'sourceParams', {
-    \   'around': {
-    \     'maxSize': 500
-    \    }
-    \ })
+    \ }})
   call ddc#enable()
 
   " Popup and preview mappings. Note enter is 'accept' only if we scrolled down, tab
@@ -1355,16 +1348,9 @@ if s:active('ddc.vim')
   " Language server settings
   " Note: Most mappings override custom ones so critical to change all settings.
   " Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
-  " Note: Attempted to enable markdown rendering in preview window but fails. See:
-  " https://github.com/prabirshrestha/vim-lsp/issues/865#issuecomment-719476089
-  let g:lsp_get_supported_capabilities = [function('format#lsp_get_supported_capabilities')]
-  let g:lsp_fold_enabled = 0  " not yet tested
-  let g:lsp_diagnostics_enabled = 0  " redundant with ale
-  let g:lsp_document_highlight_enabled = 0  " reundant with *, &, etc.
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
   let g:jedi#completions_enabled = 0
-  let g:jedi#documentation_command = '<Leader>P'
   let g:jedi#goto_command = ''
   let g:jedi#goto_definitions_command = ''
   let g:jedi#goto_assignments_command = ''
@@ -1373,11 +1359,12 @@ if s:active('ddc.vim')
   let g:jedi#rename_command = ''  " redundant with vim-succinct
   let g:jedi#show_call_signatures = 0  " redundant with vim-lsp
   let g:jedi#usages_command = '<Leader><CR>'
+  let g:jedi#documentation_command = '<Leader>P'  " redundant with :LspSignatureHelp
 endif
 
 " Asynchronous linting engine
 " Use :ALEInfo to verify linting is enabled
-if s:active('ale')
+if s:plug_active('ale')
   " Buffer-local toggling
   " Note: Unlike syntastic ale works with buffer contents
   " Note: LspManage fills the current buffer and for some reason does
@@ -1501,7 +1488,7 @@ endif
 
 " Vim test settings
 " Run tests near cursor or throughout file
-if s:active('vim-test')
+if s:plug_active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
   nnoremap <Leader>[ <Cmd>TestLast<CR>
   nnoremap <Leader>] <Cmd>TestNearest<CR>
@@ -1517,7 +1504,7 @@ endif
 " therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
 " signcolumn if signs present, so GitGutterDisable will remove signcolumn.
-if s:active('vim-gitgutter')
+if s:plug_active('vim-gitgutter')
   augroup gitgutter_refresh
     au!
     let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
@@ -1547,28 +1534,27 @@ endif
 " by all delimiters instead of the default of 1 delimiter.
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
-if s:active('vim-easy-align')
-  augroup easy_align
-    au!
-    au BufEnter * call extend(
-      \   g:easy_align_delimiters, {
-      \     'c': {'pattern': '\s' . (empty(utils#comment_char()) ? nr2char(0) : utils#comment_char())},
-      \   }
-      \ )  " use null character if no comment char is defined (never matches)
-  augroup END
+if s:plug_active('vim-easy-align')
   nmap ge <Plug>(EasyAlign)
   let g:easy_align_delimiters = {
     \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
     \   '&': {'pattern': '\(&&\|||\)'},
     \   ';': {'pattern': ';\+'},
     \ }
+  let g:easy_comment_delimiter = {
+    \   'c': {'pattern': '\s' . (empty(utils#comment_char()) ? nr2char(0) : utils#comment_char())},
+    \ }
+  augroup easy_align
+    au!
+    au BufEnter * call extend(g:easy_align_delimiters, g:easy_comment_delimiter)
+  augroup END
 endif
 
 " Configure codi (mathematical notepad) interpreter without history and settings
 " Julia usage bug: https://github.com/metakirby5/codi.vim/issues/120
 " Python history bug: https://github.com/metakirby5/codi.vim/issues/85
 " Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
-if s:active('codi.vim')
+if s:plug_active('codi.vim')
   augroup codi_mods
     au!
     au User CodiEnterPre call popup#codi_setup(1)
@@ -1602,7 +1588,7 @@ if s:active('codi.vim')
 endif
 
 " Speed dating, support date increments
-if s:active('vim-speeddating')
+if s:plug_active('vim-speeddating')
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp   <C-a>
@@ -1616,7 +1602,7 @@ endif
 " bottom of sum table. Mapping options are:
 " AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend,
 " AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
-if s:active('HowMuch')
+if s:plug_active('HowMuch')
   vmap <Leader>) <Plug>AutoCalcAppendWithEq
   vmap <Leader>- <Plug>AutoCalcReplaceWithSum
   vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
@@ -1624,7 +1610,7 @@ endif
 
 " Colorizer is very expensive for large files so only ever
 " activate manually. Mapping mnemonic is # for hex string
-if s:active('colorizer')
+if s:plug_active('colorizer')
   let g:colorizer_nomap = 1
   let g:colorizer_startup = 0
   nnoremap <Leader># <Cmd>ColorToggle<CR>
@@ -1634,7 +1620,7 @@ endif
 " Obsession .vimsession activates vim-obsession BufEnter and VimLeavePre
 " autocommands and saved session files call let v:this_session=expand("<sfile>:p")
 " (so that v:this_session is always set when initializing with vim -S .vimsession)
-if s:active('vim-obsession')  " must manually preserve cursor position
+if s:plug_active('vim-obsession')  " must manually preserve cursor position
   augroup session
     au!
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
