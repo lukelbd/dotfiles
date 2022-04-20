@@ -1369,9 +1369,9 @@ if s:active('ddc.vim')
   let g:jedi#goto_definitions_command = ''
   let g:jedi#goto_assignments_command = ''
   let g:jedi#goto_stubs_command = ''
-  let g:jedi#max_doc_height = 100
-  let g:jedi#rename_command = ''
-  let g:jedi#show_call_signatures = '1'
+  let g:jedi#max_doc_height = 100  " popup window height
+  let g:jedi#rename_command = ''  " redundant with vim-succinct
+  let g:jedi#show_call_signatures = 0  " redundant with vim-lsp
   let g:jedi#usages_command = '<Leader><CR>'
 endif
 
