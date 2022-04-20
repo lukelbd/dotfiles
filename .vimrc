@@ -1371,7 +1371,7 @@ if s:active('ddc.vim')
   let g:jedi#goto_stubs_command = ''
   let g:jedi#max_doc_height = 100
   let g:jedi#rename_command = ''
-  let g:jedi#show_call_signatures = '1'
+  let g:jedi#show_call_signatures = 0  " redundant with lsp
   let g:jedi#usages_command = '<Leader><CR>'
 endif
 
