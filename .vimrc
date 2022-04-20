@@ -1023,10 +1023,10 @@ Plug 'junegunn/vim-easy-align'
 " Plug 'ivanov/vim-ipython'  " replaced by jupyter-vim
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'Vimjas/vim-python-pep8-indent'  " pep8 style indentexpr
-Plug 'davidhalter/jedi-vim'  " disable autocomplete stuff in favor of deocomplete
-Plug 'jupyter-vim/jupyter-vim'  " pairing with jupyter consoles
+" Plug 'davidhalter/jedi-vim'  " use vim-lsp with jedi-language-server instead
 Plug 'jeetsukumaran/vim-python-indent-black'  " black style indentexpr
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
+Plug 'jupyter-vim/jupyter-vim'  " pairing with jupyter consoles
 Plug 'goerz/jupytext.vim'  " edit ipython notebooks
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
@@ -1311,13 +1311,26 @@ if s:plug_active('ddc.vim')
   call ddc#enable()
 
   " Popup and preview mappings. Note enter is 'accept' only if we scrolled down, tab
-  " is always 'accept' and choose default if necessary. Also break undo history when
-  " adding newlines. See: :help ins-special-special for details.
+  " is always 'accept' and choose default if necessary. See :h ins-special-special.
   " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
   augroup pum_navigation
     au!
     au BufEnter,InsertLeave * let b:pum_pos = 0
   augroup END
+  inoremap <expr> <CR>
+    \ pumvisible() ? b:pum_pos ?
+    \ "\<C-y>" . format#pum_reset()
+    \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
+    \ : "\<C-]>\<C-g>u\<CR>"
+  inoremap <expr> <Tab>
+    \ pumvisible() ? b:pum_pos ?
+    \ "\<C-y>" . format#pum_reset()
+    \ : "\<C-n>\<C-y>" . format#pum_reset()
+    \ : "\<C-]>\<Tab>"
+  inoremap <expr> <Space> format#pum_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
+  inoremap <expr> <Backspace> format#pum_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
   nnoremap <expr> <C-e> lsp#scroll(5)
   inoremap <expr> <C-e> lsp#scroll(5)
   nnoremap <expr> <C-y> lsp#scroll(-5)
@@ -1330,36 +1343,6 @@ if s:plug_active('ddc.vim')
   inoremap <expr> <C-d> format#pum_next(0.5)
   inoremap <expr> <C-f> format#pum_prev(1.0)
   inoremap <expr> <C-b> format#pum_next(1.0)
-  inoremap <expr> <Backspace> format#pum_reset()
-    \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
-  inoremap <expr> <Space> format#pum_reset()
-    \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
-  inoremap <expr> <CR>
-    \ pumvisible() ? b:pum_pos ?
-    \ "\<C-y>" . format#pum_reset()
-    \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
-    \ : "\<C-]>\<C-g>u\<CR>"
-  inoremap <expr> <Tab>
-    \ pumvisible() ? b:pum_pos ?
-    \ "\<C-y>" . format#pum_reset()
-    \ : "\<C-n>\<C-y>" . format#pum_reset()
-    \ : "\<C-]>\<Tab>"
-
-  " Language server settings
-  " Note: Most mappings override custom ones so critical to change all settings.
-  " Note: Disable autocomplete settings in favor of ddc vim-lsp autocompletion.
-  let g:jedi#auto_vim_configuration = 0
-  let g:jedi#completions_command = ''
-  let g:jedi#completions_enabled = 0
-  let g:jedi#goto_command = ''
-  let g:jedi#goto_definitions_command = ''
-  let g:jedi#goto_assignments_command = ''
-  let g:jedi#goto_stubs_command = ''
-  let g:jedi#max_doc_height = 100  " popup window height
-  let g:jedi#rename_command = ''  " redundant with vim-succinct
-  let g:jedi#show_call_signatures = 0  " redundant with vim-lsp
-  let g:jedi#usages_command = '<Leader><CR>'
-  let g:jedi#documentation_command = '<Leader>P'  " redundant with :LspSignatureHelp
 endif
 
 " Asynchronous linting engine
