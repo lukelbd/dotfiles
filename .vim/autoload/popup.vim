@@ -1,25 +1,25 @@
 "-----------------------------------------------------------------------------"
 " Utilities for setting up windows
 "-----------------------------------------------------------------------------"
-" Setup popup windows
-" File mode can be 0 (no file) 1 (simple file) or 2 (editable file)
+" Setup popup windows. Mode can be 0 (not editable) or 1 (editable).
+" Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
+" popup#job_win() or other internal stuff. So instead just try to disable normal mode
+" commands that could accidentally modify text (aside from d used for scrolling).
 " Warning: Critical error happens if try to auto-quit when only popup window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with file#close_tab().
 function! popup#popup_setup(...) abort
+  echom 'Configuring popup window for filetype: ' . &filetype
   let filemode = a:0 ? a:1 : 1
   nnoremap <silent> <buffer> q :call file#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR>
   setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
-  if filemode == 0 | setlocal buftype=nofile | endif  " this has no file
-  if filemode == 2 | return | endif  " this is editable file
+  if filemode == 1 | return | endif  " this is an editable file
   setlocal nospell statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
-  nnoremap <buffer> u <C-u>
-  nnoremap <buffer> <nowait> d <C-d>
-  nnoremap <buffer> b <C-b>
-  nnoremap <buffer> <nowait> f <C-f>
+  for char in 'xXpPDaAiIcCoO' | exe 'nnoremap <buffer> ' char . ' <Nop>' | endfor
+  for char in 'ubdf' | exe 'nnoremap <buffer> <nowait> ' char . ' <C-' . char . '>' | endfor
 endfunction
 
 " Setup command windows and ensure local maps work

@@ -32,16 +32,17 @@ if !exists('*repeat#set')
 endif
 
 " Global settings
-set nocompatible  " always use the vim defaults
 set encoding=utf-8
+set nocompatible  " always use the vim defaults
 scriptencoding utf-8
+let filetype_m = 'matlab'  " see $VIMRUNTIME/filetype.vim, also could be 'mma'
 let mapleader = "\<Space>"
-let &g:colorcolumn = has('gui_running') ? '0' : '89,121'
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
+set colorcolumn=89,121  " gentle and firm line length limits 
 set complete+=k  " enable dictionary search through 'dictionary' setting
-set completeopt-=preview  " use custom preview window
+set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cursorline
 set diffopt=vertical,foldcolumn:0,context:5
@@ -67,6 +68,9 @@ set nostartofline  " when switching buffers, doesn't move to start of line (weir
 set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
 set nrformats=alpha  " never interpret numbers as 'octal'
 set number numberwidth=4  " note old versions can't combine number with relativenumber
+set pumwidth=10  " minimum popup menu width
+set pumheight=10  " maximum popup menu height
+set previewheight=30  " default preview window height
 set redrawtime=5000  " sometimes takes a long time, let it happen
 set relativenumber
 set scrolloff=4
@@ -109,16 +113,39 @@ if has('gui_running')  " do not source $VIMRUNTIME/menu.vim for speedup (see htt
   set number relativenumber guioptions=M guicursor+=a:blinkon0  " no scrollbars or blinking
 endif
 
-" Always override these settings, even buffer-local settings
-let g:set_overrides = 'linebreak nojoinspaces wrapmargin=0 formatoptions=lrojcq textwidth=' . s:linelength
-augroup override_settings
+" Override settings and syntax, even buffer-local. The URL regex was copied
+" from the one in .tmux.conf. See: https://vi.stackexchange.com/a/11547/8084
+" Warning: Cannot use filetype specific au Syntax *.tex commands to overwrite
+" existing highlighting. An after/syntax/tex.vim file is necessary.
+" Warning: The containedin just tries to *guess* what particular comment and string
+" group names are for given filetype syntax schemes (use :Group for testing).
+function! s:setting_overrides() abort
+  setlocal concealcursor=
+  setlocal conceallevel=2
+  setlocal formatoptions=lrojcq
+  setlocal nojoinspaces
+  setlocal linebreak
+  let &l:textwidth = s:linelength
+  let &l:wrapmargin = 0
+endfunction
+function! s:syntax_overrides() abort
+  syntax match customShebang '^\%1l#!.*$'  " shebang highlighting
+  syntax match customHeader =^# \zs#\+.*$= containedin=.*Comment.*
+  syntax match customTodo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.*  " comments
+  syntax match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
+  highlight link customHeader Special
+  highlight link customShebang Special
+  highlight link customTodo Todo
+  highlight link customURL Underlined
+endfunction
+augroup buffer_overrides
   au!
-  au User BufferOverrides exe 'setlocal ' . g:set_overrides
-  au BufEnter * exe 'setlocal ' . g:set_overrides
+  au BufEnter * call s:setting_overrides()
+  au Syntax * call s:syntax_overrides()
+  au User BufferOverrides call s:setting_overrides() | call s:syntax_overrides()
 augroup END
 
 " Different cursor shape different modes
-" First mouse stuff, make sure we are using vim, not vi
 if v:version >= 500
   set mouse=a " mouse clicks and scroll wheel allowed in insert mode via escape sequences
 endif
@@ -288,17 +315,6 @@ nnoremap <Leader>j <Cmd>call file#exists()<CR>
 nnoremap <Leader>i <Cmd>call file#directory_descend()<CR>
 nnoremap <Leader>I <Cmd>call file#directory_return()<CR>
 
-" 'Execute' script with different options
-" Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
-" running chunks of code. Currently 'Z' only defined for python so use workaround.
-" Note: Critical to label these maps so one is not a prefix of another
-" or else we can get a delay. For example do not define <Plug>Execute
-map Z <Plug>ExecuteMotion
-nmap ZZ <Plug>ExecuteFile1
-nmap <Leader>z <Plug>ExecuteFile2
-nmap <Leader>Z <Plug>ExecuteFile3
-noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
-
 " Save and quit, also test whether the :q action closed the entire tab
 " hello[goodbye]
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
@@ -319,6 +335,20 @@ nnoremap <Leader>e <Cmd>edit<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 nnoremap <Leader>s <Cmd>Autosave 1<CR>
 nnoremap <Leader>S <Cmd>Autosave 0<CR>
+
+" 'Execute' script with different options
+" Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
+" running chunks of code. Currently 'Z' only defined for python so use workaround.
+" Note: Critical to label these maps so one is not a prefix of another
+" or else we can get a delay. For example do not define <Plug>Execute
+map Z <Plug>ExecuteMotion
+nmap ZZ <Plug>ExecuteFile1
+nmap <Leader>z <Plug>ExecuteFile2
+nmap <Leader>Z <Plug>ExecuteFile3
+noremap <Plug>ExecuteFile1 <Nop>
+noremap <Plug>ExecuteFile2 <Nop>
+noremap <Plug>ExecuteFile3 <Nop>
+noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Tab selection and movement
 nnoremap <Tab>' <Cmd>tabnext #<CR>
@@ -366,44 +396,8 @@ nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
-" Popup window style adjustments with less-like shortcuts
-" Note: The 'man' format is generally used with superman, the 'diff' format is
-" used with GitGutterPreviewHunk rather than fugitive commands, the 'git' format is
-" used with fugitive show and diff displays, and 'fugitive' is used for other stuff.
-" Note: Arguments indicate the 'file mode' where 0 means this is so-not-a-file that
-" we can set buftype=nofile, 1 means this is a read-only file, and 2 means this is
-" an editable file to be handled by the user (currently just used for commit messages).
-let s:popup_filetypes = {
-  \ 'ale-preview': 0,
-  \ 'codi': 0,
-  \ 'diff': 0,
-  \ 'log': 0,
-  \ 'popup': 0,
-  \ 'vim-plug': 0,
-  \ 'fugitive': 1,
-  \ 'fugitiveblame': 1,
-  \ 'git': 1,
-  \ 'man': 1,
-  \ 'qf': 1,
-  \ 'undotree': 1,
-  \ 'gitcommit': 2,
-  \ }
-augroup popup_setup
-  au!
-  au FileType help call popup#help_setup()
-  au CmdwinEnter * call popup#cmd_setup()
-  if exists('##TerminalWinOpen')
-    au TerminalWinOpen * call popup#popup_setup()
-  endif
-  for [s:key, s:val] in items(s:popup_filetypes)
-    exe 'au FileType ' . s:key . ' call popup#popup_setup(' . s:val . ')'
-  endfor
-augroup END
-let g:tags_filetypes_skip = keys(s:popup_filetypes)
-let g:tabline_filetypes_ignore = keys(s:popup_filetypes)
-
-" Other adjustments for particular filetypes. Includes commands for 'toggling'
-" character literal tabs, conceal chars, and autocompletion and syntax checking.
+" Adjustments for particular filetypes. Includes commands for 'toggling' character
+" literal tabs, conceal chars, and autocompletion and syntax checking.
 augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
@@ -412,6 +406,32 @@ command! -nargs=? PopupToggle call switch#popup(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
+
+" Popup window style adjustments with less-like shortcuts
+" Note: for some reason compound filetype 'markdown.lsp-hover' fails to apply
+" highlighting (seems unrelated to vim-markdown). So have to set filetype=markdown
+" explicitly. This also disables popup behavior when g:lsp_hover_float is set to 0.
+" Note: Here 'man' is usually used with superman 'vman', 'ale-preview' is used with
+" :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
+" with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
+" and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
+let s:filetypes = [
+  \ 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
+  \ 'gitcommit', 'log', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
+  \ ]
+let [g:tags_skip_filetypes, g:tabline_skip_filetypes] = [s:filetypes, s:filetypes]
+augroup popup_setup
+  au!
+  au FileType help call popup#help_setup()
+  au FileType markdown.lsp-hover setlocal filetype=markdown | setlocal conceallevel=2
+  au CmdwinEnter * call popup#cmd_setup()
+  if exists('##TerminalWinOpen')
+    au TerminalWinOpen * call popup#popup_setup()
+  endif
+  for s:ft in s:filetypes
+    exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:ft ==# 'gitcommit' . ')'
+  endfor
+augroup END
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary, just press n or N.
@@ -667,8 +687,10 @@ nnoremap <expr> gR format#paste_mode() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
 " nnoremap <CR> <C-]>  " fails most of the time
-nnoremap <CR> [<C-i>
-nnoremap <Leader><CR> [I
+" nnoremap <CR> [<C-i>  " jump to vim definition
+" nnoremap \<Space> [I  " display occurences
+nnoremap <Leader><CR> <Cmd>LspPeekDefinition<CR>
+nnoremap <CR> <Cmd>LspDefinition<CR>
 
 " Forward delete by tabs
 inoremap <expr> <Delete> format#forward_delete()
@@ -752,13 +774,10 @@ noremap <expr> \<Tab> format#replace_regex_expr('Fixed tabs.', '\t', repeat(' ',
 "-----------------------------------------------------------------------------"
 " External plugins
 "-----------------------------------------------------------------------------"
-" Function to find runtimepath
-function! s:find_path(regex)
+" Functions to find runtimepath and install plugins
+function! s:plug_search(regex)
   return filter(split(&runtimepath, ','), "v:val =~# '" . a:regex . "'")
 endfunction
-command! -nargs=1 FindPath echo join(s:find_path(<q-args>), ', ')
-
-" Function to install a local plugin
 function! s:plug_local(path)
   let rtp = substitute(a:path, '[''"]', '', 'g')
   let rtp = expand(rtp)
@@ -772,6 +791,7 @@ function! s:plug_local(path)
   endif
 endfunction
 command! -nargs=1 PlugLocal call s:plug_local(<args>)
+command! -nargs=1 PlugSearch echo join(s:plug_search(<q-args>), ', ')
 
 " Initialize plugin manager. Note we no longer worry about compatibility
 " because we can install everything from conda-forge, including vim and ctags.
@@ -940,6 +960,12 @@ if !has('gui_running')
   Plug 'LumaKernel/ddc-file'  " matching file names
   Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
   Plug 'matsui54/denops-popup-preview.vim'  " show previews during pmenu selection
+  let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+  let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
+  let b:lsp_hover_conceal = 1
+  let g:lsp_preview_float = 1
+  let g:lsp_preview_max_width = 80
+  let g:lsp_preview_max_height = 30
 endif
 
 " Snippets and stuff
@@ -1045,13 +1071,15 @@ let g:jupytext_fmt = 'py:percent'
 " Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
 " Plug 'hdima/python-syntax'  " this failed for me, had to manually add syntax file (f-strings not highlighted and other stuff)
 " Plug 'vim-python/python-syntax'  " alternative syntax 
-Plug 'tmux-plugins/vim-tmux'
-Plug 'preservim/vim-markdown'
 Plug 'vim-scripts/applescript.vim'
+Plug 'preservim/vim-markdown'
+Plug 'tmux-plugins/vim-tmux'
 Plug 'anntzer/vim-cython'
 Plug 'tpope/vim-liquid'
 Plug 'cespare/vim-toml'
 Plug 'JuliaEditorSupport/julia-vim'
+let g:vim_markdown_conceal = 1
+let g:vim_markdown_conceal_code_blocks = 1
 
 " Colorful stuff
 " Test: ~/.vim/plugged/colorizer/colortest.txt
@@ -1291,26 +1319,25 @@ if s:active('ddc.vim')
   call ddc#enable()
 
   " Popup and preview mappings. Note enter is 'accept' only if we scrolled down, tab
-  " is always 'accept' and choose default menu item if necessary. Also break undo
-  " history when adding newlines. See: :help ins-special-special
-  " Note: See https://github.com/prabirshrestha/vim-lsp/issues/865#issuecomment-719476089
-  " Todo: Consider using Shuogo's pum maps? Hard to implement <CR>/<Tab> features.
+  " is always 'accept' and choose default if necessary. Also break undo history when
+  " adding newlines. See: :help ins-special-special for details.
+  " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
   augroup pum_navigation
     au!
     au BufEnter,InsertLeave * let b:pum_pos = 0
   augroup END
-  nnoremap <expr> <C-e> lsp#scroll(-5)
-  inoremap <expr> <C-e> lsp#scroll(-5)
-  nnoremap <expr> <C-y> lsp#scroll(5)
-  inoremap <expr> <C-y> lsp#scroll(5)
+  nnoremap <expr> <C-e> lsp#scroll(5)
+  inoremap <expr> <C-e> lsp#scroll(5)
+  nnoremap <expr> <C-y> lsp#scroll(-5)
+  inoremap <expr> <C-y> lsp#scroll(-5)
   inoremap <expr> <Up> format#pum_prev()
   inoremap <expr> <Down> format#pum_next()
   inoremap <expr> <C-k> format#pum_prev()
   inoremap <expr> <C-j> format#pum_next()
-  inoremap <expr> <C-u> format#pum_prev(2)
-  inoremap <expr> <C-d> format#pum_next(2)
-  inoremap <expr> <C-f> format#pum_prev(1)
-  inoremap <expr> <C-b> format#pum_next(1)
+  inoremap <expr> <C-u> format#pum_prev(0.5)
+  inoremap <expr> <C-d> format#pum_next(0.5)
+  inoremap <expr> <C-f> format#pum_prev(1.0)
+  inoremap <expr> <C-b> format#pum_next(1.0)
   inoremap <expr> <Backspace> format#pum_reset()
     \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
   inoremap <expr> <Space> format#pum_reset()
@@ -1338,7 +1365,7 @@ if s:active('ddc.vim')
   let g:jedi#auto_vim_configuration = 0
   let g:jedi#completions_command = ''
   let g:jedi#completions_enabled = 0
-  let g:jedi#documentation_command = '<Leader>p'
+  let g:jedi#documentation_command = '<Leader>P'
   let g:jedi#goto_command = ''
   let g:jedi#goto_definitions_command = ''
   let g:jedi#goto_assignments_command = ''
@@ -1498,15 +1525,16 @@ if s:active('vim-gitgutter')
     exe 'au ' . cmds . ' * GitGutter'
   augroup END
   let g:gitgutter_map_keys = 0  " disable all maps yo
-  let g:gitgutter_max_signs = 5000
+  let g:gitgutter_max_signs = -1  " maximum number of signs
+  let g:gitgutter_preview_win_floating = 0  " disable preview window
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
   noremap ]g <Cmd>GitGutterNextHunk<CR>
   noremap [g <Cmd>GitGutterPrevHunk<CR>
   nnoremap <Leader>g <Cmd>call switch#gitgutter(1)<CR>
   nnoremap <Leader>G <Cmd>call switch#gitgutter(0)<CR>
-  nnoremap <Leader>q <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
   nnoremap <Leader>A <Cmd>GitGutterUndoHunk<CR>
   nnoremap <Leader>a <Cmd>GitGutterStageHunk<CR>
+  nnoremap <Leader>p <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
   silent! delcommand Gdiffsplit
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
@@ -1666,34 +1694,6 @@ if has('gui_running')
   command! SchemeNext call utils#iter_colorschemes(1)
 endif
 
-" Terminal vim colors
-augroup override_syntax
-  au!
-  au Syntax * call s:keyword_setup()
-  au BufRead * set conceallevel=2 concealcursor=
-augroup END
-
-" Set up universal keywords. See: https://vi.stackexchange.com/a/11547/8084
-" The URL regex was copied from the one used for .tmux.conf
-" Warning: Cannot use filetype specific elgl au Syntax *.tex commands to overwrite
-" existing highlighting. An after/syntax/tex.vim file is necessary.
-" Warning: The containedin just tries to *guess* what particular comment and
-" string group names are for given filetype syntax schemes. Verify that the
-" regexes will match using :Group with cursor over a comment. For example, had
-" to change .*Comment to .*Comment.* since Julia has CommentL name
-function! s:keyword_setup()
-  if &filetype ==# 'vim'
-    syn clear vimTodo  " vim instead uses the Stuff: syntax
-  else
-    syn match Todo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.*  " comments
-    syn match Special '^\%1l#!.*$'  " shebangs
-  endif
-  syn match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
-  hi link customURL Underlined
-  syn match markdownHeader =^# \zs#\+.*$= containedin=.*Comment.*
-  hi link markdownHeader Special
-endfunction
-
 " Filetype specific
 highlight link pythonImportedObject Identifier
 highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
@@ -1735,7 +1735,7 @@ highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
 highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 
-" Column stuff, color 80th column and after 120
+" Color and sign column stuff
 highlight ColorColumn cterm=NONE ctermbg=Gray
 highlight SignColumn guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 

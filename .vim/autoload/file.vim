@@ -65,20 +65,20 @@ endfunction
 function! file#close_window() abort
   let ntabs = tabpagenr('$')
   let islast = tabpagenr('$') == tabpagenr()
-  quit
+  silent! quit
   if ntabs != tabpagenr('$') && !islast
-    silent! tabp
+    silent! tabprevious
   endif
 endfunction
 function! file#close_tab() abort
   let ntabs = tabpagenr('$')
   let islast = tabpagenr('$') == tabpagenr()
   if ntabs == 1
-    qall
+    silent! quitall
   else
-    tabclose
+    silent! tabclose
     if !islast
-      silent! tabp
+      silent! tabprevious
     endif
   endif
 endfunction

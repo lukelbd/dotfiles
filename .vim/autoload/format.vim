@@ -106,10 +106,11 @@ function! format#paste_mode() abort
 endfunction
 
 " Insert next or previous popup menu
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
 function! s:pum_scroll(...) abort
   if !pumvisible() | return 0 | endif
   let info = pum_getpos()
-  return a:0 ? info['height'] / a:1 : 1
+  return a:0 ? float2nr(a:1 * info['height']) : 1
 endfunction
 function! format#pum_reset() abort
   let b:pum_pos = 0
