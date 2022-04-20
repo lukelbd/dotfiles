@@ -411,6 +411,8 @@ nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
 " Note: For some reason compound filetype 'markdown.lsp-hover' fails to apply
 " highlighting (seems unrelated to vim-markdown). So have to set filetype=markdown.
+" Note: Here popup#popup_setup() has to come before plugins or else scrollwrapped
+" overrides will overwrite the custom overrides.
 let s:filetypes = [
   \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
   \ 'gitcommit', 'log', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
