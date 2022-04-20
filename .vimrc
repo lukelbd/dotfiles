@@ -408,13 +408,12 @@ command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 
 " Popup window style adjustments with less-like shortcuts
-" Note: for some reason compound filetype 'markdown.lsp-hover' fails to apply
-" highlighting (seems unrelated to vim-markdown). So have to set filetype=markdown
-" explicitly. This also disables popup behavior when g:lsp_hover_float is set to 0.
 " Note: Here 'man' is usually used with superman 'vman', 'ale-preview' is used with
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
+" Note: For some reason compound filetype 'markdown.lsp-hover' fails to apply
+" highlighting (seems unrelated to vim-markdown). So have to set filetype=markdown.
 let s:filetypes = [
   \ 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
   \ 'gitcommit', 'log', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
@@ -429,7 +428,7 @@ augroup popup_setup
     au TerminalWinOpen * call popup#popup_setup()
   endif
   for s:ft in s:filetypes
-    exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:ft ==# 'gitcommit' . ')'
+    exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . (s:ft ==# 'gitcommit') . ')'
   endfor
 augroup END
 
