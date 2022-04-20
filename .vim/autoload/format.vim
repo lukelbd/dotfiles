@@ -95,26 +95,33 @@ function! format#paste_mode() abort
   return ''
 endfunction
 
-" Insert next or previous popup menu
-" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
-function! s:pum_scroll(...) abort
-  if !pumvisible() | return 0 | endif
-  let info = pum_getpos()
-  return a:0 ? float2nr(a:1 * info['height']) : 1
-endfunction
-function! format#pum_reset() abort
-  let b:pum_pos = 0
+" Insert complete menu items and scroll complete or preview windows (whichever is open).
+" Note: This prevents vim's baked-in circular complete menu scrolling. It
+" also prefers scrolling complete menus over preview windows.
+" Note: Used 'verb function! lsp#scroll' to figure out how to detect preview
+" windows for a reference scaling (also verified that l:window.find and
+" therefore lsp#scroll do not return popup completion windows).
+function! format#popup_reset() abort
+  let b:popup_scroll = 0
   return ''
 endfunction
-function! format#pum_next(...) abort
-  let scroll = call('s:pum_scroll', a:000)
-  let b:pum_pos += scroll
-  return repeat("\<C-n>", scroll)
-endfunction
-function! format#pum_prev(...) abort
-  let scroll = call('s:pum_scroll', a:000)
-  let b:pum_pos -= scroll
-  return repeat("\<C-p>", scroll)
+function! format#popup_scroll(scroll) abort
+  let l:methods = vital#lsp#import('VS.Vim.Window')  " scope is necessary
+  let ids = l:methods.find({id -> l:methods.is_floating(id)})
+  let complete_info = pum_getpos()  " automatically returns empty if not present
+  let preview_info = empty(ids) ? {} : l:methods.info(ids[0])
+  if !empty(complete_info)
+    let nr = type(a:scroll) == 5 ? float2nr(a:scroll * complete_info['height']) : a:scroll
+    let nr = max([0 - b:popup_scroll, nr])
+    let nr = min([complete_info['size'] - b:popup_scroll, nr])
+    let b:popup_scroll += nr  " complete menu offset
+    return repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
+  elseif !empty(preview_info)
+    let nr = type(a:scroll) == 5 ? float2nr(a:scroll * preview_info['height']) : a:scroll
+    return lsp#scroll(nr)
+  else
+    return ''
+  endif
 endfunction
 
 " Search replace without polluting history

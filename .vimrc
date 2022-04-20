@@ -419,7 +419,7 @@ let [g:tags_skip_filetypes, g:tabline_skip_filetypes] = [s:filetypes, s:filetype
 augroup popup_setup
   au!
   au FileType help call popup#help_setup()
-  au FileType markdown.lsp-hover setlocal filetype=markdown | setlocal conceallevel=2
+  au FileType markdown.lsp-hover setlocal filetype=markdown | setlocal buftype=nofile | setlocal conceallevel=2
   au CmdwinEnter * call popup#cmd_setup()
   if exists('##TerminalWinOpen')
     au TerminalWinOpen * call popup#popup_setup()
@@ -891,17 +891,18 @@ let g:speeddating_no_mappings = 1
 let g:HowMuch_no_mappings = 1
 
 " User interface selection stuff
-" Note: Shuogo claims "unite provides an integration interface for several
+" Note: Shougo claims "unite provides an integration interface for several
 " sources and you can create new interfaces" but fzf permits integration too.
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
 " centered on bottom. Note fzf#wrap is required to apply global settings and cannot
 " rely on fzf#run return values (will result in weird hard-to-debug issues).
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
+  " Plug 'Shougo/pum.vim'  " pum completion mappings, but mine are nicer
 " Plug 'Shougo/unite.vim'  " first generation
 " Plug 'Shougo/denite.vim'  " second generation
 " Plug 'Shougo/ddu.vim'  " third generation
-" Plug 'Shougo/ddu-ui-filer.vim'  " successor to Shuogo/vimfiler and Shuogo/defx.nvim
+" Plug 'Shougo/ddu-ui-filer.vim'  " successor to Shougo/vimfiler and Shougo/defx.nvim
 " Plug 'ctrlpvim/ctrlp.vim'  " replaced with fzf
 Plug '~/.fzf'  " fzf installation location, will add helptags and runtimepath
 Plug 'junegunn/fzf.vim'  " this one depends on the main repo above, includes other tools
@@ -936,7 +937,6 @@ if !has('gui_running')
   " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
   Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
   Plug 'vim-denops/denops.vim'  " ddc dependency
-  " Plug 'Shougo/pum.vim'  " pum completion mappings
   " Omnifunc sources not provided by engines
   " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
   " Plug 'neovim/nvim-lspconfig'  " nvim-cmp source
@@ -1315,34 +1315,32 @@ if s:plug_active('ddc.vim')
   " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
   augroup pum_navigation
     au!
-    au BufEnter,InsertLeave * let b:pum_pos = 0
+    au BufEnter,InsertLeave * let b:popup_scroll = 0
   augroup END
+  inoremap <expr> <C-e> format#popup_scroll(-1)
+  inoremap <expr> <C-y> format#popup_scroll(1)
+  inoremap <expr> <Up> format#popup_scroll(-0.25)
+  inoremap <expr> <Down> format#popup_scroll(0.25)
+  inoremap <expr> <C-k> format#popup_scroll(-0.25)
+  inoremap <expr> <C-j> format#popup_scroll(0.25)
+  inoremap <expr> <C-u> format#popup_scroll(-0.5)
+  inoremap <expr> <C-d> format#popup_scroll(0.5)
+  inoremap <expr> <C-b> format#popup_scroll(-1.0)
+  inoremap <expr> <C-f> format#popup_scroll(1.0)
+  inoremap <expr> <Space> format#popup_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
+  inoremap <expr> <Backspace> format#popup_reset()
+    \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
   inoremap <expr> <CR>
-    \ pumvisible() ? b:pum_pos ?
-    \ "\<C-y>" . format#pum_reset()
+    \ pumvisible() ? b:popup_scroll ?
+    \ "\<C-y>" . format#popup_reset()
     \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
     \ : "\<C-]>\<C-g>u\<CR>"
   inoremap <expr> <Tab>
-    \ pumvisible() ? b:pum_pos ?
-    \ "\<C-y>" . format#pum_reset()
-    \ : "\<C-n>\<C-y>" . format#pum_reset()
+    \ pumvisible() ? b:popup_scroll ?
+    \ "\<C-y>" . format#popup_reset()
+    \ : "\<C-n>\<C-y>" . format#popup_reset()
     \ : "\<C-]>\<Tab>"
-  inoremap <expr> <Space> format#pum_reset()
-    \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
-  inoremap <expr> <Backspace> format#pum_reset()
-    \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
-  nnoremap <expr> <C-e> lsp#scroll(5)
-  inoremap <expr> <C-e> lsp#scroll(5)
-  nnoremap <expr> <C-y> lsp#scroll(-5)
-  inoremap <expr> <C-y> lsp#scroll(-5)
-  inoremap <expr> <Up> format#pum_prev()
-  inoremap <expr> <Down> format#pum_next()
-  inoremap <expr> <C-k> format#pum_prev()
-  inoremap <expr> <C-j> format#pum_next()
-  inoremap <expr> <C-u> format#pum_prev(0.5)
-  inoremap <expr> <C-d> format#pum_next(0.5)
-  inoremap <expr> <C-f> format#pum_prev(1.0)
-  inoremap <expr> <C-b> format#pum_next(1.0)
 endif
 
 " Asynchronous linting engine
