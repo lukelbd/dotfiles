@@ -18,7 +18,6 @@ function! popup#popup_setup(...) abort
   if filemode == 1 | return | endif  " this is an editable file
   setlocal nospell statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
   for char in 'uUrRxXpPdDaAiIcCoO' | exe 'nmap <buffer> ' char . ' <Nop>' | endfor
-  for char in ['ij', 'ok'] | exe 'nmap <buffer> <nowait> ' . char[0] . ' <C-' . char[1] . '>' | endfor
   for char in 'dufb' | exe 'nmap <buffer> <nowait> ' . char . ' <C-' . char . '>' | endfor
 endfunction
 
