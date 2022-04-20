@@ -2,7 +2,7 @@
 " Builtin TeX settings
 "-----------------------------------------------------------------------------"
 " Restrict concealmeant to just accents, Greek symbols, and math symbols
-let g:tex_conceal = 'agmd'
+let g:tex_conceal = 'agmdb'
 
 " Allow @ in makeatletter, allow texmathonly outside of math regions (i.e.
 " don't highlight [_^] when you think they are outside math zone)

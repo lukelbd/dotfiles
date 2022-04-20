@@ -1,6 +1,3 @@
-" Filetype declarations. Include misc files where we want to use '#' for comments
-" (e.g. GFDL diagnostic tables and experiment tables), and batch files for HPC
-" submissions with SLURM manager (Midway, Geyser, Yellowstone) or PBS system (Cheyenne)
-autocmd BufNewFile,BufRead
-  \ .bashrc,.bash_profile,.rvmrc,*.batch,*.sbatch,*.pbs,*.bash,*.ksh,*.zsh,*.sh,*.fish,*.cdo,*.nco,diag_table*
-  \ set filetype=sh
+" Filetype declarations. Include vaguely shell-like files where '#' is the comment
+" character, e.g. GFDL diagnostic tables and HPC batch file instructions.
+au BufNewFile,BufRead *.rvmrc,*.{pbs,slurm},*.{,p,s}batch,*.{cdo,nco},*.ncap{,2},diag_table* set filetype=sh

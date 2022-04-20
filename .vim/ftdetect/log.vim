@@ -1,2 +1,2 @@
-" Filetype declarations
-au BufNewFile,BufRead __doc__*,__LSP_SETTINGS__*,*.info,*.log set filetype=log
+" Filetype declarations. Include popups that otherwise have no filetype.
+au BufNewFile,BufRead *.log,*.info,__LSP_SETTINGS__* set filetype=log
