@@ -88,7 +88,7 @@ set splitright  " splitting behavior
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " shoft default tabs
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
-set updatetime=5000  " used for CursorHold autocmds and default is 4000ms
+set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=  " prevent cursor from going where no actual character
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
@@ -662,14 +662,15 @@ map [e <Plug>BlankUp
 map ]e <Plug>BlankDown
 
 " Maps and commands for circular location-list scrolling
-command! -bar -count=1 Cnext execute utils#iter_cyclic(<count>, 'qf')
-command! -bar -count=1 Cprev execute utils#iter_cyclic(<count>, 'qf', 1)
+" Note: ALE populates the window-local loc list rather than the global quickfix list.
 command! -bar -count=1 Lnext execute utils#iter_cyclic(<count>, 'loc')
 command! -bar -count=1 Lprev execute utils#iter_cyclic(<count>, 'loc', 1)
+command! -bar -count=1 Qnext execute utils#iter_cyclic(<count>, 'qf')
+command! -bar -count=1 Qprev execute utils#iter_cyclic(<count>, 'qf', 1)
 noremap [x <Cmd>Lprev<CR>
 noremap ]x <Cmd>Lnext<CR>
-noremap [q <Cmd>Cprev<CR>
-noremap ]q <Cmd>Cnext<CR>
+noremap [X <Cmd>Qprev<CR>
+noremap ]X <Cmd>Qnext<CR>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
@@ -683,12 +684,15 @@ nnoremap <expr> gO format#paste_mode() . 'O'
 nnoremap <expr> gR format#paste_mode() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
-" nnoremap <CR> <C-]>  " fails most of the time
-" nnoremap <CR> [<C-i>  " jump to vim definition
-" nnoremap \<Space> [I  " display occurences
-nnoremap <Leader>P <Cmd>LspSignatureHelp<CR>
-nnoremap <Leader><CR> <Cmd>LspPeekDefinition<CR>
-nnoremap <CR> <Cmd>LspDefinition<CR>
+noremap <CR> <Cmd>LspPeekDefinition<CR>
+noremap <Leader>P <Cmd>LspHover --ui=float<CR>
+noremap <Leader><CR> <Cmd>LspDefinition<CR>
+noremap [r <Cmd>LspPreviousReference<CR>
+noremap ]r <Cmd>LspNextReference<CR>
+" nnoremap <Leader>P <Cmd>LspSignatureHelp<CR>
+" noremap <CR> <C-]>  " fails most of the time
+" noremap <CR> [<C-i>  " jump to vim definition
+" noremap \<Space> [I  " display occurences
 
 " Forward delete by tabs
 inoremap <expr> <Delete> format#forward_delete()
@@ -964,8 +968,8 @@ if !has('gui_running')
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_highlight_enabled = 0  " reundant with using *, &, etc.
+  let g:lsp_document_code_action_signs_enabled = 1  " disable annoying signs
+  let g:lsp_document_highlight_enabled = 1  " used with [r and ]r
   let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1
