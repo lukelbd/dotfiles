@@ -677,29 +677,28 @@ qgrep() {
 }
 
 # Refactor, coding, and logging tools
+# NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
+# occurences of file paths (should be 1 but this is convenient way to record them).
 todo() { qfind . -print -a -exec grep -n '\bTODO\b' {} \;; }
 note() { qfind . -print -a -exec grep -n '\bNOTE\b' {} \;; }
 fixme() { qfind . -print -a -exec grep -n '\bFIXME\b' {} \;; }
 refactor() {
-  local cmd
-  if ! $_macos; then
-    cmd=sed
-  elif which gsed 2>/dev/null; then
-    cmd=gsed
-  else
-    echo 'Error: command gsed not found.'
-    return 1
-  fi
-  [ $# -eq 2 ] || {
-    echo 'Error: refactor() requires search pattern and replace pattern.'
-    return 1
-  }
-  qfind . -print -a -exec $cmd -E -n "s@$1@$2@gp" {} \; || {
-    echo 'Error: sed failed.'
-    return 1
-  }
+  local cmd file files result
+  $_macos && cmd=gsed || cmd=sed
+  [ $# -eq 2 ] \
+    || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
+  result=$(qfind . -print -a -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
+    || { echo "Error: Search $1 to $2 failed."; return 1; }
+  readarray -t files < <(echo "$result"$'\nEOF' | \
+    awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
+    || { echo "Error: Filtering files failed."; return 1; }  # readarray is bash 4+
+  echo $'Preview:\n'"$result"
+  IFS=$'\n' echo $'Files to change:\n'"$(printf '%s\n' "${files[@]}")"
   if confirm-no 'Proceed with refactor?'; then
-    qfind . -print -a -exec $cmd -E -i "s@$1@$2@g" {} \;
+    for file in "${files[@]}"; do
+      $cmd -E -i "s@$1@$2@g" "$file" \
+      || { echo "Error: Refactor on $file failed."; return 1; }
+    done
   fi
 }
 
