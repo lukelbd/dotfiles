@@ -1,8 +1,8 @@
 dotfiles
 ========
 
-This repo synchronizes various settings for `bash`, `vim`, `tmux`, and `jupyter`.
-It also includes some handy shell functions and shell scripts.
+This repo synchronizes various settings for `bash`, `vim`, `git`, `tmux`, `ipython`,
+and `jupyter`. It also includes some handy shell functions and shell scripts.
 
 Bash config
 -----------

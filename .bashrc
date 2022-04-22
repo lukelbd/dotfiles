@@ -1963,11 +1963,11 @@ title_update() {  # fix name issues
 }
 
 # Ask for a title when we create pane 0 (i.e. the first pane of a new window)
+alias title='_title_set'  # easier for user
 if $_macos; then
   [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 fi
-alias title='_title_set'  # easier for user
 
 #-----------------------------------------------------------------------------#
 # Mac stuff

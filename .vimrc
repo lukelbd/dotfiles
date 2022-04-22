@@ -290,17 +290,19 @@ endfor
 "-----------------------------------------------------------------------------"
 " Useful commands
 " Note: This is analogous to :scriptnames
-command! -nargs=0 Bufs call utils#open_bufs()
 command! -nargs=? Abspath call utils#abs_path(<f-args>)
+command! -nargs=0 Bufpaths call utils#open_bufs()
 
 " Opening file in current directory and some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
+" Note: Here :History includes v:oldfiles and open buffers.
 command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
-noremap <C-g> <Cmd>GFiles<CR>
 noremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 noremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
 noremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
 noremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
+noremap <C-r> <Cmd>History<CR>
+noremap <C-g> <Cmd>GFiles<CR>
 
 " Default 'open file under cursor' to open in new tab; change for normal and vidual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
@@ -409,10 +411,6 @@ nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
-" Note: For some reason compound filetype 'markdown.lsp-hover' fails to apply
-" highlighting (seems unrelated to vim-markdown). So have to set filetype=markdown.
-" Note: Here popup#popup_setup() has to come before plugins or else scrollwrapped
-" overrides will overwrite the custom overrides.
 let s:filetypes = [
   \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
   \ 'gitcommit', 'log', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
@@ -421,7 +419,7 @@ let [g:tags_skip_filetypes, g:tabline_skip_filetypes] = [s:filetypes, s:filetype
 augroup popup_setup
   au!
   au FileType help call popup#help_setup()
-  au FileType markdown.lsp-hover setlocal filetype=markdown | setlocal buftype=nofile | setlocal conceallevel=2
+  au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au CmdwinEnter * call popup#cmd_setup()
   if exists('##TerminalWinOpen')
     au TerminalWinOpen * call popup#popup_setup()
@@ -432,12 +430,13 @@ augroup popup_setup
 augroup END
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
-" Note: Mapping for 'repeat last search' is unnecessary, just press n or N.
-" Note: Help and man info is also shown by ddc popups. Similar to pydoc and pylsp.
-nnoremap <Leader>; :<Up><CR>
-nnoremap <Leader>: q:
-nnoremap <Leader>< q?
-nnoremap <Leader>> q/
+" Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
+nnoremap <Leader>; q:
+nnoremap <Leader>. q/
+nnoremap <Leader>, q?
+nnoremap <Leader>: <Cmd>History:<CR>
+nnoremap <Leader>> <Cmd>History/<CR>
+nnoremap <Leader>< :<Up><CR>
 nnoremap <Leader>h <Cmd>call popup#help_flag() \| redraw!<CR>
 nnoremap <Leader>H <Cmd>call popup#help_man() \| redraw!<CR>
 nnoremap <Leader>v <Cmd>call popup#help_win()<CR>
@@ -969,7 +968,7 @@ if !has('gui_running')
   let g:lsp_document_highlight_enabled = 0  " reundant with using *, &, etc.
   let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
-  let b:lsp_hover_conceal = 1
+  let g:lsp_hover_conceal = 1
   let g:lsp_preview_float = 1
   let g:lsp_preview_max_width = 80
   let g:lsp_preview_max_height = 30
@@ -1153,16 +1152,14 @@ if s:plug_active('vim-succinct')
   let g:succinct_nextdelim_map = '<F2>'
 endif
 
-" Mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
+" Additional mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
+" Also add custom filetype log and plugin filetype ale-preview to list.
 if s:plug_active('vim-scrollwrapped')
   let g:scrollwrapped_wrap_filetypes = [
-    \ 'ale-preview', 'bib', 'liquid', 'log', 'markdown', 'rst', 'tex'
-    \ ]
-  nnoremap <Leader>w <Cmd>WrapToggle<CR>
-  nnoremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
-  nnoremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
-  vnoremap <expr> <Up> (winheight(0) / 4) . '<C-y>' . (winheight(0) / 4) . 'gk'
-  vnoremap <expr> <Down> (winheight(0) / 4) . '<C-e>' . (winheight(0) / 4) . 'gj'
+    \ 'ale-preview', 'bib', 'liquid', 'log', 'markdown', 'rst', 'tex']
+  noremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
+  noremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
+  noremap <Leader>w <Cmd>WrapToggle<CR>
 endif
 
 " Add maps for vim-tags command and use tags for default double bracket motion,
@@ -1182,8 +1179,8 @@ if s:plug_active('vim-tags')
   endfunction
   nnoremap <Leader>t <Cmd>ShowTags<CR>
   nnoremap <Leader>T <Cmd>UpdateTags<CR>
-  nnoremap <Leader>, <Cmd>Tags<CR>
-  nnoremap <Leader>. <Cmd>BTags<CR>
+  nnoremap <Leader>q <Cmd>BTags<CR>
+  nnoremap <Leader>Q <Cmd>Tags<CR>
   let g:tags_nofilter_filetypes = ['fortran']
   let g:tags_scope_filetypes = {
     \ 'vim'     : 'afc',
