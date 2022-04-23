@@ -968,7 +968,7 @@ if !has('gui_running')
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_code_action_signs_enabled = 1  " disable annoying signs
+  let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
   let g:lsp_document_highlight_enabled = 1  " used with [r and ]r
   let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
