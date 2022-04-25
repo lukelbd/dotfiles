@@ -269,8 +269,8 @@ nnoremap V myV
 nnoremap vc myvlh
 nnoremap <C-v> my<C-v>
 nnoremap v/ hn<Cmd>noh<CR>mygn
-vnoremap <LeftMouse> <LeftMouse>mx`y<Cmd>exe 'normal! ' . visualmode()<CR>`x
 vnoremap <CR> <C-c>
+vnoremap <LeftMouse> <LeftMouse>mx`y<Cmd>exe 'normal! ' . visualmode()<CR>`x
 
 " Automatically update binary spellfile
 " See: https://vi.stackexchange.com/a/5052/8084
@@ -684,15 +684,15 @@ nnoremap <expr> gO format#paste_mode() . 'O'
 nnoremap <expr> gR format#paste_mode() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
-noremap <CR> <Cmd>LspPeekDefinition<CR>
-noremap <Leader>P <Cmd>LspHover --ui=float<CR>
-noremap <Leader><CR> <Cmd>LspDefinition<CR>
 noremap [r <Cmd>LspPreviousReference<CR>
 noremap ]r <Cmd>LspNextReference<CR>
+" nnoremap <CR> <C-]>  " fails most of the time
+" nnoremap <CR> [<C-i>  " jump to vim definition
+" nnoremap \<Space> [I  " display occurences
 " nnoremap <Leader>P <Cmd>LspSignatureHelp<CR>
-" noremap <CR> <C-]>  " fails most of the time
-" noremap <CR> [<C-i>  " jump to vim definition
-" noremap \<Space> [I  " display occurences
+nnoremap <CR> <Cmd>LspPeekDefinition<CR>
+nnoremap <Leader>P <Cmd>LspHover --ui=float<CR>
+nnoremap <Leader><CR> <Cmd>LspDefinition<CR>
 
 " Forward delete by tabs
 inoremap <expr> <Delete> format#forward_delete()

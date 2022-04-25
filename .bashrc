@@ -1511,12 +1511,11 @@ ncvarlist() {
   local file list dmnlist varlist
   [ $# -lt 1 ] && echo "Usage: ncvarlist FILE" && return 1
   for file in "$@"; do
+    unset dmnlist varlist
     read -r -a list < <(nclist "$file" | xargs)
     read -r -a dmnlist < <(ncdimlist "$file" | xargs)
     for item in "${list[@]}"; do
-      if ! [[ " ${dmnlist[*]} " =~ " $item " ]]; then
-        varlist+=("$item")
-      fi
+      [[ " ${dmnlist[*]} " =~ " $item " ]] || varlist+=("$item")
     done
     echo "File: $file"
     echo "${varlist[*]}" | tr -s ' ' '\n' | grep -v '[{}]' | sort  # print results
