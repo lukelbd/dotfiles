@@ -198,7 +198,7 @@ function! popup#help_win(...) abort
 endfunction
 
 " Setup job popup window
-" Note: The '.log' extension should trigger popup.
+" Note: The '.job' extension should trigger popup windows.
 " Note: Add 'set -x' to display commands and no-op ':' to signal completion.
 " Note: The '/bin/sh' is critical to permit chained commands e.g. with && or
 " || otherwise they are interpreted as literals.
@@ -214,7 +214,7 @@ function! popup#job_win(cmd, ...) abort
   let hght = winheight('.') / 4
   let opts = {}  " job options, empty by default
   if (a:0 ? a:1 : 1)  " whether to show popup window
-    let logfile = expand('%:t:r') . '.log'
+    let logfile = expand('%:t:r') . '.job'
     let lognum = bufwinnr(logfile)
     if lognum == -1  " open a logfile window
       exe hght . 'split ' . logfile
@@ -225,6 +225,7 @@ function! popup#job_win(cmd, ...) abort
       exe winnr('#') . 'wincmd w'
     endif
     let num = bufnr(logfile)
+    call setbufvar(num, '&buftype', 'nofile')
     let opts = {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
   endif
   let b:popup_job = job_start(cmds, opts)

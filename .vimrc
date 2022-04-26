@@ -413,7 +413,7 @@ nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
 let s:filetypes = [
   \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
-  \ 'gitcommit', 'log', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
+  \ 'gitcommit', 'job', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
   \ ]
 let [g:tags_skip_filetypes, g:tabline_skip_filetypes] = [s:filetypes, s:filetypes]
 augroup popup_setup
