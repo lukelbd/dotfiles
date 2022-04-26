@@ -260,17 +260,22 @@ for s:key in [
   endif
 endfor
 
-" Enable left mouse click in visual mode to extend selection, normally this is impossible
+" Enable left mouse click in visual mode to extend selection, normally impossible
+" Note: Mark z used when defining and jumping in same line, mark x used for insert
+" mode undo maps, and mark y used for visual mode maps.
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when
 " enter visual mode, to do that need to map vi and va stuff.
 nnoremap v myv
 nnoremap V myV
-nnoremap vc myvlh
 nnoremap <C-v> my<C-v>
-nnoremap v/ hn<Cmd>noh<CR>mygn
+vnoremap v <Esc>myv
+vnoremap V <Esc>myV
+vnoremap <C-v> <Esc>my<C-v>
+nnoremap gn gE/<C-r>"/<CR><Cmd>noh<CR>mygn
+nnoremap gN W?<C-r>"?e<CR><Cmd>noh<CR>mygN
+vnoremap <LeftMouse> <LeftMouse>mz`y<Cmd>exe 'normal! ' . visualmode()<CR>`z
 vnoremap <CR> <C-c>
-vnoremap <LeftMouse> <LeftMouse>mx`y<Cmd>exe 'normal! ' . visualmode()<CR>`x
 
 " Automatically update binary spellfile
 " See: https://vi.stackexchange.com/a/5052/8084
@@ -628,10 +633,10 @@ nnoremap <nowait> gu guiw
 nnoremap <nowait> gU gUiw
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
-nmap gy <Plug>cap1
-nmap gt <Plug>cap2
 vnoremap gy ~
 vnoremap gt mzgu<Esc>`<~h
+nmap gy <Plug>cap1
+nmap gt <Plug>cap2
 
 " Always open folds when starting files
 " Note: For some reason vim ignores foldlevelstart
