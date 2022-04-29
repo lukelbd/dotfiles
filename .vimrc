@@ -424,6 +424,7 @@ let [g:tags_skip_filetypes, g:tabline_skip_filetypes] = [s:filetypes, s:filetype
 augroup popup_setup
   au!
   au FileType help call popup#help_setup()
+  au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au CmdwinEnter * call popup#cmd_setup()
   if exists('##TerminalWinOpen')
@@ -749,34 +750,68 @@ noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
 " Note: This works recursively with the below maps
 nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
-" Delete commented text. For some reason search screws up when using \(\)
-" groups, maybe because first parts of match are identical?
-" Note: utils#comment_char() doesn't get invoked either until expression
-" is run so comment character will reflect it sbuffer-local value.
-noremap <expr> \c format#replace_regex_expr('Removed comments.', '^\s*' . utils#comment_char() . '.\+$\n', '', '\s\+' . utils#comment_char() . '.\+$', '')
+" Delete commented text. For some reason search screws up when using \(\) groups,
+" maybe because first parts of match are identical?
+noremap <expr> \c format#replace_regex_expr(
+  \ 'Removed comments.',
+  \ '^\s*' . utils#comment_char() . '.\+$\n', '',
+  \ '\s\+' . utils#comment_char() . '.\+$', '')
+
+" Replace tabs with spaces
+noremap <expr> \<Tab> format#replace_regex_expr(
+  \ 'Fixed tabs.',
+  \ '\t', repeat(' ', &tabstop))
 
 " Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
-noremap <expr> \w format#replace_regex_expr('Removed trailing whitespace.', '\s\+\ze$', '')
-
-" Replace consecutive spaces on current line with one space, if they're not part of indentation
-noremap <expr> \s format#replace_regex_expr('Squeezed redundant whitespace.', '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S format#replace_regex_expr('Removed all whitespace.', '\S\@<=\(^ \+\)\@<! \+', '')
+noremap <expr> \w format#replace_regex_expr(
+  \ 'Removed trailing whitespace.',
+  \ '\s\+\ze$', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
-noremap <expr> \e format#replace_regex_expr('Squeezed consecutive newlines.', '\(\n\s*\n\)\(\s*\n\)\+', '\1')
-noremap <expr> \E format#replace_regex_expr('Removed empty lines.', '^\s*$\n', '')
+noremap <expr> \e format#replace_regex_expr(
+  \ 'Squeezed consecutive newlines.',
+  \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
+noremap <expr> \E format#replace_regex_expr(
+  \ 'Removed empty lines.',
+  \ '^\s*$\n', '')
+
+" Replace consecutive spaces on current line with one space,
+" only if they're not part of indentation
+noremap <expr> \s format#replace_regex_expr(
+  \ 'Squeezed redundant whitespace.',
+  \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S format#replace_regex_expr(
+  \ 'Removed all whitespace.',
+  \ '\S\@<=\(^ \+\)\@<! \+', '')
+
+" Replace useless bibtex entries
+" Previously localized to bibtex ftplugin but no major reason not to include here
+noremap <expr> \x format#replace_regex_expr(
+  \ 'Removed bibtex entries.',
+  \ '^\s*\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
+  \ '')
+noremap <expr> \X format#replace_regex_expr(
+  \ 'Removed bibtex entries.',
+  \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
+  \ '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-noremap <expr> \' format#replace_regex_expr('Fixed single quotes.', '‘', '`', '’', "'")
-noremap <expr> \" format#replace_regex_expr('Fixed double quotes.', '“', '``', '”', "''")
-noremap <expr> \- format#replace_regex_expr('Fixed long dashes.', '–', '--')
-noremap <expr> \_ format#replace_regex_expr('Fixed wordbreak dashes.', '\(\w\)[-–] ', '\1')
-
-" Replace tabs with spaces
-noremap <expr> \<Tab> format#replace_regex_expr('Fixed tabs.', '\t', repeat(' ', &tabstop))
-
+noremap <expr> \- format#replace_regex_expr(
+  \ 'Fixed long dashes.',
+  \ '–', '--')
+noremap <expr> \_ format#replace_regex_expr(
+  \ 'Fixed wordbreak dashes.',
+  \ '\(\w\)[-–] ', '\1')
+noremap <expr> \' format#replace_regex_expr(
+  \ 'Fixed single quotes.',
+  \ '‘', '`',
+  \ '’', "'")
+noremap <expr> \" format#replace_regex_expr(
+  \ 'Fixed double quotes.',
+  \ '“', '``',
+  \ '”', "''")
 
 "-----------------------------------------------------------------------------"
 " External plugins
@@ -881,7 +916,7 @@ Plug 'vim-test/vim-test'
 " to vim -S .vimsession and exiting vim saves the session there
 " Plug 'thaerkh/vim-workspace'
 " Plug 'gioele/vim-autoswap'  " deals with swap files automatically; no longer use them so unnecessary
-" Plug 'xolox/vim-reload'  " better to write my own simple plugin
+" Plug 'xolox/vim-reload'  " easier to write custom reload function
 Plug 'tpope/vim-obsession'
 
 " Git wrappers and differencing tools

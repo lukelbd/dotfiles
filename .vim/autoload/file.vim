@@ -19,8 +19,7 @@ endfunction
 
 " Refresh settings
 function! file#refresh() abort
-  filetype detect " if started with empty file, but now shebang makes filetype clear
-  filetype plugin indent on
+  filetype detect  " if started with empty file, but now shebang makes filetype clear
   let loaded = []
   let files = [
     \ '~/.vimrc',
@@ -29,10 +28,12 @@ function! file#refresh() abort
     \ '~/.vim/after/ftplugin/' . &filetype . '.vim',
     \ '~/.vim/after/syntax/' . &filetype . '.vim'
     \ ]
-  for file in files
-    if !empty(glob(file))
-      exe 'so ' . file
-      call add(loaded, file)
+  for i in range(len(files))
+    if filereadable(expand(files[i]))
+      exe 'so ' . files[i] | call add(loaded, files[i])
+    endif
+    if i == 0  " immediately after .vimrc completion
+      doautocmd Filetype
     endif
   endfor
   echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
