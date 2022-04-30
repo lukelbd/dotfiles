@@ -1597,7 +1597,7 @@ if s:plug_active('codi.vim')
   let g:codi#sync = 0  " enable async mode
   let g:codi#interpreters = {
     \ 'python': {
-        \ 'bin': ['python3', '-i', '-c', "'import readline; readline.set_auto_history(False)'"],
+        \ 'bin': ['python3', '-i', '-c', 'import readline; readline.set_auto_history(False)'],
         \ 'prompt': '^\(>>>\|\.\.\.\) ',
         \ 'quitcmd': 'exit()',
         \ 'preprocess': function('popup#codi_preprocess'),

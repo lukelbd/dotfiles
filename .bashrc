@@ -306,8 +306,8 @@ _setup_opts() {
   shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
   export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
-  export HISTSIZE=50000
-  export HISTFILESIZE=10000  # huge history -- doesn't appear to slow things down, so why not?
+  export HISTSIZE=10000  # huge history
+  export HISTFILESIZE=10000  # huge history
   export HISTCONTROL="erasedups:ignoreboth"  # avoid duplicate entries
 }
 _setup_opts 2>/dev/null  # ignore if option unavailable
