@@ -43,7 +43,7 @@ import matplotlib.ticker as mticker
 import matplotlib.transforms as mtransforms
 import proplot as pplt
 pplt.ion()
-pplt.rc['figure.dpi'] = 150 if 'img' in pplt.rc.backend or 'iterm' in pplt.rc.backend else 100
+pplt.rc['figure.dpi'] = 180 if 'img' in pplt.rc.backend or 'iterm' in pplt.rc.backend else 100
 try:
     import cartopy
 except ImportError:

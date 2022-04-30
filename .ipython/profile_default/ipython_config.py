@@ -15,10 +15,10 @@ c.InteractiveShell.banner1 = 'IPython {} | Python {} | Type ? for help\n'.format
 # See: https://github.com/daleroberts/itermplot
 from IPython.core import shellapp
 from IPython.core import pylabtools
-from IPython.terminal import pt_inputhooks
 backends = {
-    'iterm': 'module://itermplot',
-    'imgcat': 'module://matplotlib_iterm2.backend_iterm2',
+    'imgcat': 'module://imgcat',
+    'itermplot': 'module://itermplot',
+    'matplotlib_iterm2': 'module://matplotlib_iterm2.backend_iterm2',
 }
 shellapp.backend_keys.extend(backends)
 pylabtools.backends.update(backends)
