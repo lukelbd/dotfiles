@@ -21,7 +21,7 @@ function! s:open_markdown_file()
   let cmd = 'open -a "Marked 2" ' . shellescape(@%) . ' && open -a "' . terminal . '"'
   call popup#job_win(cmd, 0)
 endfunction
-nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>open_markdown_file()<CR>
+nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>open_markdown_file()<CR>
 
 " Define markdown vim-surround macros
 " Note: Some of these copied from html.vim

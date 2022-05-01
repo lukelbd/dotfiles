@@ -6,12 +6,14 @@ tags
 # Python stuff
 *.pyc
 *.ipynb
+*.egg_info
+*.ipynb_checkpoints
 __pycache__
-.ipynb_checkpoints
 
 # Common temporary files
 *.log
 *.tmp
+*.bak
 
 # Trash
 old

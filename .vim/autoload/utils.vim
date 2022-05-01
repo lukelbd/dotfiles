@@ -93,6 +93,7 @@ function! utils#operator_func(type) range abort
   exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
   return ''
 endfunction
+
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
 function! utils#iter_colorschemes(reverse) abort
@@ -115,6 +116,19 @@ function! utils#iter_colorschemes(reverse) abort
   let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 
+" Helper function for comparing values
+" Copied from: https://vi.stackexchange.com/a/14359
+function! s:compare(a, b)
+  for i in range(len(a:a))
+    if a:a[i] < a:b[i]
+      return -1
+    elseif a:a[i] > a:b[i]
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
 " Cyclic next error in location list
 " Copied from: https://vi.stackexchange.com/a/14359
 function! utils#iter_cyclic(count, list, ...) abort
@@ -132,7 +146,7 @@ function! utils#iter_cyclic(count, list, ...) abort
   if reverse
     call reverse(items)
   endif
-  let [bufnr, cmp] = [bufnr('%'), reverse ? 1 : -1]
+  let [bufnr, compare] = [bufnr('%'), reverse ? 1 : -1]
   let context = [line('.'), col('.')]
   if v:version > 800 || has('patch-8.0.1112')
     let current = call(func, extend(copy(params), [{'idx':1}])).idx
@@ -144,7 +158,7 @@ function! utils#iter_cyclic(count, list, ...) abort
   " Jump to next loc circularly
   call filter(items, 'v:val.bufnr == bufnr')
   let nbuffer = len(get(items, 0, {}))
-  call filter(items, 's:cmp(context, [v:val.lnum, v:val.col, v:val.idx]) == cmp')
+  call filter(items, 's:compare(context, [v:val.lnum, v:val.col, v:val.idx]) == compare')
   let inext = get(get(items, 0, {}), 'idx', 'E553: No more items')
   if type(inext) == type(0)
     return cmd . inext

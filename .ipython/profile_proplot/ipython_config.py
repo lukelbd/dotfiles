@@ -4,23 +4,20 @@
 # Load default profile
 load_subconfig('ipython_config.py', profile='default')
 
-# Add proplot development lines. For iterm use PNG so DPI is controllable! In the
-# end could not get itermplot or imgcat to work. Inline figures are too small. Also
-# installing imgcat messes up matplotlib_iterm2 in ipython but fixes jupyter console.
+# Set matplotlib backend. For iterm use PNG so DPI is controllable! In the end could
+# not get itermplot or imgcat to work. Inline figures are too small. Also installing
+# imgcat messes up matplotlib_iterm2 in ipython but fixes jupyter console.
 # See: https://github.com/wookayin/python-imgcat
 # See: https://github.com/daleroberts/itermplot/issues/27
 # See: https://github.com/oselivanov/matplotlib_iterm2
-lines = """
-# Set up backend
 import os
-# backend = os.environ.setdefault('MPLBACKEND', 'module://imgcat')
-# backend = os.environ.setdefault('MPLBACKEND', 'module://itermplot')
-backend = os.environ.setdefault('MPLBACKEND', 'module://matplotlib_iterm2.backend_iterm2')
-# Set up proplot
-import proplot as pplt
-pplt.ion()
-pplt.rc['figure.dpi'] = 200 if 'img' in backend or 'iterm' in backend else 100
-# Import modules for development
+default = 'module://imgcat'
+default = 'module://itermplot'
+default = 'module://matplotlib_iterm2.backend_iterm2'
+os.environ.setdefault('MPLBACKEND', default)
+
+# Add proplot development lines.
+lines = """
 import cycler
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -44,13 +41,16 @@ import matplotlib.scale as mscale
 import matplotlib.text as mtext
 import matplotlib.ticker as mticker
 import matplotlib.transforms as mtransforms
+import proplot as pplt
+pplt.ion()
+pplt.rc['figure.dpi'] = 180 if 'img' in pplt.rc.backend or 'iterm' in pplt.rc.backend else 100
 try:
     import cartopy
 except ImportError:
     pass
 else:
-    import cartopy.feature as cfeature
     import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
     from cartopy.mpl import gridliner
     from cartopy.mpl import geoaxes
 """

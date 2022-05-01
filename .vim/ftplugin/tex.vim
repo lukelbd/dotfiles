@@ -2,7 +2,7 @@
 " Builtin TeX settings
 "-----------------------------------------------------------------------------"
 " Restrict concealmeant to just accents, Greek symbols, and math symbols
-let g:tex_conceal = 'agmd'
+let g:tex_conceal = 'agmdb'
 
 " Allow @ in makeatletter, allow texmathonly outside of math regions (i.e.
 " don't highlight [_^] when you think they are outside math zone)
@@ -39,14 +39,14 @@ endfunction
 " Latexmk command and shortcuts
 " Note: This map overwrites :TestVisit but no harm for tex files.
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <silent> <buffer> <Leader>\ :<C-u>call <sid>latexmk('--quick')<CR>
-noremap <silent> <buffer> <Plug>ExecuteFile1 :<C-u>call <sid>latexmk()<CR>
-noremap <silent> <buffer> <Plug>ExecuteFile2 :<C-u>call <sid>latexmk('--diff')<CR>
-noremap <silent> <buffer> <Plug>ExecuteFile3 :<C-u>call <sid>latexmk('--word')<CR>
+noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--quick')<CR>
+noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk()<CR>
+noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--diff')<CR>
+noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--word')<CR>
 
-" Snippet dictionaries. Each snippet is made into an <expr> map by prepending
-" and appending the strings with single quotes. This lets us make input()
-" dependent snippets as shown for the 'j', 'k', and 'E' mappings.
+" Snippet dictionaries. Each snippet is made into an <expr> map by prepending and
+" appending the strings with single quotes. This lets us make input() dependent
+" snippets as shown for the 'j', 'k', and 'E' mappings.
 " * \xi is the weird curly one, pronounced 'zai'
 " * \chi looks like an x, pronounced 'kai'
 " * the 'u' used for {-} and {+} is for 'unary'

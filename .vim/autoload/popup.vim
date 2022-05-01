@@ -1,8 +1,10 @@
 "-----------------------------------------------------------------------------"
 " Utilities for setting up windows
 "-----------------------------------------------------------------------------"
-" Setup popup windows
-" File mode can be 0 (no file) 1 (simple file) or 2 (editable file)
+" Setup popup windows. Mode can be 0 (not editable) or 1 (editable).
+" Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
+" popup#job_win() or other internal stuff. So instead just try to disable normal mode
+" commands that could accidentally modify text (aside from d used for scrolling).
 " Warning: Critical error happens if try to auto-quit when only popup window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
@@ -13,13 +15,10 @@ function! popup#popup_setup(...) abort
   nnoremap <silent> <buffer> q :call file#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR>
   setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
-  if filemode == 0 | setlocal buftype=nofile | endif  " this has no file
-  if filemode == 2 | return | endif  " this is editable file
+  if filemode == 1 | return | endif  " this is an editable file
   setlocal nospell statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
-  nnoremap <buffer> u <C-u>
-  nnoremap <buffer> <nowait> d <C-d>
-  nnoremap <buffer> b <C-b>
-  nnoremap <buffer> <nowait> f <C-f>
+  for char in 'uUrRxXpPdDaAiIcCoO' | exe 'nmap <buffer> ' char . ' <Nop>' | endfor
+  for char in 'dufb' | exe 'nmap <buffer> <nowait> ' . char . ' <C-' . char . '>' | endfor
 endfunction
 
 " Setup command windows and ensure local maps work
@@ -80,39 +79,20 @@ function! popup#codi_rephrase(text) abort
   let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
   let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
   if &filetype ==# 'julia'  " prepend repr functions
-    let text = '_r=k->print(k*" = "*repr(eval(k)));' . text
+    let text = '_r=s->print(s*" = "*repr(eval(s)));' . text
   else
-    let text = '_r=lambda k:print(k+" = "+repr(eval(k)));' . text
+    let text = '_r=lambda s:print(s+" = "+repr(eval(s)));' . text
   endif
   let maxlen = 950  " too close to 1000 gets risky even if under 1000
-  let index = maxlen
-  while len(text) > maxlen && line('$') < maxlen && (!exists('curlen') || curlen != len(text))
-    let curlen = len(text)
-    let index -= count(text[index:], "\n")
+  let cutoff = maxlen
+  while len(text) > maxlen && (!exists('prevlen') || prevlen != len(text))
+    let prevlen = len(text)
+    let cutoff -= count(text[cutoff:], "\n")
     let text = ''
-      \ . substitute(text[:index - 1], '\(^\|\n\)[^\n]*$', '\n', '')
-      \ . substitute(text[index:], '[^\n]', '', 'g')
+      \ . substitute(text[:cutoff - 1], '\(^\|\n\)[^\n]*$', '\n', '')
+      \ . substitute(text[cutoff:], '[^\n]', '', 'g')
   endwhile
   return text
-endfunction
-
-" Kludgy function to prevent issue where (1) window alignment is messed up if
-" below first line and (2) offset of ~2 lines is present until cursor moves.
-" See issue for updates: https://github.com/metakirby5/codi.vim/issues/106
-function! popup#codi_kludge(trigger)
-  if a:trigger
-    let winline = line('w0')
-    if winline > 1
-      let s:codi_view = winsaveview()
-      1  " jump to first line
-    endif
-  else
-    if exists('s:codi_view')
-      call winrestview(s:codi_view)
-      unlet s:codi_view
-      normal! kj
-    endif
-  endif
 endfunction
 
 " Popup windows with filetype and color information
@@ -218,7 +198,7 @@ function! popup#help_win(...) abort
 endfunction
 
 " Setup job popup window
-" Note: The '.log' extension should trigger popup.
+" Note: The '.job' extension should trigger popup windows.
 " Note: Add 'set -x' to display commands and no-op ':' to signal completion.
 " Note: The '/bin/sh' is critical to permit chained commands e.g. with && or
 " || otherwise they are interpreted as literals.
@@ -230,21 +210,23 @@ function! popup#job_win(cmd, ...) abort
     echohl None
     return 1
   endif
+  let cmds = ['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :']
+  let hght = winheight('.') / 4
   let opts = {}  " job options, empty by default
-  let show = a:0 ? a:1 : 1
-  if show  " show popup window
-    let logfile = expand('%:t:r') . '.log'
+  if (a:0 ? a:1 : 1)  " whether to show popup window
+    let logfile = expand('%:t:r') . '.job'
     let lognum = bufwinnr(logfile)
     if lognum == -1  " open a logfile window
-      silent! exe string(winheight('.') / 4) . 'split ' . logfile
-      silent! exe winnr('#') . 'wincmd w'
+      exe hght . 'split ' . logfile
+      exe winnr('#') . 'wincmd w'
     else  " jump to logfile window and clean its contents
-      silent! exe bufwinnr(logfile) . 'wincmd w'
-      silent! 1,$d _
-      silent! exe winnr('#') . 'wincmd w'
+      exe bufwinnr(logfile) . 'wincmd w'
+      1,$d _
+      exe winnr('#') . 'wincmd w'
     endif
     let num = bufnr(logfile)
+    call setbufvar(num, '&buftype', 'nofile')
     let opts = {'out_io': 'buffer', 'out_buf': num, 'err_io': 'buffer', 'err_buf': num}
   endif
-  let b:popup_job = job_start(['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :'], opts)
+  let b:popup_job = job_start(cmds, opts)
 endfunction

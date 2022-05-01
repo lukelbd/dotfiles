@@ -1,16 +1,8 @@
+#-----------------------------------------------------------------------------#
 # Configuration file for jupyter-notebook.
 #-----------------------------------------------------------------------------#
-# Modifications
-#-----------------------------------------------------------------------------#
-c = get_config()
-
 # Default browser popup (normally run with --no-browser but useful anyways)
 c.LabApp.browser = '/Applications/Chromium.app/Contents/MacOS/Chromium --app=%s'
-
-# Remote access (safe because users still need token)
-# c.LabApp.allow_remote_access = True
-# c.LabApp.allow_origin = '*'
-# c.LabApp.ip = '0.0.0.0'
 
 #------------------------------------------------------------------------------
 # Application(SingletonConfigurable) configuration

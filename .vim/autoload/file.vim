@@ -19,8 +19,7 @@ endfunction
 
 " Refresh settings
 function! file#refresh() abort
-  filetype detect " if started with empty file, but now shebang makes filetype clear
-  filetype plugin indent on
+  filetype detect  " if started with empty file, but now shebang makes filetype clear
   let loaded = []
   let files = [
     \ '~/.vimrc',
@@ -29,10 +28,12 @@ function! file#refresh() abort
     \ '~/.vim/after/ftplugin/' . &filetype . '.vim',
     \ '~/.vim/after/syntax/' . &filetype . '.vim'
     \ ]
-  for file in files
-    if !empty(glob(file))
-      exe 'so ' . file
-      call add(loaded, file)
+  for i in range(len(files))
+    if filereadable(expand(files[i]))
+      exe 'so ' . files[i] | call add(loaded, files[i])
+    endif
+    if i == 0  " immediately after .vimrc completion
+      doautocmd Filetype
     endif
   endfor
   echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
@@ -52,11 +53,11 @@ function! file#rename(name, bang) abort
     if expand('%:p') !=# curfile && filewritable(expand('%:p'))
       silent exe 'bwipe! ' . curfile
       if delete(curfile)
-        echoerr 'Could not delete ' . curfile
+        throw 'Could not delete ' . curfile
       endif
     endif
   else
-    echoerr v:errmsg
+    throw v:errmsg
   endif
 endfunction
 
@@ -65,20 +66,20 @@ endfunction
 function! file#close_window() abort
   let ntabs = tabpagenr('$')
   let islast = tabpagenr('$') == tabpagenr()
-  quit
+  silent! quit
   if ntabs != tabpagenr('$') && !islast
-    silent! tabp
+    silent! tabprevious
   endif
 endfunction
 function! file#close_tab() abort
   let ntabs = tabpagenr('$')
   let islast = tabpagenr('$') == tabpagenr()
   if ntabs == 1
-    qall
+    silent! quitall
   else
-    tabclose
+    silent! tabclose
     if !islast
-      silent! tabp
+      silent! tabprevious
     endif
   endif
 endfunction
@@ -139,8 +140,19 @@ function! s:tab_drop(file) abort
   end
 endfunction
 
+" Open from local or current directory
+" Note: Using <expr> instead of this tiny helper function causes <C-c> to display
+" annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
+function! file#open_from(files, local) abort
+  let command = a:files ? 'Files' : 'Open'
+  let default = a:local ? expand('%:p:h') . '/' : fnamemodify(getcwd(), ':p')
+  let result = input(command . ': ', default, 'file')
+  if !empty(result)
+    exe command . ' ' . result
+  endif
+endfunction
+
 " Check if user selection is directory, descend until user selects a file.
-" This is similar to default shell tab expansion.
 " Warning: Must use expand() rather than glob() or new file names are not completed.
 " Warning: FZF executes asynchronously so cannot do loop recursion inside driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554

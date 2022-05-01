@@ -27,8 +27,8 @@
 #   TODO: Remove this and use figcp for figure syncing instead.
 # 'get':
 #   Fetch all branches, even ones that don't yet exist on local
-#   local (normally those are ignored with git fetch --all); see
-#   https://stackoverflow.com/a/10312587/4970632
+#   local (normally those are ignored with git fetch --all).
+#   see: https://stackoverflow.com/a/10312587/4970632
 # 'hist':
 #   full history for a given file
 # 'ignore':
@@ -37,8 +37,11 @@
 # 'objects':
 #   When you commit giant files (i.e. over 100MB), even after you delete them,
 #   you won't be able to push to Github because they were tracked and are found
-#   in .vim. use this to delete file/directory throughout history. from:
-#   https://stackoverflow.com/a/23657759/4970632
+#   in .vim. use this to delete file/directory throughout history.
+#   see: https://stackoverflow.com/a/23657759/4970632
+# 'oops':
+#   Amend commit with exact same commit message from:
+#   see: https://stackoverflow.com/a/56267398/4970632
 # 'pack':
 #   Shows largest 'pack' files in repo
 # 'rmupstream':
@@ -84,6 +87,7 @@
 	long       = status --long --branch
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
+	oops       = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
 	pack       = "!git-pack \"$@\""
 	remotes    = remote --verbose
 	rmupstream = branch --unset-upstream

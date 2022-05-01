@@ -1,2 +1,2 @@
-" Filetype declarations. Include various source files and auto-generated files
-au BufRead,BufNewFile *.tex,*.bbl,*.toc,*.lot,*.lof,*.sty,*.cls set filetype=tex
+" Filetype declarations. Include source files and auto-generated files.
+au BufRead,BufNewFile *.tex,*.dtx,*.ltx,*.bbl,*.cls,*.sty,*.lot,*.lof,*.toc set filetype=tex

@@ -11,4 +11,4 @@ function! s:run_julia_script()
   let cmd = 'julia ' . shellescape(@%)
   call popup#job_win(cmd)
 endfunction
-nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>run_julia_script()<CR>
+nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>run_julia_script()<CR>

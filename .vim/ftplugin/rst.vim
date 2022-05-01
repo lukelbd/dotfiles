@@ -12,4 +12,4 @@ function! s:open_rst_file()
   let cmd = '~/miniconda3/bin/restview -b -l 40000 ' . shellescape(@%)
   call popup#job_win(cmd, 0)  " without display window
 endfunction
-nnoremap <silent> <buffer> <Plug>ExecuteFile1 :call <sid>open_rst_file()<CR>
+nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>open_rst_file()<CR>
