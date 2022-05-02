@@ -72,8 +72,12 @@ case "${HOSTNAME%%.*}" in
   # Macbook settings
   uriah*|velouria*|enceladus*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
-    # * List homewbrew installs with 'brew list' (narrow with --formulae or --casks).
-    #   packages with 'brew info package', macports with 'port installed [package]'.
+    # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
+    #   Show package info with 'brew info package'.
+    # * List macport installs with 'port installed requested'.
+    #   Show package info with 'port installed [package]'.
+    # * Installed vim using: conda install vim. Also must incall ncurses with
+    #   conda install -y conda-forge::ncurses. See: https://github.com/conda-forge/rabbitmq-server-feedstock/issues/14
     # * Installed tex using: brew install --cask mactex
     #   See: https://tex.stackexchange.com/q/97183/73149
     # * Installed ffmpeg using: sudo port install ffmpeg +nonfree
