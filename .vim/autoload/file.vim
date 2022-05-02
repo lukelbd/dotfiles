@@ -35,6 +35,9 @@ function! file#refresh() abort
     if i == 0  " immediately after .vimrc completion
       doautocmd Filetype
     endif
+    if i == 4
+      doautocmd BufEnter
+    endif
   endfor
   echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
 endfunction

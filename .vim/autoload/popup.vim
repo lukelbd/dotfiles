@@ -50,6 +50,8 @@ endfunction
 function! popup#codi_setup(toggle) abort
   if a:toggle
     let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
+    nnoremap <buffer> q <C-w>p<Cmd>Codi!!<CR>
+    nnoremap <buffer> <C-w> <C-w>p<Cmd>Codi!!<CR>
     exe 'augroup codi_' . bufnr('%')
       au!
       exe 'au ' . cmds . ' <buffer> call codi#update()'
@@ -79,9 +81,9 @@ function! popup#codi_rephrase(text) abort
   let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
   let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
   if &filetype ==# 'julia'  " prepend repr functions
-    let text = '_r=s->print(s*" = "*repr(eval(s)));' . text
+    let text = '_r=s->print(s*" = "*string(eval(s)));' . text
   else
-    let text = '_r=lambda s:print(s+" = "+repr(eval(s)));' . text
+    let text = '_r=lambda s:print(s+" = "+str(eval(s)));' . text
   endif
   let maxlen = 950  " too close to 1000 gets risky even if under 1000
   let cutoff = maxlen

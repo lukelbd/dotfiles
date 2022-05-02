@@ -121,7 +121,6 @@ endif
 " group names are for given filetype syntax schemes (use :Group for testing).
 augroup buffer_overrides
   au!
-  au User BufferOverrides call s:buffer_overrides()
   au BufEnter * call s:buffer_overrides()
 augroup END
 function! s:buffer_overrides() abort
@@ -247,7 +246,6 @@ endfor
 " * Ctrl-b and Ctrl-z do nothing but insert literal char
 augroup override_maps
   au!
-  au User BufferOverrides inoremap <buffer> <S-Tab> <C-d>
   au BufEnter * inoremap <buffer> <S-Tab> <C-d>
 augroup END
 for s:key in [
@@ -1792,6 +1790,6 @@ if $HOSTNAME !~# 'cheyenne'
   command! WipeReg for i in range(34, 122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
   WipeReg
 endif
-doautocmd User BufferOverrides  " trigger buffer-local overrides for this file
+doautocmd <nomodeline> BufEnter  " trigger buffer-local overrides for this file
 nohlsearch  " turn off highlighting at startup
 redraw!  " weird issue sometimes where statusbar disappears
