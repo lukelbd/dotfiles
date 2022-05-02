@@ -24,9 +24,10 @@ shellapp.backend_keys.extend(backends)
 pylabtools.backends.update(backends)
 
 # Add default lines
+# See: https://ipython.readthedocs.io/en/8.0.0/whatsnew/version8.html#autoreload-3-feature
 lines = """
 %load_ext autoreload
-%autoreload 2
+%autoreload 3
 import os
 import re
 import sys
