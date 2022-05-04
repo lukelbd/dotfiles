@@ -1,8 +1,8 @@
 " Vim syntax File
 " Language: NCL
-" Author:   Carl Schreck (carl@cicsnc.org)
+" Author: Carl Schreck (carl@cicsnc.org)
 " Based on previous versions by Kevin Mueller and Arindam Chakraborty
-" Updated Thu Mar  2 17:24:24 MST 2017
+" Updated Thu Mar 2 17:24:24 MST 2017
 
 
 " For version 5.x: Clear all syntax items
@@ -50,24 +50,24 @@ syn match nclOperator "\.not\."
 syn match nclOperator "\.xor\."
 
 
-" ncl numbers (ripped off from  fortran.vim)
-syn match nclNumber	display "\<\d\+\(_\a\w*\)\=\>"
-syn match nclNumber	display	"\<\d\+[deq][-+]\=\d\+\(_\a\w*\)\=\>"
-syn match nclNumber	display	"\.\d\+\([deq][-+]\=\d\+\)\=\(_\a\w*\)\=\>"
-syn match nclNumber	display	"\<\d\+\.\([deq][-+]\=\d\+\)\=\(_\a\w*\)\=\>"
-syn match nclNumber	display	"\<\d\+\.\d\+\([dq][-+]\=\d\+\)\=\(_\a\w*\)\=\>"
-syn match nclNumber	display	"\<\d\+\.\d\+\(e[-+]\=\d\+\)\=\(_\a\w*\)\=\>"
+" ncl numbers (ripped off from fortran.vim)
+syn match nclNumber display "\<\d\+\(_\a\w*\)\=\>"
+syn match nclNumber display "\<\d\+[deq][-+]\=\d\+\(_\a\w*\)\=\>"
+syn match nclNumber display "\.\d\+\([deq][-+]\=\d\+\)\=\(_\a\w*\)\=\>"
+syn match nclNumber display "\<\d\+\.\([deq][-+]\=\d\+\)\=\(_\a\w*\)\=\>"
+syn match nclNumber display "\<\d\+\.\d\+\([dq][-+]\=\d\+\)\=\(_\a\w*\)\=\>"
+syn match nclNumber display "\<\d\+\.\d\+\(e[-+]\=\d\+\)\=\(_\a\w*\)\=\>"
 
 
-" syn match nclBoolean	"\.\s*\(True\|False\)\s*\."
-syn keyword nclBoolean   True False 
+" syn match nclBoolean "\.\s*\(True\|False\)\s*\."
+syn keyword nclBoolean True False 
 
 " pattern matching for comments
-syn match   nclComment	"^\ *;.*$"
-syn match   nclComment    ";.*"
+syn match nclComment "^\ *;.*$"
+syn match nclComment ";.*"
 
 " pattern matching for strings
-syn region  nclString		start=+"+  end=+"+
+syn region nclString start=+"+ end=+"+
 
 " Define the default highlighting.
 " For version 5.7 and earlier: only when not done already
@@ -80,29 +80,29 @@ if version >= 508 || !exists("did_ncl_syn_inits")
     command -nargs=+ HiLink hi def link <args>
   endif
 
-  HiLink nclBUILTIN     Function
-  HiLink nclCONTRIB     Special
-  HiLink nclDIAG        Special
-  HiLink nclPOP         Special
-  HiLink nclESMF        Special
-  HiLink nclCROP        Special
-  HiLink nclBOOTSTRAP   Special
-  HiLink nclEXTVAL      Special
-  HiLink nclHEAT        Special
-  HiLink nclSHEA        Special
-  HiLink nclSKEWT       Special
-  HiLink nclUSER        Special
-  HiLink nclWRFARW      Special
-  HiLink nclWRFCONTRIB  Special
-  HiLink nclWINDROSE    Special
-  HiLink nclGSN         Special
-  HiLink nclResource    Type
-  HiLink nclKeyword     Keyword
-  HiLink nclOperator    Operator
-  HiLink nclNumber	Number
-  HiLink nclBoolean     Boolean
-  HiLink nclComment	Comment
-  HiLink nclString	String
+  HiLink nclBUILTIN Function
+  HiLink nclCONTRIB Special
+  HiLink nclDIAG Special
+  HiLink nclPOP Special
+  HiLink nclESMF Special
+  HiLink nclCROP Special
+  HiLink nclBOOTSTRAP Special
+  HiLink nclEXTVAL Special
+  HiLink nclHEAT Special
+  HiLink nclSHEA Special
+  HiLink nclSKEWT Special
+  HiLink nclUSER Special
+  HiLink nclWRFARW Special
+  HiLink nclWRFCONTRIB Special
+  HiLink nclWINDROSE Special
+  HiLink nclGSN Special
+  HiLink nclResource Type
+  HiLink nclKeyword Keyword
+  HiLink nclOperator Operator
+  HiLink nclNumber Number
+  HiLink nclBoolean Boolean
+  HiLink nclComment Comment
+  HiLink nclString String
 
   delcommand HiLink
 endif

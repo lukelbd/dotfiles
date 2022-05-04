@@ -1,11 +1,11 @@
 " Downloaded: 2018-02-20
 " vimtex - LaTeX plugin for Vim
 " Maintainer: Karl Yngve Lervåg
-" Email:      karl.yngve@gmail.com
+" Email: karl.yngve@gmail.com
 " if !exists('b:current_syntax')
-"   let b:current_syntax = 'tex'
+" let b:current_syntax = 'tex'
 " elseif b:current_syntax !=# 'tex'
-"   finish
+" finish
 " endif
 "------------------------------------------------------------------------------"
 " Author: Luke Davis (lukelbd@gmail.com)
@@ -46,7 +46,7 @@ endtry
 " For some reason a syn match command fails
 " * See: https://vi.stackexchange.com/q/5696/8084
 " * Appears that wherever the backslash is concealed, this one 'overwrites' existing
-"   match.
+" match.
 " syn match Statement '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=' conceal
 
 "------------------------------------------------------------------------------"
@@ -60,7 +60,7 @@ syntax spell toplevel
 
 " Allow arguments in newenvironments
 syntax region texEnvName contained matchgroup=Delimiter
-      \ start="{"rs=s+1  end="}"
+      \ start="{"rs=s+1 end="}"
       \ nextgroup=texEnvBgn,texEnvArgs contained skipwhite skipnl
 syntax region texEnvArgs contained matchgroup=Delimiter
       \ start="\["rs=s+1 end="]"
@@ -88,7 +88,7 @@ syntax match texInputFile /\\includepdf\%(\[.\{-}\]\)\=\s*{.\{-}}/
 
 " Allow subequations (fixes #1019)
 "- This should be temporary, as it seems subequations is erroneously part of
-"   texBadMath from Charles Campbell's syntax plugin.
+" texBadMath from Charles Campbell's syntax plugin.
 syn match texBeginEnd "\(\\begin\>\|\\end\>\)\ze{subequations}" nextgroup=texBeginEndName
 
 " {{{1 Italic font, bold font and conceals
@@ -96,21 +96,21 @@ syn match texBeginEnd "\(\\begin\>\|\\end\>\)\ze{subequations}" nextgroup=texBeg
 " EDIT: Have disabled this feature, because we turned off the 'make bright colors
 " bold' in iTerm. So is now useless. The loop makes sure textbf highlighting is on.
 " if get(g:, 'tex_fast', 'b') =~# 'b'
-"   let s:conceal = (has('conceal') && get(g:, 'tex_conceal', 'b') =~# 'b')
-"         \ ? 'concealends' : ''
+" let s:conceal = (has('conceal') && get(g:, 'tex_conceal', 'b') =~# 'b')
+" \ ? 'concealends' : ''
 "
-"   for [s:style, s:group, s:commands] in [
-"         \ ['texItalStyle', 'texItalGroup', ['emph', 'textit']],
-"         \ ['texBoldStyle', 'texBoldGroup', ['textbf']],
-"         \]
-"     for s:cmd in s:commands
-"       execute 'syntax region' s:style 'matchgroup=texTypeStyle'
-"             \ 'start="\\' . s:cmd . '\s*{" end="}"'
-"             \ 'contains=@Spell,@' . s:group
-"             \ s:conceal
-"     endfor
-"     execute 'syntax cluster texMatchGroup add=' . s:style
-"   endfor
+" for [s:style, s:group, s:commands] in [
+" \ ['texItalStyle', 'texItalGroup', ['emph', 'textit']],
+" \ ['texBoldStyle', 'texBoldGroup', ['textbf']],
+" \]
+" for s:cmd in s:commands
+" execute 'syntax region' s:style 'matchgroup=texTypeStyle'
+" \ 'start="\\' . s:cmd . '\s*{" end="}"'
+" \ 'contains=@Spell,@' . s:group
+" \ s:conceal
+" endfor
+" execute 'syntax cluster texMatchGroup add=' . s:style
+" endfor
 " endif
 
 " }}}1
@@ -121,7 +121,7 @@ syntax region texUrlVerb matchgroup=Delimiter
       \ start='\z([^\ta-zA-Z]\)' end='\z1' contained
 
 syntax match texStatement '\\url\ze\s*{' nextgroup=texUrl
-syntax region texUrl     matchgroup=Delimiter start='{' end='}' contained
+syntax region texUrl matchgroup=Delimiter start='{' end='}' contained
 
 syntax match texStatement '\\href' nextgroup=texHref
 syntax region texHref matchgroup=Delimiter start='{' end='}' contained
@@ -130,10 +130,10 @@ syntax region texHref matchgroup=Delimiter start='{' end='}' contained
 syntax match texStatement '\\hyperref' nextgroup=texHyperref
 syntax region texHyperref matchgroup=Delimiter start='\[' end='\]' contained
 
-highlight link texUrl          Function
-highlight link texUrlVerb      texUrl
-highlight link texHref         texUrl
-highlight link texHyperref     texRefZone
+highlight link texUrl Function
+highlight link texUrlVerb texUrl
+highlight link texHref texUrl
+highlight link texHyperref texRefZone
 
 " }}}1
 " {{{1 Add support for biblatex and csquotes packages (cite commands)
@@ -214,7 +214,7 @@ endif
 " The following code changes inline math so as to support the column
 " specifiers [0], e.g.
 "
-"   \begin{tabular}{*{3}{>{$}c<{$}}}
+" \begin{tabular}{*{3}{>{$}c<{$}}}
 "
 " [0]: https://en.wikibooks.org/wiki/LaTeX/Tables#Column_specification_using_.3E.7B.5Ccmd.7D_and_.3C.7B.5Ccmd.7D
 "
@@ -223,7 +223,7 @@ if exists('b:vimtex.packages.array') && get(g:, 'tex_fast', 'M') =~# 'M'
   syntax clear texMathZoneX
   " NOTE: removed conceal feature for dollar sign delimiters; is just confusing
   " if has('conceal') && &enc ==# 'utf-8' && get(g:, 'tex_conceal', 'd') =~# 'd'
-  "   syntax region texMathZoneX matchgroup=Delimiter start="\([<>]{\)\@<!\$" skip="\%(\\\\\)*\\\$" matchgroup=Delimiter end="\$" end="%stopzone\>" concealends contains=@texMathZoneGroup
+  " syntax region texMathZoneX matchgroup=Delimiter start="\([<>]{\)\@<!\$" skip="\%(\\\\\)*\\\$" matchgroup=Delimiter end="\$" end="%stopzone\>" concealends contains=@texMathZoneGroup
   " else
   syntax region texMathZoneX matchgroup=Delimiter start="\([<>]{\)\@<!\$" skip="\%(\\\\\)*\\\$" matchgroup=Delimiter end="\$" end="%stopzone\>" contains=@texMathZoneGroup
   " endif
@@ -255,7 +255,7 @@ if get(g:, 'tex_fast', 'r') =~# 'r'
         \ start='\[' end=']'
         \ contains=@texRefGroup,texRefZone
 
-  highlight link texCRefZone      texRefZone
+  highlight link texCRefZone texRefZone
   highlight link texCRefZoneRange texRefZone
   highlight link texCRefLabelOpts texCmdArgs
 endif
@@ -288,11 +288,11 @@ syntax match texZone "\\lstinline\s*\(\[.*\]\)\={.\{-}}"
 " {{{1 Add support for moreverb package
 
 if exists('g:tex_verbspell')
-  syntax region texZone start="\\begin{verbatimtab}"   end="\\end{verbatimtab}\|%stopzone\>"   contains=@Spell
+  syntax region texZone start="\\begin{verbatimtab}" end="\\end{verbatimtab}\|%stopzone\>" contains=@Spell
   syntax region texZone start="\\begin{verbatimwrite}" end="\\end{verbatimwrite}\|%stopzone\>" contains=@Spell
   syntax region texZone start="\\begin{boxedverbatim}" end="\\end{boxedverbatim}\|%stopzone\>" contains=@Spell
 else
-  syntax region texZone start="\\begin{verbatimtab}"   end="\\end{verbatimtab}\|%stopzone\>"
+  syntax region texZone start="\\begin{verbatimtab}" end="\\end{verbatimtab}\|%stopzone\>"
   syntax region texZone start="\\begin{verbatimwrite}" end="\\end{verbatimwrite}\|%stopzone\>"
   syntax region texZone start="\\begin{boxedverbatim}" end="\\end{boxedverbatim}\|%stopzone\>"
 endif
@@ -339,12 +339,12 @@ execute 'syntax match texBadMath ''\\end\s*{\s*\(' . join([
       \ 'xalignat',
       \ 'xxalignat'], '\|') . '\)\*\=\s*}'''
 
-" Amsmath [lr][vV]ert  (Holger Mitschke)
+" Amsmath [lr][vV]ert (Holger Mitschke)
 for s:texmath in [
-      \ ['\\lvert', '|'] ,
-      \ ['\\rvert', '|'] ,
-      \ ['\\lVert', '‖'] ,
-      \ ['\\rVert', '‖'] ,
+      \ ['\\lvert', '|'],
+      \ ['\\rvert', '|'],
+      \ ['\\lVert', '‖'],
+      \ ['\\rVert', '‖'],
       \ ]
   execute "syntax match texMathDelim '\\\\[bB]igg\\=[lr]\\="
         \ . s:texmath[0] . "' contained conceal cchar=" . s:texmath[1]
