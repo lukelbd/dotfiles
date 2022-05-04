@@ -1402,11 +1402,16 @@ if s:plug_active('ale')
   map [x <Plug>(ale_previous_wrap)
 
   " Settings and checkers
+  " https://github.com/Kuniwak/vint  # vim linter and format chcker
+  " https://github.com/PyCQA/flake8  # python linter and format checker
+  " https://pypi.org/project/doc8/  # python format checker
   " https://github.com/koalaman/shellcheck  # shell linter
-  " https://github.com/Kuniwak/vint  # vim linter
-  " https://pypi.org/project/doc8/  # python linter
+  " https://github.com/mvdan/sh  # shell format checker
+  " https://github.com/openstack/bashate  # shell format checker
   " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
   " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
+  " Note: here bashate is equivalent to pep8, similar to prettier and beautify for
+  " javascript and html. also tried shfmt but not available.
   " Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
   " with :ALEFix black. Or can use the black plugin and use :Black of course.
   " Note: chktex is awful (e.g. raises errors for any command not followed
@@ -1418,7 +1423,7 @@ if s:plug_active('ale')
     \ 'json': ['jsonlint'],
     \ 'python': ['python', 'flake8'],
     \ 'rst': [],
-    \ 'sh': ['shellcheck'],
+    \ 'sh': ['shellcheck', 'bashate'],
     \ 'tex': ['lacheck'],
     \ 'text': [],
     \ 'vim': ['vint'],
@@ -1445,6 +1450,7 @@ if s:plug_active('ale')
   let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
 
   " Shellcheck ignore list
+  " * Permite two space indent consistent with other languages (E003)
   " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
   " * Allow sourcing from files (SC1090, SC1091)
   " * Allow building arrays from unquoted result of command (SC2206, SC2207)
@@ -1457,11 +1463,11 @@ if s:plug_active('ale')
   " * Allow assigning commands to variables (SC2209)
   " * Allow unquoted glob pattern assignments (SC2125)
   " * Allow defining aliases with .bashrc variables (SC2139)
-  let g:shellcheck_ignore_list = [
-    \ 'SC1090', 'SC1091', 'SC2002', 'SC2068', 'SC2086', 'SC2206', 'SC2207',
-    \ 'SC2230', 'SC2231', 'SC2016', 'SC2041', 'SC2043', 'SC2209', 'SC2125', 'SC2139',
-    \ ]
-  let g:ale_sh_shellcheck_options = '-e ' . join(g:shellcheck_ignore_list, ',')
+  let s:shellcheck_ignore =
+    \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
+    \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
+  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:linelength
+  let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
 
   " Flake8 ignore list (also apply to autopep8):
   " * Allow line breaks before binary operators (W503)
@@ -1469,6 +1475,7 @@ if s:plug_active('ale')
   " * Allow multiple spaces before operators for easy-align segments (E221)
   " * Allow multiple spaces after commas for easy-align segments (E241)
   " * Allow assigning lambda expressions instead of def (E731)
+  " * Permit 'l' and 'I' variable names (E741)
   " * Allow no docstring on public methods (e.g. overrides) (D102) (flake8-docstrings)
   " * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
   " * Allow empty docstring after __init__ (D107) (flake8-docstrings)
@@ -1478,20 +1485,17 @@ if s:plug_active('ale')
   " * Allow backslashes in docstring (D301) (flake8-docstring)
   " * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
   " * Allow imperative mood properties (D401) (flake8-docstring)
-  " * Allow unused keyword arguments (U100) (flake8-unused-arguments)
-  " * Permit 'l' and 'I' variable names (E741)
-  let s:flake8_ignore_list = [
-    \ 'W503', 'E402', 'E221', 'E241', 'E731', 'E741',
-    \ 'D102', 'D107', 'D105', 'D200', 'D204', 'D205', 'D301', 'D400', 'D401',
-    \ ]
-  let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . join(s:flake8_ignore_list, ',')
+  let s:flake8_ignore =
+    \ 'W503,E402,E221,E241,E731,E741,'
+    \ . 'D102,D107,D105,D200,D204,D205,D301,D400,D401'
+  let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . s:flake8_ignore
 
   " Related plugins requiring similar exceptions
   " Isort plugin docs: https://github.com/fisadev/vim-isort
   " Black plugin docs: https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
   " Autopep8 plugin docs (or :help autopep8): https://github.com/tell-k/vim-autopep8 (includes a few global variables)
   " Autoformat plugin docs: https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
-  let g:autopep8_ignore = join(s:flake8_ignore_list, ',')
+  let g:autopep8_ignore = s:flake8_ignore
   let g:autopep8_max_line_length = s:linelength
   let g:autopep8_disable_show_diff = 1
   let g:black_linelength = s:linelength

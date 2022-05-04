@@ -208,6 +208,8 @@ case "${HOSTNAME%%.*}" in
 esac
 
 # Access custom executables and git repos
+# NOTE: Install go with mamba for availability on workstations without pseudo
+# access. Then install shfmt with: go install mvdan.cc/sh/v3/cmd/shfmt@latest
 # NOTE: Install deno with mamba to get correct binaries. Using install script
 # can have issues with CentOS 7: https://github.com/denoland/deno/issues/1658
 export DENO_INSTALL=$HOME/.deno  # ddc.vim typescript dependency
@@ -438,17 +440,18 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 # test line length to guess if it is an error message stub or contains desired info.
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 help() {
+  local result
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
     builtin help "$@" 2>&1 | less
   else
     if [ "$1" == cdo ]; then
-      local help=$("$1" --help "${@:2}" 2>&1)
+      result=$("$1" --help "${@:2}" 2>&1)
     else
-      local help=$("$@" --help 2>&1)
+      result=$("$@" --help 2>&1)
     fi
-    if [ "$(echo "$help" | wc -l)" -gt 2 ]; then
-      command less <<< "$help"
+    if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+      command less <<< "$result"
     else
       echo "No help information for $*."
     fi
@@ -1562,7 +1565,7 @@ ncvartable() {
   [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   for file in "${@:2}"; do
     echo "File: $file"
-    cdo infon -seltimestep,1 -selname,"$1" "$file" 2>/dev/null \
+    cdo -s infon -seltimestep,1 -selname,"$1" "$file" 2>/dev/null \
       | tr -s ' ' | cut -d ' ' -f 6,8,10-12 | column -t
   done
 }
@@ -1573,7 +1576,7 @@ ncvardetails() {
   [ $# -lt 2 ] && echo "Usage: ncvardetails VAR FILE" && return 1
   for file in "${@:2}"; do
     echo "File: $file"
-    cdo infon -seltimestep,1 -selname,"$1" "$file" 2>/dev/null \
+    cdo -s infon -seltimestep,1 -selname,"$1" "$file" 2>/dev/null \
       | tr -s ' ' | column -t | less
     done
 }
