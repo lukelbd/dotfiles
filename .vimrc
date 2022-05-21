@@ -982,6 +982,7 @@ if !has('gui_running')
   Plug 'vim-denops/denops.vim'  " ddc dependency
   " Omnifunc sources not provided by engines
   " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
+  " Note: Highlighting required for reference jumping: https://github.com/prabirshrestha/vim-lsp/issues/655
   " Plug 'neovim/nvim-lspconfig'  " nvim-cmp source
   " Plug 'hrsh7th/cmp-nvim-lsp'  " nvim-cmp source
   " Plug 'hrsh7th/cmp-buffer'  " nvim-cmp source
@@ -1115,11 +1116,12 @@ let g:jupytext_fmt = 'py:percent'
 " Plug 'nathanaelkane/vim-indent-guides'
 
 " Syntax highlighting
-" Note impsort sorts import statements, and highlights modules with an after/syntax script
+" Note impsort sorts import statements and highlights modules using an after/syntax
 " Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
-" Plug 'tweekmonster/impsort.vim' " this fucking thing has an awful regex, breaks if you use comments, fuck that shit
-" Plug 'hdima/python-syntax'  " this failed for me, had to manually add syntax file (f-strings not highlighted and other stuff)
-" Plug 'vim-python/python-syntax'  " alternative syntax 
+" Plug 'tweekmonster/impsort.vim' " conflicts with isort plugin, also had major issues
+" Plug 'vim-python/python-syntax'  " originally from hdima/python-syntax, manually copied version with match case
+" Plug 'daeyun/vim-matlab'  " alternative but project seems dead
+Plug 'MortenStabenau/matlab-vim'
 Plug 'vim-scripts/applescript.vim'
 Plug 'preservim/vim-markdown'
 Plug 'tmux-plugins/vim-tmux'
@@ -1563,7 +1565,7 @@ endif
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
 if s:plug_active('vim-easy-align')
-  nmap ge <Plug>(EasyAlign)
+  map ge <Plug>(EasyAlign)
   let g:easy_align_delimiters = {
     \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
     \   '&': {'pattern': '\(&&\|||\)'},
