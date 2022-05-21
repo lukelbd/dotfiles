@@ -9,14 +9,21 @@
 #   e.g. brew list, conda list, pip list, jupyter kernelspec list.
 # * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
 #   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
-#   requires ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
-# * Prefix key for issuing SSH-session commands is '~' ('exit' sometimes doesn't work,
-#   perhaps because it is aliased or some 'exit' is defined in $PATH).
-#    C-d/'exit' -- IF AVAILABLE, exit SSH session
-#    ~./~C-z -- Exit SSH session
-#    ~& -- Puts SSH into background
-#    ~# -- Gives list of forwarded connections in this session
-#    ~? -- Gives list of these commands
+#   requires removing ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
+# * Use asciinema for screen recordings. Tried pympress for presentations and copied
+#   impressive and presentation to bin but all seem to have issues. Instead use
+#   Presentation app: http://iihm.imag.fr/blanch/software/osx-presentation/
+#   mamba install gtk3 cairo poppler pygobject && pip install pympress
+#   brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
+# * Prefix key for issuing SSH-session commands is '~' ('exit' sometimes
+#   fails perhaps because it is aliased or some 'exit' is defined in $PATH).
+#   ~C-z -- Stop current SSH session
+#   exit -- Terminate SSH session (if available)
+#   ~. -- Terminate SSH session (always available)
+#   ~C -- Enter SSH command line
+#   ~& -- Send SSH session into background
+#   ~# -- Give list of forwarded connections in this session
+#   ~? -- Give list of these commands
 #-----------------------------------------------------------------------------#
 # Bail out if not running interactively (e.g. when sending data packets over with scp/rsync)
 # Known bug: scp/rsync fail without this line due to greeting message:
@@ -86,10 +93,6 @@ case "${HOSTNAME%%.*}" in
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
     # * Installed cdo, nco, and R with macports. Installed ncl by installing compilers
     #   with macports and downloading pre-compiled binary from ncar.
-    # * Installed gcc and gfortran with 'port install libgcc7' then 'port select
-    #   --set gcc mp-gcc7' (needed for ncl). Try 'port select --list gcc'.
-    # * Actually in latest versions had issues installing gcc7... listed gcc9 as
-    #   dependency then failed... so now have used 'brew install gcc@7'.
     # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
     #   gnu-tar gawk'. Then found paths with: https://apple.stackexchange.com/q/69223/214359
     # * Fix permission issues after migrating macs with following command:
@@ -141,8 +144,18 @@ case "${HOSTNAME%%.*}" in
     # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
     # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
     # alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # port libs
-    alias ncl='DYLD_LIBRARY_PATH="/usr/local/lib/gcc/7/" ncl'  # brew libs
+    alias ncl='DYLD_LIBRARY_PATH=/usr/local/lib/gcc/7/ ncl'  # brew libs
     export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically necessary to run NCL
+
+    # C and fortran compilers
+    # Used to install gcc and gfortran with 'port install libgcc7' then 'port select
+    # --set gcc mp-gcc7' (needed for ncl) (try 'port select --list gcc') but latest
+    # versions had issues... so now use 'brew install gcc@7'. Also homebrew keeps
+    # version prefix on compilers so add aliases to destinations.
+    alias c++='/usr/local/bin/c++-11'
+    alias cpp='/usr/local/bin/cpp-11'
+    alias gcc='/usr/local/bin/gcc-11'
+    alias gfortran='/usr/local/bin/gfortran-11'  # alias already present but why not
 
     # CDO HDF5 setting. See the following note after port install cdo:
     # Mac users may need to set the environment variable "HDF5_USE_FILE_LOCKING" to the
@@ -326,6 +339,7 @@ _setup_opts 2>/dev/null  # ignore if option unavailable
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
 alias cd='cd -P'  # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'   # ls with dirs differentiate from files
+alias ld='ls --color=always -AFd'  # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
 export LESS="--RAW-CONTROL-CHARS"
 [ -r ~/.LESS_TERMCAP ] && source ~/.LESS_TERMCAP
@@ -540,6 +554,7 @@ vim-session() {
 }
 
 # Absolute path, works everywhere (mac, linux, or anything with bash)
+# See: https://stackoverflow.com/a/23002317/4970632
 abspath() {
   if [ -d "$1" ]; then
     (cd "$1" && pwd)
@@ -845,6 +860,7 @@ bytes2human() {
 }
 
 # Simple zotfile doctor shorthands
+# NOTE: Main script found in bin from https://github.com/giorginolab/zotfile_doctor
 _zotfile_database="$HOME/Zotero/zotero.sqlite"
 _zotfile_storage="$HOME/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents"
 alias zotfile-doctor="command zotfile-doctor '$_zotfile_database' '$_zotfile_storage'"
@@ -911,7 +927,7 @@ _is_empty() {
 # nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
 # random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
 _address_port() {
-  local host  # get it?
+  local address port host
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
   [ $# -gt 1 ] && echo 'Error: Too many input args.' && return 1
   case $host in
@@ -1612,12 +1628,6 @@ extract() {
 #-----------------------------------------------------------------------------#
 # PDF and image utilities
 #-----------------------------------------------------------------------------#
-# Presentation tools. Other tools are "impressive" and "presentation", and both should
-# be in bin -- "pympress" is homebrew software, and below installs it. For pympress
-# install see:  http://pygobject.readthedocs.io/en/latest/getting_started.html
-# brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
-alias pympress='LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/python3 /usr/local/bin/pympress'
-
 # Converting between things
 # * Flatten gets rid of transparency/renders it against white background, and
 #   the units/density specify a <N>dpi resulting bitmap file. Another option
@@ -1736,7 +1746,7 @@ echo 'done'
 if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # Various default settings (see man page for --bind information)
   # * Inline info puts the number line thing on same line as text.
-  # * Gind slash to accept so behavior matches shell completion behavior.
+  # * Bind slash to accept so behavior matches shell completion behavior.
   # * Color -1 is terminal default. See: https://stackoverflow.com/a/33206814/4970632
   _echo_bashrc 'Enabling fzf'
   # shellcheck disable=2034
@@ -1781,7 +1791,7 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
     "
   }
 
-  # Source file
+  # Source bash file
   complete -r  # reset first
   source ~/.fzf.bash
   echo 'done'
