@@ -5,6 +5,7 @@
 # Create symlinks from $HOME to the committed files in $HOME/dotfiles
 ################################################################################
 # Files to be ignored
+shopt -s nullglob
 exclude=(README.md REGEXES.md .gitignore setup cleanup backup)
 
 # Setup
@@ -41,15 +42,22 @@ for name in "${names[@]}"; do  # iterate through files
 done
 
 # Create variety of symlinks in home directory
-opts=(~/miniconda3/lib/python3.*/site-packages)
-python=${opts[0]:?$HOME/miniconda3/lib/python3.*/site-packages}  # raise warning later
+# NOTE: Using brew install --cask mactex generates /Library/TeX/Root symlink pointing
+# to /Library/TeX/Distributions/.DefaultTeX/Contents/Root pointing to a distribution
+# year e.g. /usr/local/texlive/2021. Use the symlink for consistency across versions.
+# For python have to manually search for the latest version using reverse number sort.
+pyroot=$HOME/miniconda3/lib/python3.
+read -r -a pynums < <(echo $pyroot* | sed "s@$pyroot@@g" | tr ' ' '\n' | sort -gr)
+pyroot=$pyroot${pynums[0]:?10}  # emit error below if empty
+libroot=$HOME/Library
+texroot=/Library/TeX/Root
 for pair in \
-  $python:site-packages \
-  /usr/local/texlive/2017/texmf-dist/tex/latex:tex-packages \
-  /Volumes/GoogleDrive/My\ Drive:Google\ Drive \
-  $HOME/Library/Mobile\ Documents/com~apple~CloudDocs:iCloud\ Drive \
-  $HOME/Library/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/:iCloud\ PDFs \
-  $HOME/Library/Services:workflows
+  $pyroot/site-packages:site-packages \
+  $texroot/texmf-dist/tex:tex-packages \
+  $libroot/Mobile\ Documents/com~apple~CloudDocs:iCloud\ Drive \
+  $libroot/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/:iCloud\ PDFs \
+  $libroot/CloudStorage/GoogleDrive-lukelbd@gmail.com/My\ Drive:Google\ Drive \
+  $libroot/Services:workflows
   do
   src=${pair%:*}
   if ! [ -r "$src" ]; then
