@@ -5,11 +5,23 @@
 # out what is in the system defaults before using this and make sure your
 # $PATH is populated. To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# * Use '<package_manager> list' for most package managers to see what is installed
-#   e.g. brew list, conda list, pip list, jupyter kernelspec list.
+# * Use '<package_manager> list' for most package managers to see what is
+#   installed e.g. brew list, conda list, pip list, jupyter kernelspec list,
+#   jupyter labextension list, jupyter nbextension list.
 # * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
 #   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
 #   requires removing ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
+#   See: https://fcollonval.medium.com/conda-environments-in-jupyter-ecosystem-without-pain-e9fab3992fb7
+# * To prevent annoying 'template_path' error message must update the latex_envs repo with
+#   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
+#   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
+#   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
+# * Tried installing jupyterlab formatter https://github.com/ryantam626/jupyterlab_code_formatter
+#   and setting shortcut to single keypress but seems plugin can only be invoked
+#   from an 'edit' mode that requires some modifier. Settled on 'Ctrl =' instead of
+#   'F' (analogous to Ctrl - used for splitting). Can also use edit menu. Might also
+#   need jupyter server extension enable --py jupyterlab_code_formatter to repair
+#   first time: https://github.com/ryantam626/jupyterlab_code_formatter/issues/193
 # * Use asciinema for screen recordings. Tried pympress for presentations and copied
 #   impressive and presentation to bin but all seem to have issues. Instead use
 #   Presentation app: http://iihm.imag.fr/blanch/software/osx-presentation/
@@ -187,13 +199,13 @@ case "${HOSTNAME%%.*}" in
     export NCARG_ROOT=/usr/local  # ncl root
     ;;
 
-  # Chicago supercomputer, any of the login nodes
-  midway*)
-    # Add modules and paths and remove print statements from prompt
-    # WARNING: Greedy glob removes commands sandwiched between print statements
-    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
-    export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
-    _load_unloaded mlk intel  # latest CDO version is not default
+  # Euclid options
+  euclid*)
+    # Add basic paths
+    # Note all netcdf and mpich utilites are already in in /usr/local/bin
+    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
+    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
+    export LD_LIBRARY_PATH=/usr/local/lib
     ;;
 
   # Cheyenne supercomputer, any of the login nodes
@@ -206,13 +218,13 @@ case "${HOSTNAME%%.*}" in
     _load_unloaded netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
     ;;
 
-  # Euclid options
-  euclid)
-    # Add basic paths
-    # Note all netcdf and mpich utilites are already in in /usr/local/bin
-    export PATH=/usr/local/bin:/usr/bin:/bin:$PATH
-    export PATH=/opt/pgi/linux86-64/13.7/bin:/opt/Mathworks/bin:$PATH
-    export LD_LIBRARY_PATH=/usr/local/lib
+  # Chicago supercomputer, any of the login nodes
+  # WARNING: Greedy glob removes commands sandwiched between print statements
+  midway*)
+    # Add modules and paths and remove print statements from prompt
+    export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
+    export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
+    _load_unloaded mlk intel  # latest cdo version is not default
     ;;
 
   *)
