@@ -474,7 +474,7 @@
         {
             "command": "jupyterlab_code_formatter:format",
             "keys": [
-                "Ctrl F"
+                "Ctrl ="
             ],
             "selector": ".jp-Notebook.jp-mod-editMode"
         },
