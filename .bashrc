@@ -22,6 +22,13 @@
 #   'F' (analogous to Ctrl - used for splitting). Can also use edit menu. Might also
 #   need jupyter server extension enable --py jupyterlab_code_formatter to repair
 #   first time: https://github.com/ryantam626/jupyterlab_code_formatter/issues/193
+# * Seems 'ipywidgets' is dependency of a few plugins but can emit annoying
+#   'ERROR | No such comm target registered:' messages on first run... tried using
+#   'jupyter nbextension install --py widgetsnbextension --user' followed by
+#   'jupyter nbextension enable --py widgetsnbextension' to suppress.
+#   See: https://github.com/jupyter-widgets/ipywidgets/issues/1720#issuecomment-330598324
+#   However this fails. Instead should just ignore message as it is harmless.
+#   See: https://github.com/jupyter-widgets/ipywidgets/issues/2257#issuecomment-1110056315
 # * Use asciinema for screen recordings. Tried pympress for presentations and copied
 #   impressive and presentation to bin but all seem to have issues. Instead use
 #   Presentation app: http://iihm.imag.fr/blanch/software/osx-presentation/
@@ -938,6 +945,8 @@ _is_empty() {
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
 # nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
 # random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
+# WARNING: For ports lower than 1000 have to be ROOT so instead use ports ranging
+# from 2000 to 9000. See: https://stackoverflow.com/a/67240407/4970632
 _address_port() {
   local address port host
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
@@ -945,35 +954,35 @@ _address_port() {
   case $host in
     uriah*|velouria*|enceladus*)
       address=localhost
-      port=1000
-      ;;
-    euclid)
-      address=ldavis@euclid.atmos.colostate.edu
       port=2000
       ;;
     monde)
       address=ldavis@monde.atmos.colostate.edu
       port=3000
       ;;
-    midway*)
-      address=t-9841aa@midway2-login1.rcc.uchicago.edu  # pass: orkalluctudg
+    euclid)
+      address=ldavis@euclid.atmos.colostate.edu
       port=4000
       ;;
     cheyenne*)
       address=davislu@cheyenne5.ucar.edu
       port=5000
       ;;
-    lmu*)
-      address=Luke.Davis@login.meteo.physik.uni-muenchen.dd
+    midway*)
+      address=t-9841aa@midway2-login1.rcc.uchicago.edu  # pass: orkalluctudg
       port=6000
       ;;
-    ldm)
-      address=ldm@ldm.atmos.colostate.edu  # user: atmos-2012
+    zephyr*)
+      address=lukelbd@zephyr.meteo.mcgill.ca
       port=7000
       ;;
-    zephyr)
-      address=lukelbd@zephyr.meteo.mcgill.ca
+    lmu*)
+      address=Luke.Davis@login.meteo.physik.uni-muenchen.dd
       port=8000
+      ;;
+    ldm*)
+      address=ldm@ldm.atmos.colostate.edu  # user: atmos-2012
+      port=9000
       ;;
     *@*)
       echo "Warning: Non-standard host $host. You may want to edit your .bashrc."
