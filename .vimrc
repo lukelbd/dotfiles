@@ -1544,8 +1544,8 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
-  noremap ]g <Cmd>GitGutterNextHunk<CR>
-  noremap [g <Cmd>GitGutterPrevHunk<CR>
+  noremap ]g <Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
+  noremap [g <Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
   nnoremap <Leader>g <Cmd>call switch#gitgutter(1)<CR>
   nnoremap <Leader>G <Cmd>call switch#gitgutter(0)<CR>
   nnoremap <Leader>A <Cmd>GitGutterUndoHunk<CR>
