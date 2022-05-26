@@ -10,6 +10,7 @@ setlocal indentexpr=s:pyindent(v:lnum)  " new indent expression
 setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
+let g:python_highlight_func_calls = 0  " python-syntax syntax option
 
 " Enable braceless
 if exists(':BracelessEnable')
