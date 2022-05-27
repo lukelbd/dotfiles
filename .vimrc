@@ -1005,6 +1005,7 @@ if !has('gui_running')
   Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
   Plug 'matsui54/denops-popup-preview.vim'  " show previews during pmenu selection
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+  let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
   let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs

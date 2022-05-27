@@ -16,12 +16,24 @@
 #   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
 #   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
 #   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
-# * Tried installing jupyterlab formatter https://github.com/ryantam626/jupyterlab_code_formatter
-#   and setting shortcut to single keypress but seems plugin can only be invoked
-#   from an 'edit' mode that requires some modifier. Settled on 'Ctrl =' instead of
-#   'F' (analogous to Ctrl - used for splitting). Can also use edit menu. Might also
-#   need jupyter server extension enable --py jupyterlab_code_formatter to repair
-#   first time: https://github.com/ryantam626/jupyterlab_code_formatter/issues/193
+# * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
+#   following: https://github.com/jupyter-lsp/jupyterlab-lsp. Install with mamba
+#   install jupyterlab-lsp python-lsp-server r-languageserver and then restart
+#   jupyterlab. Also need c.Completer.use_jedi = False in ipython_config.py to prevent
+#   redundancy with built-in ipython autocompletion. And instead of python-lsp-server
+#   use jedi-language-server==0.36.0 (need >=0.35.0 for INFO log level bug fix).
+# * To get jupytext conversion and .py file reading inside jupyter noteboks need the
+#   extensions: https://github.com/mwouts/jupytext/tree/main/packages/labextension.
+#   Install jupyter notebook and jupyter lab extensions with mamba install jupytext;
+#   jupyter nbextension install --py jupytext --user; jupyter nbextension enable --py
+#   jupytext --user; jupyter labextension install jupyterlab-jupytext.
+# * To get black and isort autoformat tools inside jupyterlab use the following:
+#   https://github.com/ryantam626/jupyterlab_code_formatter. Might also need to run
+#   jupyter server extension enable --py jupyterlab_code_formatter after installation
+#   (see issue 193). Install with just mamba install jupyterlab-code-formatter. Tried
+#   setting shortcut to single keypress but seems plugin can only be invoked from an
+#   'edit' mode that requires some modifier. Settled on 'Ctrl =' instead of 'F' (similar
+#   to Ctrl - used for splitting). Can also trigger autoformatting from edit menu.
 # * Seems 'ipywidgets' is dependency of a few plugins but can emit annoying
 #   'ERROR | No such comm target registered:' messages on first run... tried using
 #   'jupyter nbextension install --py widgetsnbextension --user' followed by
@@ -1393,11 +1405,7 @@ jupyter-convert() {
 }
 
 # Change the jupytext kernel for all notebooks
-# NOTE: To install and use jupytext do the following
-# pip install jupytext
-# jupyter nbextension install --py jupytext --user
-# jupyter nbextension enable --py jupytext --user
-# jupyter labextension install jupyterlab-jupytext
+# NOTE: To install and use jupytext see top of file.
 jupyter-kernel() {
   local file files
   kernel=$1

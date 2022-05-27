@@ -47,13 +47,14 @@ state = np.random.RandomState(51423)
 """
 
 # Update ipython
+c.Completer.use_jedi = False  # improve jupyterlab-lsp speed
 c.PlainTextFormatter.pprint = True  # always pretty print
-c.TerminalInteractiveShell.highlighting_style = 'monokai'  # highlighting
-c.TerminalInteractiveShell.confirm_exit = False  # no confirm exit
-c.TerminalInteractiveShell.term_title = False  # no terminal title
 c.InteractiveShellApp.matplotlib = None  # disable backend
 c.InteractiveShellApp.exec_lines.append(lines)
 # c.InteractiveShellApp.exec_lines.extend(lines.split('\n'))
+c.TerminalInteractiveShell.highlighting_style = 'monokai'  # highlighting
+c.TerminalInteractiveShell.confirm_exit = False  # no confirm exit
+c.TerminalInteractiveShell.term_title = False  # no terminal title
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration
