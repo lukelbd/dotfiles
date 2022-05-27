@@ -958,66 +958,72 @@ let g:fzf_action = {
   \ 'ctrl-v': 'vsplit'
   \ }
 
+" Language servers
+" Note: Highlighting under keywords is for reference jumping with [r and ]r but
+" monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
+" Note: Seems vim-lsp can detect servers installed separately in $PATH with e.g.
+" mamba install python-lsp-server (needed for jupyterlab-lsp) or install and
+" uninstall them individually in ~/.local/share/vim-lsp-settings/servers/<server>
+" using LspInstallServer and LspUninstallServer (servers written in python are
+" installed with pip inside 'venv' virtual environment subfolders). Most likely
+" harmless if both external and internal are installed but try to avoid.
+" Plug 'natebosch/vim-lsc'  " alternative lsp client
+Plug 'rhysd/vim-lsp-ale'  " prevents duplicate language servers, zero config needed!
+Plug 'prabirshrestha/vim-lsp'  " ddc-vim-lsp requirement
+Plug 'mattn/vim-lsp-settings'  " auto vim-lsp settings
+let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+let g:lsp_ale_auto_enable_linter = v:false  " default is true
+let g:lsp_diagnostics_enabled = 0  " redundant with ale
+let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
+let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
+let g:lsp_document_highlight_enabled = 1  " used with [r and ]r
+let g:lsp_fold_enabled = 0  " not yet tested
+let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
+let g:lsp_hover_conceal = 1
+let g:lsp_preview_float = 1
+let g:lsp_preview_max_width = 80
+let g:lsp_preview_max_height = 30
+let g:lsp_signature_help_delay = 100  " milliseconds
+
 " Completion engines
-" Note: Disable for macvim because not sure how to control its python distribution
-if !has('gui_running')
-  " Completion engines sources
-  " Note: Install pynvim with 'mamba install pynvim'
-  " Note: Install deno with 'curl -fsSL https://deno.land/install.sh | sh'
-  " Plug 'neoclide/coc.nvim"  " vscode inspired
-  " Plug 'ervandew/supertab'  " oldschool, don't bother!
-  " Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
-  " Plug 'hrsh7th/nvim-cmp'  " lua version
-  " Plug 'Valloric/YouCompleteMe'  " broken, don't bother!
-  " Plug 'prabirshrestha/asyncomplete.vim'  " alternative engine
-  " Plug 'Shougo/neocomplcache.vim'  " first generation (no requirements)
-  " Plug 'Shougo/neocomplete.vim'  " second generation (requires lua)
-  " let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
-  " Plug 'Shougo/deoplete.nvim'  " third generation (requires pynvim)
-  " Plug 'Shougo/neco-vim'  " deoplete dependency
-  " Plug 'roxma/nvim-yarp'  " deoplete dependency
-  " Plug 'roxma/vim-hug-neovim-rpc'  " deoplete dependency
-  " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
-  Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
-  Plug 'vim-denops/denops.vim'  " ddc dependency
-  " Omnifunc sources not provided by engines
-  " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
-  " Note: Highlighting required for reference jumping: https://github.com/prabirshrestha/vim-lsp/issues/655
-  " Plug 'neovim/nvim-lspconfig'  " nvim-cmp source
-  " Plug 'hrsh7th/cmp-nvim-lsp'  " nvim-cmp source
-  " Plug 'hrsh7th/cmp-buffer'  " nvim-cmp source
-  " Plug 'hrsh7th/cmp-path'  " nvim-cmp source
-  " Plug 'hrsh7th/cmp-cmdline'  " nvim-cmp source
-  " Plug 'deoplete-plugins/deoplete-jedi'  " old language-specific completion
-  " Plug 'Shougo/neco-syntax'  " old language-specific completion
-  " Plug 'Shougo/echodoc.vim'  " old language-specific completion
-  " Plug 'Shougo/ddc-nvim-lsp'  " language server protocoal completion for neovim only
-  " Plug 'Shougo/ddc-matcher_head'  " filter for heading match
-  " Plug 'Shougo/ddc-sorter_rank'  " filter for sorting rank
-  " Plug 'natebosch/vim-lsc'  " alternative lsp client
-  Plug 'rhysd/vim-lsp-ale'  " prevents duplicate language servers, zero config needed!
-  Plug 'prabirshrestha/vim-lsp'  " ddc-vim-lsp requirement
-  Plug 'mattn/vim-lsp-settings'  " auto vim-lsp settings
-  Plug 'shun/ddc-vim-lsp'  " language server protocol completion for vim 8+
-  Plug 'Shougo/ddc-around'  " matching words near cursor
-  Plug 'matsui54/ddc-buffer'  " matching words from buffer (as in neocomplete)
-  Plug 'LumaKernel/ddc-file'  " matching file names
-  Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
-  Plug 'matsui54/denops-popup-preview.vim'  " show previews during pmenu selection
-  let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
-  let g:lsp_ale_auto_enable_linter = v:false  " default is true
-  let g:lsp_diagnostics_enabled = 0  " redundant with ale
-  let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_highlight_enabled = 1  " used with [r and ]r
-  let g:lsp_fold_enabled = 0  " not yet tested
-  let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
-  let g:lsp_hover_conceal = 1
-  let g:lsp_preview_float = 1
-  let g:lsp_preview_max_width = 80
-  let g:lsp_preview_max_height = 30
-  let g:lsp_signature_help_delay = 100  " milliseconds
-endif
+" Note: Install pynvim with 'mamba install pynvim'
+" Note: Install deno with 'curl -fsSL https://deno.land/install.sh | sh'
+" Plug 'neoclide/coc.nvim"  " vscode inspired
+" Plug 'ervandew/supertab'  " oldschool, don't bother!
+" Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
+" Plug 'hrsh7th/nvim-cmp'  " lua version
+" Plug 'Valloric/YouCompleteMe'  " broken, don't bother!
+" Plug 'prabirshrestha/asyncomplete.vim'  " alternative engine
+" Plug 'Shougo/neocomplcache.vim'  " first generation (no requirements)
+" Plug 'Shougo/neocomplete.vim'  " second generation (requires lua)
+" let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
+" Plug 'Shougo/deoplete.nvim'  " third generation (requires pynvim)
+" Plug 'Shougo/neco-vim'  " deoplete dependency
+" Plug 'roxma/nvim-yarp'  " deoplete dependency
+" Plug 'roxma/vim-hug-neovim-rpc'  " deoplete dependency
+" let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
+Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
+Plug 'vim-denops/denops.vim'  " ddc dependency
+
+" Omnifunc sources not provided by engines
+" See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
+" Plug 'neovim/nvim-lspconfig'  " nvim-cmp source
+" Plug 'hrsh7th/cmp-nvim-lsp'  " nvim-cmp source
+" Plug 'hrsh7th/cmp-buffer'  " nvim-cmp source
+" Plug 'hrsh7th/cmp-path'  " nvim-cmp source
+" Plug 'hrsh7th/cmp-cmdline'  " nvim-cmp source
+" Plug 'deoplete-plugins/deoplete-jedi'  " old language-specific completion
+" Plug 'Shougo/neco-syntax'  " old language-specific completion
+" Plug 'Shougo/echodoc.vim'  " old language-specific completion
+" Plug 'Shougo/ddc-nvim-lsp'  " language server protocoal completion for neovim only
+" Plug 'Shougo/ddc-matcher_head'  " filter for heading match
+" Plug 'Shougo/ddc-sorter_rank'  " filter for sorting rank
+Plug 'shun/ddc-vim-lsp'  " language server protocol completion for vim 8+
+Plug 'Shougo/ddc-around'  " matching words near cursor
+Plug 'matsui54/ddc-buffer'  " matching words from buffer (as in neocomplete)
+Plug 'LumaKernel/ddc-file'  " matching file names
+Plug 'tani/ddc-fuzzy'  " filter for fuzzy matching similar to fzf
+Plug 'matsui54/denops-popup-preview.vim'  " show previews during pmenu selection
 
 " Snippets and stuff
 " Todo: Investigate further, but so far primitive vim-succinct snippets are fine
@@ -1070,7 +1076,7 @@ Plug 'junegunn/vim-easy-align'
 " Plug 'ivanov/vim-ipython'  " replaced by jupyter-vim
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " Plug 'Vimjas/vim-python-pep8-indent'  " pep8 style indentexpr
-" Plug 'davidhalter/jedi-vim'  " use vim-lsp with jedi-language-server instead
+" Plug 'davidhalter/jedi-vim'  " use vim-lsp with mamba install python-lsp-server
 Plug 'jeetsukumaran/vim-python-indent-black'  " black style indentexpr
 Plug 'tweekmonster/braceless.vim'  " partial overlap with vim-textobj-indent, but these include header
 Plug 'jupyter-vim/jupyter-vim'  " pairing with jupyter consoles
@@ -1313,8 +1319,6 @@ endif
 " Completion engine settings (see :help ddc-options). Configuration was inspired
 " by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/. For
 " configuration help see https://github.com/Shougo/ddc.vim#configuration.
-" Note: Currently use jedi-language-server instead of pylsp-all to prevent conflicts
-" with ale. Otherwise use default servers for all filetypes.
 " Note: Underscore seems to indicate all sources, used for global filter options,
 " and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
 if s:plug_active('ddc.vim')
@@ -1675,29 +1679,30 @@ command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line(
 nnoremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 nnoremap <Leader>Y <Cmd>SyncStart<CR>
 
-" GUI vim colors
-" See: https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-" gruvbox, molokai, papercolor, fahrenheit, oceanicnext, ayu, abra, badwolf,
+" GUI vim colors. Examples:
+" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+" abra  " good one
+" ayu  " good one
+" badwolf  " good one
+" fahrenheit  " good one
+" gruvbox  " good one
+" molokai  " good one
+" monokai  " larger variation
+" monokain  " slight variation of molokai
+" moody  " other one
+" nazca  " other one
+" northland  " other one
+" oceanicnext  " good one
+" papercolor  " good one
+" sierra  " other one
+" tender  " other one
+" turtles  " other one
+" underwater-mod  " other one
+" vilight  " other one
+" vim-material  " other one
+" vimbrains  " other one
+" void  " other one
 if has('gui_running')
-  " colorscheme abra
-  " colorscheme ayu
-  " colorscheme gruvbox
-  " colorscheme molokai
-  " colorscheme monokai  " larger variation
-  " colorscheme monokain  " slight variation of molokai
-  " colorscheme moody
-  " colorscheme nazca
-  " colorscheme northland
-  " colorscheme oceanicnext
-  " colorscheme papercolor
-  " colorscheme sierra
-  " colorscheme tender
-  " colorscheme turtles
-  " colorscheme underwater-mod
-  " colorscheme vilight
-  " colorscheme vim-material
-  " colorscheme vimbrains
-  " colorscheme void
   colorscheme papercolor
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement

@@ -17,11 +17,20 @@
 #   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
 #   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
-#   following: https://github.com/jupyter-lsp/jupyterlab-lsp. Install with mamba
-#   install jupyterlab-lsp python-lsp-server r-languageserver and then restart
-#   jupyterlab. Also need c.Completer.use_jedi = False in ipython_config.py to prevent
-#   redundancy with built-in ipython autocompletion. And instead of python-lsp-server
-#   use jedi-language-server==0.36.0 (need >=0.35.0 for INFO log level bug fix).
+#   following: https://github.com/jupyter-lsp/jupyterlab-lsp. Install with mamba install
+#   jupyterlab-lsp python-lsp-server r-languageserver. Need c.Completer.use_jedi = False
+#   in ipython_config.py to prevent redundancy with built-in ipython autocompletion.
+# * Seems jupyterlab-lsp auto-detects several servers including jedi-language-server
+#   but only python-lsp-server shows error messages (possibly related to this issue:
+#   https://github.com/jupyter-lsp/jupyterlab-lsp/issues/437). So use the latter
+#   server for simplicity and uninstall jedi-language-server (although if switch back
+#   later need server version >= 0.35.0 to prevent annoying info logging level issue).
+# * Seems vim-lsp-ale autodetects and parses python-lsp-server error and warning
+#   diagnostics but ignores jedi-language-server diagnostics (possibly harder to parse
+#   jedi diagnostics in general). This overrides g:ale_linters, including e.g. flake8
+#   customizations, so need g:lsp_ale_auto_enable_linter = v:false to prevent issues.
+#   Also note for some reason LspManageServers seems to automatically detect conda
+#   installed servers but must manually use LspUninstallServer after a conda uninstall.
 # * To get jupytext conversion and .py file reading inside jupyter noteboks need the
 #   extensions: https://github.com/mwouts/jupytext/tree/main/packages/labextension.
 #   Install jupyter notebook and jupyter lab extensions with mamba install jupytext;
