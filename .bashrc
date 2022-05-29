@@ -17,9 +17,10 @@
 #   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
 #   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
-#   following: https://github.com/jupyter-lsp/jupyterlab-lsp. Install with mamba install
-#   jupyterlab-lsp python-lsp-server r-languageserver. Need c.Completer.use_jedi = False
-#   in ipython_config.py to prevent redundancy with built-in ipython autocompletion.
+#   following: https://github.com/jupyter-lsp/jupyterlab-lsp plus python-lsp-server
+#   and r-languageserver. Add c.Completer.use_jedi = False in ipython_config.py to
+#   prevent redundancy with built-in ipython autocompletion. For supported servers
+#   see: https://jupyterlab-lsp.readthedocs.io/en/latest/Language%20Servers.html
 # * Seems jupyterlab-lsp auto-detects several servers including jedi-language-server
 #   but only python-lsp-server shows error messages (possibly related to this issue:
 #   https://github.com/jupyter-lsp/jupyterlab-lsp/issues/437). So use the latter
@@ -239,20 +240,21 @@ case "${HOSTNAME%%.*}" in
   # Cheyenne supercomputer, any of the login nodes
   # NOTE: Use 'sinteractive' for interactive mode
   cheyenne*)
-    # Add modules and paths
-    # Set tmpdir following direction of: https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
+    # Add modules and paths and set tmpdir following direction of:
+    # https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
     export TMPDIR=/glade/scratch/$USER/tmp
     export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
-    _load_unloaded netcdf nco tmux intel impi  # have latest greatest versions of CDO and NCL via conda
+    _load_unloaded netcdf tmux intel impi  # cdo and nco via conda
     ;;
 
   # Chicago supercomputer, any of the login nodes
   # WARNING: Greedy glob removes commands sandwiched between print statements
   midway*)
-    # Add modules and paths and remove print statements from prompt
+    # Add modules and paths
+    # Remove annoying print statements from prompt
     export PATH=$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin
     export PROMPT_COMMAND=${PROMPT_COMMAND//printf*\";/}
-    _load_unloaded mlk intel  # latest cdo version is not default
+    _load_unloaded mlk intel  # cdo and nco via conda
     ;;
 
   *)
