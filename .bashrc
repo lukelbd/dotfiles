@@ -1904,34 +1904,37 @@ fi
 # See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
-# Find cond base
+# Find conda base
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
 alias brew="PATH=\"$PATH\" brew"
 if [ -d "$HOME/anaconda3" ]; then
-  _conda=anaconda3
+  _conda=$HOME/anaconda3
 elif [ -d "$HOME/miniconda3" ]; then
-  _conda=miniconda3
+  _conda=$HOME/miniconda3
 else
   unset _conda
 fi
 
 if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
-  # Initialize conda
+  # Initialize conda. Generate this code with 'mamba init'
   _echo_bashrc 'Enabling conda'
-  __conda_setup=$("$HOME/$_conda/bin/conda" 'shell.bash' 'hook' 2> /dev/null)
+  __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
   if [ $? -eq 0 ]; then
     eval "$__conda_setup"
   else
-    if [ -f "$HOME/$_conda/etc/profile.d/conda.sh" ]; then
-      source "$HOME/$_conda/etc/profile.d/conda.sh"
+    if [ -f "$_conda/etc/profile.d/conda.sh" ]; then
+      source "$_conda/etc/profile.d/conda.sh"
     else
-      export PATH=$HOME/$_conda/bin:$PATH
+      export PATH="$_conda/bin:$PATH"
     fi
   fi
-  if ! [[ "$PATH" =~ condabin ]]; then
-    export PATH=$HOME/$_conda/condabin:$PATH
-  fi
   unset __conda_setup
+  if [ -f "$_conda/etc/profile.d/mamba.sh" ]; then
+    source "$_conda/etc/profile.d/mamba.sh"
+  fi
+  if ! [[ "$PATH" =~ condabin ]]; then
+    export PATH=$_conda/condabin:$PATH
+  fi
 
   # Function to list available packages
   conda-avail() {
