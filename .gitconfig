@@ -83,7 +83,6 @@
 	files      = ls-tree -r master --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
-	leaf       = "!git log \"$@\". --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
 	long       = status --long --branch
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
@@ -97,7 +96,7 @@
 	tags       = push origin --tags
 	tree       = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
 	truncate   = "!git-truncate \"$@\""
-	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color \"$@\" 2>/dev/null"
+	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
 	unstage    = reset --soft
 	update     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
 	user       = "!git-user \"$@\""

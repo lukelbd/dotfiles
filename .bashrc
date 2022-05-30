@@ -132,8 +132,8 @@ case "${HOSTNAME%%.*}" in
     #   See: https://stackoverflow.com/q/55092608/4970632
     # * Installed universal ctags with (not in main repo becauase no versions yet):
     #   brew install --HEAD universal-ctags/universal-ctags/universal-ctags
-    # * Installed cdo, nco, and R with macports. Installed ncl by installing compilers
-    #   with macports and downloading pre-compiled binary from ncar.
+    # * Installed cdo, nco, and R with conda. Installed ncl by installing compilers
+    #   with homebrew and downloading pre-compiled binary from ncar.
     # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
     #   gnu-tar gawk'. Then found paths with: https://apple.stackexchange.com/q/69223/214359
     # * Fix permission issues after migrating macs with following command:
@@ -180,13 +180,12 @@ case "${HOSTNAME%%.*}" in
     export PATH=/Applications/Julia-1.7.app/Contents/Resources/julia/bin:$PATH
 
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
-    # NOTE: NCL originally tried to find dyld to /usr/local/lib/libgfortran.3.dylib;
-    # actually ends up in above path after brew install gcc49. And must install
-    # this rather than gcc, which loads libgfortran.3.dylib and yields gcc version 7
-    # Tried DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python modules
-    # alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # port libs
-    alias ncl='DYLD_LIBRARY_PATH=/usr/local/lib/gcc/7/ ncl'  # brew libs
-    export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically necessary to run NCL
+    # NOTE: Tried exporting DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python
+    # modules so instead just always invoke ncl with temporarily set DYLD_LIBRARY_PATH.
+    # Note ncl is realiased below and are careful to preserve any leading paths.
+    # alias ncl='DYLD_LIBRARY_PATH="/opt/local/lib/libgcc" ncl'  # port libraries
+    alias ncl='DYLD_LIBRARY_PATH=/usr/local/lib/gcc/7/ ncl'  # brew libraries
+    export NCARG_ROOT=$HOME/builds/ncl-6.6.2  # critically to run ncl
 
     # C and fortran compilers
     # Used to install gcc and gfortran with 'port install libgcc7' then 'port select
@@ -825,7 +824,7 @@ hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-statu
 alias fdiff='command git --no-pager diff --textconv --no-index --color=always'
 alias ddiff='command git --no-pager diff --textconv --no-index --color=always --name-status'
 rdiff() {
-  [ $# -ne 2 ] && echo "Usage: idiff DIR1 DIR2" && return 1
+  [ $# -ne 2 ] && echo "Usage: rdiff DIR1 DIR2" && return 1
   command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
     --brief --strip-trailing-cr -r "$1" "$2"
 }

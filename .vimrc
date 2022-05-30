@@ -90,7 +90,7 @@ set tabstop=2  " shoft default tabs
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
-set virtualedit=  " prevent cursor from going where no actual character
+set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu
 set wildmode=longest:list,full
