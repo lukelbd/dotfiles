@@ -675,6 +675,8 @@ noremap [x <Cmd>Lprev<CR>
 noremap ]x <Cmd>Lnext<CR>
 noremap [X <Cmd>Qprev<CR>
 noremap ]X <Cmd>Qnext<CR>
+noremap <Leader>q <Cmd>lopen<CR>
+noremap <Leader>Q <Cmd>lclose<CR>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
@@ -1210,7 +1212,8 @@ if s:plug_active('vim-scrollwrapped')
     \ 'ale-preview', 'bib', 'liquid', 'log', 'markdown', 'rst', 'tex']
   noremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   noremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
-  noremap <Leader>w <Cmd>WrapToggle<CR>
+  noremap <Leader>w <Cmd>WrapToggle 1<CR>
+  noremap <Leader>W <Cmd>WrapToggle 0<CR>
 endif
 
 " Add maps for vim-tags command and use tags for default double bracket motion,
@@ -1230,8 +1233,8 @@ if s:plug_active('vim-tags')
   endfunction
   nnoremap <Leader>t <Cmd>ShowTags<CR>
   nnoremap <Leader>T <Cmd>UpdateTags<CR>
-  nnoremap <Leader>q <Cmd>BTags<CR>
-  nnoremap <Leader>Q <Cmd>Tags<CR>
+  nnoremap <Leader>b <Cmd>BTags<CR>
+  nnoremap <Leader>B <Cmd>Tags<CR>
   let g:tags_nofilter_filetypes = ['fortran']
   let g:tags_scope_filetypes = {
     \ 'vim'     : 'afc',
@@ -1708,9 +1711,9 @@ if has('gui_running')
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap Statement
-  nnoremap <Leader>B <Cmd>Colors<CR>
-  nnoremap <Leader>n <Cmd>SchemeNext<CR>
-  nnoremap <Leader>N <Cmd>SchemePrev<CR>
+  nnoremap <Leader>8 <Cmd>Colors<CR>
+  nnoremap <Leader>9 <Cmd>SchemeNext<CR>
+  nnoremap <Leader>0 <Cmd>SchemePrev<CR>
   command! SchemePrev call utils#iter_colorschemes(0)
   command! SchemeNext call utils#iter_colorschemes(1)
 endif
@@ -1776,7 +1779,12 @@ command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
 command! -nargs=0 ShowColors call popup#colors_win()
 command! -nargs=0 ShowPlugin call popup#plugin_win()
 command! -nargs=0 ShowSyntax call popup#syntax_win()
-
+noremap <Leader>1 <Cmd>CurrentColor<CR>
+noremap <Leader>2 <Cmd>CurrentGroup<CR>
+noremap <Leader>3 <Cmd>CurrentSyntax<CR>
+noremap <Leader>4 <Cmd>ShowColors<CR>
+noremap <Leader>5 <Cmd>ShowPlugin<CR>
+noremap <Leader>6 <Cmd>ShowSyntax<CR>
 
 "-----------------------------------------------------------------------------"
 " Exit
