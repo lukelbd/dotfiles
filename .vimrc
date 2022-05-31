@@ -529,10 +529,10 @@ vnoremap cc s
 nnoremap cL mzi<CR><Esc>`z
 
 " Swap adjacent characters or rows
-nnoremap ch <Cmd>call format#swap_characters(0)<CR>
-nnoremap cl <Cmd>call format#swap_characters(1)<CR>
-nnoremap ck <Cmd>call format#swap_lines(0)<CR>
-nnoremap cj <Cmd>call format#swap_lines(1)<CR>
+nnoremap ch <Cmd>call insert#swap_characters(0)<CR>
+nnoremap cl <Cmd>call insert#swap_characters(1)<CR>
+nnoremap ck <Cmd>call insert#swap_lines(0)<CR>
+nnoremap cj <Cmd>call insert#swap_lines(1)<CR>
 
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o oX<Backspace>
@@ -592,8 +592,8 @@ nnoremap <Leader>c <Cmd>CopyToggle 1<CR>
 nnoremap <Leader>C <Cmd>CopyToggle 0<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
-inoremap <expr> <C-v> format#lang_map()
-cnoremap <expr> <C-v> format#lang_map()
+inoremap <expr> <C-v> insert#lang_map()
+cnoremap <expr> <C-v> insert#lang_map()
 
 " Spellcheck (really is a builtin plugin, hence why it's in this section)
 " Turn on for certain filetypes
@@ -620,8 +620,8 @@ nnoremap <Leader>D z=
 
 " Similar to ]s and [s but also corrects the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-nnoremap <silent> <Plug>forward_spell bh]s:call format#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[s:call format#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nnoremap <silent> <Plug>forward_spell bh]s:call insert#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[s:call insert#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
@@ -660,8 +660,8 @@ noremap [Z [z
 noremap ]Z ]z
 
 " Unimpaired blank lines
-noremap <Plug>BlankUp <Cmd>call format#blank_up(v:count1)<CR>
-noremap <Plug>BlankDown <Cmd>call format#blank_down(v:count1)<CR>
+noremap <Plug>BlankUp <Cmd>call insert#blank_up(v:count1)<CR>
+noremap <Plug>BlankDown <Cmd>call insert#blank_down(v:count1)<CR>
 map [e <Plug>BlankUp
 map ]e <Plug>BlankDown
 
@@ -680,14 +680,14 @@ noremap <Leader>Q <Cmd>lclose<CR>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
-nnoremap <expr> ga format#paste_mode() . 'a'
-nnoremap <expr> gA format#paste_mode() . 'A'
-nnoremap <expr> gc format#paste_mode() . 'c'
-nnoremap <expr> gi format#paste_mode() . 'i'
-nnoremap <expr> gI format#paste_mode() . 'I'
-nnoremap <expr> go format#paste_mode() . 'o'
-nnoremap <expr> gO format#paste_mode() . 'O'
-nnoremap <expr> gR format#paste_mode() . 'R'
+nnoremap <expr> ga insert#paste_mode() . 'a'
+nnoremap <expr> gA insert#paste_mode() . 'A'
+nnoremap <expr> gc insert#paste_mode() . 'c'
+nnoremap <expr> gi insert#paste_mode() . 'i'
+nnoremap <expr> gI insert#paste_mode() . 'I'
+nnoremap <expr> go insert#paste_mode() . 'o'
+nnoremap <expr> gO insert#paste_mode() . 'O'
+nnoremap <expr> gR insert#paste_mode() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
 noremap [r <Cmd>LspPreviousReference<CR>
@@ -701,7 +701,7 @@ nnoremap <Leader>P <Cmd>LspHover --ui=float<CR>
 nnoremap <Leader><CR> <Cmd>LspDefinition<CR>
 
 " Forward delete by tabs
-inoremap <expr> <Delete> format#forward_delete()
+inoremap <expr> <Delete> insert#forward_delete()
 
 " Insert comment similar to gc
 " Todo: Add more control insert mappings?
@@ -1370,29 +1370,29 @@ if s:plug_active('ddc.vim')
     au!
     au BufEnter,InsertLeave * let b:popup_scroll = 0
   augroup END
-  inoremap <expr> <C-e> format#popup_scroll(-1)
-  inoremap <expr> <C-y> format#popup_scroll(1)
-  inoremap <expr> <Up> format#popup_scroll(-0.25)
-  inoremap <expr> <Down> format#popup_scroll(0.25)
-  inoremap <expr> <C-k> format#popup_scroll(-0.25)
-  inoremap <expr> <C-j> format#popup_scroll(0.25)
-  inoremap <expr> <C-u> format#popup_scroll(-0.5)
-  inoremap <expr> <C-d> format#popup_scroll(0.5)
-  inoremap <expr> <C-b> format#popup_scroll(-1.0)
-  inoremap <expr> <C-f> format#popup_scroll(1.0)
-  inoremap <expr> <Space> format#popup_reset()
+  inoremap <expr> <C-e> insert#popup_scroll(-1)
+  inoremap <expr> <C-y> insert#popup_scroll(1)
+  inoremap <expr> <Up> insert#popup_scroll(-0.25)
+  inoremap <expr> <Down> insert#popup_scroll(0.25)
+  inoremap <expr> <C-k> insert#popup_scroll(-0.25)
+  inoremap <expr> <C-j> insert#popup_scroll(0.25)
+  inoremap <expr> <C-u> insert#popup_scroll(-0.5)
+  inoremap <expr> <C-d> insert#popup_scroll(0.5)
+  inoremap <expr> <C-b> insert#popup_scroll(-1.0)
+  inoremap <expr> <C-f> insert#popup_scroll(1.0)
+  inoremap <expr> <Space> insert#popup_reset()
     \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
-  inoremap <expr> <Backspace> format#popup_reset()
+  inoremap <expr> <Backspace> insert#popup_reset()
     \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
   inoremap <expr> <CR>
     \ pumvisible() ? b:popup_scroll ?
-    \ "\<C-y>" . format#popup_reset()
+    \ "\<C-y>" . insert#popup_reset()
     \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
     \ : "\<C-]>\<C-g>u\<CR>"
   inoremap <expr> <Tab>
     \ pumvisible() ? b:popup_scroll ?
-    \ "\<C-y>" . format#popup_reset()
-    \ : "\<C-n>\<C-y>" . format#popup_reset()
+    \ "\<C-y>" . insert#popup_reset()
+    \ : "\<C-n>\<C-y>" . insert#popup_reset()
     \ : "\<C-]>\<Tab>"
 endif
 
