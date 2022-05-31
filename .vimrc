@@ -989,7 +989,7 @@ let g:lsp_signature_help_delay = 100  " milliseconds
 
 " Completion engines
 " Note: Install pynvim with 'mamba install pynvim'
-" Note: Install deno with 'curl -fsSL https://deno.land/install.sh | sh'
+" Note: Install deno with brew on mac and with conda on linux
 " Plug 'neoclide/coc.nvim"  " vscode inspired
 " Plug 'ervandew/supertab'  " oldschool, don't bother!
 " Plug 'ajh17/VimCompletesMe'  " no auto-popup feature
@@ -1004,7 +1004,7 @@ let g:lsp_signature_help_delay = 100  " milliseconds
 " Plug 'roxma/nvim-yarp'  " deoplete dependency
 " Plug 'roxma/vim-hug-neovim-rpc'  " deoplete dependency
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
-Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
+" Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
 Plug 'vim-denops/denops.vim'  " ddc dependency
 
 " Omnifunc sources not provided by engines
@@ -1130,7 +1130,8 @@ let g:jupytext_fmt = 'py:percent'
 " Plug 'tweekmonster/impsort.vim' " conflicts with isort plugin, also had major issues
 " Plug 'vim-python/python-syntax'  " originally from hdima/python-syntax, manually copied version with match case
 " Plug 'daeyun/vim-matlab'  " alternative but project seems dead
-Plug 'MortenStabenau/matlab-vim'
+" Plug 'MortenStabenau/matlab-vim'  " requires tmux installed
+Plug 'andymass/vim-matlab'  " recently updated vim-matlab fork from matchup author
 Plug 'vim-scripts/applescript.vim'
 Plug 'preservim/vim-markdown'
 Plug 'tmux-plugins/vim-tmux'
@@ -1161,7 +1162,7 @@ let g:splitjoin_join_mapping  = 'cJ'
 let g:splitjoin_trailing_comma = 1
 let g:splitjoin_normalize_whitespace = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
-
+"
 " Custom plugins or forks, try to load locally if possible!
 " See: https://github.com/junegunn/vim-plug/issues/32
 " Note: This needs to come after or else vim-succinct will not be able to use

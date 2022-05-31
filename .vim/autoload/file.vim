@@ -66,10 +66,16 @@ endfunction
 
 " Safely closing tabs and windows
 " Note: This moves to the left tab after closure
+" Note: Calling quit inside codei buffer triggers 'attempt to close buffer
+" that is in use' error so instead return to main window and toggle codi.
 function! file#close_window() abort
   let ntabs = tabpagenr('$')
   let islast = tabpagenr('$') == tabpagenr()
-  silent! quit
+  if &l:filetype ==# 'codi'
+    wincmd p | Codi!!
+  else
+    silent! quit
+  endif
   if ntabs != tabpagenr('$') && !islast
     silent! tabprevious
   endif

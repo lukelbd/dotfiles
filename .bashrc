@@ -412,7 +412,7 @@ if $_macos; then
   alias bindings_stty='stty -e'  # bindings
 else  # shellcheck disable=2142
   alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
-  alias hardware="cat /etc/*-release"  # print out Debian, etc. release info
+  alias hardware="cat /etc/*-release"  # print operating system info
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
   alias bindings_stty='stty -a'  # bindings
 fi
@@ -1952,7 +1952,7 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
   }
 
   # Activate conda
-  conda activate base
+  mamba activate base
   echo 'done'
 fi
 
