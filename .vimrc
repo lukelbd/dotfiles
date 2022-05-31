@@ -1004,7 +1004,7 @@ let g:lsp_signature_help_delay = 100  " milliseconds
 " Plug 'roxma/nvim-yarp'  " deoplete dependency
 " Plug 'roxma/vim-hug-neovim-rpc'  " deoplete dependency
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
-" Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
+Plug 'Shougo/ddc.vim'  " fourth generation (requires pynvim and deno)
 Plug 'vim-denops/denops.vim'  " ddc dependency
 
 " Omnifunc sources not provided by engines
