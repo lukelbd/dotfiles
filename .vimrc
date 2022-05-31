@@ -460,8 +460,7 @@ cnoremap <expr> <F2> "\<S-Tab>"
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 " silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>C <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
-
+nnoremap <Leader>? <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
 
 "-----------------------------------------------------------------------------"
 " Editing utilities
@@ -589,7 +588,8 @@ noremap " "*
 
 " Copy mode ('paste mode' accessible with [v and ]v via unimpaired.vim)
 command! -nargs=? CopyToggle call switch#copy(<args>)
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>c <Cmd>CopyToggle 1<CR>
+nnoremap <Leader>C <Cmd>CopyToggle 0<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
 inoremap <expr> <C-v> format#lang_map()
