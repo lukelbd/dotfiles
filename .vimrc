@@ -1234,8 +1234,7 @@ if s:plug_active('vim-tags')
   endfunction
   nnoremap <Leader>t <Cmd>ShowTags<CR>
   nnoremap <Leader>T <Cmd>UpdateTags<CR>
-  nnoremap <Leader>b <Cmd>BTags<CR>
-  nnoremap <Leader>B <Cmd>Tags<CR>
+  nnoremap <Leader>B <Cmd>BTags<CR>
   let g:tags_nofilter_filetypes = ['fortran']
   let g:tags_scope_filetypes = {
     \ 'vim'     : 'afc',
