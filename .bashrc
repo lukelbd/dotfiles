@@ -594,6 +594,16 @@ vim-session() {
   vim -S .vimsession "$@"  # use above function
 }
 
+# Either pipe the output of the remaining commands into the less pager
+# or open the files. Use the latter only for executables on $PATH
+less() {
+  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
+    "$@" 2>&1 | command less  # pipe output of command
+  else
+    command less "$@"  # show files in less
+  fi
+}
+
 # Absolute path, works everywhere (mac, linux, or anything with bash)
 # See: https://stackoverflow.com/a/23002317/4970632
 abspath() {

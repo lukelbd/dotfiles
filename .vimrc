@@ -99,7 +99,7 @@ let &g:wildignore = ''
   \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
   \ . '*.mp3,*.m4a,*.mk4,*.mp4,*.mov,*.flac,*.wav,'
-  \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store,'
+  \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store'
 if exists('&diffopt')
   set diffopt^=filler
 endif
@@ -1498,7 +1498,7 @@ if s:plug_active('ale')
   " * Allow multiple spaces before operators for easy-align segments (E221)
   " * Allow multiple spaces after commas for easy-align segments (E241)
   " * Allow assigning lambda expressions instead of def (E731)
-  " * Permit 'l' and 'I' variable names (E741)
+  " * Allow the variable names 'l' and 'I' (E741)
   " * Allow no docstring on public methods (e.g. overrides) (D102) (flake8-docstrings)
   " * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
   " * Allow empty docstring after __init__ (D107) (flake8-docstrings)
