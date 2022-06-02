@@ -433,25 +433,25 @@ augroup popup_setup
   endfor
 augroup END
 
+" Cycle through wildmenu expansion with these keys
+" Note: Mapping without <expr> will type those literal keys
+cnoremap <expr> <F1> "\<Tab>"
+cnoremap <expr> <F2> "\<S-Tab>"
+
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
 nnoremap <Leader>; q:
 nnoremap <Leader>. q/
 nnoremap <Leader>, q?
-nnoremap <Leader>: <Cmd>History:<CR>
-nnoremap <Leader>> <Cmd>History/<CR>
 nnoremap <Leader>< :<Up><CR>
+nnoremap <Leader>> <Cmd>History:<CR>
+nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>h <Cmd>call popup#help_flag() \| redraw!<CR>
 nnoremap <Leader>H <Cmd>call popup#help_man() \| redraw!<CR>
 nnoremap <Leader>v <Cmd>call popup#help_win()<CR>
 nnoremap <Leader>V <Cmd>Help<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
-
-" Cycle through wildmenu expansion with these keys
-" Note: Mapping without <expr> will type those literal keys
-cnoremap <expr> <F1> "\<Tab>"
-cnoremap <expr> <F2> "\<S-Tab>"
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
@@ -460,7 +460,7 @@ cnoremap <expr> <F2> "\<S-Tab>"
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 " silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>? <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
+nnoremap <Leader>: <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
 
 "-----------------------------------------------------------------------------"
 " Editing utilities
@@ -493,8 +493,8 @@ nnoremap <Leader>" <Cmd>BLines<CR>
 " and use ' or [1-8]' to jump to a mark.
 " let g:highlightmark_colors = ['magenta']
 " let g:highlightmark_cterm_colors = [5]
-command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
+command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
 nnoremap <expr> ` "`" . nr2char(97 + v:count)
 nnoremap <expr> ~ 'm' . nr2char(97 + v:count) . ':HighlightMark ' . nr2char(97 + v:count) . '<CR>'
 nnoremap <Leader>~ <Cmd>RemoveHighlights<CR>
@@ -692,13 +692,15 @@ nnoremap <expr> gR insert#paste_mode() . 'R'
 " Jump to definition of keyword under cursor, and show first line of occurence
 noremap [r <Cmd>LspPreviousReference<CR>
 noremap ]r <Cmd>LspNextReference<CR>
+nnoremap <CR> <Cmd>LspPeekDefinition<CR>
+nnoremap <Leader>& <Cmd>LspSignatureHelp<CR>
+nnoremap <Leader>* <Cmd>LspHover --ui=float<CR>
+nnoremap <Leader>P <Cmd>LspReferences<CR>
+nnoremap <Leader><CR> <Cmd>LspDefinition<CR>
 " nnoremap <CR> <C-]>  " fails most of the time
 " nnoremap <CR> [<C-i>  " jump to vim definition
 " nnoremap \<Space> [I  " display occurences
 " nnoremap <Leader>P <Cmd>LspSignatureHelp<CR>
-nnoremap <CR> <Cmd>LspPeekDefinition<CR>
-nnoremap <Leader>P <Cmd>LspHover --ui=float<CR>
-nnoremap <Leader><CR> <Cmd>LspDefinition<CR>
 
 " Forward delete by tabs
 inoremap <expr> <Delete> insert#forward_delete()
@@ -860,11 +862,19 @@ Plug 'Konfekt/FastFold'
 " let g:SimpylFold_fold_docstring = 0
 " let g:SimpylFold_fold_import = 0
 
-" Matching groups
+" Matching groups and searching
 Plug 'andymass/vim-matchup'
+Plug 'henrik/vim-indexed-search'
 let g:loaded_matchparen = 1
 let g:matchup_matchparen_enabled = 1
 let g:matchup_transmute_enabled = 0  " breaks latex!
+let g:indexed_search_colors = 0
+let g:indexed_search_mappings = 0
+let g:indexed_search_shortmess = 1
+let g:indexed_search_dont_move = 1
+let g:indexed_search_line_info = 1
+let g:indexed_search_numbered_only = 1
+let g:indexed_search_n_always_searches_forward = 1
 
 " Useful panel plugins
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -929,11 +939,11 @@ Plug 'junegunn/gv.vim'  " view commit graphs with :GV
 " Calculators and number stuff
 " Plug 'vim-scripts/Toggle'  " toggling stuff on/off, modified this myself
 " Plug 'triglav/vim-visual-increment'  " superceded by vim-speeddating
-Plug 'metakirby5/codi.vim'
 Plug 'sk1418/HowMuch'
 Plug 'tpope/vim-speeddating'  " dates and stuff
-let g:speeddating_no_mappings = 1
+Plug 'metakirby5/codi.vim'  " calculators
 let g:HowMuch_no_mappings = 1
+let g:speeddating_no_mappings = 1
 
 " User interface selection stuff
 " Note: Shougo claims "unite provides an integration interface for several
@@ -1129,8 +1139,8 @@ let g:jupytext_fmt = 'py:percent'
 " Plug 'numirias/semshi', {'do': ':UpdateRemotePlugins'}  " neovim required
 " Plug 'tweekmonster/impsort.vim' " conflicts with isort plugin, also had major issues
 " Plug 'vim-python/python-syntax'  " originally from hdima/python-syntax, manually copied version with match case
-" Plug 'daeyun/vim-matlab'  " alternative but project seems dead
 " Plug 'MortenStabenau/matlab-vim'  " requires tmux installed
+" Plug 'daeyun/vim-matlab'  " alternative but project seems dead
 Plug 'andymass/vim-matlab'  " recently updated vim-matlab fork from matchup author
 Plug 'vim-scripts/applescript.vim'
 Plug 'preservim/vim-markdown'
@@ -1319,22 +1329,25 @@ if s:plug_active('undotree')
   nnoremap <Leader>u <Cmd>UndotreeToggle<CR>
 endif
 
-" Completion engine settings (see :help ddc-options). Configuration was inspired
-" by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/. For
-" configuration help see https://github.com/Shougo/ddc.vim#configuration.
+" Completion engine settings (see :help ddc-options). Configuration was
+" inspired by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
+" For configuration help see https://github.com/Shougo/ddc.vim#configuration.
 " Note: Underscore seems to indicate all sources, used for global filter options,
 " and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
 if s:plug_active('ddc.vim')
   " Engine settings and sources
-  " Alternative: '_': {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']},
+  " Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
+  " Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
+  " The matcher_fuzzy with word splitmode seems to be a reasonable compromise.
   call ddc#custom#patch_global({
     \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
     \ 'sourceParams': {'around': {'maxSize': 500}},
+    \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
     \ 'sourceOptions': {
     \   '_': {
     \     'matchers': ['matcher_fuzzy'],
     \     'sorters': ['sorter_fuzzy'],
-    \     'converters': ['converter_fuzzy']
+    \     'converters': ['converter_fuzzy'],
     \   },
     \   'vim-lsp': {
     \     'mark': 'L',
@@ -1370,8 +1383,8 @@ if s:plug_active('ddc.vim')
     au!
     au BufEnter,InsertLeave * let b:popup_scroll = 0
   augroup END
-  inoremap <expr> <C-e> insert#popup_scroll(-1)
-  inoremap <expr> <C-y> insert#popup_scroll(1)
+  inoremap <expr> <C-y> insert#popup_scroll(-1)
+  inoremap <expr> <C-e> insert#popup_scroll(1)
   inoremap <expr> <Up> insert#popup_scroll(-0.25)
   inoremap <expr> <Down> insert#popup_scroll(0.25)
   inoremap <expr> <C-k> insert#popup_scroll(-0.25)
@@ -1403,6 +1416,7 @@ if s:plug_active('ale')
   " Note: Unlike syntastic ale works with buffer contents
   " Note: LspManage fills the current buffer and for some reason does
   " not trigger filetype autocommand so must also do it manually.
+  nnoremap <Leader>! <Cmd>ALEDetail<CR>
   nnoremap <Leader>@ <Cmd>ALEInfo<CR>
   nnoremap <Leader>% <Cmd>LspStatus<CR>
   nnoremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup()<CR>
@@ -1636,11 +1650,12 @@ else
   noremap - <C-x>
 endif
 
-" The howmuch.vim plugin. Pneumonic for mapping is the straight line at
-" bottom of sum table. Mapping options are:
-" AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend,
+" The howmuch.vim plugin. Mnemonic for equation solving is just that parentheses
+" show up in equations. Mnemonic for sums is the straight line at bottom of table.
+" Options are: AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend,
 " AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
 if s:plug_active('HowMuch')
+  vmap <Leader>( <Plug>AutoCalcReplace
   vmap <Leader>) <Plug>AutoCalcAppendWithEq
   vmap <Leader>- <Plug>AutoCalcReplaceWithSum
   vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
