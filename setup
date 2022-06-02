@@ -6,9 +6,9 @@
 ################################################################################
 # Files to be ignored
 shopt -s nullglob
-exclude=(README.md REGEXES.md .gitignore setup cleanup backup)
+exclude=(README.md REGEXES.md .gitignore backup cleanup setup)
 
-# Setup
+# Read the tracked file names
 root=$HOME
 dotfiles=$HOME/dotfiles
 cd "$dotfiles" || {

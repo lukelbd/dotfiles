@@ -863,18 +863,18 @@ Plug 'Konfekt/FastFold'
 " let g:SimpylFold_fold_import = 0
 
 " Matching groups and searching
+" Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search
 Plug 'andymass/vim-matchup'
 Plug 'henrik/vim-indexed-search'
-let g:loaded_matchparen = 1
-let g:matchup_matchparen_enabled = 1
-let g:matchup_transmute_enabled = 0  " breaks latex!
-let g:indexed_search_colors = 0
+let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
+let g:matchup_transmute_enabled = 0  " issues in latex, use vim-succinct instead
 let g:indexed_search_mappings = 0
-let g:indexed_search_shortmess = 1
-let g:indexed_search_dont_move = 1
-let g:indexed_search_line_info = 1
-let g:indexed_search_numbered_only = 1
-let g:indexed_search_n_always_searches_forward = 1
+let g:indexed_search_colors = 0
+let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
+let g:indexed_search_line_info = 1  " show first and last line indicators
+let g:indexed_search_shortmess = 1  " shorter message
+let g:indexed_search_numbered_only = 1  " only show numbers
+let g:indexed_search_n_always_searches_forward = 1  " after ? still search forward
 
 " Useful panel plugins
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
