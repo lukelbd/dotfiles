@@ -820,6 +820,7 @@ noremap <expr> \" format#replace_regex_expr(
 " External plugins
 "-----------------------------------------------------------------------------"
 " Functions to find runtimepath and install plugins
+" See: https://github.com/junegunn/vim-plug/issues/32
 function! s:plug_active(key) abort
   return &runtimepath =~# '/' . a:key . '\>'
 endfunction
@@ -869,7 +870,7 @@ Plug 'andymass/vim-matchup'
 Plug 'henrik/vim-indexed-search'
 let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
 let g:matchup_transmute_enabled = 0  " issues in latex, use vim-succinct instead
-let g:indexed_search_mappings = 0
+let g:indexed_search_mappings = 1  " required even for <Plug> mappings to work
 let g:indexed_search_colors = 0
 let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
 let g:indexed_search_line_info = 1  " show first and last line indicators
@@ -1174,12 +1175,12 @@ let g:splitjoin_trailing_comma = 1
 let g:splitjoin_normalize_whitespace = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
 "
-" Custom plugins or forks, try to load locally if possible!
-" See: https://github.com/junegunn/vim-plug/issues/32
-" Note: This needs to come after or else vim-succinct will not be able to use
-" textobj#user#plugin and (possibly) initial statusline will be complete.
+" Custom plugins or forks and try to load locally if possible!
 " Note: ^= prepends to list and += appends. Also previously added forks here but
 " probably simpler/consistent to simply source files.
+" Note: This needs to come after or else (1) vim-succinct will not be able to use
+" textobj#user#plugin, (2) the initial statusline will possibly be incomplete, and
+" (3) cannot wrap indexed-search plugin with tags file.
 for s:name in [
   \ 'vim-succinct',
   \ 'vim-tags',
