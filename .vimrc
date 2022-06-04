@@ -689,17 +689,19 @@ nnoremap <expr> gO insert#paste_mode() . 'O'
 nnoremap <expr> gR insert#paste_mode() . 'R'
 
 " Jump to definition of keyword under cursor, and show first line of occurence
+" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
+" See: https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
+" Note: LspDefinition may jump to another file in current window. Instead should
+" just use peek to see definition and only use built-in 'gd' local definitions.
 noremap [r <Cmd>LspPreviousReference<CR>
 noremap ]r <Cmd>LspNextReference<CR>
 nnoremap <CR> <Cmd>LspPeekDefinition<CR>
 nnoremap <Leader>& <Cmd>LspSignatureHelp<CR>
 nnoremap <Leader>* <Cmd>LspHover --ui=float<CR>
 nnoremap <Leader>P <Cmd>LspReferences<CR>
-nnoremap <Leader><CR> <Cmd>LspDefinition<CR>
-" nnoremap <CR> <C-]>  " fails most of the time
+nnoremap <Leader><CR> gd
 " nnoremap <CR> [<C-i>  " jump to vim definition
 " nnoremap \<Space> [I  " display occurences
-" nnoremap <Leader>P <Cmd>LspSignatureHelp<CR>
 
 " Forward delete by tabs
 inoremap <expr> <Delete> insert#forward_delete()

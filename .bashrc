@@ -112,13 +112,13 @@ unalias -a
 # Reset functions? Nah, no decent way to do it
 # declare -F # to view current ones
 
-# Flag for if in MacOs
+# Flag for if in macos
 # First, the path management
 _macos=false
 _echo_bashrc 'Variables and modules'
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  uriah*|velouria*|enceladus*)
+  uriah*|velouria*|vortex*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
     #   Show package info with 'brew info package'.
