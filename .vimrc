@@ -491,10 +491,10 @@ noremap M gE
 " Add 'g' version jumping keys that move by only alhanumeric characters (i.e.
 " excluding dots, dashes, underscores). This is consistent with tmux.
 for s:char in ['w', 'b', 'e', 'm']
-  exe 'noremap ' . s:char . ' '
+  exe 'noremap g' . s:char . ' '
     \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
     \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
-    \ . 'g' . s:char . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
+    \ . s:char . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
 endfor
 
 " Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
