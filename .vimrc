@@ -479,14 +479,23 @@ noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
 
+" Navigate to marks or lines with FZF
+nnoremap <Leader>' <Cmd>Marks<CR>
+nnoremap <Leader>" <Cmd>BLines<CR>
+
 " Free up m keys, so ge/gE command belongs as single-keystroke
 " words along with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
 
-" Navigate to marks or lines with FZF
-nnoremap <Leader>' <Cmd>Marks<CR>
-nnoremap <Leader>" <Cmd>BLines<CR>
+" Add 'g' version jumping keys that move by only alhanumeric characters (i.e.
+" excluding dots, dashes, underscores). This is consistent with tmux.
+for s:char in ['w', 'b', 'e', 'm']
+  exe 'noremap ' . s:char . ' '
+    \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
+    \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
+    \ . 'g' . s:char . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
+endfor
 
 " Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
 " and use ' or [1-8]' to jump to a mark.
@@ -1819,6 +1828,7 @@ augroup clear_jumps
     au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
   endif
 augroup END
+
 " Clear writeable registers
 " On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
 " See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
