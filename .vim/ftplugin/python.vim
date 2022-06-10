@@ -5,19 +5,11 @@
 " Includes a couple mappings for converting {'a':1} to a=1
 "-----------------------------------------------------------------------------"
 " Misc settings
+setlocal iskeyword-=.  " exclude period from word definition
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
-setlocal indentexpr=s:pyindent(v:lnum)  " new indent expression
-setlocal iskeyword-=.  " never include period in word definition
 let g:python_highlight_all = 1  " builtin python syntax option
+let g:python_highlight_func_calls = 1  " python-syntax syntax option
 let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
-" let g:python_highlight_func_calls = 0  " python-syntax syntax option
-
-" Enable braceless
-if exists(':BracelessEnable')
-  BracelessEnable
-  " BracelessEnable +indent  " weird bug causes screen view to jump
-  " BracelessEnable +indent +highlight  " highlight slows things down, even on mac
-endif
 
 " Translating dictionaries to keyword input
 noremap <expr> <buffer> cd python#kwargs_dict_expr(1)
@@ -37,3 +29,10 @@ call succinct#add_delims({
   \ 't': "tuple(\r)",
   \ },
   \ 1)
+
+" Define indention-based 'm' text objects
+if exists(':BracelessEnable')
+  BracelessEnable  " enable basic 'm' objects
+  " BracelessEnable +indent  " weird bug causes screen view to jump
+  " BracelessEnable +indent +highlight  " highlight slows things down even on mac
+endif
