@@ -1604,7 +1604,7 @@ ncvarinfo() {
   for file in "${@:2}"; do
     echo "File: $file"
     command ncdump -h "$file" \
-      | grep -E -A100 "$types $1\\(" | grep -E -B100 $'\t\t'"$1:" \
+      | grep -E -A100 "$types $1(\\(.*\\)| ;)" | grep -E -B100 $'\t\t'"$1:" \
       | sed "s/$1://g" | sed $'s/^\t//g'
   done
 }
@@ -1651,7 +1651,7 @@ ncvardetails() {
 # argument to a function; so, need to cat all input arguments with @ into list
 extract() {
   for name in "$@"; do
-    if [ -f "$name" ] ; then
+    if [ -f "$name" ]; then
       case "$name" in
         *.tar.bz2) tar xvjf "$name"    ;;
         *.tar.xz)  tar xf "$name"      ;;
