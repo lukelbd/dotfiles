@@ -136,8 +136,8 @@ call succinct#add_snippets({
   \ 1)
 
 " Surround tools. Currently only overwrite 'r' and 'a' global bracket surrounds
-" the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds
-" Delimiters should also not overlap common text objects like 'w' and 'p'
+" the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds.
+" Delimiters should also not overlap common text objects like 'w' and 'p'.
 " Rejected maps:
 " \ 'p': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
 " \ 'F': "\\begin{wrapfigure}{r}{0.5\\textwidth}\n\\centering\r\\end{wrapfigure}",

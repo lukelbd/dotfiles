@@ -17,7 +17,7 @@ silent! unlet g:fortran_free_source
 silent! unlet g:fortran_fixed_source
 
 " Tool that compiles code, then runs it, then deletes the executable
-function! s:run_fortran_program()
+function! s:run_fortran_program() abort
   update
   if !exists('g:fortran_compiler')
     let g:fortran_compiler = 'gfortran'

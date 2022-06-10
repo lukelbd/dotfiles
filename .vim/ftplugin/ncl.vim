@@ -8,7 +8,7 @@ setlocal commentstring=;%s
 setlocal dictionary+=~/.vim/words/ncl.dic
 
 " Run NCL script
-function! s:run_ncl_script()
+function! s:run_ncl_script() abort
   update
   let cmd = 'ncl -n -Q ' . shellescape(@%)
   call popup#job_win(cmd)

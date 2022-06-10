@@ -9,7 +9,7 @@ let g:vim_markdown_math = 1 " turn on $$ math
 let b:delimitMate_quotes = "\" ' $ ` * _"
 
 " Open markdown files
-function! s:open_markdown_file()
+function! s:open_markdown_file() abort
   update
   if $TERM_PROGRAM ==? ''
     let terminal = 'MacVim'

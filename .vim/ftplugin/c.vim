@@ -2,7 +2,7 @@
 " C settings
 "------------------------------------------------------------------------------"
 " Compile code then run it and delete the executable
-function! s:run_c_program()
+function! s:run_c_program() abort
   update
   if !exists('g:c_compiler')
     let g:c_compiler = 'gcc'

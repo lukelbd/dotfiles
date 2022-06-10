@@ -6,7 +6,7 @@ let b:delimitMate_quotes = "'"
 let b:delimitMate_matchpairs = '(:),{:},[:],<:>'
 
 " Source current vim script
-function! s:source_vim_script()
+function! s:source_vim_script() abort
   update
   source %
   echo 'Sourced ' . expand('%:p:t')
