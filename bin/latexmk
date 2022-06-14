@@ -162,26 +162,30 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
   local ext name names file files
   names=("$@")
   [ "${#names[@]}" -eq 0 ] && return
-  # Detect files and add to lists if not already present
-  files=($(kpsewhich "${names[@]/%/.sty}" "${names[@]/%/.bst}"))
-  for file in "${files[@]}"; do
-    if [[ " ${files[*]} " =~ " ./${file##*/} " ]]; then
-      [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
-    else
-      [[ " ${texfiles[*]##*/} " =~ " ${file##*/} " ]] || texfiles+=("$file")
-    fi
-  done
-  # Try to copy files from templates directory if they weren't found
+  # Copy files from the templates directory if they were not already
   for name in "${names[@]}"; do
-    found=false
     for ext in sty bst; do
       file=${src}/${name}.${ext}
-      if [[ " ${files[*]##*/} " =~ " ${file##*/} " ]]; then
-        found=true
-      elif [ -r "$file" ]; then
+      if [ -r "$file" ] && ! [ -r "./${file##*/}" ]; then
         cp "$file" ./ 2>/dev/null  # ignore 'same file' error e.g. when inside templates directory
         [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
+      fi
+    done
+  done
+  # Detect files and add to lists if not already present
+  files=($(kpsewhich "${names[@]/%/.sty}" "${names[@]/%/.bst}"))
+  for name in "${names[@]}"; do
+    found=false
+    for file in "${files[@]}"; do
+      root=${file##*/}
+      root=${root%.*}
+      [ "$name" == "$root" ] || continue
+      if [[ " ${files[*]} " =~ " ./${file##*/} " ]]; then
         found=true
+        [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
+      else
+        found=true
+        [[ " ${texfiles[*]##*/} " =~ " ${file##*/} " ]] || texfiles+=("$file")
       fi
     done
     $found || raise "${name} not found"  # do not raise error if failed to re-copy file
