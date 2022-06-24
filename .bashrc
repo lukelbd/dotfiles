@@ -87,9 +87,6 @@ if [ -z "$_prompt_set" ]; then  # don't overwrite modifications by supercomputer
 fi
 
 # Message constructor; modify the number to increase number of dots
-_echo_bashrc() {
-  printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
-}
 _load_unloaded() {
   local module   # but _loaded_modules is global
   read -r -a _loaded_modules < <(module --terse list 2>&1)
@@ -99,6 +96,9 @@ _load_unloaded() {
       module load "$module"
     fi
   done
+}
+_echo_bashrc() {
+  printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
 }
 
 #-----------------------------------------------------------------------------#
@@ -984,7 +984,7 @@ _address_port() {
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
   [ $# -gt 1 ] && echo 'Error: Too many input args.' && return 1
   case $host in
-    uriah*|velouria*|enceladus*)
+    uriah*|velouria*|vortex*)
       address=localhost
       port=2000
       ;;
