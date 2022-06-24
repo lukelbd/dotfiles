@@ -163,10 +163,12 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
   names=("$@")
   [ "${#names[@]}" -eq 0 ] && return
   # Copy files from the templates directory if they were not already
+  # NOTE: Test 'newer than' returns true if second file does not exist.
   for name in "${names[@]}"; do
     for ext in sty bst; do
       file=${src}/${name}.${ext}
-      if [ -r "$file" ] && ! [ -r "./${file##*/}" ]; then
+      if [ -r "$file" ] && [ "$file" -nt "./${file##*/}" ]; then
+        echoerr "Copying file ${file##*/}."
         cp "$file" ./ 2>/dev/null  # ignore 'same file' error e.g. when inside templates directory
         [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
       fi
