@@ -208,9 +208,11 @@ for file in "${filenames[@]}"; do
   packages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level deep
   texfind "${packages[@]}"
   # Set compiler and viewer options
-  echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe Acrobat Reader DC'
-  echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
+  # WARNING: lualatex is mostly a superset of xelatex and detection must be
+  # prioritized for beamer or else get weird errors e.g. missing tex gyre fonts.
   echo "${packages[*]}" | grep -E '\bfontspec\b|\bxltxtra\b' &>/dev/null && latex=xelatex
+  echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
+  echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe Acrobat Reader DC'
 done
 
 # Error and info messages
