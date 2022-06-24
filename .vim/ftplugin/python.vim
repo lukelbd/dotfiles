@@ -7,6 +7,7 @@
 " Misc settings
 setlocal iskeyword-=.  " exclude period from word definition
 setlocal tabstop=4 softtabstop=4 shiftwidth=4
+let g:python_slow_sync = 0  " use fast syncing
 let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_func_calls = 1  " python-syntax syntax option
 let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
