@@ -431,7 +431,7 @@ augroup popup_setup
   if exists('##TerminalWinOpen')
     au TerminalWinOpen * call popup#popup_setup()
   endif
-  for s:ft in s:filetypes
+  for s:ft in s:popup_filetypes
     exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . (s:ft ==# 'gitcommit') . ')'
   endfor
 augroup END
@@ -601,8 +601,9 @@ noremap " "*
 " Turn on for filetypes containing text destined for users
 augroup spell_toggle
   au!
-  exe 'au FileType ' . join(s:lang_filetypes, ',')
-    \ 'if expand("<afile>") != "__doc__" | call switch#spellcheck(1) | endif'
+  for s:ft in s:lang_filetypes
+    exe 'au FileType ' . s:ft . ' if expand("<afile>") != "__doc__" | call switch#spellcheck(1) | endif'
+  endfor
 augroup END
 command! SpellToggle call switch#spellcheck(<args>)
 command! LangToggle call switch#spelllang(<args>)
@@ -615,8 +616,9 @@ nnoremap <Leader>K <Cmd>call switch#spelllang(0)<CR>
 " Turn on for filetypes containing raw possibly heavily wrapped data
 augroup copy_toggle
   au!
-  exe 'au FileType ' . join(s:data_filetypes + s:copy_filetypes, ',')
-    \ . ' call switch#copy(1)'
+  for s:ft in s:data_filetypes + s:copy_filetypes
+    exe 'au FileType ' . s:ft . ' call switch#copy(1)'
+  endfor
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 nnoremap <Leader>c <Cmd>CopyToggle 1<CR>

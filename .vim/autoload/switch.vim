@@ -64,13 +64,13 @@ function! switch#copy(...) abort
       endif
       exe 'let &l:' . prop . ' = 0'
     endfor
-    echo 'Copy mode enabled.'
+    echom 'Copy mode enabled.'
   else
     for prop in copyprops
       exe 'silent! let &l:' . prop . ' = b:' . prop
       exe 'silent! unlet b:' . prop
     endfor
-    echo 'Copy mode disabled.'
+    echom 'Copy mode disabled.'
   endif
 endfunction
 
@@ -148,9 +148,9 @@ function! switch#spelllang(...)
   endif
   if uk
     setlocal spelllang=en_gb
-    echo 'Current language: UK english'
+    echom 'Current language: UK english'
   else
     setlocal spelllang=en_us
-    echo 'Current language: US english'
+    echom 'Current language: US english'
   endif
 endfunction
