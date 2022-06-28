@@ -23,13 +23,19 @@
 " instead of Plug 'tpope/vim-repeat' or else get errors running vim on new installs.
 let &t_te=''
 let &t_Co=256
-let s:linelength = 88
 exe 'runtime autoload/repeat.vim'
 if !exists('*repeat#set')
   echohl WarningMsg
   echom 'Warning: vim-repeat unavailable, some features will be unavailable.'
   echohl None
 endif
+let s:line_length = 88
+let s:copy_filetypes = ['bib', 'log', 'qf']  " for wrapping and copy toggle
+let s:data_filetypes = ['csv', 'dosini', 'json', 'text']  " for just copy toggle
+let s:lang_filetypes = ['html', 'liquid', 'markdown', 'rst', 'tex']  " for wrapping and spell toggle
+let s:popup_filetypes = ['__doc__', 'ale-preview', 'codi', 'diff',
+  \ 'fugitive', 'fugitiveblame', 'git', 'gitcommit', 'job',
+  \ '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug']  " for popup windows
 
 " Global settings
 set encoding=utf-8
@@ -129,7 +135,7 @@ function! s:buffer_overrides() abort
   setlocal formatoptions=lrojcq
   setlocal nojoinspaces
   setlocal linebreak
-  let &l:textwidth = s:linelength
+  let &l:textwidth = s:line_length
   let &l:wrapmargin = 0
   syntax match customShebang '^\%1l#!.*$'  " shebang highlighting
   syntax match customHeader =^# \zs#\+.*$= containedin=.*Comment.*
@@ -414,11 +420,8 @@ nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
-let s:filetypes = [
-  \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git',
-  \ 'gitcommit', 'job', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug',
-  \ ]
-let [g:tags_skip_filetypes, g:tabline_skip_filetypes] = [s:filetypes, s:filetypes]
+let g:tags_skip_filetypes = s:popup_filetypes
+let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
   au!
   au FileType help call popup#help_setup()
@@ -594,7 +597,27 @@ noremap X "_X
 noremap ' "_
 noremap " "*
 
-" Copy mode ('paste mode' accessible with [v and ]v via unimpaired.vim)
+" Spellcheck (really is a builtin plugin, hence why it's in this section)
+" Turn on for filetypes containing text destined for users
+augroup spell_toggle
+  au!
+  exe 'au FileType ' . join(s:lang_filetypes, ',')
+    \ 'if expand("<afile>") != "__doc__" | call switch#spellcheck(1) | endif'
+augroup END
+command! SpellToggle call switch#spellcheck(<args>)
+command! LangToggle call switch#spelllang(<args>)
+nnoremap <Leader>l <Cmd>call switch#spellcheck(1)<CR>
+nnoremap <Leader>L <Cmd>call switch#spellcheck(0)<CR>
+nnoremap <Leader>k <Cmd>call switch#spelllang(1)<CR>
+nnoremap <Leader>K <Cmd>call switch#spelllang(0)<CR>
+
+" Copy mode ('paste mode' accessible with 'g' insert mappings)
+" Turn on for filetypes containing raw possibly heavily wrapped data
+augroup copy_toggle
+  au!
+  exe 'au FileType ' . join(s:data_filetypes + s:copy_filetypes, ',')
+    \ . ' call switch#copy(1)'
+augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 nnoremap <Leader>c <Cmd>CopyToggle 1<CR>
 nnoremap <Leader>C <Cmd>CopyToggle 0<CR>
@@ -602,21 +625,6 @@ nnoremap <Leader>C <Cmd>CopyToggle 0<CR>
 " Caps lock toggle and insert mode map that toggles it on and off
 inoremap <expr> <C-v> insert#lang_map()
 cnoremap <expr> <C-v> insert#lang_map()
-
-" Spellcheck (really is a builtin plugin, hence why it's in this section)
-" Turn on for certain filetypes
-augroup spell_toggle
-  au!
-  au FileType tex,html,markdown,rst if expand('<afile>') != '__doc__' | call switch#spellcheck(1) | endif
-augroup END
-
-" Toggle spelling on and off
-command! SpellToggle call switch#spellcheck(<args>)
-command! LangToggle call switch#spelllang(<args>)
-nnoremap <Leader>l <Cmd>call switch#spellcheck(1)<CR>
-nnoremap <Leader>L <Cmd>call switch#spellcheck(0)<CR>
-nnoremap <Leader>k <Cmd>call switch#spelllang(1)<CR>
-nnoremap <Leader>K <Cmd>call switch#spelllang(0)<CR>
 
 " Add and remove from dictionary
 nnoremap <Leader>f zg
@@ -1221,8 +1229,8 @@ call plug#end()
 " Add weird mappings powered by Karabiner. Note that custom delimiters
 " are declared inside vim-succinct plugin functions rather than here.
 if s:plug_active('vim-succinct')
-  let g:succinct_surround_prefix = '<C-s>'
-  let g:succinct_snippet_prefix = '<C-a>'
+  let g:succinct_surround_prefix = '<C-a>'
+  let g:succinct_snippet_prefix = '<C-s>'
   let g:succinct_prevdelim_map = '<F1>'
   let g:succinct_nextdelim_map = '<F2>'
 endif
@@ -1230,8 +1238,7 @@ endif
 " Additional mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 " Also add custom filetype log and plugin filetype ale-preview to list.
 if s:plug_active('vim-scrollwrapped')
-  let g:scrollwrapped_wrap_filetypes = [
-    \ 'ale-preview', 'bib', 'liquid', 'log', 'markdown', 'rst', 'tex']
+  let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
   noremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   noremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
   noremap <Leader>w <Cmd>WrapToggle 1<CR>
@@ -1501,7 +1508,7 @@ if s:plug_active('ale')
   let s:shellcheck_ignore =
     \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
     \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
-  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:linelength
+  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:line_length
   let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
 
   " Flake8 ignore list (also apply to autopep8):
@@ -1523,7 +1530,7 @@ if s:plug_active('ale')
   let s:flake8_ignore =
     \ 'W503,E402,E221,E241,E731,E741,'
     \ . 'D102,D107,D105,D200,D204,D205,D301,D400,D401'
-  let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . s:flake8_ignore
+  let g:ale_python_flake8_options =  '--max-line-length=' . s:line_length . ' --ignore=' . s:flake8_ignore
 
   " Related plugins requiring similar exceptions
   " Isort plugin docs: https://github.com/fisadev/vim-isort
@@ -1531,20 +1538,20 @@ if s:plug_active('ale')
   " Autopep8 plugin docs (or :help autopep8): https://github.com/tell-k/vim-autopep8 (includes a few global variables)
   " Autoformat plugin docs: https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
   let g:autopep8_ignore = s:flake8_ignore
-  let g:autopep8_max_line_length = s:linelength
+  let g:autopep8_max_line_length = s:line_length
   let g:autopep8_disable_show_diff = 1
-  let g:black_linelength = s:linelength
+  let g:black_linelength = s:line_length
   let g:black_skip_string_normalization = 1
   let g:vim_isort_python_version = 'python3'
   let g:vim_isort_config_overrides = {
     \ 'include_trailing_comma': 'true',
     \ 'force_grid_wrap': 0,
     \ 'multi_line_output': 3,
-    \ 'line_length': s:linelength,
+    \ 'line_length': s:line_length,
     \ }
   let g:formatdef_mpython =
-    \ '"isort --trailing-comma --force-grid-wrap 0 --multi-line 3 --line-length ' . s:linelength . ' - | '
-    \ . 'black --quiet --skip-string-normalization --line-length ' . s:linelength . ' -"'
+    \ '"isort --trailing-comma --force-grid-wrap 0 --multi-line 3 --line-length ' . s:line_length . ' - | '
+    \ . 'black --quiet --skip-string-normalization --line-length ' . s:line_length . ' -"'
   let g:formatters_python = ['mpython']  " multiple formatters
   let g:formatters_fortran = ['fprettify']
 endif
