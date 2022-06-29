@@ -893,6 +893,7 @@ let g:indexed_search_mappings = 1  " required even for <Plug> mappings to work
 let g:indexed_search_colors = 0
 let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
 let g:indexed_search_line_info = 1  " show first and last line indicators
+let g:indexed_search_max_lines = 100000  " increase from default of 3000 for log files
 let g:indexed_search_shortmess = 1  " shorter message
 let g:indexed_search_numbered_only = 1  " only show numbers
 let g:indexed_search_n_always_searches_forward = 1  " after ? still search forward
