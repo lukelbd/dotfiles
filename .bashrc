@@ -977,7 +977,7 @@ _is_empty() {
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
 # nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
 # random, 1-2 are obvious first and second choices, 5 is nice round number, 6 is last)
-# WARNING: For ports lower than 1000 have to be ROOT so instead use ports ranging
+# WARNING: For ports lower than 1024 have to be ROOT so instead use ports ranging
 # from 2000 to 9000. See: https://stackoverflow.com/a/67240407/4970632
 _address_port() {
   local address port host
