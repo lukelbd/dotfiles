@@ -267,13 +267,14 @@ esac
 # NOTE: Install deno with mamba to get correct binaries. Using install script
 # can have issues with CentOS 7: https://github.com/denoland/deno/issues/1658
 export DENO_INSTALL=$HOME/.deno  # ddc.vim typescript dependency
-export PATH=$HOME/.local/bin:$PATH  # local pip install location
-export PATH=$HOME/.iterm2:$PATH  # iterm utilities
-export PATH=$HOME/node/bin:$PATH  # javascript commands
 export PATH=$DENO_INSTALL/bin:$PATH  # deno commands (see https://deno.land)
+export PATH=$HOME/node/bin:$PATH  # node commands
 export PATH=$HOME/go/bin:$PATH  # go scripts
+export PATH=$HOME/nvim/bin:$PATH  # neovim location
+export PATH=$HOME/.iterm2:$PATH  # iterm utilities
+export PATH=$HOME/.local/bin:$PATH  # pip install location
+export PATH=$HOME/ncparallel:$PATH  # utility location
 export PATH=$HOME/bin:$PATH  # custom scripts
-export PATH=$HOME/ncparallel:$PATH  # custom repo
 
 # Various python stuff
 # NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
@@ -284,9 +285,9 @@ export PYTHONUNBUFFERED=1  # must set this or python prevents print statements f
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
-_local_projects=(timescales transport constraints persistence)
-_shared_projects=(drycore idealized cmip-data reanalysis-data)
-for _project in "${_local_projects[@]}" "${_shared_projects[@]}"; do
+_science_projects=(drycore timescales transport constraints persistence)
+_general_projects=(cmip-data reanalysis-data shared)
+for _project in "${_science_projects[@]}" "${_general_projects[@]}"; do
     if [ -r "$HOME/science/$_project" ]; then
       export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
     elif [ -r "$HOME/$_project" ]; then
@@ -1477,8 +1478,8 @@ namelist() {
   cut -d= -f1 -s "$file" | grep -v '!' | xargs
 }
 
-# NetCDF tools (should just remember these)
-# NCKS behavior very different between versions, so use ncdump instead
+# NetCDF tools (should just remember these).
+# ncks behavior very different between versions, so use ncdump instead
 # * Note if HDF4 is installed in your anaconda distro, ncdump points to *that location*
 #   before the homebrew install location 'brew tap homebrew/science, brew install cdo'.
 # * This is bad, because the current version can't read netcdf4 files; you really
@@ -1486,7 +1487,7 @@ namelist() {
 nchelp() {
   echo "Available commands:"
   echo "ncenv ncinfo ncdims ncvars ncglobals
-        ncin nclist ncvarlist ncdimlist
+        nclist ncdimlist ncvarlist
         ncvarinfo ncvardump ncvartable ncvardetails" | column -t
 }
 ncenv() {  # show variables on a compute cluster
@@ -1512,13 +1513,14 @@ ncversion() {
 }
 
 # General summaries
-ncglobals() {
-  # show just the global attributes
+ncinfo() {
+  # show just the variable info (and linebreak before global attributes)
+  # command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
   local file
-  [ $# -lt 1 ] && echo "Usage: ncglobals FILE" && return 1
+  [ $# -lt 1 ] && echo "Usage: ncinfo FILE" && return 1
   for file in "$@"; do
     echo "File: $file"
-    command ncdump -h "$file" | grep -A100 ^//
+    command ncdump -h "$file" | sed '1,1d;$d'  # trims first and last lines; do not need these
   done
 }
 ncdims() {
@@ -1532,16 +1534,6 @@ ncdims() {
       | tr -d ';' | tr -s ' ' | column -t
   done
 }
-ncinfo() {
-  # show just the variable info (and linebreak before global attributes)
-  # command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
-  local file
-  [ $# -lt 1 ] && echo "Usage: ncinfo FILE" && return 1
-  for file in "$@"; do
-    echo "File: $file"
-    command ncdump -h "$file" | sed '1,1d;$d'  # trims first and last lines; do not need these
-  done
-}
 ncvars() {
   # the space makes sure it isn't another variable that has trailing-substring
   # identical to this variable, -A prints TRAILING lines starting from FIRST match,
@@ -1552,6 +1544,15 @@ ncvars() {
     echo "File: $file"
     command ncdump -h "$file" | grep -A100 "^variables:$" | sed '/^$/q' | \
       sed $'s/^\t//g' | grep -v "^$" | grep -v "^variables:$"
+  done
+}
+ncglobals() {
+  # show just the global attributes
+  local file
+  [ $# -lt 1 ] && echo "Usage: ncglobals FILE" && return 1
+  for file in "$@"; do
+    echo "File: $file"
+    command ncdump -h "$file" | grep -A100 ^//
   done
 }
 
@@ -1609,9 +1610,9 @@ ncvarinfo() {
   done
 }
 ncvardump() {
-  # dump variable contents (first argument) from file (second argument)
-  # tail -r reverses stuff, then can grep to get the 1st match and use the before flag to print stuff
-  # before (need extended grep to get the coordinate name), then trim the first line (curly brace) and reverse
+  # dump variable contents (first argument) from file (second argument), using grep
+  # to print everything before the variable data section starts, then using sed to
+  # trim the first curly brace line and re-reversing.
   local file
   [ $# -lt 2 ] && echo "Usage: ncvardump VAR FILE" && return 1
   for file in "${@:2}"; do
@@ -1622,10 +1623,9 @@ ncvardump() {
   done
 }
 ncvartable() {
-  # parse the CDO parameter table; ncvarinfo replaces this
-  # procedure is ideal for "sanity checks" of data; just test one timestep
-  # slice at every level; the tr -s ' ' trims multiple whitespace
-  # to single and the column command re-aligns columns
+  # print a summary table of the data at each level for "sanity checking"
+  # just tests one timestep slice at every level; the tr -s ' ' trims multiple
+  # whitespace to single and the column command re-aligns columns after filtering
   local file
   [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   for file in "${@:2}"; do
