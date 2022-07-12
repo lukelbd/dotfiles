@@ -1188,7 +1188,9 @@ Plug 'lilydjwg/colorizer'  " only in macvim or when &t_Co == 256
 " Plug 'ohjames/tabdrop'  " now apply similar solution with tabline#write
 " Plug 'beloglazov/vim-online-thesaurus'  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
 " Plug 'terryma/vim-multiple-cursors'  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
+" Plug 'vim-scripts/LargeFile'  " disable syntax highlighting for large files
 Plug 'AndrewRadev/splitjoin.vim'  " single-line multi-line transition hardly every needed
+let g:LargeFile = 1  " megabyte limit
 let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_join_mapping  = 'cJ'
 let g:splitjoin_trailing_comma = 1
