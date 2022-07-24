@@ -285,8 +285,8 @@ export PYTHONUNBUFFERED=1  # must set this or python prevents print statements f
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
-_science_projects=(drycore timescales transport constraints persistence)
-_general_projects=(cmip-data reanalysis-data shared)
+_science_projects=(drycore constraints persistence timescales transport)
+_general_projects=(cmip-data reanalysis-data idealized coupled)
 for _project in "${_science_projects[@]}" "${_general_projects[@]}"; do
     if [ -r "$HOME/science/$_project" ]; then
       export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
