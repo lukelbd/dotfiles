@@ -787,8 +787,8 @@ nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 " maybe because first parts of match are identical?
 noremap <expr> \c format#replace_regex_expr(
   \ 'Removed comments.',
-  \ '^\s*' . utils#comment_char() . '.\+$\n', '',
-  \ '\s\+' . utils#comment_char() . '.\+$', '')
+  \ '^\s*' . comment#comment_char() . '.\+$\n', '',
+  \ '\s\+' . comment#comment_char() . '.\+$', '')
 
 " Replace tabs with spaces
 noremap <expr> \<Tab> format#replace_regex_expr(
@@ -1628,7 +1628,10 @@ if s:plug_active('vim-easy-align')
     \   ';': {'pattern': ';\+'},
     \ }
   let g:easy_comment_delimiter = {
-    \   'c': {'pattern': '\s' . (empty(utils#comment_char()) ? nr2char(0) : utils#comment_char())},
+    \   'c': {
+    \       'pattern': '\s'
+    \       . (empty(comment#comment_char()) ? nr2char(0) : comment#comment_char())
+    \   },
     \ }
   augroup easy_align
     au!
