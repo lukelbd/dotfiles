@@ -49,7 +49,7 @@ endfunction
 
 " Return regexes for search
 function! s:search_item(optional)
-  let head = '^\(\s*\%(' . utils#comment_char() . '\s*\)\?\)'  " leading spaces or comment
+  let head = '^\(\s*\%(' . comment#comment_char() . '\s*\)\?\)'  " leading spaces or comment
   let indicator = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
   let tail = '\(.*\)$'  " remainder of line
   if a:optional

@@ -30,12 +30,21 @@ if !exists('*repeat#set')
   echohl None
 endif
 let s:line_length = 88
-let s:copy_filetypes = ['bib', 'log', 'qf']  " for wrapping and copy toggle
-let s:data_filetypes = ['csv', 'dosini', 'json', 'text']  " for just copy toggle
-let s:lang_filetypes = ['html', 'liquid', 'markdown', 'rst', 'tex']  " for wrapping and spell toggle
-let s:popup_filetypes = ['__doc__', 'ale-preview', 'codi', 'diff',
-  \ 'fugitive', 'fugitiveblame', 'git', 'gitcommit', 'job',
-  \ '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug']  " for popup windows
+let s:copy_filetypes = [
+  \ 'bib', 'log', 'qf'
+  \ ]  " for wrapping and copy toggle
+let s:data_filetypes = [
+  \ 'csv', 'dosini', 'json', 'text'
+  \ ]  " for just copy toggle
+let s:lang_filetypes = [
+  \ 'html', 'liquid', 'markdown', 'rst', 'tex'
+  \ ]  " for wrapping and spell toggle
+let s:popup_filetypes = [
+  \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ ]  " for popup toggle
+let s:popup_filetypes += [
+  \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug'
+  \ ] " for popup toggle
 
 " Global settings
 set encoding=utf-8
@@ -299,8 +308,10 @@ endfor
 "-----------------------------------------------------------------------------"
 " Useful commands
 " Note: This is analogous to :scriptnames
-command! -nargs=? Abspath call utils#abs_path(<f-args>)
-command! -nargs=0 Bufpaths call utils#open_bufs()
+command! -nargs=? ShowPath call utils#show_path(<f-args>)
+command! -nargs=0 ShowBufs call utils#show_bufs()
+command! -nargs=0 CloseBufs call utils#close_bufs()
+command! -nargs=0 ClearRegs call utils#clear_regs()
 
 " Opening file in current directory and some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
@@ -323,12 +334,12 @@ nnoremap <Leader>j <Cmd>call file#exists()<CR>
 nnoremap <Leader>i <Cmd>call file#directory_descend()<CR>
 nnoremap <Leader>I <Cmd>call file#directory_return()<CR>
 
-" Save and quit, also test whether the :q action closed the entire tab
-" hello[goodbye]
+" Save and quit, also test whether ttab :q action closed the entire tab
+" Note: Since closing big sessions can be dangerous, do not use mappings.
+" Require manually invoking using :qall or :quitall
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
 nnoremap <C-w> <Cmd>call file#close_window()<CR>
-nnoremap <C-e> <Cmd>call file#close_tab()<CR>
-nnoremap <C-q> <Cmd>quitall<CR>
+nnoremap <C-q> <Cmd>call file#close_tab()<CR>
 
 " Renaming things
 command! -nargs=* -complete=file -bang Rename call file#rename('<args>', '<bang>')
@@ -1842,13 +1853,8 @@ augroup clear_jumps
 augroup END
 
 " Clear writeable registers
-" On some vim versions [] fails (is ideal, because removes from :registers), but '' will at least empty them out
-" See thread: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
 " Warning: On cheyenne, get lalloc error when calling WipeReg, strange
-if $HOSTNAME !~# 'cheyenne'
-  command! WipeReg for i in range(34, 122) | silent! call setreg(nr2char(i), '') | silent! call setreg(nr2char(i), []) | endfor
-  WipeReg
-endif
+if $HOSTNAME !~# 'cheyenne' | call utils#clear_regs() | endif
 doautocmd <nomodeline> BufEnter  " trigger buffer-local overrides for this file
 nohlsearch  " turn off highlighting at startup
 redraw!  " weird issue sometimes where statusbar disappears

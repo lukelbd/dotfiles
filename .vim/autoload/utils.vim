@@ -1,17 +1,33 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
-" Absolute path
-function! utils#abs_path(...) abort
-  let path = a:0 ? a:1 : @%
-  echom 'Path: ' . fnamemodify(path, ':p')
+" Clear writable registers. On some vim versions [] fails (is ideal,
+" because removes from :registers), but '' will at least empty them out.
+" See: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
+function! utils#clear_regs()
+  for i in range(34, 122)
+    silent! call setreg(nr2char(i), '')
+    silent! call setreg(nr2char(i), [])
+  endfor
 endfunction
 
-" Comment character
-function! utils#comment_char() abort
-  let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
-  let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
-  return escape(string, '[]\.*$~')  " escape magic characters
+" Close buffers that do not appear in windows
+" See: https://stackoverflow.com/a/7321131/4970632
+function! utils#close_bufs()
+  let nums = []
+  for t in range(1, tabpagenr('$'))
+    call extend(nums, tabpagebuflist(t))
+  endfor
+  let names = []
+  for b in range(1, bufnr('$'))
+    if bufexists(b) && !getbufvar(b, '&mod') && index(nums, b) == -1
+      call add(names, bufname(b))
+      silent exe 'bwipeout ' b
+    endif
+  endfor
+  if !empty(names)
+    echom 'Closed invisible buffer(s): ' . join(names, ', ')
+  endif
 endfunction
 
 " Better grep, with limited regex translation
@@ -25,14 +41,20 @@ function! utils#grep_pattern(regex) abort
   return result
 endfunction
 
-" List the active buffer names
-function! utils#open_bufs() abort
+" Show the active buffer names
+function! utils#show_bufs() abort
   let result = {}
   for nr in range(0, bufnr('$'))
     if buflisted(nr) | let result[nr] = bufname(nr) | endif
   endfor
   echo join(values(map(result, "v:key . ': ' . v:val")), "\n")
   return result
+endfunction
+
+" Show the absolute path
+function! utils#show_path(...) abort
+  let path = a:0 ? a:1 : @%
+  echom 'Path: ' . fnamemodify(path, ':p')
 endfunction
 
 " Reverse the selected lines

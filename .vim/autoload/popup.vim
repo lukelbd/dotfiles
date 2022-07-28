@@ -74,7 +74,7 @@ function! popup#codi_preprocess(line) abort
   return substitute(a:line, '�[?2004l', '', '')
 endfunction
 function! popup#codi_rephrase(text) abort
-  let pat = '\s*' . utils#comment_char() . '[^\n]*\(\n\|$\)'  " remove comments
+  let pat = '\s*' . comment#comment_char() . '[^\n]*\(\n\|$\)'  " remove comments
   let text = substitute(a:text, pat, '\1', 'g')
   let pat = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
   let text = substitute(text, pat, '\1', 'g')

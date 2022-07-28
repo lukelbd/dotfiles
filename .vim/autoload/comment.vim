@@ -10,6 +10,13 @@ function! s:indent_spaces() abort  " match current indent level
   return repeat(' ', col == -1 ? 0 : col - 1)
 endfunction
 
+" Return the comment character
+function! comment#comment_char() abort
+  let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
+  let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
+  return escape(string, '[]\.*$~')  " escape magic characters
+endfunction
+
 " Begin comment in insert mode
 function! comment#comment_insert() abort
   let parts = split(&l:commentstring, '%s')
@@ -18,7 +25,7 @@ endfunction
 
 " Separator of dashes matching current line length
 function! comment#section_line(fill, ...) abort
-  let cchar = utils#comment_char()
+  let cchar = comment#comment_char()
   let indent = s:indent_spaces()
   let nfill = match(getline('.'), '\s*$') - len(indent)  " location of last non-whitespace char
   call append(line('.'), indent . repeat(a:fill, nfill))
@@ -29,7 +36,7 @@ endfunction
 
 " Separators of arbitrary length
 function! comment#header_line(fill, nfill, suffix, ...) abort " inserts above by default; most common use
-  let cchar = utils#comment_char()
+  let cchar = comment#comment_char()
   let indent = s:indent_spaces()
   let suffix = a:suffix ? cchar : ''
   let nfill = (a:nfill - len(indent)) / len(a:fill) " divide by length of fill character
@@ -44,7 +51,7 @@ endfunction
 
 " Inline style of format '# ---- Hello world! ----'
 function! comment#header_inline(ndash) abort
-  let cchar = utils#comment_char()
+  let cchar = comment#comment_char()
   let indent = s:indent_spaces()
   let title = s:input_title()
   if empty(title) | return | endif
@@ -54,7 +61,7 @@ endfunction
 " Inline style of format '# Hello world! #'
 function! comment#header_incomment() abort
   let indent = s:indent_spaces()
-  let cchar = utils#comment_char()
+  let cchar = comment#comment_char()
   let title = s:input_title()
   if empty(title) | return | endif
   call append(line('.'), indent . cchar . ' ' . title . ' ' . cchar)
@@ -63,6 +70,6 @@ endfunction
 " Arbtirary message above this line, matching indentation level
 function! comment#message(message) abort
   let indent = s:indent_spaces()
-  let cchar = utils#comment_char()
+  let cchar = comment#comment_char()
   call append(line('.') - 1, indent . cchar . ' ' . a:message)
 endfunction
