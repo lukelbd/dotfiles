@@ -753,9 +753,10 @@ qgrep() {
 # Refactor, coding, and logging tools
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
 # occurences of file paths (should be 1 but this is convenient way to record them).
-todo() { qfind . -print -a -exec grep -n '\bTODO\b' {} \;; }
-note() { qfind . -print -a -exec grep -n '\bNOTE\b' {} \;; }
-fixme() { qfind . -print -a -exec grep -n '\bFIXME\b' {} \;; }
+todo() { qfind . -print -a -exec grep -i -n '\btodo:\b' {} \;; }
+note() { qfind . -print -a -exec grep -i -n '\bnote:\b' {} \;; }
+error() { qfind . -print -a -exec grep -i -n '\berror:\b' {} \;; }
+warning() { qfind . -print -a -exec grep -i -n '\bwarning:\b' {} \;; }
 refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
@@ -1962,6 +1963,8 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
   }
 
   # Activate conda
+  # NOTE: This calls '__conda_activate activate' which runs the command list returned
+  # by '__conda_exe shell.posix activate'. Can time things by inspecting this list.
   mamba activate base
   echo 'done'
 fi

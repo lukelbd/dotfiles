@@ -1613,9 +1613,9 @@ if s:plug_active('vim-gitgutter')
   command! -nargs=* Gstatus Git status <args>
 endif
 
-" Easy-align with delimiters for case/esac block parens and seimcolons, chained
-" && and || symbols, and trailing comments (with two spaces ignoring commented lines)
-" Note: See test.txt for easy-align tests.
+" Easy-align with delimiters for case/esac block parens and seimcolons, chained &&
+" and || symbols, and trailing comments (with two spaces ignoring commented lines).
+" See file empty.txt for easy-align tests.
 " Note: Use <Left> to stick delimiter to left instead of right and use * to align
 " by all delimiters instead of the default of 1 delimiter.
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
