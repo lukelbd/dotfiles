@@ -1245,8 +1245,8 @@ call plug#end()
 " Add weird mappings powered by Karabiner. Note that custom delimiters
 " are declared inside vim-succinct plugin functions rather than here.
 if s:plug_active('vim-succinct')
-  let g:succinct_surround_prefix = '<C-a>'
-  let g:succinct_snippet_prefix = '<C-s>'
+  let g:succinct_surround_prefix = '<C-s>'
+  let g:succinct_snippet_prefix = '<C-e>'
   let g:succinct_prevdelim_map = '<F1>'
   let g:succinct_nextdelim_map = '<F2>'
 endif
