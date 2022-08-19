@@ -962,19 +962,6 @@ alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 SSH_ENV="$HOME/.ssh/environment"  # for below
 
-# Helper function: return if directory is empty or essentially empty
-# See: https://superuser.com/a/352387/506762
-_is_empty() {
-  local contents
-  [ -d "$1" ] || return 0  # does not exist, so empty
-  read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
-  if [ ${#contents[@]} -eq 0 ] || [ ${#contents[@]} -eq 1 ] && [ "${contents##*/}" == .DS_Store ]; then
-    return 0  # this can happen even if you delete all files
-  else
-    return 1  # non-empty
-  fi
-}
-
 # Define address names and ports. To enable passwordless login, use "ssh-copy-id $host".
 # For cheyenne, to hook up to existing screen/tmux sessions, pick one of the 1-6 login
 # nodes. From testing it seems 4 is most empty (probably human psychology thing; 3 seems
@@ -1234,6 +1221,19 @@ figcp() {
   _scp_bulk "${flags[@]}" "$((1 - forward))" $@ "$dest" "$src"  # address may expand to nothing
 }
 
+# Helper function: return if directory is empty or essentially
+# empty. See: https://superuser.com/a/352387/506762
+_is_empty() {
+  local contents
+  [ -d "$1" ] || return 0  # does not exist, so empty
+  read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
+  if [ ${#contents[@]} -eq 0 ] || [ ${#contents[@]} -eq 1 ] && [ "${contents##*/}" == .DS_Store ]; then
+    return 0  # this can happen even if you delete all files
+  else
+    return 1  # non-empty
+  fi
+}
+
 # Generate SSH file system
 # For pros and cons see: https://unix.stackexchange.com/q/25974/112647
 # For how to install sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
@@ -1251,20 +1251,24 @@ mount() {
     mdata?) host=monde ;;
     *)      host=$location ;;
   esac
-  address=$(_address $host) || { echo "Error: Unknown host."; return 1; }
+  address=$(_address $host) || {
+    echo "Error: Unknown host $host."
+    return 1
+  }
+  _is_empty "$HOME/$host" || {
+    echo "Error: Directory \"$HOME/$host\" already exists, and is non-empty!"
+    return 1
+  }
   echo "Server: $host"
   echo "Address: $address"
-  if ! _is_empty "$HOME/$host"; then
-    echo "Error: Directory \"$HOME/$host\" already exists, and is non-empty!" && return 1
-  fi
 
   # Directory on remote server
   # NOTE: Using tilde ~ does not seem to work
   case $location in
-    glade)      location="/glade/scratch/davislu" ;;
-    mdata?)     location="/${location}/ldavis"    ;;  # mdata1, mdata2, ...
-    cheyenne?)  location="/glade/u/home/davislu"  ;;
-    *)          location="/home/ldavis"           ;;
+    glade)     location="/glade/scratch/davislu" ;;
+    mdata?)    location="/${location}/ldavis"    ;;  # mdata1, mdata2, ...
+    cheyenne?) location="/glade/u/home/davislu"  ;;
+    *)         location="/home/ldavis"           ;;
   esac
 
   # Initiate (objects are meant to help speed up connection)
@@ -1283,16 +1287,14 @@ unmount() {
   [ $# -ne 1 ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
   local server="$1"
   echo "Server: $server"
-  command umount "$HOME/$server"
-  # shellcheck disable=2181
-  if [ $? -ne 0 ]; then
-    diskutil umount force "$HOME/$server" || {
-      echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
-      return 1
-    }
-  elif ! _is_empty "$HOME/$server"; then
-    echo "Warning: Leftover mount folder appears to be non-empty!" && return 1
-  fi
+  command umount "$HOME/$server" || diskutil umount force "$HOME/$server" || {
+    echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
+    return 1
+  }
+  _is_empty "$HOME/$server" || {
+    echo "Warning: Leftover mount folder appears to be non-empty!"
+    return 1
+  }
   rm -r "${HOME:?}/$server"
 }
 
