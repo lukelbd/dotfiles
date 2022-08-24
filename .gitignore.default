@@ -1,15 +1,20 @@
+# Untracked folders
+manuscripts/
+meetings/
+figures/
+videos/
+figs*/
+vids*/
+
+# Trash folders
+old/
+trash/
+garbage/
+
 # Vim session files and swap files
 tags
 .vimsession
 .*.sw[a-z]
-
-# Paper folders
-manuscripts
-meetings
-figures
-videos
-figs*
-vids*
 
 # Python stuff
 *.pyc
@@ -22,11 +27,6 @@ __pycache__
 *.log
 *.tmp
 *.bak
-
-# Trash
-old
-trash
-garbage
 
 # Compiled source
 *.com
