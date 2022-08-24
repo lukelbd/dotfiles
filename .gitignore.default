@@ -1,12 +1,13 @@
 # Untracked folders
-manuscripts/
-meetings/
-figures/
-videos/
 figs*/
 vids*/
+figures*/
+videos*/
+manuscripts*/
+meetings*/
 
 # Trash folders
+tmp/
 old/
 trash/
 garbage/
