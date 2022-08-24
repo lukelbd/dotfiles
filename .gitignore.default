@@ -3,12 +3,13 @@ tags
 .vimsession
 .*.sw[a-z]
 
-# Figure files
-*.jpeg
-*.jpg
-*.png
-*.pdf
-*.tiff
+# Paper folders
+manuscripts
+meetings
+figures
+videos
+figs*
+vids*
 
 # Python stuff
 *.pyc
