@@ -1212,13 +1212,12 @@ lrcp() {
 }
 figcp() {
   local flags forward address src dest
-  flags=(--include='man*/***' --include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
+  flags=(--include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
   $_macos && forward=1 || forward=0
   [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
   src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
   $_macos && dest=${src/$HOME\/science/$HOME} || dest=${src/$HOME/$HOME\/science}
   _scp_bulk "${flags[@]}" "$forward" $@ "$src" "$dest"  # address may expand to nothing
-  _scp_bulk "${flags[@]}" "$((1 - forward))" $@ "$dest" "$src"  # address may expand to nothing
 }
 
 # Helper function: return if directory is empty or essentially
