@@ -3,19 +3,24 @@
 # Recursively check patterns in .gitignore file and remove them from
 # tracking.
 #------------------------------------------------------------------------------#
-# Initial
+# Initial stuff
 [ $# -ne 0 ] && echo "Usage: git ignore" && exit 1
 root=$(git rev-parse --show-toplevel 2>/dev/null)
 [ -z "$root" ] && echo "Error: Not in git repo." && exit 1
-# Loop
-cat $root/.gitignore | grep -v '#' | grep -v '^\s*$' | sed 's/\*\*\///g' \
-  | while read pattern; do
-  echo "$pattern"
-  if [[ "$pattern" =~ "/*/" ]]; then
-    find "$root/${pattern%/*/}" -mindepth 1 -maxdepth 1 -type d -print0 \
-      | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null
-  else
-    find "$root" -name "$pattern" -print0 \
-      | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null
-  fi
+# Loop over ignores and patterns
+for base in "$HOME" "$root"; do
+  cat $base/.gitignore \
+  | grep -v '#' \
+  | grep -v '^\s*$' \
+  | sed 's/\*\*\///g' \
+  | while read -r pattern; do
+    echo "$pattern"
+    if [[ "$pattern" =~ '/*/' ]]; then
+      find "$root/${pattern%/*/}" -mindepth 1 -maxdepth 1 -type d -print0 \
+        | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null
+    else
+      find "$root" -name "$pattern" -print0 \
+        | xargs -0 git rm -r --cached --ignore-unmatch -- 2>/dev/null
+    fi
+  done
 done
