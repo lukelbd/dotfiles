@@ -9,6 +9,7 @@ root=$(git rev-parse --show-toplevel 2>/dev/null)
 [ -z "$root" ] && echo "Error: Not in git repo." && exit 1
 # Loop over ignores and patterns
 for base in "$HOME" "$root"; do
+  [ -r "$base/.gitignore" ] || continue
   cat $base/.gitignore \
   | grep -v '#' \
   | grep -v '^\s*$' \
