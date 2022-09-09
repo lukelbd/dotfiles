@@ -83,7 +83,7 @@ if [ -z "$_prompt_set" ]; then  # don't overwrite modifications by supercomputer
   _prompt_set=1
   _prompt_dirs() {
     local paths
-    IFS=$'\n' read -d '' -r -a paths < <(dirs -p -l | tac)
+    IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
     paths=("${paths[@]##*/}")
     IFS=: eval 'echo "${paths[*]}"'
   }
@@ -387,6 +387,9 @@ alias cd='cd -P'  # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'   # ls with dirs differentiate from files
 alias ld='ls --color=always -AFd'  # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
+alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
+popd() { command popd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
+pushd() { command pushd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
 export LESS="--RAW-CONTROL-CHARS"
 [ -r ~/.LESS_TERMCAP ] && source ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
