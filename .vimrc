@@ -1530,8 +1530,6 @@ if s:plug_active('ale')
   " Flake8 ignore list (also apply to autopep8):
   " * Allow line breaks before binary operators (W503)
   " * Allow imports after statements for jupytext files (E402)
-  " * Allow multiple spaces before operators for easy-align segments (E221)
-  " * Allow multiple spaces after commas for easy-align segments (E241)
   " * Allow assigning lambda expressions instead of def (E731)
   " * Allow the variable names 'l' and 'I' (E741)
   " * Allow no docstring on public methods (e.g. overrides) (D102) (flake8-docstrings)
@@ -1543,8 +1541,10 @@ if s:plug_active('ale')
   " * Allow backslashes in docstring (D301) (flake8-docstring)
   " * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
   " * Allow imperative mood properties (D401) (flake8-docstring)
+  " * Do not allow multiple spaces before operators for easy-align segments (E221)
+  " * Do not allow multiple spaces after commas for easy-align segments (E241)
   let s:flake8_ignore =
-    \ 'W503,E402,E221,E241,E731,E741,'
+    \ 'W503,E402,E731,E741,'
     \ . 'D102,D107,D105,D200,D204,D205,D301,D400,D401'
   let g:ale_python_flake8_options =  '--max-line-length=' . s:line_length . ' --ignore=' . s:flake8_ignore
 

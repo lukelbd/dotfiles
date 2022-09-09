@@ -19,7 +19,9 @@
                     "pylsp.plugins.pyflakes.enabled": false,
                     "pylsp.plugins.pylint.enabled": false,
                     "pylsp.plugins.rope.enabled": true,
-                    "pylsp.plugins.yapf.enabled": false
+                    "pylsp.plugins.yapf.enabled": false,
+                    "pylsp.plugins.flake8.ignore": ["W503", "E402", "E731", "E741"],
+                    "pylsp.plugins.flake8.maxLineLength": 88
                 }
             }
         }
