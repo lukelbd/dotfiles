@@ -78,18 +78,19 @@
 [[ $- != *i* ]] && return
 
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
+# Ensure the prompt is applied only once so that supercomputer modules, conda
+# environments, etc. can subsequently modify the prompt appearance.
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
-if [ -z "$_prompt_set" ]; then  # don't overwrite modifications by supercomputer modules, conda environments, etc.
-  _prompt_set=1
-  _prompt_dirs() {
-    local paths
-    IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
-    paths=("${paths[@]##*/}")
-    IFS=: eval 'echo "${paths[*]}"'
-  }
-  export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
-fi
+# don't overwrite modifications by supercomputer modules, conda environments, etc.
+_prompt_dirs() {
+  local paths
+  IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
+  paths=("${paths[@]##*/}")
+  IFS=: eval 'echo "${paths[*]}"'
+}
+[ -n "$_prompt_set" ] || export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
+_prompt_set=1
 
 # Message constructor; modify the number to increase number of dots
 _load_unloaded() {
