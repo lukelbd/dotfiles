@@ -1006,8 +1006,8 @@ let g:fzf_action = {
 " Language servers
 " Note: Highlighting under keywords is for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
-" Note: Seems vim-lsp can detect servers installed separately in $PATH with e.g.
-" mamba install python-lsp-server (needed for jupyterlab-lsp) or install and
+" Note: Seems vim-lsp can both detect servers installed separately in $PATH with
+" e.g. mamba install python-lsp-server (needed for jupyterlab-lsp) or install and
 " uninstall them individually in ~/.local/share/vim-lsp-settings/servers/<server>
 " using LspInstallServer and LspUninstallServer (servers written in python are
 " installed with pip inside 'venv' virtual environment subfolders). Most likely
