@@ -26,11 +26,11 @@
 #   https://github.com/jupyter-lsp/jupyterlab-lsp/issues/437). So use the latter
 #   server for simplicity and uninstall jedi-language-server (although if switch back
 #   later need server version >= 0.35.0 to prevent annoying info logging level issue).
-# * To configure python-lsp-server for jupyterlab use jupyter_server_config.json in the
-#   .jupyter folder: https://jupyterlab-lsp.readthedocs.io/en/latest/Configuring.html
-#   For the settings see readme https://github.com/python-lsp/python-lsp-server
-#   and https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
-#   and for an example see: https://github.com/jupyter-lsp/jupyterlab-lsp/issues/818
+# * To configure python-lsp-server use the interactive advanced setting editor (search
+#   for 'server') shown here: https://github.com/jupyter-lsp/jupyterlab-lsp/pull/245 or
+#   edit the json in .jupyter/lab/user-settings/@krassowski/jupyterlab-lsp. For all
+#   settings see readme https://github.com/python-lsp/python-lsp-server and the full
+#   docs https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
 # * Seems vim-lsp-ale autodetects and parses python-lsp-server error and warning
 #   diagnostics but ignores jedi-language-server diagnostics (possibly harder to parse
 #   jedi diagnostics in general). This overrides g:ale_linters, including e.g. flake8

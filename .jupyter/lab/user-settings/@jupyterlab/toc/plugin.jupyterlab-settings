@@ -1,0 +1,10 @@
+{
+    // Table of Contents
+    // @jupyterlab/toc:plugin
+    // Table of contents settings.
+    // ***************************
+
+    // ToC Configuration
+    // Specifies whether to allow the ToC extension to collapse notebook cells.
+    "collapsibleNotebooks": true
+}

@@ -23,12 +23,19 @@ backup
 __pycache__
 
 # Jupyter and ipython
-# We are explicit here to avoid copying history
-# Do not copy current theme stored in apputils-extensions
+# Do not copy ipython profile history and internal directories
+# Do not copy jupyter lab workspace records or interface settings
+# Do not copy paths hardcoded in nbconvert json
+# See: https://stackoverflow.com/q/65776556/4970632
 .jupyter/*
 .ipython/*
-!nbconfig/*
-!shortcuts.jupyterlab-settings
+workspaces
+apputils-extension
+statusbar-extension
+extensionmanager-extension
+!lab
+!nbconfig
+!user-settings
 !jupyter_config.json
 !jupyter_notebook_config.json
 !jupyter_server_config.json
