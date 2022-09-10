@@ -1,4 +1,8 @@
 {
+    // Language Server
+    // @krassowski/jupyterlab-lsp:plugin
+    // Language Server Protocol settings.
+    // **********************************
     "language_servers": {
        "pylsp": {
            "serverSettings": {
