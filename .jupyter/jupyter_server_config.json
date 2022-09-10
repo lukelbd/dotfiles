@@ -2,14 +2,6 @@
     "LanguageServerManager": {
         "language_servers": {
             "pylsp": {
-                "display_name": "python-language-server",
-                "languages": [
-                    "python"
-                ],
-                "mime_types": [
-                    "text/python",
-                    "text/x-ipython"
-                ],
                 "serverSettings": {
                     "pylsp.plugins.autopep8.enabled": false,
                     "pylsp.plugins.flake8.enabled": true,
