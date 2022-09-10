@@ -29,10 +29,6 @@ __pycache__
 # See: https://stackoverflow.com/q/65776556/4970632
 .jupyter/*
 .ipython/*
-workspaces
-apputils-extension
-statusbar-extension
-extensionmanager-extension
 !lab
 !nbconfig
 !user-settings
@@ -45,3 +41,7 @@ extensionmanager-extension
 !jupyter_nbconvert_config.py
 !ipython_config.py
 !ipython_kernel_config.py
+workspaces
+apputils-extension
+statusbar-extension
+extensionmanager-extension
