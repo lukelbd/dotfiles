@@ -34,7 +34,7 @@ let s:copy_filetypes = [
   \ 'bib', 'log', 'qf'
   \ ]  " for wrapping and copy toggle
 let s:data_filetypes = [
-  \ 'csv', 'dosini', 'json', 'text'
+  \ 'csv', 'dosini', 'json', 'jsonc', 'text'
   \ ]  " for just copy toggle
 let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
@@ -1174,6 +1174,7 @@ let g:jupytext_fmt = 'py:percent'
 " call plug#('vim-python/python-syntax')  " originally from hdima/python-syntax, manually copied version with match case
 " call plug#('MortenStabenau/matlab-vim')  " requires tmux installed
 " call plug#('daeyun/vim-matlab')  " alternative but project seems dead
+" call plug#('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
 call plug#('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call plug#('vim-scripts/applescript.vim')
 call plug#('preservim/vim-markdown')
@@ -1479,6 +1480,7 @@ if s:plug_active('ale')
     \ 'fortran': ['gfortran'],
     \ 'help': [],
     \ 'json': ['jsonlint'],
+    \ 'jsonc': ['jsonlint'],
     \ 'python': ['python', 'flake8'],
     \ 'rst': [],
     \ 'sh': ['shellcheck', 'bashate'],

@@ -2,13 +2,13 @@
 .proplot/cmaps
 .vim/plugged
 .vim/black
+schemes
 empty*
 test*
 *.log
 *.bib
 .DS_Store
 .nfs*
-syntax
 tags
 tmp
 
