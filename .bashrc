@@ -1423,15 +1423,19 @@ jupyter-connect() {
 }
 
 # Save a concise HTML snapshot of the jupyter notebook for collaboration
-# NOTE: This creates a single html file and a folder of files. When sharing should
-# recursively zip with 'zip -r file_date.zip file_date*' to include subfolder files.
-# NOTE: PDF version requires xelatex (use conda install -c conda-forge tectonic). HTML
-# version requres toc2 extension (see https://stackoverflow.com/a/63123831/4970632).
+# NOTE: As of 2022-09-12 the PDF version requires xelatex. Try to use drop-in xelatex
+# replacement tectonic for speed; install with conda install -c conda-forge tectonic and
+# edit jupyter_nbconvert_config.py. See: https://github.com/jupyter/nbconvert/issues/808
+# NOTE: As of 2022-09-12 the HTML version can only use the jupyter notebook toc2-style
+# table of contents. To install see: https://stackoverflow.com/a/63123831/4970632 (note
+# jupyter_nbconvert_config.json is auto-edited). To change default settings must use
+# classical jupyter notebook interface, and to include toc with default html export can
+# optionally add metadata to ipynb. See: https://stackoverflow.com/a/59286150/4970632
 # NOTE: As of 2022-09-12 nbconvert greater than 5 causes issues converting notebooks.
 # See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1533
 # This also causes issues with later versions of jinja so need to downgrade to 3.0.0
-# with pip despite conflict warnings re: jupyter-server and jupyterlab-server.
-# See: https://github.com/d2l-ai/d2l-book/issues/46
+# with pip despite conflict warnings re: jupyter-server and jupyterlab-server. Should
+# revisit this in future. See: https://github.com/d2l-ai/d2l-book/issues/46
 jupyter-convert() {
   local ext fmt dir file output
   # fmt=pdf
@@ -1448,7 +1452,7 @@ jupyter-convert() {
       --to "$fmt" --output-dir "$dir" --output "$output" "$file"
     cd "$dir" || { echo "Error: Failed to jump to directory."; return 1; }
     output=${output##*/}
-    zip -r "${output/.${ext}/.zip}" "${output/.${ext}/}"*
+    zip -r "${output/.${ext}/.zip}" "${output/.${ext}/}"*  # include _files subfolder
   done
 }
 
