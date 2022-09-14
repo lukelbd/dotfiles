@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "Exporter": {
+    "template_paths": [
+      ".",
+      "/home/ldavis/.jupyter",
+      "/Users/ldavis/.jupyter"
+    ],
+    "preprocessors": [
+      "jupyter_contrib_nbextensions.nbconvert_support.CodeFoldingPreprocessor",
+      "jupyter_contrib_nbextensions.nbconvert_support.PyMarkdownPreprocessor"
+    ],
+    "template_path": [
+      ".",
+      "/home/ldavis/miniconda3/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates",
+      "/Users/ldavis/miniconda3/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates"
+    ]
+  }
+}

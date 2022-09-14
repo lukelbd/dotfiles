@@ -16,6 +16,7 @@
 #   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
 #   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
 #   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
+#   See: https://github.com/jupyter/nbconvert/pull/1310
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
 #   following: https://github.com/jupyter-lsp/jupyterlab-lsp plus python-lsp-server
 #   and r-languageserver. Add c.Completer.use_jedi = False in ipython_config.py to
@@ -1221,7 +1222,7 @@ lrcp() {
 }
 figcp() {
   local flags forward address src dest
-  flags=(--include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
+  flags=(--include='fig*/***' --include='vid*/***' --include='meet*/***' --exclude='*' --exclude='.*')
   $_macos && forward=1 || forward=0
   [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
   src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
@@ -1422,17 +1423,32 @@ jupyter-connect() {
 }
 
 # Save a concise HTML snapshot of the jupyter notebook for collaboration
-# NOTE: Requires xelatex. Use conda install -c conda-forge tectonic
+# NOTE: This creates a single html file and a folder of files. When sharing should
+# recursively zip with 'zip -r file_date.zip file_date*' to include subfolder files.
+# NOTE: PDF version requires xelatex (use conda install -c conda-forge tectonic). HTML
+# version requres toc2 extension (see https://stackoverflow.com/a/63123831/4970632).
+# NOTE: As of 2022-09-12 nbconvert greater than 5 causes issues converting notebooks.
+# See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1533
+# This also causes issues with later versions of jinja so need to downgrade to 3.0.0
+# with pip despite conflict warnings re: jupyter-server and jupyterlab-server.
+# See: https://github.com/d2l-ai/d2l-book/issues/46
 jupyter-convert() {
-  local fmt dir file
+  local ext fmt dir file output
   # fmt=pdf
   fmt=html_toc
+  ext=${fmt%_*}
   dir=$(git rev-parse --show-toplevel)/meetings
+  cwd=$(pwd)
   [ -d "$dir" ] || { echo "Error: Directory $dir does not exist."; return 1; }
   for file in "$@"; do
+    cd "$cwd" || { echo "Error: Failed to jump to directory."; return 1; }
     [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
-    jupyter nbconvert --to "$fmt" --no-input --no-prompt \
-      --output-dir "$dir" --output "${file%.ipynb}_$(date +%Y-%m-%d).${fmt%_*}" "$file"
+    output=${file%.ipynb}_$(date +%Y-%m-%d).$ext
+    jupyter nbconvert --no-input --no-prompt \
+      --to "$fmt" --output-dir "$dir" --output "$output" "$file"
+    cd "$dir" || { echo "Error: Failed to jump to directory."; return 1; }
+    output=${output##*/}
+    zip -r "${output/.${ext}/.zip}" "${output/.${ext}/}"*
   done
 }
 

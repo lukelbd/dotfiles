@@ -25,7 +25,6 @@ __pycache__
 # Jupyter and ipython
 # Do not copy ipython profile history and internal directories
 # Do not copy jupyter lab workspace records or interface settings
-# Do not copy paths hardcoded in nbconvert json
 # See: https://stackoverflow.com/q/65776556/4970632
 .jupyter/*
 .ipython/*
@@ -34,6 +33,7 @@ __pycache__
 !user-settings
 !jupyter_config.json
 !jupyter_notebook_config.json
+!jupyter_nbconvert_config.json
 !jupyter_server_config.json
 !jupyter_console_config.py
 !jupyter_qtconsole_config.py
