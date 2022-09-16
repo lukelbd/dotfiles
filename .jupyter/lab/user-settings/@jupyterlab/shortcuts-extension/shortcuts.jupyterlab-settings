@@ -253,34 +253,10 @@
             "disabled": true
         },
         {
-            "command": "notebook:merge-cells",
-            "keys": [
-                "Shift M"
-            ],
-            "selector": ".jp-Notebook:focus",
-            "disabled": true
-        },
-        {
-            "command": "notebook:split-cell-at-cursor",
-            "keys": [
-                "Ctrl Shift -"
-            ],
-            "selector": ".jp-Notebook.jp-mod-editMode",
-            "disabled": true
-        },
-        {
             "command": "notebook:delete-cell",
             "keys": [
                 "D",
                 "D"
-            ],
-            "selector": ".jp-Notebook:focus",
-            "disabled": true
-        },
-        {
-            "command": "notebook:undo-cell-action",
-            "keys": [
-                "Z"
             ],
             "selector": ".jp-Notebook:focus",
             "disabled": true
@@ -304,18 +280,28 @@
             "disabled": true
         },
         {
-            "command": "application:activate-previous-tab",
+            "command": "notebook:undo-cell-action",
             "keys": [
-                "Accel Shift ,"
+                "Z"
             ],
-            "selector": "body"
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
         },
         {
-            "command": "application:activate-next-tab",
+            "command": "notebook:merge-cells",
             "keys": [
-                "Accel Shift ."
+                "Shift M"
             ],
-            "selector": "body"
+            "selector": ".jp-Notebook:focus",
+            "disabled": true
+        },
+        {
+            "command": "notebook:split-cell-at-cursor",
+            "keys": [
+                "Ctrl Shift -"
+            ],
+            "selector": ".jp-Notebook.jp-mod-editMode",
+            "disabled": true
         },
         {
             "command": "notebook:change-cell-to-code",
@@ -360,6 +346,13 @@
             "selector": ".jp-Notebook:focus"
         },
         {
+            "command": "notebook:redo-cell-action",
+            "keys": [
+                "Shift U"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
             "command": "notebook:paste-cell-below",
             "keys": [
                 "P"
@@ -379,20 +372,6 @@
                 "I"
             ],
             "selector": ".jp-Notebook:focus"
-        },
-        {
-            "command": "kernelmenu:interrupt",
-            "keys": [
-                "Q"
-            ],
-            "selector": "[data-jp-kernel-user]:focus"
-        },
-        {
-            "command": "kernelmenu:restart",
-            "keys": [
-                "Shift Q"
-            ],
-            "selector": "[data-jp-kernel-user]:focus"
         },
         {
             "command": "docmanager:save",
@@ -416,30 +395,16 @@
             "selector": ".jp-Notebook:focus"
         },
         {
-            "command": "notebook:merge-cells",
+            "command": "notebook:insert-cell-below",
             "keys": [
-                "M"
+                "O"
             ],
             "selector": ".jp-Notebook:focus"
-        },
-        {
-            "command": "notebook:split-cell-at-cursor",
-            "keys": [
-                "Ctrl -"
-            ],
-            "selector": ".jp-Notebook.jp-mod-editMode"
         },
         {
             "command": "notebook:insert-cell-above",
             "keys": [
                 "Shift O"
-            ],
-            "selector": ".jp-Notebook:focus"
-        },
-        {
-            "command": "notebook:insert-cell-below",
-            "keys": [
-                "O"
             ],
             "selector": ".jp-Notebook:focus"
         },
@@ -472,11 +437,11 @@
             "selector": ".jp-Notebook:focus"
         },
         {
-            "command": "jupyterlab_code_formatter:format",
+            "command": "notebook:merge-cells",
             "keys": [
-                "Ctrl ="
+                "M"
             ],
-            "selector": ".jp-Notebook.jp-mod-editMode"
+            "selector": ".jp-Notebook:focus"
         },
         {
             "command": "notebook:reconnect-to-kernel",
@@ -485,7 +450,35 @@
             ],
             "selector": ".jp-Notebook:focus"
         },
-                {
+        {
+            "command": "kernelmenu:interrupt",
+            "keys": [
+                "Q"
+            ],
+            "selector": "[data-jp-kernel-user]:focus"
+        },
+        {
+            "command": "kernelmenu:restart",
+            "keys": [
+                "Shift Q"
+            ],
+            "selector": "[data-jp-kernel-user]:focus"
+        },
+        {
+            "command": "notebook:split-cell-at-cursor",
+            "keys": [
+                "Ctrl -"
+            ],
+            "selector": ".jp-Notebook.jp-mod-editMode"
+        },
+        {
+            "command": "jupyterlab_code_formatter:format",
+            "keys": [
+                "Ctrl ="
+            ],
+            "selector": ".jp-Notebook.jp-mod-editMode"
+        },
+        {
             "command": "console:run-forced",
             "keys": [
                 "Ctrl Enter"
@@ -498,6 +491,20 @@
                 "Ctrl Enter"
             ],
             "selector": ".jp-CodeConsole[data-jp-interaction-mode='terminal'] .jp-CodeConsole-promptCell"
+        },
+        {
+            "command": "application:activate-previous-tab",
+            "keys": [
+                "Accel Shift ,"
+            ],
+            "selector": "body"
+        },
+        {
+            "command": "application:activate-next-tab",
+            "keys": [
+                "Accel Shift ."
+            ],
+            "selector": "body"
         }
     ]
 }
