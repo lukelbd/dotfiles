@@ -1167,6 +1167,8 @@ kill-port() {
 _scp_bulk() {
   local cmd port flags forward remote address paths srcs dest
   # Parse arguments
+  # NOTE: Could add --delete flag to remove contents but very risky... better to just
+  # always track which files are deleted and manually update both dirs... or use git.
   flags=(-vhi -rlpt --update --progress)  # default flags
   $_macos && remote=0 || remote=1  # whether on remote
   while [ $# -gt 0 ]; do
@@ -1438,17 +1440,16 @@ jupyter-convert() {
   fmt=html_toc
   ext=${fmt%_*}
   dir=$(git rev-parse --show-toplevel)/meetings
-  cwd=$(pwd)
   [ -d "$dir" ] || { echo "Error: Directory $dir does not exist."; return 1; }
   for file in "$@"; do
-    cd "$cwd" || { echo "Error: Failed to jump to directory."; return 1; }
     [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
     output=${file%.ipynb}_$(date +%Y-%m-%d).$ext
     jupyter nbconvert --no-input --no-prompt \
       --to "$fmt" --output-dir "$dir" --output "$output" "$file"
-    cd "$dir" || { echo "Error: Failed to jump to directory."; return 1; }
     output=${output##*/}
+    pushd "$dir" || { echo "Error: Failed to jump to meeting directory."; return 1; }
     zip -r "${output/.${ext}/.zip}" "${output/.${ext}/}"*
+    popd || { echo "Error: Failed to return to original directory."; return 1; }
   done
 }
 
