@@ -316,7 +316,7 @@ command! -nargs=0 ClearRegs call utils#clear_regs()
 " Opening file in current directory and some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
 " Note: Here :History includes v:oldfiles and open buffers.
-command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
+command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
 noremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 noremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
 noremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
@@ -1629,15 +1629,14 @@ if s:plug_active('vim-easy-align')
     \   '&': {'pattern': '\(&&\|||\)'},
     \   ';': {'pattern': ';\+'},
     \ }
-  let g:easy_comment_delimiter = {
-    \   'c': {
-    \       'pattern': '\s'
-    \       . (empty(comment#comment_char()) ? nr2char(0) : comment#comment_char())
-    \   },
-    \ }
   augroup easy_align
     au!
-    au BufEnter * call extend(g:easy_align_delimiters, g:easy_comment_delimiter)
+    au BufEnter * let g:easy_align_delimiters['c'] = {
+      \   'pattern': '\s' . (
+      \     empty(comment#comment_char())
+      \     ? nr2char(0) : comment#comment_char()
+      \   )
+      \ }
   augroup END
 endif
 

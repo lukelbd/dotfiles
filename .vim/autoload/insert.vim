@@ -65,9 +65,9 @@ endfunction
 " Insert complete menu items and scroll complete or preview windows (whichever is open).
 " Note: This prevents vim's baked-in circular complete menu scrolling. It
 " also prefers scrolling complete menus over preview windows.
-" Note: Used 'verb function! lsp#scroll' to figure out how to detect preview
-" windows for a reference scaling (also verified that l:window.find and
-" therefore lsp#scroll do not return popup completion windows).
+" Note: Used 'verb function! lsp#scroll' to figure out how to detect
+" preview windows for a reference scaling (also verified that l:window.find
+" and therefore lsp#scroll do not return popup completion windows).
 function! insert#popup_reset() abort
   let b:popup_scroll = 0
   return ''

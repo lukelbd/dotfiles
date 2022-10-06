@@ -370,8 +370,8 @@ _setup_opts() {
   shopt -u failglob                 # no error message if expansion is empty
   shopt -u nocaseglob               # match case in glob expressions
   shopt -u nocasematch              # match case in case/esac and [[ =~ ]] instances
-  shopt -u no_empty_cmd_completion  # enable empty command completion
   shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+  shopt -u no_empty_cmd_completion  # enable empty command completion
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
   export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
   export HISTSIZE=5000  # huge history
@@ -386,12 +386,12 @@ _setup_opts 2>/dev/null  # ignore if option unavailable
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
-alias cd='cd -P'  # don't want this on my mac temporarily
-alias ls='ls --color=always -AF'   # ls with dirs differentiate from files
-alias ld='ls --color=always -AFd'  # ls with details and file sizes
+alias cd='cd -P'                    # don't want this on my mac temporarily
+alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
+alias ld='ls --color=always -AFd'   # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
-popd() { command popd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
+popd() { command popd "$@" >/dev/null || return 1; }    # suppress wrong-order printing
 pushd() { command pushd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
 export LESS="--RAW-CONTROL-CHARS"
 [ -r ~/.LESS_TERMCAP ] && source ~/.LESS_TERMCAP
