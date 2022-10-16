@@ -47,11 +47,11 @@ let s:popup_filetypes += [
   \ ] " for popup toggle
 
 " Global settings
-set encoding=utf-8
-set nocompatible  " always use the vim defaults
 scriptencoding utf-8
 let filetype_m = 'matlab'  " see $VIMRUNTIME/filetype.vim, also could be 'mma'
 let mapleader = "\<Space>"
+set encoding=utf-8
+set nocompatible  " always use the vim defaults
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
@@ -60,7 +60,7 @@ set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cursorline
-set diffopt=vertical,foldcolumn:0,context:5
+set diffopt=context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set foldlevel=99
@@ -68,6 +68,8 @@ set foldlevelstart=99
 set foldmethod=expr  " fold methods
 set foldnestmax=10  " avoids weird things
 set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
+set guifont=Monaco:h13  " match iterm settings in macvim
+set guioptions=M  " use default value
 set history=100  " search history
 set hlsearch incsearch  " show match as typed so far, and highlight as you go
 set iminsert=0  " disable language maps (used for caps lock)
@@ -818,17 +820,6 @@ noremap <expr> \S format#replace_regex_expr(
   \ 'Removed all whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \+', '')
 
-" Replace useless bibtex entries
-" Previously localized to bibtex ftplugin but no major reason not to include here
-noremap <expr> \x format#replace_regex_expr(
-  \ 'Removed bibtex entries.',
-  \ '^\s*\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
-  \ '')
-noremap <expr> \X format#replace_regex_expr(
-  \ 'Removed bibtex entries.',
-  \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
-  \ '')
-
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
 noremap <expr> \- format#replace_regex_expr(
@@ -839,12 +830,21 @@ noremap <expr> \_ format#replace_regex_expr(
   \ '\(\w\)[-–] ', '\1')
 noremap <expr> \' format#replace_regex_expr(
   \ 'Fixed single quotes.',
-  \ '‘', '`',
-  \ '’', "'")
+  \ '‘', '`', '’', "'")
 noremap <expr> \" format#replace_regex_expr(
   \ 'Fixed double quotes.',
-  \ '“', '``',
-  \ '”', "''")
+  \ '“', '``', '”', "''")
+
+" Replace useless bibtex entries
+" Previously localized to bibtex ftplugin but no major reason not to include here
+noremap <expr> \x format#replace_regex_expr(
+  \ 'Removed bibtex entries.',
+  \ '^\s*\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
+  \ '')
+noremap <expr> \X format#replace_regex_expr(
+  \ 'Removed bibtex entries.',
+  \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
+  \ '')
 
 "-----------------------------------------------------------------------------"
 " External plugins
@@ -1759,11 +1759,11 @@ nnoremap <Leader>Y <Cmd>SyncStart<CR>
 " vimbrains  " other one
 " void  " other one
 if has('gui_running')
-  colorscheme papercolor
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap Statement
+  colorscheme papercolor
   nnoremap <Leader>8 <Cmd>Colors<CR>
   nnoremap <Leader>9 <Cmd>SchemeNext<CR>
   nnoremap <Leader>0 <Cmd>SchemePrev<CR>
