@@ -8,8 +8,16 @@ c = get_config()
 # See: https://nbconvert.readthedocs.io/en/latest/config_options.html
 c.PDFExporter.verbose = True
 c.PDFExporter.latex_count = 1
-c.PDFExporter.latex_command = [
-    os.path.expanduser('~/miniconda3/bin/tectonic'), '{filename}',
+c.PDFExporter.latex_command = [os.path.expanduser('~/miniconda3/bin/tectonic'), '{filename}']  # noqa: E501
+
+# Nice html exporter
+c.Exporter.preprocessors = [
+    'nbconvert.preprocessors.TagRemovePreprocessor',
+    'nbconvert.preprocessors.RegexRemovePreprocessor',
+    'nbconvert.preprocessors.coalesce_streams',
+    'nbconvert.preprocessors.CSSHTMLHeaderPreprocessor',
+    'nbconvert.preprocessors.HighlightMagicsPreprocessor',
+    # 'nbconvert.preprocessors.ExtractOutputPreprocessor',
 ]
 
 # Previously tried to use hidecode.tplx template but this is obsolete

@@ -1,14 +1,22 @@
+# Untracked folders
+figs*/
+vids*/
+figures*/
+videos*/
+class*/
+meeting*/
+manuscript*/
+
+# Trash folders
+tmp/
+old/
+trash/
+garbage/
+
 # Vim session files and swap files
 tags
 .vimsession
 .*.sw[a-z]
-
-# Figure files
-*.jpeg
-*.jpg
-*.png
-*.pdf
-*.tiff
 
 # Python stuff
 *.pyc
@@ -21,11 +29,6 @@ __pycache__
 *.log
 *.tmp
 *.bak
-
-# Trash
-old
-trash
-garbage
 
 # Compiled source
 *.com

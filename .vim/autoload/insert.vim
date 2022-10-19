@@ -28,7 +28,8 @@ endfunction
 " See: http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock which uses
 " iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
 function! insert#lang_map()
-  let b:caps_lock = exists('b:caps_lock') ? b:caps_lock - 1 : 1
+  let b:caps_lock = exists('b:caps_lock') ? 1 - b:caps_lock : 1
+  echom 'Caps lock! ' . b:caps_lock
   if b:caps_lock
     for s:c in range(char2nr('A'), char2nr('Z'))
       exe 'lnoremap <buffer> ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
@@ -36,7 +37,7 @@ function! insert#lang_map()
     endfor
     augroup caps_lock
       au!
-      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | autocmd! caps_lock
+      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | let b:caps_lock = 0 | autocmd! caps_lock
     augroup END
   endif
   return "\<C-^>"
@@ -65,9 +66,9 @@ endfunction
 " Insert complete menu items and scroll complete or preview windows (whichever is open).
 " Note: This prevents vim's baked-in circular complete menu scrolling. It
 " also prefers scrolling complete menus over preview windows.
-" Note: Used 'verb function! lsp#scroll' to figure out how to detect preview
-" windows for a reference scaling (also verified that l:window.find and
-" therefore lsp#scroll do not return popup completion windows).
+" Note: Used 'verb function! lsp#scroll' to figure out how to detect
+" preview windows for a reference scaling (also verified that l:window.find
+" and therefore lsp#scroll do not return popup completion windows).
 function! insert#popup_reset() abort
   let b:popup_scroll = 0
   return ''

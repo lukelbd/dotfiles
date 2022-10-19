@@ -22,18 +22,17 @@
 #   or added back in
 # 'exec':
 #   Exec arbitrary shell command on top level
-# 'figs':
-#   Add and push figures with simple default message.
-#   TODO: Remove this and use figcp for figure syncing instead.
 # 'get':
 #   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all).
 #   see: https://stackoverflow.com/a/10312587/4970632
-# 'hist':
-#   full history for a given file
+# 'files':
+#   List the tracked file names.
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
+# 'long':
+#   Long status message.
 # 'objects':
 #   When you commit giant files (i.e. over 100MB), even after you delete them,
 #   you won't be able to push to Github because they were tracked and are found
@@ -47,6 +46,8 @@
 # 'rmupstream':
 #   Unset upstream branch, needed after you change the name of a local branch
 #   with git branch -m name because git tracks the old remote branch name
+# 'short':
+#   Short status message.
 # 'tree':
 #   Descriptive git log
 # 'truncate':
@@ -79,7 +80,6 @@
 	delete     = "!git-delete \"$@\""
 	deleted    = "!git-deleted \"$@\""
 	exec       = "!exec \"$@\""
-	figs       = "!find $(git rev-parse --show-toplevel) -type f -name '[^.]*' \\( -name '*.pdf' -o -name '*.png' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.gif' -o -name '*.avi' -o -name '*.mp4' \\) -exec git add {} + && git commit -m 'Update figures and notebooks.' && git push origin master"
 	files      = ls-tree -r master --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""

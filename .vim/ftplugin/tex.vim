@@ -44,12 +44,11 @@ noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk()<CR>
 noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--diff')<CR>
 noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--word')<CR>
 
-" Snippet dictionaries. Each snippet is made into an <expr> map by prepending and
-" appending the strings with single quotes. This lets us make input() dependent
-" snippets as shown for the 'j', 'k', and 'E' mappings.
-" * \xi is the weird curly one, pronounced 'zai'
+" Snippet dictionaries. Each snippet is made into an <expr> map by prepending
+" and appending the strings with single quotes. This lets us make input()
+" dependent snippets as shown for the 'j', 'k', and 'E' mappings.
+" * \xi looks like a funky squiggle, pronounced 'zai'
 " * \chi looks like an x, pronounced 'kai'
-" * the 'u' used for {-} and {+} is for 'unary'
 " Rejected maps:
 " \ "'": tex#make_snippet(tex#graphic_select(), '\includegraphics{', '}'),
 " \ '"': tex#make_snippet(tex#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
@@ -139,11 +138,12 @@ call succinct#add_snippets({
 " the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds.
 " Delimiters should also not overlap common text objects like 'w' and 'p'.
 " Rejected maps:
-" \ 'p': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
+" \ 'P': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
+" \ 'G': "\\hidecontent{\\includegraphics{\r}}",
 " \ 'F': "\\begin{wrapfigure}{r}{0.5\\textwidth}\n\\centering\r\\end{wrapfigure}",
+" \ 'L': "\\href{\1Link: \1}{\r}",
 " \ ',': "\\begin{\1\\begin{\1}\r\\end{\1\1}",
 " \ '.': "\\\1\\\1{\r}",
-" \ 'L': "\\href{\1Link: \1}{\r}",
 call succinct#add_delims({
   \ "'": "`\r'",
   \ '!': "\\frametitle{\r}",
@@ -179,7 +179,7 @@ call succinct#add_delims({
   \ 'D': "\\ddot{\r}",
   \ 'E': "\{\\color{red}\r}",
   \ 'F': "\\begin{center}\n\\centering\r\\end{center}",
-  \ 'G': "\\hidecontent{\\includegraphics{\r}}",
+  \ 'G': "\\makebox[\\textwidth][c]{\\includegraphics{\r}}",
   \ 'I': "\\texttt{\r}",
   \ 'J': "\\underset{}{\r}",
   \ 'K': "\\overset{}{\r}",

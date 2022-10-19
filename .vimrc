@@ -34,7 +34,7 @@ let s:copy_filetypes = [
   \ 'bib', 'log', 'qf'
   \ ]  " for wrapping and copy toggle
 let s:data_filetypes = [
-  \ 'csv', 'dosini', 'json', 'text'
+  \ 'csv', 'dosini', 'json', 'jsonc', 'text'
   \ ]  " for just copy toggle
 let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
@@ -47,11 +47,11 @@ let s:popup_filetypes += [
   \ ] " for popup toggle
 
 " Global settings
-set encoding=utf-8
-set nocompatible  " always use the vim defaults
 scriptencoding utf-8
 let filetype_m = 'matlab'  " see $VIMRUNTIME/filetype.vim, also could be 'mma'
 let mapleader = "\<Space>"
+set encoding=utf-8
+set nocompatible  " always use the vim defaults
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
@@ -60,7 +60,7 @@ set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cursorline
-set diffopt=vertical,foldcolumn:0,context:5
+set diffopt=context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set foldlevel=99
@@ -68,6 +68,8 @@ set foldlevelstart=99
 set foldmethod=expr  " fold methods
 set foldnestmax=10  " avoids weird things
 set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
+set guifont=Monaco:h13  " match iterm settings in macvim
+set guioptions=M  " use default value
 set history=100  " search history
 set hlsearch incsearch  " show match as typed so far, and highlight as you go
 set iminsert=0  " disable language maps (used for caps lock)
@@ -316,7 +318,7 @@ command! -nargs=0 ClearRegs call utils#clear_regs()
 " Opening file in current directory and some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
 " Note: Here :History includes v:oldfiles and open buffers.
-command! -nargs=* -complete=file Open call file#open_continuous(<f-args>)
+command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
 noremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 noremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
 noremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
@@ -818,17 +820,6 @@ noremap <expr> \S format#replace_regex_expr(
   \ 'Removed all whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \+', '')
 
-" Replace useless bibtex entries
-" Previously localized to bibtex ftplugin but no major reason not to include here
-noremap <expr> \x format#replace_regex_expr(
-  \ 'Removed bibtex entries.',
-  \ '^\s*\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
-  \ '')
-noremap <expr> \X format#replace_regex_expr(
-  \ 'Removed bibtex entries.',
-  \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
-  \ '')
-
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
 noremap <expr> \- format#replace_regex_expr(
@@ -839,12 +830,21 @@ noremap <expr> \_ format#replace_regex_expr(
   \ '\(\w\)[-–] ', '\1')
 noremap <expr> \' format#replace_regex_expr(
   \ 'Fixed single quotes.',
-  \ '‘', '`',
-  \ '’', "'")
+  \ '‘', '`', '’', "'")
 noremap <expr> \" format#replace_regex_expr(
   \ 'Fixed double quotes.',
-  \ '“', '``',
-  \ '”', "''")
+  \ '“', '``', '”', "''")
+
+" Replace useless bibtex entries
+" Previously localized to bibtex ftplugin but no major reason not to include here
+noremap <expr> \x format#replace_regex_expr(
+  \ 'Removed bibtex entries.',
+  \ '^\s*\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
+  \ '')
+noremap <expr> \X format#replace_regex_expr(
+  \ 'Removed bibtex entries.',
+  \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
+  \ '')
 
 "-----------------------------------------------------------------------------"
 " External plugins
@@ -1006,8 +1006,8 @@ let g:fzf_action = {
 " Language servers
 " Note: Highlighting under keywords is for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
-" Note: Seems vim-lsp can detect servers installed separately in $PATH with e.g.
-" mamba install python-lsp-server (needed for jupyterlab-lsp) or install and
+" Note: Seems vim-lsp can both detect servers installed separately in $PATH with
+" e.g. mamba install python-lsp-server (needed for jupyterlab-lsp) or install and
 " uninstall them individually in ~/.local/share/vim-lsp-settings/servers/<server>
 " using LspInstallServer and LspUninstallServer (servers written in python are
 " installed with pip inside 'venv' virtual environment subfolders). Most likely
@@ -1174,6 +1174,7 @@ let g:jupytext_fmt = 'py:percent'
 " call plug#('vim-python/python-syntax')  " originally from hdima/python-syntax, manually copied version with match case
 " call plug#('MortenStabenau/matlab-vim')  " requires tmux installed
 " call plug#('daeyun/vim-matlab')  " alternative but project seems dead
+" call plug#('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
 call plug#('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
 call plug#('vim-scripts/applescript.vim')
 call plug#('preservim/vim-markdown')
@@ -1479,6 +1480,7 @@ if s:plug_active('ale')
     \ 'fortran': ['gfortran'],
     \ 'help': [],
     \ 'json': ['jsonlint'],
+    \ 'jsonc': ['jsonlint'],
     \ 'python': ['python', 'flake8'],
     \ 'rst': [],
     \ 'sh': ['shellcheck', 'bashate'],
@@ -1530,8 +1532,6 @@ if s:plug_active('ale')
   " Flake8 ignore list (also apply to autopep8):
   " * Allow line breaks before binary operators (W503)
   " * Allow imports after statements for jupytext files (E402)
-  " * Allow multiple spaces before operators for easy-align segments (E221)
-  " * Allow multiple spaces after commas for easy-align segments (E241)
   " * Allow assigning lambda expressions instead of def (E731)
   " * Allow the variable names 'l' and 'I' (E741)
   " * Allow no docstring on public methods (e.g. overrides) (D102) (flake8-docstrings)
@@ -1543,8 +1543,10 @@ if s:plug_active('ale')
   " * Allow backslashes in docstring (D301) (flake8-docstring)
   " * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
   " * Allow imperative mood properties (D401) (flake8-docstring)
+  " * Do not allow multiple spaces before operators for easy-align segments (E221)
+  " * Do not allow multiple spaces after commas for easy-align segments (E241)
   let s:flake8_ignore =
-    \ 'W503,E402,E221,E241,E731,E741,'
+    \ 'W503,E402,E731,E741,'
     \ . 'D102,D107,D105,D200,D204,D205,D301,D400,D401'
   let g:ale_python_flake8_options =  '--max-line-length=' . s:line_length . ' --ignore=' . s:flake8_ignore
 
@@ -1627,15 +1629,14 @@ if s:plug_active('vim-easy-align')
     \   '&': {'pattern': '\(&&\|||\)'},
     \   ';': {'pattern': ';\+'},
     \ }
-  let g:easy_comment_delimiter = {
-    \   'c': {
-    \       'pattern': '\s'
-    \       . (empty(comment#comment_char()) ? nr2char(0) : comment#comment_char())
-    \   },
-    \ }
   augroup easy_align
     au!
-    au BufEnter * call extend(g:easy_align_delimiters, g:easy_comment_delimiter)
+    au BufEnter * let g:easy_align_delimiters['c'] = {
+      \   'pattern': '\s' . (
+      \     empty(comment#comment_char())
+      \     ? nr2char(0) : comment#comment_char()
+      \   )
+      \ }
   augroup END
 endif
 
@@ -1758,11 +1759,11 @@ nnoremap <Leader>Y <Cmd>SyncStart<CR>
 " vimbrains  " other one
 " void  " other one
 if has('gui_running')
-  colorscheme papercolor
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap Statement
+  colorscheme papercolor
   nnoremap <Leader>8 <Cmd>Colors<CR>
   nnoremap <Leader>9 <Cmd>SchemeNext<CR>
   nnoremap <Leader>0 <Cmd>SchemePrev<CR>

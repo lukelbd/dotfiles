@@ -2,13 +2,13 @@
 .proplot/cmaps
 .vim/plugged
 .vim/black
+schemes
 empty*
 test*
 *.log
 *.bib
 .DS_Store
 .nfs*
-syntax
 tags
 tmp
 
@@ -23,17 +23,25 @@ backup
 __pycache__
 
 # Jupyter and ipython
-# We are explicit here to avoid copying history
-# Do not copy current theme stored in apputils-extensions
+# Do not copy ipython profile history and internal directories
+# Do not copy jupyter lab workspace records or interface settings
+# See: https://stackoverflow.com/q/65776556/4970632
 .jupyter/*
 .ipython/*
-!nbconfig/*
-!shortcuts.jupyterlab-settings
+!lab
+!nbconfig
+!user-settings
 !jupyter_config.json
+!jupyter_notebook_config.json
+!jupyter_nbconvert_config.json
+!jupyter_server_config.json
 !jupyter_console_config.py
 !jupyter_qtconsole_config.py
 !jupyter_notebook_config.py
 !jupyter_nbconvert_config.py
-!jupyter_notebook_config.json
 !ipython_config.py
 !ipython_kernel_config.py
+workspaces
+apputils-extension
+statusbar-extension
+extensionmanager-extension

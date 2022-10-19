@@ -16,6 +16,7 @@
 #   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
 #   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
 #   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
+#   See: https://github.com/jupyter/nbconvert/pull/1310
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
 #   following: https://github.com/jupyter-lsp/jupyterlab-lsp plus python-lsp-server
 #   and r-languageserver. Add c.Completer.use_jedi = False in ipython_config.py to
@@ -26,6 +27,11 @@
 #   https://github.com/jupyter-lsp/jupyterlab-lsp/issues/437). So use the latter
 #   server for simplicity and uninstall jedi-language-server (although if switch back
 #   later need server version >= 0.35.0 to prevent annoying info logging level issue).
+# * To configure python-lsp-server use the interactive advanced setting editor (search
+#   for 'server') shown here: https://github.com/jupyter-lsp/jupyterlab-lsp/pull/245 or
+#   edit the json in .jupyter/lab/user-settings/@krassowski/jupyterlab-lsp. For all
+#   settings see readme https://github.com/python-lsp/python-lsp-server and the full
+#   docs https://github.com/python-lsp/python-lsp-server/blob/develop/CONFIGURATION.md
 # * Seems vim-lsp-ale autodetects and parses python-lsp-server error and warning
 #   diagnostics but ignores jedi-language-server diagnostics (possibly harder to parse
 #   jedi diagnostics in general). This overrides g:ale_linters, including e.g. flake8
@@ -73,18 +79,19 @@
 [[ $- != *i* ]] && return
 
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
+# Ensure the prompt is applied only once so that supercomputer modules, conda
+# environments, etc. can subsequently modify the prompt appearance.
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
-if [ -z "$_prompt_set" ]; then  # don't overwrite modifications by supercomputer modules, conda environments, etc.
-  _prompt_set=1
-  _prompt_dirs() {
-    local paths
-    IFS=$'\n' read -d '' -r -a paths < <(dirs -p -l | tac)
-    paths=("${paths[@]##*/}")
-    IFS=: eval 'echo "${paths[*]}"'
-  }
-  export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
-fi
+# don't overwrite modifications by supercomputer modules, conda environments, etc.
+_prompt_dirs() {
+  local paths
+  IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
+  paths=("${paths[@]##*/}")
+  IFS=: eval 'echo "${paths[*]}"'
+}
+[ -n "$_prompt_set" ] || export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
+_prompt_set=1
 
 # Message constructor; modify the number to increase number of dots
 _load_unloaded() {
@@ -363,8 +370,8 @@ _setup_opts() {
   shopt -u failglob                 # no error message if expansion is empty
   shopt -u nocaseglob               # match case in glob expressions
   shopt -u nocasematch              # match case in case/esac and [[ =~ ]] instances
-  shopt -u no_empty_cmd_completion  # enable empty command completion
   shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+  shopt -u no_empty_cmd_completion  # enable empty command completion
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
   export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
   export HISTSIZE=5000  # huge history
@@ -379,10 +386,13 @@ _setup_opts 2>/dev/null  # ignore if option unavailable
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
-alias cd='cd -P'  # don't want this on my mac temporarily
-alias ls='ls --color=always -AF'   # ls with dirs differentiate from files
-alias ld='ls --color=always -AFd'  # ls with details and file sizes
+alias cd='cd -P'                    # don't want this on my mac temporarily
+alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
+alias ld='ls --color=always -AFd'   # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
+alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
+popd() { command popd "$@" >/dev/null || return 1; }    # suppress wrong-order printing
+pushd() { command pushd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
 export LESS="--RAW-CONTROL-CHARS"
 [ -r ~/.LESS_TERMCAP ] && source ~/.LESS_TERMCAP
 if hash tput 2>/dev/null; then
@@ -1157,6 +1167,8 @@ kill-port() {
 _scp_bulk() {
   local cmd port flags forward remote address paths srcs dest
   # Parse arguments
+  # NOTE: Could add --delete flag to remove contents but very risky... better to just
+  # always track which files are deleted and manually update both dirs... or use git.
   flags=(-vhi -rlpt --update --progress)  # default flags
   $_macos && remote=0 || remote=1  # whether on remote
   while [ $# -gt 0 ]; do
@@ -1212,13 +1224,12 @@ lrcp() {
 }
 figcp() {
   local flags forward address src dest
-  flags=(--include='man*/***' --include='fig*/***' --include='vid*/***' --exclude='*' --exclude='.*')
+  flags=(--include='fig*/***' --include='vid*/***' --include='meet*/***' --exclude='*' --exclude='.*')
   $_macos && forward=1 || forward=0
   [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
   src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
   $_macos && dest=${src/$HOME\/science/$HOME} || dest=${src/$HOME/$HOME\/science}
   _scp_bulk "${flags[@]}" "$forward" $@ "$src" "$dest"  # address may expand to nothing
-  _scp_bulk "${flags[@]}" "$((1 - forward))" $@ "$dest" "$src"  # address may expand to nothing
 }
 
 # Helper function: return if directory is empty or essentially
@@ -1414,17 +1425,35 @@ jupyter-connect() {
 }
 
 # Save a concise HTML snapshot of the jupyter notebook for collaboration
-# NOTE: Requires xelatex. Use conda install -c conda-forge tectonic
+# NOTE: As of 2022-09-12 the PDF version requires xelatex. Try to use drop-in xelatex
+# replacement tectonic for speed; install with conda install -c conda-forge tectonic and
+# edit jupyter_nbconvert_config.py. See: https://github.com/jupyter/nbconvert/issues/808
+# NOTE: As of 2022-09-12 the HTML version can only use the jupyter notebook toc2-style
+# table of contents. To install see: https://stackoverflow.com/a/63123831/4970632 (note
+# jupyter_nbconvert_config.json is auto-edited). To change default settings must use
+# classical jupyter notebook interface, and to include toc with default html export can
+# optionally add metadata to ipynb. See: https://stackoverflow.com/a/59286150/4970632
+# NOTE: As of 2022-09-12 nbconvert greater than 5 causes issues converting notebooks.
+# See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1533
+# This also causes issues with later versions of jinja so need to downgrade to 3.0.0
+# with pip despite conflict warnings re: jupyter-server and jupyterlab-server. Should
+# revisit this in future. See: https://github.com/d2l-ai/d2l-book/issues/46
 jupyter-convert() {
-  local fmt dir file
+  local ext fmt dir file output
   # fmt=pdf
   fmt=html_toc
+  ext=${fmt%_*}
   dir=$(git rev-parse --show-toplevel)/meetings
   [ -d "$dir" ] || { echo "Error: Directory $dir does not exist."; return 1; }
   for file in "$@"; do
     [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
-    jupyter nbconvert --to "$fmt" --no-input --no-prompt \
-      --output-dir "$dir" --output "${file%.ipynb}_$(date +%Y-%m-%d).${fmt%_*}" "$file"
+    output=${file%.ipynb}_$(date +%Y-%m-%d).$ext
+    jupyter nbconvert --no-input --no-prompt \
+      --to "$fmt" --output-dir "$dir" --output "$output" "$file"
+    output=${output##*/}
+    pushd "$dir" || { echo "Error: Failed to jump to meeting directory."; return 1; }
+    zip -r "${output/.${ext}/.zip}" "${output/.${ext}/}"*  # include _files subfolder
+    popd || { echo "Error: Failed to return to original directory."; return 1; }
   done
 }
 

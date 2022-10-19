@@ -3,8 +3,12 @@
 "-----------------------------------------------------------------------------"
 " Helper functions and variables
 let s:newfile = '[new file]'  " dummy entry for requesting new file in current directory
-function! s:make_prompt(dir) abort
-  return substitute(a:dir, '^' . expand('~'), '~', '') . '/'  " remove user folder
+function! s:make_prompt(path) abort
+  let prompt = a:path
+  let prompt = substitute(prompt, '^' . expand('~'), '~', '')
+  let prompt = substitute(prompt, '^' . fnamemodify('.', ':p'), '.', '')
+  let prompt = empty(prompt) ? '.' : prompt
+  return prompt . '/'  " remove user folder
 endfunction
 
 " Test if file exists
@@ -153,8 +157,16 @@ endfunction
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to display
 " annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_from(files, local) abort
-  let command = a:files ? 'Files' : 'Open'
-  let default = a:local ? expand('%:p:h') . '/' : fnamemodify(getcwd(), ':p')
+  if a:files
+    let command = 'Files'  " fzf recursively-descending open command
+  else
+    let command = 'Open'  " custom 'continuous' per-directory open command
+  endif
+  if a:local
+    let default = expand('%:p:h') . '/'  " start from local directory
+  else
+    let default = fnamemodify(getcwd(), ':p')  " start from current directory
+  endif
   let result = input(command . ': ', default, 'file')
   if !empty(result)
     exe command . ' ' . result
@@ -169,7 +181,8 @@ function! file#open_continuous(...) abort
   let paths = []
   for pattern in a:000
     let pattern = substitute(pattern, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
-    call extend(paths, expand(pattern, 0, 1))  " expand glob patterns
+    let files = expand(pattern, 0, 1)  " expand glob patterns
+    call extend(paths, files)
   endfor
   call s:open_continuous(paths)  " call fzf sink function
 endfunction
@@ -186,17 +199,13 @@ function! s:open_continuous(...) abort
   let paths = []
   for item in items
     if item == s:newfile  " should be recursed at least one level
-      let base = empty(base) ? '.' : base  " should be impossible but just in case
       let item = input(s:make_prompt(base), '', 'customlist,utils#null_list')
     endif
-    if empty(item)  " e.g. cancelled input
-      :
-    elseif empty(base)
-      call add(paths, item)
-    elseif item ==# '..'  " fnamemodify :p does not expand .. so must do this instead
-      call add(paths, fnamemodify(base, ':h'))  " head of current directory
+    let item = substitute(item, '\s', '\ ', 'g')
+    if item ==# '..'  " fnamemodify :p does not remove the .. so must do this
+      call add(paths, fnamemodify(base, ':p:h'))
     elseif !empty(item)
-      call add(paths, base . '/' . item)
+      call add(paths, empty(base) ? item : base . '/' . item)
     endif
   endfor
   " Possibly activate or re-activate fzf

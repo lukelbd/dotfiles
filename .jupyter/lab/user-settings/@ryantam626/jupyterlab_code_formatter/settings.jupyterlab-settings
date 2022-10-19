@@ -3,20 +3,37 @@
     // @ryantam626/jupyterlab_code_formatter:settings
     // See https://jupyterlab-code-formatter.readthedocs.io/en/latest/how-to-use.html
     // *****************************************
-    "formatOnSave": false,
+    "preferences": {
+        "default_formatter": {
+            "python": [
+                "isort",
+                "black"
+            ],
+            "r": "formatR"
+        }
+    },
     "black": {
         "line_length": 88,
         "string_normalization": false
     },
-    "isort": {
-        "line_length": 88,
-        "force_grid_wrap": 0,
-        "include_trailing_comma": true,
-        "multi_line_output": 3
+    "yapf": {
+        "style_config": "google"
     },
-    "preferences": {
-        "default_formatter": {
-            "python": ["isort", "black"]
-        }
-    }
+    "autopep8": {},
+    "isort": {
+        "multi_line_output": 3,
+        "include_trailing_comma": true,
+        "force_grid_wrap": 0,
+        "use_parentheses": true,
+        "line_length": 88
+    },
+    "formatR": {
+        "indent": 2,
+        "arrow": true,
+        "wrap": true,
+        "width_cutoff": 150
+    },
+    "styler": {},
+    "formatOnSave": false,
+    "suppressFormatterErrors": false
 }
