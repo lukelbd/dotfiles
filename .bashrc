@@ -1984,13 +1984,13 @@ _prompt() {  # input argument should be new command
 #    export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
 # 2. Next idea was to use environment variabbles -- TERM_SESSION_ID/ITERM_SESSION_ID
 #    indicate the window/tab/pane number so we can grep and fill.
+_title_file=$HOME/.title
 if [[ "$TERM_PROGRAM" =~ Apple_Terminal ]]; then
   _win_num=0
 else
   _win_num=${TERM_SESSION_ID%%t*}
-  _win_num=${_win_num#w}
 fi
-_title_file=~/.title
+_win_num=${_win_num#w}
 
 # First function that sets title
 # Record title from user input, or as user argument
