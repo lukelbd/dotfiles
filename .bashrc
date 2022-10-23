@@ -72,18 +72,23 @@
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
 #-----------------------------------------------------------------------------#
-# Bail out if not running interactively (e.g. when sending data packets over with scp/rsync)
-# Known bug: scp/rsync fail without this line due to greeting message:
+# Bail out if not running interactively (e.g. when sending data packets over with
+# scp/rsync). Known bug: scp/rsync fail without this line due to greeting message:
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
 # 2. https://unix.stackexchange.com/questions/18231/scp-fails-without-error
 [[ $- != *i* ]] && return
+_setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
 
+#-----------------------------------------------------------------------------#
+# Configure shell behavior and key bindings
+#-----------------------------------------------------------------------------#
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # Ensure the prompt is applied only once so that supercomputer modules, conda
 # environments, etc. can subsequently modify the prompt appearance.
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
+_setup_message 'Machine setup'
 _prompt_dirs() {
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
@@ -93,7 +98,84 @@ _prompt_dirs() {
 [ -n "$_prompt_set" ] || export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 _prompt_set=1
 
-# Message constructor; modify the number to increase number of dots
+# Readline/inputrc settings
+# Use ctrl-r to search previous commands
+# Equivalent to putting lines in single quotes inside .inputrc
+# bind 'set editing-mode vi'
+# bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
+# bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block curso
+_setup_bindings() {
+  complete -r  # remove completions
+  bind -r '"\C-i"'
+  bind -r '"\C-d"'
+  bind -r '"\C-s"'  # to enable C-s in Vim (normally caught by terminal as start/stop signal)
+  bind 'set keyseq-timeout 50'                # see: https://unix.stackexchange.com/a/318497/112647
+  bind 'set show-mode-in-prompt off'          # do not show mode
+  bind 'set disable-completion off'           # ensure on
+  bind 'set completion-ignore-case on'        # want dat
+  bind 'set completion-map-case on'           # treat hyphens and underscores as same
+  bind 'set show-all-if-ambiguous on'         # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+  bind 'set menu-complete-display-prefix on'  # show string typed so far as 'member' while cycling through completion options
+  bind 'set completion-display-width 1'       # easier to read
+  bind 'set bell-style visible'               # only let readlinke/shell do visual bell; use 'none' to disable totally
+  bind 'set skip-completed-text on'           # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
+  bind 'set visible-stats off'                # extra information, e.g. whether something is executable with *
+  bind 'set page-completions off'             # no more --more-- pager when list too big
+  bind 'set completion-query-items 0'         # never ask for user confirmation if there's too much stuff
+  bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
+  bind '"\C-i": menu-complete'                # this will not pollute scroll history; better
+  bind '"\e-1\C-i": menu-complete-backward'   # this will not pollute scroll history; better
+  bind '"\e[Z": "\e-1\C-i"'                   # shift tab to go backwards
+  bind '"\eOP": menu-complete'
+  bind '"\eOQ": menu-complete-backward'
+  stty werase undef  # no more ctrl-w word delete function; allows c-w re-binding to work
+  stty stop undef    # no more ctrl-s
+  stty eof undef     # no more ctrl-d
+}
+_setup_bindings 2>/dev/null  # ignore any errors
+
+# Shell Options
+# Check out 'shopt -p' to see possibly interesting shell options
+# Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
+_setup_opts() {
+  set +H  # turn off history expand so can have '!' in strings: https://unix.stackexchange.com/a/33341/112647
+  set -o ignoreeof  # never close terminal with ctrl-d
+  stty -ixon  # disable start stop output control to alloew ctrl-s
+  shopt -s autocd                   # typing naked directory name will cd into it
+  shopt -s cdspell                  # attempt spelling correction of cd arguments
+  shopt -s cdable_vars              # cd into shell variable directories, no $ necessary
+  shopt -s checkwinsize             # allow window resizing
+  shopt -s cmdhist                  # save multi-line commands as one command in history
+  shopt -s direxpand                # expand directories
+  shopt -s dirspell                 # attempt spelling correction of dirname
+  shopt -s globstar                 # **/ matches all subdirectories, searches recursively
+  shopt -s histappend               # append to the history file, don't overwrite it
+  shopt -u dotglob                  # include dot patterns in glob matches
+  shopt -u extglob                  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -u failglob                 # no error message if expansion is empty
+  shopt -u nocaseglob               # match case in glob expressions
+  shopt -u nocasematch              # match case in case/esac and [[ =~ ]] instances
+  shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+  shopt -u no_empty_cmd_completion  # enable empty command completion
+  export PROMPT_DIRTRIM=2  # trim long paths in prompt
+  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
+  export HISTSIZE=5000  # huge history
+  export HISTFILESIZE=5000  # huge history
+  export HISTCONTROL="erasedups:ignoreboth"  # avoid duplicate entries
+}
+_setup_opts 2>/dev/null  # ignore if option unavailable
+
+#-----------------------------------------------------------------------------#
+# Settings for particular machines
+#-----------------------------------------------------------------------------#
+# Reset all aliases
+# Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
+unalias -a
+
+# Reset functions? Nah, no decent way to do it
+# declare -F # to view current ones
+
+# Helper function to load modules automatically
 _load_unloaded() {
   local module   # but _loaded_modules is global
   read -r -a _loaded_modules < <(module --terse list 2>&1)
@@ -104,25 +186,10 @@ _load_unloaded() {
     fi
   done
 }
-_echo_bashrc() {
-  printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"
-}
-
-#-----------------------------------------------------------------------------#
-# Settings for particular machines
-# Custom key bindings and interaction
-#-----------------------------------------------------------------------------#
-# Reset all aliases
-# Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
-unalias -a
-
-# Reset functions? Nah, no decent way to do it
-# declare -F # to view current ones
 
 # Flag for if in macos
 # First, the path management
 _macos=false
-_echo_bashrc 'Variables and modules'
 case "${HOSTNAME%%.*}" in
   # Macbook settings
   uriah*|velouria*|vortex*)
@@ -310,81 +377,11 @@ export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
 #-----------------------------------------------------------------------------#
-# Configure shell behavior and key bindings
-#-----------------------------------------------------------------------------#
-_echo_bashrc 'Functions and aliases'
-# Readline/inputrc settings
-# Use ctrl-r to search previous commands
-# Equivalent to putting lines in single quotes inside .inputrc
-# bind 'set editing-mode vi'
-# bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
-# bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block curso
-_setup_bindings() {
-  complete -r  # remove completions
-  bind -r '"\C-i"'
-  bind -r '"\C-d"'
-  bind -r '"\C-s"'  # to enable C-s in Vim (normally caught by terminal as start/stop signal)
-  bind 'set keyseq-timeout 50'                # see: https://unix.stackexchange.com/a/318497/112647
-  bind 'set show-mode-in-prompt off'          # do not show mode
-  bind 'set disable-completion off'           # ensure on
-  bind 'set completion-ignore-case on'        # want dat
-  bind 'set completion-map-case on'           # treat hyphens and underscores as same
-  bind 'set show-all-if-ambiguous on'         # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
-  bind 'set menu-complete-display-prefix on'  # show string typed so far as 'member' while cycling through completion options
-  bind 'set completion-display-width 1'       # easier to read
-  bind 'set bell-style visible'               # only let readlinke/shell do visual bell; use 'none' to disable totally
-  bind 'set skip-completed-text on'           # if there is text to right of cursor, make bash ignore it; only bash 4.0 readline
-  bind 'set visible-stats off'                # extra information, e.g. whether something is executable with *
-  bind 'set page-completions off'             # no more --more-- pager when list too big
-  bind 'set completion-query-items 0'         # never ask for user confirmation if there's too much stuff
-  bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
-  bind '"\C-i": menu-complete'                # this will not pollute scroll history; better
-  bind '"\e-1\C-i": menu-complete-backward'   # this will not pollute scroll history; better
-  bind '"\e[Z": "\e-1\C-i"'                   # shift tab to go backwards
-  bind '"\eOP": menu-complete'
-  bind '"\eOQ": menu-complete-backward'
-  stty werase undef  # no more ctrl-w word delete function; allows c-w re-binding to work
-  stty stop undef    # no more ctrl-s
-  stty eof undef     # no more ctrl-d
-}
-_setup_bindings 2>/dev/null  # ignore any errors
-
-# Shell Options
-# Check out 'shopt -p' to see possibly interesting shell options
-# Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
-_setup_opts() {
-  set +H  # turn off history expand so can have '!' in strings: https://unix.stackexchange.com/a/33341/112647
-  set -o ignoreeof  # never close terminal with ctrl-d
-  stty -ixon  # disable start stop output control to alloew ctrl-s
-  shopt -s autocd                   # typing naked directory name will cd into it
-  shopt -s cdspell                  # attempt spelling correction of cd arguments
-  shopt -s cdable_vars              # cd into shell variable directories, no $ necessary
-  shopt -s checkwinsize             # allow window resizing
-  shopt -s cmdhist                  # save multi-line commands as one command in history
-  shopt -s direxpand                # expand directories
-  shopt -s dirspell                 # attempt spelling correction of dirname
-  shopt -s globstar                 # **/ matches all subdirectories, searches recursively
-  shopt -s histappend               # append to the history file, don't overwrite it
-  shopt -u dotglob                  # include dot patterns in glob matches
-  shopt -u extglob                  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -u failglob                 # no error message if expansion is empty
-  shopt -u nocaseglob               # match case in glob expressions
-  shopt -u nocasematch              # match case in case/esac and [[ =~ ]] instances
-  shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
-  shopt -u no_empty_cmd_completion  # enable empty command completion
-  export PROMPT_DIRTRIM=2  # trim long paths in prompt
-  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
-  export HISTSIZE=5000  # huge history
-  export HISTFILESIZE=5000  # huge history
-  export HISTCONTROL="erasedups:ignoreboth"  # avoid duplicate entries
-}
-_setup_opts 2>/dev/null  # ignore if option unavailable
-
-#-----------------------------------------------------------------------------#
-# Aliases/functions for printing out information
+# Functions for printing information
 #-----------------------------------------------------------------------------#
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
+_setup_message 'General setup'
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
 alias cd='cd -P'                    # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
@@ -495,7 +492,7 @@ space() {
 }
 
 #-----------------------------------------------------------------------------#
-# Wrappers for common functions
+# Functions wrapping common commands
 #-----------------------------------------------------------------------------#
 # Environment variables
 export EDITOR='command vim'  # default editor, nice and simple
@@ -668,7 +665,7 @@ open() {
 }
 
 #-----------------------------------------------------------------------------#
-# General utilties
+# General utilty functions
 #-----------------------------------------------------------------------------#
 # Receive affirmative or negative response using input message, then exit accordingly.
 confirm() {
@@ -962,7 +959,7 @@ zotfile-cleanup() {
 }
 
 #-----------------------------------------------------------------------------#
-# Sessions, supercomputers, and github
+# Remote-related functions
 #-----------------------------------------------------------------------------#
 # Shortcuts for queue
 alias suser='squeue -u $USER'
@@ -1245,17 +1242,17 @@ _is_empty() {
   fi
 }
 
-# Generate SSH file system
-# For pros and cons see: https://unix.stackexchange.com/q/25974/112647
-# For how to install sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
+# Generate SSH file system with optimized caching settings
+# For pros and cons of mounting see: https://unix.stackexchange.com/q/25974/112647
+# For installing sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
+# For cache timeout options see: https://superuser.com/q/344255/506762
+# For cache timeout also see: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
 # NOTE: Why not pipe? Because pipe creates fork *subshell* whose variables are
 # inaccessible to current shell: https://stackoverflow.com/a/13764018/4970632
 mount() {
   local host address location
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
   [ $# -ne 1 ] && echo "Usage: mount SERVER_NAME" && return 1
-
-  # Get address
   location="$1"
   case "$location" in
     glade)  host=cheyenne ;;
@@ -1272,26 +1269,20 @@ mount() {
   }
   echo "Server: $host"
   echo "Address: $address"
-
-  # Directory on remote server
-  # NOTE: Using tilde ~ does not seem to work
   case $location in
     glade)     location="/glade/scratch/davislu" ;;
     mdata?)    location="/${location}/ldavis"    ;;  # mdata1, mdata2, ...
     cheyenne?) location="/glade/u/home/davislu"  ;;
-    *)         location="/home/ldavis"           ;;
+    *)         location="/home/ldavis"           ;;  # NOTE: Using tilde ~ does not seem to work
   esac
-
-  # Initiate (objects are meant to help speed up connection)
-  # See discussion: https://superuser.com/q/344255/506762
-  # Also see blogpost: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
-  # NOTE: The cache timeout prevents us from detecting new files!
+  # NOTE: The cache timeout prevents us from detecting new files! Therefore
+  # do not enable cache settings for now... must revisit this.
   # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead
   # -ocache_timeout=115200 -oattr_timeout=115200 -ociphers=arcfour
   # -ocache_timeout=60 -oattr_timeout=115200
-  command sshfs "$address:$location" "$HOME/$host" -ocache=no -ocompression=no -ovolname="$host"
+  command sshfs \
+    "$address:$location" "$HOME/$host" -ocache=no -ocompression=no -ovolname="$host"
 }
-
 # Safely undo mount. Name 'unmount' is more intuitive than 'umount'
 unmount() {
   ! $_macos && echo "Error: This should be run from your macbook." && return 1
@@ -1820,7 +1811,6 @@ echo 'done'
 
 #-----------------------------------------------------------------------------#
 # FZF fuzzy file completion tool
-# See this page for ANSI color information: https://stackoverflow.com/a/33206814/4970632
 #-----------------------------------------------------------------------------#
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
@@ -1828,8 +1818,9 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # Various default settings (see man page for --bind information)
   # * Inline info puts the number line thing on same line as text.
   # * Bind slash to accept so behavior matches shell completion behavior.
-  # * Color -1 is terminal default. See: https://stackoverflow.com/a/33206814/4970632
-  _echo_bashrc 'Enabling fzf'
+  # * Enforce terminal background default color using -1 below.
+  # * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
+  _setup_message 'Enabling fzf'
   # shellcheck disable=2034
   {
     _fzf_opts=" \
@@ -1900,7 +1891,7 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
 fi
 
 #-----------------------------------------------------------------------------#
-# Shell integration; iTerm2 feature only
+# Shell integration for iTerm2
 #-----------------------------------------------------------------------------#
 # Show inline figures with fixed 300dpi
 # Make sure it was not already installed and we are not inside vim :terminal
@@ -1910,7 +1901,7 @@ if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   && [ -f ~/.iterm2_shell_integration.bash ] \
   && [ -z "$VIMRUNTIME" ]; then
   # Enable shell integration
-  _echo_bashrc 'Enabling shell integration'
+  _setup_message 'Enabling shell integration'
   source ~/.iterm2_shell_integration.bash
 
   # Add helper functions
@@ -1938,12 +1929,6 @@ fi
 
 #-----------------------------------------------------------------------------#
 # Conda stuff
-# WARNING: Must come after shell integration or gets overwritten
-# WARNING: Making conda environments work with jupyter is complicated!
-# Have to remove stuff from ipykernel and install them manually.
-# See: https://stackoverflow.com/a/54985829/4970632
-# See: https://stackoverflow.com/a/48591320/4970632
-# See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 #-----------------------------------------------------------------------------#
 # Find conda base
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
@@ -1956,9 +1941,16 @@ else
   unset _conda
 fi
 
+# Optionally initiate conda
+# WARNING: This must come after shell integration or gets overwritten
+# WARNING: Making conda environments work with jupyter is complicated. Have
+# to remove stuff from ipykernel and then install them manually.
+# See: https://stackoverflow.com/a/54985829/4970632
+# See: https://stackoverflow.com/a/48591320/4970632
+# See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
   # Initialize conda. Generate this code with 'mamba init'
-  _echo_bashrc 'Enabling conda'
+  _setup_message 'Enabling conda'
   __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
   if [ $? -eq 0 ]; then
     eval "$__conda_setup"
