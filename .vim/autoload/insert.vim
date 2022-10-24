@@ -29,7 +29,6 @@ endfunction
 " iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
 function! insert#lang_map()
   let b:caps_lock = exists('b:caps_lock') ? 1 - b:caps_lock : 1
-  echom 'Caps lock! ' . b:caps_lock
   if b:caps_lock
     for s:c in range(char2nr('A'), char2nr('Z'))
       exe 'lnoremap <buffer> ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)

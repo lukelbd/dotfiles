@@ -1223,10 +1223,10 @@ for s:name in [
   \ 'vim-scrollwrapped',
   \ 'vim-toggle',
   \ ]
-  let s:path_home = expand('~/' . s:name)
+  let s:path_code = expand('~/coding/' . s:name)
   let s:path_fork = expand('~/forks/' . s:name)
-  if isdirectory(s:path_home)
-    call s:plug_local(s:path_home)
+  if isdirectory(s:path_code)
+    call s:plug_local(s:path_code)
   elseif isdirectory(s:path_fork)
     call s:plug_local(s:path_fork)
   else

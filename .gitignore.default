@@ -1,17 +1,17 @@
 # Untracked folders
-figs*/
-vids*/
-figures*/
-videos*/
-class*/
-meeting*/
-manuscript*/
+figs*
+vids*
+figures*
+videos*
+class*
+meeting*
+manuscript*
 
 # Trash folders
-tmp/
-old/
-trash/
-garbage/
+tmp
+old
+trash*
+garbage*
 
 # Vim session files and swap files
 tags
