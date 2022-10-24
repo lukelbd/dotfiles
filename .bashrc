@@ -347,7 +347,6 @@ export PATH=$HOME/go/bin:$PATH  # go scripts
 export PATH=$HOME/nvim/bin:$PATH  # neovim location
 export PATH=$HOME/.iterm2:$PATH  # iterm utilities
 export PATH=$HOME/.local/bin:$PATH  # pip install location
-export PATH=$HOME/ncparallel:$PATH  # utility location
 export PATH=$HOME/bin:$PATH  # custom scripts
 
 # Various python stuff
@@ -357,11 +356,20 @@ unset MPLBACKEND
 unset PYTHONPATH
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
-export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
-_science_projects=(drycore constraints persistence timescales transport)
-_general_projects=(cmip-data reanalysis-data idealized coupled)
-for _project in "${_science_projects[@]}" "${_general_projects[@]}"; do
+export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
+export PATH=$HOME/coding/ncparallel:$PATH  # utility location
+_dirs_data=(cmip-data reanalysis-data idealized coupled)
+_dirs_tools=(ncparallel mppnccombine)
+_dirs_science=(constraints persistence timescales transport)
+for _project in "${_dirs_tools[@]}"; do
+    if [ -r "$HOME/models/$_project" ]; then
+      export PATH=$HOME/models/$_project:$PATH
+    elif [ -r "$HOME/$_project" ]; then
+      export PATH=$HOME/$_project:$PATH
+    fi
+done
+for _project in "${_dirs_data[@]}" "${_dirs_science[@]}"; do
     if [ -r "$HOME/science/$_project" ]; then
       export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
     elif [ -r "$HOME/$_project" ]; then
@@ -1220,13 +1228,12 @@ lrcp() {
   _scp_bulk 1 "$@"
 }
 figcp() {
-  local flags forward address src dest
+  local flags forward address path
   flags=(--include='fig*/***' --include='vid*/***' --include='meet*/***' --exclude='*' --exclude='.*')
   $_macos && forward=1 || forward=0
   [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
-  src=$(git rev-parse --show-toplevel)/  # trailing slash is critical!
-  $_macos && dest=${src/$HOME\/science/$HOME} || dest=${src/$HOME/$HOME\/science}
-  _scp_bulk "${flags[@]}" "$forward" $@ "$src" "$dest"  # address may expand to nothing
+  path=$(git rev-parse --show-toplevel)/  # assumes identical paths (note trailing slash is critical)
+  _scp_bulk "${flags[@]}" "$forward" $@ "$path" "$path"  # address may expand to nothing
 }
 
 # Helper function: return if directory is empty or essentially
@@ -1810,6 +1817,43 @@ wctex() {
 echo 'done'
 
 #-----------------------------------------------------------------------------#
+# Shell integration for iTerm2
+#-----------------------------------------------------------------------------#
+# Show inline figures with fixed 300dpi
+# Make sure it was not already installed and we are not inside vim :terminal
+# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
+if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
+  && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
+  && [ -f ~/.iterm2_shell_integration.bash ] \
+  && [ -z "$VIMRUNTIME" ]; then
+  # Enable shell integration
+  _setup_message 'Enabling shell integration'
+  source ~/.iterm2_shell_integration.bash
+
+  # Add helper functions
+  for func in imgcat imgls; do
+    unalias $func
+    eval 'function '$func'() {
+      local i tmp files
+      i=0
+      files=("$@")
+      for file in "${files[@]}"; do
+        if [ "${file##*.}" == pdf ]; then
+          tmp=./tmp.${file%.*}.png  # convert to png
+          convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
+        else
+          tmp=./tmp.${file}
+          convert -flatten "$file" "$tmp"
+        fi
+        $HOME/.iterm2/'$func' "$tmp"
+        rm "$tmp"
+      done
+    }'
+  done
+  echo 'done'
+fi
+
+#-----------------------------------------------------------------------------#
 # FZF fuzzy file completion tool
 #-----------------------------------------------------------------------------#
 # Run installation script; similar to the above one
@@ -1888,43 +1932,6 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   #   READLINE_POINT=${#READLINE_LINE}
   # }
   # bind -x '"\C-i": _complete_override'
-fi
-
-#-----------------------------------------------------------------------------#
-# Shell integration for iTerm2
-#-----------------------------------------------------------------------------#
-# Show inline figures with fixed 300dpi
-# Make sure it was not already installed and we are not inside vim :terminal
-# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
-  && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
-  && [ -f ~/.iterm2_shell_integration.bash ] \
-  && [ -z "$VIMRUNTIME" ]; then
-  # Enable shell integration
-  _setup_message 'Enabling shell integration'
-  source ~/.iterm2_shell_integration.bash
-
-  # Add helper functions
-  for func in imgcat imgls; do
-    unalias $func
-    eval 'function '$func'() {
-      local i tmp files
-      i=0
-      files=("$@")
-      for file in "${files[@]}"; do
-        if [ "${file##*.}" == pdf ]; then
-          tmp=./tmp.${file%.*}.png  # convert to png
-          convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
-        else
-          tmp=./tmp.${file}
-          convert -flatten "$file" "$tmp"
-        fi
-        $HOME/.iterm2/'$func' "$tmp"
-        rm "$tmp"
-      done
-    }'
-  done
-  echo 'done'
 fi
 
 #-----------------------------------------------------------------------------#
@@ -2074,7 +2081,7 @@ if $_macos; then # first the MacOS options
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
-  # Audio and video
+  # Sleep mode for plex
   enable_sleep() {
     sudo pmset -a sleep 1
     sudo pmset -a hibernatemode 1
@@ -2085,15 +2092,13 @@ if $_macos; then # first the MacOS options
     sudo pmset -a hibernatemode 0
     sudo pmset -a disablesleep 1
   }
-  print_weather() {
-    curl 'wttr.in/Fort Collins'
-  }
-  print_artists() {
-    find ~/Music -mindepth 2 -type f -printf "%P\n" \
-      | cut -d/ -f1 \
-      | grep -v ^Media$ \
-      | uniq -c \
-      | sort -n
+
+  # Audio and video utlis
+  strip_audio() {
+    local file
+    for file in "$@"; do
+      ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"
+    done
   }
   sort_artists() {
     local base artist title
@@ -2108,11 +2113,20 @@ if $_macos; then # first the MacOS options
       echo "Moved '$base' to '$artist/$title'."
     done
   }
-  strip_audio() {
-    local file
-    for file in "$@"; do
-      ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"
-    done
+
+  # Helpful messages
+  show_weather() {
+    curl 'wttr.in/Fort Collins'
+  }
+  show_artists() {
+    find ~/Music \
+      -type f \
+      -mindepth 2 \
+      -printf "%P\n" \
+      | cut -d/ -f1 \
+      | grep -v ^Media$ \
+      | uniq -c \
+      | sort -n
   }
 fi
 
