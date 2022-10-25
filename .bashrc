@@ -2145,6 +2145,61 @@ if $_macos; then # first the MacOS options
       | uniq -c \
       | sort -n
   }
+
+  # Enable or disable sleep mode for plex
+  enable_sleep() {
+    sudo pmset -a sleep 1
+    sudo pmset -a hibernatemode 1
+    sudo pmset -a disablesleep 0
+  }
+  disable_sleep() {  # see: https://gist.github.com/pwnsdx/2ae98341e7e5e64d32b734b871614915
+    sudo pmset -a sleep 0
+    sudo pmset -a hibernatemode 0
+    sudo pmset -a disablesleep 1
+  }
+
+  # Enable or disable animations
+  # See: https://apple.stackexchange.com/q/14001/214359
+  disable_animations() {
+    defaults write -g NSAutomaticWindowAnimationsEnabled -bool false
+    defaults write -g NSScrollAnimationEnabled -bool false
+    defaults write -g NSWindowResizeTime -float 0.001
+    defaults write -g QLPanelAnimationDuration -float 0
+    defaults write -g NSScrollViewRubberbanding -bool false
+    defaults write -g NSDocumentRevisionsWindowTransformAnimation -bool false
+    defaults write -g NSToolbarFullScreenAnimationDuration -float 0
+    defaults write -g NSBrowserColumnAnimationSpeedMultiplier -float 0
+    defaults write com.apple.dock springboard-page-duration -float 0
+    defaults write com.apple.dock expose-animation-duration -float 0
+    defaults write com.apple.dock autohide-time-modifier -float 0
+    defaults write com.apple.dock autohide-delay -float 0
+    defaults write com.apple.dock springboard-show-duration -float 0
+    defaults write com.apple.dock springboard-hide-duration -float 0
+    defaults write com.apple.finder DisableAllAnimations -bool true
+    defaults write com.apple.Mail DisableSendAnimations -bool true
+    defaults write com.apple.Mail DisableReplyAnimations -bool true
+  }
+
+  # Enable animations
+  enable_animations() {
+    defaults delete -g NSAutomaticWindowAnimationsEnabled
+    defaults delete -g NSScrollAnimationEnabled
+    defaults delete -g NSWindowResizeTime
+    defaults delete -g QLPanelAnimationDuration
+    defaults delete -g NSScrollViewRubberbanding
+    defaults delete -g NSDocumentRevisionsWindowTransformAnimation
+    defaults delete -g NSToolbarFullScreenAnimationDuration
+    defaults delete -g NSBrowserColumnAnimationSpeedMultiplier
+    defaults delete com.apple.dock autohide-time-modifier
+    defaults delete com.apple.dock autohide-delay
+    defaults delete com.apple.dock expose-animation-duration
+    defaults delete com.apple.dock springboard-show-duration
+    defaults delete com.apple.dock springboard-hide-duration
+    defaults delete com.apple.dock springboard-page-duration
+    defaults delete com.apple.finder DisableAllAnimations
+    defaults delete com.apple.Mail DisableSendAnimations
+    defaults delete com.apple.Mail DisableReplyAnimations
+  }
 fi
 
 #-----------------------------------------------------------------------------#
