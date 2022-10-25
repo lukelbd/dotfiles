@@ -1940,15 +1940,65 @@ fi
 # Find conda base
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
 alias brew="PATH=\"$PATH\" brew"
-if [ -d "$HOME/anaconda3" ]; then
-  _conda=$HOME/anaconda3
+if [ -d "$HOME/mambaforge" ]; then
+  _conda=$HOME/mambaforge
+elif [ -d "$HOME/miniforge" ]; then
+  _conda=$HOME/miniforge
 elif [ -d "$HOME/miniconda3" ]; then
   _conda=$HOME/miniconda3
 else
   unset _conda
 fi
 
-# Optionally initiate conda
+# Function to list available packages
+conda-avail() {
+  local version versions
+  [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
+  echo "Package:            $1"
+  version=$(mamba list "^$1$" 2>/dev/null)
+  [[ "$version" =~ "$1" ]] \
+    && version=$(echo "$version" | grep "$1" | awk 'NR == 1 {print $2}') \
+    || version="N/A"  # get N/A if not installed
+  echo "Current version:    $version"
+  versions=$(mamba search -c conda-forge "$1" 2>/dev/null) \
+    || { echo "Error: Package \"$1\" not found."; return 1; }
+  versions=$(echo "$versions" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | sort | xargs)
+  echo "Available versions: $versions"
+}
+
+# Function to backup and restore conda environments. This is useful when conda breaks
+# due to usage errors or issues with permissions after a crash and backblaze restore.
+conda-backup() {
+  local env dest
+  dest=$HOME/dotfiles
+  [ -d "$dest" ] || { echo " Error: Backup directory $dest not found."; return 1; }
+  dest=$dest/envs
+  [ -d "$dest" ] || mkdir "$dest/envs"
+  for env in $(conda env list | cut -d" " -f1); do
+    [[ ${env:0:1} == "#" ]] && continue
+    echo "Creating file: $dest/${env}.yml"
+    conda env export -n $env > "$dest/${env}.yml"
+  done
+}
+conda-restore() {
+  local envs path src
+  src=$HOME/dotfiles/envs
+  [ -d "$src" ] || { echo " Error: Backup directory $src not found."; return 1; }
+  envs=($(conda env list | cut -d' ' -f1))
+  for path in "$src"/*.yml; do
+    name=${path##*/}
+    name=${name%.yml}
+    if [[ " ${envs[*]} " =~ " $name " ]]; then
+      echo "Updating environment: $name"
+      mamba env update -n "$name" --file "$path"
+    else
+      echo "Creating environment: $name"
+      mamba env create -n "$name" --file "$path"
+    fi
+  done
+}
+
+# Optionally initiate conda (generate this code with 'mamba init')
 # WARNING: This must come after shell integration or gets overwritten
 # WARNING: Making conda environments work with jupyter is complicated. Have
 # to remove stuff from ipykernel and then install them manually.
@@ -1956,7 +2006,6 @@ fi
 # See: https://stackoverflow.com/a/48591320/4970632
 # See: https://medium.com/@nrk25693/how-to-add-your-conda-environment-to-your-jupyter-notebook-in-just-4-steps-abeab8b8d084
 if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]]; then
-  # Initialize conda. Generate this code with 'mamba init'
   _setup_message 'Enabling conda'
   __conda_setup=$("$_conda/bin/conda" 'shell.bash' 'hook' 2>/dev/null)
   if [ $? -eq 0 ]; then
@@ -1975,28 +2024,8 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
   if ! [[ "$PATH" =~ condabin ]]; then
     export PATH=$_conda/condabin:$PATH
   fi
-
-  # Function to list available packages
-  conda-avail() {
-    local version versions
-    [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
-    echo "Package:            $1"
-    version=$(mamba list "^$1$" 2>/dev/null)
-    [[ "$version" =~ "$1" ]] \
-      && version=$(echo "$version" | grep "$1" | awk 'NR == 1 {print $2}') \
-      || version="N/A"  # get N/A if not installed
-    echo "Current version:    $version"
-    versions=$(mamba search -c conda-forge "$1" 2>/dev/null) \
-      || { echo "Error: Package \"$1\" not found."; return 1; }
-    versions=$(echo "$versions" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | sort | xargs)
-    echo "Available versions: $versions"
-  }
-
-  # Activate conda
-  # NOTE: This calls '__conda_activate activate' which runs the command list returned
-  # by '__conda_exe shell.posix activate'. Can time things by inspecting this list.
-  mamba activate base
-  echo 'done'
+  mamba activate base  # calls '__conda_activate activate' which runs the
+  echo 'done' # commands returned by '__conda_exe shell.posix activate'
 fi
 
 #-----------------------------------------------------------------------------#
@@ -2080,18 +2109,6 @@ if $_macos; then # first the MacOS options
     || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
-
-  # Sleep mode for plex
-  enable_sleep() {
-    sudo pmset -a sleep 1
-    sudo pmset -a hibernatemode 1
-    sudo pmset -a disablesleep 0
-  }
-  disable_sleep() {  # see: https://gist.github.com/pwnsdx/2ae98341e7e5e64d32b734b871614915
-    sudo pmset -a sleep 0
-    sudo pmset -a hibernatemode 0
-    sudo pmset -a disablesleep 1
-  }
 
   # Audio and video utlis
   strip_audio() {

@@ -6,10 +6,9 @@
 ################################################################################
 # Files to be ignored
 shopt -s nullglob
-exclude=(README.md REGEXES.md .gitignore backup cleanup setup)
+exclude=(README.md REGEXES.md .gitignore envs backup cleanup setup)
 
 # Read the tracked file names
-root=$HOME  # home directory
 dotfiles=$HOME/dotfiles  # dotfiles directory
 cd "$dotfiles" || {
   echo "Error: dotfiles repo should be cloned into \$HOME."
@@ -24,9 +23,9 @@ for name in "${names[@]}"; do  # iterate through files
   [[ " ${exclude[*]} " =~ " $name " ]] && continue
   file=$dotfiles/$name
   [ "$name" == .gitignore.default ] && name=.gitignore  # change destination name?
-  dest=$root/$name
+  dest=$HOME/$name
   bakdest=$backup/$name
-  echo "Creating symlink to '${file##*/}' in '$root'..."
+  echo "Creating symlink to '${file##*/}' in '$HOME'..."
   if [ -L "$dest" ]; then
     echo "Removing existing symlink..."
     rm "$dest"  # remove if symlink
@@ -46,18 +45,26 @@ done
 # to /Library/TeX/Distributions/.DefaultTeX/Contents/Root pointing to a distribution
 # year e.g. /usr/local/texlive/2021. Use the symlink for consistency across versions.
 # For python have to manually search for the latest version using reverse number sort.
-libroot=$root/Library  # library root
-pyroot=$root/miniconda3/lib/python3.  # python root
+libroot=$HOME/Library  # library source
+texroot=/Library/TeX/Root  # tex distribution
+nvimroot=$HOME/.config/nvim
+[ -d "$nvimroot" ] || mkdir "$nvimroot"
+if [ -d "$HOME/mambaforge" ]; then
+  condaroot=$HOME/mambaforge
+elif [ -d "$HOME/miniforge" ]; then
+  condaroot=$HOME/miniforge
+else  # possibly also missing
+  condaroot=$HOME/miniconda3
+fi
+pyroot=$condaroot/lib/python3.  # python root
 read -r -a pynums < <(echo $pyroot* | sed "s@$pyroot@@g" | tr ' ' '\n' | sort -gr)
 pyroot=$pyroot${pynums[0]:?10}  # below emits error if empty
-texroot=/Library/TeX/Root  # tex distribution
-vimroot=$root/.config/nvim  # vim root location
-[ -d "$vimroot" ] || mkdir "$vimroot"
 for pair in \
-  $root/.vim:.nvim \
-  $root/dotfiles/.vimrc:.config/nvim/init.vim \
+  $HOME/.vim:.nvim \
+  $HOME/dotfiles/.vimrc:.config/nvim/init.vim \
   $pyroot/site-packages:site-packages \
   $texroot/texmf-dist/tex:tex-packages \
+  $libroot/Mobile\ Documents/com~apple~CloudDocs/Mackup:mackup \
   $libroot/Mobile\ Documents/com~apple~CloudDocs:iCloud\ Drive \
   $libroot/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/:iCloud\ PDFs \
   $libroot/CloudStorage/GoogleDrive-lukelbd@gmail.com/My\ Drive:Google\ Drive \
@@ -68,7 +75,7 @@ for pair in \
     echo "Warning: Skipping link to '$src' (path does not exist)."
     continue
   fi
-  dest=$root/${pair#*:}
+  dest=$HOME/${pair#*:}
   echo "Creating symlink to '$src' at '$dest'..."
   if [ -L "$dest" ]; then
     echo "Removing existing symlink..."

@@ -2,7 +2,6 @@
 .proplot/cmaps
 .vim/plugged
 .vim/black
-schemes
 empty*
 test*
 *.log
