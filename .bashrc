@@ -5,18 +5,19 @@
 # out what is in the system defaults before using this and make sure your
 # $PATH is populated. To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# * Use '<package_manager> list' for most package managers to see what is
-#   installed e.g. brew list, conda list, pip list, jupyter kernelspec list,
-#   jupyter labextension list, jupyter nbextension list.
+# * To see what is available for various package/environment managers use e.g. brew list
+#   (--cask|--formulae), port installed (requested), tlmgr list --only-installed,
+#   conda (env) list (or list <package>), pip list (or info <package), jupyter
+#   kernelspec||labextension|nbextension list, etc. See below.
+# * Use 'brew install --cask eloston-chromium' for ARM-compatible version of
+#   chromium: https://github.com/ungoogled-software/ungoogled-chromium#downloads
+#   Then automatically open notebooks and other "localhost" links in popup-style kiosks
+#   without menu bars by having Choosy auto-select the pseudo-app "LocalHost" created by
+#   Platypus when "localhost" is in the URL (simply calls chromium --kiosk "$url").
 # * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
 #   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
 #   requires removing ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
 #   See: https://fcollonval.medium.com/conda-environments-in-jupyter-ecosystem-without-pain-e9fab3992fb7
-# * To prevent annoying 'template_path' error message must update the latex_envs repo with
-#   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
-#   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
-#   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
-#   See: https://github.com/jupyter/nbconvert/pull/1310
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
 #   following: https://github.com/jupyter-lsp/jupyterlab-lsp plus python-lsp-server
 #   and r-languageserver. Add c.Completer.use_jedi = False in ipython_config.py to
@@ -50,6 +51,11 @@
 #   setting shortcut to single keypress but seems plugin can only be invoked from an
 #   'edit' mode that requires some modifier. Settled on 'Ctrl =' instead of 'F' (similar
 #   to Ctrl - used for splitting). Can also trigger autoformatting from edit menu.
+# * To prevent annoying 'template_path' error message must update the latex_envs repo with
+#   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
+#   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
+#   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
+#   See: https://github.com/jupyter/nbconvert/pull/1310
 # * Seems 'ipywidgets' is dependency of a few plugins but can emit annoying
 #   'ERROR | No such comm target registered:' messages on first run... tried using
 #   'jupyter nbextension install --py widgetsnbextension --user' followed by
@@ -250,8 +256,8 @@ case "${HOSTNAME%%.*}" in
     # NOTE: Installing Julia using conda not recommended. Instead use their internal
     # package manager and download compiled binaries into home folder on remote stations.
     # See discussion here: https://discourse.julialang.org/t/installation-on-linux-without-sudo-root/22121
-    export JULIA='/Applications/Julia-1.7.app/Contents/Resources/julia'
-    export PATH=/Applications/Julia-1.7.app/Contents/Resources/julia/bin:$PATH
+    export JULIA='/Applications/Julia-1.8.app/Contents/Resources/julia'
+    export PATH=/Applications/Julia-1.8.app/Contents/Resources/julia/bin:$PATH
 
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
     # NOTE: Tried exporting DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python
