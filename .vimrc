@@ -1448,14 +1448,14 @@ if s:plug_active('vim-lsp')
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <CR> <Cmd>LspPeekDefinition<CR>
-  noremap <Leader><CR> gd
   noremap <Leader>q <Cmd>LspReferences<CR>
   noremap <Leader>Q <Cmd>call switch#autocomp()<CR>
   noremap <Leader>& <Cmd>LspSignatureHelp<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
   noremap <Leader>% <Cmd>LspStatus<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup()<CR>
+  nnoremap <CR> <Cmd>LspPeekDefinition<CR>
+  nnoremap <Leader><CR> gd
   " nnoremap <CR> [<C-i>  " jump to vim definition
   " nnoremap \<Space> [I  " display occurences
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
