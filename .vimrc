@@ -461,10 +461,10 @@ nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 " Literal tabs for particular filetypes.
 augroup tab_toggle
   au!
-  au FileType xml,make,text,gitconfig TabToggle 1
+  au FileType xml,make,text,gitconfig setlocal noexpandtab | let b:expandtab = 0
 augroup END
-nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
 command! -nargs=? TabToggle call switch#expandtab(<args>)
+nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
 " Popup window style adjustments with less-like shortcuts
 " Note: Fugitive applies the fugitive mapping 'dq' to git diff/show display windows
@@ -661,9 +661,8 @@ noremap ]X <Cmd>Qnext<CR>
 " Turn on for filetypes containing text destined for users
 augroup spell_toggle
   au!
-  for s:ft in s:lang_filetypes
-    exe 'au FileType ' . s:ft . ' if expand("<afile>") != "__doc__" | call switch#spellcheck(1) | endif'
-  endfor
+  let s:filetypes = join(s:lang_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . " if expand('<afile>') != '__doc__' | setlocal spell | endif"
 augroup END
 command! SpellToggle call switch#spellcheck(<args>)
 command! LangToggle call switch#spelllang(<args>)
@@ -701,9 +700,8 @@ nmap gt <Plug>cap2
 " Turn on for filetypes containing raw possibly heavily wrapped data
 augroup copy_toggle
   au!
-  for s:ft in s:data_filetypes + s:copy_filetypes
-    exe 'au FileType ' . s:ft . ' call switch#copy(1)'
-  endfor
+  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(1)'
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
@@ -1480,7 +1478,7 @@ endif
 " with :ALEFix black. Or can use the black plugin and use :Black of course.
 " Note: chktex is awful (e.g. raises errors for any command not followed
 " by curly braces) so lacheck is best you are going to get.
-" https://github.com/Kuniwak/vint  # vim linter and format chcker
+" https://github.com/Kuniwak/vint  # vim linter and format checker (pip install vim-vint)
 " https://github.com/PyCQA/flake8  # python linter and format checker
 " https://pypi.org/project/doc8/  # python format checker
 " https://github.com/koalaman/shellcheck  # shell linter
