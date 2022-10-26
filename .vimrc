@@ -19,35 +19,18 @@
 " conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
 " Critical stuff
-" Note: Since repeat#set is used everywhere we copy repeat.vim to autoload folder
-" instead of Plug 'tpope/vim-repeat' or else get errors running vim on new installs.
 let &t_te=''
 let &t_Co=256
 exe 'runtime autoload/repeat.vim'
-if !exists('*repeat#set')
+if !exists('*repeat#set')  " only plugin that needs to be copied manually
   echohl WarningMsg
   echom 'Warning: vim-repeat unavailable, some features will be unavailable.'
   echohl None
 endif
-let s:line_length = 88
-let s:copy_filetypes = [
-  \ 'bib', 'log', 'qf'
-  \ ]  " for wrapping and copy toggle
-let s:data_filetypes = [
-  \ 'csv', 'dosini', 'json', 'jsonc', 'text'
-  \ ]  " for just copy toggle
-let s:lang_filetypes = [
-  \ 'html', 'liquid', 'markdown', 'rst', 'tex'
-  \ ]  " for wrapping and spell toggle
-let s:popup_filetypes = [
-  \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame',
-  \ ]  " for popup toggle
-let s:popup_filetypes += [
-  \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug'
-  \ ] " for popup toggle
 
 " Global settings
 scriptencoding utf-8
+let s:line_length = 88
 let filetype_m = 'matlab'  " see $VIMRUNTIME/filetype.vim, also could be 'mma'
 let mapleader = "\<Space>"
 set encoding=utf-8
@@ -129,6 +112,35 @@ endif
 if has('gui_running')  " do not source $VIMRUNTIME/menu.vim for speedup (see https://vi.stackexchange.com/q/10348/8084)
   set number relativenumber guioptions=M guicursor+=a:blinkon0  " no scrollbars or blinking
 endif
+if v:version >= 500
+  set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
+endif
+if has('ttymouse')  " different cursor shape different modes
+  set ttymouse=sgr
+else
+  set ttymouse=xterm2
+endif
+
+" File types for different unified settings
+" Note: Here 'man' is usually used with superman 'vman', 'ale-preview' is used with
+" :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
+" with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
+" and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
+let s:copy_filetypes = [
+  \ 'bib', 'log', 'qf'
+  \ ]  " for wrapping and copy toggle
+let s:data_filetypes = [
+  \ 'csv', 'dosini', 'json', 'jsonc', 'text'
+  \ ]  " for just copy toggle
+let s:lang_filetypes = [
+  \ 'html', 'liquid', 'markdown', 'rst', 'tex'
+  \ ]  " for wrapping and spell toggle
+let s:popup_filetypes = [
+  \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ ]  " for popup toggle
+let s:popup_filetypes += [
+  \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug'
+  \ ]
 
 " Override settings and syntax, even buffer-local. The URL regex was copied
 " from the one in .tmux.conf. See: https://vi.stackexchange.com/a/11547/8084
@@ -158,15 +170,43 @@ function! s:buffer_overrides() abort
   highlight link customURL Underlined
 endfunction
 
-" Different cursor shape different modes
-if v:version >= 500
-  set mouse=a " mouse clicks and scroll wheel allowed in insert mode via escape sequences
-endif
-if has('ttymouse')
-  set ttymouse=sgr
-else
-  set ttymouse=xterm2
-endif
+" Flake8 ignore list (also apply to autopep8):
+" * Allow line breaks before binary operators (W503)
+" * Allow imports after statements for jupytext files (E402)
+" * Allow assigning lambda expressions instead of def (E731)
+" * Allow the variable names 'l' and 'I' (E741)
+" * Allow no docstring on public methods (e.g. overrides) (D102) (flake8-docstrings)
+" * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
+" * Allow empty docstring after __init__ (D107) (flake8-docstrings)
+" * Allow single-line docstring with multi-line quotes (D200) (flake8-docstrings)
+" * Allow no blank line after class docstring (D204) (flake8-docstrings)
+" * Allow no blank line between summary and description (D205) (flake8-docstrings)
+" * Allow backslashes in docstring (D301) (flake8-docstring)
+" * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
+" * Allow imperative mood properties (D401) (flake8-docstring)
+" * Do not allow multiple spaces before operators for easy-align segments (E221)
+" * Do not allow multiple spaces after commas for easy-align segments (E241)
+let s:flake8_ignore =
+  \ 'W503,E402,E731,E741,'
+  \ . 'D102,D107,D105,D200,D204,D205,D301,D400,D401'
+
+" Shellcheck ignore list
+" * Permite two space indent consistent with other languages (E003)
+" * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
+" * Allow sourcing from files (SC1090, SC1091)
+" * Allow building arrays from unquoted result of command (SC2206, SC2207)
+" * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
+" * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
+" * Allow 'which' instead of 'command -v' (SC2230)
+" * Allow unquoted variables in for loop (SC2231)
+" * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
+" * Allow looping through single strings (SC2043)
+" * Allow assigning commands to variables (SC2209)
+" * Allow unquoted glob pattern assignments (SC2125)
+" * Allow defining aliases with .bashrc variables (SC2139)
+let s:shellcheck_ignore =
+  \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
+  \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
 
 
 "-----------------------------------------------------------------------------"
@@ -317,19 +357,21 @@ command! -nargs=0 ClearRegs call utils#clear_regs()
 
 " Opening file in current directory and some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
-" Note: Here :History includes v:oldfiles and open buffers.
 command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
 noremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 noremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
 noremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
 noremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
+
+" FZF commands for opening files and commit previews
+" Note: Here :History includes v:oldfiles and open buffers.
 noremap <C-r> <Cmd>History<CR>
 noremap <C-g> <Cmd>GFiles<CR>
 
-" Default 'open file under cursor' to open in new tab; change for normal and vidual
+" Default 'open file under cursor' to open in new tab; change for normal and visual
 " Remember the 'gd' and 'gD' commands go to local declaration, or first instance.
-nnoremap <Leader>J <c-w>gf
-nnoremap <Leader>j <Cmd>call file#exists()<CR>
+nnoremap <Leader>f <Cmd>call file#exists()<CR>
+nnoremap <Leader>F <c-w>gf
 
 " Move to current directory
 " Pneumonic is 'inside' just like Ctrl + i map
@@ -354,8 +396,7 @@ nnoremap <Leader>e <Cmd>edit<CR>
 
 " Autosave with SmartWrite using utils function
 command! -nargs=? Autosave call switch#autosave(<args>)
-nnoremap <Leader>s <Cmd>Autosave 1<CR>
-nnoremap <Leader>S <Cmd>Autosave 0<CR>
+nnoremap <Leader>a <Cmd>call switch#autosave()<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -417,26 +458,22 @@ nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
-" Adjustments for particular filetypes. Includes commands for 'toggling' character
-" literal tabs, conceal chars, and autocompletion and syntax checking.
+" Literal tabs for particular filetypes.
 augroup tab_toggle
   au!
   au FileType xml,make,text,gitconfig TabToggle 1
 augroup END
-command! -nargs=? PopupToggle call switch#popup(<args>)
-command! -nargs=? ConcealToggle call switch#conceal(<args>)
-command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>TabToggle<CR>
+command! -nargs=? TabToggle call switch#expandtab(<args>)
 
 " Popup window style adjustments with less-like shortcuts
-" Note: Here 'man' is usually used with superman 'vman', 'ale-preview' is used with
-" :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
-" with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
-" and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
+" Note: Fugitive applies the fugitive mapping 'dq' to git diff/show display windows
+" (other d-mappings only work with file display) which interferes with scrolling.
 let g:tags_skip_filetypes = s:popup_filetypes
 let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
   au!
+  au User FugitivePager silent! nunmap <buffer> dq
   au FileType help call popup#help_setup()
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
@@ -449,24 +486,25 @@ augroup popup_setup
   endfor
 augroup END
 
+" Vim command windows, help windows, man pages, and result of 'cmd --help'
+" Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
+" Note: Here the 's' stands for 'shell commands' and 'v' stands for 'vim'.
+nnoremap <Leader>; <Cmd>History:<CR>
+nnoremap <Leader>: q:
+nnoremap <Leader>, :<Up><CR>
+nnoremap <Leader>/ <Cmd>History/<CR>
+nnoremap <Leader>? q/
+nnoremap <Leader>s <Cmd>call popup#help_flag() \| redraw!<CR>
+nnoremap <Leader>S <Cmd>call popup#help_man() \| redraw!<CR>
+nnoremap <Leader>v <Cmd>Help<CR>
+nnoremap <Leader>V <Cmd>call popup#help_win()<CR>
+nnoremap <Leader>m <Cmd>Maps<CR>
+nnoremap <Leader>M <Cmd>Commands<CR>
+
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
 cnoremap <expr> <F1> "\<Tab>"
 cnoremap <expr> <F2> "\<S-Tab>"
-
-" Vim command windows, help windows, man pages, and result of 'cmd --help'
-" Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
-nnoremap <Leader>; q:
-nnoremap <Leader>: <Cmd>History:<CR>
-nnoremap <Leader>/ q/
-nnoremap <Leader>, :<Up><CR>
-nnoremap <Leader>? <Cmd>History/<CR>
-nnoremap <Leader>h <Cmd>call popup#help_flag() \| redraw!<CR>
-nnoremap <Leader>H <Cmd>call popup#help_man() \| redraw!<CR>
-nnoremap <Leader>v <Cmd>call popup#help_win()<CR>
-nnoremap <Leader>V <Cmd>Help<CR>
-nnoremap <Leader>m <Cmd>Maps<CR>
-nnoremap <Leader>M <Cmd>Commands<CR>
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
@@ -476,6 +514,7 @@ nnoremap <Leader>M <Cmd>Commands<CR>
 " silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>. <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
+
 
 "-----------------------------------------------------------------------------"
 " Editing utilities
@@ -599,8 +638,7 @@ command! -range -nargs=? WrapItems <line1>,<line2>call format#wrap_items(<args>)
 noremap <expr> gQ '<Esc>' . format#wrap_items_expr(v:count)
 
 " Toggle highlighting
-noremap <Leader>o <Cmd>noh<CR>
-noremap <Leader>O <Cmd>set hlsearch<CR>
+noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 
 " Never save single-character deletions to any register
 noremap x "_x
@@ -609,6 +647,17 @@ noremap X "_X
 " Maps for throwaaway and clipboard register
 noremap ' "_
 noremap " "*
+
+" Maps and commands for circular location-list scrolling
+" Note: ALE populates the window-local loc list rather than the global quickfix list.
+command! -bar -count=1 Lnext execute utils#iter_cyclic(<count>, 'loc')
+command! -bar -count=1 Lprev execute utils#iter_cyclic(<count>, 'loc', 1)
+command! -bar -count=1 Qnext execute utils#iter_cyclic(<count>, 'qf')
+command! -bar -count=1 Qprev execute utils#iter_cyclic(<count>, 'qf', 1)
+noremap [x <Cmd>Lprev<CR>
+noremap ]x <Cmd>Lnext<CR>
+noremap [X <Cmd>Qprev<CR>
+noremap ]X <Cmd>Qnext<CR>
 
 " Spellcheck (really is a builtin plugin, hence why it's in this section)
 " Turn on for filetypes containing text destined for users
@@ -620,30 +669,12 @@ augroup spell_toggle
 augroup END
 command! SpellToggle call switch#spellcheck(<args>)
 command! LangToggle call switch#spelllang(<args>)
-nnoremap <Leader>l <Cmd>call switch#spellcheck(1)<CR>
-nnoremap <Leader>L <Cmd>call switch#spellcheck(0)<CR>
-nnoremap <Leader>k <Cmd>call switch#spelllang(1)<CR>
-nnoremap <Leader>K <Cmd>call switch#spelllang(0)<CR>
-
-" Copy mode ('paste mode' accessible with 'g' insert mappings)
-" Turn on for filetypes containing raw possibly heavily wrapped data
-augroup copy_toggle
-  au!
-  for s:ft in s:data_filetypes + s:copy_filetypes
-    exe 'au FileType ' . s:ft . ' call switch#copy(1)'
-  endfor
-augroup END
-command! -nargs=? CopyToggle call switch#copy(<args>)
-nnoremap <Leader>c <Cmd>CopyToggle 1<CR>
-nnoremap <Leader>C <Cmd>CopyToggle 0<CR>
-
-" Caps lock toggle and insert mode map that toggles it on and off
-inoremap <expr> <C-v> insert#lang_map()
-cnoremap <expr> <C-v> insert#lang_map()
+nnoremap <Leader>l <Cmd>call switch#spellcheck()<CR>
+nnoremap <Leader>L <Cmd>call switch#spelllang()<CR>
 
 " Add and remove from dictionary
-nnoremap <Leader>f zg
-nnoremap <Leader>F zug
+nnoremap <Leader>k zg
+nnoremap <Leader>K zug
 
 " Fix spelling under cursor
 nnoremap <Leader>d 1z=
@@ -667,6 +698,23 @@ vnoremap gy ~
 vnoremap gt mzgu<Esc>`<~h
 nmap gy <Plug>cap1
 nmap gt <Plug>cap2
+
+" Copy mode and conceal mode ('paste mode' accessible with 'g' insert mappings)
+" Turn on for filetypes containing raw possibly heavily wrapped data
+augroup copy_toggle
+  au!
+  for s:ft in s:data_filetypes + s:copy_filetypes
+    exe 'au FileType ' . s:ft . ' call switch#copy(1)'
+  endfor
+augroup END
+command! -nargs=? CopyToggle call switch#copy(<args>)
+command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+
+" Caps lock toggle and insert mode map that toggles it on and off
+inoremap <expr> <C-v> insert#lang_map()
+cnoremap <expr> <C-v> insert#lang_map()
 
 " Always open folds when starting files
 " Note: For some reason vim ignores foldlevelstart
@@ -696,19 +744,6 @@ noremap <Plug>BlankDown <Cmd>call insert#blank_down(v:count1)<CR>
 map [e <Plug>BlankUp
 map ]e <Plug>BlankDown
 
-" Maps and commands for circular location-list scrolling
-" Note: ALE populates the window-local loc list rather than the global quickfix list.
-command! -bar -count=1 Lnext execute utils#iter_cyclic(<count>, 'loc')
-command! -bar -count=1 Lprev execute utils#iter_cyclic(<count>, 'loc', 1)
-command! -bar -count=1 Qnext execute utils#iter_cyclic(<count>, 'qf')
-command! -bar -count=1 Qprev execute utils#iter_cyclic(<count>, 'qf', 1)
-noremap [x <Cmd>Lprev<CR>
-noremap ]x <Cmd>Lnext<CR>
-noremap [X <Cmd>Qprev<CR>
-noremap ]X <Cmd>Qnext<CR>
-noremap <Leader>q <Cmd>lopen<CR>
-noremap <Leader>Q <Cmd>lclose<CR>
-
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
 nnoremap <expr> ga insert#paste_mode() . 'a'
@@ -719,21 +754,6 @@ nnoremap <expr> gI insert#paste_mode() . 'I'
 nnoremap <expr> go insert#paste_mode() . 'o'
 nnoremap <expr> gO insert#paste_mode() . 'O'
 nnoremap <expr> gR insert#paste_mode() . 'R'
-
-" Jump to definition of keyword under cursor, and show first line of occurence
-" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
-" See: https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
-" Note: LspDefinition may jump to another file in current window. Instead should
-" just use peek to see definition and only use built-in 'gd' local definitions.
-noremap [r <Cmd>LspPreviousReference<CR>
-noremap ]r <Cmd>LspNextReference<CR>
-nnoremap <CR> <Cmd>LspPeekDefinition<CR>
-nnoremap <Leader>& <Cmd>LspSignatureHelp<CR>
-nnoremap <Leader>* <Cmd>LspHover --ui=float<CR>
-nnoremap <Leader>P <Cmd>LspReferences<CR>
-nnoremap <Leader><CR> gd
-" nnoremap <CR> [<C-i>  " jump to vim definition
-" nnoremap \<Space> [I  " display occurences
 
 " Forward delete by tabs
 inoremap <expr> <Delete> insert#forward_delete()
@@ -845,6 +865,7 @@ noremap <expr> \X format#replace_regex_expr(
   \ 'Removed bibtex entries.',
   \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
   \ '')
+
 
 "-----------------------------------------------------------------------------"
 " External plugins
@@ -968,6 +989,7 @@ call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
 call plug#('junegunn/gv.vim')  " view commit graphs with :GV
 " call plug#('rbong/vim-flog')  " view commit graphs with :Flog
+let g:fugitive_no_maps = 1
 
 " Calculators and number stuff
 " call plug#('vim-scripts/Toggle')  " toggling stuff on/off, modified this myself
@@ -1004,8 +1026,6 @@ let g:fzf_action = {
   \ }
 
 " Language servers
-" Note: Highlighting under keywords is for reference jumping with [r and ]r but
-" monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 " Note: Seems vim-lsp can both detect servers installed separately in $PATH with
 " e.g. mamba install python-lsp-server (needed for jupyterlab-lsp) or install and
 " uninstall them individually in ~/.local/share/vim-lsp-settings/servers/<server>
@@ -1017,18 +1037,6 @@ call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero con
 call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
 call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
 let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
-let g:lsp_ale_auto_enable_linter = v:false  " default is true
-let g:lsp_diagnostics_enabled = 0  " redundant with ale
-let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
-let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
-let g:lsp_document_highlight_enabled = 0  " used with [r and ]r
-let g:lsp_fold_enabled = 0  " not yet tested
-let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
-let g:lsp_hover_conceal = 1
-let g:lsp_preview_float = 1
-let g:lsp_preview_max_width = 80
-let g:lsp_preview_max_height = 30
-let g:lsp_signature_help_delay = 100  " milliseconds
 
 " Completion engines
 " Note: Install pynvim with 'mamba install pynvim'
@@ -1258,8 +1266,7 @@ if s:plug_active('vim-scrollwrapped')
   let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
   noremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   noremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
-  noremap <Leader>w <Cmd>WrapToggle 1<CR>
-  noremap <Leader>W <Cmd>WrapToggle 0<CR>
+  noremap <Leader>w <Cmd>WrapToggle<CR>
 endif
 
 " Add maps for vim-tags command and use tags for default double bracket motion,
@@ -1277,9 +1284,9 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
-  nnoremap <Leader>t <Cmd>ShowTags<CR>
-  nnoremap <Leader>T <Cmd>UpdateTags<CR>
-  nnoremap <Leader>B <Cmd>BTags<CR>
+  nnoremap <Leader>t <Cmd>BTags<CR>
+  nnoremap <Leader>T <Cmd>ShowTags<CR>
+  nnoremap <Leader>U <Cmd>UpdateTags<CR>
   let g:tags_nofilter_filetypes = ['fortran']
   let g:tags_scope_filetypes = {
     \ 'vim'     : 'afc',
@@ -1325,6 +1332,7 @@ if s:plug_active('vim-sneak')
 endif
 
 " Vim marks in sign column
+" Note: Requires mappings consistent with 'm' change
 if s:plug_active('vim-signature')
   let g:SignatureMap = {
     \ 'Leader': '~',
@@ -1351,29 +1359,14 @@ if s:plug_active('vim-signature')
     \ }
 endif
 
-" Undo tree settings
-" Note: This sort of seems against the anti-nerdtree anti-tagbar minimalist
-" principal but think unique utilities that briefly pop up on left are exception.
-if s:plug_active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  if has('persistent_undo')
-    let &undodir=$HOME . '/.undodir'
-    set undofile
-  endif
-  nnoremap <Leader>u <Cmd>UndotreeToggle<CR>
-endif
-
-" Completion engine settings (see :help ddc-options). Configuration was
-" inspired by https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
-" For configuration help see https://github.com/Shougo/ddc.vim#configuration.
-" Note: Underscore seems to indicate all sources, used for global filter options,
-" and filetype-specific options are added with ddc#custom#patch_filetype(filetype, ...).
+" Completion engine settings (see :help ddc-options). Note underscore seems
+" to indicate all sources, used for global filter options, and filetype-specific
+" options can be added with ddc#custom#patch_filetype(filetype, ...).
+" Config inspiration: https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
+" Config help: https://github.com/Shougo/ddc.vim#configuration.
+" Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
+" Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
 if s:plug_active('ddc.vim')
-  " Engine settings and sources
-  " Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
-  " Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
-  " The matcher_fuzzy with word splitmode seems to be a reasonable compromise.
   call ddc#custom#patch_global({
     \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
     \ 'sourceParams': {'around': {'maxSize': 500}},
@@ -1410,10 +1403,12 @@ if s:plug_active('ddc.vim')
     \   },
     \ }})
   call ddc#enable()
+endif
 
-  " Popup and preview mappings. Note enter is 'accept' only if we scrolled down, tab
-  " is always 'accept' and choose default if necessary. See :h ins-special-special.
-  " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+" Related popup and preview mappings. Note enter is 'accept' only if we scrolled down,
+" tab is always 'accept' and choose default if necessary. See :h ins-special-special.
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+if s:plug_active('ddc.vim')
   augroup pum_navigation
     au!
     au BufEnter,InsertLeave * let b:popup_scroll = 0
@@ -1444,37 +1439,64 @@ if s:plug_active('ddc.vim')
     \ : "\<C-]>\<Tab>"
 endif
 
-" Asynchronous linting engine
-" Use :ALEInfo to verify linting is enabled
-if s:plug_active('ale')
-  " Buffer-local toggling
-  " Note: Unlike syntastic ale works with buffer contents
-  " Note: LspManage fills the current buffer and for some reason does
-  " not trigger filetype autocommand so must also do it manually.
-  nnoremap <Leader>! <Cmd>ALEDetail<CR>
-  nnoremap <Leader>@ <Cmd>ALEInfo<CR>
-  nnoremap <Leader>% <Cmd>LspStatus<CR>
-  nnoremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup()<CR>
-  nnoremap <Leader>x <Cmd>call switch#ale(1)<CR>
-  nnoremap <Leader>X <Cmd>call switch#ale(0)<CR>
-  map ]x <Plug>(ale_next_wrap)
-  map [x <Plug>(ale_previous_wrap)
+" Lsp integration settings
+" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
+" https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
+" Note: LspDefinition may jump to another file in current window. Instead should
+" just use peek to see definition and only use built-in 'gd' local definitions.
+" Note: Highlighting under keywords required for reference jumping with [r and ]r but
+" monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
+if s:plug_active('vim-lsp')
+  command! -nargs=0 LspStartServer call lsp#activate()
+  noremap [r <Cmd>LspPreviousReference<CR>
+  noremap ]r <Cmd>LspNextReference<CR>
+  noremap <CR> <Cmd>LspPeekDefinition<CR>
+  noremap <Leader><CR> gd
+  noremap <Leader>q <Cmd>LspReferences<CR>
+  noremap <Leader>Q <Cmd>call switch#autocomp()<CR>
+  noremap <Leader>& <Cmd>LspSignatureHelp<CR>
+  noremap <Leader>* <Cmd>LspHover --ui=float<CR>
+  noremap <Leader>% <Cmd>LspStatus<CR>
+  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup()<CR>
+  " nnoremap <CR> [<C-i>  " jump to vim definition
+  " nnoremap \<Space> [I  " display occurences
+  let g:lsp_ale_auto_enable_linter = v:false  " default is true
+  let g:lsp_diagnostics_enabled = 0  " redundant with ale
+  let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
+  let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
+  let g:lsp_document_highlight_enabled = 0  " used with [r and ]r
+  let g:lsp_fold_enabled = 0  " not yet tested
+  let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
+  let g:lsp_hover_conceal = 1
+  let g:lsp_preview_float = 1
+  let g:lsp_preview_max_width = 80
+  let g:lsp_preview_max_height = 30
+  let g:lsp_signature_help_delay = 100  " milliseconds
 
-  " Settings and checkers
-  " https://github.com/Kuniwak/vint  # vim linter and format chcker
-  " https://github.com/PyCQA/flake8  # python linter and format checker
-  " https://pypi.org/project/doc8/  # python format checker
-  " https://github.com/koalaman/shellcheck  # shell linter
-  " https://github.com/mvdan/sh  # shell format checker
-  " https://github.com/openstack/bashate  # shell format checker
-  " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
-  " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
-  " Note: here bashate is equivalent to pep8, similar to prettier and beautify for
-  " javascript and html. also tried shfmt but not available.
-  " Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
-  " with :ALEFix black. Or can use the black plugin and use :Black of course.
-  " Note: chktex is awful (e.g. raises errors for any command not followed
-  " by curly braces) so lacheck is best you are going to get.
+endif
+
+" Asynchronous linting engine
+" Note: Here bashate is equivalent to pep8, similar to prettier and beautify for
+" javascript and html. also tried shfmt but not available.
+" Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
+" with :ALEFix black. Or can use the black plugin and use :Black of course.
+" Note: chktex is awful (e.g. raises errors for any command not followed
+" by curly braces) so lacheck is best you are going to get.
+" https://github.com/Kuniwak/vint  # vim linter and format chcker
+" https://github.com/PyCQA/flake8  # python linter and format checker
+" https://pypi.org/project/doc8/  # python format checker
+" https://github.com/koalaman/shellcheck  # shell linter
+" https://github.com/mvdan/sh  # shell format checker
+" https://github.com/openstack/bashate  # shell format checker
+" https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
+" https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
+if s:plug_active('ale')
+  " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
+  " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
+  noremap <Leader>x <Cmd>lopen<CR>
+  noremap <Leader>X <Cmd>call switch#ale()<CR>
+  noremap <Leader>! <Cmd>ALEDetail<CR>
+  noremap <Leader>@ <Cmd>ALEInfo<CR>
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
@@ -1488,7 +1510,6 @@ if s:plug_active('ale')
     \ 'text': [],
     \ 'vim': ['vint'],
     \ }
-  command! -nargs=0 LspStartServer call lsp#activate()
   let g:ale_completion_enabled = 0
   let g:ale_completion_autoimport = 0
   let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
@@ -1508,53 +1529,21 @@ if s:plug_active('ale')
   let g:ale_echo_msg_info_str = 'Info'
   let g:ale_echo_msg_warning_str = 'Warn'
   let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
-
-  " Shellcheck ignore list
-  " * Permite two space indent consistent with other languages (E003)
-  " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
-  " * Allow sourcing from files (SC1090, SC1091)
-  " * Allow building arrays from unquoted result of command (SC2206, SC2207)
-  " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
-  " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
-  " * Allow 'which' instead of 'command -v' (SC2230)
-  " * Allow unquoted variables in for loop (SC2231)
-  " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
-  " * Allow looping through single strings (SC2043)
-  " * Allow assigning commands to variables (SC2209)
-  " * Allow unquoted glob pattern assignments (SC2125)
-  " * Allow defining aliases with .bashrc variables (SC2139)
-  let s:shellcheck_ignore =
-    \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
-    \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
+  let g:ale_python_flake8_options =  '--max-line-length=' . s:line_length . ' --ignore=' . s:flake8_ignore
   let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:line_length
   let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
+endif
 
-  " Flake8 ignore list (also apply to autopep8):
-  " * Allow line breaks before binary operators (W503)
-  " * Allow imports after statements for jupytext files (E402)
-  " * Allow assigning lambda expressions instead of def (E731)
-  " * Allow the variable names 'l' and 'I' (E741)
-  " * Allow no docstring on public methods (e.g. overrides) (D102) (flake8-docstrings)
-  " * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
-  " * Allow empty docstring after __init__ (D107) (flake8-docstrings)
-  " * Allow single-line docstring with multi-line quotes (D200) (flake8-docstrings)
-  " * Allow no blank line after class docstring (D204) (flake8-docstrings)
-  " * Allow no blank line between summary and description (D205) (flake8-docstrings)
-  " * Allow backslashes in docstring (D301) (flake8-docstring)
-  " * Allow multi-line summary sentence of docstring (D400) (flake8-docstrings)
-  " * Allow imperative mood properties (D401) (flake8-docstring)
-  " * Do not allow multiple spaces before operators for easy-align segments (E221)
-  " * Do not allow multiple spaces after commas for easy-align segments (E241)
-  let s:flake8_ignore =
-    \ 'W503,E402,E731,E741,'
-    \ . 'D102,D107,D105,D200,D204,D205,D301,D400,D401'
-  let g:ale_python_flake8_options =  '--max-line-length=' . s:line_length . ' --ignore=' . s:flake8_ignore
-
-  " Related plugins requiring similar exceptions
-  " Isort plugin docs: https://github.com/fisadev/vim-isort
-  " Black plugin docs: https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
-  " Autopep8 plugin docs (or :help autopep8): https://github.com/tell-k/vim-autopep8 (includes a few global variables)
-  " Autoformat plugin docs: https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
+" Related plugins using similar exceptions
+" Isort plugin docs:
+" https://github.com/fisadev/vim-isort
+" Black plugin docs:
+" https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
+" Autopep8 plugin docs (or :help autopep8):
+" https://github.com/tell-k/vim-autopep8 (includes a few global variables)
+" Autoformat plugin docs:
+" https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
+if s:plug_active('ale')
   let g:autopep8_ignore = s:flake8_ignore
   let g:autopep8_max_line_length = s:line_length
   let g:autopep8_disable_show_diff = 1
@@ -1585,9 +1574,36 @@ if s:plug_active('vim-test')
   nnoremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
-" Fugitive aliases and git gutter settings
-" Note: Gdiff redirects to default Gdiffsplit and 'delcommand' fails for some weird
-" reason (get undefined command errors trying to use :Gdiff) so intead overwrite this.
+" Undo tree settings
+" Note: This sort of seems against the anti-nerdtree anti-tagbar minimalist
+" principal but think unique utilities that briefly pop up on left are exception.
+if s:plug_active('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
+  if has('persistent_undo')
+    let &undodir=$HOME . '/.undodir'
+    set undofile
+  endif
+  nnoremap <Leader>u <Cmd>UndotreeToggle<CR>
+endif
+
+" Fugitive settings
+" Note: This repairs inconsistent Gdiff redirect to Gdiffsplit. For some reason
+" 'delcommand' fails (get undefined command errors in :Gdiff) so intead overwrite.
+if s:plug_active('vim-fugitive')
+  silent! delcommand Gdiffsplit
+  command! -nargs=* Gsplit Gvsplit
+  command! -nargs=* -bang Gdiffsplit Git diff <args>
+  command! -nargs=* Gstatus Git status <args>
+  noremap <Leader>g <Cmd>Git<CR>
+  noremap <Leader>h <Cmd>BCommits<CR>
+  noremap <Leader>H <Cmd>Commits<CR>
+  noremap <Leader>n <Cmd>exe 'Gdiff ' . @%<CR>
+  noremap <Leader>N <Cmd>exe 'Gdiff --staged ' . @%<CR>
+  " noremap <Leader>N <Cmd>Git diff<CR>
+endif
+
+" Git gutter settings
 " Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
 " therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
@@ -1604,15 +1620,10 @@ if s:plug_active('vim-gitgutter')
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
   noremap ]g <Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
   noremap [g <Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
-  nnoremap <Leader>g <Cmd>call switch#gitgutter(1)<CR>
-  nnoremap <Leader>G <Cmd>call switch#gitgutter(0)<CR>
-  nnoremap <Leader>A <Cmd>GitGutterUndoHunk<CR>
-  nnoremap <Leader>a <Cmd>GitGutterStageHunk<CR>
+  nnoremap <Leader>j <Cmd>call switch#gitgutter()<CR>
+  nnoremap <Leader>J <Cmd>GitGutterStageHunk<CR>
   nnoremap <Leader>p <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
-  silent! delcommand Gdiffsplit
-  command! -nargs=* Gsplit Gvsplit
-  command! -nargs=* -bang Gdiffsplit Git diff <args>
-  command! -nargs=* Gstatus Git status <args>
+  nnoremap <Leader>P <Cmd>GitGutterUndoHunk<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parens and seimcolons, chained &&
