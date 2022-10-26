@@ -94,7 +94,7 @@ _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; 
 # See: https://stackoverflow.com/a/28938235/4970632
 # See: https://unix.stackexchange.com/a/124408/112647
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
-_setup_message 'Machine setup'
+_setup_message 'General setup'
 _prompt_dirs() {
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
@@ -395,7 +395,7 @@ echo 'done'
 #-----------------------------------------------------------------------------#
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
-_setup_message 'General setup'
+_setup_message 'Utility setup'
 [ -r "$HOME/.dircolors.ansi" ] && eval "$(dircolors ~/.dircolors.ansi)"
 alias cd='cd -P'                    # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
@@ -423,20 +423,20 @@ fi
 alias aliases='compgen -a'
 alias variables='compgen -v'
 alias functions='compgen -A function'  # show current shell functions
-alias builtins='compgen -b'            # bash builtins
+alias builtins='compgen -b' # bash builtins
 alias commands='compgen -c'
 alias keywords='compgen -k'
 alias modules='module avail 2>&1 | cat '
+alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
+# alias bindings_stty='stty -e'  # show bindings (native mac)
 if $_macos; then
   alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"  # see https://apple.stackexchange.com/a/352770/214359
   alias hardware='sw_vers'  # see https://apple.stackexchange.com/a/255553/214359
   alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
-  alias bindings_stty='stty -e'  # bindings
 else  # shellcheck disable=2142
   alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
   alias hardware="cat /etc/*-release"  # print operating system info
   alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
-  alias bindings_stty='stty -a'  # bindings
 fi
 alias inputrc_ops='bind -v'    # the 'set' options, and their values
 alias inputrc_funcs='bind -l'  # the functions, for example 'forward-char'

@@ -488,18 +488,16 @@ augroup END
 
 " Vim command windows, help windows, man pages, and result of 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
-" Note: Here the 's' stands for 'shell commands' and 'v' stands for 'vim'.
+" Note: Here the 'k' is just easy to access and 'v' is for vim commands
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>, :<Up><CR>
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
-nnoremap <Leader>s <Cmd>call popup#help_flag() \| redraw!<CR>
-nnoremap <Leader>S <Cmd>call popup#help_man() \| redraw!<CR>
 nnoremap <Leader>v <Cmd>Help<CR>
 nnoremap <Leader>V <Cmd>call popup#help_win()<CR>
-nnoremap <Leader>m <Cmd>Maps<CR>
-nnoremap <Leader>M <Cmd>Commands<CR>
+nnoremap <Leader>n <Cmd>Maps<CR>
+nnoremap <Leader>m <Cmd>Commands<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -673,12 +671,12 @@ nnoremap <Leader>l <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>L <Cmd>call switch#spelllang()<CR>
 
 " Add and remove from dictionary
-nnoremap <Leader>k zg
-nnoremap <Leader>K zug
+nnoremap <Leader>d zg
+nnoremap <Leader>D zug
 
 " Fix spelling under cursor
-nnoremap <Leader>d 1z=
-nnoremap <Leader>D z=
+nnoremap <Leader>s 1z=
+nnoremap <Leader>S z=
 
 " Similar to ]s and [s but also corrects the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
@@ -1595,11 +1593,11 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
-  noremap <Leader>g <Cmd>Git<CR>
   noremap <Leader>h <Cmd>BCommits<CR>
   noremap <Leader>H <Cmd>Commits<CR>
-  noremap <Leader>n <Cmd>exe 'Gdiff ' . @%<CR>
-  noremap <Leader>N <Cmd>exe 'Gdiff --staged ' . @%<CR>
+  noremap <Leader>j <Cmd>exe 'Gdiff ' . @%<CR>
+  noremap <Leader>J <Cmd>exe 'Gdiff --staged ' . @%<CR>
+  noremap <Leader>k <Cmd>Git<CR>
   " noremap <Leader>N <Cmd>Git diff<CR>
 endif
 
@@ -1620,8 +1618,8 @@ if s:plug_active('vim-gitgutter')
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
   noremap ]g <Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
   noremap [g <Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
-  nnoremap <Leader>j <Cmd>call switch#gitgutter()<CR>
-  nnoremap <Leader>J <Cmd>GitGutterStageHunk<CR>
+  nnoremap <Leader>g <Cmd>call switch#gitgutter()<CR>
+  nnoremap <Leader>G <Cmd>GitGutterStageHunk<CR>
   nnoremap <Leader>p <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
   nnoremap <Leader>P <Cmd>GitGutterUndoHunk<CR>
 endif

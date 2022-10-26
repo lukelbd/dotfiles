@@ -130,52 +130,6 @@ function! popup#syntax_group() abort
   echom 'Syntax Group: ' . join(names, ', ')
 endfunction
 
-" Show command help
-" Note: This is low-level companion to high-level vim-lsp features
-function! popup#help_flag(...) abort
-  if a:0
-    let cmd = a:1
-  else
-    let cmd = input('Get --help info: ', expand('<cword>'), 'shellcmd')
-  endif
-  if !empty(cmd)
-    silent! exe '!clear; '
-      \ . 'search=' . cmd . '; '
-      \ . 'if [ -n $search ] && builtin help $search &>/dev/null; then '
-      \ . '  builtin help $search 2>&1 | less; '
-      \ . 'elif $search --help &>/dev/null; then '
-      \ . '  $search --help 2>&1 | less; '
-      \ . 'fi'
-    if v:shell_error != 0
-      echohl WarningMsg
-      echom "Warning: 'man " . cmd . "' failed."
-      echohl None
-    endif
-  endif
-endfunction
-
-" Show command manual
-" Note: This is low-level companion to high-level vim-lsp features
-function! popup#help_man(...) abort
-  if a:0
-    let cmd = a:1
-  else
-    let cmd = input('Get man page: ', expand('<cword>'), 'shellcmd')
-  endif
-  if !empty(cmd)
-    silent! exe '!clear; '
-      \ . 'search=' . cmd . '; '
-      \ . 'if [ -n $search ] && command man $search &>/dev/null; then '
-      \ . '  command man $search; '
-      \ . 'fi'
-    if v:shell_error != 0
-      echohl WarningMsg
-      echom "Warning: '" . cmd . " --help' failed."
-      echohl None
-    endif
-  endif
-endfunction
-
 " Setup help windows
 function! popup#help_setup() abort
   wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
