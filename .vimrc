@@ -29,16 +29,15 @@ if !exists('*repeat#set')  " only plugin that needs to be copied manually
 endif
 
 " Global settings
-scriptencoding utf-8
-let s:line_length = 88
-let filetype_m = 'matlab'  " see $VIMRUNTIME/filetype.vim, also could be 'mma'
-let mapleader = "\<Space>"
 set encoding=utf-8
+scriptencoding utf-8
+let s:line_length = 88  " used with plugins below
+let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
+let g:mapleader = "\<Space>"
 set nocompatible  " always use the vim defaults
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
-set colorcolumn=89,121  " gentle and firm line length limits 
 set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
@@ -51,7 +50,7 @@ set foldlevelstart=99
 set foldmethod=expr  " fold methods
 set foldnestmax=10  " avoids weird things
 set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
-set guifont=Monaco:h13  " match iterm settings in macvim
+set guifont=Monaco:h12  " match iterm settings in macvim
 set guioptions=M  " use default value
 set history=100  " search history
 set hlsearch incsearch  " show match as typed so far, and highlight as you go
@@ -102,6 +101,9 @@ let &g:wildignore = ''
   \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store'
 if exists('&diffopt')
   set diffopt^=filler
+endif
+if !&l:wrap
+  set colorcolumn=89,121  " gentle and firm line length limits 
 endif
 if exists('&breakindent')  " map indentation when breaking
   set breakindent
