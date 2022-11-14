@@ -214,26 +214,32 @@ let s:shellcheck_ignore =
 "-----------------------------------------------------------------------------"
 " Repair unexpected behavior
 "-----------------------------------------------------------------------------"
-" Summary found here: http://vim.wikia.com/wiki/Change_cursor_shape_in_different_modes
-" fail if you have an insert-mode remap of Esc; see: https://vi.stackexchange.com/q/15072/8084
-" * Also according to this, don't need iTerm-specific Cursorshape stuff: https://stackoverflow.com/a/44473667/4970632
-"   The TMUX stuff just wraps everything in \<Esc>Ptmux;\<Esc> CONTENT \<Esc>\\
-" * Also see this for more compact TMUX stuff: https://vi.stackexchange.com/a/14203/8084
-if exists('&t_SI')
-  let &t_SI = (exists('$TMUX') ? "\ePtmux;\e\e[6 q\e\\" : "\e[6 q")
-endif
-if exists('&t_SR')
-  let &t_SR = (exists('$TMUX') ? "\ePtmux;\e\e[4 q\e\\" : "\e[4 q")
-endif
-if exists('&t_EI')
-  let &t_EI = (exists('$TMUX') ? "\ePtmux;\e\e[2 q\e\\" : "\e[2 q")
-endif
-
 " Escape repair needed when we allow h/l to change line num
 augroup escape_fix
   au!
   au InsertLeave * normal! `^
 augroup END
+
+" Support cursor shapes. Note neither Ptmux escape codes (e.g. through 'vitality'
+" plugin) or terminal overrides seem necessary in newer versions of tmux.
+" See: https://stackoverflow.com/a/44473667/4970632 (outdated terminal overrides)
+" See: https://vi.stackexchange.com/a/22239/8084 (outdated terminal overrides)
+" See: https://vi.stackexchange.com/a/14203/8084 (outdated Ptmux sequences)
+" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
+" call plug#('sjl/vitality.vim')  # outdated
+" let g:vitality_always_assume_iterm = 1
+let &t_SI = "\e[6 q"
+let &t_SR = "\e[4 q"
+let &t_EI = "\e[2 q"
+
+" Stop cursor from changing when clicking on panes. Note this is no longer
+" necessary since tmux handles FocusLost signal itself.
+" See: https://github.com/sjl/vitality.vim/issues/29
+" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
+" augroup cursor_fix
+"   au!
+"   au FocusLost * stopinsert
+" augroup END
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
@@ -951,7 +957,7 @@ nmap gl <Plug>(characterize)
 
 " Syntax checking and formatting
 " Note: syntastic looks for checkers in $PATH, must be installed manually
-" Plug 'scrooloose/syntastic'  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
+" call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
 call plug#('dense-analysis/ale')
 call plug#('fisadev/vim-isort')
 call plug#('Chiel92/vim-autoformat')
@@ -1054,6 +1060,7 @@ let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30
 " call plug#('roxma/vim-hug-neovim-rpc')  " deoplete dependency
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
 call plug#('Shougo/ddc.vim')  " fourth generation (requires pynvim and deno)
+call plug#('Shougo/ddc-ui-native')  " matching words near cursor
 call plug#('vim-denops/denops.vim')  " ddc dependency
 
 " Omnifunc sources not provided by engines
@@ -1362,9 +1369,11 @@ endif
 " options can be added with ddc#custom#patch_filetype(filetype, ...).
 " Config inspiration: https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
 " Config help: https://github.com/Shougo/ddc.vim#configuration.
+" See: https://github.com/Shougo/ddc-ui-native
 " Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
 " Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
 if s:plug_active('ddc.vim')
+  call ddc#custom#patch_global('ui', 'native')
   call ddc#custom#patch_global({
     \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
     \ 'sourceParams': {'around': {'maxSize': 500}},
