@@ -72,6 +72,7 @@ cleanup() {
 }
 
 # Commands
+# TODO: Remove this since now simply remap GNU sed to first one in path.
 [[ "$OSTYPE" =~ darwin* ]] && macos=true || macos=false
 which gsed &>/dev/null && sedcmd=gsed || sedcmd=sed
 $macos && [ "$sedcmd" == sed ] && \
@@ -165,7 +166,7 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
   # Copy files from the templates directory if they were not already
   # NOTE: Test 'newer than' returns true if second file does not exist.
   for name in "${names[@]}"; do
-    for ext in sty bst; do
+    for ext in cls sty bst; do
       file=${src}/${name}.${ext}
       if [ -r "$file" ] && [ "$file" -nt "./${file##*/}" ]; then
         echoerr "Copying file ${file##*/}."
@@ -187,37 +188,42 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
         [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
       else
         found=true
-        [[ " ${texfiles[*]##*/} " =~ " ${file##*/} " ]] || texfiles+=("$file")
+        [[ " ${distrofiles[*]##*/} " =~ " ${file##*/} " ]] || distrofiles+=("$file")
       fi
     done
     $found || raise "${name} not found"  # do not raise error if failed to re-copy file
   done
 }
 
-# Iterate over subfiles
+# Find class files, package files, bibliography names
+# NOTE: This also iterates over subfiles for e.g. thesis composition
 filenames=("$filename")
 filenames+=($(nocomments "$filename" | grep -E '\\import\b|\\include\b|\\input\b' | inbraces))
 echoerr "Checking files: ${filenames[*]}"
 for file in "${filenames[@]}"; do
-  # Find class files, package files, bibliography names
   nocomments=$(nocomments "$file")
   bibs+=($(echo "$nocomments" | grep -E '\\bibliography\b|\\nobibliography\b|\\addbibresource\b' | inbraces))
-  classes+=($(echo "$nocomments" | grep '\\documentclass\b' | inbraces))
-  packages+=($(packages "$filename" | sort | uniq))  # first level deep
-  texfind "${packages[@]}"
-  packages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level deep
-  texfind "${packages[@]}"
-  # Set compiler and viewer options
-  # WARNING: lualatex is mostly a superset of xelatex and detection must be
-  # prioritized for beamer or else get weird errors e.g. missing tex gyre fonts.
-  echo "${packages[*]}" | grep -E '\bfontspec\b|\bxltxtra\b' &>/dev/null && latex=xelatex
-  echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
-  echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe Acrobat Reader DC'
+  iclasses+=($(echo "$nocomments" | grep '\\documentclass\b' | inbraces))
+  classes+=("${iclasses[@]}")
+  texfind "${iclasses[@]}"
+  ipackages+=($(packages "$filename" | sort | uniq))  # first level deep
+  packages+=("${ipackages[@]}")
+  texfind "${ipackages[@]}"
+  jpackages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level deep
+  packages+=("${jpackages[@]}")
+  texfind "${jpackages[@]}";
 done
+
+# Set compiler and viewer options
+# WARNING: lualatex is mostly a superset of xelatex and detection must be
+# prioritized for beamer or else get weird errors e.g. missing tex gyre fonts.
+echo "${packages[*]}" | grep -E '\bfontspec\b|\bxltxtra\b' &>/dev/null && latex=xelatex
+echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
+echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe Acrobat Reader DC'
 
 # Error and info messages
 [ ${#classes[@]} -eq 0 ] && echoerr "Warning: Unknown document class."
-[ ${#texfiles[@]} -gt 0 ] && echoerr "Files found in TeX distro: ${texfiles[*]##*/}"
+[ ${#distrofiles[@]} -gt 0 ] && echoerr "Files found in TeX distro: ${distrofiles[*]##*/}"
 [ ${#localfiles[@]} -gt 0 ] && echoerr "Files found locally: ${localfiles[*]##*/}"
 [ "${#bibs[@]}" -eq 0 ] && bibliography=false || bibliography=true
 if $bibliography; then
