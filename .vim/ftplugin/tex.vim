@@ -137,6 +137,11 @@ call succinct#add_snippets({
 " Surround tools. Currently only overwrite 'r' and 'a' global bracket surrounds
 " the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds.
 " Delimiters should also not overlap common text objects like 'w' and 'p'.
+" Note: In ametsoc suffix is specified with \citep[suffix]{cite1,cite2} and prefix with
+" e.g. \citep[prefix][]{cite1,cite2}. In ams this is \cite[suffix]{cite1,cite2} and
+" \cite<prefix>{cite1,cite2} and commands are \cite and \citeA instead of \citep and
+" \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty
+" brackets for filling later since synmtax is dependent on citation engine.
 " Rejected maps:
 " \ 'P': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
 " \ 'G': "\\hidecontent{\\includegraphics{\r}}",
@@ -186,7 +191,7 @@ call succinct#add_delims({
   \ 'L': "\1Link: \r..*\r\\\\href{&}{\1\r\1\r..*\r}\1",
   \ 'M': "\\mathbb{\r}",
   \ 'O': "\\mathbf{\r}",
-  \ 'R': "\\citet[][]{\r}",
+  \ 'R': "\\citet{\r}",
   \ 'S': "{\\usebackgroundtemplate{}\\begin{frame}\r\\end{frame}}",
   \ 'T': "\\begin{table}\n\\centering\r\\end{table}",
   \ 'U': "\\uncover<+->{%\r\}",
@@ -213,7 +218,7 @@ call succinct#add_delims({
   \ 'm': "\\mathrm{\r}",
   \ 'n': "\\pdfcomment{%\r}",
   \ 'o': "\\textbf{\r}",
-  \ 'r': "\\citep[][]{\r}",
+  \ 'r': "\\citep{\r}",
   \ 's': "\\begin{frame}\r\\end{frame}",
   \ 't': "\1Alignment: \r..*\r\\\\begin{tabular}{&}\1\r\1\r..*\r\\\\end{tabular}\1",
   \ 'u': "\\underline{\r}",
