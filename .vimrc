@@ -710,6 +710,8 @@ augroup copy_toggle
   au!
   let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
   exe 'au FileType ' . s:filetypes . ' call switch#copy(1)'
+  let s:filetypes = 'tmux'  " possibly subtypes of files with copytoggle otherwise
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(0)'
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
