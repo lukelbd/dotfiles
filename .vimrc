@@ -93,34 +93,28 @@ set virtualedit=block  " allow cursor to go past line endings in visual block mo
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu
 set wildmode=longest:list,full
+let &g:colorcolumn = '89,121'  " global color columns
+let &g:breakindent = 1  " global indent behavior
+let &g:expandtab = 1  " global expand tab
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:wildignore = ''
   \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
   \ . '*.mp3,*.m4a,*.mk4,*.mp4,*.mov,*.flac,*.wav,'
   \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store'
-if exists('&diffopt')
-  set diffopt^=filler
-endif
-if !&l:wrap
-  set colorcolumn=89,121  " gentle and firm line length limits 
-endif
-if exists('&breakindent')  " map indentation when breaking
-  set breakindent
-endif
-if !exists('b:expandtab')  " only apply if TabToggle has not been used
-  set expandtab
-endif
-if has('gui_running')  " do not source $VIMRUNTIME/menu.vim for speedup (see https://vi.stackexchange.com/q/10348/8084)
-  set number relativenumber guioptions=M guicursor+=a:blinkon0  " no scrollbars or blinking
-endif
 if v:version >= 500
   set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
+endif
+if exists('&diffopt')
+  set diffopt^=filler
 endif
 if has('ttymouse')  " different cursor shape different modes
   set ttymouse=sgr
 else
   set ttymouse=xterm2
+endif
+if has('gui_running')  " do not source $VIMRUNTIME/menu.vim for speedup (see https://vi.stackexchange.com/q/10348/8084)
+  set number relativenumber guioptions=M guicursor+=a:blinkon0  " no scrollbars or blinking
 endif
 
 " File types for different unified settings
