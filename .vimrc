@@ -1606,8 +1606,8 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gstatus Git status <args>
   noremap <Leader>h <Cmd>BCommits<CR>
   noremap <Leader>H <Cmd>Commits<CR>
-  noremap <Leader>j <Cmd>exe 'Gdiff ' . @%<CR>
-  noremap <Leader>J <Cmd>exe 'Gdiff --staged ' . @%<CR>
+  noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
+  noremap <Leader>J <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
   noremap <Leader>k <Cmd>Git<CR>
   " noremap <Leader>N <Cmd>Git diff<CR>
 endif
