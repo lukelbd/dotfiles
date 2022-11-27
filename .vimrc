@@ -1570,10 +1570,11 @@ endif
 " Run tests near cursor or throughout file
 if s:plug_active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
-  nnoremap <Leader>[ <Cmd>TestLast<CR>
+  " nnoremap <Leader>[ <Cmd>TestLast<CR>
+  nnoremap <Leader>[ <Cmd>TestNearest --mpl-generate<CR>
   nnoremap <Leader>] <Cmd>TestNearest<CR>
-  nnoremap <Leader>{ <Cmd>TestSuite<CR>
-  nnoremap <Leader>} <Cmd>TestSuite<CR>
+  nnoremap <Leader>{ <Cmd>TestLast<CR>
+  nnoremap <Leader>} <Cmd>TestFile<CR>
   nnoremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
