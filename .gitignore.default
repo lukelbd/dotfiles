@@ -4,8 +4,11 @@ vids*
 figures*
 videos*
 class*
+course*
 meeting*
 manuscript*
+!figures*.py
+!videos*.py
 
 # Trash folders
 tmp

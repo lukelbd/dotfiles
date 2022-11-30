@@ -22,6 +22,7 @@ import cycler
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.axes as maxes
+import matplotlib.axis as maxis
 import matplotlib.cm as mcm
 import matplotlib.colors as mcolors
 import matplotlib.collections as mcollections

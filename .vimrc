@@ -1417,7 +1417,7 @@ if s:plug_active('ddc.vim')
     au BufEnter,InsertLeave * let b:popup_scroll = 0
   augroup END
   inoremap <expr> <C-y> insert#popup_scroll(-1)
-  inoremap <expr> <C-e> insert#popup_scroll(1)
+  inoremap <expr> <C-t> insert#popup_scroll(1)
   inoremap <expr> <Up> insert#popup_scroll(-0.25)
   inoremap <expr> <Down> insert#popup_scroll(0.25)
   inoremap <expr> <C-k> insert#popup_scroll(-0.25)
