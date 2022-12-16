@@ -117,7 +117,7 @@ else
 fi
 
 # Get paths
-src=$HOME/templates  # location of LaTeX style files and templates
+templates=$HOME/templates  # location of LaTeX style files and templates
 echoerr "Filename: $filename"
 if [[ "$filename" =~ / ]]; then  # i.e. contains directory specifier
   directory=${filename%/*}  # trim shortest pattern matching <stuff>/*, keep "stuff"
@@ -153,9 +153,15 @@ nocomments() {  # ignore comments. TODO: Maybe awk is better?
 packages() {
   local sub file
   for file in "$@"; do
-    nocomments "$file" | grep -E '\\RequirePackage|\\usepackage|\\bibliographystyle' | $sedcmd 's/\[[^][]*\]//g;s/AtEndOfClass{//g;/#\|\[\|\]\|newcommand/d' | inbraces
+    nocomments "$file" \
+      | grep -E '\\RequirePackage[^ ]|\\usepackage[^ ]|\\bibliographystyle[^ ]' \
+      | $sedcmd 's/\[[^][]*\]//g;s/AtEndOfClass{//g;/#\|\[\|\]\|newcommand/d' \
+      | inbraces
     for sub in '' font color; do
-      nocomments "$file" | grep '\\use'$sub'theme' | inbraces | sed 's/^/beamer'$sub'theme/'
+      nocomments "$file" \
+        | grep '\\use'$sub'theme' \
+        | inbraces \
+        | sed 's/^/beamer'$sub'theme/'
     done
   done
 }
@@ -167,7 +173,7 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
   # NOTE: Test 'newer than' returns true if second file does not exist.
   for name in "${names[@]}"; do
     for ext in cls sty bst; do
-      file=${src}/${name}.${ext}
+      file=${templates}/${name}.${ext}
       if [ -r "$file" ] && [ "$file" -nt "./${file##*/}" ]; then
         echoerr "Copying file ${file##*/}."
         cp "$file" ./ 2>/dev/null  # ignore 'same file' error e.g. when inside templates directory
@@ -176,7 +182,7 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
     done
   done
   # Detect files and add to lists if not already present
-  files=($(kpsewhich "${names[@]/%/.sty}" "${names[@]/%/.bst}"))
+  files=($(kpsewhich "${names[@]/%/.cls}" "${names[@]/%/.sty}" "${names[@]/%/.bst}"))
   for name in "${names[@]}"; do
     found=false
     for file in "${files[@]}"; do
