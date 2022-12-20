@@ -69,12 +69,10 @@ function! switch#autosave(...) abort
       au!
       exe 'au ' . cmds . ' <buffer> silent call tabline#write()'
     augroup END
-    echom 'Autosave enabled.'
   else
     exe 'augroup autosave_' . bufnr('%')
       au!
     augroup END
-    echom 'Autosave disabled.'
   endif
   let b:autosave_enabled = toggle
   call s:switch_message('Autosave', toggle)
