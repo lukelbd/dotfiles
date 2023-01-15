@@ -849,19 +849,33 @@ pskill() {  # jobs by ps name
   done
 }
 
-# Compare invididual files and directory trees. First is bash builtin, aliases are git
-# (first for files, second for directories), and functions print information about every
-# single file in recursive trees (first comparing contents, second comparing times).
-# See: https://stackoverflow.com/a/52201926/4970632
+# Compare invididual files and directory trees. First is bash builtin (first for files,
+# second for directories), then functions print information about every single file in
+# recursive trees (first comparing contents, second comparing times). Used the
+# --textconv option as described here https://stackoverflow.com/a/52201926/4970632
+# WARNING: Tried using :(exclude) and :! but does not work with no-index.
+# See: https://stackoverflow.com/a/58845608/4970632
+# See: https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-alias fdiff='command git --no-pager diff --textconv --no-index --color=always'
-alias ddiff='command git --no-pager diff --textconv --no-index --color=always --name-status'
-rdiff() {
+fdiff() {  # file differences
+  command git --no-pager diff --textconv --no-index --color=always "$@" 2>&1 \
+    | grep -v -e 'warning:' | tac | sed -e '/Binary files/,+3d' | tac
+    # -- ':!.vimsession' ':!*.git' ':!*.svn' ':!*.sw[a-z]' \
+    # ':!*.DS_Store' ':!*.ipynb_checkpoints' ':!*__pycache__'
+}
+ddiff() {  # directory differences
+  command git --no-pager diff --textconv --no-index --color=always --name-status "$@" 2>&1 | grep -v \
+    -e 'warning:' -e '.vimsession' -e '.git' -e '.svn' -e '.sw[a-z]' \
+    -e '.DS_Store' -e '.ipynb_checkpoints' -e '.*__pycache__'
+}
+rdiff() {  # recursive differences
   [ $# -ne 2 ] && echo "Usage: rdiff DIR1 DIR2" && return 1
-  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+  command diff -s \
+    -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+    -x '*.DS_Store' -x '*.ipynb_checkpoints' -x '*__pycache__' \
     --brief --strip-trailing-cr -r "$1" "$2"
 }
-tdiff() {  # print statements are formatted like rdiff
+tdiff() {  # time differences
   [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
   dir1=${1%/}
@@ -869,7 +883,12 @@ tdiff() {  # print statements are formatted like rdiff
   for dir in "$dir1" "$dir2"; do
     echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
-    files+=$'\n'$(find "$dir" -mindepth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession')
+    files+=$'\n'$( \
+      find "$dir" -mindepth 1 \( \
+      -path '*.vimsession' -o -path '*.git' -o -path '*.svn' -o -path '*.sw[a-z]' \
+      -o -path '*.DS_Store' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+      -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
+      \) -prune -o -print)
   done
   while read -r file; do
     file=${file/$dir1\//}
@@ -1890,9 +1909,8 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # shellcheck disable=2034
   {
     _fzf_prune="\\( \
-    -path '*.git' -o -path '*.svn' \
-    -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-    -o -path '*.DS_Store' -o -path '*.vimsession' \
+    -path '*.vimsession' -o -path '*.git' -o -path '*.svn' -o -path '*.sw[a-z]' \
+    -o -path '*.DS_Store' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
     -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
     \\) -prune \
     "
