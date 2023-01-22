@@ -364,7 +364,6 @@ export PYTHONUNBUFFERED=1  # must set this or python prevents print statements f
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
-export PATH=$HOME/coding/ncparallel:$PATH  # utility location
 _dirs_data=(cmip-data reanalysis-data idealized coupled)
 _dirs_tools=(ncparallel mppnccombine)
 _dirs_science=(constraints persistence timescales transport)
@@ -760,7 +759,7 @@ qfind() {
     -path '*/.*' -prune -o -name '[A-Z_]*' -prune \
     -o -type d \( ${_exclude[@]:1} \) -prune \
     -o -type f \( ! -name '*.*' "${_include[@]}" \) \
-    "${@:2}"
+    -o -name "${@:2}"  # name filter plus optional operators
 }
 qgrep() {
   [ $# -lt 2 ] && echo 'Error: qgrep() requires at least 2 args (pattern and path).' && return 1
@@ -864,8 +863,8 @@ fdiff() {  # file differences
     # ':!*.DS_Store' ':!*.ipynb_checkpoints' ':!*__pycache__'
 }
 ddiff() {  # directory differences
-  command git --no-pager diff --textconv --no-index --color=always --name-status "$@" 2>&1 | grep -v \
-    -e 'warning:' -e '.vimsession' -e '.git' -e '.svn' -e '.sw[a-z]' \
+  command git --no-pager diff --textconv --no-index --color=always --name-status "$@" 2>&1 \
+    | grep -v -e 'warning:' -e '.vimsession' -e '.git' -e '.svn' -e '.sw[a-z]' \
     -e '.DS_Store' -e '.ipynb_checkpoints' -e '.*__pycache__'
 }
 rdiff() {  # recursive differences
