@@ -384,8 +384,8 @@ nnoremap <Leader>I <Cmd>call file#directory_return()<CR>
 " Note: Since closing big sessions can be dangerous, do not use mappings.
 " Require manually invoking using :qall or :quitall
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
-nnoremap <C-w> <Cmd>call file#close_window()<CR>
-nnoremap <C-q> <Cmd>call file#close_tab()<CR>
+nnoremap <C-w> <Cmd>call file#close_tab()<CR>
+nnoremap <C-e> <Cmd>call file#close_window()<CR>
 
 " Renaming things
 command! -nargs=* -complete=file -bang Rename call file#rename('<args>', '<bang>')
@@ -398,7 +398,7 @@ nnoremap <Leader>e <Cmd>edit<CR>
 
 " Autosave with SmartWrite using utils function
 command! -nargs=? Autosave call switch#autosave(<args>)
-nnoremap <Leader>a <Cmd>call switch#autosave()<CR>
+nnoremap <Leader>A <Cmd>call switch#autosave()<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -451,6 +451,7 @@ nnoremap <Tab>i z.
 nnoremap <Tab>o zb
 nnoremap <Tab>p zL
 nnoremap <Tab>= <Cmd>vertical resize 90<CR>
+nnoremap <Tab>0 <Cmd>resize 100<CR>
 nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
 nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 5 * v:count1)<CR>

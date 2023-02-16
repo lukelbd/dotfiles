@@ -154,7 +154,7 @@ packages() {
   local sub file
   for file in "$@"; do
     nocomments "$file" \
-      | grep -E '\\RequirePackage[^ ]|\\usepackage[^ ]|\\bibliographystyle[^ ]' \
+      | grep -E '\\RequirePackage[^ ]|\\templatetype[^ ]|\\usepackage[^ ]|\\bibliographystyle[^ ]' \
       | $sedcmd 's/\[[^][]*\]//g;s/AtEndOfClass{//g;/#\|\[\|\]\|newcommand/d' \
       | inbraces
     for sub in '' font color; do
@@ -182,7 +182,14 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
     done
   done
   # Detect files and add to lists if not already present
-  files=($(kpsewhich "${names[@]/%/.cls}" "${names[@]/%/.sty}" "${names[@]/%/.bst}"))
+  files=( \
+    $(kpsewhich \
+      "${names[@]/%/.cls}" \
+      "${names[@]/%/.sty}" \
+      "${names[@]/%/.bst}" \
+      "${names[@]/%/.ldf}" \
+    ) \
+  )
   for name in "${names[@]}"; do
     found=false
     for file in "${files[@]}"; do
