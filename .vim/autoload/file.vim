@@ -1,6 +1,6 @@
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Utilities for managing files
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Helper functions and variables
 let s:newfile = '[new file]'  " dummy entry for requesting new file in current directory
 function! s:make_prompt(path) abort
@@ -116,9 +116,9 @@ function! file#directory_return() abort
   endif
 endfunction
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Opening files
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Generate list of files in directory including hidden and non-hidden
 " Warning: For some reason including 'down' in fzf#run prevents fzf from returning a
 " list (version 0.29). However exluding it produces weird behavior that blacks out
@@ -234,9 +234,9 @@ function! s:open_continuous(...) abort
   endfor
 endfunction
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Tab management
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Function that generates lists of tabs and their numbers
 function! s:tab_source() abort
   if !exists('g:tabline_bufignore')

@@ -9,11 +9,13 @@
 #   (--cask|--formulae), port installed (requested), tlmgr list --only-installed,
 #   conda (env) list (or list <package>), pip list (or info <package), jupyter
 #   kernelspec||labextension|nbextension list, etc. See below.
-# * Use 'brew install --cask eloston-chromium' for ARM-compatible version of
-#   chromium: https://github.com/ungoogled-software/ungoogled-chromium#downloads
+# * For ARM-copatible version of chromium tried 'brew install --cask eloston-chromium'
+#   but seems to sometimes download intel version. Instead follow these links:
+#   https://github.com/ungoogled-software/ungoogled-chromium#downloads
+#   https://ungoogled-software.github.io/ungoogled-chromium-binaries/releases/macos/
 #   Then automatically open notebooks and other "localhost" links in popup-style kiosks
 #   without menu bars by having Choosy auto-select the pseudo-app "LocalHost" created by
-#   Platypus when "localhost" is in the URL (simply calls chromium --kiosk "$url").
+#   platypus when "localhost" is in the URL (simply calls chromium --kiosk "$url").
 # * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
 #   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
 #   requires removing ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.

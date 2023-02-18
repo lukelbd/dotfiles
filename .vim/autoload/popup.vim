@@ -1,6 +1,9 @@
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Utilities for setting up windows
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
+" Update encoding for special character
+scriptencoding utf-8
+
 " Setup popup windows. Mode can be 0 (not editable) or 1 (editable).
 " Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
 " popup#job_win() or other internal stuff. So instead just try to disable normal mode

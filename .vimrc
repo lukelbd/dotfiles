@@ -1,4 +1,4 @@
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " vint: -ProhibitSetNoCompatible
 " A fancy vimrc that does all sorts of magical things.
 " Note: Have iTerm map some ctrl+key combinations that would otherwise
@@ -17,7 +17,7 @@
 " 'z' marks in various complicated remaps.
 " Note when installing with anaconda, you may need to run
 " conda install -y conda-forge::ncurses first
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Critical stuff
 let &t_te=''
 let &t_Co=256
@@ -205,9 +205,9 @@ let s:shellcheck_ignore =
   \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
 
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Repair unexpected behavior
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Escape repair needed when we allow h/l to change line num
 augroup escape_fix
   au!
@@ -347,9 +347,9 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
 endfor
 
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " File and window utilities
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Useful commands
 " Note: This is analogous to :scriptnames
 command! -nargs=? ShowPath call utils#show_path(<f-args>)
@@ -517,9 +517,9 @@ silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>. <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
 
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Editing utilities
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Useful commands
 command! -nargs=1 Grep call utils#grep_pattern(<q-args>)
 command! -range Reverse <line1>,<line2>call utils#reverse_lines()
@@ -768,8 +768,8 @@ nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')
 nnoremap gcY <Cmd>call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
 nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
 nnoremap gc' <Cmd>call comment#header_incomment()<CR>
-nnoremap gc: <Cmd>call comment#header_line('-', 77, 1, 1)<CR>
-nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 1, 0)<CR><Cmd>call repeat#set("\<Plug>CommentBar")<CR>
+nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
+nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 1)<CR><Cmd>call repeat#set("\<Plug>CommentBar")<CR>
 nmap gc; <Plug>CommentBar
 
 " ReST section comment headers
@@ -868,9 +868,9 @@ noremap <expr> \X format#replace_regex_expr(
   \ '')
 
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " External plugins
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Functions to find runtimepath and install plugins
 " See: https://github.com/junegunn/vim-plug/issues/32
 function! s:plug_active(key) abort
@@ -1250,9 +1250,9 @@ endfor
 call plug#end()
 
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Plugin sttings
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Add weird mappings powered by Karabiner. Note that custom delimiters
 " are declared inside vim-succinct plugin functions rather than here.
 if s:plug_active('vim-succinct')
@@ -1370,6 +1370,10 @@ endif
 " Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
 " Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
 if s:plug_active('ddc.vim')
+  let g:denops#server#deno_args = [
+    \ '--max-heap-size=50',
+    \ '--max-old-space-size=50'
+    \ ]  " limit memory to 50MB: https://stackoverflow.com/a/72499787/4970632
   call ddc#custom#patch_global('ui', 'native')
   call ddc#custom#patch_global({
     \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
@@ -1516,6 +1520,7 @@ if s:plug_active('ale')
     \ }
   let g:ale_completion_enabled = 0
   let g:ale_completion_autoimport = 0
+  let g:ale_cursor_detail = 0
   let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
   let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
   let g:ale_hover_cursor = 0
@@ -1534,8 +1539,10 @@ if s:plug_active('ale')
   let g:ale_echo_msg_warning_str = 'Warn'
   let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
   let g:ale_python_flake8_options =  '--max-line-length=' . s:line_length . ' --ignore=' . s:flake8_ignore
+  let g:ale_set_balloons = 0  " no ballons
   let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:line_length
   let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
+  let g:ale_virtualtext_cursor = 0  " no error shown here
 endif
 
 " Related plugins using similar exceptions
@@ -1739,9 +1746,9 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
 endif
 
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Syntax stuff
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Fix syntax highlighting. Leverage ctags integration to almost always fix syncing
 " Note: This says get the closest tag to the first line in the window, all tags
 " rather than top-level only, searching backward, and without circular wrapping.
@@ -1855,9 +1862,9 @@ noremap <Leader>4 <Cmd>ShowColors<CR>
 noremap <Leader>5 <Cmd>ShowPlugin<CR>
 noremap <Leader>6 <Cmd>ShowSyntax<CR>
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Exit
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Clear past jumps
 " Don't want stuff from plugin files and the vimrc populating jumplist after statrup
 " Simple way would be to use au BufRead * clearjumps

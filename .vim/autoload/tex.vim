@@ -1,8 +1,8 @@
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Advanced TeX configuration of shortcuts.vim
 " Warning: File name cannot be shortcuts.vim. Maybe this only works with
 " vim-plug plugins, not local plugins manually added to rtp?
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 function! s:sed_cmd() abort
   if has('macunix')
     let gsed = '/usr/local/bin/gsed'  " Todo: defer to 'gsed' alias?
@@ -15,9 +15,9 @@ function! s:sed_cmd() abort
   return gsed
 endfunction
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Selecting from tex labels (integration with idetools)
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Source for tex labels
 function! s:label_source() abort
   if !exists('b:tags_by_name')
@@ -58,10 +58,10 @@ function! tex#label_select(...) abort
   return function('s:label_select', a:000)
 endfunction
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Selecting citations from bibtex files
 " See: https://github.com/msprev/fzf-bibtex
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Basic function called every time
 function! s:cite_source() abort
   " Set the plugin source variables
@@ -134,9 +134,9 @@ function! tex#cite_select(...) abort
   return function('s:cite_select', a:000)
 endfunction
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Selecting from available graphics files
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Related function that prints graphics files
 function! s:graphic_source() abort
   " Get graphics paths
@@ -205,9 +205,9 @@ function! tex#graphic_select(...) abort
   return function('s:graphic_select', a:000)
 endfunction
 
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Checking math mode and making units
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Wrap in math environment only if cursor is not already inside one
 " Use TeX syntax to detect any and every math environment
 " Note: Check syntax of point to *left* of cursor because that's the environment

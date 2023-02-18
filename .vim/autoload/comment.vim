@@ -1,6 +1,6 @@
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Utilities for inserting comments
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Helper functions
 function! s:input_title()
   return input('Title: ', '', 'customlist,utils#null_list')
@@ -35,12 +35,11 @@ function! comment#section_line(fill, ...) abort
 endfunction
 
 " Separators of arbitrary length
-function! comment#header_line(fill, nfill, suffix, ...) abort " inserts above by default; most common use
+function! comment#header_line(fill, nfill, ...) abort  " inserts above by default
   let cchar = comment#comment_char()
   let indent = s:indent_spaces()
-  let suffix = a:suffix ? cchar : ''
   let nfill = (a:nfill - len(indent)) / len(a:fill) " divide by length of fill character
-  let text = indent . cchar . repeat(a:fill, nfill) . suffix
+  let text = indent . cchar . repeat(a:fill, nfill)
   if a:0 && a:1
     let title = s:input_title()
     if empty(title) | return | endif
@@ -64,7 +63,7 @@ function! comment#header_incomment() abort
   let cchar = comment#comment_char()
   let title = s:input_title()
   if empty(title) | return | endif
-  call append(line('.'), indent . cchar . ' ' . title . ' ' . cchar)
+  call append(line('.'), indent . cchar . ' ' . title)
 endfunction
 
 " Arbtirary message above this line, matching indentation level
