@@ -1,6 +1,6 @@
 #!/bin/bash
 # shellcheck disable=1090,2181,2120,2076
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # This file should override defaults in /etc/profile in /etc/bashrc. Check
 # out what is in the system defaults before using this and make sure your
 # $PATH is populated. To SSH between servers without password use:
@@ -53,7 +53,9 @@
 #   setting shortcut to single keypress but seems plugin can only be invoked from an
 #   'edit' mode that requires some modifier. Settled on 'Ctrl =' instead of 'F' (similar
 #   to Ctrl - used for splitting). Can also trigger autoformatting from edit menu.
-# * To prevent annoying 'template_path' error message must update the latex_envs repo with
+# * To prevent 'template_path' warning message, edit jupyter_nbconvert_config.json
+#   config file in $CONDA_PREFIX/etc/jupyter/, then update latex_envs with:
+#   pip uninstall jupyter_latex_envs  # otherwise may not update
 #   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
 #   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
 #   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
@@ -79,7 +81,7 @@
 #   ~& -- Send SSH session into background
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Bail out if not running interactively (e.g. when sending data packets over with
 # scp/rsync). Known bug: scp/rsync fail without this line due to greeting message:
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
@@ -87,9 +89,9 @@
 [[ $- != *i* ]] && return
 _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Configure shell behavior and key bindings
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # Ensure the prompt is applied only once so that supercomputer modules, conda
 # environments, etc. can subsequently modify the prompt appearance.
@@ -173,9 +175,9 @@ _setup_opts() {
 }
 _setup_opts 2>/dev/null  # ignore if option unavailable
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Settings for particular machines
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Reset all aliases
 # Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
@@ -200,7 +202,8 @@ _load_unloaded() {
 _macos=false
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  uriah*|velouria*|vortex*)
+  # NOTE: Logging into network WiFi changes hostname to DESKTOP-XXX.ColoState.EDU
+  DESKTOP*|vortex*|velouria*|uriah*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
     #   Show package info with 'brew info package'.
@@ -391,9 +394,9 @@ export CFLAGS=-stdlib=libc++
 export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Functions for printing information
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
@@ -506,9 +509,9 @@ space() {
   done
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Functions wrapping common commands
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Environment variables
 export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
@@ -679,9 +682,9 @@ open() {
   done
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # General utilty functions
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Receive affirmative or negative response using input message, then exit accordingly.
 confirm() {
   [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
@@ -992,9 +995,9 @@ zotfile-cleanup() {
   fi
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Remote-related functions
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Shortcuts for queue
 alias suser='squeue -u $USER'
 alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[:alpha:]"'
@@ -1093,19 +1096,19 @@ ports() {
 # For enter command then remain in shell see: https://serverfault.com/q/79645/427991
 alias ssh=_ssh  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
-  local address port flags
+  local address port nport flags
   if ! $_macos; then
     ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 "$@"
     return $?
   fi
   [[ $# -gt 2 || $# -lt 1 ]] && { echo 'Usage: _ssh HOST [PORT]'; return 1; }
+  nport=6  # or just 3?
   address=$(_address "$1") || { echo 'Error: Invalid address.'; return 1; }
   if [ -n "$2" ]; then
     ports=($2)  # custom
   else
     port=$(_port "$1")
-    ports=($(seq $port $((port + 6))))
-    # ports=($(seq $port $((port + 3))))  # try fewer
+    ports=($(seq $port $((port + nport))))
   fi
   flags="-o LogLevel=error -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
   flags+=" -t -R localhost:${ports[0]}:localhost:22"  # for rlcp etc.
@@ -1333,9 +1336,9 @@ unmount() {
   rm -r "${HOME:?}/$server"
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # REPLs and interactive servers
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Add jupyter kernels with custom profiles (see below)
 # See: https://github.com/minrk/a2km
 # See: https://stackoverflow.com/a/46370853/4970632
@@ -1442,9 +1445,9 @@ jupyter-connect() {
   # Connect over ports
   echo "Connecting to jupyter notebook(s) over port(s) $ports."
   if $_macos; then
-    _jupyter_tunnel "$server" "$ports"
+    _ssh "$server" "$ports"
   else
-    _jupyter_tunnel "$ports"
+    _ssh "$ports"
   fi
 }
 
@@ -1523,9 +1526,9 @@ jupyter-name() {
 alias server="python -m http.server"
 alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Dataset utilities
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Fortran tools
 namelist() {
   local file='input.nml'
@@ -1730,9 +1733,9 @@ extract() {
   done
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # PDF and image utilities
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Converting between things
 # * Flatten gets rid of transparency/renders it against white background, and
 #   the units/density specify a <N>dpi resulting bitmap file. Another option
@@ -1842,9 +1845,9 @@ wctex() {
 # This is *the end* of all function and alias declarations
 echo 'done'
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Shell integration for iTerm2
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Show inline figures with fixed 300dpi
 # Make sure it was not already installed and we are not inside vim :terminal
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
@@ -1879,9 +1882,9 @@ if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   echo 'done'
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # FZF fuzzy file completion tool
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
@@ -1959,9 +1962,9 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # bind -x '"\C-i": _complete_override'
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Conda stuff
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Find conda base
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
 alias brew="PATH=\"$PATH\" brew"
@@ -2053,9 +2056,9 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
   echo 'done' # commands returned by '__conda_exe shell.posix activate'
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Prompt and title management
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Safely add a prompt command
 _prompt() {  # input argument should be new command
   export PROMPT_COMMAND=$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')
@@ -2123,9 +2126,9 @@ if $_macos; then
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Mac stuff
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # TODO: This hangs when run from interactive cluster node, we test by comparing
 # hostname variable with command (variable does not change)
 if $_macos; then # first the MacOS options
@@ -2227,9 +2230,9 @@ if $_macos; then # first the MacOS options
   }
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Message
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 [ -n "$VIMRUNTIME" ] \
   && unset PROMPT_COMMAND
 [ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \

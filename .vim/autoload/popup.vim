@@ -190,12 +190,13 @@ function! popup#job_win(cmd, ...) abort
     let num = bufnr(logfile)
     call setbufvar(num, '&buftype', 'nofile')
     let opts = {
+      \ 'in_io': 'null',
       \ 'out_io': 'buffer',
-      \ 'out_buf': num,
       \ 'err_io': 'buffer',
+      \ 'out_buf': num,
       \ 'err_buf': num,
-      \ 'noblock': 1,
-      \ 'pty': 1
+      \ 'noblock': 0,
+      \ 'pty': 0
       \ }
   endif
   let b:popup_job = job_start(cmds, opts)
