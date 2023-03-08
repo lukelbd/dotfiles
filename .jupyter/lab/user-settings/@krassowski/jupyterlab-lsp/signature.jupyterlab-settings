@@ -1,0 +1,8 @@
+{
+    "closeCharacters": [
+        ")",
+        ";"
+    ],
+    "maxLines": 12,
+    "disable": true
+}
