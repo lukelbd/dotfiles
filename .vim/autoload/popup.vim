@@ -181,11 +181,8 @@ function! popup#job_win(cmd, ...) abort
     let lognum = bufwinnr(logfile)
     if lognum == -1  " open a logfile window
       exe hght . 'split ' . logfile
-      exe winnr('#') . 'wincmd w'
     else  " jump to logfile window and clean its contents
-      exe bufwinnr(logfile) . 'wincmd w'
-      1,$d _
-      exe winnr('#') . 'wincmd w'
+      exe lognum . 'wincmd w' | 1,$d _
     endif
     let num = bufnr(logfile)
     call setbufvar(num, '&buftype', 'nofile')
@@ -200,4 +197,5 @@ function! popup#job_win(cmd, ...) abort
       \ }
   endif
   let b:popup_job = job_start(cmds, opts)
+  exe winnr('#') . 'wincmd w'
 endfunction

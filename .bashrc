@@ -226,6 +226,7 @@ case "${HOSTNAME%%.*}" in
     #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
     unset MANPATH
+    export HOSTNAME=vortex
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
     export PATH=/Library/TeX/texbin:$PATH
     export PATH=/opt/X11/bin:$PATH

@@ -26,6 +26,7 @@ tags
 *.ipynb
 *.egg_info
 *.ipynb_checkpoints
+*.virtual_documents
 __pycache__
 
 # Common temporary files

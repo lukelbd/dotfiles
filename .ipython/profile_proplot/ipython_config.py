@@ -43,7 +43,7 @@ import matplotlib.text as mtext
 import matplotlib.ticker as mticker
 import matplotlib.transforms as mtransforms
 import proplot as pplt
-pplt.ion()
+plt.ion()
 pplt.rc['figure.dpi'] = 180 if 'img' in pplt.rc.backend or 'iterm' in pplt.rc.backend else 100
 try:
     import cartopy
