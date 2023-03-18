@@ -18,6 +18,7 @@ function! popup#popup_setup(...) abort
   nnoremap <silent> <buffer> q :call file#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR>
   setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
+  if &filetype ==# 'qf' | nnoremap <buffer> <CR> <CR> | endif
   if filemode == 1 | return | endif  " this is an editable file
   setlocal nospell statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
   for char in 'uUrRxXpPdDaAiIcCoO' | exe 'nmap <buffer> ' char . ' <Nop>' | endfor
