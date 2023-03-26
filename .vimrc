@@ -225,11 +225,14 @@ augroup END
 " See: https://vi.stackexchange.com/a/22239/8084 (outdated terminal overrides)
 " See: https://vi.stackexchange.com/a/14203/8084 (outdated Ptmux sequences)
 " See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
+" See: https://www.reddit.com/r/vim/comments/24g8r8/italics_in_terminal_vim_and_tmux/
 " call plug#('sjl/vitality.vim')  # outdated
 " let g:vitality_always_assume_iterm = 1
 let &t_SI = "\e[6 q"
 let &t_SR = "\e[4 q"
 let &t_EI = "\e[2 q"
+let &t_ZH = "\e[3m"
+let &t_ZR = "\e[23m"
 
 " Stop cursor from changing when clicking on panes. Note this is no longer
 " necessary since tmux handles FocusLost signal itself.
@@ -1465,6 +1468,8 @@ endif
 " just use peek to see definition and only use built-in 'gd' local definitions.
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
+" Note: Previously had issues with markdown preview display in popup windows but
+" fixed. See this thread: https://github.com/prabirshrestha/vim-lsp/pull/1086
 if s:plug_active('vim-lsp')
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>

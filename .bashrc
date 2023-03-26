@@ -824,7 +824,7 @@ refactor() {
 }
 
 # Process management
-# TODO: Add to these?
+# TODO: Add to these utilities?
 alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
 alias restarts='last reboot | less'
 log() {
