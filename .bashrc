@@ -3,8 +3,10 @@
 #-----------------------------------------------------------------------------
 # This file should override defaults in /etc/profile in /etc/bashrc. Check
 # out what is in the system defaults before using this and make sure your
-# $PATH is populated. To SSH between servers without password use:
-# https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
+# $PATH is populated. To permit pulling from github use ssh-keygen -R
+# github.com and to SSH between serverse use the below link:
+# https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key/
+# https://thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
 # * To see what is available for various package/environment managers use e.g.
 #   brew list (--cask|--formulae), port installed (requested),
 #   tlmgr list --only-installed, conda (env) list (or list <package>),
@@ -755,42 +757,58 @@ rename() {
 # NOTE: No way to include extensionless executables in qgrep
 # NOTE: In find, if dotglob is unset, cannot match hidden files with [.]*
 # NOTE: In grep, using --exclude=.* also excludes current directory
-_exclude_dirs=(api build trash sources plugged externals '*conda3*')
+_exclude_dirs=(api build trash sources plugged externals '*conda*' '*mamba*' 'site-packages')
 _include_exts=(.py .sh .jl .m .ncl .vim .rst .ipynb)
-qfind() {
-  local _include _exclude
-  [ $# -lt 2 ] && echo 'Error: qfind() requires at least 2 args (path and command).' && return 1
-  _exclude=(${_exclude_dirs[@]/#/-o -name })  # expand into commands *and* names
-  _include=(${_include_exts[@]/#/-o -name })
-  _include=("${_include[@]//./*.}")  # add glob patterns
-  command find "$1" \
-    -path '*/.*' -prune -o -name '[A-Z_]*' -prune \
-    -o -type d \( ${_exclude[@]:1} \) -prune \
-    -o -type f \( ! -name '*.*' "${_include[@]}" \) \
-    -o -name "${@:2}"  # name filter plus optional operators
-}
 qgrep() {
-  [ $# -lt 2 ] && echo 'Error: qgrep() requires at least 2 args (pattern and path).' && return 1
-  command grep "$@" \
-    -E --color=auto --exclude='[A-Z_.]*' \
+  local commands exclude include
+  case "$#" in
+    0) echo 'Error: qgrep() requires at least 1 arg (the pattern).' && return 1 ;;
+    1) commands=("$1" .) ;;
+    *) commands=("$@") ;;
+  esac
+  exclude=("${_exclude_dirs[@]/#/--exclude-dir=}")
+  include=("${_include_exts[@]/#/--include=*}")
+  command grep \
+    -i -r -E --color=auto --exclude='[A-Z_.]*' \
     --exclude-dir='.[^.]*' --exclude-dir='_*' \
-    ${_exclude_dirs[@]/#/--exclude-dir=} \
-    ${_include_exts[@]/#/--include=*}
+    ${exclude[@]} ${include[@]} -- ${commands[@]}  # only regex and paths allowed
+
+}
+qfind() {
+  local commands exclude include 
+  case "$#" in
+    0) commands=(. '*' -print) ;;
+    1) commands=("$1" '*' -print) ;;
+    2) commands=("$1" "$2" -print) ;;
+    *) commands=("$@") ;;
+  esac
+  exclude=(${_exclude_dirs[@]/#/-o -name })  # expand into commands *and* names
+  include=(${_include_exts[@]/#/-o -name })  # expand into commands *and* names
+  include=("${include[@]//./*.}")  # add glob patterns
+  # echo 'hello!!!' "${commands[0]}" ... "${commands[@]:1}"
+  command find "${commands[0]}" \
+    -path '*/.*' -prune \
+    -o -name '[A-Z_]*' -prune \
+    -o -type d \( "${exclude[@]:1}" \) -prune \
+    -o -type f \( "${include[@]:1}" \) \
+    -name "${commands[@]:1}"
+    # -o -type f -name
+    # "${commands[@]:1}"  # name filter plus optional operators
 }
 
 # Refactor, coding, and logging tools
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
 # occurences of file paths (should be 1 but this is convenient way to record them).
-todo() { qfind . -print -a -exec grep -i -n '\btodo:\b' {} \;; }
-note() { qfind . -print -a -exec grep -i -n '\bnote:\b' {} \;; }
-error() { qfind . -print -a -exec grep -i -n '\berror:\b' {} \;; }
-warning() { qfind . -print -a -exec grep -i -n '\bwarning:\b' {} \;; }
+todo() { qfind . '*' -print -a -exec grep -i -n '\btodo:' {} \;; }
+note() { qfind . '*' -print -a -exec grep -i -n '\bnote:' {} \;; }
+error() { qfind . '*' -print -a -exec grep -i -n '\berror:' {} \;; }
+warning() { qfind . '*' -print -a -exec grep -i -n '\bwarning:' {} \;; }
 refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
   [ $# -eq 2 ] \
     || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
-  result=$(qfind . -print -a -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
+  result=$(qfind . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
     || { echo "Error: Search $1 to $2 failed."; return 1; }
   readarray -t files < <(echo "$result"$'\nEOF' | \
     awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
@@ -806,8 +824,16 @@ refactor() {
 }
 
 # Process management
+# TODO: Add to these?
 alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
 alias restarts='last reboot | less'
+log() {
+  while ! [ -r "$1" ]; do
+    echo "Waiting..."
+    sleep 3
+  done
+  tail -f "$1"
+}
 tos() {  # table of shell processes (similar to 'top')
   if [ -z "$1" ]; then
     regex='$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/'
@@ -815,13 +841,6 @@ tos() {  # table of shell processes (similar to 'top')
     regex='$4 == "$1"'
   fi
   ps | awk 'NR == 1 {next}; '"$regex"'{print $1 " " $4}'
-}
-log() {
-  while ! [ -r "$1" ]; do
-    echo "Waiting..."
-    sleep 3
-  done
-  tail -f "$1"
 }
 
 # Killing jobs and supercomputer stuff
