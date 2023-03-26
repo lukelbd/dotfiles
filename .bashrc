@@ -5,10 +5,10 @@
 # out what is in the system defaults before using this and make sure your
 # $PATH is populated. To SSH between servers without password use:
 # https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# * To see what is available for various package/environment managers use e.g. brew list
-#   (--cask|--formulae), port installed (requested), tlmgr list --only-installed,
-#   conda (env) list (or list <package>), pip list (or info <package), jupyter
-#   kernelspec||labextension|nbextension list, etc. See below.
+# * To see what is available for various package/environment managers use e.g.
+#   brew list (--cask|--formulae), port installed (requested),
+#   tlmgr list --only-installed, conda (env) list (or list <package>),
+#   pip list (or info <package), jupyter kernelspec||labextension|nbextension list
 # * For ARM-copatible version of chromium tried 'brew install --cask eloston-chromium'
 #   but seems to sometimes download intel version. Instead follow these links:
 #   https://github.com/ungoogled-software/ungoogled-chromium#downloads

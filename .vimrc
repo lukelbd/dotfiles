@@ -95,8 +95,8 @@ set wildmenu
 set wildmode=longest:list,full
 let &g:colorcolumn = '89,121'  " global color columns
 let &g:breakindent = 1  " global indent behavior
-let &g:expandtab = 1  " global expand tab
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
+let &g:expandtab = 1  " global expand tab
 let &g:wildignore = ''
   \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
@@ -1380,11 +1380,14 @@ endif
 " Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
 " Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
 if s:plug_active('ddc.vim')
-  " Limit memory to 50MB: https://stackoverflow.com/a/72499787/4970632
-  " No longer available as of deno 1.17.0?
-  " \ '--max-heap-size=50',
-  " \ '--max-old-space-size=50'
-  let g:denops#server#deno_args = []
+  " Permit installation on first try
+  " See: https://github.com/Shougo/ddc.vim/issues/120
+  " Limit memory to 50M (flags passed to --v8-flags as of deno 1.17.0?)
+  " See: https://stackoverflow.com/a/72499787/4970632
+  let g:denops#server#deno_args = [
+    \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
+    \ '--v8-flags=--max-heap-size=50,--max-old-space-size=50',
+    \ ]
   call ddc#custom#patch_global('ui', 'native')
   call ddc#custom#patch_global({
     \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
@@ -1398,27 +1401,27 @@ if s:plug_active('ddc.vim')
     \   },
     \   'vim-lsp': {
     \     'mark': 'L',
-    \     'maxCandidates': 15,
+    \     'maxItems': 15,
     \     'isVolatile': v:true,
     \     'forceCompletionPattern': '\\.|:|->',
     \   },
     \   'vsnip': {
     \     'mark': 'S',
-    \     'maxCandidates': 5,
+    \     'maxItems': 5,
     \   },
     \   'around': {
     \     'mark': 'A',
-    \     'maxCandidates': 5,
+    \     'maxItems': 5,
     \   },
     \   'buffer': {
     \     'mark': 'B',
-    \     'maxCandidates': 5,
+    \     'maxItems': 5,
     \   },
     \   'file': {
     \     'mark': 'F',
     \     'isVolatile': v:true,
     \     'forceCompletionPattern': '\S/\S*',
-    \     'maxCandidates': 5,
+    \     'maxItems': 5,
     \   },
     \ }})
   call ddc#enable()
