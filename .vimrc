@@ -156,9 +156,14 @@ function! s:buffer_overrides() abort
   setlocal linebreak
   let &l:textwidth = s:line_length
   let &l:wrapmargin = 0
-  syntax match customShebang '^\%1l#!.*$'  " shebang highlighting
-  syntax match customHeader =^# \zs#\+.*$= containedin=.*Comment.*
-  syntax match customTodo '\C\%(WARNINGS\=\|ERRORS\=\|FIXMES\=\|TODOS\=\|NOTES\=\|XXX\)\ze:\=' containedin=.*Comment.*  " comments
+  if &filetype ==# 'vim'  " vim9 strings: https://github.com/vim/vim/issues/11307
+    syntax match customComment /^[ \t:]*".*$/ contains=vimCommentTitle,vimCommentString,@vimCommentGroup containedin=.*\(Body\|\)
+    highlight link customComment vimComment
+    highlight link vimCommentString vimComment
+  endif  " vim override must come first for e.g. url override to work!
+  syntax match customShebang /^\%1l#!.*$/  " shebang highlighting
+  syntax match customHeader /^# \zs#\+.*$/ containedin=.*Comment.*
+  syntax match customTodo /\C\%(WARNINGS\?\|ERRORS\?\|FIXMES\?\|TODOS\?\|NOTES\?\|XXX\)\ze:\?/ containedin=.*Comment.*  " comments
   syntax match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
   highlight link customHeader Special
   highlight link customShebang Special
@@ -462,8 +467,10 @@ nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
 " Literal tabs for particular filetypes.
+" Note: For some reason must be manually enabled for vim
 augroup tab_toggle
   au!
+  au FileType vim setlocal expandtab | let b:expandtab = 1
   au FileType xml,make,text,gitconfig setlocal noexpandtab | let b:expandtab = 0
 augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
@@ -749,7 +756,7 @@ map ]e <Plug>BlankDown
 " Note: switched easy-align mapping from ga to ge for consistency here
 nnoremap <expr> ga insert#paste_mode() . 'a'
 nnoremap <expr> gA insert#paste_mode() . 'A'
-nnoremap <expr> gc insert#paste_mode() . 'c'
+nnoremap <expr> gC insert#paste_mode() . 'c'
 nnoremap <expr> gi insert#paste_mode() . 'i'
 nnoremap <expr> gI insert#paste_mode() . 'I'
 nnoremap <expr> go insert#paste_mode() . 'o'
@@ -764,13 +771,17 @@ inoremap <expr> <Delete> insert#forward_delete()
 inoremap <expr> <C-g>c comment#comment_insert()
 
 " Section headers, dividers, and other information
+" Todo: Improve title headers
+" function
+"   hello world
+" endfunction
+nmap gc; <Plug>CommentBar
+nnoremap <Plug>CommentBar :<C-u>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
+nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
+nnoremap gc' <Cmd>call comment#header_incomment()<CR>
+nnoremap gc" <Cmd>call comment#header_inline(1)<CR>
 nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
 nnoremap gcY <Cmd>call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
-nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
-nnoremap gc' <Cmd>call comment#header_incomment()<CR>
-nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
-nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 1)<CR><Cmd>call repeat#set("\<Plug>CommentBar")<CR>
-nmap gc; <Plug>CommentBar
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
@@ -1008,7 +1019,7 @@ let g:speeddating_no_mappings = 1
 " rely on fzf#run return values (will result in weird hard-to-debug issues).
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
-  " call plug#('Shougo/pum.vim')  " pum completion mappings, but mine are nicer
+" call plug#('Shougo/pum.vim')  " pum completion mappings, but mine are nicer
 " call plug#('Shougo/unite.vim')  " first generation
 " call plug#('Shougo/denite.vim')  " second generation
 " call plug#('Shougo/ddu.vim')  " third generation
@@ -1794,28 +1805,13 @@ if has('gui_running')
   command! SchemeNext call utils#iter_colorschemes(1)
 endif
 
-" Filetype specific
-highlight link pythonImportedObject Identifier
-highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
+" Make terminal background same as main background
+highlight Terminal ctermbg=NONE ctermfg=NONE
 
-" Magenta is uncommon color, so use it for sneak and highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-highlight Search ctermbg=Magenta ctermfg=NONE
+" Transparent conceal group so when conceallevel=0 elements revert to original colors
+highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
 
-" Popup menu
-highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
-
-" Move control from LightColor to Color and DarkColor
-" because ANSI has no control over light ones it seems.
-highlight Type ctermbg=NONE ctermfg=DarkGreen
-highlight Constant ctermbg=NONE ctermfg=Red
-highlight Special ctermbg=NONE ctermfg=DarkRed
-highlight PreProc ctermbg=NONE ctermfg=DarkCyan
-highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
-
-" Only works in iTerm with minimum contrast setting (otherwise use Gray)
+" Comment highlighting (only works in iTerm with minimum contrast enabled, else use gray)
 highlight LineNR cterm=NONE ctermbg=NONE ctermfg=Black
 highlight Comment ctermfg=Black cterm=NONE
 
@@ -1831,22 +1827,33 @@ highlight MatchParen ctermfg=NONE ctermbg=Blue
 highlight CursorLine cterm=NONE ctermbg=Black
 highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
 
-" Error highlighting (use Red and Magenta for increased prominence)
-highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
-highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
-
 " Color and sign column stuff
 highlight ColorColumn cterm=NONE ctermbg=Gray
 highlight SignColumn guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
 
-" Make terminal background same as main background
-highlight Terminal ctermbg=NONE ctermfg=NONE
+" Sneak and search highlighting
+highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
+highlight Search ctermbg=Magenta ctermfg=NONE
 
-" Transparent dummy group used to add @Nospell
-highlight Dummy ctermbg=NONE ctermfg=NONE
+" Popup menu
+highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
 
-" Transparent conceal group so when conceallevel=0 elements revert to original colors
-highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
+" Switch from LightColor to Color and DarkColor because ANSI has no control over light
+highlight Type ctermbg=NONE ctermfg=DarkGreen
+highlight Constant ctermbg=NONE ctermfg=Red
+highlight Special ctermbg=NONE ctermfg=DarkRed
+highlight PreProc ctermbg=NONE ctermfg=DarkCyan
+highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
+
+" Error highlighting (use Red and Magenta for increased prominence)
+highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
+
+" Python highlighting
+highlight link pythonImportedObject Identifier
+highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 
 " Helper commands defined in utils
 command! -nargs=0 CurrentColor vert help group-name

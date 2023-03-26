@@ -2,16 +2,18 @@
 " vimtex - LaTeX plugin for Vim
 " Maintainer: Karl Yngve Lervåg
 " Email: karl.yngve@gmail.com
-" if !exists('b:current_syntax')
-" let b:current_syntax = 'tex'
-" elseif b:current_syntax !=# 'tex'
-" finish
-" endif
 "------------------------------------------------------------------------------"
 " Author: Luke Davis (lukelbd@gmail.com)
 " Date: 2018-07-26
 " Custom syntax modifications
 "------------------------------------------------------------------------------"
+" Initial stuff
+" if !exists('b:current_syntax')
+"   let b:current_syntax = 'tex'
+" elseif b:current_syntax !=# 'tex'
+"   finish
+" endif
+
 " Things recommended from :help tex-syntax
 " First more lines for accuracy
 syntax sync minlines=500
@@ -20,15 +22,15 @@ syntax sync minlines=500
 " The first arg is an identifying suffix -- must be between K and U
 " The last arg is whether environment has a 'starred' form, i.e. \begin{align*}
 " Explictly add these cause why not
-call TexNewMathZone("M", "equation", 1)
-call TexNewMathZone("N", "align", 1)
+call TexNewMathZone('M', 'equation', 1)
+call TexNewMathZone('N', 'align', 1)
 
 " Disable spellcheck within *yellow-highlighted curly brace commands*, but does
 " *not* disable spellcheck within environments like textbf and naked braces {}
-" Just copied the :SyntaxFile line, but removed 'transparent' flag
+" Copied the :SyntaxFile line and removed the 'transparent' flag
 syn region texMatcherNM matchgroup=Delimiter
   \ start="{" skip="\\\\\|\\[{}]" end="}"
-  \ contains=@texMatchNMGroup,texError,@NoSpell " this is exact copy of :SyntaxFile line, but removes 'transparent' flag
+  \ contains=@texMatchNMGroup,texError,@NoSpell
 
 " Conceal backslash commands; only matchadd works for some reason
 " Warning: This will make highlight searches really weird if you make the 'priority' (arg 3)

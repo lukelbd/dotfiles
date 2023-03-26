@@ -39,22 +39,23 @@ function! comment#header_line(fill, nfill, ...) abort  " inserts above by defaul
   let cchar = comment#comment_char()
   let indent = s:indent_spaces()
   let nfill = (a:nfill - len(indent)) / len(a:fill) " divide by length of fill character
-  let text = indent . cchar . repeat(a:fill, nfill)
+  let comment = indent . cchar . repeat(a:fill, nfill) . cchar
   if a:0 && a:1
     let title = s:input_title()
     if empty(title) | return | endif
-    let text = [text, indent . cchar . ' ' . title, text]
+    let comment = [comment, indent . cchar . ' ' . title, comment]
   endif
-  call append(line('.') - 1, text)
+  call append(line('.') - 1, comment)
 endfunction
 
-" Inline style of format '# ---- Hello world! ----'
+" Inline style of format '# ---- Hello world! ---- #'
 function! comment#header_inline(ndash) abort
   let cchar = comment#comment_char()
   let indent = s:indent_spaces()
   let title = s:input_title()
   if empty(title) | return | endif
-  call append(line('.') - 1, indent . cchar . repeat(' ', a:ndash) . repeat('-', a:ndash) . ' ' . title . ' ' . repeat('-', a:ndash))
+  let comment = indent . cchar . repeat(' ', a:ndash) . repeat('-', a:ndash) . ' ' . title . ' ' . repeat('-', a:ndash) . ' ' . cchar
+  call append(line('.') - 1, comment)
 endfunction
 
 " Inline style of format '# Hello world! #'
@@ -63,12 +64,14 @@ function! comment#header_incomment() abort
   let cchar = comment#comment_char()
   let title = s:input_title()
   if empty(title) | return | endif
-  call append(line('.'), indent . cchar . ' ' . title)
+  let comment = indent . cchar . ' ' . title . ' ' . cchar
+  call append(line('.'), comment)
 endfunction
 
 " Arbtirary message above this line, matching indentation level
 function! comment#message(message) abort
   let indent = s:indent_spaces()
   let cchar = comment#comment_char()
-  call append(line('.') - 1, indent . cchar . ' ' . a:message)
+  let comment = indent . cchar . ' ' . a:message . ' ' . cchar
+  call append(line('.') - 1, comment)
 endfunction
