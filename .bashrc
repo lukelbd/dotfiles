@@ -799,10 +799,10 @@ qfind() {
 # Refactor, coding, and logging tools
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
 # occurences of file paths (should be 1 but this is convenient way to record them).
-todo() { qfind . '*' -print -a -exec grep -i -n '\btodo:' {} \;; }
-note() { qfind . '*' -print -a -exec grep -i -n '\bnote:' {} \;; }
-error() { qfind . '*' -print -a -exec grep -i -n '\berror:' {} \;; }
-warning() { qfind . '*' -print -a -exec grep -i -n '\bwarning:' {} \;; }
+note() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\bnote:' {} \;; }
+todo() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\btodo:' {} \;; }
+error() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\berror:' {} \;; }
+warning() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\bwarning:' {} \;; }
 refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
