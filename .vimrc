@@ -1370,10 +1370,11 @@ endif
 " Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
 " Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
 if s:plug_active('ddc.vim')
-  let g:denops#server#deno_args = [
-    \ '--max-heap-size=50',
-    \ '--max-old-space-size=50'
-    \ ]  " limit memory to 50MB: https://stackoverflow.com/a/72499787/4970632
+  " Limit memory to 50MB: https://stackoverflow.com/a/72499787/4970632
+  " No longer available as of deno 1.17.0?
+  " \ '--max-heap-size=50',
+  " \ '--max-old-space-size=50'
+  let g:denops#server#deno_args = []
   call ddc#custom#patch_global('ui', 'native')
   call ddc#custom#patch_global({
     \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
