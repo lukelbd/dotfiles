@@ -1,6 +1,6 @@
-"-----------------------------------------------------------------------------
+"-----------------------------------------------------------------------------"
 " General utilities
-"-----------------------------------------------------------------------------
+"-----------------------------------------------------------------------------"
 " Clear writable registers. On some vim versions [] fails (is ideal,
 " because removes from :registers), but '' will at least empty them out.
 " See: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively

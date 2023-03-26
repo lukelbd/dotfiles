@@ -1,6 +1,6 @@
-"-----------------------------------------------------------------------------
+"-----------------------------------------------------------------------------"
 " Utilities for inserting comments
-"-----------------------------------------------------------------------------
+"-----------------------------------------------------------------------------"
 " Helper functions
 function! s:input_title()
   return input('Title: ', '', 'customlist,utils#null_list')
@@ -38,7 +38,7 @@ endfunction
 function! comment#header_line(fill, nfill, ...) abort  " inserts above by default
   let cchar = comment#comment_char()
   let indent = s:indent_spaces()
-  let nfill = (a:nfill - len(indent)) / len(a:fill) " divide by length of fill character
+  let nfill = (a:nfill - len(indent)) / len(a:fill)  " divide by length of fill character
   let comment = indent . cchar . repeat(a:fill, nfill) . cchar
   if a:0 && a:1
     let title = s:input_title()
@@ -54,7 +54,7 @@ function! comment#header_inline(ndash) abort
   let indent = s:indent_spaces()
   let title = s:input_title()
   if empty(title) | return | endif
-  let comment = indent . cchar . repeat(' ', a:ndash) . repeat('-', a:ndash) . ' ' . title . ' ' . repeat('-', a:ndash) . ' ' . cchar
+  let comment = indent . cchar . ' ' . repeat('-', a:ndash) . ' ' . title . ' ' . repeat('-', a:ndash) . ' ' . cchar
   call append(line('.') - 1, comment)
 endfunction
 
