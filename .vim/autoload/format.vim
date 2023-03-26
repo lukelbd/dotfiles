@@ -13,12 +13,16 @@ endfunction
 " Search replace without polluting history
 " Undoing this command will move the cursor to the first line in the range of
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
+" Warning: Critical to replace line-by-line in reverse order in case substitutions
+" have different number of newlines. Cannot figure out how to do this in one command.
 function! format#replace_regex(message, ...) range abort
   let prevhist = @/
   let winview = winsaveview()
-  for i in range(0, a:0 - 2, 2)
-    keepjumps exe a:firstline . ',' . a:lastline . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
-    call histdel('/', -1)
+  for line in range(a:lastline, a:firstline, -1)
+    for i in range(0, a:0 - 2, 2)
+      keepjumps exe line . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
+      call histdel('/', -1)
+    endfor
   endfor
   echom a:message
   let @/ = prevhist

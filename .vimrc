@@ -806,12 +806,11 @@ noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
 " Note: This works recursively with the below maps
 nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
-" Delete commented text. For some reason search screws up when using \(\) groups,
-" maybe because first parts of match are identical?
+" Delete commented text.
+" Note: Cannot put first line
 noremap <expr> \c format#replace_regex_expr(
   \ 'Removed comments.',
-  \ '^\s*' . comment#comment_char() . '.\+$\n', '',
-  \ '\s\+' . comment#comment_char() . '.\+$', '')
+  \ '\(^\s*' . comment#comment_char() . '.\+$\n\\|\s\+' . comment#comment_char() . '.\+$\)', '')
 
 " Replace tabs with spaces
 noremap <expr> \<Tab> format#replace_regex_expr(
