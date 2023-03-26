@@ -362,8 +362,10 @@ export PATH=$HOME/.local/bin:$PATH  # pip install location
 export PATH=$HOME/bin:$PATH  # custom scripts
 
 # Various python stuff
-# NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
+# NOTE: For download stats use 'condastats overall <package>' or 'pypistats <package>'.
+# As of 2023-03-21 for proplot get 51k all-time conda downloads and 10k 180-day proplot
+# downloads equals approximately (since 2019?) 80k pypi downloads?
 unset MPLBACKEND
 unset PYTHONPATH
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
