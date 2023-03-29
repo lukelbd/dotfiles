@@ -101,13 +101,16 @@ _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; 
 # See: https://unix.stackexchange.com/a/124408/112647
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
 _setup_message 'General setup'
-_prompt_dirs() {
+_prompt_branch() {  # consider adding or just get in habit of hitting cmd-b
+  git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1) /'
+}
+_prompt_dirs() {  # always have full directory history up
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
   paths=("${paths[@]##*/}")
   IFS=: eval 'echo "${paths[*]}"'
 }
-[ -n "$_prompt_set" ] || export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
+[ -n "$_prompt_set" ] || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 _prompt_set=1
 
 # Readline/inputrc settings
