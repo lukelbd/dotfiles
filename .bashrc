@@ -101,14 +101,13 @@ _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; 
 # See: https://unix.stackexchange.com/a/124408/112647
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
 _setup_message 'General setup'
-_prompt_branch() {  # consider adding or just get in habit of hitting cmd-b
+_prompt_branch() {  # print parentheses around git branch similar to conda environment
   git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1) /'
 }
-_prompt_dirs() {  # always have full directory history up
+_prompt_dirs() {  # show full dirs path from base to current instead of just current
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
-  paths=("${paths[@]##*/}")
-  IFS=: eval 'echo "${paths[*]}"'
+  IFS=: eval 'echo "${paths[*]##*/}"'
 }
 [ -n "$_prompt_set" ] || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 _prompt_set=1
@@ -774,7 +773,7 @@ qgrep() {
   command grep \
     -i -r -E --color=auto --exclude='[A-Z_.]*' \
     --exclude-dir='.[^.]*' --exclude-dir='_*' \
-    ${exclude[@]} ${include[@]} -- ${commands[@]}  # only regex and paths allowed
+    ${exclude[@]} ${include[@]} ${commands[@]}  # only regex and paths allowed
 
 }
 qfind() {
@@ -788,7 +787,6 @@ qfind() {
   exclude=(${_exclude_dirs[@]/#/-o -name })  # expand into commands *and* names
   include=(${_include_exts[@]/#/-o -name })  # expand into commands *and* names
   include=("${include[@]//./*.}")  # add glob patterns
-  # echo 'hello!!!' "${commands[0]}" ... "${commands[@]:1}"
   command find "${commands[0]}" \
     -path '*/.*' -prune \
     -o -name '[A-Z_]*' -prune \

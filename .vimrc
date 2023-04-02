@@ -817,18 +817,11 @@ noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
 " Note: This works recursively with the below maps
 nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
-" Delete commented text.
-" Note: Cannot put first line
-noremap <expr> \c format#replace_regex_expr(
-  \ 'Removed comments.',
-  \ '\(^\s*' . comment#comment_char() . '.\+$\n\\|\s\+' . comment#comment_char() . '.\+$\)', '')
-
 " Replace tabs with spaces
+" Remove trailing whitespace (see https://stackoverflow.com/a/3474742/4970632)
 noremap <expr> \<Tab> format#replace_regex_expr(
   \ 'Fixed tabs.',
   \ '\t', repeat(' ', &tabstop))
-
-" Delete trailing whitespace; from https://stackoverflow.com/a/3474742/4970632
 noremap <expr> \w format#replace_regex_expr(
   \ 'Removed trailing whitespace.',
   \ '\s\+\ze$', '')
@@ -836,20 +829,30 @@ noremap <expr> \w format#replace_regex_expr(
 " Delete empty lines
 " Replace consecutive newlines with single newline
 noremap <expr> \e format#replace_regex_expr(
-  \ 'Squeezed consecutive newlines.',
-  \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
-noremap <expr> \E format#replace_regex_expr(
   \ 'Removed empty lines.',
   \ '^\s*$\n', '')
+noremap <expr> \E format#replace_regex_expr(
+  \ 'Squeezed consecutive newlines.',
+  \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
 
 " Replace consecutive spaces on current line with one space,
 " only if they're not part of indentation
 noremap <expr> \s format#replace_regex_expr(
-  \ 'Squeezed redundant whitespace.',
-  \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S format#replace_regex_expr(
   \ 'Removed all whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \+', '')
+noremap <expr> \S format#replace_regex_expr(
+  \ 'Squeezed redundant whitespace.',
+  \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+
+" Delete first-level and second-level commented text
+" Note: This is useful when editing tex files
+noremap <expr> \c format#replace_regex_expr(
+  \ 'Removed all comments.',
+  \ '\(^\s*' . comment#comment_char() . '.\+$\n\\|\s\+' . comment#comment_char() . '.\+$\)', '')
+noremap <expr> \C format#replace_regex_expr(
+  \ 'Removed second-level comments.',
+  \ '\(^\s*' . comment#comment_char() . '\s*' . comment#comment_char() . '.\+$\n\\|\s\+'
+  \ . comment#comment_char() . '\s*' . comment#comment_char() . '.\+$\)', '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
