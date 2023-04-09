@@ -156,11 +156,6 @@ function! s:buffer_overrides() abort
   setlocal linebreak
   let &l:textwidth = s:line_length
   let &l:wrapmargin = 0
-  if &filetype ==# 'vim'  " vim9 strings: https://github.com/vim/vim/issues/11307
-    syntax match customComment /^[ \t:]*".*$/ contains=vimCommentTitle,vimCommentString,@vimCommentGroup containedin=.*\(Body\|\)
-    highlight link customComment vimComment
-    highlight link vimCommentString vimComment
-  endif  " vim override must come first for e.g. url override to work!
   syntax match customShebang /^\%1l#!.*$/  " shebang highlighting
   syntax match customHeader /^# \zs#\+.*$/ containedin=.*Comment.*
   syntax match customTodo /\C\%(WARNINGS\?\|ERRORS\?\|FIXMES\?\|TODOS\?\|NOTES\?\|XXX\)\ze:\?/ containedin=.*Comment.*  " comments
@@ -430,10 +425,8 @@ nnoremap <Tab>> <Cmd>call file#tab_move(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call file#tab_move(tabpagenr() - v:count1)<CR>
 nnoremap <Tab>m <Cmd>call file#tab_move()<CR>
 nnoremap <Tab><Space> <Cmd>Buffers<CR>
-nnoremap <Tab><Tab> <Cmd>call file#tab_select()<CR>
-for s:num in range(1, 10)
-  exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt'
-endfor
+nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call file#tab_select()<CR>'
+for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
 " Window selection and creation
 nnoremap <Tab>; <C-w><C-p>
@@ -473,7 +466,7 @@ nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 " Note: For some reason must be manually enabled for vim
 augroup tab_toggle
   au!
-  au FileType vim setlocal expandtab | let b:expandtab = 1
+  au FileType vim,tex setlocal expandtab | let b:expandtab = 1
   au FileType xml,make,text,gitconfig setlocal noexpandtab | let b:expandtab = 0
 augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
@@ -499,7 +492,7 @@ augroup popup_setup
   endfor
 augroup END
 
-" Vim command windows, help windows, man pages, and result of 'cmd --help'
+" Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
 " Note: Here the 'k' is just easy to access and 'v' is for vim commands
 nnoremap <Leader>; <Cmd>History:<CR>
@@ -509,8 +502,10 @@ nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Help<CR>
 nnoremap <Leader>V <Cmd>call popup#help_win()<CR>
-nnoremap <Leader>n <Cmd>Maps<CR>
-nnoremap <Leader>m <Cmd>Commands<CR>
+nnoremap <Leader>m <Cmd>Maps<CR>
+nnoremap <Leader>M <Cmd>Commands<CR>
+nnoremap <Leader>n <Cmd>exe 'Ag ' . @/<CR>
+nnoremap <Leader>N <Cmd>exe 'Rg ' . @/<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -531,10 +526,12 @@ nnoremap <Leader>. <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 " Editing utilities
 "-----------------------------------------------------------------------------"
 " Useful commands
+" Note: Should use Ag and Rg searchers intead of grep here
 command! -nargs=1 Grep call utils#grep_pattern(<q-args>)
 command! -range Reverse <line1>,<line2>call utils#reverse_lines()
 
-" Jump to last changed text, note F4 is mapped to Ctrl-m in iTerm
+" Jump to last changed text
+" Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
 
@@ -1631,7 +1628,7 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
   noremap <Leader>J <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
   noremap <Leader>k <Cmd>Git<CR>
-  " noremap <Leader>N <Cmd>Git diff<CR>
+  noremap <Leader>K <Cmd>Git blame<CR>
 endif
 
 " Git gutter settings

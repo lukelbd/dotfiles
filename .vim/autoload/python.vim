@@ -30,7 +30,9 @@ function! python#start_jupyter() abort
   let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
   while !exists('folder') || !empty(folder)  " note default scope is l: (g: is ignored)
     let parent += 1
-    let folder = expand('%:p' . repeat(':h', parent) . ':t')
+    let string = '%:p' . repeat(':h', parent)
+    let folder = expand(string . ':t')
+    let path = expand(string)
     let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
     if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
   endwhile
