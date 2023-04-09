@@ -53,9 +53,13 @@ c.PlainTextFormatter.pprint = True  # always pretty print
 c.InteractiveShellApp.matplotlib = None  # disable backend
 c.InteractiveShellApp.exec_lines.append(lines)
 # c.InteractiveShellApp.exec_lines.extend(lines.split('\n'))
+
+# Configure style plus auto-black
+# See: https://ipython.readthedocs.io/en/stable/whatsnew/version8.html#ipython-8-1-0
 c.TerminalInteractiveShell.highlighting_style = 'monokai'  # highlighting
 c.TerminalInteractiveShell.confirm_exit = False  # no confirm exit
 c.TerminalInteractiveShell.term_title = False  # no terminal title
+c.TerminalInteractiveShell.autoformatter = 'black'
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration
