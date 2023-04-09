@@ -1,14 +1,13 @@
 #!/bin/bash
 # shellcheck disable=2076
-################################################################################
-# setup
+#-----------------------------------------------------------------------------#
 # Create symlinks from $HOME to the committed files in $HOME/dotfiles
-################################################################################
-# Files to be ignored
+#-----------------------------------------------------------------------------#
+# Read the tracked file names. Note style configs required to be in .config.
+# See: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 shopt -s nullglob
+configs=(pep8 black)  # required
 exclude=(README.md REGEXES.md .gitignore envs backup cleanup setup)
-
-# Read the tracked file names
 dotfiles=$HOME/dotfiles  # dotfiles directory
 cd "$dotfiles" || {
   echo "Error: dotfiles repo should be cloned into \$HOME."
@@ -18,11 +17,13 @@ read -r -a names < <(git ls-tree --name-only master | xargs)
 backup=$dotfiles/backup
 [ -d "$backup" ] || mkdir "$backup"
 
-# Move existing stuff to storage, then create symlinks
+# Create symlinks
+# NOTE: Moves existing stuff to backup storage
 for name in "${names[@]}"; do  # iterate through files
   [[ " ${exclude[*]} " =~ " $name " ]] && continue
+  [[ " ${configs[*]} " =~ " $name " ]] && name=.config/$name
+  [[ .gitignore.default == "$name"  ]] && name=.gitignore
   file=$dotfiles/$name
-  [ "$name" == .gitignore.default ] && name=.gitignore  # change destination name?
   dest=$HOME/$name
   bakdest=$backup/$name
   echo "Creating symlink to '${file##*/}' in '$HOME'..."
