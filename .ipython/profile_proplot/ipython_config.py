@@ -42,9 +42,12 @@ import matplotlib.scale as mscale
 import matplotlib.text as mtext
 import matplotlib.ticker as mticker
 import matplotlib.transforms as mtransforms
+from icecream import ic
 import proplot as pplt
+backend = os.environ.get('MPLBACKEND', 'MacOSX')
+pplt.rc['figure.dpi'] = 180 if 'img' in backend or 'iterm' in backend else 100
+plt.switch_backend(backend)
 plt.ion()
-pplt.rc['figure.dpi'] = 180 if 'img' in pplt.rc.backend or 'iterm' in pplt.rc.backend else 100
 try:
     import cartopy
 except ImportError:
