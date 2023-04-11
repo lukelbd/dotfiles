@@ -21,17 +21,19 @@ backup=$dotfiles/backup
 # NOTE: Moves existing stuff to backup storage
 for name in "${names[@]}"; do  # iterate through files
   [[ " ${exclude[*]} " =~ " $name " ]] && continue
-  [[ " ${configs[*]} " =~ " $name " ]] && name=.config/$name
+  # Initial stuff
   [[ .gitignore.default == "$name"  ]] && name=.gitignore
   file=$dotfiles/$name
+  [[ " ${configs[*]} " =~ " $name " ]] && name=.config/$name
   dest=$HOME/$name
-  bakdest=$backup/$name
+  # Apply symlinks
   echo "Creating symlink to '${file##*/}' in '$HOME'..."
   if [ -L "$dest" ]; then
     echo "Removing existing symlink..."
     rm "$dest"  # remove if symlink
   elif [ -r "$dest" ]; then
     echo "Moving existing file '${file##*/}' to '$backup'..."
+    bakdest=$backup/$name
     if [ -e "$bakdest" ]; then
       echo "Warning: Removing existing backup..."
       rm -r "$bakdest"
