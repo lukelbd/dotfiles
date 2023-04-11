@@ -42,7 +42,7 @@ set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cursorline
-set diffopt=context:5,foldcolumn:0,vertical  " vim-difference display options
+set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set foldlevel=99
@@ -59,6 +59,7 @@ set lazyredraw
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
 set maxmempattern=50000  " from 1000 to 10000
+set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
 set nobackup noswapfile noundofile  " no more swap files; constantly hitting C-s so it's safe
 set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
 set noinfercase ignorecase smartcase  " smartcase makes search case insensitive, unless has capital letter
@@ -86,6 +87,7 @@ set splitbelow
 set splitright  " splitting behavior
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " shoft default tabs
+set ttymouse=sgr  " different cursor shapes for different modes
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
@@ -97,25 +99,13 @@ let &g:colorcolumn = '89,121'  " global color columns
 let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
+if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
+if has('gui_running') | set set guicursor+=a:blinkon0 | endif  " skip blinking
 let &g:wildignore = ''
   \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
   \ . '*.mp3,*.m4a,*.mk4,*.mp4,*.mov,*.flac,*.wav,'
   \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store'
-if v:version >= 500
-  set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
-endif
-if exists('&diffopt')
-  set diffopt^=filler
-endif
-if has('ttymouse')  " different cursor shape different modes
-  set ttymouse=sgr
-else
-  set ttymouse=xterm2
-endif
-if has('gui_running')  " do not source $VIMRUNTIME/menu.vim for speedup (see https://vi.stackexchange.com/q/10348/8084)
-  set number relativenumber guioptions=M guicursor+=a:blinkon0  " no scrollbars or blinking
-endif
 
 " File types for different unified settings
 " Note: Here 'man' is usually used with superman 'vman', 'ale-preview' is used with
@@ -362,6 +352,7 @@ command! -nargs=0 ClearRegs call utils#clear_regs()
 
 " Opening file in current directory and some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
+" Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
 noremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 noremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
@@ -452,7 +443,7 @@ nnoremap <Tab>i z.
 nnoremap <Tab>o zb
 nnoremap <Tab>p zL
 nnoremap <Tab>= <Cmd>vertical resize 90<CR>
-nnoremap <Tab>0 <Cmd>resize 100<CR>
+nnoremap <Tab>0 <Cmd>exe 'resize ' . ((len(tabpagebuflist()) > 1 ? 0.8 : 1.0) * &lines)<CR>
 nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
 nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 5 * v:count1)<CR>
@@ -632,10 +623,10 @@ nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 
 " Indenting counts improvement. Before 2> indented this line or this motion repeated,
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
-nnoremap <expr> >> '<Esc>' . repeat('>>', v:count1)
-nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
-nnoremap <expr> > '<Esc>' . format#indent_items_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . format#indent_items_expr(1, v:count1)
+nnoremap <expr> >> "\<Esc>" . repeat('>>', v:count1)
+nnoremap <expr> << "\<Esc>" . repeat('<<', v:count1)
+nnoremap <expr> > "\<Esc>" . format#indent_items_expr(0, v:count1)
+nnoremap <expr> < "\<Esc>" . format#indent_items_expr(1, v:count1)
 
 " Wrapping lines with arbitrary textwidth
 command! -range -nargs=? WrapLines <line1>,<line2>call format#wrap_lines(<args>)
