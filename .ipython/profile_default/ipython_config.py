@@ -47,19 +47,33 @@ from pathlib import Path
 state = np.random.RandomState(51423)
 """
 
-# Update ipython
-c.Completer.use_jedi = False  # improve jupyterlab-lsp speed
-c.PlainTextFormatter.pprint = True  # always pretty print
-c.InteractiveShellApp.matplotlib = None  # disable backend
-c.InteractiveShellApp.exec_lines.append(lines)
-# c.InteractiveShellApp.exec_lines.extend(lines.split('\n'))
+# Declare monkey patch function
+# See: https://github.com/algmyr/ipython/blob/5b6dbf/IPython/terminal/interactiveshell.py  # noqa: E501
+# TODO: Submit pull request requesting mode that loads user configuration.
+def black_reformat_handler(text_before_cursor, **kwargs):  # noqa: E302
+    import black
+    mode = black.Mode(line_length=88, string_normalization=False)
+    formatted_text = black.format_str(text_before_cursor, mode=mode)
+    if not text_before_cursor.endswith('\n') and formatted_text.endswith('\n'):
+        formatted_text = formatted_text[:-1]
+    return formatted_text
 
-# Configure style plus auto-black
+# Configure terminal settings (note reformat_handler is undocumented)
 # See: https://ipython.readthedocs.io/en/stable/whatsnew/version8.html#ipython-8-1-0
+from IPython import terminal
+terminal.interactiveshell.black_reformat_handler = black_reformat_handler  # patch
 c.TerminalInteractiveShell.highlighting_style = 'monokai'  # highlighting
 c.TerminalInteractiveShell.confirm_exit = False  # no confirm exit
 c.TerminalInteractiveShell.term_title = False  # no terminal title
 c.TerminalInteractiveShell.autoformatter = 'black'
+
+# Configure session settings
+# Note disable jedi since use plugins instead
+c.Completer.use_jedi = True  # improve jupyterlab-lsp speed
+c.PlainTextFormatter.pprint = True  # always pretty print
+c.InteractiveShellApp.matplotlib = None  # disable backend
+c.InteractiveShellApp.exec_lines.append(lines)
+# c.InteractiveShellApp.exec_lines.extend(lines.split('\n'))
 
 #------------------------------------------------------------------------------
 # InteractiveShellApp(Configurable) configuration
