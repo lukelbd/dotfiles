@@ -193,7 +193,7 @@ function! popup#job_win(cmd, ...) abort
       \ 'err_io': 'buffer',
       \ 'out_buf': num,
       \ 'err_buf': num,
-      \ 'noblock': 0,
+      \ 'noblock': 1,
       \ 'pty': 0
       \ }
   endif

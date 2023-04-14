@@ -100,7 +100,7 @@ let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
 if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
-if has('gui_running') | set set guicursor+=a:blinkon0 | endif  " skip blinking
+if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
 let &g:wildignore = ''
   \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
   \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
@@ -443,7 +443,7 @@ nnoremap <Tab>i z.
 nnoremap <Tab>o zb
 nnoremap <Tab>p zL
 nnoremap <Tab>= <Cmd>vertical resize 90<CR>
-nnoremap <Tab>0 <Cmd>exe 'resize ' . ((len(tabpagebuflist()) > 1 ? 0.8 : 1.0) * &lines)<CR>
+nnoremap <Tab>0 <Cmd>exe 'resize ' . ((len(tabpagebuflist()) > 1 ? 0.75 : 1.0) * &lines)<CR>
 nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
 nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 5 * v:count1)<CR>
@@ -1377,7 +1377,7 @@ if s:plug_active('ddc.vim')
   " See: https://stackoverflow.com/a/72499787/4970632
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
-    \ '--v8-flags=--max-heap-size=50,--max-old-space-size=50',
+    \ '--v8-flags=--max-heap-size=1000,--max-old-space-size=1000',
     \ ]
   call ddc#custom#patch_global('ui', 'native')
   call ddc#custom#patch_global({
