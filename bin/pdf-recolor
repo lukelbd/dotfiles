@@ -4,6 +4,7 @@ Change the color of the highlight annotations in PDF document(s).
 The destination color is hardcoded in this script.
 """
 # Adapted from:
+# https://gist.github.com/jgosmann/9397570
 # https://unix.stackexchange.com/a/118492/112647
 # PDF format reference:
 # http://wwwimages.adobe.com/www.adobe.com/content/dam/Adobe/en/devnet/pdf/pdfs/PDF32000_2008.pdf
@@ -12,58 +13,62 @@ import pathlib
 import re
 
 # Color specification
+# WARNING: No decimal after first number critical to increase chances
+# that replacement color size does not exceed size of original file.
 PREFIX = b'/C ['
 SUFFIX = b']'
-COLOR = b'1.0 0.969 0.416'  # match PDF Expert highlight color on iPad
+COLOR = b'1 0.969 0.416'  # match PDF Expert highlight color on iPad
 # COLOR b'254 245 142'  # this is what color dropper should show
-# COLOR = b'0.0 0.0 0.0'
+
+# Component regular expressions
+_to_char_group = lambda chars: f'[{re.escape(chars)}]'
+FLOAT = r'(?=\+|\-)?\d+(\.\d*)?'
+SPACE = '\x00\x09\x0A\x0C\x0D\x20'
+DELIM = '()<>[]{}/%'
+OTHER = f'[{re.escape(SPACE)}{re.escape(DELIM)}]'
+SPACE = f'[{re.escape(SPACE)}]'
 
 # Regular expressions
-_to_char_group = lambda chars: '[' + re.escape(chars) + ']'
-FLOAT = r'(?=\+|\-)?\d+(\.\d*)?'
-WHITESPACE = '\x00\x09\x0A\x0C\x0D\x20'
-DELIMITER = '()<>[]{}/%'
-WS = _to_char_group(WHITESPACE)
-DELIM = _to_char_group(DELIMITER)
-SPECIAL = _to_char_group(WHITESPACE + DELIMITER)
 REGEX_OBJ = re.compile(
-    fr'(?<={SPECIAL})obj{WS}*<<.*?>>{WS}*endobj(?={SPECIAL})'.encode(), re.DOTALL
+    fr'(?<={OTHER})obj{SPACE}*<<.*?>>{SPACE}*endobj(?={OTHER})'.encode(), re.DOTALL
 )
 REGEX_ANNOT = re.compile(
-    f'/Type{WS}*/Annot(?={SPECIAL})'.encode()
+    f'/Type{SPACE}*/Annot(?={OTHER})'.encode()
 )
 REGEX_HIGH = re.compile(
-    f'/Subtype{WS}*/Highlight(?={SPECIAL})'.encode()
+    f'/Subtype{SPACE}*/Highlight(?={OTHER})'.encode()
 )
 REGEX_COLOR = re.compile(
-    fr'/C{WS}*\[{WS}*({FLOAT}){WS}+({FLOAT}){WS}+({FLOAT}){WS}*\]'.encode()
+    fr'/C{SPACE}*\[{SPACE}*({FLOAT}){SPACE}+({FLOAT}){SPACE}+({FLOAT}){SPACE}*\]'.encode()  # noqa: E501
 )
 
 
-def process_color(match):
+def process_color(m):
     """
     Replace colors in the input string.
     """
-    diff = len(match.group(0)) - len(COLOR) - len(PREFIX) - len(SUFFIX)
+    diff = len(m.group(0)) - len(COLOR) - len(PREFIX) - len(SUFFIX)
     if diff < 0:
         raise NotImplementedError(
-            'Replacement is too long and would require the size of the PDF '
-            'file to change. This is not implemented.'
+            f'Replacement is {-diff} characters longer than original text and would '
+            'require the size of the PDF file to change. This is not implemented.'
         )
     result = PREFIX + diff * b' ' + COLOR + SUFFIX
     return result
 
 
-def process_obj(match):
+def process_obj(m):
     """
     Replace colors in the input text.
     """
-    is_annot = REGEX_ANNOT.search(match.group(0))
-    is_highlight = REGEX_HIGH.search(match.group(0))
+    text = orig = m.group()
+    is_annot = REGEX_ANNOT.search(text)
+    is_highlight = REGEX_HIGH.search(text)
     if is_annot and is_highlight:
-        return REGEX_COLOR.sub(process_color, match.group(0))
-    else:
-        return match.group(0)
+        text = REGEX_COLOR.sub(process_color, text)
+        colors = [REGEX_COLOR.search(text).group() for text in (orig, text)]
+        print(f'Replaced color {colors[0]} with {colors[1]}.')
+    return text
 
 
 def process_file(path, dryrun=False, overwrite=False):
@@ -84,8 +89,8 @@ def process_file(path, dryrun=False, overwrite=False):
         old = f.read()
     try:
         new, count = REGEX_OBJ.subn(process_obj, old)
-    except NotImplementedError:
-        print(f'File {name!r} replacement failed.')
+    except NotImplementedError as error:
+        print(f'File {name!r} replacement failed: {error}')
         return
     # Save results
     if count == 0:
@@ -95,7 +100,7 @@ def process_file(path, dryrun=False, overwrite=False):
     else:
         if not overwrite:
             path = path.parent / (path.stem + suffix + '.pdf')
-        print(f'Enforcing highlight color for file {name!r}')
+        print(f'Saving corrected highlighting to {path.name!r}.')
         with open(path, 'wb') as f:
             f.write(new)
 
