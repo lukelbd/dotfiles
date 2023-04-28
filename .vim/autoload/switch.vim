@@ -34,7 +34,7 @@ endfunction
 
 " Enable and disable autocomplete engines
 function! switch#autocomp(...) abort
-  if !exists('*ddc#custom#patch_buffer')
+  if !exists('*denops#server#start')
     return
   endif
   if a:0
@@ -45,7 +45,11 @@ function! switch#autocomp(...) abort
     let toggle = 0  " enabled by default, this disables for first time
   endif
   let b:lsp_enabled = toggle
-  call ddc#custom#patch_buffer('completionMode', toggle ? 'popupmenu' : 'manual')
+  if toggle  " note completionMode was removed
+    call denops#server#start()
+  else
+    call denops#server#stop()
+  endif
   call s:switch_message('Autocomplete', toggle)
 endfunction
 

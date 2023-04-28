@@ -26,7 +26,7 @@ syntax region texMatcherNM matchgroup=Delimiter
 " empty lines before commands). Helpful for when navigating huge documents.
 " Note: Here matchadd() is required instead of syntax match for some reason.
 " Warning: Complex lookbehinds significantly slow things down.
-highlight Paragraph ctermfg=NONE ctermbg=Cyan
+highlight Paragraph ctermfg=NONE ctermbg=Green
 call matchadd(
   \ 'Paragraph',
   \ '^\s*\n\(\s*$\)\@!')
