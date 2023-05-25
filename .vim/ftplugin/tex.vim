@@ -192,7 +192,7 @@ call succinct#add_delims({
   \ 'M': "\\mathbb{\r}",
   \ 'O': "\\mathbf{\r}",
   \ 'R': "\\citet{\r}",
-  \ 'S': "{\\usebackgroundtemplate{}\\begin{frame}\r\\end{frame}}",
+  \ 'S': "\\begingroup\n\\usebackgroundtemplate{}\n\\begin{frame}\r\\end{frame}\n\\endgroup",
   \ 'T': "\\begin{table}\n\\centering\r\\end{table}",
   \ 'U': "\\uncover<+->{%\r\}",
   \ 'V': "\\begin{verbatim}\r\\end{verbatim}",

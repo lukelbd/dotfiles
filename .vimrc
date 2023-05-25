@@ -680,8 +680,8 @@ nnoremap <Leader>S z=
 
 " Similar to ]s and [s but also corrects the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-nnoremap <silent> <Plug>forward_spell bh]s:call insert#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[s:call insert#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nnoremap <silent> <Plug>forward_spell bh]s<Cmd>call insert#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[s<Cmd>call insert#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
@@ -764,7 +764,7 @@ inoremap <expr> <C-g>c comment#comment_insert()
 " Section headers, dividers, and other information
 " Todo: Improve title headers
 nmap gc; <Plug>CommentBar
-nnoremap <Plug>CommentBar :<C-u>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
+nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
 nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
 nnoremap gc' <Cmd>call comment#header_incomment()<CR>
 nnoremap gc" <Cmd>call comment#header_inline(5)<CR>

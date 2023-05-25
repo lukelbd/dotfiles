@@ -10,7 +10,7 @@
 # * To see what is available for various package/environment managers use e.g.
 #   brew list (--cask|--formulae), port installed (requested),
 #   tlmgr list --only-installed, conda (env) list (or list <package>),
-#   pip list (or info <package), jupyter kernelspec||labextension|nbextension list
+#   pip list (or info <package>), jupyter kernelspec||labextension|nbextension list
 # * For ARM-copatible version of chromium tried 'brew install --cask eloston-chromium'
 #   but seems to sometimes download intel version. Instead follow these links:
 #   https://github.com/ungoogled-software/ungoogled-chromium#downloads
@@ -187,7 +187,7 @@ _setup_opts 2>/dev/null  # ignore if option unavailable
 unalias -a
 
 # Reset functions? Nah, no decent way to do it
-# declare -F # to view current ones
+# declare -F  # to view current ones
 
 # Helper function to load modules automatically
 _load_unloaded() {
