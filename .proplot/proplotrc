@@ -5,9 +5,11 @@
 # https://matplotlib.org/stable/tutorials/introductory/customizing.html
 #--------------------------------------------------------------------
 # Changed settings
+# NOTE: Avoid Helvetica Neue since text rendering is weird and
+# short with lower-resolution inline jupyter notebook backend.
 # figure.max_open_warning: 0
-figure.dpi: 112
-font.name: Helvetica Neue
+# font.name: Helvetica Neue
+figure.dpi: 110
 
 # Proplot settings
 # style:                      proplot
