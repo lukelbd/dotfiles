@@ -6,6 +6,7 @@
 #--------------------------------------------------------------------
 # Changed settings
 # figure.max_open_warning: 0
+figure.dpi: 112
 font.name: Helvetica Neue
 
 # Proplot settings
