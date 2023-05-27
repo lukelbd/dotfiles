@@ -23,6 +23,8 @@ Optional arguments
                  parses and filters the latex engine output so it is easier to peruse.
   -q|--quick     Enable quick mode and skip rendering the PDF if it is newer than the
                  TeX file. This can be used with '-l' to jump to a line.
+  -n|--nobib     Skip bibliography re-compilation. Use this to help
+                 speed up compilation on big files.
   -d|--diff      Run latexdiff on most 'recent' file. Requires files in your
                  directory are otherwise identically named, but end with unique
                  date strings YYYY-MM.tex or YYYY-MM-DD.tex
@@ -61,7 +63,7 @@ cleanup() {
   local files_rm files_new
   [ -n "$files_old" ] || return 0
   files_new=(*)  # new files
-  ext_ignore=(tex bbl pdf docx png jpg jpeg eps gif)
+  ext_ignore=(aux tex bbl pdf docx png jpg jpeg eps gif)
   for file_new in "${files_new[@]}"; do
     [[ " ${files_old[*]} " =~ " $file_new " ]] && continue
     [[ " ${ext_ignore[*]} " =~ " ${file_new##*.} " ]] && continue
@@ -86,12 +88,14 @@ latex=pdflatex  # by default use pdflatex
 bibtex=bibtex   # for compiling bibliographies
 viewer=Skim     # default PDF viewer
 quick=false     # quick mode active?
+nobib=false     # skip bibliography?
 texdiff=false   # get difference pdf?
 tex2docx=false  # option
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)     echoerr "$doc" && exit 0 ;;
     -r|--raw)      raw=true ;;
+    -n|--nobib)    nobib=true ;;
     -d|--diff)     texdiff=true ;;
     -w|--word)     tex2docx=true ;;
     -q|--quick)    quick=true ;;
@@ -239,7 +243,7 @@ echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe 
 [ ${#distrofiles[@]} -gt 0 ] && echoerr "Files found in TeX distro: ${distrofiles[*]##*/}"
 [ ${#localfiles[@]} -gt 0 ] && echoerr "Files found locally: ${localfiles[*]##*/}"
 [ "${#bibs[@]}" -eq 0 ] && bibliography=false || bibliography=true
-if $bibliography; then
+if ! $nobib && $bibliography; then
   bibs=("${bibs[@]%.bib}")  # remove extension if present
   bibfiles=("${bibs[@]/%/.bib}")  # add back extension
   echoerr "Bib files: ${bibfiles[*]}"
@@ -323,7 +327,7 @@ if ! $texdiff && ! $tex2docx; then
   echoerr 'Generating aux file...'  # maybe just need to generate glossary!
   run 0 "$latex" "${flags_tex[@]}" "$filestem"
   if ! $quick; then
-    if $bibliography; then
+    if ! $nobib && $bibliography; then
       echoerr 'Generating bibliography...'
       run 0 "$bibtex" "$filestem"
       echoerr 'Incorporating bbl file...'
@@ -371,7 +375,7 @@ if $texdiff; then
   diffstem=${diffname%.tex}
   $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
   if ! $quick; then
-    if $bibliography; then
+    if ! $nobib && $bibliography; then
       $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
       $bibtex "$diffstem" 1>&2  #&>/dev/null
     fi
@@ -390,7 +394,7 @@ if $tex2docx; then
   # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --filter pandoc-crossref --citeproc)
   flags=(-M cref=true --filter pandoc-xnos)
-  if $bibliography; then
+  if ! $nobib && $bibliography; then
     if [[ " ${packages[*]} " =~ natbib ]]; then
       flags+=(--natbib)
     elif [[ " ${packages[*]} " =~ biblatex ]]; then
