@@ -1552,12 +1552,24 @@ alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.y
 #-----------------------------------------------------------------------------
 # Dataset utilities
 #-----------------------------------------------------------------------------
-# Fortran tools
-namelist() {
-  local file='input.nml'
-  [ $# -gt 0 ] && file="$1"
-  echo "Params in current namelist:"
-  cut -d= -f1 -s "$file" | grep -v '!' | xargs
+# Code parsing tools
+namelist() {  # list all namelist parameters
+  local file files
+  files=("$@")
+  [ $# -eq 0 ] && files=(input.nml)
+  for file in "${files[@]}"; do
+    echo "Params in namelist '$file':"
+    cut -d= -f1 -s "$file" | grep -v '!' | xargs
+  done
+}
+graphicspath() {  # list all graphics paths (used in autoload tex.vim)
+  awk -v RS='[^\n]*{' '
+    init && inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path; inside=0} {init=0}
+    inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path}
+    inside && /(\n|^)}/ {inside=0}
+    RT ~ /graphicspath/ {init=1; inside=1}
+    /document}/ {exit}
+  ' "$@"
 }
 
 # NetCDF tools (should just remember these).

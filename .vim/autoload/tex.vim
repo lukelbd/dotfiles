@@ -140,20 +140,16 @@ endfunction
 " Related function that prints graphics files
 function! s:graphic_source() abort
   " Get graphics paths
-  " Note: Negative indexing evidently does not work with strings
-  " Todo: Make this work when \graphicspath takes up more than one line
-  " Not high priority because latexmk rarely accounts for this anyway
-  let paths = system('grep -o ''^[^%]*'' ' . shellescape(@%) . ' | '
-    \ . s:sed_cmd() . ' -n ''s@\\graphicspath{\(.*\)}@\1@p''')
-  let paths = substitute(paths, "\n", '', 'g')  " in case multiple \graphicspath calls, even though this is illegal
-  if !empty(paths) && (paths[0] !=# '{' || paths[len(paths) - 1] !=# '}')
-    echohl WarningMsg
-    echom "Warning: Incorrect syntax '" . paths . "'. Surround paths with curly braces."
-    echohl None
-    let paths = '{' . paths . '}'
-  endif
-  " Check syntax
-  " Make paths relative to *latex file* not cwd
+  let paths = system(
+    \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . " | awk -v RS='[^\\n]*{' '"
+    \ . 'init && inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path; inside=0} {init=0} '
+    \ . 'inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path} '
+    \ . 'inside && /(\n|^)}/ {inside=0} '
+    \ . 'RT ~ /graphicspath/ {init=1; inside=1} '
+    \ . '/document}/ {exit} '
+    \ . "'")
+  let paths = substitute(paths, "\n", '', 'g')  " in case of multiple lines
+  " Check syntax and ensure paths are relative to latex file
   let filedir = expand('%:h')
   let pathlist = []
   for path in split(paths[1:len(paths) - 2], '}{')
