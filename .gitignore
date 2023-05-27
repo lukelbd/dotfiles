@@ -38,6 +38,7 @@ __pycache__
 !jupyter_qtconsole_config.py
 !jupyter_notebook_config.py
 !jupyter_nbconvert_config.py
+!jupyter_server_config.py
 !ipython_config.py
 !ipython_kernel_config.py
 workspaces
