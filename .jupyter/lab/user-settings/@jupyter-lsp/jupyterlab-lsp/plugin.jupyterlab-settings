@@ -1,0 +1,151 @@
+{
+    // Language Server
+    // @jupyter-lsp/jupyterlab-lsp:plugin
+    // Language Server Protocol settings.
+    // **********************************
+    "language_servers": {
+        "julia-language-server": {
+            "priority": 100,
+            "serverSettings": {
+                "julia.lint.run": true,
+                "julia.lint.missingrefs": "none",
+                "julia.lint.disabledDirs": [
+                    "docs",
+                    "test"
+                ],
+                "julia.lint.call": true,
+                "julia.lint.iter": true,
+                "julia.lint.nothingcomp": true,
+                "julia.lint.constif": true,
+                "julia.lint.lazy": true,
+                "julia.lint.datadecl": true,
+                "julia.lint.typeparam": true,
+                "julia.lint.modname": true,
+                "julia.lint.pirates": true,
+                "julia.lint.useoffuncargs": true,
+                "julia.completionmode": "qualify"
+            }
+        },
+        "pylsp": {
+            "priority": 100,
+            "serverSettings": {
+                "pylsp.configurationSources": [
+                    "pyflakes"
+                ],
+                "pylsp.plugins.flake8.config": null,
+                "pylsp.plugins.flake8.enabled": true,
+                "pylsp.plugins.flake8.exclude": [],
+                "pylsp.plugins.flake8.executable": "flake8",
+                "pylsp.plugins.flake8.filename": null,
+                "pylsp.plugins.flake8.hangClosing": null,
+                "pylsp.plugins.flake8.ignore": [
+                    "E501",
+                    "F401",
+                    "W503",
+                    "E402",
+                    "E731",
+                    "E741"
+                ],
+                "pylsp.plugins.flake8.maxLineLength": 88,
+                "pylsp.plugins.flake8.indentSize": null,
+                "pylsp.plugins.flake8.perFileIgnores": [],
+                "pylsp.plugins.flake8.select": null,
+                "pylsp.plugins.jedi.extra_paths": [],
+                "pylsp.plugins.jedi.env_vars": null,
+                "pylsp.plugins.jedi.environment": null,
+                "pylsp.plugins.jedi_completion.enabled": true,
+                "pylsp.plugins.jedi_completion.include_params": true,
+                "pylsp.plugins.jedi_completion.include_class_objects": true,
+                "pylsp.plugins.jedi_completion.fuzzy": false,
+                "pylsp.plugins.jedi_completion.eager": false,
+                "pylsp.plugins.jedi_completion.resolve_at_most": 10,
+                "pylsp.plugins.jedi_completion.cache_for": [
+                    "pandas",
+                    "numpy",
+                    "tensorflow",
+                    "matplotlib"
+                ],
+                "pylsp.plugins.jedi_definition.enabled": true,
+                "pylsp.plugins.jedi_definition.follow_imports": true,
+                "pylsp.plugins.jedi_definition.follow_builtin_imports": true,
+                "pylsp.plugins.jedi_hover.enabled": false,
+                "pylsp.plugins.jedi_references.enabled": false,
+                "pylsp.plugins.jedi_signature_help.enabled": true,
+                "pylsp.plugins.jedi_symbols.enabled": false,
+                "pylsp.plugins.jedi_symbols.all_scopes": false,
+                "pylsp.plugins.jedi_symbols.include_import_symbols": false,
+                "pylsp.plugins.mccabe.enabled": false,
+                "pylsp.plugins.mccabe.threshold": 15,
+                "pylsp.plugins.preload.enabled": false,
+                "pylsp.plugins.preload.modules": [],
+                "pylsp.plugins.pycodestyle.enabled": false,
+                "pylsp.plugins.pycodestyle.exclude": [],
+                "pylsp.plugins.pycodestyle.filename": [],
+                "pylsp.plugins.pycodestyle.select": [],
+                "pylsp.plugins.pycodestyle.ignore": [],
+                "pylsp.plugins.pycodestyle.hangClosing": null,
+                "pylsp.plugins.pycodestyle.maxLineLength": null,
+                "pylsp.plugins.pycodestyle.indentSize": null,
+                "pylsp.plugins.pydocstyle.enabled": false,
+                "pylsp.plugins.pydocstyle.convention": null,
+                "pylsp.plugins.pydocstyle.addIgnore": [],
+                "pylsp.plugins.pydocstyle.addSelect": [],
+                "pylsp.plugins.pydocstyle.ignore": [],
+                "pylsp.plugins.pydocstyle.select": [],
+                "pylsp.plugins.pydocstyle.match": "(?!test_).*\\.py",
+                "pylsp.plugins.pydocstyle.matchDir": "[^\\.].*",
+                "pylsp.plugins.pyflakes.enabled": false,
+                "pylsp.plugins.pylint.enabled": false,
+                "pylsp.plugins.pylint.args": [],
+                "pylsp.plugins.pylint.executable": null,
+                "pylsp.plugins.rope_completion.enabled": false,
+                "pylsp.plugins.rope_completion.eager": false,
+                "pylsp.plugins.yapf.enabled": false,
+                "pylsp.rope.extensionModules": null,
+                "pylsp.rope.ropeFolder": null
+            }
+        },
+        "r-languageserver": {
+            "priority": 100,
+            "serverSettings": {
+                "r.lsp.debug": true,
+                "r.lsp.log_file": null,
+                "r.lsp.diagnostics": true,
+                "r.lsp.rich_documentation": true,
+                "r.lsp.snippet_support": true,
+                "r.lsp.max_completions": 200,
+                "r.lsp.lint_cache": false,
+                "r.lsp.link_file_size_limit": 16384
+            }
+        },
+        "texlab": {
+            "priority": 100,
+            "serverSettings": {
+                "rootDirectory": null,
+                "build.executable": "latexmk",
+                "build.args": [
+                    "-pdf",
+                    "-interaction=nonstopmode",
+                    "-synctex=1",
+                    "%f"
+                ],
+                "build.onSave": false,
+                "build.outputDirectory": ".",
+                "build.forwardSearchAfter": false,
+                "forwardSearch.executable": null,
+                "forwardSearch.args": [],
+                "chktex.onOpenAndSave": false,
+                "chktex.onEdit": false,
+                "diagnosticsDelay": 300,
+                "formatterLineLength": 80,
+                "latexFormatter": "latexindent",
+                "latexindent.local": null,
+                "latexindent.modifyLineBreaks": false
+            }
+        }
+    },
+    "loggingConsole": "browser",
+    "loggingLevel": "warn",
+    "logAllCommunication": false,
+    "setTrace": null
+}
