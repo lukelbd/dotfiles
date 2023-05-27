@@ -1,4 +1,8 @@
 {
+    // Language Server
+    // @jupyter-lsp/jupyterlab-lsp:plugin
+    // Language Server Protocol settings.
+    // **********************************
     "showDocumentation": false,
     "continuousHinting": false,
     "suppressContinuousHintingIn": [
