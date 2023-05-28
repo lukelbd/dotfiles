@@ -21,16 +21,16 @@ Optional arguments
   -h|--help      Print this message.
   -r|--raw       Print the raw unfiltered error messages. By default this script
                  parses and filters the latex engine output so it is easier to peruse.
-  -q|--quick     Enable quick mode and skip rendering the PDF if it is newer than the
-                 TeX file. This can be used with '-l' to jump to a line.
-  -n|--nobib     Skip bibliography re-compilation. Use this to help
-                 speed up compilation on big files.
-  -d|--diff      Run latexdiff on most 'recent' file. Requires files in your
-                 directory are otherwise identically named, but end with unique
-                 date strings YYYY-MM.tex or YYYY-MM-DD.tex
-  -w|--word      Pass -w or --word to automatically convert latex to the Microsoft
-                 Word format using pandoc. This can be useful for collaborating
-                 with peers that do not know latex.
+  -a|--auxonly   Generate the aux file only. This can be combined with -l to
+                 quickly jump across an existing PDF.
+  -p|--pdfonly   Generate the pdf file only. This can be used with very long
+                 files for quicker updates.
+  -s|--skipbib   Skip bibliography re-compilation. This can be used to speed
+                 things up when citations are unchanged.
+  -d|--diff      Run latexdiff on most 'recent' file. Requires files in your directory
+                 that share the same prefix but end with NN, YYYY-MM, or YYYY-MM-DD.
+  -w|--word      Convert to docx file using pandoc. This can be useful for
+                 collaborating with peers that do not know latex.
   [-l|--line]=N  The line number in the LaTeX document. If the viewer is Skim then
                  we will jump to this line in the PDF document.
 
@@ -49,7 +49,7 @@ See also
 
   https://mg.readthedocs.io/latexmk.html
 "
-# Function for raising error
+# Function for raising error message
 echoerr() {
   echo "$*" 1>&2
 }
@@ -58,7 +58,7 @@ raise() {
   echoerr "Error: $*"
   exit 1
 }
-# Exit trap function
+# Exit trap function to delete everything except .tex .aux .bbl
 cleanup() {
   local files_rm files_new
   [ -n "$files_old" ] || return 0
@@ -87,18 +87,20 @@ raw=false
 latex=pdflatex  # by default use pdflatex
 bibtex=bibtex   # for compiling bibliographies
 viewer=Skim     # default PDF viewer
-quick=false     # quick mode active?
-nobib=false     # skip bibliography?
+auxonly=false   # only update aux file?
+pdfonly=false   # only update PDF file?
+skipbib=false   # skip updating bbl file?
 texdiff=false   # get difference pdf?
 tex2docx=false  # option
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)     echoerr "$doc" && exit 0 ;;
     -r|--raw)      raw=true ;;
-    -n|--nobib)    nobib=true ;;
+    -a|--aux-only) auxonly=true skipbib=true ;;
+    -p|--pdf-only) pdfonly=true skipbib=true ;; 
+    -s|--skip-bib) skipbib=true ;;
     -d|--diff)     texdiff=true ;;
     -w|--word)     tex2docx=true ;;
-    -q|--quick)    quick=true ;;
     -l=*|--line=*) line=${1#*=} ;;
     [^-]*)
       [ -n "$filename" ] && raise "Got multiple filenames."
@@ -131,16 +133,12 @@ fi
 filestem=${filename%.tex}  # simple
 diffname=${filename%.tex}_changes.tex
 
-# Update repo
+# Other updates
 # TODO: Remove this after finishing figcp implementation
 # NOTE: This is useful e.g. for pulling remote figure changes
 git pull 2>/dev/null
-
-# Quick mode adjustment
-# WARNING: Cannot auto-enable quick mode in case e.g. user wants to
-# update figures or re-compile after an error. Only auto-disable.
-if ! [ -r "$filestem.pdf" ] || [ "$filename" -nt "$filestem.pdf" ]; then
-  quick=false
+if $auxonly && [ "$filename" -nt "$filestem.pdf" ]; then
+  echo "Warning: TeX file is newer than PDF. SyncTeX may not work properly."
 fi
 
 #-----------------------------------------------------------------------------#
@@ -243,7 +241,7 @@ echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe 
 [ ${#distrofiles[@]} -gt 0 ] && echoerr "Files found in TeX distro: ${distrofiles[*]##*/}"
 [ ${#localfiles[@]} -gt 0 ] && echoerr "Files found locally: ${localfiles[*]##*/}"
 [ "${#bibs[@]}" -eq 0 ] && bibliography=false || bibliography=true
-if ! $nobib && $bibliography; then
+if ! $skipbib && $bibliography; then
   bibs=("${bibs[@]%.bib}")  # remove extension if present
   bibfiles=("${bibs[@]/%/.bib}")  # add back extension
   echoerr "Bib files: ${bibfiles[*]}"
@@ -309,7 +307,7 @@ case $latex in
   xelatex)  stylized=XeLaTeX flags_tex+=(-no-pdf) ;;
   *) raise "Unknown compiler \"$latex\"." ;;
 esac
-if $quick; then
+if $auxonly; then
   flags_tex+=(-synctex=1)  # synctex on first (only) run
 else
   flags_pdf+=(-synctex=1)  # synctex on last run
@@ -324,10 +322,12 @@ fi
 # run 0 $latex $flags "$filestem"
 echoerr "Running with ${stylized}..."
 if ! $texdiff && ! $tex2docx; then
-  echoerr 'Generating aux file...'  # maybe just need to generate glossary!
-  run 0 "$latex" "${flags_tex[@]}" "$filestem"
-  if ! $quick; then
-    if ! $nobib && $bibliography; then
+  if ! $pdfonly; then
+    echoerr 'Generating aux file...'  # maybe just need to generate glossary!
+    run 0 "$latex" "${flags_tex[@]}" "$filestem"
+  fi
+  if ! $auxonly; then
+    if ! $skipbib && $bibliography; then
       echoerr 'Generating bibliography...'
       run 0 "$bibtex" "$filestem"
       echoerr 'Incorporating bbl file...'
@@ -373,9 +373,11 @@ if $texdiff; then
 
   # Make the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
   diffstem=${diffname%.tex}
-  $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
-  if ! $quick; then
-    if ! $nobib && $bibliography; then
+  if ! $pdfonly; then
+    $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
+  fi
+  if ! $auxonly; then
+    if ! $skipbib && $bibliography; then
       $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
       $bibtex "$diffstem" 1>&2  #&>/dev/null
     fi
@@ -394,7 +396,7 @@ if $tex2docx; then
   # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --filter pandoc-crossref --citeproc)
   flags=(-M cref=true --filter pandoc-xnos)
-  if ! $nobib && $bibliography; then
+  if ! $skipbib && $bibliography; then
     if [[ " ${packages[*]} " =~ natbib ]]; then
       flags+=(--natbib)
     elif [[ " ${packages[*]} " =~ biblatex ]]; then
