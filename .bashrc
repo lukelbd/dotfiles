@@ -1564,12 +1564,12 @@ namelist() {  # list all namelist parameters
 }
 graphicspath() {  # list all graphics paths (used in autoload tex.vim)
   awk -v RS='[^\n]*{' '
-    init && inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path; inside=0} {init=0}
-    inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path}
+    inside && /}/ {path=$0; if(init) inside=0} {init=0}
     inside && /(\n|^)}/ {inside=0}
+    path {sub(/}.*/, "}", path); print "{" path}
     RT ~ /graphicspath/ {init=1; inside=1}
-    /document}/ {exit}
-  ' "$@"
+    /document}/ {exit} {path=""}
+  ' "$@"  # RS is the 'record separator' and RT is '*this* record separator'
 }
 
 # NetCDF tools (should just remember these).

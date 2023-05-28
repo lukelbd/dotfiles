@@ -22,10 +22,10 @@ syntax region texMatcherNM matchgroup=Delimiter
   \ start="{" skip="\\\\\|\\[{}]" end="}"
   \ contains=@texMatchNMGroup,texError,@NoSpell
 
-" Add highlighting for empty line preceding paragraph or section (i.e. ignoring
-" empty lines before commands). Helpful for when navigating huge documents.
-" Note: Here matchadd() is required instead of syntax match for some reason.
-" Warning: Complex lookbehinds significantly slow things down.
+" Add highlighting for empty line preceding paragraph or section (i.e. ignoring empty
+" lines before commands). Helpful for when navigating huge documents.
+" Note: Here matchadd() is required instead of syntax match for some reason. Also
+" note complex lookbehinds significantly slow things down so keep simple.
 highlight Paragraph ctermfg=NONE ctermbg=Green
 call matchadd(
   \ 'Paragraph',

@@ -142,11 +142,11 @@ function! s:graphic_source() abort
   " Get graphics paths
   let paths = system(
     \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . " | awk -v RS='[^\\n]*{' '"
-    \ . 'init && inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path; inside=0} {init=0} '
-    \ . 'inside && /}/ {path=$0; sub(/}.*/, "}", path); print "{" path} '
+    \ . 'inside && /}/ {path=$0; if(init) inside=0} {init=0} '
     \ . 'inside && /(\n|^)}/ {inside=0} '
-    \ . 'RT ~ /graphicspath/ {init=1; inside=1} '
-    \ . '/document}/ {exit} '
+    \ . 'path {sub(/}.*/, "}", path); print "{" path} '
+    \ . 'RT ~ /graphicspath/ {init=1; inside=1}'
+    \ . '/document}/ {exit} {path=""}'
     \ . "'")
   let paths = substitute(paths, "\n", '', 'g')  " in case of multiple lines
   " Check syntax and ensure paths are relative to latex file

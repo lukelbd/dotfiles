@@ -39,10 +39,15 @@ endfunction
 " Latexmk command and shortcuts
 " Note: This map overwrites :TestVisit but no harm for tex files.
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--quick')<CR>
+noremap <buffer> <Leader>{ <Cmd>call <sid>latexmk('--diff')<CR>
+noremap <buffer> <Leader>} <Cmd>call <sid>latexmk('--word')<CR>
+noremap <buffer> <Leader>\| <Cmd>call <sid>latexmk('--diff --word')<CR>
+noremap <buffer> <Leader>[ <Cmd>call <sid>latexmk('--aux-only')<CR>
+noremap <buffer> <Leader>] <Cmd>call <sid>latexmk('--aux-only')<CR>
+noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--raw')<CR>
 noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk()<CR>
-noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--diff')<CR>
-noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--word')<CR>
+noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--skip-bib')<CR>
+noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--pdf-only')<CR>
 
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending
 " and appending the strings with single quotes. This lets us make input()
@@ -151,7 +156,6 @@ call succinct#add_snippets({
 " \ '.': "\\\1\\\1{\r}",
 call succinct#add_delims({
   \ "'": "`\r'",
-  \ '!': "\\frametitle{\r}",
   \ '"': "``\r''",
   \ '#': "\\begin{enumerate}\r\\end{enumerate}",
   \ '$': "$\r$",
@@ -165,14 +169,16 @@ call succinct#add_delims({
   \ ',': "\1Environment: \\begin{\r..*\r\\\\begin{&}\1\r\1\r..*\r\\\\end{&}\1",
   \ '.': "\1Command: \\\r..*\r\\\\&{\1\r\1\r..*\r}\1",
   \ '0': "\\cref{\r}",
-  \ '1': "\\section{\r}",
-  \ '2': "\\subsection{\r}",
-  \ '3': "\\subsubsection{\r}",
-  \ '4': "\\section*{\r}",
-  \ '5': "\\subsection*{\r}",
-  \ '6': "\\subsubsection*{\r}",
-  \ '7': "\\tag{\r}",
-  \ '8': "\\label{\r}",
+  \ '1': "\\frametitle{\r}",
+  \ '2': "\\framesubtitle{\r}",
+  \ '3': "\\section{\r}",
+  \ '4': "\\subsection{\r}",
+  \ '5': "\\subsubsection{\r}",
+  \ '6': "\\section*{\r}",
+  \ '7': "\\subsection*{\r}",
+  \ '8': "\\subsubsection*{\r}",
+  \ '!': "\\tag{\r}",
+  \ '~': "\\label{\r}",
   \ '9': "\\ref{\r}",
   \ ':': "\\begin{alertblock}{}\r\\end{alertblock}",
   \ ';': "\\begin{block}{}\r\\end{block}",
@@ -229,7 +235,6 @@ call succinct#add_delims({
   \ '{': "\\left\\{\r\\right\\}",
   \ '|': "\\left\\|\r\\right\\|",
   \ '}': "\\left\\{\\begin{array}{ll}\r\\end{array}\\right.",
-  \ '~': "\\title{\r}",
   \ },
   \ 1)
 
