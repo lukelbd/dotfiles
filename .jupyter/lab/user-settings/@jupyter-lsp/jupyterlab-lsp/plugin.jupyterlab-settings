@@ -1,8 +1,4 @@
 {
-    // Language Server
-    // @jupyter-lsp/jupyterlab-lsp:plugin
-    // Language Server Protocol settings.
-    // **********************************
     "language_servers": {
         "julia-language-server": {
             "priority": 100,
