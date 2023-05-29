@@ -466,8 +466,8 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " Popup window style adjustments with less-like shortcuts
 " Note: Fugitive applies the fugitive mapping 'dq' to git diff/show display windows
 " (other d-mappings only work with file display) which interferes with scrolling.
-let g:tags_skip_filetypes = s:popup_filetypes
-let g:tabline_skip_filetypes = s:popup_filetypes
+let g:tags_skip_filetypes = ['help'] + s:popup_filetypes
+let g:tabline_skip_filetypes = ['help'] + s:popup_filetypes
 augroup popup_setup
   au!
   au User FugitivePager silent! nunmap <buffer> dq
@@ -475,11 +475,10 @@ augroup popup_setup
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au CmdwinEnter * call popup#cmd_setup()
-  if exists('##TerminalWinOpen')
-    au TerminalWinOpen * call popup#popup_setup()
-  endif
+  au TerminalWinOpen * call popup#popup_setup(1)
   for s:ft in s:popup_filetypes
-    exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . (s:ft ==# 'gitcommit') . ')'
+    let s:modifiable = s:ft ==# 'gitcommit'
+    exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:modifiable . ')'
   endfor
 augroup END
 
@@ -1469,7 +1468,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>Q <Cmd>call switch#autocomp()<CR>
   noremap <Leader>& <Cmd>LspSignatureHelp<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
-  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup()<CR>
+  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup(0)<CR>
   noremap <Leader>^ <Cmd>LspStatus<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> gd

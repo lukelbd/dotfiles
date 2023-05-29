@@ -13,13 +13,12 @@ scriptencoding utf-8
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with file#close_tab().
-function! popup#popup_setup(...) abort
-  let filemode = a:0 ? a:1 : 1
+function! popup#popup_setup(filemode) abort
   nnoremap <silent> <buffer> q :call file#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call file#close_window()<CR>
   setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
   if &filetype ==# 'qf' | nnoremap <buffer> <CR> <CR> | endif
-  if filemode == 1 | return | endif  " this is an editable file
+  if a:filemode == 1 | return | endif  " this is an editable file
   setlocal nospell statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
   for char in 'uUrRxXpPdDaAiIcCoO' | exe 'nmap <buffer> ' char . ' <Nop>' | endfor
   for char in 'dufb' | exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>' | endfor
@@ -31,88 +30,44 @@ function! popup#cmd_setup() abort
   inoremap <buffer> <expr> <CR> ""
   nnoremap <buffer> <CR> <C-c><CR>
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
-  silent call popup#popup_setup()
-endfunction
-
-" Setup new codi window
-function! popup#codi_new(...) abort
-  if a:0 && a:1 !~# '^\s*$'
-    let name = a:1
-  else
-    let name = input('Calculator name (' . getcwd() . '): ', '', 'file')
-  endif
-  if name !~# '^\s*$'
-    exe 'tabe ' . fnamemodify(name, ':r') . '.py'
-    Codi!!
-  endif
-endfunction
-
-" Custom codi window autocommands Want TextChanged,InsertLeave, not
-" TextChangedI which is enabled with g:codi#autocmd = 'TextChanged'
-" See: https://github.com/metakirby5/codi.vim/issues/90
-" Note: This sets up the calculator window not the display window
-function! popup#codi_setup(toggle) abort
-  if a:toggle
-    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
-    nnoremap <buffer> q <C-w>p<Cmd>Codi!!<CR>
-    nnoremap <buffer> <C-w> <C-w>p<Cmd>Codi!!<CR>
-    exe 'augroup codi_' . bufnr('%')
-      au!
-      exe 'au ' . cmds . ' <buffer> call codi#update()'
-    augroup END
-  else
-    exe 'augroup codi_' . bufnr('%')
-      au!
-    augroup END
-  endif
-endfunction
-
-" Pre-processor fixes escapes returned by interpreters. For the
-" escape issue see: https://github.com/metakirby5/codi.vim/issues/120
-" Rephraser to remove comment characters before passing to interpreter. For the
-" 1000 char limit issue see: https://github.com/metakirby5/codi.vim/issues/88
-" Note: Warning message will be gobbled so don't bother. Just silent failure.
-" Note: Vim substitute() function '.' matches newlines and codi silently fails
-" if the rephrased input lines don't match original line count so be careful.
-function! popup#codi_preprocess(line) abort
-  return substitute(a:line, '�[?2004l', '', '')
-endfunction
-function! popup#codi_rephrase(text) abort
-  let pat = '\s*' . comment#comment_char() . '[^\n]*\(\n\|$\)'  " remove comments
-  let text = substitute(a:text, pat, '\1', 'g')
-  let pat = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
-  let text = substitute(text, pat, '\1', 'g')
-  let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
-  let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
-  if &filetype ==# 'julia'  " prepend repr functions
-    let text = '_r=s->print(s*" = "*string(eval(s)));' . text
-  else
-    let text = '_r=lambda s:print(s+" = "+str(eval(s)));' . text
-  endif
-  let maxlen = 950  " too close to 1000 gets risky even if under 1000
-  let cutoff = maxlen
-  while len(text) > maxlen && (!exists('prevlen') || prevlen != len(text))
-    let prevlen = len(text)
-    let cutoff -= count(text[cutoff:], "\n")
-    let text = ''
-      \ . substitute(text[:cutoff - 1], '\(^\|\n\)[^\n]*$', '\n', '')
-      \ . substitute(text[cutoff:], '[^\n]', '', 'g')
-  endwhile
-  return text
+  silent call popup#popup_setup(0)
 endfunction
 
 " Popup windows with filetype and color information
 function! popup#colors_win() abort
   source $VIMRUNTIME/syntax/colortest.vim
-  silent call popup#popup_setup()
+  silent call popup#popup_setup(0)
 endfunction
 function! popup#plugin_win() abort
   execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
-  silent call popup#popup_setup()
+  silent call popup#popup_setup(0)
 endfunction
 function! popup#syntax_win() abort
   execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
-  silent call popup#popup_setup()
+  silent call popup#popup_setup(0)
+endfunction
+
+" Setup help windows
+function! popup#help_setup() abort
+  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
+  vertical resize 80 " always certain size
+  nnoremap <buffer> <CR> <C-]>
+  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+  silent call popup#popup_setup(0)
+endfunction
+
+" Show vim help window
+" Note: This is low-level companions to fzf feature
+function! popup#help_win(...) abort
+  if a:0
+    let item = a:1
+  else
+    let item = input('Vim help item: ', '', 'help')
+  endif
+  if !empty(item)
+    exe 'vert help ' . item
+  endif
 endfunction
 
 " Print information about syntax group
@@ -134,32 +89,9 @@ function! popup#syntax_group() abort
   echom 'Syntax Group: ' . join(names, ', ')
 endfunction
 
-" Setup help windows
-function! popup#help_setup() abort
-  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
-  vertical resize 80 " always certain size
-  nnoremap <buffer> <CR> <C-]>
-  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
-  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
-  silent call popup#popup_setup()
-endfunction
-
-" Show vim help window
-" Note: This is low-level companions to fzf feature
-function! popup#help_win(...) abort
-  if a:0
-    let item = a:1
-  else
-    let item = input('Vim help item: ', '', 'help')
-  endif
-  if !empty(item)
-    exe 'vert help ' . item
-  endif
-endfunction
-
 " Setup job popup window
-" Note: The '.job' extension should trigger popup windows.
-" Note: Add 'set -x' to display commands and no-op ':' to signal completion.
+" Note: The '.job' extension should trigger popup windows. Also add 'set -x' to
+" display commands and no-op ':' to signal completion.
 " Note: The '/bin/sh' is critical to permit chained commands e.g. with && or
 " || otherwise they are interpreted as literals.
 " Note: Use 'pty' intead of pipe to prevent output buffering and delayed
@@ -199,4 +131,72 @@ function! popup#job_win(cmd, ...) abort
   endif
   let b:popup_job = job_start(cmds, opts)
   exe winnr('#') . 'wincmd w'
+endfunction
+
+" Setup new codi window
+function! popup#codi_new(...) abort
+  if a:0 && a:1 !~# '^\s*$'
+    let name = a:1
+  else
+    let name = input('Calculator name (' . getcwd() . '): ', '', 'file')
+  endif
+  if name !~# '^\s*$'
+    exe 'tabe ' . fnamemodify(name, ':r') . '.py'
+    Codi!!
+  endif
+endfunction
+
+" Custom codi window autocommands Want TextChanged,InsertLeave, not
+" TextChangedI which is enabled with g:codi#autocmd = 'TextChanged'
+" See: https://github.com/metakirby5/codi.vim/issues/90
+" Note: This sets up the calculator window not the display window
+function! popup#codi_setup(toggle) abort
+  if a:toggle
+    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
+    nnoremap <buffer> q <C-w>p<Cmd>Codi!!<CR>
+    nnoremap <buffer> <C-w> <C-w>p<Cmd>Codi!!<CR>
+    exe 'augroup codi_' . bufnr('%')
+      au!
+      exe 'au ' . cmds . ' <buffer> call codi#update()'
+    augroup END
+  else
+    exe 'augroup codi_' . bufnr('%')
+      au!
+    augroup END
+  endif
+endfunction
+
+" Pre-processor fixes escapes returned by interpreters. For the
+" escape issue see: https://github.com/metakirby5/codi.vim/issues/120
+" Rephraser to remove comment characters before passing to interpreter. For the
+" 1000 char limit issue see: https://github.com/metakirby5/codi.vim/issues/88
+" Note: Warning message will be gobbled so don't bother. Just silent failure. Also
+" vim substitute() function '.' matches newlines and codi silently fails if the
+" rephrased input lines don't match original line count so be careful.
+function! popup#codi_preprocess(line) abort
+  return substitute(a:line, '�[?2004l', '', '')
+endfunction
+function! popup#codi_rephrase(text) abort
+  let pat = '\s*' . comment#comment_char() . '[^\n]*\(\n\|$\)'  " remove comments
+  let text = substitute(a:text, pat, '\1', 'g')
+  let pat = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
+  let text = substitute(text, pat, '\1', 'g')
+  let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
+  let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
+  if &filetype ==# 'julia'  " prepend repr functions
+    let text = '_r=s->print(s*" = "*string(eval(s)));' . text
+  else
+    let text = '_r=lambda s:print(s+" = "+str(eval(s)));' . text
+  endif
+  let maxlen = 950  " too close to 1000 gets risky even if under 1000
+  let cutoff = maxlen
+  while len(text) > maxlen && (!exists('prevlen') || prevlen != len(text))
+    " vint: next-line -ProhibitUsingUndeclaredVariable  " erroneous warning
+    let prevlen = len(text)
+    let cutoff -= count(text[cutoff:], "\n")
+    let text = ''
+      \ . substitute(text[:cutoff - 1], '\(^\|\n\)[^\n]*$', '\n', '')
+      \ . substitute(text[cutoff:], '[^\n]', '', 'g')
+  endwhile
+  return text
 endfunction

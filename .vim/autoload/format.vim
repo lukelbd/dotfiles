@@ -54,7 +54,7 @@ endfunction
 " Return regexes for search
 function! s:search_item(optional)
   let head = '^\(\s*\%(' . comment#comment_char() . '\s*\)\?\)'  " leading spaces or comment
-  let indicator = '\(\%([*-]\|\d\+\.\|\a\+\.\)\s\+\)'  " item indicator plus space
+  let indicator = '\(\%([*-]\|\<\d\.\|\<\a\.\)\s\+\)'  " item indicator plus space
   let tail = '\(.*\)$'  " remainder of line
   if a:optional
     let indicator = indicator . '\?'
@@ -63,12 +63,12 @@ function! s:search_item(optional)
 endfunction
 
 " Utilitify for removing the item indicator
-function! s:remove_item(line, firstline_, lastline_) abort
+function! s:remove_item(line, first, last) abort
   let pattern = s:search_item(0)
   let pattern_optional = s:search_item(1)
   let match_head = substitute(a:line, pattern, '\1', '')
   let match_item = substitute(a:line, pattern, '\2', '')
-  keepjumps exe a:firstline_ . ',' . a:lastline_
+  keepjumps exe a:first . ',' . a:last
     \ . 's@' . pattern_optional
     \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
     \ . '@ge'
@@ -94,8 +94,9 @@ function! format#wrap_items(...) range abort
     let line = getline(linenum)
     let linecount += 1
     if line =~# pattern
+      let upper = '^\s*[*_]*[A-Z]'  " upper case optionally surrounded by emphasis
       let tail = substitute(line, pattern, '\3', '')
-      if tail !~# '^\s*[A-Z]'  " remove item indicator if starts with lowercase
+      if tail !~# upper  " remove item indicator if starts with lowercase
         call s:remove_item(line, linenum, linenum)
       else  " otherwise join count lines and adjust lastline
         exe linenum . 'join ' . linecount
