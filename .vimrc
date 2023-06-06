@@ -31,7 +31,7 @@ endif
 " Global settings
 set encoding=utf-8
 scriptencoding utf-8
-let s:line_length = 88  " used with plugins below
+let s:line_length = 88  " used with plugins below and in 'pep8' + 'black' files
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:mapleader = "\<Space>"
 set nocompatible  " always use the vim defaults
@@ -157,6 +157,7 @@ function! s:buffer_overrides() abort
 endfunction
 
 " Flake8 ignore list (also apply to autopep8):
+" Note: Keep this in sync with 'pep8' and 'black' file
 " * Allow line breaks before binary operators (W503)
 " * Allow imports after statements for jupytext files (E402)
 " * Allow assigning lambda expressions instead of def (E731)
@@ -177,6 +178,7 @@ let s:flake8_ignore =
   \ . 'D102,D107,D105,D200,D204,D205,D301,D400,D401'
 
 " Shellcheck ignore list
+" Todo: Add this to seperate linting configuration file?
 " * Permite two space indent consistent with other languages (E003)
 " * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
 " * Allow sourcing from files (SC1090, SC1091)
@@ -579,6 +581,7 @@ nnoremap U <C-r>
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
+" au BufLeave,WinLeave * exe 'normal! qZq' | let b:recording = 0
 nnoremap , @z
 nnoremap <expr> Q b:recording
   \ ? 'q<Esc><Cmd>let b:recording = 0<CR>'
@@ -586,7 +589,6 @@ nnoremap <expr> Q b:recording
 augroup recording_tests
   au!
   au BufEnter * let b:recording = 0
-  au BufLeave,WinLeave * exe 'normal! qzq' | let b:recording = 0
 augroup END
 
 " Use cc for s because use sneak plugin
@@ -1381,19 +1383,67 @@ if s:plug_active('vim-signature')
     \ }
 endif
 
-" Completion engine settings (see :help ddc-options). Note underscore seems
-" to indicate all sources, used for global filter options, and filetype-specific
+" Lsp integration settings
+" Note: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
+" 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
+" Note: Use :LspInstallServer and :LspUninstallServer to enable or disable lsp for
+" specific filetypes. For example texlab is slow so use :LspUninstallServer texlab.
+" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
+" https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
+" Note: LspDefinition may jump to another file in current window. Instead should
+" just use peek to see definition and only use built-in 'gd' local definitions.
+" Note: Highlighting under keywords required for reference jumping with [r and ]r but
+" monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
+" Note: Previously had issues with markdown preview display in popup windows but
+" fixed. See this thread: https://github.com/prabirshrestha/vim-lsp/pull/1086
+" Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
+" plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
+" vim-lsp-settings/servers files in .config. See: https://github.com/mattn/vim-lsp-settings
+if s:plug_active('vim-lsp')
+  command! -nargs=0 LspStartServer call lsp#activate()
+  noremap [r <Cmd>LspPreviousReference<CR>
+  noremap ]r <Cmd>LspNextReference<CR>
+  noremap <Leader>q <Cmd>LspReferences<CR>
+  noremap <Leader>Q <Cmd>call switch#autocomp()<CR>
+  noremap <Leader>& <Cmd>LspSignatureHelp<CR>
+  noremap <Leader>* <Cmd>LspHover --ui=float<CR>
+  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup(0)<CR>
+  noremap <Leader>^ <Cmd>LspStatus<CR>
+  nnoremap <CR> <Cmd>LspPeekDefinition<CR>
+  nnoremap <Leader><CR> gd
+  " nnoremap <CR> [<C-i>  " jump to vim definition
+  " nnoremap \<Space> [I  " display occurences
+  let g:lsp_ale_auto_enable_linter = v:false  " default is true
+  let g:lsp_diagnostics_enabled = 0  " redundant with ale
+  let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
+  let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
+  let g:lsp_document_highlight_enabled = 0  " used with [r and ]r
+  let g:lsp_fold_enabled = 0  " not yet tested
+  let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
+  let g:lsp_hover_conceal = 1
+  let g:lsp_preview_float = 1
+  let g:lsp_preview_max_width = 80
+  let g:lsp_preview_max_height = 30
+  let g:lsp_signature_help_delay = 100  " milliseconds
+  " let g:lsp_settings = {
+  " \   'pylsp': {'workspace_config': {'pylsp': {}}}
+  " \   'texlab': {'workspace_config': {'texlab': {}}}
+  " \ }
+endif
+
+" Lsp completion settings (see :help ddc-options). Note underscore seems to
+" indicate all sources, used for global filter options, and filetype-specific
 " options can be added with ddc#custom#patch_filetype(filetype, ...).
-" Config inspiration: https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
-" Config help: https://github.com/Shougo/ddc.vim#configuration.
+" Note: Previously had installation permissions issues so used various '--allow'
+" flags to support. See: https://github.com/Shougo/ddc.vim/issues/120
+" Note: Try to limit memory to 50M. Engine flags are passed to '--v8-flags' flag
+" as of deno 1.17.0? See: https://stackoverflow.com/a/72499787/4970632
+" Note: Use 'converters': [], 'matches': ['matcher_head'], 'sorters': ['sorter_rank']
+" to speed up or disable fuzzy completion.
 " See: https://github.com/Shougo/ddc-ui-native
-" Option A: {'matchers': ['matcher_head'], 'sorters': ['sorter_rank']}
-" Option B: {'matchers': ['matcher_fuzzy'], 'sorters': ['sorter_fuzzy'], 'converters': ['converter_fuzzy']}
+" See: https://github.com/Shougo/ddc.vim#configuration.
+" See: https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
 if s:plug_active('ddc.vim')
-  " Permit installation on first try
-  " See: https://github.com/Shougo/ddc.vim/issues/120
-  " Limit memory to 50M (flags passed to --v8-flags as of deno 1.17.0?)
-  " See: https://stackoverflow.com/a/72499787/4970632
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
     \ '--v8-flags=--max-heap-size=1000,--max-old-space-size=1000',
@@ -1437,9 +1487,10 @@ if s:plug_active('ddc.vim')
   call ddc#enable()
 endif
 
-" Related popup and preview mappings. Note enter is 'accept' only if we scrolled down,
-" tab is always 'accept' and choose default if necessary. See :h ins-special-special.
+" Related popup and preview mappings
 " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
+" and default is chosen if necessary. See :h ins-special-special.
 if s:plug_active('ddc.vim')
   augroup pum_navigation
     au!
@@ -1456,9 +1507,11 @@ if s:plug_active('ddc.vim')
   inoremap <expr> <C-b> insert#popup_scroll(-1.0)
   inoremap <expr> <C-f> insert#popup_scroll(1.0)
   inoremap <expr> <Space> insert#popup_reset()
-    \ . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
+    \ . (pumvisible() ? "\<C-e>" : '')
+    \ . "\<C-]>\<Space>"
   inoremap <expr> <Backspace> insert#popup_reset()
-    \ . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
+    \ . (pumvisible() ? "\<C-e>" : '')
+    \ . "\<Backspace>"
   inoremap <expr> <CR>
     \ pumvisible() ? b:popup_scroll ?
     \ "\<C-y>" . insert#popup_reset()
@@ -1471,49 +1524,9 @@ if s:plug_active('ddc.vim')
     \ : "\<C-]>\<Tab>"
 endif
 
-" Lsp integration settings
-" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
-" https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
-" Note: LspDefinition may jump to another file in current window. Instead should
-" just use peek to see definition and only use built-in 'gd' local definitions.
-" Note: Highlighting under keywords required for reference jumping with [r and ]r but
-" monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
-" Note: Previously had issues with markdown preview display in popup windows but
-" fixed. See this thread: https://github.com/prabirshrestha/vim-lsp/pull/1086
-" Note: Use :LspInstallServer and :LspUninstallServer to enable or disable lsp for
-" specific filetypes. For example texlab is slow so use :LspUninstallServer texlab.
-if s:plug_active('vim-lsp')
-  command! -nargs=0 LspStartServer call lsp#activate()
-  noremap [r <Cmd>LspPreviousReference<CR>
-  noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>q <Cmd>LspReferences<CR>
-  noremap <Leader>Q <Cmd>call switch#autocomp()<CR>
-  noremap <Leader>& <Cmd>LspSignatureHelp<CR>
-  noremap <Leader>* <Cmd>LspHover --ui=float<CR>
-  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup(0)<CR>
-  noremap <Leader>^ <Cmd>LspStatus<CR>
-  nnoremap <CR> <Cmd>LspPeekDefinition<CR>
-  nnoremap <Leader><CR> gd
-  " nnoremap <CR> [<C-i>  " jump to vim definition
-  " nnoremap \<Space> [I  " display occurences
-  let g:lsp_ale_auto_enable_linter = v:false  " default is true
-  let g:lsp_diagnostics_enabled = 0  " redundant with ale
-  let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_highlight_enabled = 0  " used with [r and ]r
-  let g:lsp_fold_enabled = 0  " not yet tested
-  let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
-  let g:lsp_hover_conceal = 1
-  let g:lsp_preview_float = 1
-  let g:lsp_preview_max_width = 80
-  let g:lsp_preview_max_height = 30
-  let g:lsp_signature_help_delay = 100  " milliseconds
-
-endif
-
 " Asynchronous linting engine
-" Note: Here bashate is equivalent to pep8, similar to prettier and beautify for
-" javascript and html. also tried shfmt but not available.
+" Note: bashate is equivalent to pep8, similar to prettier and beautify
+" for javascript and html, also tried shfmt but not available.
 " Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
 " with :ALEFix black. Or can use the black plugin and use :Black of course.
 " Note: chktex is awful (e.g. raises errors for any command not followed
@@ -1595,9 +1608,14 @@ if s:plug_active('ale')
     \ 'multi_line_output': 3,
     \ 'line_length': s:line_length,
     \ }
-  let g:formatdef_mpython =
-    \ '"isort --trailing-comma --force-grid-wrap 0 --multi-line 3 --line-length ' . s:line_length . ' - | '
-    \ . 'black --quiet --skip-string-normalization --line-length ' . s:line_length . ' -"'
+  let g:formatdef_mpython = '"isort '
+    \ . '--trailing-comma '
+    \ . '--force-grid-wrap 0 '
+    \ . '--multi-line 3 '
+    \ . '--line-length ' . s:line_length
+    \ . ' - | black --quiet '
+    \ . '--skip-string-normalization '
+    \ . '--line-length ' . s:line_length . ' - "'
   let g:formatters_python = ['mpython']  " multiple formatters
   let g:formatters_fortran = ['fprettify']
 endif
