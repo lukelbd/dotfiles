@@ -2016,7 +2016,7 @@ else
 fi
 
 # Function to list available packages
-conda-avail() {
+mamba-avail() {
   local version versions
   [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
   echo "Package:            $1"
@@ -2033,23 +2033,23 @@ conda-avail() {
 
 # Function to backup and restore conda environments. This is useful when conda breaks
 # due to usage errors or issues with permissions after a crash and backblaze restore.
-conda-backup() {
+mamba-backup() {
   local env dest
   dest=$HOME/dotfiles
   [ -d "$dest" ] || { echo " Error: Backup directory $dest not found."; return 1; }
   dest=$dest/envs
   [ -d "$dest" ] || mkdir "$dest/envs"
-  for env in $(conda env list | cut -d" " -f1); do
+  for env in $(mamba env list | cut -d" " -f1); do
     [[ ${env:0:1} == "#" ]] && continue
     echo "Creating file: $dest/${env}.yml"
-    conda env export -n $env > "$dest/${env}.yml"
+    mamba env export -n $env > "$dest/${env}.yml"
   done
 }
-conda-restore() {
+mamba-restore() {
   local envs path src
   src=$HOME/dotfiles/envs
   [ -d "$src" ] || { echo " Error: Backup directory $src not found."; return 1; }
-  envs=($(conda env list | cut -d' ' -f1))
+  envs=($(mamba env list | cut -d' ' -f1))
   for path in "$src"/*.yml; do
     name=${path##*/}
     name=${name%.yml}
