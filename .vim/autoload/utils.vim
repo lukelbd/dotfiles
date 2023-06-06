@@ -30,6 +30,17 @@ function! utils#close_bufs()
   endif
 endfunction
 
+" Search term for Rg and Ag
+" Todo: Learn other options for rg and ag, write bashrc helpers
+" Note: Rg is faster so use by default: https://unix.stackexchange.com/a/524094/112647
+function! utils#grep_command(cmd) abort
+  let prompt = "Search pattern (default '" . @/ . "'): "
+  let search = input(prompt, '', 'customlist,utils#null_list')
+  let search = empty(search) ? @/ : search
+  let path = expand('%:h')
+  exe a:cmd . ' ' . search . ' ' . path
+endfunction
+
 " Better grep, with limited regex translation
 function! utils#grep_pattern(regex) abort 
   let regex = a:regex
@@ -39,29 +50,6 @@ function! utils#grep_pattern(regex) abort
   let result = split(system("grep '" . regex . "' " . shellescape(@%) . ' 2>/dev/null'), "\n")
   echo join(result, "\n")
   return result
-endfunction
-
-" Show the active buffer names
-function! utils#show_bufs() abort
-  let result = {}
-  for nr in range(0, bufnr('$'))
-    if buflisted(nr) | let result[nr] = bufname(nr) | endif
-  endfor
-  echo join(values(map(result, "v:key . ': ' . v:val")), "\n")
-  return result
-endfunction
-
-" Show the absolute path
-function! utils#show_path(...) abort
-  let path = a:0 ? a:1 : @%
-  echom 'Path: ' . fnamemodify(path, ':p')
-endfunction
-
-" Reverse the selected lines
-function! utils#reverse_lines() range abort
-  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
-  let num = empty(range) ? 0 : a:firstline - 1
-  exec 'silent ' . range . 'g/^/m' . num
 endfunction
 
 " Null input() completion function to prevent unexpected insertion of literal tabs
@@ -116,9 +104,45 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
+" Show the active buffer names
+function! utils#show_bufs() abort
+  let result = {}
+  for nr in range(0, bufnr('$'))
+    if buflisted(nr) | let result[nr] = bufname(nr) | endif
+  endfor
+  echo join(values(map(result, "v:key . ': ' . v:val")), "\n")
+  return result
+endfunction
+
+" Show the absolute path
+function! utils#show_path(...) abort
+  let path = a:0 ? a:1 : @%
+  echom 'Path: ' . fnamemodify(path, ':p')
+endfunction
+
+" Reverse the selected lines
+function! utils#reverse_lines() range abort
+  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
+  let num = empty(range) ? 0 : a:firstline - 1
+  exec 'silent ' . range . 'g/^/m' . num
+endfunction
+
+" Helper function for comparing values
+" Copied from: https://vi.stackexchange.com/a/14359
+function! s:compare(a, b) abort
+  for i in range(len(a:a))
+    if a:a[i] < a:b[i]
+      return -1
+    elseif a:a[i] > a:b[i]
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
-function! utils#iter_colorschemes(reverse) abort
+function! utils#wrap_colorschemes(reverse) abort
   let step = a:reverse ? 1 : -1
   if !exists('g:all_colorschemes')
     let g:all_colorschemes = getcompletion('', 'color')
@@ -138,22 +162,9 @@ function! utils#iter_colorschemes(reverse) abort
   let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
 endfunction
 
-" Helper function for comparing values
-" Copied from: https://vi.stackexchange.com/a/14359
-function! s:compare(a, b)
-  for i in range(len(a:a))
-    if a:a[i] < a:b[i]
-      return -1
-    elseif a:a[i] > a:b[i]
-      return 1
-    endif
-  endfor
-  return 0
-endfunction
-
 " Cyclic next error in location list
 " Copied from: https://vi.stackexchange.com/a/14359
-function! utils#iter_cyclic(count, list, ...) abort
+function! utils#wrap_cyclic(count, list, ...) abort
   " Initial stuff
   let reverse = a:0 && a:1
   let func = 'get' . a:list . 'list'
@@ -186,7 +197,7 @@ function! utils#iter_cyclic(count, list, ...) abort
     return cmd . inext
   elseif nbuffer != 0
     exe '' . (reverse ? line('$') : 0)
-    return utils#iter_cyclic(a:count, a:list, reverse)
+    return utils#wrap_cyclic(a:count, a:list, reverse)
   else
     return 'echoerr ' . string(inext)  " string() adds quotes
   endif

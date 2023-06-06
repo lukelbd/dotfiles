@@ -756,11 +756,15 @@ rename() {
 }
 
 # Finding files and pattern
-# NOTE: No way to include extensionless executables in qgrep
-# NOTE: In find, if dotglob is unset, cannot match hidden files with [.]*
+# NOTE: Ignore list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
+# searcher 'ag'. Should install with 'brew install the_silver_searcher ripgrep'.
+# NOTE: Have no way to include extensionless executables in qgrep
 # NOTE: In grep, using --exclude=.* also excludes current directory
-_exclude_dirs=(api build trash sources plugged externals '*conda*' '*mamba*' 'site-packages')
-_include_exts=(.py .sh .jl .m .ncl .vim .rst .ipynb)
+# NOTE: In find, if dotglob is unset, cannot match hidden files with [.]*
+_excludes=(api build trash sources plugged externals site-packages '*conda*' '*mamba*')
+_includes=(.py .sh .jl .m .ncl .vim .rst .ipynb)
+alias ag='ag --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
+alias rg='rg --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
 qgrep() {
   local commands exclude include
   case "$#" in
@@ -768,8 +772,8 @@ qgrep() {
     1) commands=("$1" .) ;;
     *) commands=("$@") ;;
   esac
-  exclude=("${_exclude_dirs[@]/#/--exclude-dir=}")
-  include=("${_include_exts[@]/#/--include=*}")
+  exclude=("${_excludes[@]/#/--exclude-dir=}")
+  include=("${_includes[@]/#/--include=*}")
   command grep \
     -i -r -E --color=auto --exclude='[A-Z_.]*' \
     --exclude-dir='.[^.]*' --exclude-dir='_*' \
@@ -784,8 +788,8 @@ qfind() {
     2) commands=("$1" "$2" -print) ;;
     *) commands=("$@") ;;
   esac
-  exclude=(${_exclude_dirs[@]/#/-o -name })  # expand into commands *and* names
-  include=(${_include_exts[@]/#/-o -name })  # expand into commands *and* names
+  exclude=(${_excludes[@]/#/-o -name })  # expand into commands *and* names
+  include=(${_includes[@]/#/-o -name })  # expand into commands *and* names
   include=("${include[@]//./*.}")  # add glob patterns
   command find "${commands[0]}" \
     -path '*/.*' -prune \

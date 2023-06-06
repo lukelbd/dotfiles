@@ -1,16 +1,18 @@
-# Ignore patterns for git management
-# NOTE: This should be kept in sync with '.ignore' ag/rg file.
-# Untracked folders
-figs*
-vids*
-figures*
-videos*
-class*
-course*
-meeting*
-manuscript*
-!figures*.py
-!videos*.py
+# Ignore patterns for ripgrep 'rg' and silver searcher 'ag'
+# NOTE: This should be kept in sync with '.gitignore.default' file.
+# NOTE: Head should be kept in sync with 'qgrep' bashrc function.
+# NOTE: Should work for both ripgrep and ag.
+# bashrc function. See: https://www.linode.com/docs/guides/silver-searcher-on-linux/
+# Unsearched folders
+api
+build
+trash
+sources
+plugged
+externals
+site-packages
+*conda*
+*mamba*
 
 # Trash folders
 tmp

@@ -485,6 +485,14 @@ augroup END
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
 " Note: Here the 'k' is just easy to access and 'v' is for vim commands
+" Note: Difficult to pass flags to Ag/Rg with default interface. Solve with below.
+" Ag solution: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
+" Rg solution: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
+let s:cmd = 'rg --column --line-number --no-heading --color=always --smart-case '
+let s:agflags = '--skip-vcs-ignores --hidden'  " see https://github.com/ggreer/the_silver_searcher/issues/1189
+let s:rgflags = '--no-ignore-vcs --hidden'  " see https://github.com/BurntSushi/ripgrep/issues/645
+command! -bang -nargs=* Ag call fzf#vim#ag(<q-args>, s:agflags, fzf#vim#with_preview(), <bang>0)
+command! -bang -nargs=* Rg call fzf#vim#grep(s:cmd . s:rgflags . ' -- ' . shellescape(<q-args>), 1, <bang>0)
 nnoremap <Leader>. :<Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
@@ -494,8 +502,8 @@ nnoremap <Leader>v <Cmd>Help<CR>
 nnoremap <Leader>V <Cmd>call popup#help_win()<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
-nnoremap <Leader>n <Cmd>exe 'Ag ' . @/<CR>
-nnoremap <Leader>N <Cmd>exe 'Rg ' . @/<CR>
+nnoremap <Leader>n <Cmd> call utils#grep_command('Rg')<CR>
+nnoremap <Leader>N <Cmd> call utils#grep_command('Ag')<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
