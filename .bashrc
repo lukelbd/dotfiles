@@ -20,7 +20,7 @@
 #   platypus when "localhost" is in the URL (simply calls chromium --kiosk "$url").
 # * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
 #   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
-#   requires removing ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
+#   requires removing ~/mambaforge/etc/jupyter/jupyter_config.json to suppress warnings.
 #   See: https://fcollonval.medium.com/conda-environments-in-jupyter-ecosystem-without-pain-e9fab3992fb7
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
 #   following: https://github.com/jupyter-lsp/jupyterlab-lsp plus python-lsp-server
@@ -378,7 +378,7 @@ export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 _dirs_data=(cmip-data reanalysis-data idealized coupled)
 _dirs_tools=(ncparallel mppnccombine)
-_dirs_science=(constraints persistence timescales transport)
+_dirs_research=(constraints persistence timescales transport)
 for _project in "${_dirs_tools[@]}"; do
     if [ -r "$HOME/models/$_project" ]; then
       export PATH=$HOME/models/$_project:$PATH
@@ -386,9 +386,9 @@ for _project in "${_dirs_tools[@]}"; do
       export PATH=$HOME/$_project:$PATH
     fi
 done
-for _project in "${_dirs_data[@]}" "${_dirs_science[@]}"; do
-    if [ -r "$HOME/science/$_project" ]; then
-      export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
+for _project in "${_dirs_data[@]}" "${_dirs_research[@]}"; do
+    if [ -r "$HOME/research/$_project" ]; then
+      export PYTHONPATH=$HOME/research/$_project:$PYTHONPATH
     elif [ -r "$HOME/$_project" ]; then
       export PYTHONPATH=$HOME/$_project:$PYTHONPATH
     fi
@@ -2011,8 +2011,6 @@ if [ -d "$HOME/mambaforge" ]; then
   _conda=$HOME/mambaforge
 elif [ -d "$HOME/miniforge" ]; then
   _conda=$HOME/miniforge
-elif [ -d "$HOME/miniconda3" ]; then
-  _conda=$HOME/miniconda3
 else
   unset _conda
 fi
