@@ -656,10 +656,10 @@ noremap " "*
 
 " Maps and commands for circular location-list scrolling
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
-command! -bar -count=1 Lnext execute utils#iter_cyclic(<count>, 'loc')
-command! -bar -count=1 Lprev execute utils#iter_cyclic(<count>, 'loc', 1)
-command! -bar -count=1 Qnext execute utils#iter_cyclic(<count>, 'qf')
-command! -bar -count=1 Qprev execute utils#iter_cyclic(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute utils#wrap_cyclic(<count>, 'loc')
+command! -bar -count=1 Lprev execute utils#wrap_cyclic(<count>, 'loc', 1)
+command! -bar -count=1 Qnext execute utils#wrap_cyclic(<count>, 'qf')
+command! -bar -count=1 Qprev execute utils#wrap_cyclic(<count>, 'qf', 1)
 noremap [x <Cmd>Lprev<CR>
 noremap ]x <Cmd>Lnext<CR>
 noremap [X <Cmd>Qprev<CR>
@@ -901,6 +901,7 @@ function! s:plug_local(path)
 endfunction
 command! -nargs=1 PlugFind echo join(s:plug_find(<q-args>), ', ')
 command! -nargs=1 PlugLocal call s:plug_local(<args>)
+let s:enable_lsp = 1  " ad hoc speedup
 
 " Initialize plugin manager. Note we no longer worry about compatibility
 " because we can install everything from conda-forge, including vim and ctags.
@@ -1042,62 +1043,73 @@ let g:fzf_action = {
 " installed with pip inside 'venv' virtual environment subfolders). Most likely
 " harmless if both external and internal are installed but try to avoid.
 " call plug#('natebosch/vim-lsc')  " alternative lsp client
-call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero config needed!
-call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
-call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
-let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+if s:enable_lsp
+  call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero config needed!
+  call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
+  call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
+  let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+endif
 
 " Completion engines
 " Note: Install pynvim with 'mamba install pynvim'
 " Note: Install deno with brew on mac and with conda on linux
-" call plug#('neoclide/coc.nvim")  " vscode inspired
-" call plug#('ervandew/supertab')  " oldschool, don't bother!
-" call plug#('ajh17/VimCompletesMe')  " no auto-popup feature
-" call plug#('hrsh7th/nvim-cmp')  " lua version
-" call plug#('Valloric/YouCompleteMe')  " broken, don't bother!
-" call plug#('prabirshrestha/asyncomplete.vim')  " alternative engine
-" call plug#('Shougo/neocomplcache.vim')  " first generation (no requirements)
-" call plug#('Shougo/neocomplete.vim')  " second generation (requires lua)
-" let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
-" call plug#('Shougo/deoplete.nvim')  " third generation (requires pynvim)
-" call plug#('Shougo/neco-vim')  " deoplete dependency
-" call plug#('roxma/nvim-yarp')  " deoplete dependency
-" call plug#('roxma/vim-hug-neovim-rpc')  " deoplete dependency
-" let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
-call plug#('Shougo/ddc.vim')  " fourth generation (requires pynvim and deno)
-call plug#('Shougo/ddc-ui-native')  " matching words near cursor
-call plug#('vim-denops/denops.vim')  " ddc dependency
+" Warning: denops.vim frequently upgrades requirements to most recent vim
+" distribution but conda-forge version is slower to update. Workaround by pinning
+" to older commits: https://github.com/vim-denops/denops.vim/commits/main
+if s:enable_lsp
+  " call plug#('neoclide/coc.nvim")  " vscode inspired
+  " call plug#('ervandew/supertab')  " oldschool, don't bother!
+  " call plug#('ajh17/VimCompletesMe')  " no auto-popup feature
+  " call plug#('hrsh7th/nvim-cmp')  " lua version
+  " call plug#('Valloric/YouCompleteMe')  " broken, don't bother!
+  " call plug#('prabirshrestha/asyncomplete.vim')  " alternative engine
+  " call plug#('Shougo/neocomplcache.vim')  " first generation (no requirements)
+  " call plug#('Shougo/neocomplete.vim')  " second generation (requires lua)
+  " let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
+  " call plug#('Shougo/deoplete.nvim')  " third generation (requires pynvim)
+  " call plug#('Shougo/neco-vim')  " deoplete dependency
+  " call plug#('roxma/nvim-yarp')  " deoplete dependency
+  " call plug#('roxma/vim-hug-neovim-rpc')  " deoplete dependency
+  " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
+  call plug#('Shougo/ddc.vim')  " fourth generation (requires pynvim and deno)
+  call plug#('Shougo/ddc-ui-native')  " matching words near cursor
+  call plug#('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
+endif
 
 " Omnifunc sources not provided by engines
 " See: https://github.com/Shougo/deoplete.nvim/wiki/Completion-Sources
-" call plug#('neovim/nvim-lspconfig')  " nvim-cmp source
-" call plug#('hrsh7th/cmp-nvim-lsp')  " nvim-cmp source
-" call plug#('hrsh7th/cmp-buffer')  " nvim-cmp source
-" call plug#('hrsh7th/cmp-path')  " nvim-cmp source
-" call plug#('hrsh7th/cmp-cmdline')  " nvim-cmp source
-" call plug#('deoplete-plugins/deoplete-jedi')  " old language-specific completion
-" call plug#('Shougo/neco-syntax')  " old language-specific completion
-" call plug#('Shougo/echodoc.vim')  " old language-specific completion
-" call plug#('Shougo/ddc-nvim-lsp')  " language server protocoal completion for neovim only
-" call plug#('Shougo/ddc-matcher_head')  " filter for heading match
-" call plug#('Shougo/ddc-sorter_rank')  " filter for sorting rank
-call plug#('shun/ddc-vim-lsp')  " language server protocol completion for vim 8+
-call plug#('Shougo/ddc-around')  " matching words near cursor
-call plug#('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
-call plug#('LumaKernel/ddc-file')  " matching file names
-call plug#('tani/ddc-fuzzy')  " filter for fuzzy matching similar to fzf
-call plug#('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
+if s:enable_lsp
+  " call plug#('neovim/nvim-lspconfig')  " nvim-cmp source
+  " call plug#('hrsh7th/cmp-nvim-lsp')  " nvim-cmp source
+  " call plug#('hrsh7th/cmp-buffer')  " nvim-cmp source
+  " call plug#('hrsh7th/cmp-path')  " nvim-cmp source
+  " call plug#('hrsh7th/cmp-cmdline')  " nvim-cmp source
+  " call plug#('deoplete-plugins/deoplete-jedi')  " old language-specific completion
+  " call plug#('Shougo/neco-syntax')  " old language-specific completion
+  " call plug#('Shougo/echodoc.vim')  " old language-specific completion
+  " call plug#('Shougo/ddc-nvim-lsp')  " language server protocoal completion for neovim only
+  " call plug#('Shougo/ddc-matcher_head')  " filter for heading match
+  " call plug#('Shougo/ddc-sorter_rank')  " filter for sorting rank
+  call plug#('shun/ddc-vim-lsp')  " language server protocol completion for vim 8+
+  call plug#('Shougo/ddc-around')  " matching words near cursor
+  call plug#('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
+  call plug#('LumaKernel/ddc-file')  " matching file names
+  call plug#('tani/ddc-fuzzy')  " filter for fuzzy matching similar to fzf
+  call plug#('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
+endif
 
 " Snippets and stuff
 " Todo: Investigate further, but so far primitive vim-succinct snippets are fine
-" call plug#('SirVer/ultisnips')  " fancy snippet actions
-" call plug#('honza/vim-snippets')  " reference snippet files supplied to e.g. ultisnips
-" call plug#('LucHermitte/mu-template')  " file template and snippet engine mashup, not popular
-" call plug#('Shougo/neosnippet.vim')  " snippets consistent with ddc
-" call plug#('Shougo/neosnippet-snippets')  " standard snippet library
-" call plug#('Shougo/deoppet.nvim')  " next generation snippets (does not work in vim8)
-call plug#('hrsh7th/vim-vsnip')  " snippets
-call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
+if s:enable_lsp
+  " call plug#('SirVer/ultisnips')  " fancy snippet actions
+  " call plug#('honza/vim-snippets')  " reference snippet files supplied to e.g. ultisnips
+  " call plug#('LucHermitte/mu-template')  " file template and snippet engine mashup, not popular
+  " call plug#('Shougo/neosnippet.vim')  " snippets consistent with ddc
+  " call plug#('Shougo/neosnippet-snippets')  " standard snippet library
+  " call plug#('Shougo/deoppet.nvim')  " next generation snippets (does not work in vim8)
+  call plug#('hrsh7th/vim-vsnip')  " snippets
+  call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
+endif
 
 " Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
 " are better and API is simpler. Only miss adding numbers to operators, otherwise
@@ -1241,7 +1253,7 @@ for s:name in [
   \ 'vim-scrollwrapped',
   \ 'vim-toggle',
   \ ]
-  let s:path_code = expand('~/coding/' . s:name)
+  let s:path_code = expand('~/software/' . s:name)
   let s:path_fork = expand('~/forks/' . s:name)
   if isdirectory(s:path_code)
     call s:plug_local(s:path_code)
@@ -1468,6 +1480,8 @@ endif
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 " Note: Previously had issues with markdown preview display in popup windows but
 " fixed. See this thread: https://github.com/prabirshrestha/vim-lsp/pull/1086
+" Note: Use :LspInstallServer and :LspUninstallServer to enable or disable lsp for
+" specific filetypes. For example texlab is slow so use :LspUninstallServer texlab.
 if s:plug_active('vim-lsp')
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
@@ -1610,6 +1624,7 @@ if s:plug_active('undotree')
     let &undodir=$HOME . '/.undodir'
     set undofile
   endif
+  nmap <Leader>U <Plug>UndotreeClearHistory
   nnoremap <Leader>u <Cmd>UndotreeToggle<CR>
 endif
 
@@ -1804,8 +1819,8 @@ if has('gui_running')
   nnoremap <Leader>8 <Cmd>Colors<CR>
   nnoremap <Leader>9 <Cmd>SchemeNext<CR>
   nnoremap <Leader>0 <Cmd>SchemePrev<CR>
-  command! SchemePrev call utils#iter_colorschemes(0)
-  command! SchemeNext call utils#iter_colorschemes(1)
+  command! SchemePrev call utils#wrap_colorschemes(0)
+  command! SchemeNext call utils#wrap_colorschemes(1)
 endif
 
 " Make terminal background same as main background
