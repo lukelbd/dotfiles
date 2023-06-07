@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=2076
-usage="latexmk [OPTIONS] FILE"
+usage="latexmk [OPTIONS] FILE [DIFF_FILE]"
 doc="
 Auto-typeset LaTeX documents. This is similar to the famous PERL latexmk program, but
 with some unique features. Opens the resulting typeset file in a macOS PDF viewer then
@@ -14,7 +14,7 @@ Usage
 
 Positional arguments
 
-  FILE
+  FILE           The latex file.
 
 Optional arguments
 
@@ -27,10 +27,12 @@ Optional arguments
                  files for quicker updates.
   -s|--skipbib   Skip bibliography re-compilation. This can be used to speed
                  things up when citations are unchanged.
-  -d|--diff      Run latexdiff on most 'recent' file. Requires files in your directory
-                 that share the same prefix but end with NN, YYYY-MM, or YYYY-MM-DD.
   -w|--word      Convert to docx file using pandoc. This can be useful for
                  collaborating with peers that do not know latex.
+  -d|--diff      Run latexdiff on most 'recent' file. Requires files in your directory
+                 that share the same prefix but end with NN, YYYY-MM, or YYYY-MM-DD.
+  [-p|--prev]=F  Run latexdiff against this previous version of the current file.
+                 This is an alternative to detecting automatically with --diff.
   [-l|--line]=N  The line number in the LaTeX document. If the viewer is Skim then
                  we will jump to this line in the PDF document.
 
@@ -83,15 +85,15 @@ $macos && [ "$sedcmd" == sed ] && \
 # Parse args
 trap cleanup EXIT  # remove files on exit or interruption!
 shopt -s nullglob  # glob-expand into zero entries
-raw=false
-latex=pdflatex  # by default use pdflatex
-bibtex=bibtex   # for compiling bibliographies
+latex=pdflatex  # default typesetting command
+bibtex=bibtex   # default bibliography generator
 viewer=Skim     # default PDF viewer
+raw=false       # show raw command output?
 auxonly=false   # only update aux file?
 pdfonly=false   # only update PDF file?
 skipbib=false   # skip updating bbl file?
 texdiff=false   # get difference pdf?
-tex2docx=false  # option
+texdocx=false   # convert with pandoc?
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)     echoerr "$doc" && exit 0 ;;
@@ -99,14 +101,12 @@ while [ $# -gt 0 ]; do
     -a|--aux-only) auxonly=true skipbib=true ;;
     -p|--pdf-only) pdfonly=true skipbib=true ;; 
     -s|--skip-bib) skipbib=true ;;
+    -w|--word)     texdocx=true ;;
     -d|--diff)     texdiff=true ;;
-    -w|--word)     tex2docx=true ;;
-    -l=*|--line=*) line=${1#*=} ;;
-    [^-]*)
-      [ -n "$filename" ] && raise "Got multiple filenames."
-      filename="$1"
-      ;;
-    *) raise "Unknown arg $1."
+    -p=*|--prev=*) prevname=${1#*=} ;;
+    -l=*|--line=*) linenum=${1#*=} ;;
+    [^-]*) [ -n "$filename" ] && raise "File name already passed." || filename=$1 ;;
+    *) raise "Unknown latexmk flag $1." ;;
   esac
   shift
 done
@@ -281,9 +281,9 @@ open() {
   appname=$1
   pdfname=$2
   texname=${pdfname%.pdf}.tex
-  if [ "$appname" == 'Skim' ] && which displayline &>/dev/null && [ -n "$line" ]; then
-    echoerr "Opening \"$pdfname\" and jumping to line $line (source $texname)"
-    displayline -r "$line" "$pdfname" "$texname"
+  if [ "$appname" == 'Skim' ] && which displayline &>/dev/null && [ -n "$linenum" ]; then
+    echoerr "Opening \"$pdfname\" and jumping to line $linenum (source $texname)"
+    displayline -r "$linenum" "$pdfname" "$texname"
   else
     echoerr "Opening \"$pdfname\""
     command open -a "$appname" "$pdfname" &
@@ -321,7 +321,7 @@ fi
 # WARNING: To keep exit code from pdflatex, pipe later on
 # run 0 $latex $flags "$filestem"
 echoerr "Running with ${stylized}..."
-if ! $texdiff && ! $tex2docx; then
+if ! $texdiff && ! $texdocx; then
   if ! $pdfonly; then
     echoerr 'Generating aux file...'  # maybe just need to generate glossary!
     run 0 "$latex" "${flags_tex[@]}" "$filestem"
@@ -342,33 +342,35 @@ fi
 # Difference-LaTeX file, with track changes
 if $texdiff; then
   # Find files that come *before* current one in alphanumeric sorting
-  version='[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}'
-  prefix=$(sed -E "s/$version.*\$//g" <<< "$filename")
-  suffix=$(sed -E "s/^.*$version//g" <<< "$filename")
-  echo "Prefix: $prefix Suffix: $suffix"
-  prevnames=("$prefix"*[_-][0-9][0-9]"$suffix")  # sorted manuscript files (glob is sorted by default)
-  for index in "${!prevnames[@]}"; do  # expands to array of indices
-    [[ "${prevnames[index]}" =~ '_changes.tex' ]] && continue
-    [[ "${prevnames[index]}" == "$filename" ]] && break
-  done
-  [ "$prefix" == "$filename" ] && raise "Invalid filename for generating difference file: $filename"
-  [ "$index" -eq 0 ] && raise "Failed to find earlier version of current file: $filename"
+  if [ -z "$prevname" ]; then
+    version='[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}'
+    prefix=$(sed -E "s/$version.*\$//g" <<< "$filename")
+    suffix=$(sed -E "s/^.*$version//g" <<< "$filename")
+    echo "Prefix: $prefix Suffix: $suffix"
+    prevnames=("$prefix"*[_-][0-9][0-9]"$suffix")  # sorted manuscript files (glob is sorted by default)
+    for index in "${!prevnames[@]}"; do  # expands to array of indices
+      [[ "${prevnames[index]}" =~ '_changes.tex' ]] && continue
+      [[ "${prevnames[index]}" == "$filename" ]] && break
+    done
+    [ "$prefix" == "$filename" ] && raise "Invalid filename for generating difference file: $filename"
+    [ "$index" -eq 0 ] && raise "Failed to find earlier version of current file: $filename"
+    prevname=${prevnames[index - 1]}  # previous before finding this one
+  fi
 
   # Make the difference tex file and support line jumping
   # NOTE: skim-displayline will be prepended with '%DIF > ' in difference file
-  prevname=${prevnames[index - 1]}  # previous before finding this one
   echoerr "Running latexdiff on ${filename##*/} minus ${prevname##*/}"
   [ -e "$diffname" ] && rm "$diffname"  # previous file name
   tmpfile="$filestem.tmp"  # will be deleted by cleanup()
   cp "$filename" "$tmpfile"
-  [ -n "$line" ] && $sedcmd -i "${line}s/$/  % skim-displayline/" "$tmpfile"
+  [ -n "$linenum" ] && $sedcmd -i "${linenum}s/$/  % skim-displayline/" "$tmpfile"
   latexdiff --append-context2cmd=abstract "$prevname" "$tmpfile" > "$diffname"
   [ -r $diffname ] || raise 'Difference file not produced.'
-  line=$(grep -n -m 1 'skim-displayline$' "$diffname" | sed 's/\([0-9]*\).*/\1/')
+  linenum=$(grep -n -m 1 'skim-displayline$' "$diffname" | sed 's/\([0-9]*\).*/\1/')
   # shellcheck disable=SC2181
-  if [ $? -ne 0 ] || ! [[ "$line" =~ ^[0-9]+$ ]]; then
+  if [ $? -ne 0 ] || ! [[ "$linenum" =~ ^[0-9]+$ ]]; then
     echoerr 'Warning: Failed to detect difference file line.'
-    unset line
+    unset linenum
   fi
 
   # Make the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
@@ -390,7 +392,7 @@ fi
 # * For citeproc see: https://github.com/jgm/citeproc
 # * For xnos see: https://github.com/tomduck/pandoc-xnos
 # Unfortunately neither xnos nor crossref work for numbering equations and figures
-if $tex2docx; then
+if $texdocx; then
   type pandoc &>/dev/null || raise "Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
   # flags=(--citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
@@ -413,7 +415,7 @@ if $tex2docx; then
 fi
 
 # Open the relevant file
-! $texdiff && ! $tex2docx && open "$viewer" "$filestem.pdf"  # too jumpy if open everything!
+! $texdiff && ! $texdocx && open "$viewer" "$filestem.pdf"  # too jumpy if open everything!
 $texdiff && open "$viewer" "$diffstem.pdf"
-$tex2docx && open "Pages" "$filestem.docx"
+$texdocx && open "Pages" "$filestem.docx"
 $macos && command open -a "$terminal" &  # bring terminal back into focus

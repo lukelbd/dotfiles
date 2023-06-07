@@ -26,14 +26,20 @@ if isdirectory(s:cache_dir)
 endif
 
 " Running custom or default latexmk command in background
-" Warning: Trailing space will be escaped as flag! So trim unless we have any options
+" Note: When 'PREVIOUS_VERSION: file.tex' or 'PERVIOUS_VERSION=file.tex' is on first
+" line, '--diff' flags passed to :Latexmk are replaced with '--prev=file.tex'.
 function! s:latexmk(...) abort
   let opts = {}  " job options, empty by default
-  let flags = trim(a:0 ? a:1 : '') . ' --line=' . string(line('.'))
-  call popup#job_win(
-    \ 'latexmk ' . flags . ' ' . shellescape(expand('%')),
-    \ flags !~# '--quick\|-q'
-    \ )
+  let path = shellescape(expand('%'))
+  let prev = matchstr(getline(1), 'PREVIOUS_VERSION\s*[:=]\s*\zs\S*\ze')
+  let flags = trim(a:0 ? a:1 : '')
+  let linenum = ' --line=' . string(line('.'))
+  if !empty(prev)
+    let flags = substitute(flags, '\(^\|\s\)\zs\(-d\|--diff\)\>', '--prev=' . prev, '')
+  endif
+  let command = 'latexmk ' . flags . ' ' . linenum . ' ' . path
+  let popup = flags !~# '\(^\|\s\)\(-q\|--quick\)\>'
+  call popup#job_win(command, popup)
 endfunction
 
 " Latexmk command and shortcuts
