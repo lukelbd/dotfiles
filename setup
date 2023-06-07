@@ -7,7 +7,7 @@
 # See: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 shopt -s nullglob
 configs=(pep8 black)  # required
-exclude=(README.md REGEXES.md .gitignore envs backup cleanup setup)
+exclude=(README.md REGEXES.md .gitignore environment.yml envs backup cleanup setup)
 dotfiles=$HOME/dotfiles  # dotfiles directory
 cd "$dotfiles" || {
   echo "Error: dotfiles repo should be cloned into \$HOME."
