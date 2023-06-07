@@ -54,7 +54,6 @@ function! popup#help_setup() abort
   nnoremap <buffer> <CR> <C-]>
   nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
-  silent call popup#popup_setup(0)
 endfunction
 
 " Show vim help window
@@ -106,10 +105,11 @@ function! popup#job_win(cmd, ...) abort
     echohl None
     return 1
   endif
+  let popup = a:0 ? a:1 : 1  " whether to show popup window
   let cmds = ['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :']
   let hght = winheight('.') / 4
   let opts = {}  " job options, empty by default
-  if a:0 ? a:1 : 1  " whether to show popup window
+  if popup  " show popup, or run job
     let logfile = expand('%:t:r') . '.job'
     let lognum = bufwinnr(logfile)
     if lognum == -1  " open a logfile window

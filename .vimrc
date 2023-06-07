@@ -122,7 +122,7 @@ let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
 let s:popup_filetypes = [
-  \ '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ 'help', '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame',
   \ ]  " for popup toggle
 let s:popup_filetypes += [
   \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug'
@@ -466,18 +466,22 @@ command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
 " Popup window style adjustments with less-like shortcuts
+" Todo: Understand and use fugitive popups more often, figure out how to open git
+" diffs in new tab instead of filling current window, or restoring old window.
 " Note: Fugitive applies the fugitive mapping 'dq' to git diff/show display windows
 " (other d-mappings only work with file display) which interferes with scrolling.
-let g:tags_skip_filetypes = ['help'] + s:popup_filetypes
-let g:tabline_skip_filetypes = ['help'] + s:popup_filetypes
+let g:tags_skip_filetypes = s:popup_filetypes
+let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
   au!
-  au User FugitivePager silent! nunmap <buffer> dq
-  au FileType help call popup#help_setup()
-  au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
-  au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
-  au CmdwinEnter * call popup#cmd_setup()
+  au FileType fugitiveblame call git#blame_setup()
+  au FileType fugitive call git#git_setup()
   au TerminalWinOpen * call popup#popup_setup(1)
+  au CmdwinEnter * call popup#cmd_setup()
+  au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
+  au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
+  au FileType help call popup#help_setup()
+  au User FugitivePager silent! nunmap <buffer> dq
   for s:ft in s:popup_filetypes
     let s:modifiable = s:ft ==# 'gitcommit'
     exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:modifiable . ')'
