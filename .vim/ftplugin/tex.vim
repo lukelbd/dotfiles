@@ -38,7 +38,7 @@ function! s:latexmk(...) abort
     let flags = substitute(flags, '\(^\|\s\)\zs\(-d\|--diff\)\>', '--prev=' . prev, '')
   endif
   let command = 'latexmk ' . flags . ' ' . linenum . ' ' . path
-  let popup = flags !~# '\(^\|\s\)\(-q\|--quick\)\>'
+  let popup = flags !~# '\(^\|\s\)\(-a\|--aux\)\>'
   call popup#job_win(command, popup)
 endfunction
 
@@ -48,12 +48,12 @@ command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
 noremap <buffer> <Leader>{ <Cmd>call <sid>latexmk('--diff')<CR>
 noremap <buffer> <Leader>} <Cmd>call <sid>latexmk('--word')<CR>
 noremap <buffer> <Leader>\| <Cmd>call <sid>latexmk('--diff --word')<CR>
-noremap <buffer> <Leader>[ <Cmd>call <sid>latexmk('--aux-only')<CR>
-noremap <buffer> <Leader>] <Cmd>call <sid>latexmk('--aux-only')<CR>
+noremap <buffer> <Leader>[ <Cmd>call <sid>latexmk('--aux')<CR>
+noremap <buffer> <Leader>] <Cmd>call <sid>latexmk('--aux')<CR>
 noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--raw')<CR>
 noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk()<CR>
-noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--skip-bib')<CR>
-noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--pdf-only')<CR>
+noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--nobbl')<CR>
+noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--pdf')<CR>
 
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending
 " and appending the strings with single quotes. This lets us make input()
