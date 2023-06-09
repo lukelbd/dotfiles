@@ -22,7 +22,7 @@ dependencies:
   - netCDF4
   - cftime
   - cf_xarray
-  - pint_xarray
+  - pint-xarray
   - matplotlib<3.6
   - cartopy
   - seaborn
