@@ -6,6 +6,7 @@ name: base
 channels:
   - conda-forge
 dependencies:
+  - pip
   - vim
   - cdo
   - nco
@@ -16,11 +17,11 @@ dependencies:
   - dask
   - pandas
   - xarray
-  - xarray==2022.01.01
+  - xarray<=2022.01.01
   - scipy
   - netCDF4
   - cftime
-  - cf-xarray
+  - cf_xarray
   - pint_xarray
   - matplotlib<3.6
   - cartopy
@@ -29,12 +30,12 @@ dependencies:
   - jupytext
   - nb_conda_kernels
   - jupyter
-  - jupyter-lsp
   - jupyter_nbextensions_configurator
   - jupyterlab<4.0.0
   - jupyterlab_server
+  - jupyter-lsp
   - jupyterlab-lsp
-  - jupyterlab-code-formatter
+  - jupyterlab_code_formatter
   - pip:
     - cf_units
     - icecream
