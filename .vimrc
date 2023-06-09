@@ -1150,7 +1150,11 @@ let g:vim_textobj_parameter_mapping = '='  " avoid ',' conflict with latex
 " call plug#('godlygeek/tabular')
 call plug#('junegunn/vim-easy-align')
 
-" Python utilities
+" Python and related utilities
+" Todo: Test vim-repl, seems to support all REPLs, but only :terminal is supported.
+" Todo: Test vimcmdline, claims it can also run in tmux pane or 'terminal emulator'.
+" call plug#('sillybun/vim-repl')  " run arbitrary code snippets
+" call plug#('jalvesaq/vimcmdline')  " run arbitrary code snippets
 " call plug#('vim-scripts/Pydiction')  " just changes completeopt and dictionary and stuff
 " call plug#('cjrh/vim-conda')  " for changing anconda VIRTUALENV but probably don't need it
 " call plug#('klen/python-mode')  " incompatible with jedi-vim and outdated
