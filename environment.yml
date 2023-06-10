@@ -1,25 +1,35 @@
-# General packages to install
-# Use this when changing conda distributions
+# General packages to install.
+# Use this on new servers with mamba env update -f environment.yml
 # NOTE: mamba cf_units has outdated python requirements so use pip
 # NOTE: recent xarray version has multi-index issues: https://github.com/pydata/xarray/issues/7695
+# NOTE: rm -r ~/.julia/registries to fix install issues: https://stackoverflow.com/a/59300263/4970632
+# NOTE: after installing julia, its package manager will use the environment: https://stackoverflow.com/a/45947604/4970632
 name: base
 channels:
   - conda-forge
 dependencies:
   - pip
+  - python
+  - julia
+  - bash
+  - python-lsp-server
+  - julia-language-server
+  - bash-language-server
   - vim
-  - cdo
+  - deno
+  - ctags
+  - tmux
+  - bc
   - nco
+  - cdo
   - pynco
   - python-cdo
-  - deno
   - numpy
+  - scipy
   - dask
   - pandas
-  - xarray
+  - netcdf4
   - xarray<=2022.01.01
-  - scipy
-  - netCDF4
   - cftime
   - cf_xarray
   - pint-xarray
