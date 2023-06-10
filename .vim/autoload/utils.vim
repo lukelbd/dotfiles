@@ -30,11 +30,20 @@ function! utils#close_bufs()
   endif
 endfunction
 
+" Parsing function
+" Note: Rg is faster so use by default: https://unix.stackexchange.com/a/524094/112647
+function! utils#grep_escape(...) abort
+  let args = []
+  for item in a:000
+    call add(args, fzf#shellescape(item))  " from ~/.fzf/plugin, but used by fzf.vim
+  endfor
+  return join(args, ' ')
+endfunction
+
 " Search term for Rg and Ag
 " Todo: Learn other options for rg and ag, write bashrc helpers
-" Note: Rg is faster so use by default: https://unix.stackexchange.com/a/524094/112647
 function! utils#grep_command(cmd) abort
-  let prompt = "Search pattern (default '" . @/ . "'): "
+  let prompt = a:cmd . " pattern (default '" . @/ . "'): "
   let search = input(prompt, '', 'customlist,utils#null_list')
   let search = empty(search) ? @/ : search
   let path = expand('%:h')
