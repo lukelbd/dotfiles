@@ -1798,11 +1798,9 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  nnoremap <Leader>$
-      \ <Cmd>if !empty(v:this_session) \| exe 'Obsession ' . v:this_session
-      \ \| else \| exe 'Obsession .vimsession' \| endif<CR>
+  nnoremap <Leader>$ <Cmd>call utils#init_session()<CR>
+  command! -nargs=? Session call utils#init_session(<q-args>)
 endif
-
 
 "-----------------------------------------------------------------------------"
 " Syntax stuff

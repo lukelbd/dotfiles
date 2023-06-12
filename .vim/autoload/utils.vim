@@ -1,6 +1,19 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
+" Helper function for comparing values
+" Copied from: https://vi.stackexchange.com/a/14359
+function! s:compare(a, b) abort
+  for i in range(len(a:a))
+    if a:a[i] < a:b[i]
+      return -1
+    elseif a:a[i] > a:b[i]
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
 " Clear writable registers. On some vim versions [] fails (is ideal,
 " because removes from :registers), but '' will at least empty them out.
 " See: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
@@ -59,6 +72,21 @@ function! utils#grep_pattern(regex) abort
   let result = split(system("grep '" . regex . "' " . shellescape(@%) . ' 2>/dev/null'), "\n")
   echo join(result, "\n")
   return result
+endfunction
+
+" Create obsession file and possibly remove old one
+function! utils#init_session(...)
+  if !exists(':Obsession')
+    echoerr ':Obsession is not installed.'
+    return
+  endif
+  let current = v:this_session
+  let session = a:0 ? a:1 : !empty(current) ? current : '.vimsession'
+  exe 'Obsession ' . session
+  if !empty(current) && fnamemodify(session, ':p') != fnamemodify(current, ':p')
+    echom 'Removing old session file ' . fnamemodify(current, ':t')
+    call delete(current)
+  endif
 endfunction
 
 " Null input() completion function to prevent unexpected insertion of literal tabs
@@ -134,19 +162,6 @@ function! utils#reverse_lines() range abort
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   let num = empty(range) ? 0 : a:firstline - 1
   exec 'silent ' . range . 'g/^/m' . num
-endfunction
-
-" Helper function for comparing values
-" Copied from: https://vi.stackexchange.com/a/14359
-function! s:compare(a, b) abort
-  for i in range(len(a:a))
-    if a:a[i] < a:b[i]
-      return -1
-    elseif a:a[i] > a:b[i]
-      return 1
-    endif
-  endfor
-  return 0
 endfunction
 
 " Switch to next or previous colorschemes and print the name
