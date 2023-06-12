@@ -2,6 +2,7 @@
 .proplot/cmaps
 .vim/plugged
 .vim/black
+.vim-lsp-settings/servers
 empty*
 test*
 *.log

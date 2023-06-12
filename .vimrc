@@ -122,10 +122,10 @@ let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
 let s:popup_filetypes = [
-  \ 'help', '__doc__', 'ale-preview', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ 'help', '__doc__', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
   \ ]  " for popup toggle
 let s:popup_filetypes += [
-  \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'qf', 'undotree', 'vim-plug'
+  \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
   \ ]
 
 " Override settings and syntax, even buffer-local. The URL regex was copied
@@ -383,18 +383,20 @@ nnoremap <C-s> <Cmd>call tabline#write()<CR>
 nnoremap <C-w> <Cmd>call file#close_tab()<CR>
 nnoremap <C-e> <Cmd>call file#close_window()<CR>
 
-" Renaming things
+" Autosave and rename
+" Note: Here :Rename was copied from external Rename2.vim plugin
 command! -nargs=* -complete=file -bang Rename call file#rename('<args>', '<bang>')
+command! -nargs=? Autosave call switch#autosave(<args>)
+nnoremap <Leader>A <Cmd>call switch#autosave()<CR>
 
 " Refreshing things
+" Note: Mru opens popup window of recent files. Selecting will replace the
+" current buffer with that file so has similar effect to :edit.
 command! Refresh call file#refresh()
 nnoremap <Leader>r <Cmd>redraw!<CR>
 nnoremap <Leader>R <Cmd>Refresh<CR>
 nnoremap <Leader>e <Cmd>edit<CR>
-
-" Autosave with SmartWrite using utils function
-command! -nargs=? Autosave call switch#autosave(<args>)
-nnoremap <Leader>A <Cmd>call switch#autosave()<CR>
+nnoremap <Leader>E <Cmd>Mru<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -412,6 +414,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Tab selection and movement
 nnoremap <Tab>' <Cmd>tabnext #<CR>
+nnoremap <Tab>" <Cmd>Wipeout<CR>
 nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
 nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
 nnoremap <Tab>> <Cmd>call file#tab_move(tabpagenr() + v:count1)<CR>
@@ -490,8 +493,7 @@ augroup END
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Warning: The fzf#vim#ag call to fzf#shellescape (in ~/.fzf/plugin folder) and
-" the defualt :Rg use of shellescape() prevents us from specifying paths in the
-" utils mappings. So bypass below
+" the :Rg use of shellescape() prevents us from specifying paths. So bypass below.
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
 " Note: Here the 'k' is just easy to access and 'v' is for vim commands
 " Note: Difficult to pass flags to Ag/Rg with default interface. Solve with below.
@@ -552,6 +554,11 @@ noremap <Right> <C-i>
 " Navigate to marks or lines with FZF
 nnoremap <Leader>' <Cmd>Marks<CR>
 nnoremap <Leader>" <Cmd>BLines<CR>
+
+" Default increment and decrement mappings
+" Possibly overwritten by vim-speeddating
+noremap + <C-a>
+noremap - <C-x>
 
 " Free up m keys, so ge/gE command belongs as single-keystroke
 " words along with e/E, w/W, and b/B
@@ -987,20 +994,25 @@ call plug#('psf/black')
 call plug#('tomtom/tcomment_vim')
 
 " Running tests and stuff
-" Note: This works for every filetype (simliar to ale)
+" Note: This works for every filetype (simliar to ale). Set up various
+" shortcuts to test whole file, current test, next test, etc.
 call plug#('vim-test/vim-test')
 
 " Inline code handling
-" Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
-" will have all filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
+" Note: Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
+" will have filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
 " call plug#('AndrewRadev/inline_edit.vim')
 
-" Sessions and swap files and reloading. Mapped in my .bashrc
-" to vim -S .vimsession and exiting vim saves the session there
+" Restoring sessions and recent files. Use 'vim-session' bash function to restore from
+" .vimsession or start new session with that file, or 'vim' then ':so .vimsession'.
+" Note: Here mru can be used to replace current file in window with files from recent
+" popup list. Useful e.g. if lsp or fugitive plugins accidentally replace buffer.
 " call plug#('thaerkh/vim-workspace')
 " call plug#('gioele/vim-autoswap')  " deals with swap files automatically; no longer use them so unnecessary
 " call plug#('xolox/vim-reload')  " easier to write custom reload function
-call plug#('tpope/vim-obsession')
+call plug#('tpope/vim-obsession')  " sparse features on top of built-in session behavior
+call plug#('yegappan/mru')  " most recent file
+call plug#('artnez/vim-wipeout')  " remove open buffers
 
 " Git wrappers and differencing tools
 " vim-flog and gv.vim are heavyweight and lightweight commit viewing plugins
@@ -1025,8 +1037,8 @@ let g:speeddating_no_mappings = 1
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
 " centered on bottom. Note fzf#wrap is required to apply global settings and cannot
 " rely on fzf#run return values (will result in weird hard-to-debug issues).
-" See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
+" See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " call plug#('Shougo/pum.vim')  " pum completion mappings, but mine are nicer
 " call plug#('Shougo/unite.vim')  " first generation
 " call plug#('Shougo/denite.vim')  " second generation
@@ -1044,18 +1056,19 @@ let g:fzf_action = {
   \ 'ctrl-v': 'vsplit'
   \ }
 
-" Language servers
+" Language server integration
 " Note: Seems vim-lsp can both detect servers installed separately in $PATH with
-" e.g. mamba install python-lsp-server (needed for jupyterlab-lsp) or install and
-" uninstall them individually in ~/.local/share/vim-lsp-settings/servers/<server>
-" using LspInstallServer and LspUninstallServer (servers written in python are
-" installed with pip inside 'venv' virtual environment subfolders). Most likely
-" harmless if both external and internal are installed but try to avoid.
+" e.g. mamba install python-lsp-server (needed for jupyterlab-lsp) or install
+" individually in ~/.local/share/vim-lsp-settings/servers/<server> using the
+" vim-lsp-settings plugin commands :LspInstallServer and :LspUninstallServer
+" (servers written in python are installed with pip inside 'venv' virtual environment
+" subfolders). Most likely harmless if duplicate installations but try to avoid.
 " call plug#('natebosch/vim-lsc')  " alternative lsp client
 if s:enable_lsp
   call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero config needed!
   call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
   call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
+	call plug#('rhysd/vim-healthcheck')  " plugin help
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
 endif
 
@@ -1237,6 +1250,8 @@ call plug#('flazz/vim-colorschemes')  " for macvim
 call plug#('fcpg/vim-fahrenheit')  " for macvim
 call plug#('KabbAmine/yowish.vim')  " for macvim
 call plug#('lilydjwg/colorizer')  " only in macvim or when &t_Co == 256
+let g:colorizer_nomap = 1
+let g:colorizer_startup = 0
 
 " Helpful stuff
 " call plug#('dkarter/bullets.vim')  " list numbering but completely fails
@@ -1286,7 +1301,7 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" Add weird mappings powered by Karabiner. Note that custom delimiters
+" Additional mappings powered by Karabiner. Note that custom delimiters
 " are declared inside vim-succinct plugin functions rather than here.
 if s:plug_active('vim-succinct')
   let g:succinct_surround_prefix = '<C-s>'
@@ -1395,21 +1410,20 @@ if s:plug_active('vim-signature')
 endif
 
 " Lsp integration settings
+" Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
+" plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
+" vim-lsp-settings/servers files in .config. See: https://github.com/mattn/vim-lsp-settings
 " Note: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
 " 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
-" Note: Use :LspInstallServer and :LspUninstallServer to enable or disable lsp for
-" specific filetypes. For example texlab is slow so use :LspUninstallServer texlab.
-" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
-" https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
+" Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
 " Note: LspDefinition may jump to another file in current window. Instead should
 " just use peek to see definition and only use built-in 'gd' local definitions.
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 " Note: Previously had issues with markdown preview display in popup windows but
 " fixed. See this thread: https://github.com/prabirshrestha/vim-lsp/pull/1086
-" Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
-" plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
-" vim-lsp-settings/servers files in .config. See: https://github.com/mattn/vim-lsp-settings
+" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
+" https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
 if s:plug_active('vim-lsp')
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
@@ -1419,7 +1433,8 @@ if s:plug_active('vim-lsp')
   noremap <Leader>& <Cmd>LspSignatureHelp<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
   noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup(0)<CR>
-  noremap <Leader>^ <Cmd>LspStatus<CR>
+  noremap <Leader>^ <Cmd>verbose LspStatus<CR>
+  noremap <Leader>` <Cmd>CheckHealth<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> gd
   " nnoremap <CR> [<C-i>  " jump to vim definition
@@ -1436,9 +1451,13 @@ if s:plug_active('vim-lsp')
   let g:lsp_preview_max_width = 80
   let g:lsp_preview_max_height = 30
   let g:lsp_signature_help_delay = 100  " milliseconds
+  let g:lsp_settings_servers_dir = $HOME . '/.vim-lsp-settings/servers'
+  let g:lsp_settings_global_settings_dir = $HOME . '/.vim-lsp-settings'
   " let g:lsp_settings = {
   " \   'pylsp': {'workspace_config': {'pylsp': {}}}
   " \   'texlab': {'workspace_config': {'texlab': {}}}
+  " \   'julia-language-server': {'workspace_config': {'julia-language-server': {}}}
+  " \   'bash-language-server': {'workspace_config': {'bash-language-server': {}}}
   " \ }
 endif
 
@@ -1450,10 +1469,9 @@ endif
 " Note: Try to limit memory to 50M. Engine flags are passed to '--v8-flags' flag
 " as of deno 1.17.0? See: https://stackoverflow.com/a/72499787/4970632
 " Note: Use 'converters': [], 'matches': ['matcher_head'], 'sorters': ['sorter_rank']
-" to speed up or disable fuzzy completion.
-" See: https://github.com/Shougo/ddc-ui-native
-" See: https://github.com/Shougo/ddc.vim#configuration.
-" See: https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
+" to speed up or disable fuzzy completion. See: https://github.com/Shougo/ddc-ui-native
+" and https://github.com/Shougo/ddc.vim#configuration. Also for general config
+" inspiration see https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
 if s:plug_active('ddc.vim')
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
@@ -1759,33 +1777,22 @@ if s:plug_active('codi.vim')
 endif
 
 " Speed dating, support date increments
+" Note: This overwrites default increment/decrement plugins
 if s:plug_active('vim-speeddating')
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp   <C-a>
   noremap <Plug>SpeedDatingFallbackDown <C-x>
-else
-  noremap + <C-a>
-  noremap - <C-x>
 endif
 
 " The howmuch.vim plugin. Mnemonic for equation solving is just that parentheses
 " show up in equations. Mnemonic for sums is the straight line at bottom of table.
-" Options are: AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend,
-" AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
+" Options: AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend, AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
 if s:plug_active('HowMuch')
   vmap <Leader>( <Plug>AutoCalcReplace
   vmap <Leader>) <Plug>AutoCalcAppendWithEq
   vmap <Leader>- <Plug>AutoCalcReplaceWithSum
   vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
-endif
-
-" Colorizer is very expensive for large files so only ever
-" activate manually. Mapping mnemonic is # for hex string
-if s:plug_active('colorizer')
-  let g:colorizer_nomap = 1
-  let g:colorizer_startup = 0
-  nnoremap <Leader># <Cmd>ColorToggle<CR>
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
@@ -1900,13 +1907,15 @@ highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 highlight link pythonImportedObject Identifier
 highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 
-" Helper commands defined in utils
+" Syntax helper commands
+" Note: Mapping mnemonic for colorizer is # for hex string
 command! -nargs=0 CurrentColor vert help group-name
 command! -nargs=0 CurrentGroup call popup#syntax_group()
 command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
 command! -nargs=0 ShowColors call popup#colors_win()
 command! -nargs=0 ShowPlugin call popup#plugin_win()
 command! -nargs=0 ShowSyntax call popup#syntax_win()
+noremap <Leader># <Cmd>ColorToggle<CR>
 noremap <Leader>1 <Cmd>CurrentColor<CR>
 noremap <Leader>2 <Cmd>CurrentGroup<CR>
 noremap <Leader>3 <Cmd>CurrentSyntax<CR>
