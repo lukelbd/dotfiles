@@ -243,7 +243,10 @@ function! s:format_units(value) abort
         echohl None
         return ''
       endif
-      let part = '\mathrm{' . items[1] . '}'
+      let part = items[1]
+      if part !~# '^[+-]\?[0-9.]\+$'
+        let part = '\mathrm{' . items[1] . '}'
+      endif
       if !empty(items[2])
         let part .= '^{' . items[2] . '}'
       endif

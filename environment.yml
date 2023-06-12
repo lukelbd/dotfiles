@@ -15,6 +15,12 @@ dependencies:
   - python-lsp-server
   - julia-language-server
   - bash-language-server
+  - flake8
+  - black
+  - isort
+  - shellcheck
+  - pytest
+  - pandoc
   - vim
   - deno
   - ctags
@@ -37,9 +43,11 @@ dependencies:
   - cartopy
   - seaborn
   - metpy
+  - ipython
+  - ipykernel
+  - jupyter
   - jupytext
   - nb_conda_kernels
-  - jupyter
   - jupyter_nbextensions_configurator
   - jupyterlab<4.0.0
   - jupyterlab_server
@@ -47,6 +55,9 @@ dependencies:
   - jupyterlab-lsp
   - jupyterlab_code_formatter
   - pip:
+    - bashate
+    - vim-vint
     - cf_units
     - icecream
     - esgf-pyclient
+    - flake8-unused-arguments

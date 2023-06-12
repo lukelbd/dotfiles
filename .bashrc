@@ -4,13 +4,14 @@
 # This file should override defaults in /etc/profile in /etc/bashrc. Check
 # out what is in the system defaults before using this and make sure your
 # $PATH is populated. To permit pulling from github use ssh-keygen -R
-# github.com and to SSH between serverse use the below link:
+# github.com and to SSH between servers use the below link:
 # https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key/
 # https://thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# * To see what is available for various package/environment managers use e.g.
-#   brew list (--cask|--formulae), port installed (requested),
-#   tlmgr list --only-installed, conda (env) list (or list <package>),
-#   pip list (or info <package>), jupyter kernelspec||labextension|nbextension list
+# * To see what is available for package/environment managers, possibly ignoring
+#   dependencies, use e.g. brew (list|leaves|deps --installed) (--cask|--formulae),
+#   port installed (requested), tlmgr list --only-installed, mamba (env) list (or list
+#   <package>), mamba env export --from-history (no deps), pip (list|feeze) (or info
+#   <package>), pip-chill (no deps), jupyter kernelspec||labextension|nbextension list.
 # * For ARM-copatible version of chromium tried 'brew install --cask eloston-chromium'
 #   but seems to sometimes download intel version. Instead follow these links:
 #   https://github.com/ungoogled-software/ungoogled-chromium#downloads
@@ -1931,13 +1932,14 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # * Inline info puts the number line thing on same line as text.
   # * Bind slash to accept so behavior matches shell completion behavior.
   # * Enforce terminal background default color using -1 below.
+  # * Could use --select-1 to auto-select single result but want interactive instead.
   # * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
   _setup_message 'Enabling fzf'
   # shellcheck disable=2034
   {
     _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
-    --select-1 --exit-0 --inline-info --height=6 \
+    --exit-0 --inline-info --height=6 \
     --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
     "
     export FZF_DEFAULT_OPTS="$_fzf_opts"  # critical to export so used by vim
@@ -2166,16 +2168,15 @@ fi
 #-----------------------------------------------------------------------------
 # Mac stuff
 #-----------------------------------------------------------------------------
-# TODO: This hangs when run from interactive cluster node, we test by comparing
-# hostname variable with command (variable does not change)
 if $_macos; then # first the MacOS options
-  # Homebrew-bash as default shell
+  # Homebrew bash as default shell
+  # NOTE: Use 'brew install bash' and 'brew install bash-language-server'
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null \
     || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
-  # Audio and video utlis
+  # Audio utilities
   strip_audio() {
     local file
     for file in "$@"; do

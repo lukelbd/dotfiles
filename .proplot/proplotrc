@@ -8,7 +8,7 @@
 # NOTE: Avoid Helvetica Neue since text rendering is weird and
 # short with lower-resolution inline jupyter notebook backend.
 # figure.max_open_warning: 0
-# font.name: Helvetica Neue
+font.name: Helvetica
 figure.dpi: 110
 
 # Proplot settings
