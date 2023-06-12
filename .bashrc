@@ -10,7 +10,7 @@
 # * To see what is available for package/environment managers, possibly ignoring
 #   dependencies, use e.g. brew (list|leaves|deps --installed) (--cask|--formulae),
 #   port installed (requested), tlmgr list --only-installed, mamba (env) list (or list
-#   <package>), mamba env export --from-history (no deps), pip (list|feeze) (or info
+#   <package>), mamba env export --from-history (no deps), pip (list|feeze) (or show
 #   <package>), pip-chill (no deps), jupyter kernelspec||labextension|nbextension list.
 # * For ARM-copatible version of chromium tried 'brew install --cask eloston-chromium'
 #   but seems to sometimes download intel version. Instead follow these links:
@@ -600,6 +600,16 @@ git() {
   command git "$@"
 }
 
+# Either pipe the output of the remaining commands into the less pager
+# or open the files. Use the latter only for executables on $PATH
+less() {
+  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
+    "$@" 2>&1 | command less  # pipe output of command
+  else
+    command less "$@"  # show files in less
+  fi
+}
+
 # Simple pseudo-vi editor
 # See: https://vi.stackexchange.com/a/6114
 vi() {
@@ -620,22 +630,23 @@ vim() {
 # Open session and fix various bugs. For some reason folds
 # are otherwise re-closed upon openening each file.
 vim-session() {
-  [ -r .vimsession ] || { echo "Error: .vimsession file not found."; return 1; }
-  sed -i '/zt/a setlocal nofoldenable' .vimsession  # unfold everything
-  sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession  # remove folds
-  sed -i -s 'N;/normal! zo/!P;D' .vimsession  # remove folds
-  sed -i -s 'N;/normal! zc/!P;D' .vimsession  # remove folds
-  vim -S .vimsession "$@"  # use above function
-}
-
-# Either pipe the output of the remaining commands into the less pager
-# or open the files. Use the latter only for executables on $PATH
-less() {
-  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
-    "$@" 2>&1 | command less  # pipe output of command
-  else
-    command less "$@"  # show files in less
-  fi
+  local arg path flags  # flags and session file
+  for arg in "$@"; do
+    if [[ "$arg" =~ ^-.* ]]; then
+      flags+=("$arg")
+    elif [ -z "$path" ]; then
+      path="$arg"
+    else
+      echo 'Error: Too many input args.'
+      return 1
+    fi
+  done
+  [ -z "$path" ] && path=.vimsession
+  [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
+  sed -i '/zt/a setlocal nofoldenable' "$path"  # unfold everything
+  sed -i 's/^[0-9]*,[0-9]*fold$//g' "$path"  # remove folds
+  sed -i -s 'N;/normal! z[oc]/!P;D' "$path"  # remove folds
+  vim -S "$path" "${flags[@]}"  # call above function
 }
 
 # Absolute path, works everywhere (mac, linux, or anything with bash)

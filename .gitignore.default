@@ -20,7 +20,7 @@ garbage*
 
 # Vim session files and swap files
 tags
-.vimsession
+.vimsession*
 .*.sw[a-z]
 
 # Python stuff

@@ -13,7 +13,7 @@ tags
 tmp
 
 # Vim extras, binary spell files
-.vimsession
+.vimsession*
 .*.sw[a-z]
 *.spl
 
