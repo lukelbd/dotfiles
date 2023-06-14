@@ -42,8 +42,9 @@ endfunction
 " Note: This removes $HOME folder and current path from string.
 function! s:open_prompt(path) abort
   let prompt = a:path
+  let prompt = substitute(prompt, '^\~', expand('~'), '')  " see also file.vim
+  let prompt = substitute(prompt, '^' . getcwd(), '.', '')
   let prompt = substitute(prompt, '^' . expand('~'), '~', '')
-  let prompt = substitute(prompt, '^' . fnamemodify('.', ':p'), '.', '')
   let prompt = empty(prompt) ? '.' : prompt
   return prompt . '/'  " remove user folder
 endfunction

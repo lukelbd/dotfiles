@@ -362,6 +362,7 @@ noremap <C-g> <Cmd>GFiles<CR>
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
 noremap <Leader>i <Cmd>call switch#localdir()<CR>
+noremap <Leader>I <Cmd>tabe \| exe 'SuperMan ' . input('Man page: ', '', 'shellcmd')<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
 noremap <Leader>F <c-w>gf
 
@@ -485,19 +486,25 @@ augroup popup_setup
   endfor
 augroup END
 
+" Interactive file jumping with grep commands
+" Note: These redefinitions add flexibility to native fzf.vim commands,
+" mnemonic for alternatives is 'local directory' or 'current file'. Also note Rg
+" is faster so it gets lower case: https://unix.stackexchange.com/a/524094/112647
+" command! -bang -nargs=* Af call utils#grep_ag(<bang>0, 2, 0, <f-args>)
+" command! -bang -nargs=* Rf call utils#grep_rg(<bang>0, 2, 0, <f-args>)
+command! -bang -nargs=* Ag call utils#grep_ag(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=* Rg call utils#grep_rg(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=* Al call utils#grep_ag(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=* Rl call utils#grep_rg(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=* A1 call utils#grep_ag(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=* R1 call utils#grep_rg(<bang>0, 0, 1, <f-args>)
+" nnoremap <Leader>n <Cmd>call utils#grep_pattern('ag', 1, 0)<CR>
+" nnoremap <Leader>N <Cmd>call utils#grep_pattern('ag', 0, 0)<CR>
+nnoremap <Leader>n <Cmd>call utils#grep_pattern('rg', 1, 0)<CR>
+nnoremap <Leader>N <Cmd>call utils#grep_pattern('rg', 0, 0)<CR>
+
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
-" Warning: The fzf#vim#ag call to fzf#shellescape (in ~/.fzf/plugin folder) and
-" the :Rg use of shellescape() prevents us from specifying paths. So bypass below.
-" Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
-" Note: Here the 'k' is just easy to access and 'v' is for vim commands
-" Note: Difficult to pass flags to Ag/Rg with default interface. Solve with below.
-" Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
-" Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
-let s:cmd = 'rg --column --line-number --no-heading --color=always --smart-case '
-let s:agflags = '--path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'
-let s:rgflags = '--no-ignore-vcs --hidden'
-command! -bang -nargs=* Ag call fzf#vim#ag_raw(s:agflags . ' -- ' . utils#grep_parse(<f-args>), fzf#vim#with_preview(), <bang>0)
-command! -bang -nargs=* Rg call fzf#vim#grep(s:cmd . s:rgflags . ' -- ' . utils#grep_parse(<f-args>), fzf#vim#with_preview(), <bang>0)
+" Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
 nnoremap <Leader>. :<Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
@@ -507,8 +514,6 @@ nnoremap <Leader>v <Cmd>Help<CR>
 nnoremap <Leader>V <Cmd>call popup#help_win()<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
-nnoremap <Leader>n <Cmd>call utils#grep_command('Rg')<CR>
-nnoremap <Leader>N <Cmd>call utils#grep_command('Ag')<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -1334,8 +1339,8 @@ if s:plug_active('vim-tags')
     endif
   endfunction
   nnoremap <C-t> <Cmd>UpdateTags<CR>
-  nnoremap <Leader>t <Cmd>BTags<CR>
-  nnoremap <Leader>T <Cmd>ShowTags<CR>
+  nnoremap <Leader>t <Cmd>ShowTags<CR>
+  nnoremap <Leader>T <Cmd>BTags<CR>
   let g:tags_subtop_filetypes = ['fortran']
   let g:tags_scope_kinds = {
     \ 'vim': 'afc',
@@ -1683,6 +1688,7 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
+  noremap <Leader>g <Cmd>GitGutterStageHunk<CR>
   noremap <Leader>G <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>h <Cmd>BCommits<CR>
   noremap <Leader>H <Cmd>Commits<CR>
@@ -1709,8 +1715,7 @@ if s:plug_active('vim-gitgutter')
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
   noremap ]g <Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
   noremap [g <Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
-  noremap <Leader>g <Cmd>call switch#gitgutter()<CR>
-  noremap <Leader>O <Cmd>GitGutterStageHunk<CR>
+  noremap <Leader>O <Cmd>call switch#gitgutter()<CR>
   noremap <Leader>P <Cmd>GitGutterUndoHunk<CR>
   noremap <Leader>p <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
 endif

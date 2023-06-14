@@ -1,7 +1,7 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
-" Comapre position indices [lnum, col, idx]
+" Compare position indices [lnum, col, idx]
 " See: https://vi.stackexchange.com/a/14359
 function! s:compare_lists(a, b) abort
   for i in range(len(a:a))
@@ -14,31 +14,66 @@ function! s:compare_lists(a, b) abort
   return 0
 endfunction
 
-" Call Rg or Ag grep commands
-" Todo: Support dynamically passing other flags
-function! utils#grep_command(cmd) abort
-  let prompt = a:cmd . " pattern (default '" . @/ . "'): "
-  let search = input(prompt, '', 'customlist,utils#null_list')
-  let search = empty(search) ? @/ : search
-  let path = expand('%:h')  " command also translates regex
-  exe a:cmd . ' ' . search . ' ' . path
+" Grep commands
+" Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
+" Todo: Jump to existing windows when present instead of duplicating?
+" Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
+" Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
+function! utils#grep_ag(bang, level, depth, ...) abort
+  let flags = '--path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'
+  let extra = a:depth ? ' --depth ' . (a:depth - 1) : ''
+  let args = call('utils#grep_parse', [a:level] + a:000)
+  " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
+  " let opts = fzf#vim#with_preview(opts)
+  let opts = fzf#vim#with_preview()
+  call fzf#vim#ag_raw(flags . ' -- ' . args, opts, a:bang)  " bang uses fullscreen
+endfunction
+function! utils#grep_rg(bang, level, depth, ...) abort
+  let flags = '--no-ignore-vcs --hidden'
+  let extra = a:depth ? ' --max-depth ' . a:depth : ''
+  let args = call('utils#grep_parse', [a:level] + a:000)
+  " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
+  " let opts = fzf#vim#with_preview(opts)
+  let opts = fzf#vim#with_preview()
+  let cmd = 'rg --column --line-number --no-heading --color=always --smart-case '
+  call fzf#vim#grep(cmd . ' ' . flags . extra . ' -- ' . args, opts, a:bang)  " bang uses fullscreen
 endfunction
 
 " Parse grep args and translate regex indicators
-" Note: Rg is faster so use by default: https://unix.stackexchange.com/a/524094/112647
-function! utils#grep_parse(...) abort
-  let args = []
-  for item in a:000
-    let item = substitute(item, '\(\\<\|\\>\)', '\\b', 'g')  " translate word borders
-    let item = substitute(item, '\(\\c\|\\C\)', '', 'g')  " smartcase imposed by flag
-    let item = substitute(item, '\\S', "[^ \t]", 'g')
-    let item = substitute(item, '\\s', "[ \t]",  'g')
-    let item = substitute(item, '\\[ikf]', '\\w', 'g')
-    let item = substitute(item, '\\[IKF]', '[a-zA-Z_]', 'g')
-    let item = fzf#shellescape(item)
-    call add(args, item)  " from ~/.fzf/plugin, but used by fzf.vim
+" Warning: Strange bug seems to cause :Ag and :Rg to only work on individual files
+" if more than one file is passed. Otherwise preview window shows 'file is not found'
+" error and selecting from menu fails. So always pass extra dummy name.
+function! utils#grep_parse(level, search, ...) abort
+  let regex = fzf#shellescape(a:search)  " similar to native but handles other shells
+  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g')  " translate word borders
+  let regex = substitute(regex, '\(\\c\|\\C\)', '', 'g')  " smartcase imposed by flag
+  let regex = substitute(regex, '\\S', "[^ \t]", 'g')  " non-whitespace characters
+  let regex = substitute(regex, '\\s', "[ \t]",  'g')  " whitespace characters
+  let regex = substitute(regex, '\\[ikf]', '\\w', 'g')  " keyword, identifier, filename
+  let regex = substitute(regex, '\\[IKF]', '[a-zA-Z_]', 'g')  " same but no numbers
+  let paths = a:000  " list of paths
+  if empty(paths)  " default path or directory
+    let paths = [a:level > 1 ? @% : a:level > 0 ? expand('%:h') : getcwd()]
+  endif
+  let cmd = regex  " concatenated paths
+  for path in paths  " iterate over all
+    let path = substitute(path, '^\~', expand('~'), '')  " see also file.vim
+    let path = substitute(path, '^' . getcwd(), '.', '')
+    let path = substitute(path, '^' . expand('~'), '~', '')
+    let cmd = cmd . ' ' . path  " do not escape paths to permit e.g. glob patterns
   endfor
-  return join(args, ' ')
+  return cmd . ' dummy.fzf'  " fix bug described above
+endfunction
+
+" Call Rg or Ag grep commands
+" Todo: Support
+function! utils#grep_pattern(grep, level, depth) abort
+  let prompt = toupper(a:grep[0]) . a:grep[1:] . " pattern (default '" . @/ . "'): "
+  let search = input(prompt, '', 'customlist,utils#null_list')
+  let search = empty(search) ? @/ : search
+  let path = expand('%:h')  " command also translates regex
+  let func = 'utils#grep_' . tolower(a:grep)
+  call call(func, [0, a:level, a:depth, search])
 endfunction
 
 " Null input() completion function to prevent unexpected insertion of literal tabs

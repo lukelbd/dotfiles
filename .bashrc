@@ -484,10 +484,9 @@ _columnize() {
 
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
-# alias phone-mount='simple-mtpfs -f -v ~/Phone'
 alias du='du -h'
+alias d1='du -h -d 1'  # single directory, see also r1 a1
 alias df='df -h'
-alias d1='du -h -d 1'  # see also r0 a0
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
