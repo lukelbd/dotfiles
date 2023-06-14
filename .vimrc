@@ -385,7 +385,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
 command! -nargs=0 Refresh call vim#refresh_config()
 noremap <C-r> <Cmd>redraw!<CR>
-noremap <Leader>r <Cmd>Refresh<CR>
+noremap <Leader>R <Cmd>Refresh<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
 
@@ -394,7 +394,7 @@ noremap <Leader>E <Cmd>FZFMru<CR>
 " require manual closure using :qall or :quitall.
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
-nnoremap <Leader>a <Cmd>call switch#autosave()<CR>
+nnoremap <Leader>A <Cmd>call switch#autosave()<CR>
 noremap <C-s> <Cmd>call tabline#write()<CR>
 noremap <C-w> <Cmd>call vim#close_tab()<CR>
 noremap <C-e> <Cmd>call vim#close_window()<CR>
@@ -1335,12 +1335,16 @@ if s:plug_active('vim-tags')
   nnoremap <C-t> <Cmd>ShowTags<CR>
   nnoremap <Leader>t <Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>UpdateTags<CR>
-  let g:tags_nofilter_filetypes = ['fortran']
-  let g:tags_scope_filetypes = {
-    \ 'vim'     : 'afc',
-    \ 'tex'     : 'bs',
-    \ 'python'  : 'fcm',
-    \ 'fortran' : 'smfp',
+  let g:tags_subtop_filetypes = ['fortran']
+  let g:tags_scope_kinds = {
+    \ 'vim': 'afc',
+    \ 'tex': 'bs',
+    \ 'python': 'fcm',
+    \ 'fortran': 'smfp',
+    \ }
+  let g:tags_skip_kinds = {
+    \ 'tex': 'g',
+    \ 'vim': 'mvD',
     \ }
 endif
 
@@ -1426,8 +1430,8 @@ if s:plug_active('vim-lsp')
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>A <Cmd>call switch#lsp()<CR>
-  noremap <Leader>R <Cmd>LspReferences<CR>
+  noremap <Leader>a <Cmd>call switch#lsp()<CR>
+  noremap <Leader>r <Cmd>LspReferences<CR>
   noremap <Leader>& <Cmd>LspSignatureHelp<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
   noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup(0)<CR>
