@@ -45,8 +45,8 @@ endfunction
 " error and selecting from menu fails. So always pass extra dummy name.
 function! utils#grep_parse(level, search, ...) abort
   let regex = fzf#shellescape(a:search)  " similar to native but handles other shells
-  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g')  " translate word borders
-  let regex = substitute(regex, '\(\\c\|\\C\)', '', 'g')  " smartcase imposed by flag
+  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " translate word borders
+  let regex = substitute(regex, '\\[cCvV]', '', 'g')  " smartcase imposed by flag
   let regex = substitute(regex, '\\S', "[^ \t]", 'g')  " non-whitespace characters
   let regex = substitute(regex, '\\s', "[ \t]",  'g')  " whitespace characters
   let regex = substitute(regex, '\\[ikf]', '\\w', 'g')  " keyword, identifier, filename
