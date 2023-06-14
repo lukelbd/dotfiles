@@ -75,9 +75,10 @@ endfunction
 function! s:man_cursor() abort
   let bnr = bufnr()
   let curr = b:man_curr
-  let page = expand('<cWORD>')  " below copied from highlight group
-  let page = substitute(page, '([1-9][a-z]\=)\S*', '', '')
-  exe 'Man ' . page
+  let word = expand('<cWORD>')  " possibly includes trailing puncation
+  let page = matchstr(word, '\f\+')  " from highlight group
+  let num = matchstr(word, '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
+  exe 'Man ' . num . ' ' . page
   if bnr != bufnr()  " original buffer
     let b:man_prev = curr
     let b:man_curr = page
