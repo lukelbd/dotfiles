@@ -1,0 +1,61 @@
+# Ignore patterns for ripgrep 'rg' and silver searcher 'ag'
+# This file should be kept in sync with '.gitignore.default' and bashrc functions
+# Auto-generated
+.git
+.svn
+api
+_build
+plugged
+*conda*/
+*mamba*/
+externals
+site-packages
+
+# Trash folders
+tmp
+old
+trash*
+garbage*
+
+# Vim session files and swap files
+tags
+.vimsession
+.*.sw[a-z]
+
+# Python stuff
+*.pyc
+*.ipynb
+*.egg_info
+*.ipynb_checkpoints
+*.virtual_documents
+__pycache__
+
+# Common temporary files
+*.log
+*.tmp
+*.bak
+
+# Compiled source
+*.com
+*.class
+*.dll
+*.exe
+*.o
+*.so
+
+# Compressed files
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# OS-generated files
+.nfs*
+.DS_Store
+.DS_Store?
+.Trashes
+._*

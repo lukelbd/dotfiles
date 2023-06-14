@@ -30,7 +30,9 @@ function! python#start_jupyter() abort
   let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
   while !exists('folder') || !empty(folder)  " note default scope is l: (g: is ignored)
     let parent += 1
-    let folder = expand('%:p' . repeat(':h', parent) . ':t')
+    let string = '%:p' . repeat(':h', parent)
+    let folder = expand(string . ':t')
+    let path = expand(string)
     let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
     if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
   endwhile
@@ -42,10 +44,16 @@ endfunction
 " Run with popup window using conda python, not vim python (important for macvim)
 " Todo: More robust checking for anaconda python in other places.
 function! python#run_win()
-  let exe = $HOME . '/miniconda3/bin/python'
-  let proj = $HOME . '/miniconda3/share/proj'
-  let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
-  silent call popup#job_win(cmd)
+  if !exists('$CONDA_PREFIX')
+    echohl WarningMsg
+    echom 'Cannot find conda prefix.'
+    echohl None
+  else
+    let exe = $CONDA_PREFIX . '/bin/python'
+    let proj = $CONDA_PREFIX . '/share/proj'
+    let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
+    silent call popup#job_win(cmd)
+  endif
 endfunction
 
 " Run current file using either popup window or jupyter session

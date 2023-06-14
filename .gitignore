@@ -2,6 +2,7 @@
 .proplot/cmaps
 .vim/plugged
 .vim/black
+.vim-lsp-settings/servers
 empty*
 test*
 *.log
@@ -12,7 +13,7 @@ tags
 tmp
 
 # Vim extras, binary spell files
-.vimsession
+.vimsession*
 .*.sw[a-z]
 *.spl
 
@@ -38,6 +39,7 @@ __pycache__
 !jupyter_qtconsole_config.py
 !jupyter_notebook_config.py
 !jupyter_nbconvert_config.py
+!jupyter_server_config.py
 !ipython_config.py
 !ipython_kernel_config.py
 workspaces

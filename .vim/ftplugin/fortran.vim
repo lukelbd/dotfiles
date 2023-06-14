@@ -1,6 +1,6 @@
-"------------------------------------------------------------------------------"
+"------------------------------------------------------------------------------
 " Fortran settings
-"------------------------------------------------------------------------------"
+"------------------------------------------------------------------------------
 " These mostly make automatic indentation better
 " See this helpful thread: https://stackoverflow.com/a/17619568/4970632
 " See $VIMRUNTIME/indent/fortran.vim for setting the relevant global variables

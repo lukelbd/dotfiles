@@ -1,6 +1,6 @@
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Builtin TeX settings
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
 " Restrict concealmeant to just accents, Greek symbols, and math symbols
 let g:tex_conceal = 'agmdb'
 
@@ -26,23 +26,34 @@ if isdirectory(s:cache_dir)
 endif
 
 " Running custom or default latexmk command in background
-" Warning: Trailing space will be escaped as flag! So trim unless we have any options
+" Note: When 'PREVIOUS_VERSION: file.tex' or 'PERVIOUS_VERSION=file.tex' is on first
+" line, '--diff' flags passed to :Latexmk are replaced with '--prev=file.tex'.
 function! s:latexmk(...) abort
   let opts = {}  " job options, empty by default
-  let flags = trim(a:0 ? a:1 : '') . ' --line=' . string(line('.'))
-  call popup#job_win(
-    \ 'latexmk ' . flags . ' ' . shellescape(expand('%')),
-    \ flags !~# '--quick\|-q'
-    \ )
+  let path = shellescape(expand('%'))
+  let prev = matchstr(getline(1), 'PREVIOUS_VERSION\s*[:=]\s*\zs\S*\ze')
+  let flags = trim(a:0 ? a:1 : '')
+  let linenum = ' --line=' . string(line('.'))
+  if !empty(prev)
+    let flags = substitute(flags, '\(^\|\s\)\zs\(-d\|--diff\)\>', '--prev=' . prev, '')
+  endif
+  let command = 'latexmk ' . flags . ' ' . linenum . ' ' . path
+  let popup = flags !~# '\(^\|\s\)\(-a\|--aux\)\>'
+  call popup#job_win(command, popup)
 endfunction
 
 " Latexmk command and shortcuts
 " Note: This map overwrites :TestVisit but no harm for tex files.
 command! -buffer -nargs=* Latexmk call s:latexmk(<q-args>)
-noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--quick')<CR>
+noremap <buffer> <Leader>{ <Cmd>call <sid>latexmk('--diff')<CR>
+noremap <buffer> <Leader>} <Cmd>call <sid>latexmk('--word')<CR>
+noremap <buffer> <Leader>\| <Cmd>call <sid>latexmk('--diff --word')<CR>
+noremap <buffer> <Leader>[ <Cmd>call <sid>latexmk('--aux')<CR>
+noremap <buffer> <Leader>] <Cmd>call <sid>latexmk('--aux')<CR>
+noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--raw')<CR>
 noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk()<CR>
-noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--diff')<CR>
-noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--word')<CR>
+noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--nobbl')<CR>
+noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--pdf')<CR>
 
 " Snippet dictionaries. Each snippet is made into an <expr> map by prepending
 " and appending the strings with single quotes. This lets us make input()
@@ -95,6 +106,7 @@ call succinct#add_snippets({
   \ 'I': tex#ensure_math('\iint'),
   \ 'K': tex#ensure_math('\kappa'),
   \ 'L': tex#ensure_math('\Lambda'),
+  \ 'N': tex#cite_select(),
   \ 'O': tex#ensure_math('^\circ'),
   \ 'P': tex#ensure_math('\Pi'),
   \ 'Q': tex#ensure_math('\Theta'),
@@ -117,13 +129,14 @@ call succinct#add_snippets({
   \ 'k': tex#ensure_math("\1Superscript: \r..*\r^{&}\1"),
   \ 'l': tex#ensure_math('\lambda'),
   \ 'm': tex#ensure_math('\mu'),
-  \ 'n': tex#ensure_math('\nabla'),
+  \ 'n': tex#cite_select(),
   \ 'o': tex#ensure_math('\cdot'),
   \ 'p': tex#ensure_math('\pi'),
   \ 'q': tex#ensure_math('\theta'),
   \ 'r': tex#cite_select(),
   \ 's': tex#ensure_math('\sigma'),
   \ 't': tex#ensure_math('\tau'),
+  \ 'T': tex#ensure_math('\nabla'),
   \ 'u': tex#ensure_math('\gamma'),
   \ 'v': tex#ensure_math('\nu'),
   \ 'w': tex#ensure_math('\omega'),
@@ -137,16 +150,21 @@ call succinct#add_snippets({
 " Surround tools. Currently only overwrite 'r' and 'a' global bracket surrounds
 " the 'f', 'p', and 'A' surrounds, and the '(', '[', '{', and '<' surrounds.
 " Delimiters should also not overlap common text objects like 'w' and 'p'.
+" Note: In ametsoc suffix is specified with \citep[suffix]{cite1,cite2} and prefix with
+" e.g. \citep[prefix][]{cite1,cite2}. In ams this is \cite[suffix]{cite1,cite2} and
+" \cite<prefix>{cite1,cite2} and commands are \cite and \citeA instead of \citep and
+" \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty
+" brackets for filling later since synmtax is dependent on citation engine.
 " Rejected maps:
-" \ 'P': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
-" \ 'G': "\\hidecontent{\\includegraphics{\r}}",
+" \ 'E': "{\\color{red}\r}",
 " \ 'F': "\\begin{wrapfigure}{r}{0.5\\textwidth}\n\\centering\r\\end{wrapfigure}",
+" \ 'G': "\\hidecontent{\\includegraphics{\r}}",
 " \ 'L': "\\href{\1Link: \1}{\r}",
+" \ 'P': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
 " \ ',': "\\begin{\1\\begin{\1}\r\\end{\1\1}",
 " \ '.': "\\\1\\\1{\r}",
 call succinct#add_delims({
   \ "'": "`\r'",
-  \ '!': "\\frametitle{\r}",
   \ '"': "``\r''",
   \ '#': "\\begin{enumerate}\r\\end{enumerate}",
   \ '$': "$\r$",
@@ -160,14 +178,16 @@ call succinct#add_delims({
   \ ',': "\1Environment: \\begin{\r..*\r\\\\begin{&}\1\r\1\r..*\r\\\\end{&}\1",
   \ '.': "\1Command: \\\r..*\r\\\\&{\1\r\1\r..*\r}\1",
   \ '0': "\\cref{\r}",
-  \ '1': "\\section{\r}",
-  \ '2': "\\subsection{\r}",
-  \ '3': "\\subsubsection{\r}",
-  \ '4': "\\section*{\r}",
-  \ '5': "\\subsection*{\r}",
-  \ '6': "\\subsubsection*{\r}",
-  \ '7': "\\tag{\r}",
-  \ '8': "\\label{\r}",
+  \ '1': "\\frametitle{\r}",
+  \ '2': "\\framesubtitle{%\n\r\n}",
+  \ '3': "\\section{\r}",
+  \ '4': "\\subsection{\r}",
+  \ '5': "\\subsubsection{\r}",
+  \ '6': "\\section*{\r}",
+  \ '7': "\\subsection*{\r}",
+  \ '8': "\\subsubsection*{\r}",
+  \ '!': "\\tag{\r}",
+  \ '~': "\\label{\r}",
   \ '9': "\\ref{\r}",
   \ ':': "\\begin{alertblock}{}\r\\end{alertblock}",
   \ ';': "\\begin{block}{}\r\\end{block}",
@@ -177,17 +197,18 @@ call succinct#add_delims({
   \ '@': "\\begin{enumerate}[label=\\alph*.]\r\\end{enumerate}",
   \ 'A': "\\captionof{figure}{\r}",
   \ 'D': "\\ddot{\r}",
-  \ 'E': "\{\\color{red}\r}",
-  \ 'F': "\\begin{center}\n\\centering\r\\end{center}",
-  \ 'G': "\\makebox[\\textwidth][c]{\\includegraphics{\r}}",
+  \ 'E': "\\textcolor{red}{\r}",
+  \ 'F': "\\begin{figure}[h]\n\\centering\r\\end{figure}",
+  \ 'G': "\\makebox[\\textwidth][c]{%\n\\includegraphics{\r}\n}",
   \ 'I': "\\texttt{\r}",
   \ 'J': "\\underset{}{\r}",
   \ 'K': "\\overset{}{\r}",
   \ 'L': "\1Link: \r..*\r\\\\href{&}{\1\r\1\r..*\r}\1",
   \ 'M': "\\mathbb{\r}",
+  \ 'N': "\\pdfcomment{%\n\r\n}",
   \ 'O': "\\mathbf{\r}",
   \ 'R': "\\citet{\r}",
-  \ 'S': "{\\usebackgroundtemplate{}\\begin{frame}\r\\end{frame}}",
+  \ 'S': "\\begingroup\n\\usebackgroundtemplate{}\n\\begin{frame}\r\\end{frame}\n\\endgroup",
   \ 'T': "\\begin{table}\n\\centering\r\\end{table}",
   \ 'U': "\\uncover<+->{%\r\}",
   \ 'V': "\\begin{verbatim}\r\\end{verbatim}",
@@ -211,7 +232,7 @@ call succinct#add_delims({
   \ 'k': "^{\r}",
   \ 'l': "\\mathcal{\r}",
   \ 'm': "\\mathrm{\r}",
-  \ 'n': "\\pdfcomment{%\r}",
+  \ 'n': "\\footcite{\r}",
   \ 'o': "\\textbf{\r}",
   \ 'r': "\\citep{\r}",
   \ 's': "\\begin{frame}\r\\end{frame}",
@@ -224,7 +245,6 @@ call succinct#add_delims({
   \ '{': "\\left\\{\r\\right\\}",
   \ '|': "\\left\\|\r\\right\\|",
   \ '}': "\\left\\{\\begin{array}{ll}\r\\end{array}\\right.",
-  \ '~': "\\title{\r}",
   \ },
   \ 1)
 

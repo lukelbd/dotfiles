@@ -32,9 +32,9 @@ function! switch#ale(...) abort
   call s:switch_message('ALE', toggle)
 endfunction
 
-" Enable and disable autocomplete engines
-function! switch#autocomp(...) abort
-  if !exists('*ddc#custom#patch_buffer')
+" Enable and disable LSP engines
+function! switch#lsp(...) abort
+  if !exists('*denops#server#start')
     return
   endif
   if a:0
@@ -45,8 +45,12 @@ function! switch#autocomp(...) abort
     let toggle = 0  " enabled by default, this disables for first time
   endif
   let b:lsp_enabled = toggle
-  call ddc#custom#patch_buffer('completionMode', toggle ? 'popupmenu' : 'manual')
-  call s:switch_message('Autocomplete', toggle)
+  if toggle  " note completionMode was removed
+    call denops#server#start()
+  else
+    call denops#server#stop()
+  endif
+  call s:switch_message('Lsp', toggle)
 endfunction
 
 " Autosave toggle (autocommands are local to buffer as with codi)
@@ -69,36 +73,61 @@ function! switch#autosave(...) abort
       au!
       exe 'au ' . cmds . ' <buffer> silent call tabline#write()'
     augroup END
-    echom 'Autosave enabled.'
   else
     exe 'augroup autosave_' . bufnr('%')
       au!
     augroup END
-    echom 'Autosave disabled.'
   endif
   let b:autosave_enabled = toggle
   call s:switch_message('Autosave', toggle)
 endfunction
 
+" Toggle directory 
+" Note: This can be useful for browsing files
+function! switch#localdir() abort
+  let root = getcwd(-1)
+  let local = expand('%:p:h')
+  let toggle = !haslocaldir()
+  if !empty(v:this_session)  " enforce in case it changed
+    let root = fnamemodify(v:this_session, ':p:h')
+    if getcwd(-1) !=# root
+      exe 'cd ' . root
+      echom "Global directory '" . root . "'"
+    endif
+  endif
+  if toggle
+    exe 'lcd ' . local
+  else
+    exe 'cd ' . root
+  endif
+  call s:switch_message("Local directory '" . local . "'", toggle)
+endfunction
+
 " Toggle conceal characters on and off
+" Note: Hide message because result is obvious and for consistency with copy mode
+" call s:switch_message('Conceal mode', toggle)
 function! switch#conceal(...) abort
   if a:0
     let toggle = a:1
   else
-    let toggle = &conceallevel ? 0 : 2 " turn off and on
+    let toggle = &conceallevel ? 0 : 2  " turn off and on
   endif
+  let suppress = a:0 > 1 ? a:2 : 0
   exe 'set conceallevel=' . (toggle ? 2 : 0)
-  " Note: Hide message because result is obvious and for consistency with copy mode
-  " call s:switch_message('Conceal mode', toggle)
+  if !suppress
+    call s:switch_message('Conceal mode', toggle)
+  endif
 endfunction
 
 " Eliminates special chars during copy
+" Note: Hide switch message during autoload
 function! switch#copy(...) abort
   if a:0
     let toggle = a:1
   else
     let toggle = !exists('b:number')
   endif
+  let suppress = a:0 > 1 ? a:2 : 0
   let copyprops = ['list', 'number', 'relativenumber', 'scrolloff']
   if toggle
     for prop in copyprops
@@ -113,8 +142,9 @@ function! switch#copy(...) abort
       exe 'silent! unlet b:' . prop
     endfor
   endif
-  " Note: Hide message to prevent from toggling in
-  " call s:switch_message('Copy mode', toggle)
+  if !suppress
+    call s:switch_message('Copy mode', toggle)
+  endif
 endfunction
 
 " Toggle literal tab characters on and off
@@ -124,8 +154,11 @@ function! switch#expandtab(...) abort
   else
     setlocal expandtab!
   endif
-  let b:expandtab = &l:expandtab  " this overrides set expandtab in vimrc
-  call s:switch_message('Literal tabs', 1 - b:expandtab)
+  let suppress = a:0 > 1 ? a:2 : 0
+  let b:expandtab = &l:expandtab  " override set expandtab in vimrc
+  if !suppress
+    call s:switch_message('Literal tabs', 1 - b:expandtab)
+  endif
 endfunction
 
 " Either listen to input, turn on if switch not declared, or do opposite

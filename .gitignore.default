@@ -1,11 +1,15 @@
+# This file should be kept in sync with '.ignore' ag/rg file.
 # Untracked folders
 figs*
 vids*
 figures*
 videos*
 class*
+course*
 meeting*
 manuscript*
+!figures*.py
+!videos*.py
 
 # Trash folders
 tmp
@@ -15,7 +19,7 @@ garbage*
 
 # Vim session files and swap files
 tags
-.vimsession
+.vimsession*
 .*.sw[a-z]
 
 # Python stuff
@@ -23,6 +27,7 @@ tags
 *.ipynb
 *.egg_info
 *.ipynb_checkpoints
+*.virtual_documents
 __pycache__
 
 # Common temporary files

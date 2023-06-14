@@ -1,9 +1,6 @@
-"-----------------------------------------------------------------------------"
-" Author: Luke Davis (lukelbd@gmail.com)
-" Date: 2018-09-20
-" Various settings and macros for python files
-" Includes a couple mappings for converting {'a':1} to a=1
-"-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------
+" Python settings
+"-----------------------------------------------------------------------------
 " Misc settings
 setlocal iskeyword-=.  " exclude period from word definition
 setlocal tabstop=4 softtabstop=4 shiftwidth=4

@@ -62,10 +62,11 @@ dependencies:
   - libopenblas=0.3.17=openmp_h3351f45_1
   - libpng=1.6.37=h7cec526_2
   - libsodium=1.0.18=hbcb3906_1
+  - libsqlite=3.39.4=ha978bb4_0
   - libssh2=1.10.0=h52ee1ee_2
   - libtiff=4.3.0=h1167814_1
   - libwebp-base=1.2.1=h0d85af4_0
-  # - libzlib=1.2.11=h9173be1_1013
+  - libzlib=1.2.13=hfd90126_4
   - llvm-openmp=12.0.1=hda6cdc1_1
   - lz4-c=1.9.3=he49afe7_1
   - matplotlib=3.3.2=py39h6e9494a_1
@@ -93,6 +94,7 @@ dependencies:
   - platformdirs=2.3.0=pyhd8ed1ab_0
   - proj=8.2.1=h1512c50_0
   - prompt-toolkit=3.0.20=pyha770c72_0
+  - psutil=5.9.3=py39ha30fb19_0
   - ptyprocess=0.7.0=pyhd3deb0d_0
   - pure_eval=0.2.2=pyhd8ed1ab_0
   - pycparser=2.21=pyhd8ed1ab_0
@@ -120,7 +122,7 @@ dependencies:
   - setuptools_scm_git_archive=1.1=py_0
   - shapely=1.8.0=py39hbfbc381_5
   - six=1.16.0=pyh6c4a22f_0
-  # - sqlite=3.37.0=h23a322b_0
+  - sqlite=3.38.5=hd9f0692_0
   - stack_data=0.1.4=pyhd8ed1ab_0
   - tk=8.6.11=h5dbffcc_1
   - toml=0.10.2=pyhd8ed1ab_0
@@ -139,7 +141,7 @@ dependencies:
   - yaml=0.2.5=h0d85af4_2
   - zeromq=4.3.4=he49afe7_1
   - zipp=3.7.0=pyhd8ed1ab_0
-  # - zlib=1.2.11=h9173be1_1013
+  - zlib=1.2.13=hfd90126_4
   - zstd=1.5.0=h582d3a0_0
   - pip:
     - attrs==21.2.0
@@ -148,4 +150,4 @@ dependencies:
     - nbformat==5.1.3
     - nbstripout==0.5.0
     - pyrsistent==0.18.0
-prefix: /Users/ldavis/miniconda3/envs/matplotlib-3.3
+prefix: /Users/ldavis/mambaforge/envs/matplotlib-3.3

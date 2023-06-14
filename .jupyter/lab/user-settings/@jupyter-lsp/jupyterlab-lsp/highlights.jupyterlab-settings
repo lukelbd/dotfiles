@@ -1,5 +1,5 @@
 {
     "debouncerDelay": 250,
     "removeOnBlur": false,
-    "disable": true
+    "disable": false
 }

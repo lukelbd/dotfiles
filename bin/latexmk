@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=2076
-usage="latexmk [OPTIONS] FILE"
+usage="latexmk [OPTIONS] FILE [DIFF_FILE]"
 doc="
 Auto-typeset LaTeX documents. This is similar to the famous PERL latexmk program, but
 with some unique features. Opens the resulting typeset file in a macOS PDF viewer then
@@ -14,21 +14,25 @@ Usage
 
 Positional arguments
 
-  FILE
+  FILE           The latex file.
 
 Optional arguments
 
   -h|--help      Print this message.
   -r|--raw       Print the raw unfiltered error messages. By default this script
                  parses and filters the latex engine output so it is easier to peruse.
-  -q|--quick     Enable quick mode and skip rendering the PDF if it is newer than the
-                 TeX file. This can be used with '-l' to jump to a line.
-  -d|--diff      Run latexdiff on most 'recent' file. Requires files in your
-                 directory are otherwise identically named, but end with unique
-                 date strings YYYY-MM.tex or YYYY-MM-DD.tex
-  -w|--word      Pass -w or --word to automatically convert latex to the Microsoft
-                 Word format using pandoc. This can be useful for collaborating
-                 with peers that do not know latex.
+  -a|--aux       Generate the aux file only. This can be combined with -l to
+                 quickly jump across an existing PDF.
+  -p|--pdf       Generate the pdf file only. This can be used with very long
+                 files for quicker updates.
+  -n|--nobbl     Do not re-compile the bibliography. This can be used to speed
+                 things up when citations are unchanged.
+  -w|--word      Convert to docx file using pandoc. This can be useful for
+                 collaborating with peers that do not know latex.
+  -d|--diff      Run latexdiff on most 'recent' file. Requires files in your directory
+                 that share the same prefix but end with NN, YYYY-MM, or YYYY-MM-DD.
+  [-p|--prev]=F  Run latexdiff against this previous version of the current file.
+                 This is an alternative to detecting automatically with --diff.
   [-l|--line]=N  The line number in the LaTeX document. If the viewer is Skim then
                  we will jump to this line in the PDF document.
 
@@ -47,7 +51,7 @@ See also
 
   https://mg.readthedocs.io/latexmk.html
 "
-# Function for raising error
+# Function for raising error message
 echoerr() {
   echo "$*" 1>&2
 }
@@ -56,12 +60,12 @@ raise() {
   echoerr "Error: $*"
   exit 1
 }
-# Exit trap function
+# Exit trap function to delete everything except .tex .aux .bbl
 cleanup() {
   local files_rm files_new
   [ -n "$files_old" ] || return 0
   files_new=(*)  # new files
-  ext_ignore=(tex bbl pdf docx png jpg jpeg eps gif)
+  ext_ignore=(aux tex bbl pdf docx png jpg jpeg eps gif)
   for file_new in "${files_new[@]}"; do
     [[ " ${files_old[*]} " =~ " $file_new " ]] && continue
     [[ " ${ext_ignore[*]} " =~ " ${file_new##*.} " ]] && continue
@@ -72,6 +76,7 @@ cleanup() {
 }
 
 # Commands
+# TODO: Remove this since now simply remap GNU sed to first one in path.
 [[ "$OSTYPE" =~ darwin* ]] && macos=true || macos=false
 which gsed &>/dev/null && sedcmd=gsed || sedcmd=sed
 $macos && [ "$sedcmd" == sed ] && \
@@ -80,26 +85,28 @@ $macos && [ "$sedcmd" == sed ] && \
 # Parse args
 trap cleanup EXIT  # remove files on exit or interruption!
 shopt -s nullglob  # glob-expand into zero entries
-raw=false
-latex=pdflatex  # by default use pdflatex
-bibtex=bibtex   # for compiling bibliographies
+latex=pdflatex  # default typesetting command
+bibtex=bibtex   # default bibliography generator
 viewer=Skim     # default PDF viewer
-quick=false     # quick mode active?
+raw=false       # show raw command output?
+nobbl=false     # do not update bbl file?
+auxonly=false   # only update aux file?
+pdfonly=false   # only update PDF file?
 texdiff=false   # get difference pdf?
-tex2docx=false  # option
+texdocx=false   # convert with pandoc?
 while [ $# -gt 0 ]; do
   case $1 in
     -h|--help)     echoerr "$doc" && exit 0 ;;
     -r|--raw)      raw=true ;;
+    -a|--aux)      auxonly=true nobbl=true ;;
+    -p|--pdf)      pdfonly=true nobbl=true ;; 
+    -n|--nobbl)    nobbl=true ;;
     -d|--diff)     texdiff=true ;;
-    -w|--word)     tex2docx=true ;;
-    -q|--quick)    quick=true ;;
-    -l=*|--line=*) line=${1#*=} ;;
-    [^-]*)
-      [ -n "$filename" ] && raise "Got multiple filenames."
-      filename="$1"
-      ;;
-    *) raise "Unknown arg $1."
+    -w|--word)     texdocx=true ;;
+    -l=*|--line=*) linenum=${1#*=} ;;
+    -p=*|--prev=*) prevname=${1#*=} texdiff=true ;;
+    [^-]*) [ -n "$filename" ] && raise "File name already passed." || filename=$1 ;;
+    *) raise "Unknown latexmk flag $1." ;;
   esac
   shift
 done
@@ -116,7 +123,7 @@ else
 fi
 
 # Get paths
-src=$HOME/templates  # location of LaTeX style files and templates
+templates=$HOME/templates  # location of LaTeX style files and templates
 echoerr "Filename: $filename"
 if [[ "$filename" =~ / ]]; then  # i.e. contains directory specifier
   directory=${filename%/*}  # trim shortest pattern matching <stuff>/*, keep "stuff"
@@ -126,16 +133,12 @@ fi
 filestem=${filename%.tex}  # simple
 diffname=${filename%.tex}_changes.tex
 
-# Update repo
+# Other updates
 # TODO: Remove this after finishing figcp implementation
 # NOTE: This is useful e.g. for pulling remote figure changes
 git pull 2>/dev/null
-
-# Quick mode adjustment
-# WARNING: Cannot auto-enable quick mode in case e.g. user wants to
-# update figures or re-compile after an error. Only auto-disable.
-if ! [ -r "$filestem.pdf" ] || [ "$filename" -nt "$filestem.pdf" ]; then
-  quick=false
+if $auxonly && [ "$filename" -nt "$filestem.pdf" ]; then
+  echo "Warning: TeX file is newer than PDF. SyncTeX may not work properly."
 fi
 
 #-----------------------------------------------------------------------------#
@@ -152,9 +155,15 @@ nocomments() {  # ignore comments. TODO: Maybe awk is better?
 packages() {
   local sub file
   for file in "$@"; do
-    nocomments "$file" | grep -E '\\RequirePackage|\\usepackage|\\bibliographystyle' | $sedcmd 's/\[[^][]*\]//g;s/AtEndOfClass{//g;/#\|\[\|\]\|newcommand/d' | inbraces
+    nocomments "$file" \
+      | grep -E '\\RequirePackage[^ ]|\\templatetype[^ ]|\\usepackage[^ ]|\\bibliographystyle[^ ]' \
+      | $sedcmd 's/\[[^][]*\]//g;s/AtEndOfClass{//g;/#\|\[\|\]\|newcommand/d' \
+      | inbraces
     for sub in '' font color; do
-      nocomments "$file" | grep '\\use'$sub'theme' | inbraces | sed 's/^/beamer'$sub'theme/'
+      nocomments "$file" \
+        | grep '\\use'$sub'theme' \
+        | inbraces \
+        | sed 's/^/beamer'$sub'theme/'
     done
   done
 }
@@ -165,8 +174,8 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
   # Copy files from the templates directory if they were not already
   # NOTE: Test 'newer than' returns true if second file does not exist.
   for name in "${names[@]}"; do
-    for ext in sty bst; do
-      file=${src}/${name}.${ext}
+    for ext in cls sty bst; do
+      file=${templates}/${name}.${ext}
       if [ -r "$file" ] && [ "$file" -nt "./${file##*/}" ]; then
         echoerr "Copying file ${file##*/}."
         cp "$file" ./ 2>/dev/null  # ignore 'same file' error e.g. when inside templates directory
@@ -175,7 +184,14 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
     done
   done
   # Detect files and add to lists if not already present
-  files=($(kpsewhich "${names[@]/%/.sty}" "${names[@]/%/.bst}"))
+  files=( \
+    $(kpsewhich \
+      "${names[@]/%/.cls}" \
+      "${names[@]/%/.sty}" \
+      "${names[@]/%/.bst}" \
+      "${names[@]/%/.ldf}" \
+    ) \
+  )
   for name in "${names[@]}"; do
     found=false
     for file in "${files[@]}"; do
@@ -187,40 +203,45 @@ texfind() {  # find files with kpsewhich and copy from folders it not present
         [[ " ${localfiles[*]##*/} " =~ " ${file##*/} " ]] || localfiles+=("./${file##*/}")
       else
         found=true
-        [[ " ${texfiles[*]##*/} " =~ " ${file##*/} " ]] || texfiles+=("$file")
+        [[ " ${distrofiles[*]##*/} " =~ " ${file##*/} " ]] || distrofiles+=("$file")
       fi
     done
     $found || raise "${name} not found"  # do not raise error if failed to re-copy file
   done
 }
 
-# Iterate over subfiles
+# Find class files, package files, bibliography names
+# NOTE: This also iterates over subfiles for e.g. thesis composition
 filenames=("$filename")
 filenames+=($(nocomments "$filename" | grep -E '\\import\b|\\include\b|\\input\b' | inbraces))
 echoerr "Checking files: ${filenames[*]}"
 for file in "${filenames[@]}"; do
-  # Find class files, package files, bibliography names
   nocomments=$(nocomments "$file")
   bibs+=($(echo "$nocomments" | grep -E '\\bibliography\b|\\nobibliography\b|\\addbibresource\b' | inbraces))
-  classes+=($(echo "$nocomments" | grep '\\documentclass\b' | inbraces))
-  packages+=($(packages "$filename" | sort | uniq))  # first level deep
-  texfind "${packages[@]}"
-  packages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level deep
-  texfind "${packages[@]}"
-  # Set compiler and viewer options
-  # WARNING: lualatex is mostly a superset of xelatex and detection must be
-  # prioritized for beamer or else get weird errors e.g. missing tex gyre fonts.
-  echo "${packages[*]}" | grep -E '\bfontspec\b|\bxltxtra\b' &>/dev/null && latex=xelatex
-  echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
-  echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe Acrobat Reader DC'
+  iclasses+=($(echo "$nocomments" | grep '\\documentclass\b' | inbraces))
+  classes+=("${iclasses[@]}")
+  texfind "${iclasses[@]}"
+  ipackages+=($(packages "$filename" | sort | uniq))  # first level deep
+  packages+=("${ipackages[@]}")
+  texfind "${ipackages[@]}"
+  jpackages+=($(packages "${localfiles[@]}" | sort | uniq))  # second level deep
+  packages+=("${jpackages[@]}")
+  texfind "${jpackages[@]}";
 done
+
+# Set compiler and viewer options
+# WARNING: lualatex is mostly a superset of xelatex and detection must be
+# prioritized for beamer or else get weird errors e.g. missing tex gyre fonts.
+echo "${packages[*]}" | grep -E '\bfontspec\b|\bxltxtra\b' &>/dev/null && latex=xelatex
+echo "${classes[*]}" | grep '\bbeamer\b' &>/dev/null && latex=lualatex
+echo "$nocomments" | grep -E '\\animategraphics\b' &>/dev/null && viewer='Adobe Acrobat Reader DC'
 
 # Error and info messages
 [ ${#classes[@]} -eq 0 ] && echoerr "Warning: Unknown document class."
-[ ${#texfiles[@]} -gt 0 ] && echoerr "Files found in TeX distro: ${texfiles[*]##*/}"
+[ ${#distrofiles[@]} -gt 0 ] && echoerr "Files found in TeX distro: ${distrofiles[*]##*/}"
 [ ${#localfiles[@]} -gt 0 ] && echoerr "Files found locally: ${localfiles[*]##*/}"
 [ "${#bibs[@]}" -eq 0 ] && bibliography=false || bibliography=true
-if $bibliography; then
+if ! $nobbl && $bibliography; then
   bibs=("${bibs[@]%.bib}")  # remove extension if present
   bibfiles=("${bibs[@]/%/.bib}")  # add back extension
   echoerr "Bib files: ${bibfiles[*]}"
@@ -260,9 +281,9 @@ open() {
   appname=$1
   pdfname=$2
   texname=${pdfname%.pdf}.tex
-  if [ "$appname" == 'Skim' ] && which displayline &>/dev/null && [ -n "$line" ]; then
-    echoerr "Opening \"$pdfname\" and jumping to line $line (source $texname)"
-    displayline -r "$line" "$pdfname" "$texname"
+  if [ "$appname" == 'Skim' ] && which displayline &>/dev/null && [ -n "$linenum" ]; then
+    echoerr "Opening \"$pdfname\" and jumping to line $linenum (source $texname)"
+    displayline -r "$linenum" "$pdfname" "$texname"
   else
     echoerr "Opening \"$pdfname\""
     command open -a "$appname" "$pdfname" &
@@ -286,7 +307,7 @@ case $latex in
   xelatex)  stylized=XeLaTeX flags_tex+=(-no-pdf) ;;
   *) raise "Unknown compiler \"$latex\"." ;;
 esac
-if $quick; then
+if $auxonly; then
   flags_tex+=(-synctex=1)  # synctex on first (only) run
 else
   flags_pdf+=(-synctex=1)  # synctex on last run
@@ -300,11 +321,13 @@ fi
 # WARNING: To keep exit code from pdflatex, pipe later on
 # run 0 $latex $flags "$filestem"
 echoerr "Running with ${stylized}..."
-if ! $texdiff && ! $tex2docx; then
-  echoerr 'Generating aux file...'  # maybe just need to generate glossary!
-  run 0 "$latex" "${flags_tex[@]}" "$filestem"
-  if ! $quick; then
-    if $bibliography; then
+if ! $texdiff && ! $texdocx; then
+  if ! $pdfonly; then
+    echoerr 'Generating aux file...'  # maybe just need to generate glossary!
+    run 0 "$latex" "${flags_tex[@]}" "$filestem"
+  fi
+  if ! $auxonly; then
+    if ! $nobbl && $bibliography; then
       echoerr 'Generating bibliography...'
       run 0 "$bibtex" "$filestem"
       echoerr 'Incorporating bbl file...'
@@ -319,35 +342,44 @@ fi
 # Difference-LaTeX file, with track changes
 if $texdiff; then
   # Find files that come *before* current one in alphanumeric sorting
-  prefix=$(sed -E 's/[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}\.tex//g' <<< "$filename")
-  prevnames=("$prefix"*[_-][0-9][0-9].tex)  # sorted manuscript files (glob is sorted by default)
-  for index in "${!prevnames[@]}"; do  # expands to array of indices
-    [ "${prevnames[index]}" == "$filename" ] && break
-  done
-  [ "$prefix" == "$filename" ] && raise "Invalid filename for generating difference file: $filename"
-  [ "$index" -eq 0 ] && raise "Failed to find earlier version of current file: $filename"
+  if [ -z "$prevname" ]; then
+    version='[_-]([0-9]{4}-)?([0-9]{2}-)?[0-9]{2}'
+    prefix=$(sed -E "s/$version.*\$//g" <<< "$filename")
+    suffix=$(sed -E "s/^.*$version//g" <<< "$filename")
+    echo "Prefix: $prefix Suffix: $suffix"
+    prevnames=("$prefix"*[_-][0-9][0-9]"$suffix")  # sorted manuscript files (glob is sorted by default)
+    for index in "${!prevnames[@]}"; do  # expands to array of indices
+      [[ "${prevnames[index]}" =~ '_changes.tex' ]] && continue
+      [[ "${prevnames[index]}" == "$filename" ]] && break
+    done
+    [ "$prefix" == "$filename" ] && raise "Invalid filename for generating difference file: $filename"
+    [ "$index" -eq 0 ] && raise "Failed to find earlier version of current file: $filename"
+    prevname=${prevnames[index - 1]}  # previous before finding this one
+  fi
 
   # Make the difference tex file and support line jumping
   # NOTE: skim-displayline will be prepended with '%DIF > ' in difference file
-  prevname=${prevnames[index - 1]}
   echoerr "Running latexdiff on ${filename##*/} minus ${prevname##*/}"
   [ -e "$diffname" ] && rm "$diffname"  # previous file name
   tmpfile="$filestem.tmp"  # will be deleted by cleanup()
   cp "$filename" "$tmpfile"
-  [ -n "$line" ] && $sedcmd -i "${line}s/$/  % skim-displayline/" "$tmpfile"
+  [ -n "$linenum" ] && $sedcmd -i "${linenum}s/$/  % skim-displayline/" "$tmpfile"
   latexdiff --append-context2cmd=abstract "$prevname" "$tmpfile" > "$diffname"
   [ -r $diffname ] || raise 'Difference file not produced.'
-  line=$(grep -n -m 1 'skim-displayline$' "$diffname" | sed 's/\([0-9]*\).*/\1/')
-  if [ $? -ne 0 ] || ! [[ "$line" =~ ^[0-9]+$ ]]; then
+  linenum=$(grep -n -m 1 'skim-displayline$' "$diffname" | sed 's/\([0-9]*\).*/\1/')
+  # shellcheck disable=SC2181
+  if [ $? -ne 0 ] || ! [[ "$linenum" =~ ^[0-9]+$ ]]; then
     echoerr 'Warning: Failed to detect difference file line.'
-    unset line
+    unset linenum
   fi
 
   # Make the pdflatex calls necessary to generate tables of contents, bibligrapyy, etc.
   diffstem=${diffname%.tex}
-  $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
-  if ! $quick; then
-    if $bibliography; then
+  if ! $pdfonly; then
+    $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
+  fi
+  if ! $auxonly; then
+    if ! $nobbl && $bibliography; then
       $latex "${flags_tex[@]}" "$diffstem" &>/dev/null
       $bibtex "$diffstem" 1>&2  #&>/dev/null
     fi
@@ -360,13 +392,13 @@ fi
 # * For citeproc see: https://github.com/jgm/citeproc
 # * For xnos see: https://github.com/tomduck/pandoc-xnos
 # Unfortunately neither xnos nor crossref work for numbering equations and figures
-if $tex2docx; then
+if $texdocx; then
   type pandoc &>/dev/null || raise "Cannot convert to docx because pandoc is not installed. Try brew install pandoc."
   # flags=(--citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --citeproc --filter=pandoc-crossref)
   # flags=(-M cref=true --filter pandoc-crossref --citeproc)
   flags=(-M cref=true --filter pandoc-xnos)
-  if $bibliography; then
+  if ! $nobbl && $bibliography; then
     if [[ " ${packages[*]} " =~ natbib ]]; then
       flags+=(--natbib)
     elif [[ " ${packages[*]} " =~ biblatex ]]; then
@@ -383,7 +415,7 @@ if $tex2docx; then
 fi
 
 # Open the relevant file
-! $texdiff && ! $tex2docx && open "$viewer" "$filestem.pdf"  # too jumpy if open everything!
+! $texdiff && ! $texdocx && open "$viewer" "$filestem.pdf"  # too jumpy if open everything!
 $texdiff && open "$viewer" "$diffstem.pdf"
-$tex2docx && open "Pages" "$filestem.docx"
+$texdocx && open "Pages" "$filestem.docx"
 $macos && command open -a "$terminal" &  # bring terminal back into focus

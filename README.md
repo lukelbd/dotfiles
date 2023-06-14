@@ -27,7 +27,7 @@ billion key mappings as I see fit. I use a few different standard prefixes:
 | `\`        | `n`       | Preset search and replaces with motions.                          |
 | `g`        | `n`       | Various plugin-specific extensions.                               |
 | `<C-s>`    | `vi`      | Surrounding content with delimiters. See the [vim-succinct](https://github.com/lukelbd/vim-succinct) plugin. |
-| `<C-d>`    | `i`       | Inserting pre-defined snippets. See the [vim-succinct](https://github.com/lukelbd/vim-succinct) plugin.      |
+| `<C-e>`    | `i`       | Inserting pre-defined snippets. See the [vim-succinct](https://github.com/lukelbd/vim-succinct) plugin.      |
 
 Also check out the vim plugins I've written over the years:
 [vim-succinct](https://github.com/lukelbd/vim-templates),

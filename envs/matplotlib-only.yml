@@ -3,15 +3,18 @@ channels:
   - conda-forge
 dependencies:
   - appnope=0.1.2=py39h6e9494a_1
+  - asttokens=2.0.8=pyhd8ed1ab_0
   - backcall=0.2.0=pyh9f0ad1d_0
   - backports=1.0=py_2
   - backports.functools_lru_cache=1.6.4=pyhd8ed1ab_0
+  - bzip2=1.0.8=h0d85af4_4
   - ca-certificates=2021.10.8=h033912b_0
   - certifi=2021.10.8=py39h6e9494a_0
   - cycler=0.10.0=py_2
   - debugpy=1.4.1=py39h9fcab8e_0
   - decorator=5.1.0=pyhd8ed1ab_0
   - entrypoints=0.3=py39hde42818_1002
+  - executing=1.1.1=pyhd8ed1ab_0
   - freetype=2.10.4=h4cff582_1
   - ipykernel=6.4.1=py39h71a6800_0
   - ipython=7.28.0=py39h71a6800_0
@@ -35,9 +38,10 @@ dependencies:
   - libopenblas=0.3.17=openmp_h3351f45_1
   - libpng=1.6.37=h7cec526_2
   - libsodium=1.0.18=hbcb3906_1
+  - libsqlite=3.39.4=ha978bb4_0
   - libtiff=4.3.0=h1167814_1
   - libwebp-base=1.2.1=h0d85af4_0
-  # - libzlib=1.2.11=h9173be1_1013
+  - libzlib=1.2.13=hfd90126_4
   - llvm-openmp=12.0.1=hda6cdc1_1
   - lz4-c=1.9.3=he49afe7_1
   - matplotlib=3.4.3=py39h6e9494a_1
@@ -49,14 +53,16 @@ dependencies:
   - olefile=0.46=pyh9f0ad1d_1
   - openjpeg=2.4.0=h6e7aa92_1
   - openssl=3.0.0=h0d85af4_1
+  - packaging=21.3=pyhd8ed1ab_0
   - parso=0.8.2=pyhd8ed1ab_0
   - pexpect=4.8.0=pyh9f0ad1d_2
   - pickleshare=0.7.5=py39hde42818_1002
   - pillow=8.3.2=py39he9bb72f_0
   - pip=21.2.4=pyhd8ed1ab_0
   - prompt-toolkit=3.0.20=pyha770c72_0
-  # - proplot=0.9.3=pyhd8ed1ab_0
+  - psutil=5.9.3=py39ha30fb19_0
   - ptyprocess=0.7.0=pyhd3deb0d_0
+  - pure_eval=0.2.2=pyhd8ed1ab_0
   - pygments=2.10.0=pyhd8ed1ab_0
   - pyparsing=2.4.7=pyh9f0ad1d_0
   - python=3.9.7=h38b4d05_3_cpython
@@ -66,7 +72,8 @@ dependencies:
   - readline=8.1=h05e3726_0
   - setuptools=58.2.0=py39h6e9494a_0
   - six=1.16.0=pyh6c4a22f_0
-  # - sqlite=3.36.0=h23a322b_2
+  - sqlite=3.37.0=h23a322b_0
+  - stack_data=0.5.1=pyhd8ed1ab_0
   - tk=8.6.11=h5dbffcc_1
   - tornado=6.1=py39h89e85a6_1
   - traitlets=5.1.0=pyhd8ed1ab_0
@@ -75,7 +82,7 @@ dependencies:
   - wheel=0.37.0=pyhd8ed1ab_1
   - xz=5.2.5=haf1e3a3_1
   - zeromq=4.3.4=he49afe7_1
-  # - zlib=1.2.11=h9173be1_1013
+  - zlib=1.2.13=hfd90126_4
   - zstd=1.5.0=h582d3a0_0
   - pip:
     - attrs==21.2.0
@@ -84,4 +91,4 @@ dependencies:
     - nbformat==5.1.3
     - nbstripout==0.5.0
     - pyrsistent==0.18.0
-prefix: /Users/ldavis/miniconda3/envs/matplotlib-only
+prefix: /Users/ldavis/mambaforge/envs/matplotlib-only

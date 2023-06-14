@@ -1,22 +1,27 @@
 #!/bin/bash
 # shellcheck disable=1090,2181,2120,2076
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # This file should override defaults in /etc/profile in /etc/bashrc. Check
 # out what is in the system defaults before using this and make sure your
-# $PATH is populated. To SSH between servers without password use:
-# https://www.thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
-# * To see what is available for various package/environment managers use e.g. brew list
-#   (--cask|--formulae), port installed (requested), tlmgr list --only-installed,
-#   conda (env) list (or list <package>), pip list (or info <package), jupyter
-#   kernelspec||labextension|nbextension list, etc. See below.
-# * Use 'brew install --cask eloston-chromium' for ARM-compatible version of
-#   chromium: https://github.com/ungoogled-software/ungoogled-chromium#downloads
+# $PATH is populated. To permit pulling from github use ssh-keygen -R
+# github.com and to SSH between servers use the below link:
+# https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key/
+# https://thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
+# * To see what is available for package/environment managers, possibly ignoring
+#   dependencies, use e.g. brew (list|leaves|deps --installed) (--cask|--formulae),
+#   port installed (requested), tlmgr list --only-installed, mamba (env) list (or list
+#   <package>), mamba env export --from-history (no deps), pip (list|feeze) (or show
+#   <package>), pip-chill (no deps), jupyter kernelspec||labextension|nbextension list.
+# * For ARM-copatible version of chromium tried 'brew install --cask eloston-chromium'
+#   but seems to sometimes download intel version. Instead follow these links:
+#   https://github.com/ungoogled-software/ungoogled-chromium#downloads
+#   https://ungoogled-software.github.io/ungoogled-chromium-binaries/releases/macos/
 #   Then automatically open notebooks and other "localhost" links in popup-style kiosks
 #   without menu bars by having Choosy auto-select the pseudo-app "LocalHost" created by
-#   Platypus when "localhost" is in the URL (simply calls chromium --kiosk "$url").
+#   platypus when "localhost" is in the URL (simply calls chromium --kiosk "$url").
 # * Switch between jupyter kernels in a lab session by installing nb_conda_kernels:
 #   https://github.com/Anaconda-Platform/nb_conda_kernels. In some jupyter versions
-#   requires removing ~/miniconda3/etc/jupyter/jupyter_config.json to suppress warnings.
+#   requires removing ~/mambaforge/etc/jupyter/jupyter_config.json to suppress warnings.
 #   See: https://fcollonval.medium.com/conda-environments-in-jupyter-ecosystem-without-pain-e9fab3992fb7
 # * To get lsp features in jupyterlab (e.g. autocompletion, suggestions) use the
 #   following: https://github.com/jupyter-lsp/jupyterlab-lsp plus python-lsp-server
@@ -51,7 +56,9 @@
 #   setting shortcut to single keypress but seems plugin can only be invoked from an
 #   'edit' mode that requires some modifier. Settled on 'Ctrl =' instead of 'F' (similar
 #   to Ctrl - used for splitting). Can also trigger autoformatting from edit menu.
-# * To prevent annoying 'template_path' error message must update the latex_envs repo with
+# * To prevent 'template_path' warning message, edit jupyter_nbconvert_config.json
+#   config file in $CONDA_PREFIX/etc/jupyter/, then update latex_envs with:
+#   pip uninstall jupyter_latex_envs  # otherwise may not update
 #   pip install git+https://github.com/jfbercher/jupyter_latex_envs.git and (if needed)
 #   pip install git+https://github.com/ipython-contrib/jupyter_contrib_nbextensions.git.
 #   See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529
@@ -77,7 +84,7 @@
 #   ~& -- Send SSH session into background
 #   ~# -- Give list of forwarded connections in this session
 #   ~? -- Give list of these commands
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Bail out if not running interactively (e.g. when sending data packets over with
 # scp/rsync). Known bug: scp/rsync fail without this line due to greeting message:
 # 1. https://unix.stackexchange.com/questions/88602/scp-from-remote-host-fails-due-to-login-greeting-set-in-bashrc
@@ -85,9 +92,9 @@
 [[ $- != *i* ]] && return
 _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Configure shell behavior and key bindings
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Prompt "<comp name>[<job count>]:<push dir N>:...:<push dir 1>:<work dir> <user>$"
 # Ensure the prompt is applied only once so that supercomputer modules, conda
 # environments, etc. can subsequently modify the prompt appearance.
@@ -95,13 +102,15 @@ _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; 
 # See: https://unix.stackexchange.com/a/124408/112647
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
 _setup_message 'General setup'
-_prompt_dirs() {
+_prompt_branch() {  # print parentheses around git branch similar to conda environment
+  git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1) /'
+}
+_prompt_dirs() {  # show full dirs path from base to current instead of just current
   local paths
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
-  paths=("${paths[@]##*/}")
-  IFS=: eval 'echo "${paths[*]}"'
+  IFS=: eval 'echo "${paths[*]##*/}"'
 }
-[ -n "$_prompt_set" ] || export PS1='\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
+[ -n "$_prompt_set" ] || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 _prompt_set=1
 
 # Readline/inputrc settings
@@ -171,15 +180,15 @@ _setup_opts() {
 }
 _setup_opts 2>/dev/null  # ignore if option unavailable
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Settings for particular machines
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Reset all aliases
 # Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
 
 # Reset functions? Nah, no decent way to do it
-# declare -F # to view current ones
+# declare -F  # to view current ones
 
 # Helper function to load modules automatically
 _load_unloaded() {
@@ -198,7 +207,8 @@ _load_unloaded() {
 _macos=false
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  uriah*|velouria*|vortex*)
+  # NOTE: Logging into network WiFi changes hostname to DESKTOP-XXX.ColoState.EDU
+  DESKTOP*|vortex*|velouria*|uriah*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
     #   Show package info with 'brew info package'.
@@ -221,6 +231,7 @@ case "${HOSTNAME%%.*}" in
     #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
     unset MANPATH
+    export HOSTNAME=vortex
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
     export PATH=/Library/TeX/texbin:$PATH
     export PATH=/opt/X11/bin:$PATH
@@ -356,18 +367,19 @@ export PATH=$HOME/.local/bin:$PATH  # pip install location
 export PATH=$HOME/bin:$PATH  # custom scripts
 
 # Various python stuff
-# NOTE: For download stats use 'condastats overall <package>' or 'pypinfo <package>'
 # NOTE: Could not get itermplot to work. Inline figures too small.
+# NOTE: For download stats use 'condastats overall <package>' or 'pypistats <package>'.
+# As of 2023-03-21 for proplot get 51k all-time conda downloads and 10k 180-day proplot
+# downloads equals approximately (since 2019?) 80k pypi downloads?
 unset MPLBACKEND
 unset PYTHONPATH
 export PYTHONUNBUFFERED=1  # must set this or python prevents print statements from getting flushed to stdout until exe finishes
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
-export PATH=$HOME/coding/ncparallel:$PATH  # utility location
 _dirs_data=(cmip-data reanalysis-data idealized coupled)
 _dirs_tools=(ncparallel mppnccombine)
-_dirs_science=(constraints persistence timescales transport)
+_dirs_research=(constraints persistence timescales transport)
 for _project in "${_dirs_tools[@]}"; do
     if [ -r "$HOME/models/$_project" ]; then
       export PATH=$HOME/models/$_project:$PATH
@@ -375,9 +387,9 @@ for _project in "${_dirs_tools[@]}"; do
       export PATH=$HOME/$_project:$PATH
     fi
 done
-for _project in "${_dirs_data[@]}" "${_dirs_science[@]}"; do
-    if [ -r "$HOME/science/$_project" ]; then
-      export PYTHONPATH=$HOME/science/$_project:$PYTHONPATH
+for _project in "${_dirs_data[@]}" "${_dirs_research[@]}"; do
+    if [ -r "$HOME/research/$_project" ]; then
+      export PYTHONPATH=$HOME/research/$_project:$PYTHONPATH
     elif [ -r "$HOME/$_project" ]; then
       export PYTHONPATH=$HOME/$_project:$PYTHONPATH
     fi
@@ -390,9 +402,9 @@ export CFLAGS=-stdlib=libc++
 export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Functions for printing information
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
 _setup_message 'Utility setup'
@@ -423,11 +435,13 @@ fi
 alias aliases='compgen -a'
 alias variables='compgen -v'
 alias functions='compgen -A function'  # show current shell functions
-alias builtins='compgen -b' # bash builtins
+alias builtins='compgen -b'  # bash builtins
 alias commands='compgen -c'
 alias keywords='compgen -k'
 alias modules='module avail 2>&1 | cat '
 alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
+kinds() { ctags --list-kinds="$*"; }  # list language shortcuts
+allkinds() { ctags --list-kinds-full="$*"; }  # list language shortcuts
 # alias bindings_stty='stty -e'  # show bindings (native mac)
 if $_macos; then
   alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"  # see https://apple.stackexchange.com/a/352770/214359
@@ -471,8 +485,9 @@ _columnize() {
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
 # alias phone-mount='simple-mtpfs -f -v ~/Phone'
-alias du='du -h -d 1'
+alias du='du -h'
 alias df='df -h'
+alias d1='du -h -d 1'  # see also r0 a0
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
@@ -489,13 +504,14 @@ dl() {
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
 }
 
-# Save log of directory space to home directory
+# Save a log of directory space to home directory
 # NOTE: This relies on workflow where ~/scratch folders are symlinks pointing
 # to data storage hard disks. Otherwise need to hardcode server-specific folders.
 space() {
-  local log sub dir
+  local init log sub dir
   log=$HOME/storage.log
-  printf 'Timestamp:\n%s\n' "$(date +%s)" >$log
+  [ -r "$log" ] && init='\n\n' || init=''
+  printf "$init"'Timestamp:\n%s\n' "$(date +%s)" >>$log
   for sub in '' '..'; do
     for dir in ~/ ~/scratch*; do
       [ -d "$dir" ] || continue
@@ -505,9 +521,9 @@ space() {
   done
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Functions wrapping common commands
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Environment variables
 export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
@@ -556,19 +572,6 @@ man() {
   fi
 }
 
-# Vim man page command
-vman() {
-  if [ $# -eq 0 ]; then
-    echo "What manual page do you want?";
-    return 0
-  elif ! command man -w "$@" > /dev/null; then
-    return 1
-  fi
-  command vim -c "SuperMan $*"
-  clear
-  printf '\e[3J'
-}
-
 # Prevent git stash from running without 'git stash push' and test message length
 # https://stackoverflow.com/q/48751491/4970632
 git() {
@@ -588,6 +591,16 @@ git() {
   command git "$@"
 }
 
+# Either pipe the output of the remaining commands into the less pager
+# or open the files. Use the latter only for executables on $PATH
+less() {
+  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
+    "$@" 2>&1 | command less  # pipe output of command
+  else
+    command less "$@"  # show files in less
+  fi
+}
+
 # Simple pseudo-vi editor
 # See: https://vi.stackexchange.com/a/6114
 vi() {
@@ -605,25 +618,43 @@ vim() {
   printf '\e[3J'
 }
 
+# Vim man page command
+vman() {
+  if [ $# -eq 0 ]; then
+    echo "What manual page do you want?";
+    return 0
+  elif ! command man -w "$@" > /dev/null; then
+    return 1
+  fi
+  command vim -c "SuperMan $*"
+  clear
+  printf '\e[3J'
+}
+
 # Open session and fix various bugs. For some reason folds
 # are otherwise re-closed upon openening each file.
 vim-session() {
-  [ -r .vimsession ] || { echo "Error: .vimsession file not found."; return 1; }
-  sed -i '/zt/a setlocal nofoldenable' .vimsession  # unfold everything
-  sed -i 's/^[0-9]*,[0-9]*fold$//g' .vimsession  # remove folds
-  sed -i -s 'N;/normal! zo/!P;D' .vimsession  # remove folds
-  sed -i -s 'N;/normal! zc/!P;D' .vimsession  # remove folds
-  vim -S .vimsession "$@"  # use above function
-}
-
-# Either pipe the output of the remaining commands into the less pager
-# or open the files. Use the latter only for executables on $PATH
-less() {
-  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
-    "$@" 2>&1 | command less  # pipe output of command
-  else
-    command less "$@"  # show files in less
-  fi
+  local arg path flags root alt  # flags and session file
+  for arg in "$@"; do
+    if [[ "$arg" =~ ^-.* ]]; then
+      flags+=("$arg")
+    elif [ -z "$path" ]; then
+      path="$arg"
+    else
+      echo 'Error: Too many input args.'
+      return 1
+    fi
+  done
+  [ -z "$path" ] && path=.vimsession
+  [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
+  root=$(abspath "$path")  # absolute path with slashes
+  root=${root%/*}  # root directory to detect
+  alt=${root/$HOME/\~}  # alternative root with tilde
+  sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
+  sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous line navigation and fold command
+  sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
+  sed -i "\\:^lcd \\($root\\|$alt\\)\$:d" "$path"  # remove outdated lcd calls
+  vim -S "$path" "${flags[@]}"  # call above function
 }
 
 # Absolute path, works everywhere (mac, linux, or anything with bash)
@@ -678,9 +709,9 @@ open() {
   done
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # General utilty functions
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Receive affirmative or negative response using input message, then exit accordingly.
 confirm() {
   [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
@@ -744,46 +775,76 @@ rename() {
   done
 }
 
-# Finding files and pattern
-# NOTE: No way to include extensionless executables in qgrep
-# NOTE: In find, if dotglob is unset, cannot match hidden files with [.]*
-# NOTE: In grep, using --exclude=.* also excludes current directory
-_exclude_dirs=(api build trash sources plugged externals '*conda3*')
-_include_exts=(.py .sh .jl .m .ncl .vim .rst .ipynb)
-qfind() {
-  local _include _exclude
-  [ $# -lt 2 ] && echo 'Error: qfind() requires at least 2 args (path and command).' && return 1
-  _exclude=(${_exclude_dirs[@]/#/-o -name })  # expand into commands *and* names
-  _include=(${_include_exts[@]/#/-o -name })
-  _include=("${_include[@]//./*.}")  # add glob patterns
-  command find "$1" \
-    -path '*/.*' -prune -o -name '[A-Z_]*' -prune \
-    -o -type d \( ${_exclude[@]:1} \) -prune \
-    -o -type f \( ! -name '*.*' "${_include[@]}" \) \
-    "${@:2}"
+# Grep or find files and pattern
+# NOTE: Currently silver searcher does not respect global '~/.ignore' folder in $HOME
+# so use override. See: https://github.com/ggreer/the_silver_searcher/issues/1097
+# NOTE: Exclude list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
+# searcher 'ag'. Should install with 'brew install the_silver_searcher ripgrep'. Also
+# note that directories are only excluded if they are *not below* current directory.
+# NOTE: Seems 'grep' has no way to include extensionless executables. Also note 'grep'
+# --exclude=.* will skip current directory (so require subsequent character [^.])
+# and if dotglob is unset then 'find' cannot match hidden files with [.]* (so use .*)
+_excludes=(.git .svn api _build plugged 'trash*' '*conda*' '*mamba*' externals site-packages)
+_includes=(.py .sh .jl .m .ncl .vim .rst .ipynb)
+alias ag='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
+alias rg='rg --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
+alias a1='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden --depth 0'  # see also 'd1'
+alias r1='rg --no-ignore-vcs --hidden --max-depth 1'  # see also 'd1'
+_grep() {
+  local commands exclude include nohidden
+  nohidden="$1"
+  shift  # internal argument
+  case "$#" in
+    0) echo 'Error: qgrep() requires at least 1 arg (the pattern).' && return 1 ;;
+    1) commands=("$1" .) ;;  # pattern
+    *) commands=("$@") ;;  # pattern path(s)
+  esac
+  exclude=("${_excludes[@]/#/--exclude-dir=}")
+  include=("${_includes[@]/#/--include=*}")
+  [ "$nohidden" -eq 1 ] && exclude+=(--exclude-dir='.[^.]*')
+  [ "$nohidden" -eq 1 ] && exclude+=(--exclude='[A-Z_.]*') || exclude+=(--exclude='[A-Z_]*')
+  command grep \
+    -i -r -E --color=auto --exclude-dir='_*' \
+    ${exclude[@]} ${include[@]} ${commands[@]}  # only regex and paths allowed
 }
-qgrep() {
-  [ $# -lt 2 ] && echo 'Error: qgrep() requires at least 2 args (pattern and path).' && return 1
-  command grep "$@" \
-    -E --color=auto --exclude='[A-Z_.]*' \
-    --exclude-dir='.[^.]*' --exclude-dir='_*' \
-    ${_exclude_dirs[@]/#/--exclude-dir=} \
-    ${_include_exts[@]/#/--include=*}
+_find() {
+  local commands exclude include nohidden header
+  nohidden="$1"
+  shift  # internal argument
+  case "$#" in
+    0) commands=(. '*' -print) ;;  # everything
+    1) commands=("$1" '*' -print) ;;  # path
+    2) commands=("$1" "$2" -print) ;;  # path pattern
+    *) commands=("$@") ;;  # path pattern (commands)
+  esac
+  [ "$nohidden" -eq 1 ] && header=(-path '*/.*' -prune)
+  exclude=(${_excludes[@]/#/-o -name })  # expand into commands *and* names
+  include=(${_includes[@]/#/-o -name })  # expand into commands *and* names
+  include=("${include[@]//./*.}")  # glob extension patterns
+  command find "${commands[0]}" "${header[@]}" \
+    -o -name '[A-Z_]*' -prune \
+    -o -type d \( "${exclude[@]:1}" \) -prune \
+    -o -type f \( "${include[@]:1}" \) \
+    -name "${commands[@]:1}"
 }
+qg() { _grep 1 "$@"; }  # quick grep
+hg() { _grep 0 "$@"; }  # include hidden
+qf() { _find 1 "$@"; }  # quick find
+hf() { _find 0 "$@"; }  # include hidden
 
 # Refactor, coding, and logging tools
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
 # occurences of file paths (should be 1 but this is convenient way to record them).
-todo() { qfind . -print -a -exec grep -i -n '\btodo:\b' {} \;; }
-note() { qfind . -print -a -exec grep -i -n '\bnote:\b' {} \;; }
-error() { qfind . -print -a -exec grep -i -n '\berror:\b' {} \;; }
-warning() { qfind . -print -a -exec grep -i -n '\bwarning:\b' {} \;; }
+note() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\bnote:' {} \;; }
+todo() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\btodo:' {} \;; }
+error() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\berror:' {} \;; }
+warning() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\bwarning:' {} \;; }
 refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
   [ $# -eq 2 ] \
     || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
-  result=$(qfind . -print -a -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
+  result=$(qf . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
     || { echo "Error: Search $1 to $2 failed."; return 1; }
   readarray -t files < <(echo "$result"$'\nEOF' | \
     awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
@@ -799,8 +860,16 @@ refactor() {
 }
 
 # Process management
+# TODO: Add to these utilities?
 alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
 alias restarts='last reboot | less'
+log() {
+  while ! [ -r "$1" ]; do
+    echo "Waiting..."
+    sleep 3
+  done
+  tail -f "$1"
+}
 tos() {  # table of shell processes (similar to 'top')
   if [ -z "$1" ]; then
     regex='$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/'
@@ -808,13 +877,6 @@ tos() {  # table of shell processes (similar to 'top')
     regex='$4 == "$1"'
   fi
   ps | awk 'NR == 1 {next}; '"$regex"'{print $1 " " $4}'
-}
-log() {
-  while ! [ -r "$1" ]; do
-    echo "Waiting..."
-    sleep 3
-  done
-  tail -f "$1"
 }
 
 # Killing jobs and supercomputer stuff
@@ -849,19 +911,33 @@ pskill() {  # jobs by ps name
   done
 }
 
-# Compare invididual files and directory trees. First is bash builtin, aliases are git
-# (first for files, second for directories), and functions print information about every
-# single file in recursive trees (first comparing contents, second comparing times).
-# See: https://stackoverflow.com/a/52201926/4970632
+# Compare invididual files and directory trees. First is bash builtin (first for files,
+# second for directories), then functions print information about every single file in
+# recursive trees (first comparing contents, second comparing times). Used the
+# --textconv option as described here https://stackoverflow.com/a/52201926/4970632
+# WARNING: Tried using :(exclude) and :! but does not work with no-index.
+# See: https://stackoverflow.com/a/58845608/4970632
+# See: https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-alias fdiff='command git --no-pager diff --textconv --no-index --color=always'
-alias ddiff='command git --no-pager diff --textconv --no-index --color=always --name-status'
-rdiff() {
+fdiff() {  # file differences
+  command git --no-pager diff --textconv --no-index --color=always "$@" 2>&1 \
+    | grep -v -e 'warning:' | tac | sed -e '/Binary files/,+3d' | tac
+    # -- ':!.vimsession' ':!*.git' ':!*.svn' ':!*.sw[a-z]' \
+    # ':!*.DS_Store' ':!*.ipynb_checkpoints' ':!*__pycache__'
+}
+ddiff() {  # directory differences
+  command git --no-pager diff --textconv --no-index --color=always --name-status "$@" 2>&1 \
+    | grep -v -e 'warning:' -e '.vimsession' -e '.git' -e '.svn' -e '.sw[a-z]' \
+    -e '.DS_Store' -e '.ipynb_checkpoints' -e '.*__pycache__'
+}
+rdiff() {  # recursive differences
   [ $# -ne 2 ] && echo "Usage: rdiff DIR1 DIR2" && return 1
-  command diff -s -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+  command diff -s \
+    -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
+    -x '*.DS_Store' -x '*.ipynb_checkpoints' -x '*__pycache__' \
     --brief --strip-trailing-cr -r "$1" "$2"
 }
-tdiff() {  # print statements are formatted like rdiff
+tdiff() {  # time differences
   [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
   dir1=${1%/}
@@ -869,7 +945,12 @@ tdiff() {  # print statements are formatted like rdiff
   for dir in "$dir1" "$dir2"; do
     echo "Directory: $dir"
     ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
-    files+=$'\n'$(find "$dir" -mindepth 1 ! -name '*.sw[a-z]' ! -name '*.git' ! -name '*.svn' ! -name '.vimsession')
+    files+=$'\n'$( \
+      find "$dir" -mindepth 1 \( \
+      -path '*.vimsession' -o -path '*.git' -o -path '*.svn' -o -path '*.sw[a-z]' \
+      -o -path '*.DS_Store' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
+      -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
+      \) -prune -o -print)
   done
   while read -r file; do
     file=${file/$dir1\//}
@@ -972,9 +1053,9 @@ zotfile-cleanup() {
   fi
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Remote-related functions
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Shortcuts for queue
 alias suser='squeue -u $USER'
 alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[:alpha:]"'
@@ -1073,19 +1154,19 @@ ports() {
 # For enter command then remain in shell see: https://serverfault.com/q/79645/427991
 alias ssh=_ssh  # other utilities do *not* test if ssh was overwritten by function! but *will* avoid aliases. so, use an alias
 _ssh() {
-  local address port flags
+  local address port nport flags
   if ! $_macos; then
     ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=60 "$@"
     return $?
   fi
   [[ $# -gt 2 || $# -lt 1 ]] && { echo 'Usage: _ssh HOST [PORT]'; return 1; }
+  nport=6  # or just 3?
   address=$(_address "$1") || { echo 'Error: Invalid address.'; return 1; }
   if [ -n "$2" ]; then
     ports=($2)  # custom
   else
     port=$(_port "$1")
-    ports=($(seq $port $((port + 6))))
-    # ports=($(seq $port $((port + 3))))  # try fewer
+    ports=($(seq $port $((port + nport))))
   fi
   flags="-o LogLevel=error -o StrictHostKeyChecking=no -o ServerAliveInterval=60"
   flags+=" -t -R localhost:${ports[0]}:localhost:22"  # for rlcp etc.
@@ -1313,9 +1394,9 @@ unmount() {
   rm -r "${HOME:?}/$server"
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # REPLs and interactive servers
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Add jupyter kernels with custom profiles (see below)
 # See: https://github.com/minrk/a2km
 # See: https://stackoverflow.com/a/46370853/4970632
@@ -1422,9 +1503,9 @@ jupyter-connect() {
   # Connect over ports
   echo "Connecting to jupyter notebook(s) over port(s) $ports."
   if $_macos; then
-    _jupyter_tunnel "$server" "$ports"
+    _ssh "$server" "$ports"
   else
-    _jupyter_tunnel "$ports"
+    _ssh "$ports"
   fi
 }
 
@@ -1503,15 +1584,27 @@ jupyter-name() {
 alias server="python -m http.server"
 alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Dataset utilities
-#-----------------------------------------------------------------------------#
-# Fortran tools
-namelist() {
-  local file='input.nml'
-  [ $# -gt 0 ] && file="$1"
-  echo "Params in current namelist:"
-  cut -d= -f1 -s "$file" | grep -v '!' | xargs
+#-----------------------------------------------------------------------------
+# Code parsing tools
+namelist() {  # list all namelist parameters
+  local file files
+  files=("$@")
+  [ $# -eq 0 ] && files=(input.nml)
+  for file in "${files[@]}"; do
+    echo "Params in namelist '$file':"
+    cut -d= -f1 -s "$file" | grep -v '!' | xargs
+  done
+}
+graphicspath() {  # list all graphics paths (used in autoload tex.vim)
+  awk -v RS='[^\n]*{' '
+    inside && /}/ {path=$0; if(init) inside=0} {init=0}
+    inside && /(\n|^)}/ {inside=0}
+    path {sub(/}.*/, "}", path); print "{" path}
+    RT ~ /graphicspath/ {init=1; inside=1}
+    /document}/ {exit} {path=""}
+  ' "$@"  # RS is the 'record separator' and RT is '*this* record separator'
 }
 
 # NetCDF tools (should just remember these).
@@ -1710,9 +1803,9 @@ extract() {
   done
 }
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # PDF and image utilities
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Converting between things
 # * Flatten gets rid of transparency/renders it against white background, and
 #   the units/density specify a <N>dpi resulting bitmap file. Another option
@@ -1822,9 +1915,9 @@ wctex() {
 # This is *the end* of all function and alias declarations
 echo 'done'
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Shell integration for iTerm2
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Show inline figures with fixed 300dpi
 # Make sure it was not already installed and we are not inside vim :terminal
 # Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
@@ -1859,9 +1952,9 @@ if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
   echo 'done'
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # FZF fuzzy file completion tool
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
@@ -1869,13 +1962,14 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # * Inline info puts the number line thing on same line as text.
   # * Bind slash to accept so behavior matches shell completion behavior.
   # * Enforce terminal background default color using -1 below.
+  # * Could use --select-1 to auto-select single result but want interactive instead.
   # * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
   _setup_message 'Enabling fzf'
   # shellcheck disable=2034
   {
     _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
-    --select-1 --exit-0 --inline-info --height=6 \
+    --exit-0 --inline-info --height=6 \
     --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
     "
     export FZF_DEFAULT_OPTS="$_fzf_opts"  # critical to export so used by vim
@@ -1890,9 +1984,8 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # shellcheck disable=2034
   {
     _fzf_prune="\\( \
-    -path '*.git' -o -path '*.svn' \
-    -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-    -o -path '*.DS_Store' -o -path '*.vimsession' \
+    -path '*.vimsession' -o -path '*.git' -o -path '*.svn' -o -path '*.sw[a-z]' \
+    -o -path '*.DS_Store' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
     -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
     \\) -prune \
     "
@@ -1940,9 +2033,9 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # bind -x '"\C-i": _complete_override'
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Conda stuff
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Find conda base
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
 alias brew="PATH=\"$PATH\" brew"
@@ -1950,14 +2043,12 @@ if [ -d "$HOME/mambaforge" ]; then
   _conda=$HOME/mambaforge
 elif [ -d "$HOME/miniforge" ]; then
   _conda=$HOME/miniforge
-elif [ -d "$HOME/miniconda3" ]; then
-  _conda=$HOME/miniconda3
 else
   unset _conda
 fi
 
 # Function to list available packages
-conda-avail() {
+mamba-avail() {
   local version versions
   [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
   echo "Package:            $1"
@@ -1974,23 +2065,23 @@ conda-avail() {
 
 # Function to backup and restore conda environments. This is useful when conda breaks
 # due to usage errors or issues with permissions after a crash and backblaze restore.
-conda-backup() {
+mamba-backup() {
   local env dest
   dest=$HOME/dotfiles
   [ -d "$dest" ] || { echo " Error: Backup directory $dest not found."; return 1; }
   dest=$dest/envs
   [ -d "$dest" ] || mkdir "$dest/envs"
-  for env in $(conda env list | cut -d" " -f1); do
+  for env in $(mamba env list | cut -d" " -f1); do
     [[ ${env:0:1} == "#" ]] && continue
     echo "Creating file: $dest/${env}.yml"
-    conda env export -n $env > "$dest/${env}.yml"
+    mamba env export -n $env > "$dest/${env}.yml"
   done
 }
-conda-restore() {
+mamba-restore() {
   local envs path src
   src=$HOME/dotfiles/envs
   [ -d "$src" ] || { echo " Error: Backup directory $src not found."; return 1; }
-  envs=($(conda env list | cut -d' ' -f1))
+  envs=($(mamba env list | cut -d' ' -f1))
   for path in "$src"/*.yml; do
     name=${path##*/}
     name=${name%.yml}
@@ -2034,9 +2125,9 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
   echo 'done' # commands returned by '__conda_exe shell.posix activate'
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Prompt and title management
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Safely add a prompt command
 _prompt() {  # input argument should be new command
   export PROMPT_COMMAND=$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')
@@ -2104,19 +2195,18 @@ if $_macos; then
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Mac stuff
-#-----------------------------------------------------------------------------#
-# TODO: This hangs when run from interactive cluster node, we test by comparing
-# hostname variable with command (variable does not change)
+#-----------------------------------------------------------------------------
 if $_macos; then # first the MacOS options
-  # Homebrew-bash as default shell
+  # Homebrew bash as default shell
+  # NOTE: Use 'brew install bash' and 'brew install bash-language-server'
   grep '/usr/local/bin/bash' /etc/shells 1>/dev/null \
     || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
   [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
     && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
 
-  # Audio and video utlis
+  # Audio utilities
   strip_audio() {
     local file
     for file in "$@"; do
@@ -2208,9 +2298,9 @@ if $_macos; then # first the MacOS options
   }
 fi
 
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Message
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 [ -n "$VIMRUNTIME" ] \
   && unset PROMPT_COMMAND
 [ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \

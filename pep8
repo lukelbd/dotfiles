@@ -1,0 +1,4 @@
+# Global flake8 ignore settings
+# See .vimrc for descriptions and reasoning.
+[pep8]
+ignore = W503,E402,E731,E741,D102,D107,D105,D200,D204,D205,D301,D400,D401

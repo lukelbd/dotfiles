@@ -1,6 +1,6 @@
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Configuration file for ipython.
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Load default profile
 load_subconfig('ipython_config.py', profile='default')
 
@@ -22,6 +22,7 @@ import cycler
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.axes as maxes
+import matplotlib.axis as maxis
 import matplotlib.cm as mcm
 import matplotlib.colors as mcolors
 import matplotlib.collections as mcollections
@@ -41,9 +42,12 @@ import matplotlib.scale as mscale
 import matplotlib.text as mtext
 import matplotlib.ticker as mticker
 import matplotlib.transforms as mtransforms
+from icecream import ic
 import proplot as pplt
-pplt.ion()
-pplt.rc['figure.dpi'] = 180 if 'img' in pplt.rc.backend or 'iterm' in pplt.rc.backend else 100
+backend = os.environ.get('MPLBACKEND', 'MacOSX')
+pplt.rc['figure.dpi'] = 180 if 'img' in backend or 'iterm' in backend else 100
+plt.switch_backend(backend)
+plt.ion()
 try:
     import cartopy
 except ImportError:
@@ -57,6 +61,7 @@ else:
 
 # Update ipython
 c.InteractiveShellApp.exec_lines.append(lines)
+c.TerminalInteractiveShell.autoformatter = 'black'
 # c.InteractiveShellApp.exec_lines.extend(lines.split('\n'))
 # c.TerminalIPythonApp.pylab = 'imgcat'  # use MPLBACKEND to avoid error message
 # c.TerminalIPythonApp.pylab = 'iterm'  # use MPLBACKEND to avoid error message

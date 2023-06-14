@@ -10,30 +10,33 @@
 #-----------------------------------------------------------------------------#
 # Helper
 raise() {
-  echo "Error: $@"
+  echo "Error: $*"
   exit 1
 }
 
 # Bail if we are in middle of rebase
 base=$(git rev-parse --show-toplevel)
+# shellcheck disable=2181
 [ $? -ne 0 ] && raise "Not in git repository."
 [ -d $base/.git/rebase-merge ] && exit 0
 
 # Get head dir
-init=($(git ls-files | grep __init__.py | grep -v 'tests'))
-[ ${#init[@]} -eq 0 ] && raise "__init__.py not found."
-[ ${#init[@]} -gt 1 ] && raise "Multiple candidates for __init__.py: ${init[@]}"
+inits=($(git ls-files | grep __init__.py | grep -v 'tests'))
+[ ${#inits[@]} -eq 0 ] && raise "__init__.py not found."
+[ ${#inits[@]} -gt 1 ] && raise "Multiple candidates for __init__.py: ${inits[*]}"
 
 # Get version string
-version=$(cat $init | grep -E '^version|^__version')
+init=${inits[0]}  # single item
+version=$(cat "$init" | grep -E '^version|^__version')
 [ -z "$version" ] && raise "$init version string not found."
-[ $(echo "$version" | wc -l) -gt 1 ] && raise "Ambiguous version string in $init."
+[ "$(echo "$version" | wc -l)" -gt 1 ] && raise "Ambiguous version string in $init."
 version=$(echo "$version" | awk -F"['\"]" '{print $2}') # first string on line
 
 # Prompt user action
 # NOTE: Currently git suppresses interactivity but that's fine, just means
 # default action of adding tag is taken
-tag=$(git describe --tags $(git rev-list --tags --max-count=1))
+tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+# shellcheck disable=2181
 if [ $? -ne 0 ] || [ "$tag" != "v$version" ]; then
   while true; do
     read -r -p "Increment tag from $tag --> v$version? ([y]/n) " response

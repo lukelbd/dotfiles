@@ -2,138 +2,23 @@
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
 " Helper functions and variables
-let s:newfile = '[new file]'  " dummy entry for requesting new file in current directory
-function! s:make_prompt(path) abort
-  let prompt = a:path
-  let prompt = substitute(prompt, '^' . expand('~'), '~', '')
-  let prompt = substitute(prompt, '^' . fnamemodify('.', ':p'), '.', '')
-  let prompt = empty(prompt) ? '.' : prompt
-  return prompt . '/'  " remove user folder
-endfunction
+let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
 
-" Test if file exists
-function! file#exists() abort
-  let files = glob(expand('<cfile>'))
-  if empty(files)
-    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
-  else
-    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
-  endif
-endfunction
-
-" Refresh settings
-function! file#refresh() abort
-  filetype detect  " if started with empty file, but now shebang makes filetype clear
-  let loaded = []
-  let files = [
-    \ '~/.vimrc',
-    \ '~/.vim/ftplugin/' . &filetype . '.vim',
-    \ '~/.vim/syntax/' . &filetype . '.vim',
-    \ '~/.vim/after/ftplugin/' . &filetype . '.vim',
-    \ '~/.vim/after/syntax/' . &filetype . '.vim'
-    \ ]
-  for i in range(len(files))
-    if filereadable(expand(files[i]))
-      exe 'so ' . files[i] | call add(loaded, files[i])
-    endif
-    if i == 0  " immediately after .vimrc completion
-      doautocmd Filetype
-    endif
-    if i == 4
-      doautocmd BufEnter
-    endif
-  endfor
-  echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
-endfunction
-
-" Rename2.vim  -  Rename a buffer within Vim and on disk
-" Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
-" Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
-" Usage: Rename[!] {newname}
-function! file#rename(name, bang) abort
-  let curfile = expand('%:p')
-  let curfilepath = expand('%:p:h')
-  let newname = curfilepath . '/' . a:name
-  let v:errmsg = ''
-  silent! exe 'saveas' . a:bang . ' ' . newname
-  if v:errmsg =~# '^$\|^E329'
-    if expand('%:p') !=# curfile && filewritable(expand('%:p'))
-      silent exe 'bwipe! ' . curfile
-      if delete(curfile)
-        throw 'Could not delete ' . curfile
-      endif
-    endif
-  else
-    throw v:errmsg
-  endif
-endfunction
-
-" Safely closing tabs and windows
-" Note: This moves to the left tab after closure
-" Note: Calling quit inside codei buffer triggers 'attempt to close buffer
-" that is in use' error so instead return to main window and toggle codi.
-function! file#close_window() abort
-  let ntabs = tabpagenr('$')
-  let islast = tabpagenr('$') == tabpagenr()
-  if &l:filetype ==# 'codi'
-    wincmd p | Codi!!
-  else
-    silent! quit
-  endif
-  if ntabs != tabpagenr('$') && !islast
-    silent! tabprevious
-  endif
-endfunction
-function! file#close_tab() abort
-  let ntabs = tabpagenr('$')
-  let islast = tabpagenr('$') == tabpagenr()
-  if ntabs == 1
-    silent! quitall
-  else
-    silent! tabclose
-    if !islast
-      silent! tabprevious
-    endif
-  endif
-endfunction
-
-" Current directory change
-function! file#directory_descend() abort
-  let cd_prev = getcwd()
-  if !exists('b:cd_prev') || b:cd_prev != cd_prev
-    let b:cd_prev = cd_prev
-  endif
-  lcd %:p:h
-  echom 'Descended into file directory.'
-endfunction
-function! file#directory_return() abort
-  if exists('b:cd_prev')
-    exe 'lcd ' . b:cd_prev
-    unlet b:cd_prev
-    echom 'Returned to previous directory.'
-  else
-    echom 'Previous directory is unset.'
-  endif
-endfunction
-
-"-----------------------------------------------------------------------------"
-" Opening files
-"-----------------------------------------------------------------------------"
 " Generate list of files in directory including hidden and non-hidden
-" Warning: For some reason including 'down' in fzf#run prevents fzf from returning a
+" Note: For some reason including 'down' in fzf#run prevents fzf from returning a
 " list (version 0.29). However exluding it produces weird behavior that blacks out
 " rest of screen. Workaround is to factor out an unnecessary source function.
-function! s:list_files(dir) abort
+function! s:open_list(dir) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, 'fnamemodify(v:val, '':t'')')
-  call insert(paths, s:newfile, 0)  " highest priority
+  call insert(paths, s:new_file, 0)  " highest priority
   return paths
 endfunction
 
-" Tab drop plugin from: https://github.com/ohjames/tabdrop
+" Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
 " Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
-" on monde so need to use the *tab jump* command instead!
-function! s:tab_drop(file) abort
+" on monde version of vim so need to use the *tab jump* command instead!
+function! s:open_jump(file) abort
   let visible = {}
   let path = fnamemodify(a:file, ':p')
   let tabjump = 0
@@ -153,14 +38,24 @@ function! s:tab_drop(file) abort
   end
 endfunction
 
+" Generate prompt for continuous open
+" Note: This removes $HOME folder and current path from string.
+function! s:open_prompt(path) abort
+  let prompt = a:path
+  let prompt = substitute(prompt, '^' . expand('~'), '~', '')
+  let prompt = substitute(prompt, '^' . fnamemodify('.', ':p'), '.', '')
+  let prompt = empty(prompt) ? '.' : prompt
+  return prompt . '/'  " remove user folder
+endfunction
+
 " Open from local or current directory
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to display
 " annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_from(files, local) abort
-  if a:files
-    let command = 'Files'  " fzf recursively-descending open command
-  else
-    let command = 'Open'  " custom 'continuous' per-directory open command
+  if a:files  " fzf recursively-descending open command
+    let command = 'Files'
+  else  " custom 'continuous' per-directory open command
+    let command = 'Open'
   endif
   if a:local
     let default = expand('%:p:h') . '/'  " start from local directory
@@ -198,8 +93,8 @@ function! s:open_continuous(...) abort
   " Process paths input manually or from fzf
   let paths = []
   for item in items
-    if item == s:newfile  " should be recursed at least one level
-      let item = input(s:make_prompt(base), '', 'customlist,utils#null_list')
+    if item == s:new_file  " should be recursed at least one level
+      let item = input(s:open_prompt(base), '', 'customlist,utils#null_list')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " fnamemodify :p does not remove the .. so must do this
@@ -215,9 +110,9 @@ function! s:open_continuous(...) abort
     let base = substitute(base, '/$', '', '')  " remove trailing slash
     let paths = []  " only continue in recursion
     call fzf#run(fzf#wrap({
-      \ 'source': s:list_files(base),
+      \ 'source': s:open_list(base),
       \ 'sinklist': function('s:open_continuous', [base]),
-      \ 'options': "--multi --no-sort --prompt='" . s:make_prompt(base) . "'",
+      \ 'options': "--multi --no-sort --prompt='" . s:open_prompt(base) . "'",
       \ }))
   endif
   " Open file(s), or if it is already open just jump to that tab
@@ -229,90 +124,49 @@ function! s:open_continuous(...) abort
     elseif path =~# '[*?[\]]'  " failed glob search so do nothing
       :
     elseif !empty(path)
-      call s:tab_drop(path)
+      call s:open_jump(path)
     endif
   endfor
 endfunction
 
-"-----------------------------------------------------------------------------"
-" Tab management
-"-----------------------------------------------------------------------------"
-" Function that generates lists of tabs and their numbers
-function! s:tab_source() abort
-  if !exists('g:tabline_bufignore')
-    let g:tabline_bufignore = ['qf', 'vim-plug', 'help', 'diff', 'man', 'fugitive', 'nerdtree', 'tagbar', 'codi'] " filetypes considered 'helpers'
+" Show the absolute path
+function! file#print_abspath(...) abort
+  let paths = a:0 ? a:000 : [@%]
+  for path in paths
+    let abs = fnamemodify(path, ':p')
+    echom "Relative: '" . path "'"
+    echom "Absolute: '" . abs . "'"
+  endfor
+endfunction
+
+" Echo whether the current file exists
+function! file#print_exists() abort
+  let files = glob(expand('<cfile>'))
+  if empty(files)
+    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  else
+    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
   endif
-  let unsorted = []
-  for t in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = t + 1 " the tab number
-    let buflist = tabpagebuflist(tabnr)
-    for b in buflist
-      " Get the 'primary' panel in a tab, ignore 'helper' panels even when in focus
-      " If there is *only* a 'helper' panel, use it for the title
-      if index(g:tabline_bufignore, getbufvar(b, '&ft')) == -1
-        let bufnr = b
-        break
-      elseif b == buflist[-1]
-        let bufnr = b
+endfunction
+
+" Rename2.vim  -  Rename a buffer within Vim and on disk
+" Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
+" Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
+" Usage: Rename[!] {newname}
+function! file#rename_to(name, bang) abort
+  let curfile = expand('%:p')
+  let curfilepath = expand('%:p:h')
+  let newname = curfilepath . '/' . a:name
+  let v:errmsg = ''
+  silent! exe 'saveas' . a:bang . ' ' . newname
+  if v:errmsg =~# '^$\|^E329'
+    if expand('%:p') !=# curfile && filewritable(expand('%:p'))
+      silent exe 'bwipe! ' . curfile
+      if delete(curfile)
+        throw 'Could not delete ' . curfile
       endif
-    endfor
-    call add(unsorted, tabnr . ': ' . fnamemodify(bufname(bufnr), '%:t'))  " name
-  endfor
-  let ctab = tabpagenr()
-  let sorted = []
-  for offset in range(1, tabpagenr('$'))
-    if ctab + offset <= len(unsorted)
-      call add(sorted, unsorted[ctab + offset - 1])
     endif
-    if ctab - offset > 0
-      call add(sorted, unsorted[ctab - offset - 1])
-    endif
-  endfor
-  return sorted
-endfunction
-
-" Function that jumps to the tab number from a line generated by tabselect
-function! s:tab_select_sink(item) abort
-  exe 'normal! ' . split(a:item, ':')[0] . 'gt'
-endfunction
-
-" Select from open tabs
-function! file#tab_select() abort
-  call fzf#run(fzf#wrap({
-    \ 'source': s:tab_source(),
-    \ 'options': '--no-sort --prompt="Tab> "',
-    \ 'sink': function('s:tab_select_sink'),
-    \ }))
-endfunction
-
-" Move current tab to the exact place of tab number N
-function! s:tab_move_sink(nr) abort
-  if type(a:nr) == 0
-    let nr = a:nr
   else
-    let parts = split(a:nr, ':')  " fzf selection
-    let nr = str2nr(parts[0])
-  endif
-  if nr == tabpagenr() || nr == 0 || nr ==# ''
-    return
-  elseif nr > tabpagenr() && v:version[0] > 7
-    exe 'tabmove ' . nr
-  else
-    exe 'tabmove ' . (nr - 1)
-  endif
-endfunction
-
-" Move to selected tab
-" Note: We display the tab names in case we want to group this
-" file appropriately amongst similar open files.
-function! file#tab_move(...) abort
-  if a:0
-    call s:tab_move_sink(a:1)
-  else
-    call fzf#run(fzf#wrap({
-      \ 'source': s:tab_source(),
-      \ 'options': '--no-sort --prompt="Number> "',
-      \ 'sink': function('s:tab_move_sink'),
-      \ }))
+    throw v:errmsg
   endif
 endfunction

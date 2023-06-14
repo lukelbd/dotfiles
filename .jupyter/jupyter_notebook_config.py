@@ -1,6 +1,6 @@
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Configuration file for jupyter-notebook.
-#-----------------------------------------------------------------------------#
+#-----------------------------------------------------------------------------
 # Default browser popup (normally run with --no-browser but useful anyways)
 c.LabApp.browser = '/Applications/Chromium.app/Contents/MacOS/Chromium --app=%s'
 

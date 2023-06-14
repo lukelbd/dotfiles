@@ -68,8 +68,9 @@ dependencies:
   - libpng=1.6.37=h7cec526_2
   - libprotobuf=3.19.4=hcf210ce_0
   - libsodium=1.0.18=hbcb3906_1
+  - libsqlite=3.39.4=ha978bb4_0
   - libssh2=1.10.0=h52ee1ee_2
-  # - libzlib=1.2.11=h9173be1_1013
+  - libzlib=1.2.13=hfd90126_4
   - llvm-openmp=13.0.1=hcb1a161_1
   - markdown=3.3.6=pyhd8ed1ab_0
   - matplotlib-inline=0.1.3=pyhd8ed1ab_0
@@ -80,12 +81,14 @@ dependencies:
   - oauthlib=3.2.0=pyhd8ed1ab_0
   - openssl=1.1.1l=h0d85af4_0
   - opt_einsum=3.3.0=pyhd8ed1ab_1
+  - packaging=21.3=pyhd8ed1ab_0
   - parso=0.8.3=pyhd8ed1ab_0
   - pexpect=4.8.0=pyh9f0ad1d_2
   - pickleshare=0.7.5=py_1003
   - pip=22.0.3=pyhd8ed1ab_0
   - prompt-toolkit=3.0.27=pyha770c72_0
   - protobuf=3.19.4=py310hba3363e_0
+  - psutil=5.9.3=py310h90acd4f_0
   - ptyprocess=0.7.0=pyhd3deb0d_0
   - pure_eval=0.2.2=pyhd8ed1ab_0
   - pyasn1=0.4.8=py_0
@@ -94,6 +97,7 @@ dependencies:
   - pygments=2.11.2=pyhd8ed1ab_0
   - pyjwt=2.3.0=pyhd8ed1ab_1
   - pyopenssl=22.0.0=pyhd8ed1ab_0
+  - pyparsing=3.0.9=pyhd8ed1ab_0
   - pysocks=1.7.1=py310h2ec42d9_4
   - python=3.10.2=h1dd9edd_3_cpython
   - python-dateutil=2.8.2=pyhd8ed1ab_0
@@ -134,5 +138,5 @@ dependencies:
   - yarl=1.7.2=py310he24745e_1
   - zeromq=4.3.4=he49afe7_1
   - zipp=3.7.0=pyhd8ed1ab_1
-  # - zlib=1.2.11=h9173be1_1013
-prefix: /Users/ldavis/miniconda3/envs/machine-learning
+  - zlib=1.2.13=hfd90126_4
+prefix: /Users/ldavis/mambaforge/envs/machine-learning
