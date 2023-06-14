@@ -569,19 +569,6 @@ man() {
   fi
 }
 
-# Vim man page command
-vman() {
-  if [ $# -eq 0 ]; then
-    echo "What manual page do you want?";
-    return 0
-  elif ! command man -w "$@" > /dev/null; then
-    return 1
-  fi
-  command vim -c "SuperMan $*"
-  clear
-  printf '\e[3J'
-}
-
 # Prevent git stash from running without 'git stash push' and test message length
 # https://stackoverflow.com/q/48751491/4970632
 git() {
@@ -628,10 +615,23 @@ vim() {
   printf '\e[3J'
 }
 
+# Vim man page command
+vman() {
+  if [ $# -eq 0 ]; then
+    echo "What manual page do you want?";
+    return 0
+  elif ! command man -w "$@" > /dev/null; then
+    return 1
+  fi
+  command vim -c "SuperMan $*"
+  clear
+  printf '\e[3J'
+}
+
 # Open session and fix various bugs. For some reason folds
 # are otherwise re-closed upon openening each file.
 vim-session() {
-  local arg path flags  # flags and session file
+  local arg path flags root alt  # flags and session file
   for arg in "$@"; do
     if [[ "$arg" =~ ^-.* ]]; then
       flags+=("$arg")
@@ -644,9 +644,13 @@ vim-session() {
   done
   [ -z "$path" ] && path=.vimsession
   [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
-  sed -i '/zt/a setlocal nofoldenable' "$path"  # unfold everything
-  sed -i 's/^[0-9]*,[0-9]*fold$//g' "$path"  # remove folds
-  sed -i -s 'N;/normal! z[oc]/!P;D' "$path"  # remove folds
+  root=$(abspath "$path")  # absolute path with slashes
+  root=${root%/*}  # root directory to detect
+  alt=${root/$HOME/\~}  # alternative root with tilde
+  sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
+  sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous line navigation and fold command
+  sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
+  sed -i "\\:^lcd \\($root\\|$alt\\)\$:d" "$path"  # remove outdated lcd calls
   vim -S "$path" "${flags[@]}"  # call above function
 }
 
