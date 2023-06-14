@@ -435,11 +435,13 @@ fi
 alias aliases='compgen -a'
 alias variables='compgen -v'
 alias functions='compgen -A function'  # show current shell functions
-alias builtins='compgen -b' # bash builtins
+alias builtins='compgen -b'  # bash builtins
 alias commands='compgen -c'
 alias keywords='compgen -k'
 alias modules='module avail 2>&1 | cat '
 alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
+kinds() { ctags --list-kinds="$*"; }  # list language shortcuts
+allkinds() { ctags --list-kinds-full="$*"; }  # list language shortcuts
 # alias bindings_stty='stty -e'  # show bindings (native mac)
 if $_macos; then
   alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"  # see https://apple.stackexchange.com/a/352770/214359
@@ -502,13 +504,14 @@ dl() {
   find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
 }
 
-# Save log of directory space to home directory
+# Save a log of directory space to home directory
 # NOTE: This relies on workflow where ~/scratch folders are symlinks pointing
 # to data storage hard disks. Otherwise need to hardcode server-specific folders.
 space() {
-  local log sub dir
+  local init log sub dir
   log=$HOME/storage.log
-  printf 'Timestamp:\n%s\n' "$(date +%s)" >$log
+  [ -r "$log" ] && init='\n\n' || init=''
+  printf "$init"'Timestamp:\n%s\n' "$(date +%s)" >>$log
   for sub in '' '..'; do
     for dir in ~/ ~/scratch*; do
       [ -d "$dir" ] || continue
