@@ -49,13 +49,6 @@ endfunction
 
 " Show and setup vim help page
 " Note: This ensures original plugins are present
-function! popup#help_setup() abort
-  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
-  vertical resize 80 " always certain size
-  nnoremap <buffer> <CR> <C-]>
-  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
-  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
-endfunction
 function! popup#help_page(...) abort
   if a:0
     let item = a:1
@@ -66,6 +59,13 @@ function! popup#help_page(...) abort
     exe 'vert help ' . item
   endif
 endfunction
+function! popup#help_setup() abort
+  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
+  vertical resize 80 " always certain size
+  nnoremap <buffer> <CR> <C-]>
+  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+endfunction
 
 " Show and setup shell man page
 " Warning: Calling :Man changes the buffer, so use buffer variables specific to each
@@ -73,17 +73,27 @@ endfunction
 " Note: Adapted from vim-superman. The latter runs quit on failure so not viable
 " for interactive use during vim sessions. Turns out to be very simple.
 function! s:man_cursor() abort
-  let current = b:man_curr
+  let bnr = bufnr()
+  let curr = b:man_curr
   let page = expand('<cWORD>')  " below copied from highlight group
   let page = substitute(page, '([1-9][a-z]\=)\S*', '', '')
   exe 'Man ' . page
-  let b:man_prev = current
-  let b:man_curr = page
+  if bnr != bufnr()  " original buffer
+    let b:man_prev = curr
+    let b:man_curr = page
+  endif
 endfunction
-function! popup#man_setup(...) abort
-  let b:man_curr = expand('%:t:r')
-  noremap <nowait> <buffer> [ <Cmd>exe exists('b:man_prev') ? 'Man ' . b:man_prev : ''<CR>
-  noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
+function! s:man_jump(forward) abort
+  let curr = b:man_curr
+  let name = a:forward ? 'man_next' : 'man_prev'
+  let page = get(b:, name, '')
+  if empty(page) | return | endif
+  exe 'Man ' . page
+  if a:forward
+    let b:man_prev = curr
+  else
+    let b:man_next = curr
+  endif
 endfunction
 function! popup#man_page() abort
   let file = @%
@@ -96,6 +106,12 @@ function! popup#man_page() abort
     silent! quit
     call file#open_jump(file)
   endif
+endfunction
+function! popup#man_setup(...) abort
+  let b:man_curr = expand('%:t:r')
+  noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
+  noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
+  noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
 endfunction
 
 " Print information about syntax group
