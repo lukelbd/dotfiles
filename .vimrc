@@ -546,8 +546,8 @@ noremap <Left> <C-o>
 noremap <Right> <C-i>
 
 " Navigate to marks or lines with FZF
-" Note: BLines is underitilized so use with peekaboo instead
-" nnoremap <Leader>" <Cmd>BLines<CR>
+" Note: BLines should be used more, easier than '/' sometimes
+nnoremap <Leader>" <Cmd>BLines<CR>
 nnoremap <Leader>' <Cmd>Marks<CR>
 
 " Default increment and decrement mappings
@@ -957,7 +957,7 @@ call plug#('Konfekt/FastFold')
 " call plug#('kshenoy/vim-signature')  " experimental
 call plug#('junegunn/vim-peekaboo')
 call plug#('justinmk/vim-sneak')
-let g:peekaboo_prefix = '<Leader>'
+let g:peekaboo_prefix = '"'
 let g:peekaboo_window = 'vertical topleft 30new'
 
 " Matching groups and searching
@@ -1685,13 +1685,13 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
+  noremap <Leader>G <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>h <Cmd>BCommits<CR>
   noremap <Leader>H <Cmd>Commits<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
   noremap <Leader>J <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
   noremap <Leader>k <Cmd>Git<CR>
   noremap <Leader>K <Cmd>Git blame<CR>
-  noremap <Leader>O <Cmd>Git add %<CR><Cmd>echom "Staged file '" . @% . "'"<CR>
 endif
 
 " Git gutter settings
@@ -1712,9 +1712,9 @@ if s:plug_active('vim-gitgutter')
   noremap ]g <Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
   noremap [g <Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
   noremap <Leader>g <Cmd>call switch#gitgutter()<CR>
-  noremap <Leader>G <Cmd>GitGutterStageHunk<CR>
-  noremap <Leader>p <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
+  noremap <Leader>O <Cmd>GitGutterStageHunk<CR>
   noremap <Leader>P <Cmd>GitGutterUndoHunk<CR>
+  noremap <Leader>p <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parens and seimcolons, chained &&
