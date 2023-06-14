@@ -14,21 +14,8 @@ function! s:compare_lists(a, b) abort
   return 0
 endfunction
 
-" Parsing function
-" Note: Rg is faster so use by default: https://unix.stackexchange.com/a/524094/112647
-function! utils#grep_escape(...) abort
-  let args = []
-  for item in a:000
-    let item = substitute(item, '\(\\<\|\\>\)', '\\b', 'g')  " translate word borders
-    let item = substitute(item, '\(\\c\|\\C\)', '', 'g')  " smartcase imposed by flag
-    let item = fzf#shellescape(item)
-    call add(args, item)  " from ~/.fzf/plugin, but used by fzf.vim
-  endfor
-  return join(args, ' ')
-endfunction
-
-" Search term for Rg and Ag
-" Todo: Learn other options for rg and ag, write bashrc helpers
+" Call Rg or Ag grep commands
+" Todo: Support dynamically passing other flags
 function! utils#grep_command(cmd) abort
   let prompt = a:cmd . " pattern (default '" . @/ . "'): "
   let search = input(prompt, '', 'customlist,utils#null_list')
@@ -37,16 +24,21 @@ function! utils#grep_command(cmd) abort
   exe a:cmd . ' ' . search . ' ' . path
 endfunction
 
-" Better grep, with limited regex translation
-function! utils#grep_pattern(regex) abort 
-  let path = shellescape(@%)
-  let regex = a:regex
-  let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g')
-  let regex = substitute(regex, '\\s', "[ \t]",  'g')
-  let regex = substitute(regex, '\\S', "[^ \t]", 'g')
-  let result = split(system("grep '" . regex . "' " . path . ' 2>/dev/null'), "\n")
-  echo join(result, "\n")
-  return result
+" Parse grep args and translate regex indicators
+" Note: Rg is faster so use by default: https://unix.stackexchange.com/a/524094/112647
+function! utils#grep_parse(...) abort
+  let args = []
+  for item in a:000
+    let item = substitute(item, '\(\\<\|\\>\)', '\\b', 'g')  " translate word borders
+    let item = substitute(item, '\(\\c\|\\C\)', '', 'g')  " smartcase imposed by flag
+    let item = substitute(item, '\\S', "[^ \t]", 'g')
+    let item = substitute(item, '\\s', "[ \t]",  'g')
+    let item = substitute(item, '\\[ikf]', '\\w', 'g')
+    let item = substitute(item, '\\[IKF]', '[a-zA-Z_]', 'g')
+    let item = fzf#shellescape(item)
+    call add(args, item)  " from ~/.fzf/plugin, but used by fzf.vim
+  endfor
+  return join(args, ' ')
 endfunction
 
 " Null input() completion function to prevent unexpected insertion of literal tabs

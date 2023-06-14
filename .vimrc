@@ -496,8 +496,8 @@ augroup END
 let s:cmd = 'rg --column --line-number --no-heading --color=always --smart-case '
 let s:agflags = '--path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'
 let s:rgflags = '--no-ignore-vcs --hidden'
-command! -bang -nargs=* Ag call fzf#vim#ag_raw(s:agflags . ' -- ' . utils#grep_escape(<f-args>), fzf#vim#with_preview(), <bang>0)
-command! -bang -nargs=* Rg call fzf#vim#grep(s:cmd . s:rgflags . ' -- ' . utils#grep_escape(<f-args>), fzf#vim#with_preview(), <bang>0)
+command! -bang -nargs=* Ag call fzf#vim#ag_raw(s:agflags . ' -- ' . utils#grep_parse(<f-args>), fzf#vim#with_preview(), <bang>0)
+command! -bang -nargs=* Rg call fzf#vim#grep(s:cmd . s:rgflags . ' -- ' . utils#grep_parse(<f-args>), fzf#vim#with_preview(), <bang>0)
 nnoremap <Leader>. :<Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
@@ -528,11 +528,6 @@ nnoremap <Leader>, <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Editing utilities
 "-----------------------------------------------------------------------------"
-" Useful commands
-" Note: Should use Ag and Rg searchers intead of grep here
-command! -nargs=1 Grep call utils#grep_pattern(<q-args>)
-command! -range Reverse <line1>,<line2>call utils#reverse_lines()
-
 " Jump to last changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
@@ -547,8 +542,8 @@ noremap <Right> <C-i>
 
 " Navigate to marks or lines with FZF
 " Note: BLines should be used more, easier than '/' sometimes
-nnoremap <Leader>" <Cmd>BLines<CR>
-nnoremap <Leader>' <Cmd>Marks<CR>
+noremap <Leader>" <Cmd>BLines<CR>
+noremap <Leader>' <Cmd>Marks<CR>
 
 " Default increment and decrement mappings
 " Possibly overwritten by vim-speeddating
@@ -575,9 +570,9 @@ endfor
 " let g:highlightmark_cterm_colors = [5]
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
 command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
-nnoremap <expr> ` "`" . nr2char(97 + v:count)
-nnoremap <expr> ~ 'm' . nr2char(97 + v:count) . ':HighlightMark ' . nr2char(97 + v:count) . '<CR>'
-nnoremap <Leader>~ <Cmd>RemoveHighlights<CR>
+noremap <expr> ` "`" . nr2char(97 + v:count)
+noremap <expr> ~ 'm' . nr2char(97 + v:count) . ':HighlightMark ' . nr2char(97 + v:count) . '<CR>'
+noremap <Leader>~ <Cmd>RemoveHighlights<CR>
 
 " Insert and mormal mode undo and redo. Also permit toggling blocks while in insert mode
 " Note: Here use <C-g> prefix similar to comment insert, and 'break squence' is
@@ -600,15 +595,18 @@ augroup recording_tests
   au BufEnter * let b:recording = 0
 augroup END
 
+" Reverse with command based on https://superuser.com/a/189956/506762
+command! -range Reverse <line1>,<line2>call utils#reverse_lines()
+
+" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
+nnoremap cL mzi<CR><Esc>`z
+
 " Use cc for s because use sneak plugin
 nnoremap c<Backspace> <Nop>
 nnoremap cc s
 vnoremap cc s
 
-" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-nnoremap cL mzi<CR><Esc>`z
-
-" Swap adjacent characters or rows
+" Swap characters or lines
 nnoremap ch <Cmd>call insert#swap_characters(0)<CR>
 nnoremap cl <Cmd>call insert#swap_characters(1)<CR>
 nnoremap ck <Cmd>call insert#swap_lines(0)<CR>
