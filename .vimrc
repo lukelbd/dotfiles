@@ -123,7 +123,7 @@ let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
 let s:popup_filetypes = [
-  \ 'help', '__doc__', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
   \ ]  " for popup toggle
 let s:popup_filetypes += [
   \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
@@ -362,7 +362,6 @@ noremap <C-g> <Cmd>GFiles<CR>
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
 noremap <Leader>i <Cmd>call switch#localdir()<CR>
-noremap <Leader>I <Cmd>tabe \| exe 'SuperMan ' . input('Man page: ', '', 'shellcmd')<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
 noremap <Leader>F <c-w>gf
 
@@ -478,6 +477,7 @@ augroup popup_setup
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType help call popup#help_setup()  " additional setup steps
+  au FileType man call popup#man_setup()  " additional setup steps
   au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
   au User FugitivePager silent! nunmap <buffer> dq
   for s:ft in s:popup_filetypes
@@ -511,7 +511,8 @@ nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Help<CR>
-nnoremap <Leader>V <Cmd>call popup#help_win()<CR>
+nnoremap <Leader>V <Cmd>call popup#help_page()<CR>
+nnoremap <Leader>B <Cmd>call popup#man_page()<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
 
@@ -684,7 +685,7 @@ noremap ]X <Cmd>Qnext<CR>
 augroup spell_toggle
   au!
   let s:filetypes = join(s:lang_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . " if expand('<afile>') != '__doc__' | setlocal spell | endif"
+  exe 'au FileType ' . s:filetypes . ' setlocal spell'
 augroup END
 command! SpellToggle call switch#spellcheck(<args>)
 command! LangToggle call switch#spelllang(<args>)
@@ -1922,12 +1923,12 @@ command! -nargs=0 ShowColors call popup#colors_win()
 command! -nargs=0 ShowPlugin call popup#plugin_win()
 command! -nargs=0 ShowSyntax call popup#syntax_win()
 noremap <Leader># <Cmd>ColorToggle<CR>
-noremap <Leader>1 <Cmd>CurrentColor<CR>
-noremap <Leader>2 <Cmd>CurrentGroup<CR>
-noremap <Leader>3 <Cmd>CurrentSyntax<CR>
-noremap <Leader>4 <Cmd>ShowColors<CR>
-noremap <Leader>5 <Cmd>ShowPlugin<CR>
-noremap <Leader>6 <Cmd>ShowSyntax<CR>
+noremap <Leader>1 <Cmd>CurrentGroup<CR>
+noremap <Leader>2 <Cmd>CurrentSyntax<CR>
+noremap <Leader>3 <Cmd>CurrentColor<CR>
+noremap <Leader>4 <Cmd>ShowPlugin<CR>
+noremap <Leader>5 <Cmd>ShowSyntax<CR>
+noremap <Leader>6 <Cmd>ShowColors<CR>
 
 "-----------------------------------------------------------------------------"
 " Exit

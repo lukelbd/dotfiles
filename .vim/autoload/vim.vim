@@ -216,4 +216,3 @@ function! vim#wipe_bufs()
     echom 'Closed ' . len(names) . ' hidden buffer(s): ' . join(names, ', ')
   endif
 endfunction
-

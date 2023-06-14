@@ -16,7 +16,7 @@ endfunction
 
 " Grep commands
 " Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
-" Todo: Jump to existing windows when present instead of duplicating?
+" Todo: Override sink function with custom s:tab_jump plugin: https://stackoverflow.com/questions/49443373/vim-overwrite-plugin-scoped-function
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
 function! utils#grep_ag(bang, level, depth, ...) abort

@@ -47,7 +47,8 @@ function! popup#syntax_win() abort
   silent call popup#popup_setup(0)
 endfunction
 
-" Setup help windows
+" Show and setup vim help page
+" Note: This ensures original plugins are present
 function! popup#help_setup() abort
   wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
   vertical resize 80 " always certain size
@@ -55,10 +56,7 @@ function! popup#help_setup() abort
   nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
 endfunction
-
-" Show vim help window
-" Note: This is low-level companions to fzf feature
-function! popup#help_win(...) abort
+function! popup#help_page(...) abort
   if a:0
     let item = a:1
   else
@@ -66,6 +64,34 @@ function! popup#help_win(...) abort
   endif
   if !empty(item)
     exe 'vert help ' . item
+  endif
+endfunction
+
+" Show and setup shell man page
+" Note: Adapted from vim-superman. The latter runs quit on failure so not viable
+" for interactive use during vim sessions. Turns out to be very simple.
+function! s:man_cursor() abort
+  let page = expand('<cWORD>')  " below copied from highlight group
+  let page = substitute(page, '([1-9][a-z]\=)\S*', '', '')
+  let w:man_prev = w:man_curr
+  let w:man_curr = page
+  exe 'Man ' . page
+endfunction
+function! popup#man_setup(...) abort
+  let w:man_curr = expand('%:t:r')
+  noremap <nowait> <buffer> [ <Cmd>exe exists('w:man_prev') ? 'Man ' . w:man_prev : ''<CR>
+  noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
+endfunction
+function! popup#man_page() abort
+  let file = @%
+  let page = input('Man page: ', '', 'shellcmd')
+  if empty(page) | return | endif
+  tabedit
+  set filetype=man
+  exe 'Man ' . page
+  if line('$') <= 1
+    silent! quit
+    call file#open_jump(file)
   endif
 endfunction
 

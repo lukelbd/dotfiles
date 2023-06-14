@@ -2,40 +2,18 @@
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
 " Helper functions and variables
+" Warning: For some reason including 'down' in fzf#run prevents fzf from returning
+" a list (version 0.29). However exluding it produces weird behavior that blacks
+" out rest of screen. Workaround is to factor out an unnecessary source function.
 let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
 
-" Generate list of files in directory including hidden and non-hidden
-" Note: For some reason including 'down' in fzf#run prevents fzf from returning a
-" list (version 0.29). However exluding it produces weird behavior that blacks out
-" rest of screen. Workaround is to factor out an unnecessary source function.
+" Generate list of files in directory
+" Note: This includes hidden and non-hidden files
 function! s:open_list(dir) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, 'fnamemodify(v:val, '':t'')')
   call insert(paths, s:new_file, 0)  " highest priority
   return paths
-endfunction
-
-" Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
-" Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
-" on monde version of vim so need to use the *tab jump* command instead!
-function! s:open_jump(file) abort
-  let visible = {}
-  let path = fnamemodify(a:file, ':p')
-  let tabjump = 0
-  for t in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = t + 1 " the tab number
-    for b in tabpagebuflist(tabnr)
-      if fnamemodify(bufname(b), ':p') == path
-        exe 'normal! ' . tabnr . 'gt'
-        return
-      endif
-    endfor
-  endfor
-  if bufname('%') ==# '' && &modified == 0  " fill this window
-    exec 'edit ' . a:file
-  else  " create new tab
-    exec 'tabnew ' . a:file
-  end
 endfunction
 
 " Generate prompt for continuous open
@@ -67,6 +45,29 @@ function! file#open_from(files, local) abort
   if !empty(result)
     exe command . ' ' . result
   endif
+endfunction
+
+" Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
+" Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
+" on monde version of vim so need to use the *tab jump* command instead!
+function! file#open_jump(file) abort
+  let visible = {}
+  let path = fnamemodify(a:file, ':p')
+  let tabjump = 0
+  for t in range(tabpagenr('$')) " iterate through each tab
+    let tabnr = t + 1 " the tab number
+    for b in tabpagebuflist(tabnr)
+      if fnamemodify(bufname(b), ':p') == path
+        exe 'normal! ' . tabnr . 'gt'
+        return
+      endif
+    endfor
+  endfor
+  if bufname('%') ==# '' && &modified == 0  " fill this window
+    exec 'edit ' . a:file
+  else  " create new tab
+    exec 'tabnew ' . a:file
+  end
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
@@ -125,12 +126,13 @@ function! s:open_continuous(...) abort
     elseif path =~# '[*?[\]]'  " failed glob search so do nothing
       :
     elseif !empty(path)
-      call s:open_jump(path)
+      call file#open_jump(path)
     endif
   endfor
 endfunction
 
-" Show the absolute path
+" Print the absolute path
+" Print whether the current file exists
 function! file#print_abspath(...) abort
   let paths = a:0 ? a:000 : [@%]
   for path in paths
@@ -139,8 +141,6 @@ function! file#print_abspath(...) abort
     echom "Absolute: '" . abs . "'"
   endfor
 endfunction
-
-" Echo whether the current file exists
 function! file#print_exists() abort
   let files = glob(expand('<cfile>'))
   if empty(files)
@@ -152,7 +152,6 @@ endfunction
 
 " Rename2.vim  -  Rename a buffer within Vim and on disk
 " Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
-" Copyright June 2007 by Christian J. Robinson <infynity@onewest.net>
 " Usage: Rename[!] {newname}
 function! file#rename_to(name, bang) abort
   let curfile = expand('%:p')
