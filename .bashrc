@@ -483,8 +483,9 @@ _columnize() {
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
 # alias phone-mount='simple-mtpfs -f -v ~/Phone'
-alias du='du -h -d 1'
+alias du='du -h'
 alias df='df -h'
+alias d1='du -h -d 1'  # see also r0 a0
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
@@ -767,65 +768,76 @@ rename() {
   done
 }
 
-# Finding files and pattern
-# NOTE: Ignore list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
-# searcher 'ag'. Should install with 'brew install the_silver_searcher ripgrep'.
-# NOTE: Have no way to include extensionless executables in qgrep
-# NOTE: In grep, using --exclude=.* also excludes current directory
-# NOTE: In find, if dotglob is unset, cannot match hidden files with [.]*
-_excludes=(api build trash sources plugged externals site-packages '*conda*' '*mamba*')
+# Grep or find files and pattern
+# NOTE: Currently silver searcher does not respect global '~/.ignore' folder in $HOME
+# so use override. See: https://github.com/ggreer/the_silver_searcher/issues/1097
+# NOTE: Exclude list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
+# searcher 'ag'. Should install with 'brew install the_silver_searcher ripgrep'. Also
+# note that directories are only excluded if they are *not below* current directory.
+# NOTE: Seems 'grep' has no way to include extensionless executables. Also note 'grep'
+# --exclude=.* will skip current directory (so require subsequent character [^.])
+# and if dotglob is unset then 'find' cannot match hidden files with [.]* (so use .*)
+_excludes=(.git .svn api _build plugged 'trash*' '*conda*' '*mamba*' externals site-packages)
 _includes=(.py .sh .jl .m .ncl .vim .rst .ipynb)
-alias ag='ag --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
+alias ag='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
 alias rg='rg --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
-qgrep() {
-  local commands exclude include
+alias a1='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden --depth 0'  # see also 'd1'
+alias r1='rg --no-ignore-vcs --hidden --max-depth 1'  # see also 'd1'
+_grep() {
+  local commands exclude include nohidden
+  nohidden="$1"
+  shift  # internal argument
   case "$#" in
     0) echo 'Error: qgrep() requires at least 1 arg (the pattern).' && return 1 ;;
-    1) commands=("$1" .) ;;
-    *) commands=("$@") ;;
+    1) commands=("$1" .) ;;  # pattern
+    *) commands=("$@") ;;  # pattern path(s)
   esac
   exclude=("${_excludes[@]/#/--exclude-dir=}")
   include=("${_includes[@]/#/--include=*}")
+  [ "$nohidden" -eq 1 ] && exclude+=(--exclude-dir='.[^.]*')
+  [ "$nohidden" -eq 1 ] && exclude+=(--exclude='[A-Z_.]*') || exclude+=(--exclude='[A-Z_]*')
   command grep \
-    -i -r -E --color=auto --exclude='[A-Z_.]*' \
-    --exclude-dir='.[^.]*' --exclude-dir='_*' \
+    -i -r -E --color=auto --exclude-dir='_*' \
     ${exclude[@]} ${include[@]} ${commands[@]}  # only regex and paths allowed
-
 }
-qfind() {
-  local commands exclude include 
+_find() {
+  local commands exclude include nohidden header
+  nohidden="$1"
+  shift  # internal argument
   case "$#" in
-    0) commands=(. '*' -print) ;;
-    1) commands=("$1" '*' -print) ;;
-    2) commands=("$1" "$2" -print) ;;
-    *) commands=("$@") ;;
+    0) commands=(. '*' -print) ;;  # everything
+    1) commands=("$1" '*' -print) ;;  # path
+    2) commands=("$1" "$2" -print) ;;  # path pattern
+    *) commands=("$@") ;;  # path pattern (commands)
   esac
+  [ "$nohidden" -eq 1 ] && header=(-path '*/.*' -prune)
   exclude=(${_excludes[@]/#/-o -name })  # expand into commands *and* names
   include=(${_includes[@]/#/-o -name })  # expand into commands *and* names
-  include=("${include[@]//./*.}")  # add glob patterns
-  command find "${commands[0]}" \
-    -path '*/.*' -prune \
+  include=("${include[@]//./*.}")  # glob extension patterns
+  command find "${commands[0]}" "${header[@]}" \
     -o -name '[A-Z_]*' -prune \
     -o -type d \( "${exclude[@]:1}" \) -prune \
     -o -type f \( "${include[@]:1}" \) \
     -name "${commands[@]:1}"
-    # -o -type f -name
-    # "${commands[@]:1}"  # name filter plus optional operators
 }
+qg() { _grep 1 "$@"; }  # quick grep
+hg() { _grep 0 "$@"; }  # include hidden
+qf() { _find 1 "$@"; }  # quick find
+hf() { _find 0 "$@"; }  # include hidden
 
 # Refactor, coding, and logging tools
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
 # occurences of file paths (should be 1 but this is convenient way to record them).
-note() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\bnote:' {} \;; }
-todo() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\btodo:' {} \;; }
-error() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\berror:' {} \;; }
-warning() { qfind "${1:-.}" '*' -print -a -exec grep -i -n '\bwarning:' {} \;; }
+note() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\bnote:' {} \;; }
+todo() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\btodo:' {} \;; }
+error() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\berror:' {} \;; }
+warning() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\bwarning:' {} \;; }
 refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
   [ $# -eq 2 ] \
     || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
-  result=$(qfind . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
+  result=$(qf . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
     || { echo "Error: Search $1 to $2 failed."; return 1; }
   readarray -t files < <(echo "$result"$'\nEOF' | \
     awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \

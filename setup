@@ -6,7 +6,7 @@
 # Read the tracked file names. Note style configs required to be in .config.
 # See: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
 shopt -s nullglob
-configs=(pep8 black)  # required
+configs=(pep8 black isort .ignore)  # required
 exclude=(README.md REGEXES.md .gitignore environment.yml envs backup cleanup setup)
 dotfiles=$HOME/dotfiles  # dotfiles directory
 cd "$dotfiles" || {
@@ -14,8 +14,15 @@ cd "$dotfiles" || {
   exit 1
 }
 read -r -a names < <(git ls-tree --name-only master | xargs)
+
+# Create required folders
+# NOTE: If 'undodir' in vim is set to non-existent folder failure is silent
 backup=$dotfiles/backup
+undohist=$HOME/.vim_undo_hist  # required for persistent undo
+nvimroot=$HOME/.config/nvim
 [ -d "$backup" ] || mkdir "$backup"
+[ -d "$nvimroot" ] || mkdir "$nvimroot"
+[ -d "$undohist" ] || mkdir "$undohist"
 
 # Create symlinks
 # NOTE: Moves existing stuff to backup storage
@@ -50,8 +57,6 @@ done
 # For python have to manually search for the latest version using reverse number sort.
 libroot=$HOME/Library  # library source
 texroot=/Library/TeX/Root  # tex distribution
-nvimroot=$HOME/.config/nvim
-[ -d "$nvimroot" ] || mkdir "$nvimroot"
 if [ -d "$HOME/mambaforge" ]; then
   condaroot=$HOME/mambaforge
 elif [ -d "$HOME/miniforge" ]; then

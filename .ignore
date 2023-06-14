@@ -1,18 +1,15 @@
 # Ignore patterns for ripgrep 'rg' and silver searcher 'ag'
-# NOTE: This should be kept in sync with '.gitignore.default' file.
-# NOTE: Head should be kept in sync with 'qgrep' bashrc function.
-# NOTE: Should work for both ripgrep and ag.
-# bashrc function. See: https://www.linode.com/docs/guides/silver-searcher-on-linux/
-# Unsearched folders
+# This file should be kept in sync with '.gitignore.default' and bashrc functions
+# Auto-generated
+.git
+.svn
 api
-build
-trash
-sources
+_build
 plugged
+*conda*/
+*mamba*/
 externals
 site-packages
-*conda*
-*mamba*
 
 # Trash folders
 tmp

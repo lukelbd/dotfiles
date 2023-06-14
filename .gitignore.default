@@ -1,5 +1,4 @@
-# Ignore patterns for git management
-# NOTE: This should be kept in sync with '.ignore' ag/rg file.
+# This file should be kept in sync with '.ignore' ag/rg file.
 # Untracked folders
 figs*
 vids*

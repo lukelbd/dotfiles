@@ -497,11 +497,11 @@ augroup END
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N).
 " Note: Here the 'k' is just easy to access and 'v' is for vim commands
 " Note: Difficult to pass flags to Ag/Rg with default interface. Solve with below.
-" Ag solution: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
-" Rg solution: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
+" Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
+" Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
 let s:cmd = 'rg --column --line-number --no-heading --color=always --smart-case '
-let s:agflags = '--skip-vcs-ignores --hidden'  " see https://github.com/ggreer/the_silver_searcher/issues/1189
-let s:rgflags = '--no-ignore-vcs --hidden'  " see https://github.com/BurntSushi/ripgrep/issues/645
+let s:agflags = '--path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'
+let s:rgflags = '--no-ignore-vcs --hidden'
 command! -bang -nargs=* Ag call fzf#vim#ag_raw(s:agflags . ' -- ' . utils#grep_escape(<f-args>), fzf#vim#with_preview(), <bang>0)
 command! -bang -nargs=* Rg call fzf#vim#grep(s:cmd . s:rgflags . ' -- ' . utils#grep_escape(<f-args>), fzf#vim#with_preview(), <bang>0)
 nnoremap <Leader>. :<Up><CR>
@@ -1662,17 +1662,14 @@ if s:plug_active('vim-test')
 endif
 
 " Undo tree settings
-" Note: This sort of seems against the anti-nerdtree anti-tagbar minimalist
-" principal but think unique utilities that briefly pop up on left are exception.
+" Todo: Currently can only clear history with 'C' in active pane not externally. Need
+" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+" Note: This sort of seems against the anti-nerdtree anti-tagbar minimalist principal
+" but think unique utilities that briefly pop up on left are exception.
 if s:plug_active('undotree')
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
-  if has('persistent_undo')
-    let &undodir=$HOME . '/.undodir'
-    set undofile
-  endif
-  nmap <Leader>U <Plug>UndotreeClearHistory
-  nnoremap <Leader>u <Cmd>UndotreeToggle<CR>
+  noremap <Leader>u <Cmd>UndotreeToggle<CR>
 endif
 
 " Fugitive settings
