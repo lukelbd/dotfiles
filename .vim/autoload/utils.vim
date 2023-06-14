@@ -19,7 +19,10 @@ endfunction
 function! utils#grep_escape(...) abort
   let args = []
   for item in a:000
-    call add(args, fzf#shellescape(item))  " from ~/.fzf/plugin, but used by fzf.vim
+    let item = substitute(item, '\(\\<\|\\>\)', '\\b', 'g')  " translate word borders
+    let item = substitute(item, '\(\\c\|\\C\)', '', 'g')  " smartcase imposed by flag
+    let item = fzf#shellescape(item)
+    call add(args, item)  " from ~/.fzf/plugin, but used by fzf.vim
   endfor
   return join(args, ' ')
 endfunction
@@ -30,17 +33,18 @@ function! utils#grep_command(cmd) abort
   let prompt = a:cmd . " pattern (default '" . @/ . "'): "
   let search = input(prompt, '', 'customlist,utils#null_list')
   let search = empty(search) ? @/ : search
-  let path = expand('%:h')
+  let path = expand('%:h')  " command also translates regex
   exe a:cmd . ' ' . search . ' ' . path
 endfunction
 
 " Better grep, with limited regex translation
 function! utils#grep_pattern(regex) abort 
+  let path = shellescape(@%)
   let regex = a:regex
   let regex = substitute(regex, '\(\\<\|\\>\)', '\\b', 'g')
   let regex = substitute(regex, '\\s', "[ \t]",  'g')
   let regex = substitute(regex, '\\S', "[^ \t]", 'g')
-  let result = split(system("grep '" . regex . "' " . shellescape(@%) . ' 2>/dev/null'), "\n")
+  let result = split(system("grep '" . regex . "' " . path . ' 2>/dev/null'), "\n")
   echo join(result, "\n")
   return result
 endfunction

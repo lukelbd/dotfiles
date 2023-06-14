@@ -477,7 +477,7 @@ augroup popup_setup
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType help call popup#help_setup()  " additional setup steps
-  au FileType checkhealth file checkhealth  " set buffer name to checkhealth
+  au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
   au User FugitivePager silent! nunmap <buffer> dq
   for s:ft in s:popup_filetypes
     let s:modifiable = s:ft ==# 'gitcommit'
