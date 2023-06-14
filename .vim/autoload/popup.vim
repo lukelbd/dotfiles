@@ -68,18 +68,21 @@ function! popup#help_page(...) abort
 endfunction
 
 " Show and setup shell man page
+" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
+" page to record navigation history. Order of assignment below is critical.
 " Note: Adapted from vim-superman. The latter runs quit on failure so not viable
 " for interactive use during vim sessions. Turns out to be very simple.
 function! s:man_cursor() abort
+  let current = b:man_curr
   let page = expand('<cWORD>')  " below copied from highlight group
   let page = substitute(page, '([1-9][a-z]\=)\S*', '', '')
-  let w:man_prev = w:man_curr
-  let w:man_curr = page
   exe 'Man ' . page
+  let b:man_prev = current
+  let b:man_curr = page
 endfunction
 function! popup#man_setup(...) abort
-  let w:man_curr = expand('%:t:r')
-  noremap <nowait> <buffer> [ <Cmd>exe exists('w:man_prev') ? 'Man ' . w:man_prev : ''<CR>
+  let b:man_curr = expand('%:t:r')
+  noremap <nowait> <buffer> [ <Cmd>exe exists('b:man_prev') ? 'Man ' . b:man_prev : ''<CR>
   noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
 endfunction
 function! popup#man_page() abort
