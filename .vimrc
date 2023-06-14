@@ -546,8 +546,9 @@ noremap <Left> <C-o>
 noremap <Right> <C-i>
 
 " Navigate to marks or lines with FZF
+" Note: BLines is underitilized so use with peekaboo instead
+" nnoremap <Leader>" <Cmd>BLines<CR>
 nnoremap <Leader>' <Cmd>Marks<CR>
-nnoremap <Leader>" <Cmd>BLines<CR>
 
 " Default increment and decrement mappings
 " Possibly overwritten by vim-speeddating
@@ -954,8 +955,10 @@ call plug#('Konfekt/FastFold')
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
 " call plug#('kshenoy/vim-signature')  " experimental
-" call plug#('junegunn/vim-peekaboo')
+call plug#('junegunn/vim-peekaboo')
 call plug#('justinmk/vim-sneak')
+let g:peekaboo_prefix = '<Leader>'
+let g:peekaboo_window = 'vertical topleft 30new'
 
 " Matching groups and searching
 " Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search
@@ -1573,10 +1576,10 @@ endif
 if s:plug_active('ale')
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
+  " noremap <Leader>! <Cmd>ALEDetail<CR>  " redundant with :lopen
   noremap <Leader>x <Cmd>lopen<CR>
   noremap <Leader>X <Cmd>call switch#ale()<CR>
-  noremap <Leader>! <Cmd>ALEDetail<CR>
-  noremap <Leader>@ <Cmd>ALEInfo<CR>
+  noremap <Leader>! <Cmd>ALEInfo<CR>
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
