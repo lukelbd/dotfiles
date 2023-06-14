@@ -116,9 +116,14 @@
 " gq    Close the status buffer.
 " .     Start a |:| command line with the file under the
 " g?    Show help for |fugitive-maps|.
+
+
+" Configure general git mappings
+" Todo: Add to this
 function! git#git_setup() abort
-  " silent! nunmap <buffer> u
 endfunction
+
+" Configure blame mappings
+" Todo: Add to this
 function! git#blame_setup() abort
-  " silent! nunmap <buffer> u
 endfunction

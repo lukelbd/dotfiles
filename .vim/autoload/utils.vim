@@ -1,9 +1,9 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
-" Helper function for comparing values
-" Copied from: https://vi.stackexchange.com/a/14359
-function! s:compare(a, b) abort
+" Comapre position indices [lnum, col, idx]
+" See: https://vi.stackexchange.com/a/14359
+function! s:compare_lists(a, b) abort
   for i in range(len(a:a))
     if a:a[i] < a:b[i]
       return -1
@@ -12,35 +12,6 @@ function! s:compare(a, b) abort
     endif
   endfor
   return 0
-endfunction
-
-" Clear writable registers. On some vim versions [] fails (is ideal,
-" because removes from :registers), but '' will at least empty them out.
-" See: https://stackoverflow.com/questions/19430200/how-to-clear-vim-registers-effectively
-function! utils#clear_regs()
-  for i in range(34, 122)
-    silent! call setreg(nr2char(i), '')
-    silent! call setreg(nr2char(i), [])
-  endfor
-endfunction
-
-" Close buffers that do not appear in windows
-" See: https://stackoverflow.com/a/7321131/4970632
-function! utils#close_bufs()
-  let nums = []
-  for t in range(1, tabpagenr('$'))
-    call extend(nums, tabpagebuflist(t))
-  endfor
-  let names = []
-  for b in range(1, bufnr('$'))
-    if bufexists(b) && !getbufvar(b, '&mod') && index(nums, b) == -1
-      call add(names, bufname(b))
-      silent exe 'bwipeout ' b
-    endif
-  endfor
-  if !empty(names)
-    echom 'Closed invisible buffer(s): ' . join(names, ', ')
-  endif
 endfunction
 
 " Parsing function
@@ -126,22 +97,6 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
-" Show the active buffer names
-function! utils#show_bufs() abort
-  let result = {}
-  for nr in range(0, bufnr('$'))
-    if buflisted(nr) | let result[nr] = bufname(nr) | endif
-  endfor
-  echo join(values(map(result, "v:key . ': ' . v:val")), "\n")
-  return result
-endfunction
-
-" Show the absolute path
-function! utils#show_path(...) abort
-  let path = a:0 ? a:1 : @%
-  echom 'Path: ' . fnamemodify(path, ':p')
-endfunction
-
 " Reverse the selected lines
 function! utils#reverse_lines() range abort
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
@@ -198,9 +153,10 @@ function! utils#wrap_cyclic(count, list, ...) abort
   endif
   call add(context, current)
   " Jump to next loc circularly
+  let expr = 'compare == s:compare_lists(context, [v:val.lnum, v:val.col, v:val.idx])'
   call filter(items, 'v:val.bufnr == bufnr')
   let nbuffer = len(get(items, 0, {}))
-  call filter(items, 's:compare(context, [v:val.lnum, v:val.col, v:val.idx]) == compare')
+  call filter(items, expr)
   let inext = get(get(items, 0, {}), 'idx', 'E553: No more items')
   if type(inext) == type(0)
     return cmd . inext

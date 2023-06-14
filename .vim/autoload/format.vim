@@ -1,6 +1,19 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
+" Utilitify for removing the item indicator
+function! s:remove_item(line, first, last) abort
+  let pattern = s:search_item(0)
+  let pattern_optional = s:search_item(1)
+  let match_head = substitute(a:line, pattern, '\1', '')
+  let match_item = substitute(a:line, pattern, '\2', '')
+  keepjumps exe a:first . ',' . a:last
+    \ . 's@' . pattern_optional
+    \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
+    \ . '@ge'
+  call histdel('/', -1)
+endfunction
+
 " Indent multiple times
 function! format#indent_items(dedent, count) range abort
   exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
@@ -60,19 +73,6 @@ function! s:search_item(optional)
     let indicator = indicator . '\?'
   endif
   return head . indicator . tail
-endfunction
-
-" Utilitify for removing the item indicator
-function! s:remove_item(line, first, last) abort
-  let pattern = s:search_item(0)
-  let pattern_optional = s:search_item(1)
-  let match_head = substitute(a:line, pattern, '\1', '')
-  let match_item = substitute(a:line, pattern, '\2', '')
-  keepjumps exe a:first . ',' . a:last
-    \ . 's@' . pattern_optional
-    \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
-    \ . '@ge'
-  call histdel('/', -1)
 endfunction
 
 " Fix all lines that are too long, with special consideration for bullet style lists and
