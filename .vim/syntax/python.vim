@@ -18,9 +18,9 @@ endif
 " See: https://github.com/vim/vim/issues/2790
 syntax sync minlines=100
 
-"
+"------------------------------------------------------------------------------"
 " Commands
-"
+"------------------------------------------------------------------------------"
 command! -buffer Python2Syntax let b:python_version_2 = 1 | let &syntax=&syntax
 command! -buffer Python3Syntax let b:python_version_2 = 0 | let &syntax=&syntax
 
@@ -44,9 +44,9 @@ function! s:Python2Syntax()
     return s:Enabled('g:python_version_2')
 endfunction
 
-"
+"------------------------------------------------------------------------------"
 " Default options
-"
+"------------------------------------------------------------------------------"
 
 call s:EnableByDefault('g:python_slow_sync')
 call s:EnableByDefault('g:python_highlight_builtin_funcs_kwarg')
@@ -72,17 +72,17 @@ if s:Enabled('g:python_highlight_builtins')
     call s:EnableByDefault('g:python_highlight_builtin_funcs')
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Function calls
-"
+"------------------------------------------------------------------------------"
 
 if s:Enabled('g:python_highlight_func_calls')
     syn match pythonFunctionCall '\%([^[:cntrl:][:space:][:punct:][:digit:]]\|_\)\%([^[:cntrl:][:punct:][:space:]]\|_\)*\ze\%(\s*(\)'
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Keywords
-"
+"------------------------------------------------------------------------------"
 
 syn keyword pythonStatement     break continue del return pass yield global assert lambda with
 syn keyword pythonStatement     raise nextgroup=pythonExClass skipwhite
@@ -122,18 +122,18 @@ else
 endif
 
 
-"
+"------------------------------------------------------------------------------"
 " Operators
-"
+"------------------------------------------------------------------------------"
 syn keyword pythonOperator      and in is not or
 if s:Enabled('g:python_highlight_operators')
     syn match pythonOperator        '\V=\|-\|+\|*\|@\|/\|%\|&\||\|^\|~\|<\|>\|!=\|:='
 endif
 syn match pythonError           '[$?]\|\([-+@%&|^~]\)\1\{1,}\|\([=*/<>]\)\2\{2,}\|\([+@/%&|^~<>]\)\3\@![-+*@/%&|^~<>]\|\*\*[*@/%&|^<>]\|=[*@/%&|^<>]\|-[+*@/%&|^~<]\|[<!>]\+=\{2,}\|!\{2,}=\+' display
 
-"
+"------------------------------------------------------------------------------"
 " Decorators (new in Python 2.4)
-"
+"------------------------------------------------------------------------------"
 
 syn match   pythonDecorator    '^\s*\zs@' display nextgroup=pythonDottedName skipwhite
 if s:Python2Syntax()
@@ -143,9 +143,9 @@ else
 endif
 syn match   pythonDot        '\.' display containedin=pythonDottedName
 
-"
+"------------------------------------------------------------------------------"
 " Comments
-"
+"------------------------------------------------------------------------------"
 
 syn match   pythonComment       '#.*$' display contains=pythonTodo,@Spell
 if !s:Enabled('g:python_highlight_file_headers_as_comments')
@@ -154,9 +154,9 @@ if !s:Enabled('g:python_highlight_file_headers_as_comments')
 endif
 syn keyword pythonTodo          TODO FIXME XXX contained
 
-"
+"------------------------------------------------------------------------------"
 " Errors
-"
+"------------------------------------------------------------------------------"
 
 syn match pythonError           '\<\d\+[^0-9[:space:]]\+\>' display
 
@@ -171,9 +171,9 @@ if s:Enabled('g:python_highlight_space_errors')
     syn match pythonSpaceError    '\s\+$' display
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Strings
-"
+"------------------------------------------------------------------------------"
 
 if s:Python2Syntax()
     " Python 2 strings
@@ -303,9 +303,9 @@ if s:Enabled('g:python_highlight_doctests')
     syn region pythonDocTest2  start='^\s*>>>' skip=+\\"+ end=+"""+he=s-1 end='^\s*$' contained
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Numbers (ints, longs, floats, complex)
-"
+"------------------------------------------------------------------------------"
 
 if s:Python2Syntax()
     syn match   pythonHexError    '\<0[xX]\x*[g-zG-Z]\+\x*[lL]\=\>' display
@@ -355,9 +355,9 @@ else
     syn match   pythonFloat       '\<\d\%([_0-9]*\d\)\=\.\d\=\%([_0-9]*\d\)\=\%([eE][+-]\=\d\%([_0-9]*\d\)\=\)\=[jJ]\=' display
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Builtin objects
-"
+"------------------------------------------------------------------------------"
 
 if s:Enabled('g:python_highlight_builtin_objs')
     syn keyword pythonNone        None
@@ -367,9 +367,9 @@ if s:Enabled('g:python_highlight_builtin_objs')
     syn keyword pythonBuiltinObj  __loader__ __spec__ __path__ __cached__
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Builtin functions
-"
+"------------------------------------------------------------------------------"
 
 if s:Enabled('g:python_highlight_builtin_funcs')
     let s:funcs_re = '__import__|abs|all|any|bin|callable|chr|classmethod|compile|complex|delattr|dir|divmod|enumerate|eval|filter|format|getattr|globals|hasattr|hash|help|hex|id|input|isinstance|issubclass|iter|len|locals|map|max|memoryview|min|next|oct|open|ord|pow|property|range|repr|reversed|round|setattr|slice|sorted|staticmethod|sum|super|type|vars|zip'
@@ -393,18 +393,18 @@ if s:Enabled('g:python_highlight_builtin_funcs')
     unlet s:funcs_re
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Builtin types
-"
+"------------------------------------------------------------------------------"
 
 if s:Enabled('g:python_highlight_builtin_types')
     syn match pythonBuiltinType    '\v\.@<!<%(object|bool|int|float|tuple|str|list|dict|set|frozenset|bytearray|bytes)>'
 endif
 
 
-"
+"------------------------------------------------------------------------------"
 " Builtin exceptions and warnings
-"
+"------------------------------------------------------------------------------"
 
 if s:Enabled('g:python_highlight_exceptions')
     let s:exs_re = 'BaseException|Exception|ArithmeticError|LookupError|EnvironmentError|AssertionError|AttributeError|BufferError|EOFError|FloatingPointError|GeneratorExit|IOError|ImportError|IndexError|KeyError|KeyboardInterrupt|MemoryError|NameError|NotImplementedError|OSError|OverflowError|ReferenceError|RuntimeError|StopIteration|SyntaxError|IndentationError|TabError|SystemError|SystemExit|TypeError|UnboundLocalError|UnicodeError|UnicodeEncodeError|UnicodeDecodeError|UnicodeTranslateError|ValueError|VMSError|WindowsError|ZeroDivisionError|Warning|UserWarning|BytesWarning|DeprecationWarning|PendingDeprecationWarning|SyntaxWarning|RuntimeWarning|FutureWarning|ImportWarning|UnicodeWarning'
@@ -419,9 +419,9 @@ if s:Enabled('g:python_highlight_exceptions')
     unlet s:exs_re
 endif
 
-"
+"------------------------------------------------------------------------------"
 " Misc
-"
+"------------------------------------------------------------------------------"
 
 if s:Enabled('g:python_slow_sync')
     syn sync minlines=2000
