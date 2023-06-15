@@ -1433,8 +1433,8 @@ endif
 " Note: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
 " 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
 " Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
-" Note: LspDefinition may jump to another file in current window. Instead should
-" just use peek to see definition and only use built-in 'gd' local definitions.
+" Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
+" so below behavior is close to 'Existing': https://github.com/prabirshrestha/vim-lsp/pull/776
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 " Note: Previously had issues with markdown preview display in popup windows but
@@ -1453,7 +1453,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>^ <Cmd>verbose LspStatus<CR>
   noremap <Leader>` <Cmd>CheckHealth<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
-  nnoremap <Leader><CR> gd
+  nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>
   " nnoremap <CR> [<C-i>  " jump to vim definition
   " nnoremap \<Space> [I  " display occurences
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
