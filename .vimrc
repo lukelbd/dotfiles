@@ -38,6 +38,7 @@ set nocompatible  " always use the vim defaults
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
+set buflisted  " list all buffers by default
 set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
@@ -86,7 +87,7 @@ set showtabline=2
 set softtabstop=2
 set splitbelow
 set splitright  " splitting behavior
-set switchbuf=useopen  " when switching buffers use open tab
+set switchbuf=usetab,newtab  " when switching buffers use open tab
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " shoft default tabs
 set ttymouse=sgr  " different cursor shapes for different modes
@@ -378,10 +379,9 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Note: Here :Rename is adapted from :Rename2 plugin
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
-noremap <Leader>i <Cmd>Abspath<CR>
-noremap <Leader>I <Cmd>call switch#localdir()<CR>
+noremap <Leader>i <Cmd>call switch#localdir()<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
-noremap <Leader>F <c-w>gf
+noremap <Leader>F <Cmd>exe 'Existing ' . expand('<cfile>')<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -1053,8 +1053,9 @@ let g:HowMuch_no_mappings = 1
 let g:speeddating_no_mappings = 1
 
 " User interface selection stuff
-" Note: Shougo claims "unite provides an integration interface for several
-" sources and you can create new interfaces" but fzf permits integration too.
+" Note: 'Existing' opens ag/rg in existing open tab/window, similar to switchbuf=usetab.
+" However :Buffers still fails even with fzf_buffers_jump=1 (with the below :Existing
+" override it loads duplicate tabs, otherwise overwrites window). Not meant for tabs.
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
 " centered on bottom. Note fzf#wrap is required to apply global settings and cannot
 " rely on fzf#run return values (will result in weird hard-to-debug issues).
@@ -1068,6 +1069,8 @@ let g:speeddating_no_mappings = 1
 " call plug#('ctrlpvim/ctrlp.vim')  " replaced with fzf
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
+let g:fzf_buffers_jump = 1
+let g:fzf_tags_command = 'ctags -f - --excmd=number '
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_action = {
   \ 'ctrl-m': 'Existing',
@@ -1697,10 +1700,11 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
+  noremap <Leader>I <Cmd>Git blame<CR>
   noremap <Leader>g <Cmd>GitGutterStageHunk<CR>
   noremap <Leader>G <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>h <Cmd>Git<CR>
-  noremap <Leader>H <Cmd>Git blame<CR>
+  noremap <Leader>H <Cmd>Git reset %<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
   noremap <Leader>J <Cmd>BCommits<CR>
   noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>

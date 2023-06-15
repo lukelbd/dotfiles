@@ -1,6 +1,17 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim windows and sessions
 "-----------------------------------------------------------------------------"
+" List buffers by most recent
+" See: https://vi.stackexchange.com/a/22428/8084 (comment)
+" Note: For some reason some edited files have 'nobuflisted' set (so ignored by
+" e.g. :bnext). Maybe due to some plugin. Anyway do not use buflisted() filter.
+function! s:recent_bufs() abort
+  let info = getbufinfo()
+  let info = sort(info, {val1, val2 -> val2.lastused - val1.lastused})
+  return map(info, {idx, val -> val.bufnr})
+  " return filter(nums, {val -> buflisted(val)})
+endfunction
+
 " Safely closing tabs and windows
 " Note: This moves to the left tab after closure
 " Note: Calling quit inside codei buffer triggers 'attempt to close buffer
@@ -65,39 +76,39 @@ function! vim#init_session(...)
 endfunction
 
 " Function that generates lists of tabs and their numbers
+" Note: Here sorty by recently accessed to help replace :Buffers
 " Warning: Need to keep up-to-date with tabline setting name
 function! s:fzf_tab_source() abort
-  let tabskip = get(g:, 'tabline_skip_filetypes', [])
   let ndigits = len(string(tabpagenr('$')))
-  let unsorted = []
+  let tabskip = get(g:, 'tabline_skip_filetypes', [])
+  let unsorted = {}
   for tnr in range(tabpagenr('$')) " iterate through each tab
     let tabnr = tnr + 1 " the tab number
-    let buflist = tabpagebuflist(tabnr)
-    for bnr in buflist
-      " Get the 'primary' panel in a tab, ignore 'helper' panels even when in focus
+    let tbufs = tabpagebuflist(tabnr)
+    for bnr in tbufs
+      " Get 'primary' panel in tab, ignore 'helpers' even when focused
       " If there is *only* a 'helper' panel, use tnr for the title
       if index(tabskip, getbufvar(bnr, '&ft')) == -1
-        let bufnr = bnr
-        break
-      elseif bnr == buflist[-1]
+        let bufnr = bnr | break
+      elseif bnr == tbufs[-1]
         let bufnr = bnr
       endif
     endfor
     let pad = repeat(' ', ndigits - len(string(tabnr)))
-    let suffix = fnamemodify(bufname(bufnr), '%:t')
-    call add(unsorted, pad . tabnr . ': ' . suffix)  " display name
+    let path = fnamemodify(bufname(bufnr), '%:t')
+    let path = pad . tabnr . ': ' . path  " displayed string
+    let unsorted[string(bufnr)] = path
   endfor
-  let ctab = tabpagenr()
   let sorted = []
-  for offset in range(1, tabpagenr('$'))
-    if ctab + offset <= len(unsorted)
-      call add(sorted, unsorted[ctab + offset - 1])
-    endif
-    if ctab - offset > 0
-      call add(sorted, unsorted[ctab - offset - 1])
+  let used = []
+  let nums = keys(unsorted)
+  for bnr in s:recent_bufs()
+    let idx = index(nums, string(bnr))
+    if idx >= 0
+      call add(sorted, remove(unsorted, nums[idx]))
     endif
   endfor
-  return sorted
+  return sorted + values(unsorted)
 endfunction
 
 " Select from open tabs
@@ -196,19 +207,17 @@ function! vim#source_motion_expr(...) abort
   return utils#motion_func('vim#source_motion', a:000)
 endfunction
 
-" Show the active buffer names
-" Note: This also sorts by name
+" Print currently open buffers
+" Note: This should be used in conjunction with :WipeBufs
 function! vim#show_bufs() abort
-  let result = {}
   let ndigits = len(string(bufnr('$')))
-  let buffers = []
-  for bufnr in range(0, bufnr('$'))
-    if buflisted(bufnr)
-      let pad = repeat(' ', ndigits - len(string(bufnr)))
-      call add(buffers, pad . bufnr . ': ' . bufname(bufnr))
-    endif
+  let result = {}
+  let lines = []
+  for bufnr in s:recent_bufs()
+    let pad = repeat(' ', ndigits - len(string(bufnr)))
+    call add(lines, pad . bufnr . ': ' . bufname(bufnr))
   endfor
-  echo join(buffers, "\n")
+  echo join(lines, "\n")
 endfunction
 
 " Close buffers that do not appear in windows
