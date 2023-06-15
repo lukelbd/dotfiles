@@ -158,6 +158,7 @@ function! s:move_tab_sink(nr) abort
 endfunction
 
 " Refresh config settings
+" Todo: Expand to include all filetype files? Or not necessary?
 function! vim#refresh_config() abort
   filetype detect  " if started with empty file, but now shebang makes filetype clear
   let loaded = []

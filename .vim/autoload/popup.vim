@@ -105,7 +105,7 @@ function! popup#man_page() abort
   exe 'Man ' . page
   if line('$') <= 1
     silent! quit
-    call file#open_jump(file)
+    call file#open_existing(file)
   endif
 endfunction
 function! popup#man_setup(...) abort

@@ -363,11 +363,13 @@ nnoremap <C-e> <Cmd>call vim#close_window()<CR>
 " Note: These are just convenience functions (see file#open_from) for details.
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
-command! -nargs=1 -complete=file Jump call file#open_jump(<q-args>)
+command! -nargs=? -complete=file Existing call file#open_existing(<q-args>)
 nnoremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 nnoremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
 nnoremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
 nnoremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
+" nnoremap <C-g> <Cmd>Locate<CR>  " uses giant databsae from unix 'locate'
+" nnoremap <C-g> <Cmd>Files<CR>  " see file#open_from(1, ...)
 nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
@@ -1068,8 +1070,8 @@ call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, inclu
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
   " \ 'ctrl-m': 'tab split',
 let g:fzf_action = {
+  \ 'ctrl-m': 'Existing',
   \ 'ctrl-i': 'silent!',
-  \ 'ctrl-m': 'Jump',
   \ 'ctrl-t': 'tab split',
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit'
@@ -1197,7 +1199,7 @@ call plug#('junegunn/vim-easy-align')
 " call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
 call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
-call plug#('jupyter-vim/jupyter-vim')  " pairing with jupyter consoles
+call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
@@ -1835,13 +1837,16 @@ noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
 " Color scheme iteration
-" Note: This is mainly used for GUI vim, otherwise use terminal themes
+" Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
+" Note: This is mainly used for GUI vim (otherwise use terminal themes). Ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-noremap <Leader>8 <Cmd>Colors<CR>
-noremap <Leader>9 <Cmd>SchemeNext<CR>
-noremap <Leader>0 <Cmd>SchemePrev<CR>
-command! SchemePrev call utils#wrap_colorschemes(0)
-command! SchemeNext call utils#wrap_colorschemes(1)
+if has('gui_running')
+  noremap <Leader>8 <Cmd>Colors<CR>
+  noremap <Leader>9 <Cmd>SchemeNext<CR>
+  noremap <Leader>0 <Cmd>SchemePrev<CR>
+  command! SchemePrev call utils#wrap_colorschemes(0)
+  command! SchemeNext call utils#wrap_colorschemes(1)
+endif
 
 " GUI overrides and colors
 " Note: Should play with different schemes here

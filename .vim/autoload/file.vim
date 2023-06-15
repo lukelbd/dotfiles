@@ -9,22 +9,43 @@ let s:new_file = '[new file]'  " dummy entry for requesting new file in current 
 
 " Generate list of files in directory
 " Note: This includes hidden and non-hidden files
-function! s:open_list(dir) abort
+function! s:path_source(dir) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, 'fnamemodify(v:val, '':t'')')
   call insert(paths, s:new_file, 0)  " highest priority
   return paths
 endfunction
 
-" Generate prompt for continuous open
-" Note: This removes $HOME folder and current path from string.
-function! s:open_prompt(path) abort
-  let prompt = a:path
-  let prompt = substitute(prompt, '^\~', expand('~'), '')  " see also file.vim
-  let prompt = substitute(prompt, '^' . getcwd(), '.', '')
-  let prompt = substitute(prompt, '^' . expand('~'), '~', '')
-  let prompt = empty(prompt) ? '.' : prompt
-  return prompt . '/'  " remove user folder
+" Abbreviate path for the continuous open prompt
+" Note: This removes $HOME folder and current path from string. Used in utils.vim
+function! file#path_abbrev(path) abort
+  let abb = substitute(a:path, '^\~', expand('~'), '')
+  let abb = substitute(abb, '^' . getcwd(), '.', '')
+  let abb = substitute(abb, '^' . expand('~'), '~', '')
+  return empty(abb) ? '.' : abb
+endfunction
+
+" Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
+" Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
+" on monde version of vim so need to use the *tab jump* command instead!
+function! file#open_existing(file) abort
+  let visible = {}
+  let path = fnamemodify(a:file, ':p')
+  let tabjump = 0
+  for t in range(tabpagenr('$')) " iterate through each tab
+    let tabnr = t + 1 " the tab number
+    for b in tabpagebuflist(tabnr)
+      if fnamemodify(bufname(b), ':p') == path
+        exe 'normal! ' . tabnr . 'gt'
+        return
+      endif
+    endfor
+  endfor
+  if bufname('%') ==# '' && &modified == 0  " fill this window
+    exec 'edit ' . a:file
+  else  " create new tab
+    exec 'tabnew ' . a:file
+  end
 endfunction
 
 " Open from local or current directory
@@ -45,29 +66,6 @@ function! file#open_from(files, local) abort
   if !empty(result)
     exe command . ' ' . result
   endif
-endfunction
-
-" Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
-" Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
-" on monde version of vim so need to use the *tab jump* command instead!
-function! file#open_jump(file) abort
-  let visible = {}
-  let path = fnamemodify(a:file, ':p')
-  let tabjump = 0
-  for t in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = t + 1 " the tab number
-    for b in tabpagebuflist(tabnr)
-      if fnamemodify(bufname(b), ':p') == path
-        exe 'normal! ' . tabnr . 'gt'
-        return
-      endif
-    endfor
-  endfor
-  if bufname('%') ==# '' && &modified == 0  " fill this window
-    exec 'edit ' . a:file
-  else  " create new tab
-    exec 'tabnew ' . a:file
-  end
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
@@ -96,7 +94,7 @@ function! s:open_continuous(...) abort
   let paths = []
   for item in items
     if item == s:new_file  " should be recursed at least one level
-      let item = input(s:open_prompt(base), '', 'customlist,utils#null_list')
+      let item = input(file#path_abbrev(base) . '/', '', 'customlist,utils#null_list')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " fnamemodify :p does not remove the .. so must do this
@@ -112,9 +110,9 @@ function! s:open_continuous(...) abort
     let base = substitute(base, '/$', '', '')  " remove trailing slash
     let paths = []  " only continue in recursion
     call fzf#run(fzf#wrap({
-      \ 'source': s:open_list(base),
+      \ 'source': s:path_source(base),
       \ 'sinklist': function('s:open_continuous', [base]),
-      \ 'options': "--multi --no-sort --prompt='" . s:open_prompt(base) . "'",
+      \ 'options': "--multi --no-sort --prompt='" . file#path_abbrev(base) . "/'",
       \ }))
   endif
   " Open file(s), or if it is already open just jump to that tab
@@ -126,7 +124,7 @@ function! s:open_continuous(...) abort
     elseif path =~# '[*?[\]]'  " failed glob search so do nothing
       :
     elseif !empty(path)
-      call file#open_jump(path)
+      call file#open_existing(path)
     endif
   endfor
 endfunction
