@@ -230,6 +230,7 @@ case "${HOSTNAME%%.*}" in
     #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
     #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
+    alias locate='/usr/bin/locate'  # coreutils version fails
     unset MANPATH
     export HOSTNAME=vortex
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
@@ -2187,12 +2188,12 @@ title_update() {  # fix name issues
   _title_update "$@"
 }
 
-# Ask for a title when we create pane 0 (i.e. the first pane of a new window)
-alias title='_title_set'  # easier for user
+# Ask for a title when we create pane 0
 if $_macos; then
   [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 fi
+alias title='_title_set'  # easier for user
 
 #-----------------------------------------------------------------------------
 # Mac stuff

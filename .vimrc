@@ -363,6 +363,7 @@ nnoremap <C-e> <Cmd>call vim#close_window()<CR>
 " Note: These are just convenience functions (see file#open_from) for details.
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
+command! -nargs=1 -complete=file Jump call file#open_jump(<q-args>)
 nnoremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 nnoremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
 nnoremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
@@ -404,12 +405,13 @@ noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
 
 " Buffer management
-" Note: Here Wipeout replaces :Wipeout plugin since has more sources
+" Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call vim#show_bufs()
 command! -nargs=0 WipeBufs call vim#wipe_bufs()
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
-noremap <Leader>W <Cmd>Buffers<CR>
+noremap <Leader>W <Cmd>Windows<CR>
+" noremap <Leader>W <Cmd>Buffers<CR>
 
 " Tab selection and movement
 nnoremap <Tab>' <Cmd>tabnext #<CR>
@@ -514,7 +516,7 @@ nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
-nnoremap <Leader>v <Cmd>Help<CR>
+nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call popup#help_page()<CR>
 nnoremap <Leader>B <Cmd>call popup#man_page()<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
@@ -931,7 +933,7 @@ command! -nargs=1 PlugLocal call s:plug_local(<args>)
 " managers. Currently use junegunn/vim-plug but could switch to Shougo/dein.vim
 " (with haya14busa/dein-command.vim for commands instead of functions) which was
 " derived from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
-call plug#begin($HOME . '/.vim/plugged')
+call plug#begin('~/.vim/plugged')
 
 " Inline code handling
 " Note: Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
@@ -1064,9 +1066,10 @@ let g:speeddating_no_mappings = 1
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
+  " \ 'ctrl-m': 'tab split',
 let g:fzf_action = {
   \ 'ctrl-i': 'silent!',
-  \ 'ctrl-m': 'tab split',
+  \ 'ctrl-m': 'Jump',
   \ 'ctrl-t': 'tab split',
   \ 'ctrl-x': 'split',
   \ 'ctrl-v': 'vsplit'
@@ -1325,7 +1328,6 @@ if s:plug_active('vim-scrollwrapped')
   noremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
   noremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
   noremap <Leader>w <Cmd>WrapToggle<CR>
-  noremap <Leader>W <Cmd>Buffers<CR>
 endif
 
 " Add maps for vim-tags command and use tags for default double bracket motion,
@@ -1832,40 +1834,44 @@ command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line(
 noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
-" GUI vim colors. Examples:
+" Color scheme iteration
+" Note: This is mainly used for GUI vim, otherwise use terminal themes
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-" abra  " good one
-" ayu  " good one
-" badwolf  " good one
-" fahrenheit  " good one
-" gruvbox  " good one
-" molokai  " good one
-" monokai  " larger variation
-" monokain  " slight variation of molokai
-" moody  " other one
-" nazca  " other one
-" northland  " other one
-" oceanicnext  " good one
-" papercolor  " good one
-" sierra  " other one
-" tender  " other one
-" turtles  " other one
-" underwater-mod  " other one
-" vilight  " other one
-" vim-material  " other one
-" vimbrains  " other one
-" void  " other one
+noremap <Leader>8 <Cmd>Colors<CR>
+noremap <Leader>9 <Cmd>SchemeNext<CR>
+noremap <Leader>0 <Cmd>SchemePrev<CR>
+command! SchemePrev call utils#wrap_colorschemes(0)
+command! SchemeNext call utils#wrap_colorschemes(1)
+
+" GUI overrides and colors
+" Note: Should play with different schemes here
 if has('gui_running')
   hi! link vimCommand Statement
   hi! link vimNotFunc Statement
   hi! link vimFuncKey Statement
   hi! link vimMap Statement
   colorscheme papercolor
-  noremap <Leader>8 <Cmd>Colors<CR>
-  noremap <Leader>9 <Cmd>SchemeNext<CR>
-  noremap <Leader>0 <Cmd>SchemePrev<CR>
-  command! SchemePrev call utils#wrap_colorschemes(0)
-  command! SchemeNext call utils#wrap_colorschemes(1)
+  " abra  " good one
+  " ayu  " good one
+  " badwolf  " good one
+  " fahrenheit  " good one
+  " gruvbox  " good one
+  " molokai  " good one
+  " monokai  " larger variation
+  " monokain  " slight variation of molokai
+  " moody  " other one
+  " nazca  " other one
+  " northland  " other one
+  " oceanicnext  " good one
+  " papercolor  " good one
+  " sierra  " other one
+  " tender  " other one
+  " turtles  " other one
+  " underwater-mod  " other one
+  " vilight  " other one
+  " vim-material  " other one
+  " vimbrains  " other one
+  " void  " other one
 endif
 
 " Make terminal background same as main background
@@ -1926,7 +1932,6 @@ command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
 command! -nargs=0 ShowColors call popup#colors_win()
 command! -nargs=0 ShowPlugin call popup#plugin_win()
 command! -nargs=0 ShowSyntax call popup#syntax_win()
-noremap <Leader># <Cmd>ColorToggle<CR>
 noremap <Leader>1 <Cmd>CurrentGroup<CR>
 noremap <Leader>2 <Cmd>CurrentSyntax<CR>
 noremap <Leader>3 <Cmd>CurrentColor<CR>
