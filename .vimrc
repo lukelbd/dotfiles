@@ -60,7 +60,8 @@ set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, 
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
 set maxmempattern=50000  " from 1000 to 10000
 set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
-set nobackup noswapfile noundofile  " no more swap files; constantly hitting C-s so it's safe
+set nobackup  " no backups when overwriting files, use tabline/statusline features
+set noswapfile " no more swap files, instead use session
 set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
 set noinfercase ignorecase smartcase  " smartcase makes search case insensitive, unless has capital letter
 set nospell spelllang=en_us spellcapcheck=  " spellcheck off by default
@@ -90,8 +91,9 @@ set tabstop=2  " shoft default tabs
 set ttymouse=sgr  " different cursor shapes for different modes
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
-set undolevels=1000  " maximum undo level
-set undodir=$HOME/.vim_undo_hist
+set undofile  " save undo history
+set undolevels=500  " maximum undo level
+set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
@@ -747,12 +749,12 @@ augroup fold_open
 augroup END
 
 " Open *all* folds under cursor, not just this one
-" noremap <expr> zo foldclosed('.') ? 'zA' : ''
 " Open *all* folds recursively and update foldlevel
-noremap zO zR
 " Close *all* folds and update foldlevel
-noremap zC zM
 " Delete *all* manual folds
+" noremap <expr> zo foldclosed('.') ? 'zA' : ''
+noremap zO zR
+noremap zC zM
 noremap zD zE
 
 " Jump between folds with more consistent naming
@@ -929,7 +931,7 @@ command! -nargs=1 PlugLocal call s:plug_local(<args>)
 " managers. Currently use junegunn/vim-plug but could switch to Shougo/dein.vim
 " (with haya14busa/dein-command.vim for commands instead of functions) which was
 " derived from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
-call plug#begin('~/.vim/plugged')
+call plug#begin($HOME . '/.vim/plugged')
 
 " Inline code handling
 " Note: Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
@@ -1462,8 +1464,8 @@ if s:plug_active('vim-lsp')
   let g:lsp_preview_max_width = 80
   let g:lsp_preview_max_height = 30
   let g:lsp_signature_help_delay = 100  " milliseconds
-  let g:lsp_settings_servers_dir = $HOME . '/.vim-lsp-settings/servers'
-  let g:lsp_settings_global_settings_dir = $HOME . '/.vim-lsp-settings'
+  let g:lsp_settings_servers_dir = '~/.vim-lsp-settings/servers'
+  let g:lsp_settings_global_settings_dir = '~/.vim-lsp-settings'
   " let g:lsp_settings = {
   " \   'pylsp': {'workspace_config': {'pylsp': {}}}
   " \   'texlab': {'workspace_config': {'texlab': {}}}
@@ -1693,12 +1695,12 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gstatus Git status <args>
   noremap <Leader>g <Cmd>GitGutterStageHunk<CR>
   noremap <Leader>G <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
-  noremap <Leader>h <Cmd>BCommits<CR>
-  noremap <Leader>H <Cmd>Commits<CR>
+  noremap <Leader>h <Cmd>Git<CR>
+  noremap <Leader>H <Cmd>Git blame<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
-  noremap <Leader>J <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
-  noremap <Leader>k <Cmd>Git<CR>
-  noremap <Leader>K <Cmd>Git blame<CR>
+  noremap <Leader>J <Cmd>BCommits<CR>
+  noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
+  noremap <Leader>K <Cmd>Commits<CR>
 endif
 
 " Git gutter settings
