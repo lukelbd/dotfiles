@@ -1,7 +1,7 @@
 "-----------------------------------------------------------------------------"
 " Utilities for setting up windows
 "-----------------------------------------------------------------------------"
-" Update encoding for special character
+" Global encoding for special character
 scriptencoding utf-8
 
 " Setup popup windows. Mode can be 0 (not editable) or 1 (editable).
@@ -77,19 +77,19 @@ function! s:man_cursor() abort
   let curr = b:man_curr
   let word = expand('<cWORD>')  " possibly includes trailing puncation
   let page = matchstr(word, '\f\+')  " from highlight group
-  let num = matchstr(word, '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
-  exe 'Man ' . num . ' ' . page
+  let pnum = matchstr(word, '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
+  exe 'Man ' . pnum . ' ' . page
   if bnr != bufnr()  " original buffer
     let b:man_prev = curr
-    let b:man_curr = page
+    let b:man_curr = [page, pnum]
   endif
 endfunction
 function! s:man_jump(forward) abort
   let curr = b:man_curr
   let name = a:forward ? 'man_next' : 'man_prev'
-  let page = get(b:, name, '')
-  if empty(page) | return | endif
-  exe 'Man ' . page
+  let pair = get(b:, name, '')
+  if empty(pair) | return | endif
+  exe 'Man ' . pair[1] . ' ' . pair[0]
   if a:forward
     let b:man_prev = curr
   else
@@ -109,7 +109,9 @@ function! popup#man_page() abort
   endif
 endfunction
 function! popup#man_setup(...) abort
-  let b:man_curr = expand('%:t:r')
+  let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
+  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
+  let b:man_curr = [page, pnum]
   noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
   noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
   noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
