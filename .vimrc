@@ -61,6 +61,7 @@ set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, 
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
 set maxmempattern=50000  " from 1000 to 10000
 set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
+set noautochdir  " disable auto changing
 set nobackup  " no backups when overwriting files, use tabline/statusline features
 set noswapfile " no more swap files, instead use session
 set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
@@ -90,6 +91,7 @@ set splitright  " splitting behavior
 set switchbuf=usetab,newtab  " when switching buffers use open tab
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " shoft default tabs
+set tags=~/.vimtags,.vimtags,./.vimtags  " home, working dir, or file dir
 set ttymouse=sgr  " different cursor shapes for different modes
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
@@ -403,18 +405,18 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
 command! -nargs=0 Refresh call vim#refresh_config()
 noremap <C-r> <Cmd>redraw!<CR>
-noremap <Leader>R <Cmd>Refresh<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
+noremap <Leader>R <Cmd>Refresh<CR>
 
 " Buffer management
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call vim#show_bufs()
 command! -nargs=0 WipeBufs call vim#wipe_bufs()
-noremap <Leader>q <Cmd>ShowBufs<CR>
+" noremap <Leader>q <Cmd>ShowBufs<CR>
+noremap <Leader>q <Cmd>Windows<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
-noremap <Leader>W <Cmd>Windows<CR>
-" noremap <Leader>W <Cmd>Buffers<CR>
+noremap <Leader>W <Cmd>Buffers<CR>
 
 " Tab selection and movement
 nnoremap <Tab>' <Cmd>tabnext #<CR>
@@ -1034,6 +1036,7 @@ call plug#('vim-test/vim-test')
 " call plug#('xolox/vim-reload')  " easier to write custom reload function
 call plug#('tpope/vim-obsession')  " sparse features on top of built-in session behavior
 call plug#('yegappan/mru')  " most recent file
+" let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
 
 " Git wrappers and differencing tools
 " vim-flog and gv.vim are heavyweight and lightweight commit viewing plugins
@@ -1070,7 +1073,7 @@ let g:speeddating_no_mappings = 1
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
 let g:fzf_buffers_jump = 1
-let g:fzf_tags_command = 'ctags -f - --excmd=number '
+let g:fzf_tags_command = 'ctags -R -f .vimtags'
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_action = {
   \ 'ctrl-m': 'Existing',
@@ -1350,9 +1353,10 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
-  nnoremap <C-t> <Cmd>UpdateTags<CR>
-  nnoremap <Leader>t <Cmd>ShowTags<CR>
-  nnoremap <Leader>T <Cmd>BTags<CR>
+  " nnoremap <Leader>t <Cmd>ShowTags<CR>
+  nnoremap <Leader>t <Cmd>BTags<CR>
+  nnoremap <Leader>T <Cmd>Tags<CR>
+  nnoremap <Leader>U <Cmd>UpdateTags<CR>
   let g:tags_subtop_filetypes = ['fortran']
   let g:tags_scope_kinds = {
     \ 'vim': 'afc',

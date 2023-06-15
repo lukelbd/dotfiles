@@ -19,6 +19,7 @@ garbage*
 
 # Vim session files and swap files
 tags
+.vimtags*
 .vimsession*
 .*.sw[a-z]
 
