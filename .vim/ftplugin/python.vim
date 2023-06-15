@@ -13,7 +13,7 @@ let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
 noremap <expr> <buffer> cd python#kwargs_dict_expr(1)
 noremap <expr> <buffer> cD python#kwargs_dict_expr(0)
 
-" Add mappings
+" Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()
 noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#run_content()<CR>
 noremap <buffer> <Plug>ExecuteFile2 <Cmd>call python#start_jupyter()<CR>

@@ -182,6 +182,33 @@ function! vim#refresh_config() abort
   echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
 endfunction
 
+" Source file or lines
+" Note: Compare to python#run_content()
+function! vim#source_content() abort
+  if v:count
+    echom 'Sourcing ' . v:count . ' lines.'
+    let lines = getline(line('.'), line('.') + v:count)
+    exe join(lines, "\n")
+  else
+    echo "Sourcing '" . expand('%:p:t') . "'."
+    update
+    source %
+  endif
+endfunction
+
+" Source input motion
+" Todo: Add generalization for running chunks of arbitrary filetypes?
+function! vim#source_motion() range abort
+  update
+  echom 'Sourcing lines ' . a:firstline . ' to ' . a:lastline . '.'
+  let lines = getline(a:firstline, a:lastline)
+  exe join(lines, "\n")
+endfunction
+" For <expr> map accepting motion
+function! vim#source_motion_expr(...) abort
+  return utils#motion_func('vim#source_motion', a:000)
+endfunction
+
 " Show the active buffer names
 " Note: This also sorts by name
 function! vim#show_bufs() abort

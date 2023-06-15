@@ -46,34 +46,31 @@ function! python#run_win()
   endif
 endfunction
 
-" Run current file using either popup window or jupyter session
+" Run file or lines using either popup window or jupyter session
 " Note: Running 'cell' in file without cells still works
 function! python#run_content() abort
   update
-  if !python#has_jupyter()
-    call python#run_win()
+  if v:count  " see also vim.vim
+    echom 'Running ' . v:count . ' lines.'
+    exe 'JupyterSendCount ' . v:count
+  elseif !python#has_jupyter()
     echom 'Running file with python.'
+    call python#run_win()
   elseif search('^# %%', 'n')  " returns line number if match found, zero if none found
-    JupyterSendCell
     echom 'Running block with jupyter.'
+    JupyterSendCell
   else
-    JupyterRunFile
     echom 'Running file with jupyter.'
+    JupyterRunFile
   endif
 endfunction
 
 " Run input motion using jupyter session. Warning is issued if no connection
 " Todo: Add generalization for running chunks of arbitrary filetypes?
-" Warning: Important that 'count' comes first so range is ignored
 function! python#run_motion() range abort
   update
-  if v:count
-    echom 'Running ' . v:count . ' lines.'
-    exe 'JupyterSendCount ' . v:count
-  else
-    echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
-    exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
-  endif
+  echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
+  exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
 endfunction
 " For <expr> map accepting motion
 function! python#run_motion_expr(...) abort
