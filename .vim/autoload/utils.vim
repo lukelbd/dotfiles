@@ -1,19 +1,6 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
-" Compare position indices [lnum, col, idx]
-" See: https://vi.stackexchange.com/a/14359
-function! s:compare_lists(a, b) abort
-  for i in range(len(a:a))
-    if a:a[i] < a:b[i]
-      return -1
-    elseif a:a[i] > a:b[i]
-      return 1
-    endif
-  endfor
-  return 0
-endfunction
-
 " Grep commands
 " Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
 " Todo: Override sink function with custom s:tab_jump plugin: https://stackoverflow.com/questions/49443373/vim-overwrite-plugin-scoped-function
@@ -44,18 +31,21 @@ endfunction
 " if more than one file is passed. Otherwise preview window shows 'file is not found'
 " error and selecting from menu fails. So always pass extra dummy name.
 function! utils#grep_parse(level, search, ...) abort
-  let regex = fzf#shellescape(a:search)  " similar to native but handles other shells
-  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " translate word borders
-  let regex = substitute(regex, '\\[cCvV]', '', 'g')  " smartcase imposed by flag
-  let regex = substitute(regex, '\\S', "[^ \t]", 'g')  " non-whitespace characters
-  let regex = substitute(regex, '\\s', "[ \t]",  'g')  " whitespace characters
-  let regex = substitute(regex, '\\[ikf]', '\\w', 'g')  " keyword, identifier, filename
-  let regex = substitute(regex, '\\[IKF]', '[a-zA-Z_]', 'g')  " same but no numbers
+  let cmd = fzf#shellescape(a:search)  " similar to native but handles other shells
+  let cmd = substitute(cmd, '\\[<>]', '\\b', 'g')  " translate word borders
+  let cmd = substitute(cmd, '\\[cCvV]', '', 'g')  " smartcase imposed by flag
+  let cmd = substitute(cmd, '\\S', "[^ \t]", 'g')  " non-whitespace characters
+  let cmd = substitute(cmd, '\\s', "[ \t]",  'g')  " whitespace characters
+  let cmd = substitute(cmd, '\\[ikf]', '\\w', 'g')  " keyword, identifier, filename
+  let cmd = substitute(cmd, '\\[IKF]', '[a-zA-Z_]', 'g')  " same but no numbers
   let paths = a:000  " list of paths
   if empty(paths)  " default path or directory
     let paths = [a:level > 1 ? @% : a:level > 0 ? expand('%:h') : getcwd()]
   endif
-  let cmd = regex  " concatenated paths
+  if !s:open_overridden
+    call s:open_override()
+    let s:open_overridden = 1
+  endif
   for path in paths  " iterate over all
     let path = substitute(path, '^\~', expand('~'), '')  " see also file.vim
     let path = substitute(path, '^' . getcwd(), '.', '')
@@ -158,43 +148,30 @@ function! utils#wrap_colorschemes(reverse) abort
 endfunction
 
 " Cyclic next error in location list
-" Copied from: https://vi.stackexchange.com/a/14359
+" Adapted from: https://vi.stackexchange.com/a/14359
+" Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
+" cursor is on final error in the file but ]x does not cycle to the next one.
 function! utils#wrap_cyclic(count, list, ...) abort
-  " Initial stuff
-  let reverse = a:0 && a:1
+  " Build up list of loc dictionaries
   let func = 'get' . a:list . 'list'
+  let reverse = a:0 && a:1
   let params = a:list ==# 'loc' ? [0] : []
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let items = call(func, params)
-  if empty(items)
-    return 'echoerr ' . string('E42: No Errors')  " string() adds quotes
-  endif
-  " Build up list of loc dictionaries
-  call map(items, 'extend(v:val, {"idx": v:key + 1})')
-  if reverse
-    call reverse(items)
-  endif
-  let [bufnr, compare] = [bufnr('%'), reverse ? 1 : -1]
-  let context = [line('.'), col('.')]
-  if v:version > 800 || has('patch-8.0.1112')
-    let current = call(func, extend(copy(params), [{'idx':1}])).idx
-  else
-    redir => capture | execute cmd | redir END
-    let current = str2nr(matchstr(capture, '(\zs\d\+\ze of \d\+)'))
-  endif
-  call add(context, current)
+  call filter(items, "v:val.bufnr == bufnr('%')")
+  if empty(items) | return "echoerr 'E42: No errors'" | endif
+  call map(items, "extend(v:val, {'idx': v:key + 1})")
+  if reverse | call reverse(items) | endif
   " Jump to next loc circularly
-  let expr = 'compare == s:compare_lists(context, [v:val.lnum, v:val.col, v:val.idx])'
-  call filter(items, 'v:val.bufnr == bufnr')
-  let nbuffer = len(get(items, 0, {}))
-  call filter(items, expr)
-  let inext = get(get(items, 0, {}), 'idx', 'E553: No more items')
+  let [lnum, cnum] = [line('.'), col('.')]
+  let [cmps, oper] = [[], reverse ? '<' : '>']
+  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
+  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
+  call filter(items, join(cmps, ' || '))
+  let inext = get(get(items, 0, {}), 'idx', '')
   if type(inext) == type(0)
     return cmd . inext
-  elseif nbuffer != 0
-    exe '' . (reverse ? line('$') : 0)
-    return utils#wrap_cyclic(a:count, a:list, reverse)
-  else
-    return 'echoerr ' . string(inext)  " string() adds quotes
   endif
+  exe reverse ? line('$') : 0
+  return utils#wrap_cyclic(a:count, a:list, reverse)
 endfunction
