@@ -762,8 +762,8 @@ rename() {
   for i in $(seq 1 ${#files1[@]}); do
     file1=${files1[i-1]}
     ext=${file1##*.}
-    tmp=$dir/tmp$(printf %03d $i).$ext
-    file2=$dir/$base$(printf %03d $i).$ext
+    tmp=$dir/tmp$(printf %04d $i).$ext
+    file2=$dir/$base$(printf %04d $i).$ext
     tmps+=("$tmp")
     files2+=("$file2")
     mv "$file1" "$tmp" || { echo "Move failed."; return 1; }
