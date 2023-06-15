@@ -1,5 +1,7 @@
-" Todo: Update with custom mappings.
-" Setup fugitive window
+"-----------------------------------------------------------------------------"
+" Utilities for fugitive windows
+" Todo: Update with custom mappings
+"-----------------------------------------------------------------------------"
 " Blame help
 " g?    show this help
 " A     resize to end of author column

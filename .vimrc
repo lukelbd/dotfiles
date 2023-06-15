@@ -91,6 +91,7 @@ set ttymouse=sgr  " different cursor shapes for different modes
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
 set undolevels=1000  " maximum undo level
+set undodir=$HOME/.vim_undo_hist
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
@@ -346,22 +347,33 @@ endfor
 "-----------------------------------------------------------------------------"
 " File and window utilities
 "-----------------------------------------------------------------------------"
-" Opening file in current directory and some input directory
+" Save or quit the current session
+" Note: To avoid accidentally closing vim do not use mapped shortcuts. Instead
+" require manual closure using :qall or :quitall.
+" nnoremap <C-q> <Cmd>quitall<CR>
+command! -nargs=? Autosave call switch#autosave(<args>)
+noremap <Leader>A <Cmd>call switch#autosave()<CR>
+nnoremap <C-s> <Cmd>call tabline#write()<CR>
+nnoremap <C-w> <Cmd>call vim#close_tab()<CR>
+nnoremap <C-e> <Cmd>call vim#close_window()<CR>
+
+" Open file in current directory or some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
-noremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
-noremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
-noremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
-noremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
-noremap <C-g> <Cmd>GFiles<CR>
+nnoremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
+nnoremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
+nnoremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
+nnoremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
+nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
 " Pneumonic is 'inside' just like Ctrl + i map
 " Note: Here :Rename is adapted from :Rename2 plugin
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
-noremap <Leader>i <Cmd>call switch#localdir()<CR>
+noremap <Leader>i <Cmd>Abspath<CR>
+noremap <Leader>I <Cmd>call switch#localdir()<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
 noremap <Leader>F <c-w>gf
 
@@ -388,16 +400,6 @@ noremap <C-r> <Cmd>redraw!<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
-
-" Save or quit the current session
-" Note: To avoid accidentally closing vim do not use mapped shortcuts. Instead
-" require manual closure using :qall or :quitall.
-" nnoremap <C-q> <Cmd>quitall<CR>
-command! -nargs=? Autosave call switch#autosave(<args>)
-nnoremap <Leader>A <Cmd>call switch#autosave()<CR>
-noremap <C-s> <Cmd>call tabline#write()<CR>
-noremap <C-w> <Cmd>call vim#close_tab()<CR>
-noremap <C-e> <Cmd>call vim#close_window()<CR>
 
 " Buffer management
 " Note: Here Wipeout replaces :Wipeout plugin since has more sources
@@ -470,10 +472,10 @@ let g:tags_skip_filetypes = s:popup_filetypes
 let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
   au!
-  au FileType fugitiveblame call git#blame_setup()
-  au FileType fugitive call git#git_setup()
   au TerminalWinOpen * call popup#popup_setup(1)
   au CmdwinEnter * call popup#cmd_setup()
+  au FileType fugitiveblame call git#blame_setup()
+  au FileType fugitive call git#git_setup()
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType help call popup#help_setup()  " additional setup steps
@@ -1441,7 +1443,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>r <Cmd>LspReferences<CR>
   noremap <Leader>& <Cmd>LspSignatureHelp<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
-  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>call popup#popup_setup(0)<CR>
+  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call popup#popup_setup(0)<CR>
   noremap <Leader>^ <Cmd>verbose LspStatus<CR>
   noremap <Leader>` <Cmd>CheckHealth<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
