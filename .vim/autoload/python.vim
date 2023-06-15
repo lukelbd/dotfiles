@@ -1,16 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Python utils defined here
 "-----------------------------------------------------------------------------"
-" Sort lines
-function! s:sort_lines(line1, line2) abort
-  let line1 = a:line1
-  let line2 = a:line2
-  if line1 > line2
-    let [line2, line1] = [line1, line2]
-  endif
-  return [line1, line2]
-endfunction
-
 " Return indication whether a jupyter connection is active
 " Warning: This uses private variable _jupyter_session. Should monitor for changes.
 function! python#has_jupyter() abort
@@ -72,8 +62,7 @@ function! python#run_content() abort
   endif
 endfunction
 
-" Run input motion using jupyter session
-" Note: Warning will be issued if connection not established.
+" Run input motion using jupyter session. Warning is issued if no connection
 " Todo: Add generalization for running chunks of arbitrary filetypes?
 " Warning: Important that 'count' comes first so range is ignored
 function! python#run_motion() range abort
@@ -101,9 +90,9 @@ function! python#kwargs_dict(kw2dc, ...) abort range
   let winview = winsaveview()
   let lines = []
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
-  let firstcol = col("'" . marks[0]) - 1  " when calling col(), ' means `
+  let firstcol = col("'" . marks[0]) - 1  " in col() single quote ' really means `
   let lastcol = len(getline("'" . marks[1])) - 1
-  let [firstline, lastline] = s:sort_lines(a:firstline, a:lastline)
+  let [firstline, lastline] = sort([a:firstline, a:lastline])
   for linenum in range(firstline, lastline)
     " Get selection text ignoring unselected parts of first and last line
     let line = getline(linenum)
@@ -142,7 +131,6 @@ function! python#kwargs_dict(kw2dc, ...) abort range
   call append(firstline - 1, lines)
   call winrestview(winview)
 endfunction
-
 " For <expr> map accepting motion
 function! python#kwargs_dict_expr(kw2dc) abort
   return utils#motion_func('python#kwargs_dict', [a:kw2dc, mode()])
