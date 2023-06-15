@@ -83,11 +83,13 @@ function! utils#grep_parse(level, search, ...) abort
 endfunction
 
 " Call Rg or Ag grep commands
-" Todo: Support
+" Note: This lets user both pick default with <CR> or cancel with <C-c>
+" Todo: Expand this approach for other places throughout vim funcs?
 function! utils#grep_pattern(grep, level, depth) abort
-  let prompt = toupper(a:grep[0]) . a:grep[1:] . " pattern (default '" . @/ . "'): "
-  echo prompt
-  let char = nr2char(getchar())
+  let prompt = a:level > 1 ? 'File' : a:level > 0 ? 'Local' : 'Global'
+  let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:]
+  let prompt = prompt . " pattern (default '" . @/ . "'): "
+  echo prompt | let char = nr2char(getchar())
   if char ==# "\<Esc>" || char ==# "\<C-c>"
     return
   elseif empty(char) || char ==# "\<CR>"
@@ -96,8 +98,6 @@ function! utils#grep_pattern(grep, level, depth) abort
     let search = input('', char, 'customlist,utils#null_list')
   endif
   let search = empty(search) || search ==# "\<CR>" ? @/ : search
-  " let search = input(prompt, '', 'customlist,utils#null_list')
-  " let search = empty(search) ? @/ : search
   let path = expand('%:h')  " command also translates regex
   let func = 'utils#grep_' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, search])

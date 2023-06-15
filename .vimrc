@@ -86,6 +86,7 @@ set showtabline=2
 set softtabstop=2
 set splitbelow
 set splitright  " splitting behavior
+set switchbuf=useopen  " when switching buffers use open tab
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " shoft default tabs
 set ttymouse=sgr  " different cursor shapes for different modes
@@ -1068,7 +1069,6 @@ let g:speeddating_no_mappings = 1
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-  " \ 'ctrl-m': 'tab split',
 let g:fzf_action = {
   \ 'ctrl-m': 'Existing',
   \ 'ctrl-i': 'silent!',
