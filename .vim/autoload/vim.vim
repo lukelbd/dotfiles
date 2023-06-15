@@ -1,20 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim windows and sessions
 "-----------------------------------------------------------------------------"
-" Compare directories
-" Todo: Consider supporting recursive search in :Open and using this for sorting?
-function! s:compare_paths(a, b) abort
-  let alevel = count(a:a, '/')
-  let blevel = count(a:b, '/')
-  if alevel != blevel  " prefer closer files first
-    return alevel > blevel ? 1 : -1
-  elseif a:a != a:b  " alphabetic string sorting
-    return a:a > a:b ? 1 : -1
-  else  " identical
-    return 0
-  endif
-endfunction
-
 " Safely closing tabs and windows
 " Note: This moves to the left tab after closure
 " Note: Calling quit inside codei buffer triggers 'attempt to close buffer

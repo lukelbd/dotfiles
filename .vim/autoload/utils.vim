@@ -1,37 +1,6 @@
 "-----------------------------------------------------------------------------"
 " General utilities
 "-----------------------------------------------------------------------------"
-" Utility for opening in active tab
-" Note: No longer needed since can just use g:fzf_actions()
-" Note: This is adapted from https://stackoverflow.com/a/49447600/4970632
-" let s:open_overridden = 0
-" let s:open_source = '~/.vim/plugged/fzf.vim/autoload/fzf/vim.vim'
-" function! s:open_override() abort
-"   exe 'source ' . s:open_source
-"   let names = split(execute('scriptnames'), "\n")
-"   call filter(names, "v:val =~# '" . s:open_source[2:] . "'")
-"   if len(names) != 1
-"     echohl WarningMsg
-"     echom 'Warning: Unable to override fzf s:open function.'
-"     echohl None
-"   endif
-"   let snr = matchstr(names[0], '^[0-9]\+')
-"   let func = [
-"     \ "function! \<SNR>" . snr . '_Open(cmd, target)',
-"     \ '  call utils#open_override(a:cmd, a:target)',
-"     \ 'endfunction',
-"     \ ]
-"   exe join(func, "\n")
-" endfunction
-" " Actual override function
-" function! utils#open_override(cmd, target)
-"   if stridx('edit', a:cmd) == 0 && fnamemodify(a:target, ':p') ==# expand('%:p')
-"     normal! m'
-"     return
-"   endif
-"   execute a:cmd . fnameescape(a:target)
-" endfunction
-
 " Grep commands
 " Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
 " Todo: Override sink function with custom s:tab_jump plugin: https://stackoverflow.com/questions/49443373/vim-overwrite-plugin-scoped-function
