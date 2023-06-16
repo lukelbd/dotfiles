@@ -413,10 +413,10 @@ noremap <Leader>R <Cmd>Refresh<CR>
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call vim#show_bufs()
 command! -nargs=0 WipeBufs call vim#wipe_bufs()
-" noremap <Leader>q <Cmd>ShowBufs<CR>
+" noremap <Leader>w <Cmd>ShowBufs<CR>
 noremap <Leader>q <Cmd>Windows<CR>
-noremap <Leader>Q <Cmd>WipeBufs<CR>
-noremap <Leader>W <Cmd>Buffers<CR>
+noremap <Leader>Q <Cmd>Buffers<CR>
+noremap <Leader>W <Cmd>WipeBufs<CR>
 
 " Tab selection and movement
 nnoremap <Tab>' <Cmd>tabnext #<CR>
@@ -1201,9 +1201,9 @@ call plug#('junegunn/vim-easy-align')
 " call plug#('klen/python-mode')  " incompatible with jedi-vim and outdated
 " call plug#('ivanov/vim-ipython')  " replaced by jupyter-vim
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
-" call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr
 " call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
-call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr
+" call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
+call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
 call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
@@ -1475,8 +1475,8 @@ if s:plug_active('vim-lsp')
   let g:lsp_preview_max_width = 80
   let g:lsp_preview_max_height = 30
   let g:lsp_signature_help_delay = 100  " milliseconds
-  let g:lsp_settings_servers_dir = '~/.vim-lsp-settings/servers'
-  let g:lsp_settings_global_settings_dir = '~/.vim-lsp-settings'
+  let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
+  let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'
   " let g:lsp_settings = {
   " \   'pylsp': {'workspace_config': {'pylsp': {}}}
   " \   'texlab': {'workspace_config': {'texlab': {}}}
@@ -1649,9 +1649,9 @@ endif
 " Autoformat plugin docs:
 " https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
 if s:plug_active('ale')
+  let g:autopep8_disable_show_diff = 1
   let g:autopep8_ignore = s:flake8_ignore
   let g:autopep8_max_line_length = s:line_length
-  let g:autopep8_disable_show_diff = 1
   let g:black_linelength = s:line_length
   let g:black_skip_string_normalization = 1
   let g:vim_isort_python_version = 'python3'

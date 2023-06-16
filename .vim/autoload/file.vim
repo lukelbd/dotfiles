@@ -160,7 +160,7 @@ function! file#rename_to(name, bang) abort
   if v:errmsg =~# '^$\|^E329'
     if expand('%:p') !=# curfile && filewritable(expand('%:p'))
       silent exe 'bwipe! ' . curfile
-      if delete(curfile)
+      if delete(curfile) != 0
         throw 'Could not delete ' . curfile
       endif
     endif
