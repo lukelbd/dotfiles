@@ -381,6 +381,13 @@
             "selector": ".jp-Notebook:focus"
         },
         {
+            "command": "docmanager:rename",
+            "keys": [
+                "Accel R"
+            ],
+            "selector": ".jp-Notebook:focus"
+        },
+        {
             "command": "documentsearch:start",
             "keys": [
                 "/"

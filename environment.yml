@@ -58,6 +58,6 @@ dependencies:
     - bashate
     - vim-vint
     - cf_units
-    - icecream
     - esgf-pyclient
     - flake8-unused-arguments
+    - git+https://github.com/gruns/icecream.git  # until release increments

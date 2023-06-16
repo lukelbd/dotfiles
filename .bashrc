@@ -614,8 +614,7 @@ vim() {
   [ "${#files[@]}" -gt 0 ] && flags+=(-p)
   command vim -p "$@"
   [[ " $* " =~ (--version|--help|-h) ]] && return
-  clear
-  printf '\e[3J'
+  clear; # printf '\e[3J'
 }
 
 # Vim man page command
@@ -627,8 +626,7 @@ vman() {
     return 1
   fi
   command vim -c "SuperMan $*"
-  clear
-  printf '\e[3J'
+  clear; # printf '\e[3J'
 }
 
 # Open session and fix various bugs. For some reason folds
