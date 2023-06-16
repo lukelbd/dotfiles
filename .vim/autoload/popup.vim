@@ -12,10 +12,10 @@ scriptencoding utf-8
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
-" and simply get in habit of closing entire tabs with vim#close_tab().
+" and simply get in habit of closing entire tabs with session#close_tab().
 function! popup#popup_setup(filemode) abort
-  nnoremap <silent> <buffer> q :call vim#close_window()<CR>
-  nnoremap <silent> <buffer> <C-w> :call vim#close_window()<CR>
+  nnoremap <silent> <buffer> q :call session#close_window()<CR>
+  nnoremap <silent> <buffer> <C-w> :call session#close_window()<CR>
   setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
   if &filetype ==# 'qf' | nnoremap <buffer> <CR> <CR> | endif
   if a:filemode == 1 | return | endif  " this is an editable file
