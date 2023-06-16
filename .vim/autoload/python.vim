@@ -51,16 +51,16 @@ endfunction
 function! python#run_content() abort
   update
   if v:count  " see also vim.vim
-    echom 'Running ' . v:count . ' lines.'
+    echom 'Running ' . v:count . ' lines'
     exe 'JupyterSendCount ' . v:count
   elseif !python#has_jupyter()
-    echom 'Running file with python.'
+    echom 'Running file with python'
     call python#run_win()
   elseif search('^# %%', 'n')  " returns line number if match found, zero if none found
-    echom 'Running block with jupyter.'
+    echom 'Running block with jupyter'
     JupyterSendCell
   else
-    echom 'Running file with jupyter.'
+    echom 'Running file with jupyter'
     JupyterRunFile
   endif
 endfunction

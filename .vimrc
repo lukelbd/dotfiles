@@ -360,8 +360,8 @@ endfor
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>A <Cmd>call switch#autosave()<CR>
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
-nnoremap <C-w> <Cmd>call vim#close_tab()<CR>
-nnoremap <C-e> <Cmd>call vim#close_window()<CR>
+nnoremap <C-w> <Cmd>call session#close_tab()<CR>
+nnoremap <C-e> <Cmd>call session#close_window()<CR>
 
 " Open file in current directory or some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
@@ -403,7 +403,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
-command! -nargs=0 Refresh call vim#refresh_config()
+command! -nargs=0 Refresh call vim#source_config()
 noremap <C-r> <Cmd>redraw!<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
@@ -411,8 +411,8 @@ noremap <Leader>R <Cmd>Refresh<CR>
 
 " Buffer management
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
-command! -nargs=0 ShowBufs call vim#show_bufs()
-command! -nargs=0 WipeBufs call vim#wipe_bufs()
+command! -nargs=0 ShowBufs call session#show_bufs()
+command! -nargs=0 WipeBufs call session#wipe_bufs()
 " noremap <Leader>w <Cmd>ShowBufs<CR>
 noremap <Leader>q <Cmd>Windows<CR>
 noremap <Leader>Q <Cmd>Buffers<CR>
@@ -422,10 +422,10 @@ noremap <Leader>W <Cmd>WipeBufs<CR>
 nnoremap <Tab>' <Cmd>tabnext #<CR>
 nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
 nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
-nnoremap <Tab>> <Cmd>call vim#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call vim#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>m <Cmd>call vim#move_tab()<CR>
-nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call vim#jump_tab()<CR>'
+nnoremap <Tab>> <Cmd>call session#move_tab(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call session#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>m <Cmd>call session#move_tab()<CR>
+nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call session#jump_tab()<CR>'
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
 " Window selection and creation
@@ -677,6 +677,8 @@ noremap x "_x
 noremap X "_X
 
 " Maps for throwaaway and clipboard register
+" Note: Use g:peekaboo_prefix = '"' below so can still use registers with '"' press
+map '' ""
 noremap ' "_
 noremap " "*
 
@@ -1470,13 +1472,16 @@ if s:plug_active('vim-lsp')
   let g:lsp_document_highlight_enabled = 0  " used with [r and ]r
   let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
-  let g:lsp_hover_conceal = 1
-  let g:lsp_preview_float = 1
-  let g:lsp_preview_max_width = 80
-  let g:lsp_preview_max_height = 30
+  let g:lsp_hover_conceal = 1  " enable markdown conceale
+  let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
+  let g:lsp_preview_float = 1  " floating window
+  let g:lsp_preview_max_width = -1  " no maximum
+  let g:lsp_preview_max_height = -1  " no maximum
+  let g:lsp_signature_help_enabled = 1  " sigature help
   let g:lsp_signature_help_delay = 100  " milliseconds
   let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
   let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'
+  " let g:lsp_inlay_hints_enabled = 1  " use inline hints
   " let g:lsp_settings = {
   " \   'pylsp': {'workspace_config': {'pylsp': {}}}
   " \   'texlab': {'workspace_config': {'texlab': {}}}
@@ -1828,7 +1833,7 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Session ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  command! -nargs=* Session call vim#init_session(<q-args>)
+  command! -nargs=* Session call session#init_session(<q-args>)
   noremap <Leader>$ <Cmd>Session<CR>
 endif
 

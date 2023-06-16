@@ -125,6 +125,8 @@ function! utils#operator_func(type) range abort
 endfunction
 
 " Reverse the selected lines
+" Note: Adaptation of hard-to-remember :g command shortcut.
+" https://vim.fandom.com/wiki/Reverse_order_of_lines
 function! utils#reverse_lines() range abort
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   let num = empty(range) ? 0 : a:firstline - 1
