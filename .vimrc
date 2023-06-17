@@ -375,7 +375,7 @@ noremap <Leader>9 <Cmd>SchemeNext<CR>
 noremap <Leader>0 <Cmd>SchemePrev<CR>
 augroup color_scheme
   au!
-  au ColorScheme default call vim#source_refresh()
+  au ColorScheme default call vim#refresh_config()
 augroup END
 
 " GUI overrides and colors
@@ -528,7 +528,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
-command! -nargs=? Refresh call vim#source_refresh(<q-args>)
+command! -nargs=? Refresh call vim#refresh_config(<q-args>)
 noremap <C-r> <Cmd>redraw!<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
@@ -728,10 +728,9 @@ nnoremap U <C-r>
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
 " au BufLeave,WinLeave * exe 'normal! qZq' | let b:recording = 0
-nnoremap , @z
-nnoremap <expr> Q b:recording
-  \ ? 'q<Esc><Cmd>let b:recording = 0<CR>'
-  \ : 'qz<Esc><Cmd>let b:recording = 1<CR>'
+nnoremap <expr> , '<Esc>@' . nr2char(96 + v:count1)
+nnoremap <expr> Q '<Esc>q' . (b:recording ? '' : nr2char(96 + v:count1))
+  \ . '<Esc><Cmd>let b:recording = 1 - b:recording<CR>'
 augroup recording_tests
   au!
   au BufEnter * let b:recording = 0
