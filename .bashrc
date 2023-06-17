@@ -533,10 +533,11 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 # test line length to guess if it is an error message stub or contains desired info.
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 help() {
-  local result
+  local cmd result
+  cmd="file $* --help | set buftype=nofile | call popup#popup_setup(0)"
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
-    builtin help "$@" 2>&1 | less
+    builtin help "$@" 2>&1 | vim -c "$cmd" -
   else
     if [ "$1" == cdo ]; then
       result=$("$1" --help "${@:2}" 2>&1)
@@ -544,7 +545,7 @@ help() {
       result=$("$@" --help 2>&1)
     fi
     if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-      command less <<< "$result"
+      vim -c "$cmd" - <<< "$result"
     else
       echo "No help information for $*."
     fi
@@ -617,8 +618,8 @@ vim() {
   clear; # printf '\e[3J'
 }
 
-# Vim man page command
-vman() {
+# Open man page with vim navigation
+man() {
   if [ $# -eq 0 ]; then
     echo "What manual page do you want?";
     return 0
