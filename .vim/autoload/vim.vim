@@ -1,32 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for sourcing vimscript
 "-----------------------------------------------------------------------------"
-" Refresh config settings
-" Todo: Expand to include all filetype files? Or not necessary?
-function! vim#source_config() abort
-  filetype detect  " if started with empty file, but now shebang makes filetype clear
-  let loaded = []
-  let files = [
-    \ '~/.vimrc',
-    \ '~/.vim/ftplugin/' . &filetype . '.vim',
-    \ '~/.vim/syntax/' . &filetype . '.vim',
-    \ '~/.vim/after/ftplugin/' . &filetype . '.vim',
-    \ '~/.vim/after/syntax/' . &filetype . '.vim'
-    \ ]
-  for i in range(len(files))
-    if filereadable(expand(files[i]))
-      exe 'so ' . files[i] | call add(loaded, files[i])
-    endif
-    if i == 0  " immediately after .vimrc completion
-      doautocmd Filetype
-    endif
-    if i == 4
-      doautocmd BufEnter
-    endif
-  endfor
-  echom 'Loaded ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
-endfunction
-
 " Source file or lines
 " Note: Compare to python#run_content()
 function! vim#source_content() abort
@@ -52,4 +26,49 @@ endfunction
 " For <expr> map accepting motion
 function! vim#source_motion_expr(...) abort
   return utils#motion_func('vim#source_motion', a:000)
+endfunction
+
+" Refresh all other settings
+" let files = substitute(files, '\(^\|\n\@<=\)\s*\d*:\s*\(.*\)\($\|\n\@=\)', '\2', 'g')
+function! vim#source_refresh(...) abort
+  filetype detect  " in case started with empty file and shebang changes this
+  if !exists('g:refresh_times') | let g:refresh_times = {} | endif  " filetype specific
+  let time = get(g:refresh_times, &filetype, g:refresh_times[''])
+  let regexes = [
+    \ '/.fzf/',
+    \ '/plugged/',
+    \ '/ftdetect/',
+    \ '/\.\?vimsession*',
+    \ '/\.\?vim/autoload/vim.vim',
+    \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
+    \ ]
+  let regex = '\(' . join(regexes, '\|') . '\)'
+  let paths = split(execute('scriptnames'), "\n")  " load order, distinct from &rtp
+  let loaded = []
+  for path in paths
+    let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
+    let path = expand(path)  " then compare to home
+    if path !~# expand('~')
+      continue  " skip files outside of home
+    endif
+    if path =~# regex
+      continue  " skip externally sourced files
+    endif
+    if a:0 && path !~# a:1
+      continue  " skip files not matching input regex
+    endif
+    if path =~# '/ftplugin/' && path !~# '/' . &filetype . '.vim'
+      continue  " only refresh current filetype
+    endif
+    if path =~# '\(.vimrc\|init.vim\)'  " always load and trigger filetypes here
+      doautocmd Filetype
+    elseif getftime(path) < time
+      continue  " skip others if not outdated
+    endif
+    exe 'so ' . path
+    call add(loaded, path)
+  endfor
+  doautocmd BufEnter
+  echom 'Loaded: ' . join(map(loaded, 'fnamemodify(v:val, ":~")[2:]'), ', ') . '.'
+  let g:refresh_times[&filetype] = localtime()
 endfunction

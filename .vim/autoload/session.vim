@@ -171,6 +171,6 @@ function! session#wipe_bufs()
     endif
   endfor
   if !empty(names)
-    echom 'Closed ' . len(names) . ' hidden buffer(s): ' . join(names, ', ')
+    echom 'Wiped out ' . len(names) . ' hidden buffer(s): ' . join(names, ', ')
   endif
 endfunction

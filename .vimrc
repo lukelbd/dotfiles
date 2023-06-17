@@ -31,9 +31,10 @@ endif
 " Global settings
 set encoding=utf-8
 scriptencoding utf-8
-let s:line_length = 88  " used with plugins below and in 'pep8' + 'black' files
+let g:refresh_times = get(g:, 'refresh_times', {'': localtime()})
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
-let g:mapleader = "\<Space>"
+let g:mapleader = "\<Space>"  " see below <Leader> mappings
+let s:linelength = 88  " see below configuration
 set nocompatible  " always use the vim defaults
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
@@ -42,21 +43,22 @@ set buflisted  " list all buffers by default
 set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
-set cursorline
+set cursorline  " highlight cursor line
 set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
-set foldlevel=99
-set foldlevelstart=99
+set foldlevel=99  " disable folds
+set foldlevelstart=99  " disable folds
 set foldmethod=expr  " fold methods
-set foldnestmax=10  " avoids weird things
-set foldopen=tag,mark  " options for opening folds on cursor movement; disallow block
+set foldnestmax=10  " avoids weird folding issues
+set foldopen=tag,mark  " opening folds on cursor movement, disallow block folds
 set guifont=Monaco:h12  " match iterm settings in macvim
-set guioptions=M  " use default value
+set guioptions=M  " default gui options
 set history=100  " search history
-set hlsearch incsearch  " show match as typed so far, and highlight as you go
+set hlsearch  " highlight as you go
 set iminsert=0  " disable language maps (used for caps lock)
-set lazyredraw
+set incsearch  " show match as typed so far
+set lazyredraw  " skip redraws during macro and function calls
 set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
 set maxmempattern=50000  " from 1000 to 10000
@@ -75,22 +77,22 @@ set pumwidth=10  " minimum popup menu width
 set pumheight=10  " maximum popup menu height
 set previewheight=30  " default preview window height
 set redrawtime=5000  " sometimes takes a long time, let it happen
-set relativenumber
-set scrolloff=4
+set relativenumber  " relative line numbers for navigation
+set scrolloff=4  " screen lines above and below cursor
 set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
 set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
 set signcolumn=auto  " auto may cause lag after startup but unsure
 set shell=/usr/bin/env\ bash
 set shiftround  " round to multiple of shift width
-set shiftwidth=2
-set shortmess=atqcT  " snappy messages; 'a' does a bunch of common stuff
-set showtabline=2
-set softtabstop=2
-set splitbelow
+set shiftwidth=2  " default 2 spaces
+set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
+set showtabline=2  " default 2 spaces
+set softtabstop=2  " default 2 spaces
+set splitbelow  " splitting behavior
 set splitright  " splitting behavior
 set switchbuf=usetab,newtab  " when switching buffers use open tab
 set tabpagemax=100  " allow opening shit load of tabs at once
-set tabstop=2  " shoft default tabs
+set tabstop=2  " default 2 spaces
 set tags=~/.vimtags,.vimtags,./.vimtags  " home, working dir, or file dir
 set ttymouse=sgr  " different cursor shapes for different modes
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
@@ -101,8 +103,8 @@ set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
-set wildmenu
-set wildmode=longest:list,full
+set wildmenu  " command line completion
+set wildmode=longest:list,full  " command line completion
 let &g:colorcolumn = '89,121'  " global color columns
 let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
@@ -152,7 +154,7 @@ function! s:buffer_overrides() abort
   setlocal formatoptions=lrojcq
   setlocal nojoinspaces
   setlocal linebreak
-  let &l:textwidth = s:line_length
+  let &l:textwidth = s:linelength
   let &l:wrapmargin = 0
   syntax match customShebang /^\%1l#!.*$/  " shebang highlighting
   syntax match customHeader /^# \zs#\+.*$/ containedin=.*Comment.*
@@ -351,6 +353,129 @@ endfor
 
 
 "-----------------------------------------------------------------------------"
+" Highlighting stuff
+"-----------------------------------------------------------------------------"
+" Fix syntax highlighting. Leverage ctags integration to almost always fix syncing
+" Note: This says get the closest tag to the first line in the window, all tags
+" rather than top-level only, searching backward, and without circular wrapping.
+command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
+command! SyncStart syntax sync fromstart
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
+noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
+noremap <Leader>Y <Cmd>SyncStart<CR>
+
+" Color scheme iteration
+" Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
+" Note: This is mainly used for GUI vim (otherwise use terminal themes). Ideas:
+" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+command! SchemePrev call utils#wrap_colorschemes(0)
+command! SchemeNext call utils#wrap_colorschemes(1)
+noremap <Leader>8 <Cmd>Colors<CR>
+noremap <Leader>9 <Cmd>SchemeNext<CR>
+noremap <Leader>0 <Cmd>SchemePrev<CR>
+augroup color_scheme
+  au!
+  au ColorScheme default call vim#source_refresh()
+augroup END
+
+" GUI overrides and colors
+" Note: Should play with different schemes here
+if has('gui_running')
+  colorscheme papercolor
+  " abra  " good one
+  " ayu  " good one
+  " badwolf  " good one
+  " fahrenheit  " good one
+  " gruvbox  " good one
+  " molokai  " good one
+  " monokai  " larger variation
+  " monokain  " slight variation of molokai
+  " moody  " other one
+  " nazca  " other one
+  " northland  " other one
+  " oceanicnext  " good one
+  " papercolor  " good one
+  " sierra  " other one
+  " tender  " other one
+  " turtles  " other one
+  " underwater-mod  " other one
+  " vilight  " other one
+  " vim-material  " other one
+  " vimbrains  " other one
+  " void  " other one
+  hi! link vimCommand Statement
+  hi! link vimNotFunc Statement
+  hi! link vimFuncKey Statement
+  hi! link vimMap Statement
+endif
+
+" Make terminal background same as main background
+highlight Terminal ctermbg=NONE ctermfg=NONE
+
+" Transparent conceal group so when conceallevel=0 elements revert to original colors
+highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
+
+" Comment highlighting (only works in iTerm with minimum contrast enabled, else use gray)
+highlight LineNR cterm=NONE ctermbg=NONE ctermfg=Black
+highlight Comment ctermfg=Black cterm=NONE
+
+" Special characters
+highlight NonText ctermfg=Black cterm=NONE
+highlight SpecialKey ctermfg=Black cterm=NONE
+
+" Matching parentheses
+highlight Todo ctermfg=NONE ctermbg=Red
+highlight MatchParen ctermfg=NONE ctermbg=Blue
+
+" Cursor line or column highlighting using cterm color mapping
+highlight CursorLine cterm=NONE ctermbg=Black
+highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
+
+" Color and sign column stuff
+highlight ColorColumn cterm=NONE ctermbg=Gray
+highlight SignColumn guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
+
+" Sneak and search highlighting
+highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
+highlight Search ctermbg=Magenta ctermfg=NONE
+
+" Popup menu
+highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
+
+" Switch from LightColor to Color and DarkColor because ANSI has no control over light
+highlight Type ctermbg=NONE ctermfg=DarkGreen
+highlight Constant ctermbg=NONE ctermfg=Red
+highlight Special ctermbg=NONE ctermfg=DarkRed
+highlight PreProc ctermbg=NONE ctermfg=DarkCyan
+highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
+
+" Error highlighting (use Red and Magenta for increased prominence)
+highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
+
+" Python highlighting
+highlight link pythonImportedObject Identifier
+highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
+
+" Syntax helper commands
+" Note: Mapping mnemonic for colorizer is # for hex string
+command! -nargs=0 CurrentColor vert help group-name
+command! -nargs=0 CurrentGroup call popup#syntax_group()
+command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
+command! -nargs=0 ShowColors call popup#colors_win()
+command! -nargs=0 ShowPlugin call popup#plugin_win()
+command! -nargs=0 ShowSyntax call popup#syntax_win()
+noremap <Leader>1 <Cmd>CurrentGroup<CR>
+noremap <Leader>2 <Cmd>CurrentSyntax<CR>
+noremap <Leader>3 <Cmd>CurrentColor<CR>
+noremap <Leader>4 <Cmd>ShowPlugin<CR>
+noremap <Leader>5 <Cmd>ShowSyntax<CR>
+noremap <Leader>6 <Cmd>ShowColors<CR>
+
+
+"-----------------------------------------------------------------------------"
 " File and window utilities
 "-----------------------------------------------------------------------------"
 " Save or quit the current session
@@ -403,7 +528,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
-command! -nargs=0 Refresh call vim#source_config()
+command! -nargs=? Refresh call vim#source_refresh(<q-args>)
 noremap <C-r> <Cmd>redraw!<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
@@ -1637,9 +1762,9 @@ if s:plug_active('ale')
   let g:ale_echo_msg_info_str = 'Info'
   let g:ale_echo_msg_warning_str = 'Warn'
   let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
-  let g:ale_python_flake8_options =  '--max-line-length=' . s:line_length . ' --ignore=' . s:flake8_ignore
+  let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . s:flake8_ignore
   let g:ale_set_balloons = 0  " no ballons
-  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:line_length
+  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:linelength
   let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
   let g:ale_virtualtext_cursor = 0  " no error shown here
 endif
@@ -1656,24 +1781,24 @@ endif
 if s:plug_active('ale')
   let g:autopep8_disable_show_diff = 1
   let g:autopep8_ignore = s:flake8_ignore
-  let g:autopep8_max_line_length = s:line_length
-  let g:black_linelength = s:line_length
+  let g:autopep8_max_line_length = s:linelength
+  let g:black_linelength = s:linelength
   let g:black_skip_string_normalization = 1
   let g:vim_isort_python_version = 'python3'
   let g:vim_isort_config_overrides = {
     \ 'include_trailing_comma': 'true',
     \ 'force_grid_wrap': 0,
     \ 'multi_line_output': 3,
-    \ 'line_length': s:line_length,
+    \ 'linelength': s:linelength,
     \ }
   let g:formatdef_mpython = '"isort '
     \ . '--trailing-comma '
     \ . '--force-grid-wrap 0 '
     \ . '--multi-line 3 '
-    \ . '--line-length ' . s:line_length
+    \ . '--line-length ' . s:linelength
     \ . ' - | black --quiet '
     \ . '--skip-string-normalization '
-    \ . '--line-length ' . s:line_length . ' - "'
+    \ . '--line-length ' . s:linelength . ' - "'
   let g:formatters_python = ['mpython']  " multiple formatters
   let g:formatters_fortran = ['fprettify']
 endif
@@ -1836,126 +1961,6 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
   command! -nargs=* Session call session#init_session(<q-args>)
   noremap <Leader>$ <Cmd>Session<CR>
 endif
-
-"-----------------------------------------------------------------------------"
-" Syntax stuff
-"-----------------------------------------------------------------------------"
-" Fix syntax highlighting. Leverage ctags integration to almost always fix syncing
-" Note: This says get the closest tag to the first line in the window, all tags
-" rather than top-level only, searching backward, and without circular wrapping.
-command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
-command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
-noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
-noremap <Leader>Y <Cmd>SyncStart<CR>
-
-" Color scheme iteration
-" Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
-" Note: This is mainly used for GUI vim (otherwise use terminal themes). Ideas:
-" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-if has('gui_running')
-  noremap <Leader>8 <Cmd>Colors<CR>
-  noremap <Leader>9 <Cmd>SchemeNext<CR>
-  noremap <Leader>0 <Cmd>SchemePrev<CR>
-  command! SchemePrev call utils#wrap_colorschemes(0)
-  command! SchemeNext call utils#wrap_colorschemes(1)
-endif
-
-" GUI overrides and colors
-" Note: Should play with different schemes here
-if has('gui_running')
-  hi! link vimCommand Statement
-  hi! link vimNotFunc Statement
-  hi! link vimFuncKey Statement
-  hi! link vimMap Statement
-  colorscheme papercolor
-  " abra  " good one
-  " ayu  " good one
-  " badwolf  " good one
-  " fahrenheit  " good one
-  " gruvbox  " good one
-  " molokai  " good one
-  " monokai  " larger variation
-  " monokain  " slight variation of molokai
-  " moody  " other one
-  " nazca  " other one
-  " northland  " other one
-  " oceanicnext  " good one
-  " papercolor  " good one
-  " sierra  " other one
-  " tender  " other one
-  " turtles  " other one
-  " underwater-mod  " other one
-  " vilight  " other one
-  " vim-material  " other one
-  " vimbrains  " other one
-  " void  " other one
-endif
-
-" Make terminal background same as main background
-highlight Terminal ctermbg=NONE ctermfg=NONE
-
-" Transparent conceal group so when conceallevel=0 elements revert to original colors
-highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
-
-" Comment highlighting (only works in iTerm with minimum contrast enabled, else use gray)
-highlight LineNR cterm=NONE ctermbg=NONE ctermfg=Black
-highlight Comment ctermfg=Black cterm=NONE
-
-" Special characters
-highlight NonText ctermfg=Black cterm=NONE
-highlight SpecialKey ctermfg=Black cterm=NONE
-
-" Matching parentheses
-highlight Todo ctermfg=NONE ctermbg=Red
-highlight MatchParen ctermfg=NONE ctermbg=Blue
-
-" Cursor line or column highlighting using cterm color mapping
-highlight CursorLine cterm=NONE ctermbg=Black
-highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
-
-" Color and sign column stuff
-highlight ColorColumn cterm=NONE ctermbg=Gray
-highlight SignColumn guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
-
-" Sneak and search highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-highlight Search ctermbg=Magenta ctermfg=NONE
-
-" Popup menu
-highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
-
-" Switch from LightColor to Color and DarkColor because ANSI has no control over light
-highlight Type ctermbg=NONE ctermfg=DarkGreen
-highlight Constant ctermbg=NONE ctermfg=Red
-highlight Special ctermbg=NONE ctermfg=DarkRed
-highlight PreProc ctermbg=NONE ctermfg=DarkCyan
-highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
-
-" Error highlighting (use Red and Magenta for increased prominence)
-highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
-highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
-
-" Python highlighting
-highlight link pythonImportedObject Identifier
-highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
-
-" Syntax helper commands
-" Note: Mapping mnemonic for colorizer is # for hex string
-command! -nargs=0 CurrentColor vert help group-name
-command! -nargs=0 CurrentGroup call popup#syntax_group()
-command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
-command! -nargs=0 ShowColors call popup#colors_win()
-command! -nargs=0 ShowPlugin call popup#plugin_win()
-command! -nargs=0 ShowSyntax call popup#syntax_win()
-noremap <Leader>1 <Cmd>CurrentGroup<CR>
-noremap <Leader>2 <Cmd>CurrentSyntax<CR>
-noremap <Leader>3 <Cmd>CurrentColor<CR>
-noremap <Leader>4 <Cmd>ShowPlugin<CR>
-noremap <Leader>5 <Cmd>ShowSyntax<CR>
-noremap <Leader>6 <Cmd>ShowColors<CR>
 
 "-----------------------------------------------------------------------------"
 " Exit
