@@ -61,7 +61,7 @@ function! utils#grep_pattern(grep, level, depth) abort
   echo prompt | let char = nr2char(getchar())
   if char ==# "\<Esc>" || char ==# "\<C-c>"
     return
-  elseif empty(char) || char ==# "\<CR>"
+  elseif empty(char) || char ==# "\<Tab>" || char ==# "\<CR>"
     let search = ''
   else
     let search = input('', char, 'customlist,utils#null_list')
