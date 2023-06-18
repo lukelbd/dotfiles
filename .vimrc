@@ -330,10 +330,10 @@ endfor
 " enter visual mode, to do that need to map vi and va stuff.
 nnoremap v myv
 nnoremap V myV
-nnoremap <C-v> my<C-v>
+nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'my<C-v>'
 vnoremap v <Esc>myv
 vnoremap V <Esc>myV
-vnoremap <C-v> <Esc>my<C-v>
+vnoremap <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'my<C-v>'
 nnoremap gn gE/<C-r>"/<CR><Cmd>noh<CR>mygn
 nnoremap gN W?<C-r>"?e<CR><Cmd>noh<CR>mygN
 vnoremap <LeftMouse> <LeftMouse>mz`y<Cmd>exe 'normal! ' . visualmode()<CR>`z
