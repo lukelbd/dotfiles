@@ -6,8 +6,8 @@
 function! vim#source_content() abort
   if v:count
     echom 'Sourcing ' . v:count . ' lines'
-    let lines = getline(line('.'), line('.') + v:count)
-    exe join(lines, "\n")
+    let range = line('.') . ',' . (line('.') + v:count)
+    exe range . 'source'
   else
     echo "Sourcing '" . expand('%:p:t') . "'"
     update
@@ -20,8 +20,8 @@ endfunction
 function! vim#source_motion() range abort
   update
   echom 'Sourcing lines ' . a:firstline . ' to ' . a:lastline
-  let lines = getline(a:firstline, a:lastline)
-  exe join(lines, "\n")
+  let range = a:firstline . ',' . a:lastline
+  exe range . 'source'
 endfunction
 " For <expr> map accepting motion
 function! vim#source_motion_expr(...) abort
