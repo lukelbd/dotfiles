@@ -81,7 +81,7 @@ endfunction
 " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
 " bug where if opening bracket is immediately followed by newline, then 'inner'
 " bracket range incorrectly sets the closing bracket column position to '1'.
-function! python#kwargs_dict(kw2dc, ...) abort range
+function! python#kw_to_dict(invert, ...) abort range
   let winview = winsaveview()
   let lines = []
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
@@ -106,14 +106,14 @@ function! python#kwargs_dict(kw2dc, ...) abort range
       echom 'Warning: Text is both dictionary-like and kwarg-like.'
       echohl None
     endif
-    if a:kw2dc == 1  " kwargs to dictionary
-      let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
-      let line = substitute(line, '\>\ze\s*=', "'", 'g')
-      let line = substitute(line, '\s*=\s*', ': ', 'g')
-    else
+    if a:invert  " dictionary to kwargs
       let line = substitute(line, "\\>['\"]" . '\ze\s*:', '', 'g')  " remove trailing quote first
       let line = substitute(line, "['\"]\\<" . '\ze\w\+\s*:', '', 'g')
       let line = substitute(line, '\s*:\s*', '=', 'g')
+    else
+      let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
+      let line = substitute(line, '\>\ze\s*=', "'", 'g')
+      let line = substitute(line, '\s*=\s*', ': ', 'g')
     endif
     call add(lines, prefix . line . suffix)
   endfor
@@ -122,6 +122,6 @@ function! python#kwargs_dict(kw2dc, ...) abort range
   call winrestview(winview)
 endfunction
 " For <expr> map accepting motion
-function! python#kwargs_dict_expr(kw2dc) abort
-  return utils#motion_func('python#kwargs_dict', [a:kw2dc, mode()])
+function! python#kw_to_dict_expr(invert) abort
+  return utils#motion_func('python#kw_to_dict', [a:invert, mode()])
 endfunction

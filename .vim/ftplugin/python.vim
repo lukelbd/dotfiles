@@ -9,9 +9,9 @@ let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_func_calls = 1  " python-syntax syntax option
 let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
 
-" Translating dictionaries to keyword input
-noremap <expr> <buffer> cd python#kwargs_dict_expr(1)
-noremap <expr> <buffer> cD python#kwargs_dict_expr(0)
+" Translate dictionaries to keyword input
+noremap <expr> <buffer> cd python#kwargs_dict_expr(0)
+noremap <expr> <buffer> cD python#kwargs_dict_expr(1)
 
 " Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()
