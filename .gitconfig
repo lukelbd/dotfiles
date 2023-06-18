@@ -114,7 +114,7 @@
 	excludesfile = ~/.gitignore
 	mergeoptions = --no-edit
 	ignorecase = false
-	editor = "command vim -c 'goto' -c 'startinsert' -c 'Autosave' -c 'let &colorcolumn=73'"
+	editor = command vim
 [credential]
 	helper = osxkeychain
 [diff "pdf"]

@@ -484,6 +484,7 @@ noremap <Leader>6 <Cmd>ShowColors<CR>
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>A <Cmd>call switch#autosave()<CR>
+
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
 nnoremap <C-w> <Cmd>call session#close_tab()<CR>
 nnoremap <C-e> <Cmd>call session#close_window()<CR>
@@ -607,11 +608,12 @@ let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
   au!
   au TerminalWinOpen * call popup#popup_setup(1)
-  au CmdwinEnter * call popup#cmd_setup()
+  au CmdwinEnter * call popup#cmdwin_setup() | call popup#popup_setup(0)
   au FileType fugitiveblame call git#blame_setup()
   au FileType fugitive call git#git_setup()
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
+  au FileType gitcommit call popup#gitcommit_setup()  " additional setup steps
   au FileType help call popup#help_setup()  " additional setup steps
   au FileType man call popup#man_setup()  " additional setup steps
   au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
@@ -1823,6 +1825,7 @@ if s:plug_active('undotree')
 endif
 
 " Fugitive settings
+" Mnemonic for blame is to 'inspect' current file
 " Note: This repairs inconsistent Gdiff redirect to Gdiffsplit. For some reason
 " 'delcommand' fails (get undefined command errors in :Gdiff) so intead overwrite.
 if s:plug_active('vim-fugitive')
@@ -1830,8 +1833,8 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
-  noremap <Leader>I <Cmd>Git<CR>
-  noremap <Leader>O <Cmd>Git blame -s<CR>
+  noremap <Leader>I <Cmd>Git blame -s<CR>
+  noremap <Leader>O <Cmd>Git commit<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
   noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
@@ -1855,11 +1858,11 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
-  noremap ]g <Cmd>call switch#gitgutter(1) \| exe v:count1 . 'GitGutterNextHunk'<CR>
-  noremap [g <Cmd>call switch#gitgutter(1) \| exe v:count1 . 'GitGutterPrevHunk'<CR>
-  noremap <Leader>g <Cmd>call switch#gitgutter(1) \| GitGutterStageHunk<CR>
-  noremap <Leader>G <Cmd>call switch#gitgutter(1) \| GitGutterUndoHunk<CR>
-  noremap <Leader>h <Cmd>call switch#gitgutter(1) \| GitGutterPreviewHunk \| wincmd j<CR>
+  noremap ]g <Cmd>call switch#gitgutter(1)<CR><Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
+  noremap [g <Cmd>call switch#gitgutter(1)<CR><Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
+  noremap <Leader>g <Cmd>call switch#gitgutter(1)<CR><Cmd>GitGutterStageHunk<CR>
+  noremap <Leader>G <Cmd>call switch#gitgutter(1)<CR><Cmd>GitGutterUndoHunk<CR>
+  noremap <Leader>h <Cmd>call switch#gitgutter(1)<CR><Cmd>GitGutterPreviewHunk \| wincmd j<CR>
   noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
 endif
 

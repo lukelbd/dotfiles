@@ -16,21 +16,20 @@ scriptencoding utf-8
 function! popup#popup_setup(filemode) abort
   nnoremap <silent> <buffer> q :call session#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call session#close_window()<CR>
-  setlocal nolist nonumber norelativenumber nocursorline colorcolumn=
+  setlocal nolist nonumber norelativenumber nocursorline
   if &filetype ==# 'qf' | nnoremap <buffer> <CR> <CR> | endif
   if a:filemode == 1 | return | endif  " this is an editable file
-  setlocal nospell statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
+  setlocal nospell colorcolumn= statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
   for char in 'uUrRxXpPdDaAiIcCoO' | exe 'nmap <buffer> ' char . ' <Nop>' | endfor
   for char in 'dufb' | exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>' | endfor
 endfunction
 
 " Setup command windows and ensure local maps work
 " Note: Here 'execute' means run the selected line
-function! popup#cmd_setup() abort
+function! popup#cmdwin_setup() abort
   inoremap <buffer> <expr> <CR> ""
   nnoremap <buffer> <CR> <C-c><CR>
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
-  silent call popup#popup_setup(0)
 endfunction
 
 " Popup windows with filetype and color information
@@ -45,6 +44,15 @@ endfunction
 function! popup#syntax_win() abort
   execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
   silent call popup#popup_setup(0)
+endfunction
+
+" Git commit setup
+" Note: This works for both command line and fugitive commits
+function! popup#gitcommit_setup(...)
+  let &l:colorcolumn = 73
+  call switch#autosave(1)
+  goto
+  startinsert
 endfunction
 
 " Show and setup vim help page
