@@ -1249,7 +1249,9 @@ if s:enable_lsp
   call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
   call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
 	call plug#('rhysd/vim-healthcheck')  " plugin help
-  let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+  let g:lsp_float_max_width = 88
+  let g:lsp_preview_max_width = 88
+  let g:lsp_preview_max_height = 176
 endif
 
 " Completion engines
@@ -1276,6 +1278,8 @@ if s:enable_lsp
   call plug#('Shougo/ddc.vim')  " fourth generation (requires pynvim and deno)
   call plug#('Shougo/ddc-ui-native')  " matching words near cursor
   call plug#('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
+  let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
+  " let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
 endif
 
 " Omnifunc sources not provided by engines
@@ -1596,15 +1600,22 @@ endif
 " Note: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
 " 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
 " Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
+" Note: The below autocmd gives signature popups the same borders as hover popups.
+" Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
 " so below behavior is close to 'Existing': https://github.com/prabirshrestha/vim-lsp/pull/776
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
-" Note: Previously had issues with markdown preview display in popup windows but
-" fixed. See this thread: https://github.com/prabirshrestha/vim-lsp/pull/1086
 " Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
 " https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
 if s:plug_active('vim-lsp')
+  augroup lsp_style
+    au!
+    autocmd User lsp_float_opened
+      \ call popup_setoptions(
+      \ lsp#ui#vim#output#getpreviewwinid(),
+      \ {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']})
+  augroup END
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
@@ -1617,8 +1628,6 @@ if s:plug_active('vim-lsp')
   noremap <Leader>` <Cmd>CheckHealth<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>
-  " nnoremap <CR> [<C-i>  " jump to vim definition
-  " nnoremap \<Space> [I  " display occurences
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
@@ -1630,8 +1639,6 @@ if s:plug_active('vim-lsp')
   let g:lsp_max_buffer_size = 2000000  " decrease from 5000000
   let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_preview_float = 1  " floating window
-  let g:lsp_preview_max_width = -1  " no maximum
-  let g:lsp_preview_max_height = -1  " no maximum
   let g:lsp_signature_help_enabled = 1  " sigature help
   let g:lsp_signature_help_delay = 100  " milliseconds
   let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
