@@ -1592,6 +1592,7 @@ if s:plug_active('vim-lsp')
   let g:lsp_fold_enabled = 0  " not yet tested
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
+  let g:lsp_max_buffer_size = 2000000  " decrease from 5000000
   let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_preview_float = 1  " floating window
   let g:lsp_preview_max_width = -1  " no maximum
@@ -1625,8 +1626,7 @@ if s:plug_active('ddc.vim')
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
     \ '--v8-flags=--max-heap-size=1000,--max-old-space-size=1000',
     \ ]
-  call ddc#custom#patch_global('ui', 'native')
-  call ddc#custom#patch_global({
+  let g:ddc_sources = {
     \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
     \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
@@ -1660,7 +1660,9 @@ if s:plug_active('ddc.vim')
     \     'forceCompletionPattern': '\S/\S*',
     \     'maxItems': 5,
     \   },
-    \ }})
+    \ }}
+  call ddc#custom#patch_global('ui', 'native')
+  call ddc#custom#patch_global(g:ddc_sources)
   call ddc#enable()
 endif
 
@@ -1828,15 +1830,14 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
-  noremap <Leader>I <Cmd>Git blame<CR>
-  noremap <Leader>g <Cmd>GitGutterStageHunk<CR>
-  noremap <Leader>G <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
-  noremap <Leader>h <Cmd>Git<CR>
-  noremap <Leader>H <Cmd>Git reset %<CR>
+  noremap <Leader>I <Cmd>Git<CR>
+  noremap <Leader>O <Cmd>Git blame -s<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
-  noremap <Leader>J <Cmd>BCommits<CR>
+  noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
-  noremap <Leader>K <Cmd>Commits<CR>
+  noremap <Leader>K <Cmd>echom "Git reset '" . @% . "'" \| Git reset %<CR>
+  noremap <Leader>p <Cmd>BCommits<CR>
+  noremap <Leader>P <Cmd>Commits<CR>
 endif
 
 " Git gutter settings
@@ -1854,11 +1855,12 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
-  noremap ]g <Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
-  noremap [g <Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
-  noremap <Leader>O <Cmd>call switch#gitgutter()<CR>
-  noremap <Leader>P <Cmd>GitGutterUndoHunk<CR>
-  noremap <Leader>p <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
+  noremap ]g <Cmd>call switch#gitgutter(1) \| exe v:count1 . 'GitGutterNextHunk'<CR>
+  noremap [g <Cmd>call switch#gitgutter(1) \| exe v:count1 . 'GitGutterPrevHunk'<CR>
+  noremap <Leader>g <Cmd>call switch#gitgutter(1) \| GitGutterStageHunk<CR>
+  noremap <Leader>G <Cmd>call switch#gitgutter(1) \| GitGutterUndoHunk<CR>
+  noremap <Leader>h <Cmd>call switch#gitgutter(1) \| GitGutterPreviewHunk \| wincmd j<CR>
+  noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parens and seimcolons, chained &&
