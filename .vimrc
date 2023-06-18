@@ -1673,33 +1673,33 @@ endif
 if s:plug_active('ddc.vim')
   augroup pum_navigation
     au!
-    au BufEnter,InsertLeave * let b:popup_scroll = 0
+    au BufEnter,InsertLeave * let b:scroll_state = 0
   augroup END
-  inoremap <expr> <C-y> insert#popup_scroll(-1)
-  inoremap <expr> <C-t> insert#popup_scroll(1)
-  inoremap <expr> <Up> insert#popup_scroll(-0.25)
-  inoremap <expr> <Down> insert#popup_scroll(0.25)
-  inoremap <expr> <C-k> insert#popup_scroll(-0.25)
-  inoremap <expr> <C-j> insert#popup_scroll(0.25)
-  inoremap <expr> <C-u> insert#popup_scroll(-0.5)
-  inoremap <expr> <C-d> insert#popup_scroll(0.5)
-  inoremap <expr> <C-b> insert#popup_scroll(-1.0)
-  inoremap <expr> <C-f> insert#popup_scroll(1.0)
-  inoremap <expr> <Space> insert#popup_reset()
+  inoremap <expr> <C-y> insert#menu_scroll(-1)
+  inoremap <expr> <C-t> insert#menu_scroll(1)
+  inoremap <expr> <Up> insert#menu_scroll(-0.25)
+  inoremap <expr> <Down> insert#menu_scroll(0.25)
+  inoremap <expr> <C-k> insert#menu_scroll(-0.25)
+  inoremap <expr> <C-j> insert#menu_scroll(0.25)
+  inoremap <expr> <C-u> insert#menu_scroll(-0.5)
+  inoremap <expr> <C-d> insert#menu_scroll(0.5)
+  inoremap <expr> <C-b> insert#menu_scroll(-1.0)
+  inoremap <expr> <C-f> insert#menu_scroll(1.0)
+  inoremap <expr> <Space> insert#menu_reset()
     \ . (pumvisible() ? "\<C-e>" : '')
     \ . "\<C-]>\<Space>"
-  inoremap <expr> <Backspace> insert#popup_reset()
+  inoremap <expr> <Backspace> insert#menu_reset()
     \ . (pumvisible() ? "\<C-e>" : '')
     \ . "\<Backspace>"
   inoremap <expr> <CR>
-    \ pumvisible() ? b:popup_scroll ?
-    \ "\<C-y>" . insert#popup_reset()
+    \ pumvisible() ? b:scroll_state ?
+    \ "\<C-y>" . insert#menu_reset()
     \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
     \ : "\<C-]>\<C-g>u\<CR>"
   inoremap <expr> <Tab>
-    \ pumvisible() ? b:popup_scroll ?
-    \ "\<C-y>" . insert#popup_reset()
-    \ : "\<C-n>\<C-y>" . insert#popup_reset()
+    \ pumvisible() ? b:scroll_state ?
+    \ "\<C-y>" . insert#menu_reset()
+    \ : "\<C-n>\<C-y>" . insert#menu_reset()
     \ : "\<C-]>\<Tab>"
 endif
 

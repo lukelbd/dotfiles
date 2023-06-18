@@ -68,11 +68,11 @@ endfunction
 " Note: Used 'verb function! lsp#scroll' to figure out how to detect
 " preview windows for a reference scaling (also verified that l:window.find
 " and therefore lsp#scroll do not return popup completion windows).
-function! insert#popup_reset() abort
-  let b:popup_scroll = 0
+function! insert#menu_reset() abort
+  let b:scroll_state = 0
   return ''
 endfunction
-function! insert#popup_scroll(scroll) abort
+function! insert#menu_scroll(scroll) abort
   let l:methods = vital#lsp#import('VS.Vim.Window')  " scope is necessary
   let ids = l:methods.find({id -> l:methods.is_floating(id)})
   let complete_info = pum_getpos()  " automatically returns empty if not present
@@ -80,9 +80,9 @@ function! insert#popup_scroll(scroll) abort
   if !empty(complete_info)
     let nr = type(a:scroll) == 5 ? float2nr(a:scroll * complete_info['height']) : a:scroll
     let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
-    let nr = max([0 - b:popup_scroll, nr])
-    let nr = min([complete_info['size'] - b:popup_scroll, nr])
-    let b:popup_scroll += nr  " complete menu offset
+    let nr = max([0 - b:scroll_state, nr])
+    let nr = min([complete_info['size'] - b:scroll_state, nr])
+    let b:scroll_state += nr  " complete menu offset
     return repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
   elseif !empty(preview_info)
     let nr = type(a:scroll) == 5 ? float2nr(a:scroll * preview_info['height']) : a:scroll
