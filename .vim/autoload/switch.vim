@@ -29,33 +29,6 @@ function! switch#ale(...) abort
   call s:switch_message('ale and lsp integration', toggle)
 endfunction
 
-" Enable and disable LSP engines
-" Note: The ddc docs says ddc#disable() is permanent so just remove sources
-" Note: The server status can lag because takes a while for async server stop
-" let state = denops#server#status() ==? 'running'  " check denops server status
-" let servers = lsp#get_server_names()  " servers applied to any filetype
-function! switch#lsp(...) abort
-  let running = []  " 'allowed' means servers applied to this filetype
-  let servers = exists('*lsp#get_allowed_servers') ? lsp#get_allowed_servers() : []
-  for server in servers
-    if lsp#get_server_status(server) =~? 'running' | call add(running, server) | endif
-  endfor
-  let state = !empty(running)  " at least one filetype server is running
-  let toggle = a:0 ? a:1 : 1 - state
-  if state == toggle || empty(servers)
-    return
-  elseif toggle  " note completionMode was removed
-    call lsp#activate()  " currently can only activate everything
-    call ddc#custom#patch_global(g:ddc_sources)  " restore sources
-    call denops#server#start()  " must come after ddc call
-  else
-    for server in running | call lsp#stop_server(server) | endfor  " de-activate server
-    call ddc#custom#patch_global({'sources': []})  " wipe out ddc sources
-    call denops#server#stop()  " must come before ddc call
-  endif
-  call s:switch_message('lsp and autocomplete', toggle)
-endfunction
-
 " Autosave toggle (autocommands are local to buffer as with codi)
 " We use augroups with buffer-specific names to prevent conflict
 function! switch#autosave(...) abort
@@ -76,27 +49,6 @@ function! switch#autosave(...) abort
   endif
   let b:autosave_enabled = toggle
   call s:switch_message('Autosave', toggle)
-endfunction
-
-" Toggle directory 
-" Note: This can be useful for browsing files
-function! switch#localdir(...) abort
-  let state = haslocaldir()
-  let toggle = a:0 ? a:1 : 1 - state
-  let root = empty(v:this_session) ? getcwd(-1) : fnamemodify(v:this_session, ':p:h')
-  let local = expand('%:p:h')
-  if getcwd(-1) !=# root  " enforce in case it changed
-    exe 'cd ' . root
-    echom "Global directory '" . root . "'"
-  endif
-  if state == toggle
-    return
-  elseif toggle
-    exe 'lcd ' . local
-  else
-    exe 'cd ' . root
-  endif
-  call s:switch_message("Local directory '" . local . "'", toggle)
 endfunction
 
 " Toggle conceal characters on and off
@@ -185,6 +137,54 @@ function! switch#hlsearch(...) abort
   endif
   call feedkeys("\<Cmd>" . cmd . "\<CR>")
   call s:switch_message('Highlight search', toggle)
+endfunction
+
+" Toggle directory 
+" Note: This can be useful for browsing files
+function! switch#localdir(...) abort
+  let state = haslocaldir()
+  let toggle = a:0 ? a:1 : 1 - state
+  let root = empty(v:this_session) ? getcwd(-1) : fnamemodify(v:this_session, ':p:h')
+  let local = expand('%:p:h')
+  if getcwd(-1) !=# root  " enforce in case it changed
+    exe 'cd ' . root
+    echom "Global directory '" . root . "'"
+  endif
+  if state == toggle
+    return
+  elseif toggle
+    exe 'lcd ' . local
+  else
+    exe 'cd ' . root
+  endif
+  call s:switch_message("Local directory '" . local . "'", toggle)
+endfunction
+
+" Enable and disable LSP engines
+" Note: The ddc docs says ddc#disable() is permanent so just remove sources
+" Note: The server status can lag because takes a while for async server stop
+" let state = denops#server#status() ==? 'running'  " check denops server status
+" let servers = lsp#get_server_names()  " servers applied to any filetype
+function! switch#lsp(...) abort
+  let running = []  " 'allowed' means servers applied to this filetype
+  let servers = exists('*lsp#get_allowed_servers') ? lsp#get_allowed_servers() : []
+  for server in servers
+    if lsp#get_server_status(server) =~? 'running' | call add(running, server) | endif
+  endfor
+  let state = !empty(running)  " at least one filetype server is running
+  let toggle = a:0 ? a:1 : 1 - state
+  if state == toggle || empty(servers)
+    return
+  elseif toggle  " note completionMode was removed
+    call lsp#activate()  " currently can only activate everything
+    call ddc#custom#patch_global(g:ddc_sources)  " restore sources
+    call denops#server#start()  " must come after ddc call
+  else
+    for server in running | call lsp#stop_server(server) | endfor  " de-activate server
+    call ddc#custom#patch_global({'sources': []})  " wipe out ddc sources
+    call denops#server#stop()  " must come before ddc call
+  endif
+  call s:switch_message('lsp and autocomplete', toggle)
 endfunction
 
 " Toggle spell check on and off
