@@ -1923,10 +1923,10 @@ endif
 if s:plug_active('codi.vim')
   augroup codi_mods
     au!
-    au User CodiEnterPre call popup#codi_setup(1)
-    au User CodiLeavePost call popup#codi_setup(0)
+    au User CodiEnterPre call codi#setup(1)
+    au User CodiLeavePost call codi#setup(0)
   augroup END
-  command! -nargs=? CodiNew call popup#codi_new(<q-args>)
+  command! -nargs=? CodiNew call codi#new(<q-args>)
   noremap <Leader>= <Cmd>CodiNew<CR>
   noremap <Leader>+ <Cmd>Codi!!<CR>
   let g:codi#autocmd = 'None'
@@ -1940,15 +1940,15 @@ if s:plug_active('codi.vim')
         \ 'bin': ['python3', '-i', '-c', 'import readline; readline.set_auto_history(False)'],
         \ 'prompt': '^\(>>>\|\.\.\.\) ',
         \ 'quitcmd': 'exit()',
-        \ 'preprocess': function('popup#codi_preprocess'),
-        \ 'rephrase': function('popup#codi_rephrase'),
+        \ 'preprocess': function('codi#preprocess'),
+        \ 'rephrase': function('codi#rephrase'),
         \ },
     \ 'julia': {
         \ 'bin': ['julia', '-q', '-i', '--color=no', '--history-file=no'],
         \ 'prompt': '^\(julia>\|      \)',
         \ 'quitcmd': 'exit()',
-        \ 'preprocess': function('popup#codi_preprocess'),
-        \ 'rephrase': function('popup#codi_rephrase'),
+        \ 'preprocess': function('codi#preprocess'),
+        \ 'rephrase': function('codi#rephrase'),
         \ },
     \ }
 endif
