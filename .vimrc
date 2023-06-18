@@ -410,50 +410,50 @@ if has('gui_running')
 endif
 
 " Make terminal background same as main background
-highlight Terminal ctermbg=NONE ctermfg=NONE
+highlight Terminal ctermbg=None ctermfg=None
 
 " Transparent conceal group so when conceallevel=0 elements revert to original colors
-highlight Conceal ctermbg=NONE ctermfg=NONE ctermbg=NONE ctermfg=NONE
+highlight Conceal ctermbg=None ctermfg=None ctermbg=None ctermfg=None
 
 " Comment highlighting (only works in iTerm with minimum contrast enabled, else use gray)
-highlight LineNR cterm=NONE ctermbg=NONE ctermfg=Black
-highlight Comment ctermfg=Black cterm=NONE
+highlight LineNR cterm=None ctermbg=None ctermfg=Black
+highlight Comment ctermfg=Black cterm=None
 
 " Special characters
-highlight NonText ctermfg=Black cterm=NONE
-highlight SpecialKey ctermfg=Black cterm=NONE
+highlight NonText ctermfg=Black cterm=None
+highlight SpecialKey ctermfg=Black cterm=None
 
 " Matching parentheses
-highlight Todo ctermfg=NONE ctermbg=Red
-highlight MatchParen ctermfg=NONE ctermbg=Blue
+highlight Todo ctermfg=None ctermbg=Red
+highlight MatchParen ctermfg=None ctermbg=Blue
 
 " Cursor line or column highlighting using cterm color mapping
-highlight CursorLine cterm=NONE ctermbg=Black
-highlight CursorLineNR cterm=NONE ctermbg=Black ctermfg=White
+highlight CursorLine cterm=None ctermbg=Black
+highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
 
 " Color and sign column stuff
-highlight ColorColumn cterm=NONE ctermbg=Gray
-highlight SignColumn guibg=NONE cterm=NONE ctermfg=Black ctermbg=NONE
+highlight ColorColumn cterm=None ctermbg=Gray
+highlight SignColumn guibg=None cterm=None ctermfg=Black ctermbg=None
 
 " Sneak and search highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-highlight Search ctermbg=Magenta ctermfg=NONE
+highlight Sneak ctermbg=DarkMagenta ctermfg=None
+highlight Search ctermbg=Magenta ctermfg=None
 
 " Popup menu
-highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
+highlight Pmenu ctermbg=None ctermfg=White cterm=None
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None
+highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
 
 " Switch from LightColor to Color and DarkColor because ANSI has no control over light
-highlight Type ctermbg=NONE ctermfg=DarkGreen
-highlight Constant ctermbg=NONE ctermfg=Red
-highlight Special ctermbg=NONE ctermfg=DarkRed
-highlight PreProc ctermbg=NONE ctermfg=DarkCyan
-highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
+highlight Type ctermbg=None ctermfg=DarkGreen
+highlight Constant ctermbg=None ctermfg=Red
+highlight Special ctermbg=None ctermfg=DarkRed
+highlight PreProc ctermbg=None ctermfg=DarkCyan
+highlight Indentifier ctermbg=None ctermfg=Cyan cterm=Bold
 
 " Error highlighting (use Red and Magenta for increased prominence)
-highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
-highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEErrorLine ctermfg=None ctermbg=None cterm=None
+highlight ALEWarningLine ctermfg=None ctermbg=None cterm=None
 
 " Python highlighting
 highlight link pythonImportedObject Identifier
