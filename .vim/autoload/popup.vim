@@ -125,7 +125,54 @@ function! popup#man_setup(...) abort
   noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
 endfunction
 
+" Insert complete menu items and scroll complete or preview windows (whichever is open).
+" Note: This prevents vim's baked-in circular complete menu scrolling. It
+" also prefers scrolling complete menus over preview windows.
+" Note: Used 'verb function! lsp#scroll' to figure out how to detect
+" preview windows for a reference scaling (also verified that l:window.find
+" and therefore lsp#scroll do not return popup completion windows).
+function! popup#scroll_reset() abort
+  let b:scroll_state = 0
+  return ''
+endfunction
+function! s:scroll_preview(info, scroll) abort
+  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:info['height']) : a:scroll
+  let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
+  return lsp#scroll(nr)
+endfunction
+function! s:scroll_popup(info, scroll) abort
+  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:info['height']) : a:scroll
+  let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
+  let nr = max([0 - b:scroll_state, nr])
+  let nr = min([a:info['size'] - b:scroll_state, nr])
+  let b:scroll_state += nr  " complete menu offset
+  return repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
+endfunction
+function! s:scroll_normal(scroll) abort
+  let nr = abs(type(a:scroll) == 5 ? float2nr(a:scroll * winheight(0)) : a:scroll)
+  let cmd = ''
+  if mode() !~# '^[iIR]'  " revert to normal mode scrolling
+    let updown = a:scroll > 0 ? 'd' : 'u'
+    let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ", '" . updown . "', 1)\<CR>"
+  endif
+  return cmd
+endfunction
+function! popup#scroll_count(scroll) abort
+  let complete_info = pum_getpos()  " automatically returns empty if not present
+  let l:methods = vital#lsp#import('VS.Vim.Window')  " scope is necessary
+  let preview_ids = l:methods.find({id -> l:methods.is_floating(id)})
+  let preview_info = empty(preview_ids) ? {} : l:methods.info(preview_ids[0])
+  if !empty(complete_info)
+    return s:scroll_popup(complete_info, a:scroll)
+  elseif !empty(preview_info)
+    return s:scroll_preview(preview_info, a:scroll)
+  else
+    return s:scroll_normal(a:scroll)
+  endif
+endfunction
+
 " Print information about syntax group
+" Note: Top command more verbose than bottom
 function! popup#syntax_list(name) abort
   if a:name
     exe 'verb syntax list ' . a:name

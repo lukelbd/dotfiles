@@ -484,7 +484,6 @@ noremap <Leader>6 <Cmd>ShowColors<CR>
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>A <Cmd>call switch#autosave()<CR>
-
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
 nnoremap <C-w> <Cmd>call session#close_tab()<CR>
 nnoremap <C-e> <Cmd>call session#close_window()<CR>
@@ -901,6 +900,54 @@ noremap <Plug>BlankDown <Cmd>call edit#blank_down(v:count1)<CR>
 map [e <Plug>BlankUp
 map ]e <Plug>BlankDown
 
+" Enter insert mode above or below.
+" Pressing enter on empty line preserves leading whitespace
+nnoremap o oX<Backspace>
+nnoremap O OX<Backspace>
+
+" Preview window scrolling
+" Note: Popup menu always closed but this also does preview windows
+noremap <expr> <C-k> popup#scroll_count(-0.25)
+noremap <expr> <C-j> popup#scroll_count(0.25)
+noremap <expr> <C-u> popup#scroll_count(-0.5)
+noremap <expr> <C-d> popup#scroll_count(0.5)
+noremap <expr> <C-b> popup#scroll_count(-1.0)
+noremap <expr> <C-f> popup#scroll_count(1.0)
+
+" Popup and preview window scrolling
+" This should work with or without ddc
+augroup pum_navigation
+  au!
+  au BufEnter,InsertLeave * let b:scroll_state = 0
+augroup END
+inoremap <expr> <C-k> popup#scroll_count(-0.25)
+inoremap <expr> <C-j> popup#scroll_count(0.25)
+inoremap <expr> <C-u> popup#scroll_count(-0.5)
+inoremap <expr> <C-d> popup#scroll_count(0.5)
+inoremap <expr> <C-b> popup#scroll_count(-1.0)
+inoremap <expr> <C-f> popup#scroll_count(1.0)
+
+" Popup menu selection shortcuts
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
+" and default is chosen if necessary. See :h ins-special-special.
+inoremap <expr> <Space> popup#scroll_reset()
+  \ . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<C-]>\<Space>"
+inoremap <expr> <Backspace> popup#scroll_reset()
+  \ . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<Backspace>"
+inoremap <expr> <CR>
+  \ pumvisible() ? b:scroll_state ?
+  \ "\<C-y>" . popup#scroll_reset()
+  \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
+  \ : "\<C-]>\<C-g>u\<CR>"
+inoremap <expr> <Tab>
+  \ pumvisible() ? b:scroll_state ?
+  \ "\<C-y>" . popup#scroll_reset()
+  \ : "\<C-n>\<C-y>" . popup#scroll_reset()
+  \ : "\<C-]>\<Tab>"
+
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
 nnoremap <expr> ga edit#paste_mode() . 'a'
@@ -914,31 +961,6 @@ nnoremap <expr> gR edit#paste_mode() . 'R'
 
 " Forward delete by tabs
 inoremap <expr> <Delete> edit#forward_delete()
-
-" Insert comment similar to gc
-" Todo: Add more control insert mappings?
-inoremap <expr> <C-g>c comment#comment_insert()
-
-" Section headers, dividers, and other information
-" Todo: Improve title headers
-nmap gc; <Plug>CommentBar
-nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
-nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
-nnoremap gc' <Cmd>call comment#header_incomment()<CR>
-nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
-nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap gcY <Cmd>call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
-
-" ReST section comment headers
-" Warning: <Plug> name should not be subset of other name or results in delay!
-nnoremap <Plug>SectionSingle <Cmd>call comment#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
-nnoremap <Plug>SubsectionSingle <Cmd>call comment#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
-nnoremap <Plug>SectionDouble <Cmd>call comment#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
-nnoremap <Plug>SubsectionDouble <Cmd>call comment#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
-nmap g= <Plug>SectionSingle
-nmap g- <Plug>SubsectionSingle
-nmap g+ <Plug>SectionDouble
-nmap g_ <Plug>SubsectionDouble
 
 " Search and find-replace stuff. Ensure 'noignorecase' turned on when
 " in insert mode, so that popup menu autocompletion respects input case.
@@ -1455,10 +1477,13 @@ endif
 " Additional mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 " Also add custom filetype log and plugin filetype ale-preview to list.
 if s:plug_active('vim-scrollwrapped')
+  let g:scrollwrapped_nomap = 1
   let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
-  noremap <Up> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'u', 1)<CR>
-  noremap <Down> <Cmd>call scrollwrapped#scroll(winheight(0) / 4, 'd', 1)<CR>
   noremap <Leader>w <Cmd>WrapToggle<CR>
+  noremap <expr> <Up> popup#scroll_count(-0.25)
+  noremap <expr> <Down> popup#scroll_count(0.25)
+  inoremap <expr> <Up> popup#scroll_count(-0.25)
+  inoremap <expr> <Down> popup#scroll_count(0.25)
 endif
 
 " Add maps for vim-tags command and use tags for default double bracket motion,
