@@ -63,7 +63,7 @@ function! grep#pattern(grep, level, depth) abort
   elseif empty(char) || char ==# "\<Tab>" || char ==# "\<CR>"
     let search = ''
   else
-    let search = input('', char, 'customlist,internals#null_list')
+    let search = input('', char, 'customlist,utils#null_list')
   endif
   let func = 'grep#' . tolower(a:grep)
   let search = empty(search) || search ==# "\<CR>" ? @/ : search

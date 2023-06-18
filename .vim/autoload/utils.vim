@@ -2,28 +2,29 @@
 " Internal utilities
 "-----------------------------------------------------------------------------"
 " Null input() completion function to prevent unexpected insertion of literal tabs
-function! internals#null_list(...) abort
+" Note: This is used in other autoload functions
+function! utils#null_list(...) abort
   return []
 endfunction
 " Null operator motion function
-function! internals#null_operator(...) range abort
+function! utils#null_operator(...) range abort
   return ''
 endfunction
 " For <expr> mapping accepting motion
-function! internals#null_operator_expr(...) abort
-  return internals#motion_func('internals#null_operator', a:000)
+function! utils#null_operator_expr(...) abort
+  return utils#motion_func('utils#null_operator', a:000)
 endfunction
 
 " Call function over the visual line range or the user motion line range
 " Note: Use this approach rather than adding line range as physical arguments and
 " calling with call call(func, firstline, lastline, ...) so that funcs can still be
 " invoked manually with V<motion>:call func(). This is more standard paradigm.
-function! internals#motion_func(funcname, args) abort
+function! utils#motion_func(funcname, args) abort
   let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
   if mode() =~# '^\(v\|V\|\)$'
-    return ":\<C-u>'<,'>call internals#operator_func('')\<CR>"
+    return ":\<C-u>'<,'>call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'
-    set operatorfunc=internals#operator_func
+    set operatorfunc=utils#operator_func
     return 'g@'  " uses the input line range
   else
     echoerr 'E999: Illegal mode: ' . string(mode())
@@ -31,11 +32,11 @@ function! internals#motion_func(funcname, args) abort
   endif
 endfunction
 
-" Execute the function name and call signature passed to internals#motion_func. This
+" Execute the function name and call signature passed to utils#motion_func. This
 " is generally invoked inside an <expr> mapping.
 " Note: Only motions can cause backwards firstline to lastline order. Manual
 " calls to the function will have sorted lines.
-function! internals#operator_func(type) range abort
+function! utils#operator_func(type) range abort
   if empty(a:type)  " default behavior
       let firstline = a:firstline
       let lastline  = a:lastline
@@ -53,10 +54,22 @@ function! internals#operator_func(type) range abort
   return ''
 endfunction
 
+" Run command with v:count register specification
+" Note: Powers 'c', 'y', 'd', and 'q' (mapped to 'Q')
+function! utils#register_func(macro, count) abort
+  let base = a:macro ? 96 : 106  " default uses a-j for text k-t for macros
+  if a:count
+    let prefix = nr2char(base + a:count)
+  else
+    let prefix = ''
+  endif
+  return "\<Esc>" . prefix
+endfunction
+
 " Reverse the selected lines
 " Note: Adaptation of hard-to-remember :g command shortcut.
 " https://vim.fandom.com/wiki/Reverse_order_of_lines
-function! internals#reverse_lines() range abort
+function! utils#reverse_lines() range abort
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   let num = empty(range) ? 0 : a:firstline - 1
   exec 'silent ' . range . 'g/^/m' . num
@@ -64,7 +77,7 @@ endfunction
 
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
-function! internals#wrap_colorschemes(reverse) abort
+function! utils#wrap_colorschemes(reverse) abort
   let step = a:reverse ? 1 : -1
   if !exists('g:all_colorschemes')
     let g:all_colorschemes = getcompletion('', 'color')
@@ -88,7 +101,7 @@ endfunction
 " Adapted from: https://vi.stackexchange.com/a/14359
 " Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
 " cursor is on final error in the file but ]x does not cycle to the next one.
-function! internals#wrap_cyclic(count, list, ...) abort
+function! utils#wrap_cyclic(count, list, ...) abort
   " Build up list of loc dictionaries
   let func = 'get' . a:list . 'list'
   let reverse = a:0 && a:1
@@ -110,5 +123,5 @@ function! internals#wrap_cyclic(count, list, ...) abort
     return cmd . inext
   endif
   exe reverse ? line('$') : 0
-  return internals#wrap_cyclic(a:count, a:list, reverse)
+  return utils#wrap_cyclic(a:count, a:list, reverse)
 endfunction

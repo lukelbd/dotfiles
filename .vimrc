@@ -368,8 +368,8 @@ noremap <Leader>Y <Cmd>SyncStart<CR>
 " Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
 " Note: This is mainly used for GUI vim (otherwise use terminal themes). Ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-command! SchemePrev call internals#wrap_colorschemes(0)
-command! SchemeNext call internals#wrap_colorschemes(1)
+command! SchemePrev call utils#wrap_colorschemes(0)
+command! SchemeNext call utils#wrap_colorschemes(1)
 noremap <Leader>8 <Cmd>Colors<CR>
 noremap <Leader>9 <Cmd>SchemeNext<CR>
 noremap <Leader>0 <Cmd>SchemePrev<CR>
@@ -523,7 +523,7 @@ nmap <Leader>Z <Plug>ExecuteFile3
 noremap <Plug>ExecuteFile1 <Nop>
 noremap <Plug>ExecuteFile2 <Nop>
 noremap <Plug>ExecuteFile3 <Nop>
-noremap <expr> <Plug>ExecuteMotion internals#null_operator_expr()
+noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Refresh session or re-opening previous files
 " Note: Here :History includes v:oldfiles and open buffers.
@@ -674,7 +674,7 @@ nnoremap <Leader>, <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Reverse using command
 " See: https://superuser.com/a/189956/506762
-command! -range Reverse <line1>,<line2>call internals#reverse_lines()
+command! -range Reverse <line1>,<line2>call utils#reverse_lines()
 
 " Jump to last changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
@@ -807,10 +807,10 @@ noremap " "*
 
 " Maps and commands for circular location-list scrolling
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
-command! -bar -count=1 Lnext execute internals#wrap_cyclic(<count>, 'loc')
-command! -bar -count=1 Lprev execute internals#wrap_cyclic(<count>, 'loc', 1)
-command! -bar -count=1 Qnext execute internals#wrap_cyclic(<count>, 'qf')
-command! -bar -count=1 Qprev execute internals#wrap_cyclic(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute utils#wrap_cyclic(<count>, 'loc')
+command! -bar -count=1 Lprev execute utils#wrap_cyclic(<count>, 'loc', 1)
+command! -bar -count=1 Qnext execute utils#wrap_cyclic(<count>, 'qf')
+command! -bar -count=1 Qprev execute utils#wrap_cyclic(<count>, 'qf', 1)
 noremap [x <Cmd>Lprev<CR>
 noremap ]x <Cmd>Lnext<CR>
 noremap [X <Cmd>Qprev<CR>

@@ -94,7 +94,7 @@ function! s:open_continuous(...) abort
   let paths = []
   for item in items
     if item == s:new_file  " should be recursed at least one level
-      let item = input(file#path_abbrev(base) . '/', '', 'customlist,internals#null_list')
+      let item = input(file#path_abbrev(base) . '/', '', 'customlist,utils#null_list')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " fnamemodify :p does not remove the .. so must do this
@@ -151,7 +151,7 @@ endfunction
 " Rename2.vim  -  Rename a buffer within Vim and on disk
 " Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
 " Usage: Rename[!] {newname}
-function! file#rename_to(name, bang) abort
+function! file#rename_to(name, bang)
   let curfile = expand('%:p')
   let curfilepath = expand('%:p:h')
   let newname = curfilepath . '/' . a:name

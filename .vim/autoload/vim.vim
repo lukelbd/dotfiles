@@ -44,7 +44,7 @@ function! vim#refresh_config(...) abort
     \ '/\.\?vim/autoload/vim.vim',
     \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
     \ ]
-  let regex = '\(' . join(regexes, '\|') . '\)'
+  let regex = join(regexes, '\|')
   let paths = split(execute('scriptnames'), "\n")  " load order, distinct from &rtp
   let loaded = []
   let updates = {}
@@ -57,12 +57,12 @@ function! vim#refresh_config(...) abort
     if index(loaded, path) != -1
       continue  " already loaded this
     endif
-    if path =~# '/\(syntax\|ftplugin\)/'
+    if path =~# '/syntax/\|/ftplugin/'
       let ftype = fnamemodify(path, ':t:r')
     else
       let ftype = 'global'
     endif
-    if path =~# '/\(\.\?vimrc\|init\.vim\)'  " always source and trigger filetypes here
+    if path =~# '/\.\?vimrc\|/init\.vim'  " always source and trigger filetypes
       doautocmd Filetype
     elseif getftime(path) < get(g:refresh_times, ftype, default)
       continue  " only refresh if outdated

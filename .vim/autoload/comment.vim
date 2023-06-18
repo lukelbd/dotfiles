@@ -3,7 +3,7 @@
 "-----------------------------------------------------------------------------"
 " Helper functions
 function! s:input_title()
-  return input('Comment block name: ', '', 'customlist,internals#null_list')
+  return input('Comment block name: ', '', 'customlist,utils#null_list')
 endfunction
 function! s:indent_spaces() abort  " match current indent level
   let col = match(getline('.'), '^\s*\S\zs')  " location of first non-whitespace char
