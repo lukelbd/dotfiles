@@ -9,20 +9,18 @@ let s:new_file = '[new file]'  " dummy entry for requesting new file in current 
 
 " Generate list of files in directory
 " Note: This includes hidden and non-hidden files
-function! s:path_source(dir) abort
+function! s:path_source(dir, user) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
-  let paths = map(paths, 'fnamemodify(v:val, '':t'')')
-  call insert(paths, s:new_file, 0)  " highest priority
+  let paths = map(paths, "fnamemodify(v:val, ':t')")
+  if a:user | call insert(paths, s:new_file, 0) | endif
   return paths
 endfunction
-
-" Abbreviate path for the continuous open prompt
-" Note: This removes $HOME folder and current path from string. Used in utils.vim
-function! file#path_abbrev(path) abort
-  let abb = substitute(a:path, '^\~', expand('~'), '')
-  let abb = substitute(abb, '^' . getcwd(), '.', '')
-  let abb = substitute(abb, '^' . expand('~'), '~', '')
-  return empty(abb) ? '.' : abb
+function! file#path_list(lead, line, cursor) abort
+  let head = fnamemodify(a:lead, ':h')
+  let tail = fnamemodify(a:lead, ':t')
+  let paths = split(globpath(head, tail . '*'), "\n")
+  let paths = map(paths, "fnamemodify(v:val, ':~:.')")
+  return paths
 endfunction
 
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
@@ -32,10 +30,10 @@ function! file#open_existing(file) abort
   let visible = {}
   let path = fnamemodify(a:file, ':p')
   let tabjump = 0
-  for t in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = t + 1 " the tab number
-    for b in tabpagebuflist(tabnr)
-      if fnamemodify(bufname(b), ':p') == path
+  for tnr in range(tabpagenr('$')) " iterate through each tab
+    let tabnr = tnr + 1 " the tab number
+    for bnr in tabpagebuflist(tabnr)
+      if fnamemodify(bufname(bnr), ':p') == path
         exe 'normal! ' . tabnr . 'gt'
         return
       endif
@@ -48,24 +46,16 @@ function! file#open_existing(file) abort
   end
 endfunction
 
-" Open from local or current directory
-" Note: Using <expr> instead of this tiny helper function causes <C-c> to display
-" annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
+" Open from local or current directory (see also grep.vim)
+" Note: Using <expr> instead of this tiny helper function causes <C-c> to
+" display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_from(files, local) abort
-  if a:files  " fzf recursively-descending open command
-    let command = 'Files'
-  else  " custom 'continuous' per-directory open command
-    let command = 'Open'
-  endif
-  if a:local
-    let default = expand('%:p:h') . '/'  " start from local directory
-  else
-    let default = fnamemodify(getcwd(), ':p')  " start from current directory
-  endif
-  let result = input(command . ': ', default, 'file')
-  if !empty(result)
-    exe command . ' ' . result
-  endif
+  let cmd = a:files ? 'Files' : 'Open'  " continuous per-directory open or fzf recursive?
+  let default = a:local ? expand('%:p:h') . '/' : fnamemodify(getcwd(), ':p')
+  let default = fnamemodify(default, ':~')
+  let start = utils#complete_input(cmd, default, 'file#path_list')
+  if empty(start) | return | endif
+  exe cmd . ' ' . start
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
@@ -93,14 +83,17 @@ function! s:open_continuous(...) abort
   " Process paths input manually or from fzf
   let paths = []
   for item in items
-    if item == s:new_file  " should be recursed at least one level
-      let item = input(file#path_abbrev(base) . '/', '', 'customlist,utils#null_list')
+    let user = item ==# s:new_file
+    if user  " should be recursed at least one level
+      let item = input(fnamemodify(base, ':~:.') . '/', '', 'customlist,utils#null_list')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
-    if item ==# '..'  " fnamemodify :p does not remove the .. so must do this
-      call add(paths, fnamemodify(base, ':p:h'))
+    if item ==# '..'  " :p adds a slash so need two :h:h to remove then
+      call add(paths, fnamemodify(base, ':p:h:h'))
     elseif !empty(item)
       call add(paths, empty(base) ? item : base . '/' . item)
+    elseif user
+      call add(paths, base)
     endif
   endfor
   " Possibly activate or re-activate fzf
@@ -108,11 +101,13 @@ function! s:open_continuous(...) abort
     let base = empty(paths) ? '.' : paths[0]
     let base = fnamemodify(base, ':p')  " full directory name
     let base = substitute(base, '/$', '', '')  " remove trailing slash
+    let trunc = fnamemodify(base, ':~:.')  " remove unnecessary stuff
+    let trunc = trunc[:1] =~# '/' ? trunc : './' . trunc
     let paths = []  " only continue in recursion
     call fzf#run(fzf#wrap({
-      \ 'source': s:path_source(base),
+      \ 'source': s:path_source(base, 1),
       \ 'sinklist': function('s:open_continuous', [base]),
-      \ 'options': "--multi --no-sort --prompt='" . file#path_abbrev(base) . "/'",
+      \ 'options': "--multi --no-sort --prompt='" . trunc . "/'",
       \ }))
   endif
   " Open file(s), or if it is already open just to that tab

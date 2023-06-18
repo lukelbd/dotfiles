@@ -54,21 +54,18 @@ endfunction
 
 " Call Rg or Ag grep commands (see also file.vim)
 " Note: This lets user both pick default with <CR> or cancel with <C-c>
+function! grep#list(lead, list, cursor)
+  let opts = execute('history search')
+  let opts = substitute(opts, '\n\@<=>\?\s*[0-9]*\s*\([^\n]*\)\(\n\|$\)\@=', '\1', 'g')
+  let opts = split(opts, '\n')
+  let opts = filter(opts, 'v:val[:len(a:lead) - 1] ==# a:lead')
+  return reverse(opts[1:])
+endfunction
 function! grep#pattern(grep, level, depth) abort
   let prompt = a:level > 1 ? 'File' : a:level > 0 ? 'Local' : 'Global'
-  let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:]
-  let prompt = prompt . " pattern (default '" . @/ . "'):"
-  echo prompt | let char = nr2char(getchar())
-  if char ==# "\<Esc>" || char ==# "\<C-c>"
-    return
-  elseif char ==# "\<CR>"
-    let search = char
-  else
-    let text = char ==# "\<Tab>" ? @/ : char
-    let search = input('', text, 'customlist,utils#null_list')
-  endif
-  let func = 'grep#' . tolower(a:grep)
-  let search = search ==# "\<CR>" ? @/ : search
+  let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:] . ' pattern'
+  let search = utils#complete_input(prompt, @/, 'grep#list')
   if empty(search) | return | endif
+  let func = 'grep#' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, search])
 endfunction

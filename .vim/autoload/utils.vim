@@ -1,6 +1,36 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
+
+" Implement input behavior
+" Note: This is used for both grep and file completion
+function! utils#complete_list(...) abort
+  let [init, fhandle, default] = s:complete_params
+  if !init  " kludge for default behavior
+    return call(fhandle, a:000)
+  else
+    let s:complete_params[0] = 0
+    let char = nr2char(getchar())
+    if char ==# "\<Tab>"
+      return [default]
+    elseif char ==# "\<CR>"
+      call feedkeys("\<CR>", 't')
+      return [default]
+    elseif char =~# '\p'
+      return [char]
+    else
+      call feedkeys("\<CR>", 't')
+      return ['']
+    endif
+  endif
+endfunction
+function! utils#complete_input(prompt, default, func)
+  let message = a:prompt . ' (' . a:default . '): '
+  let s:complete_params = [1, a:func, a:default]
+  call feedkeys("\<Tab>", 't')
+  return input(message, '', 'customlist,utils#complete_list')
+endfunction
+
 " Null input() completion function to prevent unexpected insertion of literal tabs
 " Note: This is used in other autoload functions
 function! utils#null_list(...) abort
