@@ -32,6 +32,15 @@ function! popup#cmdwin_setup() abort
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
 endfunction
 
+" Git commit setup
+" Note: This works for both command line and fugitive commits
+function! popup#commit_setup(...)
+  let &l:colorcolumn = 73
+  call switch#autosave(1)
+  goto
+  startinsert
+endfunction
+
 " Popup windows with filetype and color information
 function! popup#colors_win() abort
   source $VIMRUNTIME/syntax/colortest.vim
@@ -46,40 +55,79 @@ function! popup#syntax_win() abort
   silent call popup#popup_setup(0)
 endfunction
 
-" Git commit setup
-" Note: This works for both command line and fugitive commits
-function! popup#gitcommit_setup(...)
-  let &l:colorcolumn = 73
-  call switch#autosave(1)
-  goto
-  startinsert
+" Setup job popup window
+" Note: The '.job' extension should trigger popup windows. Also add 'set -x' to
+" display commands and no-op ':' to signal completion.
+" Note: The '/bin/sh' is critical to permit chained commands e.g. with && or
+" || otherwise they are interpreted as literals.
+" Note: Use 'pty' intead of pipe to prevent output buffering and delayed
+" printing as a result. See https://vi.stackexchange.com/a/20639/8084
+" Note: Job has to be non-local variable or else can terminate
+" early when references gone. See https://vi.stackexchange.com/a/22597/8084
+let s:vim8 = has('patch-8.0.0039') && exists('*job_start')  " copied from autoreload/plug.vim
+function! popup#job_win(cmd, ...) abort
+  if !s:vim8
+    echohl ErrorMsg
+    echom 'Error: Running jobs requires vim >= 8.0'
+    echohl None
+    return 1
+  endif
+  let popup = a:0 ? a:1 : 1  " whether to show popup window
+  let cmds = ['/bin/sh', '-c', 'set -x; ' . a:cmd . '; :']
+  let hght = winheight('.') / 4
+  let opts = {}  " job options, empty by default
+  if popup  " show popup, or run job
+    let logfile = expand('%:t:r') . '.job'
+    let lognum = bufwinnr(logfile)
+    if lognum == -1  " open a logfile window
+      exe hght . 'split ' . logfile
+    else  " jump to logfile window and clean its contents
+      exe lognum . 'wincmd w' | 1,$d _
+    endif
+    let num = bufnr(logfile)
+    call setbufvar(num, '&buftype', 'nofile')
+    let opts = {
+      \ 'in_io': 'null',
+      \ 'out_io': 'buffer',
+      \ 'err_io': 'buffer',
+      \ 'out_buf': num,
+      \ 'err_buf': num,
+      \ 'noblock': 1,
+      \ 'pty': 0
+      \ }
+  endif
+  let b:popup_job = job_start(cmds, opts)
+  exe winnr('#') . 'wincmd w'
 endfunction
 
-" Show and setup vim help page
-" Note: This ensures original plugins are present
-function! popup#help_page(...) abort
-  if a:0
-    let item = a:1
+" Popup window with help information
+" Note: See also the help() .bashrc command
+function! popup#help_page(tab, ...) abort
+  let file = @%
+  let page = a:0 ? a:1 : input('Help info: ', '', 'shellcmd')
+  let args = split(page, '\s\+')
+  if empty(page) | return | endif
+  if a:tab | tabedit | endif
+  set filetype=popup
+  set buftype=nofile
+  exe 'file ' . join(args, ' ')
+  call popup#popup_setup(0)
+  AnsiEsc!
+  if args[0] ==# 'cdo'
+    call insert(args, '--help', 1)
   else
-    let item = input('Vim help item: ', '', 'help')
+    call add(args, '--help')
   endif
-  if !empty(item)
-    exe 'vert help ' . item
+  let result = split(system(join(args, ' ')), "\n")
+  call append(0, result)
+  goto
+  if len(result) == 0
+    silent! quit
+    call file#open_existing(file)
   endif
-endfunction
-function! popup#help_setup() abort
-  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
-  vertical resize 80 " always certain size
-  nnoremap <buffer> <CR> <C-]>
-  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
-  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
 endfunction
 
-" Show and setup shell man page
-" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
-" page to record navigation history. Order of assignment below is critical.
-" Note: Adapted from vim-superman. The latter runs quit on failure so not viable
-" for interactive use during vim sessions. Turns out to be very simple.
+" Man page utilities
 function! s:man_cursor() abort
   let bnr = bufnr()
   let curr = b:man_curr
@@ -104,22 +152,40 @@ function! s:man_jump(forward) abort
     let b:man_next = curr
   endif
 endfunction
-function! popup#man_page() abort
+
+" Show and setup shell man page
+" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
+" page to record navigation history. Order of assignment below is critical.
+" Note: Adapted from vim-superman. The latter runs quit on failure so not viable
+" for interactive use during vim sessions. Turns out to be very simple.
+" Note: Apple will have empty line then BUILTIN(1) on second line, but linux
+" will show as first line BASH_BUILTINS(1), so we search the first two lines.
+function! popup#man_page(tab, ...) abort
   let file = @%
-  let page = input('Man page: ', '', 'shellcmd')
+  let page = a:0 ? a:1 : input('Man page: ', '', 'shellcmd')
   if empty(page) | return | endif
-  tabedit
+  if a:tab | tabedit | endif
   set filetype=man
   exe 'Man ' . page
   if line('$') <= 1
     silent! quit
     call file#open_existing(file)
   endif
+  if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
+    if has('macunix') && page !=# 'builtin'
+      Man bash
+    endif
+    let @/ = '^       ' . page . ' [.*$'
+    normal! n
+  endif
 endfunction
 function! popup#man_setup(...) abort
   let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
   let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
   let b:man_curr = [page, pnum]
+  setlocal tabstop=8
+  setlocal softtabstop=8
+  setlocal shiftwidth=8
   noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
   noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
   noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
@@ -191,3 +257,22 @@ function! popup#syntax_group() abort
   echom 'Syntax Group: ' . join(names, ', ')
 endfunction
 
+" Show and setup vim help page
+" Note: This ensures original plugins are present
+function! popup#vim_page(...) abort
+  if a:0
+    let item = a:1
+  else
+    let item = input('Vim help item: ', '', 'help')
+  endif
+  if !empty(item)
+    exe 'vert help ' . item
+  endif
+endfunction
+function! popup#vim_setup() abort
+  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
+  vertical resize 80 " always certain size
+  nnoremap <buffer> <CR> <C-]>
+  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
+  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+endfunction

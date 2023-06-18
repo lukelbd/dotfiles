@@ -618,8 +618,8 @@ augroup popup_setup
   au FileType fugitive call git#git_setup()
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
-  au FileType gitcommit call popup#gitcommit_setup()  " additional setup steps
-  au FileType help call popup#help_setup()  " additional setup steps
+  au FileType gitcommit call popup#commit_setup()  " additional setup steps
+  au FileType help call popup#vim_setup()  " additional setup steps
   au FileType man call popup#man_setup()  " additional setup steps
   au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
   au User FugitivePager silent! nunmap <buffer> dq
@@ -654,9 +654,9 @@ nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
-nnoremap <Leader>V <Cmd>call popup#help_page()<CR>
-nnoremap <Leader>h <Cmd>call popup#cmd_help()<CR>
-nnoremap <Leader>H <Cmd>call popup#man_page()<CR>
+nnoremap <Leader>V <Cmd>call popup#vim_page()<CR>
+nnoremap <Leader>h <Cmd>call popup#help_page(1)<CR>
+nnoremap <Leader>H <Cmd>call popup#man_page(1)<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
 

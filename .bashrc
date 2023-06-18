@@ -531,50 +531,28 @@ export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 
 # Help page display
+# To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 # Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
-# To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 help() {
-  local flags result
-  flags=(--cmd 'set buftype=nofile')  # called before .vimrc, othes called after
-  flags+=(-c "file $* --help" -c 'call popup#popup_setup(0)' -c 'AnsiEsc!')
-  [ $# -eq 0 ] && echo "Requires argument." && return 1
-  if builtin help "$@" &>/dev/null; then
-    builtin help "$@" 2>&1 | vim "${flags[@]}" -
-    # builtin help "$@" 2>&1 | less
+  local result
+  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
+  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+    vim --cmd 'set buftype=nofile' -c "call popup#help_page(0, '$*')"
   else
-    if [ "$1" == cdo ]; then
-      result=$("$1" --help "${@:2}" 2>&1)
-    else
-      result=$("$@" --help 2>&1)
-    fi
-    if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-      vim "${flags[@]}" - <<< "$result"
-      # command less <<< "$result"
-    else
-      echo "No help information for $*."
-    fi
+    echo "No help information for $*."
   fi
 }
 
-# Man page display with auto jumping to relevant info
+# Man page display with auto jumping to relevant info. Note man command
+# should print nice error message if nothing is found.
 # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-# Note Mac will have empty line then BUILTIN(1) on second line, but linux will
-# show as first line BASH_BUILTINS(1); so we search the first two lines
-# if command man $1 | sed '2q;d' | grep "^BUILTIN(1)" &>/dev/null; then
 man() {
   local search arg="$*"
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
-  if command man "$arg" 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
-    if $_macos && [ "$arg" != "builtin" ]; then
-      search=bash  # need the 'bash' manpage for full info
-    else
-      search=$arg  # linux shows all info necessary, just have to find it
-    fi
-    LESS=-p"^ *$arg.*\[.*$" command man "$search"
-  else
-    command man "$arg"  # could display error message
+  if command man "$arg" 1>/dev/null; then  # could display error message
+    vim --cmd 'set buftype=nofile' -c "call popup#man_page(0, '$*')"
   fi
 }
 
@@ -793,7 +771,7 @@ _grep() {
   exclude=("${_excludes[@]/#/--exclude-dir=}")
   include=("${_includes[@]/#/--include=*}")
   [ "$nohidden" -eq 1 ] && exclude+=(--exclude-dir='.[^.]*')
-  [ "$nohidden" -eq 1 ] && exclude+=(--exclude='[A-Z_.]*') || exclude+=(--exclude='[A-Z_]*')
+  [ "$nohidden" -eq 1 ] && exclude+=(--exclude='[A-Z_.]*')
   command grep \
     -i -r -E --color=auto --exclude-dir='_*' \
     ${exclude[@]} ${include[@]} ${commands[@]}  # only regex and paths allowed
@@ -808,20 +786,19 @@ _find() {
     2) commands=("$1" "$2" -print) ;;  # path pattern
     *) commands=("$@") ;;  # path pattern (commands)
   esac
-  [ "$nohidden" -eq 1 ] && header=(-path '*/.*' -prune)
+  [ "$nohidden" -eq 1 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune)
   exclude=(${_excludes[@]/#/-o -name })  # expand into commands *and* names
   include=(${_includes[@]/#/-o -name })  # expand into commands *and* names
   include=("${include[@]//./*.}")  # glob extension patterns
   command find "${commands[0]}" "${header[@]}" \
-    -o -name '[A-Z_]*' -prune \
     -o -type d \( "${exclude[@]:1}" \) -prune \
     -o -type f \( "${include[@]:1}" \) \
     -name "${commands[@]:1}"
 }
-qg() { _grep 1 "$@"; }  # quick grep
-hg() { _grep 0 "$@"; }  # include hidden
-qf() { _find 1 "$@"; }  # quick find
-hf() { _find 0 "$@"; }  # include hidden
+qg() { _grep 0 "$@"; }  # quick grep
+vg() { _grep 1 "$@"; }  # very quick grep
+qf() { _find 0 "$@"; }  # quick find
+vf() { _find 1 "$@"; }  # very quick find
 
 # Refactor, coding, and logging tools
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
