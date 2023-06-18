@@ -415,6 +415,8 @@ alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ld='ls --color=always -AFd'   # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
+alias ctime='date +%s'              # current time in seconds since epoch
+alias mtime='date +%s -r'           # modification time of input file
 popd() { command popd "$@" >/dev/null || return 1; }    # suppress wrong-order printing
 pushd() { command pushd "$@" >/dev/null || return 1; }  # suppress wrong-order printing
 export LESS="--RAW-CONTROL-CHARS"
@@ -533,12 +535,13 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 # test line length to guess if it is an error message stub or contains desired info.
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 help() {
-  local cmd result
-  # cmd_before='set shortmess+=I'
-  cmd="file $* --help | set buftype=nofile | call popup#popup_setup(0) | AnsiEsc!"
+  local flags result
+  flags=(--cmd 'set buftype=nofile')  # called before .vimrc, othes called after
+  flags+=(-c "file $* --help" -c 'call popup#popup_setup(0)' -c 'AnsiEsc!')
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
-    builtin help "$@" 2>&1 | vim -c "$cmd" -
+    builtin help "$@" 2>&1 | vim "${flags[@]}" -
+    # builtin help "$@" 2>&1 | less
   else
     if [ "$1" == cdo ]; then
       result=$("$1" --help "${@:2}" 2>&1)
@@ -546,7 +549,8 @@ help() {
       result=$("$@" --help 2>&1)
     fi
     if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-      vim -c "$cmd" - <<< "$result"
+      vim "${flags[@]}" - <<< "$result"
+      # command less <<< "$result"
     else
       echo "No help information for $*."
     fi
@@ -609,26 +613,13 @@ vi() {
   HOME=/dev/null command vim -i NONE -u NONE "$@"
 }
 
-# Open one tab per file, then clear screen and delete scrollback.
+# Open one tab per file. Previously cleared screen and deleted scrollback history
+# but now just use &restorescreen=1 and &t_ti and &t_te escape codes.
 # See: https://apple.stackexchange.com/q/31872/214359
-# NOTE: Unable to get iTerm to automatically delete vim scrollback
 vim() {
   [ "${#files[@]}" -gt 0 ] && flags+=(-p)
-  command vim -p "$@"
+  command vim --cmd 'set restorescreen' -p "$@"
   [[ " $* " =~ (--version|--help|-h) ]] && return
-  clear; # printf '\e[3J'
-}
-
-# Open man page with vim navigation
-vman() {
-  if [ $# -eq 0 ]; then
-    echo "What manual page do you want?";
-    return 0
-  elif ! command man -w "$@" > /dev/null; then
-    return 1
-  fi
-  command vim -c "SuperMan $*"
-  clear; # printf '\e[3J'
 }
 
 # Open session and fix various bugs. For some reason folds
