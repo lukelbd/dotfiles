@@ -534,7 +534,8 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 help() {
   local cmd result
-  cmd="file $* --help | set buftype=nofile | call popup#popup_setup(0)"
+  # cmd_before='set shortmess+=I'
+  cmd="file $* --help | set buftype=nofile | call popup#popup_setup(0) | AnsiEsc!"
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
     builtin help "$@" 2>&1 | vim -c "$cmd" -
@@ -619,7 +620,7 @@ vim() {
 }
 
 # Open man page with vim navigation
-man() {
+vman() {
   if [ $# -eq 0 ]; then
     echo "What manual page do you want?";
     return 0
@@ -910,33 +911,33 @@ pskill() {  # jobs by ps name
   done
 }
 
-# Compare invididual files and directory trees. First is bash builtin (first for files,
-# second for directories), then functions print information about every single file in
-# recursive trees (first comparing contents, second comparing times). Used the
-# --textconv option as described here https://stackoverflow.com/a/52201926/4970632
-# WARNING: Tried using :(exclude) and :! but does not work with no-index.
-# See: https://stackoverflow.com/a/58845608/4970632
-# See: https://stackoverflow.com/a/53475515/4970632
+# Git and differencing utilities. Here 'fd' prints git diff-style directory diffs,
+# 'qd' prints git status-style directory diffs, 'rd' prints recursive directory
+# content differences, and 'td' prints directory modification time diferences.
+# NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
+# NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
+# https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-fdiff() {  # file differences
+fd() {  # detailed file differences
   command git --no-pager diff --textconv --no-index --color=always "$@" 2>&1 \
     | grep -v -e 'warning:' | tac | sed -e '/Binary files/,+3d' | tac
     # -- ':!.vimsession' ':!*.git' ':!*.svn' ':!*.sw[a-z]' \
     # ':!*.DS_Store' ':!*.ipynb_checkpoints' ':!*__pycache__'
 }
-ddiff() {  # directory differences
-  command git --no-pager diff --textconv --no-index --color=always --name-status "$@" 2>&1 \
-    | grep -v -e 'warning:' -e '.vimsession' -e '.git' -e '.svn' -e '.sw[a-z]' \
+qd() {  # quick directory differences
+  command git --no-pager diff \
+    --textconv --no-index --color=always --name-status "$@" 2>&1 | \
+    grep -v -e 'warning:' -e '.vimsession' -e '.git' -e '.svn' -e '.sw[a-z]' \
     -e '.DS_Store' -e '.ipynb_checkpoints' -e '.*__pycache__'
 }
-rdiff() {  # recursive differences
+rd() {  # recursive directory differences
   [ $# -ne 2 ] && echo "Usage: rdiff DIR1 DIR2" && return 1
   command diff -s \
     -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
     -x '*.DS_Store' -x '*.ipynb_checkpoints' -x '*__pycache__' \
     --brief --strip-trailing-cr -r "$1" "$2"
 }
-tdiff() {  # time differences
+td() {  # modification time differences
   [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
   dir1=${1%/}
