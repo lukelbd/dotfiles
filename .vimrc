@@ -604,10 +604,10 @@ command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
 " Popup window style adjustments with less-like shortcuts
-" Todo: Understand and use fugitive popups more often, figure out how to open git
-" diffs in new tab instead of filling current window, or restoring old window.
-" Note: Fugitive applies the fugitive mapping 'dq' to git diff/show display windows
-" (other d-mappings only work with file display) which interferes with scrolling.
+" Note: Fugitive has tons of special maps so also do not treat it like normal
+" popup, preserve existing maps and require standard normal scrolling.
+" Note: Tried 'FugitiveIndex' and 'FugitivePager' and only former successfully
+" overrides the mapping, otherwise gets overwritten by in-place loader.
 let g:tags_skip_filetypes = s:popup_filetypes
 let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
@@ -622,9 +622,9 @@ augroup popup_setup
   au FileType help call popup#vim_setup()  " additional setup steps
   au FileType man call popup#man_setup()  " additional setup steps
   au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
-  au User FugitivePager silent! nunmap <buffer> dq
+  au User FugitiveIndex let b:maparg = maparg('<CR>') | noremap <expr> <buffer> <CR> git#fugitive_open()
   for s:ft in s:popup_filetypes
-    let s:modifiable = s:ft ==# 'gitcommit'
+    let s:modifiable = s:ft ==# 'gitcommit' || s:ft ==# 'fugitive'
     exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:modifiable . ')'
   endfor
 augroup END

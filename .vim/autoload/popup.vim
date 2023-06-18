@@ -122,7 +122,7 @@ function! popup#help_page(tab, ...) abort
   let name = join(args, ' ')
   let bnum = bufnr(name)
   if a:tab | tabedit | endif
-  if bufnr(name) != -1 | exe bnum . 'bdelete' | endif
+  if bnum != -1 | exe bnum . 'bdelete' | endif
   let result = split(system(join(args, ' ') . ' 2>&1'), "\n")
   call append(0, result)
   goto

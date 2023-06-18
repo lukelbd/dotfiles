@@ -112,6 +112,26 @@
 " .     Start a |:| command line with the file under the
 " g?    Show help for |fugitive-maps|.
 
+" Fugitive jumping to existing files
+" Note: Currently avoid overwriting existing buffer with non-existing partials and
+" diffs by always starting interactive fugitive from new tab.
+" Note: Should use other insert or changing commands e.g. 'o' and 'O' for opening
+" diffs and stuff. The below is mainly used for the fugitive home page.
+function! git#fugitive_page() abort
+  let bnum = bufnr('fugitive')
+  if bnum != -1 | silent! exe bnum . 'bdelete' | endif
+  tab Git
+  file fugitive
+endfunction
+function! git#fugitive_open(...)
+  let path = a:0 ? a:1 : expand('<cfile>')
+  if !empty(glob(path))
+    return "\<Cmd>Existing " . path . "\<CR>"
+  else  " should be applied by autocmd
+    return eval('"' . escape(get(b:, 'maparg', ''), '"<') . '"')
+  endif
+endfunction
+
 " Git gutter utility
 " Note: This was designed by looking at hunk.vim. Seems all buffer local gitgutter
 " settings are stores in g:gitgutter dictionary with 'hunks' containing lists of
