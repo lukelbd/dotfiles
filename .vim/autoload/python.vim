@@ -77,36 +77,30 @@ function! python#run_motion_expr(...) abort
   return utils#motion_func('python#run_motion', a:000)
 endfunction
 
-" Easy conversion between key=value pairs and 'key': value dictionary entries
-" Do son on current line, or within visual selection
+" Convert between key=value pairs and 'key': value dictionaries
+" Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
+" bug where if opening bracket is immediately followed by newline, then 'inner'
+" bracket range incorrectly sets the closing bracket column position to '1'.
 function! python#kwargs_dict(kw2dc, ...) abort range
-  " First get selection columns
-  " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
-  " bug where if opening bracket is immediately followed by newline, then 'inner'
-  " bracket range incorrectly sets the closing bracket column position to '1'.
   let winview = winsaveview()
   let lines = []
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
-  let firstcol = col("'" . marks[0]) - 1  " in col() single quote ' really means `
-  let lastcol = len(getline("'" . marks[1])) - 1
+  let firstcol = col("'" . marks[0]) - 1  " first column, note ' really means ` here
+  let lastcol = len(getline("'" . marks[1])) - 1  " last selection column
   let [firstline, lastline] = sort([a:firstline, a:lastline])
-  for linenum in range(firstline, lastline)
-    " Get selection text ignoring unselected parts of first and last line
-    let line = getline(linenum)
-    let prefix = ''
-    let suffix = ''
-    if linenum == firstline && linenum == lastline
+  for lnum in range(firstline, lastline)
+    let [line, prefix, suffix] = [getline(lnum), '', '']
+    if lnum == firstline && lnum == lastline  " vint: -ProhibitUsingUndeclaredVariable
+      let line = line[firstcol:lastcol]
       let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''
       let suffix = line[lastcol + 1:]
-      let line = line[firstcol : lastcol]
-    elseif linenum == firstline
+    elseif lnum == firstline
+      let line = line[firstcol:]
       let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''
-      let line = line[firstcol :]
-    elseif linenum == lastline
-      let suffix = line[lastcol + 1:]
+    elseif lnum == lastline
       let line = line[:lastcol]
+      let suffix = line[lastcol + 1:]
     endif
-    " Run fancy translation substitutions
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echohl WarningMsg
       echom 'Warning: Text is both dictionary-like and kwarg-like.'
@@ -123,9 +117,8 @@ function! python#kwargs_dict(kw2dc, ...) abort range
     endif
     call add(lines, prefix . line . suffix)
   endfor
-  " Replace lines with fixed lines
   exe firstline . ',' . lastline . 'd _'
-  call append(firstline - 1, lines)
+  call append(firstline - 1, lines)  " replace with fixed lines
   call winrestview(winview)
 endfunction
 " For <expr> map accepting motion

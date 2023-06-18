@@ -15,12 +15,12 @@ function! s:remove_item(line, first, last) abort
 endfunction
 
 " Indent multiple times
-function! format#indent_items(dedent, count) range abort
+function! edit#indent_items(dedent, count) range abort
   exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
 " For <expr> map accepting motion
-function! format#indent_items_expr(...) abort
-  return utils#motion_func('format#indent_items', a:000)
+function! edit#indent_items_expr(...) abort
+  return utils#motion_func('edit#indent_items', a:000)
 endfunction
 
 " Search replace without polluting history
@@ -28,7 +28,7 @@ endfunction
 " lines that was changed: https://stackoverflow.com/a/52308371/4970632
 " Warning: Critical to replace line-by-line in reverse order in case substitutions
 " have different number of newlines. Cannot figure out how to do this in one command.
-function! format#replace_regex(message, ...) range abort
+function! edit#replace_regex(message, ...) range abort
   let prevhist = @/
   let winview = winsaveview()
   for line in range(a:lastline, a:firstline, -1)
@@ -42,15 +42,15 @@ function! format#replace_regex(message, ...) range abort
   call winrestview(winview)
 endfunction
 " For <expr> map accepting motion
-function! format#replace_regex_expr(...) abort
-  return utils#motion_func('format#replace_regex', a:000)
+function! edit#replace_regex_expr(...) abort
+  return utils#motion_func('edit#replace_regex', a:000)
 endfunction
 
 " Wrap the lines to 'count' columns rather than 'textwidth'
 " Note: Could put all commands in feedkeys() but then would get multiple
 " commands flashing at bottom of screen. Also need feedkeys() because normal
 " doesn't work inside an expression mapping.
-function! format#wrap_lines(...) range abort
+function! edit#wrap_lines(...) range abort
   let textwidth = &l:textwidth
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let cmd =
@@ -60,8 +60,8 @@ function! format#wrap_lines(...) range abort
   call feedkeys(cmd, 'n')
 endfunction
 " For <expr> map accepting motion
-function! format#wrap_lines_expr(...) abort
-  return utils#motion_func('format#wrap_lines', a:000)
+function! edit#wrap_lines_expr(...) abort
+  return utils#motion_func('edit#wrap_lines', a:000)
 endfunction
 
 " Return regexes for search
@@ -80,7 +80,7 @@ endfunction
 " Note: This is good example of incorporating motion support in custom functions!
 " Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
-function! format#wrap_items(...) range abort
+function! edit#wrap_items(...) range abort
   " Initial stuff
   let textwidth = &l:textwidth
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
@@ -120,6 +120,6 @@ function! format#wrap_items(...) range abort
   let &l:textwidth = textwidth
 endfunction
 " For <expr> map accepting motion
-function! format#wrap_items_expr(...) abort
-  return utils#motion_func('format#wrap_items', a:000)
+function! edit#wrap_items_expr(...) abort
+  return utils#motion_func('edit#wrap_items', a:000)
 endfunction

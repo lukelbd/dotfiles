@@ -368,8 +368,8 @@ noremap <Leader>Y <Cmd>SyncStart<CR>
 " Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
 " Note: This is mainly used for GUI vim (otherwise use terminal themes). Ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-command! SchemePrev call utils#wrap_colorschemes(0)
-command! SchemeNext call utils#wrap_colorschemes(1)
+command! SchemePrev call internals#wrap_colorschemes(0)
+command! SchemeNext call internals#wrap_colorschemes(1)
 noremap <Leader>8 <Cmd>Colors<CR>
 noremap <Leader>9 <Cmd>SchemeNext<CR>
 noremap <Leader>0 <Cmd>SchemePrev<CR>
@@ -522,7 +522,7 @@ nmap <Leader>Z <Plug>ExecuteFile3
 noremap <Plug>ExecuteFile1 <Nop>
 noremap <Plug>ExecuteFile2 <Nop>
 noremap <Plug>ExecuteFile3 <Nop>
-noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
+noremap <expr> <Plug>ExecuteMotion internals#null_operator_expr()
 
 " Refresh session or re-opening previous files
 " Note: Here :History includes v:oldfiles and open buffers.
@@ -626,18 +626,18 @@ augroup END
 " Note: These redefinitions add flexibility to native fzf.vim commands,
 " mnemonic for alternatives is 'local directory' or 'current file'. Also note Rg
 " is faster so it gets lower case: https://unix.stackexchange.com/a/524094/112647
-" command! -bang -nargs=* Af call utils#grep_ag(<bang>0, 2, 0, <f-args>)
-" command! -bang -nargs=* Rf call utils#grep_rg(<bang>0, 2, 0, <f-args>)
-command! -bang -nargs=* Ag call utils#grep_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=* Rg call utils#grep_rg(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=* Al call utils#grep_ag(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=* Rl call utils#grep_rg(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=* A1 call utils#grep_ag(<bang>0, 0, 1, <f-args>)
-command! -bang -nargs=* R1 call utils#grep_rg(<bang>0, 0, 1, <f-args>)
-" nnoremap <Leader>n <Cmd>call utils#grep_pattern('ag', 1, 0)<CR>
-" nnoremap <Leader>N <Cmd>call utils#grep_pattern('ag', 0, 0)<CR>
-nnoremap <Leader>n <Cmd>call utils#grep_pattern('rg', 1, 0)<CR>
-nnoremap <Leader>N <Cmd>call utils#grep_pattern('rg', 0, 0)<CR>
+" command! -bang -nargs=* Af call cgrep#grep_ag(<bang>0, 2, 0, <f-args>)
+" command! -bang -nargs=* Rf call cgrep#grep_rg(<bang>0, 2, 0, <f-args>)
+" nnoremap <Leader>n <Cmd>call grep#pattern('ag', 1, 0)<CR>
+" nnoremap <Leader>N <Cmd>call grep#pattern('ag', 0, 0)<CR>
+command! -bang -nargs=* Ag call grep#ag(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=* Rg call grep#rg(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=* Al call grep#ag(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=* Rl call grep#rg(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=* A1 call grep#ag(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=* R1 call grep#rg(<bang>0, 0, 1, <f-args>)
+nnoremap <Leader>n <Cmd>call grep#pattern('rg', 1, 0)<CR>
+nnoremap <Leader>N <Cmd>call grep#pattern('rg', 0, 0)<CR>
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
@@ -670,6 +670,10 @@ nnoremap <Leader>, <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Editing utilities
 "-----------------------------------------------------------------------------"
+" Reverse using command
+" See: https://superuser.com/a/189956/506762
+command! -range Reverse <line1>,<line2>call internals#reverse_lines()
+
 " Jump to last changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
@@ -782,23 +786,16 @@ nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
 nnoremap <expr> >> "\<Esc>" . repeat('>>', v:count1)
 nnoremap <expr> << "\<Esc>" . repeat('<<', v:count1)
-nnoremap <expr> > "\<Esc>" . format#indent_items_expr(0, v:count1)
-nnoremap <expr> < "\<Esc>" . format#indent_items_expr(1, v:count1)
+nnoremap <expr> > "\<Esc>" . edit#indent_items_expr(0, v:count1)
+nnoremap <expr> < "\<Esc>" . edit#indent_items_expr(1, v:count1)
 
 " Wrapping lines with arbitrary textwidth
-command! -range -nargs=? WrapLines <line1>,<line2>call format#wrap_lines(<args>)
-noremap <expr> gq '<Esc>' . format#wrap_lines_expr(v:count)
+command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
+noremap <expr> gq '<Esc>' . edit#wrap_lines_expr(v:count)
 
 " Wrapping lines accounting for bullet indentation and with arbitrary textwidth
-command! -range -nargs=? WrapItems <line1>,<line2>call format#wrap_items(<args>)
-noremap <expr> gQ '<Esc>' . format#wrap_items_expr(v:count)
-
-" Toggle highlighting
-noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
-
-" Never save single-character deletions to any register
-noremap x "_x
-noremap X "_X
+command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
+noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " Maps for throwaaway and clipboard register
 " Note: Use g:peekaboo_prefix = '"' below so can still use registers with '"' press
@@ -808,10 +805,10 @@ noremap " "*
 
 " Maps and commands for circular location-list scrolling
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
-command! -bar -count=1 Lnext execute utils#wrap_cyclic(<count>, 'loc')
-command! -bar -count=1 Lprev execute utils#wrap_cyclic(<count>, 'loc', 1)
-command! -bar -count=1 Qnext execute utils#wrap_cyclic(<count>, 'qf')
-command! -bar -count=1 Qprev execute utils#wrap_cyclic(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute internals#wrap_cyclic(<count>, 'loc')
+command! -bar -count=1 Lprev execute internals#wrap_cyclic(<count>, 'loc', 1)
+command! -bar -count=1 Qnext execute internals#wrap_cyclic(<count>, 'qf')
+command! -bar -count=1 Qprev execute internals#wrap_cyclic(<count>, 'qf', 1)
 noremap [x <Cmd>Lprev<CR>
 noremap ]x <Cmd>Lnext<CR>
 noremap [X <Cmd>Qprev<CR>
@@ -941,10 +938,10 @@ nmap g- <Plug>SubsectionSingle
 nmap g+ <Plug>SectionDouble
 nmap g_ <Plug>SubsectionDouble
 
-" Search and find-replace stuff
-" * Had issue before where InsertLeave ignorecase autocmd was getting reset; it was
-"   because MoveToNext was called with au!, which resets all InsertLeave commands then adds its own
-" * Make sure 'noignorecase' turned on when in insert mode, so *autocompletion* respects case.
+" Search and find-replace stuff. Ensure 'noignorecase' turned on when
+" in insert mode, so that popup menu autocompletion respects input case.
+" Note: Previously had issue before where InsertLeave ignorecase autocmd was getting
+" reset because MoveToNext was called with au!, which resets InsertLeave commands.
 augroup search_replace
   au!
   au InsertEnter * set noignorecase  " default ignore case
@@ -952,9 +949,7 @@ augroup search_replace
 augroup END
 
 " Search for non-ASCII escape chars
-" Fails: https://stackoverflow.com/a/16987522/4970632
-" noremap gE /[^\x00-\x7F]<CR>
-" Works: https://stackoverflow.com/a/41168966/4970632
+" See: https://stackoverflow.com/a/41168966/4970632
 noremap gE /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Search for git commit conflict blocks
@@ -966,63 +961,63 @@ nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
 " Replace tabs with spaces
 " Remove trailing whitespace (see https://stackoverflow.com/a/3474742/4970632)
-noremap <expr> \<Tab> format#replace_regex_expr(
+noremap <expr> \<Tab> edit#replace_regex_expr(
   \ 'Fixed tabs.',
   \ '\t', repeat(' ', &tabstop))
-noremap <expr> \w format#replace_regex_expr(
+noremap <expr> \w edit#replace_regex_expr(
   \ 'Removed trailing whitespace.',
   \ '\s\+\ze$', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
-noremap <expr> \e format#replace_regex_expr(
+noremap <expr> \e edit#replace_regex_expr(
   \ 'Removed empty lines.',
   \ '^\s*$\n', '')
-noremap <expr> \E format#replace_regex_expr(
+noremap <expr> \E edit#replace_regex_expr(
   \ 'Squeezed consecutive newlines.',
   \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
 
 " Replace consecutive spaces on current line with one space,
 " only if they're not part of indentation
-noremap <expr> \s format#replace_regex_expr(
+noremap <expr> \s edit#replace_regex_expr(
   \ 'Removed all whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \+', '')
-noremap <expr> \S format#replace_regex_expr(
+noremap <expr> \S edit#replace_regex_expr(
   \ 'Squeezed redundant whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
 
 " Delete first-level and second-level commented text
 " Note: This is useful when editing tex files
-noremap <expr> \c format#replace_regex_expr(
+noremap <expr> \c edit#replace_regex_expr(
   \ 'Removed all comments.',
   \ '\(^\s*' . comment#comment_char() . '.\+$\n\\|\s\+' . comment#comment_char() . '.\+$\)', '')
-noremap <expr> \C format#replace_regex_expr(
+noremap <expr> \C edit#replace_regex_expr(
   \ 'Removed second-level comments.',
   \ '\(^\s*' . comment#comment_char() . '\s*' . comment#comment_char() . '.\+$\n\\|\s\+'
   \ . comment#comment_char() . '\s*' . comment#comment_char() . '.\+$\)', '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-noremap <expr> \- format#replace_regex_expr(
+noremap <expr> \- edit#replace_regex_expr(
   \ 'Fixed long dashes.',
   \ '–', '--')
-noremap <expr> \_ format#replace_regex_expr(
+noremap <expr> \_ edit#replace_regex_expr(
   \ 'Fixed wordbreak dashes.',
   \ '\(\w\)[-–] ', '\1')
-noremap <expr> \' format#replace_regex_expr(
+noremap <expr> \' edit#replace_regex_expr(
   \ 'Fixed single quotes.',
   \ '‘', '`', '’', "'")
-noremap <expr> \" format#replace_regex_expr(
+noremap <expr> \" edit#replace_regex_expr(
   \ 'Fixed double quotes.',
   \ '“', '``', '”', "''")
 
 " Replace useless bibtex entries
 " Previously localized to bibtex ftplugin but no major reason not to include here
-noremap <expr> \x format#replace_regex_expr(
+noremap <expr> \x edit#replace_regex_expr(
   \ 'Removed bibtex entries.',
   \ '^\s*\(abstract\|annotate\|copyright\|file\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
   \ '')
-noremap <expr> \X format#replace_regex_expr(
+noremap <expr> \X edit#replace_regex_expr(
   \ 'Removed bibtex entries.',
   \ '^\s*\(abstract\|annotate\|copyright\|doi\|file\|language\|keywords\|note\|shorttitle\|url\|urldate\)\s*=\s*{\_.\{-}},\?\n',
   \ '')

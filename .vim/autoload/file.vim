@@ -94,7 +94,7 @@ function! s:open_continuous(...) abort
   let paths = []
   for item in items
     if item == s:new_file  " should be recursed at least one level
-      let item = input(file#path_abbrev(base) . '/', '', 'customlist,utils#null_list')
+      let item = input(file#path_abbrev(base) . '/', '', 'customlist,internals#null_list')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " fnamemodify :p does not remove the .. so must do this
@@ -115,7 +115,7 @@ function! s:open_continuous(...) abort
       \ 'options': "--multi --no-sort --prompt='" . file#path_abbrev(base) . "/'",
       \ }))
   endif
-  " Open file(s), or if it is already open just jump to that tab
+  " Open file(s), or if it is already open just to that tab
   for path in paths
     if isdirectory(path)  " false for empty string
       echohl WarningMsg
