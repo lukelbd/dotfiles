@@ -534,25 +534,49 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 # Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
+# if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+#   vim --cmd 'set buftype=nofile' -c "call popup#help_page(0, '$*')"
+# else
+#   echo "No help information for $*."
+# fi
 help() {
   local result
-  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
-  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-    vim --cmd 'set buftype=nofile' -c "call popup#help_page(0, '$*')"
+  [ $# -eq 0 ] && echo "Requires argument." && return 1
+  if builtin help "$@" &>/dev/null; then
+    builtin help "$@" 2>&1 | less
   else
-    echo "No help information for $*."
+    if [ "$1" == cdo ]; then
+      result=$("$1" --help "${@:2}" 2>&1)
+    else
+      result=$("$@" --help 2>&1)
+    fi
+    if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+      command less <<< "$result"
+    else
+      echo "No help information for $*."
+    fi
   fi
 }
 
 # Man page display with auto jumping to relevant info. Note man command
 # should print nice error message if nothing is found.
 # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
+# if command man "$arg" 1>/dev/null; then  # could display error message
+#   vim --cmd 'set buftype=nofile' -c "call popup#man_page(0, '$*')"
+# fi
 man() {
   local search arg="$*"
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
-  if command man "$arg" 1>/dev/null; then  # could display error message
-    vim --cmd 'set buftype=nofile' -c "call popup#man_page(0, '$*')"
+  if command man "$arg" 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
+    if $_macos && [ "$arg" != "builtin" ]; then
+      search=bash  # need the 'bash' manpage for full info
+    else
+      search=$arg  # linux shows all info necessary, just have to find it
+    fi
+    LESS=-p"^ *$arg.*\[.*$" command man "$search"
+  else
+    command man "$arg"  # could display error message
   fi
 }
 

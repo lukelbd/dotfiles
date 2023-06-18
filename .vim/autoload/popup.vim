@@ -101,26 +101,35 @@ function! popup#job_win(cmd, ...) abort
 endfunction
 
 " Popup window with help information
-" Note: See also the help() .bashrc command
+" Note: See also .bashrc help(). These utils
 function! popup#help_page(tab, ...) abort
   let file = @%
   let page = a:0 ? a:1 : input('Help info: ', '', 'shellcmd')
   let args = split(page, '\s\+')
   if empty(page) | return | endif
-  if a:tab | tabedit | endif
-  set filetype=popup
-  set buftype=nofile
-  exe 'file ' . join(args, ' ')
-  call popup#popup_setup(0)
-  AnsiEsc!
+  if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
+    return popup#man_page(a:tab, join(args, '-'))  " identical result
+  endif
   if args[0] ==# 'cdo'
     call insert(args, '--help', 1)
   else
     call add(args, '--help')
   endif
-  let result = split(system(join(args, ' ')), "\n")
+  if !executable(args[0])
+    echom 'help.vim: no --help info for "' . args[0] . '"'
+    return
+  endif
+  let name = join(args, ' ')
+  let bnum = bufnr(name)
+  if a:tab | tabedit | endif
+  if bufnr(name) != -1 | exe bnum . 'bdelete' | endif
+  let result = split(system(join(args, ' ') . ' 2>&1'), "\n")
   call append(0, result)
   goto
+  set filetype=popup
+  set buftype=nofile
+  exe 'file ' . name
+  call popup#popup_setup(0)
   if len(result) == 0
     silent! quit
     call file#open_existing(file)
@@ -128,6 +137,7 @@ function! popup#help_page(tab, ...) abort
 endfunction
 
 " Man page utilities
+" Note: See also .bashrc man(). These utils are expanded from vim-superman.
 function! s:man_cursor() abort
   let bnr = bufnr()
   let curr = b:man_curr
@@ -156,8 +166,6 @@ endfunction
 " Show and setup shell man page
 " Warning: Calling :Man changes the buffer, so use buffer variables specific to each
 " page to record navigation history. Order of assignment below is critical.
-" Note: Adapted from vim-superman. The latter runs quit on failure so not viable
-" for interactive use during vim sessions. Turns out to be very simple.
 " Note: Apple will have empty line then BUILTIN(1) on second line, but linux
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
 function! popup#man_page(tab, ...) abort

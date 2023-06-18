@@ -8,7 +8,7 @@
 #   Change the name of arbitrary commit messages; just provide a SHA1 reference
 #   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
 # 'blame':
-#   Add nice coloring according to date of commit.
+#   Add nice highlightRecent coloring according to date of commit.
 #   see: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
 # 'branches':
 #   List all branches. Prune dead remote branches every time.

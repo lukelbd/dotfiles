@@ -1151,6 +1151,7 @@ let g:indexed_search_n_always_searches_forward = 0  " disable for consistency wi
 call plug#('mbbill/undotree')
 
 " Various utilities
+" Note: Replaced 'vim-superman' with custom man viewing utilities
 " call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
 " call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
 " call plug#('jez/vim-superman')  " add the 'vman' command-line tool
@@ -1217,6 +1218,7 @@ let g:speeddating_no_mappings = 1
 " rely on fzf#run return values (will result in weird hard-to-debug issues).
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
+" call plug#('mhinz/vim-grepper')  " for ag/rg but seems like easymotion, too much
 " call plug#('Shougo/pum.vim')  " pum completion mappings, but mine are nicer
 " call plug#('Shougo/unite.vim')  " first generation
 " call plug#('Shougo/denite.vim')  " second generation
@@ -1837,13 +1839,14 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
   noremap <Leader>O <Cmd>Git commit<CR>
-  noremap <Leader>B <Cmd>Git blame -s<CR>
+  noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
   noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
   noremap <Leader>K <Cmd>echom "Git reset '" . @% . "'" \| Git reset %<CR>
   noremap <Leader>p <Cmd>BCommits<CR>
   noremap <Leader>P <Cmd>Commits<CR>
+  let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
 
 " Git gutter settings
