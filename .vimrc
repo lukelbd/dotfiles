@@ -31,7 +31,7 @@ endif
 " Global settings
 set encoding=utf-8
 scriptencoding utf-8
-let g:refresh_times = get(g:, 'refresh_times', {'': localtime()})
+let g:refresh_times = get(g:, 'refresh_times', {'global': localtime()})
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:mapleader = "\<Space>"  " see below <Leader> mappings
 let s:linelength = 88  " see below configuration
@@ -40,6 +40,7 @@ set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
 set buflisted  " list all buffers by default
+set cmdheight=1  " increse to avoid pressing enter to continue 
 set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
@@ -215,6 +216,11 @@ augroup escape_fix
   au!
   au InsertLeave * normal! `^
 augroup END
+
+" Set escape codes to restore screen after exiting
+" See: :help restorescreen page
+let &t_ti = "\e7\e[r\e[?47h"
+let &t_te = "\e[?47l\e8"
 
 " Support cursor shapes. Note neither Ptmux escape codes (e.g. through 'vitality'
 " plugin) or terminal overrides seem necessary in newer versions of tmux.
@@ -649,7 +655,8 @@ nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call popup#help_page()<CR>
-nnoremap <Leader>B <Cmd>call popup#man_page()<CR>
+nnoremap <Leader>h <Cmd>call popup#cmd_help()<CR>
+nnoremap <Leader>H <Cmd>call popup#man_page()<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
 
@@ -659,13 +666,14 @@ cnoremap <expr> <F1> "\<Tab>"
 cnoremap <expr> <F2> "\<S-Tab>"
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
+" Mnemonic is that '!' matches the ':!' used to enter shell commands
 " Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
 " Note: Must change local dir or use environment variable to make term pop up here:
 " https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
 " silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
 " silent! tnoremap <nowait> <Esc> <C-\><C-n>
 silent! tnoremap <expr> <C-c> "\<C-c>"
-nnoremap <Leader>, <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
+nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -827,11 +835,10 @@ command! LangToggle call switch#spelllang(<args>)
 nnoremap <Leader>l <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>L <Cmd>call switch#spelllang()<CR>
 
-" Add and remove from dictionary
+" Add and remove from dictionary (d)
+" Fix spelling under cursor auto or interactively (s)
 nnoremap <Leader>d zg
 nnoremap <Leader>D zug
-
-" Fix spelling under cursor auto or interactively
 nnoremap <Leader>s 1z=
 nnoremap <Leader>S z=
 
@@ -839,8 +846,8 @@ nnoremap <Leader>S z=
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 nnoremap <silent> <Plug>forward_spell bh]s<Cmd>call edit#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
 nnoremap <silent> <Plug>backward_spell el[s<Cmd>call edit#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
-nmap ]d <Plug>forward_spell
-nmap [d <Plug>backward_spell
+nmap ]S <Plug>forward_spell
+nmap [S <Plug>backward_spell
 
 " Capitalization stuff with g, a bit refined. Not currently used in normal mode, and
 " fits better mnemonically (here y next to u, and t is for title case).
@@ -880,12 +887,12 @@ augroup fold_open
 augroup END
 
 " Open *all* folds under cursor, not just this one
-" Open *all* folds recursively and update foldlevel
-" Close *all* folds and update foldlevel
-" Delete *all* manual folds
 " noremap <expr> zo foldclosed('.') ? 'zA' : ''
+" Open *all* folds recursively and update foldlevel
 noremap zO zR
+" Close *all* folds and update foldlevel
 noremap zC zM
+" Delete *all* manual folds
 noremap zD zE
 
 " Jump between folds with more consistent naming
@@ -894,7 +901,7 @@ noremap ]z zj
 noremap [Z [z
 noremap ]Z ]z
 
-" Unimpaired blank lines
+" Blank lines inspired by 'unimpaired'
 noremap <Plug>BlankUp <Cmd>call edit#blank_up(v:count1)<CR>
 noremap <Plug>BlankDown <Cmd>call edit#blank_down(v:count1)<CR>
 map [e <Plug>BlankUp
@@ -1133,7 +1140,7 @@ let g:indexed_search_line_info = 1  " show first and last line indicators
 let g:indexed_search_max_lines = 100000  " increase from default of 3000 for log files
 let g:indexed_search_shortmess = 1  " shorter message
 let g:indexed_search_numbered_only = 1  " only show numbers
-let g:indexed_search_n_always_searches_forward = 1  " after ? still search forward
+let g:indexed_search_n_always_searches_forward = 0  " disable for consistency with sneak
 
 " Useful panel plugins
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -1146,7 +1153,8 @@ call plug#('mbbill/undotree')
 " Various utilities
 " call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
 " call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
-call plug#('jez/vim-superman')  " add the 'vman' command-line tool
+" call plug#('jez/vim-superman')  " add the 'vman' command-line tool
+" call plug#('tpope/unimpaired')  " bracket maps that no longer use
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call plug#('tpope/vim-characterize')  " print character info (mnemonic is l for letter)
 nmap gl <Plug>(characterize)
@@ -1600,10 +1608,10 @@ if s:plug_active('vim-lsp')
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>a <Cmd>call switch#lsp()<CR>
-  noremap <Leader>r <Cmd>LspReferences<CR>
-  noremap <Leader>& <Cmd>LspSignatureHelp<CR>
+  noremap <Leader>a <Cmd>LspReferences<CR>
+  noremap <Leader>A <Cmd>call switch#lsp()<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
+  noremap <Leader>& <Cmd>LspSignatureHelp<CR>
   noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call popup#popup_setup(0)<CR>
   noremap <Leader>^ <Cmd>verbose LspStatus<CR>
   noremap <Leader>` <Cmd>CheckHealth<CR>
@@ -1693,43 +1701,6 @@ if s:plug_active('ddc.vim')
   call ddc#enable()
 endif
 
-" Related popup and preview mappings
-" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
-" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
-" and default is chosen if necessary. See :h ins-special-special.
-if s:plug_active('ddc.vim')
-  augroup pum_navigation
-    au!
-    au BufEnter,InsertLeave * let b:scroll_state = 0
-  augroup END
-  inoremap <expr> <C-y> insert#menu_scroll(-1)
-  inoremap <expr> <C-t> insert#menu_scroll(1)
-  inoremap <expr> <Up> insert#menu_scroll(-0.25)
-  inoremap <expr> <Down> insert#menu_scroll(0.25)
-  inoremap <expr> <C-k> insert#menu_scroll(-0.25)
-  inoremap <expr> <C-j> insert#menu_scroll(0.25)
-  inoremap <expr> <C-u> insert#menu_scroll(-0.5)
-  inoremap <expr> <C-d> insert#menu_scroll(0.5)
-  inoremap <expr> <C-b> insert#menu_scroll(-1.0)
-  inoremap <expr> <C-f> insert#menu_scroll(1.0)
-  inoremap <expr> <Space> insert#menu_reset()
-    \ . (pumvisible() ? "\<C-e>" : '')
-    \ . "\<C-]>\<Space>"
-  inoremap <expr> <Backspace> insert#menu_reset()
-    \ . (pumvisible() ? "\<C-e>" : '')
-    \ . "\<Backspace>"
-  inoremap <expr> <CR>
-    \ pumvisible() ? b:scroll_state ?
-    \ "\<C-y>" . insert#menu_reset()
-    \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
-    \ : "\<C-]>\<C-g>u\<CR>"
-  inoremap <expr> <Tab>
-    \ pumvisible() ? b:scroll_state ?
-    \ "\<C-y>" . insert#menu_reset()
-    \ : "\<C-n>\<C-y>" . insert#menu_reset()
-    \ : "\<C-]>\<Tab>"
-endif
-
 " Asynchronous linting engine
 " Note: bashate is equivalent to pep8, similar to prettier and beautify
 " for javascript and html, also tried shfmt but not available.
@@ -1748,10 +1719,10 @@ endif
 if s:plug_active('ale')
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
-  " noremap <Leader>! <Cmd>ALEDetail<CR>  " redundant with :lopen
   noremap <Leader>x <Cmd>lopen<CR>
   noremap <Leader>X <Cmd>call switch#ale()<CR>
-  noremap <Leader>! <Cmd>ALEInfo<CR>
+  noremap <Leader>@ <Cmd>ALEInfo<CR>
+  noremap <Leader># <Cmd>ALEDetail<CR>
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
@@ -1858,8 +1829,8 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
-  noremap <Leader>I <Cmd>Git blame -s<CR>
   noremap <Leader>O <Cmd>Git commit<CR>
+  noremap <Leader>B <Cmd>Git blame -s<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
   noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
@@ -1869,6 +1840,7 @@ if s:plug_active('vim-fugitive')
 endif
 
 " Git gutter settings
+" Note: Maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.'
 " Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
 " therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
@@ -1883,12 +1855,16 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
-  noremap ]g <Cmd>call switch#gitgutter(1)<CR><Cmd>exe v:count1 . 'GitGutterNextHunk'<CR>
-  noremap [g <Cmd>call switch#gitgutter(1)<CR><Cmd>exe v:count1 . 'GitGutterPrevHunk'<CR>
-  noremap <Leader>g <Cmd>call switch#gitgutter(1)<CR><Cmd>GitGutterStageHunk<CR>
-  noremap <Leader>G <Cmd>call switch#gitgutter(1)<CR><Cmd>GitGutterUndoHunk<CR>
-  noremap <Leader>h <Cmd>call switch#gitgutter(1)<CR><Cmd>GitGutterPreviewHunk \| wincmd j<CR>
-  noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
+  noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
+  noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
+  noremap ]G <Cmd>call git#hunk_jump(1, 1)<CR>
+  noremap [G <Cmd>call git#hunk_jump(0, 1)<CR>
+  noremap <expr> gs git#hunk_action_expr(1)
+  noremap <expr> gS git#hunk_action_expr(0)
+  nnoremap gss <Cmd>call git#hunk_action(1)<CR>
+  nnoremap gSS <Cmd>call git#hunk_action(0)<CR>
+  noremap <Leader>g <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
+  noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parens and seimcolons, chained &&

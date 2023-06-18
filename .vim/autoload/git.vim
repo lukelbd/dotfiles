@@ -1,7 +1,7 @@
 "-----------------------------------------------------------------------------"
 " Utilities for fugitive windows
-" Todo: Update with custom mappings
 "-----------------------------------------------------------------------------"
+" Todo: Update with custom mappings
 " Blame help
 " g?    show this help
 " A     resize to end of author column
@@ -13,7 +13,6 @@
 " O     jump to patch or blob in new tab
 " p     jump to patch or blob in preview window
 " -     reblame at commit
-
 " Staging/unstaging
 " s     Stage (add) the file or hunk under the cursor.
 " u     Unstage (reset) the file or hunk under the cursor.
@@ -25,7 +24,6 @@
 " <     Remove the inline diff of the file under the cursor.
 " gI    Open .git/info/exclude in a split and add the file
 " I|P   Invoke |:Git| add --patch or reset --patch on the file
-
 " Diff maps
 " dp    Invoke |:Git| diff on the file under the cursor.
 " dd    Perform a |:Gdiffsplit| on the file under the cursor.
@@ -33,7 +31,6 @@
 " ds|dh Perform a |:Ghdiffsplit| on the file under the cursor.
 " dq    Close all but one diff buffer, and |:diffoff|! the last one.
 " d?    Show this help.
-
 " Navigation maps ~
 " <CR>  Open the file or |fugitive-object| under the cursor.
 " o     Open the file or |fugitive-object| under the cursor in
@@ -63,7 +60,6 @@
 " gP    Jump to file [count] in the "Unpulled" section.
 " gr    Jump to file [count] in the "Rebasing" section.
 " gi    Open .git/info/exclude in a split.  Use a count to
-
 " Commit maps ~
 " cc    Create a commit.
 " ca    Amend the last commit and edit the message.
@@ -81,13 +77,11 @@
 " crn   Revert the commit under the cursor in the index and
 " cr<Spa>   Populate command line with ":Git revert ".
 " cm<Spa>   Populate command line with ":Git merge ".
-
 " Checkout/branch maps ~
 " coo   Check out the commit under the cursor.
 " cb<Spa>   Populate command line with ":Git branch ".
 " co<Spa>   Populate command line with ":Git checkout ".
 " cb?|co?   Show this help.
-
 " Stash maps ~
 " czz   Push stash.  Pass a [count] of 1 to add
 " czw   Push stash of the work-tree.  Like `czz` with
@@ -98,12 +92,12 @@
 " czp   Pop topmost stash, or stash@{count}, preserving the
 " cz<Spa>               Populate command line with ":Git stash ".
 " cz?   Show this help.
-
 " Rebase maps ~
 " ri|u  Perform an interactive rebase. Uses ancestor of
 " rf    Perform an autosquash rebase without editing the todo
 " ru    Perform an interactive rebase against @{upstream}.
 " rp    Perform an interactive rebase against @{push}.
+" asdfad
 " rr    Continue the current rebase.
 " rs    Skip the current commit and continue the current
 " ra    Abort the current rebase.
@@ -113,19 +107,52 @@
 " rd    Perform an interactive rebase with the commit under
 " r<Spa>  Populate command line with ":Git rebase ".
 " r?    Show this help.
-
 " Miscellaneous maps ~
 " gq    Close the status buffer.
 " .     Start a |:| command line with the file under the
 " g?    Show help for |fugitive-maps|.
 
-
-" Configure general git mappings
-" Todo: Add to this
-function! git#git_setup() abort
+" Git gutter utility
+" Note: This was designed by looking at hunk.vim. Seems all buffer local gitgutter
+" settings are stores in g:gitgutter dictionary with 'hunks' containing lists of
+" [id, type, line, nline] where type == 0 is for addition-only hunks. Seems that
+" gitgutter#hunk#stage() requires cursor inside lines and fails when specifying lines
+" outside of addition hunk (see s:hunk_op) so explicitly navigate lines below. Also
+" this automatically stages partial additions if motion intersects only partly, but
+" otherwise, for intersections with non-addition hunks, stages the entire thing.
+" Note: Currently GitGutterStageHunk only supports partial staging of additions
+" specified by visual selection, not different hunks. This supports both, iterates in
+" reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
+function! git#hunk_jump(forward, stage) abort
+  call switch#gitgutter(1)  " ensure enabled
+  let which = a:forward ? 'Next' : 'Prev'
+  let cmd = 'GitGutter' . which . 'Hunk'
+  exe v:count1 . cmd
+  if a:stage | exe 'GitGutterStageHunk' | endif
 endfunction
-
-" Configure blame mappings
-" Todo: Add to this
-function! git#blame_setup() abort
+function! git#hunk_action(stage) abort range
+  call switch#gitgutter(1)  " ensure enabled
+  let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
+  let lines = []
+  let hunks = get(get(b:, 'gitgutter', {}), 'hunks', [])
+  let [firstline, lastline] = sort([a:firstline, a:lastline])
+  for [id, typ, lnum, lcnt] in hunks
+    let lmax = lcnt == 0 ? lnum : lnum + lcnt - 1
+    if firstline <= lnum && lmax <= lastline
+      let range = ''
+    elseif firstline <= lnum && lnum <= lastline  " starts inside, ends outside
+      let range = typ == 0 ? lnum . ',' . lastline : ''
+    elseif firstline <= lmax && lmax <= lastline  " starts outside, ends inside
+      let range = typ == 0 ? firstline . ',' . lmax : ''
+    else
+      continue
+    endif
+    exe lnum
+    exe range . cmd
+  endfor
+  GitGutter  " update signs (sometimes they lag)
+endfunction
+" For <expr> map accepting motion
+function! git#hunk_action_expr(...) abort
+  return utils#motion_func('git#hunk_action', a:000)
 endfunction
