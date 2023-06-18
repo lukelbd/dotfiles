@@ -4,13 +4,18 @@
 
 " Implement input behavior
 " Note: This is used for both grep and file completion
-function! utils#complete_list(...) abort
+function! utils#complete_list(...)
   let [init, fhandle, default] = s:complete_params
   if !init  " kludge for default behavior
     return call(fhandle, a:000)
   else
     let s:complete_params[0] = 0
-    let char = nr2char(getchar())
+    try
+      let char = nr2char(getchar())
+    catch  " user presses Ctrl-C
+      call feedkeys("\<CR>", 't')
+      return ['']
+    endtry
     if char ==# "\<Tab>"
       return [default]
     elseif char ==# "\<CR>"
@@ -24,7 +29,7 @@ function! utils#complete_list(...) abort
     endif
   endif
 endfunction
-function! utils#complete_input(prompt, default, func)
+function! utils#complete_input(prompt, default, func) abort
   let message = a:prompt . ' (' . a:default . '): '
   let s:complete_params = [1, a:func, a:default]
   call feedkeys("\<Tab>", 't')

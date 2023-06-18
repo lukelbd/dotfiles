@@ -1850,7 +1850,8 @@ if s:plug_active('vim-fugitive')
 endif
 
 " Git gutter settings
-" Note: Maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.'
+" Note: Maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.'. Also
+" <Leader>g both refreshes the gutter (e.g. after staging) and previews anything.
 " Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
 " therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
@@ -1873,7 +1874,7 @@ if s:plug_active('vim-gitgutter')
   noremap <expr> gS git#hunk_action_expr(0)
   nnoremap gss <Cmd>call git#hunk_action(1)<CR>
   nnoremap gSS <Cmd>call git#hunk_action(0)<CR>
-  noremap <Leader>g <Cmd>GitGutterPreviewHunk \| wincmd j<CR>
+  noremap <Leader>g <Cmd>GitGutter<CR><Cmd>GitGutterPreviewHunk \| wincmd j<CR>
   noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
 endif
 

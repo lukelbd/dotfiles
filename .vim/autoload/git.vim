@@ -1,7 +1,7 @@
 "-----------------------------------------------------------------------------"
 " Utilities for fugitive windows
 "-----------------------------------------------------------------------------"
-" Todo: Update with custom mappings
+" Todo: Memorize these mappings and possibly modify some.
 " Blame help
 " g?    show this help
 " A     resize to end of author column
