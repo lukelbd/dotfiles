@@ -37,6 +37,8 @@ function! grep#parse(level, search, ...) abort
   let cmd = substitute(cmd, '\\s', "[ \t]",  'g')  " whitespace characters
   let cmd = substitute(cmd, '\\[ikf]', '\\w', 'g')  " keyword, identifier, filename
   let cmd = substitute(cmd, '\\[IKF]', '[a-zA-Z_]', 'g')  " same but no numbers
+  let cmd = substitute(cmd, '\\\([(|)]\)', '\2', 'g')  " un-escape grouping indicators
+  let cmd = substitute(cmd, '\([(|)]\)', '\\\1', 'g')  " escape literal parentheses
   let paths = a:000  " list of paths
   if empty(paths)  " default path or directory
     let paths = [a:level > 1 ? @% : a:level > 0 ? expand('%:h') : getcwd()]
@@ -50,22 +52,23 @@ function! grep#parse(level, search, ...) abort
   return cmd . ' dummy.fzf'  " fix bug described above
 endfunction
 
-" Call Rg or Ag grep commands
+" Call Rg or Ag grep commands (see also file.vim)
 " Note: This lets user both pick default with <CR> or cancel with <C-c>
-" Todo: Expand this approach for other places throughout vim funcs?
 function! grep#pattern(grep, level, depth) abort
   let prompt = a:level > 1 ? 'File' : a:level > 0 ? 'Local' : 'Global'
   let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:]
-  let prompt = prompt . " pattern (default '" . @/ . "'): "
+  let prompt = prompt . " pattern (default '" . @/ . "'):"
   echo prompt | let char = nr2char(getchar())
   if char ==# "\<Esc>" || char ==# "\<C-c>"
     return
-  elseif empty(char) || char ==# "\<Tab>" || char ==# "\<CR>"
-    let search = ''
+  elseif char ==# "\<CR>"
+    let search = char
   else
-    let search = input('', char, 'customlist,utils#null_list')
+    let text = char ==# "\<Tab>" ? @/ : char
+    let search = input('', text, 'customlist,utils#null_list')
   endif
   let func = 'grep#' . tolower(a:grep)
-  let search = empty(search) || search ==# "\<CR>" ? @/ : search
+  let search = search ==# "\<CR>" ? @/ : search
+  if empty(search) | return | endif
   call call(func, [0, a:level, a:depth, search])
 endfunction
