@@ -754,10 +754,10 @@ nnoremap cc s
 vnoremap cc s
 
 " Swap characters or lines
-nnoremap ch <Cmd>call insert#swap_characters(0)<CR>
-nnoremap cl <Cmd>call insert#swap_characters(1)<CR>
-nnoremap ck <Cmd>call insert#swap_lines(0)<CR>
-nnoremap cj <Cmd>call insert#swap_lines(1)<CR>
+nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
+nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
+nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
+nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
 
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o oX<Backspace>
@@ -838,8 +838,8 @@ nnoremap <Leader>S z=
 
 " Similar to ]s and [s but also corrects the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-nnoremap <silent> <Plug>forward_spell bh]s<Cmd>call insert#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[s<Cmd>call insert#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nnoremap <silent> <Plug>forward_spell bh]s<Cmd>call edit#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[s<Cmd>call edit#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]d <Plug>forward_spell
 nmap [d <Plug>backward_spell
 
@@ -870,8 +870,8 @@ nnoremap <Leader>c <Cmd>call switch#copy()<CR>
 nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
-inoremap <expr> <C-v> insert#lang_map()
-cnoremap <expr> <C-v> insert#lang_map()
+inoremap <expr> <C-v> edit#lang_map()
+cnoremap <expr> <C-v> edit#lang_map()
 
 " Always open folds when starting files
 " Note: For some reason vim ignores foldlevelstart
@@ -896,24 +896,24 @@ noremap [Z [z
 noremap ]Z ]z
 
 " Unimpaired blank lines
-noremap <Plug>BlankUp <Cmd>call insert#blank_up(v:count1)<CR>
-noremap <Plug>BlankDown <Cmd>call insert#blank_down(v:count1)<CR>
+noremap <Plug>BlankUp <Cmd>call edit#blank_up(v:count1)<CR>
+noremap <Plug>BlankDown <Cmd>call edit#blank_down(v:count1)<CR>
 map [e <Plug>BlankUp
 map ]e <Plug>BlankDown
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
-nnoremap <expr> ga insert#paste_mode() . 'a'
-nnoremap <expr> gA insert#paste_mode() . 'A'
-nnoremap <expr> gC insert#paste_mode() . 'c'
-nnoremap <expr> gi insert#paste_mode() . 'i'
-nnoremap <expr> gI insert#paste_mode() . 'I'
-nnoremap <expr> go insert#paste_mode() . 'o'
-nnoremap <expr> gO insert#paste_mode() . 'O'
-nnoremap <expr> gR insert#paste_mode() . 'R'
+nnoremap <expr> ga edit#paste_mode() . 'a'
+nnoremap <expr> gA edit#paste_mode() . 'A'
+nnoremap <expr> gC edit#paste_mode() . 'c'
+nnoremap <expr> gi edit#paste_mode() . 'i'
+nnoremap <expr> gI edit#paste_mode() . 'I'
+nnoremap <expr> go edit#paste_mode() . 'o'
+nnoremap <expr> gO edit#paste_mode() . 'O'
+nnoremap <expr> gR edit#paste_mode() . 'R'
 
 " Forward delete by tabs
-inoremap <expr> <Delete> insert#forward_delete()
+inoremap <expr> <Delete> edit#forward_delete()
 
 " Insert comment similar to gc
 " Todo: Add more control insert mappings?

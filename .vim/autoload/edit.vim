@@ -1,17 +1,27 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Utilitify for removing the item indicator
-function! s:remove_item(line, first, last) abort
-  let pattern = s:search_item(0)
-  let pattern_optional = s:search_item(1)
-  let match_head = substitute(a:line, pattern, '\1', '')
-  let match_item = substitute(a:line, pattern, '\2', '')
-  keepjumps exe a:first . ',' . a:last
-    \ . 's@' . pattern_optional
-    \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
-    \ . '@ge'
-  call histdel('/', -1)
+" Inserting blank lines
+" See: https://github.com/tpope/vim-unimpaired
+function! edit#blank_up(count) abort
+  put!=repeat(nr2char(10), a:count)
+  ']+1
+  silent! call repeat#set("\<Plug>BlankUp", a:count)
+endfunction
+function! edit#blank_down(count) abort
+  put =repeat(nr2char(10), a:count)
+  '[-1
+  silent! call repeat#set("\<Plug>BlankDown", a:count)
+endfunction
+
+" Forward delete by tabs
+function! edit#forward_delete() abort
+  let line = getline('.')
+  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
+    return repeat("\<Delete>", &tabstop)
+  else
+    return "\<Delete>"
+  endif
 endfunction
 
 " Indent multiple times
@@ -21,6 +31,44 @@ endfunction
 " For <expr> map accepting motion
 function! edit#indent_items_expr(...) abort
   return utils#motion_func('edit#indent_items', a:000)
+endfunction
+
+" Toggle insert and command-mode caps lock
+" See: http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock which uses
+" iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
+function! edit#lang_map()
+  let b:caps_lock = exists('b:caps_lock') ? 1 - b:caps_lock : 1
+  if b:caps_lock
+    for s:c in range(char2nr('A'), char2nr('Z'))
+      exe 'lnoremap <buffer> ' . nr2char(s:c + 32) . ' ' . nr2char(s:c)
+      exe 'lnoremap <buffer> ' . nr2char(s:c) . ' ' . nr2char(s:c + 32)
+    endfor
+    augroup caps_lock
+      au!
+      au InsertLeave,CmdwinLeave * setlocal iminsert=0 | let b:caps_lock = 0 | autocmd! caps_lock
+    augroup END
+  endif
+  return "\<C-^>"
+endfunction
+
+" Set up temporary paste mode
+function! edit#paste_mode() abort
+  let s:paste = &paste
+  let s:mouse = &mouse
+  set paste
+  set mouse=
+  augroup insert_paste
+    au!
+    au InsertLeave *
+      \ if exists('s:paste') |
+      \   let &paste = s:paste |
+      \   let &mouse = s:mouse |
+      \   unlet s:paste |
+      \   unlet s:mouse |
+      \ endif |
+      \ autocmd! insert_paste
+  augroup END
+  return ''
 endfunction
 
 " Search replace without polluting history
@@ -44,6 +92,47 @@ endfunction
 " For <expr> map accepting motion
 function! edit#replace_regex_expr(...) abort
   return utils#motion_func('edit#replace_regex', a:000)
+endfunction
+
+" Correct next misspelled word
+" This provides functionality similar to [t and ]s
+function! edit#spell_apply(forward)
+  let nospell = 0
+  if !&l:spell
+    let nospell = 1
+    setlocal spell
+  endif
+  let winview = winsaveview()
+  exe 'normal! ' . (a:forward ? 'bh' : 'el')
+  exe 'normal! ' . (a:forward ? ']' : '[') . 's'
+  normal! 1z=
+  call winrestview(winview)
+  if nospell
+    setlocal nospell
+  endif
+endfunction
+
+" Swap characters or lines
+" Note: This does not affect registers
+function! edit#swap_characters(right) abort
+  let cnum = col('.')
+  let line = getline('.')
+  let idx = a:right ? cnum : cnum - 1
+  if idx > 0 && idx < len(line)
+    let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
+    call setline('.', line)
+  endif
+endfunction
+function! edit#swap_lines(bottom) abort
+  let offset = a:bottom ? 1 : -1
+  let lnum = line('.')
+  if lnum + offset > 0 && lnum + offset < line('$')
+    let line1 = getline(lnum)
+    let line2 = getline(lnum + offset)
+    call setline(lnum, line2)
+    call setline(lnum + offset, line1)
+  endif
+  exe lnum + offset
 endfunction
 
 " Wrap the lines to 'count' columns rather than 'textwidth'
@@ -73,6 +162,19 @@ function! s:search_item(optional)
     let indicator = indicator . '\?'
   endif
   return head . indicator . tail
+endfunction
+
+" Utilitify for removing the item indicator
+function! s:remove_item(line, first, last) abort
+  let pattern = s:search_item(0)
+  let pattern_optional = s:search_item(1)
+  let match_head = substitute(a:line, pattern, '\1', '')
+  let match_item = substitute(a:line, pattern, '\2', '')
+  keepjumps exe a:first . ',' . a:last
+    \ . 's@' . pattern_optional
+    \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
+    \ . '@ge'
+  call histdel('/', -1)
 endfunction
 
 " Fix all lines that are too long, with special consideration for bullet style lists and
