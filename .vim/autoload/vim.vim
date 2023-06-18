@@ -67,7 +67,7 @@ function! vim#refresh_config(...) abort
     elseif getftime(path) < get(g:refresh_times, ftype, default)
       continue  " only refresh if outdated
     endif
-    if ftype ==# 'global' && ftype ==# &filetype
+    if ftype ==# 'global' || ftype ==# &filetype
       exe 'so ' . path
       call add(loaded, path)
       let updates[ftype] = current
