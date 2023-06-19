@@ -534,22 +534,13 @@ export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 # Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
-# if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-#   vim --cmd 'set buftype=nofile' -c "call popup#help_page(0, '$*')"
-# else
-#   echo "No help information for $*."
-# fi
 help() {
   local result
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
     builtin help "$@" 2>&1 | less
   else
-    if [ "$1" == cdo ]; then
-      result=$("$1" --help "${@:2}" 2>&1)
-    else
-      result=$("$@" --help 2>&1)
-    fi
+    [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
     if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
       command less <<< "$result"
     else
@@ -557,26 +548,38 @@ help() {
     fi
   fi
 }
+vh() {
+  local result
+  [ $# -eq 0 ] && echo "Requires argument." && return 1
+  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
+  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+    vim --cmd 'set buftype=nofile' -c "call popup#help_page(0, '$*')"
+  else
+    echo "No help information for $*."
+  fi
+}
 
-# Man page display with auto jumping to relevant info. Note man command
-# should print nice error message if nothing is found.
+# Man page display with auto jumping to relevant info. On macOS man may direct to
+# 'builtin' page when 'bash' page actually has relevent docs whiole on linux 'builtin'
+# has the docs. Also note man command should print nice error message if nothing found.
 # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-# if command man "$arg" 1>/dev/null; then  # could display error message
-#   vim --cmd 'set buftype=nofile' -c "call popup#man_page(0, '$*')"
-# fi
 man() {
   local search arg="$*"
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
   if command man "$arg" 2>/dev/null | head -2 | grep "BUILTIN" &>/dev/null; then
-    if $_macos && [ "$arg" != "builtin" ]; then
-      search=bash  # need the 'bash' manpage for full info
-    else
-      search=$arg  # linux shows all info necessary, just have to find it
-    fi
+    $_macos && [ "$arg" != "builtin" ] && search=bash || search=$arg
     LESS=-p"^ *$arg.*\[.*$" command man "$search"
   else
     command man "$arg"  # could display error message
+  fi
+}
+vm() {
+  local search arg="$*"
+  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
+  [ $# -eq 0 ] && echo "Requires one argument." && return 1
+  if command man "$arg" 1>/dev/null; then  # could display error message
+    vim --cmd 'set buftype=nofile' -c "call popup#man_page(0, '$*')"
   fi
 }
 
@@ -609,15 +612,13 @@ less() {
   fi
 }
 
-# Simple pseudo-vi editor
+# Open one tab per file. Previously cleared screen and deleted scrollback history
+# but now just use &restorescreen=1 and &t_ti and &t_te escape codes.
 # See: https://vi.stackexchange.com/a/6114
+# See: https://apple.stackexchange.com/q/31872/214359
 vi() {
   HOME=/dev/null command vim -i NONE -u NONE "$@"
 }
-
-# Open one tab per file. Previously cleared screen and deleted scrollback history
-# but now just use &restorescreen=1 and &t_ti and &t_te escape codes.
-# See: https://apple.stackexchange.com/q/31872/214359
 vim() {
   [ "${#files[@]}" -gt 0 ] && flags+=(-p)
   command vim --cmd 'set restorescreen' -p "$@"
@@ -904,34 +905,35 @@ pskill() {  # jobs by ps name
   done
 }
 
-# Git and differencing utilities. Here 'fd' prints git diff-style directory diffs,
-# 'qd' prints git status-style directory diffs, 'rd' prints recursive directory
-# content differences, and 'td' prints directory modification time diferences.
+# Git and differencing utilities. Here 'gs' prints git status-style directory diffs,
+# 'gd' prints git diff-style file diffs, 'ds' prints recursive directory status
+# differences, and 'dd' prints basic directory modification time diferences.
 # NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-fd() {  # detailed file differences
-  command git --no-pager diff --textconv --no-index --color=always "$@" 2>&1 \
-    | grep -v -e 'warning:' | tac | sed -e '/Binary files/,+3d' | tac
-    # -- ':!.vimsession' ':!*.git' ':!*.svn' ':!*.sw[a-z]' \
-    # ':!*.DS_Store' ':!*.ipynb_checkpoints' ':!*__pycache__'
-}
-qd() {  # quick directory differences
+gs() {  # git status-style directory differences
   command git --no-pager diff \
     --textconv --no-index --color=always --name-status "$@" 2>&1 | \
-    grep -v -e 'warning:' -e '.vimsession' -e '.git' -e '.svn' -e '.sw[a-z]' \
-    -e '.DS_Store' -e '.ipynb_checkpoints' -e '.*__pycache__'
+    grep -v -e 'warning:' -e '.vimsession' -e '*.git' -e '*.svn' -e '*.sw[a-z]' \
+    -e '*.DS_Store' -e '*.ipynb_checkpoints' -e '.*__pycache__'
 }
-rd() {  # recursive directory differences
-  [ $# -ne 2 ] && echo "Usage: rdiff DIR1 DIR2" && return 1
-  command diff -s \
-    -x '.vimsession' -x '*.git' -x '*.svn' -x '*.sw[a-z]' \
-    -x '*.DS_Store' -x '*.ipynb_checkpoints' -x '*__pycache__' \
-    --brief --strip-trailing-cr -r "$1" "$2"
+gd() {  # git diff-style file differences
+  command git --no-pager diff \
+    --textconv --no-index --color=always "$@" 2>&1 \
+    | grep -v -e 'warning:' | \
+    tac | sed -e '/Binary files/,+3d' | tac
 }
-td() {  # modification time differences
-  [ $# -ne 2 ] && echo "Usage: ddiff DIR1 DIR2" && return 1
+ds() {  # directory status differences
+  [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
+  echo "Directory: $1"
+  echo "Directory: $2"
+  command diff -rq \
+    -x '.vimsession' \
+    "$1" "$2"
+}
+dd() {  # directory modification time differences
+  [ $# -ne 2 ] && echo "Usage: dt DIR1 DIR2" && return 1
   local dir dir1 dir2 cat1 cat2 cat3 cat4 cat5 file files
   dir1=${1%/}
   dir2=${2%/}
