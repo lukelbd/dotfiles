@@ -94,7 +94,7 @@ set showtabline=2  " default 2 spaces
 set softtabstop=2  " default 2 spaces
 set splitbelow  " splitting behavior
 set splitright  " splitting behavior
-set switchbuf=usetab,newtab  " when switching buffers use open tab
+set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open tab
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
@@ -1255,11 +1255,11 @@ let g:gutentags_enabled = 1
 " User interface selection stuff
 " Note: While specify ctags comamnd below, and set 'tags' accordingly above, this
 " should generally not be used since tags managed by gutentags.
-" Note: 'Existing' opens ag/rg in existing open tab/window, similar to switchbuf=usetab.
-" However :Buffers still fails even with fzf_buffers_jump=1 (with the below :Existing
-" override it loads duplicate tabs, otherwise overwrites window). Not meant for tabs.
+" Note: 'Existing' opens ag/rg in existing window, similar to switchbuf=useopen,usetab.
+" However :Buffers still opens duplicate tabs with fzf_buffers_jump=1. Avoid using.
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
-" centered on bottom. Note fzf#wrap is required to apply global settings and cannot
+" centered on bottom so do not configure this way.
+" Note: fzf#wrap is required to apply global settings and cannot
 " rely on fzf#run return values (will result in weird hard-to-debug issues).
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
@@ -1275,9 +1275,9 @@ call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, inclu
 let g:fzf_action = {
   \ 'ctrl-m': 'Existing', 'ctrl-i': 'silent!',
   \ 'ctrl-t': 'tab split', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
-  \ }
+  \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_buffers_jump = 1  " jump to existing window if possible
+let g:fzf_buffers_jump = 1  " have grep jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . grep#ignores(1)  " added just for safety
 
 " Language server integration
@@ -1293,8 +1293,8 @@ if s:enable_lsp
   call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
   call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
 	call plug#('rhysd/vim-healthcheck')  " plugin help
-  let g:lsp_float_max_width = 88
-  let g:lsp_preview_max_width = 88
+  let g:lsp_float_max_width = 88  "  some reason results in wider windows
+  let g:lsp_preview_max_width = 88  "  some reason results in wider windows
   let g:lsp_preview_max_height = 176
 endif
 
@@ -1700,8 +1700,8 @@ if s:plug_active('vim-lsp')
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
   let g:lsp_max_buffer_size = 2000000  " decrease from 5000000
-  let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_preview_float = 1  " floating window
+  let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_signature_help_enabled = 1  " sigature help
   let g:lsp_signature_help_delay = 100  " milliseconds
   let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'

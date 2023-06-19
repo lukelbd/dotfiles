@@ -78,7 +78,7 @@ endfunction
 " handle excludes anyway, so just bypass all patterns starting with '!'.
 function! grep#ignores(join) abort
   let project = split(system('git rev-parse --show-toplevel'), "\n")
-  let suffix = empty(project) ? [] : [project . '/.gitignore']
+  let suffix = empty(project) ? [] : [project[0] . '/.gitignore']
   let paths = ['~/.ignore', '~/.gitignore'] + suffix
   let ignores = []
   for path in paths
