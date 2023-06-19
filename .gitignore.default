@@ -21,6 +21,7 @@ garbage*
 tags
 .vimtags*
 .vimsession*
+.netrwhist
 .*.sw[a-z]
 
 # Python stuff

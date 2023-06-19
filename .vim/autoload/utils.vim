@@ -141,6 +141,23 @@ function! utils#reverse_lines() range abort
   exec 'silent ' . range . 'g/^/m' . num
 endfunction
 
+" Update tags setting for whole project
+" This makes fzf :Tags function and other utils search everything
+function! utils#update_tags() abort
+  let paths = []
+  for tnr in range(tabpagenr('$')) " iterate through each tab
+    let tabnr = tnr + 1 " the tab number
+    for bnr in tabpagebuflist(tabnr)
+      let opts = getbufvar(bnr, 'gutentags_files', {})
+      let path = get(opts, 'ctags', '')
+      if !empty(path) && index(paths, path) == -1
+        call add(paths, path)
+      endif
+    endfor
+  endfor
+  let &g:tags = join(paths, ',')
+endfunction
+
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
 function! utils#wrap_colorschemes(reverse) abort

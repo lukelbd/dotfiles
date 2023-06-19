@@ -5,8 +5,9 @@
 #-----------------------------------------------------------------------------#
 # Read the tracked file names. Note style configs required to be in .config.
 # See: https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html
+# Note '.ignore' seems to work in either $HOME or in $HOME/.config after testing.
 shopt -s nullglob
-configs=(pep8 black isort .ignore)  # required
+configs=(pep8 black isort)  # required
 exclude=(README.md REGEXES.md .gitignore environment.yml envs backup cleanup setup)
 dotfiles=$HOME/dotfiles  # dotfiles directory
 cd "$dotfiles" || {

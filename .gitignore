@@ -9,12 +9,13 @@ test*
 *.bib
 .DS_Store
 .nfs*
-tags
-tmp
+tmp*
 
 # Vim extras, binary spell files
-.vimsession*
+tags
 .vimtags*
+.vimsession*
+.netrwhist
 .*.sw[a-z]
 *.spl
 

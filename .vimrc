@@ -71,6 +71,7 @@ set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing i
 set noinfercase ignorecase smartcase  " smartcase makes search case insensitive, unless has capital letter
 set nospell spelllang=en_us spellcapcheck=  " spellcheck off by default
 set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
+set nowrap  " global wrap setting possibly overwritten by wraptoggle
 set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
 set nrformats=alpha  " never interpret numbers as 'octal'
 set number numberwidth=4  " note old versions can't combine number with relativenumber
@@ -96,7 +97,7 @@ set splitright  " splitting behavior
 set switchbuf=usetab,newtab  " when switching buffers use open tab
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
-set tags=~/.vimtags,.vimtags,./.vimtags  " home, working dir, or file dir
+set tags=.vimtags,./.vimtags  " home, working dir, or file dir
 set ttymouse=sgr  " different cursor shapes for different modes
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
@@ -136,10 +137,10 @@ let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
 let s:popup_filetypes = [
-  \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'GV',
   \ ]  " for popup toggle
 let s:popup_filetypes += [
-  \ 'git', 'gitcommit', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
+  \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
   \ ]
 
 " Override settings and syntax, even buffer-local. The URL regex was copied
@@ -473,9 +474,9 @@ highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 command! -nargs=0 CurrentColor vert help group-name
 command! -nargs=0 CurrentGroup call popup#syntax_group()
 command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
-command! -nargs=0 ShowColors call popup#colors_win()
-command! -nargs=0 ShowPlugin call popup#plugin_win()
-command! -nargs=0 ShowSyntax call popup#syntax_win()
+command! -nargs=0 ShowColors call popup#runtime_colors()
+command! -nargs=0 ShowPlugin call popup#runtime_ftplugin()
+command! -nargs=0 ShowSyntax call popup#runtime_syntax()
 noremap <Leader>1 <Cmd>CurrentGroup<CR>
 noremap <Leader>2 <Cmd>CurrentSyntax<CR>
 noremap <Leader>3 <Cmd>CurrentColor<CR>
@@ -620,15 +621,13 @@ augroup popup_setup
   au!
   au TerminalWinOpen * call popup#popup_setup(1)
   au CmdwinEnter * call popup#cmdwin_setup() | call popup#popup_setup(0)
-  au FileType fugitiveblame call git#blame_setup()
-  au FileType fugitive call git#git_setup()
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
-  au FileType gitcommit call popup#commit_setup()  " additional setup steps
   au FileType help call popup#vim_setup()  " additional setup steps
   au FileType man call popup#man_setup()  " additional setup steps
   au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
-  au User FugitiveIndex let b:maparg = maparg('<CR>') | noremap <expr> <buffer> <CR> git#fugitive_open()
+  au FileType gitcommit call git#commit_setup()  " additional setup steps
+  au User FugitiveIndex call git#fugitive_setup()
   for s:ft in s:popup_filetypes
     let s:modifiable = s:ft ==# 'gitcommit' || s:ft ==# 'fugitive'
     exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:modifiable . ')'
@@ -1141,6 +1140,12 @@ command! -nargs=1 PlugLocal call s:plug_local(<args>)
 " derived from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
 call plug#begin('~/.vim/plugged')
 
+" Anti-escape
+" Note: This is used only to preserve stdin colors e.g. 'git add --help'. Previously
+" invoked when opening command --help pages but now not needed since redirect small
+" subset of commands that include ANSI colors back to their corresponding man pages.
+" call plug#('powerman/vim-plugin-AnsiEsc')
+
 " Inline code handling
 " Note: Use :InlineEdit within blocks to open temporary buffer for editing. The buffer
 " will have filetype-aware settings. See: https://github.com/AndrewRadev/inline_edit.vim
@@ -1151,36 +1156,57 @@ call plug#begin('~/.vim/plugged')
 " call plug#('Asheq/close-buffers.vim')  " e.g. Bdelete hidden, Bdelete select
 " call plug#('artnez/vim-wipeout')  " utility overwritten with custom one
 
-" Tags integration with easytags
-" Note: Instead use custom plugin
-" call plug#('xolox/vim-misc')  " dependency for easytags
-" call plug#('xolox/vim-easytags')  " kind of old and not that useful honestly
-" call plug#('ludovicchabant/vim-gutentags')  " slows shit down like crazy
+" Commenting stuff
+" Note: tcomment_vim is nice minimal extension of vim-commentary, include explicit
+" commenting and uncommenting and 'blockwise' commenting with g>b and g<b
+" call plug#('scrooloose/nerdcommenter')
+" call plug#('tpope/vim-commentary')  " too simple
+call plug#('tomtom/tcomment_vim')
 
-" Anti-escape
-" Note: This is used only to preserve stdin colors e.g. 'git add --help'. Previously
-" invoked when opening command --help pages but now not needed since redirect small
-" subset of commands that include ANSI colors back to their corresponding pagers.
-" call plug#('powerman/vim-plugin-AnsiEsc')
+" General utilities
+" Note: Replaced 'vim-superman' with custom man viewing utilities
+" call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
+" call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
+" call plug#('jez/vim-superman')  " add the 'vman' command-line tool
+" call plug#('tpope/unimpaired')  " bracket maps that no longer use
+call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
+call plug#('tpope/vim-characterize')  " print character info (mnemonic is l for letter)
+nmap gl <Plug>(characterize)
 
-" Folding speedups
-" Warning: SimpylFold was very slow on monde, instead just use braceless
-" call plug#('tmhedberg/SimpylFold')
-call plug#('Konfekt/FastFold')
-" let g:SimpylFold_docstring_preview = 0
-" let g:SimpylFold_fold_docstring = 0
-" let g:SimpylFold_fold_import = 0
+" Panel utilities
+" Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
+" various shortcuts to test whole file, current test, next test, etc.
+" call plug#('vim-scripts/EnhancedJumps')  " unnecessary
+" call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
+" call plug#('scrooloose/nerdtree')  " unnecessary
+" call plug#('preservim/tagbar')  " unnecessary
+call plug#('mbbill/undotree')
 
-" Navigation and interaction
-" Should consider peekaboo once custom maps are allowed
+" Restoring sessions and recent files. Use 'vim-session' bash function to restore from
+" .vimsession or start new session with that file, or 'vim' then ':so .vimsession'.
+" Note: Here mru can be used to replace current file in window with files from recent
+" popup list. Useful e.g. if lsp or fugitive plugins accidentally replace buffer.
+" call plug#('thaerkh/vim-workspace')
+" call plug#('gioele/vim-autoswap')  " deals with swap files automatically; no longer use them so unnecessary
+" call plug#('xolox/vim-reload')  " easier to write custom reload function
+call plug#('tpope/vim-obsession')  " sparse features on top of built-in session behavior
+call plug#('yegappan/mru')  " most recent file
+" let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
+
+" Navigation and marker and fold interface
 " See: https://github.com/junegunn/vim-peekaboo/issues/84
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
-" call plug#('kshenoy/vim-signature')  " experimental
-call plug#('junegunn/vim-peekaboo')
-call plug#('justinmk/vim-sneak')
+" call plug#('kshenoy/vim-signature')  " experimental but revisit
+" call plug#('tmhedberg/SimpylFold')  " slows things down
+call plug#('junegunn/vim-peekaboo')  " popup display
+call plug#('justinmk/vim-sneak')  " simple and clean
+call plug#('Konfekt/FastFold')  " simpler
 let g:peekaboo_prefix = '"'
 let g:peekaboo_window = 'vertical topleft 30new'
+" let g:SimpylFold_docstring_preview = 0
+" let g:SimpylFold_fold_docstring = 0
+" let g:SimpylFold_fold_import = 0
 
 " Matching groups and searching
 " Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search
@@ -1197,74 +1223,38 @@ let g:indexed_search_shortmess = 1  " shorter message
 let g:indexed_search_numbered_only = 1  " only show numbers
 let g:indexed_search_n_always_searches_forward = 0  " disable for consistency with sneak
 
-" Useful panel plugins
-" Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
-" call plug#('vim-scripts/EnhancedJumps')  " unnecessary
-" call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
-" call plug#('scrooloose/nerdtree')  " unnecessary
-" call plug#('preservim/tagbar')  " unnecessary
-call plug#('mbbill/undotree')
-
-" Various utilities
-" Note: Replaced 'vim-superman' with custom man viewing utilities
-" call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
-" call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
-" call plug#('jez/vim-superman')  " add the 'vman' command-line tool
-" call plug#('tpope/unimpaired')  " bracket maps that no longer use
-call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
-call plug#('tpope/vim-characterize')  " print character info (mnemonic is l for letter)
-nmap gl <Plug>(characterize)
-
-" Syntax checking and formatting
+" Error checking and testing
+" Note: Below test plugin works for every filetype (simliar to ale). Set up
 " Note: syntastic looks for checkers in $PATH, must be installed manually
 " call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
+call plug#('vim-test/vim-test')
 call plug#('dense-analysis/ale')
 call plug#('fisadev/vim-isort')
 call plug#('Chiel92/vim-autoformat')
 call plug#('tell-k/vim-autopep8')
 call plug#('psf/black')
 
-" Commenting stuff
-" Note: tcomment_vim is nice minimal extension of vim-commentary, include explicit
-" commenting and uncommenting and 'blockwise' commenting with g>b and g<b
-" call plug#('scrooloose/nerdcommenter')
-" call plug#('tpope/vim-commentary')  " too simple
-call plug#('tomtom/tcomment_vim')
-
-" Running tests and stuff
-" Note: This works for every filetype (simliar to ale). Set up various
-" shortcuts to test whole file, current test, next test, etc.
-call plug#('vim-test/vim-test')
-
-" Restoring sessions and recent files. Use 'vim-session' bash function to restore from
-" .vimsession or start new session with that file, or 'vim' then ':so .vimsession'.
-" Note: Here mru can be used to replace current file in window with files from recent
-" popup list. Useful e.g. if lsp or fugitive plugins accidentally replace buffer.
-" call plug#('thaerkh/vim-workspace')
-" call plug#('gioele/vim-autoswap')  " deals with swap files automatically; no longer use them so unnecessary
-" call plug#('xolox/vim-reload')  " easier to write custom reload function
-call plug#('tpope/vim-obsession')  " sparse features on top of built-in session behavior
-call plug#('yegappan/mru')  " most recent file
-" let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
-
 " Git wrappers and differencing tools
 " vim-flog and gv.vim are heavyweight and lightweight commit viewing plugins
+" call plug#('rbong/vim-flog')  " view commit graphs with :Flog
 call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
 call plug#('junegunn/gv.vim')  " view commit graphs with :GV
-" call plug#('rbong/vim-flog')  " view commit graphs with :Flog
 let g:fugitive_no_maps = 1
 
-" Calculators and number stuff
-" call plug#('vim-scripts/Toggle')  " toggling stuff on/off, modified this myself
-" call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
-call plug#('sk1418/HowMuch')
-call plug#('tpope/vim-speeddating')  " dates and stuff
-call plug#('metakirby5/codi.vim')  " calculators
-let g:HowMuch_no_mappings = 1
-let g:speeddating_no_mappings = 1
+" Project-wide tags and auto-updating
+" Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
+" for detection in autoload/vim.vim) and gutentags (uses only g:gutentags_ctags_tagfile
+" for both detection and writing).
+" call plug#('xolox/vim-misc')  " dependency for easytags
+" call plug#('xolox/vim-easytags')  " kind of old and not that useful honestly
+call plug#('ludovicchabant/vim-gutentags')  " note slows things down without config
+let g:gutentags_enabled = 1
+" let g:gutentags_enabled = 0
 
 " User interface selection stuff
+" Note: While specify ctags comamnd below, and set 'tags' accordingly above, this
+" should generally not be used since tags managed by gutentags.
 " Note: 'Existing' opens ag/rg in existing open tab/window, similar to switchbuf=usetab.
 " However :Buffers still fails even with fzf_buffers_jump=1 (with the below :Existing
 " override it loads duplicate tabs, otherwise overwrites window). Not meant for tabs.
@@ -1282,16 +1272,13 @@ let g:speeddating_no_mappings = 1
 " call plug#('ctrlpvim/ctrlp.vim')  " replaced with fzf
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
-let g:fzf_buffers_jump = 1
-let g:fzf_tags_command = 'ctags -R -f .vimtags'
-let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_action = {
-  \ 'ctrl-m': 'Existing',
-  \ 'ctrl-i': 'silent!',
-  \ 'ctrl-t': 'tab split',
-  \ 'ctrl-x': 'split',
-  \ 'ctrl-v': 'vsplit'
+  \ 'ctrl-m': 'Existing', 'ctrl-i': 'silent!',
+  \ 'ctrl-t': 'tab split', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
   \ }
+let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
+let g:fzf_buffers_jump = 1  " jump to existing window if possible
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . grep#ignores(1)  " added just for safety
 
 " Language server integration
 " Note: Seems vim-lsp can both detect servers installed separately in $PATH with
@@ -1361,6 +1348,16 @@ if s:enable_lsp
   call plug#('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
 endif
 
+" Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
+" are better and API is simpler. Only miss adding numbers to operators, otherwise
+" feature set is same (e.g. cannot delete and change arbitrary text objects)
+" See discussion: https://www.reddit.com/r/vim/comments/esrfno/why_vimsandwich_and_not_surroundvim/
+" See also: https://github.com/wellle/targets.vim/issues/225
+" call plug#('wellle/targets.vim')
+" call plug#('machakann/vim-sandwich')
+call plug#('tpope/vim-surround')
+call plug#('raimondi/delimitmate')
+
 " Snippets and stuff
 " Todo: Investigate further, but so far primitive vim-succinct snippets are fine
 " call plug#('SirVer/ultisnips')  " fancy snippet actions
@@ -1372,17 +1369,7 @@ endif
 call plug#('hrsh7th/vim-vsnip')  " snippets
 call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
 
-" Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
-" are better and API is simpler. Only miss adding numbers to operators, otherwise
-" feature set is same (e.g. cannot delete and change arbitrary text objects)
-" See discussion: https://www.reddit.com/r/vim/comments/esrfno/why_vimsandwich_and_not_surroundvim/
-" See also: https://github.com/wellle/targets.vim/issues/225
-" call plug#('wellle/targets.vim')
-" call plug#('machakann/vim-sandwich')
-call plug#('tpope/vim-surround')
-call plug#('raimondi/delimitmate')
-
-" Custom text objects (inner/outer selections)
+" Additional text objects (inner/outer selections)
 " Todo: Generalized function converting text objects into navigation commands?
 " Unsustainable to try to reproduce diverse plugin-supplied text objects as
 " navigation commands... need to do this automatically!!!
@@ -1427,6 +1414,23 @@ let g:jupyter_cell_separators = ['# %%', '# <codecell>']
 let g:jupyter_mapkeys = 0
 let g:jupytext_fmt = 'py:percent'
 
+" Indent guides
+" Note: Indentline completely messes up search mode. Also requires changing Conceal
+" group color, but doing that also messes up latex conceal backslashes (which
+" we need to stay transparent). Also indent-guides looks too busy and obtrusive.
+" Instead use braceless.vim highlighting, appears only when cursor is there.
+" call plug#('yggdroot/indentline')
+" call plug#('nathanaelkane/vim-indent-guides')
+
+" ReST utilities
+" Use == tables instead of fancy ++ tables
+" call plug#('nvie/vim-rst-tables')
+" call plug#('ossobv/vim-rst-tables-py3')
+" call plug#('philpep/vim-rst-tables')
+" noremap <silent> \s :python ReformatTable()<CR>
+" let g:riv_python_rst_hl = 1
+" call plug#('Rykka/riv.vim')
+
 " TeX utilities with better syntax highlighting, better
 " indentation, and some useful remaps. Also zotero integration.
 " Note: For better configuration see https://github.com/lervag/vimtex/issues/204
@@ -1438,23 +1442,6 @@ let g:jupytext_fmt = 'py:percent'
 " call plug#('lervag/vimtex')
 " call plug#('chrisbra/vim-tex-indent')
 " call plug#('rafaqz/citation.vim')
-
-" ReST utilities
-" Use == tables instead of fancy ++ tables
-" call plug#('nvie/vim-rst-tables')
-" call plug#('ossobv/vim-rst-tables-py3')
-" call plug#('philpep/vim-rst-tables')
-" noremap <silent> \s :python ReformatTable()<CR>
-" let g:riv_python_rst_hl = 1
-" call plug#('Rykka/riv.vim')
-
-" Indent guides
-" Note: Indentline completely messes up search mode. Also requires changing Conceal
-" group color, but doing that also messes up latex conceal backslashes (which
-" we need to stay transparent). Also indent-guides looks too busy and obtrusive.
-" Instead use braceless.vim highlighting, appears only when cursor is there.
-" call plug#('yggdroot/indentline')
-" call plug#('nathanaelkane/vim-indent-guides')
 
 " Syntax highlighting
 " Note impsort sorts import statements and highlights modules using an after/syntax
@@ -1486,7 +1473,7 @@ call plug#('lilydjwg/colorizer')  " only in macvim or when &t_Co == 256
 let g:colorizer_nomap = 1
 let g:colorizer_startup = 0
 
-" Helpful stuff
+" Formatting stuff
 " call plug#('dkarter/bullets.vim')  " list numbering but completely fails
 " call plug#('ohjames/tabdrop')  " now apply similar solution with tabline#write
 " call plug#('beloglazov/vim-online-thesaurus')  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
@@ -1500,6 +1487,15 @@ let g:splitjoin_trailing_comma = 1
 let g:splitjoin_normalize_whitespace = 1
 let g:splitjoin_python_brackets_on_separate_lines = 1
 "
+" Calculators and number stuff
+" call plug#('vim-scripts/Toggle')  " toggling stuff on/off, modified this myself
+" call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
+call plug#('sk1418/HowMuch')
+call plug#('tpope/vim-speeddating')  " dates and stuff
+call plug#('metakirby5/codi.vim')  " calculators
+let g:HowMuch_no_mappings = 1
+let g:speeddating_no_mappings = 1
+
 " Custom plugins or forks and try to load locally if possible!
 " Note: ^= prepends to list and += appends. Also previously added forks here but
 " probably simpler/consistent to simply source files.
@@ -1534,6 +1530,15 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
+" Auto-complete delimiters
+" Filetype-specific settings are in various ftplugin files
+if s:plug_active('delimitmate')
+  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_jump_expansion = 0
+  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
+endif
+
 " Additional mappings powered by Karabiner. Note that custom delimiters
 " are declared inside vim-succinct plugin functions rather than here.
 if s:plug_active('vim-succinct')
@@ -1555,40 +1560,8 @@ if s:plug_active('vim-scrollwrapped')
   inoremap <expr> <Down> popup#scroll_count(0.25)
 endif
 
-" Add maps for vim-tags command and use tags for default double bracket motion,
-" except never overwrite potential single bracket mappings (e.g. help mode).
-" Todo: Currently <C-t> shows contents of tag stack, consider copying? Also :Tags
-" fzf command offers to create file, consider adapating for vim-tags?
-if s:plug_active('vim-tags')
-  augroup double_bracket
-    au!
-    au BufEnter * call s:bracket_maps()
-  augroup END
-  function! s:bracket_maps()  " defining inside autocommand not possible
-    if empty(maparg('[')) && empty(maparg(']'))
-      nmap <buffer> [[ <Plug>TagsBackwardTop
-      nmap <buffer> ]] <Plug>TagsForwardTop
-    endif
-  endfunction
-  " nnoremap <Leader>t <Cmd>ShowTags<CR>
-  nnoremap <Leader>t <Cmd>BTags<CR>
-  nnoremap <Leader>T <Cmd>Tags<CR>
-  nnoremap <Leader>U <Cmd>UpdateTags<CR>
-  let g:tags_subtop_filetypes = ['fortran']
-  let g:tags_scope_kinds = {
-    \ 'vim': 'afc',
-    \ 'tex': 'bs',
-    \ 'python': 'fcm',
-    \ 'fortran': 'smfp',
-    \ }
-  let g:tags_skip_kinds = {
-    \ 'tex': 'g',
-    \ 'vim': 'mvD',
-    \ }
-endif
-
 " Comment toggling stuff
-" Note: For once we like some of the default maps but disable others.
+" Disable a few maps but keep many others
 if s:plug_active('tcomment_vim')
   nmap g>> g>c
   nmap g<< g<c
@@ -1598,15 +1571,6 @@ if s:plug_active('tcomment_vim')
   let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
   let g:tcomment_mapleader_uncomment_anyway = 'g<'
   let g:tcomment_mapleader_comment_anyway = 'g>'
-endif
-
-" Auto-complete delimiters
-" Filetype-specific settings are in various ftplugin files
-if s:plug_active('delimitmate')
-  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
 " Vim sneak motion
@@ -1622,8 +1586,53 @@ if s:plug_active('vim-sneak')
   map <F2> <Plug>Sneak_;
 endif
 
+" Tag integration settings
+" Add maps for vim-tags and gutentags plus use tags for default double bracket
+" motion, except never overwrite potential single bracket mappings (e.g. help mode).
+" Note: Custom plugin is similar to :Btags which generates ad hoc tag list, different
+" from :FZF which uses universal file and :Gutentags which manages/updates the file.
+if s:plug_active('vim-tags')
+  augroup vim_tags
+    au!
+    au BufEnter * call s:bracket_maps()
+  augroup END
+  function! s:bracket_maps()  " defining inside autocommand not possible
+    if empty(maparg('[')) && empty(maparg(']'))
+      nmap <buffer> [[ <Plug>TagsBackwardTop
+      nmap <buffer> ]] <Plug>TagsForwardTop
+    endif
+  endfunction
+  nnoremap <Leader>t <Cmd>BTags<CR>
+  nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
+  nnoremap <Leader>U <Cmd>call switch#tags()<CR>
+  let g:tags_subtop_filetypes = ['fortran']
+  let g:tags_scope_kinds = {'vim': 'afc', 'tex': 'bs', 'python': 'fcm', 'fortran': 'smfp'}
+  let g:tags_skip_kinds = {'tex': 'g', 'vim': 'mvD'}
+endif
+
+" Gutentag tag generation
+if s:plug_active('vim-gutentags')
+  augroup guten_tags
+    au!
+    au User GutentagsUpdated call utils#update_tags()  " enforces &tags variable
+  augroup END
+  let g:gutentags_generate_on_new = 1  " project opened
+  let g:gutentags_generate_on_write = 1  " file written i.e. updated
+  let g:gutentags_generate_on_missing = 1  " no vimtags file found
+  let g:gutentags_define_advanced_commands = 1  " debugging command
+  let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
+  let g:gutentags_ctags_exclude = grep#ignores(0)  " exclude all by default
+  let g:gutentags_project_root = ['__init__.py', '.tagproject']  " manual tag file roots
+  let g:gutentags_add_default_project_roots = 1  " enabled by defaults, searches e.g. '.git'
+  let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects
+  let g:gutentags_ctags_tagfile = '.vimtags'
+  " let g:gutentags_ctags_tagfile = 'tags'
+  " let g:gutentags_cache_dir = '~/.vim_tags_cache'
+endif
+
 " Vim marks in sign column
 " Note: Requires mappings consistent with 'm' change
+" Todo: Should revisit? Or simply count on :Marks for navigation?
 if s:plug_active('vim-signature')
   let g:SignatureMap = {
     \ 'Leader': '~',
@@ -1633,10 +1642,6 @@ if s:plug_active('vim-signature')
     \ 'DeleteMark': 'dm',
     \ 'PurgeMarks': '~<Space>',
     \ 'PurgeMarkers': '~<BS>',
-    \ 'GotoNextLineAlpha': "']",
-    \ 'GotoPrevLineAlpha': "'[",
-    \ 'GotoNextSpotAlpha': '`]',
-    \ 'GotoPrevSpotAlpha': '`[',
     \ 'GotoNextLineByPos': "]'",
     \ 'GotoPrevLineByPos': "['",
     \ 'GotoNextSpotByPos': ']`',
@@ -1893,7 +1898,7 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
-  noremap <Leader>, <Cmd>call git#fugitive_page()<CR>
+  noremap <Leader>, <Cmd>tab Git<CR>
   noremap <Leader>O <Cmd>Git commit<CR>
   noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>

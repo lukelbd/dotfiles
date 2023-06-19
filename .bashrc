@@ -774,14 +774,15 @@ rename() {
 # NOTE: Exclude list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
 # searcher 'ag'. Should install with 'brew install the_silver_searcher ripgrep'. Also
 # note that directories are only excluded if they are *not below* current directory.
-# NOTE: Seems 'grep' has no way to include extensionless executables. Also note 'grep'
-# --exclude=.* will skip current directory (so require subsequent character [^.])
+# NOTE: Include list should be kept in sync with 'dircolors.ansi'. Seems 'grep' has no
+# way to include extensionless executables. Note when trying to skip hidden files,
+# grep --exclude=.* will skip current directory (so require subsequent character [^.])
 # and if dotglob is unset then 'find' cannot match hidden files with [.]* (so use .*)
 _excludes=(.git .svn api _build plugged 'trash*' '*conda*' '*mamba*' externals site-packages)
-_includes=(.py .sh .jl .m .ncl .vim .rst .ipynb)
+_includes=(.py .pyx .ipynb .sh .zsh .bash .jl .ncl .cdo .ncap .ncap2 .m .[fF] .[fF][0-9][0-9] .[cC] .cpp .vi .vim .rst .md)
 alias ag='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
-alias rg='rg --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
 alias a1='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden --depth 0'  # see also 'd1'
+alias rg='rg --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
 alias r1='rg --no-ignore-vcs --hidden --max-depth 1'  # see also 'd1'
 _grep() {
   local commands exclude include nohidden
@@ -810,19 +811,19 @@ _find() {
     2) commands=("$1" "$2" -print) ;;  # path pattern
     *) commands=("$@") ;;  # path pattern (commands)
   esac
-  [ "$nohidden" -eq 1 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune)
+  [ "$nohidden" -eq 1 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune -o)
   exclude=(${_excludes[@]/#/-o -name })  # expand into commands *and* names
   include=(${_includes[@]/#/-o -name })  # expand into commands *and* names
   include=("${include[@]//./*.}")  # glob extension patterns
   command find "${commands[0]}" "${header[@]}" \
-    -o -type d \( "${exclude[@]:1}" \) -prune \
+    -type d \( "${exclude[@]:1}" \) -prune \
     -o -type f \( "${include[@]:1}" \) \
     -name "${commands[@]:1}"
 }
-qg() { _grep 0 "$@"; }  # quick grep
-vg() { _grep 1 "$@"; }  # very quick grep
-qf() { _find 0 "$@"; }  # quick find
-vf() { _find 1 "$@"; }  # very quick find
+hg() { _grep 0 "$@"; }  # custom grep including hidden files
+hf() { _find 0 "$@"; }  # custom find including hidden files
+ng() { _grep 1 "$@"; }  # custom grep with no hidden files
+nf() { _find 1 "$@"; }  # custom grep with no find files
 
 # Refactor, coding, and logging tools
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of

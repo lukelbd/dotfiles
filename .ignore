@@ -8,8 +8,12 @@ _build
 plugged
 *conda*/
 *mamba*/
+servers
 externals
 site-packages
+*.html
+*.json
+*.xml
 
 # Trash folders
 tmp
@@ -30,6 +34,7 @@ tags
 *.ipynb_checkpoints
 *.virtual_documents
 __pycache__
+
 
 # Common temporary files
 *.log

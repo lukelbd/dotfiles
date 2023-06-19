@@ -69,3 +69,35 @@ function! grep#pattern(grep, level, depth) abort
   let func = 'grep#' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, search])
 endfunction
+
+" Parse .ignore files for ctags generation
+" Note: This is actually only used to handle 'gutentags' ignore list but
+" should be ported to bash and also used for 'qf()' and 'ff()' commands?
+" Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
+" does not work, ignores all other excludes, and vim-gutentags can only
+" handle excludes anyway, so just bypass all patterns starting with '!'.
+function! grep#ignores(join) abort
+  let project = split(system('git rev-parse --show-toplevel'), "\n")[0]
+  let paths = ['~/.ignore', '~/.gitignore', project . '/.gitignore']
+  let ignores = []
+  for path in paths
+    let path = resolve(expand(path))
+    if filereadable(path)
+      for line in readfile(path)
+        if line =~# '^\s*\(#.*\)\?$'
+          continue
+        elseif line[:0] ==# '!'
+          continue
+        elseif a:join
+          let ignore = "--exclude='" . line . "'"
+        else
+          let ignore = line
+        endif
+        call add(ignores, ignore)
+      endfor
+    endif
+  endfor
+  let ignores = uniq(ignores)
+  let ignores = a:join ? join(ignores, ' ') : ignores
+  return ignores
+endfunction

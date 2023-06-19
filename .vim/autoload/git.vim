@@ -112,16 +112,30 @@
 " .     Start a |:| command line with the file under the
 " g?    Show help for |fugitive-maps|.
 
+" Git commit setup
+" Note: This works for both command line and fugitive commits
+function! git#commit_setup(...)
+  let &l:colorcolumn = 73
+  call switch#autosave(1)
+  goto
+  startinsert
+endfunction
+
 " Fugitive jumping to existing files
 " Note: Currently avoid overwriting existing buffer with non-existing partials and
 " diffs by always starting interactive fugitive from new tab.
 " Note: Should use other insert or changing commands e.g. 'o' and 'O' for opening
 " diffs and stuff. The below is mainly used for the fugitive home page.
-function! git#fugitive_page() abort
-  let bnum = bufnr('fugitive')
-  if bnum != -1 | silent! exe bnum . 'bdelete' | endif
-  tab Git
-  file fugitive
+" General fugitive window setup
+" Note: This is cool
+function! git#fugitive_setup() abort
+  let bnum = bufnr(&filetype)
+  if bnum != -1  " needed or else will not load
+    silent! exe bnum . 'bdelete'
+  endif
+  exe 'file ' &filetype
+  let b:maparg = maparg('<CR>')
+  noremap <expr> <buffer> <CR> git#fugitive_open()
 endfunction
 function! git#fugitive_open(...)
   let path = a:0 ? a:1 : expand('<cfile>')

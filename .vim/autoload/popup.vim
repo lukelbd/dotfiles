@@ -32,27 +32,40 @@ function! popup#cmdwin_setup() abort
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
 endfunction
 
-" Git commit setup
-" Note: This works for both command line and fugitive commits
-function! popup#commit_setup(...)
-  let &l:colorcolumn = 73
-  call switch#autosave(1)
+" Popup window with help information
+" Note: See also .bashrc help(). These utils
+function! popup#help_page(tab, ...) abort
+  let file = @%
+  let page = a:0 ? a:1 : input('Help info: ', '', 'shellcmd')
+  let args = split(page, '\s\+')
+  if empty(page) | return | endif
+  if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
+    return popup#man_page(a:tab, join(args, '-'))  " identical result
+  endif
+  if args[0] ==# 'cdo'
+    call insert(args, '--help', 1)
+  else
+    call add(args, '--help')
+  endif
+  if !executable(args[0])
+    echom 'help.vim: no --help info for "' . args[0] . '"'
+    return
+  endif
+  let name = join(args, ' ')
+  let bnum = bufnr(name)
+  if a:tab | tabedit | endif
+  if bnum != -1 | exe bnum . 'bdelete' | endif
+  let result = split(system(join(args, ' ') . ' 2>&1'), "\n")
+  call append(0, result)
   goto
-  startinsert
-endfunction
-
-" Popup windows with filetype and color information
-function! popup#colors_win() abort
-  source $VIMRUNTIME/syntax/colortest.vim
-  silent call popup#popup_setup(0)
-endfunction
-function! popup#plugin_win() abort
-  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
-  silent call popup#popup_setup(0)
-endfunction
-function! popup#syntax_win() abort
-  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
-  silent call popup#popup_setup(0)
+  set filetype=popup
+  set buftype=nofile
+  exe 'file ' . name
+  call popup#popup_setup(0)
+  if len(result) == 0
+    silent! quit
+    call file#open_existing(file)
+  endif
 endfunction
 
 " Setup job popup window
@@ -100,44 +113,9 @@ function! popup#job_win(cmd, ...) abort
   exe winnr('#') . 'wincmd w'
 endfunction
 
-" Popup window with help information
-" Note: See also .bashrc help(). These utils
-function! popup#help_page(tab, ...) abort
-  let file = @%
-  let page = a:0 ? a:1 : input('Help info: ', '', 'shellcmd')
-  let args = split(page, '\s\+')
-  if empty(page) | return | endif
-  if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
-    return popup#man_page(a:tab, join(args, '-'))  " identical result
-  endif
-  if args[0] ==# 'cdo'
-    call insert(args, '--help', 1)
-  else
-    call add(args, '--help')
-  endif
-  if !executable(args[0])
-    echom 'help.vim: no --help info for "' . args[0] . '"'
-    return
-  endif
-  let name = join(args, ' ')
-  let bnum = bufnr(name)
-  if a:tab | tabedit | endif
-  if bnum != -1 | exe bnum . 'bdelete' | endif
-  let result = split(system(join(args, ' ') . ' 2>&1'), "\n")
-  call append(0, result)
-  goto
-  set filetype=popup
-  set buftype=nofile
-  exe 'file ' . name
-  call popup#popup_setup(0)
-  if len(result) == 0
-    silent! quit
-    call file#open_existing(file)
-  endif
-endfunction
-
 " Man page utilities
-" Note: See also .bashrc man(). These utils are expanded from vim-superman.
+" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
+" page to record navigation history. Order of assignment below is critical.
 function! s:man_cursor() abort
   let bnr = bufnr()
   let curr = b:man_curr
@@ -164,8 +142,7 @@ function! s:man_jump(forward) abort
 endfunction
 
 " Show and setup shell man page
-" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
-" page to record navigation history. Order of assignment below is critical.
+" Note: See also .bashrc man(). These utils are expanded from vim-superman.
 " Note: Apple will have empty line then BUILTIN(1) on second line, but linux
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
 function! popup#man_page(tab, ...) abort
@@ -283,4 +260,18 @@ function! popup#vim_setup() abort
   nnoremap <buffer> <CR> <C-]>
   nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+endfunction
+
+" Popup windows with filetype and color information
+function! popup#runtime_colors() abort
+  source $VIMRUNTIME/syntax/colortest.vim
+  silent call popup#popup_setup(0)
+endfunction
+function! popup#runtime_ftplugin() abort
+  execute 'split $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
+  silent call popup#popup_setup(0)
+endfunction
+function! popup#runtime_syntax() abort
+  execute 'split $VIMRUNTIME/syntax/' . &filetype . '.vim'
+  silent call popup#popup_setup(0)
 endfunction

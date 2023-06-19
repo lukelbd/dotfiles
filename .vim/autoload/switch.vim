@@ -188,7 +188,7 @@ function! switch#lsp(...) abort
 endfunction
 
 " Toggle spell check on and off
-function! switch#spellcheck(...)
+function! switch#spellcheck(...) abort
   let state = &l:spell
   let toggle = a:0 ? a:1 : 1 - state
   if state == toggle
@@ -200,7 +200,7 @@ function! switch#spellcheck(...)
 endfunction
 
 " Toggle between UK and US English
-function! switch#spelllang(...)
+function! switch#spelllang(...) abort
   let state = &l:spelllang ==# 'en_gb'
   let toggle = a:0 ? a:1 : 1 - state
   if state == toggle
@@ -211,4 +211,24 @@ function! switch#spelllang(...)
     setlocal spelllang=en_us
   endif
   call s:switch_message('UK English', toggle)
+endfunction
+
+" Toggle tags on and off
+function! switch#tags(...) abort
+  let names = ['tags_by_line', 'tags_by_name', 'tags_scope_by_line', 'tags_top_by_line']
+  let state = get(g:, 'gutentags_enabled', 0) && !empty(tagfiles())
+  let toggle = a:0 ? a:1 : 1 - state
+  if state == toggle
+    return
+  elseif toggle
+    let g:gutentags_enabled = 1  " all that GutentagsToggleEnabled does
+    GutentagsUpdate
+    silent! UpdateTags
+  else
+    let g:gutentags_enabled = 0  " all that GutentagsToggleEnabled does
+    for name in names
+      silent! call remove(b:, name)
+    endfor
+  endif
+  call s:switch_message('Tags file', toggle)
 endfunction
