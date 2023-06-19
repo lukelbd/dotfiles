@@ -1,6 +1,37 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
+" Convert input count to register
+" Note: This disables e.g. 2dd for 2 lines but use e.g. d2j or other motions instead
+function! utils#apply_register(map) abort
+  if v:count
+    return '"' . v:count
+  endif
+  let char = nr2char(getchar())
+  if char == "'"  " manual register selection
+    return '"'
+  elseif char == '"'  " peekaboo register selection
+    return '""'
+  elseif a:map == "'"
+    return '"_' . char
+  elseif a:map == '"'
+    return '"*' . char
+  else
+    return ''
+  endif
+endfunction
+function! utils#count_register(cmd) abort
+  if a:cmd =~# 'q\|@'
+    let char = b:recording && a:cmd ==# 'q' ? '' : nr2char(106 + v:count1)
+  elseif a:cmd =~# '`\|m'
+    let char = nr2char(97 + v:count)
+  elseif a:cmd =~# 'p\|m'
+  elseif a:cmd =~# "'"  " register pasting
+    let char = nr2char(97 + v:count)
+  elseif a:cmd =~# '"'  " macro pasting
+    let char = nr2char(107 + v:count)
+  endif
+endfunction
 
 " Implement input behavior
 " Note: This is used for both grep and file completion

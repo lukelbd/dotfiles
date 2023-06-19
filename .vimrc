@@ -74,11 +74,13 @@ set nostartofline  " when switching buffers, doesn't move to start of line (weir
 set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
 set nrformats=alpha  " never interpret numbers as 'octal'
 set number numberwidth=4  " note old versions can't combine number with relativenumber
+set path=.  " used in various built-in searching utilities, file_in_path complete opt
 set pumwidth=10  " minimum popup menu width
 set pumheight=10  " maximum popup menu height
 set previewheight=30  " default preview window height
 set redrawtime=5000  " sometimes takes a long time, let it happen
 set relativenumber  " relative line numbers for navigation
+set restorescreen  " restore screen after exiting vim
 set scrolloff=4  " screen lines above and below cursor
 set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
 set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
@@ -110,6 +112,7 @@ let &g:colorcolumn = '89,121'  " global color columns
 let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
+let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
 if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
 let &g:wildignore = ''
@@ -119,7 +122,7 @@ let &g:wildignore = ''
   \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store'
 
 " File types for different unified settings
-" Note: Here 'man' is usually used with superman 'vman', 'ale-preview' is used with
+" Note: Here 'man' is for custom man page viewing utils, 'ale-preview' is used with
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
@@ -342,7 +345,7 @@ vnoremap V <Esc>myV
 vnoremap <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'my<C-v>'
 nnoremap gn gE/<C-r>"/<CR><Cmd>noh<CR>mygn
 nnoremap gN W?<C-r>"?e<CR><Cmd>noh<CR>mygN
-vnoremap <LeftMouse> <LeftMouse>mz`y<Cmd>exe 'normal! ' . visualmode()<CR>`z
+vnoremap <LeftMouse> <LeftMouse>mx`y<Cmd>exe 'normal! ' . visualmode()<CR>`x
 vnoremap <CR> <C-c>
 
 " Automatically update binary spellfile
@@ -439,7 +442,7 @@ highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
 
 " Color and sign column stuff
 highlight ColorColumn cterm=None ctermbg=Gray
-highlight SignColumn guibg=None cterm=None ctermfg=Black ctermbg=None
+highlight SignColumn cterm=None ctermfg=Black ctermbg=None
 
 " Sneak and search highlighting
 highlight Sneak ctermbg=DarkMagenta ctermfg=None
@@ -479,6 +482,7 @@ noremap <Leader>3 <Cmd>CurrentColor<CR>
 noremap <Leader>4 <Cmd>ShowPlugin<CR>
 noremap <Leader>5 <Cmd>ShowSyntax<CR>
 noremap <Leader>6 <Cmd>ShowColors<CR>
+noremap <Leader>7 <Cmd>ColorToggle<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -489,7 +493,7 @@ noremap <Leader>6 <Cmd>ShowColors<CR>
 " require manual closure using :qall or :quitall.
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
-noremap <Leader>A <Cmd>call switch#autosave()<CR>
+noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
 nnoremap <C-w> <Cmd>call session#close_tab()<CR>
 nnoremap <C-e> <Cmd>call session#close_window()<CR>
@@ -512,7 +516,8 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Note: Here :Rename is adapted from :Rename2 plugin
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
-noremap <Leader>i <Cmd>call switch#localdir()<CR>
+noremap <Leader>i <Cmd>Abspath<CR>
+noremap <Leader>I <Cmd>call switch#localdir()<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
 noremap <Leader>F <Cmd>exe 'Existing ' . expand('<cfile>')<CR>
 
@@ -535,19 +540,20 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
 command! -nargs=? Refresh call vim#refresh_config(<q-args>)
-noremap <C-r> <Cmd>redraw!<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
+noremap <Leader>r <Cmd>redraw!<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 
 " Buffer management
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
+" Note: Currently no way to make :Buffers use custom opening command
 command! -nargs=0 ShowBufs call session#show_bufs()
 command! -nargs=0 WipeBufs call session#wipe_bufs()
 " noremap <Leader>w <Cmd>ShowBufs<CR>
+" noremap <Leader>W <Cmd>Buffers<CR>
 noremap <Leader>q <Cmd>Windows<CR>
-noremap <Leader>Q <Cmd>Buffers<CR>
-noremap <Leader>W <Cmd>WipeBufs<CR>
+noremap <Leader>Q <Cmd>WipeBufs<CR>
 
 " Tab selection and movement
 nnoremap <Tab>' <Cmd>tabnext #<CR>
@@ -695,23 +701,18 @@ noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
 
-" Navigate to marks or lines with FZF
+" Jump to marks or lines with FZF
 " Note: BLines should be used more, easier than '/' sometimes
-noremap <Leader>" <Cmd>BLines<CR>
 noremap <Leader>' <Cmd>Marks<CR>
-
-" Default increment and decrement mappings
-" Possibly overwritten by vim-speeddating
-noremap + <C-a>
-noremap - <C-x>
+noremap <Leader>" <Cmd>BLines<CR>
 
 " Free up m keys, so ge/gE command belongs as single-keystroke
 " words along with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
 
-" Add 'g' version jumping keys that move by only alhanumeric characters (i.e.
-" excluding dots, dashes, underscores). This is consistent with tmux.
+" Add 'g' version jumping keys that move by only alphanumeric characters
+" (i.e. excluding dots, dashes, underscores). This is consistent with tmux.
 for s:char in ['w', 'b', 'e', 'm']
   exe 'noremap g' . s:char . ' '
     \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
@@ -719,100 +720,107 @@ for s:char in ['w', 'b', 'e', 'm']
     \ . s:char . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
 endfor
 
-" Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"' to delete it,
-" and use ' or [1-8]' to jump to a mark.
-" let g:highlightmark_colors = ['magenta']
-" let g:highlightmark_cterm_colors = [5]
+" Insert and mormal mode undo and redo
+" Note: Here use <C-g> prefix similar to comment insert. Capital breaks the undo
+" sequence. Tried implementing 'redo' but fails because history is lost after vim
+" re-enters insert mode from the <C-o> command. Googled and no way to do it.
+" history.
+nnoremap U <C-r>
+inoremap <C-g>u <C-o>u
+inoremap <C-g>U <C-g>u
+" inoremap <CR> <C-]><C-g>u<CR>
+" inoremap <C-g>u <C-o>mx<C-o>u
+" inoremap <C-g>U <C-o><C-r><C-o>`x<Right>
+
+" Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"'
+" to delete it, and use ' or [1-8]' to jump to a mark.
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
 command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
 noremap <expr> ` "`" . nr2char(97 + v:count)
-noremap <expr> ~ 'm' . nr2char(97 + v:count) . ':HighlightMark ' . nr2char(97 + v:count) . '<CR>'
+noremap <expr> ~ 'm' . nr2char(97 + v:count) . '<Cmd>HighlightMark ' . nr2char(97 + v:count) . '<CR>'
 noremap <Leader>~ <Cmd>RemoveHighlights<CR>
 
-" Insert and mormal mode undo and redo. Also permit toggling blocks while in insert mode
-" Note: Here use <C-g> prefix similar to comment insert, and 'break squence' is
-" capital. Must use manual methods that actually remove inserted text.
-" inoremap <C-g>u <C-o><C-r><C-g>u
-" inoremap <C-g>U <C-g>u
-inoremap <C-g>u <C-o>mx<C-o>u
-inoremap <C-g>U <C-o><C-r><C-o>`x<Right>
-nnoremap U <C-r>
+" Specify a numbered register with count, or a specific register with double presses,
+" otherwise use black hole register "_ for ' and clipboard register "* for '""
+" Note: Use g:peekaboo_prefix = '"' below so that double '"' press opens up register
+" seleciton panel. Also this way double press of "'" is similar, just no popup.
+noremap <expr> ' utils#apply_register("'")
+noremap <expr> " utils#apply_register('"')
+
+" Never save single-character deletions to any register
+" Without this register fills up quickly and history is lost
+noremap x "_x
+noremap X "_X
+
+" Swap characters or lines
+" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
+nnoremap cL mzi<CR><Esc>`z
+nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
+nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
+nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
+nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
+
+" Change text, specify registers with counts.
+" Here 'cy' matches 'gy' below (note 's' is used for sneak)
+" Note: Pressing <Esc> removes count from motion, critical
+nnoremap cy "_s
+nnoremap c<Backspace> <Nop>
+nnoremap <expr> c v:count ? '<Esc>"' . nr2char(96 + v:count) . 'c' : 'c'
+nnoremap <expr> C v:count ? '<Esc>"' . nr2char(96 + v:count) . 'C' : 'C'
+vnoremap <expr> c v:count ? '"' . nr2char(96 + v:count) . 'c' : 'c'
+vnoremap <expr> C v:count ? '"' . nr2char(96 + v:count) . 'C' : 'C'
+
+" Delete text, specify registers with counts (no more dd mapping)
+" Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
+" Note: Mnemonic for second set is 'c' for 'maCro'
+nnoremap <expr> d v:count ? '<Esc>"' . nr2char(96 + v:count) . 'd' : 'd'
+nnoremap <expr> D v:count ? '<Esc>"' . nr2char(96 + v:count) . 'D' : 'D'
+vnoremap <expr> d v:count ? '"' . nr2char(96 + v:count) . 'd' : 'd'
+vnoremap <expr> D v:count ? '"' . nr2char(96 + v:count) . 'D' : 'D'
+
+" Yank text, specify registers with counts (no more yy mappings)
+" Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
+nnoremap <expr> y v:count ? '<Esc>"' . nr2char(96 + v:count) . 'y' : 'y'
+nnoremap <expr> Y v:count ? '<Esc>"' . nr2char(96 + v:count) . 'y$' : 'y$'
+vnoremap <expr> y v:count ? '"' . nr2char(96 + v:count) . 'y' : 'y'
+vnoremap <expr> Y v:count ? '"' . nr2char(96 + v:count) . 'y' : 'y'
+
+" Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
+" unchanged text, because cannot use zero, and note 'py' will cause 'p' to wait.
+" Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
+nnoremap <expr> p v:count ? '<Esc>"' . nr2char(96 + v:count) . 'p' : 'p'
+nnoremap <expr> P v:count ? '<Esc>"' . nr2char(96 + v:count) . 'P' : 'P'
+vnoremap <expr> p (v:count ? '<Esc>"' . nr2char(96 + v:count) : '') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> P (v:count ? '<Esc>"' . nr2char(96 + v:count) : '') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
+" Note: Here start at 10 letters after nr2char(97) == 'a' with nr2char(107) == 'k'. Use
+" the first 20 characters for yanking, changing, deleting into specific registers.
 " au BufLeave,WinLeave * exe 'normal! qZq' | let b:recording = 0
-nnoremap <expr> , '<Esc>@' . nr2char(96 + v:count1)
-nnoremap <expr> Q '<Esc>q' . (b:recording ? '' : nr2char(96 + v:count1))
+nnoremap <expr> , '<Esc>@' . nr2char(106 + v:count1)
+nnoremap <expr> Q '<Esc>q' . (b:recording ? '' : nr2char(106 + v:count1))
   \ . '<Esc><Cmd>let b:recording = 1 - b:recording<CR>'
 augroup recording_tests
   au!
   au BufEnter * let b:recording = 0
 augroup END
 
-" Reverse with command based on https://superuser.com/a/189956/506762
-command! -range Reverse <line1>,<line2>call utils#reverse_lines()
+" Indenting counts improvement. Before 2> indented this line or this motion repeated,
+" now it means 'indent multiple times'. Press <Esc> to remove count from motion.
+nnoremap == <Esc>==
+nnoremap == <Esc>==
+nnoremap <expr> >> '<Esc>' . repeat('>>', v:count1)
+nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
+nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
 
-" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-nnoremap cL mzi<CR><Esc>`z
-
-" Use cc for s because use sneak plugin
-nnoremap c<Backspace> <Nop>
-nnoremap cc s
-vnoremap cc s
-
-" Swap characters or lines
-nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
-nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
-nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
-nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
-
-" Pressing enter on empty line preserves leading whitespace
-nnoremap o oX<Backspace>
-nnoremap O OX<Backspace>
-
-" Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
-" unchanged text, because cannot use zero. Press <Esc> to remove count from motion.
-" Note: Use [p or ]p for P and p but adjusting to the current indent
-" Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
-nnoremap yp "0p
-nnoremap yP "0P
-nnoremap <expr> p v:count == 0 ? 'p' : '<Esc>"' . v:count . 'p'
-nnoremap <expr> P v:count == 0 ? 'P' : '<Esc>"' . v:count . 'P'
-vnoremap p p<Cmd>let @+=@0<CR><Cmd>let @"=@0<CR>
-vnoremap P P<Cmd>let @+=@0<CR><Cmd>let @"=@0<CR>
-" vnoremap p "_dP  " flickers and does not include special v_p handling
-" vnoremap P "_dP
-
-" Yank until end of line, like C and D
-nnoremap Y y$
-
-" Joining counts improvement. Before 2J joined this line and next, now it
-" means 'join the two lines below'
+" Joining counts improvement. Before 2J joined this line and
+" next, now it means 'join the two lines below'.
 nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
 nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 
-" Indenting counts improvement. Before 2> indented this line or this motion repeated,
-" now it means 'indent multiple times'. Press <Esc> to remove count from motion.
-nnoremap <expr> >> "\<Esc>" . repeat('>>', v:count1)
-nnoremap <expr> << "\<Esc>" . repeat('<<', v:count1)
-nnoremap <expr> > "\<Esc>" . edit#indent_items_expr(0, v:count1)
-nnoremap <expr> < "\<Esc>" . edit#indent_items_expr(1, v:count1)
-
-" Wrapping lines with arbitrary textwidth
-command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
-noremap <expr> gq '<Esc>' . edit#wrap_lines_expr(v:count)
-
-" Wrapping lines accounting for bullet indentation and with arbitrary textwidth
-command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
-noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
-
-" Maps for throwaaway and clipboard register
-" Note: Use g:peekaboo_prefix = '"' below so can still use registers with '"' press
-map '' ""
-noremap ' "_
-noremap " "*
-
-" Maps and commands for circular location-list scrolling
+" Circulation location scrolling
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
 command! -bar -count=1 Lnext execute utils#wrap_cyclic(<count>, 'loc')
 command! -bar -count=1 Lprev execute utils#wrap_cyclic(<count>, 'loc', 1)
@@ -822,6 +830,43 @@ noremap [x <Cmd>Lprev<CR>
 noremap ]x <Cmd>Lnext<CR>
 noremap [X <Cmd>Qprev<CR>
 noremap ]X <Cmd>Qnext<CR>
+
+" Wrapping lines with arbitrary textwidth
+" Wrapping lines accounting for bullet indentation and with arbitrary textwidth
+command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
+command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
+noremap <expr> gq '<Esc>' . edit#wrap_lines_expr(v:count)
+noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
+
+" ReST section comment headers
+" Warning: <Plug> name should not be subset of other name or results in delay!
+nnoremap <Plug>SectionSingle <Cmd>call comment#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
+nnoremap <Plug>SubsectionSingle <Cmd>call comment#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
+nnoremap <Plug>SectionDouble <Cmd>call comment#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
+nnoremap <Plug>SubsectionDouble <Cmd>call comment#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
+nmap g= <Plug>SectionSingle
+nmap g- <Plug>SubsectionSingle
+nmap g+ <Plug>SectionDouble
+nmap g_ <Plug>SubsectionDouble
+
+" Section headers, dividers, and other information
+" Todo: Improve title headers
+nmap gc; <Plug>CommentBar
+nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
+nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
+nnoremap gc' <Cmd>call comment#header_incomment()<CR>
+nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
+nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap gcY <Cmd>call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
+
+" Insert comment similar to gc
+" Todo: Add more control insert mappings?
+inoremap <expr> <C-g>c comment#comment_insert()
+
+" Default increment and decrement mappings
+" Possibly overwritten by vim-speeddating
+noremap + <C-a>
+noremap - <C-x>
 
 " Spellcheck (really is a builtin plugin, hence why it's in this section)
 " Turn on for filetypes containing text destined for users
@@ -835,10 +880,10 @@ command! LangToggle call switch#spelllang(<args>)
 nnoremap <Leader>l <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>L <Cmd>call switch#spelllang()<CR>
 
-" Add and remove from dictionary (d)
-" Fix spelling under cursor auto or interactively (s)
+" Add or remove from dictionary
 nnoremap <Leader>d zg
 nnoremap <Leader>D zug
+" Fix spelling under cursor auto or interactively
 nnoremap <Leader>s 1z=
 nnoremap <Leader>S z=
 
@@ -979,6 +1024,10 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
+" Search highlight toggle
+" Note: Previously this was <Leader>o and <Leader>O
+noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
+
 " Search for non-ASCII escape chars
 " See: https://stackoverflow.com/a/41168966/4970632
 noremap gE /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
@@ -1108,8 +1157,14 @@ call plug#begin('~/.vim/plugged')
 " call plug#('xolox/vim-easytags')  " kind of old and not that useful honestly
 " call plug#('ludovicchabant/vim-gutentags')  " slows shit down like crazy
 
+" Anti-escape
+" Note: This is used only to preserve stdin colors e.g. 'git add --help'. Previously
+" invoked when opening command --help pages but now not needed since redirect small
+" subset of commands that include ANSI colors back to their corresponding pagers.
+" call plug#('powerman/vim-plugin-AnsiEsc')
+
 " Folding speedups
-" Warning: SimpylFold horribly slow on monde, instead use braceless
+" Warning: SimpylFold was very slow on monde, instead just use braceless
 " call plug#('tmhedberg/SimpylFold')
 call plug#('Konfekt/FastFold')
 " let g:SimpylFold_docstring_preview = 0
@@ -1838,6 +1893,7 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
+  noremap <Leader>, <Cmd>call git#fugitive_page()<CR>
   noremap <Leader>O <Cmd>Git commit<CR>
   noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
