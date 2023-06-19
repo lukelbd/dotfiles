@@ -629,7 +629,7 @@ augroup popup_setup
   au FileType gitcommit call git#commit_setup()  " additional setup steps
   au User FugitiveIndex call git#fugitive_setup()
   for s:ft in s:popup_filetypes
-    let s:modifiable = s:ft ==# 'gitcommit' || s:ft ==# 'fugitive'
+    let s:modifiable = s:ft ==# 'gitcommit'
     exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:modifiable . ')'
   endfor
 augroup END

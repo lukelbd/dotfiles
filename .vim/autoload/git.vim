@@ -129,10 +129,6 @@ endfunction
 " General fugitive window setup
 " Note: This is cool
 function! git#fugitive_setup() abort
-  let bnum = bufnr(&filetype)
-  if bnum != -1  " needed or else will not load
-    silent! exe bnum . 'bdelete'
-  endif
   exe 'file ' &filetype
   let b:maparg = maparg('<CR>')
   noremap <expr> <buffer> <CR> git#fugitive_open()
