@@ -517,6 +517,7 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Note: Here :Rename is adapted from :Rename2 plugin
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
+command! -nargs=? Localdir call switch#localdir(<args>)
 noremap <Leader>i <Cmd>Abspath<CR>
 noremap <Leader>I <Cmd>call switch#localdir()<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
@@ -1679,6 +1680,7 @@ if s:plug_active('vim-lsp')
       \ lsp#ui#vim#output#getpreviewwinid(),
       \ {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']})
   augroup END
+  command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
@@ -1787,6 +1789,7 @@ endif
 " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
 " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
 if s:plug_active('ale')
+  command! -nargs=? AleToggle call switch#ale(<args>)
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
   noremap <Leader>x <Cmd>lopen<CR>
@@ -1928,6 +1931,7 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
+  command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
   noremap ]G <Cmd>call git#hunk_jump(1, 1)<CR>
