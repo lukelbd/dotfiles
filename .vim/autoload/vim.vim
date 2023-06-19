@@ -32,11 +32,12 @@ endfunction
 " Note: This also tracks filetypes outside of current one and queues the
 " update until next time function is called from within that filetype.
 " let files = substitute(files, '\(^\|\n\@<=\)\s*\d*:\s*\(.*\)\($\|\n\@=\)', '\2', 'g')
-function! vim#refresh_config(...) abort
+function! vim#refresh_config(bang, ...) abort
   filetype detect  " in case started with empty file and shebang changes this
   let g:refresh_times = get(g:, 'refresh_times', {'global': localtime()})
   let default = get(g:refresh_times, 'global', 0)
   let current = localtime()
+  let compare = a:0 ? a:1 : ''
   let regexes = [
     \ '/.fzf/',
     \ '/plugged/',
@@ -51,7 +52,7 @@ function! vim#refresh_config(...) abort
   for path in paths
     let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
     let path = resolve(expand(path))  " then compare to home
-    if path !~# expand('~') || path =~# regex || a:0 && path !~# a:1
+    if path !~# expand('~') || path =~# regex || !empty(compare) && path !~# compare
       continue  " skip files not edited by user or not matching input regex
     endif
     if index(loaded, path) != -1
@@ -64,7 +65,7 @@ function! vim#refresh_config(...) abort
     endif
     if path =~# '/\.\?vimrc\|/init\.vim'  " always source and trigger filetypes
       doautocmd Filetype
-    elseif getftime(path) < get(g:refresh_times, ftype, default)
+    elseif !a:bang && getftime(path) < get(g:refresh_times, ftype, default)
       continue  " only refresh if outdated
     endif
     if ftype ==# 'global' || ftype ==# &filetype

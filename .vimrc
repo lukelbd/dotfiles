@@ -540,7 +540,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
-command! -nargs=? Refresh call vim#refresh_config(<q-args>)
+command! -bang -nargs=? Refresh call vim#refresh_config(<bang>0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
 noremap <Leader>r <Cmd>redraw!<CR>
@@ -1024,7 +1024,7 @@ augroup search_replace
 augroup END
 
 " Search highlight toggle
-" Note: Previously this was <Leader>o and <Leader>O
+" Note: This just does 'set hlsearch!' and prints a message
 noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 
 " Search for non-ASCII escape chars
@@ -1602,6 +1602,7 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
+  command! -nargs=? TagToggle call switch#tags(<args>)
   nnoremap <Leader>t <Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
