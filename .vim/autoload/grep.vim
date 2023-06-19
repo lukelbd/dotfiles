@@ -77,8 +77,9 @@ endfunction
 " does not work, ignores all other excludes, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
 function! grep#ignores(join) abort
-  let project = split(system('git rev-parse --show-toplevel'), "\n")[0]
-  let paths = ['~/.ignore', '~/.gitignore', project . '/.gitignore']
+  let project = split(system('git rev-parse --show-toplevel'), "\n")
+  let suffix = empty(project) ? [] : [project . '/.gitignore']
+  let paths = ['~/.ignore', '~/.gitignore'] + suffix
   let ignores = []
   for path in paths
     let path = resolve(expand(path))

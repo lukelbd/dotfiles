@@ -8,13 +8,13 @@ function! utils#apply_register(map) abort
     return '"' . v:count
   endif
   let char = nr2char(getchar())
-  if char == "'"  " manual register selection
+  if char ==# "'"  " manual register selection
     return '"'
-  elseif char == '"'  " peekaboo register selection
+  elseif char ==# '"'  " peekaboo register selection
     return '""'
-  elseif a:map == "'"
+  elseif a:map ==# "'"
     return '"_' . char
-  elseif a:map == '"'
+  elseif a:map ==# '"'
     return '"*' . char
   else
     return ''
@@ -161,6 +161,7 @@ endfunction
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
 function! utils#wrap_colorschemes(reverse) abort
+  " Get colorscheme list
   let step = a:reverse ? 1 : -1
   if !exists('g:all_colorschemes')
     let g:all_colorschemes = getcompletion('', 'color')
@@ -168,6 +169,7 @@ function! utils#wrap_colorschemes(reverse) abort
   let active_colorscheme = get(g:, 'colors_name', 'default')
   let idx = index(g:all_colorschemes, active_colorscheme)
   let idx = step + (idx < 0 ? -step : idx)   " if idx < 0, set to 0 by default
+  " Jump to next
   if idx < 0
     let idx += len(g:all_colorschemes)
   elseif idx >= len(g:all_colorschemes)
