@@ -1279,7 +1279,7 @@ let g:fzf_action = {
   \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have grep jump to existing window if possible
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . grep#ignores(1)  " added just for safety
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tags#ignores(1)  " added just for safety
 
 " Language server integration
 " Note: Seems vim-lsp can both detect servers installed separately in $PATH with
@@ -1613,17 +1613,19 @@ if s:plug_active('vim-tags')
 endif
 
 " Gutentag tag generation
+" Note: Also include function for parsing ignore file contents
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
-    au User GutentagsUpdated call utils#update_tags()  " enforces &tags variable
+    au User GutentagsUpdated call tags#update()  " enforces &tags variable
   augroup END
+  command! -nargs=? Ignores echom 'Ignores: ' . join(tags#ignores(0, <q-args>), ' ')
   let g:gutentags_generate_on_new = 1  " project opened
   let g:gutentags_generate_on_write = 1  " file written i.e. updated
   let g:gutentags_generate_on_missing = 1  " no vimtags file found
   let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
-  let g:gutentags_ctags_exclude = grep#ignores(0)  " exclude all by default
+  let g:gutentags_ctags_exclude = tags#ignores(0)  " exclude all by default
   let g:gutentags_project_root = ['__init__.py', '.tagproject']  " manual tag file roots
   let g:gutentags_add_default_project_roots = 1  " enabled by defaults, searches e.g. '.git'
   let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects
