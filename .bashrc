@@ -640,6 +640,8 @@ vim-session() {
     fi
   done
   [ -z "$path" ] && path=.vimsession
+  [ -r ".vimsession-$path" ] && path=.vimsession-$path
+  [ -r ".vimsession_$path" ] && path=.vimsession_$path
   [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
   root=$(abspath "$path")  # absolute path with slashes
   root=${root%/*}  # root directory to detect
