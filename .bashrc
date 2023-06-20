@@ -1995,7 +1995,6 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   _setup_message 'Enabling fzf'
   # shellcheck disable=2034
   {
-    _fzf_ignore=$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')
     _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
     --exit-0 --inline-info --height=6 \
@@ -2010,9 +2009,16 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
 
   # Defualt find commands. The compgen ones were addd by my fork, others are native, we
   # adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
-  # TODO: Update using these
+  # NOTE: For now do not try to use universal '.ignore' files since only special
+  # utilities should ignore files while basic shell navigation should show everything.
+  # _fzf_ignore="$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')"  # alternative ignore
   # shellcheck disable=2034
   {
+    _fzf_ignore="\\( \
+      -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
+      -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
+      -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
+    "
     export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
     -type f -print -o -type l -print 2>/dev/null | cut -b3- \
     "
