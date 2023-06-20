@@ -1,41 +1,37 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
-" Convert input count to register
-" Note: This disables e.g. 2dd for 2 lines but use e.g. d2j or other motions instead
-function! utils#apply_register(map) abort
-  if v:count
-    return '"' . v:count
-  endif
-  let char = nr2char(getchar())
-  if char ==# "'"  " manual register selection
-    return '"'
-  elseif char ==# '"'  " peekaboo register selection
-    return '""'
-  elseif a:map ==# "'"
-    return '"_' . char
-  elseif a:map ==# '"'
-    return '"*' . char
-  else
-    return ''
-  endif
-endfunction
-function! utils#count_register(cmd) abort
-  if a:cmd =~# 'q\|@'
-    let char = b:recording && a:cmd ==# 'q' ? '' : nr2char(106 + v:count1)
-  elseif a:cmd =~# '`\|m'
-    let char = nr2char(97 + v:count)
-  elseif a:cmd =~# 'p\|m'
-  elseif a:cmd =~# "'"  " register pasting
-    let char = nr2char(97 + v:count)
-  elseif a:cmd =~# '"'  " macro pasting
-    let char = nr2char(107 + v:count)
-  endif
+" Reverse the selected lines
+" Note: Adaptation of hard-to-remember :g command shortcut. Adapted
+" from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
+function! utils#line_reverse() range abort
+  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
+  let num = empty(range) ? 0 : a:firstline - 1
+  exec 'silent ' . range . 'g/^/m' . num
 endfunction
 
-" Implement input behavior
-" Note: This is used for both grep and file completion
-function! utils#complete_list(...)
+" Null input() completion function
+" This prevents unexpected insertion of literal tabs
+" Note: Used in various places throughout autoload
+function! utils#null_list(...) abort
+  return []
+endfunction
+" Null operator motion function
+function! utils#null_operator(...) range abort
+  return ''
+endfunction
+" For <expr> mapping accepting motion
+function! utils#null_operator_expr(...) abort
+  return utils#motion_func('utils#null_operator', a:000)
+endfunction
+
+" Get user input (see grep and file command completion)
+" Note: This is used for grep and file command completions. It specifies a default
+" value in parentheses that can be tab expanded, selects it when user presses enter,
+" or replaces it when user starts typing text. Unique part is that it does not fill
+" the input line with text from the start, allowing both 1) quick user overrides of
+" the entire line and 2) quick selection of a default value, all in one cmdline line.
+function! utils#input_list(...)
   let [init, fhandle, default] = s:complete_params
   if !init  " kludge for default behavior
     return call(fhandle, a:000)
@@ -60,31 +56,17 @@ function! utils#complete_list(...)
     endif
   endif
 endfunction
-function! utils#complete_input(prompt, default, func) abort
+function! utils#input_complete(prompt, default, func) abort
   let message = a:prompt . ' (' . a:default . '): '
   let s:complete_params = [1, a:func, a:default]
   call feedkeys("\<Tab>", 't')
-  return input(message, '', 'customlist,utils#complete_list')
+  return input(message, '', 'customlist,utils#input_list')
 endfunction
 
-" Null input() completion function to prevent unexpected insertion of literal tabs
-" Note: This is used in other autoload functions
-function! utils#null_list(...) abort
-  return []
-endfunction
-" Null operator motion function
-function! utils#null_operator(...) range abort
-  return ''
-endfunction
-" For <expr> mapping accepting motion
-function! utils#null_operator_expr(...) abort
-  return utils#motion_func('utils#null_operator', a:000)
-endfunction
-
-" Call function over the visual line range or the user motion line range
+" Call over the visual line range or user motion line range (see e.g. python.vim)
 " Note: Use this approach rather than adding line range as physical arguments and
 " calling with call call(func, firstline, lastline, ...) so that funcs can still be
-" invoked manually with V<motion>:call func(). This is more standard paradigm.
+" invoked manually with V<motion>:call func(). This is the more standard paradigm.
 function! utils#motion_func(funcname, args) abort
   let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
   if mode() =~# '^\(v\|V\|\)$'
@@ -98,10 +80,10 @@ function! utils#motion_func(funcname, args) abort
   endif
 endfunction
 
-" Execute the function name and call signature passed to utils#motion_func. This
-" is generally invoked inside an <expr> mapping.
-" Note: Only motions can cause backwards firstline to lastline order. Manual
-" calls to the function will have sorted lines.
+" Execute the function name and call signature passed to utils#motion_func.
+" This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
+" Note: Only motions can cause backwards firstline to lastline order. Manual calls
+" to the function will have sorted lines. So this sorts for safety.
 function! utils#operator_func(type) range abort
   if empty(a:type)  " default behavior
       let firstline = a:firstline
@@ -120,25 +102,58 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
-" Run command with v:count register specification
-" Note: Powers 'c', 'y', 'd', and 'q' (mapped to 'Q')
-function! utils#register_func(macro, count) abort
-  let base = a:macro ? 96 : 106  " default uses a-j for text k-t for macros
-  if a:count
-    let prefix = nr2char(base + a:count)
-  else
-    let prefix = ''
+" Set registers or return command that will demand a register (" or peekaboo).
+" Note: First function translates counts passed to yanks/change/delete/paste and
+" marks to named registers a-j or a-k, and counts passed to macros to registers k-v.
+" Note: This permits passing counts as shorthand for number registers (maps ' and ") or
+" for the number-translated register set a-j (map <Leader>') or k-u (map <Leader>").
+" So have two options for specifying (translated or untranslated) number register:
+" either counts or as the register name (e.g. 2'p and ''2p are same). Double press of
+" ' and " are required when specifying name, except for <Leader> maps (see vimrc).
+function! utils#register_count(mode) abort
+  if v:count > 9
+    echoerr 'Error: Shorthand register number must fall between 0 and 9.'
+    return ''
   endif
-  return "\<Esc>" . prefix
+  if a:mode =~# 'q\|@'  " marks: letters k-v (11)
+    let record = get(b:, 'recording', 0)
+    let char = nr2char(107 + v:count)
+    let cmd = record && a:mode ==# 'q' ? '' : char
+    let b:recording = a:mode ==# 'q' ? 1 - record : record
+  elseif a:mode =~# '`\|m'  " macros: letters a-k (11)
+    let char = nr2char(97 + v:count)
+    let cmd = char . (a:mode ==# 'm' ? "\<Cmd>HighlightMark " . char . "\<CR>" : '')
+  else  " yanks/changes/deletes/pastes: letters a-j (10) else default
+    let char = v:count ? nr2char(96 + v:count) : ''
+    let cmd = empty(char) ? '' : (a:mode ==# 'n' ? "\<Esc>" : '') . '"' . char
+  endif
+  return cmd
 endfunction
-
-" Reverse the selected lines
-" Note: Adaptation of hard-to-remember :g command shortcut.
-" https://vim.fandom.com/wiki/Reverse_order_of_lines
-function! utils#reverse_lines() range abort
-  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
-  let num = empty(range) ? 0 : a:firstline - 1
-  exec 'silent ' . range . 'g/^/m' . num
+function! utils#register_find(mode, base) abort
+  if v:count
+    return '"' . (a:base ? nr2char(a:base + v:count) : v:count)
+  endif
+  let char = nr2char(getchar())
+  if char ==# "'"  " manual register selection
+    let cmd = '"'
+  elseif char ==# '"'  " peekaboo register selection
+    let cmd = '""'
+  elseif a:mode ==# ' '
+    if !a:base || char !~# '\d'
+      echoerr "Error: Cannot translate non-numeric register '" . char . "'."
+      let cmd = ''
+    endif
+    let char = nr2char(a:base + str2nr(char))
+    let cmd = '"' . char
+  elseif a:mode ==# "'"
+    let cmd = '"_' . char
+  elseif a:mode ==# '"'
+    let cmd = '"*' . char
+  else
+    let cmd = ''
+    echoerr 'Error: Input argument must be single or double quote.'
+  endif
+  return cmd
 endfunction
 
 " Switch to next or previous colorschemes and print the name

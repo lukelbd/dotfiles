@@ -684,7 +684,7 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Reverse using command
 " See: https://superuser.com/a/189956/506762
-command! -range Reverse <line1>,<line2>call utils#reverse_lines()
+command! -range Reverse <line1>,<line2>call utils#line_reverse()
 
 " Jump to last changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
@@ -700,8 +700,8 @@ noremap <Right> <C-i>
 
 " Jump to marks or lines with FZF
 " Note: BLines should be used more, easier than '/' sometimes
-noremap <Leader>' <Cmd>Marks<CR>
-noremap <Leader>" <Cmd>BLines<CR>
+noremap <Leader>> <Cmd>Marks<CR>
+noremap <Leader>< <Cmd>BLines<CR>
 
 " Free up m keys, so ge/gE command belongs as single-keystroke
 " words along with e/E, w/W, and b/B
@@ -729,30 +729,27 @@ inoremap <C-g>U <C-g>u
 " inoremap <C-g>u <C-o>mx<C-o>u
 " inoremap <C-g>U <C-o><C-r><C-o>`x<Right>
 
-" Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"'
-" to delete it, and use ' or [1-8]' to jump to a mark.
-" Note: For consistency with register maps, assign numbers to a-j, while assign default
-" to 'k' (marks must have name). Avoid marks x-z because they are used by vimrc maps.
-" Note: Uppercase marks are same as lowercase, but stored on exit, and numbered marks
+" Specify numbered registers using count, or alphabetic registers with double press,
+" otherwise use black hole register "_ for ' and clipboard register "* for '""
+" Note: This also assigns leader maps that translate numbers to named registers used
+" by yank/change/delete/paste (single quote) or macro define/run (double quote).
+" Note: Use g:peekaboo_prefix = '"' below so that double '"' press opens up register
+" seleciton panel. Also this way double press of "'" is similar, just no popup.
+noremap <expr> ' utils#register_find("'", 0)
+noremap <expr> " utils#register_find('"', 0)
+noremap <expr> <Leader>' utils#register_find(' ', 96)
+noremap <expr> <Leader>" utils#register_find(' ', 106)
+
+" Specify alphabetic marks using counts
+" Note: There are no 'unnamed' marks, so unlike yank/change/delete/paste maps, the
+" default mark is stored under 'a'. This is similar to register behavior.
+" Note: Uppercase marks are same as lowercase, but saved in viminfo, and numbered marks
 " are mostly internal, can be configured to restore cursor position after restarting.
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
 command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
 noremap <Leader>~ <Cmd>RemoveHighlights<CR>
-noremap <expr> ` "`" . nr2char(v:count ? 96 + v:count : 107)
-noremap <expr> ~ 'm' . nr2char(v:count ? 96 + v:count : 107)
-  \ . '<Cmd>HighlightMark ' . nr2char(v:count ? 96 + v:count : 107) . '<CR>'
-
-" Specify a numbered register with count, or a specific register with double presses,
-" otherwise use black hole register "_ for ' and clipboard register "* for '""
-" Note: Use g:peekaboo_prefix = '"' below so that double '"' press opens up register
-" seleciton panel. Also this way double press of "'" is similar, just no popup.
-noremap <expr> ' utils#apply_register("'")
-noremap <expr> " utils#apply_register('"')
-
-" Never save single-character deletions to any register
-" Without this register fills up quickly and history is lost
-noremap x "_x
-noremap X "_X
+noremap <expr> ` "`" . utils#register_count('`')
+noremap <expr> ~ 'm' . utils#register_count('m')
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
@@ -764,49 +761,50 @@ nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
 
 " Change text, specify registers with counts.
 " Here 'cy' matches 'gy' below (note 's' is used for sneak)
-" Note: Pressing <Esc> removes count from motion, critical
+" Note: Uppercase registers are same as lowercase but saved in viminfo.
+" Note: Pressing <Esc> removes count from motion, critical.
 nnoremap cy "_s
 nnoremap c<Backspace> <Nop>
-nnoremap <expr> c v:count ? '<Esc>"' . nr2char(96 + v:count) . 'c' : 'c'
-nnoremap <expr> C v:count ? '<Esc>"' . nr2char(96 + v:count) . 'C' : 'C'
-vnoremap <expr> c v:count ? '"' . nr2char(96 + v:count) . 'c' : 'c'
-vnoremap <expr> C v:count ? '"' . nr2char(96 + v:count) . 'C' : 'C'
+nnoremap <expr> c utils#register_count('n') . 'c'
+nnoremap <expr> C utils#register_count('n') . 'C'
+vnoremap <expr> c utils#register_count('v') . 'c'
+vnoremap <expr> C utils#register_count('v') . 'C'
 
 " Delete text, specify registers with counts (no more dd mapping)
 " Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
 " Note: Mnemonic for second set is 'c' for 'maCro'
-nnoremap <expr> d v:count ? '<Esc>"' . nr2char(96 + v:count) . 'd' : 'd'
-nnoremap <expr> D v:count ? '<Esc>"' . nr2char(96 + v:count) . 'D' : 'D'
-vnoremap <expr> d v:count ? '"' . nr2char(96 + v:count) . 'd' : 'd'
-vnoremap <expr> D v:count ? '"' . nr2char(96 + v:count) . 'D' : 'D'
+nnoremap <expr> d utils#register_count('n') . 'd'
+nnoremap <expr> D utils#register_count('n') . 'D'
+vnoremap <expr> d utils#register_count('v') . 'd'
+vnoremap <expr> D utils#register_count('v') . 'D'
 
 " Yank text, specify registers with counts (no more yy mappings)
 " Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-nnoremap <expr> y v:count ? '<Esc>"' . nr2char(96 + v:count) . 'y' : 'y'
-nnoremap <expr> Y v:count ? '<Esc>"' . nr2char(96 + v:count) . 'y$' : 'y$'
-vnoremap <expr> y v:count ? '"' . nr2char(96 + v:count) . 'y' : 'y'
-vnoremap <expr> Y v:count ? '"' . nr2char(96 + v:count) . 'y' : 'y'
+nnoremap <expr> y utils#register_count('n') . 'y'
+nnoremap <expr> Y utils#register_count('n') . 'y$'
+vnoremap <expr> y utils#register_count('v') . 'y'
+vnoremap <expr> Y utils#register_count('v') . 'y'
 
 " Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
 " unchanged text, because cannot use zero, and note 'py' will cause 'p' to wait.
 " Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
-nnoremap <expr> p v:count ? '<Esc>"' . nr2char(96 + v:count) . 'p' : 'p'
-nnoremap <expr> P v:count ? '<Esc>"' . nr2char(96 + v:count) . 'P' : 'P'
-vnoremap <expr> p (v:count ? '<Esc>"' . nr2char(96 + v:count) : '') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
-vnoremap <expr> P (v:count ? '<Esc>"' . nr2char(96 + v:count) : '') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
+nnoremap <expr> p utils#register_count('n') . 'p'
+nnoremap <expr> P utils#register_count('n') . 'P'
+vnoremap <expr> p utils#register_count('n') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> P utils#register_count('n') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
 " Note: Here start at 10 letters after nr2char(97) == 'a' with nr2char(107) == 'k'. Use
 " the first 20 characters for yanking, changing, deleting into specific registers.
 " au BufLeave,WinLeave * exe 'normal! qZq' | let b:recording = 0
-nnoremap <expr> , '<Esc>@' . nr2char(106 + v:count1)
-nnoremap <expr> Q '<Esc>q' . (b:recording ? '' : nr2char(106 + v:count1))
-  \ . '<Esc><Cmd>let b:recording = 1 - b:recording<CR>'
-augroup recording_tests
-  au!
-  au BufEnter * let b:recording = 0
-augroup END
+nnoremap <expr> , '<Esc>@' . utils#register_count('@')
+nnoremap <expr> Q '<Esc>q' . utils#register_count('q') . '<Esc>'
+
+" Never save single-character deletions to any register
+" Without this register fills up quickly and history is lost
+noremap x "_x
+noremap X "_X
 
 " Indenting counts improvement. Before 2> indented this line or this motion repeated,
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.

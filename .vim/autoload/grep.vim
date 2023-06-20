@@ -64,7 +64,7 @@ endfunction
 function! grep#pattern(grep, level, depth) abort
   let prompt = a:level > 1 ? 'File' : a:level > 0 ? 'Local' : 'Global'
   let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:] . ' pattern'
-  let search = utils#complete_input(prompt, @/, 'grep#list')
+  let search = utils#input_complete(prompt, @/, 'grep#list')
   if empty(search) | return | endif
   let func = 'grep#' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, search])

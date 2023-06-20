@@ -53,7 +53,7 @@ function! file#open_from(files, local) abort
   let cmd = a:files ? 'Files' : 'Open'  " continuous per-directory open or fzf recursive?
   let default = a:local ? expand('%:p:h') . '/' : fnamemodify(getcwd(), ':p')
   let default = fnamemodify(default, ':~')
-  let start = utils#complete_input(cmd, default, 'file#path_list')
+  let start = utils#input_complete(cmd, default, 'file#path_list')
   if empty(start) | return | endif
   exe cmd . ' ' . start
 endfunction
