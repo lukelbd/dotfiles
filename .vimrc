@@ -114,7 +114,7 @@ let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
-let &g:wildignore = join(tags#ignores(0, '~/.wildignore'), ',')
+let &g:wildignore = join(ctags#get_ignores(0, '~/.wildignore'), ',')
 if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
 if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
 
@@ -148,6 +148,7 @@ let s:popup_filetypes += [
 augroup buffer_overrides
   au!
   au BufEnter * call s:buffer_overrides()
+  " au FileType vim setlocal iskeyword=@,48-57,_,192-255
 augroup END
 function! s:buffer_overrides() abort
   setlocal concealcursor=
@@ -366,7 +367,7 @@ endfor
 " rather than top-level only, searching backward, and without circular wrapping.
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(ctags#close_tag(line('w0'), 0, 0, 0)[1])])
 noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
@@ -510,9 +511,9 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
 " Pneumonic is 'inside' just like Ctrl + i map
-" Note: Here :Rename is adapted from :Rename2 plugin
-command! -nargs=? Abspath call file#print_abspath(<f-args>)
+" Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
+command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=? Localdir call switch#localdir(<args>)
 noremap <Leader>i <Cmd>Abspath<CR>
 noremap <Leader>I <Cmd>call switch#localdir()<CR>
@@ -1275,7 +1276,7 @@ let g:fzf_action = {
   \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have grep jump to existing window if possible
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tags#ignores(1)  " added just for safety
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . ctags#get_ignores(1)  " added just for safety
 
 " Language server integration
 " Note: Seems vim-lsp can both detect servers installed separately in $PATH with
@@ -1613,15 +1614,15 @@ endif
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
-    au User GutentagsUpdated call tags#update()  " enforces &tags variable
+    au User GutentagsUpdated call ctags#update_setting()  " enforces &tags variable
   augroup END
-  command! -nargs=? Ignores echom 'Ignores: ' . join(tags#ignores(0, <q-args>), ' ')
+  command! -nargs=? Ignores echom 'Ignores: ' . join(ctags#get_ignores(0, <q-args>), ' ')
   let g:gutentags_generate_on_new = 1  " project opened
   let g:gutentags_generate_on_write = 1  " file written i.e. updated
   let g:gutentags_generate_on_missing = 1  " no vimtags file found
   let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
-  let g:gutentags_ctags_exclude = tags#ignores(0)  " exclude all by default
+  let g:gutentags_ctags_exclude = ctags#get_ignores(0)  " exclude all by default
   let g:gutentags_project_root = ['__init__.py', '.tagproject']  " manual tag file roots
   let g:gutentags_add_default_project_roots = 1  " enabled by defaults, searches e.g. '.git'
   let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects

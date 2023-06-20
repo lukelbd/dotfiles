@@ -145,14 +145,15 @@ endfunction
 
 " Rename2.vim  -  Rename a buffer within Vim and on disk
 " Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
-" Usage: Rename[!] {newname}
+" Note: Ignore missing 'b:gitgutter_was_enabled' error
 function! file#rename_to(name, bang)
+  let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)
   let curfile = expand('%:p')
   let curfilepath = expand('%:p:h')
   let newname = curfilepath . '/' . a:name
   let v:errmsg = ''
   silent! exe 'saveas' . a:bang . ' ' . newname
-  if v:errmsg =~# '^$\|^E329'
+  if v:errmsg =~# '^$\|^E329\|^E108'
     if expand('%:p') !=# curfile && filewritable(expand('%:p'))
       silent exe 'bwipe! ' . curfile
       if delete(curfile) != 0

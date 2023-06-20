@@ -1,9 +1,11 @@
 "-----------------------------------------------------------------------------"
 " Utilities for ctags management
 "-----------------------------------------------------------------------------"
+" Warning: Encountered strange error where naming .vim/autoload
+" file same as vim-tags/autoload. So give this a separate name.
 " Update tags setting for whole project
 " This makes fzf :Tags function and other utils search everything
-function! tags#update() abort
+function! ctags#update_setting() abort
   let paths = []
   for tnr in range(tabpagenr('$')) " iterate through each tab
     let tabnr = tnr + 1 " the tab number
@@ -24,7 +26,7 @@ endfunction
 " Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
 " does not work, ignores all other excludes, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
-function! tags#ignores(join, ...) abort
+function! ctags#get_ignores(join, ...) abort
   if a:0 && !empty(a:1) " input path
     let paths = [a:1]
   else
