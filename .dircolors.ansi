@@ -1,36 +1,32 @@
 # Exact Solarized Light color theme for the color GNU ls utility.
 # Designed for dircolors (GNU coreutils) 5.97
 #
-# This simple theme was simultaneously designed for these terminal color schemes:
-# - Solarized dark
-# - Solarized light (best)
+# This simple theme was designed for these terminal color schemes:
+#
+# - solarized dark
+# - solarized light (best)
 # - default dark
 # - default light
-# with a slight optimization for Solarized Light.
+#
+# with a slight optimization for solarized light.
 #
 # How the colors were selected:
+#
 # - Terminal emulators often have an option typically enabled by default that makes
 #   bold a different color.  It is important to leave this option enabled so that
-#   you can access the entire 16-color Solarized palette, and not just 8 colors.
-# - We favor universality over a greater number of colors.  So we limit the number
+#   you can access the entire 16-color solarized palette, and not just 8 colors.
+# - Favor universality over a greater number of colors. So we limit the number
 #   of colors so that this theme will work out of the box in all terminals,
-#   Solarized or not, dark or light.
-# - We choose to have the following category of files:
-#   NORMAL & FILE, DIR, LINK, EXEC and
-#   editable text including source, unimportant text, binary docs & multimedia source
-#   files, viewable multimedia, archived/compressed, and unimportant non-text
-# - For uniqueness, we stay away from the Solarized foreground colors are -- either
+#   solarized or not, dark or light.
+# - Choose the following categories: NORMAL & FILE, DIR, LINK, EXEC and editable
+#   text including source, unimportant text, binary docs & multimedia source
+#   files, viewable multimedia, archived/compressed, and unimportant non-text.
+# - For uniqueness stay away from the solarized foreground colors -- either
 #   base00 (brightyellow) or base0 (brightblue).  However, they can be used if
 #   you know what the bg/fg colors of your terminal are, in order to optimize the display.
-# - 3 different options are provided: universal, solarized dark, and solarized light.
-#   The only difference between the universal scheme and one that's optimized for
-#   dark/light is the color of "unimportant" files, which should blend more with the
-#   background
-# - We note that blue is the hardest color to see on dark bg and yellow is the hardest
-#   color to see on light bg (with blue being particularly bad).  So we choose yellow
+# - Note that blue is the hardest color to see on dark bg and yellow is the hardest
+#   color to see on light bg (with blue being particularly bad).  So choose yellow
 #   for multimedia files which are usually accessed in a GUI folder browser anyway.
-#   And blue is kept for custom use of this scheme's user.
-# - See table below to see the assignments.
 
 # Installation instructions:
 # This file goes in the /etc directory, and must be world readable.
@@ -120,8 +116,8 @@ TERM xterm-termite
 EIGHTBIT 1
 
 #############################################################################
-# Below are the color init strings for the basic file types. A color init
-# string consists of one or more of the following numeric codes:
+# Below are the color init strings for the basic file types. A color
+# init string consists of one or more of the following numeric codes:
 #
 # Attribute codes:
 #   00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
@@ -130,29 +126,27 @@ EIGHTBIT 1
 # Background color codes:
 #   40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
 #
-# NOTES:
-# - See http://www.oreilly.com/catalog/wdnut/excerpt/color_names.html
-# - Color combinations
-#   ANSI Color code       Solarized  Notes                Universal             SolDark              SolLight
-#   ~~~~~~~~~~~~~~~       ~~~~~~~~~  ~~~~~                ~~~~~~~~~             ~~~~~~~              ~~~~~~~~
-#   00    none                                            NORMAL, FILE          <SAME>               <SAME>
-#   30    black           base02
-#   01;30 bright black    base03     bg of SolDark
-#   31    red             red                             docs & mm src         <SAME>               <SAME>
-#   01;31 bright red      orange                          EXEC                  <SAME>               <SAME>
-#   32    green           green                           editable text         <SAME>               <SAME>
-#   01;32 bright green    base01                          unimportant text      <SAME>
-#   33    yellow          yellow     unclear in light bg  multimedia            <SAME>               <SAME>
-#   01;33 bright yellow   base00     fg of SolLight                             unimportant non-text
-#   34    blue            blue       unclear in dark bg   user customized       <SAME>               <SAME>
-#   01;34 bright blue     base0      fg in SolDark                                                   unimportant text
-#   35    magenta         magenta                         LINK                  <SAME>               <SAME>
-#   01;35 bright magenta  violet                          archive/compressed    <SAME>               <SAME>
-#   36    cyan            cyan                            DIR                   <SAME>               <SAME>
-#   01;36 bright cyan     base1                           unimportant non-text                       <SAME>
-#   37    white           base2
-#   01;37 bright white    base3      bg in SolLight
-#   05;37;41                         unclear in Putty dark
+# Colors (see http://www.oreilly.com/catalog/wdnut/excerpt/color_names.html):
+#
+# ANSI color code       Solar     Universal           SolDark         SolLight
+# ~~~~~~~~~~~~~~~       ~~~~~~~   ~~~~~~~~~           ~~~~~~~         ~~~~~~~~
+# 00    none                      NORMAL, FILE        <SAME>          <SAME>
+# 30    black           base02
+# 01;30 bright black    base03
+# 31    red             red       docs & mm src       <SAME>          <SAME>
+# 01;31 bright red      orange    EXEC                <SAME>          <SAME>
+# 32    green           green     editable text       <SAME>          <SAME>
+# 01;32 bright green    base01    other text          <SAME>
+# 33    yellow          yellow    multimedia          <SAME>          <SAME>
+# 01;33 bright yellow   base00                        other non-text
+# 34    blue            blue      user customized     <SAME>          <SAME>
+# 01;34 bright blue     base0                                         other text
+# 35    magenta         magenta   LINK                <SAME>          <SAME>
+# 01;35 bright magenta  violet    archive/compress    <SAME>          <SAME>
+# 36    cyan            cyan      DIR                 <SAME>          <SAME>
+# 01;36 bright cyan     base1     other non-text                      <SAME>
+# 37    white           base2
+# 05;37;41
 
 ### General file types
 # Global default
