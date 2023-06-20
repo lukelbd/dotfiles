@@ -116,26 +116,40 @@ function! utils#register_count(mode) abort
     return ''
   endif
   if a:mode =~# 'q\|@'  " marks: letters j-s (10)
-    let record = get(b:, 'recording', 0)
-    let char = nr2char(v:count ? 105 + v:count : 115)
-    let cmd = record && a:mode ==# 'q' ? '' : char
-    let b:recording = a:mode ==# 'q' ? 1 - record : record
+    let reg = nr2char(105 + v:count1)
+    let cmd = reg
+    if a:mode ==# 'q'
+      let record = get(b:, 'recording', 0)
+      let cmd = record ? '' : cmd
+      let b:recording = 1 - record
+    endif
   elseif a:mode =~# '`\|m'  " macros: letters a-j (10)
-    let char = nr2char(97 + v:count)
-    let cmd = char . (a:mode ==# 'm' ? "\<Cmd>HighlightMark " . char . "\<CR>" : '')
+    let cmd = reg
+    let reg = nr2char(97 + v:count)
+    if a:mode ==# 'm'
+      let cmd = cmd . "\<Cmd>HighlightMark " . reg . "\<CR>"
+    endif
   else  " yanks/changes/deletes/pastes: letters a-i (9) else default
-    let char = v:count ? nr2char(96 + v:count) : ''
-    let cmd = empty(char) ? '' : (a:mode ==# 'n' ? "\<Esc>" : '') . '"' . char
+    let reg = v:count ? nr2char(96 + v:count) : ''
+    let cmd = empty(reg) ? '' : '"' . reg
+    if v:count && a:mode ==# 'n'
+      let cmd = "\<Esc>" . cmd
+    endif
+  endif
+  if !empty(reg)
+    echom 'Register: ' . reg . ' (' . v:count . ')'
   endif
   return cmd
 endfunction
-function! utils#register_find(mode, base) abort
+function! utils#register_find(mode) abort
   if v:count  " now enable translation
     if a:mode ==# "'"
-      let cmd = '"' . nr2char(96 + v:count)
+      let reg = nr2char(96 + v:count)
     else
-      let cmd = '"' . nr2char(105 + v:count)
+      let reg = nr2char(105 + v:count1)
     endif
+    echom 'Register: ' . reg . ' (' . v:count . ')'
+    let cmd = "\<Esc>" . '"' . reg
   else
     let char = nr2char(getchar())
     if char ==# "'"  " manual register selection
