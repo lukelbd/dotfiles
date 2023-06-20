@@ -1,39 +1,42 @@
 # Ignore patterns for ripgrep 'rg' and silver searcher 'ag'
 # This file should be kept in sync with '.gitignore.default' and bashrc functions
+# NOTE: The vim integration and bash aliases actually also include '.wildignore' but
+# keep that as separate optional file to handle native vim expansion.
 # Auto-generated
-.git
-.svn
-api
-_build
-plugged
-*conda*/
-*mamba*/
-servers
-externals
-site-packages
 *.html
 *.json
 *.xml
+.git/
+.svn/
+api/
+_build/
+plugged/
+*conda*/
+*mamba*/
+servers/
+externals/
+site-packages/
 
 # Trash folders
 tmp
-old
 trash*
-garbage*
+tmp/
+trash*/
 
 # Vim session files and swap files
 tags
 .vimtags*
 .vimsession*
+.netrwhist
 .*.sw[a-z]
 
 # Python stuff
 *.pyc
 *.ipynb
-*.egg_info
-*.ipynb_checkpoints
-*.virtual_documents
-__pycache__
+*.egg_info/
+__pycache__/
+.ipynb_checkpoints/
+.virtual_documents/
 
 
 # Common temporary files
@@ -60,8 +63,8 @@ __pycache__
 *.zip
 
 # OS-generated files
+._*
 .nfs*
 .DS_Store
 .DS_Store?
-.Trashes
-._*
+.Trashes/

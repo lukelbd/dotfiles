@@ -13,9 +13,9 @@ manuscript*
 
 # Trash folders
 tmp
-old
 trash*
-garbage*
+tmp/
+trash*/
 
 # Vim session files and swap files
 tags
@@ -27,10 +27,10 @@ tags
 # Python stuff
 *.pyc
 *.ipynb
-*.egg_info
-*.ipynb_checkpoints
-*.virtual_documents
-__pycache__
+*.egg_info/
+__pycache__/
+*.ipynb_checkpoints/
+*.virtual_documents/
 
 # Common temporary files
 *.log
@@ -56,8 +56,8 @@ __pycache__
 *.zip
 
 # OS-generated files
+._*
 .nfs*
 .DS_Store
 .DS_Store?
-.Trashes
-._*
+.Trashes/

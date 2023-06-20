@@ -769,6 +769,44 @@ rename() {
   done
 }
 
+# Parse .ignore searching file (compare to tags#ignores())
+# TODO: Add utility for *just* ignoring directories not others. Or add utility
+# for ignoring absolutely nothing but preserving syntax of other utilities.
+# NOTE: Overarching rule is that we do *not* descend into giant subfolders containing
+# distributions e.g. mambaforge or plugged unless explicitly go inside them.
+# NOTE: This supports internal grepping and finding utilities. Could also be
+# expanded to support .fzf finding utilities by setting the ignored files.
+ignores() {
+  local mode line args subs files
+  [ $# -gt 0 ] && [ "$1" -gt 0 ] && mode=1 || mode=0
+  for path in ~/.ignore ~/.wildignore; do
+    while read -r line; do
+      [[ "$line" =~ ^(\s*\#.*|\s*)$ ]] && continue
+      [[ "$line" =~ ^! ]] && continue
+      if [[ "$line" =~ / ]]; then
+        if [ "$mode" -eq 1 ]; then
+          [ ${#subs[@]} -eq 0 ] && args=(-name) || args=(-o -name)
+          subs+=("${args[@]}" "*${line//\//}*")  # 'find' already supports sub directories
+        else
+          subs+=(--exclude-dir "$line")
+        fi
+      else
+        if [ "$mode" -eq 1 ]; then
+          [ ${#files[@]} -eq 0 ] && args=(-name) || args=(-o -name)
+          files+=("${args[@]}" "'$line'")  # 'find' already supports sub directories
+        else
+          files+=(--exclude "$line")
+        fi
+      fi
+    done < "$path"
+  done
+  if [ "$mode" -eq 1 ]; then
+    echo -type d \( "${subs[@]}" \) -prune -o -type f \( "${files[@]}" \) -prune -o
+  else
+    echo "${subs[@]}" "${files[@]}"
+  fi
+}
+
 # Grep or find files and pattern
 # NOTE: Currently silver searcher does not respect global '~/.ignore' folder in $HOME
 # so use override. See: https://github.com/ggreer/the_silver_searcher/issues/1097
@@ -779,66 +817,61 @@ rename() {
 # way to include extensionless executables. Note when trying to skip hidden files,
 # grep --exclude=.* will skip current directory (so require subsequent character [^.])
 # and if dotglob is unset then 'find' cannot match hidden files with [.]* (so use .*)
-_excludes=(.git .svn api _build plugged 'trash*' '*conda*' '*mamba*' externals site-packages)
-_includes=(.py .pyx .ipynb .sh .zsh .bash .jl .ncl .cdo .ncap .ncap2 .m .[fF] .[fF][0-9][0-9] .[cC] .cpp .vi .vim .rst .md)
-alias ag='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
-alias a1='ag --path-to-ignore ~/.ignore --skip-vcs-ignores --hidden --depth 0'  # see also 'd1'
-alias rg='rg --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
-alias r1='rg --no-ignore-vcs --hidden --max-depth 1'  # see also 'd1'
+alias ag='ag --path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
+alias a1='ag --path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden --depth 0'  # see also 'd1'
+alias rg='rg --ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
+alias r1='rg --ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden --max-depth 1'  # see also 'd1'
 _grep() {
-  local commands exclude include nohidden
-  nohidden="$1"
+  local commands exclude include
+  include="$1"
   shift  # internal argument
   case "$#" in
     0) echo 'Error: qgrep() requires at least 1 arg (the pattern).' && return 1 ;;
     1) commands=("$1" .) ;;  # pattern
     *) commands=("$@") ;;  # pattern path(s)
   esac
-  exclude=("${_excludes[@]/#/--exclude-dir=}")
-  include=("${_includes[@]/#/--include=*}")
-  [ "$nohidden" -eq 1 ] && exclude+=(--exclude-dir='.[^.]*')
-  [ "$nohidden" -eq 1 ] && exclude+=(--exclude='[A-Z_.]*')
+  [ "$include" -le 1 ] && exclude+=($(ignores 0))
+  [ "$include" -le 0 ] && exclude+=(--exclude='[A-Z_.]*')
+  [ "$include" -le 0 ] && exclude+=(--exclude-dir='.[^.]*')
   command grep \
     -i -r -E --color=auto --exclude-dir='_*' \
-    ${exclude[@]} ${include[@]} ${commands[@]}  # only regex and paths allowed
+    ${exclude[@]} ${commands[@]}  # only regex and paths allowed
 }
 _find() {
-  local commands exclude include nohidden header
-  nohidden="$1"
+  local commands exclude include header
+  include="$1"
   shift  # internal argument
   case "$#" in
-    0) commands=(. '*' -print) ;;  # everything
-    1) commands=("$1" '*' -print) ;;  # path
+    0) commands=(. '\*' -print) ;;  # everything
+    1) commands=("$1" '\*' -print) ;;  # path
     2) commands=("$1" "$2" -print) ;;  # path pattern
     *) commands=("$@") ;;  # path pattern (commands)
   esac
-  [ "$nohidden" -eq 1 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune -o)
-  exclude=(${_excludes[@]/#/-o -name })  # expand into commands *and* names
-  include=(${_includes[@]/#/-o -name })  # expand into commands *and* names
-  include=("${include[@]//./*.}")  # glob extension patterns
-  command find "${commands[0]}" "${header[@]}" \
-    -type d \( "${exclude[@]:1}" \) -prune \
-    -o -type f \( "${include[@]:1}" \) \
-    -name "${commands[@]:1}"
+  [ "$include" -le 1 ] && exclude=($(ignores 1))  # expand into commands *and* names
+  [ "$include" -le 0 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune -o)
+  command find "${commands[0]}" "${header[@]}" ${exclude[@]} -name "${commands[@]:1}"
 }
-hg() { _grep 0 "$@"; }  # custom grep including hidden files
-hf() { _find 0 "$@"; }  # custom find including hidden files
-ng() { _grep 1 "$@"; }  # custom grep with no hidden files
-nf() { _find 1 "$@"; }  # custom grep with no find files
+g0() { _grep 0 "$@"; }  # custom grep with ignore excludes and no hidden files
+f0() { _find 0 "$@"; }  # custom find with ignore excludes and no hidden files
+g1() { _grep 1 "$@"; }  # custom grep with ignore excludes and hidden files
+f1() { _find 1 "$@"; }  # custom find with ignore excludes and hidden files
+g2() { _grep 2 "$@"; }  # custom grep with no excludes
+f2() { _find 2 "$@"; }  # custom find with no excludes
 
 # Refactor, coding, and logging tools
+# TODO: Use vim-lsp rename utility instead? Figure out how to preview?
 # NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
 # occurences of file paths (should be 1 but this is convenient way to record them).
-note() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\bnote:' {} \;; }
-todo() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\btodo:' {} \;; }
-error() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\berror:' {} \;; }
-warning() { qf "${1:-.}" '*' -print -a -exec grep -i -n '\bwarning:' {} \;; }
+note() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bnote:' {} \;; }
+todo() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\btodo:' {} \;; }
+error() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\berror:' {} \;; }
+warning() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bwarning:' {} \;; }
 refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
   [ $# -eq 2 ] \
     || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
-  result=$(qf . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
+  result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
     || { echo "Error: Search $1 to $2 failed."; return 1; }
   readarray -t files < <(echo "$result"$'\nEOF' | \
     awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
@@ -1962,6 +1995,7 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   _setup_message 'Enabling fzf'
   # shellcheck disable=2034
   {
+    _fzf_ignore=$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')
     _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
     --exit-0 --inline-info --height=6 \
@@ -1976,28 +2010,23 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
 
   # Defualt find commands. The compgen ones were addd by my fork, others are native, we
   # adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+  # TODO: Update using these
   # shellcheck disable=2034
   {
-    _fzf_prune="\\( \
-    -path '*.vimsession' -o -path '*.git' -o -path '*.svn' -o -path '*.sw[a-z]' \
-    -o -path '*.DS_Store' -o -path '*.ipynb_checkpoints' -o -path '*__pycache__' \
-    -o -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
-    \\) -prune \
+    export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
+    -type f -print -o -type l -print 2>/dev/null | cut -b3- \
     "
-    export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_prune \
-    -o -type f -print -o -type l -print 2>/dev/null | cut -b3- \
-    "
-    FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_prune \
-    -o -type d -print 2>/dev/null | cut -b3- \
+    FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+    -type d -print 2>/dev/null | cut -b3- \
     "  # recursively search directories and cd into them
-    FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_prune \
-    -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
+    FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+    \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
     "  # recursively search files
-    FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune \
-    -o -type d -print 2>/dev/null | sed 's@^.*/@@' \
+    FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+    -type d -print 2>/dev/null | sed 's@^.*/@@' \
     "
-    FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune \
-    -o \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
+    FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+    \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
     "
   }
 

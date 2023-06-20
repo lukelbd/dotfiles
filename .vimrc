@@ -114,13 +114,9 @@ let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
+let &g:wildignore = join(tags#ignores(0, '~/.wildignore'), ',')
 if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
 if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
-let &g:wildignore = ''
-  \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
-  \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
-  \ . '*.mp3,*.m4a,*.mk4,*.mp4,*.mov,*.flac,*.wav,'
-  \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store'
 
 " File types for different unified settings
 " Note: Here 'man' is for custom man page viewing utils, 'ale-preview' is used with

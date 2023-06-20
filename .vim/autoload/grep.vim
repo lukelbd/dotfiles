@@ -1,12 +1,12 @@
 "-----------------------------------------------------------------------------"
-" General utilities
+" Utilities for grepping
 "-----------------------------------------------------------------------------"
 " Grep commands
 " Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
 function! grep#ag(bang, level, depth, ...) abort
-  let flags = '--path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'
+  let flags = '--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden'
   let extra = a:depth ? ' --depth ' . (a:depth - 1) : ''
   let args = call('grep#parse', [a:level] + a:000)
   " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
@@ -15,7 +15,7 @@ function! grep#ag(bang, level, depth, ...) abort
   call fzf#vim#ag_raw(flags . ' -- ' . args, opts, a:bang)  " bang uses fullscreen
 endfunction
 function! grep#rg(bang, level, depth, ...) abort
-  let flags = '--no-ignore-vcs --hidden'
+  let flags = '--ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden'
   let extra = a:depth ? ' --max-depth ' . a:depth : ''
   let args = call('grep#parse', [a:level] + a:000)
   " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
