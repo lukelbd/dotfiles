@@ -208,7 +208,7 @@ _macos=false
 case "${HOSTNAME%%.*}" in
   # Macbook settings
   # NOTE: Logging into network WiFi changes hostname to DESKTOP-XXX.ColoState.EDU
-  DESKTOP*|vortex*|velouria*|uriah*)
+  vortex*|velouria*|maelstrom*|uriah*|DESKTOP*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
     #   Show package info with 'brew info package'.
