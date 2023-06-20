@@ -1943,7 +1943,7 @@ if s:plug_active('vim-gitgutter')
   noremap <expr> gS git#hunk_action_expr(0)
   nnoremap gss <Cmd>call git#hunk_action(1)<CR>
   nnoremap gSS <Cmd>call git#hunk_action(0)<CR>
-  noremap <Leader>g <Cmd>GitGutter<CR><Cmd>GitGutterPreviewHunk \| wincmd j<CR>
+  noremap <Leader>g <Cmd>call git#hunk_preview()<CR>
   noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
 endif
 

@@ -142,7 +142,7 @@ function! git#fugitive_open(...)
   endif
 endfunction
 
-" Git gutter utility
+" Git gutter staging jumping and previewing
 " Note: This was designed by looking at hunk.vim. Seems all buffer local gitgutter
 " settings are stores in g:gitgutter dictionary with 'hunks' containing lists of
 " [id, type, line, nline] where type == 0 is for addition-only hunks. Seems that
@@ -153,13 +153,6 @@ endfunction
 " Note: Currently GitGutterStageHunk only supports partial staging of additions
 " specified by visual selection, not different hunks. This supports both, iterates in
 " reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
-function! git#hunk_jump(forward, stage) abort
-  call switch#gitgutter(1)  " ensure enabled
-  let which = a:forward ? 'Next' : 'Prev'
-  let cmd = 'GitGutter' . which . 'Hunk'
-  exe v:count1 . cmd
-  if a:stage | exe 'GitGutterStageHunk' | endif
-endfunction
 function! git#hunk_action(stage) abort range
   call switch#gitgutter(1)  " ensure enabled
   let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
@@ -185,4 +178,19 @@ endfunction
 " For <expr> map accepting motion
 function! git#hunk_action_expr(...) abort
   return utils#motion_func('git#hunk_action', a:000)
+endfunction
+" Hunk jumping utility
+function! git#hunk_jump(forward, stage) abort
+  call switch#gitgutter(1)  " ensure enabled
+  let which = a:forward ? 'Next' : 'Prev'
+  let cmd = 'GitGutter' . which . 'Hunk'
+  exe v:count1 . cmd
+  if a:stage | exe 'GitGutterStageHunk' | endif
+endfunction
+" Hunk preview utility
+function! git#hunk_preview() abort
+  call switch#gitgutter(1)
+  GitGutter
+  GitGutterPreviewHunk
+  wincmd j
 endfunction
