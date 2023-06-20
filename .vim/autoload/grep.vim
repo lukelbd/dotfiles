@@ -1,12 +1,12 @@
 "-----------------------------------------------------------------------------"
-" General utilities
+" Utilities for grepping
 "-----------------------------------------------------------------------------"
 " Grep commands
 " Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
 function! grep#ag(bang, level, depth, ...) abort
-  let flags = '--path-to-ignore ~/.ignore --skip-vcs-ignores --hidden'
+  let flags = '--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden'
   let extra = a:depth ? ' --depth ' . (a:depth - 1) : ''
   let args = call('grep#parse', [a:level] + a:000)
   " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
@@ -15,7 +15,7 @@ function! grep#ag(bang, level, depth, ...) abort
   call fzf#vim#ag_raw(flags . ' -- ' . args, opts, a:bang)  " bang uses fullscreen
 endfunction
 function! grep#rg(bang, level, depth, ...) abort
-  let flags = '--no-ignore-vcs --hidden'
+  let flags = '--ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden'
   let extra = a:depth ? ' --max-depth ' . a:depth : ''
   let args = call('grep#parse', [a:level] + a:000)
   " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
@@ -68,37 +68,4 @@ function! grep#pattern(grep, level, depth) abort
   if empty(search) | return | endif
   let func = 'grep#' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, search])
-endfunction
-
-" Parse .ignore files for ctags generation
-" Note: This is actually only used to handle 'gutentags' ignore list but
-" should be ported to bash and also used for 'qf()' and 'ff()' commands?
-" Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
-" does not work, ignores all other excludes, and vim-gutentags can only
-" handle excludes anyway, so just bypass all patterns starting with '!'.
-function! grep#ignores(join) abort
-  let project = split(system('git rev-parse --show-toplevel'), "\n")
-  let suffix = empty(project) ? [] : [project . '/.gitignore']
-  let paths = ['~/.ignore', '~/.gitignore'] + suffix
-  let ignores = []
-  for path in paths
-    let path = resolve(expand(path))
-    if filereadable(path)
-      for line in readfile(path)
-        if line =~# '^\s*\(#.*\)\?$'
-          continue
-        elseif line[:0] ==# '!'
-          continue
-        elseif a:join
-          let ignore = "--exclude='" . line . "'"
-        else
-          let ignore = line
-        endif
-        call add(ignores, ignore)
-      endfor
-    endif
-  endfor
-  let ignores = uniq(ignores)
-  let ignores = a:join ? join(ignores, ' ') : ignores
-  return ignores
 endfunction

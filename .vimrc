@@ -94,7 +94,7 @@ set showtabline=2  " default 2 spaces
 set softtabstop=2  " default 2 spaces
 set splitbelow  " splitting behavior
 set splitright  " splitting behavior
-set switchbuf=usetab,newtab  " when switching buffers use open tab
+set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open tab
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
@@ -114,13 +114,9 @@ let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
+let &g:wildignore = join(ctags#get_ignores(0, '~/.wildignore'), ',')
 if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
 if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
-let &g:wildignore = ''
-  \ . '*.pdf,*.doc,*.docs,*.page,*.pages,'
-  \ . '*.svg,*.jpg,*.jpeg,*.png,*.gif,*.tiff,*.o,*.mod,*.pyc,'
-  \ . '*.mp3,*.m4a,*.mk4,*.mp4,*.mov,*.flac,*.wav,'
-  \ . '*.nc,*.zip,*.dmg,*.sw[a-z],*.DS_Store'
 
 " File types for different unified settings
 " Note: Here 'man' is for custom man page viewing utils, 'ale-preview' is used with
@@ -152,6 +148,7 @@ let s:popup_filetypes += [
 augroup buffer_overrides
   au!
   au BufEnter * call s:buffer_overrides()
+  " au FileType vim setlocal iskeyword=@,48-57,_,192-255
 augroup END
 function! s:buffer_overrides() abort
   setlocal concealcursor=
@@ -370,7 +367,7 @@ endfor
 " rather than top-level only, searching backward, and without circular wrapping.
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(ctags#close_tag(line('w0'), 0, 0, 0)[1])])
 noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
@@ -514,9 +511,10 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
 " Pneumonic is 'inside' just like Ctrl + i map
-" Note: Here :Rename is adapted from :Rename2 plugin
-command! -nargs=? Abspath call file#print_abspath(<f-args>)
+" Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
 command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
+command! -nargs=? Abspath call file#print_abspath(<f-args>)
+command! -nargs=? Localdir call switch#localdir(<args>)
 noremap <Leader>i <Cmd>Abspath<CR>
 noremap <Leader>I <Cmd>call switch#localdir()<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
@@ -540,7 +538,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
-command! -nargs=? Refresh call vim#refresh_config(<q-args>)
+command! -bang -nargs=? Refresh call vim#refresh_config(<bang>0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
 noremap <Leader>r <Cmd>redraw!<CR>
@@ -1024,7 +1022,7 @@ augroup search_replace
 augroup END
 
 " Search highlight toggle
-" Note: Previously this was <Leader>o and <Leader>O
+" Note: This just does 'set hlsearch!' and prints a message
 noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 
 " Search for non-ASCII escape chars
@@ -1255,11 +1253,11 @@ let g:gutentags_enabled = 1
 " User interface selection stuff
 " Note: While specify ctags comamnd below, and set 'tags' accordingly above, this
 " should generally not be used since tags managed by gutentags.
-" Note: 'Existing' opens ag/rg in existing open tab/window, similar to switchbuf=usetab.
-" However :Buffers still fails even with fzf_buffers_jump=1 (with the below :Existing
-" override it loads duplicate tabs, otherwise overwrites window). Not meant for tabs.
+" Note: 'Existing' opens ag/rg in existing window, similar to switchbuf=useopen,usetab.
+" However :Buffers still opens duplicate tabs with fzf_buffers_jump=1. Avoid using.
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
-" centered on bottom. Note fzf#wrap is required to apply global settings and cannot
+" centered on bottom so do not configure this way.
+" Note: fzf#wrap is required to apply global settings and cannot
 " rely on fzf#run return values (will result in weird hard-to-debug issues).
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
@@ -1275,10 +1273,10 @@ call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, inclu
 let g:fzf_action = {
   \ 'ctrl-m': 'Existing', 'ctrl-i': 'silent!',
   \ 'ctrl-t': 'tab split', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
-  \ }
+  \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_buffers_jump = 1  " jump to existing window if possible
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . grep#ignores(1)  " added just for safety
+let g:fzf_buffers_jump = 1  " have grep jump to existing window if possible
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . ctags#get_ignores(1)  " added just for safety
 
 " Language server integration
 " Note: Seems vim-lsp can both detect servers installed separately in $PATH with
@@ -1293,8 +1291,8 @@ if s:enable_lsp
   call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
   call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
 	call plug#('rhysd/vim-healthcheck')  " plugin help
-  let g:lsp_float_max_width = 88
-  let g:lsp_preview_max_width = 88
+  let g:lsp_float_max_width = 88  "  some reason results in wider windows
+  let g:lsp_preview_max_width = 88  "  some reason results in wider windows
   let g:lsp_preview_max_height = 176
 endif
 
@@ -1602,6 +1600,7 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
+  command! -nargs=? TagToggle call switch#tags(<args>)
   nnoremap <Leader>t <Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
@@ -1611,17 +1610,19 @@ if s:plug_active('vim-tags')
 endif
 
 " Gutentag tag generation
+" Note: Also include function for parsing ignore file contents
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
-    au User GutentagsUpdated call utils#update_tags()  " enforces &tags variable
+    au User GutentagsUpdated call ctags#update_setting()  " enforces &tags variable
   augroup END
+  command! -nargs=? Ignores echom 'Ignores: ' . join(ctags#get_ignores(0, <q-args>), ' ')
   let g:gutentags_generate_on_new = 1  " project opened
   let g:gutentags_generate_on_write = 1  " file written i.e. updated
   let g:gutentags_generate_on_missing = 1  " no vimtags file found
   let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
-  let g:gutentags_ctags_exclude = grep#ignores(0)  " exclude all by default
+  let g:gutentags_ctags_exclude = ctags#get_ignores(0)  " exclude all by default
   let g:gutentags_project_root = ['__init__.py', '.tagproject']  " manual tag file roots
   let g:gutentags_add_default_project_roots = 1  " enabled by defaults, searches e.g. '.git'
   let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects
@@ -1678,6 +1679,7 @@ if s:plug_active('vim-lsp')
       \ lsp#ui#vim#output#getpreviewwinid(),
       \ {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']})
   augroup END
+  command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
@@ -1699,8 +1701,8 @@ if s:plug_active('vim-lsp')
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
   let g:lsp_max_buffer_size = 2000000  " decrease from 5000000
-  let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_preview_float = 1  " floating window
+  let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_signature_help_enabled = 1  " sigature help
   let g:lsp_signature_help_delay = 100  " milliseconds
   let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
@@ -1786,6 +1788,7 @@ endif
 " https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
 " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
 if s:plug_active('ale')
+  command! -nargs=? AleToggle call switch#ale(<args>)
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
   noremap <Leader>x <Cmd>lopen<CR>
@@ -1927,6 +1930,7 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
+  command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
   noremap ]G <Cmd>call git#hunk_jump(1, 1)<CR>

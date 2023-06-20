@@ -154,7 +154,7 @@ EIGHTBIT 1
 #   01;37 bright white    base3      bg in SolLight
 #   05;37;41                         unclear in Putty dark
 
-### By file type
+### General file types
 # Global default
 NORMAL 00
 # Normal file
@@ -167,14 +167,9 @@ OTHER_WRITABLE 34;47
 LINK 35
 
 # Pipe, socket, block device, character device (blue bg)
-# FIFO 30;44
-# SOCK 35;44
-# DOOR 35;44 # Solaris 2.5 and later
-# BLK  33;44
-# CHR  37;44
 FIFO 37;44
 SOCK 37;44
-DOOR 37;44 # Solaris 2.5 and later
+DOOR 37;44
 BLK  37;44
 CHR  37;44
 
@@ -186,19 +181,18 @@ EXEC 01;35  # Unix
 .bat 01;35  # Win
 .reg 01;35  # Win
 .app 01;35  # OSX
+.pyc 01;31
 .exe 01;35
 .mod 01;35
 .o   01;35
 .x   01;35
 
-# Orphaned symlinks (blinking white on red)
-# Blink may or may not work (works on iTerm dark or light, and Putty dark)
-# ORPHAN  31;47
-# ORPHAN  41;35
-ORPHAN  41;37
-# The files that orphaned symlinks point to (blinking white on red)
+# Blinking files that orphaned symlinks point to
 # MISSING  31;47
 MISSING 41;37
+# Blinking orphaned symlinks (blinking may or may not work)
+# ORPHAN  31;47
+ORPHAN  41;37
 
 #############################################################################
 ### By extension
@@ -242,7 +236,6 @@ MISSING 41;37
 .pm     31
 .m      31
 .py     31
-.pyc    31
 .pyx    31
 .rb     31
 .hs     31
