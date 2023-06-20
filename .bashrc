@@ -769,7 +769,7 @@ rename() {
   done
 }
 
-# Parse .ignore searching file (compare to tags#ignores())
+# Parse .ignore file for custom utilities (compare to vim tags#ignores())
 # TODO: Add utility for *just* ignoring directories not others. Or add utility
 # for ignoring absolutely nothing but preserving syntax of other utilities.
 # NOTE: Overarching rule is that we do *not* descend into giant subfolders containing

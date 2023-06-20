@@ -1614,21 +1614,21 @@ endif
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
-    au User GutentagsUpdated call ctags#update_setting()  " enforces &tags variable
+    au User GutentagsUpdated call ctags#set_tags()  " enforces &tags variable
   augroup END
   command! -nargs=? Ignores echom 'Ignores: ' . join(ctags#get_ignores(0, <q-args>), ' ')
+  " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
+  " let g:gutentags_ctags_tagfile = 'tags'  " use with cache dir
+  let g:gutentags_background_update = 1  " disable for debugging, printing updates
+  let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects
+  let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
+  let g:gutentags_ctags_exclude = ctags#get_ignores(0)  " exclude all by default
+  let g:gutentags_ctags_tagfile = '.vimtags'
+  let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_generate_on_new = 1  " project opened
   let g:gutentags_generate_on_write = 1  " file written i.e. updated
   let g:gutentags_generate_on_missing = 1  " no vimtags file found
-  let g:gutentags_define_advanced_commands = 1  " debugging command
-  let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
-  let g:gutentags_ctags_exclude = ctags#get_ignores(0)  " exclude all by default
-  let g:gutentags_project_root = ['__init__.py', '.tagproject']  " manual tag file roots
-  let g:gutentags_add_default_project_roots = 1  " enabled by defaults, searches e.g. '.git'
-  let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects
-  let g:gutentags_ctags_tagfile = '.vimtags'
-  " let g:gutentags_ctags_tagfile = 'tags'
-  " let g:gutentags_cache_dir = '~/.vim_tags_cache'
+  let g:gutentags_project_root_finder = 'ctags#find_root'
 endif
 
 " Vim marks in sign column
@@ -1926,10 +1926,11 @@ if s:plug_active('vim-gitgutter')
     let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
     exe 'au ' . cmds . ' * GitGutter'
   augroup END
+  if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
-  if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
+  let g:gitgutter_use_location_list = 0  " use for errors instead
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
