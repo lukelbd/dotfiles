@@ -6,32 +6,48 @@
 " Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
 " placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
 " file creations including *duplicate* tags when invoking :Tags function.
-function! ctags#find_root(path) abort
-  let names = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
-  let dists = ['__init__.py', 'setup.py', 'setup.cfg']
-  let root = fnamemodify(resolve(expand(a:path)), ':p')
-  let base = fnamemodify(root, ':h')
+function! s:get_roots(path) abort
+  let root = fnamemodify(resolve(expand(a:path)), ':p:h')
+  let roots = []
   while root !=# '' && root !=# '/'
     let root = fnamemodify(root, ':h')
-    let head = fnamemodify(root, ':h')
-    let init = split(globpath(root, '__init__.py'), "\n")
-    let init_below = split(globpath(head, '__init__.py'), "\n")
+    call add(roots, root)
+  endwhile
+  return roots
+endfunction
+function! s:get_control_root(path) abort
+  let names = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
+  for root in s:get_roots(a:path)  " top to bottom, get highest
     for name in names
       if !empty(split(globpath(root, name), "\n"))
-        return root  " always respect distributions
+        return root  " highest level control system distribution base
       endif
     endfor
-    for dist in dists
-      if !empty(split(globpath(root, dist), "\n"))
-        for name in names + dists
-          if !empty(split(globpath(head, name), "\n"))
-            return head  " e.g. site-packages folders
-          endif
-        endfor
+  endfor
+  return ''
+endfunction
+function! s:get_python_root(path) abort
+  let names = ['__init__.py', 'setup.py', 'setup.cfg']
+  for root in reverse(s:get_roots(a:path))  " botto to top, get lowest
+    for name in names
+      if !empty(split(globpath(root, name), "\n"))
+        return root  " lowest level python package indicator base
       endif
     endfor
-  endwhile
-  return base
+  endfor
+  return ''
+endfunction
+function! ctags#find_root(path) abort
+  let root = s:get_control_root(a:path)  " control systems
+  if !empty(root)
+    return root
+  endif
+  let root = s:get_python_root(a:path)  " python distributions
+  if !empty(root)
+    return root
+  endif
+  let root = fnamemodify(resolve(expand(a:path)), ':p:h')
+  return root  " fallback value
 endfunction
 
 " Parse .ignore files for ctags utilities (compare to bash ignores())
