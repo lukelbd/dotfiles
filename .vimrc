@@ -700,8 +700,8 @@ noremap <Right> <C-i>
 
 " Jump to marks or lines with FZF
 " Note: BLines should be used more, easier than '/' sometimes
-noremap <Leader>> <Cmd>Marks<CR>
-noremap <Leader>< <Cmd>BLines<CR>
+noremap <Leader>' <Cmd>Marks<CR>
+noremap <Leader>" <Cmd>BLines<CR>
 
 " Free up m keys, so ge/gE command belongs as single-keystroke
 " words along with e/E, w/W, and b/B
@@ -735,10 +735,8 @@ inoremap <C-g>U <C-g>u
 " by yank/change/delete/paste (single quote) or macro define/run (double quote).
 " Note: Use g:peekaboo_prefix = '"' below so that double '"' press opens up register
 " seleciton panel. Also this way double press of "'" is similar, just no popup.
-noremap <expr> ' utils#register_find("'", 0)
-noremap <expr> " utils#register_find('"', 0)
-noremap <expr> <Leader>' utils#register_find(' ', 96)
-noremap <expr> <Leader>" utils#register_find(' ', 106)
+noremap <expr> ' utils#register_find("'")
+noremap <expr> " utils#register_find('"')
 
 " Specify alphabetic marks using counts
 " Note: There are no 'unnamed' marks, so unlike yank/change/delete/paste maps, the

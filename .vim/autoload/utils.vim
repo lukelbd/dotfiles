@@ -115,43 +115,38 @@ function! utils#register_count(mode) abort
     echoerr 'Error: Shorthand register number must fall between 0 and 9.'
     return ''
   endif
-  if a:mode =~# 'q\|@'  " marks: letters k-v (11)
+  if a:mode =~# 'q\|@'  " marks: letters j-s (10)
     let record = get(b:, 'recording', 0)
-    let char = nr2char(107 + v:count)
+    let char = nr2char(v:count ? 105 + v:count : 115)
     let cmd = record && a:mode ==# 'q' ? '' : char
     let b:recording = a:mode ==# 'q' ? 1 - record : record
-  elseif a:mode =~# '`\|m'  " macros: letters a-k (11)
+  elseif a:mode =~# '`\|m'  " macros: letters a-j (10)
     let char = nr2char(97 + v:count)
     let cmd = char . (a:mode ==# 'm' ? "\<Cmd>HighlightMark " . char . "\<CR>" : '')
-  else  " yanks/changes/deletes/pastes: letters a-j (10) else default
+  else  " yanks/changes/deletes/pastes: letters a-i (9) else default
     let char = v:count ? nr2char(96 + v:count) : ''
     let cmd = empty(char) ? '' : (a:mode ==# 'n' ? "\<Esc>" : '') . '"' . char
   endif
   return cmd
 endfunction
 function! utils#register_find(mode, base) abort
-  if v:count
-    return '"' . (a:base ? nr2char(a:base + v:count) : v:count)
-  endif
-  let char = nr2char(getchar())
-  if char ==# "'"  " manual register selection
-    let cmd = '"'
-  elseif char ==# '"'  " peekaboo register selection
-    let cmd = '""'
-  elseif a:mode ==# ' '
-    if !a:base || char !~# '\d'
-      echoerr "Error: Cannot translate non-numeric register '" . char . "'."
-      let cmd = ''
+  if v:count  " now enable translation
+    if a:mode ==# "'"
+      let cmd = '"' . nr2char(96 + v:count)
+    else
+      let cmd = '"' . nr2char(105 + v:count)
     endif
-    let char = nr2char(a:base + str2nr(char))
-    let cmd = '"' . char
-  elseif a:mode ==# "'"
-    let cmd = '"_' . char
-  elseif a:mode ==# '"'
-    let cmd = '"*' . char
   else
-    let cmd = ''
-    echoerr 'Error: Input argument must be single or double quote.'
+    let char = nr2char(getchar())
+    if char ==# "'"  " manual register selection
+      let cmd = '"'
+    elseif char ==# '"'  " peekaboo register selection
+      let cmd = '""'
+    elseif a:mode ==# "'"
+      let cmd = '"_' . char
+    else
+      let cmd = '"*' . char
+    endif
   endif
   return cmd
 endfunction
