@@ -731,11 +731,16 @@ inoremap <C-g>U <C-g>u
 
 " Highlight marks. Use '"' or '[1-8]"' to set some mark, use '9"'
 " to delete it, and use ' or [1-8]' to jump to a mark.
+" Note: For consistency with register maps, assign numbers to a-j, while assign default
+" to 'k' (marks must have name). Avoid marks x-z because they are used by vimrc maps.
+" Note: Uppercase marks are same as lowercase, but stored on exit, and numbered marks
+" are mostly internal, can be configured to restore cursor position after restarting.
 command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
 command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
-noremap <expr> ` "`" . nr2char(97 + v:count)
-noremap <expr> ~ 'm' . nr2char(97 + v:count) . '<Cmd>HighlightMark ' . nr2char(97 + v:count) . '<CR>'
 noremap <Leader>~ <Cmd>RemoveHighlights<CR>
+noremap <expr> ` "`" . nr2char(v:count ? 96 + v:count : 107)
+noremap <expr> ~ 'm' . nr2char(v:count ? 96 + v:count : 107)
+  \ . '<Cmd>HighlightMark ' . nr2char(v:count ? 96 + v:count : 107) . '<CR>'
 
 " Specify a numbered register with count, or a specific register with double presses,
 " otherwise use black hole register "_ for ' and clipboard register "* for '""
