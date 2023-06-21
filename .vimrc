@@ -367,7 +367,7 @@ endfor
 " rather than top-level only, searching backward, and without circular wrapping.
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(ctags#close_tag(line('w0'), 0, 0, 0)[1])])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
 noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
@@ -1602,9 +1602,11 @@ if s:plug_active('vim-tags')
     endif
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
-  nnoremap <Leader>t <Cmd>BTags<CR>
-  nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
+  nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
+  nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
+  nnoremap <Leader>< <Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap <Leader>> <Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   let g:tags_subtop_filetypes = ['fortran']
   let g:tags_scope_kinds = {'vim': 'afc', 'tex': 'bs', 'python': 'fcm', 'fortran': 'smfp'}
   let g:tags_skip_kinds = {'tex': 'g', 'vim': 'mvD'}

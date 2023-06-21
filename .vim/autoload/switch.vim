@@ -222,8 +222,8 @@ function! switch#tags(...) abort
     return
   elseif toggle
     let g:gutentags_enabled = 1  " all that GutentagsToggleEnabled does
-    GutentagsUpdate
-    silent! UpdateTags
+    GutentagsUpdate  " update local tags
+    silent! UpdateTags  " update local tags
   else
     let g:gutentags_enabled = 0  " all that GutentagsToggleEnabled does
     for name in names
