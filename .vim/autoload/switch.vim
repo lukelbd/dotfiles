@@ -222,7 +222,7 @@ function! switch#tags(...) abort
     return
   elseif toggle
     let g:gutentags_enabled = 1  " all that GutentagsToggleEnabled does
-    GutentagsUpdate  " update local tags
+    silent! GutentagsUpdate  " update local tags
     silent! UpdateTags  " update local tags
   else
     let g:gutentags_enabled = 0  " all that GutentagsToggleEnabled does
@@ -230,5 +230,5 @@ function! switch#tags(...) abort
       silent! call remove(b:, name)
     endfor
   endif
-  call s:switch_message('Tags file', toggle)
+  call s:switch_message('Tags', toggle)
 endfunction

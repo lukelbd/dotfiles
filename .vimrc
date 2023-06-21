@@ -1605,8 +1605,6 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
-  nnoremap <Leader>< <Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
-  nnoremap <Leader>> <Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   let g:tags_subtop_filetypes = ['fortran']
   let g:tags_scope_kinds = {'vim': 'afc', 'tex': 'bs', 'python': 'fcm', 'fortran': 'smfp'}
   let g:tags_skip_kinds = {'tex': 'g', 'vim': 'mvD'}
@@ -1620,6 +1618,8 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call ctags#set_tags()  " enforces &tags variable
   augroup END
   command! -nargs=? Ignores echom 'Ignores: ' . join(ctags#get_ignores(0, <q-args>), ' ')
+  nnoremap <Leader>< <Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap <Leader>> <Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " use with cache dir
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
