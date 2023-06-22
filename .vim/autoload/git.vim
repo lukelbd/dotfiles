@@ -127,7 +127,6 @@ endfunction
 " Note: Should use other insert or changing commands e.g. 'o' and 'O' for opening
 " diffs and stuff. The below is mainly used for the fugitive home page.
 " General fugitive window setup
-" Note: This is cool
 function! git#fugitive_setup() abort
   exe 'file ' &filetype
   let b:maparg = maparg('<CR>')
@@ -175,10 +174,6 @@ function! git#hunk_action(stage) abort range
   endfor
   GitGutter  " update signs (sometimes they lag)
 endfunction
-" For <expr> map accepting motion
-function! git#hunk_action_expr(...) abort
-  return utils#motion_func('git#hunk_action', a:000)
-endfunction
 " Hunk jumping utility
 function! git#hunk_jump(forward, stage) abort
   call switch#gitgutter(1)  " ensure enabled
@@ -193,4 +188,8 @@ function! git#hunk_preview() abort
   GitGutter
   GitGutterPreviewHunk
   wincmd j
+endfunction
+" For <expr> map accepting motion
+function! git#hunk_action_expr(...) abort
+  return utils#motion_func('git#hunk_action', a:000)
 endfunction

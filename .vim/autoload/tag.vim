@@ -37,7 +37,7 @@ function! s:get_python_root(path) abort
   endfor
   return ''
 endfunction
-function! ctags#find_root(path) abort
+function! tag#find_root(path) abort
   let root = s:get_control_root(a:path)  " control systems
   if !empty(root)
     return root
@@ -56,7 +56,7 @@ endfunction
 " Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
 " does not work, ignores all other exclude flags, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
-function! ctags#get_ignores(join, ...) abort
+function! tag#get_ignores(join, ...) abort
   if a:0 && !empty(a:1) " input path
     let paths = [a:1]
   else
@@ -94,7 +94,7 @@ endfunction
 " since very common to open simple config files from other projects e.g. 'proplotrc'.
 " Note: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
-function! ctags#set_tags() abort
+function! tag#set_tags() abort
   let paths = []
   for tnr in range(tabpagenr('$')) " iterate through each tab
     let tabnr = tnr + 1 " the tab number

@@ -69,7 +69,7 @@ function! comment#header_incomment() abort
 endfunction
 
 " Arbtirary message above this line, matching indentation level
-function! comment#message(message) abort
+function! comment#comment_message(message) abort
   let indent = s:indent_spaces()
   let cchar = comment#comment_char()
   let comment = indent . cchar . ' ' . a:message . ' ' . cchar

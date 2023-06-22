@@ -94,6 +94,15 @@ function! edit#replace_regex_expr(...) abort
   return utils#motion_func('edit#replace_regex', a:000)
 endfunction
 
+" Reverse the selected lines
+" Note: Adaptation of hard-to-remember :g command shortcut. Adapted
+" from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
+function! edit#reverse_lines() range abort
+  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
+  let num = empty(range) ? 0 : a:firstline - 1
+  exec 'silent ' . range . 'g/^/m' . num
+endfunction
+
 " Correct next misspelled word
 " This provides functionality similar to [t and ]s
 function! edit#spell_apply(forward)
@@ -153,7 +162,12 @@ function! edit#wrap_lines_expr(...) abort
   return utils#motion_func('edit#wrap_lines', a:000)
 endfunction
 
-" Return regexes for search
+" Fix all lines that are too long, with special consideration for bullet style lists and
+" asterisks (does not insert new bullets and adds spaces for asterisks).
+" Note: This is good example of incorporating motion support in custom functions!
+" Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
+" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
+" Return regexes for the search
 function! s:search_item(optional)
   let head = '^\(\s*\%(' . comment#comment_char() . '\s*\)\?\)'  " leading spaces or comment
   let indicator = '\(\%([*-]\|\<\d\.\|\<\a\.\)\s\+\)'  " item indicator plus space
@@ -163,8 +177,7 @@ function! s:search_item(optional)
   endif
   return head . indicator . tail
 endfunction
-
-" Utilitify for removing the item indicator
+" Remove the item indicator
 function! s:remove_item(line, first, last) abort
   let pattern = s:search_item(0)
   let pattern_optional = s:search_item(1)
@@ -176,20 +189,13 @@ function! s:remove_item(line, first, last) abort
     \ . '@ge'
   call histdel('/', -1)
 endfunction
-
-" Fix all lines that are too long, with special consideration for bullet style lists and
-" asterisks (does not insert new bullets and adds spaces for asterisks).
-" Note: This is good example of incorporating motion support in custom functions!
-" Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
-" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
+" Put lines on single bullet
 function! edit#wrap_items(...) range abort
-  " Initial stuff
   let textwidth = &l:textwidth
   let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
   let prevhist = @/
   let winview = winsaveview()
   let pattern = s:search_item(0)
-  " Put lines on a single bullet
   let linecount = 0
   let lastline = a:lastline
   for linenum in range(a:lastline, a:firstline, -1)
@@ -207,14 +213,12 @@ function! edit#wrap_items(...) range abort
       endif
     endif
   endfor
-  " Wrap each line, accounting for bullet indent. If gqgq results in a wrapping, cursor
-  " is placed at end of that block. Then must remove auto-inserted item indicators.
-  for linenum in range(lastline, a:firstline, -1)
+  for linenum in range(lastline, a:firstline, -1)  " wrap accounting for bullet indent
     exe linenum
     let line = getline('.')
     normal! gqgq
-    if line =~# pattern && line('.') > linenum
-      call s:remove_item(line, linenum + 1, line('.'))
+    if line =~# pattern && line('.') > linenum  " cursor is at end of wrapping
+      call s:remove_item(line, linenum + 1, line('.'))  " remove auto-inserted item indicators
     endif
   endfor
   let @/ = prevhist

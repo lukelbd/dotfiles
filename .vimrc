@@ -22,11 +22,6 @@
 let &t_te=''
 let &t_Co=256
 exe 'runtime autoload/repeat.vim'
-if !exists('*repeat#set')  " only plugin that needs to be copied manually
-  echohl WarningMsg
-  echom 'Warning: vim-repeat unavailable, some features will be unavailable.'
-  echohl None
-endif
 
 " Global settings
 set encoding=utf-8
@@ -114,7 +109,7 @@ let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
-let &g:wildignore = join(ctags#get_ignores(0, '~/.wildignore'), ',')
+let &g:wildignore = join(tag#get_ignores(0, '~/.wildignore'), ',')
 if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
 if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
 
@@ -371,18 +366,18 @@ command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line(
 noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
-" Color scheme iteration
+" Color scheme scrolling
 " Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
 " Note: This is mainly used for GUI vim (otherwise use terminal themes). Ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-command! SchemePrev call utils#wrap_colorschemes(0)
-command! SchemeNext call utils#wrap_colorschemes(1)
+command! SchemePrev call iter#jump_colorschemes(0)
+command! SchemeNext call iter#jump_colorschemes(1)
 noremap <Leader>8 <Cmd>Colors<CR>
 noremap <Leader>9 <Cmd>SchemeNext<CR>
 noremap <Leader>0 <Cmd>SchemePrev<CR>
 augroup color_scheme
   au!
-  au ColorScheme default call vim#refresh_config()
+  au ColorScheme default call vim#config_refresh()
 augroup END
 
 " GUI overrides and colors
@@ -469,11 +464,11 @@ highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
 " Syntax helper commands
 " Note: Mapping mnemonic for colorizer is # for hex string
 command! -nargs=0 CurrentColor vert help group-name
-command! -nargs=0 CurrentGroup call popup#syntax_group()
-command! -nargs=? CurrentSyntax call popup#syntax_list(<q-args>)
-command! -nargs=0 ShowColors call popup#runtime_colors()
-command! -nargs=0 ShowPlugin call popup#runtime_ftplugin()
-command! -nargs=0 ShowSyntax call popup#runtime_syntax()
+command! -nargs=0 CurrentGroup call vim#syntax_group()
+command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
+command! -nargs=0 ShowColors call vim#runtime_colors()
+command! -nargs=0 ShowPlugin call vim#runtime_ftplugin()
+command! -nargs=0 ShowSyntax call vim#runtime_syntax()
 noremap <Leader>1 <Cmd>CurrentGroup<CR>
 noremap <Leader>2 <Cmd>CurrentSyntax<CR>
 noremap <Leader>3 <Cmd>CurrentColor<CR>
@@ -493,8 +488,8 @@ noremap <Leader>7 <Cmd>ColorToggle<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
-nnoremap <C-w> <Cmd>call session#close_tab()<CR>
-nnoremap <C-e> <Cmd>call session#close_window()<CR>
+nnoremap <C-w> <Cmd>call window#close_tab()<CR>
+nnoremap <C-e> <Cmd>call window#close_window()<CR>
 
 " Open file in current directory or some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
@@ -516,7 +511,7 @@ command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<ba
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=? Localdir call switch#localdir(<args>)
 noremap <Leader>i <Cmd>Abspath<CR>
-noremap <Leader>I <Cmd>call switch#localdir()<CR>
+noremap <Leader>I <Cmd>Localdir<CR>
 noremap <Leader>f <Cmd>call file#print_exists()<CR>
 noremap <Leader>F <Cmd>exe 'Existing ' . expand('<cfile>')<CR>
 
@@ -538,7 +533,8 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
-command! -bang -nargs=? Refresh call vim#refresh_config(<bang>0, <q-args>)
+command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
+command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
 noremap <Leader>r <Cmd>redraw!<CR>
@@ -547,10 +543,10 @@ noremap <Leader>R <Cmd>Refresh<CR>
 " Buffer management
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 " Note: Currently no way to make :Buffers use custom opening command
-command! -nargs=0 ShowBufs call session#show_bufs()
-command! -nargs=0 WipeBufs call session#wipe_bufs()
-" noremap <Leader>w <Cmd>ShowBufs<CR>
-" noremap <Leader>W <Cmd>Buffers<CR>
+command! -nargs=0 ShowBufs call window#show_bufs()
+command! -nargs=0 WipeBufs call window#wipe_bufs()
+noremap <C-r> <Cmd>ShowBufs<CR>
+" noremap <Leader>Q <Cmd>Buffers<CR>
 noremap <Leader>q <Cmd>Windows<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
 
@@ -558,10 +554,10 @@ noremap <Leader>Q <Cmd>WipeBufs<CR>
 nnoremap <Tab>' <Cmd>tabnext #<CR>
 nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
 nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
-nnoremap <Tab>> <Cmd>call session#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call session#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>m <Cmd>call session#move_tab()<CR>
-nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call session#jump_tab()<CR>'
+nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>m <Cmd>call window#move_tab()<CR>
+nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
 " Window selection and creation
@@ -617,18 +613,18 @@ let g:tags_skip_filetypes = s:popup_filetypes
 let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
   au!
-  au TerminalWinOpen * call popup#popup_setup(1)
-  au CmdwinEnter * call popup#cmdwin_setup() | call popup#popup_setup(0)
+  au TerminalWinOpen * call utils#popup_setup(1)
+  au CmdwinEnter * call vim#cmdwin_setup() | call utils#popup_setup(0)
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
-  au FileType help call popup#vim_setup()  " additional setup steps
-  au FileType man call popup#man_setup()  " additional setup steps
+  au FileType help call vim#vim_setup()  " additional setup steps
+  au FileType man call shell#man_setup()  " additional setup steps
   au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
   au FileType gitcommit call git#commit_setup()  " additional setup steps
   au User FugitiveIndex call git#fugitive_setup()
   for s:ft in s:popup_filetypes
     let s:modifiable = s:ft ==# 'gitcommit'
-    exe 'au FileType ' . s:ft . ' call popup#popup_setup(' . s:modifiable . ')'
+    exe 'au FileType ' . s:ft . ' call utils#popup_setup(' . s:modifiable . ')'
   endfor
 augroup END
 
@@ -638,16 +634,16 @@ augroup END
 " is faster so it gets lower case: https://unix.stackexchange.com/a/524094/112647
 " command! -bang -nargs=* Af call cgrep#grep_ag(<bang>0, 2, 0, <f-args>)
 " command! -bang -nargs=* Rf call cgrep#grep_rg(<bang>0, 2, 0, <f-args>)
-" nnoremap <Leader>n <Cmd>call grep#pattern('ag', 1, 0)<CR>
-" nnoremap <Leader>N <Cmd>call grep#pattern('ag', 0, 0)<CR>
-command! -bang -nargs=* Ag call grep#ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=* Rg call grep#rg(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=* Al call grep#ag(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=* Rl call grep#rg(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=* A1 call grep#ag(<bang>0, 0, 1, <f-args>)
-command! -bang -nargs=* R1 call grep#rg(<bang>0, 0, 1, <f-args>)
-nnoremap <Leader>n <Cmd>call grep#pattern('rg', 1, 0)<CR>
-nnoremap <Leader>N <Cmd>call grep#pattern('rg', 0, 0)<CR>
+" nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 1, 0)<CR>
+" nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 0, 0)<CR>
+command! -bang -nargs=* Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=* Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=* Al call grep#call_ag(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=* Rl call grep#call_rg(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=* A1 call grep#call_ag(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=* R1 call grep#call_rg(<bang>0, 0, 1, <f-args>)
+nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
@@ -657,9 +653,9 @@ nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
-nnoremap <Leader>V <Cmd>call popup#vim_page()<CR>
-nnoremap <Leader>h <Cmd>call popup#help_page(1)<CR>
-nnoremap <Leader>H <Cmd>call popup#man_page(1)<CR>
+nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
+nnoremap <Leader>h <Cmd>call shell#help_page(1)<CR>
+nnoremap <Leader>H <Cmd>call shell#man_page(1)<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
 
@@ -684,7 +680,7 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Reverse using command
 " See: https://superuser.com/a/189956/506762
-command! -range Reverse <line1>,<line2>call utils#line_reverse()
+command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
 " Jump to last changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
@@ -717,12 +713,12 @@ for s:char in ['w', 'b', 'e', 'm']
     \ . s:char . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
 endfor
 
-" Insert and mormal mode undo and redo
+" Insert and mormal mode undo and redo (see .vim/autoload/repeat.vim)
 " Note: Here use <C-g> prefix similar to comment insert. Capital breaks the undo
 " sequence. Tried implementing 'redo' but fails because history is lost after vim
-" re-enters insert mode from the <C-o> command. Googled and no way to do it.
-" history.
+" re-enters insert mode from the <C-o> command. Googled and there is no way to do it.
 nnoremap U <C-r>
+nnoremap <Plug>RepeatRedo <C-r>
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 " inoremap <CR> <C-]><C-g>u<CR>
@@ -743,8 +739,8 @@ noremap <expr> " utils#register_find('"')
 " default mark is stored under 'a'. This is similar to register behavior.
 " Note: Uppercase marks are same as lowercase, but saved in viminfo, and numbered marks
 " are mostly internal, can be configured to restore cursor position after restarting.
-command! -nargs=1 HighlightMark call highlightmark#highlight_mark(<q-args>)
-command! -nargs=* RemoveHighlights call highlightmark#remove_highlights(<f-args>)
+command! -nargs=1 HighlightMark call mark#highlight_mark(<q-args>)
+command! -nargs=* RemoveHighlights call mark#remove_highlights(<f-args>)
 noremap <Leader>~ <Cmd>RemoveHighlights<CR>
 noremap <expr> ` "`" . utils#register_count('`')
 noremap <expr> ~ 'm' . utils#register_count('m')
@@ -820,10 +816,10 @@ nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
 
 " Circulation location scrolling
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
-command! -bar -count=1 Lnext execute utils#wrap_cyclic(<count>, 'loc')
-command! -bar -count=1 Lprev execute utils#wrap_cyclic(<count>, 'loc', 1)
-command! -bar -count=1 Qnext execute utils#wrap_cyclic(<count>, 'qf')
-command! -bar -count=1 Qprev execute utils#wrap_cyclic(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute iter#jump_cyclic(<count>, 'loc')
+command! -bar -count=1 Lprev execute iter#jump_cyclic(<count>, 'loc', 1)
+command! -bar -count=1 Qnext execute iter#jump_cyclic(<count>, 'qf')
+command! -bar -count=1 Qprev execute iter#jump_cyclic(<count>, 'qf', 1)
 noremap [x <Cmd>Lprev<CR>
 noremap ]x <Cmd>Lnext<CR>
 noremap [X <Cmd>Qprev<CR>
@@ -854,8 +850,8 @@ nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 0)<CR>:call rep
 nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
 nnoremap gc' <Cmd>call comment#header_incomment()<CR>
 nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
-nnoremap gcA <Cmd>call comment#message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap gcY <Cmd>call comment#message('Date: ' . strftime('%Y-%m-%d'))<CR>
+nnoremap gcA <Cmd>call comment#comment_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap gcY <Cmd>call comment#comment_message('Date: ' . strftime('%Y-%m-%d'))<CR>
 
 " Insert comment similar to gc
 " Todo: Add more control insert mappings?
@@ -957,12 +953,12 @@ nnoremap O OX<Backspace>
 
 " Preview window scrolling
 " Note: Popup menu always closed but this also does preview windows
-noremap <expr> <C-k> popup#scroll_count(-0.25)
-noremap <expr> <C-j> popup#scroll_count(0.25)
-noremap <expr> <C-u> popup#scroll_count(-0.5)
-noremap <expr> <C-d> popup#scroll_count(0.5)
-noremap <expr> <C-b> popup#scroll_count(-1.0)
-noremap <expr> <C-f> popup#scroll_count(1.0)
+noremap <expr> <C-k> iter#scroll_count(-0.25)
+noremap <expr> <C-j> iter#scroll_count(0.25)
+noremap <expr> <C-u> iter#scroll_count(-0.5)
+noremap <expr> <C-d> iter#scroll_count(0.5)
+noremap <expr> <C-b> iter#scroll_count(-1.0)
+noremap <expr> <C-f> iter#scroll_count(1.0)
 
 " Popup and preview window scrolling
 " This should work with or without ddc
@@ -970,32 +966,32 @@ augroup pum_navigation
   au!
   au BufEnter,InsertLeave * let b:scroll_state = 0
 augroup END
-inoremap <expr> <C-k> popup#scroll_count(-0.25)
-inoremap <expr> <C-j> popup#scroll_count(0.25)
-inoremap <expr> <C-u> popup#scroll_count(-0.5)
-inoremap <expr> <C-d> popup#scroll_count(0.5)
-inoremap <expr> <C-b> popup#scroll_count(-1.0)
-inoremap <expr> <C-f> popup#scroll_count(1.0)
+inoremap <expr> <C-k> iter#scroll_count(-0.25)
+inoremap <expr> <C-j> iter#scroll_count(0.25)
+inoremap <expr> <C-u> iter#scroll_count(-0.5)
+inoremap <expr> <C-d> iter#scroll_count(0.5)
+inoremap <expr> <C-b> iter#scroll_count(-1.0)
+inoremap <expr> <C-f> iter#scroll_count(1.0)
 
 " Popup menu selection shortcuts
 " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
 " Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
 " and default is chosen if necessary. See :h ins-special-special.
-inoremap <expr> <Space> popup#scroll_reset()
+inoremap <expr> <Space> iter#scroll_reset()
   \ . (pumvisible() ? "\<C-e>" : '')
   \ . "\<C-]>\<Space>"
-inoremap <expr> <Backspace> popup#scroll_reset()
+inoremap <expr> <Backspace> iter#scroll_reset()
   \ . (pumvisible() ? "\<C-e>" : '')
   \ . "\<Backspace>"
 inoremap <expr> <CR>
   \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . popup#scroll_reset()
+  \ "\<C-y>" . iter#scroll_reset()
   \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
   \ : "\<C-]>\<C-g>u\<CR>"
 inoremap <expr> <Tab>
   \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . popup#scroll_reset()
-  \ : "\<C-n>\<C-y>" . popup#scroll_reset()
+  \ "\<C-y>" . iter#scroll_reset()
+  \ : "\<C-n>\<C-y>" . iter#scroll_reset()
   \ : "\<C-]>\<Tab>"
 
 " Insert mode with paste toggling
@@ -1118,7 +1114,7 @@ function! s:plug_find(regex)
 endfunction
 function! s:plug_local(path)
   let rtp = substitute(a:path, '[''"]', '', 'g')
-  let rtp = expand(rtp)
+  let rtp = fnamemodify(expand(rtp), ':p')
   if !isdirectory(rtp)
     echohl WarningMsg
     echo "Warning: Path '" . rtp . "' not found."
@@ -1163,14 +1159,19 @@ call plug#begin('~/.vim/plugged')
 call plug#('tomtom/tcomment_vim')
 
 " General utilities
-" Note: Replaced 'vim-superman' with custom man viewing utilities
+" Note: The 'gh' map overwrites 'select mode' but this mode is unnecessary. Simply
+" enables typing to enter insert mode after selection is complete, to emulate other
+" editors, but vim is not another editor! Typing 'c' before text is enough.
+" See: https://vi.stackexchange.com/a/4892/8084
 " call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
 " call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
-" call plug#('jez/vim-superman')  " add the 'vman' command-line tool
-" call plug#('tpope/unimpaired')  " bracket maps that no longer use
+" call plug#('jez/vim-superman')  " replaced with vim.vim and bashrc utilities
+" call plug#('tpope/vim-unimpaired')  " bracket maps that no longer use
+call plug#('tpope/vim-repeat')  " shell utils like chmod rename and move
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call plug#('tpope/vim-characterize')  " print character info (mnemonic is l for letter)
 nmap gl <Plug>(characterize)
+nmap gh <Plug>(characterize)
 
 " Panel utilities
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -1213,7 +1214,7 @@ call plug#('andymass/vim-matchup')
 call plug#('henrik/vim-indexed-search')
 let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
 let g:matchup_transmute_enabled = 0  " issues in latex, use vim-succinct instead
-let g:indexed_search_mappings = 1  " required even for <call plug#( mappings) to work
+let g:indexed_search_mappings = 1  " required even for <Plug>(mappings) to work
 let g:indexed_search_colors = 0
 let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
 let g:indexed_search_line_info = 1  " show first and last line indicators
@@ -1277,7 +1278,7 @@ let g:fzf_action = {
   \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have grep jump to existing window if possible
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . ctags#get_ignores(1)  " added just for safety
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#get_ignores(1)  " added just for safety
 
 " Language server integration
 " Note: Seems vim-lsp can both detect servers installed separately in $PATH with
@@ -1553,10 +1554,10 @@ if s:plug_active('vim-scrollwrapped')
   let g:scrollwrapped_nomap = 1
   let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
   noremap <Leader>w <Cmd>WrapToggle<CR>
-  noremap <expr> <Up> popup#scroll_count(-0.25)
-  noremap <expr> <Down> popup#scroll_count(0.25)
-  inoremap <expr> <Up> popup#scroll_count(-0.25)
-  inoremap <expr> <Down> popup#scroll_count(0.25)
+  noremap <expr> <Up> iter#scroll_count(-0.25)
+  noremap <expr> <Down> iter#scroll_count(0.25)
+  inoremap <expr> <Up> iter#scroll_count(-0.25)
+  inoremap <expr> <Down> iter#scroll_count(0.25)
 endif
 
 " Comment toggling stuff
@@ -1601,13 +1602,15 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
+  noremap <C-r> <Cmd>ShowKinds<CR>
+  noremap <C-t> <Cmd>ShowTags<CR>
+" noremap <Leader>U <Cmd>UpdateTags<CR>  " use gutentags updates instead
   command! -nargs=? TagToggle call switch#tags(<args>)
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
-  let g:tags_subtop_filetypes = ['fortran']
-  let g:tags_scope_kinds = {'vim': 'afc', 'tex': 'bs', 'python': 'fcm', 'fortran': 'smfp'}
-  let g:tags_skip_kinds = {'tex': 'g', 'vim': 'mvD'}
+  let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
+  let g:tags_skip_kinds = {'python': 'I', 'tex': 'g', 'vim': 'mvD'}
 endif
 
 " Gutentag tag generation
@@ -1615,23 +1618,23 @@ endif
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
-    au User GutentagsUpdated call ctags#set_tags()  " enforces &tags variable
+    au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
   augroup END
-  command! -nargs=? Ignores echom 'Ignores: ' . join(ctags#get_ignores(0, <q-args>), ' ')
-  nnoremap <Leader>< <Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
-  nnoremap <Leader>> <Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
+  command! -nargs=? Ignores echom 'Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
+  nnoremap <Leader>< <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap <Leader>> <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " use with cache dir
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
-  let g:gutentags_ctags_exclude = ctags#get_ignores(0)  " exclude all by default
+  let g:gutentags_ctags_exclude = tag#get_ignores(0)  " exclude all by default
   let g:gutentags_ctags_tagfile = '.vimtags'
   let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_generate_on_new = 1  " project opened
   let g:gutentags_generate_on_write = 1  " file written i.e. updated
   let g:gutentags_generate_on_missing = 1  " no vimtags file found
-  let g:gutentags_project_root_finder = 'ctags#find_root'
+  let g:gutentags_project_root_finder = 'tag#find_root'
 endif
 
 " Vim marks in sign column
@@ -1690,7 +1693,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>A <Cmd>call switch#lsp()<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
   noremap <Leader>& <Cmd>LspSignatureHelp<CR>
-  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call popup#popup_setup(0)<CR>
+  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#popup_setup(0)<CR>
   noremap <Leader>^ <Cmd>verbose LspStatus<CR>
   noremap <Leader>` <Cmd>CheckHealth<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
@@ -1979,10 +1982,10 @@ endif
 if s:plug_active('codi.vim')
   augroup codi_mods
     au!
-    au User CodiEnterPre call codi#setup(1)
-    au User CodiLeavePost call codi#setup(0)
+    au User CodiEnterPre call codi#codi_setup(1)
+    au User CodiLeavePost call codi#codi_setup(0)
   augroup END
-  command! -nargs=? CodiNew call codi#new(<q-args>)
+  command! -nargs=? CodiNew call codi#codi_new(<q-args>)
   noremap <Leader>= <Cmd>CodiNew<CR>
   noremap <Leader>+ <Cmd>Codi!!<CR>
   let g:codi#autocmd = 'None'
@@ -1996,15 +1999,15 @@ if s:plug_active('codi.vim')
         \ 'bin': ['python3', '-i', '-c', 'import readline; readline.set_auto_history(False)'],
         \ 'prompt': '^\(>>>\|\.\.\.\) ',
         \ 'quitcmd': 'exit()',
-        \ 'preprocess': function('codi#preprocess'),
-        \ 'rephrase': function('codi#rephrase'),
+        \ 'preprocess': function('codi#codi_preprocess'),
+        \ 'rephrase': function('codi#codi_rephrase'),
         \ },
     \ 'julia': {
         \ 'bin': ['julia', '-q', '-i', '--color=no', '--history-file=no'],
         \ 'prompt': '^\(julia>\|      \)',
         \ 'quitcmd': 'exit()',
-        \ 'preprocess': function('codi#preprocess'),
-        \ 'rephrase': function('codi#rephrase'),
+        \ 'preprocess': function('codi#codi_preprocess'),
+        \ 'rephrase': function('codi#codi_rephrase'),
         \ },
     \ }
 endif
@@ -2038,7 +2041,7 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Session ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  command! -nargs=* Session call session#init_session(<q-args>)
+  command! -nargs=* Session call vim#init_session(<q-args>)
   noremap <Leader>$ <Cmd>Session<CR>
 endif
 

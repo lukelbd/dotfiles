@@ -39,7 +39,7 @@ function! s:latexmk(...) abort
   endif
   let command = 'latexmk ' . flags . ' ' . linenum . ' ' . path
   let popup = flags !~# '\(^\|\s\)\(-a\|--aux\)\>'
-  call popup#job_win(command, popup)
+  call shell#job_win(command, popup)
 endfunction
 
 " Latexmk command and shortcuts

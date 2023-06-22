@@ -19,7 +19,7 @@ function! s:open_markdown_file() abort
     let terminal = $TERM_PROGRAM
   endif
   let cmd = 'open -a "Marked 2" ' . shellescape(@%) . ' && open -a "' . terminal . '"'
-  call popup#job_win(cmd, 0)
+  call shell#job_win(cmd, 0)
 endfunction
 nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>open_markdown_file()<CR>
 

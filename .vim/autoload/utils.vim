@@ -1,15 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
-" Reverse the selected lines
-" Note: Adaptation of hard-to-remember :g command shortcut. Adapted
-" from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
-function! utils#line_reverse() range abort
-  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
-  let num = empty(range) ? 0 : a:firstline - 1
-  exec 'silent ' . range . 'g/^/m' . num
-endfunction
-
 " Null input() completion function
 " This prevents unexpected insertion of literal tabs
 " Note: Used in various places throughout autoload
@@ -32,9 +23,9 @@ endfunction
 " the input line with text from the start, allowing both 1) quick user overrides of
 " the entire line and 2) quick selection of a default value, all in one cmdline line.
 function! utils#input_list(...)
-  let [init, fhandle, default] = s:complete_params
+  let [init, funcname, default, fill] = s:complete_params
   if !init  " kludge for default behavior
-    return call(fhandle, a:000)
+    return call(funcname, a:000)
   else
     let s:complete_params[0] = 0
     try
@@ -44,21 +35,25 @@ function! utils#input_list(...)
       return ['']
     endtry
     if char ==# "\<Tab>"
-      return [default]
+      return [fill]
     elseif char ==# "\<CR>"
       call feedkeys("\<CR>", 't')
-      return [default]
+      return [fill]
     elseif char =~# '\p'
       return [char]
+    elseif len(char) == 0  " backspace or delete
+      return ['']
     else
       call feedkeys("\<CR>", 't')
       return ['']
     endif
   endif
 endfunction
-function! utils#input_complete(prompt, default, func) abort
+function! utils#input_complete(prompt, funcname, default, ...) abort
+  let fill = call(a:funcname, [a:default, '', ''])
+  let fill = empty(fill) ? a:default : fill[0]  " e.g. expand intial path
   let message = a:prompt . ' (' . a:default . '): '
-  let s:complete_params = [1, a:func, a:default]
+  let s:complete_params = [1, a:funcname, a:default, fill]
   call feedkeys("\<Tab>", 't')
   return input(message, '', 'customlist,utils#input_list')
 endfunction
@@ -102,6 +97,26 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
+" Setup popup windows. Mode can be 0 (not editable) or 1 (editable).
+" Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
+" shell#job_win() or other internal stuff. So instead just try to disable normal mode
+" commands that could accidentally modify text (aside from d used for scrolling).
+" Warning: Critical error happens if try to auto-quit when only popup window is
+" left... fzf will take up the whole window in small terminals, and even when fzf
+" immediately runs and closes as e.g. with non-tex BufNewFile template detection,
+" this causes vim to crash and breaks the terminal. Instead never auto-close windows
+" and simply get in habit of closing entire tabs with session#close_tab().
+function! utils#popup_setup(filemode) abort
+  nnoremap <silent> <buffer> q :call window#close_window()<CR>
+  nnoremap <silent> <buffer> <C-w> :call window#close_window()<CR>
+  setlocal nolist nonumber norelativenumber nocursorline
+  if &filetype ==# 'qf' | nnoremap <buffer> <CR> <CR> | endif
+  if a:filemode == 1 | return | endif  " this is an editable file
+  setlocal nospell colorcolumn= statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
+  for char in 'uUrRxXpPdDaAiIcCoO' | exe 'nmap <buffer> ' char . ' <Nop>' | endfor
+  for char in 'dufb' | exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>' | endfor
+endfunction
+
 " Set registers or return command that will demand a register (" or peekaboo).
 " Note: First function translates counts passed to yanks/change/delete/paste and
 " marks to named registers a-j or a-k, and counts passed to macros to registers k-v.
@@ -110,6 +125,29 @@ endfunction
 " So have two options for specifying (translated or untranslated) number register:
 " either counts or as the register name (e.g. 2'p and ''2p are same). Double press of
 " ' and " are required when specifying name, except for <Leader> maps (see vimrc).
+function! utils#register_find(mode) abort
+  if v:count  " now enable translation
+    if a:mode ==# "'"
+      let reg = nr2char(96 + v:count)
+    else
+      let reg = nr2char(105 + v:count1)
+    endif
+    echom 'Register: ' . reg . ' (' . v:count . ')'
+    let cmd = "\<Esc>" . '"' . reg
+  else
+    let char = nr2char(getchar())
+    if char ==# "'"  " manual register selection
+      let cmd = '"'
+    elseif char ==# '"'  " peekaboo register selection
+      let cmd = '""'
+    elseif a:mode ==# "'"
+      let cmd = '"_' . char
+    else
+      let cmd = '"*' . char
+    endif
+  endif
+  return cmd
+endfunction
 function! utils#register_count(mode) abort
   if v:count > 9
     echoerr 'Error: Shorthand register number must fall between 0 and 9.'
@@ -140,80 +178,4 @@ function! utils#register_count(mode) abort
     echom 'Register: ' . reg . ' (' . v:count . ')'
   endif
   return cmd
-endfunction
-function! utils#register_find(mode) abort
-  if v:count  " now enable translation
-    if a:mode ==# "'"
-      let reg = nr2char(96 + v:count)
-    else
-      let reg = nr2char(105 + v:count1)
-    endif
-    echom 'Register: ' . reg . ' (' . v:count . ')'
-    let cmd = "\<Esc>" . '"' . reg
-  else
-    let char = nr2char(getchar())
-    if char ==# "'"  " manual register selection
-      let cmd = '"'
-    elseif char ==# '"'  " peekaboo register selection
-      let cmd = '""'
-    elseif a:mode ==# "'"
-      let cmd = '"_' . char
-    else
-      let cmd = '"*' . char
-    endif
-  endif
-  return cmd
-endfunction
-
-" Switch to next or previous colorschemes and print the name
-" This is used when deciding on macvim colorschemes
-function! utils#wrap_colorschemes(reverse) abort
-  " Get colorscheme list
-  let step = a:reverse ? 1 : -1
-  if !exists('g:all_colorschemes')
-    let g:all_colorschemes = getcompletion('', 'color')
-  endif
-  let active_colorscheme = get(g:, 'colors_name', 'default')
-  let idx = index(g:all_colorschemes, active_colorscheme)
-  let idx = step + (idx < 0 ? -step : idx)   " if idx < 0, set to 0 by default
-  " Jump to next
-  if idx < 0
-    let idx += len(g:all_colorschemes)
-  elseif idx >= len(g:all_colorschemes)
-    let idx -= len(g:all_colorschemes)
-  endif
-  let colorscheme = g:all_colorschemes[idx]
-  echom 'Colorscheme: ' . colorscheme
-  exe 'colorscheme ' . colorscheme
-  silent redraw
-  let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
-endfunction
-
-" Cyclic next error in location list
-" Adapted from: https://vi.stackexchange.com/a/14359
-" Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
-" cursor is on final error in the file but ]x does not cycle to the next one.
-function! utils#wrap_cyclic(count, list, ...) abort
-  " Build up list of loc dictionaries
-  let func = 'get' . a:list . 'list'
-  let reverse = a:0 && a:1
-  let params = a:list ==# 'loc' ? [0] : []
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
-  let items = call(func, params)
-  call filter(items, "v:val.bufnr == bufnr('%')")
-  if empty(items) | return "echoerr 'E42: No errors'" | endif
-  call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if reverse | call reverse(items) | endif
-  " Jump to next loc circularly
-  let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], reverse ? '<' : '>']
-  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
-  call filter(items, join(cmps, ' || '))
-  let inext = get(get(items, 0, {}), 'idx', '')
-  if type(inext) == type(0)
-    return cmd . inext
-  endif
-  exe reverse ? line('$') : 0
-  return utils#wrap_cyclic(a:count, a:list, reverse)
 endfunction

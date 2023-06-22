@@ -553,7 +553,7 @@ vh() {
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
   if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-    vim --cmd 'set buftype=nofile' -c "call popup#help_page(0, '$*')"
+    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
   else
     echo "No help information for $*."
   fi
@@ -579,7 +579,7 @@ vm() {
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
   if command man "$arg" 1>/dev/null; then  # could display error message
-    vim --cmd 'set buftype=nofile' -c "call popup#man_page(0, '$*')"
+    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
   fi
 }
 

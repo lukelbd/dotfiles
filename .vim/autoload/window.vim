@@ -9,14 +9,15 @@ function! s:recent_bufs() abort
   let info = getbufinfo()
   let info = sort(info, {val1, val2 -> val2.lastused - val1.lastused})
   return map(info, {idx, val -> val.bufnr})
-  " return filter(nums, {val -> buflisted(val)})
+" let nums = map(info, {idx, val -> val.bufnr})
+" return filter(nums, {val -> buflisted(val)})
 endfunction
 
 " Safely closing tabs and windows
 " Note: This moves to the left tab after closure
 " Note: Calling quit inside codei buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
-function! session#close_window() abort
+function! window#close_window() abort
   let ntabs = tabpagenr('$')
   let islast = tabpagenr('$') == tabpagenr()
   if &l:filetype ==# 'codi'
@@ -28,7 +29,7 @@ function! session#close_window() abort
     silent! tabprevious
   endif
 endfunction
-function! session#close_tab() abort
+function! window#close_tab() abort
   let ntabs = tabpagenr('$')
   let islast = tabpagenr('$') == tabpagenr()
   if ntabs == 1
@@ -48,15 +49,13 @@ function! s:fzf_tab_source() abort
   let ndigits = len(string(tabpagenr('$')))
   let tabskip = get(g:, 'tabline_skip_filetypes', [])
   let unsorted = {}
-  for tnr in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = tnr + 1 " the tab number
+  for tnr in range(tabpagenr('$'))  " iterate through each tab
+    let tabnr = tnr + 1  " the tab number
     let tbufs = tabpagebuflist(tabnr)
     for bnr in tbufs
-      " Get 'primary' panel in tab, ignore 'helpers' even when focused
-      " If there is *only* a 'helper' panel, use tnr for the title
-      if index(tabskip, getbufvar(bnr, '&ft')) == -1
+      if index(tabskip, getbufvar(bnr, '&ft')) == -1  " use if not a popup window
         let bufnr = bnr | break
-      elseif bnr == tbufs[-1]
+      elseif bnr == tbufs[-1]  " use if no non-popup windows
         let bufnr = bnr
       endif
     endfor
@@ -79,7 +78,7 @@ endfunction
 
 " Select from open tabs
 " Note: This displays a list with the tab number and the file
-function! session#jump_tab() abort
+function! window#jump_tab() abort
   call fzf#run(fzf#wrap({
     \ 'source': s:fzf_tab_source(),
     \ 'options': '--no-sort --prompt="Tab> "',
@@ -93,7 +92,7 @@ endfunction
 " Move to selected tab
 " Note: This also displays the tab names in case user wants to
 " group this file appropriately amongst similar open files.
-function! session#move_tab(...) abort
+function! window#move_tab(...) abort
   if a:0
     call s:move_tab_sink(a:1)
   else
@@ -120,31 +119,9 @@ function! s:move_tab_sink(nr) abort
   endif
 endfunction
 
-" Create obsession file and possibly remove old one
-" Note: Sets string for use with MacVim windows and possibly other GUIs
-function! session#init_session(...)
-  if !exists(':Obsession')
-    echoerr ':Obsession is not installed.'
-    return
-  endif
-  let regex = '^\.vimsession[-_]*\(.*\)$'
-  let current = v:this_session
-  let session = a:0 ? a:1 : !empty(current) ? current : '.vimsession'
-  let suffix = substitute(fnamemodify(session, ':t'), regex, '\1', '')
-  exe 'Obsession ' . session
-  if !empty(current) && fnamemodify(session, ':p') != fnamemodify(current, ':p')
-    echom 'Removing old session file ' . fnamemodify(current, ':t')
-    call delete(current)
-  endif
-  if !empty(suffix)
-    echom 'Applying session title ' . suffix
-    let &g:titlestring = suffix
-  endif
-endfunction
-
 " Print currently open buffers
 " Note: This should be used in conjunction with :WipeBufs
-function! session#show_bufs() abort
+function! window#show_bufs() abort
   let ndigits = len(string(bufnr('$')))
   let result = {}
   let lines = []
@@ -152,13 +129,14 @@ function! session#show_bufs() abort
     let pad = repeat(' ', ndigits - len(string(bufnr)))
     call add(lines, pad . bufnr . ': ' . bufname(bufnr))
   endfor
-  echo join(lines, "\n")
+  let message = "Open buffers (sorted by recent use):\n" . join(lines, "\n")
+  echo message
 endfunction
 
 " Close buffers that do not appear in windows
 " See: https://stackoverflow.com/a/7321131/4970632
 " See: https://github.com/Asheq/close-buffers.vim
-function! session#wipe_bufs()
+function! window#wipe_bufs()
   let nums = []
   for t in range(1, tabpagenr('$'))
     call extend(nums, tabpagebuflist(t))
