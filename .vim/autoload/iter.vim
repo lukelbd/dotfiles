@@ -50,7 +50,7 @@ endfunction
 
 " Switch to next or previous colorschemes and print the name
 " This is used when deciding on macvim colorschemes
-function! iter#wrap_colorschemes(reverse) abort
+function! iter#jump_colorschemes(reverse) abort
   " Get list of color schemes
   let step = a:reverse ? 1 : -1
   if !exists('g:all_colorschemes')
@@ -76,7 +76,7 @@ endfunction
 " Adapted from: https://vi.stackexchange.com/a/14359
 " Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
 " cursor is on final error in the file but ]x does not cycle to the next one.
-function! iter#wrap_cyclic(count, list, ...) abort
+function! iter#jump_cyclic(count, list, ...) abort
   " Get list of loc dictionaries
   let func = 'get' . a:list . 'list'
   let reverse = a:0 && a:1
@@ -98,5 +98,5 @@ function! iter#wrap_cyclic(count, list, ...) abort
     return cmd . inext
   endif
   exe reverse ? line('$') : 0
-  return iter#wrap_cyclic(a:count, a:list, reverse)
+  return iter#jump_cyclic(a:count, a:list, reverse)
 endfunction

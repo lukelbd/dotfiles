@@ -143,7 +143,7 @@ let s:popup_filetypes += [
 augroup buffer_overrides
   au!
   au BufEnter * call s:buffer_overrides()
-  " au FileType vim setlocal iskeyword=@,48-57,_,192-255
+  au FileType vim setlocal iskeyword=@,48-57,_,192-255,#
 augroup END
 function! s:buffer_overrides() abort
   setlocal concealcursor=
@@ -325,20 +325,19 @@ for s:key in [
 endfor
 
 " Enable left mouse click in visual mode to extend selection, normally impossible
-" Note: Mark z used when defining and jumping in same line, mark x used for insert
-" mode undo maps, and mark y used for visual mode maps.
+" Note: Marks y and z are reserved for internal map utilities.
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when
 " enter visual mode, to do that need to map vi and va stuff.
-nnoremap v myv
-nnoremap V myV
-nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'my<C-v>'
-vnoremap v <Esc>myv
-vnoremap V <Esc>myV
-vnoremap <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'my<C-v>'
-nnoremap gn gE/<C-r>"/<CR><Cmd>noh<CR>mygn
-nnoremap gN W?<C-r>"?e<CR><Cmd>noh<CR>mygN
-vnoremap <LeftMouse> <LeftMouse>mx`y<Cmd>exe 'normal! ' . visualmode()<CR>`x
+nnoremap v mzv
+nnoremap V mzV
+nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
+vnoremap v <Esc>mzv
+vnoremap V <Esc>mzV
+vnoremap <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
+nnoremap gn gE/<C-r>"/<CR><Cmd>noh<CR>mzgn
+nnoremap gN W?<C-r>"?e<CR><Cmd>noh<CR>mzgN
+vnoremap <LeftMouse> <LeftMouse>my`z<Cmd>exe 'normal! ' . visualmode()<CR>`y
 vnoremap <CR> <C-c>
 
 " Automatically update binary spellfile
@@ -512,8 +511,8 @@ command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=? Localdir call switch#localdir(<args>)
 noremap <Leader>i <Cmd>Abspath<CR>
 noremap <Leader>I <Cmd>Localdir<CR>
-noremap <Leader>f <Cmd>call file#print_exists()<CR>
-noremap <Leader>F <Cmd>exe 'Existing ' . expand('<cfile>')<CR>
+noremap <Leader>p <Cmd>call file#print_exists()<CR>
+noremap <Leader>P <Cmd>exe 'Existing ' . expand('<cfile>')<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -647,7 +646,7 @@ nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
-nnoremap <Leader>. :<Up><CR>
+" Note: Mnemonic for 'repeat command' is that it is on same key as :hlsearch
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -658,6 +657,7 @@ nnoremap <Leader>h <Cmd>call shell#help_page(1)<CR>
 nnoremap <Leader>H <Cmd>call shell#man_page(1)<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
+nnoremap <Leader>O :<C-r><Up><CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -722,8 +722,8 @@ nnoremap <Plug>RepeatRedo <C-r>
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 " inoremap <CR> <C-]><C-g>u<CR>
-" inoremap <C-g>u <C-o>mx<C-o>u
-" inoremap <C-g>U <C-o><C-r><C-o>`x<Right>
+" inoremap <C-g>u <C-o>my<C-o>u
+" inoremap <C-g>U <C-o><C-r><C-o>`y<Right>
 
 " Specify numbered registers using count, or alphabetic registers with double press,
 " otherwise use black hole register "_ for ' and clipboard register "* for '""
@@ -731,8 +731,8 @@ inoremap <C-g>U <C-g>u
 " by yank/change/delete/paste (single quote) or macro define/run (double quote).
 " Note: Use g:peekaboo_prefix = '"' below so that double '"' press opens up register
 " seleciton panel. Also this way double press of "'" is similar, just no popup.
-noremap <expr> ' utils#register_find("'")
-noremap <expr> " utils#register_find('"')
+noremap <expr> ' utils#register_count("'")
+noremap <expr> " utils#register_count('"')
 
 " Specify alphabetic marks using counts
 " Note: There are no 'unnamed' marks, so unlike yank/change/delete/paste maps, the
@@ -742,12 +742,12 @@ noremap <expr> " utils#register_find('"')
 command! -nargs=1 HighlightMark call mark#highlight_mark(<q-args>)
 command! -nargs=* RemoveHighlights call mark#remove_highlights(<f-args>)
 noremap <Leader>~ <Cmd>RemoveHighlights<CR>
-noremap <expr> ` "`" . utils#register_count('`')
-noremap <expr> ~ 'm' . utils#register_count('m')
+noremap <expr> ` "`" . utils#translate_count('`')
+noremap <expr> ~ 'm' . utils#translate_count('m')
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-nnoremap cL mzi<CR><Esc>`z
+nnoremap cL myi<CR><Esc>`y
 nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
 nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
 nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
@@ -756,44 +756,42 @@ nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
 " Change text, specify registers with counts.
 " Here 'cy' matches 'gy' below (note 's' is used for sneak)
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
-" Note: Pressing <Esc> removes count from motion, critical.
 nnoremap cy "_s
 nnoremap c<Backspace> <Nop>
-nnoremap <expr> c utils#register_count('n') . 'c'
-nnoremap <expr> C utils#register_count('n') . 'C'
-vnoremap <expr> c utils#register_count('v') . 'c'
-vnoremap <expr> C utils#register_count('v') . 'C'
+nnoremap <expr> c utils#translate_count('n') . 'c'
+nnoremap <expr> C utils#translate_count('n') . 'C'
+vnoremap <expr> c utils#translate_count('v') . 'c'
+vnoremap <expr> C utils#translate_count('v') . 'C'
 
 " Delete text, specify registers with counts (no more dd mapping)
 " Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-" Note: Mnemonic for second set is 'c' for 'maCro'
-nnoremap <expr> d utils#register_count('n') . 'd'
-nnoremap <expr> D utils#register_count('n') . 'D'
-vnoremap <expr> d utils#register_count('v') . 'd'
-vnoremap <expr> D utils#register_count('v') . 'D'
+nnoremap <expr> d utils#translate_count('n') . 'd'
+nnoremap <expr> D utils#translate_count('n') . 'D'
+vnoremap <expr> d utils#translate_count('v') . 'd'
+vnoremap <expr> D utils#translate_count('v') . 'D'
 
 " Yank text, specify registers with counts (no more yy mappings)
 " Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-nnoremap <expr> y utils#register_count('n') . 'y'
-nnoremap <expr> Y utils#register_count('n') . 'y$'
-vnoremap <expr> y utils#register_count('v') . 'y'
-vnoremap <expr> Y utils#register_count('v') . 'y'
+nnoremap <expr> y utils#translate_count('n') . 'y'
+nnoremap <expr> Y utils#translate_count('n') . 'y$'
+vnoremap <expr> y utils#translate_count('v') . 'y'
+vnoremap <expr> Y utils#translate_count('v') . 'y'
 
 " Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
 " unchanged text, because cannot use zero, and note 'py' will cause 'p' to wait.
 " Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
-nnoremap <expr> p utils#register_count('n') . 'p'
-nnoremap <expr> P utils#register_count('n') . 'P'
-vnoremap <expr> p utils#register_count('n') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
-vnoremap <expr> P utils#register_count('n') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
+nnoremap <expr> p utils#translate_count('n') . 'p'
+nnoremap <expr> P utils#translate_count('n') . 'P'
+vnoremap <expr> p utils#translate_count('n') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> P utils#translate_count('n') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
 " Note: Here start at 10 letters after nr2char(97) == 'a' with nr2char(107) == 'k'. Use
 " the first 20 characters for yanking, changing, deleting into specific registers.
 " au BufLeave,WinLeave * exe 'normal! qZq' | let b:recording = 0
-nnoremap <expr> , '<Esc>@' . utils#register_count('@')
-nnoremap <expr> Q '<Esc>q' . utils#register_count('q') . '<Esc>'
+nnoremap <expr> , '<Esc>@' . utils#translate_count('@')
+nnoremap <expr> Q '<Esc>q' . utils#translate_count('q') . '<Esc>'
 
 " Never save single-character deletions to any register
 " Without this register fills up quickly and history is lost
@@ -894,9 +892,9 @@ nmap [S <Plug>backward_spell
 nnoremap <nowait> gu guiw
 nnoremap <nowait> gU gUiw
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-nnoremap <silent> <Plug>cap2 mzguiw~h`z:call repeat#set("\<Plug>cap2")<CR>
+nnoremap <silent> <Plug>cap2 myguiw~h`y:call repeat#set("\<Plug>cap2")<CR>
 vnoremap gy ~
-vnoremap gt mzgu<Esc>`<~h
+vnoremap gt gu<Esc>`<~h
 nmap gy <Plug>cap1
 nmap gt <Plug>cap2
 
@@ -1621,8 +1619,8 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
   augroup END
   command! -nargs=? Ignores echom 'Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
-  nnoremap <Leader>< <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
-  nnoremap <Leader>> <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
+  nnoremap <Leader>f <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap <Leader>F <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " use with cache dir
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
@@ -1800,7 +1798,7 @@ if s:plug_active('ale')
   noremap <Leader>x <Cmd>lopen<CR>
   noremap <Leader>X <Cmd>call switch#ale()<CR>
   noremap <Leader>@ <Cmd>ALEInfo<CR>
-  noremap <Leader># <Cmd>ALEDetail<CR>
+  " noremap <Leader># <Cmd>ALEDetail<CR>  " redundant with lopen
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
@@ -1907,15 +1905,15 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   command! -nargs=* Gstatus Git status <args>
-  noremap <Leader>, <Cmd>tab Git<CR>
-  noremap <Leader>O <Cmd>Git commit<CR>
-  noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
   noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
   noremap <Leader>K <Cmd>echom "Git reset '" . @% . "'" \| Git reset %<CR>
-  noremap <Leader>p <Cmd>BCommits<CR>
-  noremap <Leader>P <Cmd>Commits<CR>
+  noremap <Leader>, <Cmd>BCommits<CR>
+  noremap <Leader>< <Cmd>Commits<CR>
+  noremap <Leader>. <Cmd>tab Git<CR>
+  noremap <Leader>> <Cmd>Git commit<CR>
+  noremap <Leader>B <Cmd>Git blame<CR>
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
 

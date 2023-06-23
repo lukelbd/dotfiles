@@ -1,6 +1,10 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
+" Script variable used for complete
+" Note: No way to modify function partial arglist in-place
+let s:complete_init = 0
+
 " Null input() completion function
 " This prevents unexpected insertion of literal tabs
 " Note: Used in various places throughout autoload
@@ -22,12 +26,11 @@ endfunction
 " or replaces it when user starts typing text. Unique part is that it does not fill
 " the input line with text from the start, allowing both 1) quick user overrides of
 " the entire line and 2) quick selection of a default value, all in one cmdline line.
-function! utils#input_list(...)
-  let [init, funcname, default, fill] = s:complete_params
-  if !init  " kludge for default behavior
-    return call(funcname, a:000)
+function! utils#input_list(funcref, default, ...)
+  if !s:complete_init  " kludge for default behavior
+    return call(a:funcref, a:000)
   else
-    let s:complete_params[0] = 0
+    let s:complete_init = 0
     try
       let char = nr2char(getchar())
     catch  " user presses Ctrl-C
@@ -35,10 +38,10 @@ function! utils#input_list(...)
       return ['']
     endtry
     if char ==# "\<Tab>"
-      return [fill]
+      return [a:default]
     elseif char ==# "\<CR>"
       call feedkeys("\<CR>", 't')
-      return [fill]
+      return [a:default]
     elseif char =~# '\p'
       return [char]
     elseif len(char) == 0  " backspace or delete
@@ -49,11 +52,11 @@ function! utils#input_list(...)
     endif
   endif
 endfunction
-function! utils#input_complete(prompt, funcname, default, ...) abort
-  let fill = call(a:funcname, [a:default, '', ''])
-  let fill = empty(fill) ? a:default : fill[0]  " e.g. expand intial path
+function! utils#input_complete(prompt, funcname, default) abort
+  let default = call(a:funcname, [a:default, '', ''])
+  let default = empty(default) ? a:default : default[0]  " e.g. default intial path
   let message = a:prompt . ' (' . a:default . '): '
-  let s:complete_params = [1, a:funcname, a:default, fill]
+  let funcref = function('utils#input_list', [a:funcname, default])
   call feedkeys("\<Tab>", 't')
   return input(message, '', 'customlist,utils#input_list')
 endfunction
@@ -117,23 +120,41 @@ function! utils#popup_setup(filemode) abort
   for char in 'dufb' | exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>' | endfor
 endfunction
 
-" Set registers or return command that will demand a register (" or peekaboo).
-" Note: First function translates counts passed to yanks/change/delete/paste and
-" marks to named registers a-j or a-k, and counts passed to macros to registers k-v.
-" Note: This permits passing counts as shorthand for number registers (maps ' and ") or
-" for the number-translated register set a-j (map <Leader>') or k-u (map <Leader>").
-" So have two options for specifying (translated or untranslated) number register:
-" either counts or as the register name (e.g. 2'p and ''2p are same). Double press of
-" ' and " are required when specifying name, except for <Leader> maps (see vimrc).
-function! utils#register_find(mode) abort
-  if v:count  " now enable translation
-    if a:mode ==# "'"
-      let reg = nr2char(96 + v:count)
-    else
-      let reg = nr2char(105 + v:count1)
-    endif
-    echom 'Register: ' . reg . ' (' . v:count . ')'
-    let cmd = "\<Esc>" . '"' . reg
+" Return commands specifying or demanding a register (e.g. " or peekaboo)
+" Note: These functions translate counts passed to yanks/change/delete/paste to first
+" 12 letters of alphabet, counts passed to macro records/plays to next 12 letters of
+" alphabet, and counts passed to mark sets/jumps to first 24 letters of alphabet.
+" Leave letters 'y' and 'z' alone for internal use (currently just used by marks).
+function! s:translate_count(mode) abort
+  let cnt = v:count
+  if a:mode =~# '`\|m'  " marks: letters j-s (10)
+    let type = 'Mark'
+    let [base, min, max] = [96, 1, 24]
+  elseif a:mode =~# 'q\|@\|"'  " macros: letters a-j (10)
+    let type = 'Register'
+    let [base, min, max] = [108, 1, 12]
+  else
+    let type = 'Register'
+    let [base, min, max] = [96, 0, 12]
+  endif
+  if cnt > max
+    echohl WarningMsg
+    echom "Warning: Shorthand number for '" . a:mode . '" must be less than ' . max . '.'
+    echohl None
+    let cnt = max
+  endif
+  let cnt = max([min, cnt])  " similar to v:count1
+  let name = cnt == 0 ? '' : nr2char(base + cnt)
+  if !empty(name)
+    echom type . ': ' . name . ' (' . cnt . ')'
+  endif
+  return name
+endfunction
+" Convert count into register
+function! utils#register_count(mode) abort
+  let name = s:translate_count(a:mode)
+  if !empty(name)
+    let cmd = "\<Esc>" . '"' . name
   else
     let char = nr2char(getchar())
     if char ==# "'"  " manual register selection
@@ -148,34 +169,26 @@ function! utils#register_find(mode) abort
   endif
   return cmd
 endfunction
-function! utils#register_count(mode) abort
-  if v:count > 9
-    echoerr 'Error: Shorthand register number must fall between 0 and 9.'
-    return ''
-  endif
+" Convert count into command
+function! utils#translate_count(mode) abort
+  let name = s:translate_count(a:mode)
   if a:mode =~# 'q\|@'  " marks: letters j-s (10)
-    let reg = nr2char(105 + v:count1)
-    let cmd = reg
+    let cmd = name
     if a:mode ==# 'q'
       let record = get(b:, 'recording', 0)
       let cmd = record ? '' : cmd
       let b:recording = 1 - record
     endif
   elseif a:mode =~# '`\|m'  " macros: letters a-j (10)
-    let cmd = reg
-    let reg = nr2char(97 + v:count)
+    let cmd = name
     if a:mode ==# 'm'
-      let cmd = cmd . "\<Cmd>HighlightMark " . reg . "\<CR>"
+      let cmd = cmd . "\<Cmd>HighlightMark " . name . "\<CR>"
     endif
   else  " yanks/changes/deletes/pastes: letters a-i (9) else default
-    let reg = v:count ? nr2char(96 + v:count) : ''
-    let cmd = empty(reg) ? '' : '"' . reg
-    if v:count && a:mode ==# 'n'
+    let cmd = empty(name) ? '' : '"' . name
+    if !empty(name) && a:mode ==# 'n'
       let cmd = "\<Esc>" . cmd
     endif
-  endif
-  if !empty(reg)
-    echom 'Register: ' . reg . ' (' . v:count . ')'
   endif
   return cmd
 endfunction

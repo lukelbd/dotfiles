@@ -49,11 +49,9 @@ function! mark#highlight_mark(mark) abort
     let b:mark_highlights = {}
   endif
   let highlights = b:mark_highlights
-  echo 'Mark: ' . a:mark
   let name = 'mark_'. (a:mark =~# '\u' ? 'C'. a:mark :a:mark)
   if has_key(highlights, a:mark) && len(highlights[a:mark]) == 2
-    " If mark has been defined before, remove the reference to the highlight,
-    " but leave the color intact
+    " Remove reference to highlight but leave color
     call s:match_delete(highlights[a:mark][1])
     call remove(highlights[a:mark], 1)
   elseif has_key(highlights, a:mark)
