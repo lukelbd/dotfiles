@@ -47,28 +47,24 @@ function! vim#config_refresh(bang, ...) abort
   let loaded = []
   let updates = {}
   for path in vim#config_scripts(1)
+    let ftype = path =~# '/syntax/\|/ftplugin/' ? fnamemodify(path, ':t:r') : 'global'
+    let vimrc = path =~# '/\.\?vimrc\|/init\.vim'  " always source and trigger filetypes
     if path !~# expand('~') || path =~# regex || !empty(compare) && path !~# compare
       continue  " skip files not edited by user or not matching input regex
     endif
     if index(loaded, path) != -1
       continue  " already loaded this
     endif
-    if path =~# '/syntax/\|/ftplugin/'
-      let ftype = fnamemodify(path, ':t:r')
-    else
-      let ftype = 'global'
-    endif
-    if path =~# '/\.\?vimrc\|/init\.vim'  " always source and trigger filetypes
-      doautocmd Filetype
-    elseif !a:bang && getftime(path) < get(g:refresh_times, ftype, default)
+    if !vimrc && !a:bang && getftime(path) < get(g:refresh_times, ftype, default)
       continue  " only refresh if outdated
     endif
     if ftype ==# 'global' || ftype ==# &filetype
-      exe 'so ' . path
-      call add(loaded, path)
-      let updates[ftype] = current
+      exe 'so ' . path | call add(loaded, path) | let updates[ftype] = current
     else
       let updates[ftype] = get(g:refresh_times, ftype, default)
+    endif
+    if vimrc  " trigger autocommand
+      doautocmd Filetype
     endif
   endfor
   doautocmd BufEnter

@@ -143,7 +143,6 @@ let s:popup_filetypes += [
 augroup buffer_overrides
   au!
   au BufEnter * call s:buffer_overrides()
-  au FileType vim setlocal iskeyword=@,48-57,_,192-255,#
 augroup END
 function! s:buffer_overrides() abort
   setlocal concealcursor=
