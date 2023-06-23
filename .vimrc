@@ -730,8 +730,8 @@ inoremap <C-g>U <C-g>u
 " by yank/change/delete/paste (single quote) or macro define/run (double quote).
 " Note: Use g:peekaboo_prefix = '"' below so that double '"' press opens up register
 " seleciton panel. Also this way double press of "'" is similar, just no popup.
-noremap <expr> ' utils#register_count("'")
-noremap <expr> " utils#register_count('"')
+noremap <expr> ' utils#translate_count("'")
+noremap <expr> " utils#translate_count('"')
 
 " Specify alphabetic marks using counts
 " Note: There are no 'unnamed' marks, so unlike yank/change/delete/paste maps, the

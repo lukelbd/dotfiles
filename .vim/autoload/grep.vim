@@ -9,7 +9,7 @@ function! grep#call_grep(grep, level, depth) abort
   let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:] . ' pattern'
   let search = utils#input_complete(prompt, 'grep#pattern_list', @/)
   if empty(search) | return | endif
-  let func = 'grep#' . tolower(a:grep)
+  let func = 'grep#call_' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, search])
 endfunction
 function! grep#pattern_list(lead, list, cursor)

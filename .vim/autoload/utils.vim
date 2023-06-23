@@ -1,10 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
-" Script variable used for complete
-" Note: No way to modify function partial arglist in-place
-let s:complete_init = 0
-
 " Null input() completion function
 " This prevents unexpected insertion of literal tabs
 " Note: Used in various places throughout autoload
@@ -26,11 +22,12 @@ endfunction
 " or replaces it when user starts typing text. Unique part is that it does not fill
 " the input line with text from the start, allowing both 1) quick user overrides of
 " the entire line and 2) quick selection of a default value, all in one cmdline line.
-function! utils#input_list(funcref, default, ...)
-  if !s:complete_init  " kludge for default behavior
-    return call(a:funcref, a:000)
+function! utils#input_list(...)
+  let [init, funcname, default] = s:complete_opts
+  if !init  " kludge for default behavior
+    return call(funcname, a:000)
   else
-    let s:complete_init = 0
+    let s:complete_opts[0] = 0
     try
       let char = nr2char(getchar())
     catch  " user presses Ctrl-C
@@ -38,10 +35,10 @@ function! utils#input_list(funcref, default, ...)
       return ['']
     endtry
     if char ==# "\<Tab>"
-      return [a:default]
+      return [default]
     elseif char ==# "\<CR>"
       call feedkeys("\<CR>", 't')
-      return [a:default]
+      return [default]
     elseif char =~# '\p'
       return [char]
     elseif len(char) == 0  " backspace or delete
@@ -56,7 +53,7 @@ function! utils#input_complete(prompt, funcname, default) abort
   let default = call(a:funcname, [a:default, '', ''])
   let default = empty(default) ? a:default : default[0]  " e.g. default intial path
   let message = a:prompt . ' (' . a:default . '): '
-  let funcref = function('utils#input_list', [a:funcname, default])
+  let s:complete_opts = [1, a:funcname, default]
   call feedkeys("\<Tab>", 't')
   return input(message, '', 'customlist,utils#input_list')
 endfunction
@@ -150,41 +147,35 @@ function! s:translate_count(mode) abort
   endif
   return name
 endfunction
-" Convert count into register
-function! utils#register_count(mode) abort
-  let name = s:translate_count(a:mode)
-  if !empty(name)
-    let cmd = "\<Esc>" . '"' . name
-  else
-    let char = nr2char(getchar())
-    if char ==# "'"  " manual register selection
-      let cmd = '"'
-    elseif char ==# '"'  " peekaboo register selection
-      let cmd = '""'
-    elseif a:mode ==# "'"
-      let cmd = '"_' . char
-    else
-      let cmd = '"*' . char
-    endif
-  endif
-  return cmd
-endfunction
 " Convert count into command
 function! utils#translate_count(mode) abort
   let name = s:translate_count(a:mode)
-  if a:mode =~# 'q\|@'  " marks: letters j-s (10)
-    let cmd = name
-    if a:mode ==# 'q'
-      let record = get(b:, 'recording', 0)
-      let cmd = record ? '' : cmd
-      let b:recording = 1 - record
+  if a:mode =~# "'" . '\|' . '"'
+    if !empty(name)
+      let cmd = "\<Esc>" . '"' . name
+    else
+      let char = nr2char(getchar())
+      if char ==# "'"  " manual register selection
+        let cmd = '"'
+      elseif char ==# '"'  " peekaboo register selection
+        let cmd = '""'
+      elseif a:mode ==# "'"
+        let cmd = '"_' . char
+      else
+        let cmd = '"*' . char
+      endif
     endif
-  elseif a:mode =~# '`\|m'  " macros: letters a-j (10)
+  elseif a:mode =~# '`\|m'  " marks
     let cmd = name
     if a:mode ==# 'm'
       let cmd = cmd . "\<Cmd>HighlightMark " . name . "\<CR>"
     endif
-  else  " yanks/changes/deletes/pastes: letters a-i (9) else default
+  elseif a:mode =~# 'q\|@'  " macros
+    let cmd = name
+    if a:mode ==# 'q'
+      let rec = get(b:, 'recording', 0) | let cmd = rec ? '' : cmd | let b:recording = 1 - rec
+    endif
+  else  " yanks/changes/deletes/pastes
     let cmd = empty(name) ? '' : '"' . name
     if !empty(name) && a:mode ==# 'n'
       let cmd = "\<Esc>" . cmd
