@@ -330,14 +330,14 @@ endfor
 " enter visual mode, to do that need to map vi and va stuff.
 nnoremap v mzv
 nnoremap V mzV
-nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
-vnoremap v <Esc>mzv
-vnoremap V <Esc>mzV
-vnoremap <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
 nnoremap gn gE/<C-r>"/<CR><Cmd>noh<CR>mzgn
 nnoremap gN W?<C-r>"?e<CR><Cmd>noh<CR>mzgN
-vnoremap <LeftMouse> <LeftMouse>my`z<Cmd>exe 'normal! ' . visualmode()<CR>`y
+nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
 vnoremap <CR> <C-c>
+vnoremap v <Esc>mzv
+vnoremap V <Esc>mzV
+vnoremap <expr> <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
+vnoremap <LeftMouse> <LeftMouse>my`z<Cmd>exe 'normal! ' . visualmode()<CR>`y<Cmd>delmark y<CR>
 
 " Automatically update binary spellfile
 " See: https://vi.stackexchange.com/a/5052/8084
@@ -721,81 +721,76 @@ nnoremap <Plug>RepeatRedo <C-r>
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 " inoremap <CR> <C-]><C-g>u<CR>
-" inoremap <C-g>u <C-o>my<C-o>u
-" inoremap <C-g>U <C-o><C-r><C-o>`y<Right>
+" inoremap <C-g>u <C-o>my<C-o>u<C-o>:delmark y<CR>
+" inoremap <C-g>U <C-o><C-r><C-o>`y<Right><Cmd>delmark y<CR>
 
-" Specify numbered registers using count, or alphabetic registers with double press,
-" otherwise use black hole register "_ for ' and clipboard register "* for '""
-" Note: This also assigns leader maps that translate numbers to named registers used
-" by yank/change/delete/paste (single quote) or macro define/run (double quote).
-" Note: Use g:peekaboo_prefix = '"' below so that double '"' press opens up register
-" seleciton panel. Also this way double press of "'" is similar, just no popup.
-noremap <expr> ' utils#translate_count("'")
-noremap <expr> " utils#translate_count('"')
-
-" Specify alphabetic marks using counts
-" Note: There are no 'unnamed' marks, so unlike yank/change/delete/paste maps, the
-" default mark is stored under 'a'. This is similar to register behavior.
+" Specify alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks are same as lowercase, but saved in viminfo, and numbered marks
 " are mostly internal, can be configured to restore cursor position after restarting.
 command! -nargs=1 HighlightMark call mark#highlight_mark(<q-args>)
-command! -nargs=* RemoveHighlights call mark#remove_highlights(<f-args>)
+command! -bang -nargs=* RemoveHighlights call mark#remove_highlights(<f-args>) | delmarks!
 noremap <Leader>~ <Cmd>RemoveHighlights<CR>
-noremap <expr> ` "`" . utils#translate_count('`')
+noremap <expr> ` "`" . utils#translate_count('m')
 noremap <expr> ~ 'm' . utils#translate_count('m')
-
-" Swap characters or lines
-" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-nnoremap cL myi<CR><Esc>`y
-nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
-nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
-nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
-nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
-
-" Change text, specify registers with counts.
-" Here 'cy' matches 'gy' below (note 's' is used for sneak)
-" Note: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap cy "_s
-nnoremap c<Backspace> <Nop>
-nnoremap <expr> c utils#translate_count('n') . 'c'
-nnoremap <expr> C utils#translate_count('n') . 'C'
-vnoremap <expr> c utils#translate_count('v') . 'c'
-vnoremap <expr> C utils#translate_count('v') . 'C'
-
-" Delete text, specify registers with counts (no more dd mapping)
-" Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-nnoremap <expr> d utils#translate_count('n') . 'd'
-nnoremap <expr> D utils#translate_count('n') . 'D'
-vnoremap <expr> d utils#translate_count('v') . 'd'
-vnoremap <expr> D utils#translate_count('v') . 'D'
-
-" Yank text, specify registers with counts (no more yy mappings)
-" Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-nnoremap <expr> y utils#translate_count('n') . 'y'
-nnoremap <expr> Y utils#translate_count('n') . 'y$'
-vnoremap <expr> y utils#translate_count('v') . 'y'
-vnoremap <expr> Y utils#translate_count('v') . 'y'
-
-" Paste from the nth previously deleted or changed text. Use 'yp' to paste last yanked,
-" unchanged text, because cannot use zero, and note 'py' will cause 'p' to wait.
-" Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
-nnoremap <expr> p utils#translate_count('n') . 'p'
-nnoremap <expr> P utils#translate_count('n') . 'P'
-vnoremap <expr> p utils#translate_count('n') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
-vnoremap <expr> P utils#translate_count('n') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
-" Note: Here start at 10 letters after nr2char(97) == 'a' with nr2char(107) == 'k'. Use
-" the first 20 characters for yanking, changing, deleting into specific registers.
-" au BufLeave,WinLeave * exe 'normal! qZq' | let b:recording = 0
-nnoremap <expr> , '<Esc>@' . utils#translate_count('@')
-nnoremap <expr> Q '<Esc>q' . utils#translate_count('q') . '<Esc>'
+" Note: Visual counts are ignored when starting recording. And <Esc>
+nnoremap <expr> , '@' . utils#translate_count('q')
+nnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
+vnoremap <expr> , '@' . utils#translate_count('q')
+vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
+
+" Specify numbered registers using count, or alphabetic registers with double press,
+" otherwise use black hole register "_ for ' and clipboard register "* for '""
+" Note: This relies on g:peekaboo_prefix = '"' below so that double '"' press opens up
+" register seleciton panel. Also this way double press of "'" is similar, just no popup.
+nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_count('', '_', 0)
+nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_count('q', '*', 1)
+vnoremap <expr> ' utils#translate_count('', '_', 0)
+vnoremap <expr> " utils#translate_count('q', '*', 1)
+
+" Change text, specify registers with counts.
+" Note: Uppercase registers are same as lowercase but saved in viminfo.
+nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_count('') . 'c'
+nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_count('') . 'C'
+vnoremap <expr> c utils#translate_count('') . 'c'
+vnoremap <expr> C utils#translate_count('') . 'C'
+
+" Delete text, specify registers with counts (no more dd mapping)
+" Note: Visual counts are ignored, and cannot use <Esc> because that exits visual mode
+nnoremap <expr> d (v:count ? '<Esc>' : '') . utils#translate_count('') . 'd'
+nnoremap <expr> D (v:count ? '<Esc>' : '') . utils#translate_count('') . 'D'
+vnoremap <expr> d utils#translate_count('') . 'd'
+vnoremap <expr> D utils#translate_count('') . 'D'
+
+" Yank text, specify registers with counts (no more yy mappings)
+" Note: Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
+nnoremap <expr> y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y'
+nnoremap <expr> Y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y$'
+vnoremap <expr> y utils#translate_count('') . 'y'
+vnoremap <expr> Y utils#translate_count('') . 'y'
+
+" Paste from the nth previously deleted or changed text.
+" Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
+nnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_count('') . 'p'
+nnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_count('') . 'P'
+vnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_count('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_count('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
 " Never save single-character deletions to any register
 " Without this register fills up quickly and history is lost
 noremap x "_x
 noremap X "_X
+nnoremap cy "_s
+
+" Swap characters or lines
+" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
+nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
+nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
+nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
+nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
+nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
 
 " Indenting counts improvement. Before 2> indented this line or this motion repeated,
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
@@ -891,7 +886,7 @@ nmap [S <Plug>backward_spell
 nnoremap <nowait> gu guiw
 nnoremap <nowait> gU gUiw
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-nnoremap <silent> <Plug>cap2 myguiw~h`y:call repeat#set("\<Plug>cap2")<CR>
+nnoremap <silent> <Plug>cap2 myguiw~h`y<Cmd>delmark y<CR>:call repeat#set("\<Plug>cap2")<CR>
 vnoremap gy ~
 vnoremap gt gu<Esc>`<~h
 nmap gy <Plug>cap1
@@ -1194,8 +1189,8 @@ call plug#('yegappan/mru')  " most recent file
 " See: https://github.com/junegunn/vim-peekaboo/issues/84
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
-" call plug#('kshenoy/vim-signature')  " experimental but revisit
 " call plug#('tmhedberg/SimpylFold')  " slows things down
+" call plug#('kshenoy/vim-signature')  " unneeded and abandoned
 call plug#('junegunn/vim-peekaboo')  " popup display
 call plug#('justinmk/vim-sneak')  " simple and clean
 call plug#('Konfekt/FastFold')  " simpler

@@ -122,64 +122,56 @@ endfunction
 " 12 letters of alphabet, counts passed to macro records/plays to next 12 letters of
 " alphabet, and counts passed to mark sets/jumps to first 24 letters of alphabet.
 " Leave letters 'y' and 'z' alone for internal use (currently just used by marks).
-function! s:translate_count(mode) abort
+function! s:translate_count(mode, ...) abort
   let cnt = v:count
-  if a:mode =~# '`\|m'  " marks: letters j-s (10)
-    let type = 'Mark'
+  let reg = v:register
+  if reg !=# '"' && a:mode !=# 'm'
+    return reg
+  elseif a:mode ==# 'm'  " marks: letters j-s (10)
     let [base, min, max] = [96, 1, 24]
-  elseif a:mode =~# 'q\|@\|"'  " macros: letters a-j (10)
-    let type = 'Register'
+  elseif a:mode ==# 'q'  " macros: letters a-j (10)
     let [base, min, max] = [108, 1, 12]
   else
-    let type = 'Register'
     let [base, min, max] = [96, 0, 12]
   endif
-  if cnt > max
+  let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
+  let cnt = max([min, cnt])  " use v:count1 for 'm' and 'q'
+  let name = cnt == 0 ? '' : nr2char(base + min([cnt, max]))
+  if !empty(name) && cnt <= max
+    let label = a:mode ==# 'm' ? 'Mark' : 'Register'
+    echom label . ': ' . name . ' (' . cnt . ')'
+  elseif cnt > max
+    let head = "Count '" . cnt . "' too high for translation."
+    let tail = "Using maximum '" . name . "' (" . max . ').'
     echohl WarningMsg
-    echom "Warning: Shorthand number for '" . a:mode . '" must be less than ' . max . '.'
+    echom 'Warning: ' . head . ' ' . tail
     echohl None
-    let cnt = max
-  endif
-  let cnt = max([min, cnt])  " similar to v:count1
-  let name = cnt == 0 ? '' : nr2char(base + cnt)
-  if !empty(name)
-    echom type . ': ' . name . ' (' . cnt . ')'
   endif
   return name
 endfunction
-" Convert count into command
-function! utils#translate_count(mode) abort
-  let name = s:translate_count(a:mode)
-  if a:mode =~# "'" . '\|' . '"'
-    if !empty(name)
-      let cmd = "\<Esc>" . '"' . name
-    else
+" Translate into map command
+function! utils#translate_count(mode, ...) abort
+  let default = a:0 > 0 ? a:1 : ''
+  let double = a:0 > 1 ? a:2 : ''
+  let char = ''
+  if empty(default) && empty(double)
+    let name = s:translate_count(a:mode)
+    if a:mode ==# 'm' || a:mode ==# 'q'  " marks/macros
+      let cmd = name
+    else  " yanks/changes/deletes/pastes
+      let cmd = empty(name) ? '' : '"' . name
+    endif
+  else
+    let name = s:translate_count(a:mode, 0)
+    if empty(name)  " ''/\"\"/'<motion>/\"<motion>
       let char = nr2char(getchar())
-      if char ==# "'"  " manual register selection
-        let cmd = '"'
-      elseif char ==# '"'  " peekaboo register selection
-        let cmd = '""'
-      elseif a:mode ==# "'"
-        let cmd = '"_' . char
-      else
-        let cmd = '"*' . char
-      endif
+      let name = char ==# "'" || char ==# '"' ? repeat('"', double) : default . char
     endif
-  elseif a:mode =~# '`\|m'  " marks
-    let cmd = name
-    if a:mode ==# 'm'
-      let cmd = cmd . "\<Cmd>HighlightMark " . name . "\<CR>"
-    endif
-  elseif a:mode =~# 'q\|@'  " macros
-    let cmd = name
-    if a:mode ==# 'q'
-      let rec = get(b:, 'recording', 0) | let cmd = rec ? '' : cmd | let b:recording = 1 - rec
-    endif
-  else  " yanks/changes/deletes/pastes
-    let cmd = empty(name) ? '' : '"' . name
-    if !empty(name) && a:mode ==# 'n'
-      let cmd = "\<Esc>" . cmd
-    endif
+    let cmd = '"' . name
+  endif
+  if !empty(name) && name[0] ==# default
+    let label = name[0] ==# '_' ? 'blackhole' : name[0] =~# '[+*]' ? 'clipboard' : ''
+    echom 'Register: ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
   endif
   return cmd
 endfunction
