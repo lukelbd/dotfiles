@@ -166,16 +166,22 @@ DOOR 37;44
 BLK  37;44
 CHR  37;44
 
-### Log files
+### Logs and configs
+.*rc        01;37  # bright white
 .log        01;37  # bright white
 .info       01;37
 .out        01;37
+.yml        01;37
+.yaml       01;37
+.cfg        01;37
+.conf       01;37
+.config     01;37
 .nml        01;37
 .namelist   01;37
-.vimsession 01;37
 .vimtags    01;37
+.vimsession 01;37
 
-### Compiled
+### Compiled files
 .cmd 01;35
 .exe 01;35
 .com 01;35
