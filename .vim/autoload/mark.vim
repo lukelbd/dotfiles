@@ -1,105 +1,70 @@
-" Highlight Marks plugin
+"-----------------------------------------------------------------------------"
+" Utilities for handling marks
+"-----------------------------------------------------------------------------"
 " Author: Tumbler Terrall [TumblerTerrall@gmail.com]
-" Forked By: Luke Davis [lukelbd@gmail.com]
+" Forked: Luke Davis [lukelbd@gmail.com]
+" Cleaned up and modified to handle mark definitions
+" See :help ctemrm-colors and :help gui-colors
+let s:idx = 0
+let s:idx_cterm = 0
+let s:next_id = 1
+let s:use_signs = 1
+let s:gui_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
+let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
-" Options
-if !exists('g:mark_colors')
-   let g:mark_colors = ['orange', 'yellow', 'green', 'blue', 'purple', '#00BB33']
-endif
-if !exists('g:mark_cterm_colors')
-   let g:mark_cterm_colors = [3, 2, 4, 1]
-endif
-if !exists('g:mark_use_signs')  " highlight to left end of screen?
-   let g:mark_use_signs = 0
-endif
-
-" Buffer variable containing marks. Must be buffer local or get ID not found errors,
-" because originally scripts was designed for file-global marks
-augroup mark_highlights
-  au!
-  au BufRead * let b:mark_highlights = {}  " when reading for first time
-augroup END
-
-" Script variables
-let s:index = 0
-let s:cterm_index = 0
-let s:nextID = 1
-
-" Find and return the next unique ID
-function! s:get_next()
-   let retVal = s:nextID
-   let s:nextID += 1
-   return retVal
-endfunction
-" Delete a highlight match, but take into account whether signs
-
-" are being used or not.
-function! s:match_delete(ID)
-   if g:mark_use_signs
-      exe 'sign unplace ' . a:ID
+" Delete a highlight match, but take into account whether signs are used or not
+function! s:match_delete(id)
+   if !s:use_signs
+      call matchdelete(a:id)
    else
-      call matchdelete(a:ID)
+      exe 'sign unplace ' . a:id
    endif
 endfunction
 
-" Highlight the line of the specified mark with colors from g:mark_colors
-function! mark#highlight_mark(mark) abort
-  " Need to be able to differentiate capitals from lowercases.
-  if !exists('b:mark_highlights')
-    let b:mark_highlights = {}
-  endif
-  let highlights = b:mark_highlights
-  let name = 'mark_'. (a:mark =~# '\u' ? 'C'. a:mark :a:mark)
-  if has_key(highlights, a:mark) && len(highlights[a:mark]) == 2
-    " Remove reference to highlight but leave color
-    call s:match_delete(highlights[a:mark][1])
-    call remove(highlights[a:mark], 1)
-  elseif has_key(highlights, a:mark)
-    " Mark has been defined but removed
-    let color = highlights[a:mark][0][0]
-    let cterm_color = highlights[a:mark][0][1]
-    exe 'highlight ' . name . ' ctermbg=' . cterm_color . ' guibg=' . color
-    if g:mark_use_signs
-      exe 'sign define ' . name . ' linehl=' . name
+" Remove the mark and its highlighting
+function! mark#del_marks(...) abort
+  let highlights = get(g:, 'mark_highlights', {})
+  let g:mark_highlights = highlights
+  let mrks = a:0 ? a:000 : keys(highlights)
+  for mrk in mrks
+    if has_key(highlights, mrk) && len(highlights[mrk]) > 1
+      call s:match_delete(highlights[mrk][1])
     endif
-  else
-    " Not previously defined
-    let color = g:mark_colors[s:index]
-    let cterm_color = g:mark_cterm_colors[s:cterm_index]
-    let s:index = (s:index + 1) % len(g:mark_colors)
-    let s:cterm_index = (s:cterm_index + 1) % len(g:mark_cterm_colors)
-    exe 'highlight ' . name . ' ctermbg=' . cterm_color . ' guibg=' . color
-    if g:mark_use_signs
-      exe 'sign define ' . name . ' linehl=' . name
+    if has_key(highlights, mrk)
+      call remove(highlights, mrk)
     endif
-    let highlights[a:mark] = [[color, cterm_color]]
-  endif
-  if g:mark_use_signs
-    let ID = s:get_next()
-    exe 'sign place ' . ID . ' line=' . line('.') . ' name=' . name . ' file=' . expand('%:p')
-    call add(highlights[a:mark], ID)
-  else
-    call add(highlights[a:mark], matchadd(name, ".*\\%'" . a:mark . '.*', 0))
-  endif
+    exe 'delmark ' . mrk
+  endfor
 endfunction
 
-" Remove the highlighting of the specified mark(s). If input present, only
-" remove highlights for input marks.
-function! mark#remove_highlights(...) abort
-  let highlights = exists('b:mark_highlights') ? b:mark_highlights : {}
-  if a:0
-    for mark in a:000
-      if has_key(highlights, mark) && len(highlights[mark]) > 1
-        call s:match_delete(highlights[mark][1])
-        call remove(highlights[mark], 1)
-      endif
-    endfor
+" Add the mark and highlight the line
+function! mark#set_marks(mrk) abort
+  let highlights = get(g:, 'mark_highlights', {})
+  let g:mark_highlights = highlights
+  let g:mark_recent = a:mrk  " quick jumping later
+  let name = a:mrk =~# '\u' ? 'upper_'. a:mrk : 'lower_' . a:mrk
+  let name = 'mark_'. name  " different name for capital marks
+  call feedkeys('m' . a:mrk, 'n')  " apply the mark
+  if has_key(highlights, a:mrk)
+    call s:match_delete(highlights[a:mrk][1])
+    call remove(highlights[a:mrk], 1)
+  else  " not previously defined
+    let base = a:mrk =~# '\u' ? 65 : 97
+    let idx = a:mrk =~# '\a' ? char2nr(a:mrk) - base : 0
+    let gui_color = s:gui_colors[idx % len(s:gui_colors)]
+    let cterm_color = s:cterm_colors[idx % len(s:cterm_colors)]
+    exe 'highlight ' . name . ' ctermbg=' . cterm_color . ' guibg=' . gui_color
+    if s:use_signs  " see :help sign define
+      call sign_define(name, {'linehl': name, 'text': "'" . a:mrk})
+    endif
+    let highlights[a:mrk] = [[gui_color, cterm_color]]
+  endif
+  if !s:use_signs
+    call add(highlights[a:mrk], matchadd(name, ".*\\%'" . a:mrk . '.*', 0))
   else
-    for mark in values(highlights)
-      if len(mark) > 1
-        call s:match_delete(mark[1])
-        call remove(mark, 1)
-      endif
-    endfor
+    let id = s:next_id
+    let s:next_id += 1
+    call sign_place(id, '', name, '%', {'lnum': line('.')})  " empty group critical
+    call add(highlights[a:mrk], id)
   endif
 endfunction

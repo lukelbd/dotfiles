@@ -131,30 +131,36 @@ endfunction
 " Leave letters 'y' and 'z' alone for internal use (currently just used by marks).
 function! s:translate_count(mode, ...) abort
   let cnt = v:count
-  let reg = v:register
-  if reg !=# '"' && a:mode !=# 'm'
-    return reg
-  elseif a:mode ==# 'm'  " marks: letters j-s (10)
-    let [base, min, max] = [96, 1, 24]
-  elseif a:mode ==# 'q'  " macros: letters a-j (10)
-    let [base, min, max] = [108, 1, 12]
-  else
-    let [base, min, max] = [96, 0, 12]
+  let curr = v:register
+  if curr !=# '"' && a:mode !=# 'm'
+    return [curr, '']
+  elseif a:mode =~# '[m`]'  " marks: uppercase a-z (24)
+    let [base, min, max] = [64, 1, 24]
+  elseif a:mode =~# '[q@]'  " macros: lowercase n-z (13)
+    let [base, min, max] = [109, 1, 13]
+  else  " others: lowercase a-m (13)
+    let [base, min, max] = [96, 0, 13]
   endif
   let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
   let cnt = max([min, cnt])  " use v:count1 for 'm' and 'q'
   let name = cnt == 0 ? '' : nr2char(base + min([cnt, max]))
-  if !empty(name) && cnt <= max
-    let label = a:mode ==# 'm' ? 'Mark' : 'Register'
-    echom label . ': ' . name . ' (' . cnt . ')'
-  elseif cnt > max
+  let warnings = []
+  if cnt > max  " emit warning
     let head = "Count '" . cnt . "' too high for translation."
     let tail = "Using maximum '" . name . "' (" . max . ').'
+    call add(warnings, head . ' ' . tail)
+  endif
+  if a:mode ==# 'm' && index(map(getmarklist(), "v:val['mark']"), "'" . name) != -1
+    let head = 'Overwriting existing mark'
+    let tail = "'" . name . "' (" . cnt . ').'
+    call add(warnings, head . ' ' . tail)
+  endif
+  if !empty(warnings)
     echohl WarningMsg
-    echom 'Warning: ' . head . ' ' . tail
+    echom 'Warning: ' . join(warnings, ' ')
     echohl None
   endif
-  return name
+  return [name, empty(warnings) ? string(cnt) : '']
 endfunction
 " Translate into map command
 function! utils#translate_count(mode, ...) abort
@@ -162,23 +168,24 @@ function! utils#translate_count(mode, ...) abort
   let double = a:0 > 1 ? a:2 : ''
   let char = ''
   if empty(default) && empty(double)
-    let name = s:translate_count(a:mode)
-    if a:mode ==# 'm' || a:mode ==# 'q'  " marks/macros
+    let [name, label] = s:translate_count(a:mode)
+    if a:mode =~# '[m`q@]'  " marks/macros
       let cmd = name
     else  " yanks/changes/deletes/pastes
       let cmd = empty(name) ? '' : '"' . name
     endif
   else
-    let name = s:translate_count(a:mode, 0)
+    let [name, label] = s:translate_count(a:mode, 0)
     if empty(name)  " ''/\"\"/'<motion>/\"<motion>
       let char = nr2char(getchar())
-      let name = char ==# "'" || char ==# '"' ? repeat('"', double) : default . char
+      let name = char =~# "['\"]" ? repeat('"', double) : default . char
+      let label = name ==# '_' ? 'blackhole' : name[0] =~# '[+*]' ? 'clipboard' : ''
     endif
     let cmd = '"' . name
   endif
-  if !empty(name) && name[0] ==# default
-    let label = name[0] ==# '_' ? 'blackhole' : name[0] =~# '[+*]' ? 'clipboard' : ''
-    echom 'Register: ' . name[0] . (empty(label) ? '' : ' (' . label . ')')
+  if !empty(name) && !empty(label)
+    let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
+    echom head . ': ' . name[0] . ' (' . label . ')'
   endif
   return cmd
 endfunction

@@ -694,7 +694,8 @@ noremap <Right> <C-i>
 " Jump to marks or lines with FZF
 " Note: BLines should be used more, easier than '/' sometimes
 noremap <Leader>' <Cmd>Marks<CR>
-noremap <Leader>" <Cmd>BLines<CR>
+noremap <Leader>" <Cmd>Jumps<CR>
+" noremap <Leader>" <Cmd>BLines<CR>
 
 " Free up m keys, so ge/gE command belongs as single-keystroke
 " words along with e/E, w/W, and b/B
@@ -723,21 +724,23 @@ inoremap <C-g>U <C-g>u
 " inoremap <C-g>U <C-o><C-r><C-o>`y<Right><Cmd>delmark y<CR>
 
 " Specify alphabetic marks using counts (navigate with ]` and [`)
-" Note: Uppercase marks are same as lowercase, but saved in viminfo, and numbered marks
-" are mostly internal, can be configured to restore cursor position after restarting.
-command! -nargs=1 HighlightMark call mark#highlight_mark(<q-args>)
-command! -bang -nargs=* RemoveHighlights call mark#remove_highlights(<f-args>) | delmarks!
-noremap <Leader>~ <Cmd>RemoveHighlights<CR>
-noremap <expr> ` "`" . utils#translate_count('m')
-noremap <expr> ~ 'm' . utils#translate_count('m')
+" Note: Uppercase marks unlike lowercase marks work between files and are saved in
+" viminfo, so use them. Also numbered marks are mostly internal, can be configured
+" to restore cursor position after restarting, also used in viminfo.
+command! -nargs=* SetMarks call mark#set_marks(<f-args>)
+command! -nargs=* DelMarks call mark#del_marks(<f-args>)
+noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
+noremap <expr> ` "`" . utils#translate_count('`')
+noremap <expr> <Leader>` exists('g:mark_recent') ? '`' . g:mark_recent : ''
+noremap <Leader>~ <Cmd>call mark#del_marks()<CR>
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
 " Note: Visual counts are ignored when starting recording. And <Esc>
-nnoremap <expr> , '@' . utils#translate_count('q')
 nnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
-vnoremap <expr> , '@' . utils#translate_count('q')
+nnoremap <expr> , '@' . utils#translate_count('@')
 vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
+vnoremap <expr> , '@' . utils#translate_count('@')
 
 " Specify numbered registers using count, or alphabetic registers with double press,
 " otherwise use black hole register "_ for ' and clipboard register "* for '""
@@ -2068,16 +2071,13 @@ endif
 " Exit
 "-----------------------------------------------------------------------------"
 " Clear past jumps to ignore stuff from plugin files and vimrc
-" Older versions of vim have no 'clearjumps' command so include below hack
+" Also ignore outdated marks loaded from .viminfo
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  if exists(':clearjumps')
-    au BufRead * clearjumps  " see help info on exists()
-  else
-    au BufRead * let i = 0 | while i < 100 | mark ' | let i = i + 1 | endwhile
-  endif
+  au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
 augroup END
 doautocmd <nomodeline> BufEnter  " trigger buffer-local overrides for this file
+delmarks a-z
 nohlsearch  " turn off highlighting at startup
 redraw!  " weird issue sometimes where statusbar disappears
