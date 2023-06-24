@@ -1227,11 +1227,13 @@ call plug#('tell-k/vim-autopep8')
 call plug#('psf/black')
 
 " Git wrappers and differencing tools
-" vim-flog and gv.vim are heavyweight and lightweight commit viewing plugins
-" call plug#('rbong/vim-flog')  " view commit graphs with :Flog
+" Note: vim-flog and gv.vim are heavyweight and lightweight commit branch viewing
+" plugins. Probably not necessary unless in giant project with tons of branches.
+" See: https://github.com/rbong/vim-flog/issues/15
+" call plug#('rbong/vim-flog')  " view commit graphs with :Flog, filetype 'Flog' (?)
+" call plug#('junegunn/gv.vim')  " view commit graphs with :GV, filetype 'GV'
 call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
-call plug#('junegunn/gv.vim')  " view commit graphs with :GV
 let g:fugitive_no_maps = 1
 
 " Project-wide tags and auto-updating
@@ -1903,10 +1905,10 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
   noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
   noremap <Leader>K <Cmd>echom "Git reset '" . @% . "'" \| Git reset %<CR>
-  noremap <Leader>, <Cmd>BCommits<CR>
-  noremap <Leader>< <Cmd>Commits<CR>
   noremap <Leader>. <Cmd>tab Git<CR>
   noremap <Leader>> <Cmd>Git commit<CR>
+  noremap <Leader>, <Cmd>BCommits<CR>
+  noremap <Leader>< <Cmd>Commits<CR>
   noremap <Leader>B <Cmd>Git blame<CR>
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif

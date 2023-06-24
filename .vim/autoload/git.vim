@@ -128,16 +128,21 @@ endfunction
 " diffs and stuff. The below is mainly used for the fugitive home page.
 " General fugitive window setup
 function! git#fugitive_setup() abort
-  exe 'file ' &filetype
-  let b:maparg = maparg('<CR>')
-  noremap <expr> <buffer> <CR> git#fugitive_open()
+  let rhs = maparg('<CR>', 'n', )
+  if rhs !~# 'git#fugitive_open'
+    let b:fugitive_sink = rhs
+  endif
+  noremap <buffer> <expr> <CR> git#fugitive_open()
+  noremap <buffer> <expr> <2-LeftMouse> git#fugitive_open()
 endfunction
 function! git#fugitive_open(...)
   let path = a:0 ? a:1 : expand('<cfile>')
   if !empty(glob(path))
     return "\<Cmd>Existing " . path . "\<CR>"
   else  " should be applied by autocmd
-    return eval('"' . escape(get(b:, 'maparg', ''), '"<') . '"')
+    let sink = get(b:, 'fugitive_sink', '')
+    let sink = escape(sink, '"<')
+    return eval('"' . sink . '"')
   endif
 endfunction
 
