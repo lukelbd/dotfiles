@@ -128,7 +128,7 @@ let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
 let s:popup_filetypes = [
-  \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'GV',
+  \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
   \ ]  " for popup toggle
 let s:popup_filetypes += [
   \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
@@ -603,10 +603,8 @@ command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
 " Popup window style adjustments with less-like shortcuts
-" Note: Fugitive has tons of special maps so also do not treat it like normal
-" popup, preserve existing maps and require standard normal scrolling.
-" Note: Tried 'FugitiveIndex' and 'FugitivePager' and only former successfully
-" overrides the mapping, otherwise gets overwritten by in-place loader.
+" Note: Tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues
+" due to e.g. buffer not loaded before autocmds trigger. Instead use below.
 let g:tags_skip_filetypes = s:popup_filetypes
 let g:tabline_skip_filetypes = s:popup_filetypes
 augroup popup_setup
@@ -615,11 +613,10 @@ augroup popup_setup
   au CmdwinEnter * call vim#cmdwin_setup() | call utils#popup_setup(0)
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
-  au FileType help call vim#vim_setup()  " additional setup steps
-  au FileType man call shell#man_setup()  " additional setup steps
-  au FileType checkhealth silent! bdelete checkhealth | file checkhealth  " set name to checkhealth
-  au FileType gitcommit call git#commit_setup()  " additional setup steps
-  au User FugitiveIndex call git#fugitive_setup()
+  au FileType help call vim#vim_setup()
+  au FileType man call shell#man_setup()
+  au FileType gitcommit call git#commit_setup()
+  au FileType git,fugitive,fugitiveblame call git#fugitive_setup()
   for s:ft in s:popup_filetypes
     let s:modifiable = s:ft ==# 'gitcommit'
     exe 'au FileType ' . s:ft . ' call utils#popup_setup(' . s:modifiable . ')'
@@ -1893,23 +1890,28 @@ if s:plug_active('undotree')
 endif
 
 " Fugitive settings
-" Mnemonic for blame is to 'inspect' current file
-" Note: This repairs inconsistent Gdiff redirect to Gdiffsplit. For some reason
-" 'delcommand' fails (get undefined command errors in :Gdiff) so intead overwrite.
+" Note: The :Gdiffsplit command repairs annoying issue where Gdiff redirects to
+" Gdiffsplit unlike other shorthand commands. For some reason 'delcommand Gdiffsplit'
+" fails (get undefined command errors in :Gdiff) so instead just overwrite.
+" Note: All of the file-opening commands throughout fugitive funnel them through
+" commands like Gedit, Gtabedit, etc. So can prevent duplicate tabs by simply
+" overwriting this with custom tab-jumping :Existing command (see also git.vim).
 if s:plug_active('vim-fugitive')
+  command! -bar -bang -range -nargs=* -complete=customlist,fugitive#EditComplete
+    \ Gtabedit exe fugitive#Open('Existing', <bang>0, '', <q-args>)
+  command! -nargs=* Gsplit Gvsplit <args>
   silent! delcommand Gdiffsplit
-  command! -nargs=* Gsplit Gvsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
-  command! -nargs=* Gstatus Git status <args>
-  noremap <Leader>j <Cmd>exe 'Gdiff -- ' . @%<CR>
+  noremap <Leader>j <Cmd>exe 'Git diff -- ' . @%<CR>
   noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
-  noremap <Leader>k <Cmd>exe 'Gdiff --staged -- ' . @%<CR>
+  noremap <Leader>k <Cmd>exe 'Git diff --staged -- ' . @%<CR>
   noremap <Leader>K <Cmd>echom "Git reset '" . @% . "'" \| Git reset %<CR>
-  noremap <Leader>. <Cmd>tab Git<CR>
-  noremap <Leader>> <Cmd>Git commit<CR>
-  noremap <Leader>, <Cmd>BCommits<CR>
-  noremap <Leader>< <Cmd>Commits<CR>
   noremap <Leader>B <Cmd>Git blame<CR>
+  noremap <Leader>< <Cmd>BCommits<CR>
+  noremap <Leader>> <Cmd>Commits<CR>
+  noremap <Leader>, <Cmd>tab Git<CR>
+  noremap <Leader>. <Cmd>call git#commit_run()<CR>
+  let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
 

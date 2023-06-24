@@ -34,6 +34,7 @@ endfunction
 function! switch#autosave(...) abort
   let state = get(b:, 'autosave_enabled', 0)
   let toggle = a:0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle
     return
   elseif toggle
@@ -48,7 +49,9 @@ function! switch#autosave(...) abort
     augroup END
   endif
   let b:autosave_enabled = toggle
-  call s:switch_message('Autosave', toggle)
+  if !suppress
+    call s:switch_message('Autosave', toggle)
+  endif
 endfunction
 
 " Toggle conceal characters on and off

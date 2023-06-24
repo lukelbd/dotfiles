@@ -2,161 +2,202 @@
 " Utilities for fugitive windows
 "-----------------------------------------------------------------------------"
 " Todo: Memorize these mappings and possibly modify some.
-" Blame help
-" g?    show this help
-" A     resize to end of author column
-" C     resize to end of commit column
-" D     resize to end of date/time column
-" gq    close blame, then |:Gedit| to return to work tree
-" <CR>  close blame, and jump to patch that added line
-" o     jump to patch or blob in horizontal split
-" O     jump to patch or blob in new tab
-" p     jump to patch or blob in preview window
-" -     reblame at commit
-" Staging/unstaging
+" :help fugitive-maps
+" Blame maps
+" g?    Show this help.
+" A     Resize to end of author column.
+" C     Resize to end of commit column.
+" D     Resize to end of date/time column.
+" gq    Close blame, then |:Gedit| to return to work tree version.
+" <CR>  Close blame, and jump to patch that added line (or directly to blob for boundary commit).
+" o     Jump to patch or blob in horizontal split.
+" O     Jump to patch or blob in new tab.
+" p     Jump to patch or blob in preview window.
+" -     Reblame at commit.
+" Staging/unstaging maps
 " s     Stage (add) the file or hunk under the cursor.
 " u     Unstage (reset) the file or hunk under the cursor.
 " -     Stage or unstage the file or hunk under the cursor.
 " U     Unstage everything.
-" X     Discard the change under the cursor.
+" X     Discard the change under the cursor. This uses `checkout` or `clean` under the hood.  A command is echoed that shows how to undo the change.  Consult `:messages` to see it again.  During a merge conflict, use 2X to call `checkout --ours` or 3X to call `checkout --theirs` .
 " =     Toggle an inline diff of the file under the cursor.
 " >     Insert an inline diff of the file under the cursor.
 " <     Remove the inline diff of the file under the cursor.
-" gI    Open .git/info/exclude in a split and add the file
-" I|P   Invoke |:Git| add --patch or reset --patch on the file
+" gI    Open .git/info/exclude in a split and add the file under the cursor.  Use a count to open .gitignore.
+" I|P   Invoke |:Git| add --patch or reset --patch on the file under the cursor. On untracked files, this instead calls |:Git| add --intent-to-add.
 " Diff maps
-" dp    Invoke |:Git| diff on the file under the cursor.
+" dp    Invoke |:Git| diff on the file under the cursor. Deprecated in favor of inline diffs.
 " dd    Perform a |:Gdiffsplit| on the file under the cursor.
 " dv    Perform a |:Gvdiffsplit| on the file under the cursor.
 " ds|dh Perform a |:Ghdiffsplit| on the file under the cursor.
 " dq    Close all but one diff buffer, and |:diffoff|! the last one.
-" d?    Show this help.
-" Navigation maps ~
-" <CR>  Open the file or |fugitive-object| under the cursor.
-" o     Open the file or |fugitive-object| under the cursor in
-" gO    Open the file or |fugitive-object| under the cursor in
-" O     Open the file or |fugitive-object| under the cursor in
-" p     Open the file or |fugitive-object| under the cursor in
+" d   ? Show this help.
+" Navigation maps
+" <CR>  Open the file or |fugitive-object| under the cursor. In a blob, this and similar maps jump to the patch from the diff where this was added, or where it was removed if a count was given.  If the line is still in the work tree version, passing a count takes you to it.
+" o     Open the file or |fugitive-object| under the cursor in a new split.
+" gO    Open the file or |fugitive-object| under the cursor in a new vertical split.
+" O     Open the file or |fugitive-object| under the cursor in a new tab.
+" p     Open the file or |fugitive-object| under the cursor in a preview window.  In the status buffer, 1p is required to bypass the legacy usage instructions.
 " ~     Open the current file in the [count]th first ancestor.
 " P     Open the current file in the [count]th parent.
 " C     Open the commit containing the current file.
 " (     Jump to the previous file, hunk, or revision.
 " )     Jump to the next file, hunk, or revision.
-" [c    Jump to previous hunk, expanding inline diffs
-" ]c    Jump to next hunk, expanding inline diffs
-" [/|[m Jump to previous file, collapsing inline diffs
-" ]/|]m Jump to next file, collapsing inline diffs
-" i     Jump to the next file or hunk, expanding inline diffs
+" [c    Jump to previous hunk, expanding inline diffs automatically.  (This shadows the Vim built-in |[c| that provides a similar operation in |diff| mode.)
+" ]c    Jump to next hunk, expanding inline diffs automatically.  (This shadows the Vim built-in |]c| that provides a similar operation in |diff| mode.)
+" [/|[m Jump to previous file, collapsing inline diffs automatically.  (Mnemonic: "/" appears in filenames, m" appears in "filenames".)
+" ]/|]m Jump to next file, collapsing inline diffs automatically.  (Mnemonic: "/" appears in filenames, m" appears in "filenames".)
+" i     Jump to the next file or hunk, expanding inline diffs automatically.
 " [[    Jump [count] sections backward.
 " ]]    Jump [count] sections forward.
 " []    Jump [count] section ends backward.
 " ][    Jump [count] section ends forward.
-" *     On the first column of a + or - diff line, search.
-" #     Same as "*", but search backward.
-" gu    Jump to file [count] in the "Untracked" or "Unstaged"
+" *     On the first column of a + or - diff line, search for the corresponding - or + line.  Otherwise, defer to built-in |star|.
 " gU    Jump to file [count] in the "Unstaged" section.
 " gs    Jump to file [count] in the "Staged" section.
 " gp    Jump to file [count] in the "Unpushed" section.
 " gP    Jump to file [count] in the "Unpulled" section.
 " gr    Jump to file [count] in the "Rebasing" section.
-" gi    Open .git/info/exclude in a split.  Use a count to
-" Commit maps ~
-" cc    Create a commit.
-" ca    Amend the last commit and edit the message.
-" ce    Amend the last commit without editing the message.
-" cw    Reword the last commit.
-" cvc   Create a commit with -v.
-" cva   Amend the last commit with -v
-" cf    Create a `fixup!` commit for the commit under the
-" cF    Create a `fixup!` commit for the commit under the
-" cs    Create a `squash!` commit for the commit under the
-" cS    Create a `squash!` commit for the commit under the
-" cA    Create a `squash!` commit for the commit under the
-" c<Space>  Populate command line with ":Git commit ".
-" crc   Revert the commit under the cursor.
-" crn   Revert the commit under the cursor in the index and
-" cr<Spa>   Populate command line with ":Git revert ".
-" cm<Spa>   Populate command line with ":Git merge ".
-" Checkout/branch maps ~
-" coo   Check out the commit under the cursor.
-" cb<Spa>   Populate command line with ":Git branch ".
-" co<Spa>   Populate command line with ":Git checkout ".
-" cb?|co?   Show this help.
-" Stash maps ~
-" czz   Push stash.  Pass a [count] of 1 to add
-" czw   Push stash of the work-tree.  Like `czz` with
-" czs   Push stash of the stage.  Does not accept a count.
-" czA   Apply topmost stash, or stash@{count}.
-" cza   Apply topmost stash, or stash@{count}, preserving the
-" czP   Pop topmost stash, or stash@{count}.
-" czp   Pop topmost stash, or stash@{count}, preserving the
-" cz<Spa>               Populate command line with ":Git stash ".
-" cz?   Show this help.
-" Rebase maps ~
-" ri|u  Perform an interactive rebase. Uses ancestor of
-" rf    Perform an autosquash rebase without editing the todo
-" ru    Perform an interactive rebase against @{upstream}.
-" rp    Perform an interactive rebase against @{push}.
-" asdfad
-" rr    Continue the current rebase.
-" rs    Skip the current commit and continue the current
-" ra    Abort the current rebase.
-" re    Edit the current rebase todo list.
-" rw    Perform an interactive rebase with the commit under
-" rm    Perform an interactive rebase with the commit under
-" rd    Perform an interactive rebase with the commit under
-" r<Spa>  Populate command line with ":Git rebase ".
-" r?    Show this help.
-" Miscellaneous maps ~
+" gi    Open .git/info/exclude in a split. Use a count to open .gitignore.
+" Commit maps
+" cc        Create a commit.
+" ca        Amend the last commit and edit the message.
+" ce        Amend the last commit without editing the message.
+" cw        Reword the last commit.
+" cvc       Create a commit with -v.
+" cva       Amend the last commit with -v
+" cf        Create a `fixup!` commit for the commit under the cursor.
+" cF        Create a `fixup!` commit for the commit under the cursor and immediately rebase it.
+" cs        Create a `squash!` commit for the commit under the cursor.
+" cS        Create a `squash!` commit for the commit under the cursor and immediately rebase it.
+" cA        Create a `squash!` commit for the commit under the cursor and edit the message.
+" c<Space>  Populate command line with ":Git commit ". *fugitive_cr*
+" crc       Revert the commit under the cursor.
+" crn       Revert the commit under the cursor in the index and work tree, but do not actually commit the changes.
+" cr<Space> Populate command line with ":Git revert ". *fugitive_cm*
+" cm<Space> Populate command line with ":Git merge ".
+" c?        Show this help.
+" Checkout/branch maps
+" coo       Check out the commit under the cursor.
+" cb<Space> Populate command line with ":Git branch ".
+" co<Space> Populate command line with ":Git checkout ".
+" cb?       Show this help. co?
+" Stash maps
+" czz       Push stash. Pass a [count] of 1 to add `--include-untracked` or 2 to add `--all`.
+" czw       Push stash of the work-tree. Like `czz` with `--keep-index`.
+" czs       Push stash of the stage. Does not accept a count.
+" czA       Apply topmost stash, or stash@{count}.
+" cza       Apply topmost stash, or stash@{count}, preserving the index.
+" czP       Pop topmost stash, or stash@{count}.
+" czp       Pop topmost stash, or stash@{count}, preserving the index.
+" cz<Space> Populate command line with ":Git stash ".
+" cz?       Show this help.
+" Rebase maps
+" ri|u     Perform an interactive rebase. Uses ancestor of commit under cursor as upstream if available.
+" rf       Perform an autosquash rebase without editing the todo list.  Uses ancestor of commit under cursor as upstream if available.
+" ru       Perform an interactive rebase against @{upstream}.
+" rp       Perform an interactive rebase against @{push}.
+" rr       Continue the current rebase.
+" rs       Skip the current commit and continue the current rebase.
+" ra       Abort the current rebase.
+" re       Edit the current rebase todo list.
+" rw       Perform an interactive rebase with the commit under the cursor set to `reword`.
+" rm       Perform an interactive rebase with the commit under the cursor set to `edit`.
+" rd       Perform an interactive rebase with the commit under the cursor set to `drop`.
+" r<Space> Populate command line with ":Git rebase ".
+" r?       Show this help.
+" Miscellaneous maps
 " gq    Close the status buffer.
-" .     Start a |:| command line with the file under the
+" .     Start a |:| command line with the file under the cursor prepopulated.
 " g?    Show help for |fugitive-maps|.
+" Global maps
+" <C-R><C-G>    On the command line, recall the path to the current |fugitive-object| (that is, a representation of the object recognized by |:Gedit|).
+" ["x]y<C-G>    Yank the path to the current |fugitive-object|.
+
+" Helper function
+" Note: Vim help recommends capturing full map settings using maparg(lhs, 'n', 0, 1)
+" then re-adding them using mapset(). This is a little easier than working with strings
+" returned by maparg(lhs, 'n'), for which we have to use escape(map, '"<') then
+" evaluate the resulting string with eval('"' . map . '"'). However in the dictionary
+" case, the 'rhs' entry uses <sid> instead of <snr>nr, and when calling mapset(), the
+" *current script* id is used rather than the id in the dict. Have to fix this manually.
+function! s:eval_map(map) abort
+  let rhs = get(a:map, 'rhs', '')
+  let sid = get(a:map, 'sid', '')  " see above
+  let snr = '<snr>' . sid . '_'
+  let rhs = substitute(rhs, '\c<sid>', snr, 'g')
+  return rhs
+endfunction
 
 " Git commit setup
-" Note: This works for both command line and fugitive commits
-function! git#commit_setup(...)
-  let &l:colorcolumn = 73
-  call switch#autosave(1)
+" Note: This prevents annoying <press enter to continue> message showing up when
+" committing with no staged changes, issues a warning instead of showing the message.
+function! git#commit_setup(...) abort
   goto
+  let &l:colorcolumn = 73
+  call switch#autosave(1, 1)  " suppress message
   startinsert
 endfunction
+function! git#commit_run() abort
+  let output = system('git diff --staged --quiet')  " see: https://stackoverflow.com/a/1587877/4970632
+  if v:shell_error  " unseccessful status if has uncommitted staged changes
+    Git commit
+  else  " successful status if has no uncommitted staged changes
+    echohl WarningMsg
+    echom 'Warning: No staged changes found. Unable to begin commit.'
+    echohl None
+  endif
+endfunction
 
-" Fugitive jumping to existing files
-" Note: Currently avoid overwriting existing buffer with non-existing partials and
-" diffs by always starting interactive fugitive from new tab.
-" Note: Should use other insert or changing commands e.g. 'o' and 'O' for opening
-" diffs and stuff. The below is mainly used for the fugitive home page.
-" General fugitive window setup
+" Fugitive popup setup
+" Note: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
+" its FileType autocommands, so should not have issues modifying already-modified maps.
+" Note: Many mappings call script-local functions with strings like 'tabedit', and
+" initially tried replacing with 'Existing', but turns out these all call fugitive
+" internal commands like :Gtabedit and :Gedit (and there is no :GExisting). So now
+" overwrite :Gtabedit in .vimrc. Also considered replacing 'tabedit' with 'drop' in
+" maps and having fugitive use :Gdrop, but was getting error where after tab switch
+" an empty panel was opened in the git window. Might want to revisit.
+" let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
 function! git#fugitive_setup() abort
-  let rhs = maparg('<CR>', 'n', )
-  if rhs !~# 'git#fugitive_open'
-    let b:fugitive_sink = rhs
-  endif
-  noremap <buffer> <expr> <CR> git#fugitive_open()
-  noremap <buffer> <expr> <2-LeftMouse> git#fugitive_open()
-endfunction
-function! git#fugitive_open(...)
-  let path = a:0 ? a:1 : expand('<cfile>')
-  if !empty(glob(path))
-    return "\<Cmd>Existing " . path . "\<CR>"
-  else  " should be applied by autocmd
-    let sink = get(b:, 'fugitive_sink', '')
-    let sink = escape(sink, '"<')
-    return eval('"' . sink . '"')
-  endif
+  let alt = maparg('<CR>', 'n', 0, 1)  " used throughout fugitive
+  let main = maparg('O', 'n', 0, 1)  " used throughout fugitive
+  let click = copy(main)
+  let rhs = s:eval_map(main)
+  call extend(alt, {'lhs': 'O', 'lhsraw': 'O'})
+  call extend(main, {'rhs': rhs, 'lhs': '<CR>', 'lhsraw': "\<CR>"})
+  call extend(click, {'rhs': rhs, 'lhs': '<2-LeftMouse>', 'lhsraw': "\<2-LeftMouse>"})
+  call mapset('n', 0, alt)
+  call mapset('n', 0, main)
+  call mapset('n', 0, click)
 endfunction
 
-" Git gutter staging jumping and previewing
+" Git gutter jumping and previewing
+" Note: These ensure git gutter is turned on at start. In general want to
+" keep off since it is really intensive especially for larger projects.
+function! git#hunk_jump(forward, stage) abort
+  call switch#gitgutter(1)  " ensure enabled
+  let which = a:forward ? 'Next' : 'Prev'
+  let cmd = 'GitGutter' . which . 'Hunk'
+  exe v:count1 . cmd
+  if a:stage | exe 'GitGutterStageHunk' | endif
+endfunction
+function! git#hunk_preview() abort
+  call switch#gitgutter(1)
+  GitGutter
+  GitGutterPreviewHunk
+  wincmd j
+endfunction
+
+" Git gutter staging and unstaging
+" Note: Currently GitGutterStageHunk only supports partial staging of additions
+" specified by visual selection, not different hunks. This supports both, iterates in
+" reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
 " Note: This was designed by looking at hunk.vim. Seems all buffer local gitgutter
 " settings are stores in g:gitgutter dictionary with 'hunks' containing lists of
 " [id, type, line, nline] where type == 0 is for addition-only hunks. Seems that
 " gitgutter#hunk#stage() requires cursor inside lines and fails when specifying lines
-" outside of addition hunk (see s:hunk_op) so explicitly navigate lines below. Also
-" this automatically stages partial additions if motion intersects only partly, but
-" otherwise, for intersections with non-addition hunks, stages the entire thing.
-" Note: Currently GitGutterStageHunk only supports partial staging of additions
-" specified by visual selection, not different hunks. This supports both, iterates in
-" reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
+" outside of addition hunk (see s:hunk_op) so explicitly navigate lines below.
 function! git#hunk_action(stage) abort range
   call switch#gitgutter(1)  " ensure enabled
   let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
@@ -178,21 +219,6 @@ function! git#hunk_action(stage) abort range
     exe range . cmd
   endfor
   GitGutter  " update signs (sometimes they lag)
-endfunction
-" Hunk jumping utility
-function! git#hunk_jump(forward, stage) abort
-  call switch#gitgutter(1)  " ensure enabled
-  let which = a:forward ? 'Next' : 'Prev'
-  let cmd = 'GitGutter' . which . 'Hunk'
-  exe v:count1 . cmd
-  if a:stage | exe 'GitGutterStageHunk' | endif
-endfunction
-" Hunk preview utility
-function! git#hunk_preview() abort
-  call switch#gitgutter(1)
-  GitGutter
-  GitGutterPreviewHunk
-  wincmd j
 endfunction
 " For <expr> map accepting motion
 function! git#hunk_action_expr(...) abort
