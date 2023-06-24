@@ -20,7 +20,8 @@ endfunction
 " Begin comment in insert mode
 function! comment#comment_insert() abort
   let parts = split(&l:commentstring, '%s')
-  return "\<C-g>u" . join(parts, ' ') . repeat("\<Left>", len(parts) > 1 ? len(parts[1]) + 1 : 0) . ' '
+  let lefts = repeat("\<Left>", len(parts) > 1 ? len(parts[1]) + 1 : 0)
+  return "\<C-g>u" . join(parts, ' ') . lefts . ' '
 endfunction
 
 " Separator of dashes matching current line length

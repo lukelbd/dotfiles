@@ -467,6 +467,7 @@ command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
 command! -nargs=0 ShowColors call vim#runtime_colors()
 command! -nargs=0 ShowPlugin call vim#runtime_ftplugin()
 command! -nargs=0 ShowSyntax call vim#runtime_syntax()
+noremap <Leader># <Cmd>Colorizer<CR>
 noremap <Leader>1 <Cmd>CurrentGroup<CR>
 noremap <Leader>2 <Cmd>CurrentSyntax<CR>
 noremap <Leader>3 <Cmd>CurrentColor<CR>
@@ -486,8 +487,8 @@ noremap <Leader>7 <Cmd>ColorToggle<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-s> <Cmd>call tabline#write()<CR>
-nnoremap <C-w> <Cmd>call window#close_tab()<CR>
-nnoremap <C-e> <Cmd>call window#close_window()<CR>
+nnoremap <C-w> <Cmd>call window#close_window()<CR>
+nnoremap <C-e> <Cmd>call window#close_tab()<CR>
 
 " Open file in current directory or some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
@@ -1601,7 +1602,7 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
-  let g:tags_skip_kinds = {'python': 'I', 'tex': 'g', 'vim': 'mvD'}
+  let g:tags_skip_kinds = {'python': 'I', 'tex': 'g', 'vim': 'vnC'}
 endif
 
 " Gutentag tag generation
@@ -1628,31 +1629,6 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_project_root_finder = 'tag#find_root'
 endif
 
-" Vim marks in sign column
-" Note: Requires mappings consistent with 'm' change
-" Todo: Should revisit? Or simply count on :Marks for navigation?
-if s:plug_active('vim-signature')
-  let g:SignatureMap = {
-    \ 'Leader': '~',
-    \ 'PlaceNextMark': '~,',
-    \ 'ToggleMarkAtLine': '~.',
-    \ 'PurgeMarksAtLine': '~-',
-    \ 'DeleteMark': 'dm',
-    \ 'PurgeMarks': '~<Space>',
-    \ 'PurgeMarkers': '~<BS>',
-    \ 'GotoNextLineByPos': "]'",
-    \ 'GotoPrevLineByPos': "['",
-    \ 'GotoNextSpotByPos': ']`',
-    \ 'GotoPrevSpotByPos': '[`',
-    \ 'GotoNextMarker': ']-',
-    \ 'GotoPrevMarker': '[-',
-    \ 'GotoNextMarkerAny': ']=',
-    \ 'GotoPrevMarkerAny': '[=',
-    \ 'ListBufferMarks': '~/',
-    \ 'ListBufferMarkers': '~?'
-    \ }
-endif
-
 " Lsp integration settings
 " Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
 " plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
@@ -1673,8 +1649,9 @@ if s:plug_active('vim-lsp')
     au!
     autocmd User lsp_float_opened
       \ call popup_setoptions(
-      \ lsp#ui#vim#output#getpreviewwinid(),
-      \ {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']})
+        \ lsp#ui#vim#output#getpreviewwinid(),
+        \ {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
+      \ )
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=0 LspStartServer call lsp#activate()
@@ -1684,9 +1661,9 @@ if s:plug_active('vim-lsp')
   noremap <Leader>A <Cmd>call switch#lsp()<CR>
   noremap <Leader>* <Cmd>LspHover --ui=float<CR>
   noremap <Leader>& <Cmd>LspSignatureHelp<CR>
-  noremap <Leader>% <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#popup_setup(0)<CR>
-  noremap <Leader>^ <Cmd>verbose LspStatus<CR>
-  noremap <Leader>` <Cmd>CheckHealth<CR>
+  noremap <Leader>% <Cmd>CheckHealth<CR>
+  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#popup_setup(0)<CR>
+  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " not enough info
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
@@ -1791,7 +1768,7 @@ if s:plug_active('ale')
   noremap <Leader>x <Cmd>lopen<CR>
   noremap <Leader>X <Cmd>call switch#ale()<CR>
   noremap <Leader>@ <Cmd>ALEInfo<CR>
-  " noremap <Leader># <Cmd>ALEDetail<CR>  " redundant with lopen
+  " noremap <Leader>@ <Cmd>ALEDetail<CR>  " redundant with lopen
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
