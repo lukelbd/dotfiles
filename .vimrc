@@ -410,66 +410,67 @@ if has('gui_running')
 endif
 
 " Make terminal background same as main background
-highlight Terminal ctermbg=None ctermfg=None
+highlight Terminal ctermbg=NONE ctermfg=NONE
 
 " Transparent conceal group so when conceallevel=0 elements revert to original colors
-highlight Conceal ctermbg=None ctermfg=None ctermbg=None ctermfg=None
+highlight Conceal ctermbg=NONE ctermfg=NONE
 
 " Comment highlighting (only works in iTerm with minimum contrast enabled, else use gray)
-highlight LineNR cterm=None ctermbg=None ctermfg=Black
-highlight Comment ctermfg=Black cterm=None
+highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
+highlight Comment ctermfg=Black cterm=NONE
 
 " Special characters
-highlight NonText ctermfg=Black cterm=None
-highlight SpecialKey ctermfg=Black cterm=None
+highlight NonText ctermfg=Black cterm=NONE
+highlight SpecialKey ctermfg=Black cterm=NONE
 
 " Matching parentheses
-highlight Todo ctermfg=None ctermbg=Red
-highlight MatchParen ctermfg=None ctermbg=Blue
+highlight Todo ctermbg=Red ctermfg=NONE
+highlight MatchParen ctermbg=Blue ctermfg=NONE
 
 " Cursor line or column highlighting using cterm color mapping
-highlight CursorLine cterm=None ctermbg=Black
-highlight CursorLineNR cterm=None ctermbg=Black ctermfg=White
+highlight CursorLine ctermbg=Black cterm=NONE
+highlight CursorLineNR ctermbg=Black ctermfg=White cterm=NONE
 
 " Color and sign column stuff
-highlight ColorColumn cterm=None ctermbg=Gray
-highlight SignColumn cterm=None ctermfg=Black ctermbg=None
+highlight ColorColumn ctermbg=Gray cterm=NONE
+highlight SignColumn ctermbg=NONE ctermfg=Black cterm=NONE
 
 " Sneak and search highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=None
-highlight Search ctermbg=Magenta ctermfg=None
+highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
+highlight Search ctermbg=Magenta ctermfg=NONE
 
 " Popup menu
-highlight Pmenu ctermbg=None ctermfg=White cterm=None
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=None
-highlight PmenuSbar ctermbg=None ctermfg=Black cterm=None
+highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
 
-" Switch from LightColor to Color and DarkColor because ANSI has no control over light
-highlight Type ctermbg=None ctermfg=DarkGreen
-highlight Constant ctermbg=None ctermfg=Red
-highlight Special ctermbg=None ctermfg=DarkRed
-highlight PreProc ctermbg=None ctermfg=DarkCyan
-highlight Indentifier ctermbg=None ctermfg=Cyan cterm=Bold
+" ANSI has no control over light
+" Switch from light to main and color to dark
+highlight Type ctermbg=NONE ctermfg=DarkGreen
+highlight Constant ctermbg=NONE ctermfg=Red
+highlight Special ctermbg=NONE ctermfg=DarkRed
+highlight PreProc ctermbg=NONE ctermfg=DarkCyan
+highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 
 " Error highlighting (use Red and Magenta for increased prominence)
-highlight ALEErrorLine ctermfg=None ctermbg=None cterm=None
-highlight ALEWarningLine ctermfg=None ctermbg=None cterm=None
+highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 
 " Python highlighting
 highlight link pythonImportedObject Identifier
-highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
+highlight BracelessIndent cterm=inverse ctermfg=0 ctermbg=0
 
 " Syntax helper commands
 " Note: Mapping mnemonic for colorizer is # for hex string
-command! -nargs=0 CurrentColor vert help group-name
 command! -nargs=0 CurrentGroup call vim#syntax_group()
 command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
+command! -nargs=0 GroupColors vert help group-name | call search('\*Comment') | normal! zt
 command! -nargs=0 ShowColors call vim#runtime_colors()
 command! -nargs=0 ShowPlugin call vim#runtime_ftplugin()
 command! -nargs=0 ShowSyntax call vim#runtime_syntax()
 noremap <Leader>1 <Cmd>CurrentGroup<CR>
 noremap <Leader>2 <Cmd>CurrentSyntax<CR>
-noremap <Leader>3 <Cmd>CurrentColor<CR>
+noremap <Leader>3 <Cmd>GroupColors<CR>
 noremap <Leader>4 <Cmd>ShowPlugin<CR>
 noremap <Leader>5 <Cmd>ShowSyntax<CR>
 noremap <Leader>6 <Cmd>ShowColors<CR>
@@ -649,8 +650,8 @@ nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
-nnoremap <Leader>h <Cmd>call shell#help_page(1)<CR>
-nnoremap <Leader>H <Cmd>call shell#man_page(1)<CR>
+nnoremap <Leader>, <Cmd>call shell#help_page(1)<CR>
+nnoremap <Leader>. <Cmd>call shell#man_page(1)<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
 nnoremap <Leader>O :<C-r><Up><CR>
@@ -798,10 +799,12 @@ nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
 nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
 
-" Joining counts improvement. Before 2J joined this line and
-" next, now it means 'join the two lines below'.
-nnoremap <expr> J v:count > 1 ? 'JJ' : 'J'
-nnoremap <expr> K 'k' . v:count . (v:count > 1  ? 'JJ' : 'J')
+" Joining counts improvement. Before 2J joined this line and next but now it means
+" 'join the two lines below'. Also wrap conjoin plugin around this.
+nnoremap <expr> J '<Esc>' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNormal("J")<CR>'
+nnoremap <expr> K 'k' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNormal("J")<CR>'
+nnoremap <expr> gJ '<Esc>' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
+nnoremap <expr> gK 'k' . (v:count . (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
 
 " Circulation location scrolling
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
@@ -1148,9 +1151,8 @@ call plug#begin('~/.vim/plugged')
 call plug#('tomtom/tcomment_vim')
 
 " General utilities
-" Note: The 'gh' map overwrites 'select mode' but this mode is unnecessary. Simply
-" enables typing to enter insert mode after selection is complete, to emulate other
-" editors, but vim is not another editor! Typing 'c' before text is enough.
+" Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
+" when you start typing, to emulate typing after click-and-drag. Never use it.
 " See: https://vi.stackexchange.com/a/4892/8084
 " call plug#('Shougo/vimshell.vim')  " first generation :terminal add-ons
 " call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
@@ -1159,8 +1161,7 @@ call plug#('tomtom/tcomment_vim')
 call plug#('tpope/vim-repeat')  " shell utils like chmod rename and move
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call plug#('tpope/vim-characterize')  " print character info (mnemonic is l for letter)
-nmap gl <Plug>(characterize)
-nmap gh <Plug>(characterize)
+nmap g. <Plug>(characterize)
 
 " Panel utilities
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -1228,11 +1229,15 @@ call plug#('psf/black')
 " Note: vim-flog and gv.vim are heavyweight and lightweight commit branch viewing
 " plugins. Probably not necessary unless in giant project with tons of branches.
 " See: https://github.com/rbong/vim-flog/issues/15
+" See: https://vi.stackexchange.com/a/21801/8084
 " call plug#('rbong/vim-flog')  " view commit graphs with :Flog, filetype 'Flog' (?)
 " call plug#('junegunn/gv.vim')  " view commit graphs with :GV, filetype 'GV'
+call plug#('rhysd/conflict-marker.vim')  " highlight conflicts
 call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
-let g:fugitive_no_maps = 1
+" let g:fugitive_no_maps = 1  " only disables nmap y<C-g> and cmap <C-r><C-g>
+let g:conflict_marker_enable_highlight = 1
+let g:conflict_marker_enable_mappings = 0
 
 " Project-wide tags and auto-updating
 " Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
@@ -1454,6 +1459,26 @@ call plug#('JuliaEditorSupport/julia-vim')
 let g:vim_markdown_conceal = 1
 let g:vim_markdown_conceal_code_blocks = 1
 
+" Formatting stuff
+" The conjoin plugin removes line continuation characters and is awesome
+" Note: Seems that mapping <Nop> just sends it to a black hole. Try :map <Nop> after.
+" See: https://www.reddit.com/r/vim/comments/g71wyq/delete_continuation_characters_when_joining_lines/
+" call plug#('dkarter/bullets.vim')  " list numbering but completely fails
+" call plug#('ohjames/tabdrop')  " now apply similar solution with tabline#write
+" call plug#('beloglazov/vim-online-thesaurus')  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
+" call plug#('terryma/vim-multiple-cursors')  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
+" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
+call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
+call plug#('flwyd/vim-conjoin')  " remove line continuation characters
+let g:LargeFile = 1  " megabyte limit
+let g:conjoin_map_J = '<Nop>'  " no nomap setting but this does fine
+let g:conjoin_map_gJ = '<Nop>'  " no nomap setting but this does fine
+let g:splitjoin_join_mapping  = 'cJ'
+let g:splitjoin_split_mapping = 'cK'
+let g:splitjoin_trailing_comma = 1
+let g:splitjoin_normalize_whitespace = 1
+let g:splitjoin_python_brackets_on_separate_lines = 1
+"
 " Colorful stuff
 " Test: ~/.vim/plugged/colorizer/colortest.txt
 " Note: colorizer very expensive so disabled by default and toggled with shortcut
@@ -1465,20 +1490,6 @@ call plug#('lilydjwg/colorizer')  " only in macvim or when &t_Co == 256
 let g:colorizer_nomap = 1
 let g:colorizer_startup = 0
 
-" Formatting stuff
-" call plug#('dkarter/bullets.vim')  " list numbering but completely fails
-" call plug#('ohjames/tabdrop')  " now apply similar solution with tabline#write
-" call plug#('beloglazov/vim-online-thesaurus')  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
-" call plug#('terryma/vim-multiple-cursors')  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
-" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
-call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
-let g:LargeFile = 1  " megabyte limit
-let g:splitjoin_split_mapping = 'cK'
-let g:splitjoin_join_mapping  = 'cJ'
-let g:splitjoin_trailing_comma = 1
-let g:splitjoin_normalize_whitespace = 1
-let g:splitjoin_python_brackets_on_separate_lines = 1
-"
 " Calculators and number stuff
 " call plug#('vim-scripts/Toggle')  " toggling stuff on/off, modified this myself
 " call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
@@ -1613,8 +1624,8 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
   augroup END
   command! -nargs=? Ignores echom 'Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
-  nnoremap <Leader>f <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
-  nnoremap <Leader>F <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
+  nnoremap <Leader>< <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap <Leader>> <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " use with cache dir
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
@@ -1861,15 +1872,33 @@ if s:plug_active('vim-test')
   noremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
-" Undo tree settings
-" Todo: Currently can only clear history with 'C' in active pane not externally. Need
-" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
-" Note: This sort of seems against the anti-nerdtree anti-tagbar minimalist principal
-" but think unique utilities that briefly pop up on left are exception.
-if s:plug_active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  noremap <Leader>u <Cmd>UndotreeToggle<CR>
+" Conflict highlight settings
+" Todo: Figure out how to get highlighting closer to marks, without clearing background?
+" May need to define custom :syn matches that are not regions. Ask stack exchange.
+" Note: Need to remove syntax regions here because they are added on per-filetype
+" basis and they wipe out syntax highlighting between the conflict markers.
+" See: https://vi.stackexchange.com/q/31623/8084
+" See: https://github.com/rhysd/conflict-marker.vim
+if s:plug_active('conflict-marker.vim')
+  augroup conflict_kludge
+    au!
+    au BufEnter * 
+      \ doautocmd ConflictMarkerDetect BufReadPost
+      \ | silent! syntax clear ConflictMarkerOurs
+      \ | silent! syntax clear ConflictMarkerTheirs
+  augroup END
+  highlight ConflictMarker cterm=inverse gui=inverse
+  let g:conflict_marker_highlight_group = 'ConflictMarker'
+  let g:conflict_marker_begin = '^<<<<<<< .*$'
+  let g:conflict_marker_separator = '^=======$'
+  let g:conflict_marker_common_ancestors = '^||||||| .*$'
+  let g:conflict_marker_end   = '^>>>>>>> .*$'
+  nmap ]f <Plug>(conflict-marker-next-hunk)
+  nmap [f <Plug>(conflict-marker-prev-hunk)
+  nmap gf <Plug>(conflict-marker-ourselves)
+  nmap gF <Plug>(conflict-marker-themselves)
+  nmap gd <Plug>(conflict-marker-none)
+  nmap gD <Plug>(conflict-marker-both)
 endif
 
 " Fugitive settings
@@ -1890,10 +1919,10 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>k <Cmd>exe 'Git diff --staged -- ' . @%<CR>
   noremap <Leader>K <Cmd>echom "Git reset '" . @% . "'" \| Git reset %<CR>
   noremap <Leader>B <Cmd>Git blame<CR>
-  noremap <Leader>< <Cmd>BCommits<CR>
-  noremap <Leader>> <Cmd>Commits<CR>
-  noremap <Leader>, <Cmd>Git<CR>
-  noremap <Leader>. <Cmd>call git#commit_run()<CR>
+  noremap <Leader>g <Cmd>Git<CR>
+  noremap <Leader>G <Cmd>call git#commit_run()<CR>
+  noremap <Leader>f <Cmd>BCommits<CR>
+  noremap <Leader>F <Cmd>Commits<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -1925,8 +1954,8 @@ if s:plug_active('vim-gitgutter')
   noremap <expr> gS git#hunk_action_expr(0)
   nnoremap gss <Cmd>call git#hunk_action(1)<CR>
   nnoremap gSS <Cmd>call git#hunk_action(0)<CR>
-  noremap <Leader>g <Cmd>call git#hunk_preview()<CR>
-  noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
+  noremap <Leader>h <Cmd>call git#hunk_preview()<CR>
+  noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parens and seimcolons, chained &&
@@ -1991,12 +2020,23 @@ if s:plug_active('codi.vim')
     \ }
 endif
 
+" Undo tree settings
+" Todo: Currently can only clear history with 'C' in active pane not externally. Need
+" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+if s:plug_active('undotree')
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
+  noremap <Leader>u <Cmd>UndotreeToggle<CR>
+  " noremap <Leader>U <Cmd>UndotreeToggle 1<CR>C
+endif
+
 " Speed dating, support date increments
-" Note: This overwrites default increment/decrement plugins
+" Todo: Build intuition for how to use this things.
+" Note: This overwrites default increment/decrement plugins declared above.
 if s:plug_active('vim-speeddating')
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
-  noremap <Plug>SpeedDatingFallbackUp   <C-a>
+  noremap <Plug>SpeedDatingFallbackUp <C-a>
   noremap <Plug>SpeedDatingFallbackDown <C-x>
 endif
 
