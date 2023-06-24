@@ -43,7 +43,7 @@ function! file#path_list(lead, line, cursor) abort
   else  " include leading component
     let paths = globpath(head, tail . '*', 1, 1) + globpath(head, tail . '.*', 1, 1)
   endif
-  let paths = filter(paths, "v:val !~# '^\\.\\+$'")
+  let paths = filter(paths, "fnamemodify(v:val, ':t') !~# '^\\.\\+$'")
   let paths = map(paths, "isdirectory(v:val) ? v:val . '/' : v:val")
   return paths
 endfunction
@@ -129,8 +129,8 @@ function! s:open_continuous(...) abort
 endfunction
 
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
-" Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
-" on monde version of vim so need to use the *tab jump* command instead!
+" Warning: The defaiult ':tab drop' seems to jump to the last tab on failure and
+" also takes forever. Also have run into problems with it on some vim versions.
 function! file#open_existing(file) abort
   let visible = {}
   let path = fnamemodify(a:file, ':p')
@@ -138,8 +138,10 @@ function! file#open_existing(file) abort
   for tnr in range(tabpagenr('$')) " iterate through each tab
     let tabnr = tnr + 1 " the tab number
     for bnr in tabpagebuflist(tabnr)
-      if fnamemodify(bufname(bnr), ':p') == path
-        exe 'normal! ' . tabnr . 'gt'
+      if fnamemodify(bufname(bnr), ':p') ==# path
+        let winnr = bufwinnr(bnr)
+        exe tabnr . 'tabnext'
+        exe winnr . 'wincmd w'
         return
       endif
     endfor

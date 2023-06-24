@@ -103,7 +103,7 @@ _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; 
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
 _setup_message 'General setup'
 _prompt_branch() {  # print parentheses around git branch similar to conda environment
-  git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1) /'
+  git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* (\?\([^)]*\))\? */(\1) /'
 }
 _prompt_dirs() {  # show full dirs path from base to current instead of just current
   local paths
