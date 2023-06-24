@@ -24,7 +24,7 @@ endfunction
 " the entire line and 2) quick selection of a default value, all in one cmdline line.
 function! utils#input_list(...)
   let [init, funcname, default] = s:complete_opts
-  if !init  " kludge for default behavior
+  if !init  " get complete options
     return call(funcname, a:000)
   else
     let s:complete_opts[0] = 0
@@ -50,12 +50,9 @@ function! utils#input_list(...)
   endif
 endfunction
 function! utils#input_complete(prompt, funcname, default) abort
-  let default = call(a:funcname, [a:default, '', ''])
-  let default = empty(default) ? a:default : default[0]  " e.g. default intial path
-  let message = a:prompt . ' (' . a:default . '): '
-  let s:complete_opts = [1, a:funcname, default]
+  let s:complete_opts = [1, a:funcname, a:default]
   call feedkeys("\<Tab>", 't')
-  return input(message, '', 'customlist,utils#input_list')
+  return input(a:prompt . ': ', '', 'customlist,utils#input_list')
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)

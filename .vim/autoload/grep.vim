@@ -7,6 +7,7 @@
 function! grep#call_grep(grep, level, depth) abort
   let prompt = a:level > 1 ? 'Current file' : a:level > 0 ? 'File directory' : 'Working directory'
   let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:] . ' pattern'
+  let prompt = prompt . ' (' . @/ . ')'  " default value
   let search = utils#input_complete(prompt, 'grep#pattern_list', @/)
   if empty(search) | return | endif
   let func = 'grep#call_' . tolower(a:grep)

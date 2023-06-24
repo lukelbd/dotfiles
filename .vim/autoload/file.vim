@@ -27,7 +27,8 @@ function! file#print_exists() abort
 endfunction
 
 " Generate list of files in directory
-" Note: This includes both hidden and non-hidden files.
+" Warning: Critical that the list options match the prompt lead or else
+" when a single path is returned <Tab> during input() does not complete it.
 function! s:path_source(dir, user) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, "fnamemodify(v:val, ':t')")
@@ -37,8 +38,13 @@ endfunction
 function! file#path_list(lead, line, cursor) abort
   let head = fnamemodify(a:lead, ':h')
   let tail = fnamemodify(a:lead, ':t')
-  let paths = split(globpath(head, tail . '*'), "\n")
-  let paths = map(paths, "fnamemodify(v:val, ':p:~:.')")
+  if head ==# '.'  " exclude leading component
+    let paths = glob(tail . '*', 1, 1) + glob(tail . '.*', 1, 1)
+  else  " include leading component
+    let paths = globpath(head, tail . '*', 1, 1) + globpath(head, tail . '.*', 1, 1)
+  endif
+  let paths = filter(paths, "v:val !~# '^\\.\\+$'")
+  let paths = map(paths, "isdirectory(v:val) ? v:val . '/' : v:val")
   return paths
 endfunction
 
@@ -47,9 +53,11 @@ endfunction
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_from(files, local) abort
   let cmd = a:files ? 'Files' : 'Open'  " recursive fzf or non-resucrive internal
-  let default = a:local ? expand('%:p:h') : getcwd()
-  let default = fnamemodify(default, ':~')  " do not expand current directory
-  let start = utils#input_complete(cmd, 'file#path_list', default)
+  let dir = a:local ? expand('%:p:h') : getcwd()  " neither has trailing slash
+  let path = fnamemodify(dir, ':~')
+  let prompt = cmd . ' (' . path . ')'  " display longer version in prompt
+  let default = fnamemodify(dir, ':p:~:.')  " display shorter version here
+  let start = utils#input_complete(prompt, 'file#path_list', default)
   if empty(start) | return | endif
   exe cmd . ' ' . start
 endfunction
