@@ -692,10 +692,10 @@ noremap <Left> <C-o>
 noremap <Right> <C-i>
 
 " Jump to marks or lines with FZF
-" Note: BLines should be used more, easier than '/' sometimes
-noremap <Leader>' <Cmd>Marks<CR>
-noremap <Leader>" <Cmd>Jumps<CR>
+" Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
 " noremap <Leader>" <Cmd>BLines<CR>
+noremap <Leader>' <Cmd>call mark#fzf_marks()<CR>
+noremap <Leader>" <Cmd>call mark#fzf_jumps()<CR>
 
 " Free up m keys, so ge/gE command belongs as single-keystroke
 " words along with e/E, w/W, and b/B
@@ -730,8 +730,8 @@ inoremap <C-g>U <C-g>u
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
-noremap <expr> ` "`" . utils#translate_count('`')
-noremap <expr> <Leader>` exists('g:mark_recent') ? '`' . g:mark_recent : ''
+noremap <expr> ` <Cmd>call mark#jump_mark(utils#translate_count('`'))<CR>
+noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#jump_mark(g:mark_recent)' : ''
 noremap <Leader>~ <Cmd>call mark#del_marks()<CR>
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
@@ -1608,7 +1608,7 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
-  noremap <C-r> <Cmd>ShowKinds<CR>
+  command! -nargs=0 ShowTags echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
   noremap <C-t> <Cmd>ShowTags<CR>
 " noremap <Leader>U <Cmd>UpdateTags<CR>  " use gutentags updates instead
   command! -nargs=? TagToggle call switch#tags(<args>)
@@ -1885,8 +1885,8 @@ endif
 if s:plug_active('conflict-marker.vim')
   augroup conflict_kludge
     au!
-    au BufEnter * 
-      \ doautocmd ConflictMarkerDetect BufReadPost
+    au BufEnter *
+      \ silent! doautocmd ConflictMarkerDetect BufReadPost
       \ | silent! syntax clear ConflictMarkerOurs
       \ | silent! syntax clear ConflictMarkerTheirs
   augroup END

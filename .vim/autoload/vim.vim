@@ -16,19 +16,21 @@ endfunction
 function! vim#config_scripts(...) abort
   let suppress = a:0 > 0 ? a:1 : 0
   let regex = a:0 > 1 ? a:2 : ''
-  let paths = []
-  for path in split(execute('scriptnames'), "\n")  " load order, distinct from &rtp
+  let [paths, sids] = [[], []]  " no dictionary because confusing
+  for path in split(execute('scriptnames'), "\n")
+    let sid = substitute(path, '^\s*\(\d*\):.*$', '\1', 'g')
     let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
     let path = fnamemodify(resolve(expand(path)), ':p')  " then compare to home
     if !empty(regex) && path !~# regex
       continue
     endif
     call add(paths, path)
+    call add(sids, sid)
   endfor
   if !suppress
     echom 'Script names: ' . join(paths, ', ')
   endif
-  return paths
+  return [paths, sids]
 endfunction
 function! vim#config_refresh(bang, ...) abort
   filetype detect  " in case started with empty file and shebang changes this
@@ -46,7 +48,7 @@ function! vim#config_refresh(bang, ...) abort
   let regex = join(regexes, '\|')
   let loaded = []
   let updates = {}
-  for path in vim#config_scripts(1)
+  for path in vim#config_scripts(1)[0]
     let ftype = path =~# '/syntax/\|/ftplugin/' ? fnamemodify(path, ':t:r') : 'global'
     let vimrc = path =~# '/\.\?vimrc\|/init\.vim'  " always source and trigger filetypes
     if path !~# expand('~') || path =~# regex || !empty(compare) && path !~# compare
