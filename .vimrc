@@ -1035,23 +1035,23 @@ noremap <expr> \w edit#replace_regex_expr(
 " Delete empty lines
 " Replace consecutive newlines with single newline
 noremap <expr> \e edit#replace_regex_expr(
-  \ 'Removed empty lines.',
-  \ '^\s*$\n', '')
-noremap <expr> \E edit#replace_regex_expr(
   \ 'Squeezed consecutive newlines.',
   \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
+noremap <expr> \E edit#replace_regex_expr(
+  \ 'Removed empty lines.',
+  \ '^\s*$\n', '')
 
 " Replace consecutive spaces on current line with one space,
 " only if they're not part of indentation
 noremap <expr> \s edit#replace_regex_expr(
-  \ 'Removed all whitespace.',
-  \ '\S\@<=\(^ \+\)\@<! \+', '')
-noremap <expr> \S edit#replace_regex_expr(
   \ 'Squeezed redundant whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S edit#replace_regex_expr(
+  \ 'Removed all whitespace.',
+  \ '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Delete first-level and second-level commented text
-" Note: This is useful when editing tex files
+" Note: First is more 'strict' but more common so give it lower case
 noremap <expr> \c edit#replace_regex_expr(
   \ 'Removed all comments.',
   \ '\(^\s*' . comment#comment_char() . '.\+$\n\\|\s\+' . comment#comment_char() . '.\+$\)', '')

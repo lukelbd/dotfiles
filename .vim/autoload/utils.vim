@@ -103,15 +103,25 @@ endfunction
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
-function! utils#popup_setup(filemode) abort
+function! utils#popup_setup(modifiable) abort
+  setlocal nolist nonumber norelativenumber nocursorline
   nnoremap <silent> <buffer> q :call window#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call window#close_window()<CR>
-  setlocal nolist nonumber norelativenumber nocursorline
-  if &filetype ==# 'qf' | nnoremap <buffer> <CR> <CR> | endif
-  if a:filemode == 1 | return | endif  " this is an editable file
-  setlocal nospell colorcolumn= statusline=%{'[Popup\ Window]'}%=%{StatusRight()}  " additional settings
-  for char in 'uUrRxXpPdDaAiIcCoO' | exe 'nmap <buffer> ' char . ' <Nop>' | endfor
-  for char in 'dufb' | exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>' | endfor
+  if &filetype ==# 'qf'  " disable <Nop> map
+    nnoremap <buffer> <CR> <CR>
+  endif
+  if a:modifiable == 1  " e.g. gitcommit window
+    return
+  endif
+  setlocal nospell colorcolumn= statusline=%{'[Popup\ Window]'}%=%{StatusRight()}
+  for char in 'dufb'  " always remap scrolling indicators
+    exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
+  endfor
+  for char in 'uUrRxXdDcCpPaAiIoO'  " ignore buffer-local maps e.g. fugitive
+    if !get(maparg(char, 'n', 0, 1), 'buffer', 0)
+      exe 'nmap <buffer> ' char . ' <Nop>'
+    endif
+  endfor
 endfunction
 
 " Return commands specifying or demanding a register (e.g. " or peekaboo)
