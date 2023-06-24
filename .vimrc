@@ -467,7 +467,6 @@ command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
 command! -nargs=0 ShowColors call vim#runtime_colors()
 command! -nargs=0 ShowPlugin call vim#runtime_ftplugin()
 command! -nargs=0 ShowSyntax call vim#runtime_syntax()
-noremap <Leader># <Cmd>Colorizer<CR>
 noremap <Leader>1 <Cmd>CurrentGroup<CR>
 noremap <Leader>2 <Cmd>CurrentSyntax<CR>
 noremap <Leader>3 <Cmd>CurrentColor<CR>
@@ -1184,6 +1183,7 @@ call plug#('yegappan/mru')  " most recent file
 " let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
 
 " Navigation and marker and fold interface
+" Todo: Use Lsp for expression folding? Or individual plugins? See lsp section.
 " See: https://github.com/junegunn/vim-peekaboo/issues/84
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
@@ -1658,14 +1658,16 @@ if s:plug_active('vim-lsp')
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
   noremap <Leader>a <Cmd>LspReferences<CR>
-  noremap <Leader>A <Cmd>call switch#lsp()<CR>
-  noremap <Leader>* <Cmd>LspHover --ui=float<CR>
-  noremap <Leader>& <Cmd>LspSignatureHelp<CR>
+  noremap <Leader>A <Cmd>LspHover --ui=float<CR>
+  noremap <Leader>* <Cmd>LspSignatureHelp<CR>
+  noremap <Leader># <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#popup_setup(0)<CR>
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " not enough info
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>
+  let &g:foldexpr = 'lsp#ui#vim#folding#foldexpr()'
+  let &g:foldtext = 'lsp#ui#vim#folding#foldtext()'
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
@@ -1765,10 +1767,10 @@ if s:plug_active('ale')
   command! -nargs=? AleToggle call switch#ale(<args>)
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
-  noremap <Leader>x <Cmd>lopen<CR>
-  noremap <Leader>X <Cmd>call switch#ale()<CR>
-  noremap <Leader>@ <Cmd>ALEInfo<CR>
-  " noremap <Leader>@ <Cmd>ALEDetail<CR>  " redundant with lopen
+  noremap <Leader>x <Cmd>cclose<CR><Cmd>lopen<CR>
+  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>copen<CR>
+  noremap <Leader>@ <Cmd>call switch#ale()<CR>
+  noremap <Leader>& <Cmd>ALEInfo<CR>
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
@@ -1794,10 +1796,14 @@ if s:plug_active('ale')
   let g:ale_lint_on_insert_leave = 1
   let g:ale_lint_on_save = 0
   let g:ale_lint_on_text_changed = 'normal'
+  let g:ale_list_window_size = 8
+  let g:ale_open_list = 0  " open manually
   let g:ale_sign_column_always = 0
   let g:ale_sign_error = 'E>'
   let g:ale_sign_warning = 'W>'
   let g:ale_sign_info = 'I>'
+  let g:ale_set_loclist = 1  " keep default
+  let g:ale_set_quickfix = 0  " use manual command
   let g:ale_echo_msg_error_str = 'Err'
   let g:ale_echo_msg_info_str = 'Info'
   let g:ale_echo_msg_warning_str = 'Warn'
@@ -1886,7 +1892,7 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>< <Cmd>BCommits<CR>
   noremap <Leader>> <Cmd>Commits<CR>
-  noremap <Leader>, <Cmd>tab Git<CR>
+  noremap <Leader>, <Cmd>Git<CR>
   noremap <Leader>. <Cmd>call git#commit_run()<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option

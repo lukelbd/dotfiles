@@ -83,7 +83,6 @@ function! iter#jump_cyclic(count, list, ...) abort
   let params = a:list ==# 'loc' ? [0] : []
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let items = call(func, params)
-  call filter(items, "v:val.bufnr == bufnr('%')")
   if empty(items) | return "echoerr 'E42: No errors'" | endif
   call map(items, "extend(v:val, {'idx': v:key + 1})")
   if reverse | call reverse(items) | endif
