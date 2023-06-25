@@ -175,18 +175,18 @@ endfunction
 " Git gutter jumping and previewing
 " Note: These ensure git gutter is turned on at start. In general want to
 " keep off since it is really intensive especially for larger projects.
+function! git#hunk_preview() abort
+  call switch#gitgutter(1, 1)  " ensure enabled, suppress message
+  GitGutter
+  GitGutterPreviewHunk
+  wincmd j
+endfunction
 function! git#hunk_jump(forward, stage) abort
-  call switch#gitgutter(1)  " ensure enabled
+  call switch#gitgutter(1, 1)  " ensure enabled, suppress message
   let which = a:forward ? 'Next' : 'Prev'
   let cmd = 'GitGutter' . which . 'Hunk'
   exe v:count1 . cmd
   if a:stage | exe 'GitGutterStageHunk' | endif
-endfunction
-function! git#hunk_preview() abort
-  call switch#gitgutter(1)
-  GitGutter
-  GitGutterPreviewHunk
-  wincmd j
 endfunction
 
 " Git gutter staging and unstaging
@@ -199,7 +199,7 @@ endfunction
 " gitgutter#hunk#stage() requires cursor inside lines and fails when specifying lines
 " outside of addition hunk (see s:hunk_op) so explicitly navigate lines below.
 function! git#hunk_action(stage) abort range
-  call switch#gitgutter(1)  " ensure enabled
+  call switch#gitgutter(1, 1)  " ensure enabled, suppress message
   let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
   let lines = []
   let hunks = get(get(b:, 'gitgutter', {}), 'hunks', [])
