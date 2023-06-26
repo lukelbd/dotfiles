@@ -25,12 +25,12 @@ exe 'runtime autoload/repeat.vim'
 
 " Global settings
 set encoding=utf-8
+set nocompatible  " always use the vim defaults
 scriptencoding utf-8
 let g:refresh_times = get(g:, 'refresh_times', {'global': localtime()})
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:mapleader = "\<Space>"  " see below <Leader> mappings
 let s:linelength = 88  " see below configuration
-set nocompatible  " always use the vim defaults
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
@@ -60,6 +60,8 @@ set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operat
 set maxmempattern=50000  " from 1000 to 10000
 set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
 set noautochdir  " disable auto changing
+set noautowrite  " disable auto write for file jumping commands (ask user instead)
+set noautowriteall  " disable autowrite for :exit, :quit, etc. (ask user instead)
 set nobackup  " no backups when overwriting files, use tabline/statusline features
 set noswapfile " no more swap files, instead use session
 set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
@@ -93,6 +95,10 @@ set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open t
 set tabpagemax=100  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
+set tagstack  " auto-add to tagstack with :tag commands
+set tagcase=ignore  " ignore case when matching paths
+set tagfunc=lsp#tagfunc  " use lsp for tag stack navigation
+set tagrelative  " paths in tags file are relative to location
 set ttymouse=sgr  " different cursor shapes for different modes
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
 set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
@@ -730,9 +736,9 @@ inoremap <C-g>U <C-g>u
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
-noremap <expr> ` <Cmd>call mark#jump_mark(utils#translate_count('`'))<CR>
-noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#jump_mark(g:mark_recent)' : ''
+noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
 noremap <Leader>~ <Cmd>call mark#del_marks()<CR>
+noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#goto_mark(g:mark_recent)' : ''
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
@@ -1632,14 +1638,14 @@ if s:plug_active('vim-gutentags')
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " use with cache dir
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
-  let g:gutentags_ctags_auto_set_tags = 0  " disable by default, set to *all* projects
+  let g:gutentags_ctags_auto_set_tags = 0  " tag#set_tags() handles this instead
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
   let g:gutentags_ctags_exclude = tag#get_ignores(0)  " exclude all by default
   let g:gutentags_ctags_tagfile = '.vimtags'
   let g:gutentags_define_advanced_commands = 1  " debugging command
-  let g:gutentags_generate_on_new = 1  " project opened
-  let g:gutentags_generate_on_write = 1  " file written i.e. updated
-  let g:gutentags_generate_on_missing = 1  " no vimtags file found
+  let g:gutentags_generate_on_new = 0  " project opened
+  let g:gutentags_generate_on_write = 0  " file written i.e. updated
+  let g:gutentags_generate_on_missing = 0  " no vimtags file found
   let g:gutentags_project_root_finder = 'tag#find_root'
 endif
 
@@ -1826,6 +1832,7 @@ if s:plug_active('ale')
   let g:ale_set_balloons = 0  " no ballons
   let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:linelength
   let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
+  let g:ale_update_tagstack = 0  " use ctags for this
   let g:ale_virtualtext_cursor = 0  " no error shown here
 endif
 
@@ -1875,7 +1882,7 @@ if s:plug_active('vim-test')
   noremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
-" Conflict highlight settings
+" Conflict highlight settings (warning: change below to 'BufEnter?')
 " Todo: Figure out how to get highlighting closer to marks, without clearing background?
 " May need to define custom :syn matches that are not regions. Ask stack exchange.
 " Note: Need to remove syntax regions here because they are added on per-filetype
@@ -1885,7 +1892,7 @@ endif
 if s:plug_active('conflict-marker.vim')
   augroup conflict_kludge
     au!
-    au BufEnter *
+    au BufReadPost *
       \ silent! doautocmd ConflictMarkerDetect BufReadPost
       \ | silent! syntax clear ConflictMarkerOurs
       \ | silent! syntax clear ConflictMarkerTheirs

@@ -31,13 +31,10 @@ endfunction
 
 " Autosave toggle (autocommands are local to buffer as with codi)
 " We use augroups with buffer-specific names to prevent conflict
-" Note: There are also 'autowrite' and 'autowriteall' settings that handle writing
-" before built-in file jumping (e.g. :next, :last, :rewind, ...) and tag jumping
+" Note: There are also 'autowrite' and 'autowriteall' settings that will automatically
+" write before built-in file jumping (e.g. :next, :last, :rewind, ...) and tag jumping
 " (e.g. :tag, <C-]>, ...) but they are global, and the below effectively enables
 " these settings. So do not bother with them.
-" Note: While we use 'autowrite' to capture toggle state this only handles writing
-" for built-in file jumping commands e.g. buffer switching (:next, :last, :rewind, ...)
-" and tags (:tag, <C-]>, ...). Add custom augroup for generalized autosaving.
 function! switch#autosave(...) abort
   let state = get(b:, 'autosave_enabled', 0)
   let toggle = a:0 ? a:1 : 1 - state

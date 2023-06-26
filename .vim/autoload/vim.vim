@@ -160,13 +160,12 @@ function! vim#syntax_group() abort
 endfunction
 
 " Show and setup vim help page
-" Note: This ensures original plugins are present
+" Note: All vim tag utilities including <C-]>, :pop, :tag work by searching 'tags' files
+" and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags
+" is included with vim by default, and this is always used no matter the value of &tags
+" (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
 function! vim#vim_page(...) abort
-  if a:0
-    let item = a:1
-  else
-    let item = input('Vim help item: ', '', 'help')
-  endif
+  let item = a:0 ? a:1 : input('Vim help item: ', '', 'help')
   if !empty(item)
     exe 'vert help ' . item
   endif

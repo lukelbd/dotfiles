@@ -173,9 +173,9 @@ _setup_opts() {
   shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
   shopt -u no_empty_cmd_completion  # enable empty command completion
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
-  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
-  export HISTSIZE=5000  # huge history
-  export HISTFILESIZE=5000  # huge history
+  export HISTSIZE=5000  # enable huge history
+  export HISTFILESIZE=5000  # enable huge history
+  export HISTIGNORE="&:bg *:fg *:exit *:clear *"  # don't record some commands
   export HISTCONTROL="erasedups:ignoreboth"  # avoid duplicate entries
 }
 _setup_opts 2>/dev/null  # ignore if option unavailable
@@ -845,8 +845,8 @@ _find() {
   include="$1"
   shift  # internal argument
   case "$#" in
-    0) commands=(. '\*' -print) ;;  # everything
-    1) commands=("$1" '\*' -print) ;;  # path
+    0) commands=(. '*' -print) ;;  # everything
+    1) commands=(. "$1" -print) ;;  # path
     2) commands=("$1" "$2" -print) ;;  # path pattern
     *) commands=("$@") ;;  # path pattern (commands)
   esac
