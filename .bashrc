@@ -2011,6 +2011,25 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # shellcheck disable=2034
   FZF_ALT_C_OPTS="$_fzf_opts"
 
+  # FZF marks config
+  # See: https://github.com/urbainvaes/fzf-marks
+  # shellcheck disable=2034
+  FZF_MARKS_FILE=${HOME}/.fzf.marks  # default .fzf-marks conflicts with repo
+  # shellcheck disable=2034
+  FZF_MARKS_COMMAND='fzf --height 40% --reverse'
+  # shellcheck disable=2034
+  FZF_MARKS_JUMP="\C-g"
+  # shellcheck disable=2034
+  FZF_MARKS_COLOR_LHS=39
+  # shellcheck disable=2034
+  FZF_MARKS_COLOR_RHS=36
+  # shellcheck disable=2034
+  FZF_MARKS_COLOR_COLON=33
+  # shellcheck disable=2034
+  FZF_MARKS_NO_COLORS=0
+  # shellcheck disable=2034
+  FZF_MARKS_KEEP_ORDER=0
+
   # Defualt find commands. The compgen ones were addd by my fork, others are native, we
   # adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
   # NOTE: For now do not try to use universal '.ignore' files since only special
