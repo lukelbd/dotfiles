@@ -1886,23 +1886,21 @@ endif
 " Todo: Figure out how to get highlighting closer to marks, without clearing background?
 " May need to define custom :syn matches that are not regions. Ask stack exchange.
 " Note: Need to remove syntax regions here because they are added on per-filetype
-" basis and they wipe out syntax highlighting between the conflict markers.
+" basis and they wipe out syntax highlighting between the conflict markers. However
+" following is unnecessary: silent! doautocmd ConflictMarkerDetect BufReadPost
 " See: https://vi.stackexchange.com/q/31623/8084
 " See: https://github.com/rhysd/conflict-marker.vim
 if s:plug_active('conflict-marker.vim')
   augroup conflict_kludge
     au!
-    au BufReadPost *
-      \ silent! doautocmd ConflictMarkerDetect BufReadPost
-      \ | silent! syntax clear ConflictMarkerOurs
-      \ | silent! syntax clear ConflictMarkerTheirs
+    au BufReadPost * silent! syntax clear ConflictMarkerOurs ConflictMarkerTheirs
   augroup END
   highlight ConflictMarker cterm=inverse gui=inverse
   let g:conflict_marker_highlight_group = 'ConflictMarker'
   let g:conflict_marker_begin = '^<<<<<<< .*$'
   let g:conflict_marker_separator = '^=======$'
   let g:conflict_marker_common_ancestors = '^||||||| .*$'
-  let g:conflict_marker_end   = '^>>>>>>> .*$'
+  let g:conflict_marker_end = '^>>>>>>> .*$'
   nmap ]f <Plug>(conflict-marker-next-hunk)
   nmap [f <Plug>(conflict-marker-prev-hunk)
   nmap gf <Plug>(conflict-marker-ourselves)
