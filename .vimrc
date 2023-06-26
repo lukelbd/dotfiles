@@ -1893,7 +1893,7 @@ endif
 if s:plug_active('conflict-marker.vim')
   augroup conflict_kludge
     au!
-    au BufReadPost * silent! syntax clear ConflictMarkerOurs ConflictMarkerTheirs
+    au BufEnter * silent! syntax clear ConflictMarkerOurs ConflictMarkerTheirs
   augroup END
   highlight ConflictMarker cterm=inverse gui=inverse
   let g:conflict_marker_highlight_group = 'ConflictMarker'
