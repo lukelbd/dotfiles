@@ -1116,13 +1116,14 @@ endfunction
 function! s:plug_local(path)
   let rtp = substitute(a:path, '[''"]', '', 'g')
   let rtp = fnamemodify(expand(rtp), ':p')
+  let esc = escape(rtp, ' ~')
   if !isdirectory(rtp)
     echohl WarningMsg
     echo "Warning: Path '" . rtp . "' not found."
     echohl None
-  elseif &runtimepath !~# escape(rtp, '~')
-    exe 'set rtp^=' . rtp
-    exe 'set rtp+=' . rtp . '/after'
+  elseif &runtimepath !~# esc  " any remaining tildes
+    exe 'set rtp^=' . esc
+    exe 'set rtp+=' . esc . '/after'
   endif
 endfunction
 command! -nargs=1 PlugFind echo join(s:plug_find(<q-args>), ', ')
@@ -1522,13 +1523,17 @@ for s:name in [
   \ 'vim-scrollwrapped',
   \ 'vim-toggle',
   \ ]
-  let s:path_code = expand('~/software/' . s:name)
-  let s:path_fork = expand('~/forks/' . s:name)
-  if isdirectory(s:path_code)
-    call s:plug_local(s:path_code)
-  elseif isdirectory(s:path_fork)
-    call s:plug_local(s:path_fork)
-  else
+  let s:local = 0
+  for s:root in ['~', '~/iCloud Drive']
+    for s:sub in ['software', 'forks']
+      let s:dir = expand(join([s:root, s:sub, s:name], '/'))
+      if !s:local && isdirectory(s:dir)
+        call s:plug_local(s:dir)
+        let s:local = 1
+      endif
+    endfor
+  endfor
+  if !s:local
     call plug#('lukelbd/' . s:name)
   endif
 endfor
