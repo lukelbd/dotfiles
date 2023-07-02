@@ -54,15 +54,12 @@ done
 # to /Library/TeX/Distributions/.DefaultTeX/Contents/Root pointing to a distribution
 # year e.g. /usr/local/texlive/2021. Use the symlink for consistency across versions.
 # For python have to manually search for the latest version using reverse number sort.
-libroot=$HOME/Library  # library source
 texroot=/Library/TeX/Root  # tex distribution
-if [ -d "$HOME/mambaforge" ]; then
-  condaroot=$HOME/mambaforge
-elif [ -d "$HOME/miniforge" ]; then
-  condaroot=$HOME/miniforge
-else  # possibly also missing
-  condaroot=$HOME/miniconda3
-fi
+libroot=$HOME/Library  # library source
+pdfroot=$libroot/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments
+cloudroot=$libroot/Mobile\ Documents/com~apple~CloudDocs
+googleroot=$libroot/CloudStorage/GoogleDrive-lukelbd@gmail.com
+[ -d "$HOME/micromamba" ] && condaroot=$HOME/micromamba || condaroot=$HOME/mambaforge
 pyroot=$condaroot/lib/python3.  # python root
 read -r -a pynums < <(echo $pyroot* | sed "s@$pyroot@@g" | tr ' ' '\n' | sort -gr)
 pyroot=$pyroot${pynums[0]:?10}  # below emits error if empty
@@ -70,11 +67,12 @@ for pair in \
   $HOME/.vim:.nvim \
   $HOME/dotfiles/.vimrc:.config/nvim/init.vim \
   $pyroot/site-packages:site-packages \
-  $texroot/texmf-dist/tex:tex-packages \
-  $libroot/Mobile\ Documents/com~apple~CloudDocs/Mackup:mackup \
-  $libroot/Mobile\ Documents/com~apple~CloudDocs:iCloud\ Drive \
-  $libroot/Mobile\ Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents/:iCloud\ PDFs \
-  $libroot/CloudStorage/GoogleDrive-lukelbd@gmail.com/My\ Drive:Google\ Drive \
+  $texroot/texmf-dist/tex:texmf-dist \
+  $cloudroot:icloud \
+  $cloudroot/Mackup:mackup \
+  $cloudroot/Mackup/.mackup.cfg:.mackup.cfg \
+  $pdfroot/Documents:pdfs \
+  $googleroot/My\ Drive:drive \
   $libroot/Services:workflows
   do
   src=${pair%:*}
