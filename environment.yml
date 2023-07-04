@@ -13,8 +13,6 @@ dependencies:
   - julia
   - bash
   - python-lsp-server
-  - julia-language-server
-  - bash-language-server
   - flake8
   - black
   - isort
