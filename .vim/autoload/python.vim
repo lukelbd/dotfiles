@@ -42,7 +42,7 @@ function! python#run_win()
     let exe = $CONDA_PREFIX . '/bin/python'
     let proj = $CONDA_PREFIX . '/share/proj'
     let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
-    silent call popup#job_win(cmd)
+    silent call shell#job_win(cmd)
   endif
 endfunction
 

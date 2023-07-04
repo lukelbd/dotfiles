@@ -7,8 +7,28 @@
 " out rest of screen. Workaround is to factor out an unnecessary source function.
 let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
 
+" Path utilities
+" Print information and whether current file exists
+function! file#print_abspath(...) abort
+  let paths = a:0 ? a:000 : [@%]
+  for path in paths
+    let abs = fnamemodify(path, ':p')
+    echom "Relative: '" . path "'"
+    echom "Absolute: '" . abs . "'"
+  endfor
+endfunction
+function! file#print_exists() abort
+  let files = glob(expand('<cfile>'))
+  if empty(files)
+    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  else
+    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
+  endif
+endfunction
+
 " Generate list of files in directory
-" Note: This includes hidden and non-hidden files
+" Warning: Critical that the list options match the prompt lead or else
+" when a single path is returned <Tab> during input() does not complete it.
 function! s:path_source(dir, user) abort
   let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
   let paths = map(paths, "fnamemodify(v:val, ':t')")
@@ -18,42 +38,26 @@ endfunction
 function! file#path_list(lead, line, cursor) abort
   let head = fnamemodify(a:lead, ':h')
   let tail = fnamemodify(a:lead, ':t')
-  let paths = split(globpath(head, tail . '*'), "\n")
-  let paths = map(paths, "fnamemodify(v:val, ':~:.')")
+  if head ==# '.'  " exclude leading component
+    let paths = glob(tail . '*', 1, 1) + glob(tail . '.*', 1, 1)
+  else  " include leading component
+    let paths = globpath(head, tail . '*', 1, 1) + globpath(head, tail . '.*', 1, 1)
+  endif
+  let paths = filter(paths, "fnamemodify(v:val, ':t') !~# '^\\.\\+$'")
+  let paths = map(paths, "isdirectory(v:val) ? v:val . '/' : v:val")
   return paths
-endfunction
-
-" Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
-" Warning: For some reason :tab drop and even :<bufnr>wincmd w fails
-" on monde version of vim so need to use the *tab jump* command instead!
-function! file#open_existing(file) abort
-  let visible = {}
-  let path = fnamemodify(a:file, ':p')
-  let tabjump = 0
-  for tnr in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = tnr + 1 " the tab number
-    for bnr in tabpagebuflist(tabnr)
-      if fnamemodify(bufname(bnr), ':p') == path
-        exe 'normal! ' . tabnr . 'gt'
-        return
-      endif
-    endfor
-  endfor
-  if bufname('%') ==# '' && &modified == 0  " fill this window
-    exec 'edit ' . a:file
-  else  " create new tab
-    exec 'tabnew ' . a:file
-  end
 endfunction
 
 " Open from local or current directory (see also grep.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_from(files, local) abort
-  let cmd = a:files ? 'Files' : 'Open'  " continuous per-directory open or fzf recursive?
-  let default = a:local ? expand('%:p:h') . '/' : fnamemodify(getcwd(), ':p')
-  let default = fnamemodify(default, ':~')
-  let start = utils#complete_input(cmd, default, 'file#path_list')
+  let cmd = a:files ? 'Files' : 'Open'  " recursive fzf or non-resucrive internal
+  let dir = a:local ? expand('%:p:h') : getcwd()  " neither has trailing slash
+  let path = fnamemodify(dir, ':~')
+  let prompt = cmd . ' (' . path . ')'  " display longer version in prompt
+  let default = fnamemodify(dir, ':p:~:.')  " display shorter version here
+  let start = utils#input_complete(prompt, 'file#path_list', default)
   if empty(start) | return | endif
   exe cmd . ' ' . start
 endfunction
@@ -124,23 +128,29 @@ function! s:open_continuous(...) abort
   endfor
 endfunction
 
-" Print the absolute path
-" Print whether the current file exists
-function! file#print_abspath(...) abort
-  let paths = a:0 ? a:000 : [@%]
-  for path in paths
-    let abs = fnamemodify(path, ':p')
-    echom "Relative: '" . path "'"
-    echom "Absolute: '" . abs . "'"
+" Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
+" Warning: The defaiult ':tab drop' seems to jump to the last tab on failure and
+" also takes forever. Also have run into problems with it on some vim versions.
+function! file#open_existing(file) abort
+  let visible = {}
+  let path = fnamemodify(a:file, ':p')
+  let tabjump = 0
+  for tnr in range(tabpagenr('$')) " iterate through each tab
+    let tabnr = tnr + 1 " the tab number
+    for bnr in tabpagebuflist(tabnr)
+      if fnamemodify(bufname(bnr), ':p') ==# path
+        let winnr = bufwinnr(bnr)
+        exe tabnr . 'tabnext'
+        exe winnr . 'wincmd w'
+        return
+      endif
+    endfor
   endfor
-endfunction
-function! file#print_exists() abort
-  let files = glob(expand('<cfile>'))
-  if empty(files)
-    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
-  else
-    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
-  endif
+  if bufname('%') ==# '' && &modified == 0  " fill this window
+    exec 'edit ' . a:file
+  else  " create new tab
+    exec 'tabnew ' . a:file
+  end
 endfunction
 
 " Rename2.vim  -  Rename a buffer within Vim and on disk

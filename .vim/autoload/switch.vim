@@ -2,13 +2,13 @@
 " Utilities for switching stuff on and off
 "-----------------------------------------------------------------------------"
 " Helper function
-function! s:switch_message(prefix, toggle)
-  if a:toggle
-    let state = 'enabled'
-  else
-    let state = 'disabled'
+" Optionally suppress message when toggling things by default
+function! s:switch_message(prefix, toggle, ...)
+  let suppress = a:0 ? a:1 : 0
+  if !suppress
+    let state = a:toggle ? 'enabled' : 'disabled'
+    echom toupper(a:prefix[0]) . a:prefix[1:] . ' ' . state . '.'
   endif
-  echom toupper(a:prefix[0]) . a:prefix[1:] . ' ' . state . '.'
 endfunction
 
 " Toggle ALE syntax checking
@@ -26,11 +26,15 @@ function! switch#ale(...) abort
     call lsp#ale#disable()  " start sending lsp diagnostics to ale
   endif
   let b:ale_enabled = toggle  " ensure always applied in case API changes
-  call s:switch_message('ale and lsp integration', toggle)
+  call call('s:switch_message', ['ale and lsp integration', toggle] + a:000)
 endfunction
 
 " Autosave toggle (autocommands are local to buffer as with codi)
 " We use augroups with buffer-specific names to prevent conflict
+" Note: There are also 'autowrite' and 'autowriteall' settings that will automatically
+" write before built-in file jumping (e.g. :next, :last, :rewind, ...) and tag jumping
+" (e.g. :tag, <C-]>, ...) but they are global, and the below effectively enables
+" these settings. So do not bother with them.
 function! switch#autosave(...) abort
   let state = get(b:, 'autosave_enabled', 0)
   let toggle = a:0 ? a:1 : 1 - state
@@ -48,7 +52,7 @@ function! switch#autosave(...) abort
     augroup END
   endif
   let b:autosave_enabled = toggle
-  call s:switch_message('Autosave', toggle)
+  call call('s:switch_message', ['Autosave', toggle] + a:000)
 endfunction
 
 " Toggle conceal characters on and off
@@ -57,15 +61,12 @@ endfunction
 function! switch#conceal(...) abort
   let state = &conceallevel > 0
   let toggle = a:0 ? a:1 : 1 - state
-  let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle
     return
   else
     let &l:conceallevel = toggle ? 2 : 0
   endif
-  if !suppress
-    call s:switch_message('Conceal mode', toggle)
-  endif
+  call call('s:switch_message', ['Conceal mode', toggle] + a:000)
 endfunction
 
 " Eliminates special chars during copy
@@ -73,7 +74,6 @@ endfunction
 function! switch#copy(...) abort
   let state = exists('b:number')
   let toggle = a:0 ? a:1 : 1 - state
-  let suppress = a:0 > 1 ? a:2 : 0
   let copyprops = ['list', 'number', 'relativenumber', 'scrolloff']
   if state == toggle
     return
@@ -90,24 +90,19 @@ function! switch#copy(...) abort
       exe 'silent! unlet b:' . prop
     endfor
   endif
-  if !suppress
-    call s:switch_message('Copy mode', toggle)
-  endif
+  call call('s:switch_message', ['Copy mode', toggle] + a:000)
 endfunction
 
 " Toggle literal tab characters on and off
 function! switch#expandtab(...) abort
   let state = &l:expandtab
   let toggle = a:0 ? 1 - a:1 : 1 - state  " 'on' means literal tabs i.e. no expandtab
-  let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle
     return
   else
     let &l:expandtab = toggle
   endif
-  if !suppress
-    call s:switch_message('Literal tabs', 1 - toggle)
-  endif
+  call call('s:switch_message', ['Literal tabs', 1 - toggle] + a:000)
 endfunction
 
 " Toggle git gutter and skip if input request matches current state
@@ -121,7 +116,7 @@ function! switch#gitgutter(...) abort
   else
     GitGutterBufferDisable
   endif
-  call s:switch_message('GitGutter', toggle)
+  call call('s:switch_message', ['GitGutter', toggle] + a:000)
 endfunction
 
 " Toggle highlighting
@@ -136,7 +131,7 @@ function! switch#hlsearch(...) abort
     let cmd = 'nohlsearch'
   endif
   call feedkeys("\<Cmd>" . cmd . "\<CR>")
-  call s:switch_message('Highlight search', toggle)
+  call call('s:switch_message', ['Highlight search', toggle] + a:000)
 endfunction
 
 " Toggle directory 
@@ -157,7 +152,7 @@ function! switch#localdir(...) abort
   else
     exe 'cd ' . root
   endif
-  call s:switch_message("Local directory '" . local . "'", toggle)
+  call call('s:switch_message', ["Local directory '" . local . "'", toggle] + a:000)
 endfunction
 
 " Enable and disable LSP engines
@@ -184,7 +179,7 @@ function! switch#lsp(...) abort
     call ddc#custom#patch_global({'sources': []})  " wipe out ddc sources
     call denops#server#stop()  " must come before ddc call
   endif
-  call s:switch_message('lsp and autocomplete', toggle)
+  call call('s:switch_message', ['lsp and autocomplete', toggle] + a:000)
 endfunction
 
 " Toggle spell check on and off
@@ -196,7 +191,7 @@ function! switch#spellcheck(...) abort
   else
     let &l:spell = toggle
   endif
-  call s:switch_message('Spell check', toggle)
+  call call('s:switch_message', ['Spell check', toggle] + a:000)
 endfunction
 
 " Toggle between UK and US English
@@ -210,7 +205,7 @@ function! switch#spelllang(...) abort
   else
     setlocal spelllang=en_us
   endif
-  call s:switch_message('UK English', toggle)
+  call call('s:switch_message', ['UK English', toggle] + a:000)
 endfunction
 
 " Toggle tags on and off
@@ -222,13 +217,13 @@ function! switch#tags(...) abort
     return
   elseif toggle
     let g:gutentags_enabled = 1  " all that GutentagsToggleEnabled does
-    GutentagsUpdate
-    silent! UpdateTags
+    silent! GutentagsUpdate  " update local tags
+    silent! UpdateTags  " update local tags
   else
     let g:gutentags_enabled = 0  " all that GutentagsToggleEnabled does
     for name in names
       silent! call remove(b:, name)
     endfor
   endif
-  call s:switch_message('Tags file', toggle)
+  call call('s:switch_message', ['Tags', toggle] + a:000)
 endfunction

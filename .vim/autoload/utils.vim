@@ -1,46 +1,33 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
-" Convert input count to register
-" Note: This disables e.g. 2dd for 2 lines but use e.g. d2j or other motions instead
-function! utils#apply_register(map) abort
-  if v:count
-    return '"' . v:count
-  endif
-  let char = nr2char(getchar())
-  if char ==# "'"  " manual register selection
-    return '"'
-  elseif char ==# '"'  " peekaboo register selection
-    return '""'
-  elseif a:map ==# "'"
-    return '"_' . char
-  elseif a:map ==# '"'
-    return '"*' . char
-  else
-    return ''
-  endif
+" Null input() completion function
+" This prevents unexpected insertion of literal tabs
+" Note: Used in various places throughout autoload
+function! utils#null_list(...) abort
+  return []
 endfunction
-function! utils#count_register(cmd) abort
-  if a:cmd =~# 'q\|@'
-    let char = b:recording && a:cmd ==# 'q' ? '' : nr2char(106 + v:count1)
-  elseif a:cmd =~# '`\|m'
-    let char = nr2char(97 + v:count)
-  elseif a:cmd =~# 'p\|m'
-  elseif a:cmd =~# "'"  " register pasting
-    let char = nr2char(97 + v:count)
-  elseif a:cmd =~# '"'  " macro pasting
-    let char = nr2char(107 + v:count)
-  endif
+" Null operator motion function
+function! utils#null_operator(...) range abort
+  return ''
+endfunction
+" For <expr> mapping accepting motion
+function! utils#null_operator_expr(...) abort
+  return utils#motion_func('utils#null_operator', a:000)
 endfunction
 
-" Implement input behavior
-" Note: This is used for both grep and file completion
-function! utils#complete_list(...)
-  let [init, fhandle, default] = s:complete_params
-  if !init  " kludge for default behavior
-    return call(fhandle, a:000)
+" Get user input (see grep and file command completion)
+" Note: This is used for grep and file command completions. It specifies a default
+" value in parentheses that can be tab expanded, selects it when user presses enter,
+" or replaces it when user starts typing text. Unique part is that it does not fill
+" the input line with text from the start, allowing both 1) quick user overrides of
+" the entire line and 2) quick selection of a default value, all in one cmdline line.
+function! utils#input_list(...)
+  let [init, funcname, default] = s:complete_opts
+  if !init  " get complete options
+    return call(funcname, a:000)
   else
-    let s:complete_params[0] = 0
+    let s:complete_opts[0] = 0
     try
       let char = nr2char(getchar())
     catch  " user presses Ctrl-C
@@ -54,37 +41,24 @@ function! utils#complete_list(...)
       return [default]
     elseif char =~# '\p'
       return [char]
+    elseif len(char) == 0  " backspace or delete
+      return ['']
     else
       call feedkeys("\<CR>", 't')
       return ['']
     endif
   endif
 endfunction
-function! utils#complete_input(prompt, default, func) abort
-  let message = a:prompt . ' (' . a:default . '): '
-  let s:complete_params = [1, a:func, a:default]
+function! utils#input_complete(prompt, funcname, default) abort
+  let s:complete_opts = [1, a:funcname, a:default]
   call feedkeys("\<Tab>", 't')
-  return input(message, '', 'customlist,utils#complete_list')
+  return input(a:prompt . ': ', '', 'customlist,utils#input_list')
 endfunction
 
-" Null input() completion function to prevent unexpected insertion of literal tabs
-" Note: This is used in other autoload functions
-function! utils#null_list(...) abort
-  return []
-endfunction
-" Null operator motion function
-function! utils#null_operator(...) range abort
-  return ''
-endfunction
-" For <expr> mapping accepting motion
-function! utils#null_operator_expr(...) abort
-  return utils#motion_func('utils#null_operator', a:000)
-endfunction
-
-" Call function over the visual line range or the user motion line range
+" Call over the visual line range or user motion line range (see e.g. python.vim)
 " Note: Use this approach rather than adding line range as physical arguments and
 " calling with call call(func, firstline, lastline, ...) so that funcs can still be
-" invoked manually with V<motion>:call func(). This is more standard paradigm.
+" invoked manually with V<motion>:call func(). This is the more standard paradigm.
 function! utils#motion_func(funcname, args) abort
   let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
   if mode() =~# '^\(v\|V\|\)$'
@@ -98,10 +72,10 @@ function! utils#motion_func(funcname, args) abort
   endif
 endfunction
 
-" Execute the function name and call signature passed to utils#motion_func. This
-" is generally invoked inside an <expr> mapping.
-" Note: Only motions can cause backwards firstline to lastline order. Manual
-" calls to the function will have sorted lines.
+" Execute the function name and call signature passed to utils#motion_func.
+" This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
+" Note: Only motions can cause backwards firstline to lastline order. Manual calls
+" to the function will have sorted lines. So this sorts for safety.
 function! utils#operator_func(type) range abort
   if empty(a:type)  " default behavior
       let firstline = a:firstline
@@ -120,76 +94,98 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
-" Run command with v:count register specification
-" Note: Powers 'c', 'y', 'd', and 'q' (mapped to 'Q')
-function! utils#register_func(macro, count) abort
-  let base = a:macro ? 96 : 106  " default uses a-j for text k-t for macros
-  if a:count
-    let prefix = nr2char(base + a:count)
+" Setup popup windows. Mode can be 0 (not editable) or 1 (editable).
+" Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
+" shell#job_win() or other internal stuff. So instead just try to disable normal mode
+" commands that could accidentally modify text (aside from d used for scrolling).
+" Warning: Critical error happens if try to auto-quit when only popup window is
+" left... fzf will take up the whole window in small terminals, and even when fzf
+" immediately runs and closes as e.g. with non-tex BufNewFile template detection,
+" this causes vim to crash and breaks the terminal. Instead never auto-close windows
+" and simply get in habit of closing entire tabs with session#close_tab().
+function! utils#popup_setup(modifiable) abort
+  setlocal nolist nonumber norelativenumber nocursorline
+  nnoremap <silent> <buffer> q :call window#close_window()<CR>
+  nnoremap <silent> <buffer> <C-w> :call window#close_window()<CR>
+  if &filetype ==# 'qf'  " disable <Nop> map
+    nnoremap <buffer> <CR> <CR>
+  endif
+  if a:modifiable == 1  " e.g. gitcommit window
+    return
+  endif
+  setlocal nospell colorcolumn= statusline=%{'[Popup\ Window]'}%=%{StatusRight()}
+  for char in 'dufb'  " always remap scrolling indicators
+    exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
+  endfor
+  for char in 'uUrRxXdDcCpPaAiIoO'  " ignore buffer-local maps e.g. fugitive
+    if !get(maparg(char, 'n', 0, 1), 'buffer', 0)
+      exe 'nmap <buffer> ' char . ' <Nop>'
+    endif
+  endfor
+endfunction
+
+" Return commands specifying or demanding a register (e.g. " or peekaboo)
+" Note: These functions translate counts passed to yanks/change/delete/paste to first
+" 12 letters of alphabet, counts passed to macro records/plays to next 12 letters of
+" alphabet, and counts passed to mark sets/jumps to first 24 letters of alphabet.
+" Leave letters 'y' and 'z' alone for internal use (currently just used by marks).
+function! s:translate_count(mode, ...) abort
+  let cnt = v:count
+  let curr = v:register
+  if curr !=# '"' && a:mode !=# 'm'
+    return [curr, '']
+  elseif a:mode =~# '[m`]'  " marks: uppercase a-z (24)
+    let [base, min, max] = [64, 1, 24]
+  elseif a:mode =~# '[q@]'  " macros: lowercase n-z (13)
+    let [base, min, max] = [109, 1, 13]
+  else  " others: lowercase a-m (13)
+    let [base, min, max] = [96, 0, 13]
+  endif
+  let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
+  let cnt = max([min, cnt])  " use v:count1 for 'm' and 'q'
+  let name = cnt == 0 ? '' : nr2char(base + min([cnt, max]))
+  let warnings = []
+  if cnt > max  " emit warning
+    let head = "Count '" . cnt . "' too high for translation."
+    let tail = "Using maximum '" . name . "' (" . max . ').'
+    call add(warnings, head . ' ' . tail)
+  endif
+  if a:mode ==# 'm' && index(map(getmarklist(), "v:val['mark']"), "'" . name) != -1
+    let head = 'Overwriting existing mark'
+    let tail = "'" . name . "' (" . cnt . ').'
+    call add(warnings, head . ' ' . tail)
+  endif
+  if !empty(warnings)
+    echohl WarningMsg
+    echom 'Warning: ' . join(warnings, ' ')
+    echohl None
+  endif
+  return [name, empty(warnings) ? string(cnt) : '']
+endfunction
+" Translate into map command
+function! utils#translate_count(mode, ...) abort
+  let default = a:0 > 0 ? a:1 : ''
+  let double = a:0 > 1 ? a:2 : ''
+  let char = ''
+  if empty(default) && empty(double)
+    let [name, label] = s:translate_count(a:mode)
+    if a:mode =~# '[m`q@]'  " marks/macros
+      let cmd = name
+    else  " yanks/changes/deletes/pastes
+      let cmd = empty(name) ? '' : '"' . name
+    endif
   else
-    let prefix = ''
+    let [name, label] = s:translate_count(a:mode, 0)
+    if empty(name)  " ''/\"\"/'<motion>/\"<motion>
+      let char = nr2char(getchar())
+      let name = char =~# "['\"]" ? repeat('"', double) : default . char
+      let label = name ==# '_' ? 'blackhole' : name[0] =~# '[+*]' ? 'clipboard' : ''
+    endif
+    let cmd = '"' . name
   endif
-  return "\<Esc>" . prefix
-endfunction
-
-" Reverse the selected lines
-" Note: Adaptation of hard-to-remember :g command shortcut.
-" https://vim.fandom.com/wiki/Reverse_order_of_lines
-function! utils#reverse_lines() range abort
-  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
-  let num = empty(range) ? 0 : a:firstline - 1
-  exec 'silent ' . range . 'g/^/m' . num
-endfunction
-
-" Switch to next or previous colorschemes and print the name
-" This is used when deciding on macvim colorschemes
-function! utils#wrap_colorschemes(reverse) abort
-  " Get colorscheme list
-  let step = a:reverse ? 1 : -1
-  if !exists('g:all_colorschemes')
-    let g:all_colorschemes = getcompletion('', 'color')
+  if !empty(name) && !empty(label)
+    let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
+    echom head . ': ' . name[0] . ' (' . label . ')'
   endif
-  let active_colorscheme = get(g:, 'colors_name', 'default')
-  let idx = index(g:all_colorschemes, active_colorscheme)
-  let idx = step + (idx < 0 ? -step : idx)   " if idx < 0, set to 0 by default
-  " Jump to next
-  if idx < 0
-    let idx += len(g:all_colorschemes)
-  elseif idx >= len(g:all_colorschemes)
-    let idx -= len(g:all_colorschemes)
-  endif
-  let colorscheme = g:all_colorschemes[idx]
-  echom 'Colorscheme: ' . colorscheme
-  exe 'colorscheme ' . colorscheme
-  silent redraw
-  let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
-endfunction
-
-" Cyclic next error in location list
-" Adapted from: https://vi.stackexchange.com/a/14359
-" Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
-" cursor is on final error in the file but ]x does not cycle to the next one.
-function! utils#wrap_cyclic(count, list, ...) abort
-  " Build up list of loc dictionaries
-  let func = 'get' . a:list . 'list'
-  let reverse = a:0 && a:1
-  let params = a:list ==# 'loc' ? [0] : []
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
-  let items = call(func, params)
-  call filter(items, "v:val.bufnr == bufnr('%')")
-  if empty(items) | return "echoerr 'E42: No errors'" | endif
-  call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if reverse | call reverse(items) | endif
-  " Jump to next loc circularly
-  let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], reverse ? '<' : '>']
-  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
-  call filter(items, join(cmps, ' || '))
-  let inext = get(get(items, 0, {}), 'idx', '')
-  if type(inext) == type(0)
-    return cmd . inext
-  endif
-  exe reverse ? line('$') : 0
-  return utils#wrap_cyclic(a:count, a:list, reverse)
+  return cmd
 endfunction

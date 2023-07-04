@@ -7,7 +7,7 @@
 *.sw[a-z]
 *.DS_Store
 
-# Complied files
+# Compiled
 *.cmd
 *.exe
 *.com
@@ -19,6 +19,35 @@
 *.mod
 *.o
 *.x
+
+# Archives
+*.7z
+*.apk
+*.arj
+*.bin
+*.bz
+*.bz2
+*.cab
+*.deb
+*.dmg
+*.gem
+*.gz
+*.iso
+*.jar
+*.msi
+*.rar
+*.rpm
+*.tar
+*.tbz
+*.tbz2
+*.tgz
+*.tx
+*.war
+*.xpi
+*.xz
+*.z
+*.Z
+*.zip
 
 # Documents
 *.doc
@@ -40,7 +69,7 @@
 *.pdf
 *.dvi
 
-# Image
+# Images
 *.bmp
 *.cgm
 *.dl
@@ -69,6 +98,7 @@
 *.xwd
 *.xwd
 *.yuv
+
 # Audio
 *.aac
 *.au
@@ -85,6 +115,7 @@
 *.opus
 *.ra
 *.wav
+
 # Video
 *.anx
 *.asf
@@ -115,39 +146,9 @@
 *.webm
 *.wmv
 
-# Archive files
-*.7z
-*.apk
-*.arj
-*.bin
-*.bz
-*.bz2
-*.cab
-*.deb
-*.dmg
-*.gem
-*.gz
-*.iso
-*.jar
-*.msi
-*.rar
-*.rpm
-*.tar
-*.tbz
-*.tbz2
-*.tgz
-*.tx
-*.war
-*.xpi
-*.xz
-*.z
-*.Z
-*.zip
-
-# Database files
+# Binary data
 *.nc
-*.ascii
-*.shp
+*.nc4
 *.grb
 *.grib
 *.df
@@ -156,17 +157,12 @@
 *.hdf4
 *.h5
 *.hdf5
+*.data
 *.npz
 *.npy
+*.shp
 *.pkl
-*.csv
 *.xls
 *.xlsx
-*.data
-*.tbl
-*.table
-*.rdf
-*.json
-*.xml
 *.sql
-*.mkd
+*.sqlite

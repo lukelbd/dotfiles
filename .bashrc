@@ -103,7 +103,7 @@ _setup_message() { printf '%s' "${1}$(seq -s '.' $((30 - ${#1})) | tr -d 0-9)"; 
 # don't overwrite modifications by supercomputer modules, conda environments, etc.
 _setup_message 'General setup'
 _prompt_branch() {  # print parentheses around git branch similar to conda environment
-  git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* \(.*\)/(\1) /'
+  git branch 2>/dev/null | sed -e '/^[^*]/d' -e 's/* (\?\([^)]*\))\? */(\1) /'
 }
 _prompt_dirs() {  # show full dirs path from base to current instead of just current
   local paths
@@ -173,9 +173,9 @@ _setup_opts() {
   shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
   shopt -u no_empty_cmd_completion  # enable empty command completion
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
-  export HISTIGNORE="&:[ ]*:return *:exit *:cd *:bg *:fg *:history *:clear *"  # don't record some commands
-  export HISTSIZE=5000  # huge history
-  export HISTFILESIZE=5000  # huge history
+  export HISTSIZE=5000  # enable huge history
+  export HISTFILESIZE=5000  # enable huge history
+  export HISTIGNORE="&:bg *:fg *:exit *:clear *"  # don't record some commands
   export HISTCONTROL="erasedups:ignoreboth"  # avoid duplicate entries
 }
 _setup_opts 2>/dev/null  # ignore if option unavailable
@@ -225,7 +225,8 @@ case "${HOSTNAME%%.*}" in
     # * Installed cdo, nco, and R with conda. Installed ncl by installing compilers
     #   with homebrew and downloading pre-compiled binary from ncar.
     # * Installed gnu utils with 'brew install coreutils findutils gnu-sed gnutls grep
-    #   gnu-tar gawk'. Then found paths with: https://apple.stackexchange.com/q/69223/214359
+    #   gnu-tar gawk'. Found paths with: https://apple.stackexchange.com/q/69223/214359
+    #   Also installed access to macOS 'trash' using 'brew install trash'.
     # * Fix permission issues after migrating macs with following command:
     #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
     #   https://stackoverflow.com/a/50219099/4970631
@@ -553,7 +554,7 @@ vh() {
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
   if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-    vim --cmd 'set buftype=nofile' -c "call popup#help_page(0, '$*')"
+    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
   else
     echo "No help information for $*."
   fi
@@ -579,7 +580,7 @@ vm() {
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
   if command man "$arg" 1>/dev/null; then  # could display error message
-    vim --cmd 'set buftype=nofile' -c "call popup#man_page(0, '$*')"
+    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
   fi
 }
 
@@ -640,6 +641,8 @@ vim-session() {
     fi
   done
   [ -z "$path" ] && path=.vimsession
+  [ -r ".vimsession-$path" ] && path=.vimsession-$path
+  [ -r ".vimsession_$path" ] && path=.vimsession_$path
   [ -r "$path" ] || { echo "Error: Session file '$path' not found."; return 1; }
   root=$(abspath "$path")  # absolute path with slashes
   root=${root%/*}  # root directory to detect
@@ -769,7 +772,7 @@ rename() {
   done
 }
 
-# Parse .ignore searching file (compare to tags#ignores())
+# Parse .ignore file for custom utilities (compare to vim tags#ignores())
 # TODO: Add utility for *just* ignoring directories not others. Or add utility
 # for ignoring absolutely nothing but preserving syntax of other utilities.
 # NOTE: Overarching rule is that we do *not* descend into giant subfolders containing
@@ -842,8 +845,8 @@ _find() {
   include="$1"
   shift  # internal argument
   case "$#" in
-    0) commands=(. '\*' -print) ;;  # everything
-    1) commands=("$1" '\*' -print) ;;  # path
+    0) commands=(. '*' -print) ;;  # everything
+    1) commands=(. "$1" -print) ;;  # path
     2) commands=("$1" "$2" -print) ;;  # path pattern
     *) commands=("$@") ;;  # path pattern (commands)
   esac
@@ -1993,74 +1996,79 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # * Could use --select-1 to auto-select single result but want interactive instead.
   # * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
   _setup_message 'Enabling fzf'
+  _fzf_opts=" \
+  --ansi --color=bg:-1,bg+:-1 --layout=default \
+  --exit-0 --inline-info --height=6 \
+  --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
+  "
+  export FZF_DEFAULT_OPTS="$_fzf_opts"  # critical to export so used by vim
   # shellcheck disable=2034
-  {
-    _fzf_opts=" \
-    --ansi --color=bg:-1,bg+:-1 --layout=default \
-    --exit-0 --inline-info --height=6 \
-    --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
-    "
-    export FZF_DEFAULT_OPTS="$_fzf_opts"  # critical to export so used by vim
-    FZF_COMPLETION_TRIGGER=''  # must be literal empty string rather than unset
-    FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
-    FZF_CTRL_T_OPTS="$_fzf_opts"
-    FZF_ALT_C_OPTS="$_fzf_opts"
-  }
+  FZF_COMPLETION_TRIGGER=''  # must be literal empty string rather than unset
+  # shellcheck disable=2034
+  FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
+  # shellcheck disable=2034
+  FZF_CTRL_T_OPTS="$_fzf_opts"
+  # shellcheck disable=2034
+  FZF_ALT_C_OPTS="$_fzf_opts"
+
+  # FZF marks config
+  # See: https://github.com/urbainvaes/fzf-marks
+  # shellcheck disable=2034
+  FZF_MARKS_FILE=${HOME}/.fzf.marks  # default .fzf-marks conflicts with repo
+  # shellcheck disable=2034
+  FZF_MARKS_COMMAND='fzf --height 40% --reverse'
+  # shellcheck disable=2034
+  FZF_MARKS_JUMP="\C-g"
+  # shellcheck disable=2034
+  FZF_MARKS_COLOR_LHS=39
+  # shellcheck disable=2034
+  FZF_MARKS_COLOR_RHS=36
+  # shellcheck disable=2034
+  FZF_MARKS_COLOR_COLON=33
+  # shellcheck disable=2034
+  FZF_MARKS_NO_COLORS=0
+  # shellcheck disable=2034
+  FZF_MARKS_KEEP_ORDER=0
 
   # Defualt find commands. The compgen ones were addd by my fork, others are native, we
   # adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
   # NOTE: For now do not try to use universal '.ignore' files since only special
   # utilities should ignore files while basic shell navigation should show everything.
   # _fzf_ignore="$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')"  # alternative ignore
-  # shellcheck disable=2034
-  {
-    _fzf_ignore="\\( \
-      -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
-      -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
-      -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
-    "
-    export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
+  _fzf_ignore="\\( \
+    -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
+    -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
+    -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
+  "
+  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
     -type f -print -o -type l -print 2>/dev/null | cut -b3- \
-    "
-    FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+  "
+  # shellcheck disable=2034  # recursively search directories and cd into them
+  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
     -type d -print 2>/dev/null | cut -b3- \
-    "  # recursively search directories and cd into them
-    FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+  "
+  # shellcheck disable=2034  # recursively search files
+  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
     \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
-    "  # recursively search files
-    FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+  "
+  # shellcheck disable=2034  # complete directories with tab
+  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
     -type d -print 2>/dev/null | sed 's@^.*/@@' \
-    "
-    FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+  "
+  # shellcheck disable=2034  # complete paths with tab
+  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
     \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
-    "
-  }
+  "
 
   # Source bash file
-  complete -r  # reset first
-  source ~/.fzf.bash
-  echo 'done'
-
-  # FZF tab completion for non-empty line that is not preceded by word + space.
+  # NOTE: Previously also tried to override completion here but no longer.
   # See: https://stackoverflow.com/a/42085887/4970632
   # See: https://unix.stackexchange.com/a/217916/112647
-  # NOTE: This prevents '-o' options from getting used becuase we call the functions
-  # directly... but perhaps better to relegate everything to the functions, and not
-  # sure when -o default and -o bashdefault even get used.
-  # function _complete_override () {
-  #   local cmd func
-  #   [[ "$READLINE_LINE" =~ " " ]] && cmd="${READLINE_LINE%% *}"
-  #   if [ -z "$cmd" ]; then
-  #     func=$(complete -p | awk '$NF == "-E" {print $(NF-1)}')
-  #   else
-  #     func=$(complete -p | awk '$NF == "'"$cmd"'" {print $(NF-1)}')
-  #   fi
-  #   [ -z "$func" ] && func=$(complete -p | awk '$NF == "-D" {print $(NF-1)}')
-  #   [ -z "$func" ] && echo "Error: No default completion function." && return 1
-  #   "$func" | printf -v READLINE_LINE "%s"
-  #   READLINE_POINT=${#READLINE_LINE}
-  # }
-  # bind -x '"\C-i": _complete_override'
+  complete -r  # reset first
+  source ~/.fzf.bash
+  _fzf_marks=~/.fzf-marks/fzf-marks.plugin.bash
+  [ -f "$_fzf_marks" ] && source "$_fzf_marks"
+  echo 'done'
 fi
 
 #-----------------------------------------------------------------------------

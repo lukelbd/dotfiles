@@ -1,47 +1,71 @@
 # Exact Solarized Light color theme for the color GNU ls utility.
 # Designed for dircolors (GNU coreutils) 5.97
 #
-# This simple theme was simultaneously designed for these terminal color schemes:
-# - Solarized dark
-# - Solarized light (best)
+# This simple theme was designed for these terminal color schemes:
+#
+# - solarized dark
+# - solarized light (best)
 # - default dark
 # - default light
-# with a slight optimization for Solarized Light.
+#
+# with a slight optimization for solarized light.
 #
 # How the colors were selected:
+#
 # - Terminal emulators often have an option typically enabled by default that makes
-#   bold a different color.  It is important to leave this option enabled so that
-#   you can access the entire 16-color Solarized palette, and not just 8 colors.
-# - We favor universality over a greater number of colors.  So we limit the number
+#   bold a different color. It is important to leave this option enabled so that
+#   you can access the entire 16-color solarized palette, and not just 8 colors.
+# - Favor universality over a greater number of colors. So we limit the number
 #   of colors so that this theme will work out of the box in all terminals,
-#   Solarized or not, dark or light.
-# - We choose to have the following category of files:
-#   NORMAL & FILE, DIR, LINK, EXEC and
-#   editable text including source, unimportant text, binary docs & multimedia source
-#   files, viewable multimedia, archived/compressed, and unimportant non-text
-# - For uniqueness, we stay away from the Solarized foreground colors are -- either
+#   solarized or not, dark or light.
+# - Choose the following categories: NORMAL & FILE, DIR, LINK, EXEC and editable
+#   text including source, unimportant text, binary docs & multimedia source
+#   files, viewable multimedia, archived/compressed, and unimportant non-text.
+# - For uniqueness stay away from the solarized foreground colors -- either
 #   base00 (brightyellow) or base0 (brightblue).  However, they can be used if
 #   you know what the bg/fg colors of your terminal are, in order to optimize the display.
-# - 3 different options are provided: universal, solarized dark, and solarized light.
-#   The only difference between the universal scheme and one that's optimized for
-#   dark/light is the color of "unimportant" files, which should blend more with the
-#   background
-# - We note that blue is the hardest color to see on dark bg and yellow is the hardest
-#   color to see on light bg (with blue being particularly bad).  So we choose yellow
+# - Note that blue is the hardest color to see on dark bg and yellow is the hardest
+#   color to see on light bg (with blue being particularly bad).  So choose yellow
 #   for multimedia files which are usually accessed in a GUI folder browser anyway.
-#   And blue is kept for custom use of this scheme's user.
-# - See table below to see the assignments.
 
-# Installation instructions:
-# This file goes in the /etc directory, and must be world readable.
-# You can copy this file to .dir_colors in your $HOME directory to override
-# the system defaults.
+# Colors are specified below using color init strings. These are strings consisting
+# of one or more of the following numeric codes:
+#
+# Attribute codes:
+#   00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
+# Text color codes:
+#   30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white
+# Background color codes:
+#   40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
+#
+# Colors (see http://www.oreilly.com/catalog/wdnut/excerpt/color_names.html):
+#
+# ANSI color code       Solar     Universal           SolDark         SolLight
+# ~~~~~~~~~~~~~~~       ~~~~~~~   ~~~~~~~~~           ~~~~~~~         ~~~~~~~~
+# 00    none                      NORMAL, FILE        <SAME>          <SAME>
+# 30    black           base02
+# 01;30 bright black    base03
+# 31    red             red       docs & mm src       <SAME>          <SAME>
+# 01;31 bright red      orange    EXEC                <SAME>          <SAME>
+# 32    green           green     editable text       <SAME>          <SAME>
+# 01;32 bright green    base01    other text          <SAME>
+# 33    yellow          yellow    multimedia          <SAME>          <SAME>
+# 01;33 bright yellow   base00                        other non-text
+# 34    blue            blue      user customized     <SAME>          <SAME>
+# 01;34 bright blue     base0                                         other text
+# 35    magenta         magenta   LINK                <SAME>          <SAME>
+# 01;35 bright magenta  violet    archive/compress    <SAME>          <SAME>
+# 36    cyan            cyan      DIR                 <SAME>          <SAME>
+# 01;36 bright cyan     base1     other non-text                      <SAME>
+# 37    white           base2
 
+### Colors
 # COLOR needs one of these arguments: 'tty' colorizes output to ttys, but not
 # pipes. 'all' adds color characters to all output. 'none' shuts colorization off.
 COLOR tty
 
-# Below, there should be one TERM entry for each termtype that is colorizable
+### Terms
+# Should be one TERM entry for each termtype that is colorizable
 TERM ansi
 TERM color_xterm
 TERM color-xterm
@@ -116,89 +140,59 @@ TERM xterm-color
 TERM xterm-debian
 TERM xterm-termite
 
+### General
 # EIGHTBIT, followed by '1' for on, '0' for off. (8-bit output)
 EIGHTBIT 1
-
-#############################################################################
-# Below are the color init strings for the basic file types. A color init
-# string consists of one or more of the following numeric codes:
-#
-# Attribute codes:
-#   00=none 01=bold 04=underscore 05=blink 07=reverse 08=concealed
-# Text color codes:
-#   30=black 31=red 32=green 33=yellow 34=blue 35=magenta 36=cyan 37=white
-# Background color codes:
-#   40=black 41=red 42=green 43=yellow 44=blue 45=magenta 46=cyan 47=white
-#
-# NOTES:
-# - See http://www.oreilly.com/catalog/wdnut/excerpt/color_names.html
-# - Color combinations
-#   ANSI Color code       Solarized  Notes                Universal             SolDark              SolLight
-#   ~~~~~~~~~~~~~~~       ~~~~~~~~~  ~~~~~                ~~~~~~~~~             ~~~~~~~              ~~~~~~~~
-#   00    none                                            NORMAL, FILE          <SAME>               <SAME>
-#   30    black           base02
-#   01;30 bright black    base03     bg of SolDark
-#   31    red             red                             docs & mm src         <SAME>               <SAME>
-#   01;31 bright red      orange                          EXEC                  <SAME>               <SAME>
-#   32    green           green                           editable text         <SAME>               <SAME>
-#   01;32 bright green    base01                          unimportant text      <SAME>
-#   33    yellow          yellow     unclear in light bg  multimedia            <SAME>               <SAME>
-#   01;33 bright yellow   base00     fg of SolLight                             unimportant non-text
-#   34    blue            blue       unclear in dark bg   user customized       <SAME>               <SAME>
-#   01;34 bright blue     base0      fg in SolDark                                                   unimportant text
-#   35    magenta         magenta                         LINK                  <SAME>               <SAME>
-#   01;35 bright magenta  violet                          archive/compressed    <SAME>               <SAME>
-#   36    cyan            cyan                            DIR                   <SAME>               <SAME>
-#   01;36 bright cyan     base1                           unimportant non-text                       <SAME>
-#   37    white           base2
-#   01;37 bright white    base3      bg in SolLight
-#   05;37;41                         unclear in Putty dark
-
-### General file types
-# Global default
+# Default
 NORMAL 00
 # Normal file
 FILE 00
 # Directory
 DIR 01;34
-# XX2, XX3, XX6, and XX7 directories
+# XX2, XX3, XX6, XX7
 OTHER_WRITABLE 34;47
 # Symbolic link
 LINK 35
-
-# Pipe, socket, block device, character device (blue bg)
-FIFO 37;44
+# Executable
+EXEC 01;35
+# Files that orphaned symlinks point to
+MISSING 41;37
+# Orphaned symlinks (blinking may not work)
+ORPHAN  41;37
+# Devices
+FIFO 37;44  # blue background
 SOCK 37;44
 DOOR 37;44
 BLK  37;44
 CHR  37;44
 
-# Compiled binary stuff
-EXEC 01;35  # Unix
-.cmd 01;35  # Win
-.exe 01;35  # Win
-.com 01;35  # Win
-.bat 01;35  # Win
-.reg 01;35  # Win
-.app 01;35  # OSX
+### Logs and configs
+.*rc        01;37  # bright white
+.log        01;37  # bright white
+.info       01;37
+.out        01;37
+.yml        01;37
+.yaml       01;37
+.cfg        01;37
+.conf       01;37
+.config     01;37
+.nml        01;37
+.namelist   01;37
+.vimtags    01;37
+.vimsession 01;37
+
+### Compiled files
+.cmd 01;35
+.exe 01;35
+.com 01;35
+.bat 01;35
+.reg 01;35
+.app 01;35
 .pyc 01;31
 .exe 01;35
 .mod 01;35
 .o   01;35
 .x   01;35
-
-# Blinking files that orphaned symlinks point to
-# MISSING  31;47
-MISSING 41;37
-# Blinking orphaned symlinks (blinking may or may not work)
-# ORPHAN  31;47
-ORPHAN  41;37
-
-#############################################################################
-### By extension
-# List any file extensions like '.gz' or '.tar' that you would like ls
-# to colorize below. Put the extension, a space, and the color init string.
-# (and any comments you want to add after a '#')
 
 ### Code files
 .jl     31
@@ -259,27 +253,37 @@ ORPHAN  41;37
 .bib    33
 .aux    33
 
-### Text files and readmes and stuff
-# LICENSE 33 # doesn't work
-# README  33
-.tex    33
-.bbl    33
-.txt    33
-.org    33
-.md     33
-.rst    33
-.htm    33
-.html   33
-.shtml  33
-.haml   33
-.css    33
-.sass   33
-.scss   33
-.less   33
-.man    33
-.rtf    33
+### Archives
+.7z   1;36  # bright cyan
+.apk  1;36
+.arj  1;36
+.bin  1;36
+.bz   1;36
+.bz2  1;36
+.cab  1;36
+.deb  1;36
+.dmg  1;36
+.gem  1;36
+.gz   1;36
+.iso  1;36
+.jar  1;36
+.msi  1;36
+.rar  1;36
+.rpm  1;36
+.tar  1;36
+.tbz  1;36
+.tbz2 1;36
+.tgz  1;36
+.tx   1;36
+.war  1;36
+.xpi  1;36
+.xz   1;36
+.z    1;36
+.Z    1;36
+.zip  1;36
 
-### Documents requiring GUI
+### Documents
+# Binary
 .doc  01;33
 .docx 01;33
 .odt  01;33
@@ -298,9 +302,28 @@ ORPHAN  41;37
 .ps   01;33
 .pdf  01;33
 .dvi  01;33
+# Plain text
+.tex      33
+.bbl      33
+.txt      33
+.org      33
+.md       33
+.mkd      33
+.markdown 33
+.rst      33
+.htm      33
+.html     33
+.shtml    33
+.haml     33
+.css      33
+.sass     33
+.scss     33
+.less     33
+.man      33
+.rtf      33
 
-### Multimedia formats
-# Image
+### Media
+# Images
 .bmp  32
 .cgm  32
 .dl   32
@@ -375,64 +398,36 @@ ORPHAN  41;37
 .webm 32
 .wmv  32
 
-### Archives, compressed.
-# Bright cyan, like directories are bright blue
-.7z   1;36
-.apk  1;36
-.arj  1;36
-.bin  1;36
-.bz   1;36
-.bz2  1;36
-.cab  1;36  # Win
-.deb  1;36
-.dmg  1;36  # OSX
-.gem  1;36
-.gz   1;36
-.iso  1;36
-.jar  1;36
-.msi  1;36  # Win
-.rar  1;36
-.rpm  1;36
-.tar  1;36
-.tbz  1;36
-.tbz2 1;36
-.tgz  1;36
-.tx   1;36
-.war  1;36
-.xpi  1;36
-.xz   1;36
-.z    1;36
-.Z    1;36
-.zip  1;36
-
-### Log files and session files; bright white
-.vimsession 01;37
-.log        01;37
-.nml        01;37
-
-### Database files
-.nc    36
-.ascii 36
-.shp   36
-.grb   36
-.grib  36
-.df    36
-.hdf   36
-.h4    36
-.hdf4  36
-.h5    36
-.hdf5  36
-.npz   36
-.npy   36
-.pkl   36
+### Data
+# Binary
+.nc     36
+.nc4    36
+.grb    36
+.grib   36
+.df     36
+.hdf    36
+.h4     36
+.hdf4   36
+.h5     36
+.hdf5   36
+.data   36
+.npz    36
+.npy    36
+.shp    36
+.pkl    36
+.xls    36
+.xlsx   36
+.sql    36
+.sqlite 36
+# Plain text
 .csv   36
-.xls   36
-.xlsx  36
-.data  36
 .tbl   36
+.tab   36
 .table 36
-.rdf   36
+.ascii 36
 .json  36
 .xml   36
-.sql   36
-.mkd   36
+.rdf   36
+.rgba  36
+.rgb   36
+.hex   36

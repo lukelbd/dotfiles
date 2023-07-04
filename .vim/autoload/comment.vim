@@ -20,7 +20,8 @@ endfunction
 " Begin comment in insert mode
 function! comment#comment_insert() abort
   let parts = split(&l:commentstring, '%s')
-  return "\<C-g>u" . join(parts, ' ') . repeat("\<Left>", len(parts) > 1 ? len(parts[1]) + 1 : 0) . ' '
+  let lefts = repeat("\<Left>", len(parts) > 1 ? len(parts[1]) + 1 : 0)
+  return "\<C-g>u" . join(parts, ' ') . lefts . ' '
 endfunction
 
 " Separator of dashes matching current line length
@@ -69,7 +70,7 @@ function! comment#header_incomment() abort
 endfunction
 
 " Arbtirary message above this line, matching indentation level
-function! comment#message(message) abort
+function! comment#comment_message(message) abort
   let indent = s:indent_spaces()
   let cchar = comment#comment_char()
   let comment = indent . cchar . ' ' . a:message . ' ' . cchar
