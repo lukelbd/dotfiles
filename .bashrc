@@ -1846,6 +1846,12 @@ extract() {
 #   convert -flatten in.pdf out.pdf
 # * Note the PNAS journal says 1000-1200dpi recommended for line art images
 #   and stuff with text.
+pdf2text() {  # extracting text (including appropriate newlines, etc.) from file
+  # See: https://stackoverflow.com/a/52184549/4970632
+  # See: https://pypi.org/project/pdfminer/
+  # Note command 'pdf2text.py' was renamed to bin file.
+  command pdf2txt "$@"
+}
 gif2png() {  # often needed because LaTeX can't read gif files
   for f in "$@"; do
     ! [[ "$f" =~ .gif$ ]] && echo "Warning: Skipping ${f##*/} (must be .gif)" && continue
@@ -1989,49 +1995,20 @@ fi
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
-  # Various default settings (see man page for --bind information)
+  # Default fzf flags (see man page for more info, e.g. --bind and --select-1)
   # * Inline info puts the number line thing on same line as text.
   # * Bind slash to accept so behavior matches shell completion behavior.
   # * Enforce terminal background default color using -1 below.
-  # * Could use --select-1 to auto-select single result but want interactive instead.
   # * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
   _setup_message 'Enabling fzf'
   _fzf_opts=" \
-  --ansi --color=bg:-1,bg+:-1 --layout=default \
-  --exit-0 --inline-info --height=6 \
-  --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
-  "
-  export FZF_DEFAULT_OPTS="$_fzf_opts"  # critical to export so used by vim
-  # shellcheck disable=2034
-  FZF_COMPLETION_TRIGGER=''  # must be literal empty string rather than unset
-  # shellcheck disable=2034
-  FZF_COMPLETION_OPTS="$_fzf_opts"  # tab triggers completion
-  # shellcheck disable=2034
-  FZF_CTRL_T_OPTS="$_fzf_opts"
-  # shellcheck disable=2034
-  FZF_ALT_C_OPTS="$_fzf_opts"
+    --ansi --color=bg:-1,bg+:-1 --layout=default \
+    --exit-0 --inline-info --height=6 \
+    --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
+  "  # critical to export so used by vim
 
-  # FZF marks config
-  # See: https://github.com/urbainvaes/fzf-marks
-  # shellcheck disable=2034
-  FZF_MARKS_FILE=${HOME}/.fzf.marks  # default .fzf-marks conflicts with repo
-  # shellcheck disable=2034
-  FZF_MARKS_COMMAND='fzf --height 40% --reverse'
-  # shellcheck disable=2034
-  FZF_MARKS_JUMP="\C-g"
-  # shellcheck disable=2034
-  FZF_MARKS_COLOR_LHS=39
-  # shellcheck disable=2034
-  FZF_MARKS_COLOR_RHS=36
-  # shellcheck disable=2034
-  FZF_MARKS_COLOR_COLON=33
-  # shellcheck disable=2034
-  FZF_MARKS_NO_COLORS=0
-  # shellcheck disable=2034
-  FZF_MARKS_KEEP_ORDER=0
-
-  # Defualt find commands. The compgen ones were addd by my fork, others are native, we
-  # adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+  # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
+  # Adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
   # NOTE: For now do not try to use universal '.ignore' files since only special
   # utilities should ignore files while basic shell navigation should show everything.
   # _fzf_ignore="$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')"  # alternative ignore
@@ -2040,25 +2017,49 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
     -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
     -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
   "
+
+  # Apply fzf config
+  # NOTE: To make completion trigger a single tab must set to literal empty
+  # string rather than leaving the variable unset (or else it uses default).
+  export FZF_DEFAULT_OPTS=$_fzf_opts
   export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
     -type f -print -o -type l -print 2>/dev/null | cut -b3- \
   "
-  # shellcheck disable=2034  # recursively search directories and cd into them
-  FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
-    -type d -print 2>/dev/null | cut -b3- \
-  "
-  # shellcheck disable=2034  # recursively search files
-  FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
-    \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
-  "
-  # shellcheck disable=2034  # complete directories with tab
-  FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
-    -type d -print 2>/dev/null | sed 's@^.*/@@' \
-  "
-  # shellcheck disable=2034  # complete paths with tab
-  FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
-    \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
-  "
+  # shellcheck disable=2034
+  {
+    FZF_COMPLETION_TRIGGER=''
+    FZF_COMPLETION_OPTS=$_fzf_opts
+    FZF_CTRL_T_OPTS=$_fzf_opts
+    FZF_ALT_C_OPTS=$_fzf_opts
+    FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+      -type d -print 2>/dev/null | cut -b3- \
+    "  # recursively search directories and cd into them
+    FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+      \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
+    "  # recursively search files
+    FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+      -type d -print 2>/dev/null | sed 's@^.*/@@' \
+    "  # complete directories with tab
+    FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+      \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
+    "  # complete paths with tab
+  }
+
+  # Download with git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks
+  # See: https://github.com/urbainvaes/fzf-marks
+  # NOTE: The default .fzf-marks storage file conflicts with the repo name we use
+  # shellcheck disable=2034
+  {
+    FZF_MARKS_FILE=${HOME}/.fzf.marks
+    FZF_MARKS_COMMAND='fzf --height 40% --reverse'
+    FZF_MARKS_JUMP="\C-g"
+    FZF_MARKS_COLOR_LHS=39
+    FZF_MARKS_COLOR_RHS=36
+    FZF_MARKS_COLOR_COLON=33
+    FZF_MARKS_NO_COLORS=0
+    FZF_MARKS_KEEP_ORDER=0
+  }
+
 
   # Source bash file
   # NOTE: Previously also tried to override completion here but no longer.
