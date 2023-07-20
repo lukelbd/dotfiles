@@ -383,18 +383,18 @@ _dirs_data=(cmip-data reanalysis-data idealized coupled)
 _dirs_tools=(ncparallel mppnccombine)
 _dirs_research=(constraints persistence timescales transport)
 for _project in "${_dirs_tools[@]}"; do
-    if [ -r "$HOME/models/$_project" ]; then
-      export PATH=$HOME/models/$_project:$PATH
-    elif [ -r "$HOME/$_project" ]; then
-      export PATH=$HOME/$_project:$PATH
-    fi
+  if [ -r "$HOME/models/$_project" ]; then
+    export PATH=$HOME/models/$_project:$PATH
+  elif [ -r "$HOME/$_project" ]; then
+    export PATH=$HOME/$_project:$PATH
+  fi
 done
 for _project in "${_dirs_data[@]}" "${_dirs_research[@]}"; do
-    if [ -r "$HOME/research/$_project" ]; then
-      export PYTHONPATH=$HOME/research/$_project:$PYTHONPATH
-    elif [ -r "$HOME/$_project" ]; then
-      export PYTHONPATH=$HOME/$_project:$PYTHONPATH
-    fi
+  if [ -r "$HOME/research/$_project" ]; then
+    export PYTHONPATH=$HOME/research/$_project:$PYTHONPATH
+  elif [ -r "$HOME/$_project" ]; then
+    export PYTHONPATH=$HOME/$_project:$PYTHONPATH
+  fi
 done
 
 # Adding additional flags for building C++ stuff
@@ -405,7 +405,7 @@ export GOOGLE_APPLICATION_CREDENTIALS=$HOME/pypi-downloads.json  # for pypinfo
 echo 'done'
 
 #-----------------------------------------------------------------------------
-# Functions for printing information
+# General aliases and functions
 #-----------------------------------------------------------------------------
 # Standardize colors and configure ls and cd commands
 # For less/man/etc. colors see: https://unix.stackexchange.com/a/329092/112647
@@ -445,7 +445,7 @@ alias keywords='compgen -k'
 alias modules='module avail 2>&1 | cat '
 alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
 kinds() { ctags --list-kinds="$*"; }  # list language shortcuts
-allkinds() { ctags --list-kinds-full="$*"; }  # list language shortcuts
+kinds-all() { ctags --list-kinds-full="$*"; }  # list language shortcuts
 # alias bindings_stty='stty -e'  # show bindings (native mac)
 if $_macos; then
   alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"  # see https://apple.stackexchange.com/a/352770/214359
@@ -494,17 +494,17 @@ alias df='df -h'
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
-ds() {
+dl() {
   local dir='.'
   [ $# -gt 1 ] && echo "Too many directories." && return 1
   [ $# -eq 1 ] && dir="$1"
   find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
 }
-dl() {
+dh() {
   local dir='.'
   [ $# -gt 1 ] && echo "Too many directories." && return 1
   [ $# -eq 1 ] && dir="$1";  # shellcheck disable=2033
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sed $'s|\t\./|\t|' | sed 's|^\./||' | sort -sh
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
 }
 
 # Save a log of directory space to home directory
@@ -524,12 +524,150 @@ space() {
   done
 }
 
+# Listing jobs
+# TODO: Add to these utilities?
+alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
+alias restarts='last reboot | less'
+log() {
+  while ! [ -r "$1" ]; do
+    echo "Waiting..."
+    sleep 3
+  done
+  tail -f "$1"
+}
+tos() {  # table of shell processes (similar to 'top')
+  if [ -z "$1" ]; then
+    regex='$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/'
+  else
+    regex='$4 == "$1"'
+  fi
+  ps | awk 'NR == 1 {next}; '"$regex"'{print $1 " " $4}'
+}
+
+# Killing jobs and supercomputer stuff
+ # NOTE: Any background processes started by scripts are not included in pskill!
+alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
+alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
+qkill() {  # kill PBS processes at once, useful when debugging and submitting teeny jobs
+  local proc
+  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do  # start at line 3
+    qdel "$proc"
+    echo "Deleted job $proc"
+  done
+}
+jkill() {  # background jobs by percent sign
+  local count=$(jobs | wc -l | xargs)
+  for i in $(seq 1 "$count"); do
+    echo "Killing job $i..."
+    eval "kill %$i"
+  done
+}
+pskill() {  # jobs by ps name
+  local strs
+  $_macos && echo "Error: macOS ps lists not just processes started in this shell." && return 1
+  [ $# -ne 0 ] && strs=("$@") || strs=(all)
+  for str in "${strs[@]}"; do
+    echo "Killing $str jobs..."
+    [ "$str" == all ] && str=""
+    # tos "$str" | awk '{print $1}' | xargs kill 2>/dev/null
+    pids=($(tos "$str" | awk '{print $1}'))
+    echo "Process ids: ${pids[*]}"
+    kill "${pids[@]}"
+  done
+}
+
 #-----------------------------------------------------------------------------
-# Functions wrapping common commands
+# Editing and scripting utilities
 #-----------------------------------------------------------------------------
 # Environment variables
 export EDITOR='command vim'  # default editor, nice and simple
 export LC_ALL=en_US.UTF-8  # needed to make Vim syntastic work
+
+# Receive affirmative or negative response using input message
+# Exit according to user input
+_confirm() {
+  local default paren
+  mode=$1 && shift  # whether default is yes or no
+  [ "$mode" -eq 1 ] && default=y || default=n
+  [ "$mode" -eq 1 ] && paren='[y]/n' || paren='[n]/y'
+  [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
+  [[ $# -eq 0 ]] && prompt=Confirm || prompt=$*
+  while true; do
+    read -r -p "$prompt ($paren) " response
+    if [ -n "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
+      echo "Invalid response."
+      continue  # try again
+    fi
+    if [ -z "$response" ]; then
+      response=$default
+    fi
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+      $action 0  # 'good' exit, i.e. yes
+    else
+      $action 1  # 'bad' exit, i.e. no
+    fi
+    break
+  done
+}
+confirm-no() { _confirm 0 "$@"; }
+confirm-yes() { _confirm 1 "$@"; }
+
+# Absolute path, works everywhere (mac, linux, or anything with bash)
+# See: https://stackoverflow.com/a/23002317/4970632
+abspath() {
+  if [ -d "$1" ]; then
+    (cd "$1" && pwd)
+  elif [ -f "$1" ]; then
+    if [[ "$1" = /* ]]; then
+      echo "$1"
+    elif [[ "$1" == */* ]]; then
+      echo "$(cd "${1%/*}" && pwd)/${1##*/}"
+    else
+      echo "$(pwd)/$1"
+    fi
+  fi
+}
+
+# Convert bytes to human
+# From: https://unix.stackexchange.com/a/259254/112647
+# NOTE: Used to use this in a couple awk scripts in git config aliases
+bytes2human() {
+  local nums
+  # shellcheck disable=2015
+  [ $# -gt 0 ] && nums=("$@") || read -r -a nums  # from stdin
+  for i in "${nums[@]}"; do
+    b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
+    while ((b > 1024)); do
+        d=$(printf ".%02d" $((b % 1024 * 100 / 1024)))
+        b=$((b / 1024))
+        s=$((s + 1))
+    done
+    echo "$b$d${S[$s]}"
+  done
+}
+
+# Helper function: return if directory is empty or essentially
+# empty. See: https://superuser.com/a/352387/506762
+empty() {
+  local contents
+  [ -d "$1" ] || return 0  # does not exist, so empty
+  read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
+  if [ ${#contents[@]} -eq 0 ] || [ ${#contents[@]} -eq 1 ] && [ "${contents##*/}" == .DS_Store ]; then
+    return 0  # this can happen even if you delete all files
+  else
+    return 1  # non-empty
+  fi
+}
+
+# Either pipe the output of the remaining commands into the less pager
+# or open the files. Use the latter only for executables on $PATH
+less() {
+  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
+    "$@" 2>&1 | command less  # pipe output of command
+  else
+    command less "$@"  # show files in less
+  fi
+}
 
 # Help page display
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
@@ -549,16 +687,6 @@ help() {
     fi
   fi
 }
-vh() {
-  local result
-  [ $# -eq 0 ] && echo "Requires argument." && return 1
-  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
-  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
-    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
-  else
-    echo "No help information for $*."
-  fi
-}
 
 # Man page display with auto jumping to relevant info. On macOS man may direct to
 # 'builtin' page when 'bash' page actually has relevent docs whiole on linux 'builtin'
@@ -573,14 +701,6 @@ man() {
     LESS=-p"^ *$arg.*\[.*$" command man "$search"
   else
     command man "$arg"  # could display error message
-  fi
-}
-vm() {
-  local search arg="$*"
-  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
-  [ $# -eq 0 ] && echo "Requires one argument." && return 1
-  if command man "$arg" 1>/dev/null; then  # could display error message
-    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
   fi
 }
 
@@ -603,20 +723,9 @@ git() {
   command git "$@"
 }
 
-# Either pipe the output of the remaining commands into the less pager
-# or open the files. Use the latter only for executables on $PATH
-less() {
-  if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
-    "$@" 2>&1 | command less  # pipe output of command
-  else
-    command less "$@"  # show files in less
-  fi
-}
-
-# Open one tab per file. Previously cleared screen and deleted scrollback history
-# but now just use &restorescreen=1 and &t_ti and &t_te escape codes.
+# Open one tab per file. Previously cleared screen and deleted scrollback
+# history but now just use &restorescreen=1 and &t_ti and &t_te escape codes.
 # See: https://vi.stackexchange.com/a/6114
-# See: https://apple.stackexchange.com/q/31872/214359
 vi() {
   HOME=/dev/null command vim -i NONE -u NONE "$@"
 }
@@ -626,8 +735,9 @@ vim() {
   [[ " $* " =~ (--version|--help|-h) ]] && return
 }
 
-# Open session and fix various bugs. For some reason folds
-# are otherwise re-closed upon openening each file.
+# Vim session initiation and restoration
+# See: https://apple.stackexchange.com/q/31872/214359
+# NOTE: For some reason folds are otherwise re-closed upon openening each file.
 vim-session() {
   local arg path flags root alt  # flags and session file
   for arg in "$@"; do
@@ -654,23 +764,29 @@ vim-session() {
   vim -S "$path" "${flags[@]}"  # call above function
 }
 
-# Absolute path, works everywhere (mac, linux, or anything with bash)
-# See: https://stackoverflow.com/a/23002317/4970632
-abspath() {
-  if [ -d "$1" ]; then
-    (cd "$1" && pwd)
-  elif [ -f "$1" ]; then
-    if [[ "$1" = /* ]]; then
-      echo "$1"
-    elif [[ "$1" == */* ]]; then
-      echo "$(cd "${1%/*}" && pwd)/${1##*/}"
-    else
-      echo "$(pwd)/$1"
-    fi
+# Vim version of help and man page
+# NOTE: No longer default. Prefer pagers in general.
+vh() {
+  local result
+  [ $# -eq 0 ] && echo "Requires argument." && return 1
+  [ "$1" == cdo ] && result=$("$1" --help "${@:2}" 2>&1) || result=$("$@" --help 2>&1)
+  if [ "$(echo "$result" | wc -l)" -gt 2 ]; then
+    vim --cmd 'set buftype=nofile' -c "call shell#help_page(0, '$*')"
+  else
+    echo "No help information for $*."
+  fi
+}
+vm() {
+  local search arg="$*"
+  [[ "$arg" =~ " " ]] && arg=${arg//-/ }
+  [ $# -eq 0 ] && echo "Requires one argument." && return 1
+  if command man "$arg" 1>/dev/null; then  # could display error message
+    vim --cmd 'set buftype=nofile' -c "call shell#man_page(0, '$*')"
   fi
 }
 
-# Open files optionally based on name, or revert to default behavior if -a specified
+# Open files optionally based on name
+# Revert to default behavior if -a specified
 open() {
   ! $_macos && echo "Error: open() should be run from your macbook." && return 1
   local files flags app app_default
@@ -707,71 +823,8 @@ open() {
 }
 
 #-----------------------------------------------------------------------------
-# General utilty functions
+# Searching utilities
 #-----------------------------------------------------------------------------
-# Receive affirmative or negative response using input message, then exit accordingly.
-confirm() {
-  [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
-  [[ $# -eq 0 ]] && prompt=Confirm || prompt=$*
-  while true; do
-    read -r -p "$prompt ([y]/n) " response
-    if [ -n "$response" ] && [[ ! "$response" =~  ^[NnYy]$ ]]; then
-      echo "Invalid response."
-      continue # try again
-    fi
-    if [[ "$response" =~ ^[Nn]$ ]]; then
-      $action 1  # 'bad' exit, i.e. no
-    else
-      $action 0  # 'good' exit, i.e. yes or empty
-    fi
-    break
-  done
-}
-
-# Like confirm but default value is 'no'
-confirm-no() {
-  [[ $- == *i* ]] && action=return || action=exit  # don't want to quit an interactive shell!
-  [[ $# -eq 0 ]] && prompt=Confirm || prompt=$*
-  while true; do
-    read -r -p "$prompt (y/[n]) " response
-    if [ -n "$response" ] && ! [[ "$response" =~  ^[NnYy]$ ]]; then
-      echo "Invalid response."
-      continue # try again
-    fi
-    if [[ "$response" =~ ^[Yy]$ ]]; then
-      $action 0 # 'good' exit, i.e. yes
-    else
-      $action 1 # 'bad' exit, i.e. no or empty
-    fi
-    break
-  done
-}
-
-# Rename files with matching base names or having 3-digit numbers into
-# ordered numbered files.
-rename() {
-  local i dir ext base file1 files1 tmp tmps file2 files2
-  base=$1
-  files1=("$base"*[0-9][0-9][0-9]*)
-  [[ "$base" =~ '/' ]] && dir=${base%/*} || dir=.
-  # shellcheck disable=2049
-  [[ "${files1[0]}" =~ "*" ]] && { echo "Error: No files found."; return 1; }
-  for i in $(seq 1 ${#files1[@]}); do
-    file1=${files1[i-1]}
-    ext=${file1##*.}
-    tmp=$dir/tmp$(printf %04d $i).$ext
-    file2=$dir/$base$(printf %04d $i).$ext
-    tmps+=("$tmp")
-    files2+=("$file2")
-    mv "$file1" "$tmp" || { echo "Move failed."; return 1; }
-  done
-  for i in $(seq 1 ${#files1[@]}); do
-    tmp=${tmps[i-1]}
-    file2=${files2[i-1]}
-    mv "$tmp" "$file2" || { echo "Move failed."; return 1; }
-  done
-}
-
 # Parse .ignore file for custom utilities (compare to vim tags#ignores())
 # TODO: Add utility for *just* ignoring directories not others. Or add utility
 # for ignoring absolutely nothing but preserving syntax of other utilities.
@@ -861,87 +914,10 @@ f1() { _find 1 "$@"; }  # custom find with ignore excludes and hidden files
 g2() { _grep 2 "$@"; }  # custom grep with no excludes
 f2() { _find 2 "$@"; }  # custom find with no excludes
 
-# Refactor, coding, and logging tools
-# TODO: Use vim-lsp rename utility instead? Figure out how to preview?
-# NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
-# occurences of file paths (should be 1 but this is convenient way to record them).
-note() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bnote:' {} \;; }
-todo() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\btodo:' {} \;; }
-error() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\berror:' {} \;; }
-warning() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bwarning:' {} \;; }
-refactor() {
-  local cmd file files result
-  $_macos && cmd=gsed || cmd=sed
-  [ $# -eq 2 ] \
-    || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
-  result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
-    || { echo "Error: Search $1 to $2 failed."; return 1; }
-  readarray -t files < <(echo "$result"$'\nEOF' | \
-    awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
-    || { echo "Error: Filtering files failed."; return 1; }  # readarray is bash 4+
-  echo $'Preview:\n'"$result"
-  IFS=$'\n' echo $'Files to change:\n'"$(printf '%s\n' "${files[@]}")"
-  if confirm-no 'Proceed with refactor?'; then
-    for file in "${files[@]}"; do
-      $cmd -E -i "s@$1@$2@g" "$file" \
-      || { echo "Error: Refactor on $file failed."; return 1; }
-    done
-  fi
-}
-
-# Process management
-# TODO: Add to these utilities?
-alias toc='mpstat -P ALL 1'  # table of core processes (similar to 'top')
-alias restarts='last reboot | less'
-log() {
-  while ! [ -r "$1" ]; do
-    echo "Waiting..."
-    sleep 3
-  done
-  tail -f "$1"
-}
-tos() {  # table of shell processes (similar to 'top')
-  if [ -z "$1" ]; then
-    regex='$4 !~ /^(bash|ps|awk|grep|xargs|tr|cut)$/'
-  else
-    regex='$4 == "$1"'
-  fi
-  ps | awk 'NR == 1 {next}; '"$regex"'{print $1 " " $4}'
-}
-
-# Killing jobs and supercomputer stuff
- # NOTE: Any background processes started by scripts are not included in pskill!
-alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
-alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
-qkill() {  # kill PBS processes at once, useful when debugging and submitting teeny jobs
-  local proc
-  for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do  # start at line 3
-    qdel "$proc"
-    echo "Deleted job $proc"
-  done
-}
-jkill() {  # background jobs by percent sign
-  local count=$(jobs | wc -l | xargs)
-  for i in $(seq 1 "$count"); do
-    echo "Killing job $i..."
-    eval "kill %$i"
-  done
-}
-pskill() {  # jobs by ps name
-  local strs
-  $_macos && echo "Error: macOS ps lists not just processes started in this shell." && return 1
-  [ $# -ne 0 ] && strs=("$@") || strs=(all)
-  for str in "${strs[@]}"; do
-    echo "Killing $str jobs..."
-    [ "$str" == all ] && str=""
-    # tos "$str" | awk '{print $1}' | xargs kill 2>/dev/null
-    pids=($(tos "$str" | awk '{print $1}'))
-    echo "Process ids: ${pids[*]}"
-    kill "${pids[@]}"
-  done
-}
-
-# Git and differencing utilities. Here 'gs' prints git status-style directory diffs,
+#-----------------------------------------------------------------------------#
+# Git-related utilities
+#-----------------------------------------------------------------------------#
+# Differencing utilities. Here 'gs' prints git status-style directory diffs,
 # 'gd' prints git diff-style file diffs, 'ds' prints recursive directory status
 # differences, and 'dd' prints basic directory modification time diferences.
 # NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
@@ -960,7 +936,7 @@ gd() {  # git diff-style file differences
     | grep -v -e 'warning:' | \
     tac | sed -e '/Binary files/,+3d' | tac
 }
-ds() {  # directory status differences
+ds() {  # git status-style directory differences
   [ $# -ne 2 ] && echo "Usage: ds DIR1 DIR2" && return 1
   echo "Directory: $1"
   echo "Directory: $2"
@@ -1025,67 +1001,36 @@ merge() {
   echo "Files merged into \"$out\"."
 }
 
-# Convert bytes to human
-# From: https://unix.stackexchange.com/a/259254/112647
-# NOTE: Used to use this in a couple awk scripts in git config aliases
-bytes2human() {
-  if [ $# -gt 0 ]; then
-    nums=("$@")
-  else
-    read -r -a nums  # from stdin
-  fi
-  for i in "${nums[@]}"; do
-    b=${i:-0}; d=''; s=0; S=(Bytes {K,M,G,T,P,E,Z,Y}iB)
-    while ((b > 1024)); do
-        d=$(printf ".%02d" $((b % 1024 * 100 / 1024)))
-        b=$((b / 1024))
-        s=$((s + 1))
+# Refactor, coding, and logging tools
+# TODO: Use vim-lsp rename utility instead? Figure out how to preview?
+# NOTE: The awk script builds a hash array (i.e. dictionary) that records number of
+# occurences of file paths (should be 1 but this is convenient way to record them).
+note() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bnote:' {} \;; }
+todo() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\btodo:' {} \;; }
+error() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\berror:' {} \;; }
+warning() { f0 "${1:-.}" '*' -a -type f -print -a -exec grep -i -n '\bwarning:' {} \;; }
+refactor() {
+  local cmd file files result
+  $_macos && cmd=gsed || cmd=sed
+  [ $# -eq 2 ] \
+    || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
+  result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
+    || { echo "Error: Search $1 to $2 failed."; return 1; }
+  readarray -t files < <(echo "$result"$'\nEOF' | \
+    awk '/^  / { fs[f]++ }; /^[^ ]/ { f=$1 }; END { for (f in fs) { print f } }') \
+    || { echo "Error: Filtering files failed."; return 1; }  # readarray is bash 4+
+  echo $'Preview:\n'"$result"
+  IFS=$'\n' echo $'Files to change:\n'"$(printf '%s\n' "${files[@]}")"
+  if confirm-no 'Proceed with refactor?'; then
+    for file in "${files[@]}"; do
+      $cmd -E -i "s@$1@$2@g" "$file" \
+      || { echo "Error: Refactor on $file failed."; return 1; }
     done
-    echo "$b$d${S[$s]}"
-  done
-}
-
-# Simple zotfile doctor shorthands
-# NOTE: Main script found in bin from https://github.com/giorginolab/zotfile_doctor
-_zotfile_database="$HOME/Zotero/zotero.sqlite"
-_zotfile_storage="$HOME/Library/Mobile Documents/3L68KQB4HG~com~readdle~CommonDocuments/Documents"
-alias zotfile-doctor="command zotfile-doctor '$_zotfile_database' '$_zotfile_storage'"
-yesno() {
-  local yn
-  while true; do
-    read -n1 -r -p "$1 ([y]/n)? " yn
-    [ -z "$yn" ] && yn='y'
-    case "$yn" in
-      [Yy]*) return 0 ;;
-      [Nn]*) return 1 ;;
-      *) echo "Please answer yes or no.";;
-    esac
-  done
-  return 1
-}
-zotfile-cleanup() {
-  # Find files
-  local files
-  files=$(zotfile-doctor | awk 'trigger {print $0}; /files in zotfile directory/ {trigger=1}') \
-  || {
-    echo "zotfile-doctor failed."
-    return 1
-  }
-  [ -n "$files" ] || {
-    echo "No untracked files found."
-    return 0
-  }
-  # Delete files
-  echo $'Found untracked files:\n'"$files"
-  if yesno "Delete these files"; then
-    echo
-    echo "$files" | awk "{print \"$_zotfile_storage/\" \$0}" | tr '\n' '\0' | xargs -0 rm
-    echo "Deleted files."
   fi
 }
 
 #-----------------------------------------------------------------------------
-# Remote-related functions
+# Remote session utilities
 #-----------------------------------------------------------------------------
 # Shortcuts for queue
 alias suser='squeue -u $USER'
@@ -1160,7 +1105,7 @@ _port() {
 # View ip address
 # See: https://stackoverflow.com/q/13322485/4970632
 # See: https://apple.stackexchange.com/q/20547/214359
-ip() {
+address() {
   if ! $_macos; then
     command ip route get 1 | awk '{print $NF; exit}'
   else
@@ -1277,6 +1222,9 @@ kill-port() {
   echo "Processes $pids killed. Connections over port $port removed."
 }
 
+#-----------------------------------------------------------------------------#
+# Copying utilities
+#-----------------------------------------------------------------------------#
 # Copy files between macbook and servers. When on remote server use the ssh tunnel set
 # up by _ssh. When on macbook use prestored address name (should have passwordless login).
 # NOTE: Below we use the bash parameter expansion ${!#} --> 'variable whose name is
@@ -1352,77 +1300,6 @@ figcp() {
   [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
   path=$(git rev-parse --show-toplevel)/  # assumes identical paths (note trailing slash is critical)
   _scp_bulk "${flags[@]}" "$forward" $@ "$path" "$path"  # address may expand to nothing
-}
-
-# Helper function: return if directory is empty or essentially
-# empty. See: https://superuser.com/a/352387/506762
-_is_empty() {
-  local contents
-  [ -d "$1" ] || return 0  # does not exist, so empty
-  read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
-  if [ ${#contents[@]} -eq 0 ] || [ ${#contents[@]} -eq 1 ] && [ "${contents##*/}" == .DS_Store ]; then
-    return 0  # this can happen even if you delete all files
-  else
-    return 1  # non-empty
-  fi
-}
-
-# Generate SSH file system with optimized caching settings
-# For pros and cons of mounting see: https://unix.stackexchange.com/q/25974/112647
-# For installing sshfs/osxfuse see: https://apple.stackexchange.com/a/193043/214359
-# For cache timeout options see: https://superuser.com/q/344255/506762
-# For cache timeout also see: https://www.smork.info/blog/2013/04/24/entry130424-163842.html
-# NOTE: Why not pipe? Because pipe creates fork *subshell* whose variables are
-# inaccessible to current shell: https://stackoverflow.com/a/13764018/4970632
-mount() {
-  local host address location
-  ! $_macos && echo "Error: This should be run from your macbook." && return 1
-  [ $# -ne 1 ] && echo "Usage: mount SERVER_NAME" && return 1
-  location="$1"
-  case "$location" in
-    glade)  host=cheyenne ;;
-    mdata?) host=monde ;;
-    *)      host=$location ;;
-  esac
-  address=$(_address $host) || {
-    echo "Error: Unknown host $host."
-    return 1
-  }
-  _is_empty "$HOME/$host" || {
-    echo "Error: Directory \"$HOME/$host\" already exists, and is non-empty!"
-    return 1
-  }
-  echo "Server: $host"
-  echo "Address: $address"
-  case $location in
-    glade)     location="/glade/scratch/davislu" ;;
-    mdata?)    location="/${location}/ldavis"    ;;  # mdata1, mdata2, ...
-    cheyenne?) location="/glade/u/home/davislu"  ;;
-    *)         location="/home/ldavis"           ;;  # NOTE: Using tilde ~ does not seem to work
-  esac
-  # NOTE: The cache timeout prevents us from detecting new files! Therefore
-  # do not enable cache settings for now... must revisit this.
-  # -oauto_cache,reconnect,defer_permissions,noappledouble,nolocalcaches,no_readahead
-  # -ocache_timeout=115200 -oattr_timeout=115200 -ociphers=arcfour
-  # -ocache_timeout=60 -oattr_timeout=115200
-  command sshfs \
-    "$address:$location" "$HOME/$host" -ocache=no -ocompression=no -ovolname="$host"
-}
-# Safely undo mount. Name 'unmount' is more intuitive than 'umount'
-unmount() {
-  ! $_macos && echo "Error: This should be run from your macbook." && return 1
-  [ $# -ne 1 ] && echo "Error: Function usshfs() requires exactly 1 argument." && return 1
-  local server="$1"
-  echo "Server: $server"
-  command umount "$HOME/$server" || diskutil umount force "$HOME/$server" || {
-    echo "Error: Server name \"$server\" does not seem to be mounted in \"$HOME\"."
-    return 1
-  }
-  _is_empty "$HOME/$server" || {
-    echo "Warning: Leftover mount folder appears to be non-empty!"
-    return 1
-  }
-  rm -r "${HOME:?}/$server"
 }
 
 #-----------------------------------------------------------------------------
@@ -1638,6 +1515,34 @@ graphicspath() {  # list all graphics paths (used in autoload tex.vim)
   ' "$@"  # RS is the 'record separator' and RT is '*this* record separator'
 }
 
+# Extract generalized files
+# Shell actually passes *already expanded* glob pattern when you call it as
+# argument to a function; so, need to cat all input arguments with @ into list
+extract() {
+  for name in "$@"; do
+    if [ -f "$name" ]; then
+      case "$name" in
+        *.tar.bz2) tar xvjf "$name" ;;
+        *.tar.xz) tar xf "$name" ;;
+        *.tar.gz) tar xvzf "$name" ;;
+        *.bz2) bunzip2 "$name" ;;
+        *.rar) unrar x "$name" ;;
+        *.gz) gunzip "$name" ;;
+        *.tar) tar xvf "$name" ;;
+        *.tbz2) tar xvjf "$name" ;;
+        *.tgz) tar xvzf "$name" ;;
+        *.zip) unzip "$name" ;;
+        *.Z) uncompress "$name" ;;
+        *.7z) 7z x "$name" ;;
+        *) echo "Don't know how to extract '$name'..." ;;
+      esac
+      echo "'$name' was extracted."
+    else
+      echo "'$name' is not a valid file!"
+    fi
+  done
+}
+
 # NetCDF tools (should just remember these).
 # ncks behavior very different between versions, so use ncdump instead
 # * Note if HDF4 is installed in your anaconda distro, ncdump points to *that location*
@@ -1804,34 +1709,6 @@ ncvardetails() {
     cdo -s infon -seltimestep,1 -selname,"$1" "$file" 2>/dev/null \
       | tr -s ' ' | column -t | less
     done
-}
-
-# Extract generalized files
-# Shell actually passes *already expanded* glob pattern when you call it as
-# argument to a function; so, need to cat all input arguments with @ into list
-extract() {
-  for name in "$@"; do
-    if [ -f "$name" ]; then
-      case "$name" in
-        *.tar.bz2) tar xvjf "$name"    ;;
-        *.tar.xz)  tar xf "$name"      ;;
-        *.tar.gz)  tar xvzf "$name"    ;;
-        *.bz2)     bunzip2 "$name"     ;;
-        *.rar)     unrar x "$name"     ;;
-        *.gz)      gunzip "$name"      ;;
-        *.tar)     tar xvf "$name"     ;;
-        *.tbz2)    tar xvjf "$name"    ;;
-        *.tgz)     tar xvzf "$name"    ;;
-        *.zip)     unzip "$name"       ;;
-        *.Z)       uncompress "$name"  ;;
-        *.7z)      7z x "$name"        ;;
-        *)         echo "Don't know how to extract '$name'..." ;;
-      esac
-      echo "'$name' was extracted."
-    else
-      echo "'$name' is not a valid file!"
-    fi
-  done
 }
 
 #-----------------------------------------------------------------------------
@@ -2234,113 +2111,12 @@ fi
 alias title='_title_set'  # easier for user
 
 #-----------------------------------------------------------------------------
-# Mac stuff
-#-----------------------------------------------------------------------------
-if $_macos; then # first the MacOS options
-  # Homebrew bash as default shell
-  # NOTE: Use 'brew install bash' and 'brew install bash-language-server'
-  grep '/usr/local/bin/bash' /etc/shells 1>/dev/null \
-    || sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'  # add to valid list
-  [ -n "$TERM_PROGRAM" ] && ! [[ $BASH_VERSION =~ ^[4-9].* ]] \
-    && chsh -s /usr/local/bin/bash  # change shell to Homebrew-bash, if not in MacVim
-
-  # Audio utilities
-  strip_audio() {
-    local file
-    for file in "$@"; do
-      ffmpeg -i "$file" -vcodec copy -an "${file%.*}_stripped.${file##*.}"
-    done
-  }
-  sort_artists() {
-    local base artist title
-    for file in "$@"; do
-      # shellcheck disable=SC2049
-      [[ "$file" =~ \.m4a$|\.mp3$ ]] || continue
-      base=${file##*/}
-      artist=${base% - *}
-      title=${base##* - }
-      [ -d "$artist" ] || mkdir "$artist"
-      mv "$file" "$artist/$title"
-      echo "Moved '$base' to '$artist/$title'."
-    done
-  }
-
-  # Helpful messages
-  show_weather() {
-    curl 'wttr.in/Fort Collins'
-  }
-  show_artists() {
-    find ~/Music \
-      -type f \
-      -mindepth 2 \
-      -printf "%P\n" \
-      | cut -d/ -f1 \
-      | grep -v ^Media$ \
-      | uniq -c \
-      | sort -n
-  }
-
-  # Enable or disable sleep mode for plex
-  enable_sleep() {
-    sudo pmset -a sleep 1
-    sudo pmset -a hibernatemode 1
-    sudo pmset -a disablesleep 0
-  }
-  disable_sleep() {  # see: https://gist.github.com/pwnsdx/2ae98341e7e5e64d32b734b871614915
-    sudo pmset -a sleep 0
-    sudo pmset -a hibernatemode 0
-    sudo pmset -a disablesleep 1
-  }
-
-  # Enable or disable animations
-  # See: https://apple.stackexchange.com/q/14001/214359
-  disable_animations() {
-    defaults write -g NSAutomaticWindowAnimationsEnabled -bool false
-    defaults write -g NSScrollAnimationEnabled -bool false
-    defaults write -g NSWindowResizeTime -float 0.001
-    defaults write -g QLPanelAnimationDuration -float 0
-    defaults write -g NSScrollViewRubberbanding -bool false
-    defaults write -g NSDocumentRevisionsWindowTransformAnimation -bool false
-    defaults write -g NSToolbarFullScreenAnimationDuration -float 0
-    defaults write -g NSBrowserColumnAnimationSpeedMultiplier -float 0
-    defaults write com.apple.dock springboard-page-duration -float 0
-    defaults write com.apple.dock expose-animation-duration -float 0
-    defaults write com.apple.dock autohide-time-modifier -float 0
-    defaults write com.apple.dock autohide-delay -float 0
-    defaults write com.apple.dock springboard-show-duration -float 0
-    defaults write com.apple.dock springboard-hide-duration -float 0
-    defaults write com.apple.finder DisableAllAnimations -bool true
-    defaults write com.apple.Mail DisableSendAnimations -bool true
-    defaults write com.apple.Mail DisableReplyAnimations -bool true
-  }
-
-  # Enable animations
-  enable_animations() {
-    defaults delete -g NSAutomaticWindowAnimationsEnabled
-    defaults delete -g NSScrollAnimationEnabled
-    defaults delete -g NSWindowResizeTime
-    defaults delete -g QLPanelAnimationDuration
-    defaults delete -g NSScrollViewRubberbanding
-    defaults delete -g NSDocumentRevisionsWindowTransformAnimation
-    defaults delete -g NSToolbarFullScreenAnimationDuration
-    defaults delete -g NSBrowserColumnAnimationSpeedMultiplier
-    defaults delete com.apple.dock autohide-time-modifier
-    defaults delete com.apple.dock autohide-delay
-    defaults delete com.apple.dock expose-animation-duration
-    defaults delete com.apple.dock springboard-show-duration
-    defaults delete com.apple.dock springboard-hide-duration
-    defaults delete com.apple.dock springboard-page-duration
-    defaults delete com.apple.finder DisableAllAnimations
-    defaults delete com.apple.Mail DisableSendAnimations
-    defaults delete com.apple.Mail DisableReplyAnimations
-  }
-fi
-
-#-----------------------------------------------------------------------------
 # Message
 #-----------------------------------------------------------------------------
 [ -n "$VIMRUNTIME" ] \
   && unset PROMPT_COMMAND
+$_macos && [ -r $HOME/mackup/shell.sh ] \
+  && source $HOME/mackup/shell.sh
 [ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \
   && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
 _bashrc_loaded=true
