@@ -384,46 +384,44 @@ augroup color_scheme
   au ColorScheme default call vim#config_refresh()
 augroup END
 
-" GUI overrides and colors
-" Note: Should play with different schemes here
-if has('gui_running')
-  colorscheme papercolor
-  " abra  " good one
-  " ayu  " good one
-  " badwolf  " good one
-  " fahrenheit  " good one
-  " gruvbox  " good one
-  " molokai  " good one
-  " monokai  " larger variation
-  " monokain  " slight variation of molokai
-  " moody  " other one
-  " nazca  " other one
-  " northland  " other one
-  " oceanicnext  " good one
-  " papercolor  " good one
-  " sierra  " other one
-  " tender  " other one
-  " turtles  " other one
-  " underwater-mod  " other one
-  " vilight  " other one
-  " vim-material  " other one
-  " vimbrains  " other one
-  " void  " other one
-  hi! link vimCommand Statement
-  hi! link vimNotFunc Statement
-  hi! link vimFuncKey Statement
-  hi! link vimMap Statement
+" Macvim color schemes
+" Note: Must be declared at end
+let s:colorscheme = 'papercolor'
+" let s:colorscheme = 'abra'  " good one
+" let s:colorscheme = 'ayu'  " good one
+" let s:colorscheme = 'badwolf'  " good one
+" let s:colorscheme = 'fahrenheit'  " good one
+" let s:colorscheme = 'gruvbox  " good one
+" let s:colorscheme = 'molokai'  " good one
+" let s:colorscheme = 'monokai'  " larger variation
+" let s:colorscheme = 'monokain'  " slight variation of molokai
+" let s:colorscheme = 'moody'  " other one
+" let s:colorscheme = 'nazca'  " other one
+" let s:colorscheme = 'northland'  " other one
+" let s:colorscheme = 'oceanicnext'  " good one
+" let s:colorscheme = 'papercolor'  " good one
+" let s:colorscheme = 'sierra'  " other one
+" let s:colorscheme = 'tender'  " other one
+" let s:colorscheme = 'turtles'  " other one
+" let s:colorscheme = 'underwater-mod'  " other one
+" let s:colorscheme = 'vilight'  " other one
+" let s:colorscheme = 'vim-material'  " other one
+" let s:colorscheme = 'vimbrains'  " other one
+" let s:colorscheme = 'void'  " other one
+
+" Macvim syntax overrides
+if has('gui_running')  " revisit these?
+  highlight! link vimCommand Statement
+  highlight! link vimNotFunc Statement
+  highlight! link vimFuncKey Statement
+  highlight! link vimMap Statement
 endif
 
 " Make terminal background same as main background
 highlight Terminal ctermbg=NONE ctermfg=NONE
 
-" Transparent conceal group so when conceallevel=0 elements revert to original colors
+" Use original colors for transparent conceal group
 highlight Conceal ctermbg=NONE ctermfg=NONE
-
-" Comment highlighting (only works in iTerm with minimum contrast enabled, else use gray)
-highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
-highlight Comment ctermfg=Black cterm=NONE
 
 " Special characters
 highlight NonText ctermfg=Black cterm=NONE
@@ -433,22 +431,28 @@ highlight SpecialKey ctermfg=Black cterm=NONE
 highlight Todo ctermbg=Red ctermfg=NONE
 highlight MatchParen ctermbg=Blue ctermfg=NONE
 
-" Cursor line or column highlighting using cterm color mapping
-highlight CursorLine ctermbg=Black cterm=NONE
-highlight CursorLineNR ctermbg=Black ctermfg=White cterm=NONE
+" Sneak and search highlighting
+highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
+highlight Search ctermbg=Magenta ctermfg=NONE
+
+" Popup menu highlighting
+highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
 
 " Color and sign column stuff
 highlight ColorColumn ctermbg=Gray cterm=NONE
 highlight SignColumn ctermbg=NONE ctermfg=Black cterm=NONE
 
-" Sneak and search highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-highlight Search ctermbg=Magenta ctermfg=NONE
+" Cursor line or column highlighting
+" Use the cterm color mapping
+highlight CursorLine ctermbg=Black cterm=NONE
+highlight CursorLineNR ctermbg=Black ctermfg=White cterm=NONE
 
-" Popup menu
-highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
+" Comment highlighting
+" Only works in iTerm with minimum contrast enabled (else use gray)
+highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
+highlight Comment ctermfg=Black cterm=NONE
 
 " ANSI has no control over light
 " Switch from light to main and color to dark
@@ -458,13 +462,14 @@ highlight Special ctermbg=NONE ctermfg=DarkRed
 highlight PreProc ctermbg=NONE ctermfg=DarkCyan
 highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 
-" Error highlighting (use Red and Magenta for increased prominence)
+" Error highlighting
+" Use Red or Magenta for increased prominence
 highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
 highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 
 " Python highlighting
-highlight link pythonImportedObject Identifier
 highlight BracelessIndent cterm=inverse ctermfg=0 ctermbg=0
+highlight link pythonImportedObject Identifier
 
 " Syntax helper commands
 " Note: Mapping mnemonic for colorizer is # for hex string
@@ -2087,6 +2092,7 @@ augroup clear_jumps
   au!
   au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
 augroup END
+if has('gui_running') | exe 'colorscheme ' . s:colorscheme | endif
 doautocmd <nomodeline> BufEnter  " trigger buffer-local overrides for this file
 delmarks a-z
 nohlsearch  " turn off highlighting at startup
