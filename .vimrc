@@ -1733,13 +1733,14 @@ endif
 " to speed up or disable fuzzy completion. See: https://github.com/Shougo/ddc-ui-native
 " and https://github.com/Shougo/ddc.vim#configuration. Also for general config
 " inspiration see https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
+" \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
+" \ 'sourceOptions': {'vsnip': {'mark': 'S', 'maxItems': 5}},
 if s:plug_active('ddc.vim')
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
     \ '--v8-flags=--max-heap-size=1000,--max-old-space-size=1000',
     \ ]
   let g:ddc_sources = {
-    \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
     \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
     \ 'sourceOptions': {
@@ -1753,10 +1754,6 @@ if s:plug_active('ddc.vim')
     \     'maxItems': 15,
     \     'isVolatile': v:true,
     \     'forceCompletionPattern': '\\.|:|->',
-    \   },
-    \   'vsnip': {
-    \     'mark': 'S',
-    \     'maxItems': 5,
     \   },
     \   'around': {
     \     'mark': 'A',
