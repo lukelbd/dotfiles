@@ -207,8 +207,10 @@ _load_unloaded() {
 _macos=false
 case "${HOSTNAME%%.*}" in
   # Macbook settings
-  # NOTE: Logging into network WiFi changes hostname to DESKTOP-XXX.ColoState.EDU
-  vortex*|velouria*|maelstrom*|uriah*|DESKTOP*)
+  # NOTE: Logging into network WiFi sometimes changes hostname to strange names, e.g.
+  # DESKTOP-NNN.ColoState.EDU or eduroam-NNN-NNN. Repair with 'sudo hostname HOST'.
+  # See: https://apple.stackexchange.com/q/40734/214359
+  vortex*|velouria*|maelstrom*|uriah*)
     # Defaults, LaTeX, X11, Homebrew, Macports, PGI compilers, and local compilations
     # * List homebrew installs with 'brew list' (narrow with --formulae or --casks).
     #   Show package info with 'brew info package'.
@@ -415,6 +417,7 @@ alias cd='cd -P'                    # don't want this on my mac temporarily
 alias ls='ls --color=always -AF'    # ls with dirs differentiate from files
 alias ld='ls --color=always -AFd'   # ls with details and file sizes
 alias ll='ls --color=always -AFhl'  # ls with details and file sizes
+alias curl='curl -O'                # always download associated file
 alias dirs='dirs -p | tac | xargs'  # show dir stack matching prompt order
 alias ctime='date +%s'              # current time in seconds since epoch
 alias mtime='date +%s -r'           # modification time of input file
