@@ -60,11 +60,11 @@
 # 37    white           base2
 
 ### Colors
-# COLOR needs one of these arguments: 'tty' colorizes output to ttys, but not
+# Here COLOR needs one of these arguments: 'tty' colorizes output to ttys, but not
 # pipes. 'all' adds color characters to all output. 'none' shuts colorization off.
 COLOR tty
 
-### Terms
+### Terminals
 # Should be one TERM entry for each termtype that is colorizable
 TERM ansi
 TERM color_xterm
@@ -141,7 +141,7 @@ TERM xterm-debian
 TERM xterm-termite
 
 ### General
-# EIGHTBIT, followed by '1' for on, '0' for off. (8-bit output)
+# Eight-bit output (1 on, 0 off)
 EIGHTBIT 1
 # Default
 NORMAL 00
@@ -168,7 +168,7 @@ CHR  37;44
 
 ### Logs and configs
 .*rc        01;37  # bright white
-.log        01;37  # bright white
+.log        01;37
 .info       01;37
 .out        01;37
 .yml        01;37
@@ -194,7 +194,7 @@ CHR  37;44
 .o   01;35
 .x   01;35
 
-### Code files
+### Coding
 .jl     31
 .ncl    31
 .nco    31
@@ -283,6 +283,25 @@ CHR  37;44
 .zip  1;36
 
 ### Documents
+# Text
+.tex      33
+.bbl      33
+.txt      33
+.org      33
+.md       33
+.mkd      33
+.markdown 33
+.rst      33
+.htm      33
+.html     33
+.shtml    33
+.haml     33
+.css      33
+.sass     33
+.scss     33
+.less     33
+.man      33
+.rtf      33
 # Binary
 .doc  01;33
 .docx 01;33
@@ -302,25 +321,6 @@ CHR  37;44
 .ps   01;33
 .pdf  01;33
 .dvi  01;33
-# Plain text
-.tex      33
-.bbl      33
-.txt      33
-.org      33
-.md       33
-.mkd      33
-.markdown 33
-.rst      33
-.htm      33
-.html     33
-.shtml    33
-.haml     33
-.css      33
-.sass     33
-.scss     33
-.less     33
-.man      33
-.rtf      33
 
 ### Media
 # Images
@@ -399,6 +399,18 @@ CHR  37;44
 .wmv  32
 
 ### Data
+# Text
+.csv   36
+.tbl   36
+.tab   36
+.table 36
+.ascii 36
+.json  36
+.xml   36
+.rdf   36
+.rgba  36
+.rgb   36
+.hex   36
 # Binary
 .nc     36
 .nc4    36
@@ -419,15 +431,3 @@ CHR  37;44
 .xlsx   36
 .sql    36
 .sqlite 36
-# Plain text
-.csv   36
-.tbl   36
-.tab   36
-.table 36
-.ascii 36
-.json  36
-.xml   36
-.rdf   36
-.rgba  36
-.rgb   36
-.hex   36
