@@ -1561,8 +1561,9 @@ endif
 " Additional mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
 " Also add custom filetype log and plugin filetype ale-preview to list.
 if s:plug_active('vim-scrollwrapped')
+  " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
+  let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
   let g:scrollwrapped_nomap = 1
-  let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
   noremap <Leader>w <Cmd>WrapToggle<CR>
   noremap <expr> <Up> iter#scroll_count(-0.25)
   noremap <expr> <Down> iter#scroll_count(0.25)
