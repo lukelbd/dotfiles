@@ -361,52 +361,16 @@ endfor
 "-----------------------------------------------------------------------------"
 " Highlighting stuff
 "-----------------------------------------------------------------------------"
-" Fix syntax highlighting. Leverage ctags integration to almost always fix syncing
-" Note: This says get the closest tag to the first line in the window, all tags
-" rather than top-level only, searching backward, and without circular wrapping.
-command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
-command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
-noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
-noremap <Leader>Y <Cmd>SyncStart<CR>
-
-" Color scheme scrolling
-" Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
-" Note: This is mainly used for GUI vim (otherwise use terminal themes). Ideas:
-" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-command! SchemePrev call iter#jump_colorschemes(0)
-command! SchemeNext call iter#jump_colorschemes(1)
-noremap <Leader>8 <Cmd>Colors<CR>
-noremap <Leader>9 <Cmd>SchemeNext<CR>
-noremap <Leader>0 <Cmd>SchemePrev<CR>
-augroup color_scheme
-  au!
-  exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
-augroup END
-
 " Macvim color schemes
 let s:colorscheme = 'papercolor'
-" let s:colorscheme = 'abra'  " good one
-" let s:colorscheme = 'ayu'  " good one
-" let s:colorscheme = 'badwolf'  " good one
-" let s:colorscheme = 'fahrenheit'  " good one
-" let s:colorscheme = 'gruvbox  " good one
-" let s:colorscheme = 'molokai'  " good one
-" let s:colorscheme = 'monokai'  " larger variation
-" let s:colorscheme = 'monokain'  " slight variation of molokai
-" let s:colorscheme = 'moody'  " other one
-" let s:colorscheme = 'nazca'  " other one
-" let s:colorscheme = 'northland'  " other one
-" let s:colorscheme = 'oceanicnext'  " good one
-" let s:colorscheme = 'papercolor'  " good one
-" let s:colorscheme = 'sierra'  " other one
-" let s:colorscheme = 'tender'  " other one
-" let s:colorscheme = 'turtles'  " other one
-" let s:colorscheme = 'underwater-mod'  " other one
-" let s:colorscheme = 'vilight'  " other one
-" let s:colorscheme = 'vim-material'  " other one
-" let s:colorscheme = 'vimbrains'  " other one
-" let s:colorscheme = 'void'  " other one
+" let s:colorscheme = 'abra'
+" let s:colorscheme = 'ayu'
+" let s:colorscheme = 'badwolf'
+" let s:colorscheme = 'fahrenheit'
+" let s:colorscheme = 'gruvbox'
+" let s:colorscheme = 'molokai'  " also molokai/monokain
+" let s:colorscheme = 'oceanicnext'
+" let s:colorscheme = 'papercolor'
 
 " Macvim syntax overrides
 " Todo: Whether to declare here or at bottom?
@@ -472,7 +436,30 @@ highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 highlight BracelessIndent cterm=inverse ctermfg=0 ctermbg=0
 highlight link pythonImportedObject Identifier
 
-" Syntax helper commands
+" Repair highlighting. Leveraging ctags integration almost always works.
+" Note: This says get the closest tag to the first line in the window, all tags
+" rather than top-level only, searching backward, and without circular wrapping.
+command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
+command! SyncStart syntax sync fromstart
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
+noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
+noremap <Leader>Y <Cmd>SyncStart<CR>
+
+" Color scheme scrolling
+" Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
+" Note: This is mainly used for GUI vim, otherwise use terminal themes. Some ideas:
+" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+command! SchemePrev call iter#jump_colorschemes(0)
+command! SchemeNext call iter#jump_colorschemes(1)
+noremap <Leader>8 <Cmd>Colors<CR>
+noremap <Leader>9 <Cmd>SchemeNext<CR>
+noremap <Leader>0 <Cmd>SchemePrev<CR>
+augroup color_scheme
+  au!
+  exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
+augroup END
+
+" General syntax commands
 " Note: Mapping mnemonic for colorizer is # for hex string
 command! -nargs=0 CurrentGroup call vim#syntax_group()
 command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
