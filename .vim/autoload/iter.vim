@@ -49,7 +49,7 @@ function! iter#scroll_count(scroll) abort
 endfunction
 
 " Switch to next or previous colorschemes and print the name
-" This is used when deciding on macvim colorschemes
+" Note: Have to trigger 'BufEnter' so status line updates.
 function! iter#jump_colorschemes(reverse) abort
   " Get list of color schemes
   let step = a:reverse ? 1 : -1
@@ -68,8 +68,8 @@ function! iter#jump_colorschemes(reverse) abort
   let colorscheme = g:all_colorschemes[idx]
   echom 'Colorscheme: ' . colorscheme
   exe 'colorscheme ' . colorscheme
-  silent redraw
-  let g:colors_name = colorscheme  " many plugins do this, but this is a backstop
+  let g:colors_name = colorscheme  " convention: https://stackoverflow.com/a/2419692/4970632
+  doautocmd BufEnter
 endfunction
 
 " Cyclic next error in location list

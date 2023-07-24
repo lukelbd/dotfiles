@@ -381,11 +381,10 @@ noremap <Leader>9 <Cmd>SchemeNext<CR>
 noremap <Leader>0 <Cmd>SchemePrev<CR>
 augroup color_scheme
   au!
-  au ColorScheme default call vim#config_refresh()
+  exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
 augroup END
 
 " Macvim color schemes
-" Note: Must be declared at end
 let s:colorscheme = 'papercolor'
 " let s:colorscheme = 'abra'  " good one
 " let s:colorscheme = 'ayu'  " good one
@@ -410,11 +409,13 @@ let s:colorscheme = 'papercolor'
 " let s:colorscheme = 'void'  " other one
 
 " Macvim syntax overrides
+" Todo: Whether to declare here or at bottom?
 if has('gui_running')  " revisit these?
   highlight! link vimCommand Statement
   highlight! link vimNotFunc Statement
   highlight! link vimFuncKey Statement
   highlight! link vimMap Statement
+  exe 'noautocmd colorscheme ' . s:colorscheme
 endif
 
 " Make terminal background same as main background
@@ -2085,11 +2086,11 @@ endif
 " Clear past jumps to ignore stuff from plugin files and vimrc
 " Also ignore outdated marks loaded from .viminfo
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
+" if has('gui_running') | exe 'noautocmd colorscheme ' . s:colorscheme | endif
 augroup clear_jumps
   au!
   au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
 augroup END
-if has('gui_running') | exe 'colorscheme ' . s:colorscheme | endif
 doautocmd <nomodeline> BufEnter  " trigger buffer-local overrides for this file
 delmarks a-z
 nohlsearch  " turn off highlighting at startup
