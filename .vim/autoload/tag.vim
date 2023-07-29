@@ -96,9 +96,8 @@ endfunction
 " the symlinked $HOME version in other projects. Resolve below for safety.
 function! tag#set_tags() abort
   let paths = []
-  for tnr in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = tnr + 1 " the tab number
-    for bnr in tabpagebuflist(tabnr)
+  for tnr in range(1, tabpagenr('$'))  " iterate through each tab
+    for bnr in tabpagebuflist(tnr)
       let opts = getbufvar(bnr, 'gutentags_files', {})
       let path = get(opts, 'ctags', '')
       if getcwd() =~# expand('~/') && expand(resolve(path)) !~# expand('~/')

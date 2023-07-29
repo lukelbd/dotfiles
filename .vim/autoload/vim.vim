@@ -74,18 +74,50 @@ function! vim#config_refresh(bang, ...) abort
   call extend(g:refresh_times, updates)
 endfunction
 
-" Create obsession file and possibly remove old one
+" Create session file or load existing one
 " Note: Sets string for use with MacVim windows and possibly other GUIs
+" See: https://vi.stackexchange.com/a/34669/8084
+function! vim#session_list(lead, line, cursor) abort
+  let regex = glob2regpat(a:lead)
+  let regex = regex[0:len(regex) - 2]
+  let opts = glob('.vimsession*', 0, 1)
+  let opts = filter(opts, 'v:val =~# regex')
+  echom 'Lead: ' . a:lead . ' Options: ' . join(opts, ', ')
+  return opts
+endfunction
+function! vim#session_loaded() abort
+  let regex = glob2regpat($HOME)
+  let regex = regex[0:len(regex) - 2]  " remove trailing '$'
+  let bufs = getbufinfo({'buflisted': 1})
+  let bufs = map(bufs, 'v:val.name')
+  let bufs = filter(bufs, 'v:val =~# regex')
+  return len(bufs) > 0
+endfunction
 function! vim#init_session(...)
   if !exists(':Obsession')
     echoerr ':Obsession is not installed.'
     return
   endif
-  let regex = '^\.vimsession[-_]*\(.*\)$'
+  let input = a:0 ? a:1 : ''
   let current = v:this_session
-  let session = a:0 ? a:1 : !empty(current) ? current : '.vimsession'
-  let suffix = substitute(fnamemodify(session, ':t'), regex, '\1', '')
-  exe 'Obsession ' . session
+  if !empty(input) && !filereadable(a:1) && fnamemodify(a:1, ':t') !~# '^\.vimsession'
+    let session = fnamemodify(a:1, ':h') . '/.vimsession-' . fnamemodify(a:1, ':t')
+  elseif !empty(input)  " manual session name
+    let session = a:1
+  elseif !empty(current)
+    let session = current
+  else
+    let session = '.vimsession'
+  endif
+  let suffix = substitute(fnamemodify(session, ':t'), '^\.vimsession[-_]*\(.*\)$', '\1', '')
+  if filereadable(session) && !vim#session_loaded()
+    exe 'source ' . session
+  elseif !filereadable(session)
+    exe 'Obsession ' . session
+  else  " never overwrite existing session files
+    echoerr 'Error: Cannot source session file (current session is active).'
+    return 0
+  endif
   if !empty(current) && fnamemodify(session, ':p') != fnamemodify(current, ':p')
     echom 'Removing old session file ' . fnamemodify(current, ':t')
     call delete(current)
@@ -99,16 +131,16 @@ endfunction
 " Show runtime color and plugin information
 " Note: Consistent with other utilities this uses separate tabs
 function! vim#runtime_colors() abort
-  exe 'Existing colortest.vim'
+  exe 'Drop colortest.vim'
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#popup_setup(0)
 endfunction
 function! vim#runtime_ftplugin() abort
-  exe 'Existing $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
+  exe 'Drop $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
   silent call utils#popup_setup(0)
 endfunction
 function! vim#runtime_syntax() abort
-  exe 'Existing $VIMRUNTIME/syntax/' . &filetype . '.vim'
+  exe 'Drop $VIMRUNTIME/syntax/' . &filetype . '.vim'
   silent call utils#popup_setup(0)
 endfunction
 

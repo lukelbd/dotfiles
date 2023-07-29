@@ -19,7 +19,7 @@ endfunction
 " that is in use' error so instead return to main window and toggle codi.
 function! window#close_window() abort
   let ntabs = tabpagenr('$')
-  let islast = tabpagenr('$') == tabpagenr()
+  let islast = ntabs == tabpagenr()
   if &l:filetype ==# 'codi'
     wincmd p | Codi!!
   else
@@ -31,7 +31,7 @@ function! window#close_window() abort
 endfunction
 function! window#close_tab() abort
   let ntabs = tabpagenr('$')
-  let islast = tabpagenr('$') == tabpagenr()
+  let islast = ntabs == tabpagenr()
   if ntabs == 1
     silent! quitall
   else
@@ -49,9 +49,8 @@ function! s:fzf_tab_source() abort
   let ndigits = len(string(tabpagenr('$')))
   let tabskip = get(g:, 'tabline_skip_filetypes', [])
   let unsorted = {}
-  for tnr in range(tabpagenr('$'))  " iterate through each tab
-    let tabnr = tnr + 1  " the tab number
-    let tbufs = tabpagebuflist(tabnr)
+  for tnr in range(1, tabpagenr('$'))  " iterate through each tab
+    let tbufs = tabpagebuflist(tnr)
     for bnr in tbufs
       if index(tabskip, getbufvar(bnr, '&ft')) == -1  " use if not a popup window
         let bufnr = bnr | break
@@ -59,9 +58,9 @@ function! s:fzf_tab_source() abort
         let bufnr = bnr
       endif
     endfor
-    let pad = repeat(' ', ndigits - len(string(tabnr)))
+    let pad = repeat(' ', ndigits - len(string(tnr)))
     let path = fnamemodify(bufname(bufnr), '%:t')
-    let path = pad . tabnr . ': ' . path  " displayed string
+    let path = pad . tnr . ': ' . path  " displayed string
     let unsorted[string(bufnr)] = path
   endfor
   let sorted = []

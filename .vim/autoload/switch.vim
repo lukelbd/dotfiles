@@ -44,7 +44,7 @@ function! switch#autosave(...) abort
     let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
     exe 'augroup autosave_' . bufnr('%')
       au!
-      exe 'au ' . cmds . ' <buffer> silent call tabline#write()'
+      exe 'au ' . cmds . ' <buffer> silent call file#safe_write()'
     augroup END
   else
     exe 'augroup autosave_' . bufnr('%')

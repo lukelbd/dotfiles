@@ -373,13 +373,13 @@ let s:colorscheme = 'papercolor'
 " let s:colorscheme = 'papercolor'
 
 " Macvim syntax overrides
-" Todo: Whether to declare here or at bottom?
+" Todo: Figure out whether to declare colorscheme here or at bottom
 if has('gui_running')  " revisit these?
   highlight! link vimCommand Statement
   highlight! link vimNotFunc Statement
   highlight! link vimFuncKey Statement
   highlight! link vimMap Statement
-  exe 'noautocmd colorscheme ' . s:colorscheme
+  " exe 'noautocmd colorscheme ' . s:colorscheme
 endif
 
 " Make terminal background same as main background
@@ -446,6 +446,7 @@ noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
 " Color scheme scrolling
+" Todo: Figure out whether to declare colorscheme here or at top
 " Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
 " Note: This is mainly used for GUI vim, otherwise use terminal themes. Some ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
@@ -485,15 +486,15 @@ noremap <Leader>7 <Cmd>ColorToggle<CR>
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
-nnoremap <C-s> <Cmd>call tabline#write()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-e> <Cmd>call window#close_tab()<CR>
+nnoremap <C-s> <Cmd>call file#update()<CR>
 
 " Open file in current directory or some input directory
 " Note: These are just convenience functions (see file#open_from) for details.
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
-command! -nargs=? -complete=file Existing call file#open_existing(<q-args>)
+command! -nargs=? -complete=file Drop call file#open_drop(<q-args>)
 nnoremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
 nnoremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
 nnoremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
@@ -505,13 +506,13 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Related file utilities
 " Pneumonic is 'inside' just like Ctrl + i map
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
-command! -nargs=* -complete=file -bang Rename call file#rename_to(<q-args>, '<bang>')
+command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
 command! -nargs=? Localdir call switch#localdir(<args>)
 noremap <Leader>i <Cmd>Abspath<CR>
 noremap <Leader>I <Cmd>Localdir<CR>
 noremap <Leader>p <Cmd>call file#print_exists()<CR>
-noremap <Leader>P <Cmd>exe 'Existing ' . expand('<cfile>')<CR>
+noremap <Leader>P <Cmd>exe 'Drop ' . expand('<cfile>')<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -1255,7 +1256,7 @@ let g:gutentags_enabled = 1
 " User interface selection stuff
 " Note: While specify ctags comamnd below, and set 'tags' accordingly above, this
 " should generally not be used since tags managed by gutentags.
-" Note: 'Existing' opens ag/rg in existing window, similar to switchbuf=useopen,usetab.
+" Note: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
 " However :Buffers still opens duplicate tabs with fzf_buffers_jump=1. Avoid using.
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
 " centered on bottom so do not configure this way.
@@ -1273,7 +1274,7 @@ let g:gutentags_enabled = 1
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
 let g:fzf_action = {
-  \ 'ctrl-m': 'Existing', 'ctrl-i': 'silent!',
+  \ 'ctrl-m': 'Drop', 'ctrl-i': 'silent!',
   \ 'ctrl-t': 'tab split', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
   \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
@@ -1299,8 +1300,7 @@ if s:enable_lsp
 endif
 
 " Completion engines
-" Note: Install pynvim with 'mamba install pynvim'
-" Note: Install deno with brew on mac and with conda on linux
+" Note: Autocomplete requires deno and pynvim (install both with mamba)
 " Warning: denops.vim frequently upgrades requirements to most recent vim
 " distribution but conda-forge version is slower to update. Workaround by pinning
 " to older commits: https://github.com/vim-denops/denops.vim/commits/main
@@ -1319,11 +1319,13 @@ endif
 " call plug#('roxma/vim-hug-neovim-rpc')  " deoplete dependency
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
 if s:enable_lsp
-  call plug#('Shougo/ddc.vim')  " fourth generation (requires pynvim and deno)
-  call plug#('Shougo/ddc-ui-native')  " matching words near cursor
   call plug#('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
+  call plug#('Shougo/ddc.vim', {'commit': 'db28c7d'})  " fourth generation (requires pynvim and deno)
+  call plug#('Shougo/ddc-ui-native')  " matching words near cursor
+  let g:denops#deno = $HOME . '/mambaforge/bin/deno'
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
   " let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
+  " let g:denops_disable_version_check = 0  " prevent checks: https://github.com/vim-denops/denops.vim/issues/247
 endif
 
 " Omnifunc sources not provided by engines
@@ -1366,8 +1368,8 @@ call plug#('raimondi/delimitmate')
 " call plug#('Shougo/neosnippet.vim')  " snippets consistent with ddc
 " call plug#('Shougo/neosnippet-snippets')  " standard snippet library
 " call plug#('Shougo/deoppet.nvim')  " next generation snippets (does not work in vim8)
-call plug#('hrsh7th/vim-vsnip')  " snippets
-call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
+" call plug#('hrsh7th/vim-vsnip')  " snippets
+" call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
 
 " Additional text objects (inner/outer selections)
 " Todo: Generalized function converting text objects into navigation commands?
@@ -1467,7 +1469,7 @@ let g:vim_markdown_conceal_code_blocks = 1
 " Note: Seems that mapping <Nop> just sends it to a black hole. Try :map <Nop> after.
 " See: https://www.reddit.com/r/vim/comments/g71wyq/delete_continuation_characters_when_joining_lines/
 " call plug#('dkarter/bullets.vim')  " list numbering but completely fails
-" call plug#('ohjames/tabdrop')  " now apply similar solution with tabline#write
+" call plug#('ohjames/tabdrop')  " now apply similar solution with :Drop
 " call plug#('beloglazov/vim-online-thesaurus')  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
 " call plug#('terryma/vim-multiple-cursors')  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
 " call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
@@ -1552,8 +1554,8 @@ endif
 " Additional mappings powered by Karabiner. Note that custom delimiters
 " are declared inside vim-succinct plugin functions rather than here.
 if s:plug_active('vim-succinct')
-  let g:succinct_surround_prefix = '<C-s>'
-  let g:succinct_snippet_prefix = '<C-e>'
+  let g:succinct_surround_map = '<C-s>'
+  let g:succinct_snippet_map = '<C-e>'
   let g:succinct_prevdelim_map = '<F1>'
   let g:succinct_nextdelim_map = '<F2>'
 endif
@@ -1658,7 +1660,7 @@ endif
 " Note: The below autocmd gives signature popups the same borders as hover popups.
 " Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
-" so below behavior is close to 'Existing': https://github.com/prabirshrestha/vim-lsp/pull/776
+" so below behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 " Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
@@ -1911,10 +1913,10 @@ endif
 " fails (get undefined command errors in :Gdiff) so instead just overwrite.
 " Note: All of the file-opening commands throughout fugitive funnel them through
 " commands like Gedit, Gtabedit, etc. So can prevent duplicate tabs by simply
-" overwriting this with custom tab-jumping :Existing command (see also git.vim).
+" overwriting this with custom tab-jumping :Drop command (see also git.vim).
 if s:plug_active('vim-fugitive')
   command! -bar -bang -range -nargs=* -complete=customlist,fugitive#EditComplete
-    \ Gtabedit exe fugitive#Open('Existing', <bang>0, '', <q-args>)
+    \ Gtabedit exe fugitive#Open('Drop', <bang>0, '', <q-args>)
   command! -nargs=* Gsplit Gvsplit <args>
   silent! delcommand Gdiffsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
@@ -2064,7 +2066,7 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
     au VimEnter * if !empty(v:this_session) | exe 'Session ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
-  command! -nargs=* Session call vim#init_session(<q-args>)
+  command! -nargs=* -complete=customlist,vim#session_list Session call vim#init_session(<q-args>)
   noremap <Leader>$ <Cmd>Session<CR>
 endif
 
@@ -2074,7 +2076,7 @@ endif
 " Clear past jumps to ignore stuff from plugin files and vimrc
 " Also ignore outdated marks loaded from .viminfo
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
-" if has('gui_running') | exe 'noautocmd colorscheme ' . s:colorscheme | endif
+if has('gui_running') | exe 'noautocmd colorscheme ' . s:colorscheme | endif
 augroup clear_jumps
   au!
   au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()

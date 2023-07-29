@@ -123,7 +123,7 @@ function! s:open_continuous(...) abort
     elseif path =~# '[*?[\]]'  " failed glob search so do nothing
       :
     elseif !empty(path)
-      call file#open_existing(path)
+      call file#open_drop(path)
     endif
   endfor
 endfunction
@@ -131,17 +131,16 @@ endfunction
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
 " Warning: The defaiult ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
-function! file#open_existing(file) abort
+function! file#open_drop(file) abort
   let visible = {}
   let path = fnamemodify(a:file, ':p')
   let tabjump = 0
-  for tnr in range(tabpagenr('$')) " iterate through each tab
-    let tabnr = tnr + 1 " the tab number
-    for bnr in tabpagebuflist(tabnr)
+  for tnr in range(1, tabpagenr('$'))  " iterate through each tab
+    for bnr in tabpagebuflist(tnr)
       if fnamemodify(bufname(bnr), ':p') ==# path
-        let winnr = bufwinnr(bnr)
-        exe tabnr . 'tabnext'
-        exe winnr . 'wincmd w'
+        let wnr = bufwinnr(bnr)
+        exe tnr . 'tabnext'
+        exe wnr . 'wincmd w'
         return
       endif
     endfor
@@ -156,7 +155,7 @@ endfunction
 " Rename2.vim  -  Rename a buffer within Vim and on disk
 " Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
 " Note: Ignore missing 'b:gitgutter_was_enabled' error
-function! file#rename_to(name, bang)
+function! file#rename(name, bang)
   let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)
   let curfile = expand('%:p')
   let curfilepath = expand('%:p:h')
@@ -172,5 +171,20 @@ function! file#rename_to(name, bang)
     endif
   else
     throw v:errmsg
+  endif
+endfunction
+
+" Update the file
+" Note: Prevents vim bug where cancelling the save in the confirmation
+" prompt still triggers BufWritePost and resets b:tabline_filechanged.
+function! file#update() abort
+  let tabline_changed = exists('b:tabline_filechanged') ? b:tabline_filechanged : 0
+  let statusline_changed = exists('b:statusline_filechanged') ? b:statusline_filechanged : 0
+  update  " only if unmodified
+  if &l:modified && tabline_changed && !b:tabline_filechanged
+    let b:tabline_filechanged = 1
+  endif
+  if &l:modified && statusline_changed && !b:statusline_filechanged
+    let b:statusline_filechanged = 1
   endif
 endfunction

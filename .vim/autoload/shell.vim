@@ -33,7 +33,7 @@ function! shell#help_page(tab, ...) abort
   call utils#popup_setup(0)
   if len(result) == 0
     silent! quit
-    call file#open_existing(file)
+    call file#open_drop(file)
   endif
 endfunction
 
@@ -123,7 +123,7 @@ function! shell#man_page(tab, ...) abort
   exe 'Man ' . page
   if line('$') <= 1
     silent! quit
-    call file#open_existing(file)
+    call file#open_drop(file)
   endif
   if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
     if has('macunix') && page !=# 'builtin'

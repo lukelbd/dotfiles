@@ -13,7 +13,7 @@ function! grep#call_grep(grep, level, depth) abort
   let func = 'grep#call_' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, search])
 endfunction
-function! grep#pattern_list(lead, list, cursor)
+function! grep#pattern_list(lead, line, cursor)
   let opts = execute('history search')
   let opts = substitute(opts, '\n\@<=>\?\s*[0-9]*\s*\([^\n]*\)\(\n\|$\)\@=', '\1', 'g')
   let opts = split(opts, '\n')
