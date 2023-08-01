@@ -94,16 +94,16 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
-" Setup popup windows. Mode can be 0 (not editable) or 1 (editable).
+" Setup helper windows. Mode can be 0 (not editable) or 1 (editable).
 " Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
 " shell#job_win() or other internal stuff. So instead just try to disable normal mode
 " commands that could accidentally modify text (aside from d used for scrolling).
-" Warning: Critical error happens if try to auto-quit when only popup window is
+" Warning: Critical error happens if try to auto-quit when only helper window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
-function! utils#popup_setup(modifiable) abort
+function! utils#helper_setup(modifiable) abort
   setlocal nolist nonumber norelativenumber nocursorline
   nnoremap <silent> <buffer> q :call window#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call window#close_window()<CR>
@@ -113,7 +113,7 @@ function! utils#popup_setup(modifiable) abort
   if a:modifiable == 1  " e.g. gitcommit window
     return
   endif
-  setlocal nospell colorcolumn= statusline=%{'[Popup\ Window]'}%=%{StatusRight()}
+  setlocal nospell colorcolumn= statusline=%{'[Helper\ Window]'}%=%{StatusRight()}
   for char in 'dufb'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
   endfor

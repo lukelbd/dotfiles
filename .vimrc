@@ -133,10 +133,10 @@ let s:data_filetypes = [
 let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
-let s:popup_filetypes = [
+let s:helper_filetypes = [
   \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
   \ ]  " for popup toggle
-let s:popup_filetypes += [
+let s:helper_filetypes += [
   \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
   \ ]
 
@@ -545,8 +545,7 @@ noremap <Leader>R <Cmd>Refresh<CR>
 command! -nargs=0 ShowBufs call window#show_bufs()
 command! -nargs=0 WipeBufs call window#wipe_bufs()
 noremap <C-r> <Cmd>ShowBufs<CR>
-" noremap <Leader>Q <Cmd>Buffers<CR>
-noremap <Leader>q <Cmd>Windows<CR>
+noremap <Leader>q <Cmd>Buffers<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
 
 " Tab selection and movement
@@ -557,6 +556,7 @@ nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 nnoremap <Tab>m <Cmd>call window#move_tab()<CR>
 nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
+" nnoremap <Tab><Tab> <Cmd>Windows<CR>
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
 " Window selection and creation
@@ -603,41 +603,43 @@ augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
-" Popup window style adjustments with less-like shortcuts
+" Helper window style adjustments with less-like shortcuts
 " Note: Tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues
 " due to e.g. buffer not loaded before autocmds trigger. Instead use below.
-let g:tags_skip_filetypes = s:popup_filetypes
-let g:tabline_skip_filetypes = s:popup_filetypes
-augroup popup_setup
+let g:tags_skip_filetypes = s:helper_filetypes
+let g:tabline_skip_filetypes = s:helper_filetypes
+augroup helper_setup
   au!
-  au TerminalWinOpen * call utils#popup_setup(1)
-  au CmdwinEnter * call vim#cmdwin_setup() | call utils#popup_setup(0)
+  au TerminalWinOpen * call utils#helper_setup(1)
+  au CmdwinEnter * call vim#cmdwin_setup() | call utils#helper_setup(0)
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType help call vim#vim_setup()
   au FileType man call shell#man_setup()
   au FileType gitcommit call git#commit_setup()
   au FileType git,fugitive,fugitiveblame call git#fugitive_setup()
-  for s:ft in s:popup_filetypes
+  for s:ft in s:helper_filetypes
     let s:modifiable = s:ft ==# 'gitcommit'
-    exe 'au FileType ' . s:ft . ' call utils#popup_setup(' . s:modifiable . ')'
+    exe 'au FileType ' . s:ft . ' call utils#helper_setup(' . s:modifiable . ')'
   endfor
 augroup END
 
 " Interactive file jumping with grep commands
+" Note: Each command can be called with more than one argument to specify path.
 " Note: These redefinitions add flexibility to native fzf.vim commands,
 " mnemonic for alternatives is 'local directory' or 'current file'. Also note Rg
 " is faster so it gets lower case: https://unix.stackexchange.com/a/524094/112647
-" command! -bang -nargs=* Af call cgrep#grep_ag(<bang>0, 2, 0, <f-args>)
-" command! -bang -nargs=* Rf call cgrep#grep_rg(<bang>0, 2, 0, <f-args>)
 " nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 1, 0)<CR>
 " nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 0, 0)<CR>
-command! -bang -nargs=* Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=* Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=* Al call grep#call_ag(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=* Rl call grep#call_rg(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=* A1 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-command! -bang -nargs=* R1 call grep#call_rg(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=+ Grep call grep#call_ag(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=+ Rd call grep#call_rg(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
+command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 2, 0, <f-args>)
 nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 
@@ -946,21 +948,18 @@ map ]e <Plug>BlankDown
 nnoremap o oX<Backspace>
 nnoremap O OX<Backspace>
 
-" Preview window scrolling
-" Note: Popup menu always closed but this also does preview windows
+" Popup menu and preview window scrolling
+" This should work with or without ddc
+augroup pum_navigation
+  au!
+  au BufEnter,InsertLeave * let b:scroll_state = 0
+augroup END
 noremap <expr> <C-k> iter#scroll_count(-0.25)
 noremap <expr> <C-j> iter#scroll_count(0.25)
 noremap <expr> <C-u> iter#scroll_count(-0.5)
 noremap <expr> <C-d> iter#scroll_count(0.5)
 noremap <expr> <C-b> iter#scroll_count(-1.0)
 noremap <expr> <C-f> iter#scroll_count(1.0)
-
-" Popup and preview window scrolling
-" This should work with or without ddc
-augroup pum_navigation
-  au!
-  au BufEnter,InsertLeave * let b:scroll_state = 0
-augroup END
 inoremap <expr> <C-k> iter#scroll_count(-0.25)
 inoremap <expr> <C-j> iter#scroll_count(0.25)
 inoremap <expr> <C-u> iter#scroll_count(-0.5)
@@ -1257,7 +1256,7 @@ let g:gutentags_enabled = 1
 " Note: While specify ctags comamnd below, and set 'tags' accordingly above, this
 " should generally not be used since tags managed by gutentags.
 " Note: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
-" However :Buffers still opens duplicate tabs with fzf_buffers_jump=1. Avoid using.
+" However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1.
 " Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
 " centered on bottom so do not configure this way.
 " Note: fzf#wrap is required to apply global settings and cannot
@@ -1278,7 +1277,7 @@ let g:fzf_action = {
   \ 'ctrl-t': 'tab split', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
   \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
-let g:fzf_buffers_jump = 1  " have grep jump to existing window if possible
+let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#get_ignores(1)  " added just for safety
 
 " Language server integration
@@ -1300,7 +1299,7 @@ if s:enable_lsp
 endif
 
 " Completion engines
-" Note: Autocomplete requires deno and pynvim (install both with mamba)
+" Note: Autocomplete requires deno (install with mamba). Older verison requires pynvim
 " Warning: denops.vim frequently upgrades requirements to most recent vim
 " distribution but conda-forge version is slower to update. Workaround by pinning
 " to older commits: https://github.com/vim-denops/denops.vim/commits/main
@@ -1312,20 +1311,20 @@ endif
 " call plug#('prabirshrestha/asyncomplete.vim')  " alternative engine
 " call plug#('Shougo/neocomplcache.vim')  " first generation (no requirements)
 " call plug#('Shougo/neocomplete.vim')  " second generation (requires lua)
-" let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
 " call plug#('Shougo/deoplete.nvim')  " third generation (requires pynvim)
 " call plug#('Shougo/neco-vim')  " deoplete dependency
 " call plug#('roxma/nvim-yarp')  " deoplete dependency
 " call plug#('roxma/vim-hug-neovim-rpc')  " deoplete dependency
+" let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
 if s:enable_lsp
-  call plug#('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
-  call plug#('Shougo/ddc.vim', {'commit': 'db28c7d'})  " fourth generation (requires pynvim and deno)
+  call plug#('vim-denops/denops.vim')  " ddc dependency
+  call plug#('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
+  call plug#('Shougo/ddc.vim')  " fourth generation (requires deno)
   call plug#('Shougo/ddc-ui-native')  " matching words near cursor
-  let g:denops#deno = $HOME . '/mambaforge/bin/deno'
-  let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
-  " let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
-  " let g:denops_disable_version_check = 0  " prevent checks: https://github.com/vim-denops/denops.vim/issues/247
+  " call plug#('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
+  " call plug#('Shougo/ddc.vim', {'commit': 'db28c7d'})  " fourth generation (requires deno)
+  " call plug#('Shougo/ddc-ui-native', {'commit': 'cc29db3'})  " matching words near cursor
 endif
 
 " Omnifunc sources not provided by engines
@@ -1342,12 +1341,11 @@ endif
 " call plug#('Shougo/ddc-matcher_head')  " filter for heading match
 " call plug#('Shougo/ddc-sorter_rank')  " filter for sorting rank
 if s:enable_lsp
-  call plug#('shun/ddc-vim-lsp')  " language server protocol completion for vim 8+
-  call plug#('Shougo/ddc-around')  " matching words near cursor
-  call plug#('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
-  call plug#('LumaKernel/ddc-file')  " matching file names
   call plug#('tani/ddc-fuzzy')  " filter for fuzzy matching similar to fzf
-  call plug#('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
+  call plug#('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
+  call plug#('shun/ddc-source-vim-lsp')  " language server protocol completion for vim 8+
+  call plug#('Shougo/ddc-source-around')  " matching words near cursor
+  call plug#('LumaKernel/ddc-source-file')  " matching file names
 endif
 
 " Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
@@ -1666,13 +1664,10 @@ endif
 " Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
 " https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
 if s:plug_active('vim-lsp')
+  let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   augroup lsp_style
     au!
-    autocmd User lsp_float_opened
-      \ call popup_setoptions(
-        \ lsp#ui#vim#output#getpreviewwinid(),
-        \ {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
-      \ )
+    autocmd User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=0 LspStartServer call lsp#activate()
@@ -1724,14 +1719,19 @@ endif
 " to speed up or disable fuzzy completion. See: https://github.com/Shougo/ddc-ui-native
 " and https://github.com/Shougo/ddc.vim#configuration. Also for general config
 " inspiration see https://www.reddit.com/r/neovim/comments/sm2epa/comment/hvv13pe/.
-" \ 'sources': ['around', 'buffer', 'file', 'vim-lsp', 'vsnip'],
-" \ 'sourceOptions': {'vsnip': {'mark': 'S', 'maxItems': 5}},
+" let s:ddc_sources = ['around', 'buffer', 'file', 'vim-lsp', 'vsnip']
+" let s:ddc_options = {'sourceOptions': {'vsnip': {'mark': 'S', 'maxItems': 5}}}
+" let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
 if s:plug_active('ddc.vim')
+  let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
+  let g:denops_disable_version_check = 1  " skip check for recent versions
+  let g:denops#deno = has('gui_running') ? $HOME . '/mambaforge/bin/deno' : 'deno'
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
     \ '--v8-flags=--max-heap-size=1000,--max-old-space-size=1000',
     \ ]
-  let g:ddc_sources = {
+  let s:ddc_sources = ['around', 'buffer', 'file', 'vim-lsp']
+  let s:ddc_options = {
     \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
     \ 'sourceOptions': {
@@ -1762,7 +1762,8 @@ if s:plug_active('ddc.vim')
     \   },
     \ }}
   call ddc#custom#patch_global('ui', 'native')
-  call ddc#custom#patch_global(g:ddc_sources)
+  call ddc#custom#patch_global('sources', s:ddc_sources)
+  call ddc#custom#patch_global(s:ddc_options)
   call ddc#enable()
 endif
 
