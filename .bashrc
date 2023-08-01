@@ -836,7 +836,7 @@ open() {
 # NOTE: This supports internal grepping and finding utilities. Could also be
 # expanded to support .fzf finding utilities by setting the ignored files.
 ignores() {
-  local mode line args subs files
+  local mode line args folders files
   [ $# -gt 0 ] && [ "$1" -gt 0 ] && mode=1 || mode=0
   for path in ~/.ignore ~/.wildignore; do
     while read -r line; do
@@ -844,10 +844,10 @@ ignores() {
       [[ "$line" =~ ^! ]] && continue
       if [[ "$line" =~ / ]]; then
         if [ "$mode" -eq 1 ]; then
-          [ ${#subs[@]} -eq 0 ] && args=(-name) || args=(-o -name)
-          subs+=("${args[@]}" "*${line//\//}*")  # 'find' already supports sub directories
+          [ ${#folders[@]} -eq 0 ] && args=(-name) || args=(-o -name)
+          folders+=("${args[@]}" "*${line//\//}*")  # 'find' already supports sub directories
         else
-          subs+=(--exclude-dir "$line")
+          folders+=(--exclude-dir "$line")
         fi
       else
         if [ "$mode" -eq 1 ]; then
@@ -859,10 +859,14 @@ ignores() {
       fi
     done < "$path"
   done
+  files=("${files[@]//\*/\\\*}")  # prevent expansion after capture
+  files=("${files[@]//\?/\?}")
+  folders=("${folders[@]//\*/\\\*}")  # prevent expansion after capture
+  folders=("${folders[@]//\?/\\\?}")
   if [ "$mode" -eq 1 ]; then
-    echo -type d \( "${subs[@]}" \) -prune -o -type f \( "${files[@]}" \) -prune -o
+    echo -type d \( "${folders[@]}" \) -prune -o -type f \( "${files[@]}" \) -prune -o
   else
-    echo "${subs[@]}" "${files[@]}"
+    echo "${folders[@]}" "${files[@]}"
   fi
 }
 
@@ -889,12 +893,15 @@ _grep() {
     1) commands=("$1" .) ;;  # pattern
     *) commands=("$@") ;;  # pattern path(s)
   esac
-  [ "$include" -le 1 ] && exclude+=($(ignores 0))
+  [ "$include" -le 1 ] && exclude+=($(ignores 0))  # glob patterns should be escaped
   [ "$include" -le 0 ] && exclude+=(--exclude='[A-Z_.]*')
   [ "$include" -le 0 ] && exclude+=(--exclude-dir='.[^.]*')
+  # for i in $(seq 0 2 $((${#exclude[@]} - 2))); do
+  #   echo "${exclude[i]}" "${exclude[i + 1]}"
+  # done
   command grep \
     -i -r -E --color=auto --exclude-dir='_*' \
-    ${exclude[@]} ${commands[@]}  # only regex and paths allowed
+    "${exclude[@]}" "${commands[@]}"  # only regex and paths allowed
 }
 _find() {
   local commands exclude include header
@@ -906,9 +913,9 @@ _find() {
     2) commands=("$1" "$2" -print) ;;  # path pattern
     *) commands=("$@") ;;  # path pattern (commands)
   esac
-  [ "$include" -le 1 ] && exclude=($(ignores 1))  # expand into commands *and* names
+  [ "$include" -le 1 ] && exclude=($(ignores 1))  # glob patterns should be escaped
   [ "$include" -le 0 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune -o)
-  command find "${commands[0]}" "${header[@]}" ${exclude[@]} -name "${commands[@]:1}"
+  command find "${commands[0]}" "${header[@]}" "${exclude[@]}" -name "${commands[@]:1}"
 }
 g0() { _grep 0 "$@"; }  # custom grep with ignore excludes and no hidden files
 f0() { _find 0 "$@"; }  # custom find with ignore excludes and no hidden files
