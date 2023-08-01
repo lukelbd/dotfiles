@@ -133,15 +133,15 @@ endfunction
 function! vim#runtime_colors() abort
   exe 'Drop colortest.vim'
   source $VIMRUNTIME/syntax/colortest.vim
-  silent call utils#popup_setup(0)
+  silent call utils#panel_setup(0)
 endfunction
 function! vim#runtime_ftplugin() abort
   exe 'Drop $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
-  silent call utils#popup_setup(0)
+  silent call utils#panel_setup(0)
 endfunction
 function! vim#runtime_syntax() abort
   exe 'Drop $VIMRUNTIME/syntax/' . &filetype . '.vim'
-  silent call utils#popup_setup(0)
+  silent call utils#panel_setup(0)
 endfunction
 
 " Source file or lines

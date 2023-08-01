@@ -133,10 +133,10 @@ let s:data_filetypes = [
 let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
-let s:helper_filetypes = [
+let s:panel_filetypes = [
   \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
   \ ]  " for popup toggle
-let s:helper_filetypes += [
+let s:panel_filetypes += [
   \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
   \ ]
 
@@ -606,21 +606,21 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " Helper window style adjustments with less-like shortcuts
 " Note: Tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues
 " due to e.g. buffer not loaded before autocmds trigger. Instead use below.
-let g:tags_skip_filetypes = s:helper_filetypes
-let g:tabline_skip_filetypes = s:helper_filetypes
-augroup helper_setup
+let g:tags_skip_filetypes = s:panel_filetypes
+let g:tabline_skip_filetypes = s:panel_filetypes
+augroup panel_setup
   au!
-  au TerminalWinOpen * call utils#helper_setup(1)
-  au CmdwinEnter * call vim#cmdwin_setup() | call utils#helper_setup(0)
+  au TerminalWinOpen * call utils#panel_setup(1)
+  au CmdwinEnter * call vim#cmdwin_setup() | call utils#panel_setup(0)
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType help call vim#vim_setup()
   au FileType man call shell#man_setup()
   au FileType gitcommit call git#commit_setup()
   au FileType git,fugitive,fugitiveblame call git#fugitive_setup()
-  for s:ft in s:helper_filetypes
+  for s:ft in s:panel_filetypes
     let s:modifiable = s:ft ==# 'gitcommit'
-    exe 'au FileType ' . s:ft . ' call utils#helper_setup(' . s:modifiable . ')'
+    exe 'au FileType ' . s:ft . ' call utils#panel_setup(' . s:modifiable . ')'
   endfor
 augroup END
 
@@ -1678,7 +1678,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>* <Cmd>LspSignatureHelp<CR>
   noremap <Leader># <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
-  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#popup_setup(0)<CR>
+  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " not enough info
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>

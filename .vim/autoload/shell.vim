@@ -30,7 +30,7 @@ function! shell#help_page(tab, ...) abort
   set filetype=popup
   set buftype=nofile
   exe 'file ' . name
-  call utils#popup_setup(0)
+  call utils#panel_setup(0)
   if len(result) == 0
     silent! quit
     call file#open_drop(file)
