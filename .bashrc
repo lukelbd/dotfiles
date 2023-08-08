@@ -711,7 +711,7 @@ man() {
 # https://stackoverflow.com/q/48751491/4970632
 git() {
   if [ "$#" -eq 1 ] && [ "$1" == stash ]; then
-    echo 'Error: Run "git stash push" instead.' 1>&2
+    echo 'Error: Run "git stash push --flags" instead.' 1>&2
     return 1
   fi
   if [ "$#" -ge 3 ] && [ "$1" == commit ]; then

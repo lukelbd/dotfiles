@@ -2065,7 +2065,7 @@ endif
 if s:plug_active('vim-obsession')  " must manually preserve cursor position
   augroup session
     au!
-    au VimEnter * if !empty(v:this_session) | exe 'Session ' . v:this_session | endif
+    au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
     au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
   augroup END
   command! -nargs=* -complete=customlist,vim#session_list Session call vim#init_session(<q-args>)
