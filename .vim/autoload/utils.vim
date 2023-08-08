@@ -98,7 +98,7 @@ endfunction
 " Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
 " shell#job_win() or other internal stuff. So instead just try to disable normal mode
 " commands that could accidentally modify text (aside from d used for scrolling).
-" Warning: Critical error happens if try to auto-quit when only helper window is
+" Warning: Critical error happens if try to auto-quit when only panel window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
@@ -113,7 +113,7 @@ function! utils#panel_setup(modifiable) abort
   if a:modifiable == 1  " e.g. gitcommit window
     return
   endif
-  setlocal nospell colorcolumn= statusline=%{'[Helper\ Window]'}%=%{StatusRight()}
+  setlocal nospell colorcolumn= statusline=%{'[Panel\ Window]'}%=%{StatusRight()}
   for char in 'dufb'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
   endfor

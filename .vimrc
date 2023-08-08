@@ -1021,6 +1021,7 @@ noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 noremap gE /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Search for git commit conflict blocks
+" Note: See also [f and ]f commands
 noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
 
 " Run replacement on this line alone
