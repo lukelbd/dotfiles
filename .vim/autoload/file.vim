@@ -57,7 +57,7 @@ function! file#open_from(files, local) abort
   let path = fnamemodify(dir, ':~')
   let prompt = cmd . ' (' . path . ')'  " display longer version in prompt
   let default = fnamemodify(dir, ':p:~:.')  " display shorter version here
-  let default = empty(default) ? '.' : default  " differentiat from user cancellation
+  let default = empty(default) ? './' : default  " differentiate from user cancellation
   let start = utils#input_complete(prompt, 'file#path_list', default)
   if empty(start) | return | endif
   exe cmd . ' ' . start
