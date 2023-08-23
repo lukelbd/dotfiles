@@ -1674,9 +1674,9 @@ if s:plug_active('vim-lsp')
   command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>a <Cmd>LspReferences<CR>
-  noremap <Leader>A <Cmd>LspHover --ui=float<CR>
-  noremap <Leader>* <Cmd>LspSignatureHelp<CR>
+  noremap <Leader>a <Cmd>LspHover --ui=float<CR>
+  noremap <Leader>A <Cmd>LspSignatureHelp<CR>
+  noremap <Leader>* <Cmd>LspReferences<CR>
   noremap <Leader># <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>

@@ -175,8 +175,8 @@ _setup_opts() {
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
   export HISTSIZE=5000  # enable huge history
   export HISTFILESIZE=5000  # enable huge history
-  export HISTIGNORE="&:bg *:fg *:exit *:clear *"  # don't record some commands
-  export HISTCONTROL="erasedups:ignoreboth"  # avoid duplicate entries
+  export HISTIGNORE='&:bg:fg:exit:clear'  # don't record some commands
+  export HISTCONTROL=''  # note ignoreboth = ignoredups + ignorespace
 }
 _setup_opts 2>/dev/null  # ignore if option unavailable
 
