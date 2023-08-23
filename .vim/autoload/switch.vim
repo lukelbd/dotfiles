@@ -164,13 +164,11 @@ function! switch#localdir(...) abort
 endfunction
 
 " Enable and disable LSP engines
-" Note: The ddc docs says ddc#disable() is permanent so just remove sources
 " Note: The server status can lag because takes a while for async server stop
-" let state = denops#server#status() ==? 'running'  " check denops server status
-" let servers = lsp#get_server_names()  " servers applied to any filetype
 function! switch#lsp(...) abort
   let running = []  " 'allowed' means servers applied to this filetype
   let servers = exists('*lsp#get_allowed_servers') ? lsp#get_allowed_servers() : []
+  " let servers = lsp#get_server_names()  " servers applied to any filetype
   for server in servers
     if lsp#get_server_status(server) =~? 'running' | call add(running, server) | endif
   endfor
@@ -179,16 +177,31 @@ function! switch#lsp(...) abort
   let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle || empty(servers)
     return
-  elseif toggle  " note completionMode was removed
+  elseif toggle
     call lsp#activate()  " currently can only activate everything
+  else
+    for server in running | call lsp#stop_server(server) | endfor  " de-activate server
+  endif
+  call call('s:switch_message', ['lsp integration', toggle, suppress])
+endfunction
+
+" Toggle ddc on and off
+" Note: The ddc docs says ddc#disable() is permanent so just remove sources
+function! switch#ddc(...) abort
+  let running = []  " 'allowed' means servers applied to this filetype
+  let state = denops#server#status() ==? 'running'  " check denops server status
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
+  if state == toggle
+    return
+  elseif toggle  " note completionMode was removed
     call ddc#custom#patch_global(g:ddc_sources)  " restore sources
     call denops#server#start()  " must come after ddc call
   else
-    for server in running | call lsp#stop_server(server) | endfor  " de-activate server
     call ddc#custom#patch_global({'sources': []})  " wipe out ddc sources
     call denops#server#stop()  " must come before ddc call
   endif
-  call call('s:switch_message', ['lsp and autocomplete', toggle, suppress])
+  call call('s:switch_message', ['autocomplete', toggle, suppress])
 endfunction
 
 " Toggle spell check on and off

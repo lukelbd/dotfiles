@@ -504,7 +504,7 @@ nnoremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
-" Pneumonic is 'inside' just like Ctrl + i map
+" Mnemonic is 'inside' just like Ctrl + i map
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
 command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 command! -nargs=? Abspath call file#print_abspath(<f-args>)
@@ -626,9 +626,9 @@ augroup END
 
 " Interactive file jumping with grep commands
 " Note: Each command can be called with more than one argument to specify path.
-" Note: These redefinitions add flexibility to native fzf.vim commands,
-" mnemonic for alternatives is 'local directory' or 'current file'. Also note Rg
-" is faster so it gets lower case: https://unix.stackexchange.com/a/524094/112647
+" Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
+" for alternatives is 'local directory' or 'current file'. Also note Rg is faster
+" so it gets lower case: https://unix.stackexchange.com/a/524094/112647
 " nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 1, 0)<CR>
 " nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 command! -bang -nargs=+ Grep call grep#call_ag(<bang>0, 0, 0, <f-args>)
@@ -646,6 +646,7 @@ nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
 " Note: Mnemonic for 'repeat command' is that it is on same key as :hlsearch
+" nnoremap <Leader>O :<C-r><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -656,7 +657,6 @@ nnoremap <Leader>, <Cmd>call shell#help_page(1)<CR>
 nnoremap <Leader>. <Cmd>call shell#man_page(1)<CR>
 nnoremap <Leader>m <Cmd>Maps<CR>
 nnoremap <Leader>M <Cmd>Commands<CR>
-nnoremap <Leader>O :<C-r><Up><CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -1098,6 +1098,7 @@ noremap <expr> \X edit#replace_regex_expr(
 " Ad hoc enable or disable LSP for testing
 " Note: Can also use switch#lsp() interactively
 let s:enable_lsp = 1
+let s:enable_ddc = 1
 
 " Functions to find runtimepath and install plugins
 " See: https://github.com/junegunn/vim-plug/issues/32
@@ -1318,7 +1319,7 @@ endif
 " call plug#('roxma/vim-hug-neovim-rpc')  " deoplete dependency
 " let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
-if s:enable_lsp
+if s:enable_ddc
   call plug#('vim-denops/denops.vim')  " ddc dependency
   call plug#('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
   call plug#('Shougo/ddc.vim')  " fourth generation (requires deno)
@@ -1341,7 +1342,7 @@ endif
 " call plug#('Shougo/ddc-nvim-lsp')  " language server protocoal completion for neovim only
 " call plug#('Shougo/ddc-matcher_head')  " filter for heading match
 " call plug#('Shougo/ddc-sorter_rank')  " filter for sorting rank
-if s:enable_lsp
+if s:enable_ddc
   call plug#('tani/ddc-fuzzy')  " filter for fuzzy matching similar to fzf
   call plug#('matsui54/ddc-buffer')  " matching words from buffer (as in neocomplete)
   call plug#('shun/ddc-source-vim-lsp')  " language server protocol completion for vim 8+
@@ -1671,13 +1672,12 @@ if s:plug_active('vim-lsp')
     autocmd User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
-  command! -nargs=0 LspStartServer call lsp#activate()
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
-  noremap <Leader>* <Cmd>LspReferences<CR>
-  noremap <Leader># <Cmd>call switch#lsp()<CR>
+  noremap <Leader>O <Cmd>LspReferences<CR>
+  noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " not enough info
@@ -1724,6 +1724,8 @@ endif
 " let s:ddc_options = {'sourceOptions': {'vsnip': {'mark': 'S', 'maxItems': 5}}}
 " let g:popup_preview_config = {'border': v:false, 'maxWidth': 80, 'maxHeight': 30}
 if s:plug_active('ddc.vim')
+  command! -nargs=? DdcToggle call switch#ddc(<args>)
+  noremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
   let g:denops_disable_version_check = 1  " skip check for recent versions
   let g:denops#deno = has('gui_running') ? $HOME . '/mambaforge/bin/deno' : 'deno'
@@ -1731,8 +1733,8 @@ if s:plug_active('ddc.vim')
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
     \ '--v8-flags=--max-heap-size=1000,--max-old-space-size=1000',
     \ ]
-  let s:ddc_sources = ['around', 'buffer', 'file', 'vim-lsp']
-  let s:ddc_options = {
+  let g:ddc_sources = ['around', 'buffer', 'file', 'vim-lsp']
+  let g:ddc_options = {
     \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
     \ 'sourceOptions': {
@@ -1763,8 +1765,8 @@ if s:plug_active('ddc.vim')
     \   },
     \ }}
   call ddc#custom#patch_global('ui', 'native')
-  call ddc#custom#patch_global('sources', s:ddc_sources)
-  call ddc#custom#patch_global(s:ddc_options)
+  call ddc#custom#patch_global('sources', g:ddc_sources)
+  call ddc#custom#patch_global(g:ddc_options)
   call ddc#enable()
 endif
 
@@ -1790,7 +1792,7 @@ if s:plug_active('ale')
   noremap <Leader>x <Cmd>cclose<CR><Cmd>lopen<CR>
   noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>copen<CR>
   noremap <Leader>@ <Cmd>call switch#ale()<CR>
-  noremap <Leader>& <Cmd>ALEInfo<CR>
+  noremap <Leader># <Cmd>ALEInfo<CR>
   let g:ale_linters = {
     \ 'config': [],
     \ 'fortran': ['gfortran'],
