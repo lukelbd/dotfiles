@@ -97,6 +97,25 @@ function! switch#copy(...) abort
   call call('s:switch_message', ['Copy mode', toggle, suppress])
 endfunction
 
+" Toggle ddc on and off
+" Note: The ddc docs says ddc#disable() is permanent so just remove sources
+function! switch#ddc(...) abort
+  let running = []  " 'allowed' means servers applied to this filetype
+  let state = denops#server#status() ==? 'running'  " check denops server status
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
+  if state == toggle
+    return
+  elseif toggle  " note completionMode was removed
+    call ddc#custom#patch_global(g:ddc_sources)  " restore sources
+    call denops#server#start()  " must come after ddc call
+  else
+    call ddc#custom#patch_global({'sources': []})  " wipe out ddc sources
+    call denops#server#stop()  " must come before ddc call
+  endif
+  call call('s:switch_message', ['autocomplete', toggle, suppress])
+endfunction
+
 " Toggle literal tab characters on and off
 function! switch#expandtab(...) abort
   let state = &l:expandtab
@@ -183,25 +202,6 @@ function! switch#lsp(...) abort
     for server in running | call lsp#stop_server(server) | endfor  " de-activate server
   endif
   call call('s:switch_message', ['lsp integration', toggle, suppress])
-endfunction
-
-" Toggle ddc on and off
-" Note: The ddc docs says ddc#disable() is permanent so just remove sources
-function! switch#ddc(...) abort
-  let running = []  " 'allowed' means servers applied to this filetype
-  let state = denops#server#status() ==? 'running'  " check denops server status
-  let toggle = a:0 > 0 ? a:1 : 1 - state
-  let suppress = a:0 > 1 ? a:2 : 0
-  if state == toggle
-    return
-  elseif toggle  " note completionMode was removed
-    call ddc#custom#patch_global(g:ddc_sources)  " restore sources
-    call denops#server#start()  " must come after ddc call
-  else
-    call ddc#custom#patch_global({'sources': []})  " wipe out ddc sources
-    call denops#server#stop()  " must come before ddc call
-  endif
-  call call('s:switch_message', ['autocomplete', toggle, suppress])
 endfunction
 
 " Toggle spell check on and off

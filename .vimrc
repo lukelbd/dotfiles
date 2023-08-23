@@ -646,17 +646,17 @@ nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
 " Note: Mnemonic for 'repeat command' is that it is on same key as :hlsearch
-" nnoremap <Leader>O :<C-r><Up><CR>
+" nnoremap <Leader>. :<C-r><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
+nnoremap <Leader>m <Cmd>Maps<CR>
+nnoremap <Leader>M <Cmd>Commands<CR>
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
 nnoremap <Leader>, <Cmd>call shell#help_page(1)<CR>
 nnoremap <Leader>. <Cmd>call shell#man_page(1)<CR>
-nnoremap <Leader>m <Cmd>Maps<CR>
-nnoremap <Leader>M <Cmd>Commands<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
