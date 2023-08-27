@@ -1644,9 +1644,10 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_ctags_exclude = tag#get_ignores(0)  " exclude all by default
   let g:gutentags_ctags_tagfile = '.vimtags'
   let g:gutentags_define_advanced_commands = 1  " debugging command
-  let g:gutentags_generate_on_new = 0  " project opened
-  let g:gutentags_generate_on_write = 0  " file written i.e. updated
-  let g:gutentags_generate_on_missing = 0  " no vimtags file found
+  let g:gutentags_generate_on_new = 0  " do not update tags when opening project file
+  let g:gutentags_generate_on_write = 1  " update tags when file updated
+  let g:gutentags_generate_on_missing = 1  " update tags when no vimtags file found
+  let g:gutentags_generate_on_empty_buffer = 0  " do not update tags when opening vim
   let g:gutentags_project_root_finder = 'tag#find_root'
 endif
 
@@ -1690,7 +1691,7 @@ if s:plug_active('vim-lsp')
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
   let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
   let g:lsp_document_highlight_enabled = 0  " used with [r and ]r
-  let g:lsp_fold_enabled = 0  " not yet tested
+  let g:lsp_fold_enabled = 0  " not yet tested, requires 'foldlevel', 'foldlevelstart'
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
   let g:lsp_max_buffer_size = 2000000  " decrease from 5000000
