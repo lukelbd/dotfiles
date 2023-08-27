@@ -91,15 +91,15 @@ function! python#kw_to_dict(invert, ...) abort range
   for lnum in range(firstline, lastline)
     let [line, prefix, suffix] = [getline(lnum), '', '']
     if lnum == firstline && lnum == lastline  " vint: -ProhibitUsingUndeclaredVariable
-      let line = line[firstcol:lastcol]
-      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''
+      let prefix = firstcol > 0 ? line[:firstcol - 1] : ''
       let suffix = line[lastcol + 1:]
+      let line = line[firstcol:lastcol]  " WARNING: must come last
     elseif lnum == firstline
-      let line = line[firstcol:]
-      let prefix = firstcol >= 1 ? line[:firstcol - 1] : ''
+      let prefix = firstcol > 0 ? line[:firstcol - 1] : ''
+      let line = line[firstcol:]  " WARNING: must come last
     elseif lnum == lastline
-      let line = line[:lastcol]
       let suffix = line[lastcol + 1:]
+      let line = line[:lastcol]  " WARNING: must come last
     endif
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echohl WarningMsg
@@ -107,8 +107,8 @@ function! python#kw_to_dict(invert, ...) abort range
       echohl None
     endif
     if a:invert  " dictionary to kwargs
-      let line = substitute(line, "\\>['\"]" . '\ze\s*:', '', 'g')  " remove trailing quote first
-      let line = substitute(line, "['\"]\\<" . '\ze\w\+\s*:', '', 'g')
+      let line = substitute(line, '\>[''"]\ze\s*:', '', 'g')  " remove trailing quote first
+      let line = substitute(line, '[''"]\<\ze\w\+\s*:', '', 'g')
       let line = substitute(line, '\s*:\s*', '=', 'g')
     else
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
@@ -120,6 +120,7 @@ function! python#kw_to_dict(invert, ...) abort range
   exe firstline . ',' . lastline . 'd _'
   call append(firstline - 1, lines)  " replace with fixed lines
   call winrestview(winview)
+  call cursor(firstline, firstcol)
 endfunction
 " For <expr> map accepting motion
 function! python#kw_to_dict_expr(invert) abort
