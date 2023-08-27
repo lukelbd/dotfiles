@@ -24,10 +24,13 @@ shellapp.backend_keys.extend(backends)
 pylabtools.backends.update(backends)
 
 # Add default lines
+# WARNING: %autoreload complete (3) has issues as of ipython 8.14.0 (2023-08-27) so
+# stick to older more limited version %autoreload all (2). Should submit bug report.
 # See: https://ipython.readthedocs.io/en/8.0.0/whatsnew/version8.html#autoreload-3-feature
 lines = """
 %load_ext autoreload
-%autoreload 3
+%autoreload complete
+# %autoreload all
 import os
 import re
 import sys

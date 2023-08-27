@@ -3,6 +3,8 @@
 # Use pip for cf_units since mamba cf_units outdated python requirements
 # NOTE: Can install only python and fortran servers with mamba. Use LSP interface for
 # bash-language-server and julia-language-server. Use native system 'clangd' for C++.
+# NOTE: Try not to confuse 'mamba install python-language-server' (pyls) with
+# 'mamba install python-lsp-server' (pylsp). Latter permits definition jumping.
 # NOTE: Recent xarray version has multi-index issues so use
 # an older version. See: https://github.com/pydata/xarray/issues/7695
 # NOTE: Should use rm -r ~/.julia/registries to fix install issues e.g. due to
