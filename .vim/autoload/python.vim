@@ -81,7 +81,7 @@ endfunction
 " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
 " bug where if opening bracket is immediately followed by newline, then 'inner'
 " bracket range incorrectly sets the closing bracket column position to '1'.
-function! python#kw_to_dict(invert, ...) abort range
+function! python#dict_to_kw(invert, ...) abort range
   let winview = winsaveview()
   let lines = []
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
@@ -107,13 +107,13 @@ function! python#kw_to_dict(invert, ...) abort range
       echohl None
     endif
     if a:invert  " dictionary to kwargs
-      let line = substitute(line, '\>[''"]\ze\s*:', '', 'g')  " remove trailing quote first
-      let line = substitute(line, '[''"]\<\ze\w\+\s*:', '', 'g')
-      let line = substitute(line, '\s*:\s*', '=', 'g')
-    else
       let line = substitute(line, '\<\ze\w\+\s*=', "'", 'g')  " add leading quote first
       let line = substitute(line, '\>\ze\s*=', "'", 'g')
       let line = substitute(line, '\s*=\s*', ': ', 'g')
+    else
+      let line = substitute(line, '\>[''"]\ze\s*:', '', 'g')  " remove trailing quote first
+      let line = substitute(line, '[''"]\<\ze\w\+\s*:', '', 'g')
+      let line = substitute(line, '\s*:\s*', '=', 'g')
     endif
     call add(lines, prefix . line . suffix)
   endfor
@@ -123,6 +123,6 @@ function! python#kw_to_dict(invert, ...) abort range
   call cursor(firstline, firstcol)
 endfunction
 " For <expr> map accepting motion
-function! python#kw_to_dict_expr(invert) abort
-  return utils#motion_func('python#kw_to_dict', [a:invert, mode()])
+function! python#dict_to_kw_expr(invert) abort
+  return utils#motion_func('python#dict_to_kw', [a:invert, mode()])
 endfunction
