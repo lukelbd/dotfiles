@@ -110,7 +110,8 @@ _prompt_dirs() {  # show full dirs path from base to current instead of just cur
   IFS=$'\n' read -d '' -r -a paths < <(command dirs -p | tac)
   IFS=: eval 'echo "${paths[*]##*/}"'
 }
-[ -n "$_prompt_set" ] || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
+[ -n "$_prompt_set" ] \
+  || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 _prompt_set=1
 
 # Readline/inputrc settings
@@ -336,8 +337,9 @@ case "${HOSTNAME%%.*}" in
   cheyenne*)
     # Add modules and paths and set tmpdir following direction of:
     # https://www2.cisl.ucar.edu/user-support/storing-temporary-files-tmpdir
+    INTEL=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib
     export TMPDIR=/glade/scratch/$USER/tmp
-    export LD_LIBRARY_PATH=/glade/u/apps/ch/opt/netcdf/4.6.1/intel/17.0.1/lib:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$INTEL:$LD_LIBRARY_PATH
     _load_unloaded netcdf tmux intel impi  # cdo and nco via conda
     ;;
 
@@ -352,7 +354,7 @@ case "${HOSTNAME%%.*}" in
     ;;
 
   *)
-    echo "Warning: Host '$HOSTNAME' does not have custom settings. You may want to edit your .bashrc."
+    echo "Warning: Host '$HOSTNAME' does not have any custom bashrc settings."
     ;;
 esac
 
@@ -453,11 +455,11 @@ kinds-all() { ctags --list-kinds-full="$*"; }  # list language shortcuts
 if $_macos; then
   alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"  # see https://apple.stackexchange.com/a/352770/214359
   alias hardware='sw_vers'  # see https://apple.stackexchange.com/a/255553/214359
-  alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
+  alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 else  # shellcheck disable=2142
   alias cores="cat /proc/cpuinfo | awk '/^processor/{print \$3}' | wc -l"
   alias hardware="cat /etc/*-release"  # print operating system info
-  alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v 'do-lowercase-version' | sort"  # print keybindings
+  alias bindings="bind -ps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 fi
 alias inputrc_ops='bind -v'    # the 'set' options, and their values
 alias inputrc_funcs='bind -l'  # the functions, for example 'forward-char'
@@ -501,13 +503,15 @@ dl() {
   local dir='.'
   [ $# -gt 1 ] && echo "Too many directories." && return 1
   [ $# -eq 1 ] && dir="$1"
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -print | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -print \
+    | sed 's|^\./||' | sed 's| |\\ |g' | _columnize
 }
 dh() {
   local dir='.'
   [ $# -gt 1 ] && echo "Too many directories." && return 1
   [ $# -eq 1 ] && dir="$1";  # shellcheck disable=2033
-  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; | sort -sh
+  find "$dir" -maxdepth 1 -mindepth 1 -type d -exec du -hs {} \; \
+    | sort -sh
 }
 
 # Save a log of directory space to home directory
@@ -550,7 +554,11 @@ tos() {  # table of shell processes (similar to 'top')
 # Killing jobs and supercomputer stuff
  # NOTE: Any background processes started by scripts are not included in pskill!
 alias qrm='rm ~/*.[oe][0-9][0-9][0-9]* ~/.qcmd*'  # remove (empty) job logs
-alias qls="qstat -f -w | grep -v '^[[:space:]]*[A-IK-Z]' | grep -E '^[[:space:]]*$|^[[:space:]]*[jJ]ob|^[[:space:]]*resources|^[[:space:]]*queue|^[[:space:]]*[mqs]time' | less"
+qls() {
+  qstat -f -w \
+    | grep -v '^\s*[A-IK-Z]' \
+    | grep -E '^\s*$|^\s*[jJ]ob|^\s*resources|^\s*queue|^\s*[mqs]time'
+}
 qkill() {  # kill PBS processes at once, useful when debugging and submitting teeny jobs
   local proc
   for proc in $(qstat | tail -n +3 | cut -d' ' -f1 | cut -d. -f1); do  # start at line 3
@@ -559,7 +567,8 @@ qkill() {  # kill PBS processes at once, useful when debugging and submitting te
   done
 }
 jkill() {  # background jobs by percent sign
-  local count=$(jobs | wc -l | xargs)
+  local count
+  count=$(jobs | wc -l | xargs)
   for i in $(seq 1 "$count"); do
     echo "Killing job $i..."
     eval "kill %$i"
@@ -567,7 +576,7 @@ jkill() {  # background jobs by percent sign
 }
 pskill() {  # jobs by ps name
   local strs
-  $_macos && echo "Error: macOS ps lists not just processes started in this shell." && return 1
+  $_macos && echo "Error: Mac ps does not list only shell processes." && return 1
   [ $# -ne 0 ] && strs=("$@") || strs=(all)
   for str in "${strs[@]}"; do
     echo "Killing $str jobs..."
@@ -655,7 +664,7 @@ empty() {
   local contents
   [ -d "$1" ] || return 0  # does not exist, so empty
   read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
-  if [ ${#contents[@]} -eq 0 ] || [ ${#contents[@]} -eq 1 ] && [ "${contents##*/}" == .DS_Store ]; then
+  if [ ${#contents[@]} -lt 2 ] && [ "${contents##*/}" == .DS_Store ]; then
     return 0  # this can happen even if you delete all files
   else
     return 1  # non-empty
@@ -718,7 +727,7 @@ git() {
     for i in $(seq 2 $#); do
       local arg1=${*:$i:1} arg2=${*:$((i+1)):1}
       if [ "$arg1" == '-m' ] && [ "${#arg2}" -gt 50 ]; then
-        echo "Error: Commit message has length ${#arg2}. Must be less than or equal to 50."
+        echo "Error: Message has length ${#arg2}. Must be less than or equal to 50."
         return 1
       fi
     done
@@ -880,10 +889,12 @@ ignores() {
 # way to include extensionless executables. Note when trying to skip hidden files,
 # grep --exclude=.* will skip current directory (so require subsequent character [^.])
 # and if dotglob is unset then 'find' cannot match hidden files with [.]* (so use .*)
-alias ag='ag --path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden'  # see also .vimrc, .ignore
-alias a1='ag --path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden --depth 0'  # see also 'd1'
-alias rg='rg --ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden'  # see also .vimrc, .ignore
-alias r1='rg --ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden --max-depth 1'  # see also 'd1'
+_ignore_ag='--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore'
+_ignore_rg='--ignore-file ~/.ignore --ignore-file ~/.wildignore'
+alias ag="ag $_ignore_ag --skip-vcs-ignores --hidden"  # see also .vimrc, .ignore
+alias rg="rg $_ignore_rg --no-ignore-vcs --hidden"  # see also .vimrc, .ignore
+alias a1="ag $_ignore_ag --skip-vcs-ignores --hidden --depth 0"  # see also 'd1'
+alias r1="rg $_ignore_rg --no-ignore-vcs --hidden --max-depth 1"  # see also 'd1'
 _grep() {
   local commands exclude include
   include="$1"
@@ -961,7 +972,7 @@ dd() {  # directory modification time differences
   dir2=${2%/}
   for dir in "$dir1" "$dir2"; do
     echo "Directory: $dir"
-    ! [ -d "$dir" ] && echo "Error: $dir does not exist or is not a directory." && return 1
+    ! [ -d "$dir" ] && echo "Error: $dir is not an existing directory." && return 1
     files+=$'\n'$( \
       find "$dir" -mindepth 1 \( \
       -path '*.vimsession' -o -path '*.git' -o -path '*.svn' -o -path '*.sw[a-z]' \
@@ -995,11 +1006,11 @@ dd() {  # directory modification time differences
 # See this answer: https://stackoverflow.com/a/9123563/4970632
 merge() {
   [ $# -ne 2 ] && echo "Usage: merge FILE1 FILE2" && return 1
-  [[ ! -r $1 || ! -r $2 ]] && echo "Error: One of the files is not readable." && return 1
+  [[ ! -r $1 || ! -r $2 ]] && echo "Error: File(s) are not readable." && return 1
   local ext out  # no extension
   if [[ "${1##*/}" =~ \. || "${2##*/}" =~ \. ]]; then
-    [ "${1##*.}" != "${2##*.}" ] && echo "Error: Files must have same extension." && return 1
-    local ext=.${1##*.}
+    [ "${1##*.}" != "${2##*.}" ] && echo "Error: Files need same extension." && return 1
+    ext=.${1##*.}
   fi
   out=merge$ext
   touch "tmp$ext"  # use empty file as the 'root' of the merge
@@ -1023,7 +1034,7 @@ refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
   [ $# -eq 2 ] \
-    || { echo 'Error: refactor() requires search pattern and replace pattern.'; return 1; }
+    || { echo 'Error: refactor() requires two input argument.'; return 1; }
   result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
     || { echo "Error: Search $1 to $2 failed."; return 1; }
   readarray -t files < <(echo "$result"$'\nEOF' | \
@@ -1042,11 +1053,11 @@ refactor() {
 #-----------------------------------------------------------------------------
 # Remote session utilities
 #-----------------------------------------------------------------------------
-# Shortcuts for queue
-alias suser='squeue -u $USER'
-alias sjobs='squeue -u $USER | tail -1 | tr -s " " | cut -s -d" " -f2 | tr -d "[:alpha:]"'
+# Supercomputer queue utilities
+alias suser="squeue -u \$USER"
+alias sjobs="squeue -u \$USER | tail -1 | tr -s ' ' | cut -s -d' ' -f2 | tr -d a-z"
 
-# See current ssh connections
+# Current ssh connection viewing
 alias connections="ps aux | grep -v grep | grep 'ssh '"
 SSH_ENV="$HOME/.ssh/environment"  # for below
 
@@ -1119,7 +1130,7 @@ address() {
   if ! $_macos; then
     command ip route get 1 | awk '{print $NF; exit}'
   else
-    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}' 
+    ifconfig | grep "inet " | grep -Fv 127.0.0.1 | awk '{print $2}'
   fi
 }
 
@@ -1167,7 +1178,7 @@ _ssh() {
 # port numbers. This function can be called on macbook or on remote server.
 # ssh -f (port-forwarding in background) -N (don't issue command)
 ssh-refresh() {
-  local host port ports address stat flags cmd
+  local host port ports address stat flags linux cmd
   $_macos && [ $# -eq 0 ] && echo "Error: Must input host." && return 1
   $_macos && host=$1 && shift
   [ $# -gt 0 ] && echo "Error: Too many arguments." && return 1
@@ -1178,10 +1189,11 @@ ssh-refresh() {
     flags+=" -L localhost:$port:localhost:$port"
   done
   cmd="command ssh -v -t -N -f $flags $address &>/dev/null; echo \$?"
+  linux=(-o StrictHostKeyChecking=no -p "${ports[0]}")
   if $_macos; then
     stat=$(eval "$cmd")
   else
-    stat=$(command ssh -o StrictHostKeyChecking=no -p "${ports[0]}" "$USER@localhost" "$cmd")
+    stat=$(command ssh "${linux[@]}" "$USER@localhost" "$cmd")
   fi
   echo "Exit status $stat for connection over ports: ${ports[*]:1}."
 }
@@ -1192,13 +1204,15 @@ ssh-refresh() {
 # See: https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/#platform-linux
 # For AUTH_SOCK see: https://unix.stackexchange.com/a/90869/112647
 ssh-init() {
-  if [ -f "$HOME/.ssh/id_rsa_github" ]; then
+  local path
+  path=$HOME/.ssh/id_rsa_github
+  if [ -f "$path" ]; then
     command ssh-agent | sed 's/^echo/#echo/' >"$SSH_ENV"
     chmod 600 "$SSH_ENV"
     source "$SSH_ENV" >/dev/null
-    command ssh-add "$HOME/.ssh/id_rsa_github" &>/dev/null  # add Github private key; assumes public key has been added to profile
+    command ssh-add "$path" &>/dev/null  # add Github private key; assumes public key has been added to profile
   else
-    echo "Warning: Github private SSH key \"$HOME/.ssh/id_rsa_github\" is not available." && return 1
+    echo "Warning: Github private SSH key '$path' is not available." && return 1
   fi
 }
 
@@ -1223,10 +1237,10 @@ kill-agent() {
   pkill aux ssh-agent  # simply kill processes matching ssh-agent
 }
 kill-port() {
-  local pids port=$1
+  local processes pids port=$1
   [ $# -ne 1 ] && echo "Usage: disconnect PORT" && return 1
-  # lsof -t -i tcp:$port | xargs kill  # this can kill chrome instances
-  pids=$(lsof -i "tcp:$port" | grep ssh | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
+  processes=$(lsof -i "tcp:$port" | grep ssh)
+  pids=$(echo "$processes" | sed "s/^[ \t]*//" | tr -s ' ' | cut -d' ' -f2 | xargs)
   [ -z "$pids" ] && echo "Error: Connection over port \"$port\" not found." && return 1
   echo "$pids" | xargs kill  # kill the ssh processes
   echo "Processes $pids killed. Connections over port $port removed."
@@ -1256,9 +1270,13 @@ _scp_bulk() {
     if [[ "$1" =~ ^\- ]]; then
       flags+=("$1")  # flag arguments must be specified with equals
     elif [ -z "$forward" ]; then
-      forward=$1; [[ "$forward" =~ ^[01]$ ]] || { echo "Error: Invalid forward $forward."; return 1; }
+      forward=$1; [[ "$forward" =~ ^[01]$ ]] || {
+        echo "Error: Invalid forward address $forward."; return 1
+      }
     elif [ $remote -eq 0 ] && [ -z "$address" ]; then
-      address=$(_address "$1") || { echo "Error: Invalid address $1."; return 1; }
+      address=$(_address "$1") || {
+        echo "Error: Invalid remote address $1."; return 1
+      }
     else
       paths+=("$1")  # the source and destination paths
     fi
@@ -1266,11 +1284,14 @@ _scp_bulk() {
   done
   if [ "$remote" -eq 1 ]; then  # handle ssh tunnel
     address=$USER@localhost  # use port tunnel for copying on remote server
-    port=$(_port) || { echo 'Error: Port unknown.'; return 1; }
+    port=$(_port) || { echo "Error: Port unknown."; return 1; }
     flags+=(-e "ssh -o StrictHostKeyChecking=no -p $port")
   fi
   # Sanitize paths and execute
-  [ ${#paths[@]} -lt 2 ] && echo "Usage: _scp_bulk [FLAGS] SOURCE_PATH1 [SOURCE_PATH2 ...] DEST_PATH" && return 1
+  [ ${#paths[@]} -lt 2 ] && {
+    echo "Usage: _scp_bulk [FLAGS] SOURCE_PATH1 [SOURCE_PATH2 ...] DEST_PATH"
+    return 1
+  }
   paths=("${paths[@]/#/$address:}")  # prepend with address: then possibly remove below
   srcs=("${paths[@]::${#paths[@]}-1}")  # source paths
   dest=${paths[${#paths[@]}-1]}  # destination path
@@ -1305,9 +1326,9 @@ lrcp() {
 }
 figcp() {
   local flags forward address path
-  flags=(--include='fig*/***' --include='vid*/***' --include='meet*/***' --exclude='*' --exclude='.*')
   $_macos && forward=1 || forward=0
-  [ $# -eq $forward ] || { echo "Error: Expected $forward arguments but got $#."; return 1; }
+  flags=(--include={fig,vid,meet}'*/***' --exclude={,.}'*')
+  [ $# -eq $forward ] || { echo "Error: Expected argument count $#."; return 1; }
   path=$(git rev-parse --show-toplevel)/  # assumes identical paths (note trailing slash is critical)
   _scp_bulk "${flags[@]}" "$forward" $@ "$path" "$path"  # address may expand to nothing
 }
@@ -1335,12 +1356,6 @@ alias ipython-proplot='ipython --profile=proplot'
 alias jupyter-climopy='jupyter console --kernel=python3-climopy'
 alias jupyter-proplot='jupyter console --kernel=python3-proplot'
 
-# Matlab and julia
-# For matlab just load the startup script and skip the gui stuff
-# For julia include paths in current directory and auto update modules
-alias matlab="matlab -nodesktop -nosplash -r \"run('~/matfuncs/init.m')\""
-alias julia="command julia -e 'push!(LOAD_PATH, \"./\"); using Revise' -i -q --color=yes"
-
 # R utilities
 # Note using --slave or --interactive makes quiting impossible. And ---always-readline
 # prevents prompt from switching to default prompt but disables ctrl-d from exiting.
@@ -1357,6 +1372,14 @@ if [ -n "$_ncl_dyld" ]; then
 else
   alias ncl='ncl -Q -n'
 fi
+
+# Julia and matlab
+# For matlab just load the startup script and skip the gui stuff
+# For julia include paths in current directory and auto update modules
+_julia_start='push!(LOAD_PATH, "./"); using Revise'
+_matlab_start='run("~/matfuncs/init.m")'
+alias matlab="matlab -nodesktop -nosplash -r '$_matlab_start'"
+alias julia="command julia -e '$_julia_start' -i -q --color=yes"
 
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
@@ -1478,29 +1501,22 @@ jupyter-kernel() {
   done
 }
 
-# Change JupyterLab name as it will appear in tab or browser title
-jupyter-name() {
-  [ $# -eq 0 ] && echo "Error: Argument(s) required." && return 1
-  jupyter lab build --name="$*"
-}
-
-# Servers
+# Professional website server
 # Use 'brew install ruby-bundler nodejs' then 'bundle install' first
 # See README.md in website directory
-# Ignore standard error because of annoying deprecation warnings; see:
+# NOTE: CSS variables are in _sass/_variables. Below does live updates (watch)
+# and incrementally builds website (incremental) as files are edited.
+# Ignore standard error because of annoying deprecation warnings:
 # https://github.com/academicpages/academicpages.github.io/issues/54
-# A template idea:
+# Website template idea:
 # http://briancaffey.github.io/2016/03/14/ipynb-with-jekyll.html
 # Another template idea:
 # http://www.leeclemmer.com/2017/07/04/how-to-publish-jupyter-notebooks-to-your-jekyll-static-website.html
 # For fixing tiny font size in code cells see:
 # http://purplediane.github.io/jekyll/2016/04/10/syntax-hightlighting-in-jekyll.html
-# Note CSS variables are in _sass/_variables
-# Below does live updates (watch) and incrementally builds website (incremental)
-# alias server="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
-# Use 2>/dev/null to ignore deprecation warnings
+_jekyll_flags="--incremental --watch --config '_config.yml,_config.dev.yml'"
 alias server="python -m http.server"
-alias jekyll="bundle exec jekyll serve --incremental --watch --config '_config.yml,_config.dev.yml' 2>/dev/null"
+alias jekyll="bundle exec jekyll serve $_jekyll_flags 2>/dev/null"  # ignore deprecations
 
 #-----------------------------------------------------------------------------
 # Dataset utilities
@@ -1589,7 +1605,7 @@ ncversion() {
 
 # General summaries
 ncinfo() {
-  # show just the variable info (and linebreak before global attributes)
+  # Show just the variable info (and linebreak before global attributes)
   # command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
   local file
   [ $# -lt 1 ] && echo "Usage: ncinfo FILE" && return 1
@@ -1599,7 +1615,7 @@ ncinfo() {
   done
 }
 ncdims() {
-  # show just the dimension header
+  # Show just the dimension header.
   local file
   [ $# -lt 1 ] && echo "Usage: ncdims FILE" && return 1
   for file in "$@"; do
@@ -1610,9 +1626,9 @@ ncdims() {
   done
 }
 ncvars() {
-  # the space makes sure it isn't another variable that has trailing-substring
-  # identical to this variable, -A prints TRAILING lines starting from FIRST match,
-  # -B means prinx x PRECEDING lines starting from LAST match
+  # Space makes sure it isn't another variable that has trailing-substring identical
+  # to this variable, -A prints TRAILING lines starting from FIRST match, -B means
+  # prinx x PRECEDING lines starting from LAST match.
   local file
   [ $# -lt 1 ] && echo "Usage: ncvars FILE" && return 1
   for file in "$@"; do
@@ -1622,7 +1638,7 @@ ncvars() {
   done
 }
 ncglobals() {
-  # show just the global attributes
+  # Show just the global attributes.
   local file
   [ $# -lt 1 ] && echo "Usage: ncglobals FILE" && return 1
   for file in "$@"; do
@@ -1633,19 +1649,20 @@ ncglobals() {
 
 # Listing stuff
 nclist() {
-  # only get text between variables: and linebreak before global attributes
-  # note variables don't always have dimensions! (i.e. constants) -- in this case
-  # looks like " double var ;" instead of " double var(x,y) ;"
+  # Only get text between variables: and linebreak before global attributes
+  # note variables don't always have dimensions (i.e. constants). For constants
+  # will look like " double var ;" instead of " double var(x,y) ;"
   local file
   [ $# -lt 1 ] && echo "Usage: nclist FILE" && return 1
   for file in "$@"; do
     echo "File: $file"
-    command ncdump -h "$file" | sed -n '/variables:/,$p' | sed '/^$/q' | grep -v '[:=]' \
-      | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
+    command ncdump -h "$file" | sed -n '/variables:/,$p' | sed '/^$/q' \
+      | grep -v '[:=]' | cut -d';' -f1 | cut -d'(' -f1 | sed 's/ *$//g;s/.* //g' \
+      | xargs | tr ' ' '\n' | grep -v '[{}]' | sort
   done
 }
 ncdimlist() {
-  # get list of dimensions
+  # Get list of dimensions.
   local file
   [ $# -lt 1 ] && echo "Usage: ncdimlist FILE" && return 1
   for file in "$@"; do
@@ -1655,7 +1672,7 @@ ncdimlist() {
   done
 }
 ncvarlist() {
-  # only get text between variables: and linebreak before global attributes
+  # Only get text between variables: and linebreak before global attributes.
   local file list dmnlist varlist
   [ $# -lt 1 ] && echo "Usage: ncvarlist FILE" && return 1
   for file in "$@"; do
@@ -1672,10 +1689,11 @@ ncvarlist() {
 
 # Inquiries about specific variables
 ncvarinfo() {
-  # as above but just for one variable (for the official CDL data types see
-  # https://docs.unidata.ucar.edu/nug/current/_c_d_l.html#cdl_data_types)
+  # As above but just for one variable.
+  # See: https://docs.unidata.ucar.edu/nug/current/_c_d_l.html#cdl_data_types).
+  # See: https://docs.unidata.ucar.edu/nug/current/md_types.html
   local file types
-  types='(char|byte|short|int|long|float|real|double)'
+  types='(char|byte|short|ushort|int|uint|long|int64|uint64|float|real|double)'
   [ $# -lt 2 ] && echo "Usage: ncvarinfo VAR FILE" && return 1
   for file in "${@:2}"; do
     echo "File: $file"
@@ -1685,7 +1703,7 @@ ncvarinfo() {
   done
 }
 ncvardump() {
-  # dump variable contents (first argument) from file (second argument), using grep
+  # Dump variable contents (first argument) from file (second argument), using grep
   # to print everything before the variable data section starts, then using sed to
   # trim the first curly brace line and re-reversing.
   local file
@@ -1698,9 +1716,9 @@ ncvardump() {
   done
 }
 ncvartable() {
-  # print a summary table of the data at each level for "sanity checking"
+  # Print a summary table of the data at each level for "sanity checking"
   # just tests one timestep slice at every level; the tr -s ' ' trims multiple
-  # whitespace to single and the column command re-aligns columns after filtering
+  # whitespace to single and the column command re-aligns columns after filtering.
   local file
   [ $# -lt 2 ] && echo "Usage: ncvartable VAR FILE" && return 1
   for file in "${@:2}"; do
@@ -1710,8 +1728,7 @@ ncvartable() {
   done
 }
 ncvardetails() {
-  # as above but show everything
-  # note we show every column instead of hiding stuff
+  # As above but show everything. Note we show every column instead of hiding stuff.
   local file
   [ $# -lt 2 ] && echo "Usage: ncvardetails VAR FILE" && return 1
   for file in "${@:2}"; do
@@ -1741,31 +1758,40 @@ pdf2text() {  # extracting text (including appropriate newlines, etc.) from file
 }
 gif2png() {  # often needed because LaTeX can't read gif files
   for f in "$@"; do
-    ! [[ "$f" =~ .gif$ ]] && echo "Warning: Skipping ${f##*/} (must be .gif)" && continue
+    ! [[ "$f" =~ .gif$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .gif)" && continue
     echo "Converting ${f##*/}..."
     convert "$f" "${f%.gif}.png"
   done
 }
 pdf2png() {
   for f in "$@"; do
-    ! [[ "$f" =~ .pdf$ ]] && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
+    ! [[ "$f" =~ .pdf$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
     echo "Converting ${f##*/}..."
-    convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
+    convert -flatten \
+      -units PixelsPerInch -density 1200 -background white "$f" "${f%.pdf}.png"
   done
 }
 svg2png() {
   # See: https://stackoverflow.com/a/50300526/4970632 (python is faster and convert 'dpi' is ignored)
   for f in "$@"; do
-    ! [[ "$f" =~ .svg$ ]] && echo "Warning: Skipping ${f##*/} (must be .svg)" && continue
+    ! [[ "$f" =~ .svg$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .svg)" && continue
     echo "Converting ${f##*/}..."
-    python -c "import cairosvg; cairosvg.svg2png(url='$f', write_to='${f%.svg}.png', scale=3, background_color='white')"
+    python -c "
+      import cairosvg
+      cairosvg.svg2png(
+        url='$f', write_to='${f%.svg}.png', scale=3, background_color='white'
+      )"
     # && convert -flatten -units PixelsPerInch -density 1200 -background white "$f" "${f%.svg}.png"
   done
 }
 webm2mp4() {
   for f in "$@"; do
     # See: https://stackoverflow.com/a/49379904/4970632
-    ! [[ "$f" =~ .webm$ ]] && echo "Warning: Skipping ${f##*/} (must be .webm)" && continue
+    ! [[ "$f" =~ .webm$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .webm)" && continue
     echo "Converting ${f##*/}..."
     ffmpeg -i "$f" -crf 18 -c:v libx264 "${f%.webm}.mp4"
   done
@@ -1781,16 +1807,20 @@ pdf2flat() {
   # convert "$f" "${f}_flat.pdf"
   # pdftk "$f" output "${f}_flat.pdf" flatten
   for f in "$@"; do
-    ! [[ "$f" =~ .pdf$ ]] && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
-    [[ "$f" =~ _flat ]] && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
+    ! [[ "$f" =~ .pdf$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .pdf)" && continue
+    [[ "$f" =~ _flat ]] \
+      && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
     echo "Converting $f..." && pdf2ps "$f" - | ps2pdf - "${f%.pdf}_flat.pdf"
   done
 }
 png2flat() {
   # See: https://stackoverflow.com/questions/46467523/how-to-change-picture-background-color-using-imagemagick
   for f in "$@"; do
-    ! [[ "$f" =~ .png$ ]] && echo "Warning: Skipping ${f##*/} (must be .png)" && continue
-    [[ "$f" =~ _flat ]] && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
+    ! [[ "$f" =~ .png$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .png)" && continue
+    [[ "$f" =~ _flat ]] \
+      && echo "Warning: Skipping ${f##*/} (has 'flat' in name)" && continue
     convert "$f" -opaque white -flatten "${f%.png}_flat.png"
   done
 }
@@ -1809,26 +1839,35 @@ pdfmerge() {
 # Requires brew install fontforge
 otf2ttf() {
   for f in "$@"; do
-    ! [[ "$f" =~ .otf$ ]] && echo "Warning: Skipping ${f##*/} (must be .otf)" && continue
+    ! [[ "$f" =~ .otf$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .otf)" && continue
     echo "Converting ${f##*/}..."
-    fontforge -c \
-      "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
-      "${f%.*}.otf" "${f%.*}.ttf"
+    fontforge -c "
+      import fontforge
+      from sys import argv
+      f = fontforge.open(argv[1])
+      f.generate(argv[2])
+    " "${f%.*}.otf" "${f%.*}.ttf"
   done
 }
 ttf2otf() {
   for f in "$@"; do
-    ! [[ "$f" =~ .ttf$ ]] && echo "Warning: Skipping ${f##*/} (must be .ttf)" && continue
-    fontforge -c \
-      "import fontforge; from sys import argv; f = fontforge.open(argv[1]); f.generate(argv[2])" \
-      "${f%.*}.ttf" "${f%.*}.otf"
+    ! [[ "$f" =~ .ttf$ ]] \
+      && echo "Warning: Skipping ${f##*/} (must be .ttf)" && continue
+    fontforge -c "
+      import fontforge
+      from sys import argv
+      f = fontforge.open(argv[1])
+      f.generate(argv[2])
+    " "${f%.*}.ttf" "${f%.*}.otf"
   done
 }
 
 # Rudimentary wordcount with detex
 # The -e flag ignores certain environments (e.g. abstract environment)
 wctex() {
-  local detexed=$( \
+  local detexed
+  detexed=$( \
     detex -e 'abstract,addendum,tabular,align,equation,align*,equation*' "$1" \
     | grep -v .pdf | grep -v 'fig[0-9]' \
   )
@@ -1863,7 +1902,8 @@ if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
       for file in "${files[@]}"; do
         if [ "${file##*.}" == pdf ]; then
           tmp=./tmp.${file%.*}.png  # convert to png
-          convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$tmp"
+          convert -flatten \
+            -units PixelsPerInch -density 300 -background white "$file" "$tmp"
         else
           tmp=./tmp.${file}
           convert -flatten "$file" "$tmp"
@@ -1891,7 +1931,7 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   _fzf_opts=" \
     --ansi --color=bg:-1,bg+:-1 --layout=default \
     --exit-0 --inline-info --height=6 \
-    --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up \
+    --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up\
   "  # critical to export so used by vim
 
   # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
@@ -1909,7 +1949,8 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # NOTE: To make completion trigger a single tab must set to literal empty
   # string rather than leaving the variable unset (or else it uses default).
   export FZF_DEFAULT_OPTS=$_fzf_opts
-  export FZF_DEFAULT_COMMAND="set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
+  export FZF_DEFAULT_COMMAND=" \
+    set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
     -type f -print -o -type l -print 2>/dev/null | cut -b3- \
   "
   # shellcheck disable=2034
@@ -1918,16 +1959,20 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
     FZF_COMPLETION_OPTS=$_fzf_opts
     FZF_CTRL_T_OPTS=$_fzf_opts
     FZF_ALT_C_OPTS=$_fzf_opts
-    FZF_ALT_C_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+    FZF_ALT_C_COMMAND=" \
+      command find -L . -mindepth 1 $_fzf_ignore \
       -type d -print 2>/dev/null | cut -b3- \
     "  # recursively search directories and cd into them
-    FZF_CTRL_T_COMMAND="command find -L . -mindepth 1 $_fzf_ignore \
+    FZF_CTRL_T_COMMAND=" \
+      command find -L . -mindepth 1 $_fzf_ignore \
       \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
     "  # recursively search files
-    FZF_COMPGEN_DIR_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+    FZF_COMPGEN_DIR_COMMAND=" \
+      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
       -type d -print 2>/dev/null | sed 's@^.*/@@' \
     "  # complete directories with tab
-    FZF_COMPGEN_PATH_COMMAND="command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+    FZF_COMPGEN_PATH_COMMAND=" \
+      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
       \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
     "  # complete paths with tab
   }
@@ -1979,13 +2024,16 @@ mamba-avail() {
   [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
   echo "Package:            $1"
   version=$(mamba list "^$1$" 2>/dev/null)
-  [[ "$version" =~ "$1" ]] \
-    && version=$(echo "$version" | grep "$1" | awk 'NR == 1 {print $2}') \
-    || version="N/A"  # get N/A if not installed
+  [[ "$version" =~ "$1" ]] && version=$( \
+    echo "$version" | grep "$1" | awk 'NR == 1 {print $2}' \
+  ) || version="N/A"  # get N/A if not installed
   echo "Current version:    $version"
-  versions=$(mamba search -c conda-forge "$1" 2>/dev/null) \
-    || { echo "Error: Package \"$1\" not found."; return 1; }
-  versions=$(echo "$versions" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | sort | xargs)
+  versions=$( \
+    mamba search -c conda-forge "$1" 2>/dev/null \
+  ) || { echo "Error: Package \"$1\" not found."; return 1; }
+  versions=$( \
+    echo "$versions" | grep "$1" | awk '!seen[$2]++ {print $2}' | tac | sort | xargs \
+  )
   echo "Available versions: $versions"
 }
 
@@ -2056,7 +2104,9 @@ fi
 #-----------------------------------------------------------------------------
 # Safely add a prompt command
 _prompt() {  # input argument should be new command
-  export PROMPT_COMMAND=$(echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g')
+  export PROMPT_COMMAND=$( \
+    echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g' \
+  )
 }
 
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762

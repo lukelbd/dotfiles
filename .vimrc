@@ -486,8 +486,8 @@ noremap <Leader>7 <Cmd>ColorToggle<CR>
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
-nnoremap <C-w> <Cmd>call window#close_window()<CR>
-nnoremap <C-e> <Cmd>call window#close_tab()<CR>
+nnoremap <C-w> <Cmd>call window#close_tab()<CR>
+nnoremap <C-e> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
 
 " Open file in current directory or some input directory
@@ -1790,6 +1790,7 @@ if s:plug_active('ale')
   command! -nargs=? AleToggle call switch#ale(<args>)
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
+  noremap <C-q> <Cmd>cclose<CR><Cmd>lclose<CR>
   noremap <Leader>x <Cmd>cclose<CR><Cmd>lopen<CR>
   noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>copen<CR>
   noremap <Leader>@ <Cmd>call switch#ale()<CR>
