@@ -725,7 +725,7 @@ git() {
   if [ "$#" -ge 3 ] && [ "$1" == commit ]; then
     for i in $(seq 2 $#); do
       local arg1=${*:$i:1} arg2=${*:$((i+1)):1}
-      if [ "$arg1" == '-m' ] && [ "${#arg2}" -gt 50 ]; then
+      if [ "$arg1" == '-m' ] || [ "$arg1" == '--message' ] && [ "${#arg2}" -gt 50 ]; then
         echo "Error: Message has length ${#arg2}. Must be less than or equal to 50."
         return 1
       fi
