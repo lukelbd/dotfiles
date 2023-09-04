@@ -1,0 +1,27 @@
+{
+    // Language Servers (Experimental)
+    // @jupyterlab/lsp-extension:plugin
+    // Language Server Protocol settings.
+    // **********************************
+
+    // Activate
+    // Enable or disable the language server services.
+    "activate": "on",
+
+    // Language Server
+    // Language-server specific configuration, keyed by implementation
+    "languageServers": {
+        "pylsp": {
+            "rank": 50,
+            "configuration": {}
+        }
+    },
+
+    // Log communication
+    // Enable or disable the logging feature of the language servers.
+    "logAllCommunication": false,
+
+    // Ask servers to send trace notifications
+    // Whether to ask server to send logs with execution trace (for debugging). Accepted values are: "off", "messages", "verbose". Servers are allowed to ignore this request.
+    "setTrace": "off"
+}
