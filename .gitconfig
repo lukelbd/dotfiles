@@ -85,10 +85,12 @@
 	delete     = "!git-delete \"$@\""
 	deleted    = "!git-deleted \"$@\""
 	exec       = "!exec \"$@\""
-	files      = ls-tree -r master --name-only
+	files      = ls-tree -r HEAD --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
 	long       = status --long --branch
+	ls         = ls-tree -r HEAD --name-only
+	ll         = ls-tree -r HEAD
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
 	oops       = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"

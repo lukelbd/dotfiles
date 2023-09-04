@@ -1,8 +1,4 @@
 {
-    // Code Formatter Settings
-    // @ryantam626/jupyterlab_code_formatter:settings
-    // See https://jupyterlab-code-formatter.readthedocs.io/en/latest/how-to-use.html
-    // *****************************************
     "preferences": {
         "default_formatter": {
             "python": [
@@ -10,13 +6,16 @@
                 "black"
             ],
             "R": "formatR",
+            "rust": "rustfmt",
             "c++11": "astyle"
         }
     },
-    "autopep8": {},
     "black": {
         "line_length": 88,
         "string_normalization": false
+    },
+    "yapf": {
+        "style_config": "google"
     },
     "isort": {
         "multi_line_output": 3,
@@ -32,14 +31,17 @@
         "wrap": true,
         "width_cutoff": 150
     },
+    "formatOnSave": false,
+    "cacheFormatters": false,
+    "suppressFormatterErrors": false,
     "astyle": {
         "args": []
     },
-    "yapf": {
-        "style_config": "google"
+    "ruff": {
+        "args": [
+            "--select=I"
+        ]
     },
-    "styler": {},
-    "formatOnSave": false,
-    "cacheFormatters": false,
-    "suppressFormatterErrors": false
+    "autopep8": {},
+    "styler": {}
 }

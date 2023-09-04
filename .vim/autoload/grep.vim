@@ -34,10 +34,10 @@ endfunction
 " Call Rg or Ag grep commands (see also file.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
+" let prompt = a:base > 1 ? 'Current file' : a:base > 0 ? 'File directory' : 'Working directory'
 function! grep#call_grep(grep, base, depth) abort
-  let prompt = a:base > 1 ? 'Current file' : a:base > 0 ? 'File directory' : 'Working directory'
-  let prompt = prompt . ' ' . toupper(a:grep[0]) . a:grep[1:] . ' search'
-  let prompt = prompt . ' (' . @/ . ')'  " default value
+  let prompt = fnamemodify(a:base ? @% : getcwd(), a:base == 1 ? ':h:~:.' : ':~:.')
+  let prompt = toupper(a:grep[0]) . a:grep[1:] . ' search ' . prompt . ' (' . @/ . ')'
   let search = utils#input_complete(prompt, 'grep#pattern_list', @/)
   if empty(search) | return | endif
   let func = 'grep#call_' . tolower(a:grep)
