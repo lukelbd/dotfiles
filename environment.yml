@@ -1,6 +1,8 @@
 # General packages to install.
 # Use this on new servers with mamba env update -f environment.yml
 # Use pip for cf_units since mamba cf_units outdated python requirements
+# NOTE: Jupyter Lab >= 4.0.0 ships with LSP utilities based on jupyterlab-lsp
+# extension. Try again once all highlighting bugs worked out.
 # NOTE: Can install only python and fortran servers with mamba. Use LSP interface for
 # bash-language-server and julia-language-server. Use native system 'clangd' for C++.
 # NOTE: Try not to confuse 'mamba install python-language-server' (pyls) with

@@ -1,10 +1,9 @@
 #!/bin/bash
 # shellcheck disable=1090,2181,2120,2076
 #-----------------------------------------------------------------------------
-# This file should override defaults in /etc/profile in /etc/bashrc. Check
-# out what is in the system defaults before using this and make sure your
-# $PATH is populated. To permit pulling from github use ssh-keygen -R
-# github.com and to SSH between servers use the below link:
+# This should override defaults in /etc/profile in /etc/bashrc. Check out the system
+# default setting before using this and make sure your $PATH is populated. To permit
+# pulling from github use ssh-keygen -R github.com and to SSH between servers see below:
 # https://github.blog/2023-03-23-we-updated-our-rsa-ssh-host-key/
 # https://thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
 # * To see what is available for package/environment managers, possibly ignoring
@@ -1266,6 +1265,7 @@ _scp_bulk() {
   # always track which files are deleted and manually update both dirs... or use git.
   flags=(-vhi -rlpt --update --progress)  # default flags
   $_macos && remote=0 || remote=1  # whether on remote
+  echo "Args: ${*}"
   while [ $# -gt 0 ]; do
     if [[ "$1" =~ ^\- ]]; then
       flags+=("$1")  # flag arguments must be specified with equals
