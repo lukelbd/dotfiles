@@ -26,7 +26,8 @@ __pycache__
 
 # Jupyter and ipython
 # Do not copy ipython profile history and internal directories
-# Do not copy jupyter lab workspace records or interface settings
+# Do not copy jupyter lab workspace logs or interface/toolbar settings
+# Note from application-extension and below are jupyterlab 4.0+ only
 # See: https://stackoverflow.com/q/65776556/4970632
 .jupyter/*
 .ipython/*
@@ -48,3 +49,9 @@ workspaces
 apputils-extension
 statusbar-extension
 extensionmanager-extension
+application-extension
+cell-toolbar-extension
+filebrowser-extension
+htmlviewer-extension
+notebook-extension
+csvviewer-extension
