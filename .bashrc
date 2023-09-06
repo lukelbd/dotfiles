@@ -882,7 +882,7 @@ ignores() {
 # NOTE: Currently silver searcher does not respect global '~/.ignore' folder in $HOME
 # so use override. See: https://github.com/ggreer/the_silver_searcher/issues/1097
 # NOTE: Exclude list should be kept in sync with '.ignore' for ripgrep 'rg' and silver
-# searcher 'ag'. Should install with 'brew install the_silver_searcher ripgrep'. Also
+# searcher 'ag'. Should install with 'mamba install the_silver_searcher ripgrep'. Also
 # note that directories are only excluded if they are *not below* current directory.
 # NOTE: Include list should be kept in sync with 'dircolors.ansi'. Seems 'grep' has no
 # way to include extensionless executables. Note when trying to skip hidden files,
