@@ -19,6 +19,7 @@ function! s:parse_paths(prompt, level, ...)
     let paths = [tag#find_root(@%)]
   endif
   let paths = map(paths, "fnamemodify(v:val, ':~:.')")
+  let paths = map(paths, "exists('*RelativePath') ? RelativePath(v:val) : v:val")
   let paths = map(paths, "!a:prompt && getcwd() ==# expand(v:val) ? './' : v:val")
   return paths
 endfunction
