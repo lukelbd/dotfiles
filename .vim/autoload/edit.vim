@@ -169,7 +169,7 @@ endfunction
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
 " Return regexes for the search
 function! s:search_item(optional)
-  let head = '^\(\s*\%(' . comment#comment_char() . '\s*\)\?\)'  " leading spaces or comment
+  let head = '^\(\s*\%(' . comment#get_char() . '\s*\)\?\)'  " leading spaces or comment
   let indicator = '\(\%([*-]\|\<\d\.\|\<\a\.\)\s\+\)'  " item indicator plus space
   let tail = '\(.*\)$'  " remainder of line
   if a:optional

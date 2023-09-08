@@ -11,22 +11,30 @@ function! s:indent_spaces() abort  " match current indent level
 endfunction
 
 " Return the comment character
-function! comment#comment_char() abort
+function! comment#get_char() abort
   let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
   let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
   return escape(string, '[]\.*$~')  " escape magic characters
 endfunction
 
+" Search and jump to project 'TODO', 'NOTE', 'ERROR', or 'FIXME' indicators
+function! comment#jump_note(bang, note, ...) abort
+  let comment = comment#get_char() . '\s\+'
+  let pattern = comment . '\<' . toupper(a:note[0]) + tolower(a:note[1:]) + ':'
+  call call('grep#call_rg', [a:bang, 0, 0] + a:000)
+endfunction
+
 " Begin comment in insert mode
-function! comment#comment_insert() abort
+function! comment#insert_char() abort
   let parts = split(&l:commentstring, '%s')
   let lefts = repeat("\<Left>", len(parts) > 1 ? len(parts[1]) + 1 : 0)
   return "\<C-g>u" . join(parts, ' ') . lefts . ' '
 endfunction
 
-" Separator of dashes matching current line length
-function! comment#section_line(fill, ...) abort
-  let cchar = comment#comment_char()
+" Separator of dashes matching current line length (no leading commentsj)
+" Note: Used mostly for python docstrings and markdown headers.
+function! comment#insert_divider(fill, ...) abort
+  let cchar = comment#get_char()
   let indent = s:indent_spaces()
   let nfill = match(getline('.'), '\s*$') - len(indent)  " location of last non-whitespace char
   call append(line('.'), indent . repeat(a:fill, nfill))
@@ -37,7 +45,7 @@ endfunction
 
 " Separators of arbitrary length
 function! comment#header_line(fill, nfill, ...) abort  " inserts above by default
-  let cchar = comment#comment_char()
+  let cchar = comment#get_char()
   let indent = s:indent_spaces()
   let nfill = (a:nfill - len(indent)) / len(a:fill)  " divide by length of fill character
   let comment = indent . cchar . repeat(a:fill, nfill) . cchar
@@ -51,7 +59,7 @@ endfunction
 
 " Inline style of format '# ---- Hello world! ---- #'
 function! comment#header_inline(ndash) abort
-  let cchar = comment#comment_char()
+  let cchar = comment#get_char()
   let indent = s:indent_spaces()
   let title = s:input_title()
   if empty(title) | return | endif
@@ -62,17 +70,17 @@ endfunction
 " Inline style of format '# Hello world! #'
 function! comment#header_incomment() abort
   let indent = s:indent_spaces()
-  let cchar = comment#comment_char()
+  let cchar = comment#get_char()
   let title = s:input_title()
   if empty(title) | return | endif
   let comment = indent . cchar . ' ' . title . ' ' . cchar
   call append(line('.'), comment)
 endfunction
 
-" Arbtirary message above this line, matching indentation level
-function! comment#comment_message(message) abort
+" Arbitrary message above this line, matching indentation level
+function! comment#header_message(message) abort
   let indent = s:indent_spaces()
-  let cchar = comment#comment_char()
+  let cchar = comment#get_char()
   let comment = indent . cchar . ' ' . a:message . ' ' . cchar
   call append(line('.') - 1, comment)
 endfunction

@@ -629,19 +629,27 @@ augroup END
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster
 " so it gets lower case: https://unix.stackexchange.com/a/524094/112647
-" nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 1, 0)<CR>
-" nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 command! -bang -nargs=+ Grep call grep#call_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
 command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=+ Rg call grep#call_ag(<bang>0, 0, 0, <f-args>)
 command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)
 command! -bang -nargs=+ Rd call grep#call_rg(<bang>0, 1, 0, <f-args>)
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 2, 0, <f-args>)
+command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
+
+" Convenience grep maps and commands
+" Note: Default pattern for maps is previous search @/
+" Note: Commands match the todo(), note(), error(), warning() functions in bashrc
+" nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 1, 0)<CR>
+" nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+command! -bang -nargs=* Note call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
+command! -bang -nargs=* Todo call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
+command! -bang -nargs=* Error call grep#call_ag(<bang>0, 0, 0, '\<error:', <f-args>)
+command! -bang -nargs=* Warning call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
@@ -831,28 +839,28 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-nnoremap <Plug>SectionSingle <Cmd>call comment#section_line('=', 0)<CR>:silent! call repeat#set("\<Plug>SectionSingle")<CR>
-nnoremap <Plug>SubsectionSingle <Cmd>call comment#section_line('-', 0)<CR>:silent! call repeat#set("\<Plug>SubsectionSingle")<CR>
-nnoremap <Plug>SectionDouble <Cmd>call comment#section_line('=', 1)<CR>:silent! call repeat#set("\<Plug>SectionDouble")<CR>
-nnoremap <Plug>SubsectionDouble <Cmd>call comment#section_line('-', 1)<CR>:silent! call repeat#set("\<Plug>SubsectionDouble")<CR>
-nmap g= <Plug>SectionSingle
-nmap g- <Plug>SubsectionSingle
-nmap g+ <Plug>SectionDouble
-nmap g_ <Plug>SubsectionDouble
+nnoremap <Plug>DividerSingle <Cmd>call comment#insert_divider('=', 0)<CR>:silent! call repeat#set("\<Plug>DividerSingle")<CR>
+nnoremap <Plug>SubdividerSingle <Cmd>call comment#insert_divider('-', 0)<CR>:silent! call repeat#set("\<Plug>SubdividerSingle")<CR>
+nnoremap <Plug>DividerDouble <Cmd>call comment#insert_divider('=', 1)<CR>:silent! call repeat#set("\<Plug>DividerDouble")<CR>
+nnoremap <Plug>SubdividerDouble <Cmd>call comment#insert_divider('-', 1)<CR>:silent! call repeat#set("\<Plug>SubdividerDouble")<CR>
+nmap g= <Plug>DividerSingle
+nmap g- <Plug>SubdividerSingle
+nmap g+ <Plug>DividerDouble
+nmap g_ <Plug>SubdividerDouble
 
 " Section headers, dividers, and other information
 " Todo: Improve title headers
-nmap gc; <Plug>CommentBar
-nnoremap <Plug>CommentBar <Cmd>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentBar")<CR>
+nmap gc; <Plug>CommentHeader
+nnoremap <Plug>CommentHeader <Cmd>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentHeader")<CR>
 nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
 nnoremap gc' <Cmd>call comment#header_incomment()<CR>
 nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
-nnoremap gcA <Cmd>call comment#comment_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap gcY <Cmd>call comment#comment_message('Date: ' . strftime('%Y-%m-%d'))<CR>
+nnoremap gcA <Cmd>call comment#header_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap gcD <Cmd>call comment#header_message('  Date: ' . strftime('%Y-%m-%d'))<CR>
 
 " Insert comment similar to gc
 " Todo: Add more control insert mappings?
-inoremap <expr> <C-g>c comment#comment_insert()
+inoremap <expr> <C-g>c comment#insert_char()
 
 " Default increment and decrement mappings
 " Possibly overwritten by vim-speeddating
@@ -1059,11 +1067,11 @@ noremap <expr> \S edit#replace_regex_expr(
 " Note: First is more 'strict' but more common so give it lower case
 noremap <expr> \c edit#replace_regex_expr(
   \ 'Removed all comments.',
-  \ '\(^\s*' . comment#comment_char() . '.\+$\n\\|\s\+' . comment#comment_char() . '.\+$\)', '')
+  \ '\(^\s*' . comment#get_char() . '.\+$\n\\|\s\+' . comment#get_char() . '.\+$\)', '')
 noremap <expr> \C edit#replace_regex_expr(
   \ 'Removed second-level comments.',
-  \ '\(^\s*' . comment#comment_char() . '\s*' . comment#comment_char() . '.\+$\n\\|\s\+'
-  \ . comment#comment_char() . '\s*' . comment#comment_char() . '.\+$\)', '')
+  \ '\(^\s*' . comment#get_char() . '\s*' . comment#get_char() . '.\+$\n\\|\s\+'
+  \ . comment#get_char() . '\s*' . comment#get_char() . '.\+$\)', '')
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
@@ -1988,8 +1996,8 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c'] = {
       \   'pattern': '\s' . (
-      \     empty(comment#comment_char())
-      \     ? nr2char(0) : comment#comment_char()
+      \     empty(comment#get_char())
+      \     ? nr2char(0) : comment#get_char()
       \   )
       \ }
   augroup END
