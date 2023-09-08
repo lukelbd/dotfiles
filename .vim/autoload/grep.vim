@@ -2,10 +2,13 @@
 " Utilities for grepping
 "-----------------------------------------------------------------------------"
 " Parse grep args and translate regex indicators
+" Note: If input directory is getcwd() then for some reason fnamemodify(getcwd(), ':.')
+" does not return empty string or dot. Have to detect it manually or else grep becomes
+" hard to navigate (note that fzf utils seem to expand '~' in prompt).
 " Warning: Strange bug seems to cause :Ag and :Rg to only work on individual files
 " if more than one file is passed. Otherwise preview window shows 'file is not found'
 " error and selecting from menu fails. So always pass extra dummy name.
-function! s:parse_paths(level, ...)
+function! s:parse_paths(prompt, level, ...)
   if a:0  " search input paths
     let paths = copy(a:000)
   elseif a:level > 1  " search current file only
@@ -15,7 +18,9 @@ function! s:parse_paths(level, ...)
   else  " search current file project (file directory returned if no projects found)
     let paths = [tag#find_root(@%)]
   endif
-  return map(paths, "fnamemodify(v:val, ':~:.')")
+  let paths = map(paths, "fnamemodify(v:val, ':~:.')")
+  let paths = map(paths, "!a:prompt && getcwd() ==# expand(v:val) ? './' : v:val")
+  return paths
 endfunction
 function! s:parse_grep(pattern)
   let regex = fzf#shellescape(a:pattern)  " similar to native but handles other shells
@@ -36,7 +41,7 @@ function! s:parse_input(level, pattern, ...) abort
   let flags .= a:pattern =~# '\\C' ? ' --case-sensitive' : ''  " same in ag and rg
   let flags = empty(flags) ? '--smart-case' : trim(flags)
   let regex = s:parse_grep(a:pattern)
-  let paths = call('s:parse_paths', [a:level] + a:000)
+  let paths = call('s:parse_paths', [0, a:level] + a:000)
   call add(paths, 'dummy.fzf')  " fix bug described above
   return [regex . ' ' . join(paths, ' '), flags]
 endfunction
@@ -77,7 +82,7 @@ function! grep#complete_pattern(lead, line, cursor)
   return reverse([@/] + opts[1:])
 endfunction
 function! grep#call_grep(grep, level, depth) abort
-  let prompt = s:parse_paths(a:level)[0]
+  let prompt = s:parse_paths(1, a:level)[0]
   let prompt = toupper(a:grep[0]) . a:grep[1:] . ' search ' . prompt . ' (' . @/ . ')'
   let pattern = utils#input_complete(prompt, 'grep#complete_pattern', @/)
   if empty(pattern) | return | endif
