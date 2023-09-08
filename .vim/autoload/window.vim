@@ -103,18 +103,17 @@ function! window#move_tab(...) abort
   endif
 endfunction
 function! s:move_tab_sink(nr) abort
-  if type(a:nr) == 0
+  if type(a:nr) == 0  " input tab number
     let nr = a:nr
-  else
-    let parts = split(a:nr, ':')  " fzf selection
-    let nr = str2nr(parts[0])
+  else  " fzf selections string
+    let nr = str2nr(split(a:nr, ':')[0])
   endif
   if nr == tabpagenr() || nr == 0 || nr ==# ''
     return
   elseif nr > tabpagenr() && v:version[0] > 7
-    exe 'tabmove ' . nr
+    exe 'tabmove ' . min([nr, tabpagenr('$')])
   else
-    exe 'tabmove ' . (nr - 1)
+    exe 'tabmove ' . min([nr - 1, tabpagenr('$')])
   endif
 endfunction
 
