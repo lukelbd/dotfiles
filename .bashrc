@@ -1992,13 +1992,14 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
     FZF_MARKS_KEEP_ORDER=0
   }
 
-
   # Source bash file
   # NOTE: Previously also tried to override completion here but no longer.
   # See: https://stackoverflow.com/a/42085887/4970632
   # See: https://unix.stackexchange.com/a/217916/112647
   complete -r  # reset first
   source ~/.fzf.bash
+  alias drop=dmark  # 'delete' mark (for consistency with 'jump')
+  alias marks=pmark  # 'paste' or 'print' mark (for consistency with 'marks')
   _fzf_marks=~/.fzf-marks/fzf-marks.plugin.bash
   [ -f "$_fzf_marks" ] && source "$_fzf_marks"
   echo 'done'
