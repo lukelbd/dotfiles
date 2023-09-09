@@ -7,16 +7,8 @@
 " out rest of screen. Workaround is to factor out an unnecessary source function.
 let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
 
-" Path utilities
-" Print information and whether current file exists
-function! file#print_abspath(...) abort
-  let paths = a:0 ? a:000 : [@%]
-  for path in paths
-    let abs = fnamemodify(path, ':p')
-    echom "Relative: '" . path "'"
-    echom "Absolute: '" . abs . "'"
-  endfor
-endfunction
+" Path and folder utility
+" Print file information and whether file exists
 function! file#print_exists() abort
   let files = glob(expand('<cfile>'))
   if empty(files)
@@ -24,6 +16,26 @@ function! file#print_exists() abort
   else
     echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
   endif
+endfunction
+function! file#print_paths(...) abort
+  let paths = a:0 ? a:000 : [@%]
+  for path in paths
+    let path = fnamemodify(path, ':p')
+    let root = tag#find_root(path)
+    if exists('*RelativePath')
+      let show = RelativePath(path)
+      let root = RelativePath(root)
+    else
+      let show = fnamemodify(path, ':~:.')
+      let root = fnamemodify(root, ':~:.')
+    endif
+    let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
+    let working = fnamemodify(getcwd(), ':~')
+    echom "Working directory: '" . working . "'"
+    echom "Project directory: '" . root . "'"
+    echom "Absolute path: '" . path . "'"
+    echom "Relative path: '" . show . "'"
+  endfor
 endfunction
 
 " Generate list of files in directory

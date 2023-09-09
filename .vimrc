@@ -507,9 +507,9 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Mnemonic is 'inside' just like Ctrl + i map
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
 command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
-command! -nargs=? Abspath call file#print_abspath(<f-args>)
+command! -nargs=? Paths call file#print_paths(<f-args>)
 command! -nargs=? Localdir call switch#localdir(<args>)
-noremap <Leader>i <Cmd>Abspath<CR>
+noremap <Leader>i <Cmd>Paths<CR>
 noremap <Leader>I <Cmd>Localdir<CR>
 noremap <Leader>p <Cmd>call file#print_exists()<CR>
 noremap <Leader>P <Cmd>exe 'Drop ' . expand('<cfile>')<CR>
@@ -642,10 +642,10 @@ command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
 " Convenience grep maps and commands
 " Note: Default pattern for maps is previous search @/
 " Note: Commands match the todo(), note(), error(), warning() functions in bashrc
-" nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 1, 0)<CR>
-" nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 0, 0)<CR>
-nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 1, 0)<CR>
-nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+" nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 0, 0)<CR>
+" nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 1, 0)<CR>
+nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 command! -bang -nargs=* Debug call grep#call_ag(<bang>0, 0, 0, '\<ic(', <f-args>)
 command! -bang -nargs=* Print call grep#call_ag(<bang>0, 0, 0, '\<print(', <f-args>)
 command! -bang -nargs=* Note call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
