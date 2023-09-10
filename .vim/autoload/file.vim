@@ -10,11 +10,16 @@ let s:new_file = '[new file]'  " dummy entry for requesting new file in current 
 " Path and folder utility
 " Print file information and whether file exists
 function! file#print_exists() abort
-  let files = glob(expand('<cfile>'))
+  let files = glob(expand('<cfile>'), 0, 1)
+  if exists('*RelativePath')
+    let files = map(files, 'RelativePath(v:val)')
+  else
+    let files = map(files, "fnamemodify(v:val, ':~:.')")
+  endif
   if empty(files)
     echom "File or pattern '" . expand('<cfile>') . "' does not exist."
   else
-    echom 'File(s) ' . join(map(a:0, '"''".v:val."''"'), ', ') . ' exist.'
+    echom 'File(s) ' . join(map(files, '"''".v:val."''"'), ', ') . ' exist.'
   endif
 endfunction
 function! file#print_paths(...) abort
