@@ -645,8 +645,8 @@ nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 " Convenience grep maps and commands
 " Todo: Create comment autoload function to filter to comments only
 " Note: Commands match the todo(), note(), error(), warning() functions in bashrc
-command! -bang -nargs=* Debug call grep#call_ag(<bang>0, 0, 0, '\<ic(', <f-args>)
-command! -bang -nargs=* Print call grep#call_ag(<bang>0, 0, 0, '\<print(', <f-args>)
+command! -bang -nargs=* Debug call grep#call_ag(<bang>0, 0, 0, '^\s*ic(', <f-args>)
+command! -bang -nargs=* Print call grep#call_ag(<bang>0, 0, 0, '^\s*print(', <f-args>)
 command! -bang -nargs=* Note call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
 command! -bang -nargs=* Todo call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
 command! -bang -nargs=* Warning call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
