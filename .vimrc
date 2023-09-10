@@ -336,8 +336,8 @@ endfor
 " enter visual mode, to do that need to map vi and va stuff.
 nnoremap v mzv
 nnoremap V mzV
-nnoremap gn gE/<C-r>"/<CR><Cmd>noh<CR>mzgn
-nnoremap gN W?<C-r>"?e<CR><Cmd>noh<CR>mzgN
+nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap gN W?<C-r>/e<CR><Cmd>noh<CR>mzgN
 nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
 vnoremap <CR> <C-c>
 vnoremap v <Esc>mzv
@@ -625,7 +625,8 @@ augroup panel_setup
 augroup END
 
 " Interactive file jumping with grep commands
-" Note: Each command can be called with more than one argument to specify path.
+" Note: Maps use default search pattern '@/'. Commands can be called with arguments
+" to explicitly specify path (without arguments each name has different default).
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster
 " so it gets lower case: https://unix.stackexchange.com/a/524094/112647
@@ -638,25 +639,27 @@ command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
 command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
-
-" Convenience grep maps and commands
-" Note: Default pattern for maps is previous search @/
-" Note: Commands match the todo(), note(), error(), warning() functions in bashrc
-" nnoremap <Leader>n <Cmd>call grep#call_grep('ag', 0, 0)<CR>
-" nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 1, 0)<CR>
 nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+
+" Convenience grep maps and commands
+" Todo: Create comment autoload function to filter to comments only
+" Note: Commands match the todo(), note(), error(), warning() functions in bashrc
 command! -bang -nargs=* Debug call grep#call_ag(<bang>0, 0, 0, '\<ic(', <f-args>)
 command! -bang -nargs=* Print call grep#call_ag(<bang>0, 0, 0, '\<print(', <f-args>)
 command! -bang -nargs=* Note call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
 command! -bang -nargs=* Todo call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
-command! -bang -nargs=* Error call grep#call_ag(<bang>0, 0, 0, '\<error:', <f-args>)
 command! -bang -nargs=* Warning call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
+noremap gP <Cmd>Print<CR>
+noremap gB <Cmd>Debug<CR>
+noremap gT <Cmd>Todo<CR>
+noremap gW <Cmd>Warning<CR>
+noremap gM <Cmd>Note<CR>
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
 " Note: Mnemonic for 'repeat command' is that it is on same key as :hlsearch
-" nnoremap <Leader>. :<C-r><Up><CR>
+nnoremap g. :<C-r><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -720,7 +723,7 @@ for s:char in ['w', 'b', 'e', 'm']
   exe 'noremap g' . s:char . ' '
     \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
     \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
-    \ . s:char . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
+    \ . (s:char ==# 'm' ? 'ge' : s:char) . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
 endfor
 
 " Insert and mormal mode undo and redo (see .vim/autoload/repeat.vim)
@@ -1026,13 +1029,13 @@ augroup END
 " Note: This just does 'set hlsearch!' and prints a message
 noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 
-" Search for non-ASCII escape chars
-" See: https://stackoverflow.com/a/41168966/4970632
-noremap gE /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-
 " Search for git commit conflict blocks
 " Note: See also [f and ]f commands
 noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
+
+" Search for non-ASCII escape chars
+" See: https://stackoverflow.com/a/41168966/4970632
+noremap gX /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
@@ -1175,8 +1178,9 @@ call plug#('tomtom/tcomment_vim')
 " call plug#('tpope/vim-unimpaired')  " bracket maps that no longer use
 call plug#('tpope/vim-repeat')  " shell utils like chmod rename and move
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
-call plug#('tpope/vim-characterize')  " print character info (mnemonic is l for letter)
-nmap g. <Plug>(characterize)
+call plug#('tpope/vim-characterize')  " print character information
+nmap gY <Plug>(characterize)
+" noremap gy ga  " non plugin equivalent
 
 " Panel utilities
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -1980,15 +1984,14 @@ if s:plug_active('vim-gitgutter')
   noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
 endif
 
-" Easy-align with delimiters for case/esac block parens and seimcolons, chained &&
-" and || symbols, and trailing comments (with two spaces ignoring commented lines).
-" See file empty.txt for easy-align tests.
+" Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
+" && and || symbols, or trailing comments. See file empty.txt for easy-align tests.
 " Note: Use <Left> to stick delimiter to left instead of right and use * to align
 " by all delimiters instead of the default of 1 delimiter.
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
 if s:plug_active('vim-easy-align')
-  map ge <Plug>(EasyAlign)
+  map g, <Plug>(EasyAlign)
   let g:easy_align_delimiters = {
     \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
     \   '&': {'pattern': '\(&&\|||\)'},
