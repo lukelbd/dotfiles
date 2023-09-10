@@ -27,10 +27,10 @@ function! s:parse_grep(pattern)
   let regex = fzf#shellescape(a:pattern)  " similar to native but handles other shells
   let regex = substitute(regex, '\\[cCvV]', '', 'g')  " unsure how to translate
   let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " translate word borders
-  let regex = substitute(regex, '\\S', "[^ \t]", 'g')  " non-whitespace characters
-  let regex = substitute(regex, '\\s', "[ \t]",  'g')  " whitespace characters
-  let regex = substitute(regex, '\\[ikf]', '\\w', 'g')  " keyword, identifier, filename
-  let regex = substitute(regex, '\\[IKF]', '[a-zA-Z_]', 'g')  " same but no numbers
+  let regex = substitute(regex, '\\S\C', "[^ \t]", 'g')  " non-whitespace characters
+  let regex = substitute(regex, '\\s\C', "[ \t]",  'g')  " whitespace characters
+  let regex = substitute(regex, '\\[ikf]\C', '\\w', 'g')  " keyword, identifier, filename
+  let regex = substitute(regex, '\\[IKF]\C', '[a-zA-Z_]', 'g')  " same but no numbers
   let regex = substitute(regex, '\\\([(|)]\)', '\2', 'g')  " un-escape grouping indicators
   let regex = substitute(regex, '\([(|)]\)', '\\\1', 'g')  " escape literal parentheses
   return regex

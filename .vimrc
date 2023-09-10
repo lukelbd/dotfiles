@@ -646,8 +646,8 @@ command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
 " nnoremap <Leader>N <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-command! -bang -nargs=* Debug call grep#call_ag(<bang>0, 0, 0, '\<ic(', <f-args>)
-command! -bang -nargs=* Print call grep#call_ag(<bang>0, 0, 0, '\<print(', <f-args>)
+command! -bang -nargs=* Debug call grep#call_ag(<bang>0, 0, 0, '^\s*ic(', <f-args>)
+command! -bang -nargs=* Print call grep#call_ag(<bang>0, 0, 0, '^\s*print(', <f-args>)
 command! -bang -nargs=* Note call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
 command! -bang -nargs=* Todo call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
 command! -bang -nargs=* Error call grep#call_ag(<bang>0, 0, 0, '\<error:', <f-args>)
