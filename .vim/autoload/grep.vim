@@ -55,8 +55,9 @@ function! s:parse_pattern(pattern)
   let regex = substitute(regex, '\\s', "[ \t]",  'g')  " whitespace characters
   let regex = substitute(regex, '\\[ikf]', '\\w', 'g')  " keyword, identifier, filename
   let regex = substitute(regex, '\\[IKF]', '[a-zA-Z_]', 'g')  " same but no numbers
-  let regex = substitute(regex, '\\\([(|)]\)', '\2', 'g')  " un-escape grouping indicators
-  let regex = substitute(regex, '\([(|)]\)', '\\\1', 'g')  " escape literal parentheses
+  let regex = substitute(regex, '\\\([(|)]\)', '=\1', 'g')  " reserve grouping indicators
+  let regex = substitute(regex, '\(^\|[^=\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape literal parentheses
+  let regex = substitute(regex, '=\([(|)]\)', '\1', 'g')  " unescape grouping indicators
   return regex
 endfunction
 
