@@ -1,13 +1,10 @@
 "-----------------------------------------------------------------------------"
 " Utilities for grepping
 "-----------------------------------------------------------------------------"
-" Parse grep args and translate regex indicators
-" Note: If input directory is getcwd() then for some reason fnamemodify(getcwd(), ':.')
-" does not return empty string or dot. Have to detect it manually or else grep becomes
-" hard to navigate (note that fzf utils seem to expand '~' in prompt).
-" Warning: Strange bug seems to cause :Ag and :Rg to only work on individual files
-" if more than one file is passed. Otherwise preview window shows 'file is not found'
-" error and selecting from menu fails. So always pass extra dummy name.
+" Helper function for parsing paths
+" Note: If input directory is getcwd() then fnamemodify(getcwd(), ':~:.') returns
+" only home directory shortened path (not dot or empty string). To match RelatvePath()
+" and simplify grep results convert to empty string.
 function! s:parse_paths(prompt, level, ...)
   if a:0  " search input paths
     let paths = copy(a:000)
@@ -18,12 +15,39 @@ function! s:parse_paths(prompt, level, ...)
   else  " search current file project (file directory returned if no projects found)
     let paths = [tag#find_root(@%)]
   endif
-  let paths = map(paths, "fnamemodify(v:val, ':~:.')")
-  let paths = map(paths, "exists('*RelativePath') ? RelativePath(v:val) : v:val")
-  let paths = map(paths, "!a:prompt && getcwd() ==# expand(v:val) ? './' : v:val")
-  return paths
+  let result = []
+  for path in paths
+    if exists('*RelativePath')  " returns empty string for getcwd()
+      let path = RelativePath(path)
+    else  " returns e.g. ~/dotfiles for getcwd()
+      let path = getcwd() ==# fnamemodify(path, ':p') ? '' : fnamemodify(path, ':~:.')
+    endif
+    if empty(path) && (a:prompt || len(paths) > 1)
+      let path = './'  " trailing slash as with other folders
+    endif
+    if !empty(path)  " otherwise return empty list
+      call add(result, path)
+    endif
+  endfor
+  return result
 endfunction
-function! s:parse_grep(pattern)
+
+" Helper functions for parsing grep input
+" Warning: Strange bug seems to cause :Ag and :Rg to only work on individual files
+" if more than one file is passed. Otherwise preview window shows 'file is not found'
+" error and selecting from menu fails. So always pass extra dummy name.
+function! s:parse_grep(level, pattern, ...) abort
+  let @/ = a:pattern  " set as the previous search
+  let flags = ''  " additional pattern-dependent flags
+  let flags .= a:pattern =~# '\\c' ? ' --ignore-case' : ''  " same in ag and rg
+  let flags .= a:pattern =~# '\\C' ? ' --case-sensitive' : ''  " same in ag and rg
+  let flags = empty(flags) ? '--smart-case' : trim(flags)
+  let regex = s:parse_pattern(a:pattern)
+  let paths = call('s:parse_paths', [0, a:level] + a:000)
+  let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug described above
+  return [regex . ' ' . join(paths, ' '), flags]
+endfunction
+function! s:parse_pattern(pattern)
   let regex = fzf#shellescape(a:pattern)  " similar to native but handles other shells
   let regex = substitute(regex, '\\[cCvV]', '', 'g')  " unsure how to translate
   let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " translate word borders
@@ -35,17 +59,6 @@ function! s:parse_grep(pattern)
   let regex = substitute(regex, '\([(|)]\)', '\\\1', 'g')  " escape literal parentheses
   return regex
 endfunction
-function! s:parse_input(level, pattern, ...) abort
-  let @/ = a:pattern  " set as the previous search
-  let flags = ''  " additional pattern-dependent flags
-  let flags .= a:pattern =~# '\\c' ? ' --ignore-case' : ''  " same in ag and rg
-  let flags .= a:pattern =~# '\\C' ? ' --case-sensitive' : ''  " same in ag and rg
-  let flags = empty(flags) ? '--smart-case' : trim(flags)
-  let regex = s:parse_grep(a:pattern)
-  let paths = call('s:parse_paths', [0, a:level] + a:000)
-  call add(paths, 'dummy.fzf')  " fix bug described above
-  return [regex . ' ' . join(paths, ' '), flags]
-endfunction
 
 " Call Ag or Rg from command
 " Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
@@ -53,7 +66,7 @@ endfunction
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
 function! grep#call_ag(bang, level, depth, ...) abort
   let flags = '--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden'
-  let [cmd, extra] = call('s:parse_input', [a:level] + a:000)
+  let [cmd, extra] = call('s:parse_grep', [a:level] + a:000)
   let extra .= a:depth ? ' --depth ' . (a:depth - 1) : ''
   " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
   " let opts = fzf#vim#with_preview(opts)
@@ -62,7 +75,7 @@ function! grep#call_ag(bang, level, depth, ...) abort
 endfunction
 function! grep#call_rg(bang, level, depth, ...) abort
   let flags = '--ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden'
-  let [cmd, extra] = call('s:parse_input', [a:level] + a:000)
+  let [cmd, extra] = call('s:parse_grep', [a:level] + a:000)
   let extra .= a:depth ? ' --max-depth ' . a:depth : ''
   " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
   " let opts = fzf#vim#with_preview(opts)
