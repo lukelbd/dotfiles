@@ -1879,44 +1879,6 @@ wctex() {
 echo 'done'
 
 #-----------------------------------------------------------------------------
-# Shell integration for iTerm2
-#-----------------------------------------------------------------------------
-# Show inline figures with fixed 300dpi
-# Make sure it was not already installed and we are not inside vim :terminal
-# Turn off prompt markers with: https://stackoverflow.com/questions/38136244/iterm2-how-to-remove-the-right-arrow-before-the-cursor-line
-if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
-  && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
-  && [ -f ~/.iterm2_shell_integration.bash ] \
-  && [ -z "$VIMRUNTIME" ]; then
-  # Enable shell integration
-  _setup_message 'Enabling shell integration'
-  source ~/.iterm2_shell_integration.bash
-
-  # Add helper functions
-  for func in imgcat imgls; do
-    unalias $func
-    eval 'function '$func'() {
-      local i tmp files
-      i=0
-      files=("$@")
-      for file in "${files[@]}"; do
-        if [ "${file##*.}" == pdf ]; then
-          tmp=./tmp.${file%.*}.png  # convert to png
-          convert -flatten \
-            -units PixelsPerInch -density 300 -background white "$file" "$tmp"
-        else
-          tmp=./tmp.${file}
-          convert -flatten "$file" "$tmp"
-        fi
-        $HOME/.iterm2/'$func' "$tmp"
-        rm "$tmp"
-      done
-    }'
-  done
-  echo 'done'
-fi
-
-#-----------------------------------------------------------------------------
 # FZF fuzzy file completion tool
 #-----------------------------------------------------------------------------
 # Run installation script; similar to the above one
@@ -2101,10 +2063,45 @@ if [ "${CONDA_SKIP:-0}" == 0 ] && [ -n "$_conda" ] && ! [[ "$PATH" =~ conda3 ]];
 fi
 
 #-----------------------------------------------------------------------------
-# Prompt and title management
+# Shell integration and session management
 #-----------------------------------------------------------------------------
+# Enable shell integration and show inline figures with fixed 300dpi
+# Pass of this was not already installed and we are not inside vim :terminal
+# Window badges: https://iterm2.com/documentation-badges.html
+# Prompt markers: https://stackoverflow.com/a/38913948/4970632
+# Debug current directory: https://gitlab.com/gnachman/iterm2/-/issues/11073
+# Could try `printf "\e]1337;SetBadgeFormat=%s\a" $(echo -n "\(path)" | base64)`
+# to print current directory badge when debugging.
+if [ "${ITERM_SHELL_INTEGRATION_SKIP:-0}" == 0 ] \
+  && [ -z "$ITERM_SHELL_INTEGRATION_INSTALLED" ] \
+  && [ -r ~/.iterm2_shell_integration.bash ] \
+  && [ -z "$VIMRUNTIME" ]; then
+  _setup_message 'Enabling shell integration'
+  source ~/.iterm2_shell_integration.bash
+  unalias imgcat imgls
+  _imgshow() {
+    local cmd temp files
+    cmd="$1"
+    files=("${@:2}")  # start at second arg
+    for file in "${files[@]}"; do
+      if [ "${file##*.}" == pdf ]; then
+        temp=./tmp.${file%.*}.png  # convert to png
+        convert -flatten -units PixelsPerInch -density 300 -background white "$file" "$temp"
+      else
+        temp=./tmp.${file}
+        convert -flatten "$file" "$temp"
+      fi
+      ~/.iterm2/$cmd "$temp"
+      rm "$temp"
+    done
+  }
+  imgcat() { _imshow imgcat "$@"; }
+  imgls() { _imshow imgls "$@"; }
+  echo 'done'
+fi
+
 # Safely add a prompt command
-_prompt() {  # input argument should be new command
+_append_prompt() {  # input argument should be new command
   export PROMPT_COMMAND=$( \
     echo "$PROMPT_COMMAND; $1" | sed 's/;[ \t]*;/;/g;s/^[ \t]*;//g' \
   )
@@ -2167,7 +2164,7 @@ title_update() {  # fix name issues
 
 # Ask for a title when we create pane 0
 if $_macos; then
-  [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _prompt _title_update
+  [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _append_prompt _title_update
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 fi
 alias title='_title_set'  # easier for user
