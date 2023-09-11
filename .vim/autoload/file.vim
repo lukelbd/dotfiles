@@ -25,20 +25,20 @@ endfunction
 function! file#print_paths(...) abort
   let paths = a:0 ? a:000 : [@%]
   for path in paths
-    let path = fnamemodify(path, ':p')
+    let user = fnamemodify(path, ':~')
     let root = tag#find_root(path)
     if exists('*RelativePath')
-      let show = RelativePath(path)
       let root = RelativePath(root)
+      let show = RelativePath(path)
     else
-      let show = fnamemodify(path, ':~:.')
       let root = fnamemodify(root, ':~:.')
+      let show = fnamemodify(path, ':~:.')
     endif
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
     let working = fnamemodify(getcwd(), ':~')
     echom "Working directory: '" . working . "'"
     echom "Project directory: '" . root . "'"
-    echom "Absolute path: '" . path . "'"
+    echom "Absolute path: '" . user . "'"
     echom "Relative path: '" . show . "'"
   endfor
 endfunction

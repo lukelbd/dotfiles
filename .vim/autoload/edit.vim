@@ -202,7 +202,7 @@ function! edit#wrap_items(...) range abort
     let line = getline(linenum)
     let linecount += 1
     if line =~# pattern
-      let upper = '^\s*[*_]*[A-Z]'  " upper case optionally surrounded by emphasis
+      let upper = '^\s*\(<[^>]\+>\|[*_]*\)*[A-Z]'
       let tail = substitute(line, pattern, '\3', '')
       if tail !~# upper  " remove item indicator if starts with lowercase
         call s:remove_item(line, linenum, linenum)

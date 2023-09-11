@@ -1651,9 +1651,12 @@ if s:plug_active('vim-gutentags')
   nnoremap <Leader>< <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
   nnoremap <Leader>> <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
-  " let g:gutentags_ctags_tagfile = 'tags'  " use with cache dir
+  " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
+  " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
+  " let g:gutentags_ctags_executable = 'ctags --python-kinds=-i'  " executable with tags
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
   let g:gutentags_ctags_auto_set_tags = 0  " tag#set_tags() handles this instead
+  let g:gutentags_ctags_executable = 'ctags'  " executable with tags
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
   let g:gutentags_ctags_exclude = tag#get_ignores(0)  " exclude all by default
   let g:gutentags_ctags_tagfile = '.vimtags'
