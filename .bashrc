@@ -267,13 +267,6 @@ case "${HOSTNAME%%.*}" in
       rvm use ruby 1>/dev/null
     fi
 
-    # Julia language
-    # NOTE: Installing Julia using conda not recommended. Instead use their internal
-    # package manager and download compiled binaries into home folder on remote stations.
-    # See discussion here: https://discourse.julialang.org/t/installation-on-linux-without-sudo-root/22121
-    export JULIA='/Applications/Julia-1.8.app/Contents/Resources/julia'
-    export PATH=/Applications/Julia-1.8.app/Contents/Resources/julia/bin:$PATH
-
     # NCL NCAR command language, had trouble getting it to work on Mac with conda
     # NOTE: Tried exporting DYLD_FALLBACK_LIBRARY_PATH but it screwed up some python
     # modules so instead just always invoke ncl with temporarily set DYLD_LIBRARY_PATH.
@@ -1336,19 +1329,15 @@ figcp() {
 #-----------------------------------------------------------------------------
 # REPLs and interactive servers
 #-----------------------------------------------------------------------------
-# Add jupyter kernels with custom profiles (see below)
+# Add jupyter kernels with custom profiles. Goal is to have all kernels managed
+# by conda using nb_conda_kernels (see above). Installing julia using conda then
+# running Pkg.add('IJulia') should create julia kernel also managed by conda.
 # See: https://github.com/minrk/a2km
 # See: https://stackoverflow.com/a/46370853/4970632
 # See: https://stackoverflow.com/a/50294374/4970632
-# jupyter kernelspec list  # then navigate to kernel.json files in directories
+alias jupyter-kernels='jupyter kernelspec list'  # kernel.json files in directories
 # a2km clone python3 python3-climopy && a2km add-argv python3-climopy -- --profile=climopy
 # a2km clone python3 python3-proplot && a2km add-argv python3-proplot -- --profile=proplot
-
-# Ipython profile shorthands (see ipython_config.py in .ipython profile subfolders)
-# For tests we automatically print output and increase verbosity
-alias pytest='pytest -s -v'
-alias ipython-climopy='ipython --profile=climopy'
-alias ipython-proplot='ipython --profile=proplot'
 
 # Jupyter profile shorthands requiring custom kernels that launch ipykernel
 # with a --profile argument... otherwise only the default profile is run and the
@@ -1356,30 +1345,36 @@ alias ipython-proplot='ipython --profile=proplot'
 alias jupyter-climopy='jupyter console --kernel=python3-climopy'
 alias jupyter-proplot='jupyter console --kernel=python3-proplot'
 
-# R utilities
-# Note using --slave or --interactive makes quiting impossible. And ---always-readline
-# prevents prompt from switching to default prompt but disables ctrl-d from exiting.
-alias r='command R -q --no-save'
-alias R='command R -q --no-save'
-# alias R='rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save'
+# Ipython profile shorthands (see ipython_config.py in .ipython profile subfolders)
+# For tests we automatically print output and increase verbosity
+alias pytest='pytest -s -v'
+alias ipython-climopy='ipython --profile=climopy'
+alias ipython-proplot='ipython --profile=proplot'
+
+# Julia utility
+# Include paths in current directory and auto update modules
+# Remember to include IJulia AxisArrays NamedArrays
+_julia_start='push!(LOAD_PATH, "./"); using Revise'
+alias julia="command julia -e '$_julia_start' -i -q --color=yes"
+
+# Matlab utilitiy
+# Load the startup script and skip the gui stuff
+alias matlab="matlab -nodesktop -nosplash -r '$_matlab_start'"
+_matlab_start='run("~/matfuncs/init.m")'
 
 # NCL interactive environment
 # Make sure that we encapsulate any other alias -- for example, on Macs,
 # will prefix ncl by setting DYLD_LIBRARY_PATH, so want to keep that.
-_ncl_dyld=$(alias ncl 2>/dev/null | cut -d= -f2- | cut -d\' -f2)
-if [ -n "$_ncl_dyld" ]; then
-  alias ncl="$_ncl_dyld -Q -n"  # must be evaluated literally
-else
-  alias ncl='ncl -Q -n'
-fi
+_dyld_ncl=$(alias ncl 2>/dev/null | cut -d= -f2- | cut -d\' -f2)
+# shellcheck disable=2015
+[ -n "$_dyld_ncl" ] && alias ncl="$_dyld_ncl -Q -n" || alias ncl='ncl -Q -n'
 
-# Julia and matlab
-# For matlab just load the startup script and skip the gui stuff
-# For julia include paths in current directory and auto update modules
-_julia_start='push!(LOAD_PATH, "./"); using Revise'
-_matlab_start='run("~/matfuncs/init.m")'
-alias matlab="matlab -nodesktop -nosplash -r '$_matlab_start'"
-alias julia="command julia -e '$_julia_start' -i -q --color=yes"
+# R utility
+# Note using --slave or --interactive makes quiting impossible. And ---always-readline
+# prevents prompt from switching to default prompt but disables ctrl-d from exiting.
+# alias R='rlwrap --always-readline -A -p"green" -R -S"R> " R -q --no-save'
+alias r='command R -q --no-save'
+alias R='command R -q --no-save'
 
 # Perl -- hard to understand, but here it goes:
 # * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)

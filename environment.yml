@@ -3,6 +3,8 @@
 # Use pip for cf_units since mamba cf_units outdated python requirements
 # NOTE: Jupyter Lab >= 4.0.0 ships with LSP utilities based on jupyterlab-lsp
 # extension. Try again once all highlighting bugs worked out.
+# NOTE: Executing < 1.0.0 can cause bug where excetions do not format
+# correctly. Update fixes this: https://github.com/ipython/ipython/issues/13598/
 # NOTE: Can install only python and fortran servers with mamba. Use LSP interface for
 # bash-language-server and julia-language-server. Use native system 'clangd' for C++.
 # NOTE: Try not to confuse 'mamba install python-language-server' (pyls) with
@@ -51,6 +53,7 @@ dependencies:
   - jupytext
   - pandoc
   - nb_conda_kernels
+  - executing>=1.0.0
   - jupyter_nbextensions_configurator
   - jupyterlab<4.0.0
   - jupyterlab_server
