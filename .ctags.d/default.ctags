@@ -4,3 +4,5 @@
 --excmd=number
 --langmap=sh:+.bashrc
 --langmap=vim:+.vimrc
+--python-kinds=-i
+--python-kinds=-I
