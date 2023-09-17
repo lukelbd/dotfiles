@@ -1,19 +1,23 @@
 {
   "version": 1,
   "Exporter": {
-    "template_paths": [
-      ".",
-      "/home/ldavis/.jupyter",
-      "/Users/ldavis/.jupyter"
-    ],
     "preprocessors": [
       "jupyter_contrib_nbextensions.nbconvert_support.CodeFoldingPreprocessor",
       "jupyter_contrib_nbextensions.nbconvert_support.PyMarkdownPreprocessor"
     ],
-    "template_path": [
+    "extra_template_paths": [
       ".",
-      "/home/ldavis/miniconda3/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates",
-      "/Users/ldavis/miniconda3/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates"
+      "/home/ldavis/.jupyter/templates",
+      "/Users/ldavis/.jupyter/templates",
+      "/home/ldavis/mambaforge/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates",
+      "/Users/ldavis/mambaforge/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates"
+    ],
+    "extra_template_basedirs": [
+      ".",
+      "/home/ldavis/.jupyter/templates",
+      "/Users/ldavis/.jupyter/templates",
+      "/home/ldavis/mambaforge/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates",
+      "/Users/ldavis/mambaforge/lib/python3.10/site-packages/jupyter_contrib_nbextensions/templates"
     ]
   }
 }

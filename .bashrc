@@ -937,7 +937,7 @@ f2() { _find 2 "$@"; }  # custom find with no excludes
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-gs() {  # git status-style directory differences
+gs() {  # git status-style file differences
   command git --no-pager diff \
     --textconv --no-index --color=always --name-status "$@" 2>&1 | \
     grep -v -e 'warning:' -e '.vimsession' -e '*.git' -e '*.svn' -e '*.sw[a-z]' \
@@ -1446,33 +1446,44 @@ jupyter-connect() {
 }
 
 # Save a concise HTML snapshot of the jupyter notebook for collaboration
-# NOTE: As of 2022-09-12 the PDF version requires xelatex. Try to use drop-in xelatex
+# NOTE: Can clean things up by passing --no-prompt (exlude 'in' 'out' symbols) or
+# --no-input (exclude all code) but they help orient things, better to include if
+# we are being good about using separate modules and functions.
+# NOTE: As of 2023-09-16 --output-dir seems to have no effect for some reason. Instead
+# specify base paths in folder. Also a 'files' subfolder will be generated to handle
+# figure outputs only sometimes (maybe only for retina?). For 'png' they are embedded.
+# NOTE: The PDF version requires xelatex. Try to use drop-in xelatex
 # replacement tectonic for speed; install with conda install -c conda-forge tectonic and
 # edit jupyter_nbconvert_config.py. See: https://github.com/jupyter/nbconvert/issues/808
-# NOTE: As of 2022-09-12 the HTML version can only use the jupyter notebook toc2-style
+# NOTE: The HTML version can only use the jupyter notebook toc2-style
 # table of contents. To install see: https://stackoverflow.com/a/63123831/4970632 (note
 # jupyter_nbconvert_config.json is auto-edited). To change default settings must use
 # classical jupyter notebook interface, and to include toc with default html export can
 # optionally add metadata to ipynb. See: https://stackoverflow.com/a/59286150/4970632
-# NOTE: As of 2022-09-12 nbconvert greater than 5 causes issues converting notebooks.
-# See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1533
-# This also causes issues with later versions of jinja so need to downgrade to 3.0.0
-# with pip despite conflict warnings re: jupyter-server and jupyterlab-server. Should
-# revisit this in future. See: https://github.com/d2l-ai/d2l-book/issues/46
+# mamba install jupyter_contrib_nextensions; jupyter contrib nbextension install --user
+# NOTE: Annoyingly nbconvert greater than 5 causes issues converting notebooks, but
+# almost impossible to downgrade due to dependency on older jinja2 and other jupyter
+# packages requiring downgrades / picking up conflicts. Instead have figured out
+# using custom template from github issue and merging template files.
+# See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1533#issuecomment-1195067419
+# See: https://nbconvert.readthedocs.io/en/latest/customizing.html#adding-additional-template-paths
 jupyter-convert() {
-  local ext fmt dir file output
-  # fmt=pdf
-  fmt=html_toc
-  ext=${fmt%_*}
-  dir=$(git rev-parse --show-toplevel)/meetings
-  [ -d "$dir" ] || { echo "Error: Directory $dir does not exist."; return 1; }
+  local ext fmt base file output
+  fmt=html ext=${fmt%_*}
   for file in "$@"; do
+    base=$(abspath ${file%/*})
+    base=${base%/notebooks}/meetings
+    # base=$(git rev-parse --show-toplevel)/meetings
+    [ -d "$base" ] || { echo "Error: Directory $base does not exist."; return 1; }
     [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
     output=${file%.ipynb}_$(date +%Y-%m-%d).$ext
-    jupyter nbconvert --no-input --no-prompt \
-      --to "$fmt" --output-dir "$dir" --output "$output" "$file"
+    jupyter nbconvert \
+      --template classic \
+      --to "$fmt" --output-dir "$base" --output "$base/${output##*/}" "$file" || return 1
+      # --ExtractOutputPreprocessor.enabled=False \
+      # --TemplateExporter.extra_template_basedirs=$HOME/.jupyter \
     output=${output##*/}
-    pushd "$dir" || { echo "Error: Failed to jump to meeting directory."; return 1; }
+    pushd "$base" || { echo "Error: Failed to jump to meeting directory."; return 1; }
     zip -r "${output/.${ext}/.zip}" "${output/.${ext}/}"*  # include _files subfolder
     popd || { echo "Error: Failed to return to original directory."; return 1; }
   done
@@ -1876,46 +1887,71 @@ echo 'done'
 #-----------------------------------------------------------------------------
 # FZF fuzzy file completion tool
 #-----------------------------------------------------------------------------
+# Default fzf flags (see man page for more info, e.g. --bind and --select-1)
+# * Inline info puts the number line thing on same line as text.
+# * Bind slash to accept so behavior matches shell completion behavior.
+# * Enforce terminal background default color using -1 below.
+# * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
+_fzf_opts=" \
+  --ansi --color=bg:-1,bg+:-1 --layout=default \
+  --exit-0 --inline-info --height=6 \
+  --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up\
+"  # critical to export so used by vim
+
+# Defualt fzf find commands. The compgen ones were addd by fork, others are native.
+# Adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
+# NOTE: For now do not try to use universal '.ignore' files since only special
+# utilities should ignore files while basic shell navigation should show everything.
+# _fzf_ignore="$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')"  # alternative ignore
+_fzf_ignore="\\( \
+  -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
+  -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
+  -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
+"
+
 # Run installation script; similar to the above one
 # if [ -f ~/.fzf.bash ] && ! [[ "$PATH" =~ fzf ]]; then
 if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
-  # Default fzf flags (see man page for more info, e.g. --bind and --select-1)
-  # * Inline info puts the number line thing on same line as text.
-  # * Bind slash to accept so behavior matches shell completion behavior.
-  # * Enforce terminal background default color using -1 below.
-  # * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
+  # Apply default fzf marks options
+  # Download repo with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks'
+  # then run 'push .fzf-marks && git switch config-edits' fur custom configuration.
+  # NOTE: The default .fzf-marks storage file conflicts with the repo name we use
+  # so have changed this on branch. See https://github.com/urbainvaes/fzf-marks
   _setup_message 'Enabling fzf'
-  _fzf_opts=" \
-    --ansi --color=bg:-1,bg+:-1 --layout=default \
-    --exit-0 --inline-info --height=6 \
-    --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up\
-  "  # critical to export so used by vim
-
-  # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
-  # Adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
-  # NOTE: For now do not try to use universal '.ignore' files since only special
-  # utilities should ignore files while basic shell navigation should show everything.
-  # _fzf_ignore="$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')"  # alternative ignore
-  _fzf_ignore="\\( \
-    -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
-    -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
-    -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
-  "
-
-  # Apply fzf config
-  # NOTE: To make completion trigger a single tab must set to literal empty
-  # string rather than leaving the variable unset (or else it uses default).
-  export FZF_DEFAULT_OPTS=$_fzf_opts
-  export FZF_DEFAULT_COMMAND=" \
-    set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
-    -type f -print -o -type l -print 2>/dev/null | cut -b3- \
-  "
   # shellcheck disable=2034
   {
-    FZF_COMPLETION_TRIGGER=''
-    FZF_COMPLETION_OPTS=$_fzf_opts
-    FZF_CTRL_T_OPTS=$_fzf_opts
+    FZF_MARKS_FILE=${HOME}/.fzf.marks
+    FZF_MARKS_COMMAND='fzf --height 40% --reverse'
+    FZF_MARKS_JUMP="\C-g"
+    FZF_MARKS_COLOR_LHS=39
+    FZF_MARKS_COLOR_RHS=36
+    FZF_MARKS_COLOR_COLON=33
+    FZF_MARKS_NO_COLORS=0
+    FZF_MARKS_KEEP_ORDER=0
+  }
+
+  # Apply default fzf options
+  # Download repo with 'git clone https://github.com/lukelbd/fzf-marks.git .fzf'
+  # then run 'pushd .fzf && git switch completion-edits' for custom completion behavior
+  # NOTE: To make completion trigger after single tab press, must set to literal empty
+  # string rather than leaving the variable unset (or else it uses default).
+  # shellcheck disable=2034
+  {  # first option requires export
+    export FZF_DEFAULT_OPTS=$_fzf_opts
     FZF_ALT_C_OPTS=$_fzf_opts
+    FZF_CTRL_T_OPTS=$_fzf_opts
+    FZF_COMPLETION_OPTS=$_fzf_opts
+    FZF_COMPLETION_TRIGGER=''
+  }
+
+  # Apply default fzf commands
+  # NOTE: The compgen commands were added in completion-edits fzf branch
+  # shellcheck disable=2034
+  {  # first option requires export
+    export FZF_DEFAULT_COMMAND=" \
+      set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
+      -type f -print -o -type l -print 2>/dev/null | cut -b3- \
+    "
     FZF_ALT_C_COMMAND=" \
       command find -L . -mindepth 1 $_fzf_ignore \
       -type d -print 2>/dev/null | cut -b3- \
@@ -1932,21 +1968,6 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
       command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
       \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
     "  # complete paths with tab
-  }
-
-  # Download with git clone https://github.com/lukelbd/fzf-marks.git .fzf-marks
-  # See: https://github.com/urbainvaes/fzf-marks
-  # NOTE: The default .fzf-marks storage file conflicts with the repo name we use
-  # shellcheck disable=2034
-  {
-    FZF_MARKS_FILE=${HOME}/.fzf.marks
-    FZF_MARKS_COMMAND='fzf --height 40% --reverse'
-    FZF_MARKS_JUMP="\C-g"
-    FZF_MARKS_COLOR_LHS=39
-    FZF_MARKS_COLOR_RHS=36
-    FZF_MARKS_COLOR_COLON=33
-    FZF_MARKS_NO_COLORS=0
-    FZF_MARKS_KEEP_ORDER=0
   }
 
   # Source bash file
@@ -1976,7 +1997,18 @@ else
   unset _conda
 fi
 
-# Function to list available packages
+# Pip install static copy of specific branch
+# See: https://stackoverflow.com/a/27134362/4970632
+# NOTE: Resulting install will not be editable. But could be useful for awaiting
+# PRs or new versions after submitting feature to community project.
+pip-branch() {
+  [ $# -eq 2 ] && echo "Usage: pip-branch PACKAGE BRANCH" && return 1
+  [ -d "$1" ] || { echo "Error: Package path '$1' not found."; return 1; }
+  pip install --editable git+file://"$1"@"$2"
+}
+
+# List available packages
+# NOTE: This takes really long even with mamba
 mamba-avail() {
   local version versions
   [ $# -ne 1 ] && echo "Usage: avail PACKAGE" && return 1
@@ -1995,28 +2027,29 @@ mamba-avail() {
   echo "Available versions: $versions"
 }
 
-# Function to backup and restore conda environments. This is useful when conda breaks
+# Fucntions to backup and restore conda environments. This is useful when conda breaks
 # due to usage errors or issues with permissions after a crash and backblaze restore.
+# NOTE: This can also be used to sync across macbooks. Just clone 'dotfiles' there.
 mamba-backup() {
   local env dest
-  dest=$HOME/dotfiles
-  [ -d "$dest" ] || { echo " Error: Backup directory $dest not found."; return 1; }
-  dest=$dest/envs
-  [ -d "$dest" ] || mkdir "$dest/envs"
+  dest=$HOME/dotfiles/
+  [ -d "$dest" ] || { echo " Error: Cannot find icloud directory $dest."; return 1; }
+  [ -d "$dest/envs" ] || mkdir "$dest/envs"
   for env in $(mamba env list | cut -d" " -f1); do
     [[ ${env:0:1} == "#" ]] && continue
-    echo "Creating file: $dest/${env}.yml"
-    mamba env export -n $env > "$dest/${env}.yml"
+    echo "Creating file: $dest/envs/${env}.yml"
+    mamba env export -n $env > "$dest/envs/${env}.yml"
   done
 }
 mamba-restore() {
   local envs path src
-  src=$HOME/dotfiles/envs
-  [ -d "$src" ] || { echo " Error: Backup directory $src not found."; return 1; }
+  src=$HOME/dotfiles/
+  [ -d "$src" ] || { echo " Error: Cannot find icloud directory $src."; return 1; }
   envs=($(mamba env list | cut -d' ' -f1))
   for path in "$src"/*.yml; do
     name=${path##*/}
     name=${name%.yml}
+    # shellcheck disable=2076
     if [[ " ${envs[*]} " =~ " $name " ]]; then
       echo "Updating environment: $name"
       mamba env update -n "$name" --file "$path"
@@ -2028,7 +2061,6 @@ mamba-restore() {
 }
 
 # Optionally initiate conda (generate this code with 'mamba init')
-# WARNING: This must come after shell integration or gets overwritten
 # WARNING: Making conda environments work with jupyter is complicated. Have
 # to remove stuff from ipykernel and then install them manually.
 # See: https://stackoverflow.com/a/54985829/4970632

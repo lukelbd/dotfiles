@@ -1,8 +1,14 @@
 #-----------------------------------------------------------------------------
 # Configuration file for jupyter-notebook.
 #-----------------------------------------------------------------------------
-# Default browser popup (normally run with --no-browser but useful anyways)
+# Default browser popup
+# Normally initiate jupyter lab with --no-browser but still useful
 c.LabApp.browser = '/Applications/Chromium.app/Contents/MacOS/Chromium --app=%s'
+
+# Default kernel from 'python -m nb_conda_kernels list'
+# See: https://stackoverflow.com/a/66082018/4970632
+# See: https://github.com/Anaconda-Platform/nb_conda_kernels/issues/72
+c.MultiKernelManager.default_kernel_name = 'conda-root-py'
 
 #------------------------------------------------------------------------------
 # Application(SingletonConfigurable) configuration
