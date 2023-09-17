@@ -1176,7 +1176,7 @@ call plug#('tomtom/tcomment_vim')
 " call plug#('Shougo/deol.nvim')  " second generation :terminal add-ons
 " call plug#('jez/vim-superman')  " replaced with vim.vim and bashrc utilities
 " call plug#('tpope/vim-unimpaired')  " bracket maps that no longer use
-call plug#('tpope/vim-repeat')  " shell utils like chmod rename and move
+call plug#('tpope/vim-repeat')  " basic repeat utility
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call plug#('tpope/vim-characterize')  " print character information
 nmap gY <Plug>(characterize)
@@ -1668,12 +1668,12 @@ if s:plug_active('vim-gutentags')
 endif
 
 " Lsp integration settings
+" Todo: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
+" 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
+" Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
 " Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
 " plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
 " vim-lsp-settings/servers files in .config. See: https://github.com/mattn/vim-lsp-settings
-" Note: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
-" 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
-" Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
 " Note: The below autocmd gives signature popups the same borders as hover popups.
 " Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
@@ -1681,7 +1681,7 @@ endif
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 " Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
-" https://www.reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
+" See https://reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
 if s:plug_active('vim-lsp')
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   augroup lsp_style
