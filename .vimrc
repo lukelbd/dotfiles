@@ -46,7 +46,7 @@ set esckeys  " make sure enabled, allows keycodes
 set foldlevel=99  " disable folds
 set foldlevelstart=99  " disable folds
 set foldmethod=expr  " fold methods
-set foldnestmax=10  " avoids weird folding issues
+set foldnestmax=2  " allow only two folding levels
 set foldopen=tag,mark  " opening folds on cursor movement, disallow block folds
 set guifont=Monaco:h12  " match iterm settings in macvim
 set guioptions=M  " default gui options
@@ -928,28 +928,6 @@ nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 inoremap <expr> <C-v> edit#lang_map()
 cnoremap <expr> <C-v> edit#lang_map()
 
-" Always open folds when starting files
-" Note: For some reason vim ignores foldlevelstart
-augroup fold_open
-  au!
-  au BufReadPost * silent! foldopen!
-augroup END
-
-" Open *all* folds under cursor, not just this one
-" noremap <expr> zo foldclosed('.') ? 'zA' : ''
-" Open *all* folds recursively and update foldlevel
-noremap zO zR
-" Close *all* folds and update foldlevel
-noremap zC zM
-" Delete *all* manual folds
-noremap zD zE
-
-" Jump between folds with more consistent naming
-noremap [z zk
-noremap ]z zj
-noremap [Z [z
-noremap ]Z ]z
-
 " Blank lines inspired by 'unimpaired'
 noremap <Plug>BlankUp <Cmd>call edit#blank_up(v:count1)<CR>
 noremap <Plug>BlankDown <Cmd>call edit#blank_down(v:count1)<CR>
@@ -973,8 +951,8 @@ noremap <expr> <C-u> iter#scroll_count(-0.5)
 noremap <expr> <C-d> iter#scroll_count(0.5)
 noremap <expr> <C-b> iter#scroll_count(-1.0)
 noremap <expr> <C-f> iter#scroll_count(1.0)
-inoremap <expr> <C-k> iter#scroll_count(-0.25)
-inoremap <expr> <C-j> iter#scroll_count(0.25)
+inoremap <expr> <C-k> iter#scroll_count(-1)
+inoremap <expr> <C-j> iter#scroll_count(1)
 inoremap <expr> <C-u> iter#scroll_count(-0.5)
 inoremap <expr> <C-d> iter#scroll_count(0.5)
 inoremap <expr> <C-b> iter#scroll_count(-1.0)
@@ -1207,16 +1185,16 @@ call plug#('yegappan/mru')  " most recent file
 " See: https://github.com/junegunn/vim-peekaboo/issues/84
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
-" call plug#('tmhedberg/SimpylFold')  " slows things down
 " call plug#('kshenoy/vim-signature')  " unneeded and abandoned
+call plug#('tmhedberg/SimpylFold')  " slows things down
 call plug#('junegunn/vim-peekaboo')  " popup display
 call plug#('justinmk/vim-sneak')  " simple and clean
 call plug#('Konfekt/FastFold')  " simpler
 let g:peekaboo_prefix = '"'
 let g:peekaboo_window = 'vertical topleft 30new'
-" let g:SimpylFold_docstring_preview = 0
-" let g:SimpylFold_fold_docstring = 0
-" let g:SimpylFold_fold_import = 0
+let g:SimpylFold_docstring_preview = 0  " custom python settings
+let g:SimpylFold_fold_docstring = 0
+let g:SimpylFold_fold_import = 0
 
 " Matching groups and searching
 " Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search
@@ -1601,7 +1579,8 @@ if s:plug_active('tcomment_vim')
 endif
 
 " Vim sneak motion
-" Note: easymotion is way too complicated
+" Note: Tried easy motion but way too complicated / slows everything down
+" See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 if s:plug_active('vim-sneak')
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
@@ -1641,7 +1620,12 @@ if s:plug_active('vim-tags')
 endif
 
 " Gutentag tag generation
-" Note: Also include function for parsing ignore file contents
+" Note: Use gutentags for fancy navigation in buffer / across project, alongside
+" custom vim-tags utility for simple navigation in buffer. In future may also support
+" vim-tags navigation across open tabs.
+" Todo: Update :Open and :Find so they also respect ignore files, consistent with
+" bashrc grep/find utilities and with below grep/ctags utilities. For debugging
+" parsing of ignore files use below :Ignores command.
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
@@ -1665,6 +1649,40 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_generate_on_missing = 1  " update tags when no vimtags file found
   let g:gutentags_generate_on_empty_buffer = 0  " do not update tags when opening vim
   let g:gutentags_project_root_finder = 'tag#find_root'
+endif
+
+" Fast fold settings
+" Note: Use native mappings. zr reduces fold level by 1, zm folds more by 1 level,
+" zR is big reduction (opens everything), zM is big increase (closes everything),
+" zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold.
+" Note: Also tried 'vim-lsp' folding but caused huge slowdowns. Should see folding as
+" similar to linting/syntax/ctags and use separate utility. Also consider bug report.
+" Note: FastFold suggestion for python files is to locally set foldmethod=indent but
+" this is constraining. Use SimpylFold instead (they recommend FastFold integration).
+" See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
+" See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
+if s:plug_active('vim-tags')
+  let g:fastfold_fold_movement_commands = [']z', '[z', 'zj', 'zk']
+  let g:fastfold_fold_command_suffixes =  ['x', 'X', 'a', 'A', 'o', 'O', 'c', 'C']
+  let g:fastfold_fold_movement_commands = []  " skip re-computing on navigation
+  let g:fastfold_savehook = 1
+  let g:markdown_folding = 1
+  let g:rst_fold_enabled = 1
+  let g:tex_fold_enabled = 1
+  let g:vimsyn_folding = 'af'
+  let g:xml_syntax_folding = 1
+  let g:javaScript_fold = 1
+  let g:sh_fold_enabled= 7
+  let g:zsh_fold_enable = 1
+  let g:ruby_fold = 1
+  let g:perl_fold = 1
+  let g:perl_fold_blocks = 1
+  let g:r_syntax_folding = 1
+  let g:rust_fold = 1
+  let g:php_folding = 1
+  let g:fortran_fold=1
+  let g:clojure_fold = 1
+  let g:baan_fold=1
 endif
 
 " Lsp integration settings
@@ -1697,11 +1715,15 @@ if s:plug_active('vim-lsp')
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
-  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " not enough info
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>
-  let &g:foldexpr = 'lsp#ui#vim#folding#foldexpr()'
-  let &g:foldtext = 'lsp#ui#vim#folding#foldtext()'
+  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " not enough info
+  " Warning: Empirical testing seemed to show that setting vim-lsp folding even when
+  " g:lsp_fold_enabled = 0 causes huge slowdowns. Should think of folding as similar
+  " to ale linting, syntax highlighting, or ctags generation, and use separate utility.
+  " Try fast fold: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
+  " let &g:foldexpr = 'lsp#ui#vim#folding#foldexpr()'
+  " let &g:foldtext = 'lsp#ui#vim#folding#foldtext()'
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
@@ -1890,18 +1912,6 @@ if s:plug_active('ale')
   let g:formatters_fortran = ['fprettify']
 endif
 
-" Vim test settings
-" Run tests near cursor or throughout file
-if s:plug_active('vim-test')
-  let g:test#python#pytest#options = '--mpl --verbose'
-  " noremap <Leader>[ <Cmd>TestLast<CR>
-  noremap <Leader>[ <Cmd>TestNearest --mpl-generate<CR>
-  noremap <Leader>] <Cmd>TestNearest<CR>
-  noremap <Leader>{ <Cmd>TestLast<CR>
-  noremap <Leader>} <Cmd>TestFile<CR>
-  noremap <Leader>\ <Cmd>TestVisit<CR>
-endif
-
 " Conflict highlight settings (warning: change below to 'BufEnter?')
 " Todo: Figure out how to get highlighting closer to marks, without clearing background?
 " May need to define custom :syn matches that are not regions. Ask stack exchange.
@@ -2045,6 +2055,18 @@ if s:plug_active('codi.vim')
         \ 'rephrase': function('calc#codi_rephrase'),
         \ },
     \ }
+endif
+
+" Vim test settings
+" Run tests near cursor or throughout file
+if s:plug_active('vim-test')
+  let g:test#python#pytest#options = '--mpl --verbose'
+  " noremap <Leader>[ <Cmd>TestLast<CR>
+  noremap <Leader>[ <Cmd>TestNearest --mpl-generate<CR>
+  noremap <Leader>] <Cmd>TestNearest<CR>
+  noremap <Leader>{ <Cmd>TestLast<CR>
+  noremap <Leader>} <Cmd>TestFile<CR>
+  noremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
 " Undo tree settings

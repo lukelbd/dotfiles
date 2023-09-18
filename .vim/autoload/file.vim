@@ -23,6 +23,7 @@ function! file#print_exists() abort
   endif
 endfunction
 function! file#print_paths(...) abort
+  let chars = ' *[]()?!#%&<>'
   let paths = a:0 ? a:000 : [@%]
   for path in paths
     let user = fnamemodify(path, ':~')
@@ -35,11 +36,10 @@ function! file#print_paths(...) abort
       let show = fnamemodify(path, ':~:.')
     endif
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
-    let working = fnamemodify(getcwd(), ':~')
-    echom "Working directory: '" . working . "'"
-    echom "Project directory: '" . root . "'"
-    echom "Absolute path: '" . user . "'"
-    echom "Relative path: '" . show . "'"
+    let work = fnamemodify(getcwd(), ':~')
+    echom 'Current file: ' . escape(show, chars) . ' (' . escape(user, chars) . ')'
+    echom 'Current project: ' . escape(root, chars)
+    echom 'Current directory: ' . escape(work, chars)
   endfor
 endfunction
 
