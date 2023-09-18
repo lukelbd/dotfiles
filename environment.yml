@@ -1,6 +1,10 @@
 # General packages to install.
 # Use this on new servers with mamba env update -f environment.yml
 # Use pip for cf_units since mamba cf_units outdated python requirements
+# NOTE: To avoid duplicate installations of extensions skip 'jupyter contrib install' See:
+# https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator/issues/25#issuecomment-287730514
+# NOTE: Need to install latex-envs from master branch until May 2022 PR released. See:
+# https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529#issuecomment-1134250842
 # NOTE: Here jupyterlab >= 4.0.0 ships with LSP utilities based on jupyterlab-lsp
 # extension. Try again once all highlighting bugs worked out.
 # NOTE: Using executing < 1.0.0 can cause bug where executions do not format
@@ -77,3 +81,4 @@ dependencies:
     - esgf-pyclient
     - flake8-unused-arguments
     - git+https://github.com/gruns/icecream.git  # until release increments
+    - git+https://github.com/jfbercher/jupyter_latex_envs.git  # until release increments

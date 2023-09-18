@@ -1377,23 +1377,26 @@ alias r='command R -q --no-save'
 alias R='command R -q --no-save'
 
 # Perl -- hard to understand, but here it goes:
-# * The first args are passed to rlwrap (-A sets ANSI-aware colors, and -pgreen applies green prompt)
-# * The next args are perl args; -w prints more warnings, -n is more obscure, and -E
-#   evaluates an expression -- say eval() prints evaluation of $_ (default searching and
-#   pattern space, whatever that means), and $@ is set if eval string failed so the // checks
-#   for success, and if not, prints the error message. This is a build-your-own eval.
+# * The first args are passed to rlwrap (install with 'mamba install rlwrap'). The
+#   flags -A set ANSI-aware colors and -pgreen apply a green prompt.
+# * The next args are perl args. Flags -w print more warnings, -n is more obscure, and
+#   -E evaluates an expression -- say eval() prints result of $_ (default searching and
+#   pattern space, whatever that means), and $@ is set if eval string failed so the //
+#   checks for success, and if not prints error message. This is a build-your-own eval.
 iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
   ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@'  # rlwrap stands for readline wrapper
 }
 
 # Set up jupyter lab with necessary port-forwarding connections
-# * Install nbstripout with 'pip install nbstripout', then add it to the
-#   global .gitattributes for automatic stripping of contents.
-# * To uninstall nbextensions completely, use `jupyter contrib nbextension uninstall --user` and
-#   `pip uninstall jupyter_contrib_nbextensions`; remove the configurator with `jupyter nbextensions_configurator disable`
+# See: https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator/issues/25#issuecomment-287730514
+# See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529#issuecomment-1134250842
+# * Install nbstripout with 'pip install nbstripout', then add to global .gitattributes
+#   for automatic stripping during git differencing.
+# * *Do not* need 'jupyter contrib nbextensions install --user', creates duplicate
+#   installation in ~/Library. Fix with 'jupyter contrib nbextensions uninstall --user'
 # * If you have issues where themes are just not changing in Chrome, open Developer tab
-#   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset
+#   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset.
 jupyter-lab() {
   local port flag
   if [ -n "$1" ]; then
@@ -1418,15 +1421,55 @@ jupyter-lab() {
   jupyter lab $flag --no-browser
 }
 
+# Save a concise HTML snapshot of the jupyter notebook for collaboration
+# NOTE: The PDF version requires xelatex. Try to use drop-in xelatex replacement
+# tectonic for speed. Install with 'mamba install tectonic' and correspondingly update
+# jupyter_nbconvert_config.py. See: https://github.com/jupyter/nbconvert/issues/808
+# NOTE: The HTML version can only use the jupyter notebook toc2-style table of contents.
+# Requires installing nbextensions and enabling extension in classic jupyter interface
+# (see above and https://stackoverflow.com/a/63123831/4970632but but skip 'contrib
+# install' step to avoid duplicate installations), then adding cell metadata
+# "toc": {"number_sections": false, "sideBar": true} in jupyterlab notebook
+# 'advanced tools' panel (see https://stackoverflow.com/a/59286150/4970632).
+# TODO: Table of contents still *does not work* as of 2023-09-17. Previously had issues
+# with nbconvert >= 6.0.0 and downgrading fixed things, but no longer possible due to
+# dependencies. Tried template from issue pages, and template compiles, but with no
+# table of contents. The nbextensions tab had some 'load errors'. Could continue there.
+# See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1533#issuecomment-1195067419
+# See: https://nbconvert.readthedocs.io/en/latest/customizing.html#adding-additional-template-paths
+jupyter-convert() {
+  # flags+=(--no-input)  # remove code (useful for huge files, but harder to understand)
+  # flags+=(--no-prompt)  # remove prompt (possibly cleaner, but harder to understand)
+  # flags+=(--TemplateExporter.extra_template_basedirs=$HOME/.jupyter)  # set in config
+  local ext fmt zips base input output flags
+  fmt=html  # 'html_toc' for table of contents
+  ext=${fmt%_*}  # extension
+  flags+=(--to "$fmt")
+  flags+=(--template classic)  # 'lab' for no centering, 'custom' for failed toc fix
+  flags+=(--ExtractOutputPreprocessor.enabled=False)  # embed figures in html file
+  for input in "$@"; do
+    base=$(abspath ${input%/*})  # default base directory
+    [ -d "${base%/notebooks}/meetings" ] && base=${base%/notebooks}/meetings
+    [ -r "$input" ] || { echo "Error: Notebook $input does not exist."; return 1; }
+    [[ "$input" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $input."; return 1; }
+    output=${input%.ipynb}_$(date +%Y-%m-%d).$ext
+    output=${output##*/}  # strip directory
+    jupyter nbconvert "${flags[@]}" --output-dir "$base" --output "$output" "$input" || return 1
+    zips=("${output/.${ext}/}"*)  # include _files subfolder
+    if [ "${#zips[@]}" -gt 1 ] && pushd "$base"; then
+      zip -r "${output/.${ext}/.zip}" "${zips[@]}"
+      popd || continue
+    fi
+  done
+}
+
 # Refresh stale connections from macbook to server
-# Simply calls the '_jupyter_tunnel' function
+# WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
+# -t flag, causes ssh command to mess up. Skip this flag.
 jupyter-connect() {
   local cmd ports
   cmd="ps -u | grep jupyter- | tr ' ' '\n' | grep -- --port | cut -d= -f2 | xargs"
-  # Find ports for *existing* jupyter notebooks
-  # WARNING: Using pseudo-tty allocation, i.e. simulating active shell with
-  # -t flag, causes ssh command to mess up.
-  if $_macos; then
+  if $_macos; then  # find ports for existing notebooks
     [ $# -eq 1 ] || { echo "Error: Must input server."; return 1; }
     server=$1
     ports=$(command ssh -o StrictHostKeyChecking=no "$server" "$cmd") \
@@ -1435,8 +1478,6 @@ jupyter-connect() {
     ports=$(eval "$cmd")
   fi
   [ -n "$ports" ] || { echo "Error: No active jupyter notebooks found."; return 1; }
-
-  # Connect over ports
   echo "Connecting to jupyter notebook(s) over port(s) $ports."
   if $_macos; then
     _ssh "$server" "$ports"
@@ -1445,52 +1486,12 @@ jupyter-connect() {
   fi
 }
 
-# Save a concise HTML snapshot of the jupyter notebook for collaboration
-# NOTE: Can clean things up by passing --no-prompt (exlude 'in' 'out' symbols) or
-# --no-input (exclude all code) but they help orient things, better to include if
-# we are being good about using separate modules and functions.
-# NOTE: As of 2023-09-16 --output-dir seems to have no effect for some reason. Instead
-# specify base paths in folder. Also a 'files' subfolder will be generated to handle
-# figure outputs only sometimes (maybe only for retina?). For 'png' they are embedded.
-# NOTE: The PDF version requires xelatex. Try to use drop-in xelatex
-# replacement tectonic for speed; install with conda install -c conda-forge tectonic and
-# edit jupyter_nbconvert_config.py. See: https://github.com/jupyter/nbconvert/issues/808
-# NOTE: The HTML version can only use the jupyter notebook toc2-style
-# table of contents. To install see: https://stackoverflow.com/a/63123831/4970632 (note
-# jupyter_nbconvert_config.json is auto-edited). To change default settings must use
-# classical jupyter notebook interface, and to include toc with default html export can
-# optionally add metadata to ipynb. See: https://stackoverflow.com/a/59286150/4970632
-# mamba install jupyter_contrib_nextensions; jupyter contrib nbextension install --user
-# NOTE: Annoyingly nbconvert greater than 5 causes issues converting notebooks, but
-# almost impossible to downgrade due to dependency on older jinja2 and other jupyter
-# packages requiring downgrades / picking up conflicts. Instead have figured out
-# using custom template from github issue and merging template files.
-# See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1533#issuecomment-1195067419
-# See: https://nbconvert.readthedocs.io/en/latest/customizing.html#adding-additional-template-paths
-jupyter-convert() {
-  local ext fmt base file output
-  fmt=html ext=${fmt%_*}
-  for file in "$@"; do
-    base=$(abspath ${file%/*})
-    base=${base%/notebooks}/meetings
-    # base=$(git rev-parse --show-toplevel)/meetings
-    [ -d "$base" ] || { echo "Error: Directory $base does not exist."; return 1; }
-    [[ "$file" =~ .*\.ipynb ]] || { echo "Error: Invalid filename $file."; return 1; }
-    output=${file%.ipynb}_$(date +%Y-%m-%d).$ext
-    jupyter nbconvert \
-      --template classic \
-      --to "$fmt" --output-dir "$base" --output "$base/${output##*/}" "$file" || return 1
-      # --ExtractOutputPreprocessor.enabled=False \
-      # --TemplateExporter.extra_template_basedirs=$HOME/.jupyter \
-    output=${output##*/}
-    pushd "$base" || { echo "Error: Failed to jump to meeting directory."; return 1; }
-    zip -r "${output/.${ext}/.zip}" "${output/.${ext}/}"*  # include _files subfolder
-    popd || { echo "Error: Failed to return to original directory."; return 1; }
-  done
-}
-
 # Change the jupytext kernel for all notebooks
-# NOTE: To install and use jupytext see top of file.
+# NOTE: To get jupytext conversion and .py file reading inside jupyter noteboks need
+# the extensions: https://github.com/mwouts/jupytext/tree/main/packages/labextension
+# Install jupyter notebook and jupyter lab extensions with mamba install jupytext;
+# 'jupyter nbextension install --py jupytext --user; jupyter nbextension enable
+# --py jupytext --user; jupyter labextension install jupyterlab-jupytext'.
 jupyter-kernel() {
   local file files
   kernel=$1
