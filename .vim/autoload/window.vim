@@ -5,6 +5,7 @@
 " See: https://vi.stackexchange.com/a/22428/8084 (comment)
 " Note: For some reason some edited files have 'nobuflisted' set (so ignored by
 " e.g. :bnext). Maybe due to some plugin. Anyway do not use buflisted() filter.
+scriptencoding utf-8
 function! s:recent_bufs() abort
   let info = getbufinfo()
   let info = sort(info, {val1, val2 -> val2.lastused - val1.lastused})
@@ -40,6 +41,29 @@ function! window#close_tab() abort
       silent! tabprevious
     endif
   endif
+endfunction
+
+" Show truncated fold text
+" Note: Style here is inspired by vim-anyfold. For now stick to native
+" per-filetype syntax highlighting becuase still has some useful features.
+function! window#fold_text() abort
+  " Format lines
+  let digits = len(string(line('$')))
+  let lines = string(v:foldend - v:foldstart + 1)
+  let lines = repeat(' ', digits - len(lines)) . lines
+  let lines = repeat('+ ', len(v:folddashes)) . lines . ' lines'
+  " Format text
+  let regex = '\s*' . comment#get_char() . '\s\+.*$'
+  let text = substitute(getline(v:foldstart), regex, '', 'g')
+  let regex = '\("""\|' . "'''" . '\)'  " replace docstrings
+  let text = substitute(text, regex, '<docstring>', 'g')
+  " Combine components
+  let width = winwidth(0) - scrollwrapped#numberwidth() - scrollwrapped#signwidth()
+  let width = min([width, &textwidth])  " set maximum width
+  let size = width - len(lines) - 2  " at least two spaces
+  let text = len(text) > size ? text[:size - 4] . '···' : text
+  let space = repeat(' ', width - len(text) - len(lines))
+  return text . space . lines
 endfunction
 
 " Function that generates lists of tabs and their numbers

@@ -45,10 +45,10 @@ set foldenable  " enable folding
 set foldexpr=0  " vim uses syntax folding by default
 set foldlevel=99  " disable folds
 set foldlevelstart=99  " disable folds
-set foldmethod=manual  " then fastfold toggles syntax/expr on and off
+set foldmethod=syntax  " then fastfold toggles syntax/expr on and off
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
-set foldtext=foldtext()  " default function for generating text shown on fold line
+set foldtext=window#fold_text()  " default function for generating text shown on fold line
 set guifont=Monaco:h12  " match iterm settings in macvim
 set guioptions=M  " default gui options
 set history=100  " search history
@@ -368,25 +368,23 @@ endfor
 "-----------------------------------------------------------------------------"
 " Syntax and folding
 "-----------------------------------------------------------------------------"
-"
 " Macvim color schemes
+" Todo: Figure out issues with scheme switching
 let s:colorscheme = 'papercolor'
-" let s:colorscheme = 'abra'
-" let s:colorscheme = 'ayu'
 " let s:colorscheme = 'badwolf'
 " let s:colorscheme = 'fahrenheit'
 " let s:colorscheme = 'gruvbox'
-" let s:colorscheme = 'molokai'  " also molokai/monokain
+" let s:colorscheme = 'molokai'
+" let s:colorscheme = 'monokain'
 " let s:colorscheme = 'oceanicnext'
-" let s:colorscheme = 'papercolor'
 
 " Macvim syntax overrides
 " Todo: Figure out whether to declare colorscheme here or at bottom
 if has('gui_running')  " revisit these?
-  highlight! link vimCommand Statement
+  highlight! link vimMap Statement
   highlight! link vimNotFunc Statement
   highlight! link vimFuncKey Statement
-  highlight! link vimMap Statement
+  highlight! link vimCommand Statement
   " exe 'noautocmd colorscheme ' . s:colorscheme
 endif
 
@@ -1189,6 +1187,9 @@ call plug#('yegappan/mru')  " most recent file
 " let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
 
 " Navigation and marker and fold interface
+" Note: SimPylFold seems to have nice improvements, but while vim-tex-fold adds
+" environment folding support, only native vim folds document header, which is
+" sometimes useful. Will stick to default unless things change.
 " Note: FastFold simply keeps &l:foldmethod = 'manual' most of time and updates on
 " saves or fold commands instead of continuously-updating with the highlighting as
 " vim tries to do. Works with both native vim syntax folding and expr overrides.
@@ -1197,13 +1198,15 @@ call plug#('yegappan/mru')  " most recent file
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
 " call plug#('kshenoy/vim-signature')  " unneeded and abandoned
 " call plug#('pseewald/vim-anyfold')  " need to try this!
-call plug#('tmhedberg/SimpylFold')
-" call plug#('matze/vim-tex-fold')
+" call plug#('matze/vim-tex-fold')  " tex folding
+call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('junegunn/vim-peekaboo')  " popup display
 call plug#('justinmk/vim-sneak')  " simple and clean
 call plug#('Konfekt/FastFold')  " speedup folding
 let g:peekaboo_prefix = '"'
 let g:peekaboo_window = 'vertical topleft 30new'
+let g:tex_fold_override_foldtext = 0  " disable foldtext() override
+let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
 " Matching groups and searching
 " Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search
@@ -1668,7 +1671,7 @@ endif
 " zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold,
 " and zv is open folds enough to view cursor (useful when jumping lines or searching)
 " Note: Also tried 'vim-lsp' folding but caused huge slowdowns. Should see folding as
-" similar to linting/syntax/ctags and use separate utility. Also consider bug report.
+" similar to linting/syntax/tags and use separate utility. Also consider vim-anyfold
 " Note: FastFold suggestion for python files is to locally set foldmethod=indent but
 " this is constraining. Use SimpylFold instead (they recommend FastFold integration).
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
@@ -1678,12 +1681,6 @@ if &g:foldenable || s:plug_active('FastFold')
   let g:fastfold_fold_command_suffixes =  ['x', 'X', 'a', 'A', 'o', 'O', 'c', 'C']
   let g:fastfold_fold_movement_commands = [']z', '[z', 'zj', 'zk']  " or empty list
   let g:fastfold_savehook = 1
-  let g:SimpylFold_docstring_preview = 0  " SimpylFold settings
-  let g:SimpylFold_fold_docstring = 1
-  let g:SimpylFold_fold_import = 0
-  let g:tex_fold_env_char = '¬'  " vim-tex-fold settings
-  let g:tex_fold_sec_char = '➜'
-  let g:tex_fold_override_foldtext = 0  " use default for consistency
   " Native folding settings
   let g:baan_fold = 1
   let g:clojure_fold = 1
