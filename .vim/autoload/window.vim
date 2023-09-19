@@ -62,7 +62,7 @@ function! window#fold_text() abort
   let width = winwidth(0) - offset
   let width = min([width, &textwidth - 1])  " set maximum width
   let size = width - len(lines) - 2  " at least two spaces
-  let text = len(text) > size ? text[:size - 4] . '···' : text
+  let text = len(text) > size ? text[:size - 4] . '···  ' : text
   let space = repeat(' ', width - len(text) - len(lines))
   let origin = line('.') == v:foldstart ? 0 : col('.') - (wincol() - offset)
   let result = text . space . lines
