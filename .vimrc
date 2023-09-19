@@ -397,6 +397,9 @@ endif
 " Make terminal background same as main background
 highlight Terminal ctermbg=NONE ctermfg=NONE
 
+" Show folds with dark against light
+highlight Folded ctermbg=White ctermfg=Black
+
 " Use original colors for transparent conceal group
 highlight Conceal ctermbg=NONE ctermfg=NONE
 
