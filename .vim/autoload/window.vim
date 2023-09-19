@@ -58,12 +58,15 @@ function! window#fold_text() abort
   let regex = '\("""\|' . "'''" . '\)'  " replace docstrings
   let text = substitute(text, regex, '<docstring>', 'g')
   " Combine components
-  let width = winwidth(0) - scrollwrapped#numberwidth() - scrollwrapped#signwidth()
+  let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
+  let width = winwidth(0) - offset
   let width = min([width, &textwidth - 1])  " set maximum width
   let size = width - len(lines) - 2  " at least two spaces
   let text = len(text) > size ? text[:size - 4] . '···' : text
   let space = repeat(' ', width - len(text) - len(lines))
-  return text . space . lines
+  let origin = line('.') == v:foldstart ? 0 : col('.') - (wincol() - offset)
+  let result = text . space . lines
+  return result[origin:]
 endfunction
 
 " Function that generates lists of tabs and their numbers
