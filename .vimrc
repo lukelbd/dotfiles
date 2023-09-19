@@ -461,9 +461,9 @@ noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap <Leader>Y <Cmd>SyncStart<CR>
 
 " Color scheme scrolling
-" Todo: Figure out whether to declare colorscheme here or at top
 " Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
-" Note: This is mainly used for GUI vim, otherwise use terminal themes. Some ideas:
+" Note: Colors uses fzf to jump between color schemes (fzf.vim command). These utils
+" are mainly used for GUI vim, otherwise use terminal themes. Some scheme ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
 command! SchemePrev call iter#jump_colorschemes(0)
 command! SchemeNext call iter#jump_colorschemes(1)
@@ -476,7 +476,8 @@ augroup color_scheme
 augroup END
 
 " General syntax commands
-" Note: Mapping mnemonic for colorizer is # for hex string
+" Note: ColorToggle is defined in colorizer.vim. Enables hex-string coloring. Useful
+" only for small files and with only a few tabs open.
 command! -nargs=0 CurrentGroup call vim#syntax_group()
 command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
 command! -nargs=0 GroupColors vert help group-name | call search('\*Comment') | normal! zt
@@ -1206,8 +1207,8 @@ call plug#('yegappan/mru')  " most recent file
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
 " call plug#('kshenoy/vim-signature')  " unneeded and abandoned
-" call plug#('pseewald/vim-anyfold')  " need to try this!
-" call plug#('matze/vim-tex-fold')  " tex folding
+" call plug#('pseewald/vim-anyfold')  " better indent folding (instead of vim syntax)
+" call plug#('matze/vim-tex-fold')  " folding tex environments (but no preamble)
 call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('junegunn/vim-peekaboo')  " popup display
 call plug#('justinmk/vim-sneak')  " simple and clean
@@ -1638,6 +1639,8 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
+  let g:tags_jump_map = '<Leader><Leader>'
+  let g:tags_drop_map = '<Tab><Leader>'  " inverse of default <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let g:tags_skip_kinds = {'python': 'I', 'tex': 'g', 'vim': 'vnC'}
 endif
@@ -2138,9 +2141,10 @@ endif
 "-----------------------------------------------------------------------------"
 " Exit
 "-----------------------------------------------------------------------------"
-" Clear past jumps to ignore stuff from plugin files and vimrc
-" Also ignore outdated marks loaded from .viminfo
+" Clear past jumps to ignore stuff from plugin files and vimrc. Also ignore
+" outdated buffer marks loaded from .viminfo
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
+" Todo: Figure out whether to declare colorscheme here or at top
 if has('gui_running') | exe 'noautocmd colorscheme ' . s:colorscheme | endif
 augroup clear_jumps
   au!

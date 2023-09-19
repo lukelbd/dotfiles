@@ -131,16 +131,16 @@ endfunction
 " Show runtime color and plugin information
 " Note: Consistent with other utilities this uses separate tabs
 function! vim#show_colors() abort
-  exe 'Drop colortest.vim'
+  call file#open_drop('colortest.vim')
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#panel_setup(0)
 endfunction
 function! vim#show_ftplugin() abort
-  exe 'Drop $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
+  call file#open_drop($VIMRUNTIME . '/ftplugin/' . &filetype . '.vim')
   silent call utils#panel_setup(0)
 endfunction
 function! vim#show_syntax() abort
-  exe 'Drop $VIMRUNTIME/syntax/' . &filetype . '.vim'
+  call file#open_drop($VIMRUNTIME . '/syntax/' . &filetype . '.vim')
   silent call utils#panel_setup(0)
 endfunction
 

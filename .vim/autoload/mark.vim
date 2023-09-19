@@ -58,7 +58,7 @@ function! mark#fzf_jumps(...)
   return call(snr . 'fzf', ['jumps', options, a:000])
 endfunction
 
-" Override of FZF :Marks to implement :Drop
+" Override of FZF :Marks to implement :Drop switching
 " Note: Normally the fzf function calls `A-Z, and while vim permits multi-file marks,
 " it does not have an option to open in existing tabs like 'showbufs' for loclist.
 function! s:mark_sink(lines) abort
@@ -74,7 +74,7 @@ function! mark#goto_mark(mrk) abort
     echohl None
   else
     let opts = mrks[0]
-    exe 'Drop ' . opts['file']
+    call file#open_drop(opts['file'])
     call setpos('.', opts['pos'])  " can also use this to set marks
   endif
 endfunction

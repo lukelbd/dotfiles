@@ -82,9 +82,12 @@ function! s:fzf_tab_source() abort
         let bufnr = bnr
       endif
     endfor
+    if exists('*RelativePath')
+      let path = RelativePath(bufname(bufnr))
+    else
+      let path = fnamemodify(bufname(bufnr), ':~:.')
+    endif
     let pad = repeat(' ', ndigits - len(string(tnr)))
-    let path = fnamemodify(bufname(bufnr), '%:t')
-    let path = exists('*RelativePath') ? RelativePath(path) : path  " statusline plugin
     let path = pad . tnr . ': ' . path  " displayed string
     let unsorted[string(bufnr)] = path
   endfor

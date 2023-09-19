@@ -147,7 +147,7 @@ function! s:open_continuous(...) abort
 endfunction
 
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
-" Warning: The defaiult ':tab drop' seems to jump to the last tab on failure and
+" Warning: The default ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
 function! file#open_drop(file) abort
   let visible = {}
