@@ -64,7 +64,7 @@ function! window#fold_text() abort
   let size = width - len(lines) - 2  " at least two spaces
   let text = len(text) > size ? text[:size - 4] . '···  ' : text
   let space = repeat(' ', width - len(text) - len(lines))
-  let origin = line('.') == v:foldstart ? 0 : col('.') - (wincol() - offset)
+  let origin = foldclosed(line('.')) ? 0 : col('.') - (wincol() - offset)
   let result = text . space . lines
   return result[origin:]
 endfunction
