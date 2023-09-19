@@ -7,8 +7,8 @@
 " and therefore lsp#scroll do not return popup completion windows).
 function! s:scroll_default(scroll) abort
   let nr = abs(type(a:scroll) == 5 ? float2nr(a:scroll * winheight(0)) : a:scroll)
-  let str = a:scroll > 0 ? 'd' : 'u'
-  let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ", '" . str . "', 1)\<CR>"
+  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
+  let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ', ' . rev . ")\<CR>"
   return mode() =~# '^[iIR]' ? '' : cmd  " only allowed in normal mode
 endfunction
 function! s:scroll_preview(info, scroll) abort
