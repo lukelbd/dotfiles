@@ -39,6 +39,7 @@ set backspace=indent,eol,start  " backspace by indent - handy
 set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
 set cmdheight=1  " increse to avoid pressing enter to continue 
+set colorcolumn=89,121  " color column after recommended length of 88
 set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
@@ -48,7 +49,7 @@ set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldenable  " then plugins and fastfold handle 'foldmethod' and 'foldexpr'
-set foldlevelstart=99  " hide folds when opening (then 'foldlevel' sets current status)
+set foldlevelstart=3  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=window#fold_text()  " default function for generating text shown on fold line
@@ -123,10 +124,9 @@ set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu  " command line completion
 set wildmode=longest:list,full  " command line completion
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
-let &g:colorcolumn = join([s:linelength + 1, s:linelength + 21], ',')
 let &g:expandtab = 1  " global expand tab
-let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 let &g:wildignore = join(tag#get_ignores(0, '~/.wildignore'), ',')
+let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
 if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
 
