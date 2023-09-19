@@ -19,18 +19,24 @@
 " conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
 " Critical stuff
+" Note: Below dictionary figures out which files were recently modified when refreshing
+" session. Line length is used with linting tools below and in other non-vim settings.
 set encoding=utf-8  " enable utf characters
 set nocompatible  " always use the vim defaults
 scriptencoding utf-8
 runtime autoload/repeat.vim
-let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
 let g:mapleader = "\<Space>"  " see below <Leader> mappings
+let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
 let s:linelength = 88  " see below configuration
 
 " Global settings
+" Warning: Tried setting default 'foldmethod' and 'foldexpr' can cause buffer-local
+" expression folding e.g. simpylfold to disappear and not retrigger, while using
+" setglobal didn't work for filetypes with folding not otherwise auto-triggered (vim)
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
+set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
 set cmdheight=1  " increse to avoid pressing enter to continue 
 set complete+=k  " enable dictionary search through 'dictionary' setting
@@ -41,11 +47,9 @@ set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display opt
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
-set foldenable  " enable folding
-set foldexpr=0  " vim uses syntax folding by default
+set foldenable  " then plugins and fastfold handle 'foldmethod' and 'foldexpr'
 set foldlevel=99  " disable folds
 set foldlevelstart=99  " disable folds
-set foldmethod=syntax  " then fastfold toggles syntax/expr on and off
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=window#fold_text()  " default function for generating text shown on fold line
@@ -57,7 +61,8 @@ set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
 set incsearch  " show match as typed so far
 set lazyredraw  " skip redraws during macro and function calls
-set list listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
+set list  " show hidden characters
+set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
 set matchpairs=(:),{:},[:]  " exclude <> by default for use in comparison operators
 set maxmempattern=50000  " from 1000 to 10000
 set mouse=a  " mouse clicks and scroll allowed in insert mode via escape sequences
@@ -65,60 +70,61 @@ set noautochdir  " disable auto changing
 set noautowrite  " disable auto write for file jumping commands (ask user instead)
 set noautowriteall  " disable autowrite for :exit, :quit, etc. (ask user instead)
 set nobackup  " no backups when overwriting files, use tabline/statusline features
-set noswapfile " no more swap files, instead use session
 set noerrorbells  " disable error bells (see also visualbell and t_vb)
 set noinfercase  " do not replace insert-completion with case inferred from typed text
 set nospell  " disable spellcheck by default
 set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
+set noswapfile " no more swap files, instead use session
+set notimeout  " wait forever when doing multi-key *mappings*
 set nowrap  " global wrap setting possibly overwritten by wraptoggle
-set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
 set nrformats=alpha  " never interpret numbers as 'octal'
-set number numberwidth=4  " note old versions can't combine number with relativenumber
+set number  " show line numbers
+set numberwidth=4  " number column minimum width
 set path=.  " used in various built-in searching utilities, file_in_path complete opt
-set pumwidth=10  " minimum popup menu width
-set pumheight=10  " maximum popup menu height
 set previewheight=30  " default preview window height
+set pumheight=10  " maximum popup menu height
+set pumwidth=10  " minimum popup menu width
 set redrawtime=5000  " sometimes takes a long time, let it happen
 set relativenumber  " relative line numbers for navigation
 set restorescreen  " restore screen after exiting vim
 set scrolloff=4  " screen lines above and below cursor
-set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
 set selectmode=  " disable 'select mode' slm, allow only visual mode for that stuff
-set signcolumn=auto  " auto may cause lag after startup but unsure
+set sessionoptions=tabpages,terminal,winsize  " restrict session options for speed
 set shell=/usr/bin/env\ bash
 set shiftround  " round to multiple of shift width
 set shiftwidth=2  " default 2 spaces
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=2  " default 2 spaces
+set signcolumn=auto  " auto may cause lag after startup but unsure
 set smartcase  " search case insensitive, unless has capital letter
 set softtabstop=2  " default 2 spaces
-set spelllang=en_us  " default to US english
 set spellcapcheck=  " disable checking for capital start of sentence
+set spelllang=en_us  " default to US english
 set splitbelow  " splitting behavior
 set splitright  " splitting behavior
 set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open tab
-set tabpagemax=100  " allow opening shit load of tabs at once
+set tabpagemax=300  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
-set tags=.vimtags,./.vimtags  " home, working dir, or file dir
-set tagstack  " auto-add to tagstack with :tag commands
 set tagcase=ignore  " ignore case when matching paths
 set tagfunc=lsp#tagfunc  " use lsp for tag stack navigation
 set tagrelative  " paths in tags file are relative to location
-set ttymouse=sgr  " different cursor shapes for different modes
+set tags=.vimtags,./.vimtags  " home, working dir, or file dir
+set tagstack  " auto-add to tagstack with :tag commands
+set timeoutlen=0  " othterwise do not wait at all
 set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S-Tab> escape code
-set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
+set ttymouse=sgr  " different cursor shapes for different modes
+set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set undofile  " save undo history
 set undolevels=500  " maximum undo level
-set undodir=~/.vim_undo_hist  " ./setup enforces existence
+set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set visualbell  " prefer visual bell to beeps (see also 'noerrorbells')
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu  " command line completion
 set wildmode=longest:list,full  " command line completion
-let &g:colorcolumn = '89,121'  " global color columns
-let &g:breakindent = 1  " global indent behavior
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
+let &g:colorcolumn = join([s:linelength + 1, s:linelength + 21], ',')
 let &g:expandtab = 1  " global expand tab
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 let &g:wildignore = join(tag#get_ignores(0, '~/.wildignore'), ',')
@@ -1383,12 +1389,12 @@ call plug#('raimondi/delimitmate')
 " call plug#('vim-scripts/argtextobj.vim')  " issues with this too
 " call plug#('machakann/vim-textobj-functioncall')  " does not work
 " call plug#('glts/vim-textobj-comment')  " does not work
-call plug#('kana/vim-textobj-fold')  " folding
 call plug#('kana/vim-textobj-user')  " base requirement
-call plug#('kana/vim-textobj-entire')  " entire file, object is 'e'
 call plug#('kana/vim-textobj-line')  " entire line, object is 'l'
+call plug#('kana/vim-textobj-entire')  " entire file, object is 'e'
+call plug#('kana/vim-textobj-fold')  " folding
 call plug#('kana/vim-textobj-indent')  " matching indentation, object is 'i' for deeper indents and 'I' for just contiguous blocks, and using 'a' includes blanklines
-call plug#('sgur/vim-textobj-parameter')  " function parameter
+call plug#('sgur/vim-textobj-parameter')  " function parameter, object is '='
 let g:vim_textobj_parameter_mapping = '='  " avoid ',' conflict with latex
 
 " Aligning things and stuff, use vim-easy-align because more tabular API is fugly AF
