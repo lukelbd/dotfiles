@@ -2,9 +2,10 @@
 " Python settings
 "-----------------------------------------------------------------------------
 " Various settings
-setlocal foldmethod=indent  " default fast fold
 setlocal iskeyword-=.  " exclude period from word definition
-setlocal tabstop=4 softtabstop=4 shiftwidth=4
+setlocal tabstop=4  " number of tab spaces
+setlocal shiftwidth=4
+setlocal softtabstop=4
 let g:python_slow_sync = 0  " use fast syncing
 let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_func_calls = 1  " python-syntax syntax option
