@@ -59,7 +59,7 @@ function! window#fold_text() abort
   let text = substitute(text, regex, '<docstring>', 'g')
   " Combine components
   let width = winwidth(0) - scrollwrapped#numberwidth() - scrollwrapped#signwidth()
-  let width = min([width, &textwidth])  " set maximum width
+  let width = min([width, &textwidth - 1])  " set maximum width
   let size = width - len(lines) - 2  " at least two spaces
   let text = len(text) > size ? text[:size - 4] . '···' : text
   let space = repeat(' ', width - len(text) - len(lines))
