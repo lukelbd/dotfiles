@@ -398,7 +398,7 @@ endif
 highlight Terminal ctermbg=NONE ctermfg=NONE
 
 " Show folds with dark against light
-highlight Folded ctermbg=White ctermfg=Black
+highlight Folded ctermbg=White ctermfg=Black cterm=Bold
 
 " Use original colors for transparent conceal group
 highlight Conceal ctermbg=NONE ctermfg=NONE
