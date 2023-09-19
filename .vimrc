@@ -48,8 +48,7 @@ set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldenable  " then plugins and fastfold handle 'foldmethod' and 'foldexpr'
-set foldlevel=99  " disable folds
-set foldlevelstart=99  " disable folds
+set foldlevelstart=99  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=window#fold_text()  " default function for generating text shown on fold line
