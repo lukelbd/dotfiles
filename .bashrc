@@ -741,7 +741,12 @@ vim() {
 
 # Vim session initiation and restoration
 # See: https://apple.stackexchange.com/q/31872/214359
-# NOTE: For some reason folds are otherwise re-closed upon openening each file.
+# NOTE: Previously had manual overrides for various fold commands. But not
+# anymore, seems unnecessary with simple FastFold + native folding.
+# some reason folds are otherwise re-closed upon openening each file.
+# sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
+# sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous fold commands
+# sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
 vim-session() {
   local arg path flags root alt  # flags and session file
   for arg in "$@"; do
@@ -761,9 +766,6 @@ vim-session() {
   root=$(abspath "$path")  # absolute path with slashes
   root=${root%/*}  # root directory to detect
   alt=${root/$HOME/\~}  # alternative root with tilde
-  sed -i '/zt/a setlocal nofoldenable' "$path"  # disable folds after opening file
-  sed -i 'N;/normal! z[oc]/!P;D' "$path"  # remove previous line navigation and fold command
-  sed -i '/^[0-9]*,[0-9]*fold$/d' "$path"  # remove manual fold definitions
   sed -i "\\:^lcd \\($root\\|$alt\\)\$:d" "$path"  # remove outdated lcd calls
   vim -S "$path" "${flags[@]}"  # call above function
 }

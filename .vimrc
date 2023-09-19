@@ -19,18 +19,15 @@
 " conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
 " Critical stuff
-let &t_te=''
-let &t_Co=256
-exe 'runtime autoload/repeat.vim'
-
-" Global settings
-set encoding=utf-8
+set encoding=utf-8  " enable utf characters
 set nocompatible  " always use the vim defaults
 scriptencoding utf-8
-let g:refresh_times = get(g:, 'refresh_times', {'global': localtime()})
-let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
+runtime autoload/repeat.vim
+let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
 let g:mapleader = "\<Space>"  " see below <Leader> mappings
 let s:linelength = 88  " see below configuration
+
+" Global settings
 set autoindent  " indents new lines
 set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
@@ -43,15 +40,20 @@ set cursorline  " highlight cursor line
 set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
+set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
+set foldenable  " enable folding
+set foldexpr=0  " vim uses syntax folding by default
 set foldlevel=99  " disable folds
 set foldlevelstart=99  " disable folds
-set foldmethod=expr  " fold methods
-set foldnestmax=2  " allow only two folding levels
-set foldopen=tag,mark  " opening folds on cursor movement, disallow block folds
+set foldmethod=manual  " then fastfold toggles syntax/expr on and off
+set foldnestmax=3  " allow only a few folding levels
+set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
+set foldtext=foldtext()  " default function for generating text shown on fold line
 set guifont=Monaco:h12  " match iterm settings in macvim
 set guioptions=M  " default gui options
 set history=100  " search history
-set hlsearch  " highlight as you go
+set hlsearch  " highlight as you search forward
+set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
 set incsearch  " show match as typed so far
 set lazyredraw  " skip redraws during macro and function calls
@@ -64,9 +66,9 @@ set noautowrite  " disable auto write for file jumping commands (ask user instea
 set noautowriteall  " disable autowrite for :exit, :quit, etc. (ask user instead)
 set nobackup  " no backups when overwriting files, use tabline/statusline features
 set noswapfile " no more swap files, instead use session
-set noerrorbells visualbell t_vb=  " enable internal bell, t_vb= means nothing is shown on the window
-set noinfercase ignorecase smartcase  " smartcase makes search case insensitive, unless has capital letter
-set nospell spelllang=en_us spellcapcheck=  " spellcheck off by default
+set noerrorbells  " disable error bells (see also visualbell and t_vb)
+set noinfercase  " do not replace insert-completion with case inferred from typed text
+set nospell  " disable spellcheck by default
 set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
 set nowrap  " global wrap setting possibly overwritten by wraptoggle
 set notimeout timeoutlen=0  " wait forever when doing multi-key *mappings*
@@ -88,7 +90,10 @@ set shiftround  " round to multiple of shift width
 set shiftwidth=2  " default 2 spaces
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=2  " default 2 spaces
+set smartcase  " search case insensitive, unless has capital letter
 set softtabstop=2  " default 2 spaces
+set spelllang=en_us  " default to US english
+set spellcapcheck=  " disable checking for capital start of sentence
 set splitbelow  " splitting behavior
 set splitright  " splitting behavior
 set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open tab
@@ -107,6 +112,7 @@ set undolevels=500  " maximum undo level
 set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
+set visualbell  " prefer visual bell to beeps (see also 'noerrorbells')
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu  " command line completion
 set wildmode=longest:list,full  " command line completion
@@ -220,8 +226,9 @@ augroup END
 
 " Set escape codes to restore screen after exiting
 " See: :help restorescreen page
-let &t_ti = "\e7\e[r\e[?47h"
 let &t_te = "\e[?47l\e8"
+let &t_ti = "\e7\e[r\e[?47h"
+let &t_vb = ''  " disable visual bell
 
 " Support cursor shapes. Note neither Ptmux escape codes (e.g. through 'vitality'
 " plugin) or terminal overrides seem necessary in newer versions of tmux.
@@ -359,8 +366,9 @@ endfor
 
 
 "-----------------------------------------------------------------------------"
-" Highlighting stuff
+" Syntax and folding
 "-----------------------------------------------------------------------------"
+"
 " Macvim color schemes
 let s:colorscheme = 'papercolor'
 " let s:colorscheme = 'abra'
@@ -465,9 +473,9 @@ augroup END
 command! -nargs=0 CurrentGroup call vim#syntax_group()
 command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
 command! -nargs=0 GroupColors vert help group-name | call search('\*Comment') | normal! zt
-command! -nargs=0 ShowColors call vim#runtime_colors()
-command! -nargs=0 ShowPlugin call vim#runtime_ftplugin()
-command! -nargs=0 ShowSyntax call vim#runtime_syntax()
+command! -nargs=0 ShowColors call vim#show_colors()
+command! -nargs=0 ShowPlugin call vim#show_ftplugin()
+command! -nargs=0 ShowSyntax call vim#show_syntax()
 noremap <Leader>1 <Cmd>CurrentGroup<CR>
 noremap <Leader>2 <Cmd>CurrentSyntax<CR>
 noremap <Leader>3 <Cmd>GroupColors<CR>
@@ -1181,20 +1189,21 @@ call plug#('yegappan/mru')  " most recent file
 " let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
 
 " Navigation and marker and fold interface
-" Todo: Use Lsp for expression folding? Or individual plugins? See lsp section.
+" Note: FastFold simply keeps &l:foldmethod = 'manual' most of time and updates on
+" saves or fold commands instead of continuously-updating with the highlighting as
+" vim tries to do. Works with both native vim syntax folding and expr overrides.
 " See: https://github.com/junegunn/vim-peekaboo/issues/84
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 " call plug#('easymotion/vim-easymotion')  " extremely slow and overkill
 " call plug#('kshenoy/vim-signature')  " unneeded and abandoned
-call plug#('tmhedberg/SimpylFold')  " slows things down
+" call plug#('pseewald/vim-anyfold')  " need to try this!
+call plug#('tmhedberg/SimpylFold')
+" call plug#('matze/vim-tex-fold')
 call plug#('junegunn/vim-peekaboo')  " popup display
 call plug#('justinmk/vim-sneak')  " simple and clean
-call plug#('Konfekt/FastFold')  " simpler
+call plug#('Konfekt/FastFold')  " speedup folding
 let g:peekaboo_prefix = '"'
 let g:peekaboo_window = 'vertical topleft 30new'
-let g:SimpylFold_docstring_preview = 0  " custom python settings
-let g:SimpylFold_fold_docstring = 0
-let g:SimpylFold_fold_import = 0
 
 " Matching groups and searching
 " Note: The vim-tags @#&*/?! mappings auto-integrate with vim-indexed-search
@@ -1371,6 +1380,7 @@ call plug#('raimondi/delimitmate')
 " call plug#('vim-scripts/argtextobj.vim')  " issues with this too
 " call plug#('machakann/vim-textobj-functioncall')  " does not work
 " call plug#('glts/vim-textobj-comment')  " does not work
+call plug#('kana/vim-textobj-fold')  " folding
 call plug#('kana/vim-textobj-user')  " base requirement
 call plug#('kana/vim-textobj-entire')  " entire file, object is 'e'
 call plug#('kana/vim-textobj-line')  " entire line, object is 'l'
@@ -1453,6 +1463,7 @@ call plug#('anntzer/vim-cython')
 call plug#('tpope/vim-liquid')
 call plug#('cespare/vim-toml')
 call plug#('JuliaEditorSupport/julia-vim')
+let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:vim_markdown_conceal = 1
 let g:vim_markdown_conceal_code_blocks = 1
 
@@ -1651,41 +1662,52 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_project_root_finder = 'tag#find_root'
 endif
 
-" Fast fold settings
+" Enable syntax folding options
 " Note: Use native mappings. zr reduces fold level by 1, zm folds more by 1 level,
 " zR is big reduction (opens everything), zM is big increase (closes everything),
-" zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold.
+" zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold,
+" and zv is open folds enough to view cursor (useful when jumping lines or searching)
 " Note: Also tried 'vim-lsp' folding but caused huge slowdowns. Should see folding as
 " similar to linting/syntax/ctags and use separate utility. Also consider bug report.
 " Note: FastFold suggestion for python files is to locally set foldmethod=indent but
 " this is constraining. Use SimpylFold instead (they recommend FastFold integration).
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
-if s:plug_active('vim-tags')
-  let g:fastfold_fold_movement_commands = [']z', '[z', 'zj', 'zk']
+if &g:foldenable || s:plug_active('FastFold')
+  " Various folding plugins
   let g:fastfold_fold_command_suffixes =  ['x', 'X', 'a', 'A', 'o', 'O', 'c', 'C']
-  let g:fastfold_fold_movement_commands = []  " skip re-computing on navigation
+  let g:fastfold_fold_movement_commands = [']z', '[z', 'zj', 'zk']  " or empty list
   let g:fastfold_savehook = 1
+  let g:SimpylFold_docstring_preview = 0  " SimpylFold settings
+  let g:SimpylFold_fold_docstring = 1
+  let g:SimpylFold_fold_import = 0
+  let g:tex_fold_env_char = '¬'  " vim-tex-fold settings
+  let g:tex_fold_sec_char = '➜'
+  let g:tex_fold_override_foldtext = 0  " use default for consistency
+  " Native folding settings
+  let g:baan_fold = 1
+  let g:clojure_fold = 1
+  let g:fortran_fold = 1
+  let g:javaScript_fold = 1
   let g:markdown_folding = 1
+  let g:perl_fold = 1
+  let g:perl_fold_blocks = 1
+  let g:php_folding = 1
+  let g:r_syntax_folding = 1
   let g:rst_fold_enabled = 1
+  let g:ruby_fold = 1
+  let g:rust_fold = 1
+  let g:sh_fold_enabled = 7
   let g:tex_fold_enabled = 1
   let g:vimsyn_folding = 'af'
   let g:xml_syntax_folding = 1
-  let g:javaScript_fold = 1
-  let g:sh_fold_enabled= 7
   let g:zsh_fold_enable = 1
-  let g:ruby_fold = 1
-  let g:perl_fold = 1
-  let g:perl_fold_blocks = 1
-  let g:r_syntax_folding = 1
-  let g:rust_fold = 1
-  let g:php_folding = 1
-  let g:fortran_fold=1
-  let g:clojure_fold = 1
-  let g:baan_fold=1
 endif
 
 " Lsp integration settings
+" Warning: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
+" cause huge slowdowns even with g:lsp_fold_enabled = 0 (sluggish insert mode, huge
+" clipboard-paste delays). Now use fast fold with native utilities (see above).
 " Todo: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
 " 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
 " Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
@@ -1717,13 +1739,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
   nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>
-  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " not enough info
-  " Warning: Empirical testing seemed to show that setting vim-lsp folding even when
-  " g:lsp_fold_enabled = 0 causes huge slowdowns. Should think of folding as similar
-  " to ale linting, syntax highlighting, or ctags generation, and use separate utility.
-  " Try fast fold: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
-  " let &g:foldexpr = 'lsp#ui#vim#folding#foldexpr()'
-  " let &g:foldtext = 'lsp#ui#vim#folding#foldtext()'
+  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " use :CheckHealth instead
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs

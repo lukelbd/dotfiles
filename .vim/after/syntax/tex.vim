@@ -1,48 +1,44 @@
-" Downloaded: 2018-02-20
 " vimtex - LaTeX plugin for Vim
 " Maintainer: Karl Yngve Lervåg
 " Email: karl.yngve@gmail.com
 " Date: 2018-07-26
+" Todo: Re-download updated files
 "------------------------------------------------------------------------------"
-" Initial stuff
+" Custom stuff
+"------------------------------------------------------------------------------"
 if !exists('b:current_syntax')
   let b:current_syntax = 'tex'
 elseif b:current_syntax !=# 'tex'
   finish
 endif
+syntax sync minlines=500  " increase accuracy
 
-" Things recommended from :help tex-syntax
-" First more lines for accuracy
-syntax sync minlines=500
-
-" Disable spellcheck within yellow-highlighted curly brace commands but do
-" not disable spellcheck within environments like textbf and naked braces {}.
-" Copied the :SyntaxFile line and removed the 'transparent' flag
+" Disable spellcheck within yellow-highlighted curly brace commands (e.g. preamble)
+" but do not disable spellcheck within environments like textbf and naked braces {}.
+" Note: Here just copied the :SyntaxFile line and removed the 'transparent'
+" flag. Should revisit and consider expanding.
 syntax region texMatcherNM matchgroup=Delimiter
-  \ start="{" skip="\\\\\|\\[{}]" end="}"
+  \ start='{' skip='\\\|\[{}]' end="}"
   \ contains=@texMatchNMGroup,texError,@NoSpell
 
 " Add highlighting for empty line preceding paragraph or section (i.e. ignoring empty
 " lines before commands). Helpful for when navigating huge documents.
 " Note: Here matchadd() is required instead of syntax match for some reason. Also
 " note complex lookbehinds significantly slow things down so keep simple.
-highlight Paragraph ctermfg=NONE ctermbg=Green
-call matchadd(
+hi Paragraph ctermfg=NONE ctermbg=Green | call matchadd(
   \ 'Paragraph',
   \ '^\s*\n\(\s*$\)\@!')
 
 " Conceal backslash commands. Only matchadd works for some reason. Also ignores e.g.
 " \command1\command2, which would otherwise be unreadable and is common in macros.
 " Warning: This will make highlight searches really weird if you make the 'priority'
-" (arg 3) higher than the :hlsearch priority (0); see manual. Default is 10.
-" * ID of -1 (arg 4) means 'assign no id in particular; whatever is available'
-" * The regex ignores comments (preceding % sign) and newline command \\
-" * Syn match fails; wherever the backslash is concealed, 'overwrites' existing match.
+" (arg 3) higher than the :hlsearch priority (0) (see manual). Default is 10.
+" * ID of -1 (arg 4) means 'assign no id in particular, whatever is available'
+" * Syn match fails, but wherever backslash is concealed, 'overwrites' existing match.
 " * See: https://vi.stackexchange.com/q/5696/8084
 call matchadd(
   \ 'Conceal',
-  \ '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=',
-  \ 0, -1, {'conceal': ''} )
+  \ '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
 
 "------------------------------------------------------------------------------"
 " Original plugin

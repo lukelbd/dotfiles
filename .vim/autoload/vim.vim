@@ -34,8 +34,8 @@ function! vim#config_scripts(...) abort
 endfunction
 function! vim#config_refresh(bang, ...) abort
   filetype detect  " in case started with empty file and shebang changes this
-  let g:refresh_times = get(g:, 'refresh_times', {'global': localtime()})
-  let default = get(g:refresh_times, 'global', 0)
+  let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
+  let default = get(g:refreshes, 'global', 0)
   let current = localtime()
   let compare = a:0 ? a:1 : ''
   let regexes = [
@@ -57,13 +57,13 @@ function! vim#config_refresh(bang, ...) abort
     if index(loaded, path) != -1
       continue  " already loaded this
     endif
-    if !vimrc && !a:bang && getftime(path) < get(g:refresh_times, ftype, default)
+    if !vimrc && !a:bang && getftime(path) < get(g:refreshes, ftype, default)
       continue  " only refresh if outdated
     endif
     if ftype ==# 'global' || ftype ==# &filetype
       exe 'so ' . path | call add(loaded, path) | let updates[ftype] = current
     else
-      let updates[ftype] = get(g:refresh_times, ftype, default)
+      let updates[ftype] = get(g:refreshes, ftype, default)
     endif
     if vimrc  " trigger autocommand
       doautocmd Filetype
@@ -71,7 +71,7 @@ function! vim#config_refresh(bang, ...) abort
   endfor
   doautocmd BufEnter
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
-  call extend(g:refresh_times, updates)
+  call extend(g:refreshes, updates)
 endfunction
 
 " Create session file or load existing one
@@ -130,16 +130,16 @@ endfunction
 
 " Show runtime color and plugin information
 " Note: Consistent with other utilities this uses separate tabs
-function! vim#runtime_colors() abort
+function! vim#show_colors() abort
   exe 'Drop colortest.vim'
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#panel_setup(0)
 endfunction
-function! vim#runtime_ftplugin() abort
+function! vim#show_ftplugin() abort
   exe 'Drop $VIMRUNTIME/ftplugin/' . &filetype . '.vim'
   silent call utils#panel_setup(0)
 endfunction
-function! vim#runtime_syntax() abort
+function! vim#show_syntax() abort
   exe 'Drop $VIMRUNTIME/syntax/' . &filetype . '.vim'
   silent call utils#panel_setup(0)
 endfunction
