@@ -1715,7 +1715,7 @@ endif
 " Lsp integration settings
 " Warning: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
 " cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
-" native syntax folding. Also tried tagfunc=lsp#tagfunc but now use LspDefinition instead.
+" native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
 " Todo: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
 " 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
 " Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
@@ -1990,8 +1990,10 @@ if s:plug_active('vim-fugitive')
 endif
 
 " Git gutter settings
-" Note: Maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.'. Also
-" <Leader>g both refreshes the gutter (e.g. after staging) and previews anything.
+" Note: Staging maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.', and
+" navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
+" by spell maps ]s, ]S (navigate to spell error, or navigate and fix error). Also note
+" <Leader>g both refreshes the gutter (e.g. after staging) and previews any result.
 " Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
 " therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
