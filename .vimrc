@@ -105,7 +105,7 @@ set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open t
 set tabpagemax=300  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
 set tagcase=ignore  " ignore case when matching paths
-set tagfunc=lsp#tagfunc  " use lsp for tag stack navigation
+set tagfunc=  " :tag, :pop, and <C-]> jumping function (requires physical tags file)
 set tagrelative  " paths in tags file are relative to location
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
 set tagstack  " auto-add to tagstack with :tag commands
@@ -1714,8 +1714,8 @@ endif
 
 " Lsp integration settings
 " Warning: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
-" cause huge slowdowns even with g:lsp_fold_enabled = 0 (sluggish insert mode, huge
-" clipboard-paste delays). Now use fast fold with native utilities (see above).
+" cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
+" native syntax folding. Also tried tagfunc=lsp#tagfunc but now use LspDefinition instead.
 " Todo: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
 " 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
 " Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
@@ -1728,7 +1728,7 @@ endif
 " so below behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
-" Note: <C-]> definition jumping relies on builtin vim tags file jumping so fails.
+" Note: Native <C-]> definition jumping relies on builtin vim tags file jumping so fails.
 " See https://reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
 if s:plug_active('vim-lsp')
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
