@@ -48,25 +48,29 @@ endfunction
 " per-filetype syntax highlighting becuase still has some useful features.
 function! window#fold_text() abort
   " Format lines
-  let digits = len(string(line('$')))
-  let lines = string(v:foldend - v:foldstart + 1)
-  let lines = repeat(' ', digits - len(lines)) . lines
-  let lines = repeat('+ ', len(v:folddashes)) . lines . ' lines'
+  let width = len(string(line('$')))  " maximum possible line count digits
+  let status = string(v:foldend - v:foldstart + 1)
+  let status = repeat(' ', width - len(status)) . status
+  let status = repeat('+ ', len(v:folddashes)) . status . ' lines'
   " Format text
   let regex = '\s*' . comment#get_char() . '\s\+.*$'
-  let text = substitute(getline(v:foldstart), regex, '', 'g')
-  let regex = '\("""\|' . "'''" . '\)'  " replace docstrings
-  let text = substitute(text, regex, '<docstring>', 'g')
+  let label = substitute(getline(v:foldstart), regex, '', 'g')
+  if &filetype ==# 'python'  " replace docstrings
+    let regex = '\("""\|' . "'''" . '\)'
+    let label = substitute(label, regex, '<docstring>', 'g')
+  endif
+  let width = &textwidth - 1 - len(status) - 2  " at least two spaces
+  let label = len(label) > width ? label[:width - 4] . '···  ' : label
   " Combine components
-  let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
-  let width = winwidth(0) - offset
-  let width = min([width, &textwidth - 1])  " set maximum width
-  let size = width - len(lines) - 2  " at least two spaces
-  let text = len(text) > size ? text[:size - 4] . '···  ' : text
-  let space = repeat(' ', width - len(text) - len(lines))
-  let origin = foldclosed(line('.')) ? 0 : col('.') - (wincol() - offset)
-  let result = text . space . lines
-  return result[origin:]
+  let space = repeat(' ', width - len(label) - len(status))
+  let origin = 0  " string truncation point
+  if !foldclosed(line('.'))
+    let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
+    let origin = col('.') - (wincol() - offset)
+  endif
+  let text = label . space . status
+  " vint: next-line -ProhibitUsingUndeclaredVariable  " erroneous warning
+  return text[origin:]
 endfunction
 
 " Function that generates lists of tabs and their numbers

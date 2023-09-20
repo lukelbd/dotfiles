@@ -616,7 +616,7 @@ augroup tab_toggle
   au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
 augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
-nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
+nnoremap g<Tab> <Cmd>call switch#expandtab()<CR>
 
 " Helper window style adjustments with less-like shortcuts
 " Note: Tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues
@@ -674,7 +674,7 @@ noremap gM <Cmd>Note<CR>
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
 " Note: Mnemonic for 'repeat command' is that it is on same key as :hlsearch
-nnoremap g. :<C-r><Up><CR>
+noremap g. :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -1288,8 +1288,8 @@ let g:gutentags_enabled = 1
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
 let g:fzf_action = {
-  \ 'ctrl-m': 'Drop', 'ctrl-i': 'silent!',
-  \ 'ctrl-t': 'tab split', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
+  \ 'ctrl-m': 'Drop', 'ctrl-t': 'Drop',
+  \ 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
   \ }  " have file search, grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
@@ -1639,7 +1639,7 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
   let g:tags_jump_map = '<Leader><Leader>'
-  let g:tags_drop_map = '<Tab><Leader>'  " inverse of default <Leader><Tab>
+  let g:tags_drop_map = '<Leader><Tab>'  " note default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let g:tags_skip_kinds = {'python': 'I', 'tex': 'g', 'vim': 'vnC'}
 endif
