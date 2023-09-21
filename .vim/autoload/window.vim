@@ -81,22 +81,22 @@ function! s:fzf_tab_source() abort
   let tabskip = get(g:, 'tabline_skip_filetypes', [])
   let unsorted = {}
   for tnr in range(1, tabpagenr('$'))  " iterate through each tab
-    let tbufs = tabpagebuflist(tnr)
-    for bnr in tbufs
+    let bnrs = tabpagebuflist(tnr)
+    for bnr in bnrs
       if index(tabskip, getbufvar(bnr, '&ft')) == -1  " use if not a popup window
-        let bufnr = bnr | break
-      elseif bnr == tbufs[-1]  " use if no non-popup windows
-        let bufnr = bnr
+        let buf = bnr | break
+      elseif bnr == bnrs[-1]  " use if no non-popup windows
+        let buf = bnr
       endif
     endfor
     if exists('*RelativePath')
-      let path = RelativePath(bufname(bufnr))
+      let path = RelativePath(bufname(buf))
     else
-      let path = fnamemodify(bufname(bufnr), ':~:.')
+      let path = fnamemodify(bufname(buf), ':~:.')
     endif
     let pad = repeat(' ', ndigits - len(string(tnr)))
     let path = pad . tnr . ': ' . path  " displayed string
-    let unsorted[string(bufnr)] = path
+    let unsorted[string(buf)] = path
   endfor
   let sorted = []
   let used = []

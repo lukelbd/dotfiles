@@ -506,16 +506,16 @@ nnoremap <C-e> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
 
 " Open file in current directory or some input directory
-" Note: These are just convenience functions (see file#open_from) for details.
+" Note: These are just convenience functions (see file#init_path) for details.
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
-command! -nargs=* -complete=file Open call file#open_continuous(<q-args>)
-command! -nargs=? -complete=file Drop call file#open_drop(<q-args>)
-nnoremap <C-o> <Cmd>call file#open_from(0, 0)<CR>
-nnoremap <F3>  <Cmd>call file#open_from(0, 1)<CR>
-nnoremap <C-p> <Cmd>call file#open_from(1, 0)<CR>
-nnoremap <C-y> <Cmd>call file#open_from(1, 1)<CR>
+command! -nargs=* -complete=file Open call file#open_continuous('file#open_drop', <f-args>)
+command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
+nnoremap <C-o> <Cmd>call file#init_path(0, 0)<CR>
+nnoremap <F3>  <Cmd>call file#init_path(0, 1)<CR>
+nnoremap <C-p> <Cmd>call file#init_path(1, 0)<CR>
+nnoremap <C-y> <Cmd>call file#init_path(1, 1)<CR>
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant databsae from unix 'locate'
-" nnoremap <C-g> <Cmd>Files<CR>  " see file#open_from(1, ...)
+" nnoremap <C-g> <Cmd>Files<CR>  " see file#init_path(1, ...)
 nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
@@ -571,7 +571,7 @@ nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 nnoremap <Tab>m <Cmd>call window#move_tab()<CR>
 nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
-" nnoremap <Tab><Tab> <Cmd>Windows<CR>
+nnoremap <Tab><Space> <Cmd>Windows<CR>
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
 " Window selection and creation
@@ -580,29 +580,16 @@ nnoremap <Tab>j <C-w>j
 nnoremap <Tab>k <C-w>k
 nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
-nnoremap <Tab>- :split 
-nnoremap <Tab>\ :vsplit 
+nnoremap <Tab>- <Cmd>call file#open_continuous('split')<CR>
+nnoremap <Tab>\ <Cmd>call file#open_continuous('vsplit')<CR>
 
-" Moving screen and resizing windows
-" Note: Disable old maps to force-remember the more consistent maps
-nnoremap zh <Nop>
-nnoremap zH <Nop>
-nnoremap zl <Nop>
-nnoremap zL <Nop>
-nnoremap zt <Nop>
-nnoremap zb <Nop>
-nnoremap z. <Nop>
-nnoremap <Tab>y zH
-nnoremap <Tab>u zt
-nnoremap <Tab>i z.
-nnoremap <Tab>o zb
-nnoremap <Tab>p zL
+" Window moving and resizing
 nnoremap <Tab>= <Cmd>vertical resize 90<CR>
-nnoremap <Tab>0 <Cmd>exe 'resize ' . ((len(tabpagebuflist()) > 1 ? 0.75 : 1.0) * &lines)<CR>
+nnoremap <Tab>0 <Cmd>exe 'resize ' . (&lines * (len(tabpagebuflist()) > 1 ? 0.8 : 1.0))<CR>
 nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
-nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 5 * v:count1)<CR>
-nnoremap <Tab>+ <Cmd>exe 'resize ' . (winheight(0) + 5 * v:count1)<CR>
+nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 6 * v:count1)<CR>
+nnoremap <Tab>+ <Cmd>exe 'resize ' . (winheight(0) + 6 * v:count1)<CR>
 nnoremap <Tab>[ <Cmd>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
 nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
