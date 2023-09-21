@@ -371,7 +371,7 @@ endfor
 
 
 "-----------------------------------------------------------------------------"
-" Syntax and folding
+" Syntax highlighting
 "-----------------------------------------------------------------------------"
 " Macvim color schemes
 " Todo: Figure out issues with scheme switching
@@ -696,12 +696,12 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 " See: https://superuser.com/a/189956/506762
 command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
-" Jump to last changed text
+" Jump to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
 
-" Jump to last jump
+" Jump to last and next jump
 " Note: Account for karabiner arrow key maps
 noremap <C-h> <C-o>
 noremap <C-l> <C-i>
@@ -947,12 +947,16 @@ augroup pum_navigation
   au!
   au BufEnter,InsertLeave * let b:scroll_state = 0
 augroup END
+noremap <expr> <Up> iter#scroll_count(-0.25)
+noremap <expr> <Down> iter#scroll_count(0.25)
 noremap <expr> <C-k> iter#scroll_count(-0.25)
 noremap <expr> <C-j> iter#scroll_count(0.25)
 noremap <expr> <C-u> iter#scroll_count(-0.5)
 noremap <expr> <C-d> iter#scroll_count(0.5)
 noremap <expr> <C-b> iter#scroll_count(-1.0)
 noremap <expr> <C-f> iter#scroll_count(1.0)
+inoremap <expr> <Up> iter#scroll_count(-1)
+inoremap <expr> <Down> iter#scroll_count(1)
 inoremap <expr> <C-k> iter#scroll_count(-1)
 inoremap <expr> <C-j> iter#scroll_count(1)
 inoremap <expr> <C-u> iter#scroll_count(-0.5)
@@ -1562,17 +1566,15 @@ if s:plug_active('vim-succinct')
   let g:succinct_nextdelim_map = '<F2>'
 endif
 
-" Additional mappings for scrollwrapped accounting for Karabiner <C-j> --> <Down>, etc.
-" Also add custom filetype log and plugin filetype ale-preview to list.
+" Scroll wrapped lines
+" Note: Use :WrapHeight and :WrapStarts for debugging.
+" Note: Instead of native scrollwrapped#scroll() function use an iter#scroll_count()
+" function that accounts for open popup windows. See insert-mode section above.
 if s:plug_active('vim-scrollwrapped')
-  " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
-  let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
-  let g:scrollwrapped_nomap = 1
   noremap <Leader>w <Cmd>WrapToggle<CR>
-  noremap <expr> <Up> iter#scroll_count(-0.25)
-  noremap <expr> <Down> iter#scroll_count(0.25)
-  inoremap <expr> <Up> iter#scroll_count(-0.25)
-  inoremap <expr> <Down> iter#scroll_count(0.25)
+  let g:scrollwrapped_nomap = 1  " have advanced custom maps
+  let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
+  " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
 endif
 
 " Comment toggling stuff
