@@ -169,7 +169,7 @@ endfunction
 " See: https://vi.stackexchange.com/a/7712/8084 and :help g@
 " Return regexes for the search
 function! s:search_item(optional)
-  let head = '^\(\s*\%(' . comment#comment_char() . '\s*\)\?\)'  " leading spaces or comment
+  let head = '^\(\s*\%(' . comment#get_char() . '\s*\)\?\)'  " leading spaces or comment
   let indicator = '\(\%([*-]\|\<\d\.\|\<\a\.\)\s\+\)'  " item indicator plus space
   let tail = '\(.*\)$'  " remainder of line
   if a:optional
@@ -202,7 +202,7 @@ function! edit#wrap_items(...) range abort
     let line = getline(linenum)
     let linecount += 1
     if line =~# pattern
-      let upper = '^\s*[*_]*[A-Z]'  " upper case optionally surrounded by emphasis
+      let upper = '^\s*\(<[^>]\+>\|[*_]*\)*[A-Z]'
       let tail = substitute(line, pattern, '\3', '')
       if tail !~# upper  " remove item indicator if starts with lowercase
         call s:remove_item(line, linenum, linenum)

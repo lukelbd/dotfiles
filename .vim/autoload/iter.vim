@@ -6,23 +6,29 @@
 " preview windows for a reference scaling (also verified that l:window.find
 " and therefore lsp#scroll do not return popup completion windows).
 function! s:scroll_default(scroll) abort
-  let nr = abs(type(a:scroll) == 5 ? float2nr(a:scroll * winheight(0)) : a:scroll)
-  let str = a:scroll > 0 ? 'd' : 'u'
-  let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ", '" . str . "', 1)\<CR>"
+  let max = winheight(0)
+  let nr = abs(type(a:scroll) == 5 ? float2nr(a:scroll * max) : a:scroll)
+  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
+  let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ', ' . rev . ")\<CR>"
   return mode() =~# '^[iIR]' ? '' : cmd  " only allowed in normal mode
 endfunction
 function! s:scroll_preview(info, scroll) abort
-  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:info['height']) : a:scroll
+  let max = a:info['height']
+  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * max) : a:scroll
   let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
   let cmd = lsp#scroll(nr)
   return cmd
 endfunction
 function! s:scroll_popup(info, scroll) abort
-  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:info['height']) : a:scroll
+  let max = a:info['height']
+  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * max) : a:scroll
   let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
-  let nr = max([0 - b:scroll_state, nr])
-  let nr = min([a:info['size'] - b:scroll_state, nr])
-  let b:scroll_state += nr  " complete menu offset
+  if type(a:scroll) == 5 && b:scroll_state != 0   " disable circular scroll
+    let nr = max([0 - b:scroll_state + 1, nr])
+    let nr = min([max - b:scroll_state, nr])
+  endif
+  let b:scroll_state += nr + (max + 1) * (1 + abs(nr) / (max + 1))
+  let b:scroll_state %= max + 1  " only works with positive integers
   return repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
 endfunction
 

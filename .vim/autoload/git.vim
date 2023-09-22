@@ -153,8 +153,8 @@ endfunction
 " Note: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
 " its FileType autocommands, so should not have issues modifying already-modified maps.
 " Note: Many mappings call script-local functions with strings like 'tabedit', and
-" initially tried replacing with 'Existing', but turns out these all call fugitive
-" internal commands like :Gtabedit and :Gedit (and there is no :GExisting). So now
+" initially tried replacing with 'Drop', but turns out these all call fugitive
+" internal commands like :Gtabedit and :Gedit (and there is no :Gdrop). So now
 " overwrite :Gtabedit in .vimrc. Also considered replacing 'tabedit' with 'drop' in
 " maps and having fugitive use :Gdrop, but was getting error where after tab switch
 " an empty panel was opened in the git window. Might want to revisit.

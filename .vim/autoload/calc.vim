@@ -2,7 +2,7 @@
 " Utilities for codi windows
 "-----------------------------------------------------------------------------"
 " Setup new codi window
-function! codi#codi_new(...) abort
+function! calc#codi_new(...) abort
   if a:0 && a:1 !~# '^\s*$'
     let name = a:1
   else
@@ -18,7 +18,7 @@ endfunction
 " TextChangedI which is enabled with g:codi#autocmd = 'TextChanged'
 " See: https://github.com/metakirby5/codi.vim/issues/90
 " Note: This sets up the calculator window not the display window
-function! codi#codi_setup(toggle) abort
+function! calc#codi_setup(toggle) abort
   if a:toggle
     let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
     nnoremap <buffer> q <C-w>p<Cmd>Codi!!<CR>
@@ -41,11 +41,11 @@ endfunction
 " Note: Warning message will be gobbled so don't bother. Just silent failure. Also
 " vim substitute() function '.' matches newlines and codi silently fails if the
 " rephrased input lines don't match original line count so be careful.
-function! codi#codi_preprocess(line) abort
+function! calc#codi_preprocess(line) abort
   return substitute(a:line, '�[?2004l', '', '')
 endfunction
-function! codi#codi_rephrase(text) abort
-  let pat = '\s*' . comment#comment_char() . '[^\n]*\(\n\|$\)'  " remove comments
+function! calc#codi_rephrase(text) abort
+  let pat = '\s*' . comment#get_char() . '[^\n]*\(\n\|$\)'  " remove comments
   let text = substitute(a:text, pat, '\1', 'g')
   let pat = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
   let text = substitute(text, pat, '\1', 'g')

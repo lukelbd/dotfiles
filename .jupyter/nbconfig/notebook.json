@@ -13,15 +13,15 @@
     "toggle_all_line_numbers/main": false,
     "jupyter_themes/theme_selector": true,
     "vim_binding/vim_binding": false,
-    "toc2/main": true,
     "collapsible_headings/main": false,
     "varInspector/main": true,
     "code_prettify/autopep8": true,
     "codefolding/main": true,
     "toc": true,
-    "toc2": true,
     "toc/main": true,
-    "jupytext/index": true
+    "jupytext/index": true,
+    "toc2": true,
+    "toc2/main": true
   },
   "highlight_selected_word": {
     "highlight_color": "#cccccc",

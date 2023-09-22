@@ -1,17 +1,19 @@
 "-----------------------------------------------------------------------------
 " Python settings
 "-----------------------------------------------------------------------------
-" Misc settings
+" Various settings
 setlocal iskeyword-=.  " exclude period from word definition
-setlocal tabstop=4 softtabstop=4 shiftwidth=4
+setlocal tabstop=4  " number of tab spaces
+setlocal shiftwidth=4
+setlocal softtabstop=4
 let g:python_slow_sync = 0  " use fast syncing
 let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_func_calls = 1  " python-syntax syntax option
 let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
 
 " Translate dictionaries to keyword input
-noremap <expr> <buffer> cd python#kwargs_dict_expr(0)
-noremap <expr> <buffer> cD python#kwargs_dict_expr(1)
+noremap <expr> <buffer> g; python#dict_to_kw_expr(0)
+noremap <expr> <buffer> g: python#dict_to_kw_expr(1)
 
 " Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()

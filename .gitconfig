@@ -6,17 +6,17 @@
 # NEW COMMANDS
 # 'amend':
 #   Change the name of arbitrary commit messages; just provide a SHA1 reference
-#   see: https://blog.filippo.io/git-fixup-amending-an-older-commit/
+#   See: https://blog.filippo.io/git-fixup-amending-an-older-commit/
 # 'blame':
 #   Add nice highlightRecent coloring according to date of commit.
-#   see: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
+#   See: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
 # 'branches':
 #   List all branches. Prune dead remote branches every time.
 # 'commands':
 #   List of valid commands, used for FZF integration
 # 'delete':
-#   For more information see the script; can be passed a filename or a regular
-#   expresion e.g. '*.mov'
+#   For more information see the script, can be passed a filename or a
+#   regular expression e.g. '*.mov'
 # 'deleted':
 #   Lists files that were deleted in git history, but were never re-created
 #   or added back in
@@ -25,7 +25,7 @@
 # 'get':
 #   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all).
-#   see: https://stackoverflow.com/a/10312587/4970632
+#   See: https://stackoverflow.com/a/10312587/4970632
 # 'files':
 #   List the tracked file names.
 # 'ignore':
@@ -37,12 +37,17 @@
 #   When you commit giant files (i.e. over 100MB), even after you delete them,
 #   you won't be able to push to Github because they were tracked and are found
 #   in .vim. use this to delete file/directory throughout history.
-#   see: https://stackoverflow.com/a/23657759/4970632
+#   See: https://stackoverflow.com/a/23657759/4970632
 # 'oops':
-#   Amend commit with exact same commit message from:
-#   see: https://stackoverflow.com/a/56267398/4970632
+#   Amend commit with exact same commit message.
+#   See: https://stackoverflow.com/a/56267398/4970632
 # 'pack':
 #   Shows largest 'pack' files in repo
+# 'refs':
+#   Shows all references (useful for undoing things)
+#   See: https://stackoverflow.com/a/21778/4970632
+# 'remotes':
+#   Shows remote branches.
 # 'rmupstream':
 #   Unset upstream branch, needed after you change the name of a local branch
 #   with git branch -m name because git tracks the old remote branch name
@@ -67,8 +72,8 @@
 #------------------------------------------------------------------------------;
 # TODO
 # 'opts':
-#   fails not just as git alias, but when calling the regex manually
-#   see: https://stackoverflow.com/a/52846422/4970632
+#   Fails not just as git alias, but when calling the regex manually.
+#   See: https://stackoverflow.com/a/52846422/4970632
 #   "!f(){ echo ${1}; echo /usr/local/share/doc/git-doc/git-${1}.txt; cat /usr/local/share/doc/git-doc/git-${1}.txt | ggrep --initial-tab --recursive \
 #     --binary-files=without-match --no-filename --only-matching --perl-regexp \
 #     --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
@@ -80,14 +85,17 @@
 	delete     = "!git-delete \"$@\""
 	deleted    = "!git-deleted \"$@\""
 	exec       = "!exec \"$@\""
-	files      = ls-tree -r master --name-only
+	files      = ls-tree -r HEAD --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
 	long       = status --long --branch
+	ls         = ls-tree -r HEAD --name-only
+	ll         = ls-tree -r HEAD
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
 	oops       = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
 	pack       = "!git-pack \"$@\""
+	refs       = reflog
 	remotes    = remote --verbose
 	rmupstream = branch --unset-upstream
 	root       = rev-parse --show-toplevel

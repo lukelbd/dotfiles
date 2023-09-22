@@ -1,9 +1,24 @@
 # General packages to install.
 # Use this on new servers with mamba env update -f environment.yml
-# NOTE: mamba cf_units has outdated python requirements so use pip
-# NOTE: recent xarray version has multi-index issues: https://github.com/pydata/xarray/issues/7695
-# NOTE: rm -r ~/.julia/registries to fix install issues: https://stackoverflow.com/a/59300263/4970632
-# NOTE: after installing julia, its package manager will use the environment: https://stackoverflow.com/a/45947604/4970632
+# Use pip for cf_units since mamba cf_units outdated python requirements
+# NOTE: To avoid duplicate installations of extensions skip 'jupyter contrib install' See:
+# https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator/issues/25#issuecomment-287730514
+# NOTE: Need to install latex-envs from master branch until May 2022 PR released. See:
+# https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529#issuecomment-1134250842
+# NOTE: Here jupyterlab >= 4.0.0 ships with LSP utilities based on jupyterlab-lsp
+# extension. Try again once all highlighting bugs worked out.
+# NOTE: Using executing < 1.0.0 can cause bug where executions do not format
+# correctly. Update fixes this: https://github.com/ipython/ipython/issues/13598/
+# NOTE: Can install only python and fortran servers with mamba. Use LSP interface for
+# bash-language-server and julia-language-server. Use native system 'clangd' for C++.
+# NOTE: Try not to confuse 'mamba install python-language-server' (pyls) with
+# 'mamba install python-lsp-server' (pylsp). Latter permits definition jumping.
+# NOTE: Recent xarray version has multi-index issues so use
+# an older version. See: https://github.com/pydata/xarray/issues/7695
+# NOTE: Should use rm -r ~/.julia/registries to fix install issues e.g. due to
+# downloading macOS julia package. See: https://stackoverflow.com/a/59300263/4970632
+# NOTE: After installing julia, its package manager will use the conda environment,
+# so will not have clashes. See: https://stackoverflow.com/a/45947604/4970632
 name: base
 channels:
   - conda-forge
@@ -12,18 +27,13 @@ dependencies:
   - python
   - julia
   - bash
-  - python-lsp-server
-  - flake8
-  - black
-  - isort
-  - shellcheck
-  - pytest
-  - pandoc
+  - bc
+  - git
+  - pre-commit
   - vim
   - deno
   - ctags
   - tmux
-  - bc
   - nco
   - cdo
   - pynco
@@ -32,10 +42,12 @@ dependencies:
   - scipy
   - dask
   - pandas
+  - openpyxl
   - netcdf4
   - xarray<=2022.01.01
   - cftime
   - cf_xarray
+  - pint-pandas
   - pint-xarray
   - matplotlib<3.6
   - cartopy
@@ -45,13 +57,23 @@ dependencies:
   - ipykernel
   - jupyter
   - jupytext
+  - pandoc
+  - executing>=1.0.0
   - nb_conda_kernels
+  - jupyter_contrib_nbextensions
   - jupyter_nbextensions_configurator
   - jupyterlab<4.0.0
   - jupyterlab_server
   - jupyter-lsp
   - jupyterlab-lsp
   - jupyterlab_code_formatter
+  - flake8
+  - black
+  - isort
+  - pytest
+  - python-lsp-server
+  - shellcheck
+  - fortls
   - pip:
     - bashate
     - vim-vint
@@ -59,3 +81,4 @@ dependencies:
     - esgf-pyclient
     - flake8-unused-arguments
     - git+https://github.com/gruns/icecream.git  # until release increments
+    - git+https://github.com/jfbercher/jupyter_latex_envs.git  # until release increments

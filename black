@@ -1,4 +1,4 @@
 # Settings used for ipython scrollback
 # See: https://github.com/ipython/ipython/issues/13463
-line-length: 88
-skip-string-normalization: true
+line-length = 88
+skip-string-normalization = true

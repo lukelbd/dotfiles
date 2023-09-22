@@ -5,6 +5,7 @@
 " See: https://vi.stackexchange.com/a/22428/8084 (comment)
 " Note: For some reason some edited files have 'nobuflisted' set (so ignored by
 " e.g. :bnext). Maybe due to some plugin. Anyway do not use buflisted() filter.
+scriptencoding utf-8
 function! s:recent_bufs() abort
   let info = getbufinfo()
   let info = sort(info, {val1, val2 -> val2.lastused - val1.lastused})
@@ -42,6 +43,36 @@ function! window#close_tab() abort
   endif
 endfunction
 
+" Show truncated fold text
+" Note: Style here is inspired by vim-anyfold. For now stick to native
+" per-filetype syntax highlighting becuase still has some useful features.
+function! window#fold_text() abort
+  " Format lines
+  let width = len(string(line('$')))  " maximum possible line count digits
+  let status = string(v:foldend - v:foldstart + 1)
+  let status = repeat(' ', width - len(status)) . status
+  let status = repeat('+ ', len(v:folddashes)) . status . ' lines'
+  " Format text
+  let regex = '\s*' . comment#get_char() . '\s\+.*$'
+  let label = substitute(getline(v:foldstart), regex, '', 'g')
+  if &filetype ==# 'python'  " replace docstrings
+    let regex = '\("""\|' . "'''" . '\)'
+    let label = substitute(label, regex, '<docstring>', 'g')
+  endif
+  let width = &textwidth - 1 - len(status)  " at least two spaces
+  let label = len(label) > width - 4 ? label[:width - 6] . '···  ' : label
+  " Combine components
+  let space = repeat(' ', &textwidth - 1 - len(label) - len(status))
+  let origin = 0  " string truncation point
+  if !foldclosed(line('.'))
+    let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
+    let origin = col('.') - (wincol() - offset)
+  endif
+  let text = label . space . status
+  " vint: next-line -ProhibitUsingUndeclaredVariable  " erroneous warning
+  return text[origin:]
+endfunction
+
 " Function that generates lists of tabs and their numbers
 " Note: Here sorty by recently accessed to help replace :Buffers
 " Warning: Need to keep up-to-date with tabline setting name
@@ -50,18 +81,22 @@ function! s:fzf_tab_source() abort
   let tabskip = get(g:, 'tabline_skip_filetypes', [])
   let unsorted = {}
   for tnr in range(1, tabpagenr('$'))  " iterate through each tab
-    let tbufs = tabpagebuflist(tnr)
-    for bnr in tbufs
+    let bnrs = tabpagebuflist(tnr)
+    for bnr in bnrs
       if index(tabskip, getbufvar(bnr, '&ft')) == -1  " use if not a popup window
-        let bufnr = bnr | break
-      elseif bnr == tbufs[-1]  " use if no non-popup windows
-        let bufnr = bnr
+        let buf = bnr | break
+      elseif bnr == bnrs[-1]  " use if no non-popup windows
+        let buf = bnr
       endif
     endfor
+    if exists('*RelativePath')
+      let path = RelativePath(bufname(buf))
+    else
+      let path = fnamemodify(bufname(buf), ':~:.')
+    endif
     let pad = repeat(' ', ndigits - len(string(tnr)))
-    let path = fnamemodify(bufname(bufnr), '%:t')
     let path = pad . tnr . ': ' . path  " displayed string
-    let unsorted[string(bufnr)] = path
+    let unsorted[string(buf)] = path
   endfor
   let sorted = []
   let used = []
@@ -103,18 +138,17 @@ function! window#move_tab(...) abort
   endif
 endfunction
 function! s:move_tab_sink(nr) abort
-  if type(a:nr) == 0
+  if type(a:nr) == 0  " input tab number
     let nr = a:nr
-  else
-    let parts = split(a:nr, ':')  " fzf selection
-    let nr = str2nr(parts[0])
+  else  " fzf selections string
+    let nr = str2nr(split(a:nr, ':')[0])
   endif
   if nr == tabpagenr() || nr == 0 || nr ==# ''
     return
   elseif nr > tabpagenr() && v:version[0] > 7
-    exe 'tabmove ' . nr
+    exe 'tabmove ' . min([nr, tabpagenr('$')])
   else
-    exe 'tabmove ' . (nr - 1)
+    exe 'tabmove ' . min([nr - 1, tabpagenr('$')])
   endif
 endfunction
 
