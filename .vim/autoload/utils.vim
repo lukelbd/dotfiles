@@ -16,26 +16,6 @@ function! utils#null_operator_expr(...) abort
   return utils#motion_func('utils#null_operator', a:000)
 endfunction
 
-" Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is used
-" to override fzf marks command and support jumping to existing tabs.
-" Todo: Use this to override recent fzf versions supporting multiple selection
-" See: https://github.com/junegunn/fzf.vim/issues/1508
-" See: https://stackoverflow.com/a/49447600/4970632
-function! utils#fzf_snr() abort
-  silent! call fzf#vim#with_preview()  " trigger autoload if not already done
-  let [paths, sids] = vim#config_scripts(1)
-  let path = filter(copy(paths), "v:val =~# '/autoload/fzf/vim.vim'")
-  let idx = index(paths, get(path, 0, ''))
-  if !empty(path) && idx >= 0
-    return "\<snr>" . sids[idx] . '_'
-  else
-    echohl WarningMsg
-    echom 'Warning: FZF autoload script not found.'
-    echohl None
-    return ''
-  endif
-endfunction
-
 " Get user input (see grep and file command completion)
 " Note: This is used for grep and file command completions. It specifies a default
 " value in parentheses that can be tab expanded, selects it when user presses enter,
