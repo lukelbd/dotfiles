@@ -125,7 +125,7 @@ _setup_bindings() {
   complete -r  # remove completions
   bind -r '"\C-i"'
   bind -r '"\C-d"'
-  bind -r '"\C-s"'  # to enable C-s in Vim (normally caught by terminal as start/stop signal)
+  bind -r '"\C-s"'  # enable Ctrl-s in Vim (normally caught by terminal as start/stop signal)
   bind 'set keyseq-timeout 50'                # see: https://unix.stackexchange.com/a/318497/112647
   bind 'set show-mode-in-prompt off'          # do not show mode
   bind 'set disable-completion off'           # ensure on
@@ -158,21 +158,21 @@ _setup_opts() {
   set +H  # turn off history expand so can have '!' in strings: https://unix.stackexchange.com/a/33341/112647
   set -o ignoreeof  # never close terminal with ctrl-d
   stty -ixon  # disable start stop output control to alloew ctrl-s
-  shopt -s autocd                   # typing naked directory name will cd into it
-  shopt -s cdspell                  # attempt spelling correction of cd arguments
-  shopt -s cdable_vars              # cd into shell variable directories, no $ necessary
-  shopt -s checkwinsize             # allow window resizing
-  shopt -s cmdhist                  # save multi-line commands as one command in history
-  shopt -s direxpand                # expand directories
-  shopt -s dirspell                 # attempt spelling correction of dirname
-  shopt -s globstar                 # **/ matches all subdirectories, searches recursively
-  shopt -s histappend               # append to the history file, don't overwrite it
-  shopt -u dotglob                  # include dot patterns in glob matches
-  shopt -u extglob                  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -u failglob                 # no error message if expansion is empty
-  shopt -u nocaseglob               # match case in glob expressions
-  shopt -u nocasematch              # match case in case/esac and [[ =~ ]] instances
-  shopt -u nullglob                 # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
+  shopt -s autocd  # typing naked directory name will cd into it
+  shopt -s cdspell  # attempt spelling correction of cd arguments
+  shopt -s cdable_vars  # cd into shell variable directories, no $ necessary
+  shopt -s checkwinsize  # allow window resizing
+  shopt -s cmdhist  # save multi-line commands as one command in history
+  shopt -s direxpand  # expand directories
+  shopt -s dirspell  # attempt spelling correction of dirname
+  shopt -s globstar  # **/ matches all subdirectories, searches recursively
+  shopt -s histappend  # append to the history file, don't overwrite it
+  shopt -u dotglob  # include dot patterns in glob matches
+  shopt -u extglob  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -u failglob  # no error message if expansion is empty
+  shopt -u nocaseglob  # match case in glob expressions
+  shopt -u nocasematch  # match case in case/esac and [[ =~ ]] instances
+  shopt -u nullglob  # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
   shopt -u no_empty_cmd_completion  # enable empty command completion
   export PROMPT_DIRTRIM=2  # trim long paths in prompt
   export HISTSIZE=5000  # enable huge history
@@ -1617,12 +1617,12 @@ ncversion() {
 # General summaries
 ncinfo() {
   # Show just the variable info (and linebreak before global attributes)
-  # command ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d' | less # trims first and last lines; do not need these
+  # ncdump -h "$1" | sed '/^$/q' | sed '1,1d;$d'
   local file
   [ $# -lt 1 ] && echo "Usage: ncinfo FILE" && return 1
   for file in "$@"; do
     echo "File: $file"
-    command ncdump -h "$file" | sed '1,1d;$d'  # trims first and last lines; do not need these
+    command ncdump -h "$file" | sed '1,1d;$d'
   done
 }
 ncdims() {
