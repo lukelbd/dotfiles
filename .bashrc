@@ -69,11 +69,13 @@
 #   See: https://github.com/jupyter-widgets/ipywidgets/issues/1720#issuecomment-330598324
 #   However this fails. Instead should just ignore message as it is harmless.
 #   See: https://github.com/jupyter-widgets/ipywidgets/issues/2257#issuecomment-1110056315
-# * Use asciinema for screen recordings. Tried pympress for presentations and copied
-#   impressive and presentation to bin but all seem to have issues. Instead use
-#   Presentation app: http://iihm.imag.fr/blanch/software/osx-presentation/
+# * Use asciinema for screen recordings: 'brew install asciinema' and run with key
+#   presses using 'asciinema rec --stdin [filename]'. For presentations tried pympress
+#   and copied impressive and presentation to bin but had issues. Now use Presentation.
 #   mamba install gtk3 cairo poppler pygobject && pip install pympress
 #   brew install pygobject3 --with-python3 gtk+3 && /usr/local/bin/pip3 install pympress
+#   See: http://iihm.imag.fr/blanch/software/osx-presentation/
+#   See: https://github.com/asciinema/asciinema/
 # * Prefix key for issuing SSH-session commands is '~' ('exit' sometimes
 #   fails perhaps because it is aliased or some 'exit' is defined in $PATH).
 #   ~C-z -- Stop current SSH session

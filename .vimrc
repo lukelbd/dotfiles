@@ -502,8 +502,8 @@ noremap <Leader>7 <Cmd>ColorToggle<CR>
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
-nnoremap <C-w> <Cmd>call window#close_tab()<CR>
-nnoremap <C-e> <Cmd>call window#close_window()<CR>
+nnoremap <C-q> <Cmd>call window#close_tab()<CR>
+nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
 
 " Open file in current directory or some input directory
@@ -545,24 +545,30 @@ noremap <Plug>ExecuteFile3 <Nop>
 noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Refresh session or re-opening previous files
-" Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 " noremap <C-r> <Cmd>History<CR>  " redundant with other commands
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
-noremap <Leader>E <Cmd>FZFMru<CR>
 noremap <Leader>r <Cmd>redraw!<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 
 " Buffer management
+" Note: Here :History includes v:oldfiles and open buffers.
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
-" Note: Currently no way to make :Buffers use custom opening command
 command! -nargs=0 ShowBufs call window#show_bufs()
 command! -nargs=0 WipeBufs call window#wipe_bufs()
-noremap <C-r> <Cmd>ShowBufs<CR>
-noremap <Leader>q <Cmd>Buffers<CR>
+noremap <Leader>E <Cmd>FZFMru<CR>
+noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
+
+" Tab selection
+" Note: Currently no way to make :Buffers use custom opening command
+nnoremap <Tab>q <Cmd>Buffers<CR>
+nnoremap <Tab>w <Cmd>Windows<CR>
+nnoremap <Tab>e <Cmd>History<CR>
+nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
+for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
 " Tab selection and movement
 nnoremap <Tab>' <Cmd>tabnext #<CR>
@@ -571,9 +577,6 @@ nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 nnoremap <Tab>m <Cmd>call window#move_tab()<CR>
-nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
-nnoremap <Tab><Space> <Cmd>Windows<CR>
-for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
 " Window selection and creation
 nnoremap <Tab>; <C-w><C-p>
@@ -1259,15 +1262,15 @@ call plug#('ludovicchabant/vim-gutentags')  " note slows things down without con
 let g:gutentags_enabled = 1
 " let g:gutentags_enabled = 0
 
-" User interface selection stuff
-" Note: While specify ctags comamnd below, and set 'tags' accordingly above, this
-" should generally not be used since tags managed by gutentags.
+" User fuzzy selection stuff
+" Note: For consistency, specify ctags command below and set 'tags' above accordingly,
+" however this should generally not be used since ctags are managed by gutentags.
+" Note: You must use fzf#wrap to apply global settings and cannot rely on fzf#run
+" return values (will result in weird hard-to-debug issues).
 " Note: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
-" However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1.
-" Note: FZF can also do popup windows, similar to ddc/vim-lsp, but prefer windows
-" centered on bottom so do not configure this way.
-" Note: fzf#wrap is required to apply global settings and cannot
-" rely on fzf#run return values (will result in weird hard-to-debug issues).
+" However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1 and more
+" recent fzf.vim versions don't even support 'Drop' for Tags/Ag/Rg. Pin to old version
+" See: https://github.com/junegunn/fzf.vim/issues/1508
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " call plug#('mhinz/vim-grepper')  " for ag/rg but seems like easymotion, too much
@@ -1278,7 +1281,7 @@ let g:gutentags_enabled = 1
 " call plug#('Shougo/ddu-ui-filer.vim')  " successor to Shougo/vimfiler and Shougo/defx.nvim
 " call plug#('ctrlpvim/ctrlp.vim')  " replaced with fzf
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
-call plug#('junegunn/fzf.vim')  " this one depends on the main repo above, includes other tools
+call plug#('junegunn/fzf.vim', {'commit': '5ab282c'})  " pin to version supporting :Drop
 let g:fzf_action = {
   \ 'ctrl-m': 'Drop', 'ctrl-t': 'Drop',
   \ 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
@@ -1608,8 +1611,10 @@ endif
 " Tag integration settings
 " Add maps for vim-tags and gutentags plus use tags for default double bracket
 " motion, except never overwrite potential single bracket mappings (e.g. help mode).
-" Note: Custom plugin is similar to :Btags which generates ad hoc tag list, different
-" from :FZF which uses universal file and :Gutentags which manages/updates the file.
+" Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
+" instead creating tags whenever buffer is loaded and tracking tags continuously.
+" Note: Use .ctags config to ignore particular kinds. Include python imports (Ii),
+" tex frame subtitles (g), and vim constants/variables/vimballs (Cvn).
 if s:plug_active('vim-tags')
   augroup vim_tags
     au!
@@ -1621,17 +1626,15 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
-  command! -nargs=0 ShowTags echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  noremap <C-t> <Cmd>ShowTags<CR>
-" noremap <Leader>U <Cmd>UpdateTags<CR>  " use gutentags updates instead
   command! -nargs=? TagToggle call switch#tags(<args>)
+  command! -nargs=0 ShowTags echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
+  nnoremap <Leader>u <Cmd>ShowTags<CR>
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
-  let g:tags_jump_map = '<Leader><Leader>'
-  let g:tags_drop_map = '<Leader><Tab>'  " note default is <Leader><Tab>
+  let g:tags_drop_map = '<Leader><Tab>'  " i.e. <C-Space>, default is <Leader><Tab>
+  let g:tags_jump_map = '<Leader><Leader>'  " default is <Leader><Leader>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
-  let g:tags_skip_kinds = {'python': 'I', 'tex': 'g', 'vim': 'vnC'}
 endif
 
 " Gutentag tag generation
@@ -1784,7 +1787,7 @@ if s:plug_active('ddc.vim')
   let g:denops#deno = has('gui_running') ? $HOME . '/mambaforge/bin/deno' : 'deno'
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
-    \ '--v8-flags=--max-heap-size=1000,--max-old-space-size=1000',
+    \ '--v8-flags=--max-heap-size=100,--max-old-space-size=100',
     \ ]
   let g:ddc_sources = ['around', 'buffer', 'file', 'vim-lsp']
   let g:ddc_options = {
@@ -1836,13 +1839,13 @@ endif
 " https://github.com/koalaman/shellcheck  # shell linter
 " https://github.com/mvdan/sh  # shell format checker
 " https://github.com/openstack/bashate  # shell format checker
-" https://mypy.readthedocs.io/en/stable/introduction.html  # annotation checker
+" https://mypy.readthedocs.io/en/stable/introduction.html  # type annotation checker
 " https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
 if s:plug_active('ale')
-  command! -nargs=? AleToggle call switch#ale(<args>)
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
-  noremap <C-q> <Cmd>cclose<CR><Cmd>lclose<CR>
+  " noremap <C-e> <Cmd>cclose<CR><Cmd>lclose<CR>
+  command! -nargs=? AleToggle call switch#ale(<args>)
   noremap <Leader>x <Cmd>cclose<CR><Cmd>lopen<CR>
   noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>copen<CR>
   noremap <Leader>@ <Cmd>call switch#ale()<CR>
@@ -1853,7 +1856,7 @@ if s:plug_active('ale')
     \ 'help': [],
     \ 'json': ['jsonlint'],
     \ 'jsonc': ['jsonlint'],
-    \ 'python': ['python', 'flake8'],
+    \ 'python': ['python', 'flake8', 'mypy'],
     \ 'rst': [],
     \ 'sh': ['shellcheck', 'bashate'],
     \ 'tex': ['lacheck'],
@@ -2085,16 +2088,6 @@ if s:plug_active('vim-test')
   noremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
-" Undo tree settings
-" Todo: Currently can only clear history with 'C' in active pane not externally. Need
-" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
-if s:plug_active('undotree')
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_RelativeTimestamp = 0
-  noremap <Leader>u <Cmd>UndotreeToggle<CR>
-  " noremap <Leader>U <Cmd>UndotreeToggle 1<CR>C
-endif
-
 " Speed dating, support date increments
 " Todo: Build intuition for how to use this things.
 " Note: This overwrites default increment/decrement plugins declared above.
@@ -2113,6 +2106,16 @@ if s:plug_active('HowMuch')
   vmap <Leader>) <Plug>AutoCalcAppendWithEq
   vmap <Leader>- <Plug>AutoCalcReplaceWithSum
   vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
+endif
+
+" Undo tree settings
+" Todo: Currently can only clear history with 'C' in active pane not externally. Need
+" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+if s:plug_active('undotree')
+  noremap <Tab>u <Cmd>UndotreeToggle<CR>
+  let g:undotree_DiffAutoOpen = 0
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_RelativeTimestamp = 0
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
