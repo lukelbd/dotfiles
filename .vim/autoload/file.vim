@@ -170,9 +170,9 @@ function! file#open_drop(...) abort
       endfor
     endfor
     if bufname('%') ==# '' && &modified == 0  " fill this window
-      exec 'edit ' . path
+      exe 'edit ' . path
     else  " create new tab
-      exec 'tabnew ' . path
+      exe 'tabnew ' . path
     end
   endfor
 endfunction

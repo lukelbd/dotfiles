@@ -703,13 +703,23 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 " See: https://superuser.com/a/189956/506762
 command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
+" Prevent unadorned 'gg/G' from opening folds
+" Useful for e.g. python files with docsring at top and function at bottom
+noremap <expr> gg v:count == 0 ? "\<Cmd>1<CR>" : 'ggzv'
+noremap G <Cmd>$<CR>
+
+" Jump to previous end-of-word or previous end-of-WORD
+" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
+
 " Jump to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
 
 " Jump to last and next jump
-" Note: Account for karabiner arrow key maps
+" Note: This accounts for karabiner arrow key maps
 noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
@@ -720,11 +730,6 @@ noremap <Right> <C-i>
 " noremap <Leader>" <Cmd>BLines<CR>
 noremap <Leader>' <Cmd>call mark#fzf_marks()<CR>
 noremap <Leader>" <Cmd>call mark#fzf_jumps()<CR>
-
-" Free up m keys, so ge/gE command belongs as single-keystroke
-" words along with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
 
 " Add 'g' version jumping keys that move by only alphanumeric characters
 " (i.e. excluding dots, dashes, underscores). This is consistent with tmux.
@@ -1126,16 +1131,14 @@ command! -nargs=1 PlugLocal call s:plug_local(<args>)
 
 " Initialize plugin manager. Note we no longer worry about compatibility
 " because we can install everything from conda-forge, including vim and ctags.
-" Note: See https://vi.stackexchange.com/q/388/8084 for a comparison of plugin
-" managers. Currently use junegunn/vim-plug but could switch to Shougo/dein.vim
-" (with haya14busa/dein-command.vim for commands instead of functions) which was
-" derived from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
+" Note: See https://vi.stackexchange.com/q/388/8084 for a comparison of plugin managers.
+" Currently use junegunn/vim-plug but could switch to Shougo/dein.vim which was derived
+" from Shougo/neobundle.vim which was based on vundle. Just a bit faster.
 call plug#begin('~/.vim/plugged')
 
-" Anti-escape
-" Note: This is used only to preserve stdin colors e.g. 'git add --help'. Previously
-" invoked when opening command --help pages but now not needed since redirect small
-" subset of commands that include ANSI colors back to their corresponding man pages.
+" Escape character handling
+" Note: Previously used this to preserve colors in 'command --help' pages but now simply
+" redirect git commands that include ANSI colors to their corresponding man pages.
 " call plug#('powerman/vim-plugin-AnsiEsc')
 
 " Inline code handling
@@ -1165,9 +1168,8 @@ call plug#('tomtom/tcomment_vim')
 " call plug#('tpope/vim-unimpaired')  " bracket maps that no longer use
 call plug#('tpope/vim-repeat')  " basic repeat utility
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
-call plug#('tpope/vim-characterize')  " print character information
+call plug#('tpope/vim-characterize')  " print character info (nicer version of 'ga')
 nmap gY <Plug>(characterize)
-" noremap gy ga  " non plugin equivalent
 
 " Panel utilities
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -1176,6 +1178,7 @@ nmap gY <Plug>(characterize)
 " call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
 " call plug#('scrooloose/nerdtree')  " unnecessary
 " call plug#('preservim/tagbar')  " unnecessary
+call plug#('junegunn/vim-peekaboo')  " popup display
 call plug#('mbbill/undotree')
 
 " Restoring sessions and recent files. Use 'vim-session' bash function to restore from
@@ -1189,7 +1192,7 @@ call plug#('tpope/vim-obsession')  " sparse features on top of built-in session 
 call plug#('yegappan/mru')  " most recent file
 " let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
 
-" Navigation and marker and fold interface
+" Navigation, folding, and registers
 " Note: SimPylFold seems to have nice improvements, but while vim-tex-fold adds
 " environment folding support, only native vim folds document header, which is
 " sometimes useful. Will stick to default unless things change.
@@ -1203,9 +1206,8 @@ call plug#('yegappan/mru')  " most recent file
 " call plug#('pseewald/vim-anyfold')  " better indent folding (instead of vim syntax)
 " call plug#('matze/vim-tex-fold')  " folding tex environments (but no preamble)
 call plug#('tmhedberg/SimpylFold')  " python folding
-call plug#('junegunn/vim-peekaboo')  " popup display
-call plug#('justinmk/vim-sneak')  " simple and clean
 call plug#('Konfekt/FastFold')  " speedup folding
+call plug#('justinmk/vim-sneak')  " simple and clean
 let g:peekaboo_prefix = '"'
 let g:peekaboo_window = 'vertical topleft 30new'
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
@@ -1326,14 +1328,14 @@ endif
 " call plug#('roxma/vim-hug-neovim-rpc')  " deoplete dependency
 " let g:neocomplete#enable_at_startup = 1  " needed inside plug#begin block
 " let g:deoplete#enable_at_startup = 1  " needed inside plug#begin block
+" call plug#('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
+" call plug#('Shougo/ddc.vim', {'commit': 'db28c7d'})  " fourth generation (requires deno)
+" call plug#('Shougo/ddc-ui-native', {'commit': 'cc29db3'})  " matching words near cursor
 if s:enable_ddc
-  call plug#('vim-denops/denops.vim')  " ddc dependency
   call plug#('matsui54/denops-popup-preview.vim')  " show previews during pmenu selection
+  call plug#('vim-denops/denops.vim')  " ddc dependency
   call plug#('Shougo/ddc.vim')  " fourth generation (requires deno)
   call plug#('Shougo/ddc-ui-native')  " matching words near cursor
-  " call plug#('vim-denops/denops.vim', {'commit': 'e641727'})  " ddc dependency
-  " call plug#('Shougo/ddc.vim', {'commit': 'db28c7d'})  " fourth generation (requires deno)
-  " call plug#('Shougo/ddc-ui-native', {'commit': 'cc29db3'})  " matching words near cursor
 endif
 
 " Omnifunc sources not provided by engines
@@ -1394,12 +1396,27 @@ call plug#('kana/vim-textobj-indent')  " matching indentation, object is 'i' for
 call plug#('sgur/vim-textobj-parameter')  " function parameter, object is '='
 let g:vim_textobj_parameter_mapping = '='  " avoid ',' conflict with latex
 
-" Aligning things and stuff, use vim-easy-align because more tabular API is fugly AF
-" and requires individual maps and docs suck. Also does not have built-in feature for
-" ignoring comments or built-in aligning within motions or textobj blocks.
-" call plug#('vim-scripts/Align')
-" call plug#('tommcdo/vim-lion')
-" call plug#('godlygeek/tabular')
+" Formatting stuff. Conjoin plugin removes line continuation characters and is awesome.
+" Use vim-easy-align because tabular API is fugly and requires separate maps and does
+" not support motions or text objects or ignoring comments by default.
+" Note: Seems that mapping <Nop> just sends it to a black hole. Try :map <Nop> after.
+" See: https://www.reddit.com/r/vim/comments/g71wyq/delete_continuation_characters_when_joining_lines/
+" call plug#('vim-scripts/Align')  " outdated align plugin
+" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
+" call plug#('tommcdo/vim-lion')  " alternative to easy-align
+" call plug#('godlygeek/tabular')  " difficult to use
+" call plug#('terryma/vim-multiple-cursors')  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
+" call plug#('dkarter/bullets.vim')  " list numbering but completely fails
+call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
+call plug#('flwyd/vim-conjoin')  " remove line continuation characters
+let g:LargeFile = 1  " megabyte limit
+let g:conjoin_map_J = '<Nop>'  " no nomap setting but this does fine
+let g:conjoin_map_gJ = '<Nop>'  " no nomap setting but this does fine
+let g:splitjoin_join_mapping  = 'cJ'
+let g:splitjoin_split_mapping = 'cK'
+let g:splitjoin_trailing_comma = 1
+let g:splitjoin_normalize_whitespace = 1
+let g:splitjoin_python_brackets_on_separate_lines = 1
 call plug#('junegunn/vim-easy-align')
 
 " Python and related utilities
@@ -1441,8 +1458,7 @@ let g:jupytext_fmt = 'py:percent'
 " let g:riv_python_rst_hl = 1
 " call plug#('Rykka/riv.vim')
 
-" TeX utilities with better syntax highlighting, better
-" indentation, and some useful remaps. Also zotero integration.
+" TeX utilities with syntax highlighting, indentation, mappings, and zotero integration
 " Note: For better configuration see https://github.com/lervag/vimtex/issues/204
 " Note: Now use https://github.com/msprev/fzf-bibtex with vim integration inside
 " autoload/tex.vim rather than unite versions. This is consistent with our choice
@@ -1461,8 +1477,8 @@ let g:jupytext_fmt = 'py:percent'
 " call plug#('MortenStabenau/matlab-vim')  " requires tmux installed
 " call plug#('daeyun/vim-matlab')  " alternative but project seems dead
 " call plug#('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
+call plug#('vim-scripts/applescript.vim')  " applescript syntax support
 call plug#('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
-call plug#('vim-scripts/applescript.vim')
 call plug#('preservim/vim-markdown')
 call plug#('tmux-plugins/vim-tmux')
 call plug#('anntzer/vim-cython')
@@ -1473,26 +1489,6 @@ let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:vim_markdown_conceal = 1
 let g:vim_markdown_conceal_code_blocks = 1
 
-" Formatting stuff
-" The conjoin plugin removes line continuation characters and is awesome
-" Note: Seems that mapping <Nop> just sends it to a black hole. Try :map <Nop> after.
-" See: https://www.reddit.com/r/vim/comments/g71wyq/delete_continuation_characters_when_joining_lines/
-" call plug#('dkarter/bullets.vim')  " list numbering but completely fails
-" call plug#('ohjames/tabdrop')  " now apply similar solution with :Drop
-" call plug#('beloglazov/vim-online-thesaurus')  " completely broken: https://github.com/beloglazov/vim-online-thesaurus/issues/44
-" call plug#('terryma/vim-multiple-cursors')  " article against this idea: https://medium.com/@schtoeffel/you-don-t-need-more-than-one-cursor-in-vim-2c44117d51db
-" call plug#('vim-scripts/LargeFile')  " disable syntax highlighting for large files
-call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
-call plug#('flwyd/vim-conjoin')  " remove line continuation characters
-let g:LargeFile = 1  " megabyte limit
-let g:conjoin_map_J = '<Nop>'  " no nomap setting but this does fine
-let g:conjoin_map_gJ = '<Nop>'  " no nomap setting but this does fine
-let g:splitjoin_join_mapping  = 'cJ'
-let g:splitjoin_split_mapping = 'cK'
-let g:splitjoin_trailing_comma = 1
-let g:splitjoin_normalize_whitespace = 1
-let g:splitjoin_python_brackets_on_separate_lines = 1
-"
 " Colorful stuff
 " Test: ~/.vim/plugged/colorizer/colortest.txt
 " Note: colorizer very expensive so disabled by default and toggled with shortcut
@@ -1674,7 +1670,7 @@ endif
 " zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold,
 " and zv is open folds enough to view cursor (useful when jumping lines or searching)
 " Note: Also tried 'vim-lsp' folding but caused huge slowdowns. Should see folding as
-" similar to linting/syntax/tags and use separate utility. Also consider vim-anyfold
+" similar to linting/syntax/tags and use separate utility.
 " Note: FastFold suggestion for python files is to locally set foldmethod=indent but
 " this is constraining. Use SimpylFold instead (they recommend FastFold integration).
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/

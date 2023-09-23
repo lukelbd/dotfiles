@@ -2,7 +2,9 @@
 " Utilities for shell commands and processes
 "-----------------------------------------------------------------------------"
 " Popup window with help information
-" Note: See also .bashrc help(). These utils
+" Note: See also .bashrc help(). Note we previously used 'powerman/vim-plugin-AnsiEsc'
+" to preserve colors shown in 'command --help' pages but now simply redirect git
+" commands that include ANSI colors to their correponsding (identical) man pages.
 function! shell#help_page(tab, ...) abort
   let file = @%
   let page = a:0 ? a:1 : input('Help info: ', '', 'shellcmd')
@@ -144,4 +146,3 @@ function! shell#man_setup(...) abort
   noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
   noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
 endfunction
-
