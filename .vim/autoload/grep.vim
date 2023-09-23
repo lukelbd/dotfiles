@@ -8,8 +8,8 @@
 function! s:parse_paths(prompt, level, ...)
   if a:0  " search input paths
     let paths = copy(a:000)
-  elseif a:level > 1  " search current file only
-    let paths = [@%]
+  elseif a:level > 1  " search current open files
+    let paths = tags#buffer_paths()
   elseif a:level > 0  " search current file directory
     let paths = [expand('%:h')]
   else  " search current file project (file directory returned if no projects found)
@@ -58,6 +58,7 @@ function! s:parse_pattern(pattern)
   let regex = substitute(regex, '\\\([(|)]\)', '=\1', 'g')  " reserve grouping indicators
   let regex = substitute(regex, '\(^\|[^=\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape literal parentheses
   let regex = substitute(regex, '=\([(|)]\)', '\1', 'g')  " unescape grouping indicators
+  echom 'Expression!!! ' . regex
   return regex
 endfunction
 
@@ -97,7 +98,7 @@ function! grep#complete_pattern(lead, line, cursor)
   return reverse([@/] + opts[1:])
 endfunction
 function! grep#call_grep(grep, level, depth) abort
-  let prompt = s:parse_paths(1, a:level)[0]
+  let prompt = a:level > 1 ? 'open buffers' : s:parse_paths(1, a:level)[0]
   let prompt = toupper(a:grep[0]) . a:grep[1:] . ' search ' . prompt . ' (' . @/ . ')'
   let pattern = utils#input_complete(prompt, 'grep#complete_pattern', @/)
   if empty(pattern) | return | endif

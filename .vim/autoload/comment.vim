@@ -17,13 +17,6 @@ function! comment#get_char() abort
   return escape(string, '[]\.*$~')  " escape magic characters
 endfunction
 
-" Search and jump to project 'TODO', 'NOTE', 'ERROR', or 'FIXME' indicators
-function! comment#jump_note(bang, note, ...) abort
-  let comment = comment#get_char() . '\s\+'
-  let pattern = comment . '\<' . toupper(a:note[0]) + tolower(a:note[1:]) + ':'
-  call call('grep#call_rg', [a:bang, 0, 0] + a:000)
-endfunction
-
 " Begin comment in insert mode
 function! comment#insert_char() abort
   let parts = split(&l:commentstring, '%s')

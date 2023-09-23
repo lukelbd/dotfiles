@@ -507,17 +507,18 @@ nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
 
 " Open file in current directory or some input directory
-" Note: These are just convenience functions (see file#init_path) for details.
+" Note: These are just convenience functions (see file#init_path for details).
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous('file#open_drop', <f-args>)
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
-nnoremap <C-o> <Cmd>call file#init_path(0, 0)<CR>
-nnoremap <F3>  <Cmd>call file#init_path(0, 1)<CR>
-nnoremap <C-p> <Cmd>call file#init_path(1, 0)<CR>
-nnoremap <C-y> <Cmd>call file#init_path(1, 1)<CR>
+nnoremap <C-t> <Cmd>call file#init_path(0, 0)<CR>
+nnoremap <C-y> <Cmd>call file#init_path(1, 0)<CR>
+nnoremap <F3>  <Cmd>exe 'Files ' . expand('%:p:h')<CR>
+nnoremap <C-o> <Cmd>exe 'Open ' . tag#find_root(@%)<CR>
+nnoremap <C-p> <Cmd>exe 'Files ' . tag#find_root(@%)<CR>
+nnoremap <C-g> <Cmd>GFiles<CR>
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant databsae from unix 'locate'
 " nnoremap <C-g> <Cmd>Files<CR>  " see file#init_path(1, ...)
-nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Related file utilities
 " Mnemonic is 'inside' just like Ctrl + i map
@@ -546,7 +547,6 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Refresh session or re-opening previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
-" noremap <C-r> <Cmd>History<CR>  " redundant with other commands
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
@@ -645,22 +645,25 @@ command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
 command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
-nnoremap <Leader>n <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap <Leader>N <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap <Leader>, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap <Leader>. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
 
 " Convenience grep maps and commands
-" Todo: Create comment autoload function to filter to comments only
-" Note: Commands match the todo(), note(), error(), warning() functions in bashrc
-command! -bang -nargs=* Debug call grep#call_ag(<bang>0, 0, 0, '^\s*ic(', <f-args>)
-command! -bang -nargs=* Print call grep#call_ag(<bang>0, 0, 0, '^\s*print(', <f-args>)
-command! -bang -nargs=* Note call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
-command! -bang -nargs=* Todo call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
-command! -bang -nargs=* Warning call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
-noremap gP <Cmd>Print<CR>
-noremap gB <Cmd>Debug<CR>
-noremap gT <Cmd>Todo<CR>
-noremap gW <Cmd>Warning<CR>
-noremap gM <Cmd>Note<CR>
+" Note: Search open files for print statements and project files for others
+" =======  foo bar
+let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
+command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
+command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
+command! -bang -nargs=* Warnings call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
+command! -bang -nargs=* Conflicts call grep#call_ag(<bang>0, 0, 0, s:conflicts, <f-args>)
+command! -bang -nargs=* Debugs call grep#call_ag(<bang>0, 2, 0, '^\s*ic(', <f-args>)
+command! -bang -nargs=* Prints call grep#call_ag(<bang>0, 2, 0, '^\s*print(', <f-args>)
+noremap gM <Cmd>Notes<CR>
+noremap gT <Cmd>Todos<CR>
+noremap gW <Cmd>Warnings<CR>
+noremap gG <Cmd>Conflicts<CR>
+noremap gB <Cmd>Debugs<CR>
+noremap gP <Cmd>Prints<CR>
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
 " Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
@@ -670,12 +673,12 @@ nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
-nnoremap <Leader>m <Cmd>Maps<CR>
-nnoremap <Leader>M <Cmd>Commands<CR>
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
-nnoremap <Leader>, <Cmd>call shell#help_page(1)<CR>
-nnoremap <Leader>. <Cmd>call shell#man_page(1)<CR>
+nnoremap <Leader>n <Cmd>Maps<CR>
+nnoremap <Leader>N <Cmd>Commands<CR>
+nnoremap <Leader>m <Cmd>call shell#help_page(1)<CR>
+nnoremap <Leader>M <Cmd>call shell#man_page(1)<CR>
 
 " Cycle through wildmenu expansion with these keys
 " Note: Mapping without <expr> will type those literal keys
@@ -753,7 +756,7 @@ command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
 noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
 noremap <Leader>~ <Cmd>call mark#del_marks()<CR>
-noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#goto_mark(g:mark_recent)' : ''
+noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#goto_mark(g:mark_recent)<CR>' : ''
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
@@ -1000,6 +1003,10 @@ nnoremap <expr> go edit#paste_mode() . 'o'
 nnoremap <expr> gO edit#paste_mode() . 'O'
 nnoremap <expr> gR edit#paste_mode() . 'R'
 
+" Search for non-ASCII escape chars
+" See: https://stackoverflow.com/a/41168966/4970632
+noremap g, /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+
 " Forward delete by tabs
 inoremap <expr> <Delete> edit#forward_delete()
 
@@ -1016,14 +1023,6 @@ augroup END
 " Search highlight toggle
 " Note: This just does 'set hlsearch!' and prints a message
 noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
-
-" Search for git commit conflict blocks
-" Note: See also [f and ]f commands
-noremap gG /^[<>=\|]\{7}[<>=\|]\@!<CR>
-
-" Search for non-ASCII escape chars
-" See: https://stackoverflow.com/a/41168966/4970632
-noremap gX /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
@@ -2022,7 +2021,7 @@ endif
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
 if s:plug_active('vim-easy-align')
-  map g, <Plug>(EasyAlign)
+  map g; <Plug>(EasyAlign)
   let g:easy_align_delimiters = {
     \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
     \   '&': {'pattern': '\(&&\|||\)'},
