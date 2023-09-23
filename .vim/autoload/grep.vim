@@ -58,7 +58,6 @@ function! s:parse_pattern(pattern)
   let regex = substitute(regex, '\\\([(|)]\)', '=\1', 'g')  " reserve grouping indicators
   let regex = substitute(regex, '\(^\|[^=\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape literal parentheses
   let regex = substitute(regex, '=\([(|)]\)', '\1', 'g')  " unescape grouping indicators
-  echom 'Expression!!! ' . regex
   return regex
 endfunction
 
