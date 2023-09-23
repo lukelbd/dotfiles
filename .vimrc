@@ -718,6 +718,13 @@ noremap M gE
 noremap <C-n> g;
 noremap <F4> g,
 
+" Jump between and inside of folds
+" Note: More consistent to use brackets for between folds
+noremap [z zk
+noremap ]z zj
+noremap zk [z
+noremap zj ]z
+
 " Jump to last and next jump
 " Note: This accounts for karabiner arrow key maps
 noremap <C-h> <C-o>
