@@ -12,6 +12,24 @@ let s:use_signs = 1
 let s:gui_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
+" Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
+" used to override fzf marks command and support jumping to existing tabs.
+" See: https://stackoverflow.com/a/49447600/4970632
+function! s:fzf_snr() abort
+  silent! call fzf#vim#with_preview()  " trigger autoload if not already done
+  let [paths, sids] = vim#config_scripts(1)
+  let path = filter(copy(paths), "v:val =~# '/autoload/fzf/vim.vim'")
+  let idx = index(paths, get(path, 0, ''))
+  if !empty(path) && idx >= 0
+    return "\<snr>" . sids[idx] . '_'
+  else
+    echohl WarningMsg
+    echom 'Warning: FZF autoload script not found.'
+    echohl None
+    return ''
+  endif
+endfunction
+
 " Override of FZF :Jumps
 " Note: This is only needed because the default FZF flag --bind start:pos:etc
 " was yielding errors. Not sure why but maybe an issue with bash fzf fork?
@@ -25,7 +43,7 @@ function! s:jump_sink(lines) abort
   exe 'normal! ' . cmd
 endfunction
 function! mark#fzf_jumps(...)
-  let snr = utils#fzf_snr()
+  let snr = s:fzf_snr()
   if empty(snr) | return | endif
   redir => cout
   silent jumps
@@ -62,7 +80,7 @@ function! mark#goto_mark(mrk) abort
   endif
 endfunction
 function! mark#fzf_marks(...) abort
-  let snr = utils#fzf_snr()
+  let snr = s:fzf_snr()
   if empty(snr) | return | endif
   redir => cout
   silent marks

@@ -1269,9 +1269,7 @@ let g:gutentags_enabled = 1
 " Note: You must use fzf#wrap to apply global settings and cannot rely on fzf#run
 " return values (will result in weird hard-to-debug issues).
 " Note: 'Drop' opens selection in existing window, similar to switchbuf=useopen,usetab.
-" However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1 and more
-" recent fzf.vim versions don't even support 'Drop' for Tags/Ag/Rg. Pin to old version
-" See: https://github.com/junegunn/fzf.vim/issues/1508
+" However :Buffers still opens duplicate tabs even with fzf_buffers_jump=1.
 " See: https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 " See: https://www.reddit.com/r/vim/comments/9504rz/denite_the_best_vim_pluggin/e3pbab0/
 " call plug#('mhinz/vim-grepper')  " for ag/rg but seems like easymotion, too much
@@ -1282,7 +1280,7 @@ let g:gutentags_enabled = 1
 " call plug#('Shougo/ddu-ui-filer.vim')  " successor to Shougo/vimfiler and Shougo/defx.nvim
 " call plug#('ctrlpvim/ctrlp.vim')  " replaced with fzf
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
-call plug#('junegunn/fzf.vim', {'commit': '5ab282c'})  " pin to version supporting :Drop
+call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 let g:fzf_action = {
   \ 'ctrl-m': 'Drop', 'ctrl-t': 'Drop',
   \ 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
