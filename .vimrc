@@ -50,7 +50,7 @@ set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldenable  " toggle with zi, note plugins and fastfold handle foldmethod/foldexpr
-set foldlevelstart=3  " hide folds when opening (then 'foldlevel' sets current status)
+set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=window#fold_text()  " default function for generating text shown on fold line
