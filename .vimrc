@@ -48,7 +48,8 @@ set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display opt
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
-set foldenable  " then plugins and fastfold handle 'foldmethod' and 'foldexpr'
+set foldclose=  " use foldclose=all to auto-close folds when leaving
+set foldenable  " toggle with zi, note plugins and fastfold handle foldmethod/foldexpr
 set foldlevelstart=3  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
