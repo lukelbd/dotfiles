@@ -6,3 +6,7 @@
 --langmap=vim:+.vimrc
 --python-kinds=-i
 --python-kinds=-I
+--tex-kinds=-g
+--vim-kinds=-v
+--vim-kinds=-n
+--vim-kinds=-C

@@ -67,6 +67,7 @@ dependencies:
   - jupyter-lsp
   - jupyterlab-lsp
   - jupyterlab_code_formatter
+  - mypy
   - flake8
   - black
   - isort
