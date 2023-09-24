@@ -14,8 +14,10 @@ manuscript*
 # Trash folders
 tmp
 trash*
+deprecated*
 tmp/
 trash*/
+deprecated*/
 
 # Vim session files and swap files
 tags

@@ -56,12 +56,14 @@ dependencies:
   - ipython
   - ipykernel
   - jupyter
+  - notebook
   - jupytext
   - pandoc
-  - executing>=1.0.0
   - nb_conda_kernels
+  - executing>=1.0.0
   - jupyter_contrib_nbextensions
   - jupyter_nbextensions_configurator
+  - jupyter-resource-usage<1.0.0
   - jupyterlab<4.0.0
   - jupyterlab_server
   - jupyter-lsp

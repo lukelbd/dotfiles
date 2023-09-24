@@ -853,10 +853,10 @@ command! -bar -count=1 Lnext execute iter#jump_cyclic(<count>, 'loc')
 command! -bar -count=1 Lprev execute iter#jump_cyclic(<count>, 'loc', 1)
 command! -bar -count=1 Qnext execute iter#jump_cyclic(<count>, 'qf')
 command! -bar -count=1 Qprev execute iter#jump_cyclic(<count>, 'qf', 1)
-noremap [x <Cmd>Lprev<CR>
-noremap ]x <Cmd>Lnext<CR>
-noremap [X <Cmd>Qprev<CR>
-noremap ]X <Cmd>Qnext<CR>
+noremap [x <Cmd>Lprev<CR>zv
+noremap ]x <Cmd>Lnext<CR>zv
+noremap [X <Cmd>Qprev<CR>zv
+noremap ]X <Cmd>Qnext<CR>zv
 
 " Wrapping lines with arbitrary textwidth
 " Wrapping lines accounting for bullet indentation and with arbitrary textwidth
@@ -916,8 +916,8 @@ nnoremap <Leader>S z=
 
 " Similar to ]s and [s but also corrects the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-nnoremap <silent> <Plug>forward_spell bh]s<Cmd>call edit#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[s<Cmd>call edit#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
+nnoremap <silent> <Plug>forward_spell bh]szv<Cmd>call edit#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
+nnoremap <silent> <Plug>backward_spell el[szv<Cmd>call edit#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
 nmap ]S <Plug>forward_spell
 nmap [S <Plug>backward_spell
 
@@ -944,8 +944,8 @@ augroup copy_toggle
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+nnoremap <Leader>c <Cmd>call switch#conceal()<CR>
+nnoremap <Leader>C <Cmd>call switch#copy()<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
 inoremap <expr> <C-v> edit#lang_map()
@@ -1846,7 +1846,7 @@ endif
 if s:plug_active('ale')
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
-  " noremap <C-e> <Cmd>cclose<CR><Cmd>lclose<CR>
+  noremap <C-e> <Cmd>cclose<CR><Cmd>lclose<CR>
   command! -nargs=? AleToggle call switch#ale(<args>)
   noremap <Leader>x <Cmd>cclose<CR><Cmd>lopen<CR>
   noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>copen<CR>
