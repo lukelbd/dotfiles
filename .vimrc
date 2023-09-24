@@ -374,15 +374,21 @@ endfor
 "-----------------------------------------------------------------------------"
 " Syntax highlighting
 "-----------------------------------------------------------------------------"
+" Native syntax highlight options
+" Todo: Add to these. Consider overriding tex fold.
+let g:tex_nospell = 0
+let g:tex_no_error = 0
+let g:tex_comment_nospell = 1
+
 " Macvim color schemes
 " Todo: Figure out issues with scheme switching
+let s:colorscheme = 'badwolf'
+let s:colorscheme = 'fahrenheit'
+let s:colorscheme = 'gruvbox'
+let s:colorscheme = 'molokai'
+let s:colorscheme = 'monokain'
+let s:colorscheme = 'oceanicnext'
 let s:colorscheme = 'papercolor'
-" let s:colorscheme = 'badwolf'
-" let s:colorscheme = 'fahrenheit'
-" let s:colorscheme = 'gruvbox'
-" let s:colorscheme = 'molokai'
-" let s:colorscheme = 'monokain'
-" let s:colorscheme = 'oceanicnext'
 
 " Macvim syntax overrides
 " Todo: Figure out whether to declare colorscheme here or at bottom
@@ -477,20 +483,20 @@ augroup END
 
 " General syntax commands
 " Note: ColorToggle is defined in colorizer.vim. Enables hex-string coloring. Useful
-" only for small files and with only a few tabs open.
-command! -nargs=0 CurrentGroup call vim#syntax_group()
-command! -nargs=? CurrentSyntax call vim#syntax_list(<q-args>)
-command! -nargs=0 GroupColors vert help group-name | call search('\*Comment') | normal! zt
+" only for small files and with only a few tabs open. For now keep manual.
+" noremap <Leader>7 <Cmd>ColorToggle<CR>
+command! -nargs=0 SyntaxGroup call vim#syntax_group()
+command! -nargs=? SyntaxList call vim#syntax_list(<q-args>)
+command! -nargs=0 ShowGroups vert help group-name | call search('\*Comment') | normal! zt
 command! -nargs=0 ShowColors call vim#show_colors()
 command! -nargs=0 ShowPlugin call vim#show_ftplugin()
 command! -nargs=0 ShowSyntax call vim#show_syntax()
-noremap <Leader>1 <Cmd>CurrentGroup<CR>
-noremap <Leader>2 <Cmd>CurrentSyntax<CR>
-noremap <Leader>3 <Cmd>GroupColors<CR>
-noremap <Leader>4 <Cmd>ShowPlugin<CR>
-noremap <Leader>5 <Cmd>ShowSyntax<CR>
+noremap <Leader>1 <Cmd>SyntaxGroup<CR>
+noremap <Leader>2 <Cmd>SyntaxList<CR>
+noremap <Leader>3 <Cmd>ShowGroups<CR>
+noremap <Leader>4 <Cmd>ShowSyntax<CR>
+noremap <Leader>5 <Cmd>ShowPlugin<CR>
 noremap <Leader>6 <Cmd>ShowColors<CR>
-noremap <Leader>7 <Cmd>ColorToggle<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -1473,6 +1479,8 @@ let g:jupytext_fmt = 'py:percent'
 " call plug#('lervag/vimtex')
 " call plug#('chrisbra/vim-tex-indent')
 " call plug#('rafaqz/citation.vim')
+" let g:vimtex_fold_enabled = 1
+" let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate','itemize','math']}}
 
 " Syntax highlighting
 " Note impsort sorts import statements and highlights modules using an after/syntax

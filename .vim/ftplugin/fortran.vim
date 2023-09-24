@@ -1,15 +1,20 @@
 "------------------------------------------------------------------------------
 " Fortran settings
 "------------------------------------------------------------------------------
+" Open document fold on startup
+" Note: Not possible to set foldlevelstart=1 for specific filetype
+let s:start = search('^\s*program\>', 'n')
+if foldclosed(s:start) > 0 | exe s:start . 'foldopen' | endif
+
 " These mostly make automatic indentation better
 " See this helpful thread: https://stackoverflow.com/a/17619568/4970632
 " See $VIMRUNTIME/indent/fortran.vim for setting the relevant global variables
-let g:fortran_do_enddo = 1    " otherwise do/enddo loops aren't indented!
-let g:fortran_indent_more = 1 " more better indenting
-let g:fortran_fold = 0
+let g:fortran_fold = 1
+let g:fortran_do_enddo = 1  " otherwise do/enddo loops aren't indented!
+let g:fortran_indent_more = 1  " more better indenting
 let g:fortran_have_tabs = 0
 let g:fortran_more_precise = 0
-let b:fortran_dialect = 'f08' " used by plugin?
+let b:fortran_dialect = 'f08'  " used by plugin?
 
 " Let fortran *automatically* detect free or fixed source
 " See :help ft-fortran-syntax

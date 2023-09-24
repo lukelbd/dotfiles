@@ -55,6 +55,10 @@ function! window#fold_text() abort
   " Format text
   let regex = '\s*' . comment#get_char() . '\s\+.*$'
   let label = substitute(getline(v:foldstart), regex, '', 'g')
+  if &filetype ==# 'tex'  " hide backslashes
+    let regex = '\\\@<!\\'
+    let label = substitute(label, regex, '', 'g')
+  endif
   if &filetype ==# 'python'  " replace docstrings
     let regex = '\("""\|' . "'''" . '\)'
     let label = substitute(label, regex, '<docstring>', 'g')

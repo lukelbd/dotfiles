@@ -1,19 +1,23 @@
 "-----------------------------------------------------------------------------
 " Builtin TeX settings
 "-----------------------------------------------------------------------------
-" Restrict concealmeant to just accents, Greek symbols, and math symbols
-let g:tex_conceal = 'agmdb'
+" Open document fold on startup
+" Note: Not possible to set foldlevelstart=1 for specific filetype
+let s:start = search('^\s*\\begin{document}', 'n')
+if foldclosed(s:start) > 0 | exe s:start . 'foldopen' | endif
 
-" Allow @ in makeatletter, allow texmathonly outside of math regions (i.e.
-" don't highlight [_^] when you think they are outside math zone)
+" Restrict concealmeant to accents, Greek symbols, and math symbols. Also allow @ in
+" makeatletter and 'math' outside of math zones (i.e. do not highlight [_^]).
+let g:tex_conceal = 'agmdb'
 let g:tex_stylish = 1
 
-" Disable spell checking in verbatim mode and comments, disable errors
-" let g:tex_fast = ''  " fast highlighting, but pretty ugly
+" Disable errors and disable spellcheck in verbatim and comments
+" let g:tex_fast = 0  " fast ugly highlighting
 let g:tex_fold_enable = 1
-let g:tex_comment_nospell = 1
-let g:tex_verbspell = 0
 let g:tex_no_error = 1
+let g:tex_nospell = 0
+let g:tex_verbspell = 0
+let g:tex_comment_nospell = 1
 
 " DelimitMate integration
 let b:delimitMate_quotes = '$ |'
@@ -21,9 +25,7 @@ let b:delimitMate_matchpairs = "(:),{:},[:],`:'"
 
 " Bibtex cache directory
 let s:cache_dir = expand('~/Library/Caches/bibtex')
-if isdirectory(s:cache_dir)
-  let $FZF_BIBTEX_CACHEDIR = s:cache_dir
-endif
+if isdirectory(s:cache_dir) | let $FZF_BIBTEX_CACHEDIR = s:cache_dir | endif
 
 " Running custom or default latexmk command in background
 " Note: When 'PREVIOUS_VERSION: file.tex' or 'PERVIOUS_VERSION=file.tex' is on first

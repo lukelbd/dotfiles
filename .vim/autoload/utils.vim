@@ -114,7 +114,7 @@ function! utils#panel_setup(modifiable) abort
     return
   endif
   setlocal nospell colorcolumn= statusline=%{'[Panel\ Window]'}%=%{StatusRight()}
-  for char in 'dufb'  " always remap scrolling indicators
+  for char in 'du'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
   endfor
   for char in 'uUrRxXdDcCpPaAiIoO'  " ignore buffer-local maps e.g. fugitive

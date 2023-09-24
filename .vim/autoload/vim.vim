@@ -134,14 +134,17 @@ function! vim#show_colors() abort
   call file#open_drop('colortest.vim')
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#panel_setup(0)
+  setlocal foldmethod=syntax
 endfunction
 function! vim#show_ftplugin() abort
   call file#open_drop($VIMRUNTIME . '/ftplugin/' . &filetype . '.vim')
   silent call utils#panel_setup(0)
+  setlocal foldmethod=syntax
 endfunction
 function! vim#show_syntax() abort
   call file#open_drop($VIMRUNTIME . '/syntax/' . &filetype . '.vim')
   silent call utils#panel_setup(0)
+  setlocal foldmethod=syntax
 endfunction
 
 " Source file or lines
@@ -173,9 +176,9 @@ endfunction
 
 " Print information about syntax group
 " Note: Top command more verbose than bottom
-function! vim#syntax_list(name) abort
-  if a:name
-    exe 'verb syntax list ' . a:name
+function! vim#syntax_list(...) abort
+  if a:0 && !empty(a:1)
+    exe 'verb syntax list ' . join(a:000, ' ')
   else
     exe 'verb syntax list ' . synIDattr(synID(line('.'), col('.'), 0), 'name')
   endif
