@@ -17,6 +17,13 @@ function! comment#get_char() abort
   return escape(string, '[]\.*$~')  " escape magic characters
 endfunction
 
+" Return the comment pattern regex
+function! comment#get_regex() abort
+  let space = '\s'
+  let char = empty(comment#get_char()) ? nr2char(0) : comment#get_char()
+  return '\s' . char
+endfunction
+
 " Begin comment in insert mode
 function! comment#insert_char() abort
   let parts = split(&l:commentstring, '%s')

@@ -513,7 +513,7 @@ command! -nargs=* -complete=file Open call file#open_continuous('file#open_drop'
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 nnoremap <C-t> <Cmd>call file#init_path(1, 0)<CR>
 nnoremap <C-y> <Cmd>call file#init_path(0, 0)<CR>
-nnoremap <F3>  <Cmd>exe 'Files ' . fnamemodify(resolve(@%), ':p:h')<CR>
+nnoremap <F3> <Cmd>exe 'Files ' . fnamemodify(resolve(@%), ':p:h')<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . tag#find_root(@%)<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . tag#find_root(@%)<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
@@ -558,9 +558,9 @@ noremap <Leader>R <Cmd>Refresh<CR>
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call window#show_bufs()
 command! -nargs=0 WipeBufs call window#wipe_bufs()
-noremap <Leader>E <Cmd>FZFMru<CR>
 noremap <Leader>q <Cmd>ShowBufs<CR>
 noremap <Leader>Q <Cmd>WipeBufs<CR>
+noremap <Leader>E <Cmd>FZFMru<CR>
 
 " Tab selection
 " Note: Currently no way to make :Buffers use custom opening command
@@ -634,23 +634,24 @@ augroup END
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
 " to explicitly specify path (without arguments each name has different default).
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
-" for alternatives is 'local directory' or 'current file'. Also note Rg is faster
-" so it gets lower case: https://unix.stackexchange.com/a/524094/112647
-command! -bang -nargs=+ Grep call grep#call_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ Rg call grep#call_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)
+" for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
+" has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
+command! -bang -nargs=+ Grep call grep#call_rg(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)
 command! -bang -nargs=+ Rd call grep#call_rg(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 2, 0, <f-args>)
-command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
 command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
+command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
+command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)
+command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
+command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
 nnoremap <Leader>, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 nnoremap <Leader>. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+" nnoremap <Leader>, <Cmd>call grep#call_grep('ag', 0, 0)<CR>
+" nnoremap <Leader>. <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
 " Convenience grep maps and commands
-" Note: Search open files for print statements and project files for others
-" =======  foo bar
+" Note: Search open files for print statements and project files for others.
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
 command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
 command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
@@ -666,8 +667,9 @@ noremap gB <Cmd>Debugs<CR>
 noremap gP <Cmd>Prints<CR>
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'
-" Note: Mapping for 'repeat last search' is unnecessary (just press n or N)
-" Note: Mnemonic for 'repeat command' is that it is on same key as :hlsearch
+" Also add shortcut to search for non-ASCII escape chars
+" See: https://stackoverflow.com/a/41168966/4970632
+noremap g, /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 noremap g. :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
@@ -1016,10 +1018,6 @@ nnoremap <expr> gI edit#paste_mode() . 'I'
 nnoremap <expr> go edit#paste_mode() . 'o'
 nnoremap <expr> gO edit#paste_mode() . 'O'
 nnoremap <expr> gR edit#paste_mode() . 'R'
-
-" Search for non-ASCII escape chars
-" See: https://stackoverflow.com/a/41168966/4970632
-noremap g, /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Forward delete by tabs
 inoremap <expr> <Delete> edit#forward_delete()
@@ -1628,11 +1626,11 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
+  " nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>  " redundant
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -nargs=0 ShowTags echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  nnoremap <Leader>u <Cmd>ShowTags<CR>
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
-  nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
+  nnoremap <Leader>t <Cmd>ShowTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
   let g:tags_drop_map = '<Leader><Tab>'  " i.e. <C-Space>, default is <Leader><Tab>
   let g:tags_jump_map = '<Leader><Leader>'  " default is <Leader><Leader>
@@ -1652,8 +1650,8 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
   augroup END
   command! -nargs=? Ignores echom 'Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
-  nnoremap <Leader>< <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
-  nnoremap <Leader>> <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
+  nnoremap <Leader>< <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
+  nnoremap <Leader>> <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
@@ -1988,7 +1986,7 @@ endif
 " Note: Staging maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.', and
 " navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error). Also note
-" <Leader>g both refreshes the gutter (e.g. after staging) and previews any result.
+" <Leader>g both refreshes gutter (e.g. after staging) and previews any result.
 " Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
 " therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
@@ -2024,21 +2022,21 @@ endif
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
 if s:plug_active('vim-easy-align')
-  map g; <Plug>(EasyAlign)
-  let g:easy_align_delimiters = {
-    \   ')': {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0},
-    \   '&': {'pattern': '\(&&\|||\)'},
-    \   ';': {'pattern': ';\+'},
-    \ }
   augroup easy_align
     au!
-    au BufEnter * let g:easy_align_delimiters['c'] = {
-      \   'pattern': '\s' . (
-      \     empty(comment#get_char())
-      \     ? nr2char(0) : comment#get_char()
-      \   )
-      \ }
+    au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
+  map g; <Plug>(EasyAlign)
+  let s:semi_group = {'pattern': ';\+'}
+  let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
+  let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
+  let s:comment_group = {'pattern': '\s#'}  " default value
+  let g:easy_align_delimiters = {
+    \ ';': s:semi_group,
+    \ ')': s:case_group,
+    \ '&': s:chain_group,
+    \ 'c': s:comment_group,
+  \ }
 endif
 
 " Configure codi (mathematical notepad) interpreter without history and settings
@@ -2110,11 +2108,11 @@ if s:plug_active('HowMuch')
   vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
 endif
 
-" Undo tree settings
+" Undo tree settings. Mnemonic is that Ctrl-r used for undo in other settings.
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
-  noremap <Tab>u <Cmd>UndotreeToggle<CR>
+  noremap <Leader>u <Cmd>UndotreeToggle<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0

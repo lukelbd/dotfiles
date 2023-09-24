@@ -234,7 +234,7 @@ endfunction
 
 " Toggle tags on and off
 function! switch#tags(...) abort
-  let names = ['tags_by_line', 'tags_by_name', 'tags_scope_by_line', 'tags_top_by_line']
+  let names = ['tags_by_line', 'tags_by_name', 'tags_scope_by_line', 'tags_top_by_line', 'tags_update_time']
   let state = get(g:, 'gutentags_enabled', 0) && !empty(tagfiles())
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0

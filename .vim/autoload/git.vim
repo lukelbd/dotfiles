@@ -184,7 +184,7 @@ endfunction
 function! git#hunk_jump(forward, stage) abort
   call switch#gitgutter(1, 1)  " ensure enabled, suppress message
   let which = a:forward ? 'Next' : 'Prev'
-  let cmd = 'GitGutter' . which . 'Hunk'
+  let cmd = 'GitGutter' . which . 'Hunk'  " natively expands folds
   exe v:count1 . cmd
   if a:stage | exe 'GitGutterStageHunk' | endif
 endfunction
