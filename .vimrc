@@ -511,9 +511,9 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous('file#open_drop', <f-args>)
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
-nnoremap <C-t> <Cmd>call file#init_path(0, 0)<CR>
-nnoremap <C-y> <Cmd>call file#init_path(1, 0)<CR>
-nnoremap <F3>  <Cmd>exe 'Files ' . expand('%:p:h')<CR>
+nnoremap <C-t> <Cmd>call file#init_path(1, 0)<CR>
+nnoremap <C-y> <Cmd>call file#init_path(0, 0)<CR>
+nnoremap <F3>  <Cmd>exe 'Files ' . fnamemodify(resolve(@%), ':p:h')<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . tag#find_root(@%)<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . tag#find_root(@%)<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
@@ -703,11 +703,6 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 " See: https://superuser.com/a/189956/506762
 command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
-" Prevent unadorned 'gg/G' from opening folds
-" Useful for e.g. python files with docsring at top and function at bottom
-noremap <expr> gg v:count == 0 ? "\<Cmd>1<CR>" : 'ggzv'
-noremap G <Cmd>$<CR>
-
 " Jump to previous end-of-word or previous end-of-WORD
 " This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
 noremap m ge
@@ -717,6 +712,13 @@ noremap M gE
 " Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
+
+" Jump to start or end without opening folds
+" Useful for e.g. python files with docsring at top and function at bottom
+" Note: Fold opening is auto-disabled for remapped jump commands hence the 'zv' below
+" Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
+noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
+noremap G G
 
 " Jump between and inside of folds
 " Note: More consistent to use brackets for between folds

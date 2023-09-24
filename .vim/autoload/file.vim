@@ -70,7 +70,7 @@ endfunction
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#init_path(files, local) abort
   let cmd = a:files ? 'Files' : 'Open'  " recursive fzf or non-resucrive internal
-  let dir = a:local ? expand('%:p:h') : tag#find_root(@%)  " neither has trailing slash
+  let dir = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
   let path = fnamemodify(dir, ':~')
   let prompt = cmd . ' (' . path . ')'  " display longer version in prompt
   let default = fnamemodify(dir, ':p:~:.')  " display shorter version here
