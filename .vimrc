@@ -661,28 +661,29 @@ nnoremap <Leader>. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
 command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
 command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
+command! -bang -nargs=* Errors call grep#call_ag(<bang>0, 0, 0, '\<error:', <f-args>)
 command! -bang -nargs=* Warnings call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
 command! -bang -nargs=* Conflicts call grep#call_ag(<bang>0, 0, 0, s:conflicts, <f-args>)
 command! -bang -nargs=* Debugs call grep#call_ag(<bang>0, 2, 0, '^\s*ic(', <f-args>)
 command! -bang -nargs=* Prints call grep#call_ag(<bang>0, 2, 0, '^\s*print(', <f-args>)
-noremap gM <Cmd>Notes<CR>
-noremap gT <Cmd>Todos<CR>
+noremap gL <Cmd>Todos<CR>
+noremap gH <Cmd>Notes<CR>
+noremap gE <Cmd>Error<CR>
 noremap gW <Cmd>Warnings<CR>
 noremap gG <Cmd>Conflicts<CR>
-noremap gB <Cmd>Debugs<CR>
 noremap gP <Cmd>Prints<CR>
+noremap gB <Cmd>Debugs<CR>
 
-" Vim command windows, search windows, help windows, man pages, and 'cmd --help'
-" Also add shortcut to search for non-ASCII escape chars
+" Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
+" add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " See: https://stackoverflow.com/a/41168966/4970632
-noremap g, /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-noremap g. :<C-u><Up><CR>
-nnoremap <Leader>; <Cmd>History:<CR>
-nnoremap <Leader>: q:
-nnoremap <Leader>/ <Cmd>History/<CR>
-nnoremap <Leader>? q/
-nnoremap <Leader>v <Cmd>Helptags<CR>
-nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
+noremap g: :<C-u><Up><CR>
+nnoremap <Leader>; q:
+nnoremap <Leader>: <Cmd>History:<CR>
+nnoremap <Leader>/ q/
+nnoremap <Leader>? <Cmd>History/<CR>
+nnoremap <Leader>v <Cmd>call vim#vim_page()<CR>
+nnoremap <Leader>V <Cmd>Helptags<CR>
 nnoremap <Leader>n <Cmd>Maps<CR>
 nnoremap <Leader>N <Cmd>Commands<CR>
 nnoremap <Leader>m <Cmd>call shell#help_page(1)<CR>
@@ -711,6 +712,11 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 " See: https://superuser.com/a/189956/506762
 command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
+" Search for special characters
+" First searches for escapes second for non-ascii
+noremap g, /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+noremap g. /[^\x00-\x7F]<CR>
+
 " Jump to previous end-of-word or previous end-of-WORD
 " This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
 noremap m ge
@@ -730,10 +736,13 @@ noremap G G
 
 " Jump between and inside of folds
 " Note: More consistent to use brackets for between folds
+" Note: Include maps to fzf-folds :Folds jumping utility
 noremap [z zk
 noremap ]z zj
 noremap zk [z
 noremap zj ]z
+noremap gz <Cmd>Folds<CR>
+noremap gZ <Cmd>Folds<CR>
 
 " Jump to last and next jump
 " Note: This accounts for karabiner arrow key maps
@@ -937,9 +946,9 @@ nnoremap <nowait> gU gUiw
 nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
 nnoremap <silent> <Plug>cap2 myguiw~h`y<Cmd>delmark y<CR>:call repeat#set("\<Plug>cap2")<CR>
 vnoremap gy ~
-vnoremap gt gu<Esc>`<~h
+vnoremap gY gu<Esc>`<~h
 nmap gy <Plug>cap1
-nmap gt <Plug>cap2
+nmap gY <Plug>cap2
 
 " Copy mode and conceal mode ('paste mode' accessible with 'g' insert mappings)
 " Turn on for filetypes containing raw possibly heavily wrapped data
@@ -1182,7 +1191,8 @@ call plug#('tomtom/tcomment_vim')
 call plug#('tpope/vim-repeat')  " basic repeat utility
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call plug#('tpope/vim-characterize')  " print character info (nicer version of 'ga')
-nmap gY <Plug>(characterize)
+nmap g" <Plug>(characterize)
+nnoremap g' ga
 
 " Panel utilities
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -1294,6 +1304,7 @@ let g:gutentags_enabled = 1
 " call plug#('ctrlpvim/ctrlp.vim')  " replaced with fzf
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
+call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {
   \ 'ctrl-m': 'Drop', 'ctrl-t': 'Drop',
   \ 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
@@ -1479,8 +1490,8 @@ let g:jupytext_fmt = 'py:percent'
 " call plug#('lervag/vimtex')
 " call plug#('chrisbra/vim-tex-indent')
 " call plug#('rafaqz/citation.vim')
-" let g:vimtex_fold_enabled = 1
-" let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate','itemize','math']}}
+let g:vimtex_fold_enabled = 1
+let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate','itemize','math']}}
 
 " Syntax highlighting
 " Note impsort sorts import statements and highlights modules using an after/syntax
@@ -1634,14 +1645,15 @@ if s:plug_active('vim-tags')
       nmap <buffer> ]] <Plug>TagsForwardTop
     endif
   endfunction
-  " nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>  " redundant
   command! -nargs=? TagToggle call switch#tags(<args>)
-  command! -nargs=0 ShowTags echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  nnoremap <Leader>U <Cmd>call switch#tags()<CR>
-  nnoremap <Leader>t <Cmd>ShowTags<CR>
+  command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
+  nnoremap <Leader><Tab> <Cmd>ShowTable<CR>
+  nnoremap <Leader>_ <Cmd>ShowTable!<CR>
+  nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
-  let g:tags_drop_map = '<Leader><Tab>'  " i.e. <C-Space>, default is <Leader><Tab>
-  let g:tags_jump_map = '<Leader><Leader>'  " default is <Leader><Leader>
+  nnoremap <Leader>U <Cmd>call switch#tags()<CR>
+  let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
+  let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
 endif
 
@@ -1732,10 +1744,16 @@ endif
 " Note: Native <C-]> definition jumping relies on builtin vim tags file jumping so fails.
 " See https://reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
 if s:plug_active('vim-lsp')
+  " Autocommands and maps
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   augroup lsp_style
     au!
-    autocmd User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
+    autocmd User lsp_float_opened call popup_setoptions(
+      \ lsp#ui#vim#output#getpreviewwinid(), s:popup_options
+    \ )  " apply border
+    " autocmd User lsp_setup call lsp#register_server(
+    "   \ {'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']}
+    " \ )  " see vim-lsp readme (necessary?)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   noremap [r <Cmd>LspPreviousReference<CR>
@@ -1747,7 +1765,8 @@ if s:plug_active('vim-lsp')
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   nnoremap <CR> <Cmd>LspPeekDefinition<CR>
-  nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR>
+  nnoremap <Leader><CR> <Cmd>tab LspDefinition<CR><Cmd>call feedkeys('zv', 'n')<CR>
+  " Lsp and server settings
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " use :CheckHealth instead
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
@@ -2108,12 +2127,14 @@ endif
 
 " The howmuch.vim plugin. Mnemonic for equation solving is just that parentheses
 " show up in equations. Mnemonic for sums is the straight line at bottom of table.
-" Options: AutoCalcReplace, AutoCalcReplaceWithSum, AutoCalcAppend, AutoCalcAppendWithEq, AutoCalcAppendWithSum, AutoCalcAppendWithEqAndSum
+" Note: Usage is HowMuch#HowMuch(isAppend, withEq, sum, engineType) where isAppend
+" says whether to replace or append, withEq says whether to include equals sign, sum
+" says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  vmap <Leader>( <Plug>AutoCalcReplace
-  vmap <Leader>) <Plug>AutoCalcAppendWithEq
-  vmap <Leader>- <Plug>AutoCalcReplaceWithSum
-  vmap <Leader>_ <Plug>AutoCalcAppendWithEqAndSum
+  " noremap <expr> g( edit#how_much_expr(1, 1, 0, 'py')  " no sum
+  " noremap <expr> g) edit#how_much_expr(0, 0, 0, 'py')  " no sum
+  noremap <expr> g( edit#how_much_expr(1, 1, 1, 'py')
+  noremap <expr> g) edit#how_much_expr(0, 0, 1, 'py')
 endif
 
 " Undo tree settings. Mnemonic is that Ctrl-r used for undo in other settings.
@@ -2147,6 +2168,7 @@ endif
 " outdated buffer marks loaded from .viminfo
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 " Todo: Figure out whether to declare colorscheme here or at top
+noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 if has('gui_running') | exe 'noautocmd colorscheme ' . s:colorscheme | endif
 augroup clear_jumps
   au!

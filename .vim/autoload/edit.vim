@@ -15,6 +15,7 @@ function! edit#blank_down(count) abort
 endfunction
 
 " Forward delete by tabs
+" Note: Idea is to try to enforce consistency with backspace-by-tabs
 function! edit#forward_delete() abort
   let line = getline('.')
   if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
@@ -24,6 +25,11 @@ function! edit#forward_delete() abort
   endif
 endfunction
 
+" How much calculator. Native plugin only supports visual-mode but add motions here
+" See: https://github.com/sk1418/HowMuch/blob/master/autoload/HowMuch.vim
+function! edit#how_much_expr(...) abort
+  return utils#motion_func('HowMuch#HowMuch', a:000)
+endfunction
 " Indent multiple times
 function! edit#indent_items(dedent, count) range abort
   exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
