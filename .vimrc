@@ -665,22 +665,23 @@ nnoremap <Leader>. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
 " nnoremap <Leader>. <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
 " Convenience grep maps and commands
-" Note: Search open files for print statements and project files for others.
+" Note: Search open files for print statements and project files for others
+" Note: Avoid 'gp' and 'gP' for pasting and putting cursor at end since useful
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
 command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
 command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
+command! -bang -nargs=* Prints call grep#call_ag(<bang>0, 2, 0, '^\s*print(', <f-args>)
+command! -bang -nargs=* Debugs call grep#call_ag(<bang>0, 2, 0, '^\s*ic(', <f-args>)
 command! -bang -nargs=* Errors call grep#call_ag(<bang>0, 0, 0, '\<error:', <f-args>)
 command! -bang -nargs=* Warnings call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
 command! -bang -nargs=* Conflicts call grep#call_ag(<bang>0, 0, 0, s:conflicts, <f-args>)
-command! -bang -nargs=* Debugs call grep#call_ag(<bang>0, 2, 0, '^\s*ic(', <f-args>)
-command! -bang -nargs=* Prints call grep#call_ag(<bang>0, 2, 0, '^\s*print(', <f-args>)
-noremap gL <Cmd>Todos<CR>
 noremap gH <Cmd>Notes<CR>
+noremap gL <Cmd>Todos<CR>
+noremap gM <Cmd>Prints<CR>
+noremap gB <Cmd>Debugs<CR>
 noremap gE <Cmd>Error<CR>
 noremap gW <Cmd>Warnings<CR>
 noremap gG <Cmd>Conflicts<CR>
-noremap gP <Cmd>Prints<CR>
-noremap gB <Cmd>Debugs<CR>
 
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
@@ -937,11 +938,14 @@ nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
 " Add or remove from dictionary
-nnoremap zg zg
-nnoremap zG zug
+" Note: Run :runtime spell/cleanadd.vim to fix definitions
+nnoremap zs zg
+nnoremap zS zug
+
 " Fix spelling under cursor auto or interactively
-nnoremap zs 1z=
-nnoremap zS z=
+" Note: Simple 'zg' selects first one
+nnoremap zg 1z=
+nnoremap zG z=
 
 " Similar to ]s and [s but also corrects the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
@@ -1203,8 +1207,8 @@ call plug#('tomtom/tcomment_vim')
 call plug#('tpope/vim-repeat')  " basic repeat utility
 call plug#('tpope/vim-eunuch')  " shell utils like chmod rename and move
 call plug#('tpope/vim-characterize')  " print character info (nicer version of 'ga')
-nmap g" <Plug>(characterize)
-nnoremap g' ga
+nmap zY <Plug>(characterize)
+nnoremap zy ga
 
 " Panel utilities
 " Note: For why to avoid these plugins see https://shapeshed.com/vim-netrw/
@@ -2010,6 +2014,8 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit <args>
   silent! delcommand Gdiffsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
+  noremap g' <Cmd>BCommits<CR>
+  noremap g" <Cmd>Commits<CR>
   noremap <Leader>j <Cmd>exe 'Git diff -- :/'<CR>
   noremap <Leader>J <Cmd>echom 'Git add ' . string(':/') \| Git add :/<CR>
   noremap <Leader>k <Cmd>exe 'Git diff -- ' . @%<CR>
@@ -2019,8 +2025,8 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>g <Cmd>Git<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
-  noremap <Leader>f <Cmd>BCommits<CR>
-  noremap <Leader>F <Cmd>Commits<CR>
+  noremap <Leader>f <Cmd>Git pull origin<CR>
+  noremap <Leader>F <Cmd>Git push origin<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
