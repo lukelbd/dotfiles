@@ -933,15 +933,15 @@ augroup spell_toggle
 augroup END
 command! SpellToggle call switch#spellcheck(<args>)
 command! LangToggle call switch#spelllang(<args>)
-nnoremap <Leader>l <Cmd>call switch#spellcheck()<CR>
-nnoremap <Leader>L <Cmd>call switch#spelllang()<CR>
+nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
+nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
 " Add or remove from dictionary
-nnoremap <Leader>d zg
-nnoremap <Leader>D zug
+nnoremap zg zg
+nnoremap zG zug
 " Fix spelling under cursor auto or interactively
-nnoremap <Leader>s 1z=
-nnoremap <Leader>S z=
+nnoremap zs 1z=
+nnoremap zS z=
 
 " Similar to ]s and [s but also corrects the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
@@ -1705,7 +1705,8 @@ endif
 " Note: Use native mappings. zr reduces fold level by 1, zm folds more by 1 level,
 " zR is big reduction (opens everything), zM is big increase (closes everything),
 " zj and zk jump to start/end of *this* fold, [z and ]z jump to next/previous fold,
-" and zv is open folds enough to view cursor (useful when jumping lines or searching)
+" zv is open folds enough to view cursor (useful when jumping lines or searching), and
+" zn and zN fold toggle between no folds/previous folds without affecting foldlevel.
 " Note: Also tried 'vim-lsp' folding but caused huge slowdowns. Should see folding as
 " similar to linting/syntax/tags and use separate utility.
 " Note: FastFold suggestion for python files is to locally set foldmethod=indent but
@@ -1770,9 +1771,9 @@ if s:plug_active('vim-lsp')
   command! -nargs=? LspToggle call switch#lsp(<args>)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
+  noremap <Leader>d <Cmd>LspReferences<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
-  noremap <Leader>O <Cmd>LspReferences<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
@@ -1969,6 +1970,7 @@ if s:plug_active('ale')
 endif
 
 " Conflict highlight settings (warning: change below to 'BufEnter?')
+" Shortcuts mirror zf/zF/zd/zD used for manual fold deletion and creation
 " Todo: Figure out how to get highlighting closer to marks, without clearing background?
 " May need to define custom :syn matches that are not regions. Ask stack exchange.
 " Note: Need to remove syntax regions here because they are added on per-filetype
@@ -2008,10 +2010,12 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit <args>
   silent! delcommand Gdiffsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
-  noremap <Leader>j <Cmd>exe 'Git diff -- ' . @%<CR>
-  noremap <Leader>J <Cmd>echom "Git add '" . @% . "'" \| Git add %<CR>
-  noremap <Leader>k <Cmd>exe 'Git diff --staged -- ' . @%<CR>
-  noremap <Leader>K <Cmd>echom "Git reset '" . @% . "'" \| Git reset %<CR>
+  noremap <Leader>j <Cmd>exe 'Git diff -- :/'<CR>
+  noremap <Leader>J <Cmd>echom 'Git add ' . string(':/') \| Git add :/<CR>
+  noremap <Leader>k <Cmd>exe 'Git diff -- ' . @%<CR>
+  noremap <Leader>K <Cmd>echom 'Git add ' . string(@%) \| Git add %<CR>
+  noremap <Leader>l <Cmd>exe 'Git diff --staged -- ' . @%<CR>
+  noremap <Leader>L <Cmd>echom 'Git reset ' . string(@%) \| Git reset %<CR>
   noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>g <Cmd>Git<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
