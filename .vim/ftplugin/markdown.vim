@@ -1,6 +1,10 @@
 "-----------------------------------------------------------------------------
 " Markdown settings
 "-----------------------------------------------------------------------------
+" Open primary header folds on startup
+" Note: Not possible to set foldlevelstart=1 for specific filetype
+if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
+
 " Vim-markdown settings
 let g:tex_conceal = ''  " disable math conceal
 let g:vim_markdown_math = 1 " turn on $$ math

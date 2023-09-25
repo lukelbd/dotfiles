@@ -108,7 +108,7 @@ function! utils#panel_setup(modifiable) abort
   nnoremap <silent> <buffer> q :call window#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call window#close_window()<CR>
   if &filetype ==# 'qf'  " disable <Nop> map
-    nnoremap <buffer> <CR> <CR>
+    nnoremap <buffer> <CR> <CR>zv
   endif
   if a:modifiable == 1  " e.g. gitcommit window
     return

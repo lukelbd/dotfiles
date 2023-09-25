@@ -178,6 +178,13 @@ function! s:buffer_overrides() abort
   highlight link customShebang Special
   highlight link customTodo Todo
   highlight link customURL Underlined
+  if has('gui_running')  " see https://stackoverflow.com/a/73783079/4970632
+    highlight! link Folded TabLineSel
+    let hl = hlget('Folded')[0]  " keeps getting overridden so use this
+    let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
+    let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
+    call hlset([hl])
+  endif
 endfunction
 
 " Flake8 ignore list (also apply to autopep8):
@@ -393,6 +400,7 @@ let s:colorscheme = 'papercolor'
 " Macvim syntax overrides
 " Todo: Figure out whether to declare colorscheme here or at bottom
 if has('gui_running')  " revisit these?
+  highlight! link Folded TabLine
   highlight! link vimMap Statement
   highlight! link vimNotFunc Statement
   highlight! link vimFuncKey Statement
@@ -734,22 +742,26 @@ noremap <F4> g,
 noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 noremap G G
 
-" Jump between and inside of folds
-" Note: More consistent to use brackets for between folds
-" Note: Include maps to fzf-folds :Folds jumping utility
-noremap [z zk
-noremap ]z zj
-noremap zk [z
-noremap zj ]z
-noremap gz <Cmd>Folds<CR>
-noremap gZ <Cmd>Folds<CR>
-
 " Jump to last and next jump
 " Note: This accounts for karabiner arrow key maps
 noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
+
+" Jump between and inside of folds
+" Note: Try to be consistent with other bracket maps
+noremap zj ]z
+noremap zk [z
+noremap ]z zj
+noremap [z zk
+noremap ]Z zjzv
+noremap [Z zkzv
+
+" Jump to folds with fzf
+" Note: This is consistent with gt and gT tag maps
+noremap gz <Cmd>Folds<CR>
+noremap gZ <Cmd>Folds<CR>
 
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
@@ -1873,8 +1885,8 @@ if s:plug_active('ale')
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
   noremap <C-e> <Cmd>cclose<CR><Cmd>lclose<CR>
   command! -nargs=? AleToggle call switch#ale(<args>)
-  noremap <Leader>x <Cmd>cclose<CR><Cmd>lopen<CR>
-  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>copen<CR>
+  noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
+  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
   noremap <Leader>@ <Cmd>call switch#ale()<CR>
   noremap <Leader># <Cmd>ALEInfo<CR>
   let g:ale_linters = {
