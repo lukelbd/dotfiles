@@ -754,9 +754,9 @@ noremap <Right> <C-i>
 noremap zj ]z
 noremap zk [z
 noremap ]z zj
-noremap [z zk
+noremap [z zk[z
 noremap ]Z zjzv
-noremap [Z zkzv
+noremap [Z zkzv[z
 
 " Jump to folds with fzf
 " Note: This is consistent with gt and gT tag maps
