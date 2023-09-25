@@ -659,8 +659,8 @@ command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
 command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap <Leader>, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap <Leader>. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap <Leader>' <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap <Leader>" <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 " nnoremap <Leader>, <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 " nnoremap <Leader>. <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
@@ -723,8 +723,8 @@ command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
 " Search for special characters
 " First searches for escapes second for non-ascii
-noremap g, /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-noremap g. /[^\x00-\x7F]<CR>
+noremap g' /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+noremap g" /[^\x00-\x7F]<CR>
 
 " Jump to previous end-of-word or previous end-of-WORD
 " This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
@@ -766,9 +766,9 @@ noremap gZ <Cmd>Folds<CR>
 
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
-" noremap <Leader>" <Cmd>BLines<CR>
-noremap <Leader>' <Cmd>call mark#fzf_marks()<CR>
-noremap <Leader>" <Cmd>call mark#fzf_jumps()<CR>
+" noremap <Leader>. <Cmd>BLines<CR>
+noremap <Leader>, <Cmd>call mark#fzf_jumps()<CR>
+noremap <Leader>. <Cmd>call mark#fzf_marks()<CR>
 
 " Add 'g' version jumping keys that move by only alphanumeric characters
 " (i.e. excluding dots, dashes, underscores). This is consistent with tmux.
@@ -2014,8 +2014,8 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit <args>
   silent! delcommand Gdiffsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
-  noremap g' <Cmd>BCommits<CR>
-  noremap g" <Cmd>Commits<CR>
+  noremap g, <Cmd>Commits<CR>
+  noremap g. <Cmd>BCommits<CR>
   noremap <Leader>j <Cmd>exe 'Git diff -- :/'<CR>
   noremap <Leader>J <Cmd>echom 'Git add ' . string(':/') \| Git add :/<CR>
   noremap <Leader>k <Cmd>exe 'Git diff -- ' . @%<CR>
