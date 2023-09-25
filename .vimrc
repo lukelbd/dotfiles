@@ -179,7 +179,7 @@ function! s:buffer_overrides() abort
   highlight link customTodo Todo
   highlight link customURL Underlined
   if has('gui_running')  " see https://stackoverflow.com/a/73783079/4970632
-    highlight! link Folded TabLineSel
+    highlight! link Folded TabLine
     let hl = hlget('Folded')[0]  " keeps getting overridden so use this
     let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
     let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
@@ -973,8 +973,8 @@ augroup copy_toggle
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#conceal()<CR>
-nnoremap <Leader>C <Cmd>call switch#copy()<CR>
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 
 " Caps lock toggle and insert mode map that toggles it on and off
 inoremap <expr> <C-v> edit#lang_map()
@@ -1715,7 +1715,7 @@ endif
 if &g:foldenable || s:plug_active('FastFold')
   " Various folding plugins
   let g:fastfold_fold_command_suffixes =  ['x', 'X', 'a', 'A', 'o', 'O', 'c', 'C']
-  let g:fastfold_fold_movement_commands = [']z', '[z', 'zj', 'zk']  " or empty list
+  let g:fastfold_fold_movement_commands = []  " or empty list
   let g:fastfold_savehook = 1
   " Native folding settings
   let g:baan_fold = 1
