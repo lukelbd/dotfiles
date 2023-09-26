@@ -566,8 +566,8 @@ command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
-noremap <Leader>r <Cmd>redraw<CR>
-noremap <Leader>R <Cmd>Refresh<CR>
+noremap <Leader>f <Cmd>redraw<CR>
+noremap <Leader>F <Cmd>Refresh<CR>
 
 " Buffer management
 " Note: Here :History includes v:oldfiles and open buffers.
@@ -704,49 +704,6 @@ augroup END
 " This does 'set hlsearch!' and prints a message
 noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 
-" Search for special characters
-" First searches for escapes second for non-ascii
-noremap g` /[^\x00-\x7F]<CR>
-noremap g\ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-
-" Jump to previous end-of-word or previous end-of-WORD
-" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
-
-" Jump between alphanumeric groups of characters (i.e. excluding dots, dashes,
-" underscores). This is consistent with tmux vim selection navigation
-for s:char in ['w', 'b', 'e', 'm']  " use 'g' prefix of each
-  exe 'noremap g' . s:char . ' '
-    \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
-    \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
-    \ . (s:char ==# 'm' ? 'ge' : s:char) . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
-endfor
-
-" Jump to start or end without opening folds.
-" Useful for e.g. python files with docsring at top and function at bottom
-" Note: Fold opening is auto-disabled for remapped jump commands hence the 'zv' below
-" Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
-noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
-noremap G G
-
-" Current fold toggle (open resursively, but close non-recursively)
-" Note: This helps e.g. open subsections under tex section without closing document
-noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
-
-" Jump to folds and toggle foldsD fzf
-" Note: This is consistent with gt and gT tag maps
-noremap gz <Cmd>Folds<CR>
-
-" Jump between and inside of folds
-" Note: This is more consistent with other bracket maps
-noremap zj ]z
-noremap zk [z
-noremap ]z zj
-noremap [z zk[z
-noremap ]Z zjzv
-noremap [Z zkzv[z
-
 " Jump to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
@@ -758,6 +715,49 @@ noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
+
+" Jump between alphanumeric groups of characters (i.e. excluding dots, dashes,
+" underscores). This is consistent with tmux vim selection navigation
+for s:char in ['w', 'b', 'e', 'm']  " use 'g' prefix of each
+  exe 'noremap g' . s:char . ' '
+    \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
+    \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
+    \ . (s:char ==# 'm' ? 'ge' : s:char) . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
+endfor
+
+" Jump to previous end-of-word or previous end-of-WORD
+" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
+
+" Jump to start or end without opening folds.
+" Useful for e.g. python files with docsring at top and function at bottom
+" Note: Fold opening is auto-disabled for remapped jump commands hence the 'zv' below
+" Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
+noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
+noremap G G
+
+" Search for special characters
+" First searches for escapes second for non-ascii
+noremap g` /[^\x00-\x7F]<CR>
+noremap g\ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+
+" Jump to folds and toggle foldsD fzf
+" Note: This is consistent with gt and gT tag maps
+noremap gz <Cmd>Folds<CR>
+
+" Current fold toggle (open resursively, but close non-recursively)
+" Note: This helps e.g. open subsections under tex section without closing document
+noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
+
+" Jump between and inside of folds
+" Note: This is more consistent with other bracket maps
+noremap zj ]z
+noremap zk [z
+noremap ]z zj
+noremap [z zk[z
+noremap ]Z zjzv
+noremap [Z zkzv[z
 
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
@@ -1760,14 +1760,14 @@ endif
 " Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
 " plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
 " vim-lsp-settings/servers files in .config. See: https://github.com/mattn/vim-lsp-settings
+" Note: The 'gd' and 'gD' maps use native vim recognition of buffer variables based
+" on 'iskeyword'. Analogous to gt/gT/<Leader>t/<Leader>T used for various tag jumping.
 " Note: The below autocmd gives signature popups the same borders as hover popups.
 " Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
 " so below behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
 " Note: Highlighting under keywords required for reference jumping with [r and ]r but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
-" Note: Native <C-]> definition jumping relies on builtin vim tags file jumping so fails.
-" See https://reddit.com/r/vim/comments/78u0av/why_gd_searches_instead_of_going_to_the/
 if s:plug_active('vim-lsp')
   " Autocommands and maps
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
@@ -1781,17 +1781,19 @@ if s:plug_active('vim-lsp')
     " \ )  " see vim-lsp readme (necessary?)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
+  noremap gd gdzv
+  noremap gD gDzv
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
   noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>D <Cmd>LspReferences<CR>
+  noremap <Leader>D <Cmd>tab LspDefinition<CR>
+  noremap <Leader>r <Cmd>LspReferences<CR>
+  noremap <Leader>R <Cmd>LspRename<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
-  nnoremap gd <Cmd>tab LspDefinition<CR>
-  nnoremap gD gDzv
   " Lsp and server settings
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " use :CheckHealth instead
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
