@@ -700,25 +700,53 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
-" Add 'g' version jumping keys that move by only alphanumeric characters
-" (i.e. excluding dots, dashes, underscores). This is consistent with tmux.
-for s:char in ['w', 'b', 'e', 'm']
+" Search highlighting toggle
+" This does 'set hlsearch!' and prints a message
+noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
+
+" Search for special characters
+" First searches for escapes second for non-ascii
+noremap g` /[^\x00-\x7F]<CR>
+noremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+
+" Jump to previous end-of-word or previous end-of-WORD
+" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
+
+" Jump between alphanumeric groups of characters (i.e. excluding dots, dashes,
+" underscores). This is consistent with tmux vim selection navigation
+for s:char in ['w', 'b', 'e', 'm']  " use 'g' prefix of each
   exe 'noremap g' . s:char . ' '
     \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
     \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
     \ . (s:char ==# 'm' ? 'ge' : s:char) . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
 endfor
 
-" Jump to start or end without opening folds
+" Jump to start or end without opening folds.
 " Useful for e.g. python files with docsring at top and function at bottom
 " Note: Fold opening is auto-disabled for remapped jump commands hence the 'zv' below
 " Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
 noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 noremap G G
 
-" Search highlight toggle
-" Note: This just does 'set hlsearch!' and prints a message
-noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
+" Current fold toggle (open resursively, but close non-recursively)
+" Note: This helps e.g. open subsections under tex section without closing document
+noremap <expr> z<CR> foldclosed('.') ? 'zA' : 'za'
+
+" Jump to folds and toggle foldsD fzf
+" Note: This is consistent with gt and gT tag maps
+noremap gz <Cmd>Folds<CR>
+noremap gZ <Cmd>Folds<CR>
+
+" Jump between and inside of folds
+" Note: This is more consistent with other bracket maps
+noremap zj ]z
+noremap zk [z
+noremap ]z zj
+noremap [z zk[z
+noremap ]Z zjzv
+noremap [Z zkzv[z
 
 " Jump to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
@@ -732,38 +760,13 @@ noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
 
-" Jump to previous end-of-word or previous end-of-WORD
-" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
-
-" Search for special characters
-" First searches for escapes second for non-ascii
-noremap g` /[^\x00-\x7F]<CR>
-noremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-
-" Jump to folds with fzf
-" Note: This is consistent with gt and gT tag maps
-noremap gz <Cmd>Folds<CR>
-noremap gZ <Cmd>Folds<CR>
-
-" Jump between and inside of folds
-" Note: Try to be consistent with other bracket maps
-noremap z<CR> za
-noremap zj ]z
-noremap zk [z
-noremap ]z zj
-noremap [z zk[z
-noremap ]Z zjzv
-noremap [Z zkzv[z
-
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
 " noremap <Leader>. <Cmd>BLines<CR>
 noremap g" <Cmd>call mark#fzf_jumps()<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
 
-" Specify alphabetic marks using counts (navigate with ]` and [`)
+" Declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
 " viminfo, so use them. Also numbered marks are mostly internal, can be configured
 " to restore cursor position after restarting, also used in viminfo.
@@ -908,7 +911,7 @@ nnoremap <expr> , '@' . utils#translate_count('@')
 vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
 vnoremap <expr> , '@' . utils#translate_count('@')
 
-" Specify alphabetic registers with count (consistent with mark utilities)
+" Declare alphabetic registers with count (consistent with mark utilities)
 " Note: Pressing simply ' or " before text will use black hole or clipboard register.
 " Double pressing '' is equivalent to native " and "" will show the popup window.
 " Note: This relies on g:peekaboo_prefix = '"' below so that double '"' press opens up
