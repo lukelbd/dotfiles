@@ -748,6 +748,7 @@ noremap gZ <Cmd>Folds<CR>
 
 " Jump between and inside of folds
 " Note: Try to be consistent with other bracket maps
+noremap z<CR> za
 noremap zj ]z
 noremap zk [z
 noremap ]z zj
@@ -986,7 +987,7 @@ command! LangToggle call switch#spelllang(<args>)
 nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
-" Similar to ]s and [s but also corrects the word
+" Navigate spell errors as with ]s and [s and correct the word
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 nnoremap <silent> <Plug>forward_spell bh]szv<Cmd>call edit#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
 nnoremap <silent> <Plug>backward_spell el[szv<Cmd>call edit#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
@@ -995,8 +996,8 @@ nmap [S <Plug>backward_spell
 
 " Fix spelling under cursor auto or interactively
 " Note: Simple 'zg' selects first one and zG brings up menu
-nnoremap gs 1z=
-nnoremap gS z=
+nnoremap zz 1z=
+nnoremap zZ z=
 
 " Add or remove from dictionary
 " Note: Run :runtime spell/cleanadd.vim to fix definitions
@@ -1668,8 +1669,8 @@ if s:plug_active('vim-tags')
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  nnoremap <Leader><Tab> <Cmd>ShowTable<CR>
-  nnoremap <Leader>_ <Cmd>ShowTable!<CR>
+  nnoremap <Leader>d <Cmd>ShowTable<CR>
+  nnoremap <Leader>D <Cmd>ShowTable!<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
   nnoremap <Leader>U <Cmd>call switch#tags()<CR>
@@ -2066,10 +2067,10 @@ if s:plug_active('vim-gitgutter')
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
   noremap ]G <Cmd>call git#hunk_jump(1, 1)<CR>
   noremap [G <Cmd>call git#hunk_jump(0, 1)<CR>
-  noremap <expr> zg git#hunk_action_expr(1)
-  noremap <expr> zG git#hunk_action_expr(0)
-  nnoremap <nowait> zz <Cmd>call git#hunk_action(1)<CR>
-  nnoremap <nowait> ZZ <Cmd>call git#hunk_action(0)<CR>
+  noremap <expr> gs git#hunk_action_expr(1)
+  noremap <expr> gS git#hunk_action_expr(0)
+  nnoremap <nowait> gss <Cmd>call git#hunk_action(1)<CR>
+  nnoremap <nowait> gSS <Cmd>call git#hunk_action(0)<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
