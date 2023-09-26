@@ -44,13 +44,13 @@ syntax region texMatcherNM matchgroup=Delimiter
 " Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim
 syntax region texAbstracts matchgroup=texSection
   \ start='\\abstract\s*{' end='}'
-  \ keepend contains=@texFoldGroup,@Spell fold
+  \ contains=@texFoldGroup,@Spell fold
 syntax region texAuthors matchgroup=texSection
   \ start='\\authors\s*{' end='}'
-  \ keepend contains=@texFoldGroup,@Spell fold
+  \ contains=@texFoldGroup,@Spell fold
 syntax region texCaption transparent
   \ start='\\caption\s*{' end='}'
-  \ keepend contains=@texFoldGroup,@Spell fold
+  \ contains=@texFoldGroup,@Spell fold
 syntax cluster texFoldGroup add=texAbstracts
 syntax cluster texFoldGroup add=texAuthors
 syntax cluster texFoldGroup add=texCaption
@@ -58,7 +58,7 @@ syntax cluster texPreambleMatchGroup add=texAbstracts
 syntax cluster texPreambleMatchGroup add=texAbstract
 syntax cluster texPreambleMatchGroup add=texAuthors
 
-" Enable syntax folding of figure environments. By default only math environments
+" Enable syntax folding of figures and tables. By default only math environments
 " are folded (see TexNewMathZone below and in $VIMRUNTIME/syntax.vim)
 " Note: The 'keepend' is critical or else zone seems to persist beyond figures.
 syntax region texFigureZone transparent
