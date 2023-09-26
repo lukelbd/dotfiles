@@ -663,7 +663,7 @@ noremap ]X <Cmd>Qnext<CR>zv
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " See: https://stackoverflow.com/a/41168966/4970632
-noremap g: :<C-u><Up><CR>
+noremap g. :<C-u><Up><CR>
 nnoremap <Leader>; q:
 nnoremap <Leader>: <Cmd>History:<CR>
 nnoremap <Leader>/ q/
@@ -788,10 +788,10 @@ command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
 command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap g, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap g. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
-" nnoremap g, <Cmd>call grep#call_grep('ag', 0, 0)<CR>
-" nnoremap g. <Cmd>call grep#call_grep('ag', 2, 0)<CR>
+nnoremap g; <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap g: <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+" nnoremap g; <Cmd>call grep#call_grep('ag', 0, 0)<CR>
+" nnoremap g: <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
@@ -1669,11 +1669,11 @@ if s:plug_active('vim-tags')
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
+  nnoremap <Leader>, <Cmd>call switch#tags()<CR>
   nnoremap <Leader>d <Cmd>ShowTable<CR>
   nnoremap <Leader>D <Cmd>ShowTable!<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
-  nnoremap <Leader>U <Cmd>call switch#tags()<CR>
   let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
   let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
@@ -2023,8 +2023,8 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit <args>
   silent! delcommand Gdiffsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
-  noremap <Leader>, <Cmd>Commits<CR>
-  noremap <Leader>. <Cmd>BCommits<CR>
+  noremap <Leader>' <Cmd>BCommits<CR>
+  noremap <Leader>" <Cmd>Commits<CR>
   noremap <Leader>j <Cmd>exe 'Git diff -- :/'<CR>
   noremap <Leader>J <Cmd>echom 'Git add ' . string(':/') \| Git add :/<CR>
   noremap <Leader>k <Cmd>exe 'Git diff -- ' . @%<CR>
@@ -2034,8 +2034,8 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>g <Cmd>Git<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
-  noremap <Leader>f <Cmd>Git pull origin<CR>
-  noremap <Leader>F <Cmd>Git push origin<CR>
+  noremap <Leader>u <Cmd>Git pull origin<CR>
+  noremap <Leader>U <Cmd>Git push origin<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2084,7 +2084,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
-  map g; <Plug>(EasyAlign)
+  map g, <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2172,7 +2172,7 @@ endif
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
-  noremap <Leader>u <Cmd>UndotreeToggle<CR>
+  noremap <Leader>. <Cmd>UndotreeToggle<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
