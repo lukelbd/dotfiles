@@ -1789,7 +1789,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   nnoremap gd <Cmd>LspPeekDefinition<CR>
   nnoremap gD <Cmd>tab LspDefinition<CR>
-  nnoremap g<CR> gD
+  nnoremap g<CR> gDzv
   " Lsp and server settings
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " use :CheckHealth instead
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
