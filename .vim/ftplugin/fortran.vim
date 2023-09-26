@@ -1,7 +1,7 @@
 "------------------------------------------------------------------------------
 " Fortran settings
 "------------------------------------------------------------------------------
-" Open document fold on startup
+" Ensure program open on startup
 " Note: Not possible to set foldlevelstart=1 for specific filetype
 let s:start = search('^\s*program\>', 'n')
 if foldclosed(s:start) > 0 | exe s:start . 'foldopen' | endif
