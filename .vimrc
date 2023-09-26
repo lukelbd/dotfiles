@@ -566,8 +566,8 @@ command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
-noremap <Leader>f <Cmd>redraw<CR>
-noremap <Leader>F <Cmd>Refresh<CR>
+noremap <Leader>r <Cmd>redraw<CR>
+noremap <Leader>R <Cmd>Refresh<CR>
 
 " Buffer management
 " Note: Here :History includes v:oldfiles and open buffers.
@@ -1783,12 +1783,12 @@ if s:plug_active('vim-lsp')
   command! -nargs=? LspToggle call switch#lsp(<args>)
   noremap gd gdzv
   noremap gD gDzv
-  noremap [r <Cmd>LspPreviousReference<CR>
-  noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>D <Cmd>tab LspDefinition<CR>
-  noremap <Leader>r <Cmd>LspReferences<CR>
-  noremap <Leader>R <Cmd>LspRename<CR>
+  noremap [d <Cmd>LspPreviousReference<CR>
+  noremap ]d <Cmd>LspNextReference<CR>
+  noremap <Leader>d <Cmd>LspReferences<CR>
+  noremap <Leader>D <Cmd>LspRename<CR>
+  noremap <Leader>f <Cmd>LspPeekDefinition<CR>
+  noremap <Leader>F <Cmd>tab LspDefinition<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
