@@ -42,15 +42,20 @@ syntax region texMatcherNM matchgroup=Delimiter
 " Enable syntax folding of abstracts and captions. By default only begin..end
 " environments are folded and folds do not work in preamble.
 " Note: Adapted from \textbf{} and \begin{abstract} in $VIMRUNTIME/syntax/tex.vim
-syntax region texAbstractCmd transparent
+syntax region texAbstractAlt transparent
   \ start='\\abstract\s*{' end='}'
+  \ keepend contains=@texFoldGroup,@Spell fold
+syntax region texAuthorAlt transparent
+  \ start='\\authors\s*{' end='}'
   \ keepend contains=@texFoldGroup,@Spell fold
 syntax region texCaption transparent
   \ start='\\caption\s*{' end='}'
   \ keepend contains=@texFoldGroup,@Spell fold
-syntax cluster texFoldGroup add=texAbstractCmd
+syntax cluster texFoldGroup add=texAbstractAlt
+syntax cluster texFoldGroup add=texAuthorAlt
 syntax cluster texFoldGroup add=texCaption
-syntax cluster texPreambleMatchGroup add=texAbstractCmd
+syntax cluster texPreambleMatchGroup add=texAbstractAlt
+syntax cluster texPreambleMatchGroup add=texAuthorAlt
 syntax cluster texPreambleMatchGroup add=texAbstract
 
 " Enable syntax folding of figure environments. By default only math environments
