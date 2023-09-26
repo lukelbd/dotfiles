@@ -526,7 +526,6 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
 command! -nargs=* -complete=file Open call file#open_continuous('file#open_drop', <f-args>)
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
-nnoremap <C-t> <Cmd>call file#init_path(1, 0)<CR>
 nnoremap <C-y> <Cmd>call file#init_path(0, 0)<CR>
 nnoremap <F3> <Cmd>exe 'Files ' . fnamemodify(resolve(@%), ':p:h')<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . tag#find_root(@%)<CR>
@@ -562,11 +561,13 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
+let g:MRU_Open_File_Relative = 1
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
-noremap <Leader>e <Cmd>edit<CR>
+noremap <C-r> <Cmd>redraw<CR>
+noremap <Leader>e <Cmd>History<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
-noremap <Leader>r <Cmd>redraw<CR>
+noremap <Leader>r <Cmd>edit<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 
 " Buffer management
@@ -581,7 +582,6 @@ noremap <Leader>Q <Cmd>WipeBufs<CR>
 " Note: Currently no way to make :Buffers use custom opening command
 nnoremap <Tab>q <Cmd>Buffers<CR>
 nnoremap <Tab>w <Cmd>Windows<CR>
-nnoremap <Tab>e <Cmd>History<CR>
 nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 
@@ -893,8 +893,7 @@ command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 " Note: Here use <C-g> prefix similar to comment insert. Capital breaks the undo
 " sequence. Tried implementing 'redo' but fails because history is lost after vim
 " re-enters insert mode from the <C-o> command. Googled and there is no way to do it.
-nnoremap U <C-r>
-nnoremap <Plug>RepeatRedo <C-r>
+nnoremap U <Plug>RepeatRedo
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 " inoremap <CR> <C-]><C-g>u<CR>
@@ -1785,10 +1784,10 @@ if s:plug_active('vim-lsp')
   noremap gD gDzv
   noremap [d <Cmd>LspPreviousReference<CR>
   noremap ]d <Cmd>LspNextReference<CR>
-  noremap <Leader>d <Cmd>LspReferences<CR>
-  noremap <Leader>D <Cmd>LspRename<CR>
-  noremap <Leader>f <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>F <Cmd>tab LspDefinition<CR>
+  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
+  noremap <Leader>D <Cmd>tab LspDefinition<CR>
+  noremap <Leader>f <Cmd>LspReferences<CR>
+  noremap <Leader>F <Cmd>LspRename<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
