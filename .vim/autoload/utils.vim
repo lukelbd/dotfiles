@@ -62,7 +62,7 @@ endfunction
 function! utils#motion_func(funcname, args) abort
   let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
   if mode() =~# '^\(v\|V\|\)$'
-    return ":\<C-u>'<,'>call utils#operator_func('')\<CR>"
+    return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'
     set operatorfunc=utils#operator_func
     return 'g@'  " uses the input line range

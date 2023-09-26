@@ -563,10 +563,9 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
-noremap gr <Cmd>redraw<CR>
-noremap gR <Cmd>redraw!<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
+noremap <Leader>r <Cmd>redraw<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 
 " Buffer management
@@ -647,8 +646,8 @@ augroup END
 
 " Cycle through wildmenu expansion with <C-,> and <C-.>
 " Note: Mapping without <expr> will type those literal keys
-cnoremap <expr> <F1> "\<Tab>"
-cnoremap <expr> <F2> "\<S-Tab>"
+cnoremap <F1> <C-p>
+cnoremap <F2> <C-n>
 
 " Cycle through location list options
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
@@ -664,13 +663,13 @@ noremap ]X <Cmd>Qnext<CR>zv
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " See: https://stackoverflow.com/a/41168966/4970632
-noremap g. :<C-u><Up><CR>
-nnoremap <Leader>; q:
-nnoremap <Leader>: <Cmd>History:<CR>
-nnoremap <Leader>/ q/
-nnoremap <Leader>? <Cmd>History/<CR>
-nnoremap <Leader>v <Cmd>call vim#vim_page()<CR>
-nnoremap <Leader>V <Cmd>Helptags<CR>
+noremap g: :<C-u><Up><CR>
+nnoremap <Leader>; <Cmd>History:<CR>
+nnoremap <Leader>: q:
+nnoremap <Leader>/ <Cmd>History/<CR>
+nnoremap <Leader>? q/
+nnoremap <Leader>v <Cmd>Helptags<CR>
+nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
 nnoremap <Leader>n <Cmd>Maps<CR>
 nnoremap <Leader>N <Cmd>Commands<CR>
 nnoremap <Leader>m <Cmd>call shell#help_page(1)<CR>
@@ -737,7 +736,6 @@ noremap <expr> z<CR> foldclosed('.') ? 'zA' : 'za'
 " Jump to folds and toggle foldsD fzf
 " Note: This is consistent with gt and gT tag maps
 noremap gz <Cmd>Folds<CR>
-noremap gZ <Cmd>Folds<CR>
 
 " Jump between and inside of folds
 " Note: This is more consistent with other bracket maps
@@ -784,16 +782,16 @@ noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#goto_mark(g:m
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
 command! -bang -nargs=+ Grep call grep#call_rg(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ Rd call grep#call_rg(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 2, 0, <f-args>)
+command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 2, 0, <f-args>)  " all open files
+command! -bang -nargs=+ Rd call grep#call_rg(<bang>0, 1, 0, <f-args>)  " project directory
+command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 0, 0, <f-args>)  " file directory
 command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
-command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)
-command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)
-command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 2, 0, <f-args>)
+command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 2, 0, <f-args>)  " all open files
+command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)  " project directory
+command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 0, 0, <f-args>)  " file directory
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap g; <Cmd>call grep#call_grep('rg', 2, 0)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap g, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap g. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
 " nnoremap g; <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 " nnoremap g: <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
@@ -1673,13 +1671,13 @@ if s:plug_active('vim-tags')
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  nnoremap <Leader>, <Cmd>ShowTable!<CR>
-  nnoremap <Leader>. <Cmd>ShowTable<CR>
-  nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
-  nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
-  nnoremap <Leader>- <Cmd>call switch#tags()<CR>
-  let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
-  let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
+  nnoremap <Leader>O <Cmd>call switch#tags()<CR>
+  nnoremap <Leader>T <Cmd>ShowTable!<CR>
+  nnoremap <Leader>t <Cmd>ShowTable<CR>
+  nnoremap gt <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
+  nnoremap gr <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
+  let g:tags_jump_map = 'gT'  " default is <Leader><Leader>
+  let g:tags_drop_map = 'gR'  " default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
 endif
 
@@ -1785,15 +1783,15 @@ if s:plug_active('vim-lsp')
   command! -nargs=? LspToggle call switch#lsp(<args>)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>r <Cmd>LspReferences<CR>
+  noremap <Leader><CR> <Cmd>LspReferences<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
-  nnoremap gd <Cmd>LspPeekDefinition<CR>
-  nnoremap gD <Cmd>tab LspDefinition<CR>
-  nnoremap g<CR> gD
+  nnoremap g<CR> <Cmd>LspPeekDefinition<CR>
+  nnoremap gd <Cmd>tab LspDefinition<CR>
+  nnoremap gD gDzv
   " Lsp and server settings
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " use :CheckHealth instead
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
@@ -2088,7 +2086,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
-  map g, <Plug>(EasyAlign)
+  map g; <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2156,8 +2154,8 @@ endif
 " says whether to replace or append, withEq says whether to include equals sign, sum
 " says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  noremap g{ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  noremap g} :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap g[[ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  noremap g]] :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
   noremap <expr> g[ edit#how_much_expr(0, 0, 1, 'py')
   noremap <expr> g] edit#how_much_expr(1, 1, 1, 'py')
 endif
@@ -2176,9 +2174,9 @@ endif
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
+  noremap <Leader>_ <Cmd>UndotreeToggle<CR>
   noremap <Leader>d <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
   noremap <Leader>D <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
-  noremap <Leader>O <Cmd>UndotreeToggle<CR>
   let g:undotree_SplitWidth = 30
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1

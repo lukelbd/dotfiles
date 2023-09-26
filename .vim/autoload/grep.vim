@@ -10,10 +10,10 @@ function! s:parse_paths(prompt, level, ...)
     let paths = copy(a:000)
   elseif a:level > 1  " search current open files
     let paths = tags#buffer_paths()
-  elseif a:level > 0  " search current file directory
-    let paths = [expand('%:h')]
-  else  " search current file project (file directory returned if no projects found)
+  elseif a:level > 0  " search current file project (file directory is fallback)
     let paths = [tag#find_root(@%)]
+  else  " search current file directory
+    let paths = [expand('%:h')]
   endif
   let result = []
   for path in paths
