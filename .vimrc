@@ -2068,8 +2068,8 @@ if s:plug_active('vim-gitgutter')
   noremap [G <Cmd>call git#hunk_jump(0, 1)<CR>
   noremap <expr> zg git#hunk_action_expr(1)
   noremap <expr> zG git#hunk_action_expr(0)
-  nnoremap zz <Cmd>call git#hunk_action(1)<CR>
-  nnoremap zZ <Cmd>call git#hunk_action(0)<CR>
+  nnoremap <nowait> zz <Cmd>call git#hunk_action(1)<CR>
+  nnoremap <nowait> ZZ <Cmd>call git#hunk_action(0)<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
