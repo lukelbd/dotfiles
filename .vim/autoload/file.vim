@@ -7,8 +7,8 @@
 " out rest of screen. Workaround is to factor out an unnecessary source function.
 let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
 
-" Path and folder utility
-" Print file information and whether file exists
+" Print whether current file exists
+" Useful when trying to debug 'go to this file' mapping
 function! file#print_exists() abort
   let files = glob(expand('<cfile>'), 0, 1)
   if exists('*RelativePath')
@@ -22,6 +22,9 @@ function! file#print_exists() abort
     echom 'File(s) ' . join(map(files, '"''".v:val."''"'), ', ') . ' exist.'
   endif
 endfunction
+
+" Print current file information
+" Useful before using 'go to this local directory' mapping
 function! file#print_paths(...) abort
   let chars = ' *[]()?!#%&<>'
   let paths = a:0 ? a:000 : [@%]

@@ -357,7 +357,7 @@ endfor
 nnoremap v mzv
 nnoremap V mzV
 nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap gN W?<C-r>/e<CR><Cmd>noh<CR>mzgN
+nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
 nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
 vnoremap <CR> <C-c>
 vnoremap v <Esc>mzv
@@ -395,7 +395,7 @@ let s:colorscheme = 'gruvbox'
 let s:colorscheme = 'molokai'
 let s:colorscheme = 'monokain'
 let s:colorscheme = 'oceanicnext'
-let s:colorscheme = 'papercolor'
+let s:colorscheme = 'papercolor'  " default
 
 " Macvim syntax overrides
 " Todo: Figure out whether to declare colorscheme here or at bottom
@@ -481,9 +481,9 @@ noremap <Leader>Y <Cmd>SyncStart<CR>
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
 command! SchemePrev call iter#jump_colorschemes(0)
 command! SchemeNext call iter#jump_colorschemes(1)
-noremap <Leader>8 <Cmd>Colors<CR>
-noremap <Leader>9 <Cmd>SchemeNext<CR>
-noremap <Leader>0 <Cmd>SchemePrev<CR>
+noremap <Leader>0 <Cmd>Colors<CR>
+noremap <Leader>( <Cmd>SchemePrev<CR>
+noremap <Leader>) <Cmd>SchemeNext<CR>
 augroup color_scheme
   au!
   exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
@@ -493,6 +493,7 @@ augroup END
 " Note: ColorToggle is defined in colorizer.vim. Enables hex-string coloring. Useful
 " only for small files and with only a few tabs open. For now keep manual.
 " noremap <Leader>7 <Cmd>ColorToggle<CR>
+command! -nargs=? Colorize ColorToggle <args>
 command! -nargs=0 SyntaxGroup call vim#syntax_group()
 command! -nargs=? SyntaxList call vim#syntax_list(<q-args>)
 command! -nargs=0 ShowGroups vert help group-name | call search('\*Comment') | normal! zt
@@ -663,7 +664,7 @@ noremap ]X <Cmd>Qnext<CR>zv
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " See: https://stackoverflow.com/a/41168966/4970632
-noremap g: :<C-u><Up><CR>
+noremap g. :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -706,7 +707,7 @@ noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 " Search for special characters
 " First searches for escapes second for non-ascii
 noremap g` /[^\x00-\x7F]<CR>
-noremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+noremap g\ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Jump to previous end-of-word or previous end-of-WORD
 " This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
@@ -731,7 +732,7 @@ noremap G G
 
 " Current fold toggle (open resursively, but close non-recursively)
 " Note: This helps e.g. open subsections under tex section without closing document
-noremap <expr> z<CR> foldclosed('.') ? 'zA' : 'za'
+noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
 
 " Jump to folds and toggle foldsD fzf
 " Note: This is consistent with gt and gT tag maps
@@ -781,7 +782,6 @@ noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#goto_mark(g:m
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
-command! -bang -nargs=+ Grep call grep#call_rg(<bang>0, 0, 0, <f-args>)
 command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 2, 0, <f-args>)  " all open files
 command! -bang -nargs=+ Rd call grep#call_rg(<bang>0, 1, 0, <f-args>)  " project directory
 command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 0, 0, <f-args>)  " file directory
@@ -790,8 +790,8 @@ command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 2, 0, <f-args>)  " all ope
 command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)  " project directory
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 0, 0, <f-args>)  " file directory
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap g, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap g. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap g; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap g: <Cmd>call grep#call_grep('rg', 2, 0)<CR>
 " nnoremap g; <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 " nnoremap g: <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
@@ -998,13 +998,13 @@ nmap [S <Plug>backward_spell
 
 " Fix spelling under cursor auto or interactively
 " Note: Simple 'zg' selects first one and zG brings up menu
-nnoremap zz 1z=
-nnoremap zZ z=
+nnoremap zs 1z=
+nnoremap zS z=
 
 " Add or remove from dictionary
 " Note: Run :runtime spell/cleanadd.vim to fix definitions
-nnoremap zs zg
-nnoremap zS zug
+nnoremap zd zg
+nnoremap zD zug
 
 " Identify character under cursor
 " Note: Requires characterize plugin
@@ -1132,7 +1132,7 @@ inoremap <expr> <Tab>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
-" nnoremap <expr> gR edit#paste_mode() . 'R'  " never unused
+nnoremap <expr> gR edit#paste_mode() . 'R'
 nnoremap <expr> ga edit#paste_mode() . 'a'
 nnoremap <expr> gA edit#paste_mode() . 'A'
 nnoremap <expr> gC edit#paste_mode() . 'c'
@@ -1659,7 +1659,7 @@ endif
 " Note: Use .ctags config to ignore particular kinds. Include python imports (Ii),
 " tex frame subtitles (g), and vim constants/variables/vimballs (Cvn).
 if s:plug_active('vim-tags')
-  augroup vim_tags
+  augroup vim_tags_bracket
     au!
     au BufEnter * call s:bracket_maps()
   augroup END
@@ -1671,13 +1671,11 @@ if s:plug_active('vim-tags')
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
+  nnoremap <Leader>t <Cmd>BTags<CR>
+  nnoremap <Leader>T <Cmd>Tags<CR>
   nnoremap <Leader>O <Cmd>call switch#tags()<CR>
-  nnoremap <Leader>T <Cmd>ShowTable!<CR>
-  nnoremap <Leader>t <Cmd>ShowTable<CR>
-  nnoremap gt <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
-  nnoremap gr <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
-  let g:tags_jump_map = 'gT'  " default is <Leader><Leader>
-  let g:tags_drop_map = 'gR'  " default is <Leader><Tab>
+  let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
+  let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
 endif
 
@@ -1694,6 +1692,8 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
   augroup END
   command! -nargs=? Ignores echom 'Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
+  nnoremap <Leader>, <Cmd>ShowTable!<CR>
+  nnoremap <Leader>. <Cmd>ShowTable<CR>
   nnoremap <Leader>< <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   nnoremap <Leader>> <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
@@ -1783,13 +1783,13 @@ if s:plug_active('vim-lsp')
   command! -nargs=? LspToggle call switch#lsp(<args>)
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader><CR> <Cmd>LspReferences<CR>
+  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
+  noremap <Leader>D <Cmd>LspReferences<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
-  nnoremap g<CR> <Cmd>LspPeekDefinition<CR>
   nnoremap gd <Cmd>tab LspDefinition<CR>
   nnoremap gD gDzv
   " Lsp and server settings
@@ -2086,7 +2086,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
-  map g; <Plug>(EasyAlign)
+  map g, <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2171,12 +2171,14 @@ if s:plug_active('vim-speeddating')
 endif
 
 " Undo tree settings. Mnemonic is that Ctrl-r used for undo in other settings.
+" Note: Considered also creating netrwc maps but huge can of worms. Idea was simply
+" to list files in current directory so made mapping for that.
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+" noremap <Leader>, <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
+" noremap <Leader>. <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
 if s:plug_active('undotree')
-  noremap <Leader>_ <Cmd>UndotreeToggle<CR>
-  noremap <Leader>d <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
-  noremap <Leader>D <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
+  noremap <Leader>\ <Cmd>UndotreeToggle<CR>
   let g:undotree_SplitWidth = 30
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1

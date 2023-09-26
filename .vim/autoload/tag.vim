@@ -39,11 +39,11 @@ function! s:get_python_root(path) abort
 endfunction
 function! tag#find_root(path) abort
   let root = s:get_control_root(a:path)  " control systems
-  if !empty(root)
+  if !empty(root) && fnamemodify(root, ':p') !=# expand('~')
     return root
   endif
   let root = s:get_python_root(a:path)  " python distributions
-  if !empty(root)
+  if !empty(root) && fnamemodify(root, ':p') !=# expand('~')
     return root
   endif
   let root = fnamemodify(resolve(expand(a:path)), ':p:h')
