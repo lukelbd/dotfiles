@@ -563,7 +563,8 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
-noremap gr <Cmd>redraw!<CR>
+noremap gr <Cmd>redraw<CR>
+noremap gR <Cmd>redraw!<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
@@ -621,7 +622,7 @@ augroup tab_toggle
   au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
 augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
-nnoremap g<Tab> <Cmd>call switch#expandtab()<CR>
+nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
 " Helper window style adjustments with less-like shortcuts
 " Note: Tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues
@@ -1130,6 +1131,7 @@ inoremap <expr> <Tab>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
+" nnoremap <expr> gR edit#paste_mode() . 'R'  " never unused
 nnoremap <expr> ga edit#paste_mode() . 'a'
 nnoremap <expr> gA edit#paste_mode() . 'A'
 nnoremap <expr> gC edit#paste_mode() . 'c'
@@ -1137,7 +1139,6 @@ nnoremap <expr> gi edit#paste_mode() . 'i'
 nnoremap <expr> gI edit#paste_mode() . 'I'
 nnoremap <expr> go edit#paste_mode() . 'o'
 nnoremap <expr> gO edit#paste_mode() . 'O'
-nnoremap <expr> gR edit#paste_mode() . 'R'
 
 " Forward delete by tabs
 inoremap <expr> <Delete> edit#forward_delete()
@@ -1669,11 +1670,11 @@ if s:plug_active('vim-tags')
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  nnoremap <Leader>, <Cmd>call switch#tags()<CR>
-  nnoremap <Leader>d <Cmd>ShowTable<CR>
-  nnoremap <Leader>D <Cmd>ShowTable!<CR>
+  nnoremap <Leader>, <Cmd>ShowTable!<CR>
+  nnoremap <Leader>. <Cmd>ShowTable<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
+  nnoremap <Leader>- <Cmd>call switch#tags()<CR>
   let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
   let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
@@ -2006,8 +2007,8 @@ if s:plug_active('conflict-marker.vim')
   nmap ]F <Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)
   nmap gf <Plug>(conflict-marker-ourselves)
   nmap gF <Plug>(conflict-marker-themselves)
-  nmap g[ <Plug>(conflict-marker-none)
-  nmap g] <Plug>(conflict-marker-both)
+  nmap g( <Plug>(conflict-marker-none)
+  nmap g) <Plug>(conflict-marker-both)
 endif
 
 " Fugitive settings
@@ -2152,10 +2153,10 @@ endif
 " says whether to replace or append, withEq says whether to include equals sign, sum
 " says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  noremap <Leader>( :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <Leader>) :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  noremap <expr> g( edit#how_much_expr(1, 1, 1, 'py')
-  noremap <expr> g) edit#how_much_expr(0, 0, 1, 'py')
+  noremap g{ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  noremap g} :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap <expr> g[ edit#how_much_expr(0, 0, 1, 'py')
+  noremap <expr> g] edit#how_much_expr(1, 1, 1, 'py')
 endif
 
 " Speed dating, support date increments
@@ -2172,7 +2173,10 @@ endif
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
-  noremap <Leader>. <Cmd>UndotreeToggle<CR>
+  noremap <Leader>d <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
+  noremap <Leader>D <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
+  noremap <Leader>O <Cmd>UndotreeToggle<CR>
+  let g:undotree_SplitWidth = 30
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0

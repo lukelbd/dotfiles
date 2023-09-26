@@ -26,7 +26,6 @@ function! file#print_paths(...) abort
   let chars = ' *[]()?!#%&<>'
   let paths = a:0 ? a:000 : [@%]
   for path in paths
-    let user = fnamemodify(path, ':~')
     let root = tag#find_root(path)
     if exists('*RelativePath')
       let root = RelativePath(root)
@@ -37,7 +36,7 @@ function! file#print_paths(...) abort
     endif
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
     let work = fnamemodify(getcwd(), ':~')
-    echom 'Current file: ' . escape(show, chars) . ' (' . escape(user, chars) . ')'
+    echom 'Current file: ' . escape(show, chars)
     echom 'Current project: ' . escape(root, chars)
     echom 'Current directory: ' . escape(work, chars)
   endfor
