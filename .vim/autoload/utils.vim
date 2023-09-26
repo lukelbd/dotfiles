@@ -114,7 +114,8 @@ function! utils#panel_setup(modifiable) abort
   if a:modifiable == 1  " e.g. gitcommit window
     return
   endif
-  setlocal nospell colorcolumn= statusline=%{'[Panel\ Window]'}%=%{StatusRight()}
+  setlocal nospell colorcolumn=
+  setlocal statusline=%{'[Panel:Z'.&l:foldlevel.']'}%=%{StatusRight()}
   for char in 'du'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
   endfor

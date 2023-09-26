@@ -1,7 +1,7 @@
 "-----------------------------------------------------------------------------
 " ReST settings
 "-----------------------------------------------------------------------------
-" Open primary header folds on startup
+" Ensure primary headers open on startup
 " Note: Not possible to set foldlevelstart=1 for specific filetype
 if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
 

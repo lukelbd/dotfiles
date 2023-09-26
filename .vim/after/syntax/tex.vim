@@ -1,6 +1,6 @@
-" Maintainer: Karl Yngve Lervåg
-" Email: karl.yngve@gmail.com
-" Date: 2018-07-26
+" Author: Karl Yngve Lervåg
+" Forked: Luke Davis
+" Edited: 2018-07-26
 " This builds upon native $VIMRUNTIME/syntax/tex.vim syntax highlighting. Should
 " re-download updated vimtex files in future (not sure when last updated).
 "------------------------------------------------------------------------------"
@@ -39,18 +39,40 @@ syntax region texMatcherNM matchgroup=Delimiter
   \ start='{' skip='\\\|\[{}]' end="}"
   \ contains=@texMatchNMGroup,texError,@NoSpell
 
-" Enable syntax folding of figure environments. Native foldmethod=syntax folding
-" is bundled by default, leverages same logic used to define highlight colors.
-" Note: Adpated from TexNewMathZone in $VIMRUNTIME/syntax/tex.vim. The 'keepend'
-" is critical or else zone seems to persist beyond figures.
+" Enable syntax folding of abstracts authors and captions. By default only begin..end
+" begin..end texAbstract environment is folded an only in the preamble
+" Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim
+syntax region texAbstracts matchgroup=texSection
+  \ start='\\abstract\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
+syntax region texAuthors matchgroup=texSection
+  \ start='\\authors\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
+syntax region texCaption transparent
+  \ start='\\caption\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
+syntax cluster texFoldGroup add=texAbstracts
+syntax cluster texFoldGroup add=texAuthors
+syntax cluster texFoldGroup add=texCaption
+syntax cluster texPreambleMatchGroup add=texAbstracts
+syntax cluster texPreambleMatchGroup add=texAbstract
+syntax cluster texPreambleMatchGroup add=texAuthors
+
+" Enable syntax folding of figures and tables. By default only math environments
+" are folded (see TexNewMathZone below and in $VIMRUNTIME/syntax.vim)
+" Note: The 'keepend' is critical or else zone seems to persist beyond figures.
 syntax region texFigureZone transparent
   \ start='\\begin\s*{\s*figure\*\?\s*}' end='\\end\s*{\s*figure\*\?\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
-syntax region texCenterZone transparent
-  \ start='\\begin\s*{\s*center\s*}' end='\\end\s*{\s*center\s*}'
+syntax region texTableZone transparent
+  \ start='\\begin\s*{\s*table\s*}' end='\\end\s*{\s*table\s*}'
+  \ keepend contains=@texFoldGroup,@Spell fold
+syntax region texTabular transparent
+  \ start='\\begin\s*{\s*tabular\s*}' end='\\end\s*{\s*tabular\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
 syntax cluster texFoldGroup add=texFigureZone
-syntax cluster texFoldGroup add=texCenterZone
+syntax cluster texFoldGroup add=texTableZone
+syntax cluster texFoldGroup add=texTabular
 
 "------------------------------------------------------------------------------"
 " Original plugin

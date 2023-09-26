@@ -563,7 +563,8 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
-noremap gr <Cmd>redraw!<CR>
+noremap gr <Cmd>redraw<CR>
+noremap gR <Cmd>redraw!<CR>
 noremap <Leader>e <Cmd>edit<CR>
 noremap <Leader>E <Cmd>FZFMru<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
@@ -621,7 +622,7 @@ augroup tab_toggle
   au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
 augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
-nnoremap g<Tab> <Cmd>call switch#expandtab()<CR>
+nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
 " Helper window style adjustments with less-like shortcuts
 " Note: Tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues
@@ -699,25 +700,53 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
-" Add 'g' version jumping keys that move by only alphanumeric characters
-" (i.e. excluding dots, dashes, underscores). This is consistent with tmux.
-for s:char in ['w', 'b', 'e', 'm']
+" Search highlighting toggle
+" This does 'set hlsearch!' and prints a message
+noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
+
+" Search for special characters
+" First searches for escapes second for non-ascii
+noremap g` /[^\x00-\x7F]<CR>
+noremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+
+" Jump to previous end-of-word or previous end-of-WORD
+" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
+
+" Jump between alphanumeric groups of characters (i.e. excluding dots, dashes,
+" underscores). This is consistent with tmux vim selection navigation
+for s:char in ['w', 'b', 'e', 'm']  " use 'g' prefix of each
   exe 'noremap g' . s:char . ' '
     \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
     \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
     \ . (s:char ==# 'm' ? 'ge' : s:char) . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
 endfor
 
-" Jump to start or end without opening folds
+" Jump to start or end without opening folds.
 " Useful for e.g. python files with docsring at top and function at bottom
 " Note: Fold opening is auto-disabled for remapped jump commands hence the 'zv' below
 " Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
 noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 noremap G G
 
-" Search highlight toggle
-" Note: This just does 'set hlsearch!' and prints a message
-noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
+" Current fold toggle (open resursively, but close non-recursively)
+" Note: This helps e.g. open subsections under tex section without closing document
+noremap <expr> z<CR> foldclosed('.') ? 'zA' : 'za'
+
+" Jump to folds and toggle foldsD fzf
+" Note: This is consistent with gt and gT tag maps
+noremap gz <Cmd>Folds<CR>
+noremap gZ <Cmd>Folds<CR>
+
+" Jump between and inside of folds
+" Note: This is more consistent with other bracket maps
+noremap zj ]z
+noremap zk [z
+noremap ]z zj
+noremap [z zk[z
+noremap ]Z zjzv
+noremap [Z zkzv[z
 
 " Jump to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
@@ -731,38 +760,13 @@ noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
 
-" Jump to previous end-of-word or previous end-of-WORD
-" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
-
-" Search for special characters
-" First searches for escapes second for non-ascii
-noremap g` /[^\x00-\x7F]<CR>
-noremap g~ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
-
-" Jump to folds with fzf
-" Note: This is consistent with gt and gT tag maps
-noremap gz <Cmd>Folds<CR>
-noremap gZ <Cmd>Folds<CR>
-
-" Jump between and inside of folds
-" Note: Try to be consistent with other bracket maps
-noremap z<CR> za
-noremap zj ]z
-noremap zk [z
-noremap ]z zj
-noremap [z zk[z
-noremap ]Z zjzv
-noremap [Z zkzv[z
-
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
 " noremap <Leader>. <Cmd>BLines<CR>
 noremap g" <Cmd>call mark#fzf_jumps()<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
 
-" Specify alphabetic marks using counts (navigate with ]` and [`)
+" Declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
 " viminfo, so use them. Also numbered marks are mostly internal, can be configured
 " to restore cursor position after restarting, also used in viminfo.
@@ -907,7 +911,7 @@ nnoremap <expr> , '@' . utils#translate_count('@')
 vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
 vnoremap <expr> , '@' . utils#translate_count('@')
 
-" Specify alphabetic registers with count (consistent with mark utilities)
+" Declare alphabetic registers with count (consistent with mark utilities)
 " Note: Pressing simply ' or " before text will use black hole or clipboard register.
 " Double pressing '' is equivalent to native " and "" will show the popup window.
 " Note: This relies on g:peekaboo_prefix = '"' below so that double '"' press opens up
@@ -1130,6 +1134,7 @@ inoremap <expr> <Tab>
 
 " Insert mode with paste toggling
 " Note: switched easy-align mapping from ga to ge for consistency here
+" nnoremap <expr> gR edit#paste_mode() . 'R'  " never unused
 nnoremap <expr> ga edit#paste_mode() . 'a'
 nnoremap <expr> gA edit#paste_mode() . 'A'
 nnoremap <expr> gC edit#paste_mode() . 'c'
@@ -1137,7 +1142,6 @@ nnoremap <expr> gi edit#paste_mode() . 'i'
 nnoremap <expr> gI edit#paste_mode() . 'I'
 nnoremap <expr> go edit#paste_mode() . 'o'
 nnoremap <expr> gO edit#paste_mode() . 'O'
-nnoremap <expr> gR edit#paste_mode() . 'R'
 
 " Forward delete by tabs
 inoremap <expr> <Delete> edit#forward_delete()
@@ -1669,11 +1673,11 @@ if s:plug_active('vim-tags')
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  nnoremap <Leader>, <Cmd>call switch#tags()<CR>
-  nnoremap <Leader>d <Cmd>ShowTable<CR>
-  nnoremap <Leader>D <Cmd>ShowTable!<CR>
+  nnoremap <Leader>, <Cmd>ShowTable!<CR>
+  nnoremap <Leader>. <Cmd>ShowTable<CR>
   nnoremap <Leader>t <Cmd>call switch#tags(1)<CR><Cmd>BTags<CR>
   nnoremap <Leader>T <Cmd>call switch#tags(1)<CR><Cmd>Tags<CR>
+  nnoremap <Leader>- <Cmd>call switch#tags()<CR>
   let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
   let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
@@ -2006,8 +2010,8 @@ if s:plug_active('conflict-marker.vim')
   nmap ]F <Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)
   nmap gf <Plug>(conflict-marker-ourselves)
   nmap gF <Plug>(conflict-marker-themselves)
-  nmap g[ <Plug>(conflict-marker-none)
-  nmap g] <Plug>(conflict-marker-both)
+  nmap g( <Plug>(conflict-marker-none)
+  nmap g) <Plug>(conflict-marker-both)
 endif
 
 " Fugitive settings
@@ -2152,10 +2156,10 @@ endif
 " says whether to replace or append, withEq says whether to include equals sign, sum
 " says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  noremap <Leader>( :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <Leader>) :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  noremap <expr> g( edit#how_much_expr(1, 1, 1, 'py')
-  noremap <expr> g) edit#how_much_expr(0, 0, 1, 'py')
+  noremap g{ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  noremap g} :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap <expr> g[ edit#how_much_expr(0, 0, 1, 'py')
+  noremap <expr> g] edit#how_much_expr(1, 1, 1, 'py')
 endif
 
 " Speed dating, support date increments
@@ -2172,7 +2176,10 @@ endif
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
-  noremap <Leader>. <Cmd>UndotreeToggle<CR>
+  noremap <Leader>d <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
+  noremap <Leader>D <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
+  noremap <Leader>O <Cmd>UndotreeToggle<CR>
+  let g:undotree_SplitWidth = 30
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
