@@ -888,8 +888,9 @@ noremap <expr> \X edit#replace_regex_expr(
 " Note: Here use <C-g> prefix similar to comment insert. Capital breaks the undo
 " sequence. Tried implementing 'redo' but fails because history is lost after vim
 " re-enters insert mode from the <C-o> command. Googled and no way to do it
-" nnoremap u <Plug>RepeatUndo  " already set
-nnoremap U <Plug>RepeatRedo
+" nnoremap u <Plug>RepeatUndo  " already applied
+" nnoremap U <Plug>RepeatRedo  " causes weird issues
+nnoremap U <C-r>
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 
