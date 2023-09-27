@@ -789,8 +789,8 @@ command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 2, 0, <f-args>)  " all ope
 command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)  " project directory
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 0, 0, <f-args>)  " file directory
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap g. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
-nnoremap g, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap g; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap g: <Cmd>call grep#call_grep('rg', 2, 0)<CR>
 " nnoremap g; <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 " nnoremap g: <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
@@ -812,27 +812,6 @@ noremap gB <Cmd>Debugs<CR>
 noremap gE <Cmd>Error<CR>
 noremap gW <Cmd>Warnings<CR>
 noremap gG <Cmd>Conflicts<CR>
-
-" Popup menu selection shortcuts
-" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
-" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
-" and default is chosen if necessary. See :h ins-special-special.
-inoremap <expr> <Space> iter#scroll_reset()
-  \ . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<C-]>\<Space>"
-inoremap <expr> <Backspace> iter#scroll_reset()
-  \ . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<Backspace>"
-inoremap <expr> <CR>
-  \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . iter#scroll_reset()
-  \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
-  \ : "\<C-]>\<C-g>u\<CR>"
-inoremap <expr> <Tab>
-  \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . iter#scroll_reset()
-  \ : "\<C-n>\<C-y>" . iter#scroll_reset()
-  \ : "\<C-]>\<Tab>"
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
@@ -976,19 +955,21 @@ nnoremap <expr> K 'k' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNorma
 nnoremap <expr> gJ '<Esc>' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
 nnoremap <expr> gK 'k' . (v:count . (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
 
-" Never save single-character deletions to any register
-" Without this register fills up quickly and history is lost
+" Single chacter maps
+" Print info and Never save deletions to any register a
 noremap x "_x
 noremap X "_X
-nnoremap cy "_s
+nmap gy <Plug>(Characterize)
+nnoremap gY ga
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
+nnoremap cy "_s
 nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
 nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
 nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
 nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
+nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
 
 " Toggle spell checking
 " Turn on for filetypes containing text destined for users
@@ -1014,21 +995,19 @@ nnoremap zs 1z=
 nnoremap zS z=
 nnoremap zd zg
 nnoremap zD zug
-nmap zy <Plug>(characterize)
-nnoremap zY ga
 
 " Toggle capitalization or identify character
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-nnoremap <nowait> gu guiw
-nnoremap <nowait> gU gUiw
+nnoremap <nowait> zu guiw
+nnoremap <nowait> zU gUiw
 nnoremap <silent> <Plug>CaseToggle ~h
   \ :call repeat#set("\<Plug>CaseToggle")<CR>
 nnoremap <silent> <Plug>CaseTitle myguiw~h`y<Cmd>delmark y<CR>
   \ :call repeat#set("\<Plug>CaseTitle")<CR>
-vnoremap gy ~
-vnoremap gY gu<Esc>`<~h
-nmap gy <Plug>CaseToggle
-nmap gY <Plug>CaseTitle
+vnoremap zy ~
+vnoremap zi gu<Esc>`<~h
+nmap zy <Plug>CaseToggle
+nmap zi <Plug>CaseTitle
 
 " Auto wrap lines or items within motion
 " Note: Tried below repeat maps but they fail
@@ -1109,6 +1088,27 @@ command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
 nnoremap <Leader>c <Cmd>call switch#copy()<CR>
 nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+
+" Popup menu selection shortcuts
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
+" and default is chosen if necessary. See :h ins-special-special.
+inoremap <expr> <Space> iter#scroll_reset()
+  \ . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<C-]>\<Space>"
+inoremap <expr> <Backspace> iter#scroll_reset()
+  \ . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<Backspace>"
+inoremap <expr> <CR>
+  \ pumvisible() ? b:scroll_state ?
+  \ "\<C-y>" . iter#scroll_reset()
+  \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
+  \ : "\<C-]>\<C-g>u\<CR>"
+inoremap <expr> <Tab>
+  \ pumvisible() ? b:scroll_state ?
+  \ "\<C-y>" . iter#scroll_reset()
+  \ : "\<C-n>\<C-y>" . iter#scroll_reset()
+  \ : "\<C-]>\<Tab>"
 
 " Popup menu and preview window scrolling
 " This should work with or without ddc
@@ -1664,8 +1664,8 @@ if s:plug_active('vim-tags')
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap <Leader>O <Cmd>call switch#tags()<CR>
-  let g:tags_jump_map = '<Leader>t'  " default is <Leader><Leader>
-  let g:tags_drop_map = '<Leader>T'  " default is <Leader><Tab>
+  let g:tags_drop_map = 'g,'  " default is <Leader><Tab>
+  let g:tags_jump_map = 'g.'  " default is <Leader><Leader>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
 endif
 
@@ -1682,8 +1682,8 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
   augroup END
   command! -nargs=? Ignores echom 'Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
-  nnoremap <Leader>, <Cmd>ShowTable!<CR>
-  nnoremap <Leader>. <Cmd>ShowTable<CR>
+  nnoremap <Leader>t <Cmd>ShowTable<CR>
+  nnoremap <Leader>T <Cmd>ShowTable!<CR>
   nnoremap <Leader>< <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   nnoremap <Leader>> <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
@@ -2083,7 +2083,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
-  map g; <Plug>(EasyAlign)
+  map gy <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2178,7 +2178,7 @@ endif
 " noremap <Leader>, <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
 " noremap <Leader>. <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
 if s:plug_active('undotree')
-  noremap <Leader>_ <Cmd>UndotreeToggle<CR>
+  noremap gu <Cmd>UndotreeToggle<CR>
   let g:undotree_SplitWidth = 30
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1
