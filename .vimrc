@@ -1002,7 +1002,7 @@ nnoremap <nowait> zu guiw
 nnoremap <nowait> zU gUiw
 nnoremap <silent> <Plug>CaseToggle ~h
   \ :call repeat#set("\<Plug>CaseToggle")<CR>
-nnoremap <silent> <Plug>CaseTitle myguiw~h`y<Cmd>delmark y<CR>
+nnoremap <silent> <Plug>CaseTitle myguiw~h`yh<Cmd>delmark y<CR>
   \ :call repeat#set("\<Plug>CaseTitle")<CR>
 vnoremap zy ~
 vnoremap zi gu<Esc>`<~h
