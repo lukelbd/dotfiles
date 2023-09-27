@@ -67,34 +67,57 @@ function! file#path_list(lead, line, cursor) abort
   return paths
 endfunction
 
+" Open recently edited file
+" Note: This is companion to :History with nicer behavior. Files tracked
+" in ~/.vim_mru_files across different open vim sessions.
+function! file#open_recent() abort
+  let files = readfile(expand(g:MRU_file))
+  if files[0] =~# '^#'
+    call remove(files, 0)
+  endif
+  call fzf#run(fzf#wrap({
+    \ 'source' : files,
+    \ 'options': '--no-sort --prompt="Recent> "',
+    \ 'sink': function('s:open_recent_sink'),
+    \ }))
+endfunction
+function! s:open_recent_sink(path) abort
+  exe 'Drop ' . a:path
+endfunction
+
 " Open from local or current directory (see also grep.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! file#init_path(files, local) abort
-  let cmd = a:files ? 'Files' : 'Open'  " recursive fzf or non-resucrive internal
+function! file#open_init(cmd, local) abort
+  let cmd = a:cmd ? 'Files' : 'Open'  " recursive fzf or non-resucrive internal
   let dir = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
   let path = fnamemodify(dir, ':~')
   let prompt = cmd . ' (' . path . ')'  " display longer version in prompt
   let default = fnamemodify(dir, ':p:~:.')  " display shorter version here
   let default = empty(default) ? './' : default  " differentiate from user cancellation
-  let start = utils#input_complete(prompt, 'file#path_list', default)
-  if empty(start) | return | endif
-  exe cmd . ' ' . start
+  let start = utils#input_default(prompt, 'file#path_list', default)
+  if empty(start)
+    return
+  elseif cmd ==# 'Files'
+    call fzf#vim#files(start, fzf#vim#with_preview(), 0)
+  else
+    call fzf#open_continuous(cmd, start)
+  endif
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
 " Warning: Must use expand() rather than glob() or new file names are not completed.
 " Warning: FZF executes asynchronously so cannot do loop recursion inside driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
-function! file#open_continuous(open, ...) abort
+function! file#open_continuous(cmd, ...) abort
   let paths = []
   for glob in a:000
     let glob = substitute(glob, '^\s*\(.\{-}\)\s*$', '\1', '')  " strip spaces
     call extend(paths, expand(glob, 0, 1))
   endfor
-  call s:open_continuous(a:open, paths)  " call fzf sink function
+  call s:open_continuous(a:cmd, paths)  " call fzf sink function
 endfunction
-function! s:open_continuous(open, ...) abort
+function! s:open_continuous(cmd, ...) abort
   " Parse arguments
   if a:0 == 1  " user invocation
     let base = ''
@@ -103,9 +126,9 @@ function! s:open_continuous(open, ...) abort
     let base = a:1
     let items = a:2
   endif
-  if !exists('*' . a:open) && !exists(':' . a:open)
+  if !exists(':' . a:cmd)
     echohl WarningMsg
-    echom "Error: Open command '" . a:open . "' not found."
+    echom "Error: Open command '" . a:cmd . "' not found."
     echohl None
     return
   endif
@@ -135,7 +158,7 @@ function! s:open_continuous(open, ...) abort
     let paths = []  " only continue in recursion
     call fzf#run(fzf#wrap({
       \ 'source': s:path_source(base, 1),
-      \ 'sinklist': function('s:open_continuous', [a:open, base]),
+      \ 'sinklist': function('s:open_continuous', [a:cmd, base]),
       \ 'options': "--multi --no-sort --prompt='" . trunc . "/'",
       \ }))
   endif
@@ -147,10 +170,8 @@ function! s:open_continuous(open, ...) abort
       echohl None
     elseif empty(path) || path =~# '[*?[\]]'  " unexpanded glob
       :
-    elseif exists(':' . a:open)  " e.g. vsplit or split
-      exe a:open . ' ' . path
-    else  " e.g. file#open_drop
-      call call(a:open, [path])
+    else  " e.g. split or drop
+      exe a:cmd . ' ' . path
     endif
   endfor
 endfunction

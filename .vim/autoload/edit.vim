@@ -109,24 +109,6 @@ function! edit#reverse_lines() range abort
   exec 'silent ' . range . 'g/^/m' . num
 endfunction
 
-" Correct next misspelled word
-" This provides functionality similar to [t and ]s
-function! edit#spell_apply(forward)
-  let nospell = 0
-  if !&l:spell
-    let nospell = 1
-    setlocal spell
-  endif
-  let winview = winsaveview()
-  exe 'normal! ' . (a:forward ? 'bh' : 'el')
-  exe 'normal! ' . (a:forward ? ']' : '[') . 's'
-  normal! 1z=
-  call winrestview(winview)
-  if nospell
-    setlocal nospell
-  endif
-endfunction
-
 " Swap characters or lines
 " Note: This does not affect registers
 function! edit#swap_characters(right) abort

@@ -11,7 +11,8 @@ if !exists('b:current_syntax')
 elseif b:current_syntax !=# 'tex'
   finish
 endif
-syntax sync minlines=500  " increase accuracy
+scriptencoding utf-8  " non-ascii character below
+syntax sync minlines=500  " increase highlight accuracy
 
 " Conceal backslash commands. Only matchadd works for some reason. Also ignores e.g.
 " \command1\command2, which would otherwise be unreadable and is common in macros.

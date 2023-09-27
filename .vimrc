@@ -21,13 +21,13 @@
 " Critical stuff
 " Note: Below dictionary figures out which files were recently modified when refreshing
 " session. Line length is used with linting tools below and in other non-vim settings.
-set encoding=utf-8  " enable utf characters
-set nocompatible  " always use the vim defaults
-scriptencoding utf-8
-runtime autoload/repeat.vim
+let s:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see below <Leader> mappings
 let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
-let s:linelength = 88  " see below configuration
+set nocompatible  " always use the vim defaults
+set encoding=utf-8  " enable utf characters
+scriptencoding utf-8
+runtime autoload/repeat.vim
 
 " Global settings
 " Warning: Tried setting default 'foldmethod' and 'foldexpr' can cause buffer-local
@@ -309,20 +309,17 @@ for s:mapping in [
 endfor
 
 " Disable normal mode stuff
+" * q and @ are for macros, instead reserve for quitting popup windows and tags map
 " * Q and K are weird modes never used
 " * Z is save and quit shortcut, use for executing
-" * Ctrl-p and Ctrl-n used for scrolling, remap these instead
+" * Ctrl-r is undo, use u and U instead
+" * Ctrl-p and Ctrl-n used for menu items, use <C-,> and <C-.> or scroll instead
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
-" * Turn off common normal mode issues
-" * q and @ are for macros, instead reserve for quitting popup windows and tags map
 " * ][ and [] can get hit accidentally
-" * gt and gT replaced with <Tab> mappings
-" * Ctrl-r is undo, remap this
 for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
   \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
-  \ '<Delete>', '<Backspace>', '<CR>',
-  \ '][', '[]', 'gt', 'gT',
+  \ '<Delete>', '<Backspace>', '<CR>', '][', '[]',
   \ ]
   if empty(maparg(s:key, 'n'))
     exe 'nnoremap ' . s:key . ' <Nop>'
@@ -521,18 +518,73 @@ nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
 
+" Refresh session or re-open previous files
+" Note: Here :Mru shows tracked files during session, will replace current buffer.
+command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
+command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
+noremap <Leader>e <Cmd>edit<CR>
+noremap <Leader>r <Cmd>redraw<CR>
+noremap <Leader>R <Cmd>Refresh<CR>
+let g:MRU_Open_File_Relative = 1
+
+" Buffer selection and management
+" Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
+command! -nargs=0 ShowBufs call window#show_bufs()
+command! -nargs=0 WipeBufs call window#wipe_bufs()
+noremap <Leader>q <Cmd>ShowBufs<CR>
+noremap <Leader>Q <Cmd>WipeBufs<CR>
+
 " Open file in current directory or some input directory
-" Note: These are just convenience functions (see file#init_path for details).
-" Note: Use <C-x> to open in horizontal split and <C-v> to open in vertical split.
-command! -nargs=* -complete=file Open call file#open_continuous('file#open_drop', <f-args>)
+" Note: Anything that is not :Files gets passed to :Drop command
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
-nnoremap <C-y> <Cmd>call file#init_path(0, 0)<CR>
-nnoremap <F3> <Cmd>exe 'Files ' . fnamemodify(resolve(@%), ':p:h')<CR>
+command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
+nnoremap <F3> <Cmd>exe 'Open ' . fnamemodify(resolve(@%), ':p:h')<CR>
+nnoremap <C-y> <Cmd>exe 'Files ' . fnamemodify(resolve(@%), ':p:h')<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . tag#find_root(@%)<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . tag#find_root(@%)<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
-" nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from unix 'locate'
-" nnoremap <C-g> <Cmd>Files<CR>  " see file#init_path(1, ...)
+" nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
+
+" Open file with optional user input
+" Note: Here :History includes v:oldfiles and open buffers
+" Note: Currently no way to make :Buffers use custom opening command
+nnoremap <Tab>e <Cmd>call file#open_recent()<CR>
+nnoremap <Tab>r <Cmd>History<CR>
+nnoremap <Tab>- <Cmd>call file#init_path('split', 1)<CR>
+nnoremap <Tab>\ <Cmd>call file#init_path('vsplit', 1)<CR>
+nnoremap <Tab>i <Cmd>call file#init_path('Drop', 1)<CR>
+nnoremap <Tab>y <Cmd>call file#init_path('Files', 1)<CR>
+nnoremap <Tab>o <Cmd>call file#init_path('Drop', 0)<CR>
+nnoremap <Tab>p <Cmd>call file#init_path('Files', 0)<CR>
+
+" Tab and window jumpint
+nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
+for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
+nnoremap <Tab>q <Cmd>Buffers<CR>
+nnoremap <Tab>w <Cmd>Windows<CR>
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
+nnoremap <Tab>' <Cmd>tabnext #<CR>
+nnoremap <Tab>; <C-w><C-p>
+nnoremap <Tab>j <C-w>j
+nnoremap <Tab>k <C-w>k
+nnoremap <Tab>h <C-w>h
+nnoremap <Tab>l <C-w>l
+
+" Tab and window resizing and motion
+nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>m <Cmd>call window#move_tab()<CR>
+nnoremap <Tab>= <Cmd>vertical resize 90<CR>
+nnoremap <Tab>0 <Cmd>exe 'resize ' . (&lines * (len(tabpagebuflist()) > 1 ? 0.8 : 1.0))<CR>
+nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
+nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
+nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 6 * v:count1)<CR>
+nnoremap <Tab>+ <Cmd>exe 'resize ' . (winheight(0) + 6 * v:count1)<CR>
+nnoremap <Tab>[ <Cmd>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
+nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
+nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
+nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
 " Related file utilities
 " Mnemonic is 'inside' just like Ctrl + i map
@@ -558,61 +610,6 @@ noremap <Plug>ExecuteFile1 <Nop>
 noremap <Plug>ExecuteFile2 <Nop>
 noremap <Plug>ExecuteFile3 <Nop>
 noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
-
-" Refresh session or re-open previous files
-" Note: Here :Mru shows tracked files during session, will replace current buffer.
-let g:MRU_Open_File_Relative = 1
-command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
-noremap <C-r> <Cmd>redraw<CR>
-noremap <Leader>e <Cmd>History<CR>
-noremap <Leader>E <Cmd>FZFMru<CR>
-noremap <Leader>r <Cmd>edit<CR>
-noremap <Leader>R <Cmd>Refresh<CR>
-
-" Buffer management
-" Note: Here :History includes v:oldfiles and open buffers.
-" Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
-command! -nargs=0 ShowBufs call window#show_bufs()
-command! -nargs=0 WipeBufs call window#wipe_bufs()
-noremap <Leader>q <Cmd>ShowBufs<CR>
-noremap <Leader>Q <Cmd>WipeBufs<CR>
-
-" Tab selection
-" Note: Currently no way to make :Buffers use custom opening command
-nnoremap <Tab>q <Cmd>Buffers<CR>
-nnoremap <Tab>w <Cmd>Windows<CR>
-nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
-for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
-
-" Tab selection and movement
-nnoremap <Tab>' <Cmd>tabnext #<CR>
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
-nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>m <Cmd>call window#move_tab()<CR>
-
-" Window selection and creation
-nnoremap <Tab>; <C-w><C-p>
-nnoremap <Tab>j <C-w>j
-nnoremap <Tab>k <C-w>k
-nnoremap <Tab>h <C-w>h
-nnoremap <Tab>l <C-w>l
-nnoremap <Tab>- <Cmd>call file#open_continuous('split')<CR>
-nnoremap <Tab>\ <Cmd>call file#open_continuous('vsplit')<CR>
-
-" Window moving and resizing
-nnoremap <Tab>= <Cmd>vertical resize 90<CR>
-nnoremap <Tab>0 <Cmd>exe 'resize ' . (&lines * (len(tabpagebuflist()) > 1 ? 0.8 : 1.0))<CR>
-nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
-nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
-nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 6 * v:count1)<CR>
-nnoremap <Tab>+ <Cmd>exe 'resize ' . (winheight(0) + 6 * v:count1)<CR>
-nnoremap <Tab>[ <Cmd>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
-nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
-nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
-nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
 
 " Literal tabs for particular filetypes.
 " Note: For some reason must be manually enabled for vim
@@ -645,10 +642,20 @@ augroup panel_setup
   endfor
 augroup END
 
-" Cycle through wildmenu expansion with <C-,> and <C-.>
-" Note: Mapping without <expr> will type those literal keys
-cnoremap <F1> <C-p>
-cnoremap <F2> <C-n>
+" Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
+" add shortcut to search for all non-ASCII chars (previously used all escape chars).
+" See: https://stackoverflow.com/a/41168966/4970632
+noremap g: :<C-u><Up><CR>
+nnoremap <Leader>; <Cmd>History:<CR>
+nnoremap <Leader>: q:
+nnoremap <Leader>/ <Cmd>History/<CR>
+nnoremap <Leader>? q/
+nnoremap <Leader>v <Cmd>Helptags<CR>
+nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
+nnoremap <Leader>n <Cmd>Maps<CR>
+nnoremap <Leader>N <Cmd>Commands<CR>
+nnoremap <Leader>m <Cmd>call shell#help_page(1)<CR>
+nnoremap <Leader>M <Cmd>call shell#man_page(1)<CR>
 
 " Cycle through location list options
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
@@ -661,28 +668,16 @@ noremap ]x <Cmd>Lnext<CR>zv
 noremap [X <Cmd>Qprev<CR>zv
 noremap ]X <Cmd>Qnext<CR>zv
 
-" Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
-" add shortcut to search for all non-ASCII chars (previously used all escape chars).
-" See: https://stackoverflow.com/a/41168966/4970632
-noremap g. :<C-u><Up><CR>
-nnoremap <Leader>; <Cmd>History:<CR>
-nnoremap <Leader>: q:
-nnoremap <Leader>/ <Cmd>History/<CR>
-nnoremap <Leader>? q/
-nnoremap <Leader>v <Cmd>Helptags<CR>
-nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
-nnoremap <Leader>n <Cmd>Maps<CR>
-nnoremap <Leader>N <Cmd>Commands<CR>
-nnoremap <Leader>m <Cmd>call shell#help_page(1)<CR>
-nnoremap <Leader>M <Cmd>call shell#man_page(1)<CR>
+" Cycle through wildmenu expansion with <C-,> and <C-.>
+" Note: Mapping without <expr> will type those literal keys
+cnoremap <F1> <C-p>
+cnoremap <F2> <C-n>
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Mnemonic is that '!' matches the ':!' used to enter shell commands
-" Warning: Do not map escape or cannot send iTerm-shortcuts with escape codes!
 " Note: Must change local dir or use environment variable to make term pop up here:
 " https://vi.stackexchange.com/questions/14519/how-to-run-internal-vim-terminal-at-current-files-dir
-" silent! tnoremap <silent> <Esc> <C-w>:q!<CR>
-" silent! tnoremap <nowait> <Esc> <C-\><C-n>
+" silent! tnoremap <silent> <Esc> <C-w>:q!<CR>  " will prevent sending iTerm shortcuts
 silent! tnoremap <expr> <C-c> "\<C-c>"
 nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTERMDIR<CR>
 
@@ -699,6 +694,10 @@ augroup search_replace
   au InsertEnter * set noignorecase  " default ignore case
   au InsertLeave * set ignorecase
 augroup END
+
+" Reverse using command
+" See: https://superuser.com/a/189956/506762
+command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
 " Search highlighting toggle
 " This does 'set hlsearch!' and prints a message
@@ -739,8 +738,8 @@ noremap G G
 
 " Search for special characters
 " First searches for escapes second for non-ascii
-noremap g` /[^\x00-\x7F]<CR>
-noremap g\ /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+noremap gr /[^\x00-\x7F]<CR>
+noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Jump to folds and toggle foldsD fzf
 " Note: This is consistent with gt and gT tag maps
@@ -762,8 +761,8 @@ noremap [Z zkzv[z
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
 " noremap <Leader>. <Cmd>BLines<CR>
-noremap g" <Cmd>call mark#fzf_jumps()<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
+noremap g" <Cmd>call mark#fzf_jumps()<CR>
 
 " Declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
@@ -790,8 +789,8 @@ command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 2, 0, <f-args>)  " all ope
 command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)  " project directory
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 0, 0, <f-args>)  " file directory
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap g; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap g. <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap g, <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 " nnoremap g; <Cmd>call grep#call_grep('ag', 0, 0)<CR>
 " nnoremap g: <Cmd>call grep#call_grep('ag', 2, 0)<CR>
 
@@ -813,6 +812,27 @@ noremap gB <Cmd>Debugs<CR>
 noremap gE <Cmd>Error<CR>
 noremap gW <Cmd>Warnings<CR>
 noremap gG <Cmd>Conflicts<CR>
+
+" Popup menu selection shortcuts
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
+" and default is chosen if necessary. See :h ins-special-special.
+inoremap <expr> <Space> iter#scroll_reset()
+  \ . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<C-]>\<Space>"
+inoremap <expr> <Backspace> iter#scroll_reset()
+  \ . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<Backspace>"
+inoremap <expr> <CR>
+  \ pumvisible() ? b:scroll_state ?
+  \ "\<C-y>" . iter#scroll_reset()
+  \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
+  \ : "\<C-]>\<C-g>u\<CR>"
+inoremap <expr> <Tab>
+  \ pumvisible() ? b:scroll_state ?
+  \ "\<C-y>" . iter#scroll_reset()
+  \ : "\<C-n>\<C-y>" . iter#scroll_reset()
+  \ : "\<C-]>\<Tab>"
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
@@ -885,20 +905,14 @@ noremap <expr> \X edit#replace_regex_expr(
 "-----------------------------------------------------------------------------"
 " Editing utilities
 "-----------------------------------------------------------------------------"
-" Reverse using command
-" See: https://superuser.com/a/189956/506762
-command! -range Reverse <line1>,<line2>call edit#reverse_lines()
-
 " Insert and mormal mode undo and redo (see .vim/autoload/repeat.vim)
 " Note: Here use <C-g> prefix similar to comment insert. Capital breaks the undo
 " sequence. Tried implementing 'redo' but fails because history is lost after vim
-" re-enters insert mode from the <C-o> command. Googled and there is no way to do it.
+" re-enters insert mode from the <C-o> command. Googled and no way to do it
+" nnoremap u <Plug>RepeatUndo  " already set
 nnoremap U <Plug>RepeatRedo
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
-" inoremap <CR> <C-]><C-g>u<CR>
-" inoremap <C-g>u <C-o>my<C-o>u<C-o>:delmark y<CR>
-" inoremap <C-g>U <C-o><C-r><C-o>`y<Right><Cmd>delmark y<CR>
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
 " multi-window recordings. The <Esc> below prevents q from retriggering a recording.
@@ -946,20 +960,6 @@ nnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_count('') . 'P'
 vnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_count('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
 vnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_count('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
-" Never save single-character deletions to any register
-" Without this register fills up quickly and history is lost
-noremap x "_x
-noremap X "_X
-nnoremap cy "_s
-
-" Swap characters or lines
-" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
-nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
-nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
-nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
-nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
-
 " Indenting counts improvement. Before 2> indented this line or this motion repeated,
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
 nnoremap == <Esc>==
@@ -976,7 +976,21 @@ nnoremap <expr> K 'k' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNorma
 nnoremap <expr> gJ '<Esc>' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
 nnoremap <expr> gK 'k' . (v:count . (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
 
-" Spellcheck (really is a builtin plugin, hence why it's in this section)
+" Never save single-character deletions to any register
+" Without this register fills up quickly and history is lost
+noremap x "_x
+noremap X "_X
+nnoremap cy "_s
+
+" Swap characters or lines
+" Mnemonic is 'cut line' at cursor, character under cursor will be deleted
+nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
+nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
+nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
+nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
+nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
+
+" Toggle spell checking
 " Turn on for filetypes containing text destined for users
 augroup spell_toggle
   au!
@@ -988,30 +1002,42 @@ command! LangToggle call switch#spelllang(<args>)
 nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
-" Navigate spell errors as with ]s and [s and correct the word
+" Fix misspelled words or define or identify words and characters
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-nnoremap <silent> <Plug>forward_spell bh]szv<Cmd>call edit#spell_apply(1)<CR>:call repeat#set("\<Plug>forward_spell")<CR>
-nnoremap <silent> <Plug>backward_spell el[szv<Cmd>call edit#spell_apply(0)<CR>:call repeat#set("\<Plug>backward_spell")<CR>
-nmap ]S <Plug>forward_spell
-nmap [S <Plug>backward_spell
-
-" Fix spelling under cursor auto or interactively
-" Note: Simple 'zg' selects first one and zG brings up menu
+noremap <silent> <Plug>SpellForward bh]szv1z=
+  \ :call repeat#set("\<Plug>SpellForward")<CR>
+noremap <silent> <Plug>SpellBackward el[szv1z=
+  \ :call repeat#set("\<Plug>SpellBackward")<CR>
+map ]S <Plug>SpellForward
+map [S <Plug>SpellBackward
 nnoremap zs 1z=
 nnoremap zS z=
-
-" Add or remove from dictionary
-" Note: Run :runtime spell/cleanadd.vim to fix definitions
 nnoremap zd zg
 nnoremap zD zug
+nmap zy <Plug>(characterize)
+nnoremap zY ga
 
-" Identify character under cursor
-" Note: Requires characterize plugin
-nnoremap zy ga
-nmap zY <Plug>(characterize)
+" Toggle capitalization or identify character
+" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
+nnoremap <nowait> gu guiw
+nnoremap <nowait> gU gUiw
+nnoremap <silent> <Plug>CaseToggle ~h
+  \ :call repeat#set("\<Plug>CaseToggle")<CR>
+nnoremap <silent> <Plug>CaseTitle myguiw~h`y<Cmd>delmark y<CR>
+  \ :call repeat#set("\<Plug>CaseTitle")<CR>
+vnoremap gy ~
+vnoremap gY gu<Esc>`<~h
+nmap gy <Plug>CaseToggle
+nmap gY <Plug>CaseTitle
 
-" Wrap motion lines
-" Accounts for bullet indentation and arbitrary textwidth
+" Auto wrap lines or items within motion
+" Note: Tried below repeat maps but they fail
+" noremap <expr> <Plug>WrapLines '<Esc>' . edit#wrap_lines_expr(v:count)
+"   \ . ":call repeat#set('\<Plug>WrapLines')<CR>"
+" noremap <expr> <Plug>WrapItems '<Esc>' . edit#wrap_items_expr(v:count)
+"   \ . ":call repeat#set('\<Plug>WrapItems')<CR>"
+" nmap gq <Plug>WrapLines
+" nmap gQ <Plug>WrapItems
 command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
 command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
 noremap <expr> gq '<Esc>' . edit#wrap_lines_expr(v:count)
@@ -1019,60 +1045,30 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-nnoremap <Plug>DividerSingle <Cmd>call comment#insert_divider('=', 0)<CR>:silent! call repeat#set("\<Plug>DividerSingle")<CR>
-nnoremap <Plug>SubdividerSingle <Cmd>call comment#insert_divider('-', 0)<CR>:silent! call repeat#set("\<Plug>SubdividerSingle")<CR>
-nnoremap <Plug>DividerDouble <Cmd>call comment#insert_divider('=', 1)<CR>:silent! call repeat#set("\<Plug>DividerDouble")<CR>
-nnoremap <Plug>SubdividerDouble <Cmd>call comment#insert_divider('-', 1)<CR>:silent! call repeat#set("\<Plug>SubdividerDouble")<CR>
+nnoremap <silent> <Plug>DividerSingle <Cmd>call comment#insert_divider('=', 0)<CR>
+  \ :call repeat#set("\<Plug>DividerSingle")<CR>
+nnoremap <silent> <Plug>SubdividerSingle <Cmd>call comment#insert_divider('-', 0)<CR>
+  \ :call repeat#set("\<Plug>SubdividerSingle")<CR>
+nnoremap <silent> <Plug>DividerDouble <Cmd>call comment#insert_divider('=', 1)<CR>
+  \ :call repeat#set("\<Plug>DividerDouble")<CR>
+nnoremap <silent> <Plug>SubdividerDouble <Cmd>call comment#insert_divider('-', 1)<CR>
+  \ :call repeat#set("\<Plug>SubdividerDouble")<CR>
 nmap g= <Plug>DividerSingle
 nmap g- <Plug>SubdividerSingle
 nmap g+ <Plug>DividerDouble
 nmap g_ <Plug>SubdividerDouble
 
 " Insert various comment blocks
-" Todo: Improve title headers here
+" Note: No need to repeat any of other commands
+inoremap <expr> <C-g>c comment#insert_char()
+nnoremap <silent> <Plug>CommentHeader <Cmd>call comment#header_line('-', 77, 0)<CR>
+  \ :call repeat#set("\<Plug>CommentHeader")<CR>
 nmap gc; <Plug>CommentHeader
-nnoremap <Plug>CommentHeader <Cmd>call comment#header_line('-', 77, 0)<CR>:call repeat#set("\<Plug>CommentHeader")<CR>
 nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
 nnoremap gc' <Cmd>call comment#header_incomment()<CR>
 nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
 nnoremap gc/ <Cmd>call comment#header_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
 nnoremap gc? <Cmd>call comment#header_message('Edited: ' . strftime('%Y-%m-%d'))<CR>
-inoremap <expr> <C-g>c comment#insert_char()
-
-" Default increment and decrement mappings
-" Possibly overwritten by vim-speeddating
-noremap + <C-a>
-noremap - <C-x>
-
-" Capitalization stuff with g, a bit refined. Not currently used in normal mode, and
-" fits better mnemonically (here y next to u, and t is for title case).
-" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-nnoremap <nowait> gu guiw
-nnoremap <nowait> gU gUiw
-nnoremap <silent> <Plug>cap1 ~h:call repeat#set("\<Plug>cap1")<CR>
-nnoremap <silent> <Plug>cap2 myguiw~h`y<Cmd>delmark y<CR>:call repeat#set("\<Plug>cap2")<CR>
-vnoremap gy ~
-vnoremap gY gu<Esc>`<~h
-nmap gy <Plug>cap1
-nmap gY <Plug>cap2
-
-" Copy mode and conceal mode ('paste mode' accessible with 'g' insert mappings)
-" Turn on for filetypes containing raw possibly heavily wrapped data
-augroup copy_toggle
-  au!
-  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
-  let s:filetypes = 'tmux'  " file subtypes that otherwise inherit copy toggling
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
-augroup END
-command! -nargs=? CopyToggle call switch#copy(<args>)
-command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-
-" Caps lock toggle and insert mode map that toggles it on and off
-inoremap <expr> <C-v> edit#lang_map()
-cnoremap <expr> <C-v> edit#lang_map()
 
 " Blank lines inspired by 'unimpaired'
 noremap <Plug>BlankUp <Cmd>call edit#blank_up(v:count1)<CR>
@@ -1084,6 +1080,35 @@ map ]e <Plug>BlankDown
 " Pressing enter on empty line preserves leading whitespace
 nnoremap o oX<Backspace>
 nnoremap O OX<Backspace>
+
+" Caps lock toggle and insert mode map that toggles it on and off
+" Note: When in paste mode this will trigger literal insert of next escape character
+inoremap <expr> <C-v> edit#lang_map()
+cnoremap <expr> <C-v> edit#lang_map()
+
+" Insert mode with paste toggling
+" Note: Switched easy-align mapping from ga for consistency here
+nnoremap <expr> ga edit#paste_mode() . 'a'
+nnoremap <expr> gA edit#paste_mode() . 'A'
+nnoremap <expr> gC edit#paste_mode() . 'c'
+nnoremap <expr> gi edit#paste_mode() . 'i'
+nnoremap <expr> gI edit#paste_mode() . 'I'
+nnoremap <expr> go edit#paste_mode() . 'o'
+nnoremap <expr> gO edit#paste_mode() . 'O'
+
+" Copy mode and conceal mode ('paste mode' accessible with 'g' insert mappings)
+" Turn on for filetypes containing raw possibly heavily wrapped data
+augroup copy_toggle
+  au!
+  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
+  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
+augroup END
+command! -nargs=? CopyToggle call switch#copy(<args>)
+command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 
 " Popup menu and preview window scrolling
 " This should work with or without ddc
@@ -1099,6 +1124,7 @@ noremap <expr> <C-u> iter#scroll_count(-0.5)
 noremap <expr> <C-d> iter#scroll_count(0.5)
 noremap <expr> <C-b> iter#scroll_count(-1.0)
 noremap <expr> <C-f> iter#scroll_count(1.0)
+inoremap <expr> <Delete> edit#forward_delete()
 inoremap <expr> <Up> iter#scroll_count(-1)
 inoremap <expr> <Down> iter#scroll_count(1)
 inoremap <expr> <C-k> iter#scroll_count(-1)
@@ -1107,41 +1133,6 @@ inoremap <expr> <C-u> iter#scroll_count(-0.5)
 inoremap <expr> <C-d> iter#scroll_count(0.5)
 inoremap <expr> <C-b> iter#scroll_count(-1.0)
 inoremap <expr> <C-f> iter#scroll_count(1.0)
-
-" Popup menu selection shortcuts
-" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
-" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
-" and default is chosen if necessary. See :h ins-special-special.
-inoremap <expr> <Space> iter#scroll_reset()
-  \ . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<C-]>\<Space>"
-inoremap <expr> <Backspace> iter#scroll_reset()
-  \ . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<Backspace>"
-inoremap <expr> <CR>
-  \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . iter#scroll_reset()
-  \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
-  \ : "\<C-]>\<C-g>u\<CR>"
-inoremap <expr> <Tab>
-  \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . iter#scroll_reset()
-  \ : "\<C-n>\<C-y>" . iter#scroll_reset()
-  \ : "\<C-]>\<Tab>"
-
-" Insert mode with paste toggling
-" Note: switched easy-align mapping from ga to ge for consistency here
-nnoremap <expr> gR edit#paste_mode() . 'R'
-nnoremap <expr> ga edit#paste_mode() . 'a'
-nnoremap <expr> gA edit#paste_mode() . 'A'
-nnoremap <expr> gC edit#paste_mode() . 'c'
-nnoremap <expr> gi edit#paste_mode() . 'i'
-nnoremap <expr> gI edit#paste_mode() . 'I'
-nnoremap <expr> go edit#paste_mode() . 'o'
-nnoremap <expr> gO edit#paste_mode() . 'O'
-
-" Forward delete by tabs
-inoremap <expr> <Delete> edit#forward_delete()
 
 
 "-----------------------------------------------------------------------------"
@@ -1236,7 +1227,7 @@ call plug#('mbbill/undotree')
 " call plug#('xolox/vim-reload')  " easier to write custom reload function
 call plug#('tpope/vim-obsession')  " sparse features on top of built-in session behavior
 call plug#('yegappan/mru')  " most recent file
-" let g:MRU_file = '~/.vim-mru-files'  " ignored for some reason
+let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reason)
 
 " Navigation, folding, and registers
 " Note: SimPylFold seems to have nice improvements, but while vim-tex-fold adds
@@ -1670,11 +1661,11 @@ if s:plug_active('vim-tags')
   endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
-  nnoremap <Leader>t <Cmd>BTags<CR>
-  nnoremap <Leader>T <Cmd>Tags<CR>
+  nnoremap gt <Cmd>BTags<CR>
+  nnoremap gT <Cmd>Tags<CR>
   nnoremap <Leader>O <Cmd>call switch#tags()<CR>
-  let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
-  let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
+  let g:tags_jump_map = '<Leader>t'  " default is <Leader><Leader>
+  let g:tags_drop_map = '<Leader>T'  " default is <Leader><Tab>
   let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
 endif
 
@@ -1759,13 +1750,11 @@ endif
 " Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
 " plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
 " vim-lsp-settings/servers files in .config. See: https://github.com/mattn/vim-lsp-settings
-" Note: The 'gd' and 'gD' maps use native vim recognition of buffer variables based
-" on 'iskeyword'. Analogous to gt/gT/<Leader>t/<Leader>T used for various tag jumping.
 " Note: The below autocmd gives signature popups the same borders as hover popups.
 " Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
 " so below behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
-" Note: Highlighting under keywords required for reference jumping with [r and ]r but
+" Note: Highlighting under keywords required for reference jumping with [d and ]d but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 if s:plug_active('vim-lsp')
   " Autocommands and maps
@@ -1774,20 +1763,19 @@ if s:plug_active('vim-lsp')
     au!
     autocmd User lsp_float_opened call popup_setoptions(
       \ lsp#ui#vim#output#getpreviewwinid(), s:popup_options
-    \ )  " apply border
+    \ )  " apply border to popup
     " autocmd User lsp_setup call lsp#register_server(
     "   \ {'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']}
     " \ )  " see vim-lsp readme (necessary?)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
-  noremap gd gdzv
-  noremap gD gDzv
   noremap [d <Cmd>LspPreviousReference<CR>
   noremap ]d <Cmd>LspNextReference<CR>
-  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>D <Cmd>tab LspDefinition<CR>
+  noremap gD gdzv<Cmd>noh<CR>
+  noremap gd <Cmd>tab LspDefinition<CR>
   noremap <Leader>f <Cmd>LspReferences<CR>
-  noremap <Leader>F <Cmd>LspRename<CR>
+  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
+  noremap <Leader>D <Cmd>LspRename<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
@@ -1799,7 +1787,7 @@ if s:plug_active('vim-lsp')
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
   let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_highlight_enabled = 0  " used with [r and ]r
+  let g:lsp_document_highlight_enabled = 0  " used with reference navigation
   let g:lsp_fold_enabled = 0  " not yet tested, requires 'foldlevel', 'foldlevelstart'
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
@@ -1993,7 +1981,7 @@ endif
 " See: https://vi.stackexchange.com/q/31623/8084
 " See: https://github.com/rhysd/conflict-marker.vim
 if s:plug_active('conflict-marker.vim')
-  augroup conflict_kludge
+  augroup conflict_marker_kludge
     au!
     au BufEnter * silent! syntax clear ConflictMarkerOurs ConflictMarkerTheirs
   augroup END
@@ -2003,10 +1991,14 @@ if s:plug_active('conflict-marker.vim')
   let g:conflict_marker_separator = '^=======$'
   let g:conflict_marker_common_ancestors = '^||||||| .*$'
   let g:conflict_marker_end = '^>>>>>>> .*$'
+  nmap <silent> <Plug>ConflictForward <Plug>(conflict-marker-prev-hunk)<Plug>(conflict-marker-ourselves)
+    \ :call repeat#set("\<Plug>ConflictForward")<CR>
+  nmap <silent> <Plug>ConflictBackward <Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)
+    \ :call repeat#set("\<Plug>ConflictBackward")<CR>
+  nmap ]F <Plug>ConflictForward
+  nmap [F <Plug>ConflictBackward
   nmap [f <Plug>(conflict-marker-prev-hunk)
   nmap ]f <Plug>(conflict-marker-next-hunk)
-  nmap [F <Plug>(conflict-marker-prev-hunk)<Plug>(conflict-marker-ourselves)
-  nmap ]F <Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)
   nmap gf <Plug>(conflict-marker-ourselves)
   nmap gF <Plug>(conflict-marker-themselves)
   nmap g( <Plug>(conflict-marker-none)
@@ -2064,12 +2056,16 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   let g:gitgutter_use_location_list = 0  " use for errors instead
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
-  noremap <Leader>h <Cmd>call git#hunk_preview()<CR>
-  noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
+  noremap <Plug>HunkBackward <Cmd>call git#hunk_jump(0, 1)<CR>
+    \ :call repeat#set("\<Plug>HunkBackward")<CR>
+  noremap <Plug>HunkForward <Cmd>call git#hunk_jump(1, 1)<CR>
+    \ :call repeat#set("\<Plug>HunkForward")<CR>
+  map ]G <Plug>HunkForward
+  map [G <Plug>HunkBackward
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
-  noremap ]G <Cmd>call git#hunk_jump(1, 1)<CR>
-  noremap [G <Cmd>call git#hunk_jump(0, 1)<CR>
+  noremap <Leader>h <Cmd>call git#hunk_preview()<CR>
+  noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
   noremap <expr> gs git#hunk_action_expr(1)
   noremap <expr> gS git#hunk_action_expr(0)
   nnoremap <nowait> gss <Cmd>call git#hunk_action(1)<CR>
@@ -2087,7 +2083,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
-  map g, <Plug>(EasyAlign)
+  map g; <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2169,6 +2165,9 @@ if s:plug_active('vim-speeddating')
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp <C-a>
   noremap <Plug>SpeedDatingFallbackDown <C-x>
+else
+  noremap + <C-a>
+  noremap - <C-x>
 endif
 
 " Undo tree settings. Mnemonic is that Ctrl-r used for undo in other settings.
@@ -2179,7 +2178,7 @@ endif
 " noremap <Leader>, <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
 " noremap <Leader>. <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
 if s:plug_active('undotree')
-  noremap <Leader>\ <Cmd>UndotreeToggle<CR>
+  noremap <Leader>_ <Cmd>UndotreeToggle<CR>
   let g:undotree_SplitWidth = 30
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1
@@ -2194,7 +2193,7 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
   augroup session
     au!
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
-    au BufReadPost * if line("'\"") > 0 && line("'\"") <= line("$") | exe "normal! g`\"" | endif
+    au BufReadPost * if line('''"') > 0 && line('''"') <= line('$') | exe 'normal! g`"' | endif
   augroup END
   command! -nargs=* -complete=customlist,vim#session_list Session call vim#init_session(<q-args>)
   noremap <Leader>$ <Cmd>Session<CR>
@@ -2203,7 +2202,7 @@ endif
 "-----------------------------------------------------------------------------"
 " Exit
 "-----------------------------------------------------------------------------"
-" Clear past jumps to ignore stuff from plugin files and vimrc. Also ignore
+" Clear past jumps to ignore stuff from plugin files and vimrc and ignore
 " outdated buffer marks loaded from .viminfo
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 " Todo: Figure out whether to declare colorscheme here or at top

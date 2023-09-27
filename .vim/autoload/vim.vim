@@ -33,7 +33,7 @@ function! vim#config_scripts(...) abort
   return [paths, sids]
 endfunction
 function! vim#config_refresh(bang, ...) abort
-  filetype detect  " in case started with empty file and shebang changes this
+  " filetype detect  " in case started with empty file and shebang changes this
   let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
   let default = get(g:refreshes, 'global', 0)
   let current = localtime()

@@ -99,7 +99,7 @@ endfunction
 function! grep#call_grep(grep, level, depth) abort
   let prompt = a:level > 1 ? 'open buffers' : s:parse_paths(1, a:level)[0]
   let prompt = toupper(a:grep[0]) . a:grep[1:] . ' search ' . prompt . ' (' . @/ . ')'
-  let pattern = utils#input_complete(prompt, 'grep#complete_pattern', @/)
+  let pattern = utils#input_default(prompt, 'grep#complete_pattern', @/)
   if empty(pattern) | return | endif
   let func = 'grep#call_' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, pattern])

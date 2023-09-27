@@ -16,43 +16,66 @@ function! utils#null_operator_expr(...) abort
   return utils#motion_func('utils#null_operator', a:000)
 endfunction
 
-" Get user input (see grep and file command completion)
-" Note: This is used for grep and file command completions. It specifies a default
-" value in parentheses that can be tab expanded, selects it when user presses enter,
-" or replaces it when user starts typing text. Unique part is that it does not fill
-" the input line with text from the start, allowing both 1) quick user overrides of
-" the entire line and 2) quick selection of a default value, all in one cmdline line.
+" Get user input with requested default
+" Note: This is currently used with grep and file mappings. Specifies a default value
+" in parentheses that can be tab expanded, selects it when user presses enter, or
+" replaces it when user starts typing text or backspace. This is a bit nicer than
+" filling input prompt with default value, simply start typing to drop the default
 function! utils#input_list(...)
   let [init, funcname, default] = s:complete_opts
   if !init  " get complete options
-    return call(funcname, a:000)
+    let opts = call(funcname, a:000)
   else
     let s:complete_opts[0] = 0
     try
       let char = nr2char(getchar())
     catch  " user presses Ctrl-C
-      call feedkeys("\<CR>", 't')
-      return ['']
+      let char = "\<C-c>"
     endtry
-    if char ==# "\<Tab>"
-      return [default]
-    elseif char ==# "\<CR>"
+    if char =~# '\p'  " fill prompt
+      let opts = [char]
+    elseif len(char) == 0  " clear prompt
+      let opts = ['']
+    elseif char ==# "\<Tab>"  " expand default
+      let opts = [default]
+    elseif char ==# "\<CR>"  " confirm default
       call feedkeys("\<CR>", 't')
-      return [default]
-    elseif char =~# '\p'
-      return [char]
-    elseif len(char) == 0  " backspace or delete
-      return ['']
-    else
+      let opts = [default]
+    else  " escape or cancel
       call feedkeys("\<CR>", 't')
-      return ['']
+      let opts = ['']
     endif
   endif
+  return opts
 endfunction
-function! utils#input_complete(prompt, funcname, default) abort
+function! utils#input_default(prompt, funcname, default) abort
   let s:complete_opts = [1, a:funcname, a:default]
   call feedkeys("\<Tab>", 't')
   return input(a:prompt . ': ', '', 'customlist,utils#input_list')
+endfunction
+
+" Set up command for repetition
+" Todo: Finish writing this function for e.g. [G and ]G
+function! utils#repeat_command() abort
+  :
+endfunction
+
+" Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
+" used to override fzf marks command and support jumping to existing tabs.
+" See: https://stackoverflow.com/a/49447600/4970632
+function! utils#find_snr(regex) abort
+  silent! call fzf#vim#with_preview()  " trigger autoload if not already done
+  let [paths, sids] = vim#config_scripts(1)
+  let path = filter(copy(paths), 'v:val =~# a:regex')
+  let idx = index(paths, get(path, 0, ''))
+  if !empty(path) && idx >= 0
+    return "\<snr>" . sids[idx] . '_'
+  else
+    echohl WarningMsg
+    echom "Warning: Autoload script '" . a:regex . "' not found."
+    echohl None
+    return ''
+  endif
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)

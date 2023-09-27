@@ -47,14 +47,17 @@ endfunction
 " Note: Style here is inspired by vim-anyfold. For now stick to native
 " per-filetype syntax highlighting becuase still has some useful features.
 function! window#fold_text() abort
-  " Format lines
-  let width = len(string(line('$')))  " maximum possible line count digits
+  " Get fold text
   let status = string(v:foldend - v:foldstart + 1)
-  let status = repeat(' ', width - len(status)) . status
+  let status = repeat(' ', len(string(line('$'))) - len(status)) . status
   let status = repeat('+ ', len(v:folddashes)) . status . ' lines'
-  " Format text
   let regex = '\s*' . comment#get_char() . '\s\+.*$'
-  let label = substitute(getline(v:foldstart), regex, '', 'g')
+  for line in range(v:foldstart, v:foldend)
+    let label = substitute(getline(line), regex, '', 'g')
+    let chars = substitute(label, '\s\+', '', 'g')
+    if !empty(chars) | break | endif
+  endfor
+  " Format fold text
   if &filetype ==# 'tex'  " hide backslashes
     let regex = '\\\@<!\\'
     let label = substitute(label, regex, '', 'g')
@@ -73,7 +76,7 @@ function! window#fold_text() abort
     let origin = col('.') - (wincol() - offset)
   endif
   let text = label . space . status
-  " vint: next-line -ProhibitUsingUndeclaredVariable  " erroneous warning
+  " vint: next-line -ProhibitUsingUndeclaredVariable
   return text[origin:]
 endfunction
 
