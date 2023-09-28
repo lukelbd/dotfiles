@@ -13,7 +13,7 @@ function! s:parse_paths(prompt, level, ...)
   elseif a:level > 0  " search current file project (file directory is fallback)
     let paths = [tag#find_root(@%)]
   else  " search current file directory
-    let paths = [expand('%:h')]
+    let paths = [fnamemodify(resolve(@%), ':h')]
   endif
   let result = []
   for path in paths

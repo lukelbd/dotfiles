@@ -645,7 +645,7 @@ augroup END
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " See: https://stackoverflow.com/a/41168966/4970632
-noremap g: :<C-u><Up><CR>
+noremap z; :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -789,10 +789,8 @@ command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 2, 0, <f-args>)  " all ope
 command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)  " project directory
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 0, 0, <f-args>)  " file directory
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap g; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 2, 0)<CR>
-" nnoremap g; <Cmd>call grep#call_grep('ag', 0, 0)<CR>
-" nnoremap g: <Cmd>call grep#call_grep('ag', 2, 0)<CR>
+nnoremap g; <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap g: <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
