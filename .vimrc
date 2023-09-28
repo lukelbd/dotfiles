@@ -759,9 +759,9 @@ noremap gz <Cmd>Folds<CR>
 noremap zj ]z
 noremap zk [z
 noremap ]z zj
-noremap [z zk[z
+noremap [z zk
 noremap ]Z zjzv
-noremap [Z zkzv[z
+noremap [Z zkzv
 
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
