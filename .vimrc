@@ -53,7 +53,7 @@ set foldenable  " toggle with zi, note plugins and fastfold handle foldmethod/fo
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
-set foldtext=window#fold_text()  " default function for generating text shown on fold line
+set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guifont=Monaco:h12  " match iterm settings in macvim
 set guioptions=M  " default gui options
 set history=100  " search history
@@ -94,6 +94,7 @@ set sessionoptions=tabpages,terminal,winsize  " restrict session options for spe
 set shell=/usr/bin/env\ bash
 set shiftround  " round to multiple of shift width
 set shiftwidth=2  " default 2 spaces
+set showcmd  " show operator pending command
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=2  " default 2 spaces
 set signcolumn=auto  " auto may cause lag after startup but unsure
@@ -523,7 +524,7 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 noremap <Leader>e <Cmd>edit<CR>
-noremap <Leader>r <Cmd>redraw<CR>
+noremap <Leader>r <Cmd>redraw \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
 
@@ -741,13 +742,17 @@ noremap G G
 noremap gr /[^\x00-\x7F]<CR>
 noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
-" Jump to folds and toggle foldsD fzf
-" Note: This is consistent with gt and gT tag maps
-noremap gz <Cmd>Folds<CR>
+" Set folds to specified level
+" Note: Native 'zm' and 'zr' accept counts but they are relative to current fold
+" level. This instead sets level to <count> after truncating to maximum level in file
+noremap <expr> zf (v:count ? '<Esc>' : '') . fold#fold_level('m')
+noremap <expr> zF (v:count ? '<Esc>' : '') . fold#fold_level('r')
 
-" Current fold toggle (open resursively, but close non-recursively)
-" Note: This helps e.g. open subsections under tex section without closing document
+" Jump to folds and toggle folds
+" Note: Jump mapping is consistent with gt and gT tag maps
+" Note: Toggle opens recursively, but closes single fold. Avoids unwanted foldlevel=0
 noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
+noremap gz <Cmd>Folds<CR>
 
 " Jump between and inside of folds
 " Note: This is more consistent with other bracket maps
@@ -892,19 +897,19 @@ nnoremap U <C-r>
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 
-" Record macro by pressing Q (we use lowercase for quitting popup windows) and disable
-" multi-window recordings. The <Esc> below prevents q from retriggering a recording.
-" Note: Visual counts are ignored when starting recording. And <Esc>
+" Record macro by pressing Q (we use lowercase for quitting popup windows)
+" and execute macro using ,. Also disable multi-window recordings.
+" Note: Visual counts are ignored when starting recording
 nnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
 nnoremap <expr> , '@' . utils#translate_count('@')
 vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
 vnoremap <expr> , '@' . utils#translate_count('@')
 
 " Declare alphabetic registers with count (consistent with mark utilities)
-" Note: Pressing simply ' or " before text will use black hole or clipboard register.
-" Double pressing '' is equivalent to native " and "" will show the popup window.
-" Note: This relies on g:peekaboo_prefix = '"' below so that double '"' press opens up
-" register seleciton panel. Also this way double press of "'" is similar, just no popup.
+" Note: Pressing ' or " followed by number uses numbered previous-deletion register,
+" and pressing ' or " followed by normal-mode command uses black hole or clipboard.
+" Note: Pressing double '' or "" triggers native or peekaboo register selection. This
+" relies on g:peekaboo_prefix = '"' below so that double '"' opens selection panel.
 nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_count('', '_', 0)
 nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_count('q', '*', 1)
 vnoremap <expr> ' utils#translate_count('', '_', 0)
@@ -999,7 +1004,7 @@ nnoremap zD zug
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 nnoremap <nowait> zu guiw
 nnoremap <nowait> zU gUiw
-nnoremap <silent> <Plug>CaseToggle ~h
+nnoremap <silent> <Plug>CaseToggle my~h`yh<Cmd>delmark y<CR>
   \ :call repeat#set("\<Plug>CaseToggle")<CR>
 nnoremap <silent> <Plug>CaseTitle myguiw~h`yh<Cmd>delmark y<CR>
   \ :call repeat#set("\<Plug>CaseTitle")<CR>

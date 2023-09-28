@@ -157,7 +157,7 @@ endfunction
 function! s:translate_count(mode, ...) abort
   let cnt = v:count
   let curr = v:register
-  if curr !=# '"' && a:mode !=# 'm'
+  if curr !=# '"' && a:mode !=# 'm'  " no translation needed
     return [curr, '']
   elseif a:mode =~# '[m`]'  " marks: uppercase a-z (24)
     let [base, min, max] = [64, 1, 24]
@@ -167,11 +167,12 @@ function! s:translate_count(mode, ...) abort
     let [base, min, max] = [96, 0, 13]
   endif
   let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
-  let cnt = max([min, cnt])  " use v:count1 for 'm' and 'q'
-  let name = cnt == 0 ? '' : nr2char(base + min([cnt, max]))
+  let adj = max([min, cnt])  " use v:count1 for 'm' and 'q'
+  let adj = min([adj, max])  " below maximum letter
+  let name = adj ? nr2char(base + adj) : ''
   let warnings = []
   if cnt > max  " emit warning
-    let head = "Count '" . cnt . "' too high for translation."
+    let head = "Count '" . cnt . "' too high for register translation."
     let tail = "Using maximum '" . name . "' (" . max . ').'
     call add(warnings, head . ' ' . tail)
   endif
@@ -185,32 +186,49 @@ function! s:translate_count(mode, ...) abort
     echom 'Warning: ' . join(warnings, ' ')
     echohl None
   endif
-  return [name, empty(warnings) ? string(cnt) : '']
+  return [name, empty(warnings) ? 'count ' . cnt : '']
 endfunction
 " Translate into map command
 function! utils#translate_count(mode, ...) abort
-  let default = a:0 > 0 ? a:1 : ''
-  let double = a:0 > 1 ? a:2 : ''
+  let peekaboo = a:0 > 1 ? a:2 : ''  " whether double press should open peekaboo panel
+  let default = a:0 > 0 ? a:1 : ''  " default register after key press (e.g. 'yy or \"yy)
+  let label = default ==# '_' ? 'blackhole' : default =~# '[+*]' ? 'clipboard' : ''
   let char = ''
-  if empty(default) && empty(double)
+  if empty(default) && empty(peekaboo)
     let [name, label] = s:translate_count(a:mode)
-    if a:mode =~# '[m`q@]'  " marks/macros
-      let cmd = name
-    else  " yanks/changes/deletes/pastes
-      let cmd = empty(name) ? '' : '"' . name
+    if a:mode =~# '[m`q@]'  " marks/macros (register mandatory)
+      let result = name
+    elseif !empty(name)  " yanks/changes/deletes/pastes
+      let result = '"' . name
+    else
+      let result = ''
     endif
   else
     let [name, label] = s:translate_count(a:mode, 0)
-    if empty(name)  " ''/\"\"/'<motion>/\"<motion>
+    if !empty(name)  " ''/\"\"/'<command>/\"<command>
+      let result = '"' . name
+    else
       let char = nr2char(getchar())
-      let name = char =~# "['\"]" ? repeat('"', double) : default . char
-      let label = name ==# '_' ? 'blackhole' : name[0] =~# '[+*]' ? 'clipboard' : ''
+      if char =~# '["'']'  " await native register selection
+        echom 'Register: ...'
+        let name = peekaboo ? '"' : nr2char(getchar())
+        let label = ''
+        let result = '"' . name
+        echom 'Register: ' . name[0]
+      elseif char =~# '\d'  " use character to pick number register
+        let name = char
+        let label = 'previous delete'
+        let result = '"' . name
+      else  " pass character to next normal mode command (e.g. d2j, ciw, yy)
+        let name = default
+        let label = name ==# '_' ? 'blackhole' : name =~# '[+*]' ? 'clipboard' : ''
+        let result = '"' . name . char  " including next character
+      endif
     endif
-    let cmd = '"' . name
   endif
   if !empty(name) && !empty(label)
     let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
     echom head . ': ' . name[0] . ' (' . label . ')'
   endif
-  return cmd
+  return result
 endfunction

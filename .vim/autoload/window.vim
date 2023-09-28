@@ -5,7 +5,6 @@
 " See: https://vi.stackexchange.com/a/22428/8084 (comment)
 " Note: For some reason some edited files have 'nobuflisted' set (so ignored by
 " e.g. :bnext). Maybe due to some plugin. Anyway do not use buflisted() filter.
-scriptencoding utf-8
 function! s:recent_bufs() abort
   let info = getbufinfo()
   let info = sort(info, {val1, val2 -> val2.lastused - val1.lastused})
@@ -41,43 +40,6 @@ function! window#close_tab() abort
       silent! tabprevious
     endif
   endif
-endfunction
-
-" Show truncated fold text
-" Note: Style here is inspired by vim-anyfold. For now stick to native
-" per-filetype syntax highlighting becuase still has some useful features.
-function! window#fold_text() abort
-  " Get fold text
-  let status = string(v:foldend - v:foldstart + 1)
-  let status = repeat(' ', len(string(line('$'))) - len(status)) . status
-  let status = repeat('+ ', len(v:folddashes)) . status . ' lines'
-  let regex = '\s*' . comment#get_char() . '\s\+.*$'
-  for line in range(v:foldstart, v:foldend)
-    let label = substitute(getline(line), regex, '', 'g')
-    let chars = substitute(label, '\s\+', '', 'g')
-    if !empty(chars) | break | endif
-  endfor
-  " Format fold text
-  if &filetype ==# 'tex'  " hide backslashes
-    let regex = '\\\@<!\\'
-    let label = substitute(label, regex, '', 'g')
-  endif
-  if &filetype ==# 'python'  " replace docstrings
-    let regex = '\("""\|' . "'''" . '\)'
-    let label = substitute(label, regex, '<docstring>', 'g')
-  endif
-  let width = &textwidth - 1 - len(status)  " at least two spaces
-  let label = len(label) > width - 4 ? label[:width - 6] . '···  ' : label
-  " Combine components
-  let space = repeat(' ', &textwidth - 1 - len(label) - len(status))
-  let origin = 0  " string truncation point
-  if !foldclosed(line('.'))
-    let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
-    let origin = col('.') - (wincol() - offset)
-  endif
-  let text = label . space . status
-  " vint: next-line -ProhibitUsingUndeclaredVariable
-  return text[origin:]
 endfunction
 
 " Function that generates lists of tabs and their numbers
