@@ -1,5 +1,5 @@
 "------------------------------------------------------------------------------"
-" Vim syntax file for completion for sbatch highlighting
+" Tweak bash syntax to support sbatch
 " Todo: Try awk highlighting from https://stackoverflow.com/a/13925238/4970632
 " Todo: Try heredoc highlighting from .vim/after/syntax/perl/heredoc-perl.vim
 "------------------------------------------------------------------------------"

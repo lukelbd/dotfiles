@@ -12,9 +12,6 @@ let g:vim_markdown_math = 1 " turn on $$ math
 " DelimitMate plugin
 let b:delimitMate_quotes = "\" ' $ ` * _"
 
-" Re-enforced fold text (overwritten by javascript file sometimes)
-setlocal foldtext=window#fold_text()
-
 " Open markdown files
 function! s:open_markdown_file() abort
   update

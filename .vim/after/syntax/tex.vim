@@ -1,10 +1,9 @@
+"------------------------------------------------------------------------------"
 " Author: Karl Yngve Lervåg
 " Forked: Luke Davis
 " Edited: 2018-07-26
-" This builds upon native $VIMRUNTIME/syntax/tex.vim syntax highlighting. Should
-" re-download updated vimtex files in future (not sure when last updated).
-"------------------------------------------------------------------------------"
-" Custom stuff
+" Tweak tex syntax. Adapted from vimtex. Builds upon native $VIMRUNTIME/syntax/tex.vim
+" syntax highlighting sysstem. Should re-download vimtex in future.
 "------------------------------------------------------------------------------"
 if !exists('b:current_syntax')
   let b:current_syntax = 'tex'

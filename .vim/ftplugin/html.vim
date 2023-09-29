@@ -1,8 +1,8 @@
 "------------------------------------------------------------------------------
 " HTML settings
 "------------------------------------------------------------------------------
-" DelimitMate plugin
-if &filetype !=# 'html'  " skip html-derived types, e.g. markdown
+" Skip html-derived types e.g. markdown
+if &filetype !=# 'html'
   finish
 endif
 

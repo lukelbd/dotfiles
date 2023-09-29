@@ -1,8 +1,8 @@
 "------------------------------------------------------------------------------"
 " Author: Luke Davis (lukelbd@gmail.com)
 " Updated: 2022-05-21
-" Much better python syntax
-" Copied from: https://github.com/vim-python/python-syntax/pull/91
+" Tweak python syntax
+" Adapted from: https://github.com/vim-python/python-syntax/pull/91
 "------------------------------------------------------------------------------"
 " For version 5.x: Clear all syntax items
 " For versions greater than 6.x: Quit when a syntax file was already loaded

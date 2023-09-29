@@ -4,10 +4,15 @@
 " Return indication whether a jupyter connection is active
 " Warning: This uses private variable _jupyter_session. Should monitor for changes.
 function! python#has_jupyter() abort
-  let check = ''
-    \ . '"_jupyter_session" in globals() '
-    \ . ' and _jupyter_session.kernel_client.check_connection()'
-  return str2nr(py3eval('int(' . check . ')'))
+  let check = (
+    \ '"_jupyter_session" in globals() and '
+    \ . '_jupyter_session.kernel_client.check_connection()'
+  \ )
+  if has('python3')
+    return str2nr(py3eval('int(' . check . ')'))
+  else
+    return 0
+  endif
 endfunction
 
 " Initiate a jupyter-vim connection using the file matching this directory or a parent

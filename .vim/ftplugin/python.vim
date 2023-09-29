@@ -31,8 +31,8 @@ call succinct#add_delims({
   \ 1)
 
 " Define indention-based 'm' text objects
+" BracelessEnable +indent  " weird bug causes screen view to jump
+" BracelessEnable +highlight  " highlight slows things down even on mac
 if exists(':BracelessEnable')
-  BracelessEnable  " enable basic 'm' objects
-  " BracelessEnable +indent  " weird bug causes screen view to jump
-  " BracelessEnable +indent +highlight  " highlight slows things down even on mac
+  BracelessEnable
 endif

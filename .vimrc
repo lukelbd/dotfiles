@@ -398,12 +398,12 @@ let s:colorscheme = 'papercolor'  " default
 " Macvim syntax overrides
 " Todo: Figure out whether to declare colorscheme here or at bottom
 if has('gui_running')  " revisit these?
+  " exe 'noautocmd colorscheme ' . s:colorscheme
   highlight! link Folded TabLine
   highlight! link vimMap Statement
   highlight! link vimNotFunc Statement
   highlight! link vimFuncKey Statement
   highlight! link vimCommand Statement
-  " exe 'noautocmd colorscheme ' . s:colorscheme
 endif
 
 " Make terminal background same as main background
@@ -549,8 +549,8 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Open file with optional user input
 " Note: Here :History includes v:oldfiles and open buffers
 " Note: Currently no way to make :Buffers use custom opening command
-nnoremap <Tab>e <Cmd>call file#open_recent()<CR>
-nnoremap <Tab>r <Cmd>History<CR>
+nnoremap <Tab>e <Cmd>History<CR>
+nnoremap <Tab>r <Cmd>call file#open_recent()<CR>
 nnoremap <Tab>- <Cmd>call file#init_path('split', 1)<CR>
 nnoremap <Tab>\ <Cmd>call file#init_path('vsplit', 1)<CR>
 nnoremap <Tab>i <Cmd>call file#init_path('Drop', 1)<CR>
@@ -1273,9 +1273,9 @@ let g:indexed_search_n_always_searches_forward = 0  " disable for consistency wi
 " Note: Below test plugin works for every filetype (simliar to ale). Set up
 " Note: syntastic looks for checkers in $PATH, must be installed manually
 " call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
+if has('python3') | call plug#('fisadev/vim-isort') | endif
 call plug#('vim-test/vim-test')
 call plug#('dense-analysis/ale')
-call plug#('fisadev/vim-isort')
 call plug#('Chiel92/vim-autoformat')
 call plug#('tell-k/vim-autopep8')
 call plug#('psf/black')
@@ -1477,6 +1477,7 @@ call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% 
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
+let g:jupyter_highlight_cells = 1  " required to prevent error in non-python vim
 let g:jupyter_cell_separators = ['# %%', '# <codecell>']
 let g:jupyter_mapkeys = 0
 let g:jupytext_fmt = 'py:percent'
@@ -1521,7 +1522,7 @@ let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate','itemize','math']
 " call plug#('neoclide/jsonc.vim')  " vscode-style expanded json syntax, but overkill
 call plug#('vim-scripts/applescript.vim')  " applescript syntax support
 call plug#('andymass/vim-matlab')  " recently updated vim-matlab fork from matchup author
-call plug#('preservim/vim-markdown')
+call plug#('preservim/vim-markdown')  " see .vim/after/syntax.vim for kludge fix
 call plug#('tmux-plugins/vim-tmux')
 call plug#('anntzer/vim-cython')
 call plug#('tpope/vim-liquid')
@@ -1530,6 +1531,7 @@ call plug#('JuliaEditorSupport/julia-vim')
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:vim_markdown_conceal = 1
 let g:vim_markdown_conceal_code_blocks = 1
+let g:vim_markdown_fenced_languages = ['html', 'python']
 
 " Colorful stuff
 " Test: ~/.vim/plugged/colorizer/colortest.txt
