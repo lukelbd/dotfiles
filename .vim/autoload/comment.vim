@@ -57,6 +57,14 @@ function! comment#header_line(fill, nfill, ...) abort  " inserts above by defaul
   call append(line('.') - 1, comment)
 endfunction
 
+" Arbitrary message above this line, matching indentation level
+function! comment#insert_message(message) abort
+  let indent = s:indent_spaces()
+  let cchar = comment#get_char()
+  let comment = indent . cchar . ' ' . a:message
+  call append(line('.') - 1, comment)
+endfunction
+
 " Inline style of format '# ---- Hello world! ---- #'
 function! comment#header_inline(ndash) abort
   let cchar = comment#get_char()
@@ -75,12 +83,4 @@ function! comment#header_incomment() abort
   if empty(title) | return | endif
   let comment = indent . cchar . ' ' . title . ' ' . cchar
   call append(line('.'), comment)
-endfunction
-
-" Arbitrary message above this line, matching indentation level
-function! comment#header_message(message) abort
-  let indent = s:indent_spaces()
-  let cchar = comment#get_char()
-  let comment = indent . cchar . ' ' . a:message . ' ' . cchar
-  call append(line('.') - 1, comment)
 endfunction

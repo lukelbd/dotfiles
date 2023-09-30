@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Script that mimics the superior 'screen' window-swapping behavior for 'tmux'
-# This script is super cool yo
+# Swap windows in 'tmux' similar to 'screen'.
 dest=$1
 dest=$((dest))  # allow passing e.g. 2+1 or 3-1
 iwindow=$(tmux display -p "#I") # initial number

@@ -1050,8 +1050,8 @@ nmap gc; <Plug>CommentHeader
 nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
 nnoremap gc' <Cmd>call comment#header_incomment()<CR>
 nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
-nnoremap gc/ <Cmd>call comment#header_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap gc? <Cmd>call comment#header_message('Edited: ' . strftime('%Y-%m-%d'))<CR>
+nnoremap gc/ <Cmd>call comment#insert_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
+nnoremap gc? <Cmd>call comment#insert_message('Edited: ' . strftime('%Y-%m-%d'))<CR>
 
 " Blank lines inspired by 'unimpaired'
 noremap <Plug>BlankUp <Cmd>call edit#blank_up(v:count1)<CR>

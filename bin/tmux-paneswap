@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# This function does what seemingly should be doable in tmux
-# with a simple command -p; for some reason had issues
+# Swap panes within current window. Had issues with tmux command for some reason
 pane1=$(tmux display -p "#P")  # source
 pane2=$1  # dest
 window=$(tmux display -p "#I")
