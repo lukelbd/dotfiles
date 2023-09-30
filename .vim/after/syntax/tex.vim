@@ -40,7 +40,7 @@ syntax region texMatcherNM matchgroup=Delimiter
   \ contains=@texMatchNMGroup,texError,@NoSpell
 
 " Enable syntax folding of abstracts authors and captions. By default only begin..end
-" begin..end texAbstract environment is folded an only in the preamble
+" begin..end texAbstract environment is folded and only outside of the preamble
 " Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim
 syntax region texAbstracts matchgroup=texSection
   \ start='\\abstract\s*{' end='}'
