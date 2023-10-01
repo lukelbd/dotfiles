@@ -2033,7 +2033,7 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>K <Cmd>echom 'Git add ' . string(@%) \| Git add %<CR>
   noremap <Leader>L <Cmd>echom 'Git reset ' . string(@%) \| Git reset %<CR>
   noremap <Leader>g <Cmd>echom 'Git status' \| Git<CR>
-  noremap <Leader>G <Cmd>echom 'Git commit' \| call git#commit_run()<CR>
+  noremap <Leader>G <Cmd>call git#commit_run()<CR>
   noremap <Leader>B <Cmd>echom 'Git blame' \| Git blame<CR>
   noremap <Leader>u <Cmd>echom 'Git pull origin' \| Git pull origin<CR>
   noremap <Leader>U <Cmd>echom 'Git push origin' \| Git push origin<CR>

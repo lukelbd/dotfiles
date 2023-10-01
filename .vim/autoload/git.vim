@@ -141,11 +141,13 @@ endfunction
 function! git#commit_run() abort
   let output = system('git diff --staged --quiet')  " see: https://stackoverflow.com/a/1587877/4970632
   if v:shell_error  " unseccessful status if has uncommitted staged changes
+    echom 'Git commit'
     Git commit
   else  " successful status if has no uncommitted staged changes
     echohl WarningMsg
     echom 'Warning: No staged changes found. Unable to begin commit.'
     echohl None
+    Git
   endif
 endfunction
 
