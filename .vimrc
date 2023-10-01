@@ -2026,11 +2026,11 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   noremap <Leader>' <Cmd>BCommits<CR>
   noremap <Leader>" <Cmd>Commits<CR>
-  noremap <Leader>j <Cmd>exe 'Git diff -- :/'<CR>
+  noremap <Leader>j <Cmd>echom 'Git diff -- :/' \| silent Git diff -- :/<CR>
+  noremap <Leader>k <Cmd>echom 'Git diff -- ' . @% \| silent Git diff -- %<CR>
+  noremap <Leader>l <Cmd>echom 'Git diff --staged -- ' . @% \| silent Git diff --staged -- %<CR>
   noremap <Leader>J <Cmd>echom 'Git add ' . string(':/') \| Git add :/<CR>
-  noremap <Leader>k <Cmd>exe 'Git diff -- ' . @%<CR>
   noremap <Leader>K <Cmd>echom 'Git add ' . string(@%) \| Git add %<CR>
-  noremap <Leader>l <Cmd>exe 'Git diff --staged -- ' . @%<CR>
   noremap <Leader>L <Cmd>echom 'Git reset ' . string(@%) \| Git reset %<CR>
   noremap <Leader>B <Cmd>Git blame<CR>
   noremap <Leader>g <Cmd>Git<CR>
