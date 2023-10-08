@@ -72,6 +72,7 @@ set noautowrite  " disable auto write for file jumping commands (ask user instea
 set noautowriteall  " disable autowrite for :exit, :quit, etc. (ask user instead)
 set nobackup  " no backups when overwriting files, use tabline/statusline features
 set noerrorbells  " disable error bells (see also visualbell and t_vb)
+set nohidden  " unload buffers when not open in window
 set noinfercase  " do not replace insert-completion with case inferred from typed text
 set nospell  " disable spellcheck by default
 set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
@@ -551,12 +552,12 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Note: Currently no way to make :Buffers use custom opening command
 nnoremap <Tab>e <Cmd>History<CR>
 nnoremap <Tab>r <Cmd>call file#open_recent()<CR>
-nnoremap <Tab>- <Cmd>call file#init_path('split', 1)<CR>
-nnoremap <Tab>\ <Cmd>call file#init_path('vsplit', 1)<CR>
-nnoremap <Tab>i <Cmd>call file#init_path('Drop', 1)<CR>
-nnoremap <Tab>y <Cmd>call file#init_path('Files', 1)<CR>
-nnoremap <Tab>o <Cmd>call file#init_path('Drop', 0)<CR>
-nnoremap <Tab>p <Cmd>call file#init_path('Files', 0)<CR>
+nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
+nnoremap <Tab>\ <Cmd>call file#open_init('vsplit', 1)<CR>
+nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
+nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
+nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
+nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 
 " Tab and window jumpint
 nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
@@ -742,17 +743,30 @@ noremap G G
 noremap gr /[^\x00-\x7F]<CR>
 noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
+" Jump to folds
+" Note: Mapping is consistent with gt and gT tag maps
+noremap gz <Cmd>Folds<CR>
+
+" Jump to folds and toggle folds
+" Note: Opens recursively, but closes single fold. Avoids unwanted foldlevel=0
+noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
+
 " Set folds to specified level
 " Note: Native 'zm' and 'zr' accept counts but they are relative to current fold
 " level. This instead sets level to <count> after truncating to maximum level in file
-noremap <expr> zf (v:count ? '<Esc>' : '') . fold#fold_level('m')
-noremap <expr> zF (v:count ? '<Esc>' : '') . fold#fold_level('r')
+noremap <expr> zf (v:count ? '<Esc>' : '') . fold#set_level(v:count, 'm')
+noremap <expr> zF (v:count ? '<Esc>' : '') . fold#set_level(v:count, 'r')
 
-" Jump to folds and toggle folds
-" Note: Jump mapping is consistent with gt and gT tag maps
-" Note: Toggle opens recursively, but closes single fold. Avoids unwanted foldlevel=0
-noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
-noremap gz <Cmd>Folds<CR>
+" Set folds to open/closed over input range
+" Note: This uses :foldopen[!] and :foldclose[!] commands with line range
+noremap zcc zc
+noremap zCC zC
+noremap zoo zo
+noremap zOO zO
+noremap <expr> zc fold#set_range_expr(1, 0)
+noremap <expr> zC fold#set_range_expr(1, 1)
+noremap <expr> zo fold#set_range_expr(0, 0)
+noremap <expr> zO fold#set_range_expr(0, 1)
 
 " Jump between and inside of folds
 " Note: This is more consistent with other bracket maps
@@ -2026,12 +2040,12 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   noremap <Leader>' <Cmd>BCommits<CR>
   noremap <Leader>" <Cmd>Commits<CR>
-  noremap <Leader>j <Cmd>echom 'Git diff -- :/' \| silent Git diff -- :/<CR>
-  noremap <Leader>k <Cmd>echom 'Git diff -- ' . @% \| silent Git diff -- %<CR>
-  noremap <Leader>l <Cmd>echom 'Git diff --staged -- ' . @% \| silent Git diff --staged -- %<CR>
-  noremap <Leader>J <Cmd>echom 'Git add ' . string(':/') \| Git add :/<CR>
-  noremap <Leader>K <Cmd>echom 'Git add ' . string(@%) \| Git add %<CR>
-  noremap <Leader>L <Cmd>echom 'Git reset ' . string(@%) \| Git reset %<CR>
+  noremap <Leader>j <Cmd>echom 'Git diff -- %' \| silent Git diff -- %<CR>
+  noremap <Leader>k <Cmd>echom 'Git diff --staged -- %' \| silent Git diff --staged -- %<CR>
+  noremap <Leader>l <Cmd>echom 'Git diff -- :/' \| silent Git diff -- :/<CR>
+  noremap <Leader>J <Cmd>echom 'Git add %' \| Git add %<CR>
+  noremap <Leader>K <Cmd>echom 'Git reset %' \| Git reset %<CR>
+  noremap <Leader>L <Cmd>echom 'Git add :/' \| Git add :/<CR>
   noremap <Leader>g <Cmd>echom 'Git status' \| Git<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
   noremap <Leader>B <Cmd>echom 'Git blame' \| Git blame<CR>

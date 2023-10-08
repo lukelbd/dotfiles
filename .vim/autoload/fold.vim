@@ -1,23 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
-" Translate count into fold level
-" Note: Native 'zm' and 'zr' accept commands but count is relative to current
-" fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
-" to maximum number found in file as native 'zr' does. So use the below
-function! fold#fold_level(default) abort
-  if !v:count  " default command
-    let result = '99z' . a:default
-  elseif v:count == &l:foldlevel
-    let result = ''
-  elseif v:count > &l:foldlevel
-    let result = (v:count - &l:foldlevel) . 'zr'
-  else
-    let result = (&l:foldlevel - v:count) . 'zm'
-  endif
-  return result
-endfunction
-
 " Generate truncated fold text
 " Note: Style here is inspired by vim-anyfold. For now stick to native
 " per-filetype syntax highlighting becuase still has some useful features.
@@ -54,4 +37,42 @@ function! fold#fold_text() abort
   let text = label . space . status
   " vint: next-line -ProhibitUsingUndeclaredVariable
   return text[origin:]
+endfunction
+
+" Translate count into fold level
+" Note: Native 'zm' and 'zr' accept commands but count is relative to current
+" fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
+" to maximum number found in file as native 'zr' does. So use the below
+function! fold#set_level(level, ...) abort
+  let default = a:0 ? a:1 : 'm'  " default command
+  if !a:level  " no count specified
+    let result = '99z' . default
+  elseif a:level == &l:foldlevel
+    let result = ''
+  elseif a:level > &l:foldlevel
+    let result = (a:level - &l:foldlevel) . 'zr'
+  else
+    let result = (&l:foldlevel - a:level) . 'zm'
+  endif
+  return result
+endfunction
+
+" Open or close folds over input range
+" Note: Here 'a:toggle' closes folds when 1 and opens when 0.
+function! fold#set_range(toggle, recurse, ...) range abort
+  let command = a:toggle ? 'foldclose' : 'foldopen'
+  let bang = a:recurse ? '!' : ''
+  let view = a:0 ? a:1 : ''
+  let winview = winsaveview()
+  exe a:firstline . ',' . a:lastline . command . bang
+  if a:0  " restore window view
+    call winrestview(a:1)
+  endif
+  return ''
+endfunction
+" For <expr> map accepting motion
+" Todo: Also use winsaveview for other functions?
+function! fold#set_range_expr(...) abort
+  let args = add(copy(a:000), winsaveview())
+  return utils#motion_func('fold#set_range', args)
 endfunction

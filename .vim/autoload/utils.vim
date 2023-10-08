@@ -84,11 +84,11 @@ endfunction
 " invoked manually with V<motion>:call func(). This is the more standard paradigm.
 function! utils#motion_func(funcname, args) abort
   let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
-  if mode() =~# '^\(v\|V\|\)$'
+  if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
     return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'
     set operatorfunc=utils#operator_func
-    return 'g@'  " uses the input line range
+    return 'g@'  " await user motion and call operator function over those lines
   else
     echoerr 'E999: Illegal mode: ' . string(mode())
     return ''
