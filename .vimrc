@@ -314,33 +314,39 @@ endfor
 " * q and @ are for macros, instead reserve for quitting popup windows and tags map
 " * Q and K are weird modes never used
 " * Z is save and quit shortcut, use for executing
+" * ][ and [] can get hit accidentally
 " * Ctrl-r is undo, use u and U instead
 " * Ctrl-p and Ctrl-n used for menu items, use <C-,> and <C-.> or scroll instead
 " * Ctrl-a and Ctrl-x used for incrementing, use + and - instead
-" * ][ and [] can get hit accidentally
+" * Backspace scrolls to left and Delete removes character to right
+" * Enter and Underscore scrolls down on first non-blank character
 for s:key in [
-  \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ',
+  \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ', '][', '[]',
   \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
-  \ '<Delete>', '<Backspace>', '<CR>', '][', '[]',
+  \ '<Delete>', '<Backspace>', '<CR>', '_',
   \ ]
   if empty(maparg(s:key, 'n'))
     exe 'nnoremap ' . s:key . ' <Nop>'
   endif
 endfor
 
+
 " Disable insert mode stuff
-" * Ctrl-x used for scrolling or insert-mode complection, use autocomplete instead
+" * Ctrl-, and Ctrl-. do nothing, use for previous and next delimiter jumping
+" * Ctrl-x scrolls or toggles insert-mode completion, use autocomplete instead
+" * Ctrl-n, Ctrl-p cycles through menu options, use e.g. Ctrl-j and Ctrl-k instead
+" * Ctrl-d, Ctrl-t deletes and inserts shiftwidths, use backspace and tab instead
+" * Ctrl-h deletes character before cursor, use backspace instead
 " * Ctrl-l used for special 'insertmode' always-insert-mode option
-" * Ctrl-h, Ctrl-d, Ctrl-t used for deleting and tabbing, but use backspace and tab
-" * Ctrl-p, Ctrl-n used for menu cycling, but use Ctrl-, and Ctrl-.
-" * Ctrl-b and Ctrl-z do nothing but insert literal char
+" * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
+" * Ctrl-z sends vim to background, disable to prevent cursor change
 augroup override_maps
   au!
   au BufEnter * inoremap <buffer> <S-Tab> <C-d>
 augroup END
 for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
-  \ '<C-n>', '<C-p>', '<C-b>', '<C-z>', '<C-t>', '<C-d>', '<C-h>', '<C-l>',
+  \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
   \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
   \ ]
   if empty(maparg(s:key, 'i'))
