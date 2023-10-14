@@ -842,21 +842,21 @@ nnoremap g: <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
-" Note: Avoid 'gp' and 'gP' for pasting and putting cursor at end since useful
+" Note: Native 'gp' and 'gP' almost identical to 'p' and 'P' (just moves char to right)
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
-command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
-command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
+command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 0, 0, '\<notes\?:', <f-args>)
+command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 0, 0, '\<todos\?:', <f-args>)
+command! -bang -nargs=* Errors call grep#call_ag(<bang>0, 0, 0, '\<errors\?:', <f-args>)
+command! -bang -nargs=* Warnings call grep#call_ag(<bang>0, 0, 0, '\<warnings\?:', <f-args>)
 command! -bang -nargs=* Prints call grep#call_ag(<bang>0, 2, 0, '^\s*print(', <f-args>)
 command! -bang -nargs=* Debugs call grep#call_ag(<bang>0, 2, 0, '^\s*ic(', <f-args>)
-command! -bang -nargs=* Errors call grep#call_ag(<bang>0, 0, 0, '\<error:', <f-args>)
-command! -bang -nargs=* Warnings call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
 command! -bang -nargs=* Conflicts call grep#call_ag(<bang>0, 0, 0, s:conflicts, <f-args>)
-noremap gH <Cmd>Notes<CR>
-noremap gL <Cmd>Todos<CR>
-noremap gM <Cmd>Prints<CR>
-noremap gB <Cmd>Debugs<CR>
-noremap gE <Cmd>Error<CR>
+noremap gp <Cmd>Prints<CR>
+noremap gP <Cmd>Debugs<CR>
+noremap gM <Cmd>Notes<CR>
+noremap gB <Cmd>Todos<CR>
 noremap gW <Cmd>Warnings<CR>
+noremap gE <Cmd>Errors<CR>
 noremap gG <Cmd>Conflicts<CR>
 
 " Run replacement on this line alone
