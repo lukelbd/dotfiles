@@ -43,18 +43,26 @@ endfunction
 " Note: Native 'zm' and 'zr' accept commands but count is relative to current
 " fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below
-function! fold#set_level(level, ...) abort
-  let default = a:0 ? a:1 : 'm'  " default command
-  if !a:level  " no count specified
-    let result = '99z' . default
-  elseif a:level == &l:foldlevel
-    let result = ''
-  elseif a:level > &l:foldlevel
-    let result = (a:level - &l:foldlevel) . 'zr'
-  else
-    let result = (&l:foldlevel - a:level) . 'zm'
+function! fold#set_level(...) abort
+  let current = &l:foldlevel
+  if a:0  " input direction
+    let direc = a:1 ==? 'm' ? -1 : 1
+    let cmd = v:count1 . 'z' . a:1
+  else  " specific level
+    if !v:count
+      let cmd = 'zM'
+    elseif v:count == current
+      let cmd = ''
+    elseif v:count > current
+      let cmd = (v:count - current) . 'zr'
+    else
+      let cmd = (current - v:count) . 'zm'
+    endif
   endif
-  return result
+  exe 'normal! ' . cmd
+  let result = &l:foldlevel
+  let msg = current == result ? current : current . ' -> ' . result
+  echom 'Fold level: ' . msg
 endfunction
 
 " Open or close folds over input range
@@ -71,7 +79,6 @@ function! fold#set_range(toggle, recurse, ...) range abort
   return ''
 endfunction
 " For <expr> map accepting motion
-" Todo: Also use winsaveview for other functions?
 function! fold#set_range_expr(...) abort
   let args = add(copy(a:000), winsaveview())
   return utils#motion_func('fold#set_range', args)

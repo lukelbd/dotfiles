@@ -129,6 +129,26 @@ function! s:eval_map(map) abort
   return rhs
 endfunction
 
+" Git command with message
+" Note: Fugitive does not currently use &previewwindow and does not respect <mods>
+" so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
+" Note: Previously used <Leader>b for toggle but now use lower and upper
+" case for blaming either range or entire file and 'zbb' for current line.
+function! git#run_command(cmd, ...) abort range
+  let [firstline, lastline] = sort([a:firstline, a:lastline])
+  let forcerange = a:0 ? a:1 : 0
+  let range = forcerange || a:firstline != a:lastline ? firstline . ',' . lastline : ''
+  echom range . 'Git ' . a:cmd
+  let cmd = a:cmd =~# '^status' ? '' : a:cmd
+  let mods = cmd =~# '^diff' ? 'silent ' : ''
+  exe mods . range . 'Git ' . cmd
+  exe &previewheight . 'wincmd'
+endfunction
+" For <expr> map accepting motion
+function! git#run_command_expr(...) abort
+  return utils#motion_func('git#run_command', a:000)
+endfunction
+
 " Git commit setup
 " Note: This prevents annoying <press enter to continue> message showing up when
 " committing with no staged changes, issues a warning instead of showing the message.
@@ -203,21 +223,20 @@ endfunction
 function! git#hunk_action(stage) abort range
   call switch#gitgutter(1, 1)  " ensure enabled, suppress message
   let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
-  let lines = []
   let hunks = get(get(b:, 'gitgutter', {}), 'hunks', [])
   let [firstline, lastline] = sort([a:firstline, a:lastline])
-  for [id, typ, lnum, lcnt] in hunks
-    let lmax = lcnt == 0 ? lnum : lnum + lcnt - 1
-    if firstline <= lnum && lmax <= lastline
+  for [id, htype, line1, lcount] in hunks
+    let line2 = lcount == 0 ? line1 : line1 + lcount - 1
+    if firstline <= line1 && lastline >= line2  " range encapsulates hunk
       let range = ''
-    elseif firstline <= lnum && lnum <= lastline  " starts inside, ends outside
-      let range = typ == 0 ? lnum . ',' . lastline : ''
-    elseif firstline <= lmax && lmax <= lastline  " starts outside, ends inside
-      let range = typ == 0 ? firstline . ',' . lmax : ''
+    elseif firstline <= line1 && line1 <= lastline  " starts inside, ends outside
+      let range = htype == 0 ? line1 . ',' . lastline : ''
+    elseif firstline <= line2 && line2 <= lastline  " starts outside, ends inside
+      let range = htype == 0 ? firstline . ',' . line2 : ''
     else
       continue
     endif
-    exe lnum
+    exe line1
     exe range . cmd
   endfor
   GitGutter  " update signs (sometimes they lag)

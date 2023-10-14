@@ -83,7 +83,7 @@ set nrformats=alpha  " never interpret numbers as 'octal'
 set number  " show line numbers
 set numberwidth=4  " number column minimum width
 set path=.  " used in various built-in searching utilities, file_in_path complete opt
-set previewheight=30  " default preview window height
+set previewheight=20  " default preview window height
 set pumheight=10  " maximum popup menu height
 set pumwidth=10  " minimum popup menu width
 set redrawtime=5000  " sometimes takes a long time, let it happen
@@ -653,7 +653,7 @@ augroup END
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " See: https://stackoverflow.com/a/41168966/4970632
-noremap z; :<C-u><Up><CR>
+nnoremap <Leader>. :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -753,15 +753,27 @@ noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 " Note: Mapping is consistent with gt and gT tag maps
 noremap gz <Cmd>Folds<CR>
 
-" Jump to folds and toggle folds
-" Note: Opens recursively, but closes single fold. Avoids unwanted foldlevel=0
+" Toggle fold under cursor
+" Note: Open recursively but close single fold to avoid unwanted intermediates
 noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
+noremap zZ zAzA
 
-" Set folds to specified level
-" Note: Native 'zm' and 'zr' accept counts but they are relative to current fold
-" level. This instead sets level to <count> after truncating to maximum level in file
-noremap <expr> zf (v:count ? '<Esc>' : '') . fold#set_level(v:count, 'm')
-noremap <expr> zF (v:count ? '<Esc>' : '') . fold#set_level(v:count, 'r')
+" Change fold level
+" Note: Passing 'zf' without count is equivalent to 'zM'
+noremap zF <Cmd>call fold#set_level('R')<CR>
+noremap zf <Cmd>call fold#set_level()<CR>
+noremap zm <Cmd>call fold#set_level('m')<CR>
+noremap zM <Cmd>call fold#set_level('M')<CR>
+noremap zr <Cmd>call fold#set_level('r')<CR>
+noremap zR <Cmd>call fold#set_level('R')<CR>
+
+" Close folds with lower case open with upper case
+" Note: This is more consistent with e.g. 'zF' and other utils
+" Note: Now 'zN' temporarily disables folds and 'zn' resets foldenable
+noremap za zA
+noremap zA za
+noremap zn zN
+noremap zN zn
 
 " Set folds to open/closed over input range
 " Note: This uses :foldopen[!] and :foldclose[!] commands with line range
@@ -776,16 +788,24 @@ noremap <expr> zO fold#set_range_expr(0, 1)
 
 " Jump between and inside of folds
 " Note: This is more consistent with other bracket maps
-noremap zj ]z
-noremap zk [z
-noremap ]z zj
+noremap z[ [z
+noremap z] ]z
 noremap [z zk
-noremap ]Z zjzv
+noremap ]z zj
 noremap [Z zkzv
+noremap ]Z zjzv
+
+" Adjust screen motion keys
+" Note: Instead use 'zt' for title case and 'zb' for git blame
+noremap z. z.
+noremap zj zb
+noremap zk zt
+noremap ze ze
+noremap zE zs
 
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
-" noremap <Leader>. <Cmd>BLines<CR>
+" noremap g' <Cmd>BLines<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
 noremap g" <Cmd>call mark#fzf_jumps()<CR>
 
@@ -1008,6 +1028,8 @@ nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
 " Fix misspelled words or define or identify words and characters
+" Note: Mnemonic for 'zf' and 'zF' is 'spell file' and 'zd' and 'zD' adjacent to 's'
+" but much easier to reach. Also disable native [s and ]s to avoid confusion
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 noremap <silent> <Plug>SpellForward bh]szv1z=
   \ :call repeat#set("\<Plug>SpellForward")<CR>
@@ -1029,9 +1051,9 @@ nnoremap <silent> <Plug>CaseToggle my~h`yh<Cmd>delmark y<CR>
 nnoremap <silent> <Plug>CaseTitle myguiw~h`yh<Cmd>delmark y<CR>
   \ :call repeat#set("\<Plug>CaseTitle")<CR>
 vnoremap zy ~
-vnoremap zi gu<Esc>`<~h
+vnoremap zt gu<Esc>`<~h
 nmap zy <Plug>CaseToggle
-nmap zi <Plug>CaseTitle
+nmap zt <Plug>CaseTitle
 
 " Auto wrap lines or items within motion
 " Note: Tried below repeat maps but they fail
@@ -1633,9 +1655,11 @@ endif
 " Note: Use :WrapHeight and :WrapStarts for debugging.
 " Note: Instead of native scrollwrapped#scroll() function use an iter#scroll_count()
 " function that accounts for open popup windows. See insert-mode section above.
-if s:plug_active('vim-scrollwrapped')
+if s:plug_active('vim-scrollwrapped') || s:plug_active('vim-toggle')
+  noremap <Leader>b <Cmd>Toggle<CR>
   noremap <Leader>w <Cmd>WrapToggle<CR>
-  let g:scrollwrapped_nomap = 1  " have advanced custom maps
+  let g:toggle_map = '<Leader>b'  " prevent overwriting <Leader>b
+  let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
   let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
   " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
 endif
@@ -1795,10 +1819,10 @@ if s:plug_active('vim-lsp')
     " \ )  " see vim-lsp readme (necessary?)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
-  noremap [d <Cmd>LspPreviousReference<CR>
-  noremap ]d <Cmd>LspNextReference<CR>
   noremap gD gdzv<Cmd>noh<CR>
   noremap gd <Cmd>tab LspDefinition<CR>
+  noremap [d <Cmd>LspPreviousReference<CR>
+  noremap ]d <Cmd>LspNextReference<CR>
   noremap <Leader>f <Cmd>LspReferences<CR>
   noremap <Leader>d <Cmd>LspPeekDefinition<CR>
   noremap <Leader>D <Cmd>LspRename<CR>
@@ -2021,8 +2045,8 @@ if s:plug_active('conflict-marker.vim')
     \ :call repeat#set("\<Plug>ConflictForward")<CR>
   nmap <silent> <Plug>ConflictBackward <Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)
     \ :call repeat#set("\<Plug>ConflictBackward")<CR>
-  nmap ]F <Plug>ConflictForward
   nmap [F <Plug>ConflictBackward
+  nmap ]F <Plug>ConflictForward
   nmap [f <Plug>(conflict-marker-prev-hunk)
   nmap ]f <Plug>(conflict-marker-next-hunk)
   nmap gf <Plug>(conflict-marker-ourselves)
@@ -2046,17 +2070,19 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* -bang Gdiffsplit Git diff <args>
   noremap <Leader>' <Cmd>BCommits<CR>
   noremap <Leader>" <Cmd>Commits<CR>
-  noremap <Leader>j <Cmd>echom 'Git diff -- %' \| silent Git diff -- %<CR>
-  noremap <Leader>k <Cmd>echom 'Git diff --staged -- %' \| silent Git diff --staged -- %<CR>
-  noremap <Leader>l <Cmd>echom 'Git diff -- :/' \| silent Git diff -- :/<CR>
-  noremap <Leader>J <Cmd>echom 'Git add %' \| Git add %<CR>
-  noremap <Leader>K <Cmd>echom 'Git reset %' \| Git reset %<CR>
-  noremap <Leader>L <Cmd>echom 'Git add :/' \| Git add :/<CR>
-  noremap <Leader>g <Cmd>echom 'Git status' \| Git<CR>
+  noremap <Leader>j <Cmd>call git#run_command('diff -- %')<CR>
+  noremap <Leader>k <Cmd>call git#run_command('diff --staged -- %')<CR>
+  noremap <Leader>l <Cmd>call git#run_command('diff -- :/')<CR>
+  noremap <Leader>J <Cmd>call git#run_command('add %')<CR>
+  noremap <Leader>K <Cmd>call git#run_command('reset %')<CR>
+  noremap <Leader>L <Cmd>call git#run_command('add :/')<CR>
+  noremap <Leader>g <Cmd>call git#run_command('status')<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
-  noremap <Leader>B <Cmd>echom 'Git blame' \| Git blame<CR>
-  noremap <Leader>u <Cmd>echom 'Git pull origin' \| Git pull origin<CR>
-  noremap <Leader>U <Cmd>echom 'Git push origin' \| Git push origin<CR>
+  noremap <Leader>u <Cmd>call git#run_command('pull origin')<CR>
+  noremap <Leader>U <Cmd>call git#run_command('push origin')<CR>
+  noremap zB <Cmd>call git#run_command('blame %')<CR>
+  noremap <expr> zb git#run_command_expr('blame', 1)
+  noremap zbb <Cmd>-5,.+5call git#run_command('blame', 1)<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2109,7 +2135,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
-  map gy <Plug>(EasyAlign)
+  map z; <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2196,9 +2222,9 @@ else
   noremap - <C-x>
 endif
 
-" Undo tree settings. Mnemonic is that Ctrl-r used for undo in other settings.
-" Note: Considered also creating netrwc maps but huge can of worms. Idea was simply
-" to list files in current directory so made mapping for that.
+" Undo tree mapping and settings
+" Note: Considered also creating netrwc maps but huge can of worms. Main idea
+" was to query paths in current directory but should use Ctrl-o for that.
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 " noremap <Leader>, <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
