@@ -565,7 +565,8 @@ nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 
-" Tab and window jumpint
+" Tab and window jumping
+noremap g<Tab> <Nop>
 nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 nnoremap <Tab>q <Cmd>Buffers<CR>
@@ -604,6 +605,8 @@ noremap <Leader>i <Cmd>Paths<CR>
 noremap <Leader>I <Cmd>Localdir<CR>
 noremap <Leader>p <Cmd>call file#print_exists()<CR>
 noremap <Leader>P <Cmd>exe 'Drop ' . expand('<cfile>')<CR>
+noremap <Leader>b <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
+noremap <Leader>B <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -778,13 +781,13 @@ noremap zN zn
 " Set folds to open/closed over input range
 " Note: This uses :foldopen[!] and :foldclose[!] commands with line range
 noremap zcc zc
-noremap zCC zC
 noremap zoo zo
-noremap zOO zO
 noremap <expr> zc fold#set_range_expr(1, 0)
-noremap <expr> zC fold#set_range_expr(1, 1)
 noremap <expr> zo fold#set_range_expr(0, 0)
-noremap <expr> zO fold#set_range_expr(0, 1)
+" noremap zCC zC
+" noremap zOO zO
+" noremap <expr> zC fold#set_range_expr(1, 1)
+" noremap <expr> zO fold#set_range_expr(0, 1)
 
 " Jump between and inside of folds
 " Note: This is more consistent with other bracket maps
@@ -796,12 +799,12 @@ noremap [Z zkzv
 noremap ]Z zjzv
 
 " Adjust screen motion keys
-" Note: Instead use 'zt' for title case and 'zb' for git blame
+" Note: Instead use 'zt' for title case and 'zb' for boolean toggle
 noremap z. z.
 noremap zj zb
 noremap zk zt
-noremap ze ze
-noremap zE zs
+noremap ze zs
+noremap zs ze
 
 " Jump to marks or lines with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
@@ -1027,9 +1030,8 @@ command! LangToggle call switch#spelllang(<args>)
 nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
-" Fix misspelled words or define or identify words and characters
-" Note: Mnemonic for 'zf' and 'zF' is 'spell file' and 'zd' and 'zD' adjacent to 's'
-" but much easier to reach. Also disable native [s and ]s to avoid confusion
+" Fix misspelled words or define or identify words and
+" Note: Mnemonic for 'zx' and 'zX' is 'fix spell file'
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 noremap <silent> <Plug>SpellForward bh]szv1z=
   \ :call repeat#set("\<Plug>SpellForward")<CR>
@@ -1037,10 +1039,10 @@ noremap <silent> <Plug>SpellBackward el[szv1z=
   \ :call repeat#set("\<Plug>SpellBackward")<CR>
 map ]S <Plug>SpellForward
 map [S <Plug>SpellBackward
-nnoremap zs 1z=
-nnoremap zS z=
-nnoremap zd zg
-nnoremap zD zug
+nnoremap gs 1z=
+nnoremap gS z=
+nnoremap gx zg
+nnoremap gX zug
 
 " Toggle capitalization or identify character
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
@@ -1656,9 +1658,9 @@ endif
 " Note: Instead of native scrollwrapped#scroll() function use an iter#scroll_count()
 " function that accounts for open popup windows. See insert-mode section above.
 if s:plug_active('vim-scrollwrapped') || s:plug_active('vim-toggle')
-  noremap <Leader>b <Cmd>Toggle<CR>
+  noremap zb <Cmd>Toggle<CR>
   noremap <Leader>w <Cmd>WrapToggle<CR>
-  let g:toggle_map = '<Leader>b'  " prevent overwriting <Leader>b
+  let g:toggle_map = 'zb'  " prevent overwriting <Leader>b
   let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
   let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
   " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
@@ -1936,6 +1938,7 @@ endif
 if s:plug_active('ale')
   " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
   " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
+  " 'python': ['python', 'flake8', 'mypy'],  " need to improve config
   noremap <C-e> <Cmd>cclose<CR><Cmd>lclose<CR>
   command! -nargs=? AleToggle call switch#ale(<args>)
   noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
@@ -1948,7 +1951,7 @@ if s:plug_active('ale')
     \ 'help': [],
     \ 'json': ['jsonlint'],
     \ 'jsonc': ['jsonlint'],
-    \ 'python': ['python', 'flake8', 'mypy'],
+    \ 'python': ['python', 'flake8'],
     \ 'rst': [],
     \ 'sh': ['shellcheck', 'bashate'],
     \ 'tex': ['lacheck'],
@@ -2080,9 +2083,9 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
   noremap <Leader>u <Cmd>call git#run_command('pull origin')<CR>
   noremap <Leader>U <Cmd>call git#run_command('push origin')<CR>
-  noremap zB <Cmd>call git#run_command('blame %')<CR>
-  noremap <expr> zb git#run_command_expr('blame', 1)
-  noremap zbb <Cmd>-5,.+5call git#run_command('blame', 1)<CR>
+  noremap <expr> gl git#run_command_expr('blame %', 1)
+  noremap gll <Cmd>call git#run_command('blame %')<CR>
+  noremap gL <Cmd>call git#run_command('blame')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2118,10 +2121,10 @@ if s:plug_active('vim-gitgutter')
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
   noremap <Leader>h <Cmd>call git#hunk_preview()<CR>
   noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
-  noremap <expr> gs git#hunk_action_expr(1)
-  noremap <expr> gS git#hunk_action_expr(0)
-  nnoremap <nowait> gss <Cmd>call git#hunk_action(1)<CR>
-  nnoremap <nowait> gSS <Cmd>call git#hunk_action(0)<CR>
+  noremap <expr> gh git#hunk_action_expr(1)
+  noremap <expr> gH git#hunk_action_expr(0)
+  nnoremap <nowait> ghh <Cmd>call git#hunk_action(1)<CR>
+  nnoremap <nowait> gHH <Cmd>call git#hunk_action(0)<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
@@ -2223,14 +2226,16 @@ else
 endif
 
 " Undo tree mapping and settings
-" Note: Considered also creating netrwc maps but huge can of worms. Main idea
-" was to query paths in current directory but should use Ctrl-o for that.
+" Note: Preview window override fails with undotree so use below.
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
-" noremap <Leader>, <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
-" noremap <Leader>. <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
 if s:plug_active('undotree')
+  function! Undotree_CustomMap() abort
+    noremap <buffer> u <C-u>
+    noremap <buffer> d <C-d>
+  endfunc
   noremap gu <Cmd>UndotreeToggle<CR>
+  noremap gU <Cmd>UndotreeToggle<CR><C-w>h
   let g:undotree_SplitWidth = 30
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_ShortIndicators = 1

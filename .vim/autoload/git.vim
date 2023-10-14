@@ -138,11 +138,19 @@ function! git#run_command(cmd, ...) abort range
   let [firstline, lastline] = sort([a:firstline, a:lastline])
   let forcerange = a:0 ? a:1 : 0
   let range = forcerange || a:firstline != a:lastline ? firstline . ',' . lastline : ''
+  let line = line('.')
   echom range . 'Git ' . a:cmd
   let cmd = a:cmd =~# '^status' ? '' : a:cmd
   let mods = cmd =~# '^diff' ? 'silent ' : ''
   exe mods . range . 'Git ' . cmd
-  exe &previewheight . 'wincmd'
+  if cmd =~# '^blame %' && empty(range)
+    exe line
+  endif
+  if cmd =~# '^blame' && cmd !~# '^blame %'
+    vert resize 30  " see also undotree
+  else
+    exe 'resize ' . &previewheight
+  endif
 endfunction
 " For <expr> map accepting motion
 function! git#run_command_expr(...) abort
