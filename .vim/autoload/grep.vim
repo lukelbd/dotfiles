@@ -49,12 +49,12 @@ function! s:parse_grep(level, pattern, ...) abort
 endfunction
 function! s:parse_pattern(pattern)
   let regex = fzf#shellescape(a:pattern)  " similar to native but handles other shells
-  let regex = substitute(regex, '\\[cCvV]', '', 'g')  " unsure how to translate
   let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " translate word borders
-  let regex = substitute(regex, '\\S\C', "[^ \t]", 'g')  " non-whitespace characters
-  let regex = substitute(regex, '\\s\C', "[ \t]",  'g')  " whitespace characters
-  let regex = substitute(regex, '\\[ikf]\C', '\\w', 'g')  " keyword, identifier, filename
-  let regex = substitute(regex, '\\[IKF]\C', '[a-zA-Z_]', 'g')  " same but no numbers
+  let regex = substitute(regex, '\\[cvCV]', '', 'g')  " unsure how to translate
+  let regex = substitute(regex, '\C\\S', "[^ \t]", 'g')  " non-whitespace characters
+  let regex = substitute(regex, '\C\\s', "[ \t]",  'g')  " whitespace characters
+  let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " letters underscore
+  let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " numbers letters underscore
   let regex = substitute(regex, '\\\([(|)]\)', '=\1', 'g')  " reserve grouping indicators
   let regex = substitute(regex, '\(^\|[^=\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape literal parentheses
   let regex = substitute(regex, '=\([(|)]\)', '\1', 'g')  " unescape grouping indicators

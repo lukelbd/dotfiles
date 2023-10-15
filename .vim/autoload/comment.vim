@@ -19,9 +19,10 @@ endfunction
 
 " Return the comment pattern regex
 function! comment#get_regex() abort
+  let char = comment#get_char()
+  let char = empty(char) ? nr2char(0) : char
   let space = '\s'
-  let char = empty(comment#get_char()) ? nr2char(0) : comment#get_char()
-  return '\s' . char
+  return space . char
 endfunction
 
 " Begin comment in insert mode

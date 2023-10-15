@@ -19,9 +19,11 @@
 " conda install -y conda-forge::ncurses first
 "-----------------------------------------------------------------------------"
 " Critical stuff
+" Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
+" buffer-local syntax and 'conceal-', 'format-' 'linebreak', and 'joinspaces'.
 " Note: Below dictionary figures out which files were recently modified when refreshing
 " session. Line length is used with linting tools below and in other non-vim settings.
-let s:linelength = 88  " see below configuration
+let g:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see below <Leader> mappings
 let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
 set nocompatible  " always use the vim defaults
@@ -154,41 +156,6 @@ let s:panel_filetypes += [
   \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
   \ ]
 
-" Override settings and syntax, even buffer-local. The URL regex was copied
-" from the one in .tmux.conf. See: https://vi.stackexchange.com/a/11547/8084
-" Warning: Cannot use filetype specific au Syntax *.tex commands to overwrite
-" existing highlighting. An after/syntax/tex.vim file is necessary.
-" Warning: The containedin just tries to *guess* what particular comment and string
-" group names are for given filetype syntax schemes (use :Group for testing).
-augroup buffer_overrides
-  au!
-  au BufEnter * call s:buffer_overrides()
-augroup END
-function! s:buffer_overrides() abort
-  setlocal concealcursor=
-  setlocal conceallevel=2
-  setlocal formatoptions=lrojcq
-  setlocal nojoinspaces
-  setlocal linebreak
-  let &l:textwidth = s:linelength
-  let &l:wrapmargin = 0
-  syntax match customShebang /^\%1l#!.*$/  " shebang highlighting
-  syntax match customHeader /^# \zs#\+.*$/ containedin=.*Comment.*
-  syntax match customTodo /\C\%(WARNINGS\?\|ERRORS\?\|FIXMES\?\|TODOS\?\|NOTES\?\|XXX\)\ze:\?/ containedin=.*Comment.*  " comments
-  syntax match customURL =\v<(((https?|ftp|gopher)://|(mailto|file|news):)[^' 	<>"]+|(www|web|w3)[a-z0-9_-]*\.[a-z0-9._-]+\.[^'  <>"]+)[a-zA-Z0-9/]= containedin=.*\(Comment\|String\).*
-  highlight link customHeader Special
-  highlight link customShebang Special
-  highlight link customTodo Todo
-  highlight link customURL Underlined
-  if has('gui_running')  " see https://stackoverflow.com/a/73783079/4970632
-    highlight! link Folded TabLine
-    let hl = hlget('Folded')[0]  " keeps getting overridden so use this
-    let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
-    let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
-    call hlset([hl])
-  endif
-endfunction
-
 " Flake8 ignore list (also apply to autopep8):
 " Note: Keep this in sync with 'pep8' and 'black' file
 " * Allow line breaks before binary operators (W503)
@@ -229,17 +196,29 @@ let s:shellcheck_ignore =
   \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
   \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
 
-
 "-----------------------------------------------------------------------------"
 " Repair unexpected behavior
 "-----------------------------------------------------------------------------"
-" Escape repair needed when we allow h/l to change line num
-augroup escape_fix
+" Move cursor to end of insertion after leaving
+" Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left
+" Note: Critical to keep jumplist or else populated after every single insertion. Use
+" 'zi' or explicit mark if you actually want to find previous insertion.
+augroup insert_fix
   au!
-  au InsertLeave * normal! `^
+  au InsertLeave * keepjumps normal! `^
 augroup END
 
-" Set escape codes to restore screen after exiting
+" Stop cursor from changing when clicking on panes. Note this is no longer
+" necessary since tmux handles FocusLost signal itself.
+" See: https://github.com/sjl/vitality.vim/issues/29
+" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
+" augroup cursor_fix
+"   au!
+"   au FocusLost * stopinsert
+" augroup END
+
+" Configure escape codes to restore screen after exiting
+" Disable visual bell when errors triggered because annoying
 " See: :help restorescreen page
 let &t_te = "\e[?47l\e8"
 let &t_ti = "\e7\e[r\e[?47h"
@@ -248,7 +227,6 @@ let &t_vb = ''  " disable visual bell
 " Support cursor shapes. Note neither Ptmux escape codes (e.g. through 'vitality'
 " plugin) or terminal overrides seem necessary in newer versions of tmux.
 " See: https://stackoverflow.com/a/44473667/4970632 (outdated terminal overrides)
-" See: https://vi.stackexchange.com/a/22239/8084 (outdated terminal overrides)
 " See: https://vi.stackexchange.com/a/14203/8084 (outdated Ptmux sequences)
 " See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
 " See: https://www.reddit.com/r/vim/comments/24g8r8/italics_in_terminal_vim_and_tmux/
@@ -259,15 +237,6 @@ let &t_SR = "\e[4 q"
 let &t_EI = "\e[2 q"
 let &t_ZH = "\e[3m"
 let &t_ZR = "\e[23m"
-
-" Stop cursor from changing when clicking on panes. Note this is no longer
-" necessary since tmux handles FocusLost signal itself.
-" See: https://github.com/sjl/vitality.vim/issues/29
-" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
-" augroup cursor_fix
-"   au!
-"   au FocusLost * stopinsert
-" augroup END
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. syntax highlighting
@@ -329,7 +298,6 @@ for s:key in [
     exe 'nnoremap ' . s:key . ' <Nop>'
   endif
 endfor
-
 
 " Disable insert mode stuff
 " * Ctrl-, and Ctrl-. do nothing, use for previous and next delimiter jumping
@@ -560,8 +528,8 @@ nnoremap <Tab>e <Cmd>History<CR>
 nnoremap <Tab>r <Cmd>call file#open_recent()<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
 nnoremap <Tab>\ <Cmd>call file#open_init('vsplit', 1)<CR>
+nnoremap <Tab>u <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
-nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 
@@ -714,19 +682,19 @@ command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 " This does 'set hlsearch!' and prints a message
 noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
 
-" Jump to last and next changed text
+" Go to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
 noremap <C-n> g;
 noremap <F4> g,
 
-" Jump to last and next jump
+" Go to last and next jump
 " Note: This accounts for karabiner arrow key maps
 noremap <C-h> <C-o>
 noremap <C-l> <C-i>
 noremap <Left> <C-o>
 noremap <Right> <C-i>
 
-" Jump between alphanumeric groups of characters (i.e. excluding dots, dashes,
+" Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
 for s:char in ['w', 'b', 'e', 'm']  " use 'g' prefix of each
   exe 'noremap g' . s:char . ' '
@@ -735,12 +703,12 @@ for s:char in ['w', 'b', 'e', 'm']  " use 'g' prefix of each
     \ . (s:char ==# 'm' ? 'ge' : s:char) . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
 endfor
 
-" Jump to previous end-of-word or previous end-of-WORD
+" Go to previous end-of-word or previous end-of-WORD
 " This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
 noremap m ge
 noremap M gE
 
-" Jump to start or end without opening folds.
+" Go to start or end without opening folds.
 " Useful for e.g. python files with docsring at top and function at bottom
 " Note: Fold opening is auto-disabled for remapped jump commands hence the 'zv' below
 " Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
@@ -752,7 +720,7 @@ noremap G G
 noremap gr /[^\x00-\x7F]<CR>
 noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
-" Jump to folds
+" Go to folds
 " Note: Mapping is consistent with gt and gT tag maps
 noremap gz <Cmd>Folds<CR>
 
@@ -789,7 +757,7 @@ noremap <expr> zo fold#set_range_expr(0, 0)
 " noremap <expr> zC fold#set_range_expr(1, 1)
 " noremap <expr> zO fold#set_range_expr(0, 1)
 
-" Jump between and inside of folds
+" Move between folds and inside folds hello
 " Note: This is more consistent with other bracket maps
 noremap z[ [z
 noremap z] ]z
@@ -798,15 +766,16 @@ noremap ]z zj
 noremap [Z zkzv
 noremap ]Z zjzv
 
-" Adjust screen motion keys
+" Adjust other z mappings
 " Note: Instead use 'zt' for title case and 'zb' for boolean toggle
 noremap z. z.
 noremap zj zb
 noremap zk zt
 noremap ze zs
 noremap zs ze
+noremap zi gi
 
-" Jump to marks or lines with FZF
+" Go to marks or jumps with FZF
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
 " noremap g' <Cmd>BLines<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
@@ -1982,9 +1951,9 @@ if s:plug_active('ale')
   let g:ale_echo_msg_info_str = 'Info'
   let g:ale_echo_msg_warning_str = 'Warn'
   let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
-  let g:ale_python_flake8_options =  '--max-line-length=' . s:linelength . ' --ignore=' . s:flake8_ignore
+  let g:ale_python_flake8_options =  '--max-line-length=' . g:linelength . ' --ignore=' . s:flake8_ignore
   let g:ale_set_balloons = 0  " no ballons
-  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . s:linelength
+  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . g:linelength
   let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
   let g:ale_update_tagstack = 0  " use ctags for this
   let g:ale_virtualtext_cursor = 0  " no error shown here
@@ -2002,24 +1971,24 @@ endif
 if s:plug_active('ale')
   let g:autopep8_disable_show_diff = 1
   let g:autopep8_ignore = s:flake8_ignore
-  let g:autopep8_max_line_length = s:linelength
-  let g:black_linelength = s:linelength
+  let g:autopep8_max_line_length = g:linelength
+  let g:black_linelength = g:linelength
   let g:black_skip_string_normalization = 1
   let g:vim_isort_python_version = 'python3'
   let g:vim_isort_config_overrides = {
     \ 'include_trailing_comma': 'true',
     \ 'force_grid_wrap': 0,
     \ 'multi_line_output': 3,
-    \ 'linelength': s:linelength,
+    \ 'linelength': g:linelength,
     \ }
   let g:formatdef_mpython = '"isort '
     \ . '--trailing-comma '
     \ . '--force-grid-wrap 0 '
     \ . '--multi-line 3 '
-    \ . '--line-length ' . s:linelength
+    \ . '--line-length ' . g:linelength
     \ . ' - | black --quiet '
     \ . '--skip-string-normalization '
-    \ . '--line-length ' . s:linelength . ' - "'
+    \ . '--line-length ' . g:linelength . ' - "'
   let g:formatters_python = ['mpython']  " multiple formatters
   let g:formatters_fortran = ['fprettify']
 endif
@@ -2231,15 +2200,16 @@ endif
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
   function! Undotree_CustomMap() abort
-    noremap <buffer> u <C-u>
-    noremap <buffer> d <C-d>
+    noremap <buffer> <nowait> u <C-u>
+    noremap <buffer> <nowait> d <C-d>
   endfunc
-  noremap gu <Cmd>UndotreeToggle<CR>
-  noremap gU <Cmd>UndotreeToggle<CR><C-w>h
-  let g:undotree_SplitWidth = 30
+  noremap gu <Cmd>UndotreeToggle<CR><C-w><C-p>
+  noremap gU <Cmd>UndotreeToggle<CR>
   let g:undotree_DiffAutoOpen = 0
-  let g:undotree_ShortIndicators = 1
   let g:undotree_RelativeTimestamp = 0
+  let g:undotree_SetFocusWhenToggle = 1
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_SplitWidth = 30
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)

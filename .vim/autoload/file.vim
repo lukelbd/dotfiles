@@ -89,19 +89,19 @@ endfunction
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_init(cmd, local) abort
-  let cmd = a:cmd ? 'Files' : 'Open'  " recursive fzf or non-resucrive internal
+  let msg = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
   let dir = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
   let path = fnamemodify(dir, ':~')
-  let prompt = cmd . ' (' . path . ')'  " display longer version in prompt
+  let prompt = msg . ' (' . path . ')'  " display longer version in prompt
   let default = fnamemodify(dir, ':p:~:.')  " display shorter version here
   let default = empty(default) ? './' : default  " differentiate from user cancellation
   let start = utils#input_default(prompt, 'file#path_list', default)
   if empty(start)
     return
-  elseif cmd ==# 'Files'
+  elseif msg ==# 'Files'
     call fzf#vim#files(start, fzf#vim#with_preview(), 0)
   else
-    call fzf#open_continuous(cmd, start)
+    call fzf#open_continuous(msg, start)
   endif
 endfunction
 
