@@ -107,11 +107,11 @@ function! switch#ddc(...) abort
   if state == toggle
     return
   elseif toggle  " note completionMode was removed
-    call ddc#custom#patch_global(g:ddc_sources)  " restore sources
-    call denops#server#start()  " must come after ddc call
+    call ddc#custom#patch_global('sources', g:ddc_sources)  " restore sources
+    call denops#server#start()  " must come after ddc calls
   else
-    call ddc#custom#patch_global({'sources': []})  " wipe out ddc sources
-    call denops#server#stop()  " must come before ddc call
+    call denops#server#stop()  " must come before ddc calls
+    call ddc#custom#patch_global('sources', [])  " wipe out ddc sources
   endif
   call call('s:switch_message', ['autocomplete', toggle, suppress])
 endfunction

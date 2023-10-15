@@ -2203,8 +2203,7 @@ if s:plug_active('undotree')
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>
   endfunc
-  noremap gu <Cmd>UndotreeToggle<CR><C-w><C-p>
-  noremap gU <Cmd>UndotreeToggle<CR>
+  noremap gu <Cmd>UndotreeToggle<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
