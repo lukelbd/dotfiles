@@ -11,7 +11,7 @@ let s:new_file = '[new file]'  " dummy entry for requesting new file in current 
 " Useful when trying to debug 'go to this file' mapping
 function! file#print_exists() abort
   let files = glob(expand('<cfile>'), 0, 1)
-  if exists('*RelativePath')
+  if exists('*RelativePath')  " statusline function
     let files = map(files, 'RelativePath(v:val)')
   else
     let files = map(files, "fnamemodify(v:val, ':~:.')")
@@ -30,7 +30,7 @@ function! file#print_paths(...) abort
   let paths = a:0 ? a:000 : [@%]
   for path in paths
     let root = tag#find_root(path)
-    if exists('*RelativePath')
+    if exists('*RelativePath')  " statusline function
       let root = RelativePath(root)
       let show = RelativePath(path)
     else
@@ -48,8 +48,10 @@ endfunction
 " Generate list of files in directory
 " Warning: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
-function! s:path_source(dir, user) abort
-  let paths = split(globpath(a:dir, '*'), "\n") + split(globpath(a:dir, '.?*'), "\n")
+function! s:path_source(base, user) abort
+  let glob = fnamemodify(a:base, ':p')  " full directory name
+  let glob = substitute(glob, '/$', '', '')  " remove trailing slash
+  let paths = globpath(glob, '*', 0, 1) + globpath(glob, '.?*', 0, 1)
   let paths = map(paths, "fnamemodify(v:val, ':t')")
   if a:user | call insert(paths, s:new_file, 0) | endif
   return paths
@@ -76,9 +78,9 @@ function! file#open_recent() abort
     call remove(files, 0)
   endif
   call fzf#run(fzf#wrap({
+    \ 'sink': function('s:open_recent_sink'),
     \ 'source' : files,
     \ 'options': '--no-sort --prompt="Recent> "',
-    \ 'sink': function('s:open_recent_sink'),
     \ }))
 endfunction
 function! s:open_recent_sink(path) abort
@@ -88,20 +90,21 @@ endfunction
 " Open from local or current directory (see also grep.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
+function! s:open_prompt(path) abort
+  let prompt = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
+  let prompt = prompt[:1] =~# '/' ? prompt : './' . prompt
+  return substitute(prompt, '/$', '', '') . '/'
+endfunction
 function! file#open_init(cmd, local) abort
-  let msg = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
-  let dir = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
-  let path = fnamemodify(dir, ':~')
-  let prompt = msg . ' (' . path . ')'  " display longer version in prompt
-  let default = fnamemodify(dir, ':p:~:.')  " display shorter version here
-  let default = empty(default) ? './' : default  " differentiate from user cancellation
-  let start = utils#input_default(prompt, 'file#path_list', default)
-  if empty(start)
+  let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
+  let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
+  let init = utils#input_default(cmd, 'file#path_list', s:open_prompt(base))
+  if empty(init)
     return
-  elseif msg ==# 'Files'
-    call fzf#vim#files(start, fzf#vim#with_preview(), 0)
+  elseif cmd ==# 'Files'
+    call fzf#vim#files(init, fzf#vim#with_preview(), 0)
   else
-    call fzf#open_continuous(msg, start)
+    call file#open_continuous(cmd, init)
   endif
 endfunction
 
@@ -137,7 +140,7 @@ function! s:open_continuous(cmd, ...) abort
   for item in items
     let user = item ==# s:new_file
     if user  " should be recursed at least one level
-      let item = input(fnamemodify(base, ':~:.') . '/', '', 'customlist,utils#null_list')
+      let item = input(s:open_prompt(base), '', 'customlist,utils#null_list')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " :p adds a slash so need two :h:h to remove then
@@ -149,17 +152,13 @@ function! s:open_continuous(cmd, ...) abort
     endif
   endfor
   " Possibly activate or re-activate fzf
-  if empty(paths) || len(paths) == 1 && isdirectory(paths[0])
+  if empty(paths) && a:0 == 1 || len(paths) == 1 && isdirectory(paths[0])
     let base = empty(paths) ? '.' : paths[0]
-    let base = fnamemodify(base, ':p')  " full directory name
-    let base = substitute(base, '/$', '', '')  " remove trailing slash
-    let trunc = fnamemodify(base, ':~:.')  " remove unnecessary stuff
-    let trunc = trunc[:1] =~# '/' ? trunc : './' . trunc
     let paths = []  " only continue in recursion
     call fzf#run(fzf#wrap({
+      \ 'sink*': function('s:open_continuous', [a:cmd, base]),
       \ 'source': s:path_source(base, 1),
-      \ 'sinklist': function('s:open_continuous', [a:cmd, base]),
-      \ 'options': "--multi --no-sort --prompt='" . trunc . "/'",
+      \ 'options': "--multi --no-sort --prompt='" . s:open_prompt(base) . "'",
       \ }))
   endif
   " Open file(s), or if it is already open just to that tab

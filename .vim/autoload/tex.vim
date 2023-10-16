@@ -48,7 +48,7 @@ endfunction
 " Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
 function! s:label_select() abort
   call fzf#run({
-    \ 'sinklist': function('s:label_sink'),
+    \ 'sink*': function('s:label_sink'),
     \ 'source': s:label_source(),
     \ 'options': '--multi --height=100% --prompt="Label> "',
     \ })
@@ -124,7 +124,7 @@ endfunction
 " Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
 function! s:cite_select() abort
   call fzf#run({
-    \ 'sinklist': function('s:cite_sink'),
+    \ 'sink*': function('s:cite_sink'),
     \ 'source': s:cite_source(),
     \ 'options': '--multi --height=100% --prompt="Source> "',
     \ })
@@ -191,7 +191,7 @@ endfunction
 " Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
 function! s:graphic_select() abort
   call fzf#run({
-    \ 'sinklist': function('s:graphic_sink'),
+    \ 'sink*': function('s:graphic_sink'),
     \ 'source': s:graphic_source(),
     \ 'options': '--multi --height=100% --prompt="Figure> "',
     \ })

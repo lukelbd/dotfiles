@@ -7,7 +7,7 @@
 " commands that include ANSI colors to their correponsding (identical) man pages.
 function! shell#help_page(tab, ...) abort
   let file = @%
-  let page = a:0 ? a:1 : input('Help info: ', '', 'shellcmd')
+  let page = a:0 ? a:1 : utils#input_default('Help info', 'shellcmd', expand('<cword>'))
   let args = split(page, '\s\+')
   if empty(page) | return | endif
   if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
@@ -118,7 +118,7 @@ endfunction
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
 function! shell#man_page(tab, ...) abort
   let file = @%
-  let page = a:0 ? a:1 : input('Man page: ', '', 'shellcmd')
+  let page = a:0 ? a:1 : utils#input_default('Man page', 'shellcmd', expand('<cword>'))
   if empty(page) | return | endif
   if a:tab | tabedit | endif
   set filetype=man

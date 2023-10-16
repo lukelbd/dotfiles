@@ -21,10 +21,14 @@ endfunction
 " in parentheses that can be tab expanded, selects it when user presses enter, or
 " replaces it when user starts typing text or backspace. This is a bit nicer than
 " filling input prompt with default value, simply start typing to drop the default
-function! utils#input_list(...)
+function! utils#input_list(lead, line, cursor)
   let [init, funcname, default] = s:complete_opts
   if !init  " get complete options
-    let opts = call(funcname, a:000)
+    if funcname =~# '^[a-z_]\+$'
+      let opts = getcompletion(lead, funcname)
+    else
+      let opts = call(funcname, [lead, line, cursor])
+    endif
   else
     let s:complete_opts[0] = 0
     try
@@ -32,26 +36,27 @@ function! utils#input_list(...)
     catch  " user presses Ctrl-C
       let char = "\<C-c>"
     endtry
-    if char =~# '\p'  " fill prompt
-      let opts = [char]
-    elseif len(char) == 0  " clear prompt
+    if len(char) == 0  " clear prompt
       let opts = ['']
+    elseif char =~# '\p'  " fill prompt
+      let opts = [char]
     elseif char ==# "\<Tab>"  " expand default
       let opts = [default]
     elseif char ==# "\<CR>"  " confirm default
-      call feedkeys("\<CR>", 't')
       let opts = [default]
-    else  " escape or cancel
       call feedkeys("\<CR>", 't')
+    else  " escape or cancel
       let opts = ['']
+      call feedkeys("\<CR>", 't')
     endif
   endif
   return opts
 endfunction
 function! utils#input_default(prompt, funcname, default) abort
+  let prompt = a:prompt . ' (' . a:default . '): '
   let s:complete_opts = [1, a:funcname, a:default]
   call feedkeys("\<Tab>", 't')
-  return input(a:prompt . ': ', '', 'customlist,utils#input_list')
+  return input(prompt, '', 'customlist,utils#input_list')
 endfunction
 
 " Set up command for repetition

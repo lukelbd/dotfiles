@@ -12,8 +12,13 @@ elseif exists('b:current_syntax')
   finish
 endif
 
-" Fix syntax highlighting sync issues. Sometimes maxlines works, sometimes
-" minlines works. No consistency :/
+" Additional highlighting
+" Ignore braceless and change python
+highlight BracelessIndent cterm=inverse ctermfg=0 ctermbg=0
+highlight link pythonImportedObject Identifier
+
+" Fix syntax highlighting sync issues. Sometimes maxlines works and sometimes
+" minlines works but not consistent. Also use syntax refresh mappings.
 " See: https://stackoverflow.com/a/28114709/4970632
 " See: https://github.com/vim/vim/issues/2790
 syntax sync minlines=100

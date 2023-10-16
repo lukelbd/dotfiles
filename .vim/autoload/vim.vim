@@ -35,9 +35,8 @@ endfunction
 function! vim#config_refresh(bang, ...) abort
   " filetype detect  " in case started with empty file and shebang changes this
   let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
-  let default = get(g:refreshes, 'global', 0)
-  let current = localtime()
-  let compare = a:0 ? a:1 : ''
+  let global = get(g:refreshes, 'global', 0)
+  let common = expand('~/.vim/after/common.vim')
   let regexes = [
     \ '/.fzf/',
     \ '/plugged/',
@@ -46,32 +45,34 @@ function! vim#config_refresh(bang, ...) abort
     \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
     \ ]
   let regex = join(regexes, '\|')
+  let times = {}
   let loaded = []
-  let updates = {}
   for path in vim#config_scripts(1)[0]
     let ftype = path =~# '/syntax/\|/ftplugin/' ? fnamemodify(path, ':t:r') : 'global'
     let vimrc = path =~# '/\.\?vimrc\|/init\.vim'  " always source and trigger filetypes
-    if path !~# expand('~') || path =~# regex || !empty(compare) && path !~# compare
+    if path !~# expand('~') || path =~# regex || a:0 && path !~# a:1
       continue  " skip files not edited by user or not matching input regex
     endif
     if index(loaded, path) != -1
       continue  " already loaded this
     endif
-    if !vimrc && !a:bang && getftime(path) < get(g:refreshes, ftype, default)
+    if !vimrc && !a:bang && getftime(path) < get(g:refreshes, ftype, global)
       continue  " only refresh if outdated
     endif
     if ftype ==# 'global' || ftype ==# &filetype
-      exe 'so ' . path | call add(loaded, path) | let updates[ftype] = current
+      exe 'so ' . path | call add(loaded, path) | let times[ftype] = localtime()
     else
-      let updates[ftype] = get(g:refreshes, ftype, default)
+      let times[ftype] = get(g:refreshes, ftype, global)
     endif
-    if vimrc  " trigger autocommand
+    if vimrc  " trigger filetype settings after defaults
       doautocmd Filetype
     endif
   endfor
-  doautocmd BufEnter
+  if filereadable(common)  " trigger filetype common settings
+    exe 'so ' . common
+  endif
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
-  call extend(g:refreshes, updates)
+  call extend(g:refreshes, times)
 endfunction
 
 " Create session file or load existing one
