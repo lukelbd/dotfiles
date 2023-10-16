@@ -202,7 +202,7 @@ let s:shellcheck_ignore =
 " Move cursor to end of insertion after leaving
 " Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left
 " Note: Critical to keep jumplist or else populated after every single insertion. Use
-" 'zi' or explicit mark if you actually want to find previous insertion.
+" 'zi' or changelist if you actually want to find previous insertion.
 augroup insert_fix
   au!
   au InsertLeave * keepjumps normal! `^
@@ -218,7 +218,7 @@ augroup END
 " augroup END
 
 " Configure escape codes to restore screen after exiting
-" Disable visual bell when errors triggered because annoying
+" Also disable visual bell when errors triggered because annoying
 " See: :help restorescreen page
 let &t_te = "\e[?47l\e8"
 let &t_ti = "\e7\e[r\e[?47h"
@@ -1339,7 +1339,7 @@ call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {
   \ 'ctrl-m': 'Drop', 'ctrl-t': 'Drop',
   \ 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
-  \ }  " have file search, grep open to existing window if possible
+  \ }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#get_ignores(1)  " added just for safety
