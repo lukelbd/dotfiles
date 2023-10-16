@@ -12,12 +12,12 @@ if foldclosed(s:start) > 0 | exe s:start . 'foldopen' | endif
 let g:tex_fast = 'bmMprsSvV'  " exclude 'c'
 let g:tex_fold_enable = 1
 
-" Restrict concealmeant to accents, Greek symbols, and math symbols. Also allow @ in
-" makeatletter and 'math' outside of math zones (i.e. do not highlight [_^]).
+" Only conceal accents symbols and math. Also allow @ in makeatletter
+" and 'math' outside of math zones (i.e. do not highlight [_^]).
 let g:tex_conceal = 'agmdb'
 let g:tex_stylish = 1
 
-" Disable errors and disable spellcheck in verbatim and comments
+" Ignore error highlighting and disable spellcheck in verbatim and comments
 let g:tex_no_error = 1
 let g:tex_nospell = 0
 let g:tex_verbspell = 0

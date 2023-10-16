@@ -1,28 +1,22 @@
 "-----------------------------------------------------------------------------"
 " vint: -ProhibitSetNoCompatible
-" A fancy vimrc that does all sorts of magical things.
-" Note: Have iTerm map some ctrl+key combinations that would otherwise
-" be impossible to the F1, F2 keys. Currently they are:
-"     F1: 1b 4f 50 (Ctrl-,)
-"     F2: 1b 4f 51 (Ctrl-.)
-"     F3: 1b 4f 52 (Ctrl-i)
-"     F4: 1b 4f 53 (Ctrl-m)
-" Previously used the below but no longer
-"     F5: 1b 5b 31 35 7e (shift-forward delete/shift-caps lock on macbook)
-"     F6: 1b 5b 31 37 7e (Ctrl-;)
-" Also use Karabiner 'map Ctrl-j/k/h/l to arrow keys', so be aware that if
-" you map those keys in Vim, should also map arrows.
-" Also we use 'x' for insert-related marks, 'y' for visual-related marks, and 'z'
-" for normal-related marks in various complex maps.
-" 'z' marks in various complicated remaps.
-" Note when installing with anaconda, you may need to run
-" conda install -y conda-forge::ncurses first
+" An enormous vim configuration that does all sorts of magical things.
+" Note: Use karabiner to convert ctrl-j/k/h/l into arrow keys. So anything
+" mapped to these control combinations below must also be assigned to arrow keys.
+" Note: Use iterm to convert some ctrl+key combinations that would otherwise
+" be impossible into unused function key presses. Key codes and assignments are:
+" F1: 1b 4f 50 (Ctrl-,)
+" F2: 1b 4f 51 (Ctrl-.)
+" F3: 1b 4f 52 (Ctrl-i)
+" F4: 1b 4f 53 (Ctrl-m)
+" F5: 1b 5b 31 35 7e (unused)
+" F6: 1b 5b 31 37 7e (unused)
 "-----------------------------------------------------------------------------"
 " Critical stuff
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
 " buffer-local syntax and 'conceal-', 'format-' 'linebreak', and 'joinspaces'.
-" Note: Below dictionary figures out which files were recently modified when refreshing
-" session. Line length is used with linting tools below and in other non-vim settings.
+" Note: The refresh dictionary figures out which files were modified since previous
+" refresh. Line length is used with linting tools below and in other non-vim settings.
 let g:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see below <Leader> mappings
 let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
@@ -30,13 +24,15 @@ set nocompatible  " always use the vim defaults
 set encoding=utf-8  " enable utf characters
 scriptencoding utf-8
 runtime autoload/repeat.vim
+if has('gui_running') && $PATH !~# '/mambaforge/'  " enforce macvim path
+  let $PATH = $HOME . '/mambaforge/bin:' . $PATH
+endif
 
 " Global settings
 " Warning: Tried setting default 'foldmethod' and 'foldexpr' can cause buffer-local
 " expression folding e.g. simpylfold to disappear and not retrigger, while using
 " setglobal didn't work for filetypes with folding not otherwise auto-triggered (vim)
 set autoindent  " indents new lines
-set background=dark  " standardize colors -- need to make sure background set to dark, and should be good to go
 set backspace=indent,eol,start  " backspace by indent - handy
 set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
@@ -56,8 +52,9 @@ set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current s
 set foldnestmax=3  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
-set guifont=Monaco:h12  " match iterm settings in macvim
-set guioptions=M  " default gui options
+set guicursor+=a:blinkon0  " skip blinking cursor
+set guifont=Monaco:h12  " match iterm settings
+set guioptions=M  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084
 set history=100  " search history
 set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
@@ -132,8 +129,6 @@ let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characte
 let &g:expandtab = 1  " global expand tab
 let &g:wildignore = join(tag#get_ignores(0, '~/.wildignore'), ',')
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
-if has('gui_running') | set guioptions=M | endif  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084)
-if has('gui_running') | set guicursor+=a:blinkon0 | endif  " skip blinking
 
 " File types for different unified settings
 " Note: Here 'man' is for custom man page viewing utils, 'ale-preview' is used with
@@ -196,6 +191,7 @@ let s:shellcheck_ignore =
   \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
   \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
 
+
 "-----------------------------------------------------------------------------"
 " Repair unexpected behavior
 "-----------------------------------------------------------------------------"
@@ -239,7 +235,7 @@ let &t_ZH = "\e[3m"
 let &t_ZR = "\e[23m"
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
-" disabling other stuff we want e.g. syntax highlighting
+" disabling other stuff we want e.g. synax highlighting
 if !empty(mapcheck('<Esc>', 'n'))  " maps staring with escape
   silent! unmap <Esc>[3~
   let s:insert_maps = [
@@ -352,136 +348,6 @@ endfor
 
 
 "-----------------------------------------------------------------------------"
-" Syntax highlighting
-"-----------------------------------------------------------------------------"
-" Native syntax highlight options
-" Todo: Add to these. Consider overriding tex fold.
-let g:tex_nospell = 0
-let g:tex_no_error = 0
-let g:tex_comment_nospell = 1
-
-" Macvim color schemes
-" Todo: Figure out issues with scheme switching
-let s:colorscheme = 'badwolf'
-let s:colorscheme = 'fahrenheit'
-let s:colorscheme = 'gruvbox'
-let s:colorscheme = 'molokai'
-let s:colorscheme = 'monokain'
-let s:colorscheme = 'oceanicnext'
-let s:colorscheme = 'papercolor'  " default
-
-" Macvim syntax overrides
-" Todo: Figure out whether to declare colorscheme here or at bottom
-if has('gui_running')  " revisit these?
-  " exe 'noautocmd colorscheme ' . s:colorscheme
-  highlight! link Folded TabLine
-  highlight! link vimMap Statement
-  highlight! link vimNotFunc Statement
-  highlight! link vimFuncKey Statement
-  highlight! link vimCommand Statement
-endif
-
-" Make terminal background same as main background
-highlight Terminal ctermbg=NONE ctermfg=NONE
-
-" Show folds with dark against light
-highlight Folded ctermbg=Black ctermfg=White cterm=Bold
-
-" Use original colors for transparent conceal group
-highlight Conceal ctermbg=NONE ctermfg=NONE
-
-" Special characters
-highlight NonText ctermfg=Black cterm=NONE
-highlight SpecialKey ctermfg=Black cterm=NONE
-
-" Matching parentheses
-highlight Todo ctermbg=Red ctermfg=NONE
-highlight MatchParen ctermbg=Blue ctermfg=NONE
-
-" Sneak and search highlighting
-highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
-highlight Search ctermbg=Magenta ctermfg=NONE
-
-" Popup menu highlighting
-highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
-
-" Color and sign column stuff
-highlight ColorColumn ctermbg=Gray cterm=NONE
-highlight SignColumn ctermbg=NONE ctermfg=Black cterm=NONE
-
-" Cursor line or column highlighting
-" Use the cterm color mapping
-highlight CursorLine ctermbg=Black cterm=NONE
-highlight CursorLineNR ctermbg=Black ctermfg=White cterm=NONE
-
-" Comment highlighting
-" Only works in iTerm with minimum contrast enabled (else use gray)
-highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
-highlight Comment ctermfg=Black cterm=NONE
-
-" ANSI has no control over light
-" Switch from light to main and color to dark
-highlight Type ctermbg=NONE ctermfg=DarkGreen
-highlight Constant ctermbg=NONE ctermfg=Red
-highlight Special ctermbg=NONE ctermfg=DarkRed
-highlight PreProc ctermbg=NONE ctermfg=DarkCyan
-highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
-
-" Error highlighting
-" Use Red or Magenta for increased prominence
-highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
-highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
-
-" Python highlighting
-highlight BracelessIndent cterm=inverse ctermfg=0 ctermbg=0
-highlight link pythonImportedObject Identifier
-
-" Repair highlighting. Leveraging ctags integration almost always works.
-" Note: This says get the closest tag to the first line in the window, all tags
-" rather than top-level only, searching backward, and without circular wrapping.
-command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
-command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
-noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
-noremap <Leader>Y <Cmd>SyncStart<CR>
-
-" Color scheme scrolling
-" Todo: Support terminal vim? Need command to restore defaults, e.g. source tabline.
-" Note: Colors uses fzf to jump between color schemes (fzf.vim command). These utils
-" are mainly used for GUI vim, otherwise use terminal themes. Some scheme ideas:
-" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-command! SchemePrev call iter#jump_colorschemes(0)
-command! SchemeNext call iter#jump_colorschemes(1)
-noremap <Leader>0 <Cmd>Colors<CR>
-noremap <Leader>( <Cmd>SchemePrev<CR>
-noremap <Leader>) <Cmd>SchemeNext<CR>
-augroup color_scheme
-  au!
-  exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
-augroup END
-
-" General syntax commands
-" Note: ColorToggle is defined in colorizer.vim. Enables hex-string coloring. Useful
-" only for small files and with only a few tabs open. For now keep manual.
-" noremap <Leader>7 <Cmd>ColorToggle<CR>
-command! -nargs=? Colorize ColorToggle <args>
-command! -nargs=0 SyntaxGroup call vim#syntax_group()
-command! -nargs=? SyntaxList call vim#syntax_list(<q-args>)
-command! -nargs=0 ShowGroups vert help group-name | call search('\*Comment') | normal! zt
-command! -nargs=0 ShowColors call vim#show_colors()
-command! -nargs=0 ShowPlugin call vim#show_ftplugin()
-command! -nargs=0 ShowSyntax call vim#show_syntax()
-noremap <Leader>1 <Cmd>SyntaxGroup<CR>
-noremap <Leader>2 <Cmd>SyntaxList<CR>
-noremap <Leader>3 <Cmd>ShowGroups<CR>
-noremap <Leader>4 <Cmd>ShowSyntax<CR>
-noremap <Leader>5 <Cmd>ShowPlugin<CR>
-noremap <Leader>6 <Cmd>ShowColors<CR>
-
-
-"-----------------------------------------------------------------------------"
 " File and window utilities
 "-----------------------------------------------------------------------------"
 " Save or quit the current session
@@ -528,7 +394,7 @@ nnoremap <Tab>e <Cmd>History<CR>
 nnoremap <Tab>r <Cmd>call file#open_recent()<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
 nnoremap <Tab>\ <Cmd>call file#open_init('vsplit', 1)<CR>
-nnoremap <Tab>u <Cmd>call file#open_init('Files', 1)<CR>
+nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
@@ -1283,8 +1149,8 @@ let g:indexed_search_numbered_only = 1  " only show numbers
 let g:indexed_search_n_always_searches_forward = 0  " disable for consistency with sneak
 
 " Error checking and testing
-" Note: Below test plugin works for every filetype (simliar to ale). Set up
-" Note: syntastic looks for checkers in $PATH, must be installed manually
+" Note: Test plugin works for every filetype (simliar to ale).
+" Note: ALE plugin looks for all checkers in $PATH
 " call plut#('scrooloose/syntastic')  " out of date: https://github.com/vim-syntastic/syntastic/issues/2319
 if has('python3') | call plug#('fisadev/vim-isort') | endif
 call plug#('vim-test/vim-test')
@@ -1434,9 +1300,8 @@ call plug#('raimondi/delimitmate')
 " call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
 
 " Additional text objects (inner/outer selections)
-" Todo: Generalized function converting text objects into navigation commands?
-" Unsustainable to try to reproduce diverse plugin-supplied text objects as
-" navigation commands... need to do this automatically!!!
+" Todo: Generalized function converting text objects into navigation commands? Or
+" could just rely on tag and fold jumping for most navigation.
 " call plug#('bps/vim-textobj-python')  " not really ever used, just use indent objects
 " call plug#('vim-scripts/argtextobj.vim')  " issues with this too
 " call plug#('machakann/vim-textobj-functioncall')  " does not work
@@ -1558,7 +1423,7 @@ let g:colorizer_nomap = 1
 let g:colorizer_startup = 0
 
 " Calculators and number stuff
-" call plug#('vim-scripts/Toggle')  " toggling stuff on/off, modified this myself
+" call plug#('vim-scripts/Toggle')  " toggling stuff on/off (forked instead)
 " call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
 call plug#('sk1418/HowMuch')
 call plug#('tpope/vim-speeddating')  " dates and stuff
@@ -1669,6 +1534,8 @@ endif
 " instead creating tags whenever buffer is loaded and tracking tags continuously.
 " Note: Use .ctags config to ignore particular kinds. Include python imports (Ii),
 " tex frame subtitles (g), and vim constants/variables/vimballs (Cvn).
+" Warning: Critical to mamba install 'universal-ctags' instead of outdated 'ctags'
+" or else will get warnings for non-existing kinds.
 if s:plug_active('vim-tags')
   augroup vim_tags_bracket
     au!
@@ -1847,7 +1714,7 @@ if s:plug_active('ddc.vim')
   noremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
   let g:denops_disable_version_check = 1  " skip check for recent versions
-  let g:denops#deno = has('gui_running') ? $HOME . '/mambaforge/bin/deno' : 'deno'
+  let g:denops#deno = 'deno'  " deno executable should be on $PATH
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
     \ '--v8-flags=--max-heap-size=100,--max-old-space-size=100',
@@ -2225,20 +2092,142 @@ if s:plug_active('vim-obsession')  " must manually preserve cursor position
   noremap <Leader>$ <Cmd>Session<CR>
 endif
 
+
 "-----------------------------------------------------------------------------"
-" Exit
+" Final tasks
 "-----------------------------------------------------------------------------"
+" Color schcmes from flazz/vim-colorschemes
+" Warning: This has to come after color schemes are loaded
+let s:colorscheme = 'badwolf'
+let s:colorscheme = 'fahrenheit'
+let s:colorscheme = 'gruvbox'
+let s:colorscheme = 'molokai'
+let s:colorscheme = 'monokain'
+let s:colorscheme = 'oceanicnext'
+let s:colorscheme = 'papercolor'  " default
+
+" Apply color scheme
+" Note: Avoid triggering 'colorscheme'
+if get(g:, 'colors_name', 'default') ==? 'default'
+  noautocmd set background=dark  " standardize colors
+endif
+if has('gui_running') && get(g:, 'colors_name', '') !=? s:colorscheme
+  exe 'noautocmd colorscheme ' . s:colorscheme
+endif
+if has('gui_running')  " revisit these?
+  highlight! link vimMap Statement
+  highlight! link vimNotFunc Statement
+  highlight! link vimFuncKey Statement
+  highlight! link vimCommand Statement
+endif
+
+" Pick color scheme and toggle hex coloring
+" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note
+" coloring hex strings can cause massive slowdowns so disable by default
+noremap <Leader>0 <Cmd>Colors<CR>
+noremap <Leader>8 <Cmd>Colorize<CR>
+
+" Scroll over color schemes
+" Todo: Finish terminal vim support. Currently sign column gets messed up
+" Note: Colors uses fzf to jump between color schemes (fzf.vim command). These utils
+" are mainly used for GUI vim, otherwise use terminal themes. Some scheme ideas:
+" https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
+augroup color_scheme
+  au!
+  exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
+augroup END
+command! SchemePrev call iter#jump_colorschemes(0)
+command! SchemeNext call iter#jump_colorschemes(1)
+noremap <Leader>( <Cmd>SchemePrev<CR>
+noremap <Leader>) <Cmd>SchemeNext<CR>
+
+" Show syntax under cursor and syntax types
+" Note: Here 'groups' opens up the page
+command! -nargs=0 SyntaxGroup call vim#syntax_group()
+command! -nargs=? SyntaxList call vim#syntax_list(<q-args>)
+command! -nargs=0 ShowGroups splitbelow help group-name | call search('\*Comment') | normal! zt
+noremap <Leader>1 <Cmd>SyntaxGroup<CR>
+noremap <Leader>2 <Cmd>SyntaxList<CR>
+noremap <Leader>3 <Cmd>ShowGroups<CR>
+
+" Show runtime filetype information
+command! -nargs=0 ShowColors call vim#show_colors()
+command! -nargs=0 ShowPlugin call vim#show_ftplugin()
+command! -nargs=0 ShowSyntax call vim#show_syntax()
+noremap <Leader>4 <Cmd>ShowSyntax<CR>
+noremap <Leader>5 <Cmd>ShowPlugin<CR>
+noremap <Leader>6 <Cmd>ShowColors<CR>
+
+" Repair highlighting. Leveraging ctags integration almost always works.
+" Note: This says get the closest tag to the first line in the window, all tags
+" rather than top-level only, searching backward, and without circular wrapping.
+command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
+command! SyncStart syntax sync fromstart
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
+noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
+noremap <Leader>Y <Cmd>SyncStart<CR>
+
+" Show folds with dark against light
+highlight Folded ctermbg=Black ctermfg=White cterm=Bold
+
+" Use default colors for transparent conceal and terminal background
+highlight Conceal ctermbg=NONE ctermfg=NONE
+highlight Terminal ctermbg=NONE ctermfg=NONE
+
+" Special characters
+highlight NonText ctermfg=Black cterm=NONE
+highlight SpecialKey ctermfg=Black cterm=NONE
+
+" Matching parentheses
+highlight Todo ctermbg=Red ctermfg=NONE
+highlight MatchParen ctermbg=Blue ctermfg=NONE
+
+" Sneak and search highlighting
+highlight Sneak ctermbg=DarkMagenta ctermfg=NONE
+highlight Search ctermbg=Magenta ctermfg=NONE
+
+" Color and sign column stuff
+highlight ColorColumn ctermbg=Gray cterm=NONE
+highlight SignColumn ctermbg=NONE ctermfg=Black cterm=NONE
+
+" Cursor line or column highlighting
+" Use the cterm color mapping
+highlight CursorLine ctermbg=Black cterm=NONE
+highlight CursorLineNR ctermbg=Black ctermfg=White cterm=NONE
+
+" Comment highlighting
+" Only works in iTerm with minimum contrast enabled (else use gray)
+highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
+highlight Comment ctermfg=Black cterm=NONE
+
+" Popup menu highlighting
+" Use same background as main
+highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
+highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
+
+" ANSI has no control over light
+" Switch from light to main and color to dark
+highlight Type ctermbg=NONE ctermfg=DarkGreen
+highlight Constant ctermbg=NONE ctermfg=Red
+highlight Special ctermbg=NONE ctermfg=DarkRed
+highlight PreProc ctermbg=NONE ctermfg=DarkCyan
+highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
+
+" Error highlighting
+" Use Red or Magenta for increased prominence
+highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
+
 " Clear past jumps to ignore stuff from plugin files and vimrc and ignore
 " outdated buffer marks loaded from .viminfo
+" See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
-" Todo: Figure out whether to declare colorscheme here or at top
-noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
-if has('gui_running') | exe 'noautocmd colorscheme ' . s:colorscheme | endif
 augroup clear_jumps
   au!
   au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
 augroup END
-doautocmd <nomodeline> BufEnter  " trigger buffer-local overrides for this file
+noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 delmarks a-z
 nohlsearch  " turn off highlighting at startup
-redraw!  " weird issue sometimes where statusbar disappears
+redraw!  " prevent statusline error
