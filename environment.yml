@@ -59,6 +59,9 @@ dependencies:
   - notebook
   - jupytext
   - pandoc
+  - ctags
+  - ripgrep
+  - the_silver_searcher
   - nb_conda_kernels
   - executing>=1.0.0
   - jupyter_contrib_nbextensions
