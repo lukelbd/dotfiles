@@ -3,8 +3,9 @@
 "------------------------------------------------------------------------------
 " Ensure program open on startup
 " Note: Not possible to set foldlevelstart=1 for specific filetype
-let s:start = search('^\s*program\>', 'n')
-if foldclosed(s:start) > 0 | exe s:start . 'foldopen' | endif
+" let s:start = search('^\s*program\>', 'n')
+" if foldclosed(s:start) > 0 | exe s:start . 'foldopen' | endif
+if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
 
 " These mostly make automatic indentation better
 " See this helpful thread: https://stackoverflow.com/a/17619568/4970632
