@@ -2,10 +2,11 @@
 " Builtin TeX settings
 "-----------------------------------------------------------------------------
 " Ensure document open on startup
+" Note: Initialize with closed preamble by default
 " Note: Not possible to set foldlevelstart=1 for specific filetype
-" let s:start = search('^\s*\\begin{document}', 'n')
-" if foldclosed(s:start) > 0 | exe s:start . 'foldopen' | endif
 if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
+let s:preamble = search('^\s*\\begin{document}', 'n') - 1
+if s:preamble | exe s:preamble . 'foldclose' | endif
 
 " Enable folds and adjust highlight regions
 " Note: g:tex_fast indicates highlight regions to *enable* (so setting to empty string

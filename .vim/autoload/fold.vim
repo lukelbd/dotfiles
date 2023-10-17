@@ -2,8 +2,8 @@
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
 " Recursively close or open up to &l:foldlevel
-" Note: This is used to override 'zC' but currently not used to override 'zO'. General
-" workflow is to set the minimum fold level and open up select parts of document.
+" Note: Current workflow is to set standard minimum fold level then manually open folds
+" Note: Error message is more compact if triggered outside function so use feedkeys()
 " Note: When called on line below fold level this will still trigger a fold close. So
 " pressing e.g. 'zCzC' will first fold up to foldlevel then fold additional levels.
 function! fold#close_nested() abort
@@ -11,7 +11,7 @@ function! fold#close_nested() abort
   while line > 1 && foldlevel(line - 1) > &l:foldlevel
     let line -= 1  " stop when preceding line matches desired level
   endwhile
-  exe line . 'foldclose'
+  call feedkeys("\<Cmd>" . line . "foldclose\<CR>", 'n')
 endfunction
 
 " Generate truncated fold text
