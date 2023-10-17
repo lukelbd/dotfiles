@@ -162,6 +162,8 @@ function! s:open_continuous(cmd, ...) abort
       \ }))
   endif
   " Open file(s), or if it is already open just to that tab
+  " Note: Use feedkeys() if only one file selected or else template loading
+  " on s:new_file selection will fail.
   for path in paths
     if isdirectory(path)  " false for empty string
       echohl WarningMsg
@@ -170,7 +172,7 @@ function! s:open_continuous(cmd, ...) abort
     elseif empty(path) || path =~# '[*?[\]]'  " unexpanded glob
       :
     else  " e.g. split or drop
-      exe a:cmd . ' ' . path
+      call feedkeys("\<Cmd>" . a:cmd . ' ' . path . "\<CR>", 'n')
     endif
   endfor
 endfunction

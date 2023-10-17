@@ -49,7 +49,7 @@ set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. f
 set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldenable  " toggle with zi, note plugins and fastfold handle foldmethod/foldexpr
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
-set foldnestmax=3  " allow only a few folding levels
+set foldnestmax=5  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
@@ -407,7 +407,7 @@ nnoremap <Tab>q <Cmd>Buffers<CR>
 nnoremap <Tab>w <Cmd>Windows<CR>
 nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
 nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
-nnoremap <Tab>' <Cmd>tabnext #<CR>
+nnoremap <Tab>' <Cmd>silent! tabnext #<CR>
 nnoremap <Tab>; <C-w><C-p>
 nnoremap <Tab>j <C-w>j
 nnoremap <Tab>k <C-w>k
@@ -621,12 +621,13 @@ noremap zO zO
 
 " Move between folds and inside folds hello
 " Note: This is more consistent with other bracket maps
+" Note: Recursive map required for [Z or ]Z or else way more complicated
 noremap z[ [z
 noremap z] ]z
 noremap [z zk
 noremap ]z zj
-noremap [Z zkzv
-noremap ]Z zjzv
+map [Z [zzz
+map ]Z ]zzz
 
 " Adjust other z mappings
 " Note: Instead use 'zt' for title case and 'zb' for boolean toggle

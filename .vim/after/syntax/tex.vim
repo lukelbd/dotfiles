@@ -42,13 +42,17 @@ syntax region texMatcherNM matchgroup=Delimiter
 " Enable syntax folding of abstracts authors and captions. By default only begin..end
 " begin..end texAbstract environment is folded and only outside of the preamble
 " Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim
+" Note: Caption texStatement is consistent with existing \label{} and \ref{} assignment
+" to texStatement. Also without this folds end on \end{figure} (unsure why).
+" required or else closing bracket seems to not work, think
+" statements have
 syntax region texAbstracts matchgroup=texSection
   \ start='\\abstract\s*{' end='}'
   \ contains=@texFoldGroup,@Spell fold
 syntax region texAuthors matchgroup=texSection
   \ start='\\authors\s*{' end='}'
   \ contains=@texFoldGroup,@Spell fold
-syntax region texCaption transparent
+syntax region texCaption matchgroup=texStatement
   \ start='\\caption\s*{' end='}'
   \ contains=@texFoldGroup,@Spell fold
 syntax cluster texFoldGroup add=texAbstracts

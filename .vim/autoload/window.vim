@@ -20,10 +20,10 @@ endfunction
 function! window#close_window() abort
   let ntabs = tabpagenr('$')
   let islast = ntabs == tabpagenr()
-  if &l:filetype ==# 'codi'
-    wincmd p | Codi!!
+  if &l:filetype !=# 'codi'
+    quit
   else
-    silent! quit
+    wincmd p | Codi!!
   endif
   if ntabs != tabpagenr('$') && !islast
     silent! tabprevious
