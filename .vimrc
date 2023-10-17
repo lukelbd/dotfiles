@@ -592,8 +592,8 @@ noremap gz <Cmd>Folds<CR>
 
 " Toggle fold under cursor
 " Note: Open recursively but close single fold to avoid unwanted intermediates
-noremap <expr> zz foldclosed('.') ? 'zO' : 'zc'
-noremap <expr> zZ foldclosed('.') ? 'zOzC' : 'zCzO'
+noremap <expr> zz foldclosed('.') > 0 ? 'zO' : 'zc'
+noremap <expr> zZ foldclosed('.') > 0 ? 'zO<Cmd>call fold#close_nested()<CR>' : '<Cmd>call fold#close_nested()<CR>zO'
 
 " Close folds with lower case open with upper case
 " Note: This is more consistent with e.g. 'zF' and other utils
@@ -616,7 +616,7 @@ noremap zcc zc
 noremap zoo zo
 noremap <expr> zc fold#set_range_expr(1, 0)
 noremap <expr> zo fold#set_range_expr(0, 0)
-noremap zC <cmd>call fold#close_recursive()<CR>
+noremap zC <Cmd>call fold#close_nested()<CR>
 noremap zO zO
 
 " Move between folds and inside folds hello

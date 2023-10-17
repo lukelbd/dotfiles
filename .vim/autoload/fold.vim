@@ -6,7 +6,7 @@
 " workflow is to set the minimum fold level and open up select parts of document.
 " Note: When called on line below fold level this will still trigger a fold close. So
 " pressing e.g. 'zCzC' will first fold up to foldlevel then fold additional levels.
-function! fold#close_recursive() abort
+function! fold#close_nested() abort
   let line = line('.')
   while line > 1 && foldlevel(line - 1) > &l:foldlevel
     let line -= 1  " stop when preceding line matches desired level
