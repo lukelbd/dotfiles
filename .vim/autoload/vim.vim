@@ -64,8 +64,8 @@ function! vim#config_refresh(bang, ...) abort
     else
       let times[ftype] = get(g:refreshes, ftype, global)
     endif
-    if vimrc  " trigger filetype settings after defaults
-      doautocmd Filetype
+    if vimrc  " detect filetype and trigger autocommands
+      filetype detect
     endif
   endfor
   if filereadable(common)  " trigger filetype common settings
