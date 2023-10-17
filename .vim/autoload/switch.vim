@@ -145,6 +145,7 @@ function! switch#gitgutter(...) abort
 endfunction
 
 " Toggle highlighting
+" Note: hlsearch reset when reurning from function. See :help function-search-undo
 function! switch#hlsearch(...) abort
   let state = v:hlsearch
   let toggle = a:0 > 0 ? a:1 : 1 - state
@@ -156,8 +157,8 @@ function! switch#hlsearch(...) abort
   else
     let cmd = 'nohlsearch'
   endif
-  call feedkeys("\<Cmd>" . cmd . "\<CR>")
   call call('s:switch_message', ['Highlight search', toggle, suppress])
+  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 
 " Toggle directory 

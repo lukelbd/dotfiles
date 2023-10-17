@@ -592,8 +592,13 @@ noremap gz <Cmd>Folds<CR>
 
 " Toggle fold under cursor
 " Note: Open recursively but close single fold to avoid unwanted intermediates
-noremap <expr> zz foldclosed('.') ? 'zA' : 'za'
-noremap zZ zAzA
+noremap <expr> zz foldclosed('.') ? 'zO' : 'zc'
+noremap <expr> zZ foldclosed('.') ? 'zOzC' : 'zCzO'
+
+" Close folds with lower case open with upper case
+" Note: This is more consistent with e.g. 'zF' and other utils
+noremap zn zN
+noremap zN zn
 
 " Change fold level
 " Note: Passing 'zf' without count is equivalent to 'zM'
@@ -604,24 +609,15 @@ noremap zM <Cmd>call fold#set_level('M')<CR>
 noremap zr <Cmd>call fold#set_level('r')<CR>
 noremap zR <Cmd>call fold#set_level('R')<CR>
 
-" Close folds with lower case open with upper case
-" Note: This is more consistent with e.g. 'zF' and other utils
-" Note: Now 'zN' temporarily disables folds and 'zn' resets foldenable
-noremap za zA
-noremap zA za
-noremap zn zN
-noremap zN zn
-
 " Set folds to open/closed over input range
 " Note: This uses :foldopen[!] and :foldclose[!] commands with line range
+" Note: For recursive maps can use e.g. noremap <expr> zC fold#set_range_expr(1, 0)
 noremap zcc zc
 noremap zoo zo
 noremap <expr> zc fold#set_range_expr(1, 0)
 noremap <expr> zo fold#set_range_expr(0, 0)
-" noremap zCC zC
-" noremap zOO zO
-" noremap <expr> zC fold#set_range_expr(1, 1)
-" noremap <expr> zO fold#set_range_expr(0, 1)
+noremap zC <cmd>call fold#close_recursive()<CR>
+noremap zO zO
 
 " Move between folds and inside folds hello
 " Note: This is more consistent with other bracket maps

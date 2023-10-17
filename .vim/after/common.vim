@@ -9,7 +9,7 @@ setlocal conceallevel=2
 setlocal formatoptions=lrojcq
 setlocal linebreak
 setlocal nojoinspaces
-let &l:textwidth = g:linelength  " see .vimrc
+let &l:textwidth = g:linelength  " see also .vimrc
 let &l:wrapmargin = 0
 
 " Override buffer-local syntax

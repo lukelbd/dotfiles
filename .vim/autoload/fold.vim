@@ -1,6 +1,19 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
+" Recursively close or open up to &l:foldlevel
+" Note: This is used to override 'zC' but currently not used to override 'zO'. General
+" workflow is to set the minimum fold level and open up select parts of document.
+" Note: When called on line below fold level this will still trigger a fold close. So
+" pressing e.g. 'zCzC' will first fold up to foldlevel then fold additional levels.
+function! fold#close_recursive() abort
+  let line = line('.')
+  while line > 1 && foldlevel(line - 1) > &l:foldlevel
+    let line -= 1  " stop when preceding line matches desired level
+  endwhile
+  exe line . 'foldclose'
+endfunction
+
 " Generate truncated fold text
 " Note: Style here is inspired by vim-anyfold. For now stick to native
 " per-filetype syntax highlighting becuase still has some useful features.
