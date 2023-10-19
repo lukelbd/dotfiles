@@ -8,9 +8,8 @@ if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
 setlocal foldmethod=syntax
 
 " These mostly make automatic indentation better
-" See this helpful thread: https://stackoverflow.com/a/17619568/4970632
-" See $VIMRUNTIME/indent/fortran.vim for setting the relevant global variables
-let g:fortran_fold = 1
+" See: https://stackoverflow.com/a/17619568/4970632
+" See: $VIMRUNTIME/indent/fortran.vim for relevant global variables
 let g:fortran_do_enddo = 1  " otherwise do/enddo loops aren't indented!
 let g:fortran_indent_more = 1  " more better indenting
 let g:fortran_have_tabs = 0

@@ -590,11 +590,6 @@ noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 " Note: Mapping is consistent with gt and gT tag maps
 noremap gz <Cmd>Folds<CR>
 
-" Toggle fold under cursor
-" Note: Open recursively but close single fold to avoid unwanted intermediates
-noremap <expr> zz foldclosed('.') > 0 ? 'zO' : 'zc'
-noremap <expr> zZ foldclosed('.') > 0 ? 'zO<Cmd>call fold#close_nested()<CR>' : '<Cmd>call fold#close_nested()<CR>zO'
-
 " Close folds with lower case open with upper case
 " Note: This is more consistent with e.g. 'zF' and other utils
 noremap zn zN
@@ -618,6 +613,14 @@ noremap <expr> zc fold#set_range_expr(1, 0)
 noremap <expr> zo fold#set_range_expr(0, 0)
 noremap zC <Cmd>call fold#close_nested()<CR>
 noremap zO zO
+
+" Toggle fold under cursor
+" Note: Open recursively but close single fold to avoid unwanted intermediates
+" Warning: For some reason combinining call with naked 'zO' fails so use feedkeys
+noremap <expr> zz foldclosed('.') > 0 ? 'zO' : 'zc'
+noremap <expr> zZ foldclosed('.') > 0
+  \ ? "<Cmd>call feedkeys('zO', 'n') \| call fold#close_nested()<CR>"
+  \ : "<Cmd>call fold#close_nested() \| call feedkeys('zO', 'n')<CR>"
 
 " Move between folds and inside folds hello
 " Note: This is more consistent with other bracket maps
