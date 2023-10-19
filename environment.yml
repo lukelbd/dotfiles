@@ -59,6 +59,10 @@ dependencies:
   - notebook
   - jupytext
   - pandoc
+  - pandoc-fignos
+  - pandoc-eqnos
+  - pandoc-tablenos
+  - pandoc-secnos
   - ctags
   - ripgrep
   - the_silver_searcher
