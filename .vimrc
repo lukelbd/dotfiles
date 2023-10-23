@@ -611,16 +611,14 @@ noremap zcc zc
 noremap zoo zo
 noremap <expr> zc fold#set_range_expr(1, 0)
 noremap <expr> zo fold#set_range_expr(0, 0)
-noremap zC <Cmd>call fold#close_nested()<CR>
+noremap zC <Cmd>call fold#close_nested(0)<CR>
 noremap zO zO
 
 " Toggle fold under cursor
 " Note: Open recursively but close single fold to avoid unwanted intermediates
 " Warning: For some reason combinining call with naked 'zO' fails so use feedkeys
 noremap <expr> zz foldclosed('.') > 0 ? 'zO' : 'zc'
-noremap <expr> zZ foldclosed('.') > 0
-  \ ? "<Cmd>call feedkeys('zO', 'n') \| call fold#close_nested()<CR>"
-  \ : "<Cmd>call fold#close_nested() \| call feedkeys('zO', 'n')<CR>"
+noremap zZ <Cmd>call fold#close_nested(1)<CR>
 
 " Move between folds and inside folds hello
 " Note: This is more consistent with other bracket maps

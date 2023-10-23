@@ -6,12 +6,20 @@
 " Note: Error message is more compact if triggered outside function so use feedkeys()
 " Note: When called on line below fold level this will still trigger a fold close. So
 " pressing e.g. 'zCzC' will first fold up to foldlevel then fold additional levels.
-function! fold#close_nested() abort
+function! fold#close_nested(...) abort
+  let nochange = a:0 ? a:1 : 0  " do not change open/close status, only remove nesting
+  let isclosed = foldclosed('.') > 0 ? 1 : 0
   let line = line('.')
+  if nochange && isclosed
+    call feedkeys('zO', 'n')
+  endif
   while line > 1 && foldlevel(line - 1) > &l:foldlevel
     let line -= 1  " stop when preceding line matches desired level
   endwhile
   call feedkeys("\<Cmd>" . line . "foldclose\<CR>", 'n')
+  if nochange && !isclosed
+    call feedkeys('zO', 'n')
+  endif
 endfunction
 
 " Generate truncated fold text
