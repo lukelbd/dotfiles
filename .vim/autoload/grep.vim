@@ -90,10 +90,12 @@ endfunction
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 " let prompt = a:level > 1 ? 'Current file' : a:level > 0 ? 'File directory' : 'Working directory'
 function! grep#complete_pattern(lead, line, cursor)
-  let opts = execute('history search')
-  let opts = substitute(opts, '\n\@<=>\?\s*[0-9]*\s*\([^\n]*\)\(\n\|$\)\@=', '\1', 'g')
+  let regex = '\n\@<=>\?\s*[0-9]*\s*\([^\n]*\)\(\n\|$\)\@='
+  let match = 'empty(a:lead) || v:val[:len(a:lead) - 1] ==# a:lead'
+  let opts = execute('history search')  " remove number prompt
+  let opts = substitute(opts, regex, '\1', 'g')
   let opts = split(opts, '\n')
-  let opts = filter(opts, 'empty(a:lead) || v:val[:len(a:lead) - 1] ==# a:lead')
+  let opts = filter(opts, match)  " match to user input
   return reverse([@/] + opts[1:])
 endfunction
 function! grep#call_grep(grep, level, depth) abort

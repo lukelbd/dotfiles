@@ -25,9 +25,9 @@ function! utils#input_list(lead, line, cursor)
   let [init, funcname, default] = s:complete_opts
   if !init  " get complete options
     if funcname =~# '^[a-z_]\+$'
-      let opts = getcompletion(lead, funcname)
+      let opts = getcompletion(a:lead, funcname)
     else
-      let opts = call(funcname, [lead, line, cursor])
+      let opts = call(funcname, [a:lead, a:line, a:cursor])
     endif
   else
     let s:complete_opts[0] = 0
