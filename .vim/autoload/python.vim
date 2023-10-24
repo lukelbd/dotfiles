@@ -1,66 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Python utils defined here
 "-----------------------------------------------------------------------------"
-" Fold groups of constants using SimpylFold cache
-" Warning: Only call this when SimpylFold updates to improve performance. Might break
-" if SimpylFold renames internal cache variable (monitor). Note
-function! s:fold_exists(lnum) abort
-  return exists('b:SimpylFold_cache')
-    \ && !empty(b:SimpylFold_cache[a:lnum])
-    \ && !empty(b:SimpylFold_cache[a:lnum]['foldexpr'])  " note empty(0) returns 1
-endfunction
-function! python#fold_expr(lnum) abort
-  let recache = !exists('b:SimpylFold_cache')
-  call SimpylFold#FoldExpr(a:lnum)  " auto recache
-  if recache | call python#fold_cache() | endif
-  return b:SimpylFold_cache[a:lnum]['foldexpr']
-endfunction
-function! python#fold_cache() abort
-  let lnum = 1
-  let cache = b:SimpylFold_cache
-  let global = '^[A-Z_]\k*'
-  let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
-  while lnum <= line('$')
-    if s:fold_exists(lnum) | let lnum += 1 | continue | endif
-    let line = getline(lnum)
-    let group = []
-    " Docstring fold (e.g. _docstring_snippet = """...)
-    let [_, _, pos] = matchstrpos(line, '^\(#\|\s\)\@!.*' . docstring)
-    if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
-      call add(group, lnum)
-      while line[pos:] !~# docstring  " fold entire docstring
-        let pos = 0
-        let lnum += 1
-        let line = getline(lnum)
-        call add(group, lnum)
-        if s:fold_exists(lnum) | let group = [] | break | endif
-      endwhile
-    endif
-    " Variable fold (e.g. GLOBAL_VARIABLE = [...)
-    if empty(group) && line =~# global  " zero-indent private or global variable
-      call add(group, lnum)
-      while lnum < line('$') && get(cache[lnum + 1], 'indent', 0)  " fold indents
-        let lnum += 1
-        call add(group, lnum)
-        if s:fold_exists(lnum) | let group = [] | break | endif
-      endwhile
-      if len(group) > 1
-        let lnum += 1
-        call add(group, lnum)
-      endif
-    endif
-    " Apply results (see :help fold-expr)
-    if len(group) > 1  " constant group found
-      let cache[group[0]]['foldexpr'] = '>1'  " fold start
-      let cache[group[-1]]['foldexpr'] = '<1'  " fold end
-      for value in range(group[1], group[-2])  " avoid overwriting 'lnum'
-        let cache[value]['foldexpr'] = 1
-      endfor
-    endif
-    let lnum += 1  " e.g. termination of constant group
-  endwhile
-endfunction
-
 " Convert between key=value pairs and 'key': value dictionaries
 " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
 " bug where if opening bracket is immediately followed by newline, then 'inner'
@@ -111,8 +51,79 @@ function! python#dict_to_kw_expr(invert) abort
   return utils#motion_func('python#dict_to_kw', [a:invert, mode()])
 endfunction
 
+" Return fold expression results or trigger results
+" Note: Here 'fold_edit' is called after using :edit in case folds are messed up
+function! s:fold_exists(lnum) abort
+  return exists('b:SimpylFold_cache')
+    \ && !empty(b:SimpylFold_cache[a:lnum])
+    \ && !empty(b:SimpylFold_cache[a:lnum]['foldexpr'])  " note empty(0) returns 1
+endfunction
+function! python#fold_edit() abort
+  if &filetype !=# 'python' | return | endif
+  call SimpylFold#Recache()
+  redraw
+endfunction
+function! python#fold_expr(lnum) abort
+  let recache = !exists('b:SimpylFold_cache')
+  call SimpylFold#FoldExpr(a:lnum)  " auto recache
+  if recache | call python#fold_cache() | endif
+  return b:SimpylFold_cache[a:lnum]['foldexpr']
+endfunction
+
+" Fold groups of constants using SimpylFold cache
+" Warning: Only call this when SimpylFold updates to improve performance. Might break
+" if SimpylFold renames internal cache variable (monitor). Note
+function! python#fold_cache() abort
+  let lnum = 1
+  let cache = b:SimpylFold_cache
+  let global = '^[A-Z_]\k*'
+  let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
+  while lnum <= line('$')
+    if s:fold_exists(lnum) | let lnum += 1 | continue | endif
+    let line = getline(lnum)
+    let group = []
+    " Docstring fold (e.g. _docstring_snippet = """...)
+    let [_, _, pos] = matchstrpos(line, '^\(#\|\s\)\@!.*' . docstring)
+    if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
+      call add(group, lnum)
+      while line[pos:] !~# docstring  " fold entire docstring
+        let pos = 0
+        let lnum += 1
+        let line = getline(lnum)
+        call add(group, lnum)
+        if s:fold_exists(lnum) | let group = [] | break | endif
+      endwhile
+    endif
+    " Variable fold (e.g. GLOBAL_VARIABLE = [...)
+    if empty(group) && line =~# global  " zero-indent private or global variable
+      call add(group, lnum)
+      while lnum < line('$') && get(cache[lnum + 1], 'indent', 0)  " fold indents
+        let lnum += 1
+        call add(group, lnum)
+        if s:fold_exists(lnum) | let group = [] | break | endif
+      endwhile
+      if len(group) > 1
+        let lnum += 1
+        call add(group, lnum)
+      endif
+    endif
+    " Apply results (see :help fold-expr)
+    if len(group) > 1  " constant group found
+      let cache[group[0]]['foldexpr'] = '>1'  " fold start
+      let cache[group[-1]]['foldexpr'] = '<1'  " fold end
+      for value in range(group[1], group[-2])  " avoid overwriting 'lnum'
+        let cache[value]['foldexpr'] = 1
+      endfor
+    endif
+    let lnum += 1  " e.g. termination of constant group
+  endwhile
+endfunction
+
 " Return indication whether a jupyter connection is active
-" Warning: This uses private variable _jupyter_session. Should monitor for changes.
+" Note: This uses private variable _jupyter_session. Should monitor for changes.
+" Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
+" find_connection_file(), which selects the most recently accessed file from the glob
+" pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
 function! python#has_jupyter() abort
   let check = (
     \ '"_jupyter_session" in globals() and '
@@ -126,10 +137,7 @@ function! python#has_jupyter() abort
 endfunction
 
 " Initiate a jupyter-vim connection using the file matching this directory or a parent
-" Note: This relies on automatic connection file naming in jupyter_[qt|]console.py
-" Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
-" find_connection_file(), which selects the most recently accessed file from the glob
-" pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
+" Note: Below relies on automatic connection file naming in jupyter_[qt|]console.py
 function! python#init_jupyter() abort
   let parent = 0
   let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632

@@ -364,7 +364,7 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit<CR>
+noremap <Leader>e <Cmd>edit \| call python#fold_edit()<CR>
 noremap <Leader>r <Cmd>redraw \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
