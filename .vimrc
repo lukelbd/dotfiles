@@ -1888,8 +1888,8 @@ if s:plug_active('conflict-marker.vim')
   nmap ]f <Plug>(conflict-marker-next-hunk)
   nmap gf <Plug>(conflict-marker-ourselves)
   nmap gF <Plug>(conflict-marker-themselves)
-  nmap g( <Plug>(conflict-marker-none)
-  nmap g) <Plug>(conflict-marker-both)
+  nmap g[ <Plug>(conflict-marker-none)
+  nmap g] <Plug>(conflict-marker-both)
 endif
 
 " Fugitive settings
@@ -1917,6 +1917,7 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
   noremap <Leader>u <Cmd>call git#run_command('pull origin')<CR>
   noremap <Leader>U <Cmd>call git#run_command('push origin')<CR>
+  noremap <Leader>- <Cmd>call git#run_command('switch -')<CR>
   noremap <expr> gl git#run_command_expr('blame %', 1)
   noremap gll <Cmd>call git#run_command('blame %')<CR>
   noremap gL <Cmd>call git#run_command('blame')<CR>
@@ -2040,10 +2041,10 @@ endif
 " says whether to replace or append, withEq says whether to include equals sign, sum
 " says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  noremap g[[ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  noremap g]] :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <expr> g[ edit#how_much_expr(0, 0, 1, 'py')
-  noremap <expr> g] edit#how_much_expr(1, 1, 1, 'py')
+  noremap g(( :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  noremap g)) :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap <expr> g( edit#how_much_expr(0, 0, 1, 'py')
+  noremap <expr> g) edit#how_much_expr(1, 1, 1, 'py')
 endif
 
 " Speed dating, support date increments

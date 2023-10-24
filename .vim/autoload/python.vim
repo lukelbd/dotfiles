@@ -52,7 +52,7 @@ function! python#dict_to_kw_expr(invert) abort
 endfunction
 
 " Return fold expression results or trigger results
-" Note: Here 'fold_edit' is called after using :edit in case folds are messed up
+" Note: Here 'fold_edit' refreshes folds after calling :edit
 function! s:fold_exists(lnum) abort
   return exists('b:SimpylFold_cache')
     \ && !empty(b:SimpylFold_cache[a:lnum])
@@ -61,7 +61,7 @@ endfunction
 function! python#fold_edit() abort
   if &filetype !=# 'python' | return | endif
   call SimpylFold#Recache()
-  FastFoldUpdate
+  doautocmd BufWritePost
 endfunction
 function! python#fold_expr(lnum) abort
   let recache = !exists('b:SimpylFold_cache')
