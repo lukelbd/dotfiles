@@ -33,9 +33,9 @@ function! fold#fold_text() abort
   let status = repeat('+ ', len(v:folddashes)) . status . ' lines'
   let regex = '\s*' . comment#get_char() . '\s\+.*$'
   for line in range(v:foldstart, v:foldend)
-    let label = substitute(getline(line), regex, '', 'g')
+    let label = substitute(getline(line), regex, '', 'g')  " remove comments
     let chars = substitute(label, '\s\+', '', 'g')
-    if !empty(chars) | break | endif
+    if !empty(chars) | break | endif  " non-commented line
   endfor
   " Format fold text
   if &filetype ==# 'tex'  " hide backslashes
@@ -45,6 +45,10 @@ function! fold#fold_text() abort
   if &filetype ==# 'python'  " replace docstrings
     let regex = '[frub]*["'']\{3}'
     let label = substitute(label, regex, '<docstring>', 'g')
+  endif
+  if label =~# '[\[({]\s*$'  " close delimiter
+    let label = substitute(label, '\s*$', '', 'g')
+    let label = label . '···' . {'[': ']', '(': ')', '{': '}'}[label[-1:]]
   endif
   let width = &textwidth - 1 - len(status)  " at least two spaces
   let label = len(label) > width - 4 ? label[:width - 6] . '···  ' : label
