@@ -61,7 +61,7 @@ endfunction
 function! python#fold_edit() abort
   if &filetype !=# 'python' | return | endif
   call SimpylFold#Recache()
-  redraw
+  FastFoldUpdate
 endfunction
 function! python#fold_expr(lnum) abort
   let recache = !exists('b:SimpylFold_cache')
