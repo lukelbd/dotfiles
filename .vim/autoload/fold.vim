@@ -43,7 +43,7 @@ function! fold#fold_text() abort
     let label = substitute(label, regex, '', 'g')
   endif
   if &filetype ==# 'python'  " replace docstrings
-    let regex = '\("""\|' . "'''" . '\)'
+    let regex = '[frub]*["'']\{3}'
     let label = substitute(label, regex, '<docstring>', 'g')
   endif
   let width = &textwidth - 1 - len(status)  " at least two spaces

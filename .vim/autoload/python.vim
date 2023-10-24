@@ -4,38 +4,61 @@
 " Fold groups of constants using SimpylFold cache
 " Warning: Only call this when SimpylFold updates to improve performance. Might break
 " if SimpylFold renames internal cache variable (monitor). Note
-function! python#fold_cache() abort
-  let lnum = 1
-  let cache = b:SimpylFold_cache
-  while lnum <= line('$')
-    let group = []
-    let line = getline(lnum)
-    if line =~# '^[A-Z_]\k*'  " start with zero-indent private or global variable
-      while line !~# '^\s*\(#.*\)\?$'  " end with blank line or comment line
-        call add(group, lnum)
-        let lnum += 1
-        let line = getline(lnum)
-        if !empty(cache[lnum]) && !empty(cache[lnum]['foldexpr'])  " note empty(0) is true
-          let group = []
-          break  " fallback to avoid simpylfold conflicts
-        endif
-      endwhile
-      if len(group) > 1  " constant group found
-        let cache[group[0]]['foldexpr'] = '>1'
-        let cache[group[-1]]['foldexpr'] = '<1'
-        for value in range(group[1], group[-2])  " careful not to overwrite 'lnum'
-          let cache[value]['foldexpr'] = 1
-        endfor
-      endif
-    endif
-    let lnum += 1  " e.g. termination of constant group
-  endwhile
+function! s:fold_exists(lnum) abort
+  return exists('b:SimpylFold_cache')
+    \ && !empty(b:SimpylFold_cache[a:lnum])
+    \ && !empty(b:SimpylFold_cache[a:lnum]['foldexpr'])  " note empty(0) returns 1
 endfunction
 function! python#fold_expr(lnum) abort
   let recache = !exists('b:SimpylFold_cache')
   call SimpylFold#FoldExpr(a:lnum)  " auto recache
   if recache | call python#fold_cache() | endif
   return b:SimpylFold_cache[a:lnum]['foldexpr']
+endfunction
+function! python#fold_cache() abort
+  let lnum = 1
+  let cache = b:SimpylFold_cache
+  let global = '^[A-Z_]\k*'
+  let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
+  while lnum <= line('$')
+    if s:fold_exists(lnum) | let lnum += 1 | continue | endif
+    let line = getline(lnum)
+    let group = []
+    " Docstring fold (e.g. _docstring_snippet = """...)
+    let [_, _, pos] = matchstrpos(line, '^\(#\|\s\)\@!.*' . docstring)
+    if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
+      call add(group, lnum)
+      while line[pos:] !~# docstring  " fold entire docstring
+        let pos = 0
+        let lnum += 1
+        let line = getline(lnum)
+        call add(group, lnum)
+        if s:fold_exists(lnum) | let group = [] | break | endif
+      endwhile
+    endif
+    " Variable fold (e.g. GLOBAL_VARIABLE = [...)
+    if empty(group) && line =~# global  " zero-indent private or global variable
+      call add(group, lnum)
+      while lnum < line('$') && get(cache[lnum + 1], 'indent', 0)  " fold indents
+        let lnum += 1
+        call add(group, lnum)
+        if s:fold_exists(lnum) | let group = [] | break | endif
+      endwhile
+      if len(group) > 1
+        let lnum += 1
+        call add(group, lnum)
+      endif
+    endif
+    " Apply results (see :help fold-expr)
+    if len(group) > 1  " constant group found
+      let cache[group[0]]['foldexpr'] = '>1'  " fold start
+      let cache[group[-1]]['foldexpr'] = '<1'  " fold end
+      for value in range(group[1], group[-2])  " avoid overwriting 'lnum'
+        let cache[value]['foldexpr'] = 1
+      endfor
+    endif
+    let lnum += 1  " e.g. termination of constant group
+  endwhile
 endfunction
 
 " Convert between key=value pairs and 'key': value dictionaries

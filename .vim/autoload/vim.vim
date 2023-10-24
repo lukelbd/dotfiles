@@ -71,6 +71,9 @@ function! vim#config_refresh(bang, ...) abort
   if filereadable(common)  " trigger filetype common settings
     exe 'so ' . common
   endif
+  if &filetype ==# 'python' && exists('*SetCellHighlighting')
+    call SetCellHighlighting()  " triggered by bufenter but avoid doautocmd for speed
+  endif
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   call extend(g:refreshes, times)
 endfunction
