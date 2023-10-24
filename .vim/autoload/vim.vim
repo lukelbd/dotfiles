@@ -149,8 +149,8 @@ function! vim#show_syntax() abort
 endfunction
 
 " Source file or lines
-" Note: Compare to python#run_content()
-function! vim#source_content() abort
+" Note: Compare to python#run_general()
+function! vim#source_general() abort
   if v:count
     let range = line('.') . ',' . (line('.') + v:count)
     exe range . 'source'

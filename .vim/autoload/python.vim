@@ -1,85 +1,41 @@
 "-----------------------------------------------------------------------------"
 " Python utils defined here
 "-----------------------------------------------------------------------------"
-" Return indication whether a jupyter connection is active
-" Warning: This uses private variable _jupyter_session. Should monitor for changes.
-function! python#has_jupyter() abort
-  let check = (
-    \ '"_jupyter_session" in globals() and '
-    \ . '_jupyter_session.kernel_client.check_connection()'
-  \ )
-  if has('python3')
-    return str2nr(py3eval('int(' . check . ')'))
-  else
-    return 0
-  endif
-endfunction
-
-" Initiate a jupyter-vim connection using the file matching this directory or a parent
-" Note: This relies on automatic connection file naming in jupyter_[qt|]console.py
-" Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
-" find_connection_file(), which selects the most recently accessed file from the glob
-" pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
-function! python#start_jupyter() abort
-  let parent = 0
-  let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
-  while !exists('folder') || !empty(folder)  " note default scope is l: (g: is ignored)
-    let parent += 1
-    let string = '%:p' . repeat(':h', parent)
-    let folder = expand(string . ':t')
-    let path = expand(string)
-    let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
-    if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
+" Fold groups of constants using SimpylFold cache
+" Warning: Only call this when SimpylFold updates to improve performance. Might break
+" if SimpylFold renames internal cache variable (monitor). Note
+function! python#fold_cache() abort
+  let lnum = 1
+  let cache = b:SimpylFold_cache
+  while lnum <= line('$')
+    let group = []
+    let line = getline(lnum)
+    if line =~# '^[A-Z_]\k*'  " start with zero-indent private or global variable
+      while line !~# '^\s*\(#.*\)\?$'  " end with blank line or comment line
+        call add(group, lnum)
+        let lnum += 1
+        let line = getline(lnum)
+        if !empty(cache[lnum]) && !empty(cache[lnum]['foldexpr'])  " note empty(0) is true
+          let group = []
+          break  " fallback to avoid simpylfold conflicts
+        endif
+      endwhile
+      if len(group) > 1  " constant group found
+        let cache[group[0]]['foldexpr'] = '>1'
+        let cache[group[-1]]['foldexpr'] = '<1'
+        for value in range(group[1], group[-2])  " careful not to overwrite 'lnum'
+          let cache[value]['foldexpr'] = 1
+        endfor
+      endif
+    endif
+    let lnum += 1  " e.g. termination of constant group
   endwhile
-  echohl WarningMsg
-  echom "Warning: No connection files found for path '" . expand('%:p:h') . "'."
-  echohl None
 endfunction
-
-" Run with popup window using conda python, not vim python (important for macvim)
-" Todo: More robust checking for anaconda python in other places.
-function! python#run_win()
-  if !exists('$CONDA_PREFIX')
-    echohl WarningMsg
-    echom 'Cannot find conda prefix.'
-    echohl None
-  else
-    let exe = $CONDA_PREFIX . '/bin/python'
-    let proj = $CONDA_PREFIX . '/share/proj'
-    let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
-    silent call shell#job_win(cmd)
-  endif
-endfunction
-
-" Run file or lines using either popup window or jupyter session
-" Note: Running 'cell' in file without cells still works
-function! python#run_content() abort
-  update
-  if v:count  " see also vim.vim
-    echom 'Running ' . v:count . ' lines'
-    exe 'JupyterSendCount ' . v:count
-  elseif !python#has_jupyter()
-    echom 'Running file with python'
-    call python#run_win()
-  elseif search('^# %%', 'n')  " returns line number if match found, zero if none found
-    echom 'Running block with jupyter'
-    JupyterSendCell
-  else
-    echom 'Running file with jupyter'
-    JupyterRunFile
-  endif
-endfunction
-
-" Run input motion using jupyter session. Warning is issued if no connection
-" Todo: Add generalization for running chunks of arbitrary filetypes?
-function! python#run_motion() range abort
-  update
-  echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
-  exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
-endfunction
-" For <expr> map accepting motion
-function! python#run_motion_expr(...) abort
-  return utils#motion_func('python#run_motion', a:000)
+function! python#fold_expr(lnum) abort
+  let recache = !exists('b:SimpylFold_cache')
+  call SimpylFold#FoldExpr(a:lnum)  " auto recache
+  if recache | call python#fold_cache() | endif
+  return b:SimpylFold_cache[a:lnum]['foldexpr']
 endfunction
 
 " Convert between key=value pairs and 'key': value dictionaries
@@ -98,13 +54,13 @@ function! python#dict_to_kw(invert, ...) abort range
     if lnum == firstline && lnum == lastline  " vint: -ProhibitUsingUndeclaredVariable
       let prefix = firstcol > 0 ? line[:firstcol - 1] : ''
       let suffix = line[lastcol + 1:]
-      let line = line[firstcol:lastcol]  " WARNING: must come last
+      let line = line[firstcol:lastcol]  " must come last
     elseif lnum == firstline
       let prefix = firstcol > 0 ? line[:firstcol - 1] : ''
-      let line = line[firstcol:]  " WARNING: must come last
+      let line = line[firstcol:]  " must come last
     elseif lnum == lastline
       let suffix = line[lastcol + 1:]
-      let line = line[:lastcol]  " WARNING: must come last
+      let line = line[:lastcol]  " must come last
     endif
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echohl WarningMsg
@@ -130,4 +86,91 @@ endfunction
 " For <expr> map accepting motion
 function! python#dict_to_kw_expr(invert) abort
   return utils#motion_func('python#dict_to_kw', [a:invert, mode()])
+endfunction
+
+" Return indication whether a jupyter connection is active
+" Warning: This uses private variable _jupyter_session. Should monitor for changes.
+function! python#has_jupyter() abort
+  let check = (
+    \ '"_jupyter_session" in globals() and '
+    \ . '_jupyter_session.kernel_client.check_connection()'
+  \ )
+  if has('python3')
+    return str2nr(py3eval('int(' . check . ')'))
+  else
+    return 0
+  endif
+endfunction
+
+" Initiate a jupyter-vim connection using the file matching this directory or a parent
+" Note: This relies on automatic connection file naming in jupyter_[qt|]console.py
+" Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
+" find_connection_file(), which selects the most recently accessed file from the glob
+" pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
+function! python#init_jupyter() abort
+  let parent = 0
+  let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
+  while !exists('folder') || !empty(folder)  " note default scope is l: (g: is ignored)
+    let parent += 1
+    let string = '%:p' . repeat(':h', parent)
+    let folder = expand(string . ':t')
+    let path = expand(string)
+    let pattern = 'kernel-' . folder . '-[0-9][0-9].json'
+    if !empty(glob(runtime . '/' . pattern)) | return jupyter#Connect(pattern) | endif
+  endwhile
+  echohl WarningMsg
+  echom "Warning: No connection files found for path '" . expand('%:p:h') . "'."
+  echohl None
+endfunction
+
+" Run with popup window using conda python, not vim python (important for macvim)
+" Todo: More robust checking for anaconda python in other places.
+function! python#run_file()
+  if !exists('$CONDA_PREFIX')
+    echohl WarningMsg
+    echom 'Cannot find conda prefix.'
+    echohl None
+  else
+    let exe = $CONDA_PREFIX . '/bin/python'
+    let proj = $CONDA_PREFIX . '/share/proj'
+    let cmd = 'PROJ_LIB=' . shellescape(proj) . ' ' . shellescape(exe) . ' ' . shellescape(@%)
+    silent call shell#job_win(cmd)
+  endif
+endfunction
+
+" Run file or lines using either popup window or jupyter session
+" Note: Running 'cell' in file without cells still works
+function! python#run_general() abort
+  update
+  if v:count  " see also vim.vim
+    echom 'Running ' . v:count . ' lines'
+    exe 'JupyterSendCount ' . v:count
+  elseif !python#has_jupyter()
+    echom 'Running file with python'
+    call python#run_file()
+  elseif search('^# %%', 'n')  " returns line number if match found, zero if none found
+    echom 'Running block with jupyter'
+    JupyterSendCell
+  else
+    echom 'Running file with jupyter'
+    JupyterRunFile
+  endif
+endfunction
+
+" Run input motion using jupyter session. Warning is issued if no connection
+" Todo: Add generalization for running chunks of arbitrary filetypes?
+function! python#run_motion() range abort
+  update
+  if python#has_jupyter()
+    echom 'Running lines ' . a:firstline . ' to ' . a:lastline . '.'
+    exe a:firstline . ',' . a:lastline . 'JupyterSendRange'
+  else
+    echohl WarningMsg
+    echom 'Jupyter session not found. Cannot send selection.'
+    echohl None
+  endif
+endfunction
+" For <expr> map accepting motion
+function! python#run_motion_expr(...) abort
+  return utils#motion_func('python#run_motion', a:000)
 endfunction
