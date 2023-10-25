@@ -39,7 +39,9 @@ dependencies:
   - pynco
   - python-cdo
   - numpy
+  - numba
   - scipy
+  - sparse
   - dask
   - pandas
   - openpyxl
