@@ -4,6 +4,7 @@
 " Syntax settings, see :help bash-syntax
 " First make sure bash is enabled
 let g:is_bash = 1
+setlocal foldnestmax=1
 
 " Next, the syntax errors I see that are fixed when scrolling/redrawing are actually
 " officially documented. To fix them, make this bigger. Default is 200.

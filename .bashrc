@@ -2190,9 +2190,7 @@ _title_update() {
     echo -ne "\033]0;$_title\007"  # re-assert existing title, in case changed
   fi
 }
-title_update() {  # fix name issues
-  _title_update "$@"
-}
+title_update() { _title_update "$@"; }
 
 # Ask for a title when we create pane 0
 if $_macos; then

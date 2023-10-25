@@ -61,10 +61,6 @@ dependencies:
   - notebook
   - jupytext
   - pandoc
-  - pandoc-fignos
-  - pandoc-eqnos
-  - pandoc-tablenos
-  - pandoc-secnos
   - ctags
   - ripgrep
   - the_silver_searcher
@@ -91,6 +87,10 @@ dependencies:
     - vim-vint
     - cf_units
     - esgf-pyclient
+    - pandoc-fignos
+    - pandoc-eqnos
+    - pandoc-tablenos
+    - pandoc-secnos
     - flake8-unused-arguments
     - git+https://github.com/gruns/icecream.git  # until release increments
     - git+https://github.com/jfbercher/jupyter_latex_envs.git  # until release increments
