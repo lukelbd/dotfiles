@@ -17,13 +17,15 @@
 #   See: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
 # 'branches':
 #   List all branches. Prune dead remote branches every time.
+# 'changes':
+#   List summary of differences.
 # 'commands':
 #   List of valid commands, used for FZF integration
 # 'deleted':
 #   Lists files that were deleted in git history, but were never re-created
 #   or added back in
-# 'details':
-#   Detailed status message.
+# 'delta':
+#   Show difference between two possibly-renamed files.
 # 'dictator':
 #   Change user/email information to self through every commit in repository
 # 'downstream':
@@ -62,8 +64,10 @@
 # 'remove':
 #   For more information see the script, can be passed a filename or a
 #   regular expression e.g. '*.mov'
+# 'state':
+#   Simple status message.
 # 'summary':
-#   Short status message.
+#   Detailed status message.
 # 'stashes':
 #   List all git stashes.
 # 'tree':
@@ -84,22 +88,22 @@
 # 'opts':
 #   Fails not just as git alias, but when calling the regex manually.
 #   See: https://stackoverflow.com/a/52846422/4970632
-#   "!f(){ echo ${1}; echo /usr/local/share/doc/git-doc/git-${1}.txt; cat /usr/local/share/doc/git-doc/git-${1}.txt | ggrep --initial-tab --recursive \
-#     --binary-files=without-match --no-filename --only-matching --perl-regexp \
-#     --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
+# "!f(){ echo ${1}; echo /usr/local/share/doc/git-doc/git-${1}.txt; cat /usr/local/share/doc/git-doc/git-${1}.txt | ggrep --initial-tab --recursive \
+#   --binary-files=without-match --no-filename --only-matching --perl-regexp \
+#   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 [alias]
 	absorb     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
-	amend      = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	amend      = "!f() { TARGET=$(git rev-parse \"$1\"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	amputate   = "!git-amputate \"$@\""
 	branches   = "!git --no-pager branch -vv --all"
+	changes    = "!git --no-pager diff --stat"
 	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
 	deleted    = "!git-deleted \"$@\""
-	details    = status --long --branch
+	delta      = diff -M --
 	dictator   = "!git-dictator \"$@\""
 	downstream = branch --unset-upstream
 	exec       = "!exec \"$@\""
-	files      = ls-tree -r HEAD --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
 	leaves      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
@@ -113,11 +117,11 @@
 	remotes    = remote --verbose
 	remove     = "!git-remove \"$@\""
 	root       = rev-parse --show-toplevel
-	stat       = diff --stat
+	state      = "!git --no-pager status --short --branch"
 	stashes    = stash list
-	summary    = status --short --branch
+	summary    = status --long --branch
 	tags       = push origin --tags
-	tree       = log --graph --abbrev-commit --date=relative --branches --name-status --decorate --color
+	tree       = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk      = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unstage    = reset --soft
 	upstream   = branch --set-upstream-to
