@@ -1,38 +1,27 @@
 #!/usr/bin/env bash
 #------------------------------------------------------------------------------#
 # Author: David Underhill
-# Script to permanently delete files/folders from your git history. To use
-# it, cd to your repository's root and then run the script with a list of paths
-# you want to delete, e.g., git-delete path1 path2, or with glob patterns.
-# Try also 'git deleted' and 'git objects' to see which files are bad.
+# Script to permanently delete files/folders from your git history. To use it, cd
+# to your repository's root and then run the script with a list of paths you want
+# to delete, e.g., git-delete path1 path2, or with glob patterns. Try also 'git
+# deleted' and 'git objects' to see which files are taking up the most space.
 #------------------------------------------------------------------------------#
-# Original script:
-# set -o errexit
-# [ $# -eq 0 ] && exit 0
-# cd $(git rev-parse --show-toplevel)
-# git filter-branch --index-filter "git rm -rf --cached --ignore-unmatch $@" HEAD
-# rm -rf .git/refs/original/ && git reflog expire --all && git gc --aggressive --prune
-#------------------------------------------------------------------------------#
-# Prune empty commits:
-# https://stackoverflow.com/a/5985276/4970632
-# More info:
-# https://stackoverflow.com/a/18197405/4970632
-# https://development.robinwinslow.uk/2013/06/11/dont-ever-commit-binary-files-to-git/
-# which reference github file on: https://gist.githubusercontent.com/nottrobin/5758221/raw/ff740b4ac3b8ab80d40e3598ec461400dce42b5d/git-prune
-# Two more detailed guides:
-# http://stevelorek.com/how-to-shrink-a-git-repository.html
-# https://blog.ostermiller.org/git-remove-from-history
-# Purpose of tag-name-filter:
-# https://stackoverflow.com/q/21009947/4970632
+# See: https://stackoverflow.com/a/18197405/4970632
+# See: https://development.robinwinslow.uk/2013/06/11/dont-ever-commit-binary-files-to-git/
+# Prune empty commits: https://stackoverflow.com/a/5985276/4970632
+# Reference file: https://gist.githubusercontent.com/nottrobin/5758221/raw/ff740b4ac3b8ab80d40e3598ec461400dce42b5d/git-prune
+# Detailed guide: http://stevelorek.com/how-to-shrink-a-git-repository.html
+# Detailed guide: https://blog.ostermiller.org/git-remove-from-history
+# Using tag-name-filter: https://stackoverflow.com/q/21009947/4970632
 #------------------------------------------------------------------------------#
 # Test if unstaged changes
+root=$(git rev-parse --show-toplevel)
+stat=$(git status --porcelain)
 [ $# -ne 1 ] && echo "Usage: git delete FILE_OR_PATTERN" && exit 1
-root="$(git rev-parse --show-toplevel)"
-stat="$(git status --porcelain)"
 [ -n "$stat" ] && echo "Error: Unstaged changes detected." && exit 1
 
 # Preserve current ones (mv is super fast, so while this is ugly, no big deal)
-pattern="$@" # the glob pattern
+pattern="$*" # the glob pattern
 echo "Adding to gitignore: $pattern"
 nlines=$(wc -l < "$root/.gitignore")
 printf "\n# Filter-branch files\n" >>"$root/.gitignore"
@@ -55,13 +44,12 @@ git reflog expire --verbose --expire=now --all
 
 echo "Running git gc."
 git gc --prune=now
-git gc --aggressive --prune=now
-[ $? -ne 0 ] && echo "Error" && exit 1
+git gc --aggressive --prune=now || exit 1
 
 # Move matches back
 echo "Fixing gitignore"
 hash gsed 2>/dev/null && sub=gsed || sub=sed
-$sub -i "$(($nlines+1)),\$d" "$root/.gitignore"
+$sub -i "$((nlines + 1)),\$d" "$root/.gitignore"
 
 # Suggested next steps
 # NOTE: Safe to make this manual!

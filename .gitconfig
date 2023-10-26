@@ -4,9 +4,14 @@
 # https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------
 # NEW COMMANDS
+# 'absorb':
+#   Merge one branch into this current branch. Common use case may be
+#   'git absorb upstream/master'. Beware that stash pop may cause conflicts.
 # 'amend':
-#   Change the name of arbitrary commit messages; just provide a SHA1 reference
+#   Change the name of arbitrary commit messages. Just provide a SHA1 reference
 #   See: https://blog.filippo.io/git-fixup-amending-an-older-commit/
+# 'amputate':
+#   Use this to amputate history at given SHA
 # 'blame':
 #   Add nice highlightRecent coloring according to date of commit.
 #   See: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
@@ -14,25 +19,31 @@
 #   List all branches. Prune dead remote branches every time.
 # 'commands':
 #   List of valid commands, used for FZF integration
-# 'delete':
-#   For more information see the script, can be passed a filename or a
-#   regular expression e.g. '*.mov'
 # 'deleted':
 #   Lists files that were deleted in git history, but were never re-created
 #   or added back in
+# 'details':
+#   Detailed status message.
+# 'dictator':
+#   Change user/email information to self through every commit in repository
+# 'downstream':
+#   Unset upstream branch, needed after you change the name of a local branch
+#   with git branch -m name because git tracks the old remote branch name
 # 'exec':
 #   Exec arbitrary shell command on top level
 # 'get':
 #   Fetch all branches, even ones that don't yet exist on local
 #   local (normally those are ignored with git fetch --all).
 #   See: https://stackoverflow.com/a/10312587/4970632
-# 'files':
-#   List the tracked file names.
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
-# 'long':
-#   Long status message.
+# 'leaves':
+#   List all commits including abandoned ones overwritten by e.g. amend
+# 'ls':
+#   List the tracked file names only.
+# 'll':
+#   List the tracked file names and commits.
 # 'objects':
 #   When you commit giant files (i.e. over 100MB), even after you delete them,
 #   you won't be able to push to Github because they were tracked and are found
@@ -48,22 +59,21 @@
 #   See: https://stackoverflow.com/a/21778/4970632
 # 'remotes':
 #   Shows remote branches.
-# 'rmupstream':
-#   Unset upstream branch, needed after you change the name of a local branch
-#   with git branch -m name because git tracks the old remote branch name
-# 'short':
+# 'remove':
+#   For more information see the script, can be passed a filename or a
+#   regular expression e.g. '*.mov'
+# 'summary':
 #   Short status message.
+# 'stashes':
+#   List all git stashes.
 # 'tree':
-#   Descriptive git log
-# 'truncate':
-#   Use this to truncate at given SHA
+#   Git log including changes
 # 'trunk':
-#   Succinct git log
-# 'update':
-#   Update from one branch into this current branch. common use case may
-#   be 'git update upstream/master'. beware that stash pop may cause conflicts.
-# 'user':
-#   Fix user/email information through every commit in repository
+#   Git log excluding changes
+# 'unstage':
+#   Undo 'git stage' operation.
+# 'upstream':
+#   Set upstream branch. Same as 'git branch -u'.
 # 'vim':
 #   List the vim processes running inside directory
 # 'wtf':
@@ -79,35 +89,38 @@
 #     --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 [alias]
+	absorb     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
 	amend      = "!f() { TARGET=$(git rev-parse "$1"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
-	branches   = "!git remote prune origin; git --no-pager branch -vv --all"
+	amputate   = "!git-amputate \"$@\""
+	branches   = "!git --no-pager branch -vv --all"
 	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
-	delete     = "!git-delete \"$@\""
 	deleted    = "!git-deleted \"$@\""
+	details    = status --long --branch
+	dictator   = "!git-dictator \"$@\""
+	downstream = branch --unset-upstream
 	exec       = "!exec \"$@\""
 	files      = ls-tree -r HEAD --name-only
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
-	long       = status --long --branch
-	ls         = ls-tree -r HEAD --name-only
-	ll         = ls-tree -r HEAD
+	leaves      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
+	ls         = ls-tree -r HEAD --name-only :/
+	ll         = ls-tree -r HEAD --abbrev :/
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
 	oops       = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
 	pack       = "!git-pack \"$@\""
-	refs       = reflog
+	refs       = reflog show --all
 	remotes    = remote --verbose
-	rmupstream = branch --unset-upstream
+	remove     = "!git-remove \"$@\""
 	root       = rev-parse --show-toplevel
-	short      = status --short --branch
 	stat       = diff --stat
+	stashes    = stash list
+	summary    = status --short --branch
 	tags       = push origin --tags
-	tree       = "!git log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color \"$@\" 2>/dev/null"
-	truncate   = "!git-truncate \"$@\""
-	trunk      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
+	tree       = log --graph --abbrev-commit --date=relative --branches --name-status --decorate --color
+	trunk      = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unstage    = reset --soft
-	update     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
-	user       = "!git-user \"$@\""
+	upstream   = branch --set-upstream-to
 	vim        = "!git-vim \"$@\""
 	wtf        = "!git-wtf \"$@\""
 [blame]
@@ -142,7 +155,9 @@
 [mergetool]
 	prompt = false
 [pager]
+	stash = false
 	branch = false
+	status = true
 	tag = false
 [push]
 	default = upstream

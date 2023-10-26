@@ -1711,7 +1711,7 @@ if s:plug_active('ddc.vim')
   command! -nargs=? DdcToggle call switch#ddc(<args>)
   noremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
-  let g:denops_disable_version_check = 1  " skip check for recent versions
+  let g:denops_disable_version_check = 0  " skip check for recent versions
   let g:denops#deno = 'deno'  " deno executable should be on $PATH
   let g:denops#server#deno_args = [
     \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
@@ -1910,9 +1910,9 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>j <Cmd>call git#run_command('diff -- %')<CR>
   noremap <Leader>k <Cmd>call git#run_command('diff --staged -- %')<CR>
   noremap <Leader>l <Cmd>call git#run_command('diff -- :/')<CR>
-  noremap <Leader>J <Cmd>call git#run_command('add %')<CR>
+  noremap <Leader>J <Cmd>call git#run_command('stage %')<CR>
   noremap <Leader>K <Cmd>call git#run_command('reset %')<CR>
-  noremap <Leader>L <Cmd>call git#run_command('add :/')<CR>
+  noremap <Leader>L <Cmd>call git#run_command('stage :/')<CR>
   noremap <Leader>g <Cmd>call git#run_command('status')<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
   noremap <Leader>u <Cmd>call git#run_command('pull origin')<CR>

@@ -92,5 +92,6 @@ dependencies:
     - pandoc-tablenos
     - pandoc-secnos
     - flake8-unused-arguments
+    - nbstripout
     - git+https://github.com/gruns/icecream.git  # until release increments
     - git+https://github.com/jfbercher/jupyter_latex_envs.git  # until release increments
