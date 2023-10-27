@@ -70,6 +70,8 @@
 #   Detailed status message.
 # 'stashes':
 #   List all git stashes.
+# 'stashed':
+#   Show difference between stash and parent
 # 'tree':
 #   Git log including changes
 # 'trunk':
@@ -96,7 +98,7 @@
 	absorb     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
 	amend      = "!f() { TARGET=$(git rev-parse \"$1\"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	amputate   = "!git-amputate \"$@\""
-	branches   = "!git --no-pager branch -vv --all"
+	branches   = branch -vv --all
 	changes    = "!git --no-pager diff --stat"
 	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
 	deleted    = "!git-deleted \"$@\""
@@ -117,8 +119,9 @@
 	remotes    = remote --verbose
 	remove     = "!git-remove \"$@\""
 	root       = rev-parse --show-toplevel
-	state      = "!git --no-pager status --short --branch"
+	state      = status --short --branch
 	stashes    = stash list
+	stashed    = diff stash@{0}^ stash@{0}
 	summary    = status --long --branch
 	tags       = push origin --tags
 	tree       = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
@@ -161,7 +164,7 @@
 [pager]
 	stash = false
 	branch = false
-	status = true
+	status = false
 	tag = false
 [push]
 	default = upstream

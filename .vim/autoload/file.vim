@@ -172,7 +172,7 @@ function! s:open_continuous(cmd, ...) abort
     elseif empty(path) || path =~# '[*?[\]]'  " unexpanded glob
       :
     else  " e.g. split or drop
-      call feedkeys("\<Cmd>" . a:cmd . ' ' . path . "\<CR>", 'n')
+      call feedkeys("\<Cmd>" . a:cmd . ' ' . fnameescape(path) . "\<CR>", 'n')
     endif
   endfor
 endfunction

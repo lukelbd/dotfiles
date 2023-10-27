@@ -380,10 +380,10 @@ noremap <Leader>Q <Cmd>WipeBufs<CR>
 " Note: Anything that is not :Files gets passed to :Drop command
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
-nnoremap <F3> <Cmd>exe 'Open ' . fnamemodify(resolve(@%), ':p:h')<CR>
-nnoremap <C-y> <Cmd>exe 'Files ' . fnamemodify(resolve(@%), ':p:h')<CR>
-nnoremap <C-o> <Cmd>exe 'Open ' . tag#find_root(@%)<CR>
-nnoremap <C-p> <Cmd>exe 'Files ' . tag#find_root(@%)<CR>
+nnoremap <F3> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 
@@ -394,10 +394,10 @@ nnoremap <Tab>e <Cmd>History<CR>
 nnoremap <Tab>r <Cmd>call file#open_recent()<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
 nnoremap <Tab>\ <Cmd>call file#open_init('vsplit', 1)<CR>
-nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
-nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
+nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
+nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 
 " Tab and window jumping
 noremap g<Tab> <Nop>
@@ -671,19 +671,19 @@ command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)  " project
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 0, 0, <f-args>)  " file directory
 command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
 nnoremap g; <Cmd>call grep#call_grep('rg', 2, 0)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap g: <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
 " Note: Native 'gp' and 'gP' almost identical to 'p' and 'P' (just moves char to right)
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
-command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 0, 0, '\<note:', <f-args>)
-command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 0, 0, '\<todo:', <f-args>)
-command! -bang -nargs=* Errors call grep#call_ag(<bang>0, 0, 0, '\<error:', <f-args>)
-command! -bang -nargs=* Warnings call grep#call_ag(<bang>0, 0, 0, '\<warning:', <f-args>)
+command! -bang -nargs=* Notes call grep#call_ag(<bang>0, 1, 0, '\<note:', <f-args>)
+command! -bang -nargs=* Todos call grep#call_ag(<bang>0, 1, 0, '\<todo:', <f-args>)
+command! -bang -nargs=* Errors call grep#call_ag(<bang>0, 1, 0, '\<error:', <f-args>)
+command! -bang -nargs=* Warnings call grep#call_ag(<bang>0, 1, 0, '\<warning:', <f-args>)
+command! -bang -nargs=* Conflicts call grep#call_ag(<bang>0, 1, 0, s:conflicts, <f-args>)
 command! -bang -nargs=* Prints call grep#call_ag(<bang>0, 2, 0, '^\s*print(', <f-args>)
 command! -bang -nargs=* Debugs call grep#call_ag(<bang>0, 2, 0, '^\s*ic(', <f-args>)
-command! -bang -nargs=* Conflicts call grep#call_ag(<bang>0, 0, 0, s:conflicts, <f-args>)
 noremap gp <Cmd>Prints<CR>
 noremap gP <Cmd>Debugs<CR>
 noremap gM <Cmd>Notes<CR>

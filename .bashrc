@@ -235,9 +235,8 @@ case "${HOSTNAME%%.*}" in
     #   sudo chown -R $(whoami):admin /usr/local/* && sudo chmod -R g+rwx /usr/local/*
     #   https://stackoverflow.com/a/50219099/4970631
     _macos=true
+    unset MANPATH  # reset man path
     alias locate='/usr/bin/locate'  # coreutils version fails
-    unset MANPATH
-    export HOSTNAME=vortex
     export PATH=/usr/bin:/bin:/usr/sbin:/sbin
     export PATH=/Library/TeX/texbin:$PATH
     export PATH=/opt/X11/bin:$PATH
@@ -1068,7 +1067,7 @@ _address_port() {
   [ -z "$1" ] && host=${HOSTNAME%%.*} || host="$1"
   [ $# -gt 1 ] && echo 'Error: Too many input args.' && return 1
   case $host in
-    uriah*|velouria*|vortex*)
+    vortex*|velouria*|maelstrom*|uriah*)
       address=localhost
       port=2000
       ;;
@@ -2206,6 +2205,6 @@ alias title='_title_set'  # easier for user
   && unset PROMPT_COMMAND
 $_macos && [ -r $HOME/mackup/shell.sh ] \
   && source $HOME/mackup/shell.sh
-[ -z "$_bashrc_loaded" ] && [ "$(hostname)" == "$HOSTNAME" ] \
-  && curl https://icanhazdadjoke.com/ 2>/dev/null && echo  # yay dad jokes
+[ -z "$_bashrc_loaded" ] && [[ "$(hostname)" =~ "$HOSTNAME" ]] \
+  && command curl https://icanhazdadjoke.com/ 2>/dev/null && echo
 _bashrc_loaded=true
