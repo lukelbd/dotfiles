@@ -545,8 +545,8 @@ augroup END
 command! -range Reverse <line1>,<line2>call edit#reverse_lines()
 
 " Search highlighting toggle
-" This does 'set hlsearch!' and prints a message
-noremap <Leader>o <Cmd>call switch#hlsearch()<CR>
+" This calls 'set hlsearch!' and prints a message
+noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
 
 " Go to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
@@ -1915,8 +1915,8 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>L <Cmd>call git#run_command('stage :/')<CR>
   noremap <Leader>g <Cmd>call git#run_command('status')<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
-  noremap <Leader>u <Cmd>call git#run_command('pull origin')<CR>
-  noremap <Leader>U <Cmd>call git#run_command('push origin')<CR>
+  noremap <Leader>u <Cmd>call git#run_command('push origin')<CR>
+  noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
   noremap <Leader>- <Cmd>call git#run_command('switch -')<CR>
   noremap <expr> gl git#run_command_expr('blame %', 1)
   noremap gll <Cmd>call git#run_command('blame %')<CR>

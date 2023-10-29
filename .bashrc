@@ -710,7 +710,8 @@ man() {
   fi
 }
 
-# Prevent git stash from running without 'git stash push' and test message length
+# Prevent git stash from running without 'git stash push' and test message length.
+# Note 'git stash --staged push' will stash only staged changes. Should use more often.
 # https://stackoverflow.com/q/48751491/4970632
 git() {
   if [ "$#" -eq 1 ] && [ "$1" == stash ]; then

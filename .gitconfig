@@ -28,9 +28,6 @@
 #   Show difference between two possibly-renamed files.
 # 'dictator':
 #   Change user/email information to self through every commit in repository
-# 'downstream':
-#   Unset upstream branch, needed after you change the name of a local branch
-#   with git branch -m name because git tracks the old remote branch name
 # 'exec':
 #   Exec arbitrary shell command on top level
 # 'get':
@@ -54,24 +51,22 @@
 # 'oops':
 #   Amend commit with exact same commit message.
 #   See: https://stackoverflow.com/a/56267398/4970632
+# 'outdated':
+#   Remove outdated references to remote branches.
 # 'pack':
-#   Shows largest 'pack' files in repo
+#   Show largest 'pack' files in repo
+# 'preview':
+#   Preview differences before stash pop.
 # 'refs':
-#   Shows all references (useful for undoing things)
+#   Show all references (useful for undoing things)
 #   See: https://stackoverflow.com/a/21778/4970632
 # 'remotes':
-#   Shows remote branches.
+#   Show remote branches.
 # 'remove':
 #   For more information see the script, can be passed a filename or a
 #   regular expression e.g. '*.mov'
-# 'state':
-#   Simple status message.
-# 'summary':
-#   Detailed status message.
 # 'stashes':
 #   List all git stashes.
-# 'stashed':
-#   Show difference between stash and parent
 # 'tree':
 #   Git log including changes
 # 'trunk':
@@ -80,6 +75,9 @@
 #   Undo 'git stage' operation.
 # 'upstream':
 #   Set upstream branch. Same as 'git branch -u'.
+# 'unstream':
+#   Unset upstream branch. Needed after you change the name of a local branch
+#   with git branch -m name because git tracks the old remote branch name
 # 'vim':
 #   List the vim processes running inside directory
 # 'wtf':
@@ -104,29 +102,27 @@
 	deleted    = "!git-deleted \"$@\""
 	delta      = diff -M --
 	dictator   = "!git-dictator \"$@\""
-	downstream = branch --unset-upstream
 	exec       = "!exec \"$@\""
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
-	leaves      = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
+	leaves     = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
 	ls         = ls-tree -r HEAD --name-only :/
 	ll         = ls-tree -r HEAD --abbrev :/
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
+	outdated   = remote prune origin
 	oops       = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
 	pack       = "!git-pack \"$@\""
 	refs       = reflog show --all
 	remotes    = remote --verbose
 	remove     = "!git-remove \"$@\""
 	root       = rev-parse --show-toplevel
-	state      = status --short --branch
 	stashes    = stash list
-	stashed    = diff stash@{0}^ stash@{0}
-	summary    = status --long --branch
 	tags       = push origin --tags
 	tree       = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk      = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unstage    = reset --soft
+	unstream   = branch --unset-upstream
 	upstream   = branch --set-upstream-to
 	vim        = "!git-vim \"$@\""
 	wtf        = "!git-wtf \"$@\""
