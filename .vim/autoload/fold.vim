@@ -50,10 +50,10 @@ function! fold#fold_text() abort
     let label = substitute(label, '\s*$', '', 'g')
     let label = label . '···' . {'[': ']', '(': ')', '{': '}'}[label[-1:]]
   endif
-  let width = &textwidth - 1 - len(status)  " at least two spaces
-  let label = len(label) > width - 4 ? label[:width - 6] . '···  ' : label
+  let width = &textwidth - 1 - strwidth(status)  " at least two spaces
+  let label = strwidth(label) > width - 4 ? label[:width - 6] . '···  ' : label
   " Combine components
-  let space = repeat(' ', &textwidth - 1 - len(label) - len(status))
+  let space = repeat(' ', &textwidth - 1 - strwidth(label) - strwidth(status))
   let origin = 0  " string truncation point
   if !foldclosed(line('.'))
     let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
