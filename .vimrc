@@ -18,7 +18,7 @@
 " Note: The refresh dictionary figures out which files were modified since previous
 " refresh. Line length is used with linting tools below and in other non-vim settings.
 let g:linelength = 88  " see below configuration
-let g:mapleader = "\<Space>"  " see below <Leader> mappings
+let g:mapleader = "\<Space>"  " see <Leader> mappings
 let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
 set nocompatible  " always use the vim defaults
 set encoding=utf-8  " enable utf characters

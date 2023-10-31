@@ -19,6 +19,8 @@
 #   List all branches. Prune dead remote branches every time.
 # 'commands':
 #   List of valid commands, used for FZF integration
+# 'commits':
+#   List all commits including abandoned ones overwritten by e.g. amend
 # 'deleted':
 #   Lists files that were deleted in git history, but were never re-created
 #   or added back in
@@ -35,8 +37,6 @@
 # 'ignore':
 #   Stop tracking every single regex pattern in your .gitignore
 #   to ignore all subdirectories in another directory, use subdir/*/
-# 'leaves':
-#   List all commits including abandoned ones overwritten by e.g. amend
 # 'ls':
 #   List the tracked file names only.
 # 'll':
@@ -100,13 +100,13 @@
 	amputate   = "!git-amputate \"$@\""
 	branches   = branch -vv --all
 	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
+	commits    = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
 	deleted    = "!git-deleted \"$@\""
 	delta      = diff -M --
 	dictator   = "!git-dictator \"$@\""
 	exec       = "!exec \"$@\""
 	get        = "!get-get \"$@\""
 	ignore     = "!git-ignore \"$@\""
-	leaves     = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
 	ls         = ls-tree -r HEAD --name-only :/
 	ll         = ls-tree -r HEAD --abbrev :/
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
