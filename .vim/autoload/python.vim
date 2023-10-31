@@ -11,7 +11,7 @@ function! python#dict_to_kw(invert, ...) abort range
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
   let firstcol = col("'" . marks[0]) - 1  " first column, note ' really means ` here
   let lastcol = len(getline("'" . marks[1])) - 1  " last selection column
-  let [firstline, lastline] = sort([a:firstline, a:lastline])
+  let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
   for lnum in range(firstline, lastline)
     let [line, prefix, suffix] = [getline(lnum), '', '']
     if lnum == firstline && lnum == lastline  " vint: -ProhibitUsingUndeclaredVariable

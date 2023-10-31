@@ -540,10 +540,6 @@ augroup search_replace
   au InsertLeave * set ignorecase
 augroup END
 
-" Reverse using command
-" See: https://superuser.com/a/189956/506762
-command! -range Reverse <line1>,<line2>call edit#reverse_lines()
-
 " Search highlighting toggle
 " This calls 'set hlsearch!' and prints a message
 noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
@@ -711,6 +707,12 @@ noremap gG <Cmd>Conflicts<CR>
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
 nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
+
+" Reverse input lines
+" See: https://superuser.com/a/189956/506762
+" See: https://vim.fandom.com/wiki/Reverse_order_of_lines
+noremap <expr> \r edit#reverse_lines_expr()
+noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
 
 " Replace tabs with spaces
 " Remove trailing whitespace (see https://stackoverflow.com/a/3474742/4970632)
@@ -882,13 +884,13 @@ nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 " Replace misspelled words or define or identify words
 " Note: Mnemonic for 'zx' and 'zX' is 'fix spell file'
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-noremap <silent> <Plug>SpellForward bh]szv1z=
+noremap <silent> <Plug>SpellForward <Cmd>call edit#spell_next(0)<CR>
   \ :call repeat#set("\<Plug>SpellForward")<CR>
-noremap <silent> <Plug>SpellBackward el[szv1z=
+noremap <silent> <Plug>SpellBackward <Cmd>call edit#spell_next(1)<CR>
   \ :call repeat#set("\<Plug>SpellBackward")<CR>
 map ]S <Plug>SpellForward
 map [S <Plug>SpellBackward
-nnoremap gs <Cmd>call edit#spell_check(v:count1)<CR>
+nnoremap gs <Cmd>call edit#spell_check()<CR>
 nnoremap gS <Cmd>call edit#spell_check(v:count)<CR>
 nnoremap gx zg
 nnoremap gX zug

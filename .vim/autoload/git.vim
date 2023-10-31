@@ -135,7 +135,7 @@ endfunction
 " Note: Previously used <Leader>b for toggle but now use lower and upper
 " case for blaming either range or entire file and 'zbb' for current line.
 function! git#run_command(cmd, ...) abort range
-  let [firstline, lastline] = sort([a:firstline, a:lastline])
+  let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
   let forcerange = a:0 ? a:1 : 0
   let range = forcerange || a:firstline != a:lastline ? firstline . ',' . lastline : ''
   let line = line('.')
@@ -229,10 +229,10 @@ endfunction
 " gitgutter#hunk#stage() requires cursor inside lines and fails when specifying lines
 " outside of addition hunk (see s:hunk_op) so explicitly navigate lines below.
 function! git#hunk_action(stage) abort range
+  let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
   call switch#gitgutter(1, 1)  " ensure enabled, suppress message
   let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
   let hunks = get(get(b:, 'gitgutter', {}), 'hunks', [])
-  let [firstline, lastline] = sort([a:firstline, a:lastline])
   for [id, htype, line1, lcount] in hunks
     let line2 = lcount == 0 ? line1 : line1 + lcount - 1
     if firstline <= line1 && lastline >= line2  " range encapsulates hunk

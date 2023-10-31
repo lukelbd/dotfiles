@@ -92,24 +92,41 @@ endfunction
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
 function! edit#reverse_lines() range abort
-  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
-  let num = empty(range) ? 0 : a:firstline - 1
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  let range = line1 == line2 ? '' : line1 . ',' . line2
+  let num = empty(range) ? 0 : line1 - 1
   exec 'silent ' . range . 'g/^/m' . num
+endfunction
+" For <expr> map accepting motion
+function! edit#reverse_lines_expr(...) abort
+  return utils#motion_func('edit#reverse_lines', a:000)
 endfunction
 
 " Spell check under cursor
 " Note: This improves '1z=' to return nothing when called on valid words.
-function! edit#spell_check(...) abort
-  let cnt = a:0 ? a:1 : 0
-  let word = expand('<cword>')
+" Note: If nothing passed and no manual count then skip otherwise continue.
+function! edit#spell_bad(...) abort
+  let word = a:0 ? a:1 : expand('<cword>')
   let [fixed, which] = spellbadword(word)
-  if empty(fixed)
-    echohl WarningMsg
-    echom 'Warning: Skipping current word. Already checked.'
-    echohl None
-  else
-    let cnt = cnt ? string(cnt) : ''
-    call feedkeys(cnt . 'z=', 'n')
+  return !empty(fixed)
+endfunction
+function! edit#spell_next(...) abort
+  let reverse = a:0 ? a:1 : 0
+  if !edit#spell_bad()
+    exe 'normal! ' . (reverse ? '[s' : ']s')
+  endif
+  call edit#spell_check(1)
+endfunction
+function! edit#spell_check(...) abort
+  if a:0 || v:count || edit#spell_bad()
+    let nr = a:0 ? a:1 : v:count1
+    let nr = nr ? string(nr) : ''
+    echom 'Spell check: ' . expand('<cword>')
+    if empty(nr)
+      call feedkeys('z=', 'n')
+    else
+      exe 'normal! ' . nr . 'z='
+    endif
   endif
 endfunction
 
@@ -136,7 +153,7 @@ function! edit#swap_lines(bottom) abort
   exe lnum + offset
 endfunction
 
-" Wrap the lines to 'count' columns rather than 'textwidth'
+" Wrap the lines to 'count' columns rather than 'text width'
 " Note: Could put all commands in feedkeys() but then would get multiple
 " commands flashing at bottom of screen. Also need feedkeys() because normal
 " doesn't work inside an expression mapping.

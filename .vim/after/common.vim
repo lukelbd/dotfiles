@@ -62,7 +62,7 @@ endif
 " have vimrc 'syntax sync' mappings. See: https://github.com/vim/vim/issues/2790
 if &filetype ==# 'python'  " fix syntax: https://stackoverflow.com/a/28114709/4970632
   highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
-  syntax sync minlines=100
+  syntax sync maxlines=100
 endif
 if &filetype ==# 'json'  " json comments: https://stackoverflow.com/a/68403085/4970632
   syntax match jsonComment '^\s*\/\/.*$'

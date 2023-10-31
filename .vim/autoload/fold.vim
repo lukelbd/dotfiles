@@ -163,7 +163,7 @@ endfunction
 " Open or close folds over input range
 " Note: Here 'a:toggle' closes folds when 1 and opens when 0.
 function! fold#toggle_range(...) range abort
-  let [line1, line2] = sort([a:firstline, a:lastline])
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let winview = a:0 > 2 ? a:3 : {}
   let bang = a:0 > 1 ? a:2 : 0
   let bang = bang ? '!' : ''
