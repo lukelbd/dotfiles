@@ -38,16 +38,17 @@ function! s:get_python_root(path) abort
   return ''
 endfunction
 function! tag#find_root(path) abort
+  let home = expand('~')
   let root = s:get_control_root(a:path)  " control systems
-  if !empty(root) && fnamemodify(root, ':p') !=# expand('~')
+  if !empty(root) && fnamemodify(root, ':p') !=# home
     return root
   endif
   let root = s:get_python_root(a:path)  " python distributions
-  if !empty(root) && fnamemodify(root, ':p') !=# expand('~')
+  if !empty(root) && fnamemodify(root, ':p') !=# home
     return root
   endif
   let root = fnamemodify(resolve(expand(a:path)), ':p:h')
-  return root  " fallback value
+  return root ==# home ? home . '/dummy' : root
 endfunction
 
 " Parse .ignore files for ctags utilities (compare to bash ignores())

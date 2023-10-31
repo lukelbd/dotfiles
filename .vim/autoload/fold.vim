@@ -28,9 +28,10 @@ endfunction
 scriptencoding utf-8
 function! fold#fold_text() abort
   " Get fold text
-  let status = string(v:foldend - v:foldstart + 1)
-  let status = repeat(' ', len(string(line('$'))) - len(status)) . status
-  let status = repeat('+ ', len(v:folddashes)) . status . ' lines'
+  let level = repeat('+ ', len(v:folddashes))
+  let lines = string(v:foldend - v:foldstart + 1)
+  let space = repeat(' ', len(string(line('$'))) - len(lines))
+  let status = level . space . lines . ' lines'
   let regex = '\s*' . comment#get_char() . '\s\+.*$'
   for line in range(v:foldstart, v:foldend)
     let label = substitute(getline(line), regex, '', 'g')  " remove comments

@@ -17,8 +17,6 @@
 #   See: https://gist.github.com/BuonOmo/ce45b51d0cefe949fd0c536a4a60f000
 # 'branches':
 #   List all branches. Prune dead remote branches every time.
-# 'changes':
-#   List summary of differences.
 # 'commands':
 #   List of valid commands, used for FZF integration
 # 'deleted':
@@ -49,7 +47,7 @@
 #   in .vim. use this to delete file/directory throughout history.
 #   See: https://stackoverflow.com/a/23657759/4970632
 # 'oops':
-#   Amend commit with exact same commit message.
+#   Amend commit with same commit message by default.
 #   See: https://stackoverflow.com/a/56267398/4970632
 # 'outdated':
 #   Remove outdated references to remote branches.
@@ -65,14 +63,18 @@
 # 'remove':
 #   For more information see the script, can be passed a filename or a
 #   regular expression e.g. '*.mov'
+# 'staged':
+#   List unstaged changes.
 # 'stashes':
 #   List all git stashes.
+# 'tags':
+#   List all git tags.
 # 'tree':
 #   Git log including changes
 # 'trunk':
 #   Git log excluding changes
-# 'unstage':
-#   Undo 'git stage' operation.
+# 'unstaged':
+#   List staged changes.
 # 'upstream':
 #   Set upstream branch. Same as 'git branch -u'.
 # 'unstream':
@@ -97,7 +99,6 @@
 	amend      = "!f() { TARGET=$(git rev-parse \"$1\"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	amputate   = "!git-amputate \"$@\""
 	branches   = branch -vv --all
-	changes    = "!git --no-pager diff --stat"
 	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
 	deleted    = "!git-deleted \"$@\""
 	delta      = diff -M --
@@ -117,11 +118,12 @@
 	remotes    = remote --verbose
 	remove     = "!git-remove \"$@\""
 	root       = rev-parse --show-toplevel
+	staged     = "!git --no-pager diff --stat --staged"
 	stashes    = stash list
-	tags       = push origin --tags
+	tags       = tag --list
 	tree       = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk      = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
-	unstage    = reset --soft
+	unstaged   = "!git --no-pager diff --stat"
 	unstream   = branch --unset-upstream
 	upstream   = branch --set-upstream-to
 	vim        = "!git-vim \"$@\""
