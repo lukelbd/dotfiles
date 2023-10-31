@@ -52,22 +52,24 @@ function! python#dict_to_kw_expr(invert) abort
 endfunction
 
 " Return fold expression results or trigger results
-" Note: Here 'fold_edit' refreshes folds after calling :edit
+" Note: Here 'fold_edit' refreshes folds after calling :edit and for some reason
+" is required to open files with overridden folds (especially BufWritePost).
 function! s:fold_exists(lnum) abort
   return exists('b:SimpylFold_cache')
     \ && !empty(b:SimpylFold_cache[a:lnum])
     \ && !empty(b:SimpylFold_cache[a:lnum]['foldexpr'])  " note empty(0) returns 1
-endfunction
-function! python#fold_edit() abort
-  if &filetype !=# 'python' | return | endif
-  call SimpylFold#Recache()
-  doautocmd BufWritePost
 endfunction
 function! python#fold_expr(lnum) abort
   let recache = !exists('b:SimpylFold_cache')
   call SimpylFold#FoldExpr(a:lnum)  " auto recache
   if recache | call python#fold_cache() | endif
   return b:SimpylFold_cache[a:lnum]['foldexpr']
+endfunction
+function! python#fold_refresh() abort
+  if &filetype !=# 'python' | return | endif
+  if !exists('*SimpylFold#Recache') | return | endif
+  call SimpylFold#Recache()
+  doautocmd BufWritePost
 endfunction
 
 " Fold groups of constants using SimpylFold cache

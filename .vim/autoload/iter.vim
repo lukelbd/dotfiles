@@ -1,7 +1,70 @@
 "-----------------------------------------------------------------------------"
 " Menu utilities
 "-----------------------------------------------------------------------------"
-" Insert complete menu items and scroll complete or preview windows (whichever is open).
+" Forward delete by tabs
+" Note: This enforced consistency with 'softtab' backspace-by-tabs behavior
+function! iter#forward_delete() abort
+  let line = getline('.')
+  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
+    return repeat("\<Delete>", &tabstop)
+  else
+    return "\<Delete>"
+  endif
+endfunction
+
+" Switch to next or previous colorschemes and print the name
+" Note: Have to trigger 'BufEnter' so status line updates.
+function! iter#jump_color(reverse) abort
+  " Get list of color schemes
+  let step = a:reverse ? 1 : -1
+  if !exists('g:all_colorschemes')
+    let g:all_colorschemes = getcompletion('', 'color')
+  endif
+  let active_colorscheme = get(g:, 'colors_name', 'default')
+  let idx = index(g:all_colorschemes, active_colorscheme)
+  let idx = step + (idx < 0 ? -step : idx)   " if idx < 0, set to 0 by default
+  " Jump to next color scheme circularly
+  if idx < 0
+    let idx += len(g:all_colorschemes)
+  elseif idx >= len(g:all_colorschemes)
+    let idx -= len(g:all_colorschemes)
+  endif
+  let colorscheme = g:all_colorschemes[idx]
+  echom 'Colorscheme: ' . colorscheme
+  exe 'colorscheme ' . colorscheme
+  let g:colors_name = colorscheme  " convention: https://stackoverflow.com/a/2419692/4970632
+  doautocmd BufEnter
+endfunction
+
+" Cyclic next error in location list.
+" See: https://vi.stackexchange.com/a/14359
+" Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
+" cursor is on final error in the file but ]x does not cycle to the next one.
+function! iter#jump_cyclic(count, list, ...) abort
+  " Get list of loc dictionaries
+  let func = 'get' . a:list . 'list'
+  let reverse = a:0 && a:1
+  let params = a:list ==# 'loc' ? [0] : []
+  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
+  let items = call(func, params)
+  if empty(items) | return "echoerr 'E42: No errors'" | endif
+  call map(items, "extend(v:val, {'idx': v:key + 1})")
+  if reverse | call reverse(items) | endif
+  " Jump to next loc circularly
+  let [lnum, cnum] = [line('.'), col('.')]
+  let [cmps, oper] = [[], reverse ? '<' : '>']
+  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
+  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
+  call filter(items, join(cmps, ' || '))
+  let inext = get(get(items, 0, {}), 'idx', '')
+  if type(inext) == type(0)
+    return cmd . inext
+  endif
+  exe reverse ? line('$') : 0
+  return iter#jump_cyclic(a:count, a:list, reverse)
+endfunction
+
+" Insert complete menu items and scroll complete or preview windows (whichever open).
 " Note: Used 'verb function! lsp#scroll' to figure out how to detect
 " preview windows for a reference scaling (also verified that l:window.find
 " and therefore lsp#scroll do not return popup completion windows).
@@ -32,7 +95,7 @@ function! s:scroll_popup(info, scroll) abort
   return repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
 endfunction
 
-" Scroll complete mneu or preview popup windows
+" Scroll complete menu or preview popup windows
 " Note: This prevents vim's baked-in circular complete menu scrolling.
 " Reset the scroll count (for <expr> maps)
 function! iter#scroll_reset() abort
@@ -52,56 +115,4 @@ function! iter#scroll_count(scroll) abort
   else
     return s:scroll_default(a:scroll)
   endif
-endfunction
-
-" Switch to next or previous colorschemes and print the name
-" Note: Have to trigger 'BufEnter' so status line updates.
-function! iter#jump_colorschemes(reverse) abort
-  " Get list of color schemes
-  let step = a:reverse ? 1 : -1
-  if !exists('g:all_colorschemes')
-    let g:all_colorschemes = getcompletion('', 'color')
-  endif
-  let active_colorscheme = get(g:, 'colors_name', 'default')
-  let idx = index(g:all_colorschemes, active_colorscheme)
-  let idx = step + (idx < 0 ? -step : idx)   " if idx < 0, set to 0 by default
-  " Jump to next color scheme circularly
-  if idx < 0
-    let idx += len(g:all_colorschemes)
-  elseif idx >= len(g:all_colorschemes)
-    let idx -= len(g:all_colorschemes)
-  endif
-  let colorscheme = g:all_colorschemes[idx]
-  echom 'Colorscheme: ' . colorscheme
-  exe 'colorscheme ' . colorscheme
-  let g:colors_name = colorscheme  " convention: https://stackoverflow.com/a/2419692/4970632
-  doautocmd BufEnter
-endfunction
-
-" Cyclic next error in location list
-" Adapted from: https://vi.stackexchange.com/a/14359
-" Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
-" cursor is on final error in the file but ]x does not cycle to the next one.
-function! iter#jump_cyclic(count, list, ...) abort
-  " Get list of loc dictionaries
-  let func = 'get' . a:list . 'list'
-  let reverse = a:0 && a:1
-  let params = a:list ==# 'loc' ? [0] : []
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
-  let items = call(func, params)
-  if empty(items) | return "echoerr 'E42: No errors'" | endif
-  call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if reverse | call reverse(items) | endif
-  " Jump to next loc circularly
-  let [lnum, cnum] = [line('.'), col('.')]
-  let [cmps, oper] = [[], reverse ? '<' : '>']
-  call add(cmps, 'v:val.lnum ' . oper . ' lnum')
-  call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
-  call filter(items, join(cmps, ' || '))
-  let inext = get(get(items, 0, {}), 'idx', '')
-  if type(inext) == type(0)
-    return cmd . inext
-  endif
-  exe reverse ? line('$') : 0
-  return iter#jump_cyclic(a:count, a:list, reverse)
 endfunction

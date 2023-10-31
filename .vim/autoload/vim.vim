@@ -42,6 +42,7 @@ function! vim#config_refresh(bang, ...) abort
     \ '/plugged/',
     \ '/\.\?vimsession*',
     \ '/\.\?vim/autoload/vim.vim',
+    \ '/\.\?vim/after/common.vim',
     \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
     \ ]
   let regex = join(regexes, '\|')

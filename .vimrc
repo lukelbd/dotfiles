@@ -96,7 +96,7 @@ set shiftround  " round to multiple of shift width
 set shiftwidth=2  " default 2 spaces
 set showcmd  " show operator pending command
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
-set showtabline=2  " default 2 spaces
+set showtabline=1  " default 2 spaces
 set signcolumn=auto  " auto may cause lag after startup but unsure
 set smartcase  " search case insensitive, unless has capital letter
 set softtabstop=2  " default 2 spaces
@@ -364,7 +364,7 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| call python#fold_edit()<CR>
+noremap <Leader>e <Cmd>edit \| call python#fold_refresh()<CR>
 noremap <Leader>r <Cmd>redraw \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -607,10 +607,12 @@ noremap zR <Cmd>call fold#set_level('R')<CR>
 " Set folds to open/closed over input range
 " Note: This uses :foldopen[!] and :foldclose[!] commands with line range
 " Note: For recursive maps can use e.g. noremap <expr> zC fold#set_range_expr(1, 0)
-noremap zcc zc
-noremap zoo zo
-noremap <expr> zc fold#set_range_expr(1, 0)
-noremap <expr> zo fold#set_range_expr(0, 0)
+nnoremap zcc zc
+nnoremap zoo zo
+vnoremap <nowait> zc zc
+vnoremap <nowait> zo zo
+nnoremap <expr> zc fold#set_range_expr(1, 0)
+nnoremap <expr> zo fold#set_range_expr(0, 0)
 noremap zC <Cmd>call fold#close_nested(0)<CR>
 noremap zO zO
 
@@ -863,7 +865,7 @@ command! LangToggle call switch#spelllang(<args>)
 nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
-" Fix misspelled words or define or identify words and
+" Replace misspelled words or define or identify words
 " Note: Mnemonic for 'zx' and 'zX' is 'fix spell file'
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 noremap <silent> <Plug>SpellForward bh]szv1z=
@@ -872,8 +874,8 @@ noremap <silent> <Plug>SpellBackward el[szv1z=
   \ :call repeat#set("\<Plug>SpellBackward")<CR>
 map ]S <Plug>SpellForward
 map [S <Plug>SpellBackward
-nnoremap gs 1z=
-nnoremap gS z=
+nnoremap gs <Cmd>call edit#spell_check(v:count1)<CR>
+nnoremap gS <Cmd>call edit#spell_check(v:count)<CR>
 nnoremap gx zg
 nnoremap gX zug
 
@@ -881,6 +883,8 @@ nnoremap gX zug
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 nnoremap <nowait> zu guiw
 nnoremap <nowait> zU gUiw
+vnoremap <nowait> zu gu
+vnoremap <nowait> zU gU
 nnoremap <silent> <Plug>CaseToggle my~h`yh<Cmd>delmark y<CR>
   \ :call repeat#set("\<Plug>CaseToggle")<CR>
 nnoremap <silent> <Plug>CaseTitle myguiw~h`yh<Cmd>delmark y<CR>
@@ -1005,7 +1009,7 @@ noremap <expr> <C-u> iter#scroll_count(-0.5)
 noremap <expr> <C-d> iter#scroll_count(0.5)
 noremap <expr> <C-b> iter#scroll_count(-1.0)
 noremap <expr> <C-f> iter#scroll_count(1.0)
-inoremap <expr> <Delete> edit#forward_delete()
+inoremap <expr> <Delete> iter#forward_delete()
 inoremap <expr> <Up> iter#scroll_count(-1)
 inoremap <expr> <Down> iter#scroll_count(1)
 inoremap <expr> <C-k> iter#scroll_count(-1)
@@ -2135,10 +2139,10 @@ augroup color_scheme
   au!
   exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
 augroup END
-command! SchemePrev call iter#jump_colorschemes(0)
-command! SchemeNext call iter#jump_colorschemes(1)
-noremap <Leader>( <Cmd>SchemePrev<CR>
-noremap <Leader>) <Cmd>SchemeNext<CR>
+command! ColorPrev call iter#jump_color(0)
+command! ColorNext call iter#jump_color(1)
+noremap <Leader>( <Cmd>ColorPrev<CR>
+noremap <Leader>) <Cmd>ColorNext<CR>
 
 " Show syntax under cursor and syntax types
 " Note: Here 'groups' opens up the page

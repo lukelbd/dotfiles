@@ -14,27 +14,15 @@ function! edit#blank_down(count) abort
   silent! call repeat#set("\<Plug>BlankDown", a:count)
 endfunction
 
-" Forward delete by tabs
-" Note: Idea is to try to enforce consistency with backspace-by-tabs
-function! edit#forward_delete() abort
-  let line = getline('.')
-  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
-    return repeat("\<Delete>", &tabstop)
-  else
-    return "\<Delete>"
-  endif
-endfunction
-
-" How much calculator. Native plugin only supports visual-mode but add motions here
+" Indent and calculator motion functions
+" Note: Native calculator only supports visual-mode but here add motions.
 " See: https://github.com/sk1418/HowMuch/blob/master/autoload/HowMuch.vim
 function! edit#how_much_expr(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
-" Indent multiple times
 function! edit#indent_items(dedent, count) range abort
   exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
-" For <expr> map accepting motion
 function! edit#indent_items_expr(...) abort
   return utils#motion_func('edit#indent_items', a:000)
 endfunction
@@ -58,6 +46,7 @@ function! edit#lang_map()
 endfunction
 
 " Set up temporary paste mode
+" Note: Removed automatically when insert mode is abandoned
 function! edit#paste_mode() abort
   let s:paste = &paste
   let s:mouse = &mouse
@@ -77,9 +66,8 @@ function! edit#paste_mode() abort
   return ''
 endfunction
 
-" Search replace without polluting history
-" Undoing this command will move the cursor to the first line in the range of
-" lines that was changed: https://stackoverflow.com/a/52308371/4970632
+" Search replace without history. Undo will move the cursor to the first line in the
+" range of lines that was changed: https://stackoverflow.com/a/52308371/4970632
 " Warning: Critical to replace line-by-line in reverse order in case substitutions
 " have different number of newlines. Cannot figure out how to do this in one command.
 function! edit#replace_regex(message, ...) range abort
@@ -107,6 +95,19 @@ function! edit#reverse_lines() range abort
   let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
   let num = empty(range) ? 0 : a:firstline - 1
   exec 'silent ' . range . 'g/^/m' . num
+endfunction
+
+" Spell check under cursor
+" Note: This improves '1z=' to return nothing when called on valid words.
+function! edit#spell_check(...) abort
+  let cnt = a:0 ? a:1 : 0
+  let word = expand('<cword>')
+  let [fixed, which] = spellbadword(word)
+  if !empty(fixed)
+    let cnt = cnt ? string(cnt) : ''
+    call feedkeys(cnt . 'z=', 'n')
+    echom 'Word: ' . word . ' Fixed: ' . fixed . ' Which: ' . which
+  endif
 endfunction
 
 " Swap characters or lines
