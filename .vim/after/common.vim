@@ -29,18 +29,19 @@ highlight link CommonTodo Todo
 highlight link CommonLink Underlined
 
 " Override filetype folding regions
-" Note: This leverages internal b:SimpylFold_cache variable to apply custom docstring
-" and global constant folds. For some reason fails if moved to python ftplugin.
+" Note: This leverages b:SimpylFold_cache to apply custom docstring folds and opens
+" classes by default. For some reason fails if anything here is moved to ftplugin.
 " Note: This re-enforces fold text overwritten by $RUNTIM# syntax/[markdown|javascript].
 " Also resets open-close status but unfortunately required because vim filetype refresh
 " seems to always clean out existing fold definitions.
-if &filetype ==# 'python'
-  setlocal foldexpr=python#fold_expr(v:lnum)
-  call python#fold_refresh()
-endif
 if &filetype ==# 'markdown' || &l:filetype ==# 'javascript'
   setlocal foldtext=fold#fold_text()
   doautocmd BufWritePost
+endif
+if &filetype ==# 'python'
+  setlocal foldexpr=python#fold_expr(v:lnum)
+  call python#fold_refresh()
+  silent! global/^class\>/foldopen
 endif
 
 " Override filetype folding colors

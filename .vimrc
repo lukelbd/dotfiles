@@ -590,50 +590,64 @@ noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 " Note: Mapping is consistent with gt and gT tag maps
 noremap gz <Cmd>Folds<CR>
 
-" Close folds with lower case open with upper case
-" Note: This is more consistent with e.g. 'zF' and other utils
-noremap zn zN
-noremap zN zn
+" Default fold commands
+" Note: Remove this after restarting sessions.
+noremap zf zf
+noremap zF zF
+noremap zn zn
+noremap zN zN
 
 " Change fold level
-" Note: Passing 'zf' without count is equivalent to 'zM'
-noremap zF <Cmd>call fold#set_level('R')<CR>
-noremap zf <Cmd>call fold#set_level()<CR>
+" Note: Here 'zf' sets to input count while other commands increase or decrease by
+" count. Every command echos the change. Also 'zf' without count simply prints level.
+noremap zp <Cmd>call fold#set_level()<CR>
+noremap zP <Cmd>call fold#set_level()<CR>
 noremap zm <Cmd>call fold#set_level('m')<CR>
 noremap zM <Cmd>call fold#set_level('M')<CR>
 noremap zr <Cmd>call fold#set_level('r')<CR>
 noremap zR <Cmd>call fold#set_level('R')<CR>
 
-" Set folds to open/closed over input range
-" Note: This uses :foldopen[!] and :foldclose[!] commands with line range
-" Note: For recursive maps can use e.g. noremap <expr> zC fold#set_range_expr(1, 0)
+" Toggle folds under cursor non-recursively
+" Warning: Combining expr calls with 'zO' will fail so make sure to use feedkeys.
+" Note: Previously toggled with recursive-open then non-recursive close but this is
+" annoying e.g. for huge python classes. Now use 'zZ' to explicitly toggle nesting.
 nnoremap zcc zc
 nnoremap zoo zo
 vnoremap <nowait> zc zc
 vnoremap <nowait> zo zo
-nnoremap <expr> zc fold#set_range_expr(1, 0)
-nnoremap <expr> zo fold#set_range_expr(0, 0)
-noremap zC <Cmd>call fold#close_nested(0)<CR>
-noremap zO zO
+nnoremap <expr> za fold#toggle_range_expr(-1, 0)
+nnoremap <expr> zc fold#toggle_range_expr(1, 0)
+nnoremap <expr> zo fold#toggle_range_expr(0, 0)
+noremap <expr> zz foldclosed('.') > 0 ? 'zo' : 'zc'
 
-" Toggle fold under cursor
-" Note: Open recursively but close single fold to avoid unwanted intermediates
-" Warning: For some reason combinining call with naked 'zO' fails so use feedkeys
-noremap <expr> zz foldclosed('.') > 0 ? 'zO' : 'zc'
-noremap zZ <Cmd>call fold#close_nested(1)<CR>
+" Toggle folds under cursor recursively
+" Note: Here 'zZ' will close or open all nested folds under cursor up to
+" level parent. Use :echom fold#get_parent() for debugging.
+" Note: Here 'zC' will close fold only up to current level or for definitions
+" inside class (special case for python). Could also use e.g. noremap <expr>
+" zC fold#toggle_range_expr(1, 1) for recursive motion mapping.
+" noremap zO zO
+noremap zC <Cmd>call fold#toggle_parent(1)<CR>
+noremap zO <Cmd>call fold#toggle_parent(0)<CR>
+noremap zZ <Cmd>call fold#toggle_children()<CR>
 
 " Move between folds and inside folds hello
 " Note: This is more consistent with other bracket maps
 " Note: Recursive map required for [Z or ]Z or else way more complicated
+map <silent> <Plug>FoldForward ]zzz
+  \ :call repeat#set("\<Plug>FoldForward")<CR>
+map <silent> <Plug>FoldBackward [zzz
+  \ :call repeat#set("\<Plug>FoldBackward")<CR>
+map ]Z <Plug>FoldForward
+map [Z <Plug>FoldBackward
 noremap z[ [z
 noremap z] ]z
 noremap [z zk
 noremap ]z zj
-map [Z [zzz
-map ]Z ]zzz
 
 " Adjust other z mappings
-" Note: Instead use 'zt' for title case and 'zb' for boolean toggle
+" Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling and lets us
+" use 'zt' for title case 'zb' for boolean toggle. Also make 'ze'/'zs' more intuitive.
 noremap z. z.
 noremap zj zb
 noremap zk zt

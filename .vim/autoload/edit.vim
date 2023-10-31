@@ -103,10 +103,13 @@ function! edit#spell_check(...) abort
   let cnt = a:0 ? a:1 : 0
   let word = expand('<cword>')
   let [fixed, which] = spellbadword(word)
-  if !empty(fixed)
+  if empty(fixed)
+    echohl WarningMsg
+    echom 'Warning: Skipping current word. Already checked.'
+    echohl None
+  else
     let cnt = cnt ? string(cnt) : ''
     call feedkeys(cnt . 'z=', 'n')
-    echom 'Word: ' . word . ' Fixed: ' . fixed . ' Which: ' . which
   endif
 endfunction
 

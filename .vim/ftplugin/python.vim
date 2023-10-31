@@ -8,7 +8,6 @@ setlocal shiftwidth=4
 setlocal softtabstop=4
 
 " Syntax settings
-" Warning: Folds must be overridden in common.vim. Fails to apply when moved here.
 let g:python_slow_sync = 0  " use fast syncing
 let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_func_calls = 1  " python-syntax syntax option
@@ -34,8 +33,8 @@ call succinct#add_delims({
   \ 1)
 
 " Define indention-based 'm' text objects
-" BracelessEnable +indent  " weird bug causes screen view to jump
-" BracelessEnable +highlight  " highlight slows things down even on mac
+" BracelessEnable +indent  " bug causes screen view to jump
+" BracelessEnable +highlight  " slows things down even on mac
 if exists(':BracelessEnable')
   BracelessEnable
 endif
