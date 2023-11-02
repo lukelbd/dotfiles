@@ -40,12 +40,13 @@ highlight link CommonLink Underlined
 " Override filetype folding regions
 " Note: This leverages b:SimpylFold_cache to apply custom docstring folds and opens
 " classes by default. For some reason fails if anything here is moved to ftplugin.
-" Note: This re-enforces fold text overwritten by $RUNTIM#Esyntax/[markdown|javascript].
-" Also resets open-close status but unfortunately required because vim filetype refresh
-" seems to always clean out existing fold definitions.
+" Note: This re-enforces fold text overwritten by $RUNTIME/syntax/[markdown|javascript].
+" Resets open-close status but unfortunately required because vim filetype refresh
+" seems to always clean out existing definitions. Triggering buf write seems to work.
 if &filetype ==# 'markdown' || &l:filetype ==# 'javascript'
   setlocal foldtext=fold#fold_text()
   FastFoldUpdate  " manual update
+  doautocmd BufWritePost
 endif
 if &filetype ==# 'python' && exists('*SimpylFold#Recache')
   let winview = winsaveview()
