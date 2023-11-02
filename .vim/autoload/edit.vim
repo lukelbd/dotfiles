@@ -1,21 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Insert blank lines above or below
-" Note repeat("\n") fails inside function for some reason.
-" See: https://github.com/tpope/vim-unimpaired
-" Todo: Port this methodology to utils for other repeated mappings.
-function! edit#blank_up(count) abort
-  put!=repeat(nr2char(10), a:count)
-  ']+1
-  silent! call repeat#set("\<Plug>BlankUp", a:count)
-endfunction
-function! edit#blank_down(count) abort
-  put=repeat(nr2char(10), a:count)
-  '[-1
-  silent! call repeat#set("\<Plug>BlankDown", a:count)
-endfunction
-
 " Indent and calculator motion functions
 " Note: Native calculator only supports visual-mode but here add motions.
 " See: https://github.com/sk1418/HowMuch/blob/master/autoload/HowMuch.vim
@@ -95,15 +80,15 @@ endfunction
 " Reverse or sort the input lines
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
+function! edit#sort_lines() range abort
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  exe 'silent ' . line1 . ',' . line2 . 'sort'
+endfunction
 function! edit#reverse_lines() range abort
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let range = line1 == line2 ? '' : line1 . ',' . line2
   let num = empty(range) ? 0 : line1 - 1
   exe 'silent ' . range . 'g/^/m' . num
-endfunction
-function! edit#sort_lines() range abort
-  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
-  exe 'silent ' . line1 . ',' . line2 . 'sort'
 endfunction
 " For <expr> map accepting motion
 function! edit#sort_lines_expr() range abort

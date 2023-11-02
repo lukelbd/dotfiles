@@ -279,28 +279,13 @@ endfunction
 if !empty(mapcheck('<Esc>', 'n'))  " maps staring with escape
   silent! unmap <Esc>[3~
   let s:insert_maps = [
-    \ '[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~',
     \ '[6;2~', '[5;2~', '[3;2~', '[2;2~',
+    \ '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[3~',
     \ '[6;5~', '[5;5~', '[3;5~', '[2;5~',
-    '[1;2A',
-    '[1;2B',
-    '[1;2C',
-    '[1;2D'
-    '[1;2F',
-    '[1;2H',
-    '[1;3A',
-    '[1;3B',
-    '[1;3C',
-    '[1;3D',
-    '[1;3F',
-    '[1;3H',
-    '[1;5A',
-    '[1;5B',
-    '[1;5C',
-    '[1;5D',
-    '[1;5F',
-    '[1;5H',
-    \ ]
+    \ '[1;2A', '[1;2B', '[1;2C', '[1;2D', '[1;2F', '[1;2H',
+    \ '[1;3A', '[1;3B', '[1;3C', '[1;3D', '[1;3F', '[1;3H',
+    \ '[1;5A', '[1;5B', '[1;5C', '[1;5D', '[1;5F', '[1;5H',
+  \ ]
   for s:insert_map in s:insert_maps
     exe 'silent! iunmap <Esc>' . s:insert_map
   endfor
@@ -309,10 +294,10 @@ endif
 " Suppress all prefix mappings initially so that we avoid accidental actions
 " due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
 for s:mapping in [
-  \ ['<Tab>',    'n'],
+  \ ['\', 'nv'],
+  \ ['<Tab>', 'n'],
   \ ['<Leader>', 'nv'],
-  \ ['\',        'nv'],
-  \ ]
+\ ]
   let s:key = s:mapping[0]
   let s:modes = split(s:mapping[1], '\zs')  " construct list
   for s:mode in s:modes
@@ -337,7 +322,7 @@ for s:key in [
   \ '@', 'q', 'Q', 'K', 'ZZ', 'ZQ', '][', '[]',
   \ '<C-r>', '<C-p>', '<C-n>', '<C-a>', '<C-x>',
   \ '<Delete>', '<Backspace>', '<CR>', '_',
-  \ ]
+\ ]
   if empty(maparg(s:key, 'n'))
     exe 'nnoremap ' . s:key . ' <Nop>'
   endif
@@ -359,7 +344,7 @@ for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
   \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
   \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
-  \ ]
+\ ]
   if empty(maparg(s:key, 'i'))
     exe 'inoremap ' . s:key . ' <Nop>'
   endif
@@ -964,16 +949,17 @@ call s:repeat_map('gc:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>", 'n
 call s:repeat_map("gc'", '', '<Cmd>call comment#header_inchar()<CR>', 'n')
 call s:repeat_map('gc"', '', '<Cmd>call comment#header_inline(5)<CR>', 'n')
 
-" Bracket commands inspired by 'unimpaired'
-" Todo: Generalized utils.vim repeat function. See edit.vim
-noremap [C <Cmd>call comment#next_block(1, 0)<CR>
-noremap ]C <Cmd>call comment#next_block(0, 0)<CR>
+" Navigate comment blocks
+" Capital uses only top-level blocks
 noremap [c <Cmd>call comment#next_block(1, 1)<CR>
 noremap ]c <Cmd>call comment#next_block(0, 1)<CR>
-noremap <Plug>BlankUp <Cmd>call edit#blank_up(v:count1)<CR>
-noremap <Plug>BlankDown <Cmd>call edit#blank_down(v:count1)<CR>
-map [e <Plug>BlankUp
-map ]e <Plug>BlankDown
+noremap [C <Cmd>call comment#next_block(1, 0)<CR>
+noremap ]C <Cmd>call comment#next_block(0, 0)<CR>
+
+" Insert empty lines
+" Note: See 'vim-unimpaired' for original. This drops the count but who cares.
+call s:repeat_map('[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
+call s:repeat_map(']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
 
 " Enter insert mode above or below.
 " Pressing enter on empty line preserves leading whitespace
@@ -987,8 +973,6 @@ cnoremap <expr> <C-v> edit#lang_map()
 
 " Insert mode with paste toggling
 " Note: Switched easy-align mapping from ga for consistency here
-noremap zi gi
-noremap zI gI
 nnoremap <expr> ga edit#paste_mode() . 'a'
 nnoremap <expr> gA edit#paste_mode() . 'A'
 nnoremap <expr> gC edit#paste_mode() . 'c'
@@ -996,6 +980,8 @@ nnoremap <expr> gi edit#paste_mode() . 'i'
 nnoremap <expr> gI edit#paste_mode() . 'I'
 nnoremap <expr> go edit#paste_mode() . 'o'
 nnoremap <expr> gO edit#paste_mode() . 'O'
+noremap zi gi
+noremap zI gI
 
 " Copy mode and conceal mode ('paste mode' accessible with 'g' insert mappings)
 " Turn on for filetypes containing raw possibly heavily wrapped data
