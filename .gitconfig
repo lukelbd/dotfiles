@@ -38,6 +38,10 @@
 #   List the tracked file names only.
 # 'll':
 #   List the tracked file names and commits.
+# 'master':
+#   Merge master branch into current branch.
+# 'main':
+#   Merge main branch into current branch.
 # 'objects':
 #   When you commit giant files (i.e. over 100MB), even after you delete them,
 #   you won't be able to push to Github because they were tracked and are found
@@ -58,12 +62,16 @@
 # 'remove':
 #   For more information see the script, can be passed a filename or a
 #   regular expression e.g. '*.mov'
+# 'set':
+#   Set upstream branch. Same as 'git branch -u'.
 # 'staged':
 #   List unstaged changes.
 # 'stashes':
 #   List all git stashes.
 # 'tags':
 #   List all git tags.
+# 'top':
+#   Show top level path.
 # 'tree':
 #   Git log including changes
 # 'trunk':
@@ -73,11 +81,8 @@
 #   with git branch -m name because git tracks the old remote branch name
 # 'unstaged':
 #   List staged changes.
-# 'update':
-#   Update current branch from the input branch. Common use case may be
-#   'git update upstream/master'. Beware that stash pop may cause conflicts.
 # 'upstream':
-#   Set upstream branch. Same as 'git branch -u'.
+#   Checkout master and pull upstream branch.
 # 'vim':
 #   List the vim processes running inside directory
 # 'wtf':
@@ -106,7 +111,6 @@
 	ignore     = "!git-ignore \"$@\""
 	ls         = ls-tree -r HEAD --name-only :/
 	ll         = ls-tree -r HEAD --abbrev :/
-	main       = "!git fetch --all && git stash push && {git merge main; git stash pop; }"
 	master     = "!git fetch --all && git stash push && {git merge master; git stash pop; }"
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
@@ -116,16 +120,16 @@
 	refs       = reflog show --all
 	remotes    = remote --verbose
 	remove     = "!git-remove \"$@\""
-	root       = rev-parse --show-toplevel
+	set        = branch --set-upstream-to
 	staged     = "!git --no-pager diff --stat --staged"
 	stashes    = stash list
 	tags       = tag --list
+	top        = rev-parse --show-toplevel
 	tree       = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk      = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
 	unset      = branch --unset-upstream
 	unstaged   = "!git --no-pager diff --stat"
-	upstream   = branch --set-upstream-to
-	upstream   = pull upstream
+	upstream   = "!git checkout master && pull upstream master"
 	vim        = "!git-vim \"$@\""
 	wtf        = "!git-wtf \"$@\""
 [blame]
