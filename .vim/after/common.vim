@@ -2,7 +2,7 @@
 " Override filetype and syntax settings
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
-" Override buffer-local settings
+" General settings
 " Note: This overrides native vim filetype navigation maps (e.g. :map [[ inside
 " vim file shows mapping that searches for functions. Also accounts for situations
 " e.g. help pages where single '[' or ']' are assigned <nowait> mappings.
@@ -20,7 +20,36 @@ if empty(maparg('[')) && empty(maparg(']'))
   endif
 endif
 
-" Override buffer-local syntax
+" Filetype folding regions
+" Note: Python block uses b:SimpylFold_cache to apply custom docstring folds and opens
+" classes by default. For some reason fails if anything here is moved to ftplugin.
+" Note: Markdown block overwrites foldtext from $RUNTIME/syntax/[markdown|javascript]
+" and re-applies plugged/vim-markdown folding. Also resets open-close status but
+" unfortunately required because vim filetype refresh seems to clean out definitions.
+if &filetype ==# 'markdown'
+  setlocal foldtext=fold#fold_text()
+  doautocmd BufWritePost
+endif
+if &filetype ==# 'python'
+  setlocal foldexpr=python#fold_expr(v:lnum)
+  doautocmd BufWritePost
+endif
+call fold#set_defaults()
+
+" Filetype folding colors
+" Note: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
+" based on colorscheme. Leverage that instead of reproducing here. Also need special
+" workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
+if has('gui_running')
+  highlight! link Folded TabLine
+  highlight! link Terminal TabLine
+  let hl = hlget('Folded')[0]  " keeps getting overridden so use this
+  let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
+  let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
+  call hlset([hl])
+endif
+
+" Buffer-local syntax
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
 " Warning: The containedin just tries to *guess* what particular comment and string
 " group names are for given filetype syntax schemes (use :Group for testing).
@@ -37,39 +66,7 @@ highlight link CommonBang Special
 highlight link CommonTodo Todo
 highlight link CommonLink Underlined
 
-" Override filetype folding regions
-" Note: This leverages b:SimpylFold_cache to apply custom docstring folds and opens
-" classes by default. For some reason fails if anything here is moved to ftplugin.
-" Note: This re-enforces fold text overwritten by $RUNTIME/syntax/[markdown|javascript].
-" Resets open-close status but unfortunately required because vim filetype refresh
-" seems to always clean out existing definitions. Triggering buf write seems to work.
-if &filetype ==# 'markdown' || &l:filetype ==# 'javascript'
-  setlocal foldtext=fold#fold_text()
-  FastFoldUpdate  " manual update
-  doautocmd BufWritePost
-endif
-if &filetype ==# 'python' && exists('*SimpylFold#Recache')
-  let winview = winsaveview()
-  setlocal foldexpr=python#fold_expr(v:lnum)
-  FastFoldUpdate  " manual update
-  silent! global/^class\>/foldopen
-  call winrestview(winview)
-endif
-
-" Override filetype folding colors
-" Note: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
-" based on colorscheme. Leverage that instead of reproducing here. Also need special
-" workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
-if has('gui_running')
-  highlight! link Folded TabLine
-  highlight! link Terminal TabLine
-  let hl = hlget('Folded')[0]  " keeps getting overridden so use this
-  let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
-  let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
-  call hlset([hl])
-endif
-
-" Override filetype syntax. Could move to after/syntax but annoying
+" Filetype syntax. Could move to after/syntax but annoying
 " Note: This tries to fix docstring highlighting issues but inconsistent, so also
 " have vimrc 'syntax sync' mappings. See: https://github.com/vim/vim/issues/2790
 if &filetype ==# 'python'  " fix syntax: https://stackoverflow.com/a/28114709/4970632

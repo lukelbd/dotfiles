@@ -13,13 +13,6 @@ let g:python_highlight_all = 1  " builtin python syntax option
 let g:python_highlight_func_calls = 1  " python-syntax syntax option
 let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
 
-" Folding settings
-let winview = winsaveview()
-setlocal foldexpr=python#fold_expr(v:lnum)
-FastFoldUpdate
-silent! global/^class\>/foldopen
-call winrestview(winview)
-
 " Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()
 noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#run_general()<CR>

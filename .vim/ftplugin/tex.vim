@@ -6,12 +6,6 @@
 " Note: Not possible to set foldlevelstart=1 for specific filetype
 if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
 
-" Close preamble if within
-let s:preamble = search('^\s*\\begin{document}', 'n') - 1
-if s:preamble > 0 && s:preamble < line('.')
-  silent! exe s:preamble . 'foldclose'
-endif
-
 " Adjust highlight regions
 " Note: g:tex_fast indicates highlight regions to *enable* (so setting to empty string
 " speeds things up). Here omit comment regions 'c' to prevent them from getting folded.
@@ -72,7 +66,7 @@ noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--pdf')<CR>
 " * \xi looks like a funky squiggle, pronounced 'zai'
 " * \chi looks like an x, pronounced 'kai'
 " Rejected maps:
-" \ "'": tex#make_snippet(tex#graphic_select(), '\includegraphics{', '}'),
+" \ '''': tex#make_snippet(tex#graphic_select(), '\includegraphics{', '}'),
 " \ '"': tex#make_snippet(tex#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
 " \ '/': tex#make_snippet(tex#label_select(), '\cref{', '}'),
 " \ '?': tex#make_snippet(tex#label_select(), '\ref{', '}'),

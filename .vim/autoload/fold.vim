@@ -87,10 +87,23 @@ function! fold#get_current(...) abort
   endif
 endfunction
 
-" Translate count into fold level
+" Set the file fold level and optional default toggles
 " Note: Native 'zm' and 'zr' accept commands but count is relative to current
 " fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below
+function! fold#set_defaults(...) abort
+  let pairs = {
+    \ 'python': ['^class\>', 0],
+    \ 'tex': ['\ze\n\s*\\begin{document}', 1],
+  \ }
+  if has_key(pairs, &filetype)
+    let [regex, toggle] = pairs[&l:filetype]
+    let winview = winsaveview()
+    silent! exe 'global/' . regex . '/' . (toggle ? 'foldclose' : 'foldopen')
+    call winrestview(winview)
+    silent! exe 'normal! zv'
+  endif
+endfunction
 function! fold#set_level(...) abort
   silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let current = &l:foldlevel

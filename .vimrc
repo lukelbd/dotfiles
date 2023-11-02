@@ -611,12 +611,13 @@ noremap zk zt
 noremap ze zs
 noremap zs ze
 
-" General fold commands to folds
-" Todo: Remove this after restarting sessions.
-noremap zf zf
-noremap zF zF
-noremap zn zn
-noremap zN zN
+" Reset manually open-closed folds accounting for custom overrides
+" Note: This affects only markdown and python files.
+for s:char in ['f', 'F', 'n', 'N']  " remove this after restarting sessions
+  silent! exe 'unmap! z' . s:char
+endfor
+noremap zx zx<Cmd>call fold#set_defaults()<CR>
+noremap zX zX<Cmd>call fold#set_defaults()<CR>
 
 " Change fold level
 " Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.
@@ -630,10 +631,11 @@ noremap zr <Cmd>call fold#set_level('r')<CR>
 noremap zR <Cmd>call fold#set_level('R')<CR>
 
 " Toggle folds under cursor non-recursively
-" Note: FastFoldUpdate will auto-close new folds above level so use below to prevent
-" confusing behavior where 'zz' pressed on seemingly-open undefined fold does nothing.
 " Note: Previously toggled with recursive-open then non-recursive close but this is
 " annoying e.g. for huge python classes. Now use 'zZ' to explicitly toggle nesting.
+" Note: This will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
+" maps so call FastFoldUpdate below. Also only trigger on explicit fold maps instead
+" of e.g. on TextChanged,InsertLeave in case e.g. ending delimiter is unfinished.
 noremap <expr> zz '<Cmd>FastFoldUpdate<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
 nnoremap zcc <Cmd>FastFoldUpdate<CR>zc
 nnoremap zoo <Cmd>FastFoldUpdate<CR>zo
@@ -1436,6 +1438,7 @@ let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
 let g:vim_markdown_conceal = 1
 let g:vim_markdown_conceal_code_blocks = 1
 let g:vim_markdown_fenced_languages = ['html', 'python']
+let g:vim_markdown_folding_disabled = 0  " enable header folding
 
 " Colorful stuff
 " Test: ~/.vim/plugged/colorizer/colortest.txt
@@ -1621,9 +1624,9 @@ endif
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:plug_active('FastFold')
   " Various folding plugins
+  let g:fastfold_savehook = 1  " fold on save
   let g:fastfold_fold_command_suffixes =  []  " use custom maps instead
   let g:fastfold_fold_movement_commands = []  " or empty list
-  let g:fastfold_savehook = 1
   " Native folding settings
   let g:baan_fold = 1
   let g:clojure_fold = 1
@@ -1942,26 +1945,21 @@ if s:plug_active('vim-fugitive')
 endif
 
 " Git gutter settings
-" Note: Staging maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.', and
-" navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
-" by spell maps ]s, ]S (navigate to spell error, or navigate and fix error). Also note
-" <Leader>g both refreshes gutter (e.g. after staging) and previews any result.
-" Note: Add refresh autocommands since gitgutter natively relies on CursorHold and
-" therefore requires setting 'updatetime' to a small value (which is annoying).
 " Note: Use custom command for toggling on/off. Older vim versions always show
 " signcolumn if signs present, so GitGutterDisable will remove signcolumn.
+" Note: Previously used text change autocomamnds to manually-refresh gitgutter since
+" plugin only defines CursorHold but under-the-hood the invoked function actually *does*
+" only fire when text is different. So leave default configuration alone.
+" Note: Staging maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.', and
+" navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
+" by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
 if s:plug_active('vim-gitgutter')
-  augroup gitgutter_refresh
-    au!
-    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
-    exe 'au ' . cmds . ' * GitGutter'
-  augroup END
-  if !exists('g:gitgutter_enabled') | let g:gitgutter_enabled = 0 | endif  " disable startup
+  command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
+  let g:gitgutter_async = 1  " ensure enabled
   let g:gitgutter_map_keys = 0  " disable all maps yo
   let g:gitgutter_max_signs = -1  " maximum number of signs
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   let g:gitgutter_use_location_list = 0  " use for errors instead
-  command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
   call s:repeat_map('[G', 'HunkBackward', '<Cmd>call git#hunk_jump(0, 1)<CR>')
   call s:repeat_map(']G', 'HunkForward', '<Cmd>call git#hunk_jump(1, 1)<CR>')
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
