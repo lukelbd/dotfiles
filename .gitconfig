@@ -4,9 +4,6 @@
 # https://stackoverflow.com/q/2421011/4970632
 #------------------------------------------------------------------------------
 # NEW COMMANDS
-# 'absorb':
-#   Merge one branch into this current branch. Common use case may be
-#   'git absorb upstream/master'. Beware that stash pop may cause conflicts.
 # 'amend':
 #   Change the name of arbitrary commit messages. Just provide a SHA1 reference
 #   See: https://blog.filippo.io/git-fixup-amending-an-older-commit/
@@ -53,8 +50,6 @@
 #   Remove outdated references to remote branches.
 # 'pack':
 #   Show largest 'pack' files in repo
-# 'preview':
-#   Preview differences before stash pop.
 # 'refs':
 #   Show all references (useful for undoing things)
 #   See: https://stackoverflow.com/a/21778/4970632
@@ -73,13 +68,16 @@
 #   Git log including changes
 # 'trunk':
 #   Git log excluding changes
-# 'unstaged':
-#   List staged changes.
-# 'upstream':
-#   Set upstream branch. Same as 'git branch -u'.
-# 'unstream':
+# 'unset':
 #   Unset upstream branch. Needed after you change the name of a local branch
 #   with git branch -m name because git tracks the old remote branch name
+# 'unstaged':
+#   List staged changes.
+# 'update':
+#   Update current branch from the input branch. Common use case may be
+#   'git update upstream/master'. Beware that stash pop may cause conflicts.
+# 'upstream':
+#   Set upstream branch. Same as 'git branch -u'.
 # 'vim':
 #   List the vim processes running inside directory
 # 'wtf':
@@ -95,7 +93,6 @@
 #   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 [alias]
-	absorb     = "!git fetch --all; git stash clear; git stash; git merge \"$@\"; git stash pop"
 	amend      = "!f() { TARGET=$(git rev-parse \"$1\"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
 	amputate   = "!git-amputate \"$@\""
 	branches   = branch -vv --all
@@ -109,6 +106,8 @@
 	ignore     = "!git-ignore \"$@\""
 	ls         = ls-tree -r HEAD --name-only :/
 	ll         = ls-tree -r HEAD --abbrev :/
+	main       = "!git fetch --all && git stash push && {git merge main; git stash pop; }"
+	master     = "!git fetch --all && git stash push && {git merge master; git stash pop; }"
 	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
 	objects    = "!git count-objects -H -v"
 	outdated   = remote prune origin
@@ -123,9 +122,10 @@
 	tags       = tag --list
 	tree       = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
 	trunk      = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
+	unset      = branch --unset-upstream
 	unstaged   = "!git --no-pager diff --stat"
-	unstream   = branch --unset-upstream
 	upstream   = branch --set-upstream-to
+	upstream   = pull upstream
 	vim        = "!git-vim \"$@\""
 	wtf        = "!git-wtf \"$@\""
 [blame]

@@ -2,17 +2,31 @@
 " Utilities for sourcing vimscript
 "-----------------------------------------------------------------------------"
 " Setup command windows and ensure local maps work
-" Note: Here 'execute' means run the selected line
+" Note: Here 'execute' is mapped to run the selected line.
+" Note: This is used e.g. when browsing past commands or searches
 function! vim#cmdwin_setup() abort
   inoremap <buffer> <expr> <CR> ""
   nnoremap <buffer> <CR> <C-c><CR>
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
 endfunction
 
+" Configuration scripts to skip when refreshing
+" Note: Accounts for external plugins, prevents redefining refresh function while
+" running, and prevents sourcing manually-sourced common script.
+let s:config_ignore = [
+  \ '/.fzf/',
+  \ '/plugged/',
+  \ '/\.\?vimsession*',
+  \ '/\.\?vim/autoload/vim.vim',
+  \ '/\.\?vim/after/common.vim',
+  \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
+\ ]
+
 " Refresh recently modified configuration files
-" Note: This also tracks filetypes outside of current one and queues the
-" update until next time function is called from within that filetype.
-" let files = substitute(files, '\(^\|\n\@<=\)\s*\d*:\s*\(.*\)\($\|\n\@=\)', '\2', 'g')
+" Note: Previously tried to update and track per-filetype refreshes but was way
+" overkill and need ':filetype detect' anyway to both detect changes and to trigger
+" e.g. markdown or python folding overrides. Note (after testing) this will also
+" apply the updates because all ':filetype' comamnd does is trigger script sourcing.
 function! vim#config_scripts(...) abort
   let suppress = a:0 > 0 ? a:1 : 0
   let regex = a:0 > 1 ? a:2 : ''
@@ -27,109 +41,76 @@ function! vim#config_scripts(...) abort
     call add(paths, path)
     call add(sids, sid)
   endfor
-  if !suppress
-    echom 'Script names: ' . join(paths, ', ')
-  endif
+  if !suppress | echom 'Script names: ' . join(paths, ', ') | endif
   return [paths, sids]
 endfunction
 function! vim#config_refresh(bang, ...) abort
-  " filetype detect  " in case started with empty file and shebang changes this
-  let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
-  let global = get(g:refreshes, 'global', 0)
-  let common = expand('~/.vim/after/common.vim')
-  let regexes = [
-    \ '/.fzf/',
-    \ '/plugged/',
-    \ '/\.\?vimsession*',
-    \ '/\.\?vim/autoload/vim.vim',
-    \ '/\.\?vim/after/common.vim',
-    \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
-    \ ]
-  let regex = join(regexes, '\|')
-  let times = {}
+  let time = get(g:, 'refresh', localtime())
+  let paths = vim#config_scripts(1)[0]
+  let ignore = join(s:config_ignore, '\|')
   let loaded = []
-  for path in vim#config_scripts(1)[0]
-    let ftype = path =~# '/syntax/\|/ftplugin/' ? fnamemodify(path, ':t:r') : 'global'
-    let vimrc = path =~# '/\.\?vimrc\|/init\.vim'  " always source and trigger filetypes
-    if path !~# expand('~') || path =~# regex || a:0 && path !~# a:1
-      continue  " skip files not edited by user or not matching input regex
-    endif
+  for path in paths
     if index(loaded, path) != -1
       continue  " already loaded this
     endif
-    if !vimrc && !a:bang && getftime(path) < get(g:refreshes, ftype, global)
-      continue  " only refresh if outdated
+    if path !~# expand('~') || path =~# ignore || a:0 && path !~# a:1 || index(loaded, path) != -1
+      continue  " skip files not edited by user or matching regex
     endif
-    if ftype ==# 'global' || ftype ==# &filetype
-      exe 'so ' . path | call add(loaded, path) | let times[ftype] = localtime()
-    else
-      let times[ftype] = get(g:refreshes, ftype, global)
-    endif
-    if vimrc  " detect filetype and trigger autocommands
-      filetype detect
+    if path =~# '/syntax/\|/ftplugin/'  " sourced by :filetype detect
+      let ftype = fnamemodify(path, ':t:r')  " e.g. ftplugin/python.vim --> python
+      if &filetype ==# ftype | call add(loaded, path) | endif
+    elseif a:bang || getftime(path) > time || path =~# '/\.\?vimrc\|/init\.vim'
+      exe 'source ' . path
+      call add(loaded, path)
     endif
   endfor
-  if filereadable(common)  " trigger filetype common settings
-    exe 'so ' . common
-  endif
-  if &filetype ==# 'python' && exists('*SetCellHighlighting')
-    call SetCellHighlighting()  " triggered by bufenter but avoid doautocmd for speed
-  endif
+  filetype detect  " required for e.g. folding overrides
+  source ~/.vim/after/common.vim
+  if &filetype ==# 'python' && exists('*SetCellHighlighting') | call SetCellHighlighting() | endif
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
-  call extend(g:refreshes, times)
+  let g:refresh = localtime()
 endfunction
 
 " Create session file or load existing one
 " Note: Sets string for use with MacVim windows and possibly other GUIs
 " See: https://vi.stackexchange.com/a/34669/8084
+function! s:session_loaded() abort
+  let regex = glob2regpat($HOME)
+  let regex = regex[0:len(regex) - 2]  " remove trailing '$'
+  let bufs = getbufinfo({'buflisted': 1})
+  let bufs = map(bufs, 'v:val.name')
+  return !empty(filter(bufs, 'v:val =~# regex'))
+endfunction
 function! vim#session_list(lead, line, cursor) abort
   let regex = glob2regpat(a:lead)
   let regex = regex[0:len(regex) - 2]
   let opts = glob('.vimsession*', 0, 1)
   let opts = filter(opts, 'v:val =~# regex')
-  echom 'Lead: ' . a:lead . ' Options: ' . join(opts, ', ')
   return opts
 endfunction
-function! vim#session_loaded() abort
-  let regex = glob2regpat($HOME)
-  let regex = regex[0:len(regex) - 2]  " remove trailing '$'
-  let bufs = getbufinfo({'buflisted': 1})
-  let bufs = map(bufs, 'v:val.name')
-  let bufs = filter(bufs, 'v:val =~# regex')
-  return len(bufs) > 0
-endfunction
 function! vim#init_session(...)
-  if !exists(':Obsession')
-    echoerr ':Obsession is not installed.'
-    return
-  endif
   let input = a:0 ? a:1 : ''
   let current = v:this_session
   if !empty(input) && !filereadable(a:1) && fnamemodify(a:1, ':t') !~# '^\.vimsession'
     let session = fnamemodify(a:1, ':h') . '/.vimsession-' . fnamemodify(a:1, ':t')
-  elseif !empty(input)  " manual session name
-    let session = a:1
-  elseif !empty(current)
-    let session = current
-  else
-    let session = '.vimsession'
+  else  " manual current or default session name
+    let session = !empty(input) ? a:1 : !empty(current) ? current : '.vimsession'
   endif
-  let suffix = substitute(fnamemodify(session, ':t'), '^\.vimsession[-_]*\(.*\)$', '\1', '')
-  if filereadable(session) && !vim#session_loaded()
+  if filereadable(session) && !s:session_loaded()
     exe 'source ' . session
   elseif !filereadable(session)
     exe 'Obsession ' . session
   else  " never overwrite existing session files
-    echoerr 'Error: Cannot source session file (current session is active).'
-    return 0
+    echoerr 'Error: Cannot source session file (current session is active).' | return 0
   endif
+  let title = substitute(fnamemodify(session, ':t'), '^\.vimsession[-_]*\(.*\)$', '\1', '')
   if !empty(current) && fnamemodify(session, ':p') != fnamemodify(current, ':p')
     echom 'Removing old session file ' . fnamemodify(current, ':t')
     call delete(current)
   endif
-  if !empty(suffix)
-    echom 'Applying session title ' . suffix
-    let &g:titlestring = suffix
+  if !empty(title)
+    echom 'Applying session title ' . title
+    let &g:titlestring = title
   endif
 endfunction
 

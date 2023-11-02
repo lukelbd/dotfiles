@@ -6,49 +6,41 @@
 " Note: Previously tried just '__init__.py' for e.g. conda-managed packages and
 " placing '.tagproject' in vim-plug folder but this caused tons of nested .vimtags
 " file creations including *duplicate* tags when invoking :Tags function.
-function! s:get_roots(path) abort
-  let root = fnamemodify(resolve(expand(a:path)), ':p:h')
+function! s:get_root(folder, globs, ...) abort
+  let reverse = a:0 ? a:1 : 0
+  let root = fnamemodify(a:folder, ':p')
+  let home = expand('~')
   let roots = []
-  while root !=# '' && root !=# '/'
+  while !empty(root) && root !=# '/'
     let root = fnamemodify(root, ':h')
-    call add(roots, root)
+    if root !=# home[:len(root) - 1]  " skip home or above
+      call add(roots, root)
+    endif
   endwhile
-  return roots
-endfunction
-function! s:get_control_root(path) abort
-  let names = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
-  for root in s:get_roots(a:path)  " top to bottom, get highest
-    for name in names
-      if !empty(split(globpath(root, name), "\n"))
-        return root  " highest level control system distribution base
-      endif
-    endfor
-  endfor
-  return ''
-endfunction
-function! s:get_python_root(path) abort
-  let names = ['__init__.py', 'setup.py', 'setup.cfg']
-  for root in reverse(s:get_roots(a:path))  " botto to top, get lowest
-    for name in names
-      if !empty(split(globpath(root, name), "\n"))
-        return root  " lowest level python package indicator base
+  for root in reverse ? reverse(roots) : roots
+    for glob in a:globs
+      if !empty(globpath(root, glob, 0, 1))
+        return root
       endif
     endfor
   endfor
   return ''
 endfunction
 function! tag#find_root(path) abort
+  let folder = fnamemodify(resolve(expand(a:path)), ':p:h')
+  let globs = ['.git', '.hg', '.svn', '.bzr', '_darcs', '_darcs', '_FOSSIL_', '.fslckout']
+  let root = s:get_root(folder, globs)  " highest-level control system indicator
+  if !empty(root)
+    return root
+  endif
+  let globs = ['__init__.py', 'setup.py', 'setup.cfg']
+  let root = s:get_root(folder, globs, 1)  " lowest-level python distribution indicator
+  if !empty(root)
+    return root
+  endif
   let home = expand('~')
-  let root = s:get_control_root(a:path)  " control systems
-  if !empty(root) && fnamemodify(root, ':p') !=# home
-    return root
-  endif
-  let root = s:get_python_root(a:path)  " python distributions
-  if !empty(root) && fnamemodify(root, ':p') !=# home
-    return root
-  endif
-  let root = fnamemodify(resolve(expand(a:path)), ':p:h')
-  return root ==# home ? home . '/dummy' : root
+  let root = folder ==# home[:len(folder) - 1] ? folder . '/dummy' : folder
+  return root
 endfunction
 
 " Parse .ignore files for ctags utilities (compare to bash ignores())

@@ -3,7 +3,9 @@
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
 " Override buffer-local settings
-" Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
+" Note: This overrides native vim filetype navigation maps (e.g. :map [[ inside
+" vim file shows mapping that searches for functions. Also accounts for situations
+" e.g. help pages where single '[' or ']' are assigned <nowait> mappings.
 setlocal concealcursor=
 setlocal conceallevel=2
 setlocal formatoptions=lrojcq
@@ -11,8 +13,15 @@ setlocal linebreak
 setlocal nojoinspaces
 let &l:textwidth = g:linelength  " see also .vimrc
 let &l:wrapmargin = 0
+if empty(maparg('[')) && empty(maparg(']'))
+  if !empty(maparg('<Plug>TagsBackwardTop')) && !empty(maparg('<Plug>TagsForwardTop'))
+    map <buffer> [[ <Plug>TagsBackwardTop
+    map <buffer> ]] <Plug>TagsForwardTop
+  endif
+endif
 
 " Override buffer-local syntax
+" Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
 " Warning: The containedin just tries to *guess* what particular comment and string
 " group names are for given filetype syntax schemes (use :Group for testing).
 syntax match CommonBang
@@ -31,17 +40,19 @@ highlight link CommonLink Underlined
 " Override filetype folding regions
 " Note: This leverages b:SimpylFold_cache to apply custom docstring folds and opens
 " classes by default. For some reason fails if anything here is moved to ftplugin.
-" Note: This re-enforces fold text overwritten by $RUNTIM# syntax/[markdown|javascript].
+" Note: This re-enforces fold text overwritten by $RUNTIM#Esyntax/[markdown|javascript].
 " Also resets open-close status but unfortunately required because vim filetype refresh
 " seems to always clean out existing fold definitions.
 if &filetype ==# 'markdown' || &l:filetype ==# 'javascript'
   setlocal foldtext=fold#fold_text()
-  doautocmd BufWritePost
+  FastFoldUpdate  " manual update
 endif
-if &filetype ==# 'python'
+if &filetype ==# 'python' && exists('*SimpylFold#Recache')
+  let winview = winsaveview()
   setlocal foldexpr=python#fold_expr(v:lnum)
-  call python#fold_refresh()
+  FastFoldUpdate  " manual update
   silent! global/^class\>/foldopen
+  call winrestview(winview)
 endif
 
 " Override filetype folding colors
@@ -62,7 +73,7 @@ endif
 " have vimrc 'syntax sync' mappings. See: https://github.com/vim/vim/issues/2790
 if &filetype ==# 'python'  " fix syntax: https://stackoverflow.com/a/28114709/4970632
   highlight BracelessIndent ctermfg=0 ctermbg=0 cterm=inverse
-  syntax sync maxlines=100
+  syntax sync minlines=100
 endif
 if &filetype ==# 'json'  " json comments: https://stackoverflow.com/a/68403085/4970632
   syntax match jsonComment '^\s*\/\/.*$'

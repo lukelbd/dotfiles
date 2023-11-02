@@ -15,11 +15,11 @@
 " Critical stuff
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
 " buffer-local syntax and 'conceal-', 'format-' 'linebreak', and 'joinspaces'.
-" Note: The refresh dictionary figures out which files were modified since previous
-" refresh. Line length is used with linting tools below and in other non-vim settings.
+" Note: The refresh variable used in .vim/autoload/vim.vim to autoload recently
+" updated script and line length variable used in linting tools below.
 let g:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see <Leader> mappings
-let g:refreshes = get(g:, 'refreshes', {'global': localtime()})
+let g:refresh = get(g:, 'refresh', localtime())
 set nocompatible  " always use the vim defaults
 set encoding=utf-8  " enable utf characters
 scriptencoding utf-8
@@ -145,7 +145,7 @@ let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
   \ ]  " for wrapping and spell toggle
 let s:panel_filetypes = [
-  \ 'help', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ 'help', 'ale-info', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
   \ ]  " for popup toggle
 let s:panel_filetypes += [
   \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
@@ -195,6 +195,15 @@ let s:shellcheck_ignore =
 "-----------------------------------------------------------------------------"
 " Repair unexpected behavior
 "-----------------------------------------------------------------------------"
+" Stop cursor from changing when clicking on panes. Note this may no longer be
+" necessary since tmux handles FocusLost signal itself.
+" See: https://github.com/sjl/vitality.vim/issues/29
+" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
+augroup cursor_fix
+  au!
+  au FocusLost * :      " stopinsert
+augroup END
+
 " Move cursor to end of insertion after leaving
 " Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left
 " Note: Critical to keep jumplist or else populated after every single insertion. Use
@@ -204,21 +213,12 @@ augroup insert_fix
   au InsertLeave * keepjumps normal! `^
 augroup END
 
-" Stop cursor from changing when clicking on panes. Note this is no longer
-" necessary since tmux handles FocusLost signal itself.
-" See: https://github.com/sjl/vitality.vim/issues/29
-" See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
-" augroup cursor_fix
-"   au!
-"   au FocusLost * stopinsert
-" augroup END
-
 " Configure escape codes to restore screen after exiting
 " Also disable visual bell when errors triggered because annoying
 " See: :help restorescreen page
+let &t_vb = ''  " disable visual bell
 let &t_te = "\e[?47l\e8"
 let &t_ti = "\e7\e[r\e[?47h"
-let &t_vb = ''  " disable visual bell
 
 " Support cursor shapes. Note neither Ptmux escape codes (e.g. through 'vitality'
 " plugin) or terminal overrides seem necessary in newer versions of tmux.
@@ -234,16 +234,72 @@ let &t_EI = "\e[2 q"
 let &t_ZH = "\e[3m"
 let &t_ZR = "\e[23m"
 
+" Automatically update binary spellfile
+" See: https://vi.stackexchange.com/a/5052/8084
+for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
+  if filereadable(s:spellfile) && (
+  \ !filereadable(s:spellfile . '.spl') ||
+  \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
+  \ )
+    echom 'Update spellfile: ' . s:spellfile
+    silent! exec 'mkspell! ' . fnameescape(s:spellfile)
+  endif
+endfor
+
+" Helper function to suppress prefix maps. Prevents unexpected behavior due
+" to entering wrong suffix, e.g. \x in visual mode deleting the selection.
+function! s:gobble_map(prefix, mode)
+  let char = nr2char(getchar())
+  if empty(maparg(a:prefix . char, a:mode))  " return no-op
+    return ''
+  else  " re-direct to the active mapping
+    return a:prefix . char
+  endif
+endfunction
+
+" Helper function for repeat#set
+" This is simpler than copy-pasting manual repeat#set calls
+function! s:repeat_map(lhs, name, rhs, ...) abort
+  let nore = a:0 > 1 && type(a:2) == 0 && a:2 ? '' : 'nore'
+  let args = a:0 > 1 && type(a:2) != 0 ? a:2 : '<silent>'
+  let mode = a:0 ? a:1 : ''
+  if empty(a:name)  " disable repetition (e.g. needs user input so cannot repeat)
+    let repeat = ':<C-u>call repeat#set("")<CR>'
+    exe mode . nore . 'map ' . args . ' ' . a:lhs . ' ' . repeat . a:rhs
+  else  " enable repetition (e.g. annoying-to-type initial commands)
+    let plug = empty(a:name) ? '' : '<Plug>' . a:name
+    let repeat = ':<C-u>call repeat#set("\' . plug . '")<CR>'
+    exe mode . nore . 'map ' . args . ' ' . plug . ' ' . a:rhs . repeat
+    exe mode . 'map ' . a:lhs . ' ' . plug
+  endif
+endfunction
+
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. synax highlighting
 if !empty(mapcheck('<Esc>', 'n'))  " maps staring with escape
   silent! unmap <Esc>[3~
   let s:insert_maps = [
-    \ '[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[1;3F',
-    \ '[1;3H', '[1;3B', '[1;3A', '[1;3C', '[1;3D', '[6;5~', '[5;5~',
-    \ '[3;5~', '[2;5~', '[1;5F', '[1;5H', '[1;5B', '[1;5A', '[1;5C',
-    \ '[1;5D', '[6;2~', '[5;2~', '[3;2~', '[2;2~', '[1;2F', '[1;2H',
-    \ '[1;2B', '[1;2A', '[1;2C', '[1;2D'
+    \ '[3~', '[6;3~', '[5;3~', '[3;3~', '[2;3~',
+    \ '[6;2~', '[5;2~', '[3;2~', '[2;2~',
+    \ '[6;5~', '[5;5~', '[3;5~', '[2;5~',
+    '[1;2A',
+    '[1;2B',
+    '[1;2C',
+    '[1;2D'
+    '[1;2F',
+    '[1;2H',
+    '[1;3A',
+    '[1;3B',
+    '[1;3C',
+    '[1;3D',
+    '[1;3F',
+    '[1;3H',
+    '[1;5A',
+    '[1;5B',
+    '[1;5C',
+    '[1;5D',
+    '[1;5F',
+    '[1;5H',
     \ ]
   for s:insert_map in s:insert_maps
     exe 'silent! iunmap <Esc>' . s:insert_map
@@ -252,14 +308,6 @@ endif
 
 " Suppress all prefix mappings initially so that we avoid accidental actions
 " due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
-function! s:suppress(prefix, mode)
-  let char = nr2char(getchar())
-  if empty(maparg(a:prefix . char, a:mode))
-    return ''  " no-op
-  else
-    return a:prefix . char  " re-direct to the active mapping
-  endif
-endfunction
 for s:mapping in [
   \ ['<Tab>',    'n'],
   \ ['<Leader>', 'nv'],
@@ -270,7 +318,7 @@ for s:mapping in [
   for s:mode in s:modes
     if empty(maparg(s:key, s:mode))
       exe s:mode . 'map <expr> ' . s:key
-        \ . " <sid>suppress('" . s:key . "', '" . s:mode . "')"
+        \ . " <sid>gobble_map('" . s:key . "', '" . s:mode . "')"
     endif
   endfor
 endfor
@@ -306,7 +354,6 @@ endfor
 " * Ctrl-z sends vim to background, disable to prevent cursor change
 augroup override_maps
   au!
-  au BufEnter * inoremap <buffer> <S-Tab> <C-d>
 augroup END
 for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
@@ -334,18 +381,6 @@ vnoremap V <Esc>mzV
 vnoremap <expr> <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
 vnoremap <LeftMouse> <LeftMouse>my`z<Cmd>exe 'normal! ' . visualmode()<CR>`y<Cmd>delmark y<CR>
 
-" Automatically update binary spellfile
-" See: https://vi.stackexchange.com/a/5052/8084
-for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
-  if filereadable(s:spellfile) && (
-  \ !filereadable(s:spellfile . '.spl') ||
-  \ getftime(s:spellfile) > getftime(s:spellfile . '.spl')
-  \ )
-    echom 'Update spellfile: ' . s:spellfile
-    silent! exec 'mkspell! ' . fnameescape(s:spellfile)
-  endif
-endfor
-
 
 "-----------------------------------------------------------------------------"
 " File and window utilities
@@ -364,8 +399,8 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| call python#fold_refresh()<CR>
-noremap <Leader>r <Cmd>redraw \| echo ''<CR>
+noremap <Leader>e <Cmd>edit \| doautocmd BufWritePost<CR>
+noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
 
@@ -504,10 +539,10 @@ nnoremap <Leader>M <Cmd>call shell#man_page(1)<CR>
 
 " Cycle through location list options
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
-command! -bar -count=1 Lnext execute iter#jump_cyclic(<count>, 'loc')
-command! -bar -count=1 Lprev execute iter#jump_cyclic(<count>, 'loc', 1)
-command! -bar -count=1 Qnext execute iter#jump_cyclic(<count>, 'qf')
-command! -bar -count=1 Qprev execute iter#jump_cyclic(<count>, 'qf', 1)
+command! -bar -count=1 Lnext execute iter#next_loc(<count>, 'loc', 0)
+command! -bar -count=1 Lprev execute iter#next_loc(<count>, 'loc', 1)
+command! -bar -count=1 Qnext execute iter#next_loc(<count>, 'qf', 0)
+command! -bar -count=1 Qprev execute iter#next_loc(<count>, 'qf', 1)
 noremap [x <Cmd>Lprev<CR>zv
 noremap ]x <Cmd>Lnext<CR>zv
 noremap [X <Cmd>Qprev<CR>zv
@@ -570,30 +605,36 @@ endfor
 noremap m ge
 noremap M gE
 
-" Go to start or end without opening folds.
-" Useful for e.g. python files with docsring at top and function at bottom
-" Note: Fold opening is auto-disabled for remapped jump commands hence the 'zv' below
-" Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
-noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
-noremap G G
-
 " Search for special characters
 " First searches for escapes second for non-ascii
 noremap gr /[^\x00-\x7F]<CR>
 noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
-" Go to folds
-" Note: Mapping is consistent with gt and gT tag maps
-noremap gz <Cmd>Folds<CR>
+" Go to start or end without opening folds
+" Useful for e.g. python files with docsring at top and function at bottom
+" Note: Mapped jumping commands do not open folds by default, hence the expr below
+" Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
+noremap G G
+noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 
-" Default fold commands
-" Note: Remove this after restarting sessions.
+" Screen motion mappings
+" Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling and lets us
+" use 'zt' for title case 'zb' for boolean toggle. Also make 'ze'/'zs' more intuitive.
+noremap z. z.
+noremap zj zb
+noremap zk zt
+noremap ze zs
+noremap zs ze
+
+" General fold commands to folds
+" Todo: Remove this after restarting sessions.
 noremap zf zf
 noremap zF zF
 noremap zn zn
 noremap zN zN
 
 " Change fold level
+" Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.
 " Note: Here 'zf' sets to input count while other commands increase or decrease by
 " count. Every command echos the change. Also 'zf' without count simply prints level.
 noremap zp <Cmd>call fold#set_level()<CR>
@@ -604,58 +645,45 @@ noremap zr <Cmd>call fold#set_level('r')<CR>
 noremap zR <Cmd>call fold#set_level('R')<CR>
 
 " Toggle folds under cursor non-recursively
-" Warning: Combining expr calls with 'zO' will fail so make sure to use feedkeys.
+" Note: FastFoldUpdate will auto-close new folds above level so use below to prevent
+" confusing behavior where 'zz' pressed on seemingly-open undefined fold does nothing.
 " Note: Previously toggled with recursive-open then non-recursive close but this is
 " annoying e.g. for huge python classes. Now use 'zZ' to explicitly toggle nesting.
-nnoremap zcc zc
-nnoremap zoo zo
-vnoremap <nowait> zc zc
-vnoremap <nowait> zo zo
+noremap <expr> zz '<Cmd>FastFoldUpdate<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
+nnoremap zcc <Cmd>FastFoldUpdate<CR>zc
+nnoremap zoo <Cmd>FastFoldUpdate<CR>zo
+vnoremap <nowait> zc <Cmd>FastFoldUpdate<CR>zc
+vnoremap <nowait> zo <Cmd>FastFoldUpdate<CR>zo
 nnoremap <expr> za fold#toggle_range_expr(-1, 0)
 nnoremap <expr> zc fold#toggle_range_expr(1, 0)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
-noremap <expr> zz foldclosed('.') > 0 ? 'zo' : 'zc'
 
 " Toggle folds under cursor recursively
 " Note: Here 'zZ' will close or open all nested folds under cursor up to
-" level parent. Use :echom fold#get_parent() for debugging.
+" level parent. Use :echom fold#get_current() for debugging.
 " Note: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). Could also use e.g. noremap <expr>
 " zC fold#toggle_range_expr(1, 1) for recursive motion mapping.
-" noremap zO zO
-noremap zC <Cmd>call fold#toggle_parent(1)<CR>
-noremap zO <Cmd>call fold#toggle_parent(0)<CR>
-noremap zZ <Cmd>call fold#toggle_children()<CR>
+noremap zZ <Cmd>call fold#toggle_nested()<CR>
+noremap zC <Cmd>call fold#toggle_current(1)<CR>
+noremap zO <Cmd>call fold#toggle_current(0)<CR>
 
-" Move between folds and inside folds hello
+" Jump to next or previous fold or inside fold
 " Note: This is more consistent with other bracket maps
 " Note: Recursive map required for [Z or ]Z or else way more complicated
-map <silent> <Plug>FoldForward ]zzz
-  \ :call repeat#set("\<Plug>FoldForward")<CR>
-map <silent> <Plug>FoldBackward [zzz
-  \ :call repeat#set("\<Plug>FoldBackward")<CR>
-map ]Z <Plug>FoldForward
-map [Z <Plug>FoldBackward
-noremap z[ [z
-noremap z] ]z
+call s:repeat_map('[Z', 'FoldBackward', 'zkza')
+call s:repeat_map(']Z', 'FoldForward', 'zjza')
 noremap [z zk
 noremap ]z zj
+noremap z[ [z
+noremap z] ]z
 
-" Adjust other z mappings
-" Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling and lets us
-" use 'zt' for title case 'zb' for boolean toggle. Also make 'ze'/'zs' more intuitive.
-noremap z. z.
-noremap zj zb
-noremap zk zt
-noremap ze zs
-noremap zs ze
-noremap zi gi
-
-" Go to marks or jumps with FZF
+" Go to folds marks or jumps with fzf
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
-" noremap g' <Cmd>BLines<CR>
+noremap gz <Cmd>Folds<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
 noremap g" <Cmd>call mark#fzf_jumps()<CR>
+" noremap g' <Cmd>BLines<CR>
 
 " Declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
@@ -708,20 +736,28 @@ noremap gG <Cmd>Conflicts<CR>
 " Note: This works recursively with the below maps
 nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
+" Sort input lines
+" Note: Simply uses native ':sort' command.
+noremap <expr> \s edit#sort_lines_expr()
+noremap <expr> \\s edit#sort_lines_expr() . 'ip'
+
 " Reverse input lines
 " See: https://superuser.com/a/189956/506762
 " See: https://vim.fandom.com/wiki/Reverse_order_of_lines
 noremap <expr> \r edit#reverse_lines_expr()
 noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
 
+" Remove trailing whitespace
+" See: https://stackoverflow.com/a/3474742/4970632)
+noremap <expr> \t edit#replace_regex_expr(
+  \ 'Removed trailing whitespace.',
+  \ '\s\+\ze$', '')
+
 " Replace tabs with spaces
-" Remove trailing whitespace (see https://stackoverflow.com/a/3474742/4970632)
+" Note: Could also use :retab?
 noremap <expr> \<Tab> edit#replace_regex_expr(
   \ 'Fixed tabs.',
   \ '\t', repeat(' ', &tabstop))
-noremap <expr> \w edit#replace_regex_expr(
-  \ 'Removed trailing whitespace.',
-  \ '\s\+\ze$', '')
 
 " Delete empty lines
 " Replace consecutive newlines with single newline
@@ -734,10 +770,10 @@ noremap <expr> \E edit#replace_regex_expr(
 
 " Replace consecutive spaces on current line with one space,
 " only if they're not part of indentation
-noremap <expr> \s edit#replace_regex_expr(
+noremap <expr> \w edit#replace_regex_expr(
   \ 'Squeezed redundant whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S edit#replace_regex_expr(
+noremap <expr> \W edit#replace_regex_expr(
   \ 'Removed all whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \+', '')
 
@@ -882,14 +918,9 @@ nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
 " Replace misspelled words or define or identify words
-" Note: Mnemonic for 'zx' and 'zX' is 'fix spell file'
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-noremap <silent> <Plug>SpellForward <Cmd>call edit#spell_next(0)<CR>
-  \ :call repeat#set("\<Plug>SpellForward")<CR>
-noremap <silent> <Plug>SpellBackward <Cmd>call edit#spell_next(1)<CR>
-  \ :call repeat#set("\<Plug>SpellBackward")<CR>
-map ]S <Plug>SpellForward
-map [S <Plug>SpellBackward
+call s:repeat_map(']S', 'SpellForward', '<Cmd>call edit#spell_next(0)<CR>')
+call s:repeat_map('[S', 'SpellBackward', '<Cmd>call edit#spell_next(1)<CR>')
 nnoremap gs <Cmd>call edit#spell_check()<CR>
 nnoremap gS <Cmd>call edit#spell_check(v:count)<CR>
 nnoremap gx zg
@@ -897,27 +928,18 @@ nnoremap gX zug
 
 " Toggle capitalization or identify character
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
+call s:repeat_map('zy', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
+call s:repeat_map('zt', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>', 'n')
 nnoremap <nowait> zu guiw
 nnoremap <nowait> zU gUiw
-vnoremap <nowait> zu gu
-vnoremap <nowait> zU gU
-nnoremap <silent> <Plug>CaseToggle my~h`yh<Cmd>delmark y<CR>
-  \ :call repeat#set("\<Plug>CaseToggle")<CR>
-nnoremap <silent> <Plug>CaseTitle myguiw~h`yh<Cmd>delmark y<CR>
-  \ :call repeat#set("\<Plug>CaseTitle")<CR>
 vnoremap zy ~
 vnoremap zt gu<Esc>`<~h
-nmap zy <Plug>CaseToggle
-nmap zt <Plug>CaseTitle
+vnoremap <nowait> zu gu
+vnoremap <nowait> zU gU
 
 " Auto wrap lines or items within motion
-" Note: Tried below repeat maps but they fail
-" noremap <expr> <Plug>WrapLines '<Esc>' . edit#wrap_lines_expr(v:count)
-"   \ . ":call repeat#set('\<Plug>WrapLines')<CR>"
-" noremap <expr> <Plug>WrapItems '<Esc>' . edit#wrap_items_expr(v:count)
-"   \ . ":call repeat#set('\<Plug>WrapItems')<CR>"
-" nmap gq <Plug>WrapLines
-" nmap gQ <Plug>WrapItems
+" Note: Previously tried to make this operator map but not necessary, should
+" already work with 'g@<motion>' invocation of wrapping operator function.
 command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
 command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
 noremap <expr> gq '<Esc>' . edit#wrap_lines_expr(v:count)
@@ -925,32 +947,29 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-nnoremap <silent> <Plug>DividerSingle <Cmd>call comment#insert_divider('=', 0)<CR>
-  \ :call repeat#set("\<Plug>DividerSingle")<CR>
-nnoremap <silent> <Plug>SubdividerSingle <Cmd>call comment#insert_divider('-', 0)<CR>
-  \ :call repeat#set("\<Plug>SubdividerSingle")<CR>
-nnoremap <silent> <Plug>DividerDouble <Cmd>call comment#insert_divider('=', 1)<CR>
-  \ :call repeat#set("\<Plug>DividerDouble")<CR>
-nnoremap <silent> <Plug>SubdividerDouble <Cmd>call comment#insert_divider('-', 1)<CR>
-  \ :call repeat#set("\<Plug>SubdividerDouble")<CR>
-nmap g= <Plug>DividerSingle
-nmap g- <Plug>SubdividerSingle
-nmap g+ <Plug>DividerDouble
-nmap g_ <Plug>SubdividerDouble
+call s:repeat_map('g-', 'DashSingle', "<Cmd>call comment#general_line('-', 0)<CR>")
+call s:repeat_map('g_', 'DashDouble', "<Cmd>call comment#general_line('=', 1)<CR>")
+call s:repeat_map('g=', 'EqualSingle', "<Cmd>call comment#general_line('=', 0)<CR>")
+call s:repeat_map('g+', 'EqualDouble', "<Cmd>call comment#general_line('=', 1)<CR>")
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands
-inoremap <expr> <C-g>c comment#insert_char()
-nnoremap <silent> <Plug>CommentHeader <Cmd>call comment#header_line('-', 77, 0)<CR>
-  \ :call repeat#set("\<Plug>CommentHeader")<CR>
-nmap gc; <Plug>CommentHeader
-nnoremap gc: <Cmd>call comment#header_line('-', 77, 1)<CR>
-nnoremap gc' <Cmd>call comment#header_incomment()<CR>
-nnoremap gc" <Cmd>call comment#header_inline(5)<CR>
-nnoremap gc/ <Cmd>call comment#insert_message('Author: Luke Davis (lukelbd@gmail.com)')<CR>
-nnoremap gc? <Cmd>call comment#insert_message('Edited: ' . strftime('%Y-%m-%d'))<CR>
+inoremap <expr> <C-g>c comment#get_insert()
+let s:author = "'Author: Luke Davis (lukelbd@gmail.com)'"
+let s:edited = "'Edited: ' . strftime('%Y-%m-%d')"
+call s:repeat_map('gc;', 'HeadLine', "<Cmd>call comment#header_line('-', 77, 0)<CR>", 'n')
+call s:repeat_map('gc/', 'HeadAuth', '<Cmd>call comment#general_note(' . s:author . ')<CR>', 'n')
+call s:repeat_map('gc?', 'HeadEdit', '<Cmd>call comment#general_note(' . s:edited . ')<CR>', 'n')
+call s:repeat_map('gc:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>", 'n')
+call s:repeat_map("gc'", '', '<Cmd>call comment#header_inchar()<CR>', 'n')
+call s:repeat_map('gc"', '', '<Cmd>call comment#header_inline(5)<CR>', 'n')
 
-" Blank lines inspired by 'unimpaired'
+" Bracket commands inspired by 'unimpaired'
+" Todo: Generalized utils.vim repeat function. See edit.vim
+noremap [C <Cmd>call comment#next_block(1, 0)<CR>
+noremap ]C <Cmd>call comment#next_block(0, 0)<CR>
+noremap [c <Cmd>call comment#next_block(1, 1)<CR>
+noremap ]c <Cmd>call comment#next_block(0, 1)<CR>
 noremap <Plug>BlankUp <Cmd>call edit#blank_up(v:count1)<CR>
 noremap <Plug>BlankDown <Cmd>call edit#blank_down(v:count1)<CR>
 map [e <Plug>BlankUp
@@ -968,6 +987,8 @@ cnoremap <expr> <C-v> edit#lang_map()
 
 " Insert mode with paste toggling
 " Note: Switched easy-align mapping from ga for consistency here
+noremap zi gi
+noremap zI gI
 nnoremap <expr> ga edit#paste_mode() . 'a'
 nnoremap <expr> gA edit#paste_mode() . 'A'
 nnoremap <expr> gC edit#paste_mode() . 'c'
@@ -1017,6 +1038,8 @@ augroup pum_navigation
   au!
   au BufEnter,InsertLeave * let b:scroll_state = 0
 augroup END
+inoremap <expr> <Delete> iter#forward_delete()
+inoremap <expr> <S-Tab> iter#forward_delete()
 noremap <expr> <Up> iter#scroll_count(-0.25)
 noremap <expr> <Down> iter#scroll_count(0.25)
 noremap <expr> <C-k> iter#scroll_count(-0.25)
@@ -1025,7 +1048,6 @@ noremap <expr> <C-u> iter#scroll_count(-0.5)
 noremap <expr> <C-d> iter#scroll_count(0.5)
 noremap <expr> <C-b> iter#scroll_count(-1.0)
 noremap <expr> <C-f> iter#scroll_count(1.0)
-inoremap <expr> <Delete> iter#forward_delete()
 inoremap <expr> <Up> iter#scroll_count(-1)
 inoremap <expr> <Down> iter#scroll_count(1)
 inoremap <expr> <C-k> iter#scroll_count(-1)
@@ -1555,18 +1577,10 @@ endif
 " Warning: Critical to mamba install 'universal-ctags' instead of outdated 'ctags'
 " or else will get warnings for non-existing kinds.
 if s:plug_active('vim-tags')
-  augroup vim_tags_bracket
-    au!
-    au BufEnter * call s:bracket_maps()
-  augroup END
-  function! s:bracket_maps()  " defining inside autocommand not possible
-    if empty(maparg('[')) && empty(maparg(']'))
-      nmap <buffer> [[ <Plug>TagsBackwardTop
-      nmap <buffer> ]] <Plug>TagsForwardTop
-    endif
-  endfunction
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
+  nnoremap <Leader>t <Cmd>ShowTable<CR>
+  nnoremap <Leader>T <Cmd>ShowTable!<CR>
   nnoremap gt <Cmd>BTags<CR>
   nnoremap gT <Cmd>Tags<CR>
   nnoremap <Leader>O <Cmd>call switch#tags()<CR>
@@ -1581,15 +1595,13 @@ endif
 " vim-tags navigation across open tabs.
 " Todo: Update :Open and :Find so they also respect ignore files, consistent with
 " bashrc grep/find utilities and with below grep/ctags utilities. For debugging
-" parsing of ignore files use below :Ignores command.
+" parsing of ignore files use below :ShowIgnores command.
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
     au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
   augroup END
-  command! -nargs=? Ignores echom 'Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
-  nnoremap <Leader>t <Cmd>ShowTable<CR>
-  nnoremap <Leader>T <Cmd>ShowTable!<CR>
+  command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
   nnoremap <Leader>< <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   nnoremap <Leader>> <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
@@ -1623,7 +1635,7 @@ endif
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:plug_active('FastFold')
   " Various folding plugins
-  let g:fastfold_fold_command_suffixes =  ['x', 'X', 'a', 'A', 'o', 'O', 'c', 'C']
+  let g:fastfold_fold_command_suffixes =  []  " use custom maps instead
   let g:fastfold_fold_movement_commands = []  " or empty list
   let g:fastfold_savehook = 1
   " Native folding settings
@@ -1898,12 +1910,10 @@ if s:plug_active('conflict-marker.vim')
   let g:conflict_marker_separator = '^=======$'
   let g:conflict_marker_common_ancestors = '^||||||| .*$'
   let g:conflict_marker_end = '^>>>>>>> .*$'
-  nmap <silent> <Plug>ConflictForward <Plug>(conflict-marker-prev-hunk)<Plug>(conflict-marker-ourselves)
-    \ :call repeat#set("\<Plug>ConflictForward")<CR>
-  nmap <silent> <Plug>ConflictBackward <Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)
-    \ :call repeat#set("\<Plug>ConflictBackward")<CR>
-  nmap [F <Plug>ConflictBackward
-  nmap ]F <Plug>ConflictForward
+  call s:repeat_map('[F', 'ConflictBackward',
+    \ '<Plug>(conflict-marker-prev-hunk)<Plug>(conflict-marker-ourselves)', 'n', 1)
+  call s:repeat_map(']F', 'ConflictForward',
+    \ '<Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)', 'n', 1)
   nmap [f <Plug>(conflict-marker-prev-hunk)
   nmap ]f <Plug>(conflict-marker-next-hunk)
   nmap gf <Plug>(conflict-marker-ourselves)
@@ -1966,12 +1976,8 @@ if s:plug_active('vim-gitgutter')
   let g:gitgutter_preview_win_floating = 0  " disable preview window
   let g:gitgutter_use_location_list = 0  " use for errors instead
   command! -nargs=? GitGutterToggle call switch#gitgutter(<args>)
-  noremap <Plug>HunkBackward <Cmd>call git#hunk_jump(0, 1)<CR>
-    \ :call repeat#set("\<Plug>HunkBackward")<CR>
-  noremap <Plug>HunkForward <Cmd>call git#hunk_jump(1, 1)<CR>
-    \ :call repeat#set("\<Plug>HunkForward")<CR>
-  map ]G <Plug>HunkForward
-  map [G <Plug>HunkBackward
+  call s:repeat_map('[G', 'HunkBackward', '<Cmd>call git#hunk_jump(0, 1)<CR>')
+  call s:repeat_map(']G', 'HunkForward', '<Cmd>call git#hunk_jump(1, 1)<CR>')
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
   noremap <Leader>h <Cmd>call git#hunk_preview()<CR>
@@ -2155,8 +2161,8 @@ augroup color_scheme
   au!
   exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
 augroup END
-command! ColorPrev call iter#jump_color(0)
-command! ColorNext call iter#jump_color(1)
+command! ColorPrev call iter#next_scheme(1)
+command! ColorNext call iter#next_scheme(0)
 noremap <Leader>( <Cmd>ColorPrev<CR>
 noremap <Leader>) <Cmd>ColorNext<CR>
 

@@ -50,14 +50,14 @@ endfunction
 " opening other folds. Previously tried ad hoc method using foldlevel() and scrolling
 " up lines preceding line is lower-level but this fails for adjacent same-level folds.
 function! fold#get_closed(line1, line2, ...) abort range
-  let lstart = a:0 ? a:1 : 0
+  let minline = a:0 ? a:1 : 0
   let closed = 0
   for lnum in range(a:line1, a:line2)
-    let closed = closed || foldclosed(lnum) > lstart
+    let closed = closed || foldclosed(lnum) > minline
   endfor
   return closed
 endfunction
-function! fold#get_parent(...) abort
+function! fold#get_current(...) abort
   let line = -1  " default dummy line
   let level = a:0 ? a:1 : &l:foldlevel
   let winview = winsaveview()  " save view
@@ -70,7 +70,7 @@ function! fold#get_parent(...) abort
   else
     let line = line('.')
     keepjumps normal! zk
-    if line('.') == line || foldlevel('.') > foldlevel(line)  " cursor stayed inside fold
+    if line('.') == line || foldlevel('.') > foldlevel(line)  " cursor inside fold
       exe string(line) | keepjumps normal! [z
     else  " cursor went outside fold
       keepjumps normal! zj
@@ -80,8 +80,8 @@ function! fold#get_parent(...) abort
     let line2 = line('.')
   endif
   call winrestview(winview)
-  if level == 0 && getline(line1) =~# '^class\>'  " ignore 'class'
-    return fold#get_parent(1)
+  if !a:0 && !level && getline(line1) =~# '^class\>'  " ignore 'class' folds
+    return fold#get_current(1)
   else  " default case
     return [line1, line2, foldlevel(line1)]
   endif
@@ -92,6 +92,7 @@ endfunction
 " fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below
 function! fold#set_level(...) abort
+  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let current = &l:foldlevel
   if a:0  " input direction
     let cmd = v:count1 . 'z' . a:1
@@ -117,7 +118,7 @@ endfunction
 " and :[range]foldclose does not close children. Have to go one-by-one.
 " Note: When called on line below fold level this will close fold. So e.g. 'zCzC' will
 " first fold up to foldlevel then fold additional levels.
-function! s:toggle_range(line1, line2, level, toggle) abort range
+function! s:toggle_nested(line1, line2, level, toggle) abort
   let pairs = []  " fold levels and lines
   for lnum in range(a:line1, a:line2)
     let lev = foldlevel(lnum)
@@ -134,28 +135,30 @@ function! s:toggle_range(line1, line2, level, toggle) abort range
     endif
   endfor
 endfunction
-function! fold#toggle_children(...) abort
-  let [line1, line2, level] = fold#get_parent()
-  let toggle = a:0 ? a:1 : -1  " -1 indicates switch
-  if toggle < 0  " test folds within range
-    let toggle = 1 - fold#get_closed(line1, line2, line1)
-  endif
-  if line2 > line1
-    call s:toggle_range(line1, line2, level, toggle)
-  else  " compact error message
-    call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
-  endif
-endfunction
-function! fold#toggle_parent(...) abort
-  let [line1, line2, level] = fold#get_parent()
+function! fold#toggle_current(...) abort
+  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
+  let [line1, line2, level] = fold#get_current()
   let toggle = a:0 ? a:1 : -1
-  if toggle < 0  " test parent fold
+  if toggle < 0  " open if current fold is closed
     let toggle = 1 - fold#get_closed(line1, line1)
   endif
   if line2 > line1
-    call s:toggle_range(line1, line2, level, toggle)
+    call s:toggle_nested(line1, line2, level, toggle)
     exe line1 . (toggle ? 'foldclose' : 'foldopen')
   else
+    call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
+  endif
+endfunction
+function! fold#toggle_nested(...) abort
+  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
+  let [line1, line2, level] = fold#get_current()
+  let toggle = a:0 ? a:1 : -1  " -1 indicates switch
+  if toggle < 0  " open if any nested folds are closed
+    let toggle = 1 - fold#get_closed(line1, line2, line1)
+  endif
+  if line2 > line1
+    call s:toggle_nested(line1, line2, level, toggle)
+  else  " compact error message
     call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
   endif
 endfunction
@@ -163,6 +166,7 @@ endfunction
 " Open or close folds over input range
 " Note: Here 'a:toggle' closes folds when 1 and opens when 0.
 function! fold#toggle_range(...) range abort
+  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let winview = a:0 > 2 ? a:3 : {}
   let bang = a:0 > 1 ? a:2 : 0

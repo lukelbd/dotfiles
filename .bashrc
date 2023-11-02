@@ -654,20 +654,22 @@ bytes2human() {
 
 # Helper function: return if directory is empty or essentially
 # empty. See: https://superuser.com/a/352387/506762
-empty() {
+isempty() {
   local contents
   [ -d "$1" ] || return 0  # does not exist, so empty
   read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
   if [ ${#contents[@]} -lt 2 ] && [ "${contents##*/}" == .DS_Store ]; then
+    echo "Path '$1' is empty."
     return 0  # this can happen even if you delete all files
   else
+    echo "Path '$1' is not empty."
     return 1  # non-empty
   fi
 }
 
 # Either pipe the output of the remaining commands into the less pager
 # or open the files. Use the latter only for executables on $PATH
-less() {
+function less() {
   if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
     "$@" 2>&1 | command less  # pipe output of command
   else
@@ -679,7 +681,7 @@ less() {
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 # Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
-help() {
+function help() {
   local result
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
@@ -698,7 +700,7 @@ help() {
 # 'builtin' page when 'bash' page actually has relevent docs whiole on linux 'builtin'
 # has the docs. Also note man command should print nice error message if nothing found.
 # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-man() {
+function man() {
   local search arg="$*"
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1

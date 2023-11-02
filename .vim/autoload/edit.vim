@@ -1,15 +1,17 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Inserting blank lines
+" Insert blank lines above or below
+" Note repeat("\n") fails inside function for some reason.
 " See: https://github.com/tpope/vim-unimpaired
+" Todo: Port this methodology to utils for other repeated mappings.
 function! edit#blank_up(count) abort
   put!=repeat(nr2char(10), a:count)
   ']+1
   silent! call repeat#set("\<Plug>BlankUp", a:count)
 endfunction
 function! edit#blank_down(count) abort
-  put =repeat(nr2char(10), a:count)
+  put=repeat(nr2char(10), a:count)
   '[-1
   silent! call repeat#set("\<Plug>BlankDown", a:count)
 endfunction
@@ -71,16 +73,18 @@ endfunction
 " Warning: Critical to replace line-by-line in reverse order in case substitutions
 " have different number of newlines. Cannot figure out how to do this in one command.
 function! edit#replace_regex(message, ...) range abort
-  let prevhist = @/
+  let search = @/  " hlsearch pattern
   let winview = winsaveview()
   for line in range(a:lastline, a:firstline, -1)
-    for i in range(0, a:0 - 2, 2)
-      keepjumps exe line . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
+    for idx in range(0, a:0 - 2, 2)
+      " vint: -ProhibitUsingUndeclaredVariable
+      let [regex, string] = a:000[idx:idx + 1]
+      keepjumps exe line . 's@' . regex . '@' . string . '@ge'
       call histdel('/', -1)
     endfor
   endfor
   echom a:message
-  let @/ = prevhist
+  let @/ = search
   call winrestview(winview)
 endfunction
 " For <expr> map accepting motion
@@ -88,16 +92,23 @@ function! edit#replace_regex_expr(...) abort
   return utils#motion_func('edit#replace_regex', a:000)
 endfunction
 
-" Reverse the selected lines
+" Reverse or sort the input lines
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
 function! edit#reverse_lines() range abort
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let range = line1 == line2 ? '' : line1 . ',' . line2
   let num = empty(range) ? 0 : line1 - 1
-  exec 'silent ' . range . 'g/^/m' . num
+  exe 'silent ' . range . 'g/^/m' . num
+endfunction
+function! edit#sort_lines() range abort
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  exe 'silent ' . line1 . ',' . line2 . 'sort'
 endfunction
 " For <expr> map accepting motion
+function! edit#sort_lines_expr() range abort
+  return utils#motion_func('edit#sort_lines', a:000)
+endfunction
 function! edit#reverse_lines_expr(...) abort
   return utils#motion_func('edit#reverse_lines', a:000)
 endfunction

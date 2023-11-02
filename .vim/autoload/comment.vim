@@ -25,26 +25,34 @@ function! comment#get_regex() abort
   return space . char
 endfunction
 
-" Begin comment in insert mode
-function! comment#insert_char() abort
+" Return keystrokes to start insert mode comment
+function! comment#get_insert() abort
   let parts = split(&l:commentstring, '%s')
   let lefts = repeat("\<Left>", len(parts) > 1 ? len(parts[1]) + 1 : 0)
   return "\<C-g>u" . join(parts, ' ') . lefts . ' '
 endfunction
 
-" Separator of dashes matching current line length (no leading commentsj)
-" Note: Used mostly for python docstrings and markdown headers.
-function! comment#insert_divider(fill, ...) abort
-  let cchar = comment#get_char()
+" Header style of format '# Hello world! #'
+function! comment#header_inchar() abort
   let indent = s:indent_spaces()
-  let nfill = match(getline('.'), '\s*$') - len(indent)  " location of last non-whitespace char
-  call append(line('.'), indent . repeat(a:fill, nfill))
-  if a:0 && a:1
-    call append(line('.') - 1, indent . repeat(a:fill, nfill))
-  endif
+  let cchar = comment#get_char()
+  let title = s:input_title()
+  if empty(title) | return | endif
+  let comment = indent . cchar . ' ' . title . ' ' . cchar
+  call append(line('.'), comment)
 endfunction
 
-" Separators of arbitrary length
+" Header style of format '# ---- Hello world! ---- #'
+function! comment#header_inline(ndash) abort
+  let cchar = comment#get_char()
+  let indent = s:indent_spaces()
+  let title = s:input_title()
+  if empty(title) | return | endif
+  let comment = indent . cchar . ' ' . repeat('-', a:ndash) . ' ' . title . ' ' . repeat('-', a:ndash) . ' ' . cchar
+  call append(line('.') - 1, comment)
+endfunction
+
+" Header line of arbitrary length
 function! comment#header_line(fill, nfill, ...) abort  " inserts above by default
   let cchar = comment#get_char()
   let indent = s:indent_spaces()
@@ -58,30 +66,34 @@ function! comment#header_line(fill, nfill, ...) abort  " inserts above by defaul
   call append(line('.') - 1, comment)
 endfunction
 
-" Arbitrary message above this line, matching indentation level
-function! comment#insert_message(message) abort
-  let indent = s:indent_spaces()
+" General dashes current line length (no leading commentsj)
+" Note: Used mostly for python docstrings and markdown headers.
+function! comment#general_line(fill, ...) abort
   let cchar = comment#get_char()
-  let comment = indent . cchar . ' ' . a:message
-  call append(line('.') - 1, comment)
+  let indent = s:indent_spaces()
+  let nfill = match(getline('.'), '\s*$') - len(indent)  " last non-whitespace loc
+  let line = indent . repeat(a:fill, nfill)
+  call append(line('.'), line)  " always append line
+  if a:0 && a:1 | call append(line('.') - 1, line) | endif
 endfunction
 
-" Inline style of format '# ---- Hello world! ---- #'
-function! comment#header_inline(ndash) abort
+" General comment note matching current indentation
+" Note: Used e.g. for author and date information
+function! comment#general_note(note) abort
   let cchar = comment#get_char()
   let indent = s:indent_spaces()
-  let title = s:input_title()
-  if empty(title) | return | endif
-  let comment = indent . cchar . ' ' . repeat('-', a:ndash) . ' ' . title . ' ' . repeat('-', a:ndash) . ' ' . cchar
-  call append(line('.') - 1, comment)
+  let head = indent . cchar
+  let line = head . ' ' . a:note
+  call append(line('.') - 1, line)
 endfunction
 
-" Inline style of format '# Hello world! #'
-function! comment#header_incomment() abort
-  let indent = s:indent_spaces()
-  let cchar = comment#get_char()
-  let title = s:input_title()
-  if empty(title) | return | endif
-  let comment = indent . cchar . ' ' . title . ' ' . cchar
-  call append(line('.'), comment)
+" Jump to next or previous match
+" Note: Use this for e.g. [c and ]c comment block jumping
+function! comment#next_block(reverse, ...) abort
+  let nested = a:0 ? a:1 : 0
+  let header = nested ? '\s*' : ''
+  let regex = '^' . header . comment#get_char() . '.\+$\n'
+  let regex = '\(' . regex . '\)\@<!\(' . regex . '\)\+'
+  let flags = a:reverse ? 'bw' : 'w'
+  call search(regex, flags)
 endfunction

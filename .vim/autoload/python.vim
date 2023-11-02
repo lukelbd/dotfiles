@@ -51,9 +51,11 @@ function! python#dict_to_kw_expr(invert) abort
   return utils#motion_func('python#dict_to_kw', [a:invert, mode()])
 endfunction
 
-" Return fold expression results or trigger results
+" Folding expression to add global constants and docstrings to SimpylFold cache
 " Note: Here 'fold_edit' refreshes folds after calling :edit and for some reason
 " is required to open files with overridden folds (especially BufWritePost).
+" Warning: Only call this when SimpylFold updates to improve performance. Might break
+" if SimpylFold renames internal cache variable (monitor). Note
 function! s:fold_exists(lnum) abort
   return exists('b:SimpylFold_cache')
     \ && !empty(b:SimpylFold_cache[a:lnum])
@@ -65,16 +67,6 @@ function! python#fold_expr(lnum) abort
   if recache | call python#fold_cache() | endif
   return b:SimpylFold_cache[a:lnum]['foldexpr']
 endfunction
-function! python#fold_refresh() abort
-  if &filetype !=# 'python' | return | endif
-  if !exists('*SimpylFold#Recache') | return | endif
-  call SimpylFold#Recache()
-  doautocmd BufWritePost
-endfunction
-
-" Fold groups of constants using SimpylFold cache
-" Warning: Only call this when SimpylFold updates to improve performance. Might break
-" if SimpylFold renames internal cache variable (monitor). Note
 function! python#fold_cache() abort
   let lnum = 1
   let cache = b:SimpylFold_cache
@@ -121,8 +113,9 @@ function! python#fold_cache() abort
   endwhile
 endfunction
 
-" Return indication whether a jupyter connection is active
-" Note: This uses private variable _jupyter_session. Should monitor for changes.
+" Initiate jupyter-vim connection using the file matching this directory or a parent
+" Note: This relies on automatic connection file naming in jupyter_[qt|]console.py.
+" Also depends on private variable _jupyter_session. Should monitor for changes.
 " Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
 " find_connection_file(), which selects the most recently accessed file from the glob
 " pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
@@ -137,9 +130,6 @@ function! python#has_jupyter() abort
     return 0
   endif
 endfunction
-
-" Initiate a jupyter-vim connection using the file matching this directory or a parent
-" Note: Below relies on automatic connection file naming in jupyter_[qt|]console.py
 function! python#init_jupyter() abort
   let parent = 0
   let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
