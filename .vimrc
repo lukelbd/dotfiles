@@ -2000,6 +2000,8 @@ endif
 " Julia usage bug: https://github.com/metakirby5/codi.vim/issues/120
 " Python history bug: https://github.com/metakirby5/codi.vim/issues/85
 " Syncing bug (kludge is workaround): https://github.com/metakirby5/codi.vim/issues/106
+" Note: Recent codi versions use lua-vim which is not provided by conda-forge version.
+" However seems to run fine even without lua lines. So ignore error with silent!
 if s:plug_active('codi.vim')
   augroup codi_mods
     au!
@@ -2007,8 +2009,8 @@ if s:plug_active('codi.vim')
     au User CodiLeavePost call calc#codi_setup(0)
   augroup END
   command! -nargs=? CodiNew call calc#codi_new(<q-args>)
-  noremap <Leader>= <Cmd>CodiNew<CR>
-  noremap <Leader>+ <Cmd>Codi!!<CR>
+  noremap <Leader>+ <Cmd>silent! CodiNew<CR>
+  noremap <Leader>= <Cmd>silent! Codi!!<CR>
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0

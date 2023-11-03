@@ -2,6 +2,7 @@
 " Utilities for codi windows
 "-----------------------------------------------------------------------------"
 " Setup new codi window
+scriptencoding utf-8
 function! calc#codi_new(...) abort
   if a:0 && a:1 !~# '^\s*$'
     let name = a:1
@@ -49,7 +50,7 @@ function! calc#codi_rephrase(text) abort
   let text = substitute(a:text, pat, '\1', 'g')
   let pat = '\s\+\([+-=*^|&%;:]\+\)\s\+'  " remove whitespace
   let text = substitute(text, pat, '\1', 'g')
-  let pat = '\(\_s*\)\(\k\+\)=\([^\n]*\)'  " append variable defs
+  let pat = '\(\_s\+\)\(\k\+\)=\([^\n]*\)'  " append variable defs
   let text = substitute(text, pat, '\1\2=\3;_r("\2")', 'g')
   if &filetype ==# 'julia'  " prepend repr functions
     let text = '_r=s->print(s*" = "*string(eval(s)));' . text
