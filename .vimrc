@@ -603,17 +603,17 @@ noremap G G
 noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 
 " Screen motion mappings
-" Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling and lets us
-" use 'zt' for title case 'zb' for boolean toggle. Also make 'ze'/'zs' more intuitive.
+" Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
+" and lets us use 'zt' for title case 'zb' for boolean toggle.
 noremap z. z.
 noremap zj zb
 noremap zk zt
-noremap ze zs
-noremap zs ze
+noremap zs zs
+noremap ze ze
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: This affects only markdown and python files.
-for s:char in ['f', 'F', 'n', 'N']  " remove this after restarting sessions
+for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
   silent! exe 'unmap! z' . s:char
 endfor
 noremap zx zx<Cmd>call fold#set_defaults()<CR>
@@ -2086,7 +2086,7 @@ if s:plug_active('undotree')
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
   let g:undotree_ShortIndicators = 1
-  let g:undotree_SplitWidth = 30
+  let g:undotree_SplitWidth = 33
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
