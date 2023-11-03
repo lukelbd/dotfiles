@@ -135,6 +135,7 @@ endfunction
 " Note: Previously used <Leader>b for toggle but now use lower and upper
 " case for blaming either range or entire file and 'zbb' for current line.
 function! git#run_command(cmd, ...) abort range
+  let bufnr = bufnr()
   let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
   let forcerange = a:0 ? a:1 : 0
   let range = forcerange || a:firstline != a:lastline ? firstline . ',' . lastline : ''
@@ -143,6 +144,9 @@ function! git#run_command(cmd, ...) abort range
   let cmd = a:cmd =~# '^status' ? '' : a:cmd
   let mods = cmd =~# '^diff' ? 'silent ' : ''
   exe mods . range . 'Git ' . cmd
+  if bufnr == bufnr()
+    return
+  endif
   if cmd =~# '^blame %' && empty(range)
     exe line
   endif

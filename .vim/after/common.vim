@@ -20,23 +20,7 @@ if empty(maparg('[')) && empty(maparg(']'))
   endif
 endif
 
-" Filetype folding regions
-" Note: Python block uses b:SimpylFold_cache to apply custom docstring folds and opens
-" classes by default. For some reason fails if anything here is moved to ftplugin.
-" Note: Markdown block overwrites foldtext from $RUNTIME/syntax/[markdown|javascript]
-" and re-applies plugged/vim-markdown folding. Also resets open-close status but
-" unfortunately required because vim filetype refresh seems to clean out definitions.
-if &filetype ==# 'markdown'
-  setlocal foldtext=fold#fold_text()
-  doautocmd BufWritePost
-endif
-if &filetype ==# 'python'
-  setlocal foldexpr=python#fold_expr(v:lnum)
-  doautocmd BufWritePost
-endif
-call fold#set_defaults()
-
-" Filetype folding colors
+" Enforce folding colors
 " Note: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
 " based on colorscheme. Leverage that instead of reproducing here. Also need special
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
@@ -48,6 +32,24 @@ if has('gui_running')
   let hl['gui'] = extend(get(hl, 'gui', {}), {'bold': v:true})
   call hlset([hl])
 endif
+
+" Define folding regions
+" Note: Python block uses b:SimpylFold_cache to apply custom docstring folds and opens
+" classes by default. For some reason fails if anything here is moved to ftplugin. Also
+" critical to use 'FileType' not 'BurWritePost' for python or get recursion issues.
+" Note: Markdown block overwrites foldtext from $RUNTIME/syntax/[markdown|javascript]
+" and re-applies plugged/vim-markdown folding. Also resets open-close status but
+" unfortunately required because vim filetype refresh seems to clean out definitions.
+if &filetype ==# 'python'  " trigger fastfold update
+  setlocal foldexpr=python#fold_expr(v:lnum)
+  doautocmd FileType
+endif
+if &filetype ==# 'markdown'  " trigger vim-markdown folds and fastfold update
+  setlocal foldtext=fold#fold_text()
+  doautocmd BufWritePost
+endif
+call fold#set_defaults()
+normal! zv
 
 " Buffer-local syntax
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084
