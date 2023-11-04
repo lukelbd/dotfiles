@@ -39,8 +39,7 @@ function! git#run_command(cmd, ...) abort range
   endif
   if cmd =~# '^blame' && cmd !~# '^blame %'  " see also undotree
     let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
-    exe 'vert resize ' . min([33, winwidth('.') - offset])
-    exe 'normal! 5lzs'
+    exe 'vert resize ' . min([35, winwidth('.') - offset]) ' | normal! 5lzs'
   else  " standard height
     exe 'resize ' . min([&previewheight, line('$') + 1])
   endif

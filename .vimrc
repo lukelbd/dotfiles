@@ -2053,8 +2053,8 @@ endif
 " says whether to replace or append, withEq says whether to include equals sign, sum
 " says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  noremap g(( :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  noremap g)) :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  nnoremap g(( :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  nnoremap g)) :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
   noremap <expr> g( edit#how_much_expr(0, 0, 1, 'py')
   noremap <expr> g) edit#how_much_expr(1, 1, 1, 'py')
 endif
@@ -2062,14 +2062,14 @@ endif
 " Speed dating, support date increments
 " Todo: Build intuition for how to use this things.
 " Note: This overwrites default increment/decrement plugins declared above.
-if s:plug_active('vim-speeddating')
+if !s:plug_active('vim-speeddating')
+  noremap + <C-a>
+  noremap - <C-x>
+else
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp <C-a>
   noremap <Plug>SpeedDatingFallbackDown <C-x>
-else
-  noremap + <C-a>
-  noremap - <C-x>
 endif
 
 " Undo tree mapping and settings
@@ -2086,7 +2086,7 @@ if s:plug_active('undotree')
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
   let g:undotree_ShortIndicators = 1
-  let g:undotree_SplitWidth = 33
+  let g:undotree_SplitWidth = 25
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
