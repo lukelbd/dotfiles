@@ -82,8 +82,8 @@ endfunction
 " an empty panel was opened in the git window. Might want to revisit.
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
 function! git#fugitive_setup() abort
-  let alt = maparg('<CR>', 'n', 0, 1)  " used throughout fugitive
-  let main = maparg('O', 'n', 0, 1)  " used throughout fugitive
+  let alt = maparg('<CR>', 'n', 0, 1)  " switch with 'O'
+  let main = maparg('O', 'n', 0, 1)  " switch with '<CR>'
   let click = copy(main)
   let rhs = s:eval_map(main)
   call extend(alt, {'lhs': 'O', 'lhsraw': 'O'})
@@ -92,6 +92,7 @@ function! git#fugitive_setup() abort
   call mapset('n', 0, alt)
   call mapset('n', 0, main)
   call mapset('n', 0, click)
+  silent! unmap! dq
 endfunction
 
 " Git gutter jumping and previewing

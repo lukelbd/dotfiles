@@ -384,7 +384,7 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| doautocmd BufWritePost<CR>
+noremap <Leader>e <Cmd>edit \| unlet! b:SimpylFold_cache \| doautocmd BufWritePost<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -616,8 +616,8 @@ noremap ze ze
 for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
   silent! exe 'unmap! z' . s:char
 endfor
-noremap zx zx<Cmd>call fold#set_defaults()<CR>
-noremap zX zX<Cmd>call fold#set_defaults()<CR>
+noremap zx zx<Cmd>call fold#set_defaults(0)<CR>
+noremap zX zX<Cmd>call fold#set_defaults(1)<CR>
 
 " Change fold level
 " Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.

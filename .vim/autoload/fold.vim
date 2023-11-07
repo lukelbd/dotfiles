@@ -101,7 +101,7 @@ function! fold#set_defaults(...) abort
     let winview = winsaveview()
     silent! exe 'global/' . regex . '/' . (toggle ? 'foldclose' : 'foldopen')
     call winrestview(winview)
-    silent! exe 'normal! zv'
+    silent! exe a:0 && a:1 ? '' : 'normal! zv'
   endif
 endfunction
 function! fold#set_level(...) abort
