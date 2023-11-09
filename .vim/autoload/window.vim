@@ -1,16 +1,59 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim windows and sessions
 "-----------------------------------------------------------------------------"
-" List buffers by most recent
+" Return buffers by most recent
 " See: https://vi.stackexchange.com/a/22428/8084 (comment)
 " Note: For some reason some edited files have 'nobuflisted' set (so ignored by
 " e.g. :bnext). Maybe due to some plugin. Anyway do not use buflisted() filter.
-function! s:recent_bufs() abort
-  let info = getbufinfo()
-  let info = sort(info, {val1, val2 -> val2.lastused - val1.lastused})
+" return filter(map(info, {idx, val -> val.bufnr}), {val -> buflisted(val)})
+function! s:buffers_recent() abort
+  let info = sort(getbufinfo(), {val1, val2 -> val2.lastused - val1.lastused})
   return map(info, {idx, val -> val.bufnr})
-" let nums = map(info, {idx, val -> val.bufnr})
-" return filter(nums, {val -> buflisted(val)})
+endfunction
+function! window#buffer_sort(args) abort
+  let unsorted = {}  " note keys auto-convert to string
+  for [bufnr, value] in items(a:args)  " valid for lists and dictionaries
+    let bufnr = type(a:args) == 3 ? bufnr(value) : bufnr
+    let unsorted[bufnr] = value
+  endfor
+  let sorted = []
+  let bufnrs = keys(unsorted)
+  for bufnr in s:buffers_recent()
+    let idx = index(bufnrs, string(bufnr))
+    if idx >= 0
+      call add(sorted, remove(unsorted, bufnrs[idx]))
+      call remove(bufnrs, idx)
+    endif
+  endfor
+  return sorted + values(unsorted)
+endfunction
+
+" Return main buffers in each tab
+" Note: This sorts by recent access to help replace :Buffers
+" Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
+function! window#buffer_source() abort
+  let ndigits = len(string(tabpagenr('$')))
+  let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
+  let unsorted = {}
+  for tabnr in range(1, tabpagenr('$'))  " iterate through each tab
+    let bufnrs = tabpagebuflist(tabnr)
+    for bufnr in bufnrs
+      if index(tabskip, getbufvar(bufnr, '&ft')) == -1  " use if not a popup window
+        let nr = bufnr | break
+      elseif bufnr == bufnrs[-1]  " use if no non-popup windows
+        let nr = bufnr
+      endif
+    endfor
+    if exists('*RelativePath')
+      let path = RelativePath(bufname(nr))
+    else
+      let path = fnamemodify(bufname(nr), ':~:.')
+    endif
+    let pad = repeat(' ', ndigits - len(string(tabnr)))
+    let path = pad . tabnr . ': ' . path  " displayed string
+    let unsorted[nr] = path
+  endfor
+  return window#buffer_sort(unsorted)
 endfunction
 
 " Safely closing tabs and windows
@@ -42,48 +85,11 @@ function! window#close_tab() abort
   endif
 endfunction
 
-" Function that generates lists of tabs and their numbers
-" Note: Here sorty by recently accessed to help replace :Buffers
-" Warning: Need to keep up-to-date with tabline setting name
-function! s:fzf_tab_source() abort
-  let ndigits = len(string(tabpagenr('$')))
-  let tabskip = get(g:, 'tabline_skip_filetypes', [])
-  let unsorted = {}
-  for tnr in range(1, tabpagenr('$'))  " iterate through each tab
-    let bnrs = tabpagebuflist(tnr)
-    for bnr in bnrs
-      if index(tabskip, getbufvar(bnr, '&ft')) == -1  " use if not a popup window
-        let buf = bnr | break
-      elseif bnr == bnrs[-1]  " use if no non-popup windows
-        let buf = bnr
-      endif
-    endfor
-    if exists('*RelativePath')
-      let path = RelativePath(bufname(buf))
-    else
-      let path = fnamemodify(bufname(buf), ':~:.')
-    endif
-    let pad = repeat(' ', ndigits - len(string(tnr)))
-    let path = pad . tnr . ': ' . path  " displayed string
-    let unsorted[string(buf)] = path
-  endfor
-  let sorted = []
-  let used = []
-  let nums = keys(unsorted)
-  for bnr in s:recent_bufs()
-    let idx = index(nums, string(bnr))
-    if idx >= 0
-      call add(sorted, remove(unsorted, nums[idx]))
-    endif
-  endfor
-  return sorted + values(unsorted)
-endfunction
-
 " Select from open tabs
 " Note: This displays a list with the tab number and the file
 function! window#jump_tab() abort
   call fzf#run(fzf#wrap({
-    \ 'source': s:fzf_tab_source(),
+    \ 'source': window#buffer_source(),
     \ 'options': '--no-sort --prompt="Tab> "',
     \ 'sink': function('s:jump_tab_sink'),
     \ }))
@@ -100,7 +106,7 @@ function! window#move_tab(...) abort
     call s:move_tab_sink(a:1)
   else
     call fzf#run(fzf#wrap({
-      \ 'source': s:fzf_tab_source(),
+      \ 'source': window#buffer_source(),
       \ 'options': '--no-sort --prompt="Number> "',
       \ 'sink': function('s:move_tab_sink'),
       \ }))
