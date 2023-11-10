@@ -668,15 +668,13 @@ bytes2human() {
 # Helper function: return if directory is empty or essentially
 # empty. See: https://superuser.com/a/352387/506762
 isempty() {
-  local contents
-  [ -d "$1" ] || return 0  # does not exist, so empty
-  read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
-  if [ ${#contents[@]} -lt 2 ] && [ "${contents##*/}" == .DS_Store ]; then
-    echo "Path '$1' is empty."
-    return 0  # this can happen even if you delete all files
+  local item items
+  read -r -a items < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
+  item="${items[0]##*/}"
+  if [ ${#items[@]} -le 1 ] && { [ -z "$item" ] || [ "$item" == .DS_Store ]; }; then
+    echo "Path '$1' is empty." && return 0
   else
-    echo "Path '$1' is not empty."
-    return 1  # non-empty
+    echo "Path '$1' is not empty." && return 1
   fi
 }
 
@@ -950,20 +948,20 @@ f2() { _find 2 "$@"; }  # custom find with no excludes
 #-----------------------------------------------------------------------------#
 # Git-related utilities
 #-----------------------------------------------------------------------------#
-# Differencing utilities. Here 'gs' prints git status-style directory diffs,
-# 'gd' prints git diff-style file diffs, 'ds' prints recursive directory status
+# Differencing utilities. Here 'fs' prints git status-style directory diffs,
+# 'fd' prints git diff-style file diffs, 'ds' prints recursive directory status
 # differences, and 'dd' prints basic directory modification time diferences.
 # NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-gs() {  # git status-style file differences
+fs() {  # git status-style file differences
   command git --no-pager diff \
     --textconv --no-index --color=always --name-status "$@" 2>&1 | \
     grep -v -e 'warning:' -e '.vimsession' -e '*.git' -e '*.svn' -e '*.sw[a-z]' \
     -e '*.DS_Store' -e '*.ipynb_checkpoints' -e '.*__pycache__'
 }
-gd() {  # git diff-style file differences
+fd() {  # git diff-style file differences
   command git --no-pager diff \
     --textconv --no-index --color=always "$@" 2>&1 \
     | grep -v -e 'warning:' | \
@@ -1046,7 +1044,7 @@ refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
   [ $# -eq 2 ] \
-    || { echo 'Error: refactor() requires two input argument.'; return 1; }
+    || { echo 'Error: refactor() requires two input arguments.'; return 1; }
   result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
     || { echo "Error: Search $1 to $2 failed."; return 1; }
   readarray -t files < <(echo "$result"$'\nEOF' | \
