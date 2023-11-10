@@ -9,7 +9,7 @@ endif
 " Define matching pairs
 let b:delimitMate_matchpairs = '(:),{:},[:],<:>'
 
-" Declare command to "compile' page, i.e. show it in Safari
+" Open html file in safari
 function! s:open_html_file()
   update
   exe '!clear; set -x; open -a Safari ' . shellescape(@%)

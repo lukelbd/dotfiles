@@ -1,12 +1,7 @@
 "-----------------------------------------------------------------------------
 " Builtin TeX settings
 "-----------------------------------------------------------------------------
-" Ensure document open on startup
-" Note: Initialize with closed preamble by default
-" Note: Not possible to set foldlevelstart=1 for specific filetype
-if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
-
-" Adjust highlight regions
+" Configure syntax highlighting
 " Note: g:tex_fast indicates highlight regions to *enable* (so setting to empty string
 " speeds things up). Here omit comment regions 'c' to prevent them from getting folded.
 let g:tex_fast = 'bmMprsSvV'  " exclude 'c'

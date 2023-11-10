@@ -11,12 +11,10 @@ function! fold#fold_text() abort
   let lines = string(v:foldend - v:foldstart + 1)
   let space = repeat(' ', len(string(line('$'))) - len(lines))
   let status = level . space . lines . ' lines'
-  let regex = '\s*' . comment#get_char() . '\s\+.*$'
-  for line in range(v:foldstart, v:foldend)
-    let label = substitute(getline(line), regex, '', 'g')  " remove comments
-    let chars = substitute(label, '\s\+', '', 'g')
-    if !empty(chars) | break | endif  " non-commented line
-  endfor
+  let regex = comment#get_char() . '.*$'
+  let text = substitute(getline(v:foldstart), '\s*$', '', 'g')
+  let sub = text =~# '^\s*' . regex ? '<comments>' : ''
+  let label = substitute(text, regex, sub, 'g')  " remove comments
   " Format fold text
   if &filetype ==# 'tex'  " hide backslashes
     let regex = '\\\@<!\\'
@@ -93,8 +91,9 @@ endfunction
 " to maximum number found in file as native 'zr' does. So use the below
 function! fold#set_defaults(...) abort
   let pairs = {
+    \ 'tex': ['^\s*\\begin{document}', 0],
     \ 'python': ['^class\>', 0],
-    \ 'tex': ['\ze\n\s*\\begin{document}', 1],
+    \ 'fortran': ['^\s*\(module\|program\)\>', 0],
   \ }
   if has_key(pairs, &filetype)
     let [regex, toggle] = pairs[&l:filetype]

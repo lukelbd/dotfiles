@@ -1,10 +1,8 @@
 "------------------------------------------------------------------------------
 " Fortran settings
 "------------------------------------------------------------------------------
-" Ensure program open on startup
-" Note: Not possible to set foldlevelstart=1 for specific filetype
-" Note: For some reason default foldmethod is 'manual' so eanble here
-if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
+" General settings
+" Note: This is set to 'manual' by default. Unsure why.
 setlocal foldmethod=syntax
 
 " These mostly make automatic indentation better
@@ -21,7 +19,8 @@ let b:fortran_dialect = 'f08'  " used by plugin?
 silent! unlet g:fortran_free_source
 silent! unlet g:fortran_fixed_source
 
-" Tool that compiles code, then runs it, then deletes the executable
+" Compile program then remove the executable
+" See: ftplugin/c.vim
 function! s:run_fortran_program() abort
   update
   if !exists('g:fortran_compiler')

@@ -715,11 +715,11 @@ command! -bang -nargs=* Warnings call grep#call_ag(0, 2 - <bang>0, 0, '\<warning
 command! -bang -nargs=* Conflicts call grep#call_ag(0, 2 - <bang>0, 0, s:conflicts, <f-args>)
 noremap gp <Cmd>Prints<CR>
 noremap gP <Cmd>Debugs<CR>
-noremap gM <Cmd>Notes!<CR>
-noremap gB <Cmd>Todos!<CR>
-noremap gE <Cmd>Errors!<CR>
-noremap gW <Cmd>Warnings!<CR>
-noremap gG <Cmd>Conflicts!<CR>
+noremap gM <Cmd>Notes<CR>
+noremap gB <Cmd>Todos<CR>
+noremap gE <Cmd>Errors<CR>
+noremap gW <Cmd>Warnings<CR>
+noremap gG <Cmd>Conflicts<CR>
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
