@@ -104,7 +104,6 @@ function! fold#set_defaults(...) abort
   endif
 endfunction
 function! fold#set_level(...) abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let current = &l:foldlevel
   if a:0  " input direction
     let cmd = v:count1 . 'z' . a:1
@@ -119,7 +118,9 @@ function! fold#set_level(...) abort
       let cmd = (current - v:count) . 'zm'
     endif
   endif
-  silent! exe 'normal! ' . cmd
+  if !empty(cmd)
+    silent! exe 'normal! ' . cmd
+  endif
   let result = &l:foldlevel
   let msg = current == result ? current : current . ' -> ' . result
   echom 'Fold level: ' . msg
@@ -148,7 +149,6 @@ function! s:toggle_nested(line1, line2, level, toggle) abort
   endfor
 endfunction
 function! fold#toggle_current(...) abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let [line1, line2, level] = fold#get_current()
   let toggle = a:0 ? a:1 : -1
   if toggle < 0  " open if current fold is closed
@@ -162,7 +162,6 @@ function! fold#toggle_current(...) abort
   endif
 endfunction
 function! fold#toggle_nested(...) abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let [line1, line2, level] = fold#get_current()
   let toggle = a:0 ? a:1 : -1  " -1 indicates switch
   if toggle < 0  " open if any nested folds are closed
@@ -178,7 +177,6 @@ endfunction
 " Open or close folds over input range
 " Note: Here 'a:toggle' closes folds when 1 and opens when 0.
 function! fold#toggle_range(...) range abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let winview = a:0 > 2 ? a:3 : {}
   let bang = a:0 > 1 ? a:2 : 0

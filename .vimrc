@@ -618,8 +618,8 @@ noremap ze ze
 for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
   silent! exe 'unmap! z' . s:char
 endfor
-noremap zx zx<Cmd>call fold#set_defaults(0)<CR>
-noremap zX zX<Cmd>call fold#set_defaults(1)<CR>
+noremap zx <Cmd>FastFoldUpdate<CR>zx<Cmd>call fold#set_defaults(0)<CR>
+noremap zX <Cmd>FastFoldUpdate<CR>zX<Cmd>call fold#set_defaults(1)<CR>
 
 " Change fold level
 " Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.
@@ -638,11 +638,11 @@ noremap zR <Cmd>call fold#set_level('R')<CR>
 " Note: This will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps so call FastFoldUpdate below. Also only trigger on explicit fold maps instead
 " of e.g. on TextChanged,InsertLeave in case e.g. ending delimiter is unfinished.
-noremap <expr> zz '<Cmd>FastFoldUpdate<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
-nnoremap zcc <Cmd>FastFoldUpdate<CR>zc
-nnoremap zoo <Cmd>FastFoldUpdate<CR>zo
-vnoremap <nowait> zc <Cmd>FastFoldUpdate<CR>zc
-vnoremap <nowait> zo <Cmd>FastFoldUpdate<CR>zo
+noremap <expr> zz foldclosed('.') > 0 ? 'zo' : 'zc'
+nnoremap zcc zc
+nnoremap zoo zo
+vnoremap <nowait> zc zc
+vnoremap <nowait> zo zo
 nnoremap <expr> za fold#toggle_range_expr(-1, 0)
 nnoremap <expr> zc fold#toggle_range_expr(1, 0)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
