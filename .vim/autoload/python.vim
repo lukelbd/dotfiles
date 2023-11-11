@@ -107,6 +107,7 @@ function! python#fold_cache() abort
       let cache[group[-1]]['foldexpr'] = '<1'  " fold end
       for value in range(group[1], group[-2])  " avoid overwriting 'lnum'
         let cache[value]['foldexpr'] = 1
+        call remove(cache[value], 'indent')
       endfor
     endif
     let lnum += 1  " e.g. termination of constant group

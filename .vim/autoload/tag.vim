@@ -39,7 +39,7 @@ function! tag#find_root(path) abort
     return root
   endif
   let home = expand('~')
-  let root = folder ==# home[:len(folder) - 1] ? folder . '/dummy' : folder
+  let root = folder ==# home[:len(folder) - 1] ? folder . '/dotfiles' : folder
   return root
 endfunction
 
