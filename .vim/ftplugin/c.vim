@@ -1,7 +1,8 @@
 "------------------------------------------------------------------------------
 " C settings
 "------------------------------------------------------------------------------
-" Compile code then run it and delete the executable
+" Compile program then remove the executable
+" See: ftplugin/fortran.vim
 function! s:run_c_program() abort
   update
   if !exists('g:c_compiler')

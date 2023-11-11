@@ -12,7 +12,7 @@ let g:vim_markdown_math = 1 " turn on $$ math
 " DelimitMate plugin
 let b:delimitMate_quotes = "\" ' $ ` * _"
 
-" Open markdown files
+" Open markdown file in viewer
 function! s:open_markdown_file() abort
   update
   if $TERM_PROGRAM ==? ''

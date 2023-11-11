@@ -11,12 +11,10 @@ function! fold#fold_text() abort
   let lines = string(v:foldend - v:foldstart + 1)
   let space = repeat(' ', len(string(line('$'))) - len(lines))
   let status = level . space . lines . ' lines'
-  let regex = '\s*' . comment#get_char() . '\s\+.*$'
-  for line in range(v:foldstart, v:foldend)
-    let label = substitute(getline(line), regex, '', 'g')  " remove comments
-    let chars = substitute(label, '\s\+', '', 'g')
-    if !empty(chars) | break | endif  " non-commented line
-  endfor
+  let regex = comment#get_char() . '.*$'
+  let text = substitute(getline(v:foldstart), '\s*$', '', 'g')
+  let sub = text =~# '^\s*' . regex ? '<comments>' : ''
+  let label = substitute(text, regex, sub, 'g')  " remove comments
   " Format fold text
   if &filetype ==# 'tex'  " hide backslashes
     let regex = '\\\@<!\\'
@@ -93,8 +91,9 @@ endfunction
 " to maximum number found in file as native 'zr' does. So use the below
 function! fold#set_defaults(...) abort
   let pairs = {
+    \ 'tex': ['^\s*\\begin{document}', 0],
     \ 'python': ['^class\>', 0],
-    \ 'tex': ['\ze\n\s*\\begin{document}', 1],
+    \ 'fortran': ['^\s*\(module\|program\)\>', 0],
   \ }
   if has_key(pairs, &filetype)
     let [regex, toggle] = pairs[&l:filetype]
@@ -105,7 +104,6 @@ function! fold#set_defaults(...) abort
   endif
 endfunction
 function! fold#set_level(...) abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let current = &l:foldlevel
   if a:0  " input direction
     let cmd = v:count1 . 'z' . a:1
@@ -120,7 +118,9 @@ function! fold#set_level(...) abort
       let cmd = (current - v:count) . 'zm'
     endif
   endif
-  silent! exe 'normal! ' . cmd
+  if !empty(cmd)
+    silent! exe 'normal! ' . cmd
+  endif
   let result = &l:foldlevel
   let msg = current == result ? current : current . ' -> ' . result
   echom 'Fold level: ' . msg
@@ -149,7 +149,6 @@ function! s:toggle_nested(line1, line2, level, toggle) abort
   endfor
 endfunction
 function! fold#toggle_current(...) abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let [line1, line2, level] = fold#get_current()
   let toggle = a:0 ? a:1 : -1
   if toggle < 0  " open if current fold is closed
@@ -163,7 +162,6 @@ function! fold#toggle_current(...) abort
   endif
 endfunction
 function! fold#toggle_nested(...) abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let [line1, line2, level] = fold#get_current()
   let toggle = a:0 ? a:1 : -1  " -1 indicates switch
   if toggle < 0  " open if any nested folds are closed
@@ -179,7 +177,6 @@ endfunction
 " Open or close folds over input range
 " Note: Here 'a:toggle' closes folds when 1 and opens when 0.
 function! fold#toggle_range(...) range abort
-  silent! FastFoldUpdate  " quietly update folds, ignore if command not found
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let winview = a:0 > 2 ? a:3 : {}
   let bang = a:0 > 1 ? a:2 : 0
