@@ -1575,7 +1575,7 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>O <Cmd>call switch#tags()<CR>
   let g:tags_drop_map = 'g,'  " default is <Leader><Tab>
   let g:tags_jump_map = 'g.'  " default is <Leader><Leader>
-  let g:tags_scope_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
+  let g:tags_major_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
 endif
 
 " Gutentag tag generation

@@ -78,8 +78,8 @@ function! fold#get_current(...) abort
     let line2 = line('.')
   endif
   call winrestview(winview)
-  if !a:0 && !level && getline(line1) =~# '^class\>'  " ignore 'class' folds
-    return fold#get_current(1)
+  if !a:0 && !level && getline(line1) =~# '^\s*\(\\begin{document}\|class\>\)'
+    return fold#get_current(1)  " ignore special folds
   else  " default case
     return [line1, line2, foldlevel(line1)]
   endif
