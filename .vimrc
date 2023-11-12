@@ -2156,7 +2156,7 @@ noremap <Leader>) <Cmd>ColorNext<CR>
 " Note: Here 'groups' opens up the page
 command! -nargs=0 SyntaxGroup call vim#syntax_group()
 command! -nargs=? SyntaxList call vim#syntax_list(<q-args>)
-command! -nargs=0 ShowGroups splitbelow help group-name | call search('\*Comment') | normal! zt
+command! -nargs=0 ShowGroups help group-name | call search('\*Comment') | normal! zt
 noremap <Leader>1 <Cmd>SyntaxGroup<CR>
 noremap <Leader>2 <Cmd>SyntaxList<CR>
 noremap <Leader>3 <Cmd>ShowGroups<CR>
@@ -2165,9 +2165,9 @@ noremap <Leader>3 <Cmd>ShowGroups<CR>
 command! -nargs=0 ShowColors call vim#show_colors()
 command! -nargs=0 ShowPlugin call vim#show_ftplugin()
 command! -nargs=0 ShowSyntax call vim#show_syntax()
-noremap <Leader>4 <Cmd>ShowSyntax<CR>
-noremap <Leader>5 <Cmd>ShowPlugin<CR>
-noremap <Leader>6 <Cmd>ShowColors<CR>
+noremap <Leader>4 <Cmd>ShowColors<CR>
+noremap <Leader>5 <Cmd>ShowSyntax<CR>
+noremap <Leader>6 <Cmd>ShowPlugin<CR>
 
 " Repair highlighting. Leveraging ctags integration almost always works.
 " Note: This says get the closest tag to the first line in the window, all tags

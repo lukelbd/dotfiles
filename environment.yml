@@ -32,7 +32,6 @@ dependencies:
   - pre-commit
   - vim
   - deno
-  - ctags
   - tmux
   - nco
   - cdo
@@ -61,9 +60,9 @@ dependencies:
   - notebook
   - jupytext
   - pandoc
-  - ctags
   - ripgrep
   - the_silver_searcher
+  - universal-ctags
   - nb_conda_kernels
   - executing>=1.0.0
   - jupyter_contrib_nbextensions
