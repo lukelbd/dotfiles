@@ -5,38 +5,55 @@
 " Note: Style here is inspired by vim-anyfold. For now stick to native
 " per-filetype syntax highlighting becuase still has some useful features.
 scriptencoding utf-8
+let s:delim_starts = {']': '[', ')': '(', '}': '{', '>': '<'}
+let s:delim_ends = {'[': ']', '(': ')', '{': '}', '<': '>'}
 function! fold#fold_text() abort
-  " Get fold text
-  let level = repeat('+ ', len(v:folddashes))
-  let lines = string(v:foldend - v:foldstart + 1)
-  let space = repeat(' ', len(string(line('$'))) - len(lines))
-  let status = level . space . lines . ' lines'
-  let regex = comment#get_char() . '.*$'
-  let text = substitute(getline(v:foldstart), '\s*$', '', 'g')
-  let sub = text =~# '^\s*' . regex ? '<comments>' : ''
-  let label = substitute(text, regex, sub, 'g')  " remove comments
-  " Format fold text
+  " General fold formatting
+  let comment = comment#get_char() . '.*$'
+  let label = substitute(getline(v:foldstart), '\s*$', '', 'g')
+  if label =~# '^\s*' . comment
+    let replace = '<comments>'
+    let label = substitute(label, comment, replace, 'g')  " remove comments
+  endif
+  if label =~# '[\[({<]\s*$'  " close delimiter
+    let label = substitute(label, '\s*$', '', 'g')
+    let label = label . '···' . s:delim_ends[label[-1:]]
+  endif
   if &filetype ==# 'tex'  " hide backslashes
     let regex = '\\\@<!\\'
     let label = substitute(label, regex, '', 'g')
   endif
-  if &filetype ==# 'python'  " replace docstrings
-    let regex = '[frub]*["'']\{3}'
-    let label = substitute(label, regex, '<docstring>', 'g')
+  " Docstring fold formatting
+  if &filetype ==# 'python'
+    let l:subs = []  " capture matches
+    let regex = '[frub]*["'']\{3}'  " append line after docstring
+    if label =~# regex . '\s*$'
+      for lnum in range(v:foldstart + 1, v:foldstart + 2)
+        let label .= substitute(getline(lnum), '\(^\s*\|\s*$\)', '', 'g')
+      endfor
+    endif
+    let append = '\=add(l:subs, submatch(0))'  " see: https://vi.stackexchange.com/a/16491/8084
+    call substitute(label, regex, append, 'gn')
+    let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
   endif
-  if label =~# '[\[({]\s*$'  " close delimiter
-    let label = substitute(label, '\s*$', '', 'g')
-    let label = label . '···' . {'[': ']', '(': ')', '{': '}'}[label[-1:]]
-  endif
+  " Combine fold components
+  let level = repeat('+ ', len(v:folddashes))
+  let lines = string(v:foldend - v:foldstart + 1)
+  let space = repeat(' ', len(string(line('$'))) - len(lines))
+  let status = level . space . lines . ' lines'
   let width = &textwidth - 1 - strwidth(status)  " at least two spaces
-  let label = strwidth(label) > width - 4 ? label[:width - 6] . '···  ' : label
-  " Combine components
-  let space = repeat(' ', &textwidth - 1 - strwidth(label) - strwidth(status))
   let origin = 0  " string truncation point
   if !foldclosed(line('.'))
     let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
     let origin = col('.') - (wincol() - offset)
   endif
+  if strwidth(label) > width - 4
+    let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
+    let dstr = empty(dend) ? '' : s:delim_starts[dend[0]]
+    let dend = label[width - 5 - len(dend):] =~# dstr ? '' : dend
+    let label = label[:width - 6 - len(dend)] . '···' . dend . '  '
+  endif
+  let space = repeat(' ', &textwidth - 1 - strwidth(label) - strwidth(status))
   let text = label . space . status
   " vint: next-line -ProhibitUsingUndeclaredVariable
   return text[origin:]
