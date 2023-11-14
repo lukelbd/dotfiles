@@ -19,12 +19,11 @@ noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#run_general()<CR>
 noremap <buffer> <Plug>ExecuteFile2 <Cmd>call python#init_jupyter()<CR>
 noremap <buffer> <Plug>ExecuteFile3 <Cmd>JupyterDisconnect<CR>
 
-" Insert docstring (could also use template but this is simpler)
-" See: https://github.com/heavenshell/vim-pydocstring#custom-template
-noremap <buffer> gcd <Cmd>Pydocstring \| call timer_start(500, 'python#break_docstrings')<CR>
-noremap <buffer> gcD <Cmd>Pydocstring \| call timer_start(500, 'python#break_docstrings')<CR>
+" Insert docstring (see autoload/python.vim)
+noremap <buffer> gcd <Cmd>Pydocstring<CR><Cmd>call timer_start(500, function('python#split_docstrings'))<CR>
+noremap <buffer> gcD <Cmd>Pydocstring<CR><Cmd>call timer_start(500, function('python#split_docstrings'))<CR>
 
-" Translate dictionaries to keyword input
+" Translate dictionaries to kwargs (see autoload/python.vim)
 noremap <expr> <buffer> g{ python#dict_to_kw_expr(0)
 noremap <expr> <buffer> g} python#dict_to_kw_expr(1)
 

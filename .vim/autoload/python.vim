@@ -1,21 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Python utils defined here
 "-----------------------------------------------------------------------------"
-" Insert line breaks after docstring delimiters
-" Note: This is used to adjust vim-pydocstring docstrings. By default does not insert
-" newline after opening quotes and this is easier than creating templates. Call with
-" 'timer_start' to avoid race condition with vim-pydocstring (see ftplugin/python.vim).
-" Note: This ensures correct indentation after line break. Could also use 'gnd' then
-" auto-indent by adding newline to @" match in @= and then use indent-preserving paste
-" command ]p as shown below. See https://stackoverflow.com/a/2783670/4970632
-" exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
-function! python#break_docstrings() abort
-  let regex = '\(["'']\{3}\)\n\@!\zs.*$'
-  exe 'global/' . regex . "/normal! gnc\<CR>\<C-r>\""
-  let regex = '\(\(^\|\_s\)[frub]*\)\@<!\(["'']\{3}\)$'
-  exe 'global/' . regex . "/normal! gnc\<CR>\<C-r>\""
-endfunction
-
 " Convert between key=value pairs and 'key': value dictionaries
 " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
 " bug where if opening bracket is immediately followed by newline, then 'inner'
@@ -212,4 +197,20 @@ endfunction
 " For <expr> map accepting motion
 function! python#run_motion_expr(...) abort
   return utils#motion_func('python#run_motion', a:000)
+endfunction
+
+" Split docstrings over multiple lines
+" Note: This is used to adjust vim-pydocstring without using complicated template files.
+" Use 'timer_start' to avoid race condition with plugin job (see ftplugin/python.vim).
+" Note: This ensures correct indentation after line break. Below shows alternative
+" approach using 'gnd' and auto-indent by adding newline to @" match via @= and using
+" indent-preserving paste ]p. See https://stackoverflow.com/a/2783670/4970632
+" exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
+function! python#split_docstrings(...) abort
+  let regex = '["'']\{3}\n\@!\zs.*$'
+  let cmd = "normal! gnc\<CR>\<C-r>\""
+  exe 'global/' . regex . '/' . cmd
+  let regex = '\(\(^\|\_s\)[frub]*\)\@<!'
+  let regex = regex . '["'']\{3}\s*$'
+  exe 'global/' . regex . '/' . cmd
 endfunction

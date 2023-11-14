@@ -1385,7 +1385,6 @@ call plug#('goerz/jupytext.vim')  " edit ipython notebooks
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
-let g:pydocstring_templates_path = '~/dotfiles'  " has 'noarg.txt' 'class.txt' 'def.txt'
 let g:pydocstring_doq_path = '~/mambaforge/bin/doq'  " critical to mamba install
 let g:jupyter_highlight_cells = 1  " required to prevent error in non-python vim
 let g:jupyter_cell_separators = ['# %%', '# <codecell>']
