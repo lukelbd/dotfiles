@@ -1377,12 +1377,16 @@ call plug#('junegunn/vim-easy-align')
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
 " call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
+call plug#('heavenshell/vim-pydocstring')  " automatic docstring templates
 call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
 call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
+let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
+let g:pydocstring_templates_path = '~/dotfiles'  " has 'noarg.txt' 'class.txt' 'def.txt'
+let g:pydocstring_doq_path = '~/mambaforge/bin/doq'  " critical to mamba install
 let g:jupyter_highlight_cells = 1  " required to prevent error in non-python vim
 let g:jupyter_cell_separators = ['# %%', '# <codecell>']
 let g:jupyter_mapkeys = 0
