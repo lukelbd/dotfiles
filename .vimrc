@@ -1561,13 +1561,15 @@ endif
 " motion, except never overwrite potential single bracket mappings (e.g. help mode).
 " Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
 " instead creating tags whenever buffer is loaded and tracking tags continuously.
-" Note: Use .ctags config to ignore particular kinds. Include python imports (Ii),
-" tex frame subtitles (g), and vim constants/variables/vimballs (Cvn).
+" Note: Use .ctags config to ignore kinds or include below to filter bracket jumps. See
+" :ShowTable for translations. Try to use 'minor' for all single-line constructs.
 " Warning: Critical to mamba install 'universal-ctags' instead of outdated 'ctags'
 " or else will get warnings for non-existing kinds.
 if s:plug_active('vim-tags')
   command! -nargs=? TagToggle call switch#tags(<args>)
-  command! -bang -nargs=0 ShowTable echo tags#table_kinds(<bang>0) . tags#table_tags(<bang>0)
+  command! -bang -nargs=* ShowTable
+    \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
+    \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
   nnoremap gt <Cmd>BTags<CR>
@@ -1576,6 +1578,7 @@ if s:plug_active('vim-tags')
   let g:tags_drop_map = 'g,'  " default is <Leader><Tab>
   let g:tags_jump_map = 'g.'  " default is <Leader><Leader>
   let g:tags_major_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
+  let g:tags_minor_kinds = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
 endif
 
 " Gutentag tag generation
