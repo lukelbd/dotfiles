@@ -20,20 +20,19 @@ function! fold#fold_text() abort
     let label = label . '···' . s:delim_ends[label[-1:]]
   endif
   if &filetype ==# 'tex'  " hide backslashes
-    let regex = '\\\@<!\\'
-    let label = substitute(label, regex, '', 'g')
+    let remove = '\\\@<!\\'
+    let label = substitute(label, remove, '', 'g')
   endif
   " Docstring fold formatting
   if &filetype ==# 'python'
     let l:subs = []  " capture matches
-    let regex = '[frub]*["'']\{3}'  " append line after docstring
-    if label =~# regex . '\s*$'
+    if label =~# '["'']\{3}\s*$'  " append afterward
       for lnum in range(v:foldstart + 1, v:foldstart + 2)
         let label .= substitute(getline(lnum), '\(^\s*\|\s*$\)', '', 'g')
       endfor
     endif
     let append = '\=add(l:subs, submatch(0))'  " see: https://vi.stackexchange.com/a/16491/8084
-    call substitute(label, regex, append, 'gn')
+    call substitute(label, '["'']\{3}', append, 'gn')
     let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
   endif
   " Combine fold components

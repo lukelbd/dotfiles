@@ -154,15 +154,14 @@ call succinct#add_snippets({
 " e.g. \citep[prefix][]{cite1,cite2}. In ams this is \cite[suffix]{cite1,cite2} and
 " \cite<prefix>{cite1,cite2} and commands are \cite and \citeA instead of \citep and
 " \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty
-" brackets for filling later since synmtax is dependent on citation engine.
-" Rejected maps:
-" \ 'E': "{\\color{red}\r}",
-" \ 'F': "\\begin{wrapfigure}{r}{0.5\\textwidth}\n\\centering\r\\end{wrapfigure}",
-" \ 'G': "\\hidecontent{\\includegraphics{\r}}",
-" \ 'L': "\\href{\1Link: \1}{\r}",
-" \ 'P': "\\begin{minipage}{\\linewidth}\r\\end{minipage}",
-" \ ',': "\\begin{\1\\begin{\1}\r\\end{\1\1}",
-" \ '.': "\\\1\\\1{\r}",
+" brackets for filling later since synmtax is dependent on citation engine. Rejected:
+" \ 'E': '{\\color{red}\r}',
+" \ 'F': '\\begin{wrapfigure}{r}{0.5\\textwidth}\n\\centering\r\\end{wrapfigure}',
+" \ 'G': '\\hidecontent{\\includegraphics{\r}}',
+" \ 'L': '\\href{\1Link: \1}{\r}',
+" \ 'P': '\\begin{minipage}{\\linewidth}\r\\end{minipage}',
+" \ ',': '\\begin{\1\\begin{\1}\r\\end{\1\1}',
+" \ '.': '\\\1\\\1{\r}',
 call succinct#add_delims({
   \ "'": "`\r'",
   \ '"': "``\r''",
@@ -247,18 +246,3 @@ call succinct#add_delims({
   \ '}': "\\left\\{\\begin{array}{ll}\r\\end{array}\\right.",
   \ },
   \ 1)
-
-" " Text object integration
-" " Adpated from: https://github.com/rbonvall/vim-textobj-latex/blob/master/ftplugin/tex/textobj-latex.vim
-" " Also changed begin end modes so they make more sense.
-" let s:tex_textobjs_map = {
-"   \  'dollar-math-a': {
-"   \     'pattern': '[$][^$]*[$]',
-"   \     'select': '<buffer> a$',
-"   \   },
-"   \  'dollar-math-i': {
-"   \     'pattern': '[$]\zs[^$]*\ze[$]',
-"   \     'select': '<buffer> i$',
-"   \   },
-"   \ }
-" call textobj#user#plugin('latex', s:tex_textobjs_map)
