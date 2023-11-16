@@ -1,17 +1,20 @@
 # This file should be kept in sync with '.ignore' ag/rg file.
-# Untracked folders
-figs*
-vids*
-figures*
-videos*
+# Unsynced or internal
+notes*.md
+notes*.txt
+notes*.rst
 class*
 course*
 meeting*
 manuscript*
+figs*
+vids*
+figures*
+videos*
 !figures*.py
 !videos*.py
 
-# Trash folders
+# Old or trash folders
 tmp
 trash*
 deprecated*
