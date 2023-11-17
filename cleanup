@@ -2,11 +2,11 @@
 #-----------------------------------------------------------------------------#
 # Remove all symlinks to dotfiles in the home directory
 #-----------------------------------------------------------------------------#
-shopt -s dotglob # show hidden files as well
+shopt -s dotglob  # show hidden files as well
 for link in $HOME/*; do
   [ -L "$link" ] || continue
   src=$(readlink "$link")
   [[ "$src" =~ dotfiles|Cloud|texmf\-dist|site\-packages ]] || continue
   echo "Removing dotfile symlink: '${link##"$HOME"}' -> '${src##"$HOME"}'."
-  rm "$link"
+  rm "$link" || echo "Error: Failed to remove symlink '$link'."
 done

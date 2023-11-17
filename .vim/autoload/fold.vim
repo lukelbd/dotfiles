@@ -9,12 +9,10 @@ let s:delim_starts = {']': '[', ')': '(', '}': '{', '>': '<'}
 let s:delim_ends = {'[': ']', '(': ')', '{': '}', '<': '>'}
 function! fold#fold_text() abort
   " General fold formatting
-  let comment = comment#get_char() . '.*$'
-  let label = substitute(getline(v:foldstart), '\s*$', '', 'g')
-  if label =~# '^\s*' . comment
-    let replace = '<comments>'
-    let label = substitute(label, comment, replace, 'g')  " remove comments
-  endif
+  let comment = '\(^\s*\)\@<!' . comment#get_char() . '.*$'
+  let label = getline(v:foldstart)
+  let label = substitute(label, comment, '', 'g')  " remove trailing comment
+  let label = substitute(label, '\s*$', '', 'g')  " remove trailing spaces
   if label =~# '[\[({<]\s*$'  " close delimiter
     let label = substitute(label, '\s*$', '', 'g')
     let label = label . '···' . s:delim_ends[label[-1:]]

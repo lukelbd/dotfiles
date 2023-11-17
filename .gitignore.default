@@ -1,5 +1,5 @@
 # This file should be kept in sync with '.ignore' ag/rg file.
-# Unsynced or internal
+# Internal or unsynced
 notes*.md
 notes*.txt
 notes*.rst
