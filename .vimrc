@@ -175,11 +175,12 @@ let s:flake8_ignore =
 " Shellcheck ignore list
 " Todo: Add this to seperate linting configuration file?
 " * Permite two space indent consistent with other languages (E003)
-" * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
-" * Allow sourcing from files (SC1090, SC1091)
-" * Allow building arrays from unquoted result of command (SC2206, SC2207)
+" * Allow sourcing from existing files (SC1090, SC1091)
+" * Allow 'useless cat' because left-to-right command chain more intuitive (SC2002)
+" * Allow commas inside array elements, ignore separate-by-space warning (SC2054)
 " * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
 " * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
+" * Allow building arrays from unquoted result of command (SC2206, SC2207)
 " * Allow 'which' instead of 'command -v' (SC2230)
 " * Allow unquoted variables in for loop (SC2231)
 " * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
@@ -188,7 +189,7 @@ let s:flake8_ignore =
 " * Allow unquoted glob pattern assignments (SC2125)
 " * Allow defining aliases with .bashrc variables (SC2139)
 let s:shellcheck_ignore =
-  \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
+  \ 'SC1090,SC1091,SC2002,SC2054,SC2076,SC2068,SC2086,SC2206,SC2207,'
   \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
 
 
