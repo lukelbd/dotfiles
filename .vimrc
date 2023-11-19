@@ -155,8 +155,7 @@ let s:panel_filetypes += [
 " Note: Keep this in sync with 'pep8' and 'black' file
 " * Allow line breaks before binary operators (W503)
 " * Allow imports after statements for jupytext files (E402)
-" * Allow assigning lambda expressions instead of def (E731)
-" * Allow the variable names 'l' and 'I' (E741)
+" * Allow assigning lambda expressions, variable names 'l' and 'I'  (E731, E741)
 " * Allow no docstring on public methods (e.g. overrides) (D102) (flake8-docstrings)
 " * Allow empty docstring after e.g. __str__ (D105) (flake8-docstrings)
 " * Allow empty docstring after __init__ (D107) (flake8-docstrings)
@@ -174,22 +173,19 @@ let s:flake8_ignore =
 
 " Shellcheck ignore list
 " Todo: Add this to seperate linting configuration file?
-" * Permite two space indent consistent with other languages (E003)
-" * Permit 'useless cat' because left-to-right command chain more intuitive (SC2002)
-" * Allow sourcing from files (SC1090, SC1091)
+" * Allow two space indent consistent with other languages (E003)
+" * Allow sourcing from existing files (SC1090, SC1091)
+" * Allow 'useless cat' because left-to-right command chain more intuitive (SC2002)
+" * Allow dollar signs in single quotes, looking through single strings (SC2016, SC2043)
+" * Allow commas inside arrays and quoting RHS of =~ e.g. for array comparison (SC2054, SC2076)
+" * Allow unquoted variables and array expansions, since rarely deal with spaces (SC2068, SC2086)
+" * Allow unquoted glob pattern assignments, for loop variables (SC2125, SC2231)
+" * Allow defining aliases with variables, 'which' instead of 'command -v' (SC2139, SC2230)
 " * Allow building arrays from unquoted result of command (SC2206, SC2207)
-" * Allow quoting RHS of =~ e.g. for array comparison (SC2076)
-" * Allow unquoted variables and array expansions, because we almost never deal with spaces (SC2068, SC2086)
-" * Allow 'which' instead of 'command -v' (SC2230)
-" * Allow unquoted variables in for loop (SC2231)
-" * Allow dollar signs in single quotes, e.g. ncap2 commands (SC2016)
-" * Allow looping through single strings (SC2043)
-" * Allow assigning commands to variables (SC2209)
-" * Allow unquoted glob pattern assignments (SC2125)
-" * Allow defining aliases with .bashrc variables (SC2139)
+" * Allow assigning commands to bash variables (SC2209)
 let s:shellcheck_ignore =
-  \ 'SC1090,SC1091,SC2002,SC2068,SC2086,SC2206,SC2207,'
-  \ . 'SC2230,SC2231,SC2016,SC2041,SC2043,SC2209,SC2125,SC2139'
+  \ 'SC1090,SC1091,SC2002,SC2016,SC2041,SC2043,SC2054,SC2076,SC2068,SC2086,'
+  \ . 'SC2125,SC2139,SC2206,SC2207,SC2209,SC2230,SC2231'
 
 
 "-----------------------------------------------------------------------------"
