@@ -26,7 +26,7 @@ function! fold#fold_text() abort
     let l:subs = []  " capture matches
     if label =~# '["'']\{3}\s*$'  " append afterward
       for lnum in range(v:foldstart + 1, v:foldstart + 2)
-        let label .= substitute(getline(lnum), '\(^\s*\|\s*$\)', '', 'g')
+        let label .= substitute(getline(lnum), '\(^\s*\|\s*$\|-\{3,}\)', '', 'g')
       endfor
     endif
     let append = '\=add(l:subs, submatch(0))'  " see: https://vi.stackexchange.com/a/16491/8084

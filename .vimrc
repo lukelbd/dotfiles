@@ -176,6 +176,7 @@ let s:flake8_ignore =
 " * Allow two space indent consistent with other languages (E003)
 " * Allow sourcing from existing files (SC1090, SC1091)
 " * Allow 'useless cat' because left-to-right command chain more intuitive (SC2002)
+" * Allow chained '&& ||' operators because sometimes intentional (SC2015)
 " * Allow dollar signs in single quotes, looking through single strings (SC2016, SC2043)
 " * Allow commas inside arrays and quoting RHS of =~ e.g. for array comparison (SC2054, SC2076)
 " * Allow unquoted variables and array expansions, since rarely deal with spaces (SC2068, SC2086)
@@ -184,7 +185,7 @@ let s:flake8_ignore =
 " * Allow building arrays from unquoted result of command (SC2206, SC2207)
 " * Allow assigning commands to bash variables (SC2209)
 let s:shellcheck_ignore =
-  \ 'SC1090,SC1091,SC2002,SC2016,SC2041,SC2043,SC2054,SC2076,SC2068,SC2086,'
+  \ 'SC1090,SC1091,SC2002,SC2015,SC2016,SC2041,SC2043,SC2054,SC2076,SC2068,SC2086,'
   \ . 'SC2125,SC2139,SC2206,SC2207,SC2209,SC2230,SC2231'
 
 
