@@ -378,7 +378,6 @@ export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https:/
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 
-
 # Add custom research pathsw
 # NOTE: Paradigm is to put models in 'models', raw data in 'data' or scratch, shared
 # research utilities or general ideas in 'shared', and project-specific utilities
