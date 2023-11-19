@@ -185,7 +185,7 @@ endfunction
 " and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags
 " is included with vim by default, and this is always used no matter the value of &tags
 " (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
-function! vim#vim_page(...) abort
+function! vim#vim_help(...) abort
   let item = a:0 ? a:1 : input('Vim help item: ', '', 'help')
   if !empty(item)
     exe 'vert help ' . item
