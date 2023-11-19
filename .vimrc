@@ -382,7 +382,7 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| unlet! b:SimpylFold_cache \| doautocmd BufWritePost<CR>
+noremap <Leader>e <Cmd>edit \| call fold#update_folds()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -616,8 +616,8 @@ noremap ze ze
 for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
   silent! exe 'unmap! z' . s:char
 endfor
-noremap zx <Cmd>FastFoldUpdate<CR>zx<Cmd>call fold#set_defaults(0)<CR>
-noremap zX <Cmd>FastFoldUpdate<CR>zX<Cmd>call fold#set_defaults(1)<CR>
+noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults(0)<CR>
+noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults(1)<CR>
 
 " Change fold level
 " Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.
@@ -634,8 +634,7 @@ noremap zR <Cmd>call fold#set_level('R')<CR>
 " Note: Previously toggled with recursive-open then non-recursive close but this is
 " annoying e.g. for huge python classes. Now use 'zZ' to explicitly toggle nesting.
 " Note: This will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
-" maps so call FastFoldUpdate below. Also only trigger on explicit fold maps instead
-" of e.g. on TextChanged,InsertLeave in case e.g. ending delimiter is unfinished.
+" maps. However now only call FastFoldUpdate manually for 'zx' and 'zX' (see above).
 noremap <expr> zz foldclosed('.') > 0 ? 'zo' : 'zc'
 nnoremap zcc zc
 nnoremap zoo zo
@@ -1476,7 +1475,7 @@ for s:name in [
   \ 'vim-toggle',
   \ ]
   let s:local = 0
-  for s:root in ['~', '~/iCloud Drive']
+  for s:root in ['~', '~/icloud']
     for s:sub in ['software', 'forks']
       let s:dir = expand(join([s:root, s:sub, s:name], '/'))
       if !s:local && isdirectory(s:dir)
@@ -1628,9 +1627,9 @@ endif
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:plug_active('FastFold')
   " Various folding plugins
-  let g:fastfold_savehook = 1  " fold on save
+  let g:fastfold_savehook = 1  " enough for :write but use fold#update() for e.g. :edit
   let g:fastfold_fold_command_suffixes =  []  " use custom maps instead
-  let g:fastfold_fold_movement_commands = []  " or empty list
+  let g:fastfold_fold_movement_commands = []  " use custom maps instead
   " Native folding settings
   let g:baan_fold = 1
   let g:clojure_fold = 1
@@ -1869,7 +1868,7 @@ if s:plug_active('ale')
     \ 'include_trailing_comma': 'true',
     \ 'force_grid_wrap': 0,
     \ 'multi_line_output': 3,
-    \ 'linelength': g:linelength,
+    \ 'line_length': g:linelength,
     \ }
   let g:formatdef_mpython = '"isort '
     \ . '--trailing-comma '

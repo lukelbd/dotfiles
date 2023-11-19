@@ -103,6 +103,13 @@ endfunction
 " Note: Native 'zm' and 'zr' accept commands but count is relative to current
 " fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below
+function! fold#update_folds() abort
+  if &filetype ==# 'python'
+    silent! unlet! b:SimpylFold_cache
+    call python#fold_expr(1)
+  endif
+  FastFoldUpdate
+endfunction
 function! fold#set_defaults(...) abort
   let pairs = {
     \ 'tex': ['^\s*\\begin{document}', 0],

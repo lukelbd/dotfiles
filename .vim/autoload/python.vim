@@ -76,7 +76,7 @@ function! python#fold_cache() abort
     if s:fold_exists(lnum) | let lnum += 1 | continue | endif
     let line = getline(lnum)
     let group = []
-    " Docstring fold (e.g. _docstring_snippet = """...)
+    " Docstring fold (e.g. _docstring_snippet = '''...)
     let [_, _, pos] = matchstrpos(line, '^\(#\|\s\)\@!.*' . docstring)
     if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
       call add(group, lnum)
