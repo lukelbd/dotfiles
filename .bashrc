@@ -378,33 +378,32 @@ export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https:/
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
 
-
 # Add custom research pathsw
 # NOTE: Paradigm is to put models in 'models', raw data in 'data' or scratch, shared
 # research utilities or general ideas in 'shared', and project-specific utilities
 # and ideas in 'research'. Could also try 'papers' and 'projects' but this works.
 _dirs_models=(ncparallel mppnccombine)
-_dirs_shared=(cmip-data reanalysis-data observations idealized coupled)
+_dirs_shared=(reanalysis-data cmip-data observed idealized coupled)
 _dirs_research=(timescales persistence constraints relationships hierarchy carbon-cycle)
-for _project in "${_dirs_models[@]}"; do
-  if [ -r "$HOME/models/$_project" ]; then
-    export PATH=$HOME/models/$_project:$PATH
-  elif [ -r "$HOME/$_project" ]; then
-    export PATH=$HOME/$_project:$PATH
+for _name in "${_dirs_models[@]}"; do
+  if [ -r "$HOME/models/$_name" ]; then
+    export PATH=$HOME/models/$_name:$PATH
+  elif [ -r "$HOME/$_name" ]; then
+    export PATH=$HOME/$_name:$PATH
   fi
 done
-for _project in "${_dirs_research[@]}"; do
-  if [ -r "$HOME/research/$_project" ]; then
-    export PYTHONPATH=$HOME/research/$_project:$PYTHONPATH
-  elif [ -r "$HOME/$_project" ]; then
-    export PYTHONPATH=$HOME/$_project:$PYTHONPATH
+for _name in "${_dirs_shared[@]}"; do
+  if [ -r "$HOME/shared/$_name" ]; then
+    export PYTHONPATH=$HOME/shared/$_name:$PYTHONPATH
+  elif [ -r "$HOME/$_name" ]; then
+    export PYTHONPATH=$HOME/$_name:$PYTHONPATH
   fi
 done
-for _project in "${_dirs_shared[@]}"; do
-  if [ -r "$HOME/shared/$_project" ]; then
-    export PYTHONPATH=$HOME/shared/$_project:$PYTHONPATH
-  elif [ -r "$HOME/$_project" ]; then
-    export PYTHONPATH=$HOME/$_project:$PYTHONPATH
+for _name in "${_dirs_research[@]}"; do
+  if [ -r "$HOME/research/$_name" ]; then
+    export PYTHONPATH=$HOME/research/$_name:$PYTHONPATH
+  elif [ -r "$HOME/$_name" ]; then
+    export PYTHONPATH=$HOME/$_name:$PYTHONPATH
   fi
 done
 

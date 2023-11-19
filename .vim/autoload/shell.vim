@@ -1,42 +1,121 @@
 "-----------------------------------------------------------------------------"
 " Utilities for shell commands and processes
 "-----------------------------------------------------------------------------"
-" Popup window with help information
+" Popup tab with command --help
+" Note: 'getcompletion()' seems to cache results by default so no need to use internal
+" '~/.fzf.commands' file from .fzf 'completion-edits' branch. This is fast enough.
 " Note: See also .bashrc help(). Note we previously used 'powerman/vim-plugin-AnsiEsc'
 " to preserve colors shown in 'command --help' pages but now simply redirect git
 " commands that include ANSI colors to their correponsding (identical) man pages.
-function! shell#help_page(tab, ...) abort
-  let file = @%
-  let page = a:0 ? a:1 : utils#input_default('Help info', 'shellcmd', expand('<cword>'))
-  let args = split(page, '\s\+')
+function! shell#cmd_help(...) abort
+  if a:0  " input help
+    let page = a:1
+  else  " default help
+    let page = utils#input_default('Help info', 'shellcmd', expand('<cword>'))
+  endif
   if empty(page) | return | endif
+  let args = split(page, '\s\+')
   if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
-    return shell#man_page(a:tab, join(args, '-'))  " identical result
+    return shell#cmd_man(join(args, '-'))  " identical result
   endif
   if args[0] ==# 'cdo'
     call insert(args, '--help', 1)
   else
     call add(args, '--help')
   endif
-  if !executable(args[0])
-    echom 'help.vim: no --help info for "' . args[0] . '"'
+  let cmd = join(args, ' ')
+  let result = split(system(cmd . ' 2>&1'), "\n")
+  if !executable(args[0]) || len(result) < 3
+    echom "help.vim: nothing returned from '" . cmd . "'"
     return
   endif
-  let name = join(args, ' ')
-  let bnum = bufnr(name)
-  if a:tab | tabedit | endif
+  let bnum = bufnr(cmd)
   if bnum != -1 | exe bnum . 'bdelete' | endif
-  let result = split(system(join(args, ' ') . ' 2>&1'), "\n")
-  call append(0, result)
-  goto
+  tabedit | call append(0, result) | goto
   set filetype=popup
   set buftype=nofile
-  exe 'file ' . name
+  exe 'file ' . cmd
   call utils#panel_setup(0)
-  if len(result) == 0
-    silent! quit
-    call file#open_drop(file)
+endfunction
+function! shell#fzf_help() abort
+  call fzf#run(fzf#wrap({
+    \ 'source': getcompletion('', 'shellcmd'),
+    \ 'options': '--no-sort --prompt="--help> "',
+    \ 'sink': function('shell#cmd_help'),
+    \ }))
+endfunction
+
+" Man page utilities
+" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
+" page to record navigation history. Order of assignment below is critical.
+function! shell#man_setup(...) abort
+  setlocal tabstop=8 softtabstop=8 shiftwidth=8
+  let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
+  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
+  let b:man_curr = [page, pnum]  " see below
+  noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
+  noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
+  noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
+endfunction
+function! s:man_jump(forward) abort
+  let curr = b:man_curr
+  let name = a:forward ? 'man_next' : 'man_prev'
+  let pair = get(b:, name, '')
+  if empty(pair) | return | endif
+  exe 'Man ' . pair[1] . ' ' . pair[0]
+  if a:forward
+    let b:man_prev = curr
+  else
+    let b:man_next = curr
   endif
+endfunction
+function! s:man_cursor() abort
+  let bnr = bufnr()
+  let curr = b:man_curr
+  let word = expand('<cWORD>')  " possibly includes trailing puncation
+  let page = matchstr(word, '\f\+')  " from highlight group
+  let pnum = matchstr(word, '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
+  exe 'Man ' . pnum . ' ' . page
+  if bnr != bufnr()  " original buffer
+    let b:man_prev = curr
+    let b:man_curr = [page, pnum]
+  endif
+endfunction
+
+" Popup tab with man page and navigation tools
+" Note: See also .bashrc man(). These utils are expanded from vim-superman.
+" Note: Apple will have empty line then BUILTIN(1) on second line, but linux
+" will show as first line BASH_BUILTINS(1), so we search the first two lines.
+function! shell#cmd_man(...) abort
+  let g:ft_man_folding_enable = 1  " see :help Man
+  let current = @%  " current file
+  let page = a:1
+  if a:0  " input man
+    let page = a:1
+  else  " default man
+    let page = utils#input_default('Man page', 'shellcmd', expand('<cword>'))
+  endif
+  if empty(page) | return | endif
+  tabedit | set filetype=man | exe 'Man ' . page
+  if line('$') <= 1
+    silent! quit
+    call file#open_drop(current)
+    echom "man.vim: nothing returned from 'man " . page . "'"
+  endif
+  if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
+    if has('macunix') && page !=# 'builtin'
+      Man bash
+    endif
+    let @/ = '^       ' . page . ' [.*$'
+    normal! n
+  endif
+endfunction
+function! shell#fzf_man() abort
+  call fzf#run(fzf#wrap({
+    \ 'source': getcompletion('', 'shellcmd'),
+    \ 'options': '--no-sort --prompt="man> "',
+    \ 'sink': function('shell#cmd_man'),
+    \ }))
 endfunction
 
 " Setup job popup window
@@ -82,67 +161,4 @@ function! shell#job_win(cmd, ...) abort
   endif
   let b:popup_job = job_start(cmds, opts)
   exe winnr('#') . 'wincmd w'
-endfunction
-
-" Man page utilities
-" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
-" page to record navigation history. Order of assignment below is critical.
-function! s:man_cursor() abort
-  let bnr = bufnr()
-  let curr = b:man_curr
-  let word = expand('<cWORD>')  " possibly includes trailing puncation
-  let page = matchstr(word, '\f\+')  " from highlight group
-  let pnum = matchstr(word, '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
-  exe 'Man ' . pnum . ' ' . page
-  if bnr != bufnr()  " original buffer
-    let b:man_prev = curr
-    let b:man_curr = [page, pnum]
-  endif
-endfunction
-function! s:man_jump(forward) abort
-  let curr = b:man_curr
-  let name = a:forward ? 'man_next' : 'man_prev'
-  let pair = get(b:, name, '')
-  if empty(pair) | return | endif
-  exe 'Man ' . pair[1] . ' ' . pair[0]
-  if a:forward
-    let b:man_prev = curr
-  else
-    let b:man_next = curr
-  endif
-endfunction
-
-" Show and setup shell man page
-" Note: See also .bashrc man(). These utils are expanded from vim-superman.
-" Note: Apple will have empty line then BUILTIN(1) on second line, but linux
-" will show as first line BASH_BUILTINS(1), so we search the first two lines.
-function! shell#man_page(tab, ...) abort
-  let file = @%
-  let page = a:0 ? a:1 : utils#input_default('Man page', 'shellcmd', expand('<cword>'))
-  if empty(page) | return | endif
-  if a:tab | tabedit | endif
-  set filetype=man
-  exe 'Man ' . page
-  if line('$') <= 1
-    silent! quit
-    call file#open_drop(file)
-  endif
-  if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
-    if has('macunix') && page !=# 'builtin'
-      Man bash
-    endif
-    let @/ = '^       ' . page . ' [.*$'
-    normal! n
-  endif
-endfunction
-function! shell#man_setup(...) abort
-  let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
-  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
-  let b:man_curr = [page, pnum]
-  setlocal tabstop=8
-  setlocal softtabstop=8
-  setlocal shiftwidth=8
-  noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
-  noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
-  noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
 endfunction

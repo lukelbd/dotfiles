@@ -509,17 +509,19 @@ augroup END
 " Vim command windows, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " See: https://stackoverflow.com/a/41168966/4970632
+command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
+command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
 nnoremap <Leader>. :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
-nnoremap <Leader>V <Cmd>call vim#vim_page()<CR>
+nnoremap <Leader>V <Cmd>call vim#vim_help()<CR>
 nnoremap <Leader>n <Cmd>Maps<CR>
 nnoremap <Leader>N <Cmd>Commands<CR>
-nnoremap <Leader>m <Cmd>call shell#help_page(1)<CR>
-nnoremap <Leader>M <Cmd>call shell#man_page(1)<CR>
+nnoremap <Leader>m <Cmd>call shell#fzf_help()<CR>
+nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
 
 " Cycle through location list options
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
