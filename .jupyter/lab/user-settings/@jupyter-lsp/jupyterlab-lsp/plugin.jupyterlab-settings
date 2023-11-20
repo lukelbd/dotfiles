@@ -74,7 +74,10 @@
                 "pylsp.plugins.mccabe.enabled": false,
                 "pylsp.plugins.mccabe.threshold": 15,
                 "pylsp.plugins.preload.enabled": false,
-                "pylsp.plugins.preload.modules": [],
+                "pylsp.plugins.preload.modules": [
+                    "pandas",
+                    "proplot"
+                ],
                 "pylsp.plugins.pycodestyle.enabled": false,
                 "pylsp.plugins.pycodestyle.exclude": [],
                 "pylsp.plugins.pycodestyle.filename": [],

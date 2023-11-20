@@ -1669,15 +1669,13 @@ endif
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 if s:plug_active('vim-lsp')
   " Autocommands and maps
+  " autocmd User lsp_setup  " see vim-lsp readme (necessary?)
+  " \ call lsp#register_server({'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']})
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   augroup lsp_style
     au!
-    autocmd User lsp_float_opened call popup_setoptions(
-      \ lsp#ui#vim#output#getpreviewwinid(), s:popup_options
-    \ )  " apply border to popup
-    " autocmd User lsp_setup call lsp#register_server(
-    "   \ {'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']}
-    " \ )  " see vim-lsp readme (necessary?)
+    autocmd User lsp_float_opened
+      \ call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   noremap gD gdzv<Cmd>noh<CR>
@@ -1694,6 +1692,19 @@ if s:plug_active('vim-lsp')
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   " Lsp and server settings
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " use :CheckHealth instead
+  " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples
+  let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'
+  let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
+  let s:python_settings = {'pylsp.plugins.jedi.auto_import_modules': ['pandas', 'numpy']}
+  let s:julia_settings = {}
+  let s:bash_settings = {}
+  let s:tex_settings = {}
+  let g:lsp_settings = {
+    \ 'pylsp': {'workspace_config': {'pylsp': s:python_settings}},
+    \ 'julia-language-server': {'workspace_config': {'julia-language-server': s:julia_settings}},
+    \ 'bash-language-server': {'workspace_config': {'bash-language-server': s:bash_settings}},
+    \ 'texlab': {'workspace_config': {'texlab': s:tex_settings}},
+  \ }
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
@@ -1702,20 +1713,12 @@ if s:plug_active('vim-lsp')
   let g:lsp_fold_enabled = 0  " not yet tested, requires 'foldlevel', 'foldlevelstart'
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
+  let g:lsp_inlay_hints_enabled = 0  " use inline hints
   let g:lsp_max_buffer_size = 2000000  " decrease from 5000000
   let g:lsp_preview_float = 1  " floating window
   let g:lsp_preview_fixup_conceal = -1  " fix window size in terminal vim
   let g:lsp_signature_help_enabled = 1  " sigature help
   let g:lsp_signature_help_delay = 100  " milliseconds
-  let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
-  let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'
-  " let g:lsp_inlay_hints_enabled = 1  " use inline hints
-  " let g:lsp_settings = {
-  " \   'pylsp': {'workspace_config': {'pylsp': {}}}
-  " \   'texlab': {'workspace_config': {'texlab': {}}}
-  " \   'julia-language-server': {'workspace_config': {'julia-language-server': {}}}
-  " \   'bash-language-server': {'workspace_config': {'bash-language-server': {}}}
-  " \ }
 endif
 
 " Lsp completion settings (see :help ddc-options). Note underscore seems to
