@@ -1652,21 +1652,18 @@ if &g:foldenable || s:plug_active('FastFold')
 endif
 
 " Lsp integration settings
-" Warning: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
-" cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
-" native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
-" Todo: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
-" 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow.
-" Should install with mamba instead of vim-lsp-settings :LspInstallServer command.
-" Todo: Implement server-specific settings on top of defaults via 'vim-lsp-settings'
-" plugin, e.g. try to run faster version of 'texlab'. Can use g:lsp_settings or
-" vim-lsp-settings/servers files in .config. See: https://github.com/mattn/vim-lsp-settings
 " Note: The below autocmd gives signature popups the same borders as hover popups.
 " Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
 " so below behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
 " Note: Highlighting under keywords required for reference jumping with [d and ]d but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
+" Warning: Servers are 'pylsp', 'bash-language-server', 'vim-language-server'. Tried
+" 'jedi-language-server' but had issues on linux, and tried 'texlab' but was slow. Note
+" some cannot be installed with mamba and need vim-lsp-swettings :LspInstallServer.
+" Warning: foldexpr=lsp#ui#vim#folding#foldexpr() foldtext=lsp#ui#vim#folding#foldtext()
+" cause insert mode slowdowns even with g:lsp_fold_enabled = 0. Now use fast fold with
+" native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
 if s:plug_active('vim-lsp')
   " Autocommands and mappings
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>
@@ -1692,11 +1689,10 @@ if s:plug_active('vim-lsp')
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   " Lsp and server settings
+  " See: https://github.com/python-lsp/python-lsp-server/issues/477
   " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
   " shown in :CheckHelath. Try below when debugging (should disable :LspHover)
   " let s:pylsp_settings = {'plugins': {'jedi_hover': {'enabled': v:false}}}
-  let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'
-  let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
   let s:pylsp_settings = {
     \ 'configurationSources': ['flake8'],
     \ 'plugins': {'jedi': {'auto_import_modules': ['numpy', 'pandas', 'matplotlib', 'proplot']}},
@@ -1710,6 +1706,8 @@ if s:plug_active('vim-lsp')
     \ 'julia-language-server': {'workspace_config': {'julia-language-server': s:julia_settings}},
     \ 'bash-language-server': {'workspace_config': {'bash-language-server': s:bash_settings}},
   \ }
+  let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
+  let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'  " move here next?
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
   let g:lsp_diagnostics_signs_enabled = 0  " disable annoying signs
