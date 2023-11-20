@@ -8,7 +8,7 @@
 # Note '.ignore' seems to work in either $HOME or in $HOME/.config after testing.
 shopt -s nullglob
 configs=(pep8 black isort)  # required
-exclude=(README.md REGEXES.md .gitignore environment.yml envs backup cleanup setup)
+exclude=(.gitignore backup cleanup setup envs environment.yml)
 dotfiles=$HOME/dotfiles  # dotfiles directory
 cd "$dotfiles" || {
   echo "Error: dotfiles repo should be cloned into \$HOME."
@@ -29,6 +29,7 @@ nvimroot=$HOME/.config/nvim
 # NOTE: Moves existing stuff to backup storage
 for name in "${names[@]}"; do  # iterate through files
   [[ " ${exclude[*]} " =~ " $name " ]] && continue
+  [[ "$name" =~ \.(md|txt|rst)$ ]] && continue
   file=$dotfiles/$name
   [[ .gitignore.default == "$name"  ]] && name=.gitignore
   [[ " ${configs[*]} " =~ " $name " ]] && name=.config/$name

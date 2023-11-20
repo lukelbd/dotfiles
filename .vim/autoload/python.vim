@@ -11,7 +11,7 @@ function! python#dict_to_kw(invert, ...) abort range
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
   let firstcol = col("'" . marks[0]) - 1  " first column, note ' really means ` here
   let lastcol = len(getline("'" . marks[1])) - 1  " last selection column
-  let [firstline, lastline] = sort([a:firstline, a:lastline])
+  let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
   for lnum in range(firstline, lastline)
     let [line, prefix, suffix] = [getline(lnum), '', '']
     if lnum == firstline && lnum == lastline  " vint: -ProhibitUsingUndeclaredVariable
@@ -51,17 +51,15 @@ function! python#dict_to_kw_expr(invert) abort
   return utils#motion_func('python#dict_to_kw', [a:invert, mode()])
 endfunction
 
-" Return fold expression results or trigger results
-" Note: Here 'fold_edit' refreshes folds after calling :edit
+" Folding expression to add global constants and docstrings to SimpylFold cache
+" Note: Here 'fold_edit' refreshes folds after calling :edit and for some reason
+" is required to open files with overridden folds (especially BufWritePost).
+" Warning: Only call this when SimpylFold updates to improve performance. Might break
+" if SimpylFold renames internal cache variable (monitor). Note
 function! s:fold_exists(lnum) abort
   return exists('b:SimpylFold_cache')
     \ && !empty(b:SimpylFold_cache[a:lnum])
     \ && !empty(b:SimpylFold_cache[a:lnum]['foldexpr'])  " note empty(0) returns 1
-endfunction
-function! python#fold_edit() abort
-  if &filetype !=# 'python' | return | endif
-  call SimpylFold#Recache()
-  doautocmd BufWritePost
 endfunction
 function! python#fold_expr(lnum) abort
   let recache = !exists('b:SimpylFold_cache')
@@ -69,10 +67,6 @@ function! python#fold_expr(lnum) abort
   if recache | call python#fold_cache() | endif
   return b:SimpylFold_cache[a:lnum]['foldexpr']
 endfunction
-
-" Fold groups of constants using SimpylFold cache
-" Warning: Only call this when SimpylFold updates to improve performance. Might break
-" if SimpylFold renames internal cache variable (monitor). Note
 function! python#fold_cache() abort
   let lnum = 1
   let cache = b:SimpylFold_cache
@@ -82,7 +76,7 @@ function! python#fold_cache() abort
     if s:fold_exists(lnum) | let lnum += 1 | continue | endif
     let line = getline(lnum)
     let group = []
-    " Docstring fold (e.g. _docstring_snippet = """...)
+    " Docstring fold (e.g. _docstring_snippet = '''...)
     let [_, _, pos] = matchstrpos(line, '^\(#\|\s\)\@!.*' . docstring)
     if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
       call add(group, lnum)
@@ -111,16 +105,17 @@ function! python#fold_cache() abort
     if len(group) > 1  " constant group found
       let cache[group[0]]['foldexpr'] = '>1'  " fold start
       let cache[group[-1]]['foldexpr'] = '<1'  " fold end
-      for value in range(group[1], group[-2])  " avoid overwriting 'lnum'
-        let cache[value]['foldexpr'] = 1
+      for value in range(group[1], group[-2])
+        let cache[value]['foldexpr'] = 1  " inner fold
       endfor
     endif
     let lnum += 1  " e.g. termination of constant group
   endwhile
 endfunction
 
-" Return indication whether a jupyter connection is active
-" Note: This uses private variable _jupyter_session. Should monitor for changes.
+" Initiate jupyter-vim connection using the file matching this directory or a parent
+" Note: This relies on automatic connection file naming in jupyter_[qt|]console.py.
+" Also depends on private variable _jupyter_session. Should monitor for changes.
 " Note: The jupyter-vim plugin offloads connection file searching to jupyter_client's
 " find_connection_file(), which selects the most recently accessed file from the glob
 " pattern. Therefore pass the entire pattern to jupyter#Connect() rather than the file.
@@ -135,9 +130,6 @@ function! python#has_jupyter() abort
     return 0
   endif
 endfunction
-
-" Initiate a jupyter-vim connection using the file matching this directory or a parent
-" Note: Below relies on automatic connection file naming in jupyter_[qt|]console.py
 function! python#init_jupyter() abort
   let parent = 0
   let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
@@ -204,4 +196,20 @@ endfunction
 " For <expr> map accepting motion
 function! python#run_motion_expr(...) abort
   return utils#motion_func('python#run_motion', a:000)
+endfunction
+
+" Split docstrings over multiple lines
+" Note: This is used to adjust vim-pydocstring without using complicated template files.
+" Use 'timer_start' to avoid race condition with plugin job (see ftplugin/python.vim).
+" Note: This ensures correct indentation after line break. Below shows alternative
+" approach using 'gnd' and auto-indent by adding newline to @" match via @= and using
+" indent-preserving paste ]p. See https://stackoverflow.com/a/2783670/4970632
+" exe 'global/' . regex . '/normal! gnd"="\n" . @"' . '\<CR>' . ']p'
+function! python#split_docstrings(...) abort
+  let regex = '["'']\{3}\n\@!\zs.*$'
+  let cmd = "normal! gnc\<CR>\<C-r>\""
+  exe 'global/' . regex . '/' . cmd
+  let regex = '\(\(^\|\_s\)[frub]*\)\@<!'
+  let regex = regex . '["'']\{3}\s*$'
+  exe 'global/' . regex . '/' . cmd
 endfunction

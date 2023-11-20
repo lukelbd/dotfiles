@@ -59,12 +59,6 @@ function! utils#input_default(prompt, funcname, default) abort
   return input(prompt, '', 'customlist,utils#input_list')
 endfunction
 
-" Set up command for repetition
-" Todo: Finish writing this function for e.g. [G and ]G
-function! utils#repeat_command() abort
-  :
-endfunction
-
 " Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
 " used to override fzf marks command and support jumping to existing tabs.
 " See: https://stackoverflow.com/a/49447600/4970632
@@ -84,11 +78,13 @@ function! utils#find_snr(regex) abort
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)
-" Note: Use this approach rather than adding line range as physical arguments and
-" calling with call call(func, firstline, lastline, ...) so that funcs can still be
-" invoked manually with V<motion>:call func(). This is the more standard paradigm.
+" Note: :call call(function, args) with range seems to execute line-by-line instead of
+" entire block which causes issues with some functions. So use below clunky method.
+" Also ensure functions accept :[range]call function(args) for consistency with vim
+" standard paradigm and so they can be called with e.g. V<motion>:call func().
 function! utils#motion_func(funcname, args) abort
-  let g:operator_func_signature = a:funcname . '(' . string(a:args)[1:-2] . ')'
+  let funcstring = a:funcname . '(' . string(a:args)[1:-2] . ')'
+  let s:operator_func = funcstring
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
     return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'
@@ -103,22 +99,20 @@ endfunction
 " Execute the function name and call signature passed to utils#motion_func.
 " This is generally invoked inside an <expr> mapping (see e.g. python.vim) .
 " Note: Only motions can cause backwards firstline to lastline order. Manual calls
-" to the function will have sorted lines. So this sorts for safety.
+" to the function will have sorted lines. This sorts the range for safety.
 function! utils#operator_func(type) range abort
-  if empty(a:type)  " default behavior
-      let firstline = a:firstline
-      let lastline  = a:lastline
-  elseif a:type =~? 'line\|char\|block'  " builtin g@ type strings
-      let firstline = line("'[")
-      let lastline  = line("']")
+  if empty(a:type) " default behavior
+      let line1 = a:firstline
+      let line2 = a:lastline
+  elseif a:type =~? 'line\|char\|block' " builtin g@ type strings
+      let line1 = line("'[")
+      let line2 = line("']")
   else
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''
   endif
-  if firstline > lastline
-    let [firstline, lastline] = [lastline, firstline]
-  endif
-  exe firstline . ',' . lastline . 'call ' . g:operator_func_signature
+  let [line1, line2] = sort([line1, line2], 'n')
+  exe line1 . ',' . line2 . 'call ' . s:operator_func
   return ''
 endfunction
 

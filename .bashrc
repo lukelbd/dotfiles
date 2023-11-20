@@ -376,21 +376,33 @@ export PYTHONUNBUFFERED=1  # must set this or python prevents print statements f
 export PYTHONBREAKPOINT=IPython.embed  # use ipython for debugging! see: https://realpython.com/python37-new-features/#the-breakpoint-built-in
 export MAMBA_NO_BANNER=1  # suppress goofy banner as shown here: https://github.com/mamba-org/mamba/pull/444
 export MPLCONFIGDIR=$HOME/.matplotlib  # same on every machine
-_dirs_tools=(ncparallel mppnccombine)
-_dirs_shared=(cmip-data reanalysis-data idealized coupled)
-_dirs_projects=(timescales persistence constraints relationships hierarchy carbon-cycle)
-for _project in "${_dirs_tools[@]}"; do
-  if [ -r "$HOME/models/$_project" ]; then
-    export PATH=$HOME/models/$_project:$PATH
-  elif [ -r "$HOME/$_project" ]; then
-    export PATH=$HOME/$_project:$PATH
+
+# Add custom research pathsw
+# NOTE: Paradigm is to put models in 'models', raw data in 'data' or scratch, shared
+# research utilities or general ideas in 'shared', and project-specific utilities
+# and ideas in 'research'. Could also try 'papers' and 'projects' but this works.
+_dirs_models=(ncparallel mppnccombine)
+_dirs_shared=(reanalysis-data cmip-data observed idealized coupled)
+_dirs_research=(timescales persistence constraints relationships hierarchy carbon-cycle)
+for _name in "${_dirs_models[@]}"; do
+  if [ -r "$HOME/models/$_name" ]; then
+    export PATH=$HOME/models/$_name:$PATH
+  elif [ -r "$HOME/$_name" ]; then
+    export PATH=$HOME/$_name:$PATH
   fi
 done
-for _project in "${_dirs_shared[@]}" "${_dirs_projects[@]}"; do
-  if [ -r "$HOME/research/$_project" ]; then
-    export PYTHONPATH=$HOME/research/$_project:$PYTHONPATH
-  elif [ -r "$HOME/$_project" ]; then
-    export PYTHONPATH=$HOME/$_project:$PYTHONPATH
+for _name in "${_dirs_shared[@]}"; do
+  if [ -r "$HOME/shared/$_name" ]; then
+    export PYTHONPATH=$HOME/shared/$_name:$PYTHONPATH
+  elif [ -r "$HOME/$_name" ]; then
+    export PYTHONPATH=$HOME/$_name:$PYTHONPATH
+  fi
+done
+for _name in "${_dirs_research[@]}"; do
+  if [ -r "$HOME/research/$_name" ]; then
+    export PYTHONPATH=$HOME/research/$_name:$PYTHONPATH
+  elif [ -r "$HOME/$_name" ]; then
+    export PYTHONPATH=$HOME/$_name:$PYTHONPATH
   fi
 done
 
@@ -653,20 +665,20 @@ bytes2human() {
 
 # Helper function: return if directory is empty or essentially
 # empty. See: https://superuser.com/a/352387/506762
-empty() {
-  local contents
-  [ -d "$1" ] || return 0  # does not exist, so empty
-  read -r -a contents < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
-  if [ ${#contents[@]} -lt 2 ] && [ "${contents##*/}" == .DS_Store ]; then
-    return 0  # this can happen even if you delete all files
+isempty() {
+  local item items
+  read -r -a items < <(find "$1" -maxdepth 1 -mindepth 1 2>/dev/null)
+  item="${items[0]##*/}"
+  if [ ${#items[@]} -le 1 ] && { [ -z "$item" ] || [ "$item" == .DS_Store ]; }; then
+    echo "Path '$1' is empty." && return 0
   else
-    return 1  # non-empty
+    echo "Path '$1' is not empty." && return 1
   fi
 }
 
 # Either pipe the output of the remaining commands into the less pager
 # or open the files. Use the latter only for executables on $PATH
-less() {
+function less() {
   if command -v "$1" &>/dev/null && ! [[ "$1" =~ '/' ]]; then
     "$@" 2>&1 | command less  # pipe output of command
   else
@@ -678,7 +690,7 @@ less() {
 # To avoid recursion see: http://blog.jpalardy.com/posts/wrapping-command-line-tools/
 # Note some commands (e.g. latexdiff) return bad exit code when using --help so instead
 # test line length to guess if it is an error message stub or contains desired info.
-help() {
+function help() {
   local result
   [ $# -eq 0 ] && echo "Requires argument." && return 1
   if builtin help "$@" &>/dev/null; then
@@ -697,7 +709,7 @@ help() {
 # 'builtin' page when 'bash' page actually has relevent docs whiole on linux 'builtin'
 # has the docs. Also note man command should print nice error message if nothing found.
 # See this answer and comments: https://unix.stackexchange.com/a/18092/112647
-man() {
+function man() {
   local search arg="$*"
   [[ "$arg" =~ " " ]] && arg=${arg//-/ }
   [ $# -eq 0 ] && echo "Requires one argument." && return 1
@@ -709,7 +721,8 @@ man() {
   fi
 }
 
-# Prevent git stash from running without 'git stash push' and test message length
+# Prevent git stash from running without 'git stash push' and test message length.
+# Note 'git stash --staged push' will stash only staged changes. Should use more often.
 # https://stackoverflow.com/q/48751491/4970632
 git() {
   if [ "$#" -eq 1 ] && [ "$1" == stash ]; then
@@ -933,20 +946,20 @@ f2() { _find 2 "$@"; }  # custom find with no excludes
 #-----------------------------------------------------------------------------#
 # Git-related utilities
 #-----------------------------------------------------------------------------#
-# Differencing utilities. Here 'gs' prints git status-style directory diffs,
-# 'gd' prints git diff-style file diffs, 'ds' prints recursive directory status
+# Differencing utilities. Here 'fs' prints git status-style directory diffs,
+# 'fd' prints git diff-style file diffs, 'ds' prints recursive directory status
 # differences, and 'dd' prints basic directory modification time diferences.
 # NOTE: The --textconv option described here: https://stackoverflow.com/a/52201926/4970632
 # NOTE: Tried using :(exclude) and :! but does not work with no-index. See following:
 # https://stackoverflow.com/a/58845608/4970632 and https://stackoverflow.com/a/53475515/4970632
 hash colordiff 2>/dev/null && alias diff='command colordiff'  # use --name-status to compare directories
-gs() {  # git status-style file differences
+fs() {  # git status-style file differences
   command git --no-pager diff \
     --textconv --no-index --color=always --name-status "$@" 2>&1 | \
     grep -v -e 'warning:' -e '.vimsession' -e '*.git' -e '*.svn' -e '*.sw[a-z]' \
     -e '*.DS_Store' -e '*.ipynb_checkpoints' -e '.*__pycache__'
 }
-gd() {  # git diff-style file differences
+fd() {  # git diff-style file differences
   command git --no-pager diff \
     --textconv --no-index --color=always "$@" 2>&1 \
     | grep -v -e 'warning:' | \
@@ -1029,7 +1042,7 @@ refactor() {
   local cmd file files result
   $_macos && cmd=gsed || cmd=sed
   [ $# -eq 2 ] \
-    || { echo 'Error: refactor() requires two input argument.'; return 1; }
+    || { echo 'Error: refactor() requires two input arguments.'; return 1; }
   result=$(f0 . '*' -print -exec $cmd -E -n "s@^@  @g;s@$1@$2@gp" {} \;) \
     || { echo "Error: Search $1 to $2 failed."; return 1; }
   readarray -t files < <(echo "$result"$'\nEOF' | \

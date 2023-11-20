@@ -13,58 +13,40 @@ endif
 scriptencoding utf-8  " non-ascii character below
 syntax sync minlines=500  " increase highlight accuracy
 
-" Conceal backslash commands. Only matchadd works for some reason. Also ignores e.g.
-" \command1\command2, which would otherwise be unreadable and is common in macros.
-" Warning: This will make highlight searches really weird if you make the 'priority'
-" (third argument, default 10) higher than the :hlsearch priority of 0. Note conceal
-" :syntax match instead of matchadd() fails, since wherever backslash is concealed,
-" 'overwrites' existing match. See: https://vi.stackexchange.com/q/5696/8084
-call matchadd(
-  \ 'Conceal',
-  \ '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=', 0, -1, {'conceal': ''})
-
-" Add highlighting for empty line preceding paragraph or section (i.e. ignoring empty
-" lines before commands). Helpful for when navigating huge documents.
-" Note: Here matchadd() is required instead of syntax match for some reason. Also
-" note complex lookbehinds significantly slow things down so keep simple.
-highlight Paragraph ctermfg=NONE ctermbg=Green | call matchadd(
-  \ 'Paragraph',
-  \ '^\s*\n\(\s*$\)\@!')
+" Conceal backslashes. Skips e.g. \cmd1\cmd2 but that is helpful for macros.
+" Note: Critical to make 'priority' (third argument, default 10) same as :hlsearch
+" priority (0) or matches are weird. Note :syntax match fails since concealed backslash
+" overwrites any existing matches. See: https://vi.stackexchange.com/q/5696/8084
+call matchadd('Conceal',
+  \ '\(%.*\|\\[a-zA-Z@]\+\|\\\)\@<!\zs\\\([a-zA-Z@]\+\)\@=',
+  \ 0, -1, {'conceal': ''})
 
 " Disable spellcheck within yellow-highlighted curly brace commands (e.g. preamble)
 " but do not disable spellcheck within environments like textbf and naked braces {}.
-" Note: Here just copied the :SyntaxFile line and removed the 'transparent'
-" flag. Should revisit and consider expanding.
+" Note: Here just copied the $VIMRUNTIME/syntax/tex.vim line and removed the
+" 'transparent' flag. Could revisit and consider improving but so far so good.
 syntax region texMatcherNM matchgroup=Delimiter
   \ start='{' skip='\\\|\[{}]' end="}"
-  \ contains=@texMatchNMGroup,texError,@NoSpell
+  \ contains=@texMatchNMGroup,@NoSpell,texError
 
-" Enable syntax folding of abstracts authors and captions. By default only begin..end
-" begin..end texAbstract environment is folded and only outside of the preamble
-" Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim
-" Note: Caption texStatement is consistent with existing \label{} and \ref{} assignment
-" to texStatement. Also without this folds end on \end{figure} (unsure why).
-" required or else closing bracket seems to not work, think
-" statements have
-syntax region texAbstracts matchgroup=texSection
-  \ start='\\abstract\s*{' end='}'
-  \ contains=@texFoldGroup,@Spell fold
-syntax region texAuthors matchgroup=texSection
-  \ start='\\authors\s*{' end='}'
-  \ contains=@texFoldGroup,@Spell fold
-syntax region texCaption matchgroup=texStatement
-  \ start='\\caption\s*{' end='}'
-  \ contains=@texFoldGroup,@Spell fold
-syntax cluster texFoldGroup add=texAbstracts
-syntax cluster texFoldGroup add=texAuthors
-syntax cluster texFoldGroup add=texCaption
-syntax cluster texPreambleMatchGroup add=texAbstracts
-syntax cluster texPreambleMatchGroup add=texAbstract
-syntax cluster texPreambleMatchGroup add=texAuthors
+" Comment out blocks of texts. Skip over empty lines or comment-only lines in-between
+" region however do not start or end region on those lines. This is useful during
+" revisions or when using templates with huge commented-out instruction blocks.
+" Note: Critical to use contains=texComment since contains=@texFoldGroup creates nested
+" comment zones that require extra lookbehind 'start' regex. Not sure why this works.
+" Note: Have to wrap 'start' in zero-length atom so end can be found on same line,
+" and crazy 'end' was created through trial-and-error (not sure why \S\@= needed).
+syntax region texCommentZone transparent
+  \ start='\(^\s*%\s\+\S\)\@='
+  \ end='^\s*%\s\+\S.*\(\(\%$\|\n\s*\|%\s*$\)\+\(\%$\|\S\@=\([^%]\|%\S\)\)\)\@='
+  \ keepend contains=@NoSpell,texComment fold
+syntax cluster texFoldGroup add=texCommentZone
+syntax cluster texPreambleMatchGroup add=texCommentZone
 
 " Enable syntax folding of figures and tables. By default only math environments
-" are folded (see TexNewMathZone below and in $VIMRUNTIME/syntax.vim)
-" Note: The 'keepend' is critical or else zone seems to persist beyond figures.
+" are folded (see TexNewMathZone below and in $VIMRUNTIME/syntax/tex.vim)
+" Note: The 'keepend' is critical or else zone can persist beyond figures. Not sure
+" why... supposedly just ends nested environments when parent environment is found.
 syntax region texFigureZone transparent
   \ start='\\begin\s*{\s*figure\*\?\s*}' end='\\end\s*{\s*figure\*\?\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
@@ -77,6 +59,28 @@ syntax region texTabular transparent
 syntax cluster texFoldGroup add=texFigureZone
 syntax cluster texFoldGroup add=texTableZone
 syntax cluster texFoldGroup add=texTabular
+
+" Enable syntax folding of abstracts authors and captions. By default only begin..end
+" begin..end texAbstract environment is folded and only outside of the preamble
+" Note: Adapted from texTitle and texAbstract in $VIMRUNTIME/syntax/tex.vim. Here
+" 'matchgroup' highlights the 'start' and 'end' patterns differently from region.
+" Note: Caption texStatement is consistent with existing \label{} and \ref{} assignment
+" to texStatement. Also without this folds end on \end{figure} (unsure why).
+syntax region texAuthors matchgroup=texSection
+  \ start='\\authors\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
+syntax region texAbstracts matchgroup=texSection
+  \ start='\\abstract\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
+syntax region texCaption matchgroup=texStatement
+  \ start='\\caption\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
+syntax cluster texFoldGroup add=texAuthors
+syntax cluster texFoldGroup add=texAbstracts
+syntax cluster texFoldGroup add=texCaption
+syntax cluster texPreambleMatchGroup add=texAuthors
+syntax cluster texPreambleMatchGroup add=texAbstracts
+syntax cluster texPreambleMatchGroup add=texAbstract
 
 "------------------------------------------------------------------------------"
 " Original plugin

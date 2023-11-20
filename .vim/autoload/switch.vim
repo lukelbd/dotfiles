@@ -43,10 +43,9 @@ function! switch#autosave(...) abort
   if state == toggle
     return
   elseif toggle
-    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
     exe 'augroup autosave_' . bufnr('%')
       au!
-      exe 'au ' . cmds . ' <buffer> silent call file#update()'
+      exe 'autocmd InsertLeave,TextChanged <buffer> silent call file#update()'
     augroup END
   else
     exe 'augroup autosave_' . bufnr('%')

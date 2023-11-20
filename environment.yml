@@ -19,6 +19,8 @@
 # downloading macOS julia package. See: https://stackoverflow.com/a/59300263/4970632
 # NOTE: After installing julia, its package manager will use the conda environment,
 # so will not have clashes. See: https://stackoverflow.com/a/45947604/4970632
+# NOTE: Here 'doq' required for 'vim-pydocstring' auto docstring utility.
+# See: https://github.com/heavenshell/vim-pydocstring
 name: base
 channels:
   - conda-forge
@@ -32,7 +34,6 @@ dependencies:
   - pre-commit
   - vim
   - deno
-  - ctags
   - tmux
   - nco
   - cdo
@@ -61,9 +62,9 @@ dependencies:
   - notebook
   - jupytext
   - pandoc
-  - ctags
   - ripgrep
   - the_silver_searcher
+  - universal-ctags
   - nb_conda_kernels
   - executing>=1.0.0
   - jupyter_contrib_nbextensions
@@ -83,6 +84,7 @@ dependencies:
   - shellcheck
   - fortls
   - pip:
+    - doq
     - bashate
     - vim-vint
     - cf_units

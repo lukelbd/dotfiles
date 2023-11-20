@@ -9,7 +9,7 @@ function! s:parse_paths(prompt, level, ...)
   if a:0  " search input paths
     let paths = copy(a:000)
   elseif a:level > 1  " search current open files
-    let paths = tags#buffer_paths()
+    let paths = window#buffer_sort(tags#buffer_paths())
   elseif a:level > 0  " search current file project (file directory is fallback)
     let paths = [tag#find_root(@%)]
   else  " search current file directory
@@ -45,7 +45,7 @@ function! s:parse_grep(level, pattern, ...) abort
   let regex = s:parse_pattern(a:pattern)
   let paths = call('s:parse_paths', [0, a:level] + a:000)
   let paths = empty(paths) ? paths : add(paths, 'dummy.fzf')  " fix bug described above
-  return [regex . ' ' . join(paths, ' '), flags]
+  return [regex, join(paths, ' '), flags]
 endfunction
 function! s:parse_pattern(pattern)
   let regex = fzf#shellescape(a:pattern)  " similar to native but handles other shells
@@ -62,27 +62,30 @@ function! s:parse_pattern(pattern)
 endfunction
 
 " Call Ag or Rg from command
-" Todo: Only use search pattern? https://github.com/junegunn/fzf.vim/issues/346
+" Note: Use 'timer_start' to prevent issue where echom is hidden by fzf panel creation
+" Delayed function calls: https://vi.stackexchange.com/a/27032/8084
+" Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097
+function! s:echo_grep(regex, ...) abort
+  echom 'Grep ' . a:regex
+endfunction
 function! grep#call_ag(bang, level, depth, ...) abort
   let flags = '--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden'
-  let [cmd, extra] = call('s:parse_grep', [a:level] + a:000)
+  let [regex, paths, extra] = call('s:parse_grep', [a:level] + a:000)
   let extra .= a:depth ? ' --depth ' . (a:depth - 1) : ''
-  " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
-  " let opts = fzf#vim#with_preview(opts)
   let opts = fzf#vim#with_preview()
-  call fzf#vim#ag_raw(join([flags, extra, '--', cmd], ' '), opts, a:bang)  " bang uses fullscreen
+  call fzf#vim#ag_raw(join([flags, extra, '--', regex, paths], ' '), opts, a:bang)
+  call timer_start(1, function('s:echo_grep', [regex]))
 endfunction
 function! grep#call_rg(bang, level, depth, ...) abort
   let flags = '--ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden'
-  let [cmd, extra] = call('s:parse_grep', [a:level] + a:000)
+  let [regex, paths, extra] = call('s:parse_grep', [a:level] + a:000)
   let extra .= a:depth ? ' --max-depth ' . a:depth : ''
-  " let opts = a:level > 0 ? {'dir': expand('%:h')} : {}
-  " let opts = fzf#vim#with_preview(opts)
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
-  call fzf#vim#grep(join([head, flags, '--', cmd], ' '), opts, a:bang)  " bang uses fullscreen
+  call fzf#vim#grep(join([head, flags, '--', regex, paths], ' '), opts, a:bang)  " bang uses fullscreen
+  call timer_start(1, function('s:echo_grep', [regex]))
 endfunction
 
 " Call Rg or Ag from mapping (see also file.vim)

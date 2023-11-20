@@ -1,40 +1,15 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Inserting blank lines
-" See: https://github.com/tpope/vim-unimpaired
-function! edit#blank_up(count) abort
-  put!=repeat(nr2char(10), a:count)
-  ']+1
-  silent! call repeat#set("\<Plug>BlankUp", a:count)
-endfunction
-function! edit#blank_down(count) abort
-  put =repeat(nr2char(10), a:count)
-  '[-1
-  silent! call repeat#set("\<Plug>BlankDown", a:count)
-endfunction
-
-" Forward delete by tabs
-" Note: Idea is to try to enforce consistency with backspace-by-tabs
-function! edit#forward_delete() abort
-  let line = getline('.')
-  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
-    return repeat("\<Delete>", &tabstop)
-  else
-    return "\<Delete>"
-  endif
-endfunction
-
-" How much calculator. Native plugin only supports visual-mode but add motions here
+" Indent and calculator motion functions
+" Note: Native calculator only supports visual-mode but here add motions.
 " See: https://github.com/sk1418/HowMuch/blob/master/autoload/HowMuch.vim
 function! edit#how_much_expr(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
-" Indent multiple times
 function! edit#indent_items(dedent, count) range abort
   exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
-" For <expr> map accepting motion
 function! edit#indent_items_expr(...) abort
   return utils#motion_func('edit#indent_items', a:000)
 endfunction
@@ -58,6 +33,7 @@ function! edit#lang_map()
 endfunction
 
 " Set up temporary paste mode
+" Note: Removed automatically when insert mode is abandoned
 function! edit#paste_mode() abort
   let s:paste = &paste
   let s:mouse = &mouse
@@ -77,22 +53,23 @@ function! edit#paste_mode() abort
   return ''
 endfunction
 
-" Search replace without polluting history
-" Undoing this command will move the cursor to the first line in the range of
-" lines that was changed: https://stackoverflow.com/a/52308371/4970632
+" Search replace without history. Undo will move the cursor to the first line in the
+" range of lines that was changed: https://stackoverflow.com/a/52308371/4970632
 " Warning: Critical to replace line-by-line in reverse order in case substitutions
 " have different number of newlines. Cannot figure out how to do this in one command.
 function! edit#replace_regex(message, ...) range abort
-  let prevhist = @/
+  let search = @/  " hlsearch pattern
   let winview = winsaveview()
   for line in range(a:lastline, a:firstline, -1)
-    for i in range(0, a:0 - 2, 2)
-      keepjumps exe line . 's@' . a:000[i] . '@' . a:000[i + 1] . '@ge'
+    for idx in range(0, a:0 - 2, 2)
+      " vint: -ProhibitUsingUndeclaredVariable
+      let [regex, string] = a:000[idx:idx + 1]
+      keepjumps exe line . 's@' . regex . '@' . string . '@ge'
       call histdel('/', -1)
     endfor
   endfor
   echom a:message
-  let @/ = prevhist
+  let @/ = search
   call winrestview(winview)
 endfunction
 " For <expr> map accepting motion
@@ -100,13 +77,53 @@ function! edit#replace_regex_expr(...) abort
   return utils#motion_func('edit#replace_regex', a:000)
 endfunction
 
-" Reverse the selected lines
+" Reverse or sort the input lines
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
+function! edit#sort_lines() range abort
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  exe 'silent ' . line1 . ',' . line2 . 'sort'
+endfunction
 function! edit#reverse_lines() range abort
-  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
-  let num = empty(range) ? 0 : a:firstline - 1
-  exec 'silent ' . range . 'g/^/m' . num
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  let range = line1 == line2 ? '' : line1 . ',' . line2
+  let num = empty(range) ? 0 : line1 - 1
+  exe 'silent ' . range . 'g/^/m' . num
+endfunction
+" For <expr> map accepting motion
+function! edit#sort_lines_expr() range abort
+  return utils#motion_func('edit#sort_lines', a:000)
+endfunction
+function! edit#reverse_lines_expr(...) abort
+  return utils#motion_func('edit#reverse_lines', a:000)
+endfunction
+
+" Spell check under cursor
+" Note: This improves '1z=' to return nothing when called on valid words.
+" Note: If nothing passed and no manual count then skip otherwise continue.
+function! edit#spell_bad(...) abort
+  let word = a:0 ? a:1 : expand('<cword>')
+  let [fixed, which] = spellbadword(word)
+  return !empty(fixed)
+endfunction
+function! edit#spell_next(...) abort
+  let reverse = a:0 ? a:1 : 0
+  if !edit#spell_bad()
+    exe 'normal! ' . (reverse ? '[s' : ']s')
+  endif
+  call edit#spell_check(1)
+endfunction
+function! edit#spell_check(...) abort
+  if a:0 || v:count || edit#spell_bad()
+    let nr = a:0 ? a:1 : v:count1
+    let nr = nr ? string(nr) : ''
+    echom 'Spell check: ' . expand('<cword>')
+    if empty(nr)
+      call feedkeys('z=', 'n')
+    else
+      exe 'normal! ' . nr . 'z='
+    endif
+  endif
 endfunction
 
 " Swap characters or lines
@@ -132,7 +149,7 @@ function! edit#swap_lines(bottom) abort
   exe lnum + offset
 endfunction
 
-" Wrap the lines to 'count' columns rather than 'textwidth'
+" Wrap the lines to 'count' columns rather than 'text width'
 " Note: Could put all commands in feedkeys() but then would get multiple
 " commands flashing at bottom of screen. Also need feedkeys() because normal
 " doesn't work inside an expression mapping.

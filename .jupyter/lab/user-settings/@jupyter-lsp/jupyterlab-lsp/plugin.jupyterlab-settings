@@ -26,7 +26,7 @@
             "priority": 100,
             "serverSettings": {
                 "pylsp.configurationSources": [
-                    "pyflakes"
+                    "flake8"
                 ],
                 "pylsp.plugins.flake8.config": null,
                 "pylsp.plugins.flake8.enabled": true,
@@ -47,6 +47,12 @@
                 "pylsp.plugins.flake8.indentSize": null,
                 "pylsp.plugins.flake8.perFileIgnores": [],
                 "pylsp.plugins.flake8.select": null,
+                "pylsp.plugins.jedi.auto_import_modules": [
+                    "numpy",
+                    "pandas",
+                    "matplotlib",
+                    "proplot"
+                ],
                 "pylsp.plugins.jedi.extra_paths": [],
                 "pylsp.plugins.jedi.env_vars": null,
                 "pylsp.plugins.jedi.environment": null,
@@ -57,15 +63,16 @@
                 "pylsp.plugins.jedi_completion.eager": false,
                 "pylsp.plugins.jedi_completion.resolve_at_most": 10,
                 "pylsp.plugins.jedi_completion.cache_for": [
-                    "pandas",
                     "numpy",
-                    "tensorflow",
-                    "matplotlib"
+                    "pandas",
+                    "matplotlib",
+                    "proplot",
+                    "tensorflow"
                 ],
                 "pylsp.plugins.jedi_definition.enabled": true,
                 "pylsp.plugins.jedi_definition.follow_imports": true,
                 "pylsp.plugins.jedi_definition.follow_builtin_imports": true,
-                "pylsp.plugins.jedi_hover.enabled": false,
+                "pylsp.plugins.jedi_hover.enabled": true,
                 "pylsp.plugins.jedi_references.enabled": false,
                 "pylsp.plugins.jedi_signature_help.enabled": true,
                 "pylsp.plugins.jedi_symbols.enabled": false,

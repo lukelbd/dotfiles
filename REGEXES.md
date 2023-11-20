@@ -16,7 +16,6 @@ Fortran
 -------
 
 Try to convert fixed format line continuation indicators to Fortran 90.
-
 ```vim
 %s/\(\s*!.*\)\?\n\(\s*\)\(&\)\(\S*\)\s*/\4 \3\1\r  \2/ge
 ```
@@ -28,6 +27,7 @@ Add a space between markdown headers indicators and the header text.
 ```vim
 %s/#\([a-zA-Z0-9]\)/# \1/ge
 ```
+
 Vimscript
 ---------
 
