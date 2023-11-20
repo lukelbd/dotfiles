@@ -103,11 +103,10 @@ endfunction
 " Note: Native 'zm' and 'zr' accept commands but count is relative to current
 " fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below
+" Warning: Regenerating SimpylFold cache with manual SimpylFold#FoldExpr() call can
+" produce strange bug. Instead rely on FastFoldUpdate to fill the cache.
 function! fold#update_folds() abort
-  if &filetype ==# 'python'
-    silent! unlet! b:SimpylFold_cache
-    call python#fold_expr(1)
-  endif
+  silent! unlet! b:SimpylFold_cache
   FastFoldUpdate
 endfunction
 function! fold#set_defaults(...) abort

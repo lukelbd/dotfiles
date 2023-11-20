@@ -105,8 +105,8 @@ function! python#fold_cache() abort
     if len(group) > 1  " constant group found
       let cache[group[0]]['foldexpr'] = '>1'  " fold start
       let cache[group[-1]]['foldexpr'] = '<1'  " fold end
-      for value in range(group[1], group[-2])  " avoid overwriting 'lnum'
-        let cache[value]['foldexpr'] = 1
+      for value in range(group[1], group[-2])
+        let cache[value]['foldexpr'] = 1  " inner fold
       endfor
     endif
     let lnum += 1  " e.g. termination of constant group
