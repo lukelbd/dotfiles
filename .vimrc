@@ -1668,7 +1668,8 @@ endif
 " Note: Highlighting under keywords required for reference jumping with [d and ]d but
 " monitor for updates: https://github.com/prabirshrestha/vim-lsp/issues/655
 if s:plug_active('vim-lsp')
-  " Autocommands and maps
+  " Autocommands and mappings
+  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>
   " autocmd User lsp_setup  " see vim-lsp readme (necessary?)
   " \ call lsp#register_server({'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']})
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
@@ -1691,19 +1692,23 @@ if s:plug_active('vim-lsp')
   noremap <Leader>% <Cmd>CheckHealth<CR>
   noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
   " Lsp and server settings
-  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>  " use :CheckHealth instead
-  " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples
+  " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
+  " shown in :CheckHelath. Try below when debugging (should disable :LspHover)
+  " let s:pylsp_settings = {'plugins': {'jedi_hover': {'enabled': v:false}}}
   let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'
   let g:lsp_settings_servers_dir = '~/.vim_lsp_settings/servers'
-  let s:python_settings = {'pylsp.plugins.jedi.auto_import_modules': ['pandas', 'numpy']}
+  let s:pylsp_settings = {
+    \ 'configurationSources': ['flake8'],
+    \ 'plugins': {'jedi': {'auto_import_modules': ['numpy', 'pandas', 'matplotlib', 'proplot']}},
+  \ }
+  let s:texlab_settings = {}
   let s:julia_settings = {}
   let s:bash_settings = {}
-  let s:tex_settings = {}
   let g:lsp_settings = {
-    \ 'pylsp': {'workspace_config': {'pylsp': s:python_settings}},
+    \ 'pylsp': {'workspace_config': {'pylsp': s:pylsp_settings}},
+    \ 'texlab': {'workspace_config': {'texlab': s:texlab_settings}},
     \ 'julia-language-server': {'workspace_config': {'julia-language-server': s:julia_settings}},
     \ 'bash-language-server': {'workspace_config': {'bash-language-server': s:bash_settings}},
-    \ 'texlab': {'workspace_config': {'texlab': s:tex_settings}},
   \ }
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " redundant with ale
