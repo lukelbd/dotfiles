@@ -87,22 +87,34 @@ endfunction
 " since very common to open simple config files from other projects e.g. 'proplotrc'.
 " Note: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
-function! tag#set_tags() abort
-  let paths = []
-  for tnr in range(1, tabpagenr('$'))  " iterate through each tab
-    for bnr in tabpagebuflist(tnr)
-      let opts = getbufvar(bnr, 'gutentags_files', {})
-      let path = get(opts, 'ctags', '')
-      if getcwd() =~# expand('~/') && expand(resolve(path)) !~# expand('~/')
-        continue  " ignore individual files outside of home when inside home
-      endif
-      if getcwd() !~# expand('~/dotfiles') && expand(resolve(path)) =~# expand('~/dotfiles')
-        continue  " ignore individual files in dotfiles when outside of dotfiles
-      endif
-      if !empty(path) && index(paths, path) == -1
-        call add(paths, path)
-      endif
-    endfor
+function! tag#set_tags(...) abort
+  let bufs = []  " source buffers
+  let paths = []  " tag paths
+  if a:0
+    let args = copy(a:000[empty(type(a:1)):])
+    let toggle = empty(type(a:1)) ? a:1 : 1  " type zero i.e. number (see :help empty)
+    call extend(bufs, map(args, 'bufnr(v:val)'))
+  else
+    setglobal tags=
+    let toggle = 1
+    call map(range(1, tabpagenr('$')), 'extend(bufs, tabpagebuflist(v:val))')
+  endif
+  for bnr in bufs  " possibly
+    let opts = getbufvar(bnr, 'gutentags_files', {})
+    let path = get(opts, 'ctags', '')
+    if empty(path)
+      continue  " invalid path
+    endif
+    if getcwd() !~# expand('~/dotfiles') && expand(resolve(path)) =~# expand('~/dotfiles')
+      continue  " ignore individual files in dotfiles when outside of dotfiles
+    endif
+    if getcwd() =~# expand('~/') && expand(resolve(path)) !~# expand('~/')
+      continue  " ignore individual files outside of home when inside home
+    endif
+    if toggle  " append path
+      exe 'setglobal tags+=' . fnameescape(path)
+    else  " remove path
+      exe 'setglobal tags-=' . fnameescape(path)
+    endif
   endfor
-  let &g:tags = join(paths, ',')
 endfunction

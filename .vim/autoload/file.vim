@@ -77,10 +77,15 @@ function! file#open_recent() abort
   if files[0] =~# '^#'
     call remove(files, 0)
   endif
+  if exists('*RelativePath')
+    call map(files, 'RelativePath(v:val)')
+  else
+    call map(files, 'fnamemodify(v:val, ":~:.")')
+  endif
   call fzf#run(fzf#wrap({
     \ 'sink': function('s:open_recent_sink'),
     \ 'source' : files,
-    \ 'options': '--no-sort --prompt="Recent> "',
+    \ 'options': '--no-sort --prompt="Global Hist> "',
     \ }))
 endfunction
 function! s:open_recent_sink(path) abort

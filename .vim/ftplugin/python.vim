@@ -28,11 +28,15 @@ noremap <expr> <buffer> g{ python#dict_to_kw_expr(0)
 noremap <expr> <buffer> g} python#dict_to_kw_expr(1)
 
 " Define python vim-surround macros
+" Todo: Support [frub]* regex delimiters by adding succinct#add_delims() parameter
+" to bypass regex escape and adding [] and *?+ support to succinct#process_value().
 call succinct#add_delims({
   \ 'l': "list(\r)",
   \ 't': "tuple(\r)",
-  \ 'd': '"""' . "\r" . '"""',
-  \ 'D': '"""' . "\r" . '"""',
+  \ "'": "'\r'",
+  \ '"': "\"\r\"",
+  \ 'd': "\"\"\"\r\"\"\"",
+  \ 'D': "'''\r'''",
   \ },
   \ 1)
 

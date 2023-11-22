@@ -352,8 +352,8 @@ endfor
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when
 " enter visual mode, to do that need to map vi and va stuff.
-nnoremap gV gv
-nnoremap gv gi
+nnoremap gV gi
+nnoremap gv gv
 nnoremap v mzv
 nnoremap V mzV
 nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
@@ -458,8 +458,8 @@ noremap <Leader>i <Cmd>Paths<CR>
 noremap <Leader>I <Cmd>Localdir<CR>
 noremap <Leader>p <Cmd>call file#print_exists()<CR>
 noremap <Leader>P <Cmd>exe 'Drop ' . expand('<cfile>')<CR>
-noremap <Leader>b <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
-noremap <Leader>B <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
+noremap <Leader>- <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
+noremap <Leader>_ <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -1592,8 +1592,11 @@ endif
 if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
-    au User GutentagsUpdated call tag#set_tags()  " enforces &tags variable
+    au User GutentagsUpdated call tag#set_tags()
+    au VimEnter * call tag#set_tags()
+    au BufCreate * call tag#set_tags(expand('<afile>'))
   augroup END
+  command! -complete=dir -nargs=* SetTags call tag#set_tags(<f-args>)
   command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
   nnoremap <Leader>< <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   nnoremap <Leader>> <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
@@ -1946,7 +1949,8 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
   noremap <Leader>u <Cmd>call git#run_command('push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
-  noremap <Leader>- <Cmd>call git#run_command('switch -')<CR>
+  noremap <Leader>b <Cmd>call git#run_command('branches')<CR>
+  noremap <Leader>B <Cmd>call git#run_command('switch -')<CR>
   noremap <expr> gl git#run_command_expr('blame %', 1)
   noremap gll <Cmd>call git#run_command('blame %')<CR>
   noremap gL <Cmd>call git#run_command('blame')<CR>

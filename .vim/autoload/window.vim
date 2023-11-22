@@ -133,7 +133,7 @@ function! window#show_bufs() abort
   let ndigits = len(string(bufnr('$')))
   let result = {}
   let lines = []
-  for bufnr in s:recent_bufs()
+  for bufnr in s:buffers_recent()
     let pad = repeat(' ', ndigits - len(string(bufnr)))
     call add(lines, pad . bufnr . ': ' . bufname(bufnr))
   endfor
