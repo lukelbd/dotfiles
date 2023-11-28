@@ -567,15 +567,15 @@ noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
 
 " Go to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
-noremap <C-n> g;
-noremap <F4> g,
+noremap <C-n> g;zv
+noremap <F4> g,zv
 
 " Go to last and next jump
 " Note: This accounts for karabiner arrow key maps
-noremap <C-h> <C-o>
-noremap <C-l> <C-i>
-noremap <Left> <C-o>
-noremap <Right> <C-i>
+noremap <C-h> <C-o>zv
+noremap <C-l> <C-i>zv
+noremap <Left> <C-o>zv
+noremap <Right> <C-i>zv
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
@@ -1593,13 +1593,13 @@ if s:plug_active('vim-gutentags')
   augroup guten_tags
     au!
     au User GutentagsUpdated call tag#set_tags()
-    au VimEnter * call tag#set_tags()
     au BufCreate * call tag#set_tags(expand('<afile>'))
   augroup END
   command! -complete=dir -nargs=* SetTags call tag#set_tags(<f-args>)
   command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
   nnoremap <Leader>< <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   nnoremap <Leader>> <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  call tag#set_tags()  " call during .vimrc refresh
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores

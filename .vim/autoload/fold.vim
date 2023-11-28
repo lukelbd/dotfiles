@@ -79,11 +79,11 @@ function! fold#get_current(...) abort
   endwhile
   if foldclosed('.') > 0
     let [line1, line2] = [foldclosed('.'), foldclosedend('.')]
-  else
+  else  " account for '[z' behavior when inside nested folds
     let line = line('.')
     keepjumps normal! zk
     if line('.') == line || foldlevel('.') > foldlevel(line)  " cursor inside fold
-      exe string(line) | keepjumps normal! [z
+      exe line | keepjumps normal! [z
     else  " cursor went outside fold
       keepjumps normal! zj
     endif
