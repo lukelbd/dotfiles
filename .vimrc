@@ -352,7 +352,7 @@ endfor
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when
 " enter visual mode, to do that need to map vi and va stuff.
-nnoremap gV gi
+nnoremap gz gi
 nnoremap gv gv
 nnoremap v mzv
 nnoremap V mzV
@@ -633,7 +633,7 @@ noremap zR <Cmd>call fold#set_level('R')<CR>
 
 " Toggle folds under cursor non-recursively
 " Note: Previously toggled with recursive-open then non-recursive close but this is
-" annoying e.g. for huge python classes. Now use 'zZ' to explicitly toggle nesting.
+" annoying e.g. for huge python classes. Now use 'zi' to explicitly toggle nesting.
 " Note: This will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now only call FastFoldUpdate manually for 'zx' and 'zX' (see above).
 noremap <expr> zz foldclosed('.') > 0 ? 'zo' : 'zc'
@@ -667,7 +667,7 @@ noremap z] ]z
 
 " Go to folds marks or jumps with fzf
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
-noremap gz <Cmd>Folds<CR>
+noremap zg <Cmd>Folds<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
 noremap g" <Cmd>call mark#fzf_jumps()<CR>
 " noremap g' <Cmd>BLines<CR>
@@ -915,14 +915,14 @@ nnoremap gX zug
 
 " Toggle capitalization or identify character
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-call s:repeat_map('zy', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
 call s:repeat_map('zt', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>', 'n')
-nnoremap <nowait> zu guiw
-nnoremap <nowait> zU gUiw
-vnoremap zy ~
+call s:repeat_map('zy', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
 vnoremap zt gu<Esc>`<~h
-vnoremap <nowait> zu gu
-vnoremap <nowait> zU gU
+vnoremap zy ~
+nnoremap zuu guiw
+nnoremap zUU gUiw
+noremap zu gu
+noremap zU gU
 
 " Auto wrap lines or items within motion
 " Note: Previously tried to make this operator map but not necessary, should

@@ -73,7 +73,7 @@ function! fold#get_current(...) abort
   let line = -1  " default dummy line
   let level = a:0 ? a:1 : &l:foldlevel
   let winview = winsaveview()  " save view
-  while line != line('.') && level < foldlevel('.') - 1
+  while line('.') != line && foldlevel('.') - 1 > level
     let line = line('.')
     keepjumps normal! [z
   endwhile
