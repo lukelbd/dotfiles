@@ -40,7 +40,8 @@ function! fold#fold_text() abort
   let status = level . space . lines . ' lines'
   let width = &textwidth - 1 - strwidth(status)  " at least two spaces
   let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
-  let origin = foldclosed('.') > 0 ? 0 : max([col('.') - (wincol() - offset), 0])
+  let column = foldclosed('.') > 0 ? winsaveview()['leftcol'] + 1 : col('.')
+  let origin = max([column - (wincol() - offset), 0])
   if strwidth(label) > width - 4
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
     let dstr = empty(dend) ? '' : s:delim_starts[dend[0]]
