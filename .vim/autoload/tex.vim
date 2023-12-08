@@ -139,7 +139,6 @@ endfunction
 "-----------------------------------------------------------------------------"
 " Related function that prints graphics files
 function! s:graphic_source() abort
-  " Get graphics paths
   let paths = system(
     \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . " | awk -v RS='[^\\n]*{' '"
     \ . 'inside && /}/ {path=$0; if(init) inside=0} {init=0} '
@@ -149,30 +148,31 @@ function! s:graphic_source() abort
     \ . '/document}/ {exit} {path=""}'
     \ . "'")
   let paths = substitute(paths, "\n", '', 'g')  " in case of multiple lines
-  " Check syntax and ensure paths are relative to latex file
-  let filedir = expand('%:h')
+  let folder = expand('%:h')
   let pathlist = []
   for path in split(paths[1:len(paths) - 2], '}{')
-    let abspath = expand(filedir . '/' . path)
+    let abspath = expand(path)  " e.g. $HOME/research/...
+    let relpath = expand(folder . '/' . path)  " e.g. ./figures/...
     if isdirectory(abspath)
       call add(pathlist, abspath)
+    elseif isdirectory(relpath)
+      call add(pathlist, relpath)
     else
       echohl WarningMsg
       echom "Warning: Directory '" . abspath . "' does not exist."
       echohl None
     endif
   endfor
-  " List graphics files in each path
-  let figs = []
+  let files = []
   call add(pathlist, expand('%:h'))
   for path in pathlist
     for ext in ['png', 'jpg', 'jpeg', 'pdf', 'eps']
-      call extend(figs, globpath(path, '*.' . ext, v:true, v:true))
+      call extend(files, globpath(path, '*.' . ext, v:true, v:true))
     endfor
   endfor
-  let figs = map(figs, 'fnamemodify(v:val, ":p:h:t") . "/" . fnamemodify(v:val, ":t")')
-  if empty(figs) | echoerr 'No graphics files found.' | endif
-  return figs
+  let files = map(files, 'fnamemodify(v:val, ":p:h:t") . "/" . fnamemodify(v:val, ":t")')
+  if empty(files) | echoerr 'No graphics files found.' | endif
+  return files
 endfunction
 
 " Sink for graphics

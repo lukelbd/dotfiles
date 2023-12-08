@@ -37,8 +37,8 @@ syntax region texMatcherNM matchgroup=Delimiter
 " Note: Have to wrap 'start' in zero-length atom so end can be found on same line,
 " and crazy 'end' was created through trial-and-error (not sure why \S\@= needed).
 syntax region texCommentZone transparent
-  \ start='\(^\s*%\([^%\t ]\|\s\+\S\)\)\@='
-  \ end='^\s*%\([^%\t ]\|\s\+\S\).*\(\(\%$\|\n\s*\|%\s*$\)\+\(\%$\|\S\@=\([^%]\|%%\)\)\)\@='
+  \ start='\(^\s*%\([^ \t%-]\|\s\+\S\)\)\@='
+  \ end='^\s*%\([^ \t%-]\|\s\+\S\).*\(\(\%$\|\n\s*\|%\s*$\)\+\(\%$\|\S\@=\([^%]\|%[%-]\)\)\)\@='
   \ keepend contains=@NoSpell,texComment fold
 syntax cluster texFoldGroup add=texCommentZone
 syntax cluster texPreambleMatchGroup add=texCommentZone

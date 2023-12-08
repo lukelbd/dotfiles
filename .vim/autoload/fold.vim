@@ -39,7 +39,6 @@ function! fold#fold_text() abort
   let space = repeat(' ', len(string(line('$'))) - len(lines))
   let status = level . space . lines . ' lines'
   let width = &textwidth - 1 - strwidth(status)  " at least two spaces
-  let origin = winsaveview()['leftcol']
   if strwidth(label) > width - 4
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
     let dstr = empty(dend) ? '' : s:delim_starts[dend[0]]
@@ -49,7 +48,7 @@ function! fold#fold_text() abort
   let space = repeat(' ', &textwidth - 1 - strwidth(label) - strwidth(status))
   let text = label . space . status
   " vint: next-line -ProhibitUsingUndeclaredVariable
-  return text[origin:]
+  return text[winsaveview()['leftcol']:]
 endfunction
 
 " Return line of fold under cursor matching &l:foldlevel + 1
