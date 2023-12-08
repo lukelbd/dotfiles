@@ -54,7 +54,7 @@ dependencies:
   - pint-xarray
   - matplotlib<3.6
   - cartopy
-  - seaborn
+  - seaborn<0.13.0
   - metpy
   - ipython
   - ipykernel

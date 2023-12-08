@@ -20,7 +20,7 @@
 let g:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see <Leader> mappings
 let g:refresh = get(g:, 'refresh', localtime())
-set nocompatible  " always use the vim defaults
+set nocompatible  " enable the vim defaults
 set encoding=utf-8  " enable utf characters
 scriptencoding utf-8
 runtime autoload/repeat.vim
@@ -41,6 +41,7 @@ set colorcolumn=89,121  " color column after recommended length of 88
 set complete+=k  " enable dictionary search through 'dictionary' setting
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
+set cpoptions=aABceFs  " vim compatibility options
 set cursorline  " highlight cursor line
 set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;

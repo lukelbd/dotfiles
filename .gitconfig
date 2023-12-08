@@ -102,42 +102,42 @@
 #   --null-data --regexp='(?ms)(?:^[a-z][a-zA-Z]+\\.[<>()*.a-zA-Z]+::\\v+)+?(?:(?:\\v|\\h+\\V+\\v))+(?:\\v|\\Z)'; }; f"
 #------------------------------------------------------------------------------;
 [alias]
-	amend      = "!f() { TARGET=$(git rev-parse \"$1\"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
-	amputate   = "!git-amputate \"$@\""
-	branches   = branch -vv --all
-	commands   = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
-	commits    = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
-	deleted    = "!git-deleted \"$@\""
-	delta      = diff -M --
-	dictator   = "!git-dictator \"$@\""
-	exec       = "!exec \"$@\""
-	get        = "!get-get \"$@\""
-	ignore     = "!git-ignore \"$@\""
-	ls         = ls-tree -r HEAD --name-only :/
-	ll         = ls-tree -r HEAD --abbrev :/
-	master     = "!git fetch --all && git stash push && {git merge master; git stash pop; }"
-	merged     = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
-	objects    = "!git count-objects -H -v"
-	outdated   = remote prune origin
-	oops       = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
-	pack       = "!git-pack \"$@\""
-	publish    = push origin --tags
-	refs       = reflog show --all
-	remotes    = remote --verbose
-	remove     = "!git-remove \"$@\""
-	root       = rev-parse --show-toplevel
-	set        = branch --set-upstream-to
-	staged     = "!git --no-pager diff --stat --staged"
-	stashes    = stash list
-	tags       = tag --list
-	top        = rev-parse --show-toplevel
-	tree       = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
-	trunk      = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
-	unset      = branch --unset-upstream
-	unstaged   = "!git --no-pager diff --stat"
-	upstream   = "!git checkout master && pull upstream master"
-	vim        = "!git-vim \"$@\""
-	wtf        = "!git-wtf \"$@\""
+	amend    = "!f() { TARGET=$(git rev-parse \"$1\"); git commit --fixup=$TARGET ${@:2} && EDITOR=true git rebase -i --autostash --autosquash $TARGET^; }; f"
+	amputate = "!git-amputate \"$@\""
+	branches = branch -vv --all
+	commands = "!git help -a | grep \"^ \\+[a-z]\" | tr -s ' ' | cut -d' ' -f2"
+	commits  = "!git log --graph --abbrev-commit --date=relative --branches --oneline --decorate --color $(git rev-list -g --all) 2>/dev/null"
+	deleted  = "!git-deleted \"$@\""
+	delta    = diff -M --
+	dictator = "!git-dictator \"$@\""
+	exec     = "!exec \"$@\""
+	get      = "!get-get \"$@\""
+	ignore   = "!git-ignore \"$@\""
+	ls       = ls-tree -r HEAD --name-only :/
+	ll       = ls-tree -r HEAD --abbrev :/
+	master   = "!git fetch --all && git stash push && {git merge master; git stash pop; }"
+	merged   = "![ $(git merge-base HEAD master) == $(git rev-parse HEAD) ] && echo \"Master is up to date with current branch.\" || \"Master is not up to date with current branch.\""
+	objects  = "!git count-objects -H -v"
+	outdated = remote prune origin
+	oops     = "!f(){ if [ \"$#\" -eq 0 ]; then git commit --amend --no-edit; else git commit --amend \"$@\"; fi; }; f"
+	pack     = "!git-pack \"$@\""
+	publish  = push origin --tags
+	refs     = reflog show --all
+	remotes  = remote --verbose
+	remove   = "!git-remove \"$@\""
+	root     = rev-parse --show-toplevel
+	set      = branch --set-upstream-to
+	staged   = "!git --no-pager diff --stat --staged"
+	stashes  = stash list
+	tags     = tag --list
+	top      = rev-parse --show-toplevel
+	tree     = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
+	trunk    = log --graph --abbrev-commit --date=relative --branches --name-status --oneline --decorate --color
+	unset    = branch --unset-upstream
+	unstaged = "!git --no-pager diff --stat"
+	upstream = "!git checkout master && pull upstream master"
+	vim      = "!git-vim \"$@\""
+	wtf      = "!git-wtf \"$@\""
 [blame]
 	date = human
 	coloring = highlightRecent
