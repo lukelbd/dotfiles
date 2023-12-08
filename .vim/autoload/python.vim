@@ -70,19 +70,18 @@ endfunction
 function! python#fold_cache() abort
   let lnum = 1
   let cache = b:SimpylFold_cache
-  let global = '^[A-Z_]\k*'
+  let global = '^\K\k*'
   let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
   while lnum <= line('$')
     if s:fold_exists(lnum) | let lnum += 1 | continue | endif
     let line = getline(lnum)
     let group = []
     " Docstring fold (e.g. _docstring_snippet = '''...)
-    let [_, _, pos] = matchstrpos(line, '^\(#\|\s\)\@!.*' . docstring)
+    let [_, _, pos] = matchstrpos(line, '^\K\k*\s*=\s*' . docstring)
     if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
       call add(group, lnum)
-      while line[pos:] !~# docstring  " fold entire docstring
-        let pos = 0
-        let lnum += 1
+      while lnum < line('$') && line[pos:] !~# docstring  " fold entire docstring
+        let [pos, lnum] = [0, lnum + 1]
         let line = getline(lnum)
         call add(group, lnum)
         if s:fold_exists(lnum) | let group = [] | break | endif

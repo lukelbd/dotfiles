@@ -36,7 +36,7 @@ endif
 " Define folding regions
 " Note: Python block uses b:SimpylFold_cache to apply custom docstring folds and opens
 " classes by default. For some reason fails if anything here is moved to ftplugin. Also
-" critical to use 'FileType' not 'BurWritePost' for python or get recursion issues.
+" critical to use 'FileType' not 'BufWritePost' for python or get recursion issues.
 " Note: Markdown block overwrites foldtext from $RUNTIME/syntax/[markdown|javascript]
 " and re-applies plugged/vim-markdown folding. Also resets open-close status but
 " unfortunately required because vim filetype refresh seems to clean out definitions.
@@ -49,7 +49,6 @@ if &filetype ==# 'markdown'  " trigger vim-markdown folds and fastfold update
   doautocmd BufWritePost
 endif
 call fold#set_defaults()
-normal! zv
 
 " Buffer-local syntax
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084

@@ -618,8 +618,8 @@ noremap ze ze
 for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
   silent! exe 'unmap! z' . s:char
 endfor
-noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults(0)<CR>
-noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults(1)<CR>
+noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults()<CR>zv
+noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults()<CR>
 
 " Change fold level
 " Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.
