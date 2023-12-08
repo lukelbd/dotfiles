@@ -29,16 +29,16 @@ syntax region texMatcherNM matchgroup=Delimiter
   \ start='{' skip='\\\|\[{}]' end="}"
   \ contains=@texMatchNMGroup,@NoSpell,texError
 
-" Comment out blocks of texts. Skip over empty lines or comment-only lines in-between
-" region however do not start or end region on those lines. This is useful during
+" Enable syntax folding of comment blocks. Ignores empty and comment-character-only
+" lines when defining beginning and ends of folding regions. This is useful during
 " revisions or when using templates with huge commented-out instruction blocks.
 " Note: Critical to use contains=texComment since contains=@texFoldGroup creates nested
 " comment zones that require extra lookbehind 'start' regex. Not sure why this works.
 " Note: Have to wrap 'start' in zero-length atom so end can be found on same line,
 " and crazy 'end' was created through trial-and-error (not sure why \S\@= needed).
 syntax region texCommentZone transparent
-  \ start='\(^\s*%\s\+\S\)\@='
-  \ end='^\s*%\s\+\S.*\(\(\%$\|\n\s*\|%\s*$\)\+\(\%$\|\S\@=\([^%]\|%\S\)\)\)\@='
+  \ start='\(^\s*%\([^%\t ]\|\s\+\S\)\)\@='
+  \ end='^\s*%\([^%\t ]\|\s\+\S\).*\(\(\%$\|\n\s*\|%\s*$\)\+\(\%$\|\S\@=\([^%]\|%%\)\)\)\@='
   \ keepend contains=@NoSpell,texComment fold
 syntax cluster texFoldGroup add=texCommentZone
 syntax cluster texPreambleMatchGroup add=texCommentZone
