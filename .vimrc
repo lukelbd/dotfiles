@@ -353,7 +353,7 @@ endfor
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when
 " enter visual mode, to do that need to map vi and va stuff.
-nnoremap gz gi
+nnoremap gt gi
 nnoremap gv gv
 nnoremap v mzv
 nnoremap V mzV
@@ -512,7 +512,7 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap <Leader>. :<C-u><Up><CR>
+nnoremap <Leader>, :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -607,11 +607,12 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
-noremap z. z.
 noremap zj zb
 noremap zk zt
-noremap zs zs
-noremap ze ze
+noremap z. z.
+noremap z, z.zs
+noremap z> zs
+noremap z< ze
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: This affects only markdown and python files.
@@ -668,10 +669,10 @@ noremap z] ]z
 
 " Go to folds marks or jumps with fzf
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
-noremap zg <Cmd>Folds<CR>
+" noremap g' <Cmd>BLines<CR>
+noremap gz <Cmd>Folds<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
 noremap g" <Cmd>call mark#fzf_jumps()<CR>
-" noremap g' <Cmd>BLines<CR>
 
 " Declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
@@ -682,7 +683,7 @@ command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
 noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
 noremap <Leader>~ <Cmd>call mark#del_marks()<CR>
-noremap <expr> <Leader>` exists('g:mark_recent') ? '<Cmd>call mark#goto_mark(g:mark_recent)<CR>' : ''
+noremap <Leader>` <Cmd>call mark#goto_mark(get(g:, 'mark_recent', 'A'))<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -899,31 +900,33 @@ nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
 " Replace misspelled words or define or identify words
-" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
 call s:repeat_map(']S', 'SpellForward', '<Cmd>call edit#spell_next(0)<CR>')
 call s:repeat_map('[S', 'SpellBackward', '<Cmd>call edit#spell_next(1)<CR>')
-nnoremap gs <Cmd>call edit#spell_check()<CR>
-nnoremap gS <Cmd>call edit#spell_check(v:count)<CR>
-nnoremap gx zg
-nnoremap gX zug
+noremap gs <Cmd>call edit#spell_check()<CR>
+noremap gS <Cmd>call edit#spell_check(v:count)<CR>
+noremap zs zg
+noremap zS zug
 
-" Toggle capitalization or identify character
-" Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-call s:repeat_map('zt', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
-call s:repeat_map('zT', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>', 'n')
-vnoremap zt ~
-vnoremap zT gu<Esc>`<~h
-nnoremap zuu guiw
-nnoremap zUU gUiw
-noremap zu gu
-noremap zU gU
+" Change character or title case
+" Todo: Remove unmaps after sessions restarted
+silent! unmap zuu
+silent! unmap zUU
+call s:repeat_map('zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
+call s:repeat_map('zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>', 'n')
+vnoremap zu ~
+vnoremap zU gu<Esc>`<~h
 
-" Single chacter maps
-" Print info and Never save deletions to any register a
+" Change case for word or motion
+nnoremap guu guiw
+nnoremap gUU gUiw
+noremap gu gu
+noremap gU gU
+
+" Remove character or print info
 noremap x "_x
 noremap X "_X
-nmap zy <Plug>(characterize)
-nnoremap zY ga
+map gx <Plug>(characterize)
+noremap gX ga
 
 " Auto wrap lines or items within motion
 " Note: Previously tried to make this operator map but not necessary, should
@@ -1529,9 +1532,9 @@ endif
 " Note: Instead of native scrollwrapped#scroll() function use an iter#scroll_count()
 " function that accounts for open popup windows. See insert-mode section above.
 if s:plug_active('vim-scrollwrapped') || s:plug_active('vim-toggle')
-  noremap zb <Cmd>Toggle<CR>
+  noremap <Leader>. <Cmd>Toggle<CR>
   noremap <Leader>w <Cmd>WrapToggle<CR>
-  let g:toggle_map = 'zb'  " prevent overwriting <Leader>b
+  let g:toggle_map = '<Leader>.'
   let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
   let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
   " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
@@ -1604,8 +1607,8 @@ if s:plug_active('vim-gutentags')
   augroup END
   command! -complete=dir -nargs=* SetTags call tag#set_tags(<f-args>)
   command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
-  nnoremap <Leader>< <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
-  nnoremap <Leader>> <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap zt <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap zT <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   call tag#set_tags()  " call during .vimrc refresh
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
@@ -1944,8 +1947,6 @@ if s:plug_active('vim-fugitive')
   command! -nargs=* Gsplit Gvsplit <args>
   silent! delcommand Gdiffsplit
   command! -nargs=* -bang Gdiffsplit Git diff <args>
-  noremap <Leader>' <Cmd>BCommits<CR>
-  noremap <Leader>" <Cmd>Commits<CR>
   noremap <Leader>j <Cmd>call git#run_command('diff -- %')<CR>
   noremap <Leader>k <Cmd>call git#run_command('diff --staged -- %')<CR>
   noremap <Leader>l <Cmd>call git#run_command('diff -- :/')<CR>
@@ -1954,10 +1955,12 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>L <Cmd>call git#run_command('stage :/')<CR>
   noremap <Leader>g <Cmd>call git#run_command('status')<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
-  noremap <Leader>u <Cmd>call git#run_command('push origin')<CR>
-  noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
   noremap <Leader>b <Cmd>call git#run_command('branches')<CR>
   noremap <Leader>B <Cmd>call git#run_command('switch -')<CR>
+  noremap <Leader>u <Cmd>call git#run_command('push origin')<CR>
+  noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
+  noremap <Leader>y <Cmd>BCommits<CR>
+  noremap <Leader>Y <Cmd>Commits<CR>
   noremap <expr> gl git#run_command_expr('blame %', 1)
   noremap gll <Cmd>call git#run_command('blame %')<CR>
   noremap gL <Cmd>call git#run_command('blame')<CR>
@@ -2004,7 +2007,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
   augroup END
-  map z; <Plug>(EasyAlign)
+  map gy <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2102,7 +2105,7 @@ if s:plug_active('undotree')
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>
   endfunc
-  noremap gu <Cmd>UndotreeToggle<CR>
+  noremap <Leader>' <Cmd>UndotreeToggle<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
@@ -2153,11 +2156,14 @@ if has('gui_running')  " revisit these?
   highlight! link vimCommand Statement
 endif
 
-" Pick color scheme and toggle hex coloring
-" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note
-" coloring hex strings can cause massive slowdowns so disable by default
-noremap <Leader>0 <Cmd>Colors<CR>
-noremap <Leader>8 <Cmd>Colorize<CR>
+" Repair highlighting. Leveraging ctags integration almost always works.
+" Note: This says get the closest tag to the first line in the window, all tags
+" rather than top-level only, searching backward, and without circular wrapping.
+command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
+command! SyncStart syntax sync fromstart
+command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
+noremap zy <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
+noremap zY <Cmd>SyncStart<CR>
 
 " Scroll over color schemes
 " Todo: Finish terminal vim support. Currently sign column gets messed up
@@ -2172,6 +2178,12 @@ command! ColorPrev call iter#next_scheme(1)
 command! ColorNext call iter#next_scheme(0)
 noremap <Leader>( <Cmd>ColorPrev<CR>
 noremap <Leader>) <Cmd>ColorNext<CR>
+
+" Pick color scheme and toggle hex coloring
+" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note
+" coloring hex strings can cause massive slowdowns so disable by default
+noremap <Leader>0 <Cmd>Colors<CR>
+noremap <Leader>8 <Cmd>Colorize<CR>
 
 " Show syntax under cursor and syntax types
 " Note: Here 'groups' opens up the page
@@ -2189,15 +2201,6 @@ command! -nargs=0 ShowSyntax call vim#show_syntax()
 noremap <Leader>4 <Cmd>ShowColors<CR>
 noremap <Leader>5 <Cmd>ShowSyntax<CR>
 noremap <Leader>6 <Cmd>ShowPlugin<CR>
-
-" Repair highlighting. Leveraging ctags integration almost always works.
-" Note: This says get the closest tag to the first line in the window, all tags
-" rather than top-level only, searching backward, and without circular wrapping.
-command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
-command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
-noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>zv
-noremap <Leader>Y <Cmd>SyncStart<CR>zv
 
 " Show folds with dark against light
 highlight Folded ctermbg=Black ctermfg=White cterm=Bold
