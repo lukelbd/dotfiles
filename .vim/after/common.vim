@@ -40,6 +40,8 @@ endif
 " Note: Markdown block overwrites foldtext from $RUNTIME/syntax/[markdown|javascript]
 " and re-applies plugged/vim-markdown folding. Also resets open-close status but
 " unfortunately required because vim filetype refresh seems to clean out definitions.
+let closed = foldclosed('.') > 0
+let winview = winsaveview()
 if &filetype ==# 'python'  " trigger fastfold update
   setlocal foldexpr=python#fold_expr(v:lnum)
   doautocmd FileType
@@ -49,6 +51,8 @@ if &filetype ==# 'markdown'  " trigger vim-markdown folds and fastfold update
   doautocmd BufWritePost
 endif
 call fold#set_defaults()
+exe 'silent! normal! ' . (closed ? '' : 'zv')
+call winrestview(winview)
 
 " Buffer-local syntax
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084

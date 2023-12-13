@@ -50,8 +50,6 @@ scriptencoding utf-8
 let s:delim_open = {']': '[', ')': '(', '}': '{', '>': '<'}
 let s:delim_close = {'[': ']', '(': ')', '{': '}', '<': '>'}
 function! fold#fold_text(...) abort  " hello world!!!
-  function! s:test()
-  endfunction
   if a:0 && a:0 != 3
     echohl WarningMsg
     echom 'Warning: Fold text requires zero arguments or exactly three arguments.'

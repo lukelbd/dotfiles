@@ -637,7 +637,7 @@ noremap zR <Cmd>call fold#set_level('R')<CR>
 " annoying e.g. for huge python classes. Now use 'zi' to explicitly toggle nesting.
 " Note: This will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now only call FastFoldUpdate manually for 'zx' and 'zX' (see above).
-noremap <expr> zz foldclosed('.') > 0 ? 'zo' : 'zc'
+noremap <expr> zz '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
 nnoremap zcc zc
 nnoremap zoo zo
 vnoremap <nowait> zc zc
@@ -1421,7 +1421,10 @@ let g:vimtex_fold_enabled = 1
 let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate','itemize','math']}}
 
 " Syntax highlighting
-" Note impsort sorts import statements and highlights modules using an after/syntax
+" Note: Here 'pythonic' vim-markdown folding prevents bug where folds auto-close after
+" insert mode and ignores primary headers so entire document is not folded.
+" See: https://github.com/preservim/vim-markdown/issues/516
+" See: https://github.com/preservim/vim-markdown/issues/489
 " call plug#('numirias/semshi',) {'do': ':UpdateRemotePlugins'}  " neovim required
 " call plug#('tweekmonster/impsort.vim') " conflicts with isort plugin, also had major issues
 " call plug#('vim-python/python-syntax')  " originally from hdima/python-syntax, manually copied version with match case
@@ -1437,10 +1440,13 @@ call plug#('tpope/vim-liquid')
 call plug#('cespare/vim-toml')
 call plug#('JuliaEditorSupport/julia-vim')
 let g:filetype_m = 'matlab'  " see $VIMRUNTIME/autoload/dist/ft.vim
-let g:vim_markdown_conceal = 1
-let g:vim_markdown_conceal_code_blocks = 1
+let g:vim_markdown_conceal = 1  " conceal stuff
+let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
-let g:vim_markdown_folding_disabled = 0  " enable header folding
+let g:vim_markdown_folding_level = 0  " pythonic folding level
+let g:vim_markdown_folding_style_pythonic = 1  " repair fold close issue
+let g:vim_markdown_math = 1 " turn on $$ math
+let g:vim_markdown_override_foldtext = 0  " disable due to custom fold text
 
 " Colorful stuff
 " Test: ~/.vim/plugged/colorizer/colortest.txt
