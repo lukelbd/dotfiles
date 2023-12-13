@@ -512,7 +512,7 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap <Leader>, :<C-u><Up><CR>
+nnoremap <Leader>' :<C-u><Up><CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -682,8 +682,8 @@ command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
 noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
-noremap <Leader>~ <Cmd>call mark#del_marks()<CR>
-noremap <Leader>` <Cmd>call mark#goto_mark(get(g:, 'mark_recent', 'A'))<CR>
+noremap g~ <Cmd>call mark#del_marks()<CR>
+noremap g` <Cmd>call mark#goto_mark(get(g:, 'mark_recent', 'A'))<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -887,6 +887,13 @@ nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
 nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
 nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
 
+" Remove character or print info
+" Here prefer characterize since usually has more info
+noremap x "_x
+noremap X "_X
+map gx <Plug>(characterize)
+noremap gX ga
+
 " Toggle spell checking
 " Turn on for filetypes containing text destined for users
 augroup spell_toggle
@@ -907,26 +914,20 @@ noremap gS <Cmd>call edit#spell_check(v:count)<CR>
 noremap zs zg
 noremap zS zug
 
-" Change character or title case
-" Todo: Remove unmaps after sessions restarted
-silent! unmap zuu
-silent! unmap zUU
+" Change case for word or motion
 call s:repeat_map('zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
 call s:repeat_map('zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>', 'n')
+nnoremap guu guiw
+nnoremap gUU gUiw
 vnoremap zu ~
 vnoremap zU gu<Esc>`<~h
 
-" Change case for word or motion
-nnoremap guu guiw
-nnoremap gUU gUiw
+" Enforce csae maps
+" Todo: Remove unmaps after sessions restarted
 noremap gu gu
 noremap gU gU
-
-" Remove character or print info
-noremap x "_x
-noremap X "_X
-map gx <Plug>(characterize)
-noremap gX ga
+silent! unmap zuu
+silent! unmap zUU
 
 " Auto wrap lines or items within motion
 " Note: Previously tried to make this operator map but not necessary, should
@@ -1531,10 +1532,10 @@ endif
 " Note: Use :WrapHeight and :WrapStarts for debugging.
 " Note: Instead of native scrollwrapped#scroll() function use an iter#scroll_count()
 " function that accounts for open popup windows. See insert-mode section above.
-if s:plug_active('vim-scrollwrapped') || s:plug_active('vim-toggle')
-  noremap <Leader>. <Cmd>Toggle<CR>
+if s:plug_active('vim-toggle') || s:plug_active('vim-scrollwrapped')
+  noremap zb <Cmd>Toggle<CR>
   noremap <Leader>w <Cmd>WrapToggle<CR>
-  let g:toggle_map = '<Leader>.'
+  let g:toggle_map = 'zb'
   let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
   let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
   " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
@@ -1994,6 +1995,8 @@ if s:plug_active('vim-gitgutter')
   noremap <expr> gH git#hunk_action_expr(0)
   nnoremap <nowait> ghh <Cmd>call git#hunk_action(1)<CR>
   nnoremap <nowait> gHH <Cmd>call git#hunk_action(0)<CR>
+  noremap zg <Cmd>GitGutter<CR>
+  noremap zG <Cmd>GitGutterAll<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
@@ -2063,11 +2066,10 @@ endif
 " Run tests near cursor or throughout file
 if s:plug_active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
-  " noremap <Leader>[ <Cmd>TestLast<CR>
-  noremap <Leader>[ <Cmd>TestNearest --mpl-generate<CR>
-  noremap <Leader>] <Cmd>TestNearest<CR>
-  noremap <Leader>{ <Cmd>TestLast<CR>
-  noremap <Leader>} <Cmd>TestFile<CR>
+  noremap <Leader>. <Cmd>TestNearest<CR>
+  noremap <Leader>> <Cmd>TestNearest --mpl-generate<CR>
+  noremap <Leader>, <Cmd>TestLast<CR>
+  noremap <Leader>< <Cmd>TestFile<CR>
   noremap <Leader>\ <Cmd>TestVisit<CR>
 endif
 
@@ -2105,7 +2107,7 @@ if s:plug_active('undotree')
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>
   endfunc
-  noremap <Leader>' <Cmd>UndotreeToggle<CR>
+  noremap <Leader>\ <Cmd>UndotreeToggle<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
