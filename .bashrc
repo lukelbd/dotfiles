@@ -8,7 +8,8 @@
 # https://thegeekstuff.com/2008/11/3-steps-to-perform-ssh-login-without-password-using-ssh-keygen-ssh-copy-id/
 # * To see what is available for package/environment managers, possibly ignoring
 #   dependencies, use e.g. brew (list|leaves|deps --installed) (--cask|--formulae),
-#   port installed (requested), tlmgr list --only-installed, mamba (env) list (or list
+#   port installed (requested), tlmgr list --only-installed (tlmgr update --list for
+#   'updateable' packages and tlmgr update --all to update), mamba (env) list (or list
 #   <package>), mamba env export --from-history (no deps), pip (list|feeze) (or show
 #   <package>), pip-chill (no deps), jupyter kernelspec||labextension|nbextension list.
 # * For ARM-copatible version of chromium tried 'brew install --cask eloston-chromium'

@@ -877,13 +877,6 @@ nnoremap <expr> K 'k' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNorma
 nnoremap <expr> gJ '<Esc>' . (v:count + (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
 nnoremap <expr> gK 'k' . (v:count . (v:count > 1)) . '<Cmd>call conjoin#joinNormal("gJ")<CR>'
 
-" Single chacter maps
-" Print info and Never save deletions to any register a
-noremap x "_x
-noremap X "_X
-nmap gy <Plug>(Characterize)
-nnoremap gY ga
-
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
 nnoremap cy "_s
@@ -916,14 +909,21 @@ nnoremap gX zug
 
 " Toggle capitalization or identify character
 " Warning: <Plug> invocation cannot happen inside <Cmd>...<CR> pair.
-call s:repeat_map('zt', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>', 'n')
-call s:repeat_map('zy', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
-vnoremap zt gu<Esc>`<~h
-vnoremap zy ~
+call s:repeat_map('zt', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>', 'n')
+call s:repeat_map('zT', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>', 'n')
+vnoremap zt ~
+vnoremap zT gu<Esc>`<~h
 nnoremap zuu guiw
 nnoremap zUU gUiw
 noremap zu gu
 noremap zU gU
+
+" Single chacter maps
+" Print info and Never save deletions to any register a
+noremap x "_x
+noremap X "_X
+nmap zy <Plug>(characterize)
+nnoremap zY ga
 
 " Auto wrap lines or items within motion
 " Note: Previously tried to make this operator map but not necessary, should
@@ -2196,8 +2196,8 @@ noremap <Leader>6 <Cmd>ShowPlugin<CR>
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
 command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
-noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
-noremap <Leader>Y <Cmd>SyncStart<CR>
+noremap <Leader>y <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>zv
+noremap <Leader>Y <Cmd>SyncStart<CR>zv
 
 " Show folds with dark against light
 highlight Folded ctermbg=Black ctermfg=White cterm=Bold
