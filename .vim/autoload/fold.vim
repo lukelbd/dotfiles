@@ -1,52 +1,87 @@
-"1-----------------------------------------------------------------------------"
+"-----------------------------------------------------------------------------"
 " Utilities for vim folds
 "-----------------------------------------------------------------------------"
+" Format fold for specific filetypes
+" Note: This concatenates python docstring lines and uses frame title
+" for beamer presentations. In future should expand for other filetypes.
+function! fold#get_line(line, ...) abort
+  let char = comment#get_char()
+  let regex = a:0 && a:1 ? '\(^\s*\|\s*$\)' : '\s*$'
+  let label = substitute(getline(a:line), regex, '', 'g')
+  let regex = '^\@!\s*' . char . (len(char) == 1 ? '[^' . char . ']*$' : '.*$')
+  let label = substitute(label, regex, '', 'g')
+  return label
+endfunction
+function! fold#get_line_tex(line, ...)
+  let [line, label] = [a:line, fold#get_line(a:line)]
+  if label =~# '\(begingroup\|begin\s*{\s*frame\*\?\s*}\)'
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + 5)
+      let bool = getline(lnum) =~# '^\s*\\frametitle'
+      if bool | let [line, label] = [lnum, fold#get_line(lnum)] | break | endif
+    endfor
+  endif
+  if label =~# '{\s*\(%.*\)\?$'  " append lines
+    for lnum in range(line + 1, a:0 ? a:1 : line + 5)
+      let label .= (lnum == line + 1 ? '' : ' ') . fold#get_line(lnum, 1)
+    endfor
+  endif
+  return substitute(label, '\\\@<!\\', '', 'g')  " remove backslashes
+endfunction
+function! fold#get_line_python(line, ...) abort
+  let label = fold#get_line(a:line)
+  if label =~# '["'']\{3}\s*$'  " append afterward
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + 5)
+      let doc = fold#get_line(lnum, 1)  " remove indent
+      let doc = substitute(doc, '[-=]\{3,}', '', 'g')
+      let pad = lnum == a:line + 1 || empty(doc) ? '' : ' '
+      let label .= pad . doc
+    endfor
+  endif
+  let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
+  let result = substitute(label, '["'']\{3}', '\=add(l:subs, submatch(0))', 'gn')
+  let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
+  return label
+endfunction
+
 " Generate truncated fold text
 " Note: Style here is inspired by vim-anyfold. For now stick to native
 " per-filetype syntax highlighting becuase still has some useful features.
 scriptencoding utf-8
-let s:delim_starts = {']': '[', ')': '(', '}': '{', '>': '<'}
-let s:delim_ends = {'[': ']', '(': ')', '{': '}', '<': '>'}
-function! fold#fold_text() abort
-  " General fold formatting
-  let comment = '\(^\s*\)\@<!' . comment#get_char() . '.*$'
-  let label = getline(v:foldstart)
-  let label = substitute(label, comment, '', 'g')  " remove trailing comment
-  let label = substitute(label, '\s*$', '', 'g')  " remove trailing spaces
-  if label =~# '[\[({<]\s*$'  " close delimiter
-    let label = substitute(label, '\s*$', '', 'g')
-    let label = label . '···' . s:delim_ends[label[-1:]]
+let s:delim_open = {']': '[', ')': '(', '}': '{', '>': '<'}
+let s:delim_close = {'[': ']', '(': ')', '{': '}', '<': '>'}
+function! fold#fold_text(...) abort  " hello world!!!
+  function! s:test()
+  endfunction
+  if a:0 && a:0 != 3
+    echohl WarningMsg
+    echom 'Warning: Fold text requires zero arguments or exactly three arguments.'
+    echohl None
   endif
-  if &filetype ==# 'tex'  " hide backslashes
-    let remove = '\\\@<!\\'
-    let label = substitute(label, remove, '', 'g')
+  let current = [v:foldstart, v:foldend, len(v:folddashes)]
+  let [line1, line2, level] = a:0 == 3 ? a:000 : current
+  if &filetype ==# 'python'  " python formatting
+    let label = fold#get_line_python(line1, min([line1 + 5, line2]))
+  elseif &filetype ==# 'tex'  " tex formatting
+    let label = fold#get_line_tex(line1, min([line1 + 5, line2]))
+  else  " default formatting
+    let label = fold#get_line(line1)
   endif
-  " Docstring fold formatting
-  if &filetype ==# 'python'
-    let l:subs = []  " capture matches
-    if label =~# '["'']\{3}\s*$'  " append afterward
-      for lnum in range(v:foldstart + 1, v:foldstart + 2)
-        let label .= substitute(getline(lnum), '\(^\s*\|\s*$\|-\{3,}\)', '', 'g')
-      endfor
-    endif
-    let append = '\=add(l:subs, submatch(0))'  " see: https://vi.stackexchange.com/a/16491/8084
-    call substitute(label, '["'']\{3}', append, 'gn')
-    let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
+  if label =~# '[\[({<]*$'  " append delimiter
+    let label .= '···' . s:delim_close[label[-1:]]
   endif
-  " Combine fold components
-  let level = repeat('+ ', len(v:folddashes))
-  let lines = string(v:foldend - v:foldstart + 1)
+  let level = repeat('+ ', level)
+  let lines = string(line2 - line1 + 1)
   let space = repeat(' ', len(string(line('$'))) - len(lines))
-  let status = level . space . lines . ' lines'
-  let width = &textwidth - 1 - strwidth(status)  " at least two spaces
+  let stats = level . space . lines . ' lines'
+  let width = &textwidth - 1 - strwidth(stats)  " at least two spaces
   if strwidth(label) > width - 4
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
-    let dstr = empty(dend) ? '' : s:delim_starts[dend[0]]
+    let dstr = empty(dend) ? '' : s:delim_open[dend[0]]
     let dend = label[width - 5 - len(dend):] =~# dstr ? '' : dend
     let label = label[:width - 6 - len(dend)] . '···' . dend . '  '
   endif
-  let space = repeat(' ', &textwidth - 1 - strwidth(label) - strwidth(status))
-  let text = label . space . status
+  let space = repeat(' ', &textwidth - 1 - strwidth(label) - strwidth(stats))
+  let text = label . space . stats
   " vint: next-line -ProhibitUsingUndeclaredVariable
   return text[winsaveview()['leftcol']:]
 endfunction
@@ -102,7 +137,11 @@ endfunction
 " produce strange bug. Instead rely on FastFoldUpdate to fill the cache.
 function! fold#update_folds() abort
   silent! unlet! b:SimpylFold_cache
-  FastFoldUpdate
+  if &filetype ==# 'markdown'
+    silent! doautocmd BufWritePost
+  else
+    FastFoldUpdate
+  endif
 endfunction
 function! fold#set_defaults(...) abort
   let pairs = {

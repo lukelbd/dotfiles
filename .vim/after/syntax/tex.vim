@@ -50,6 +50,12 @@ syntax cluster texPreambleMatchGroup add=texCommentZone
 syntax region texFigureZone transparent
   \ start='\\begin\s*{\s*figure\*\?\s*}' end='\\end\s*{\s*figure\*\?\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
+syntax region texFrameZone transparent
+  \ start='\(^\s*\(%.*\)\?\n\)\@<=\\begin\s*{\s*frame\*\?\s*}' end='\\end\s*{\s*frame\*\?\s*}'
+  \ keepend contains=@texFoldGroup,@Spell fold
+syntax region texGroupZone transparent
+  \ start='\\begingroup' end='\\endgroup'
+  \ keepend contains=@texFoldGroup,@Spell fold
 syntax region texTableZone transparent
   \ start='\\begin\s*{\s*table\s*}' end='\\end\s*{\s*table\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
@@ -57,6 +63,8 @@ syntax region texTabular transparent
   \ start='\\begin\s*{\s*tabular\s*}' end='\\end\s*{\s*tabular\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
 syntax cluster texFoldGroup add=texFigureZone
+syntax cluster texFoldGroup add=texFrameZone
+syntax cluster texFoldGroup add=texGroupZone
 syntax cluster texFoldGroup add=texTableZone
 syntax cluster texFoldGroup add=texTabular
 
