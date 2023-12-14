@@ -512,7 +512,7 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap <Leader>' :<C-u><Up><CR>
+nnoremap z; @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -1931,8 +1931,8 @@ if s:plug_active('conflict-marker.vim')
   nmap ]f <Plug>(conflict-marker-next-hunk)
   nmap gf <Plug>(conflict-marker-ourselves)
   nmap gF <Plug>(conflict-marker-themselves)
-  nmap g[ <Plug>(conflict-marker-none)
-  nmap g] <Plug>(conflict-marker-both)
+  nmap zf <Plug>(conflict-marker-none)
+  nmap zF <Plug>(conflict-marker-both)
 endif
 
 " Fugitive settings
@@ -2066,11 +2066,14 @@ endif
 " Run tests near cursor or throughout file
 if s:plug_active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap <Leader>. <Cmd>TestNearest<CR>
-  noremap <Leader>> <Cmd>TestNearest --mpl-generate<CR>
-  noremap <Leader>, <Cmd>TestLast<CR>
-  noremap <Leader>< <Cmd>TestFile<CR>
-  noremap <Leader>\ <Cmd>TestVisit<CR>
+  noremap <Leader>[ <Cmd>TestVisit<CR>
+  noremap <Leader>] <Cmd>TestVisit<CR>
+  noremap <Leader>. <Cmd>TestLast<CR>
+  noremap <Leader>> <Cmd>TestLast --mpl-generate<CR>
+  noremap <Leader>, <Cmd>TestNearest<CR>
+  noremap <Leader>< <Cmd>TestNearest --mpl-generate<CR>
+  noremap <Leader>' <Cmd>TestFile<CR>
+  noremap <Leader>" <Cmd>TestFile --mpl-generate<CR>
 endif
 
 " The howmuch.vim plugin. Mnemonic for equation solving is just that parentheses
@@ -2079,10 +2082,10 @@ endif
 " says whether to replace or append, withEq says whether to include equals sign, sum
 " says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  nnoremap g(( :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  nnoremap g)) :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <expr> g( edit#how_much_expr(0, 0, 1, 'py')
-  noremap <expr> g) edit#how_much_expr(1, 1, 1, 'py')
+  nnoremap g[[ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  nnoremap g]] :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap <expr> g[ edit#how_much_expr(0, 0, 1, 'py')
+  noremap <expr> g] edit#how_much_expr(1, 1, 1, 'py')
 endif
 
 " Speed dating, support date increments
