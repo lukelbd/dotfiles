@@ -13,4 +13,4 @@ function! s:run_ncl_script() abort
   let cmd = 'ncl -n -Q ' . shellescape(@%)
   call shell#job_win(cmd)
 endfunction
-nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>run_ncl_script()<CR>
+nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>run_ncl_script()<CR>

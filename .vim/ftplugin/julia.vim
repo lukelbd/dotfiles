@@ -11,4 +11,4 @@ function! s:run_julia_script() abort
   let cmd = 'julia ' . shellescape(@%)
   call shell#job_win(cmd)
 endfunction
-nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>run_julia_script()<CR>
+nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>run_julia_script()<CR>

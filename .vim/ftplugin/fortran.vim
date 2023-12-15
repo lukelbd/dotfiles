@@ -31,4 +31,4 @@ function! s:run_fortran_program() abort
   let cmd = g:fortran_compiler . ' -o ' . exe . ' ' . src . ' && ' . exe . ' && rm ' . exe
   call shell#job_win(cmd)
 endfunction
-nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>run_fortran_program()<CR>
+nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>run_fortran_program()<CR>

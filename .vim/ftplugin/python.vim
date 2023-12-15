@@ -15,9 +15,9 @@ let g:python_highlight_builtin_funcs = 0  " python-syntax syntax option
 
 " Add mappings (see also vim.vim)
 noremap <expr> <buffer> <Plug>ExecuteMotion python#run_motion_expr()
-noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#run_general()<CR>
-noremap <buffer> <Plug>ExecuteFile2 <Cmd>call python#init_jupyter()<CR>
-noremap <buffer> <Plug>ExecuteFile3 <Cmd>JupyterDisconnect<CR>
+noremap <buffer> <Plug>ExecuteFile0 <Cmd>call python#run_general()<CR>
+noremap <buffer> <Plug>ExecuteFile1 <Cmd>call python#init_jupyter()<CR>
+noremap <buffer> <Plug>ExecuteFile2 <Cmd>JupyterDisconnect<CR>
 
 " Insert docstring (see autoload/python.vim)
 noremap <buffer> gcd <Cmd>Pydocstring<CR><Cmd>call timer_start(500, function('python#split_docstrings'))<CR>

@@ -14,7 +14,7 @@ function! s:open_html_file()
   update
   exe '!clear; set -x; open -a Safari ' . shellescape(@%)
 endfunction
-nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>open_html_file()
+nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>open_html_file()
 
 " Define HTML vim-surround macros
 " Note: div is generally used just to add a class or id to sections of

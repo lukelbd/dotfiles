@@ -17,7 +17,7 @@ function! s:open_markdown_file() abort
   let cmd = 'open -a "Marked 2" ' . shellescape(@%) . ' && open -a "' . terminal . '"'
   call shell#job_win(cmd, 0)
 endfunction
-nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>open_markdown_file()<CR>
+nnoremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>open_markdown_file()<CR>
 
 " Add delimiters. Note we generally use multi-markdown instead of github for tex math.
 " See: https://github.com/fletcher/MultiMarkdown-4/issues/130

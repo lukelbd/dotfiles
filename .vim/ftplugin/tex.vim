@@ -51,9 +51,9 @@ noremap <buffer> <Leader>\| <Cmd>call <sid>latexmk('--diff --word')<CR>
 noremap <buffer> <Leader>[ <Cmd>call <sid>latexmk('--aux')<CR>
 noremap <buffer> <Leader>] <Cmd>call <sid>latexmk('--aux')<CR>
 noremap <buffer> <Leader>\ <Cmd>call <sid>latexmk('--raw')<CR>
-noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk()<CR>
-noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--nobbl')<CR>
-noremap <buffer> <Plug>ExecuteFile3 <Cmd>call <sid>latexmk('--pdf')<CR>
+noremap <buffer> <Plug>ExecuteFile0 <Cmd>call <sid>latexmk()<CR>
+noremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>latexmk('--nobbl')<CR>
+noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--pdf')<CR>
 
 " Add snippets. Each snippet is made into an <expr> map by prepending and
 " appending the strings with single quotes. This lets us make input() dependent

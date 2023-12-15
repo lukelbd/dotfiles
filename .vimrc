@@ -468,12 +468,12 @@ noremap <Leader>_ <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:
 " Note: Critical to label these maps so one is not a prefix of another
 " or else we can get a delay. For example do not define <Plug>Execute
 map Z <Plug>ExecuteMotion
-nmap ZZ <Plug>ExecuteFile1
-nmap <Leader>z <Plug>ExecuteFile2
-nmap <Leader>Z <Plug>ExecuteFile3
+nmap ZZ <Plug>ExecuteFile0
+nmap <Leader>z <Plug>ExecuteFile1
+nmap <Leader>Z <Plug>ExecuteFile2
+noremap <Plug>ExecuteFile0 <Nop>
 noremap <Plug>ExecuteFile1 <Nop>
 noremap <Plug>ExecuteFile2 <Nop>
-noremap <Plug>ExecuteFile3 <Nop>
 noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Literal tabs for particular filetypes.
