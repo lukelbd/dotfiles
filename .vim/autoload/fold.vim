@@ -71,14 +71,14 @@ function! fold#fold_text(...) abort  " hello world!!!
   let lines = string(line2 - line1 + 1)
   let space = repeat(' ', len(string(line('$'))) - len(lines))
   let stats = level . space . lines . ' lines'
-  let width = &textwidth - 1 - strwidth(stats)  " at least two spaces
+  let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
   if strwidth(label) > width - 4
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
     let dstr = empty(dend) ? '' : s:delim_open[dend[0]]
     let dend = label[width - 5 - len(dend):] =~# dstr ? '' : dend
     let label = label[:width - 6 - len(dend)] . '···' . dend . '  '
   endif
-  let space = repeat(' ', &textwidth - 1 - strwidth(label) - strwidth(stats))
+  let space = repeat(' ', width - strwidth(label))
   let text = label . space . stats
   " vint: next-line -ProhibitUsingUndeclaredVariable
   return text[winsaveview()['leftcol']:]

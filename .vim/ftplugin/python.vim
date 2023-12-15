@@ -27,22 +27,21 @@ noremap <buffer> gcD <Cmd>Pydocstring<CR><Cmd>call timer_start(500, function('py
 noremap <expr> <buffer> g{ python#dict_to_kw_expr(0)
 noremap <expr> <buffer> g} python#dict_to_kw_expr(1)
 
-" Define python vim-surround macros
-" Todo: Support [frub]* regex delimiters by adding succinct#add_delims() parameter
-" to bypass regex escape and adding [] and *?+ support to succinct#process_value().
-call succinct#add_delims({
-  \ 'l': "list(\r)",
-  \ 't': "tuple(\r)",
-  \ "'": "'\r'",
-  \ '"': "\"\r\"",
-  \ 'd': "\"\"\"\r\"\"\"",
-  \ 'D': "'''\r'''",
-  \ },
-  \ 1)
-
-" Define indention-based 'm' text objects
+" Add indention-based 'm' text objects
 " BracelessEnable +indent  " bug causes screen view to jump
 " BracelessEnable +highlight  " slows things down even on mac
 if exists(':BracelessEnable')
   BracelessEnable
 endif
+
+" Add python delimiters
+" Note: Critical to match word boundary or else e.g. r'bar' matches on both sides
+let s:delims = {
+  \ 'l': 'list(\r)',
+  \ 't': 'tuple(\r)',
+  \ "'": '''\r''',
+  \ '"': '"\r"',
+  \ 'd': '"""\r"""',
+  \ 'D': '''''''\r''''''',
+  \ }
+call succinct#add_delims(s:delims, 1)

@@ -19,18 +19,16 @@ function! s:open_markdown_file() abort
 endfunction
 nnoremap <buffer> <Plug>ExecuteFile1 <Cmd>call <sid>open_markdown_file()<CR>
 
-" Define markdown vim-surround macros. Note we generally use multi-markdown
-" syntax instead of github for improved latex support.
+" Add delimiters. Note we generally use multi-markdown instead of github for tex math.
 " See: https://github.com/fletcher/MultiMarkdown-4/issues/130
 " See: http://fletcher.github.io/MultiMarkdown-4/criticmarkup.html
-" \ '-': "~~\r~~",
-call succinct#add_delims({
-  \ 't': "<\1<\1>\r</\1\1>",
-  \ 'i': "*\r*",
-  \ 'o': "**\r**",
-  \ '-': "<s>\r</s>",
-  \ 'e': "{==\r==}",
-  \ 'd': "{--\r--}",
-  \ '$': "$$\r$$",
-  \ },
-  \ 1)
+let s:delims = {
+  \ 't': '<\1<\1>\r</\1\1>',
+  \ 'i': '*\r*',
+  \ 'o': '**\r**',
+  \ '-': '<s>\r</s>',
+  \ 'e': '{==\r==}',
+  \ 'd': '{--\r--}',
+  \ '$': '$$\r$$',
+  \ }
+call succinct#add_delims(s:delims, 1)

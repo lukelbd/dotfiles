@@ -2068,10 +2068,10 @@ if s:plug_active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
   noremap <Leader>[ <Cmd>TestVisit<CR>
   noremap <Leader>] <Cmd>TestVisit<CR>
-  noremap <Leader>. <Cmd>TestLast<CR>
-  noremap <Leader>> <Cmd>TestLast --mpl-generate<CR>
-  noremap <Leader>, <Cmd>TestNearest<CR>
-  noremap <Leader>< <Cmd>TestNearest --mpl-generate<CR>
+  noremap <Leader>, <Cmd>TestLast<CR>
+  noremap <Leader>< <Cmd>TestLast --mpl-generate<CR>
+  noremap <Leader>. <Cmd>TestNearest<CR>
+  noremap <Leader>> <Cmd>TestNearest --mpl-generate<CR>
   noremap <Leader>' <Cmd>TestFile<CR>
   noremap <Leader>" <Cmd>TestFile --mpl-generate<CR>
 endif
