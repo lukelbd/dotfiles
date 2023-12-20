@@ -34,11 +34,10 @@ if exists(':BracelessEnable')
   BracelessEnable
 endif
 
-" Add python delimiters
-" Note: Critical to match word boundary or else e.g. r'bar' matches on both sides
+" Add multiline docstring 'd' delimiters
+" Note: This will add match for e.g. 'r' prefixes.
+" but vim-textobj pattern matches
 let s:delims = {
-  \ 'l': 'list(\r)',
-  \ 't': 'tuple(\r)',
   \ "'": '''\r''',
   \ '"': '"\r"',
   \ 'd': '"""\r"""',

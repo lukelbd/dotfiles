@@ -136,6 +136,9 @@ let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
+let s:vim_plugins = [
+  \ 'vim-succinct', 'vim-tags', 'vim-statusline', 'vim-tabline', 'vim-scrollwrapped', 'vim-toggle',
+  \ ]  " custom vim plugins
 let s:copy_filetypes = [
   \ 'bib', 'log', 'qf'
   \ ]  " for wrapping and copy toggle
@@ -1333,17 +1336,20 @@ call plug#('raimondi/delimitmate')
 " Additional text objects (inner/outer selections)
 " Todo: Generalized function converting text objects into navigation commands? Or
 " could just rely on tag and fold jumping for most navigation.
-" call plug#('bps/vim-textobj-python')  " not really ever used, just use indent objects
-" call plug#('vim-scripts/argtextobj.vim')  " issues with this too
+" call plug#('bps/vim-textobj-python')  " use braceless 'm' instead
 " call plug#('machakann/vim-textobj-functioncall')  " does not work
-" call plug#('glts/vim-textobj-comment')  " does not work
+" call plug#('vim-scripts/argtextobj.vim')  " issues with this too
+" call plug#('beloglazov/vim-textobj-quotes')  " multi-line string, but not docstrings
+" call plug#('thalesmello/vim-textobj-multiline-str')  " multi-line string, adapted in python.vim
 call plug#('kana/vim-textobj-user')  " base requirement
 call plug#('kana/vim-textobj-line')  " entire line, object is 'l'
 call plug#('kana/vim-textobj-entire')  " entire file, object is 'e'
-call plug#('kana/vim-textobj-fold')  " folding
-call plug#('kana/vim-textobj-indent')  " matching indentation, object is 'i' for deeper indents and 'I' for just contiguous blocks, and using 'a' includes blanklines
+call plug#('kana/vim-textobj-fold')  " select current fold, object is 'z'
+call plug#('kana/vim-textobj-indent')  " indentation, object is 'i' or 'I' and 'a' includes empty lines
 call plug#('sgur/vim-textobj-parameter')  " function parameter, object is '='
-let g:vim_textobj_parameter_mapping = '='  " avoid ',' conflict with latex
+call plug#('glts/vim-textobj-comment')  " comment blocks, object is 'C' (see below)
+let g:vim_textobj_parameter_mapping = '='  " avoid ',' since conflicts with latex
+let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 
 " Formatting stuff. Conjoin plugin removes line continuation characters and is awesome.
 " Use vim-easy-align because tabular API is fugly and requires separate maps and does
@@ -1429,7 +1435,7 @@ let g:vimtex_fold_types = {'envs' : {'whitelist': ['enumerate','itemize','math']
 " insert mode and ignores primary headers so entire document is not folded.
 " See: https://github.com/preservim/vim-markdown/issues/516
 " See: https://github.com/preservim/vim-markdown/issues/489
-" call plug#('numirias/semshi',) {'do': ':UpdateRemotePlugins'}  " neovim required
+" call plug#('numirias/semshi', {'do': ':UpdateRemotePlugins'})  " neovim required
 " call plug#('tweekmonster/impsort.vim') " conflicts with isort plugin, also had major issues
 " call plug#('vim-python/python-syntax')  " originally from hdima/python-syntax, manually copied version with match case
 " call plug#('MortenStabenau/matlab-vim')  " requires tmux installed
@@ -1478,18 +1484,11 @@ let g:speeddating_no_mappings = 1
 " Note: This needs to come after or else (1) vim-succinct will not be able to use
 " textobj#user#plugin, (2) the initial statusline will possibly be incomplete, and
 " (3) cannot wrap indexed-search plugin with tags file.
-for s:name in [
-  \ 'vim-succinct',
-  \ 'vim-tags',
-  \ 'vim-statusline',
-  \ 'vim-tabline',
-  \ 'vim-scrollwrapped',
-  \ 'vim-toggle',
-  \ ]
+for s:plugin in s:vim_plugins
   let s:local = 0
   for s:root in ['~', '~/icloud']
     for s:sub in ['software', 'forks']
-      let s:dir = expand(join([s:root, s:sub, s:name], '/'))
+      let s:dir = expand(join([s:root, s:sub, s:plugin], '/'))
       if !s:local && isdirectory(s:dir)
         call s:plug_local(s:dir)
         let s:local = 1
@@ -1497,9 +1496,14 @@ for s:name in [
     endfor
   endfor
   if !s:local
-    call plug#('lukelbd/' . s:name)
+    call plug#('lukelbd/' . s:plugin)
   endif
 endfor
+let g:toggle_map = 'zb'
+let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
+let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
+noremap zb <Cmd>Toggle<CR>
+noremap <Leader>w <Cmd>WrapToggle<CR>
 
 " End plugin manager. Also declares filetype plugin, syntax, and indent on
 " Note every BufRead autocmd inside an ftdetect/filename.vim file is automatically
@@ -1510,39 +1514,8 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" Auto-complete delimiters
-" Filetype-specific settings are in various ftplugin files
-if s:plug_active('delimitmate')
-  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
-endif
-
-" Additional mappings powered by Karabiner. Note that custom delimiters
-" are declared inside vim-succinct plugin functions rather than here.
-if s:plug_active('vim-succinct')
-  let g:succinct_surround_map = '<C-s>'
-  let g:succinct_snippet_map = '<C-e>'
-  let g:succinct_prevdelim_map = '<F1>'
-  let g:succinct_nextdelim_map = '<F2>'
-endif
-
-" Scroll wrapped lines
-" Note: Use :WrapHeight and :WrapStarts for debugging.
-" Note: Instead of native scrollwrapped#scroll() function use an iter#scroll_count()
-" function that accounts for open popup windows. See insert-mode section above.
-if s:plug_active('vim-toggle') || s:plug_active('vim-scrollwrapped')
-  noremap zb <Cmd>Toggle<CR>
-  noremap <Leader>w <Cmd>WrapToggle<CR>
-  let g:toggle_map = 'zb'
-  let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
-  let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
-  " let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + s:lang_filetypes
-endif
-
-" Comment toggling stuff
-" Disable a few maps but keep many others
+" Toggle comments and whatnot
+" Note: This disable several maps but keeps many others
 if s:plug_active('tcomment_vim')
   nmap g>> g>c
   nmap g<< g<c
@@ -1554,7 +1527,7 @@ if s:plug_active('tcomment_vim')
   let g:tcomment_mapleader_comment_anyway = 'g>'
 endif
 
-" Vim sneak motion
+" Sneak between two-character patterns
 " Note: Tried easy motion but way too complicated / slows everything down
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
 if s:plug_active('vim-sneak')
@@ -1566,6 +1539,27 @@ if s:plug_active('vim-sneak')
   map T <Plug>Sneak_T
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
+endif
+
+" Succinct settings for text objects and delimiters
+" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also here
+" use custom names for several commands.
+if s:plug_active('vim-succinct')
+  let g:succinct_surround_map = '<C-s>'
+  let g:succinct_snippet_map = '<C-e>'
+  let g:succinct_prevdelim_map = '<F1>'
+  let g:succinct_nextdelim_map = '<F2>'
+  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_jump_expansion = 0
+  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
+  let s:textobj_comment = {
+    \   'select-i': 'iC',
+    \   'select-i-function': 'textobj#comment#select_i',
+    \   'select-a': 'aC',
+    \   'select-a-function': 'textobj#comment#select_a',
+    \ }
+  call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
 endif
 
 " Tag integration settings
