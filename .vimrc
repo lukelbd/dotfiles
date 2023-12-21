@@ -1925,8 +1925,8 @@ if s:plug_active('conflict-marker.vim')
   nmap ]f <Plug>(conflict-marker-next-hunk)
   nmap gf <Plug>(conflict-marker-ourselves)
   nmap gF <Plug>(conflict-marker-themselves)
-  nmap zf <Plug>(conflict-marker-none)
-  nmap zF <Plug>(conflict-marker-both)
+  nmap zf <Plug>(conflict-marker-both)
+  nmap zF <Plug>(conflict-marker-none)
 endif
 
 " Fugitive settings

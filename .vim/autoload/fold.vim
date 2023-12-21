@@ -8,7 +8,7 @@ function! fold#get_line(line, ...) abort
   let char = comment#get_char()
   let regex = a:0 && a:1 ? '\(^\s*\|\s*$\)' : '\s*$'
   let label = substitute(getline(a:line), regex, '', 'g')
-  let regex = '^\@!\s*' . char . (len(char) == 1 ? '[^' . char . ']*$' : '.*$')
+  let regex = '\S\@<=\s*' . char . (len(char) == 1 ? '[^' . char . ']*$' : '.*$')
   let label = substitute(label, regex, '', 'g')
   return label
 endfunction
