@@ -1918,9 +1918,9 @@ if s:plug_active('conflict-marker.vim')
   let g:conflict_marker_common_ancestors = '^||||||| .*$'
   let g:conflict_marker_end = '^>>>>>>> .*$'
   call s:repeat_map('[F', 'ConflictBackward',
-    \ '<Plug>(conflict-marker-prev-hunk)<Plug>(conflict-marker-ourselves)', 'n', 1)
+    \ '<Plug>(conflict-marker-prev-hunk)<Plug>(conflict-marker-themselves)', 'n', 1)
   call s:repeat_map(']F', 'ConflictForward',
-    \ '<Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-ourselves)', 'n', 1)
+    \ '<Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-themselves)', 'n', 1)
   nmap [f <Plug>(conflict-marker-prev-hunk)
   nmap ]f <Plug>(conflict-marker-next-hunk)
   nmap gf <Plug>(conflict-marker-ourselves)

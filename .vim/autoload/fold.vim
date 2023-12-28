@@ -128,17 +128,24 @@ function! fold#get_current(...) abort
 endfunction
 
 " Set the file fold level and optional default toggles
+" Warning: Sometimes run into issue where opening new files or reading updates
+" permanently disables 'expr' folds. Account for this by re-applying fold method.
+" Warning: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call_
+" can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
+" Warning: Python block overrides b:SimPylFold_cache while markdown block overwrites
+" foldtext from $RUNTIME/syntax/[markdown|javascript] and re-applies vim-markdown.
 " Note: Native 'zm' and 'zr' accept commands but count is relative to current
 " fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below
-" Warning: Regenerating SimpylFold cache with manual SimpylFold#FoldExpr() call can
-" produce strange bug. Instead rely on FastFoldUpdate to fill the cache.
 function! fold#update_folds() abort
-  silent! unlet! b:SimpylFold_cache
-  if &filetype ==# 'markdown'
+  if &filetype ==# 'python'
+    setlocal foldmethod=expr
+    setlocal foldexpr=python#fold_expr(v:lnum)
+    silent! unlet! b:SimpylFold_cache | FastFoldUpdate
+  elseif &filetype ==# 'markdown'
+    setlocal foldmethod=expr
+    setlocal foldtext=fold#fold_text()
     silent! doautocmd BufWritePost
-  else
-    FastFoldUpdate
   endif
 endfunction
 function! fold#set_defaults(...) abort

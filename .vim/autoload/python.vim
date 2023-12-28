@@ -52,8 +52,6 @@ function! python#dict_to_kw_expr(invert) abort
 endfunction
 
 " Folding expression to add global constants and docstrings to SimpylFold cache
-" Note: Here 'fold_edit' refreshes folds after calling :edit and for some reason
-" is required to open files with overridden folds (especially BufWritePost).
 " Warning: Only call this when SimpylFold updates to improve performance. Might break
 " if SimpylFold renames internal cache variable (monitor). Note
 function! s:fold_exists(lnum) abort
