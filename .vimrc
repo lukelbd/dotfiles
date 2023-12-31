@@ -942,10 +942,10 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-call s:repeat_map('g-', 'DashSingle', "<Cmd>call comment#general_line('-', 0)<CR>")
-call s:repeat_map('g_', 'DashDouble', "<Cmd>call comment#general_line('=', 1)<CR>")
-call s:repeat_map('g=', 'EqualSingle', "<Cmd>call comment#general_line('=', 0)<CR>")
-call s:repeat_map('g+', 'EqualDouble', "<Cmd>call comment#general_line('=', 1)<CR>")
+call s:repeat_map('g-', 'DashSingle', "<Cmd>call comment#append_line('-', 0)<CR>")
+call s:repeat_map('g_', 'DashDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
+call s:repeat_map('g=', 'EqualSingle', "<Cmd>call comment#append_line('=', 0)<CR>")
+call s:repeat_map('g+', 'EqualDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands
@@ -953,8 +953,8 @@ inoremap <expr> <C-g>c comment#get_insert()
 let s:author = "'Author: Luke Davis (lukelbd@gmail.com)'"
 let s:edited = "'Edited: ' . strftime('%Y-%m-%d')"
 call s:repeat_map('gc;', 'HeadLine', "<Cmd>call comment#header_line('-', 77, 0)<CR>", 'n')
-call s:repeat_map('gc/', 'HeadAuth', '<Cmd>call comment#general_note(' . s:author . ')<CR>', 'n')
-call s:repeat_map('gc?', 'HeadEdit', '<Cmd>call comment#general_note(' . s:edited . ')<CR>', 'n')
+call s:repeat_map('gc/', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>', 'n')
+call s:repeat_map('gc?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>', 'n')
 call s:repeat_map('gc:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>", 'n')
 call s:repeat_map("gc'", '', '<Cmd>call comment#header_inchar()<CR>', 'n')
 call s:repeat_map('gc"', '', '<Cmd>call comment#header_inline(5)<CR>', 'n')
@@ -1514,19 +1514,6 @@ call plug#end()
 "-----------------------------------------------------------------------------"
 " Plugin sttings
 "-----------------------------------------------------------------------------"
-" Toggle comments and whatnot
-" Note: This disable several maps but keeps many others
-if s:plug_active('tcomment_vim')
-  nmap g>> g>c
-  nmap g<< g<c
-  let g:tcomment_opleader1 = 'gc'  " default is 'gc'
-  let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
-  let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
-  let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
-  let g:tcomment_mapleader_uncomment_anyway = 'g<'
-  let g:tcomment_mapleader_comment_anyway = 'g>'
-endif
-
 " Sneak between two-character patterns
 " Note: Tried easy motion but way too complicated / slows everything down
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
@@ -1539,6 +1526,22 @@ if s:plug_active('vim-sneak')
   map T <Plug>Sneak_T
   map <F1> <Plug>Sneak_,
   map <F2> <Plug>Sneak_;
+endif
+
+" Toggle comments and whatnot
+" Note: This disable several maps but keeps many others
+if s:plug_active('tcomment_vim')
+  nmap g>> g>c
+  nmap g<< g<c
+  noremap gcc <Cmd>call comment#toggle_motion()<CR>
+  noremap g>c <Cmd>call comment#toggle_motion(1)<CR>
+  noremap g<c <Cmd>call comment#toggle_motion(0)<CR>
+  let g:tcomment_opleader1 = 'gc'  " default is 'gc'
+  let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
+  let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
+  let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
+  let g:tcomment_mapleader_uncomment_anyway = 'g<'
+  let g:tcomment_mapleader_comment_anyway = 'g>'
 endif
 
 " Succinct settings for text objects and delimiters

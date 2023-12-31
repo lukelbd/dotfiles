@@ -32,6 +32,27 @@ function! comment#get_insert() abort
   return "\<C-g>u" . join(parts, ' ') . lefts . ' '
 endfunction
 
+" General dashes current line length (no leading commentsj)
+" Note: Used mostly for python docstrings and markdown headers.
+function! comment#append_line(fill, ...) abort
+  let cchar = comment#get_char()
+  let indent = s:indent_spaces()
+  let nfill = match(getline('.'), '\s*$') - len(indent)  " last non-whitespace loc
+  let line = indent . repeat(a:fill, nfill)
+  call append(line('.'), line)  " always append line
+  if a:0 && a:1 | call append(line('.') - 1, line) | endif
+endfunction
+
+" General comment note matching current indentation
+" Note: Used e.g. for author and date information
+function! comment#append_note(note) abort
+  let cchar = comment#get_char()
+  let indent = s:indent_spaces()
+  let head = indent . cchar
+  let line = head . ' ' . a:note
+  call append(line('.') - 1, line)
+endfunction
+
 " Header style of format '# Hello world! #'
 function! comment#header_inchar() abort
   let indent = s:indent_spaces()
@@ -66,27 +87,6 @@ function! comment#header_line(fill, nfill, ...) abort  " inserts above by defaul
   call append(line('.') - 1, comment)
 endfunction
 
-" General dashes current line length (no leading commentsj)
-" Note: Used mostly for python docstrings and markdown headers.
-function! comment#general_line(fill, ...) abort
-  let cchar = comment#get_char()
-  let indent = s:indent_spaces()
-  let nfill = match(getline('.'), '\s*$') - len(indent)  " last non-whitespace loc
-  let line = indent . repeat(a:fill, nfill)
-  call append(line('.'), line)  " always append line
-  if a:0 && a:1 | call append(line('.') - 1, line) | endif
-endfunction
-
-" General comment note matching current indentation
-" Note: Used e.g. for author and date information
-function! comment#general_note(note) abort
-  let cchar = comment#get_char()
-  let indent = s:indent_spaces()
-  let head = indent . cchar
-  let line = head . ' ' . a:note
-  call append(line('.') - 1, line)
-endfunction
-
 " Jump to next or previous match
 " Note: Use this for e.g. [c and ]c comment block jumping
 function! comment#next_block(reverse, ...) abort
@@ -96,4 +96,21 @@ function! comment#next_block(reverse, ...) abort
   let regex = '\(' . regex . '\)\@<!\(' . regex . '\)\+'
   let flags = a:reverse ? 'bw' : 'w'
   call search(regex, flags)
+endfunction
+
+" Toggle comment under cursor accounting for folds
+" Note: Required since default 'gcc' maps to g@$ operator function call
+function! comment#toggle_motion(...) abort
+  call tcomment#ResetOption()
+  if v:count > 0 | call tcomment#SetOption('count', v:count) | endif
+  let suffix = !a:0 ? 'gcc' : a:1 ? 'Commentc' : 'Uncommentc'
+  let w:tcommentPos = getpos('.')
+  let &operatorfunc = 'TCommentOpFunc_' . suffix
+  let line1 = foldclosed('.')
+  let line2 = foldclosedend('.')
+  if line1 == line2  " e.g. both -1
+    call feedkeys('g@$', 'n')
+  else  " toggle fold
+    call feedkeys(line1 . 'ggg@' . (line2 - line1) . 'j', 'n')
+  endif
 endfunction
