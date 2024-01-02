@@ -4,6 +4,7 @@
 " Format fold for specific filetypes
 " Note: This concatenates python docstring lines and uses frame title
 " for beamer presentations. In future should expand for other filetypes.
+let s:max_lines = 100  " maxumimum number of lines
 function! fold#get_line(line, ...) abort
   let char = comment#get_char()
   let regex = a:0 && a:1 ? '\(^\s*\|\s*$\)' : '\s*$'
@@ -12,25 +13,10 @@ function! fold#get_line(line, ...) abort
   let label = substitute(label, regex, '', 'g')
   return label
 endfunction
-function! fold#get_line_tex(line, ...)
-  let [line, label] = [a:line, fold#get_line(a:line)]
-  if label =~# '\(begingroup\|begin\s*{\s*frame\*\?\s*}\)'
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + 5)
-      let bool = getline(lnum) =~# '^\s*\\frametitle'
-      if bool | let [line, label] = [lnum, fold#get_line(lnum)] | break | endif
-    endfor
-  endif
-  if label =~# '{\s*\(%.*\)\?$'  " append lines
-    for lnum in range(line + 1, a:0 ? a:1 : line + 5)
-      let label .= (lnum == line + 1 ? '' : ' ') . fold#get_line(lnum, 1)
-    endfor
-  endif
-  return substitute(label, '\\\@<!\\', '', 'g')  " remove backslashes
-endfunction
 function! fold#get_line_python(line, ...) abort
   let label = fold#get_line(a:line)
   if label =~# '["'']\{3}\s*$'  " append afterward
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + 5)
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:max_lines)
       let doc = fold#get_line(lnum, 1)  " remove indent
       let doc = substitute(doc, '[-=]\{3,}', '', 'g')
       let pad = lnum == a:line + 1 || empty(doc) ? '' : ' '
@@ -42,6 +28,26 @@ function! fold#get_line_python(line, ...) abort
   let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
   return label
 endfunction
+function! fold#get_line_tex(line, ...)
+  let [line, label] = [a:line, fold#get_line(a:line)]
+  let indent = substitute(label, '\S.*$', '', 'g')
+  if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\)\*\?\s*}'
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:max_lines)
+      let bool = getline(lnum) =~# '^\s*\\\(label\|frametitle\)'
+      if bool | let [line, label] = [lnum, fold#get_line(lnum)] | break | endif
+    endfor
+  endif
+  if label =~# '{\s*\(%.*\)\?$'  " append lines
+    for lnum in range(line + 1, a:0 ? a:1 : line + s:max_lines)
+      let bool = lnum == line + 1 || label[-1:] ==# '{'
+      let label .= (bool ? '' : ' ') . fold#get_line(lnum, 1)
+    endfor
+  endif
+  let label = substitute(label, '\\\@<!\\', '', 'g')  " remove backslashes
+  let label = substitute(label, '\(textbf\|textit\|emph\){', '', 'g')  " remove style
+  let label = indent . substitute(label, '^\s*', '', 'g')
+  return label
+endfunction
 
 " Generate truncated fold text
 " Note: Style here is inspired by vim-anyfold. For now stick to native
@@ -49,7 +55,7 @@ endfunction
 scriptencoding utf-8
 let s:delim_open = {']': '[', ')': '(', '}': '{', '>': '<'}
 let s:delim_close = {'[': ']', '(': ')', '{': '}', '<': '>'}
-function! fold#fold_text(...) abort  " hello world!!!
+function! fold#fold_text(...) abort
   if a:0 && a:0 != 3
     echohl WarningMsg
     echom 'Warning: Fold text requires zero arguments or exactly three arguments.'
@@ -58,9 +64,9 @@ function! fold#fold_text(...) abort  " hello world!!!
   let current = [v:foldstart, v:foldend, len(v:folddashes)]
   let [line1, line2, level] = a:0 == 3 ? a:000 : current
   if &filetype ==# 'python'  " python formatting
-    let label = fold#get_line_python(line1, min([line1 + 5, line2]))
+    let label = fold#get_line_python(line1, min([line1 + s:max_lines, line2]))
   elseif &filetype ==# 'tex'  " tex formatting
-    let label = fold#get_line_tex(line1, min([line1 + 5, line2]))
+    let label = fold#get_line_tex(line1, min([line1 + s:max_lines, line2]))
   else  " default formatting
     let label = fold#get_line(line1)
   endif
