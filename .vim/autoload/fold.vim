@@ -26,7 +26,7 @@ function! fold#get_line_python(line, ...) abort
   let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
   let result = substitute(label, '["'']\{3}', '\=add(l:subs, submatch(0))', 'gn')
   let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
-  return label
+  return label  " closed docstring
 endfunction
 function! fold#get_line_tex(line, ...)
   let [line, label] = [a:line, fold#get_line(a:line)]
@@ -70,14 +70,15 @@ function! fold#fold_text(...) abort
   else  " default formatting
     let label = fold#get_line(line1)
   endif
-  if label =~# '[\[({<]*$'  " append delimiter
-    let label .= '···' . s:delim_close[label[-1:]]
-  endif
   let level = repeat('+ ', level)
   let lines = string(line2 - line1 + 1)
   let space = repeat(' ', len(string(line('$'))) - len(lines))
   let stats = level . space . lines . ' lines'
   let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
+  if label =~# '[[({<]$'  " append delimiter
+    let label .= '···' . s:delim_close[label[-1:]]  " vint: -ProhibitAbbreviationOption
+    let label .= &ft ==# 'python' && label =~# '^\s*\(def\|class\)\>' ? ':' : ''
+  endif
   if strwidth(label) > width - 4
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
     let dstr = empty(dend) ? '' : s:delim_open[dend[0]]
