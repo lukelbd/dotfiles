@@ -68,7 +68,8 @@ endfunction
 function! python#fold_cache() abort
   let lnum = 1
   let cache = b:SimpylFold_cache
-  let global = '^\K\k*'
+  let global = '^\K\k*'  " e.g. VARIABLE = ... or VARIABLE.update(...)
+  let keywords = '^\(def\|class\|for\|while\|with\|try\|except\|finally\|if\|elif\|else\)'
   let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
   while lnum <= line('$')
     if s:fold_exists(lnum) | let lnum += 1 | continue | endif
@@ -86,8 +87,8 @@ function! python#fold_cache() abort
       endwhile
     endif
     " Variable fold (e.g. GLOBAL_VARIABLE = [...)
-    if empty(group) && line =~# global  " zero-indent private or global variable
-      call add(group, lnum)
+    if empty(group) && line =~# global && line !~# keywords
+      call add(group, lnum)  " zero-indent variable
       while lnum < line('$') && get(cache[lnum + 1], 'indent', 0)  " fold indents
         let lnum += 1
         call add(group, lnum)
