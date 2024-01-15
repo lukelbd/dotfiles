@@ -49,16 +49,18 @@ function! s:parse_grep(level, pattern, ...) abort
 endfunction
 function! s:parse_pattern(pattern)
   let regex = fzf#shellescape(a:pattern)  " similar to native but handles other shells
-  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " translate word borders
-  let regex = substitute(regex, '\\[cvCV]', '', 'g')  " unsure how to translate
+  let regex = substitute(regex, '\\%\([$^]\)', '\1', 'g')  " file border to line border
+  let regex = substitute(regex, '\\%\([#V]\|[<>]\?''m\)', '', 'g')  " ignore markers
+  let regex = substitute(regex, '\\%[<>]\?\(\.\|[0-9]\+\)[lcv]', '', 'g')  " ignore ranges
+  let regex = substitute(regex, '\\[<>]', '\\b', 'g')  " sided word border to unsided
+  let regex = substitute(regex, '\\[cvCV]', '', 'g')  " ignore case and magic markers
   let regex = substitute(regex, '\C\\S', "[^ \t]", 'g')  " non-whitespace characters
   let regex = substitute(regex, '\C\\s', "[ \t]",  'g')  " whitespace characters
   let regex = substitute(regex, '\C\\[IKF]', '[a-zA-Z_]', 'g')  " letters underscore
   let regex = substitute(regex, '\C\\[ikf]', '\\w', 'g')  " numbers letters underscore
-  let regex = substitute(regex, '\\\([(|)]\)', '=\1', 'g')  " reserve grouping indicators
-  let regex = substitute(regex, '\(^\|[^=\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape literal parentheses
-  let regex = substitute(regex, '=\([(|)]\)', '\1', 'g')  " unescape grouping indicators
-  return regex
+  let regex = substitute(regex, '\\%\?\([(|)]\)', '@\1', 'g')  " mark grouping parentheses
+  let regex = substitute(regex, '\(^\|[^@\\]\)\([(|)]\)', '\1\\\2', 'g')  " escape parentheses
+  return substitute(regex, '@\([(|)]\)', '\1', 'g')  " unmark grouping parentheses
 endfunction
 
 " Call Ag or Rg from command
