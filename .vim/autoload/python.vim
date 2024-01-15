@@ -87,14 +87,14 @@ function! python#fold_cache() abort
       endwhile
     endif
     " Variable fold (e.g. GLOBAL_VARIABLE = [...)
-    if empty(group) && line =~# global && line !~# keywords
+    if empty(group) && line =~# global
       call add(group, lnum)  " zero-indent variable
       while lnum < line('$') && get(cache[lnum + 1], 'indent', 0)  " fold indents
         let lnum += 1
         call add(group, lnum)
         if s:fold_exists(lnum) | let group = [] | break | endif
       endwhile
-      if len(group) > 1
+      if len(group) > 1 && line !~# keywords
         let lnum += 1
         call add(group, lnum)
       endif
