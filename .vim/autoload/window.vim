@@ -87,12 +87,16 @@ endfunction
 
 " Select from open tabs
 " Note: This displays a list with the tab number and the file
-function! window#jump_tab() abort
-  call fzf#run(fzf#wrap({
-    \ 'source': window#buffer_source(),
-    \ 'options': '--no-sort --prompt="Tab> "',
-    \ 'sink': function('s:jump_tab_sink'),
-    \ }))
+function! window#jump_tab(...) abort
+  if a:0 && a:1
+    call s:jump_tab_sink(a:1)
+  else
+    call fzf#run(fzf#wrap({
+      \ 'source': window#buffer_source(),
+      \ 'options': '--no-sort --prompt="Tab> "',
+      \ 'sink': function('s:jump_tab_sink'),
+      \ }))
+  endif
 endfunction
 function! s:jump_tab_sink(item) abort
   exe 'normal! ' . split(a:item, ':')[0] . 'gt'
@@ -102,7 +106,7 @@ endfunction
 " Note: This also displays the tab names in case user wants to
 " group this file appropriately amongst similar open files.
 function! window#move_tab(...) abort
-  if a:0
+  if a:0 && a:1
     call s:move_tab_sink(a:1)
   else
     call fzf#run(fzf#wrap({

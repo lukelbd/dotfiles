@@ -423,9 +423,9 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 
 " Tab and window jumping
-noremap g<Tab> <Nop>
-nnoremap <expr> <Tab><Tab> v:count ? v:count . 'gt' : '<Cmd>call window#jump_tab()<CR>'
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
+noremap g<Tab> <Nop>
+nnoremap <Tab><Tab> <Cmd>call window#jump_tab(v:count)<CR>
 nnoremap <Tab>q <Cmd>Buffers<CR>
 nnoremap <Tab>w <Cmd>Windows<CR>
 nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
@@ -440,7 +440,7 @@ nnoremap <Tab>l <C-w>l
 " Tab and window resizing and motion
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>m <Cmd>call window#move_tab()<CR>
+nnoremap <Tab>m <Cmd>call window#move_tab(v:count)<CR>
 nnoremap <Tab>= <Cmd>vertical resize 90<CR>
 nnoremap <Tab>0 <Cmd>exe 'resize ' . (&lines * (len(tabpagebuflist()) > 1 ? 0.8 : 1.0))<CR>
 nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
