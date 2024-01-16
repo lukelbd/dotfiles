@@ -148,19 +148,20 @@ function! edit#swap_lines(...) abort
   else
     let [line11, line12] = [line1, line1]
   endif
-  let closed = foldclosed('.') > 0 ? 1 : 0
   let line2 = delta > 0 ? line12 + delta : line11 + delta
+  let [close1, close2] = [foldclosed(line1) > 0, foldclosed(line2) > 0]
   if foldclosed(line2) > 0
     let [line21, line22] = [foldclosed(line2), foldclosedend(line2)]
   else
     let [line21, line22] = [line2, line2]
   endif
-  let [text1, text2] = [getline(line11, line12), getline(line21, line22)]
   let [line1, line2] = delta > 0 ? [line11, line22] : [line21, line12]
-  exe line1 . ',' . line2 . 'delete _'
+  let [text1, text2] = [getline(line11, line12), getline(line21, line22)]
+  call deletebufline(bufnr(), line1, line2)  " delete without register
   call append(line1 - 1, delta > 0 ? text2 + text1 : text1 + text2)
   call fold#update_folds()
-  exe line21 | exe closed ? 'foldclose' : '' | exe line21
+  silent! exe close1 ? line22 . 'foldclose' : ''
+  silent! exe close2 ? line11 . 'foldclose' : '' | exe line21
 endfunction
 
 " Wrap the lines to 'count' columns rather than 'text width'
