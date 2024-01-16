@@ -884,10 +884,10 @@ nnoremap <expr> gK 'k' . (v:count . (v:count > 1)) . '<Cmd>call conjoin#joinNorm
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
 nnoremap cy "_s
-nnoremap ch <Cmd>call edit#swap_characters(0)<CR>
-nnoremap cl <Cmd>call edit#swap_characters(1)<CR>
-nnoremap ck <Cmd>call edit#swap_lines(0)<CR>
-nnoremap cj <Cmd>call edit#swap_lines(1)<CR>
+nnoremap ch <Cmd>call edit#swap_chars(0)<CR>
+nnoremap cl <Cmd>call edit#swap_chars(1)<CR>
+nnoremap ck <Cmd>call edit#swap_lines(1)<CR>
+nnoremap cj <Cmd>call edit#swap_lines(0)<CR>
 nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
 
 " Remove character or print info

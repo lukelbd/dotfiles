@@ -153,6 +153,8 @@ function! fold#update_folds() abort
     setlocal foldmethod=expr
     setlocal foldtext=fold#fold_text()
     silent! doautocmd BufWritePost
+  else  " general case
+    FastFoldUpdate
   endif
 endfunction
 function! fold#set_defaults(...) abort

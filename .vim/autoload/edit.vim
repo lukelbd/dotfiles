@@ -128,25 +128,39 @@ endfunction
 
 " Swap characters or lines
 " Note: This does not affect registers
-function! edit#swap_characters(right) abort
+function! edit#swap_chars(...) abort
   let cnum = col('.')
-  let line = getline('.')
-  let idx = a:right ? cnum : cnum - 1
-  if idx > 0 && idx < len(line)
-    let line = line[:idx - 2] . line[idx] . line[idx - 1] . line[idx + 1:]
-    call setline('.', line)
+  let text = getline('.')
+  let idx = a:0 && a:1 ? cnum - 1 : cnum
+  if idx > 0 && idx < len(text)
+    let text = text[:idx - 2] . text[idx] . text[idx - 1] . text[idx + 1:]
+    call setline('.', text)
   endif
 endfunction
-function! edit#swap_lines(bottom) abort
-  let offset = a:bottom ? 1 : -1
-  let lnum = line('.')
-  if lnum + offset > 0 && lnum + offset < line('$')
-    let line1 = getline(lnum)
-    let line2 = getline(lnum + offset)
-    call setline(lnum, line2)
-    call setline(lnum + offset, line1)
+function! edit#swap_lines(...) abort
+  let delta = a:0 && a:1 ? -1 : 1
+  let line1 = line('.')
+  if line1 + delta < 1 || line1 + delta > line('$')
+    return
   endif
-  exe lnum + offset
+  if foldclosed(line1) > 0
+    let [line11, line12] = [foldclosed(line1), foldclosedend(line1)]
+  else
+    let [line11, line12] = [line1, line1]
+  endif
+  let closed = foldclosed('.') > 0 ? 1 : 0
+  let line2 = delta > 0 ? line12 + delta : line11 + delta
+  if foldclosed(line2) > 0
+    let [line21, line22] = [foldclosed(line2), foldclosedend(line2)]
+  else
+    let [line21, line22] = [line2, line2]
+  endif
+  let [text1, text2] = [getline(line11, line12), getline(line21, line22)]
+  let [line1, line2] = delta > 0 ? [line11, line22] : [line21, line12]
+  exe line1 . ',' . line2 . 'delete _'
+  call append(line1 - 1, delta > 0 ? text2 + text1 : text1 + text2)
+  call fold#update_folds()
+  exe line21 | exe closed ? 'foldclose' : '' | exe line21
 endfunction
 
 " Wrap the lines to 'count' columns rather than 'text width'
