@@ -28,7 +28,7 @@ endif
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
 let closed = foldclosed('.') > 0
 let winview = winsaveview()
-call fold#update_folds()
+call fold#update_folds(0)
 call fold#set_defaults()
 exe 'silent! normal! ' . (closed ? '' : 'zv')
 call winrestview(winview)

@@ -387,7 +387,7 @@ nnoremap <C-s> <Cmd>call file#update()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| call fold#update_folds()<CR>
+noremap <Leader>e <Cmd>edit \| call fold#update_folds(1)<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -622,8 +622,8 @@ noremap z< ze
 for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
   silent! exe 'unmap! z' . s:char
 endfor
-noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults()<CR>zv
-noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults()<CR>
+noremap zx <Cmd>call fold#update_folds(1)<CR>zx<Cmd>call fold#set_defaults()<CR>zv
+noremap zX <Cmd>call fold#update_folds(1)<CR>zX<Cmd>call fold#set_defaults()<CR>
 
 " Change fold level
 " Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.
@@ -641,7 +641,7 @@ noremap zR <Cmd>call fold#set_level('R')<CR>
 " annoying e.g. for huge python classes. Now use 'zi' to explicitly toggle nesting.
 " Note: This will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now only call FastFoldUpdate manually for 'zx' and 'zX' (see above).
-noremap <expr> zz '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
+noremap <expr> zz '<Cmd>call fold#update_folds(0)<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
 nnoremap zcc zc
 nnoremap zoo zo
 vnoremap <nowait> zc zc
@@ -883,12 +883,11 @@ nnoremap <expr> gK 'k' . (v:count . (v:count > 1)) . '<Cmd>call conjoin#joinNorm
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-nnoremap cy "_s
-nnoremap ch <Cmd>call edit#swap_chars(0)<CR>
-nnoremap cl <Cmd>call edit#swap_chars(1)<CR>
-nnoremap ck <Cmd>call edit#swap_lines(1)<CR>
-nnoremap cj <Cmd>call edit#swap_lines(0)<CR>
-nnoremap cL myi<CR><Esc>`y<Cmd>delmark y<CR>
+call s:repeat_map('ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>')
+call s:repeat_map('cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>')
+call s:repeat_map('ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
+call s:repeat_map('cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
+call s:repeat_map('cL', 'CutLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>')
 
 " Remove character or print info
 " Here prefer characterize since usually has more info
@@ -910,8 +909,8 @@ nnoremap <Leader>s <Cmd>call switch#spellcheck()<CR>
 nnoremap <Leader>S <Cmd>call switch#spelllang()<CR>
 
 " Replace misspelled words or define or identify words
-call s:repeat_map(']S', 'SpellForward', '<Cmd>call edit#spell_next(0)<CR>')
 call s:repeat_map('[S', 'SpellBackward', '<Cmd>call edit#spell_next(1)<CR>')
+call s:repeat_map(']S', 'SpellForward', '<Cmd>call edit#spell_next(0)<CR>')
 noremap gs <Cmd>call edit#spell_check()<CR>
 noremap gS <Cmd>call edit#spell_check(v:count)<CR>
 noremap zs zg

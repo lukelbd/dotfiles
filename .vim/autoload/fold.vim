@@ -144,7 +144,7 @@ endfunction
 " Note: Native 'zm' and 'zr' accept commands but count is relative to current
 " fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below
-function! fold#update_folds() abort
+function! fold#update_folds(...) abort
   if &filetype ==# 'python'
     setlocal foldmethod=expr
     setlocal foldexpr=python#fold_expr(v:lnum)
@@ -153,8 +153,8 @@ function! fold#update_folds() abort
     setlocal foldmethod=expr
     setlocal foldtext=fold#fold_text()
     silent! doautocmd BufWritePost
-  else  " general case
-    FastFoldUpdate
+  elseif a:0 && a:1  " force update
+    silent! exe 'FastFoldUpdate'
   endif
 endfunction
 function! fold#set_defaults(...) abort
