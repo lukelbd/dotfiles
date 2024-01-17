@@ -940,14 +940,14 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-call s:repeat_map('g-', 'DashSingle', ":<C-u>call comment#append_line('-', 0, 0)<CR>", 'n')
-call s:repeat_map('g_', 'DashDouble', ":<C-u>call comment#append_line('-', 1, 0)<CR>", 'n')
-call s:repeat_map('g=', 'EqualSingle', ":<C-u>call comment#append_line('=', 0, 0)<CR>", 'n')
-call s:repeat_map('g+', 'EqualDouble', ":<C-u>call comment#append_line('=', 1, 0)<CR>", 'n')
-call s:repeat_map('g-', 'VDashSingle', ":<C-u>call comment#append_line('-', 0, 1)<CR>", 'v')
-call s:repeat_map('g_', 'VDashDouble', ":<C-u>call comment#append_line('-', 1, 1)<CR>", 'v')
-call s:repeat_map('g=', 'VEqualSingle', ":<C-u>call comment#append_line('=', 0, 1)<CR>", 'v')
-call s:repeat_map('g+', 'VEqualDouble', ":<C-u>call comment#append_line('=', 1, 1)<CR>", 'v')
+call s:repeat_map('g-', 'DashSingle', ":<C-u>call comment#append_line('-', 0)<CR>", 'n')
+call s:repeat_map('g_', 'DashDouble', ":<C-u>call comment#append_line('-', 1)<CR>", 'n')
+call s:repeat_map('g=', 'EqualSingle', ":<C-u>call comment#append_line('=', 0)<CR>", 'n')
+call s:repeat_map('g+', 'EqualDouble', ":<C-u>call comment#append_line('=', 1)<CR>", 'n')
+call s:repeat_map('g-', 'VDashSingle', ":<C-u>call comment#append_line('-', 0, '''<', '''>')<CR>", 'v')
+call s:repeat_map('g_', 'VDashDouble', ":<C-u>call comment#append_line('-', 1, '''<', '''>')<CR>", 'v')
+call s:repeat_map('g=', 'VEqualSingle', ":<C-u>call comment#append_line('=', 0, '''<', '''>')<CR>", 'v')
+call s:repeat_map('g+', 'VEqualDouble', ":<C-u>call comment#append_line('=', 1, '''<', '''>')<CR>", 'v')
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands

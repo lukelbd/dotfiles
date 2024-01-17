@@ -37,19 +37,22 @@ function! comment#append_note(note) abort
   let append = head . ' ' . a:note
   call append(line('.') - 1, append)
 endfunction
-function! comment#append_line(fill, ...) range abort
+function! comment#append_line(fill, ...) abort
+  let [col2, col1; double] = a:0 > 1 ? reverse(copy(a:000)) : [0, 0] + a:000
+  let [col1, col2] = [type(col1) ? col(col1) : col1, type(col2) ? col(col2) : col2]
+  let double = !empty(double) && double[0]
   let cchar = comment#get_char()
   let regex = '\s*\(' . comment#get_regex() . '.*\)\?$'
-  if a:0 > 1 && a:2
-    let indent = repeat(' ', col("'<") - 1)
-    let nfill = 1 + abs(col("'>") - col("'<"))
-  else
+  if col1 && col2  " columns start at one
+    let indent = repeat(' ', col1 - 1)
+    let nfill = 1 + abs(col2 - col1)
+  else  " default divider
     let indent = s:indent_spaces()
     let nfill = match(getline('.'), regex) - len(indent)  " last non-whitespace loc
   endif
   let append = indent . repeat(a:fill, nfill)
   call append(line('.'), append)  " always append line
-  if a:0 && a:1 | call append(line('.') - 1, append) | endif
+  if double | call append(line('.') - 1, append) | endif
 endfunction
 
 " Header styles '# Hello world! #' and '# ---- Hello world! ---- #'
@@ -72,11 +75,12 @@ function! comment#header_inline(ndash) abort
   call append(line('.') - 1, header)
 endfunction
 function! comment#header_line(fill, nfill, ...) abort  " inserts above by default
+  let double = a:0 && a:1
   let indent = s:indent_spaces()
   let cchar = comment#get_char()
   let nfill = (a:nfill - len(indent)) / len(a:fill)  " divide by length of fill character
   let header = indent . cchar . repeat(a:fill, nfill) . cchar
-  if a:0 && a:1
+  if double
     let title = s:input_title() | if empty(title) | return | endif
     let header = [header, indent . cchar . ' ' . title, header]
   endif
