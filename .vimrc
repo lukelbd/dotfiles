@@ -261,16 +261,15 @@ endfunction
 " Helper function for repeat#set
 " This is simpler than copy-pasting manual repeat#set calls
 function! s:repeat_map(lhs, name, rhs, ...) abort
-  let nore = a:0 > 1 && type(a:2) == 0 && a:2 ? '' : 'nore'
-  let args = a:0 > 1 && type(a:2) != 0 ? a:2 : '<silent>'
-  let mode = a:0 ? a:1 : ''
+  let mode = a:0 > 0 ? a:1 : ''
+  let nore = a:0 > 1 && a:2 ? '' : 'nore'
   if empty(a:name)  " disable repetition (e.g. needs user input so cannot repeat)
     let repeat = ':<C-u>call repeat#set("")<CR>'
-    exe mode . nore . 'map ' . args . ' ' . a:lhs . ' ' . repeat . a:rhs
+    exe mode . nore . 'map <silent> ' . a:lhs . ' ' . repeat . a:rhs
   else  " enable repetition (e.g. annoying-to-type initial commands)
     let plug = empty(a:name) ? '' : '<Plug>' . a:name
     let repeat = ':<C-u>call repeat#set("\' . plug . '")<CR>'
-    exe mode . nore . 'map ' . args . ' ' . plug . ' ' . a:rhs . repeat
+    exe mode . nore . 'map <silent> ' . plug . ' ' . a:rhs . repeat
     exe mode . 'map ' . a:lhs . ' ' . plug
   endif
 endfunction
@@ -887,7 +886,7 @@ call s:repeat_map('ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>', 'n')
 call s:repeat_map('cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>', 'n')
 call s:repeat_map('ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>', 'n')
 call s:repeat_map('cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>', 'n')
-call s:repeat_map('cL', 'CutLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>', 'n')
+call s:repeat_map('cL', 'SliceLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>', 'n')
 
 " Remove character or print info
 " Here prefer characterize since usually has more info
@@ -941,14 +940,14 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-call s:repeat_map('g-', 'DashSingle', ":call comment#append_line('-', 0, 0)<CR>", 'n')
-call s:repeat_map('g_', 'DashDouble', ":call comment#append_line('=', 1, 0)<CR>", 'n')
-call s:repeat_map('g=', 'EqualSingle', ":call comment#append_line('=', 0, 0)<CR>", 'n')
-call s:repeat_map('g+', 'EqualDouble', ":call comment#append_line('=', 1, 0)<CR>", 'n')
-call s:repeat_map('g-', 'VDashSingle', ":call comment#append_line('-', 0, 1)<CR>", 'v')
-call s:repeat_map('g_', 'VDashDouble', ":call comment#append_line('=', 1, 1)<CR>", 'v')
-call s:repeat_map('g=', 'VEqualSingle', ":call comment#append_line('=', 0, 1)<CR>", 'v')
-call s:repeat_map('g+', 'VEqualDouble', ":call comment#append_line('=', 1, 1)<CR>", 'v')
+call s:repeat_map('g-', 'DashSingle', ":<C-u>call comment#append_line('-', 0, 0)<CR>", 'n')
+call s:repeat_map('g_', 'DashDouble', ":<C-u>call comment#append_line('-', 1, 0)<CR>", 'n')
+call s:repeat_map('g=', 'EqualSingle', ":<C-u>call comment#append_line('=', 0, 0)<CR>", 'n')
+call s:repeat_map('g+', 'EqualDouble', ":<C-u>call comment#append_line('=', 1, 0)<CR>", 'n')
+call s:repeat_map('g-', 'VDashSingle', ":<C-u>call comment#append_line('-', 0, 1)<CR>", 'v')
+call s:repeat_map('g_', 'VDashDouble', ":<C-u>call comment#append_line('-', 1, 1)<CR>", 'v')
+call s:repeat_map('g=', 'VEqualSingle', ":<C-u>call comment#append_line('=', 0, 1)<CR>", 'v')
+call s:repeat_map('g+', 'VEqualDouble', ":<C-u>call comment#append_line('=', 1, 1)<CR>", 'v')
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands
