@@ -883,11 +883,11 @@ nnoremap <expr> gK 'k' . (v:count . (v:count > 1)) . '<Cmd>call conjoin#joinNorm
 
 " Swap characters or lines
 " Mnemonic is 'cut line' at cursor, character under cursor will be deleted
-call s:repeat_map('ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>')
-call s:repeat_map('cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>')
-call s:repeat_map('ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>')
-call s:repeat_map('cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>')
-call s:repeat_map('cL', 'CutLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>')
+call s:repeat_map('ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>', 'n')
+call s:repeat_map('cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>', 'n')
+call s:repeat_map('ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>', 'n')
+call s:repeat_map('cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>', 'n')
+call s:repeat_map('cL', 'CutLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>', 'n')
 
 " Remove character or print info
 " Here prefer characterize since usually has more info
@@ -941,10 +941,14 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
-call s:repeat_map('g-', 'DashSingle', "<Cmd>call comment#append_line('-', 0)<CR>")
-call s:repeat_map('g_', 'DashDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
-call s:repeat_map('g=', 'EqualSingle', "<Cmd>call comment#append_line('=', 0)<CR>")
-call s:repeat_map('g+', 'EqualDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
+call s:repeat_map('g-', 'DashSingle', ":call comment#append_line('-', 0, 0)<CR>", 'n')
+call s:repeat_map('g_', 'DashDouble', ":call comment#append_line('=', 1, 0)<CR>", 'n')
+call s:repeat_map('g=', 'EqualSingle', ":call comment#append_line('=', 0, 0)<CR>", 'n')
+call s:repeat_map('g+', 'EqualDouble', ":call comment#append_line('=', 1, 0)<CR>", 'n')
+call s:repeat_map('g-', 'VDashSingle', ":call comment#append_line('-', 0, 1)<CR>", 'v')
+call s:repeat_map('g_', 'VDashDouble', ":call comment#append_line('=', 1, 1)<CR>", 'v')
+call s:repeat_map('g=', 'VEqualSingle', ":call comment#append_line('=', 0, 1)<CR>", 'v')
+call s:repeat_map('g+', 'VEqualDouble', ":call comment#append_line('=', 1, 1)<CR>", 'v')
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands

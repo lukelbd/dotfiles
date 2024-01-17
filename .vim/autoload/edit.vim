@@ -160,14 +160,10 @@ function! edit#swap_lines(...) abort
   let [text1, text2] = [getline(line11, line12), getline(line21, line22)]
   call deletebufline(bufnr(), line1, line2)  " delete without register
   call append(line1 - 1, delta > 0 ? text2 + text1 : text1 + text2)
-  let [fold11, fold12] = [line11 + delta * len(text2), line12 + delta * len(text2)]
-  let [fold21, fold22] = [line21 - delta * len(text1), line22 - delta * len(text1)]
-  if fold1
-    exe fold11 . ',' . fold12 . 'fold' | exe fold11 . (close1 ? 'foldclose' : 'foldopen')
-  endif
-  if fold2
-    exe fold21 . ',' . fold22 . 'fold' | exe fold21 . (close2 ? 'foldclose' : 'foldopen')
-  endif
+  let range1 = (line11 + delta * len(text2)) . ',' . (line12 + delta * len(text2))
+  let range2 = (line21 - delta * len(text1)) . ',' . (line22 - delta * len(text1))
+  if fold1 | exe range1 . 'fold' | exe range1 . (close1 ? 'foldclose' : 'foldopen') | endif
+  if fold2 | exe range2 . 'fold' | exe range2 . (close2 ? 'foldclose' : 'foldopen') | endif
   exe line21
 endfunction
 
