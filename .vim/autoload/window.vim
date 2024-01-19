@@ -36,15 +36,20 @@ function! window#buffer_source() abort
   let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
   let unsorted = {}
   for tabnr in range(1, tabpagenr('$'))  " iterate through each tab
+    let nr = -1  " default number
     let bufnrs = tabpagebuflist(tabnr)
     for bufnr in bufnrs
-      if index(tabskip, getbufvar(bufnr, '&ft')) == -1  " use if not a popup window
+      if bufnr == bufnr()
+        continue
+      elseif index(tabskip, getbufvar(bufnr, '&ft')) == -1  " use if not a popup window
         let nr = bufnr | break
       elseif bufnr == bufnrs[-1]  " use if no non-popup windows
         let nr = bufnr
       endif
     endfor
-    if exists('*RelativePath')
+    if nr < 0
+      continue
+    elseif exists('*RelativePath')
       let path = RelativePath(bufname(nr))
     else
       let path = fnamemodify(bufname(nr), ':~:.')
