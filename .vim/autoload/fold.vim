@@ -4,7 +4,8 @@
 " Format fold for specific filetypes
 " Note: This concatenates python docstring lines and uses frame title
 " for beamer presentations. In future should expand for other filetypes.
-let s:max_lines = 100  " maxumimum number of lines
+let s:maxlines = 100  " maxumimum number of lines
+let s:docstring = '["'']\{3}'  " docstring expression
 function! fold#get_label(line, ...) abort
   let char = comment#get_char()
   let regex = a:0 && a:1 ? '\(^\s*\|\s*$\)' : '\s*$'
@@ -15,16 +16,18 @@ function! fold#get_label(line, ...) abort
 endfunction
 function! fold#get_label_python(line, ...) abort
   let label = fold#get_label(a:line)
-  if label =~# '["'']\{3}\s*$'  " append afterward
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:max_lines)
+  let width = get(g:, 'linelength', 88) - 10  " minimum width
+  if label =~# 'try:\s*$\|' . s:docstring . '\s*$'  " append lines
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
       let doc = fold#get_label(lnum, 1)  " remove indent
       let doc = substitute(doc, '[-=]\{3,}', '', 'g')
-      let pad = lnum == a:line + 1 || empty(doc) ? '' : ' '
-      let label .= pad . doc
+      let pad = doc !~# '^\s*' . s:docstring && label !~# s:docstring . '\s*$'
+      let label .= repeat(' ', pad) . doc
+      if len(label) > width | break | endif
     endfor
   endif
   let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
-  let result = substitute(label, '["'']\{3}', '\=add(l:subs, submatch(0))', 'gn')
+  let result = substitute(label, s:docstring, '\=add(l:subs, submatch(0))', 'gn')
   let label .= len(l:subs) % 2 ? '···' . substitute(l:subs[0], '^[frub]*', '', 'g') : ''
   return label  " closed docstring
 endfunction
@@ -32,13 +35,13 @@ function! fold#get_label_tex(line, ...)
   let [line, label] = [a:line, fold#get_label(a:line)]
   let indent = substitute(label, '\S.*$', '', 'g')
   if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\|center\)\*\?\s*}'
-    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:max_lines)
+    for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
       let bool = getline(lnum) =~# '^\s*\\\(label\|frametitle\)'
       if bool | let [line, label] = [lnum, fold#get_label(lnum)] | break | endif
     endfor
   endif
   if label =~# '{\s*\(%.*\)\?$'  " append lines
-    for lnum in range(line + 1, a:0 ? a:1 : line + s:max_lines)
+    for lnum in range(line + 1, a:0 ? a:1 : line + s:maxlines)
       let bool = lnum == line + 1 || label[-1:] ==# '{'
       let label .= (bool ? '' : ' ') . fold#get_label(lnum, 1)
     endfor
@@ -64,9 +67,9 @@ function! fold#fold_text(...) abort
   let current = [v:foldstart, v:foldend, len(v:folddashes)]
   let [line1, line2, level] = a:0 == 3 ? a:000 : current
   if &filetype ==# 'python'  " python formatting
-    let label = fold#get_label_python(line1, min([line1 + s:max_lines, line2]))
+    let label = fold#get_label_python(line1, min([line1 + s:maxlines, line2]))
   elseif &filetype ==# 'tex'  " tex formatting
-    let label = fold#get_label_tex(line1, min([line1 + s:max_lines, line2]))
+    let label = fold#get_label_tex(line1, min([line1 + s:maxlines, line2]))
   else  " default formatting
     let label = fold#get_label(line1)
   endif

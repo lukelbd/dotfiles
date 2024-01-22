@@ -68,8 +68,8 @@ endfunction
 function! python#fold_cache() abort
   let lnum = 1
   let cache = b:SimpylFold_cache
-  let headers = '^\(def\|class\|for\|while\|with\|try\|if\)\>.*:\s*\(#.*\)\?$'
-  let keywords = '^\(except\|finally\|elif\|else\)\>.*:\s*\(#.*\)\?$'
+  let headers = '^\(if\|for\|while\|with\|try\|def\|class\)\>.*:\s*\(#.*\)\?$'
+  let keywords = '^\(elif\|else\|except\|finally\)\>.*:\s*\(#.*\)\?$'
   let docstring = '[frub]*["'']\{3}'  " doctring regex (see fold.vim)
   while lnum <= line('$')
     if s:fold_exists(lnum) | let lnum += 1 | continue | endif
@@ -79,23 +79,25 @@ function! python#fold_cache() abort
     let [_, _, pos] = matchstrpos(line, '^\K\k*\s*=\s*' . docstring)
     if pos > -1  " vint: -ProhibitUsingUndeclaredVariable
       call add(group, lnum)
-      while lnum < line('$') && line[pos:] !~# docstring  " fold entire docstring
+      while lnum < line('$') && getline(lnum)[pos:] !~# docstring  " fold entire docstring
         let [pos, lnum] = [0, lnum + 1]
-        let line = getline(lnum)
         call add(group, lnum)
-        if s:fold_exists(lnum) | let group = [] | break | endif
+        if s:fold_exists(lnum)
+          let group = [] | break
+        endif
       endwhile
     endif
-    " Zero-indent fold (e.g. VARAIBLE = [... or if condition:...)
+    " Zero-indent fold (e.g. VARIABLE = [... or if condition:...)
     if empty(group) && line =~# '^\K\k*'
-      call add(group, lnum)  " zero-indent variable
+      call add(group, lnum)
       while lnum < line('$') && (get(cache[lnum + 1], 'indent', 0) || getline(lnum + 1) =~# keywords)
         let lnum += 1 | call add(group, lnum)
-        if s:fold_exists(lnum) | let group = [] | break | endif
+        if s:fold_exists(lnum) && getline(lnum) !~# '^\s*\(from\|import\)\>'
+          let group = [] | break
+        endif
       endwhile
       if len(group) > 1 && line !~# headers
-        let lnum += 1
-        call add(group, lnum)
+        let lnum += 1 | call add(group, lnum)
       endif
     endif
     " Apply results (see :help fold-expr)
