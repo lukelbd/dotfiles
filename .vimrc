@@ -1620,7 +1620,7 @@ if s:plug_active('vim-gutentags')
   let g:gutentags_ctags_exclude = tag#get_ignores(0)  " exclude all by default
   let g:gutentags_ctags_tagfile = '.vimtags'
   let g:gutentags_define_advanced_commands = 1  " debugging command
-  let g:gutentags_generate_on_new = 0  " do not update tags when opening project file
+  let g:gutentags_generate_on_new = 1  " do not update tags when opening project file
   let g:gutentags_generate_on_write = 1  " update tags when file updated
   let g:gutentags_generate_on_missing = 1  " update tags when no vimtags file found
   let g:gutentags_generate_on_empty_buffer = 0  " do not update tags when opening vim

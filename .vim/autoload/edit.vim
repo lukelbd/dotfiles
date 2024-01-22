@@ -165,6 +165,7 @@ function! edit#swap_lines(...) abort
   if fold1 | exe range1 . 'fold' | exe range1 . (close1 ? 'foldclose' : 'foldopen') | endif
   if fold2 | exe range2 . 'fold' | exe range2 . (close2 ? 'foldclose' : 'foldopen') | endif
   exe line21
+  exe close1 ? '' : 'normal! zv'
 endfunction
 
 " Wrap the lines to 'count' columns rather than 'text width'
