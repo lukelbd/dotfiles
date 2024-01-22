@@ -189,7 +189,7 @@ let s:delims = {
   \ '*': '\begin{itemize}\r\end{itemize}',
   \ ';': '\begin{block}{}\r\end{block}',
   \ ':': '\begin{alertblock}{}\r\end{alertblock}',
-  \ '_': '\begin{center}[h]\n\r\end{center}',
+  \ '_': '\begin{center}\n\r\end{center}',
   \ '-': '\overline{\r}',
   \ '/': '\frac{\r}{}',
   \ '\': '\sqrt{\r}',

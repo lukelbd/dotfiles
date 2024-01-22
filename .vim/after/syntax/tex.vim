@@ -27,7 +27,7 @@ call matchadd('Conceal',
 " 'transparent' flag. Could revisit and consider improving but so far so good.
 syntax region texMatcherNM matchgroup=Delimiter
   \ start='{' skip='\\\|\[{}]' end="}"
-  \ contains=@texMatchNMGroup,@NoSpell,texError
+  \ contains=@NoSpell,@texMatchNMGroup,texError
 
 " Enable syntax folding of comment blocks. Ignores empty and comment-character-only
 " lines when defining beginning and ends of folding regions. This is useful during
@@ -47,6 +47,9 @@ syntax cluster texPreambleMatchGroup add=texCommentZone
 " are folded (see TexNewMathZone below and in $VIMRUNTIME/syntax/tex.vim)
 " Note: The 'keepend' is critical or else zone can persist beyond figures. Not sure
 " why... supposedly just ends nested environments when parent environment is found.
+syntax region texCenterZone transparent
+  \ start='\\begin\s*{\s*center\s*}' end='\\end\s*{\s*center\s*}'
+  \ keepend contains=@texFoldGroup,@Spell fold
 syntax region texFigureZone transparent
   \ start='\\begin\s*{\s*figure\*\?\s*}' end='\\end\s*{\s*figure\*\?\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
@@ -61,7 +64,8 @@ syntax region texTableZone transparent
   \ keepend contains=@texFoldGroup,@Spell fold
 syntax region texTabular transparent
   \ start='\\begin\s*{\s*tabular\s*}' end='\\end\s*{\s*tabular\s*}'
-  \ keepend contains=@texFoldGroup,@Spell fold
+  \ keepend contains=@texFoldGroup,@NoSpell fold
+syntax cluster texFoldGroup add=texCenterZone
 syntax cluster texFoldGroup add=texFigureZone
 syntax cluster texFoldGroup add=texFrameZone
 syntax cluster texFoldGroup add=texGroupZone
@@ -83,9 +87,17 @@ syntax region texAbstracts matchgroup=texSection
 syntax region texCaption matchgroup=texStatement
   \ start='\\caption\s*{' end='}'
   \ contains=@texFoldGroup,@Spell fold
+syntax region texFigureCaption matchgroup=texStatement
+  \ start='\\captionof\s*{\s*figure\s*}\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
+syntax region texTableCaption matchgroup=texStatement
+  \ start='\\captionof\s*{\s*table\s*}\s*{' end='}'
+  \ contains=@texFoldGroup,@Spell fold
 syntax cluster texFoldGroup add=texAuthors
 syntax cluster texFoldGroup add=texAbstracts
 syntax cluster texFoldGroup add=texCaption
+syntax cluster texFoldGroup add=texFigureCaption
+syntax cluster texFoldGroup add=texTableCaption
 syntax cluster texPreambleMatchGroup add=texAuthors
 syntax cluster texPreambleMatchGroup add=texAbstracts
 syntax cluster texPreambleMatchGroup add=texAbstract

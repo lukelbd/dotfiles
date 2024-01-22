@@ -31,7 +31,7 @@ endfunction
 function! fold#get_label_tex(line, ...)
   let [line, label] = [a:line, fold#get_label(a:line)]
   let indent = substitute(label, '\S.*$', '', 'g')
-  if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\)\*\?\s*}'
+  if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\|center\)\*\?\s*}'
     for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:max_lines)
       let bool = getline(lnum) =~# '^\s*\\\(label\|frametitle\)'
       if bool | let [line, label] = [lnum, fold#get_label(lnum)] | break | endif
