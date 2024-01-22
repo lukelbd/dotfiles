@@ -17,13 +17,14 @@ endfunction
 function! fold#get_label_python(line, ...) abort
   let label = fold#get_label(a:line)
   let width = get(g:, 'linelength', 88) - 10  " minimum width
-  if label =~# 'try:\s*$\|' . s:docstring . '\s*$'  " append lines
+  if label =~# '^try:\s*$\|' . s:docstring . '\s*$'  " append lines
     for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
       let doc = fold#get_label(lnum, 1)  " remove indent
       let doc = substitute(doc, '[-=]\{3,}', '', 'g')
-      let pad = doc !~# '^\s*' . s:docstring && label !~# s:docstring . '\s*$'
-      let label .= repeat(' ', pad) . doc
-      if len(label) > width | break | endif
+      let head = label =~# s:docstring . '\s*$'
+      let tail = doc =~# '^\s*' . s:docstring
+      let label .= repeat(' ', !head && !tail && !empty(doc)) . doc
+      if tail || len(label) > width || label =~# '^try:' | break | endif
     endfor
   endif
   let l:subs = []  " see: https://vi.stackexchange.com/a/16491/8084
