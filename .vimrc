@@ -611,7 +611,7 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
 noremap zj zb
 noremap zk zt
-noremap z. z.
+noremap z. zz
 noremap z, z.zs
 noremap z> zs
 noremap z< ze
