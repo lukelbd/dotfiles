@@ -337,9 +337,6 @@ endfor
 " * Ctrl-l used for special 'insertmode' always-insert-mode option
 " * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
 " * Ctrl-z sends vim to background, disable to prevent cursor change
-augroup override_maps
-  au!
-augroup END
 for s:key in [
   \ '<F1>', '<F2>', '<F3>', '<F4>',
   \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
@@ -355,19 +352,19 @@ endfor
 " Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
 " Want to be able to *temporarily turn scrolloff to infinity* when
 " enter visual mode, to do that need to map vi and va stuff.
-nnoremap gt gi
 nnoremap gv gv
 nnoremap v mzv
 nnoremap V mzV
 nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
 nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
 nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
-vnoremap <CR> <C-c>
 vnoremap v <Esc>mzv
 vnoremap V <Esc>mzV
-vnoremap <expr> <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
+vnoremap <CR> <C-c>
 vnoremap <LeftMouse> <LeftMouse>my`z<Cmd>exe 'normal! ' . visualmode()<CR>`y<Cmd>delmark y<CR>
-
+vnoremap <expr> <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
+vnoremap <expr> I mode() =~# "\<C-v>" ? 'I' : '<Esc>`<i'
+vnoremap <expr> A mode() =~# "\<C-v>" ? 'A' : '<Esc>`>a'
 
 "-----------------------------------------------------------------------------"
 " File and window utilities
@@ -381,6 +378,7 @@ noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
+nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(t:, 'tabline_bufnr', '%'))<CR><Cmd>only<CR>
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -514,7 +512,7 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap z; @:
+nnoremap ; @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -693,16 +691,18 @@ noremap g` <Cmd>call mark#goto_mark(get(g:, 'mark_recent', 'A'))<CR>
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
-command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 2, 0, <f-args>)  " all open files
-command! -bang -nargs=+ Rd call grep#call_rg(<bang>0, 1, 0, <f-args>)  " project directory
-command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 0, 0, <f-args>)  " file directory
-command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 0, 1, <f-args>)
-command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 2, 0, <f-args>)  " all open files
-command! -bang -nargs=+ Ad call grep#call_ag(<bang>0, 1, 0, <f-args>)  " project directory
-command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 0, 0, <f-args>)  " file directory
-command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 0, 1, <f-args>)
-nnoremap g; <Cmd>call grep#call_grep('rg', 2, 0)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)  " open files
+command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 1, 1, <f-args>)  " current directory
+command! -bang -nargs=+ R1 call grep#call_rg(<bang>0, 2, 0, <f-args>)  " project directory
+command! -bang -nargs=+ R2 call grep#call_rg(<bang>0, 3, 0, <f-args>)  " all projects
+command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)  " open files
+command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 1, 1, <f-args>)  " current directory
+command! -bang -nargs=+ A1 call grep#call_ag(<bang>0, 2, 0, <f-args>)  " project directory
+command! -bang -nargs=+ A2 call grep#call_ag(<bang>0, 3, 0, <f-args>)  " open projects
+nnoremap g; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap g: <Cmd>call grep#call_grep('rg', 3, 0)<CR>
+nnoremap z; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap z: <Cmd>call grep#call_grep('rg', 2, 0)<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
@@ -729,8 +729,8 @@ nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
 " Sort input lines
 " Note: Simply uses native ':sort' command.
-noremap <expr> \s edit#sort_lines_expr()
-noremap <expr> \\s edit#sort_lines_expr() . 'ip'
+noremap <expr> \y edit#sort_lines_expr()
+noremap <expr> \\y edit#sort_lines_expr() . 'ip'
 
 " Reverse input lines
 " See: https://superuser.com/a/189956/506762
@@ -738,35 +738,35 @@ noremap <expr> \\s edit#sort_lines_expr() . 'ip'
 noremap <expr> \r edit#reverse_lines_expr()
 noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
 
-" Remove trailing whitespace
-" See: https://stackoverflow.com/a/3474742/4970632)
-noremap <expr> \t edit#replace_regex_expr(
-  \ 'Removed trailing whitespace.',
-  \ '\s\+\ze$', '')
-
 " Replace tabs with spaces
 " Note: Could also use :retab?
-noremap <expr> \<Tab> edit#replace_regex_expr(
+noremap <expr> \t edit#replace_regex_expr(
   \ 'Fixed tabs.',
   \ '\t', repeat(' ', &tabstop))
 
-" Delete empty lines
+" Remove trailing whitespace
+" See: https://stackoverflow.com/a/3474742/4970632)
+noremap <expr> \w edit#replace_regex_expr(
+  \ 'Removed trailing whitespace.',
+  \ '\s\+\ze$', '')
+
+" Replace consecutive spaces on current line with one space
+" only if they're not part of indentation
+noremap <expr> \s edit#replace_regex_expr(
+  \ 'Squeezed consecutive whitespace.',
+  \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
+noremap <expr> \S edit#replace_regex_expr(
+  \ 'Stripped all whitespace.',
+  \ '\S\@<=\(^ \+\)\@<! \+', '')
+
+" Remove empty lines
 " Replace consecutive newlines with single newline
 noremap <expr> \e edit#replace_regex_expr(
-  \ 'Squeezed consecutive newlines.',
+  \ 'Removed consecutive empty lines.',
   \ '\(\n\s*\n\)\(\s*\n\)\+', '\1')
 noremap <expr> \E edit#replace_regex_expr(
-  \ 'Removed empty lines.',
+  \ 'Removed all empty lines.',
   \ '^\s*$\n', '')
-
-" Replace consecutive spaces on current line with one space,
-" only if they're not part of indentation
-noremap <expr> \w edit#replace_regex_expr(
-  \ 'Squeezed redundant whitespace.',
-  \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \W edit#replace_regex_expr(
-  \ 'Removed all whitespace.',
-  \ '\S\@<=\(^ \+\)\@<! \+', '')
 
 " Delete first-level and second-level commented text
 " Note: First is more 'strict' but more common so give it lower case
@@ -780,17 +780,17 @@ noremap <expr> \C edit#replace_regex_expr(
 
 " Fix unicode quotes and dashes, trailing dashes due to a pdf copy
 " Underscore is easiest one to switch if using that Karabiner map
-noremap <expr> \- edit#replace_regex_expr(
-  \ 'Fixed long dashes.',
-  \ '–', '--')
 noremap <expr> \_ edit#replace_regex_expr(
-  \ 'Fixed wordbreak dashes.',
+  \ 'Converted dashed word breaks.',
   \ '\(\w\)[-–] ', '\1')
+noremap <expr> \- edit#replace_regex_expr(
+  \ 'Converted unicode em dashes.',
+  \ '–', '--')
 noremap <expr> \' edit#replace_regex_expr(
-  \ 'Fixed single quotes.',
+  \ 'Converted unicode single quotes.',
   \ '‘', '`', '’', "'")
 noremap <expr> \" edit#replace_regex_expr(
-  \ 'Fixed double quotes.',
+  \ 'Converted unicode double quotes.',
   \ '“', '``', '”', "''")
 
 " Replace useless bibtex entries
@@ -890,6 +890,8 @@ call s:repeat_map('cL', 'SliceLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>', 'n')
 
 " Remove character or print info
 " Here prefer characterize since usually has more info
+nnoremap cp gi
+nnoremap cx "_s
 noremap x "_x
 noremap X "_X
 map gx <Plug>(characterize)
@@ -1255,13 +1257,13 @@ let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#get_ignores(1)  " added j
 " subfolders). Most likely harmless if duplicate installations but try to avoid.
 " call plug#('natebosch/vim-lsc')  " alternative lsp client
 if s:enable_lsp
-  call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero config needed!
+  " call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero config needed!
   call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
   call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
 	call plug#('rhysd/vim-healthcheck')  " plugin help
-  let g:lsp_float_max_width = 88  "  some reason results in wider windows
-  let g:lsp_preview_max_width = 88  "  some reason results in wider windows
-  let g:lsp_preview_max_height = 176
+  let g:lsp_float_max_width = g:linelength  "  some reason results in wider windows
+  let g:lsp_preview_max_width = g:linelength  "  some reason results in wider windows
+  let g:lsp_preview_max_height = 2 * g:linelength
 endif
 
 " Completion engines
@@ -1664,6 +1666,113 @@ if &g:foldenable || s:plug_active('FastFold')
   let g:zsh_fold_enable = 1
 endif
 
+" Formatting plugins related to ale
+" Isort plugin docs:
+" https://github.com/fisadev/vim-isort
+" Black plugin docs:
+" https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
+" Autopep8 plugin docs (or :help autopep8):
+" https://github.com/tell-k/vim-autopep8 (includes a few global variables)
+" Autoformat plugin docs:
+" https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
+if s:plug_active('ale')
+  let g:autopep8_disable_show_diff = 1
+  let g:autopep8_ignore = s:flake8_ignore
+  let g:autopep8_max_line_length = g:linelength
+  let g:black_linelength = g:linelength
+  let g:black_skip_string_normalization = 1
+  let g:vim_isort_python_version = 'python3'
+  let g:vim_isort_config_overrides = {
+    \ 'include_trailing_comma': 'true',
+    \ 'force_grid_wrap': 0,
+    \ 'multi_line_output': 3,
+    \ 'line_length': g:linelength,
+    \ }
+  let g:formatdef_mpython = '"isort '
+    \ . '--trailing-comma '
+    \ . '--force-grid-wrap 0 '
+    \ . '--multi-line 3 '
+    \ . '--line-length ' . g:linelength
+    \ . ' - | black --quiet '
+    \ . '--skip-string-normalization '
+    \ . '--line-length ' . g:linelength . ' - "'
+  let g:formatters_python = ['mpython']  " multiple formatters
+  let g:formatters_fortran = ['fprettify']
+endif
+
+" Asynchronous linting engine
+" Note: bashate is equivalent to pep8, similar to prettier and beautify
+" for javascript and html, also tried shfmt but not available.
+" Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
+" with :ALEFix black. Or can use the black plugin and use :Black of course.
+" Note: chktex is awful (e.g. raises errors for any command not followed
+" by curly braces) so lacheck is best you are going to get.
+" https://github.com/Kuniwak/vint  # vim linter and format checker (pip install vim-vint)
+" https://github.com/PyCQA/flake8  # python linter and format checker
+" https://pypi.org/project/doc8/  # python format checker
+" https://github.com/koalaman/shellcheck  # shell linter
+" https://github.com/mvdan/sh  # shell format checker
+" https://github.com/openstack/bashate  # shell format checker
+" https://mypy.readthedocs.io/en/stable/introduction.html  # type annotation checker
+" https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
+" map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
+" map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
+" 'python': ['python', 'flake8', 'mypy'],  " need to improve config
+if s:plug_active('ale')
+  augroup ale_toggle
+    au!
+    " autocmd BufRead ipython_config.py,ipython_*_config.py,jupyter_*_config.py call switch#ale(0, 1)
+  augroup END
+  command! -nargs=? AleToggle call switch#ale(<args>)
+  noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
+  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
+  noremap <Leader>@ <Cmd>call switch#ale()<CR>
+  noremap <Leader># <Cmd>ALEInfo<CR>
+  let g:ale_linters = {
+    \ 'config': [],
+    \ 'fortran': ['gfortran'],
+    \ 'help': [],
+    \ 'json': ['jsonlint'],
+    \ 'jsonc': ['jsonlint'],
+    \ 'python': ['python', 'flake8'],
+    \ 'rst': [],
+    \ 'sh': ['shellcheck', 'bashate'],
+    \ 'tex': ['lacheck'],
+    \ 'text': [],
+    \ 'vim': ['vint'],
+    \ }
+  let g:ale_completion_enabled = 0
+  let g:ale_completion_autoimport = 0
+  let g:ale_cursor_detail = 0
+  let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
+  let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
+  let g:ale_hover_cursor = 0
+  let g:ale_linters_explicit = 1
+  let g:ale_lint_on_enter = 1
+  let g:ale_lint_on_filetype_changed = 1
+  let g:ale_lint_on_insert_leave = 1
+  let g:ale_lint_on_save = 0
+  let g:ale_lint_on_text_changed = 'normal'
+  let g:ale_list_window_size = 8
+  let g:ale_open_list = 0  " open manually
+  let g:ale_sign_column_always = 0
+  let g:ale_sign_error = 'E>'
+  let g:ale_sign_warning = 'W>'
+  let g:ale_sign_info = 'I>'
+  let g:ale_set_loclist = 1  " keep default
+  let g:ale_set_quickfix = 0  " use manual command
+  let g:ale_echo_msg_error_str = 'Err'
+  let g:ale_echo_msg_info_str = 'Info'
+  let g:ale_echo_msg_warning_str = 'Warn'
+  let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
+  let g:ale_python_flake8_options =  '--max-line-length=' . g:linelength . ' --ignore=' . s:flake8_ignore
+  let g:ale_set_balloons = 0  " no ballons
+  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . g:linelength
+  let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
+  let g:ale_update_tagstack = 0  " use ctags for this
+  let g:ale_virtualtext_cursor = 0  " no error shown here
+endif
+
 " Lsp integration settings
 " Note: The below autocmd gives signature popups the same borders as hover popups.
 " Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
@@ -1680,13 +1789,12 @@ endif
 if s:plug_active('vim-lsp')
   " Autocommands and mappings
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>
-  " autocmd User lsp_setup  " see vim-lsp readme (necessary?)
+  " au User lsp_setup  " see vim-lsp readme (necessary?)
   " \ call lsp#register_server({'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']})
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   augroup lsp_style
     au!
-    autocmd User lsp_float_opened
-      \ call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
+    au User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   noremap gD gdzv<Cmd>noh<CR>
@@ -1754,7 +1862,11 @@ endif
 if s:plug_active('ddc.vim')
   command! -nargs=? DdcToggle call switch#ddc(<args>)
   noremap <Leader>* <Cmd>call switch#ddc()<CR>
-  let g:popup_preview_config = {'border': v:false, 'maxWidth': 88, 'maxHeight': 176}
+  let g:popup_preview_config = {
+    \ 'border': v:false,
+    \ 'maxWidth': g:linelength,
+    \ 'maxHeight': 2 * g:linelength
+    \ }
   let g:denops_disable_version_check = 0  " skip check for recent versions
   let g:denops#deno = 'deno'  " deno executable should be on $PATH
   let g:denops#server#deno_args = [
@@ -1796,110 +1908,6 @@ if s:plug_active('ddc.vim')
   call ddc#custom#patch_global('sources', g:ddc_sources)
   call ddc#custom#patch_global(g:ddc_options)
   call ddc#enable()
-endif
-
-" Asynchronous linting engine
-" Note: bashate is equivalent to pep8, similar to prettier and beautify
-" for javascript and html, also tried shfmt but not available.
-" Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
-" with :ALEFix black. Or can use the black plugin and use :Black of course.
-" Note: chktex is awful (e.g. raises errors for any command not followed
-" by curly braces) so lacheck is best you are going to get.
-" https://github.com/Kuniwak/vint  # vim linter and format checker (pip install vim-vint)
-" https://github.com/PyCQA/flake8  # python linter and format checker
-" https://pypi.org/project/doc8/  # python format checker
-" https://github.com/koalaman/shellcheck  # shell linter
-" https://github.com/mvdan/sh  # shell format checker
-" https://github.com/openstack/bashate  # shell format checker
-" https://mypy.readthedocs.io/en/stable/introduction.html  # type annotation checker
-" https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
-if s:plug_active('ale')
-  " map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
-  " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
-  " 'python': ['python', 'flake8', 'mypy'],  " need to improve config
-  noremap <C-e> <Cmd>cclose<CR><Cmd>lclose<CR>
-  command! -nargs=? AleToggle call switch#ale(<args>)
-  noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
-  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
-  noremap <Leader>@ <Cmd>call switch#ale()<CR>
-  noremap <Leader># <Cmd>ALEInfo<CR>
-  let g:ale_linters = {
-    \ 'config': [],
-    \ 'fortran': ['gfortran'],
-    \ 'help': [],
-    \ 'json': ['jsonlint'],
-    \ 'jsonc': ['jsonlint'],
-    \ 'python': ['python', 'flake8'],
-    \ 'rst': [],
-    \ 'sh': ['shellcheck', 'bashate'],
-    \ 'tex': ['lacheck'],
-    \ 'text': [],
-    \ 'vim': ['vint'],
-    \ }
-  let g:ale_completion_enabled = 0
-  let g:ale_completion_autoimport = 0
-  let g:ale_cursor_detail = 0
-  let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
-  let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
-  let g:ale_hover_cursor = 0
-  let g:ale_linters_explicit = 1
-  let g:ale_lint_on_enter = 1
-  let g:ale_lint_on_filetype_changed = 1
-  let g:ale_lint_on_insert_leave = 1
-  let g:ale_lint_on_save = 0
-  let g:ale_lint_on_text_changed = 'normal'
-  let g:ale_list_window_size = 8
-  let g:ale_open_list = 0  " open manually
-  let g:ale_sign_column_always = 0
-  let g:ale_sign_error = 'E>'
-  let g:ale_sign_warning = 'W>'
-  let g:ale_sign_info = 'I>'
-  let g:ale_set_loclist = 1  " keep default
-  let g:ale_set_quickfix = 0  " use manual command
-  let g:ale_echo_msg_error_str = 'Err'
-  let g:ale_echo_msg_info_str = 'Info'
-  let g:ale_echo_msg_warning_str = 'Warn'
-  let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
-  let g:ale_python_flake8_options =  '--max-line-length=' . g:linelength . ' --ignore=' . s:flake8_ignore
-  let g:ale_set_balloons = 0  " no ballons
-  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . g:linelength
-  let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
-  let g:ale_update_tagstack = 0  " use ctags for this
-  let g:ale_virtualtext_cursor = 0  " no error shown here
-endif
-
-" Related plugins using similar exceptions
-" Isort plugin docs:
-" https://github.com/fisadev/vim-isort
-" Black plugin docs:
-" https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
-" Autopep8 plugin docs (or :help autopep8):
-" https://github.com/tell-k/vim-autopep8 (includes a few global variables)
-" Autoformat plugin docs:
-" https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
-if s:plug_active('ale')
-  let g:autopep8_disable_show_diff = 1
-  let g:autopep8_ignore = s:flake8_ignore
-  let g:autopep8_max_line_length = g:linelength
-  let g:black_linelength = g:linelength
-  let g:black_skip_string_normalization = 1
-  let g:vim_isort_python_version = 'python3'
-  let g:vim_isort_config_overrides = {
-    \ 'include_trailing_comma': 'true',
-    \ 'force_grid_wrap': 0,
-    \ 'multi_line_output': 3,
-    \ 'line_length': g:linelength,
-    \ }
-  let g:formatdef_mpython = '"isort '
-    \ . '--trailing-comma '
-    \ . '--force-grid-wrap 0 '
-    \ . '--multi-line 3 '
-    \ . '--line-length ' . g:linelength
-    \ . ' - | black --quiet '
-    \ . '--skip-string-normalization '
-    \ . '--line-length ' . g:linelength . ' - "'
-  let g:formatters_python = ['mpython']  " multiple formatters
-  let g:formatters_fortran = ['fprettify']
 endif
 
 " Conflict highlight settings (warning: change below to 'BufEnter?')
@@ -2165,7 +2173,7 @@ endif
 " rather than top-level only, searching backward, and without circular wrapping.
 command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
-command! SyncSmart exe 'Sync ' . max([0, line('.') - str2nr(tags#close_tag(line('w0'), 0, 0, 0)[1])])
+command! SyncSmart exe 'Sync ' . max([0, line('.') - get(tags#close_tag(line('w0'), 0, 0, 0), 1, 0)])
 noremap zy <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR>
 noremap zY <Cmd>SyncStart<CR>
 

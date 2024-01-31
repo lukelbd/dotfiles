@@ -8,13 +8,16 @@
 function! s:parse_paths(prompt, level, ...)
   if a:0  " search input paths
     let paths = copy(a:000)
-  elseif a:level > 1  " search current open files
+  elseif a:level <= 0  " search all open files
     let paths = window#buffer_sort(tags#buffer_paths())
-  elseif a:level > 0  " search current file project (file directory is fallback)
-    let paths = [tag#find_root(@%)]
-  else  " search current file directory
+  elseif a:level <= 1  " search current file directory
     let paths = [fnamemodify(resolve(@%), ':h')]
+  elseif a:level <= 2  " search current file project (file directory is fallback)
+    let paths = [tag#find_root(@%)]
+  else  " search all open projects
+    let paths = map(window#buffer_sort(tags#buffer_paths()), 'tag#find_root(v:val)')
   endif
+  let paths = filter(copy(paths), 'index(paths, v:val, v:key + 1) == -1')  " unique
   let result = []
   for path in paths
     if exists('*RelativePath')  " returns empty string for getcwd()
@@ -104,7 +107,13 @@ function! grep#complete_pattern(lead, line, cursor)
   return reverse([@/] + opts[1:])
 endfunction
 function! grep#call_grep(grep, level, depth) abort
-  let prompt = a:level > 1 ? 'open buffers' : s:parse_paths(1, a:level)[0]
+  if a:level <= 0  " generally limited
+    let prompt = 'open buffers'
+  elseif a:level <= 2
+    let prompt = join(s:parse_paths(1, a:level), ' ')
+  else  " possibly enormous
+    let prompt = 'open projects'
+  endif
   let prompt = toupper(a:grep[0]) . a:grep[1:] . ' search ' . prompt
   let pattern = utils#input_default(prompt, 'grep#complete_pattern', @/)
   if empty(pattern) | return | endif

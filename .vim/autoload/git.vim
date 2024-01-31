@@ -82,17 +82,31 @@ endfunction
 " an empty panel was opened in the git window. Might want to revisit.
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
 function! git#fugitive_setup() abort
-  let alt = maparg('<CR>', 'n', 0, 1)  " switch with 'O'
-  let main = maparg('O', 'n', 0, 1)  " switch with '<CR>'
-  let click = copy(main)
-  let rhs = s:eval_map(main)
-  call extend(alt, {'lhs': 'O', 'lhsraw': 'O'})
-  call extend(main, {'rhs': rhs, 'lhs': '<CR>', 'lhsraw': "\<CR>"})
-  call extend(click, {'rhs': rhs, 'lhs': '<2-LeftMouse>', 'lhsraw': "\<2-LeftMouse>"})
-  call mapset('n', 0, alt)
-  call mapset('n', 0, main)
-  call mapset('n', 0, click)
   silent! unmap! dq
+  let open = maparg('<CR>', 'n', 0, 1)  " switch with 'O'
+  let jump = maparg('O', 'n', 0, 1)  " switch with '<CR>'
+  let prev = maparg('(', 'n', 0, 1)  " change to '<C-,>'
+  let next = maparg(')', 'n', 0, 1)  " change to '<C-.>'
+  let diff = maparg('=', 'n', 0, 1)  " change to '-'
+  let action = maparg('-', 'n', 0, 1)  " '.' for re-blaming or toggling stage
+  let command = maparg('.', 'n', 0, 1)  " ',' for starting : <commit> commands
+  let select = copy(jump)  " set to '<2-LeftMouse>'
+  call extend(open, {'rhs': s:eval_map(open), 'lhs': 'O', 'lhsraw': 'O'})
+  call extend(jump, {'rhs': s:eval_map(jump), 'lhs': '<CR>', 'lhsraw': "\<CR>"})
+  call extend(prev, {'rhs': s:eval_map(prev), 'lhs': '<F1>', 'lhsraw': "\<F1>"})
+  call extend(next, {'rhs': s:eval_map(next), 'lhs': '<F2>', 'lhsraw': "\<F2>"})
+  call extend(diff, {'rhs': s:eval_map(diff), 'lhs': '-', 'lhsraw': '-'})
+  call extend(action, {'rhs': s:eval_map(action), 'lhs': '.', 'lhsraw': '.'})
+  call extend(command, {'rhs': s:eval_map(command), 'lhs': ',', 'lhsraw': ','})
+  call extend(select, {'rhs': s:eval_map(jump), 'lhs': '<2-LeftMouse>', 'lhsraw': "\<2-LeftMouse>"})
+  call mapset('n', 0, open)
+  call mapset('n', 0, jump)
+  call mapset('n', 0, prev)
+  call mapset('n', 0, next)
+  call mapset('n', 0, diff)
+  call mapset('n', 0, action)
+  call mapset('n', 0, command)
+  call mapset('n', 0, select)
 endfunction
 
 " Git gutter jumping and previewing
