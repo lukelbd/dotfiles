@@ -12,23 +12,23 @@ function! s:switch_message(prefix, toggle, ...)
 endfunction
 
 " Toggle ALE syntax checking
-" Note: Could automatically disable errors sent from 'vim-lsp' but do explicitly
+" Note: Previously also toggled 'vim-lsp' diagnostics sent to ale by 'vim-lsp-ale' but
+" this is unnecessary since source code indicates the bridge is only triggered when
+" autocmd User ALEWantResults event is raised (i.e. disabling ALE is sufficient).
+" call lsp#ale#enable() | call lsp#ale#disable()  " vim-lsp-ale toggles
 function! switch#ale(...) abort
   let state = get(b:, 'ale_enabled', 1)  " enabled by default, disable for first time
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   if state == toggle || !exists(':ALEEnableBuffer')
     return
-  elseif toggle
-    ALEEnableBuffer  " enable and set b:ale_enabled = 1
-    call lsp#ale#enable()  " stop sending lsp diagnostics to ale
-  else
-    call lsp#ale#disable()  " start sending lsp diagnostics to ale
-    ALEResetBuffer  " remove highlights locations and signs
-    ALEDisableBuffer  " disable and set b:ale_enabled = 0
+  elseif toggle  " enable and set b:ale_enabled = 1
+    ALEEnableBuffer
+  else  " remove signs and highlights then disable and set b:ale_enabled = 0
+    ALEResetBuffer | ALEDisableBuffer
   endif
   let b:ale_enabled = toggle  " ensure always applied in case API changes
-  call call('s:switch_message', ['ale and lsp integration', toggle, suppress])
+  call call('s:switch_message', ['ale linters', toggle, suppress])
 endfunction
 
 " Autosave toggle (autocommands are local to buffer as with codi)
@@ -185,10 +185,10 @@ endfunction
 
 " Enable and disable LSP engines
 " Note: The server status can lag because takes a while for async server stop
+" let servers = lsp#get_server_names()  " servers applied to any filetype
 function! switch#lsp(...) abort
   let running = []  " 'allowed' means servers applied to this filetype
   let servers = exists('*lsp#get_allowed_servers') ? lsp#get_allowed_servers() : []
-  " let servers = lsp#get_server_names()  " servers applied to any filetype
   for server in servers
     if lsp#get_server_status(server) =~? 'running' | call add(running, server) | endif
   endfor
