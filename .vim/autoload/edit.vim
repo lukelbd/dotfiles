@@ -148,6 +148,7 @@ function! edit#swap_lines(...) abort
   else
     let [line11, line12] = [line1, line1]
   endif
+  let fold = &l:foldmethod ==# 'manual'  " fast fold enabled
   let line2 = delta > 0 ? line12 + delta : line11 + delta
   let [fold1, fold2] = [foldlevel(line1) >= 0, foldlevel(line2) >= 0]
   let [close1, close2] = [foldclosed(line1) > 0, foldclosed(line2) > 0]
@@ -162,8 +163,8 @@ function! edit#swap_lines(...) abort
   call append(line1 - 1, delta > 0 ? text2 + text1 : text1 + text2)
   let range1 = (line11 + delta * len(text2)) . ',' . (line12 + delta * len(text2))
   let range2 = (line21 - delta * len(text1)) . ',' . (line22 - delta * len(text1))
-  if fold1 | exe range1 . 'fold' | exe range1 . (close1 ? 'foldclose' : 'foldopen') | endif
-  if fold2 | exe range2 . 'fold' | exe range2 . (close2 ? 'foldclose' : 'foldopen') | endif
+  if fold && fold1 | exe range1 . 'fold' | exe range1 . (close1 ? 'foldclose' : 'foldopen') | endif
+  if fold && fold2 | exe range2 . 'fold' | exe range2 . (close2 ? 'foldclose' : 'foldopen') | endif
   exe line21
   exe close1 ? '' : 'normal! zv'
 endfunction

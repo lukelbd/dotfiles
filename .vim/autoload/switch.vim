@@ -20,11 +20,12 @@ function! switch#ale(...) abort
   if state == toggle || !exists(':ALEEnableBuffer')
     return
   elseif toggle
-    ALEEnableBuffer  " disable and set b:ale_enabled = 1
+    ALEEnableBuffer  " enable and set b:ale_enabled = 1
     call lsp#ale#enable()  " stop sending lsp diagnostics to ale
   else
-    ALEDisableBuffer  " enable and set b:ale_enabled = 0
     call lsp#ale#disable()  " start sending lsp diagnostics to ale
+    ALEResetBuffer  " remove highlights locations and signs
+    ALEDisableBuffer  " disable and set b:ale_enabled = 0
   endif
   let b:ale_enabled = toggle  " ensure always applied in case API changes
   call call('s:switch_message', ['ale and lsp integration', toggle, suppress])

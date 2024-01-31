@@ -500,7 +500,7 @@ _columnize() {
 # Directory sizes, normal and detailed, analagous to ls/ll
 # shellcheck disable=2032
 alias du='du -h'
-alias d1='du -h -d 1'  # single directory, see also r1 a1
+alias d0='du -h -d 1'  # single directory, see also r0 a0
 alias df='df -h'
 mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
@@ -902,8 +902,8 @@ _ignore_ag='--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore'
 _ignore_rg='--ignore-file ~/.ignore --ignore-file ~/.wildignore'
 alias ag="ag $_ignore_ag --skip-vcs-ignores --hidden"  # see also .vimrc, .ignore
 alias rg="rg $_ignore_rg --no-ignore-vcs --hidden"  # see also .vimrc, .ignore
-alias a1="ag $_ignore_ag --skip-vcs-ignores --hidden --depth 0"  # see also 'd1'
-alias r1="rg $_ignore_rg --no-ignore-vcs --hidden --max-depth 1"  # see also 'd1'
+alias a0="ag $_ignore_ag --skip-vcs-ignores --hidden --depth 0"  # see also 'd0'
+alias r0="rg $_ignore_rg --no-ignore-vcs --hidden --max-depth 1"  # see also 'd0'
 _grep() {
   local commands exclude include
   include="$1"
