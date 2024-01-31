@@ -378,7 +378,7 @@ noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(t:, 'tabline_bufnr', '%'))<CR><Cmd>only<CR>
+nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(b:, 'tabline_bufnr', '%'))<CR><Cmd>only<CR>
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -1257,7 +1257,7 @@ let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#get_ignores(1)  " added j
 " subfolders). Most likely harmless if duplicate installations but try to avoid.
 " call plug#('natebosch/vim-lsc')  " alternative lsp client
 if s:enable_lsp
-  " call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero config needed!
+  call plug#('rhysd/vim-lsp-ale')  " prevents duplicate language servers, zero config needed!
   call plug#('prabirshrestha/vim-lsp')  " ddc-vim-lsp requirement
   call plug#('mattn/vim-lsp-settings')  " auto vim-lsp settings
 	call plug#('rhysd/vim-healthcheck')  " plugin help
@@ -1666,113 +1666,6 @@ if &g:foldenable || s:plug_active('FastFold')
   let g:zsh_fold_enable = 1
 endif
 
-" Formatting plugins related to ale
-" Isort plugin docs:
-" https://github.com/fisadev/vim-isort
-" Black plugin docs:
-" https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
-" Autopep8 plugin docs (or :help autopep8):
-" https://github.com/tell-k/vim-autopep8 (includes a few global variables)
-" Autoformat plugin docs:
-" https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
-if s:plug_active('ale')
-  let g:autopep8_disable_show_diff = 1
-  let g:autopep8_ignore = s:flake8_ignore
-  let g:autopep8_max_line_length = g:linelength
-  let g:black_linelength = g:linelength
-  let g:black_skip_string_normalization = 1
-  let g:vim_isort_python_version = 'python3'
-  let g:vim_isort_config_overrides = {
-    \ 'include_trailing_comma': 'true',
-    \ 'force_grid_wrap': 0,
-    \ 'multi_line_output': 3,
-    \ 'line_length': g:linelength,
-    \ }
-  let g:formatdef_mpython = '"isort '
-    \ . '--trailing-comma '
-    \ . '--force-grid-wrap 0 '
-    \ . '--multi-line 3 '
-    \ . '--line-length ' . g:linelength
-    \ . ' - | black --quiet '
-    \ . '--skip-string-normalization '
-    \ . '--line-length ' . g:linelength . ' - "'
-  let g:formatters_python = ['mpython']  " multiple formatters
-  let g:formatters_fortran = ['fprettify']
-endif
-
-" Asynchronous linting engine
-" Note: bashate is equivalent to pep8, similar to prettier and beautify
-" for javascript and html, also tried shfmt but not available.
-" Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
-" with :ALEFix black. Or can use the black plugin and use :Black of course.
-" Note: chktex is awful (e.g. raises errors for any command not followed
-" by curly braces) so lacheck is best you are going to get.
-" https://github.com/Kuniwak/vint  # vim linter and format checker (pip install vim-vint)
-" https://github.com/PyCQA/flake8  # python linter and format checker
-" https://pypi.org/project/doc8/  # python format checker
-" https://github.com/koalaman/shellcheck  # shell linter
-" https://github.com/mvdan/sh  # shell format checker
-" https://github.com/openstack/bashate  # shell format checker
-" https://mypy.readthedocs.io/en/stable/introduction.html  # type annotation checker
-" https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
-" map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
-" map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
-" 'python': ['python', 'flake8', 'mypy'],  " need to improve config
-if s:plug_active('ale')
-  augroup ale_toggle
-    au!
-    " autocmd BufRead ipython_config.py,ipython_*_config.py,jupyter_*_config.py call switch#ale(0, 1)
-  augroup END
-  command! -nargs=? AleToggle call switch#ale(<args>)
-  noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
-  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
-  noremap <Leader>@ <Cmd>call switch#ale()<CR>
-  noremap <Leader># <Cmd>ALEInfo<CR>
-  let g:ale_linters = {
-    \ 'config': [],
-    \ 'fortran': ['gfortran'],
-    \ 'help': [],
-    \ 'json': ['jsonlint'],
-    \ 'jsonc': ['jsonlint'],
-    \ 'python': ['python', 'flake8'],
-    \ 'rst': [],
-    \ 'sh': ['shellcheck', 'bashate'],
-    \ 'tex': ['lacheck'],
-    \ 'text': [],
-    \ 'vim': ['vint'],
-    \ }
-  let g:ale_completion_enabled = 0
-  let g:ale_completion_autoimport = 0
-  let g:ale_cursor_detail = 0
-  let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
-  let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
-  let g:ale_hover_cursor = 0
-  let g:ale_linters_explicit = 1
-  let g:ale_lint_on_enter = 1
-  let g:ale_lint_on_filetype_changed = 1
-  let g:ale_lint_on_insert_leave = 1
-  let g:ale_lint_on_save = 0
-  let g:ale_lint_on_text_changed = 'normal'
-  let g:ale_list_window_size = 8
-  let g:ale_open_list = 0  " open manually
-  let g:ale_sign_column_always = 0
-  let g:ale_sign_error = 'E>'
-  let g:ale_sign_warning = 'W>'
-  let g:ale_sign_info = 'I>'
-  let g:ale_set_loclist = 1  " keep default
-  let g:ale_set_quickfix = 0  " use manual command
-  let g:ale_echo_msg_error_str = 'Err'
-  let g:ale_echo_msg_info_str = 'Info'
-  let g:ale_echo_msg_warning_str = 'Warn'
-  let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
-  let g:ale_python_flake8_options =  '--max-line-length=' . g:linelength . ' --ignore=' . s:flake8_ignore
-  let g:ale_set_balloons = 0  " no ballons
-  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . g:linelength
-  let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
-  let g:ale_update_tagstack = 0  " use ctags for this
-  let g:ale_virtualtext_cursor = 0  " no error shown here
-endif
-
 " Lsp integration settings
 " Note: The below autocmd gives signature popups the same borders as hover popups.
 " Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
@@ -1908,6 +1801,113 @@ if s:plug_active('ddc.vim')
   call ddc#custom#patch_global('sources', g:ddc_sources)
   call ddc#custom#patch_global(g:ddc_options)
   call ddc#enable()
+endif
+
+" Asynchronous linting engine
+" Note: bashate is equivalent to pep8, similar to prettier and beautify
+" for javascript and html, also tried shfmt but not available.
+" Note: black is not a linter (try :ALEInfo) but it is a 'fixer' and can be used
+" with :ALEFix black. Or can use the black plugin and use :Black of course.
+" Note: chktex is awful (e.g. raises errors for any command not followed
+" by curly braces) so lacheck is best you are going to get.
+" https://github.com/Kuniwak/vint  # vim linter and format checker (pip install vim-vint)
+" https://github.com/PyCQA/flake8  # python linter and format checker
+" https://pypi.org/project/doc8/  # python format checker
+" https://github.com/koalaman/shellcheck  # shell linter
+" https://github.com/mvdan/sh  # shell format checker
+" https://github.com/openstack/bashate  # shell format checker
+" https://mypy.readthedocs.io/en/stable/introduction.html  # type annotation checker
+" https://github.com/creativenull/dotfiles/blob/1c23790/config/nvim/init.vim#L481-L487
+" map ]x <Plug>(ale_next_wrap)  " use universal circular scrolling
+" map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
+" 'python': ['python', 'flake8', 'mypy'],  " need to improve config
+if s:plug_active('ale')
+  augroup ale_toggle
+    au!
+    autocmd BufReadPost ipython_*config.py,jupyter_*config.py call switch#ale(0, 1)
+  augroup END
+  command! -nargs=? AleToggle call switch#ale(<args>)
+  noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
+  noremap <Leader>X <Cmd>lclose<CR><Cmd>ALEPopulateQuickfix<CR><Cmd>exe 'copen ' . float2nr(0.15 * &lines)<CR>
+  noremap <Leader>@ <Cmd>call switch#ale()<CR>
+  noremap <Leader># <Cmd>ALEInfo<CR>
+  let g:ale_linters = {
+    \ 'config': [],
+    \ 'fortran': ['gfortran'],
+    \ 'help': [],
+    \ 'json': ['jsonlint'],
+    \ 'jsonc': ['jsonlint'],
+    \ 'python': ['python', 'flake8'],
+    \ 'rst': [],
+    \ 'sh': ['shellcheck', 'bashate'],
+    \ 'tex': ['lacheck'],
+    \ 'text': [],
+    \ 'vim': ['vint'],
+    \ }
+  let g:ale_completion_enabled = 0
+  let g:ale_completion_autoimport = 0
+  let g:ale_cursor_detail = 0
+  let g:ale_disable_lsp = 1  " vim-lsp and ddc instead
+  let g:ale_fixers = {'*': ['remove_trailing_lines', 'trim_whitespace']}
+  let g:ale_hover_cursor = 0
+  let g:ale_linters_explicit = 1
+  let g:ale_lint_on_enter = 1
+  let g:ale_lint_on_filetype_changed = 1
+  let g:ale_lint_on_insert_leave = 1
+  let g:ale_lint_on_save = 0
+  let g:ale_lint_on_text_changed = 'normal'
+  let g:ale_list_window_size = 8
+  let g:ale_open_list = 0  " open manually
+  let g:ale_sign_column_always = 0
+  let g:ale_sign_error = 'E>'
+  let g:ale_sign_warning = 'W>'
+  let g:ale_sign_info = 'I>'
+  let g:ale_set_loclist = 1  " keep default
+  let g:ale_set_quickfix = 0  " use manual command
+  let g:ale_echo_msg_error_str = 'Err'
+  let g:ale_echo_msg_info_str = 'Info'
+  let g:ale_echo_msg_warning_str = 'Warn'
+  let g:ale_echo_msg_format = '[%linter%] %code:% %s [%severity%]'
+  let g:ale_python_flake8_options =  '--max-line-length=' . g:linelength . ' --ignore=' . s:flake8_ignore
+  let g:ale_set_balloons = 0  " no ballons
+  let g:ale_sh_bashate_options = '-i E003 --max-line-length=' . g:linelength
+  let g:ale_sh_shellcheck_options = '-e ' . s:shellcheck_ignore
+  let g:ale_update_tagstack = 0  " use ctags for this
+  let g:ale_virtualtext_cursor = 0  " no error shown here
+endif
+
+" Formatting plugins related to ale
+" Isort plugin docs:
+" https://github.com/fisadev/vim-isort
+" Black plugin docs:
+" https://black.readthedocs.io/en/stable/integrations/editors.html?highlight=vim#vim
+" Autopep8 plugin docs (or :help autopep8):
+" https://github.com/tell-k/vim-autopep8 (includes a few global variables)
+" Autoformat plugin docs:
+" https://github.com/vim-autoformat/vim-autoformat (expands native 'autoformat' utilities)
+if s:plug_active('ale')
+  let g:autopep8_disable_show_diff = 1
+  let g:autopep8_ignore = s:flake8_ignore
+  let g:autopep8_max_line_length = g:linelength
+  let g:black_linelength = g:linelength
+  let g:black_skip_string_normalization = 1
+  let g:vim_isort_python_version = 'python3'
+  let g:vim_isort_config_overrides = {
+    \ 'include_trailing_comma': 'true',
+    \ 'force_grid_wrap': 0,
+    \ 'multi_line_output': 3,
+    \ 'line_length': g:linelength,
+    \ }
+  let g:formatdef_mpython = '"isort '
+    \ . '--trailing-comma '
+    \ . '--force-grid-wrap 0 '
+    \ . '--multi-line 3 '
+    \ . '--line-length ' . g:linelength
+    \ . ' - | black --quiet '
+    \ . '--skip-string-normalization '
+    \ . '--line-length ' . g:linelength . ' - "'
+  let g:formatters_python = ['mpython']  " multiple formatters
+  let g:formatters_fortran = ['fprettify']
 endif
 
 " Conflict highlight settings (warning: change below to 'BufEnter?')
