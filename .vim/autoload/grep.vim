@@ -97,7 +97,7 @@ endfunction
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 " let prompt = a:level > 1 ? 'Current file' : a:level > 0 ? 'File directory' : 'Working directory'
-function! grep#complete_pattern(lead, line, cursor)
+function! grep#complete_search(lead, line, cursor)
   let regex = '\n\@<=>\?\s*[0-9]*\s*\([^\n]*\)\(\n\|$\)\@='
   let match = 'empty(a:lead) || v:val[:len(a:lead) - 1] ==# a:lead'
   let opts = execute('history search')  " remove number prompt
@@ -107,15 +107,16 @@ function! grep#complete_pattern(lead, line, cursor)
   return reverse([@/] + opts[1:])
 endfunction
 function! grep#call_grep(grep, level, depth) abort
+  let paths = s:parse_paths(1, a:level)
   if a:level <= 0  " generally limited
-    let prompt = 'open buffers'
-  elseif a:level <= 2
-    let prompt = join(s:parse_paths(1, a:level), ' ')
-  else  " possibly enormous
-    let prompt = 'open projects'
+    let prompt = len(paths) . ' open buffers'
+  elseif a:level >= 3  " possibly enormous
+    let prompt = len(paths) . ' open projects'
+  else  " current folder or project
+    let prompt = join(paths, ' ')
   endif
   let prompt = toupper(a:grep[0]) . a:grep[1:] . ' search ' . prompt
-  let pattern = utils#input_default(prompt, 'grep#complete_pattern', @/)
+  let pattern = utils#input_default(prompt, 'grep#complete_search', @/)
   if empty(pattern) | return | endif
   let func = 'grep#call_' . tolower(a:grep)
   call call(func, [0, a:level, a:depth, pattern])

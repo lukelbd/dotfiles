@@ -378,7 +378,7 @@ noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(b:, 'tabline_bufnr', '%'))<CR><Cmd>only<CR>
+nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(b:, 'tabline_bufnr', '%'))<CR><Cmd>only<CR>ze
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -609,8 +609,8 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
 noremap zj zb
 noremap zk zt
-noremap z. zz
-noremap z, z.zs
+noremap z. zzze
+noremap z, z.
 noremap z> zs
 noremap z< ze
 
@@ -2018,7 +2018,7 @@ endif
 if s:plug_active('vim-easy-align')
   augroup easy_align
     au!
-    au BufEnter * let g:easy_align_delimiters['c']['pattern'] = comment#get_regex()
+    au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
   augroup END
   map gy <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}

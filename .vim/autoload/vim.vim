@@ -120,17 +120,14 @@ function! vim#show_colors() abort
   call file#open_drop('colortest.vim')
   source $VIMRUNTIME/syntax/colortest.vim
   silent call utils#panel_setup(0)
-  setlocal foldmethod=syntax
 endfunction
 function! vim#show_ftplugin() abort
   call file#open_drop($VIMRUNTIME . '/ftplugin/' . &filetype . '.vim')
   silent call utils#panel_setup(0)
-  setlocal foldmethod=syntax
 endfunction
 function! vim#show_syntax() abort
   call file#open_drop($VIMRUNTIME . '/syntax/' . &filetype . '.vim')
   silent call utils#panel_setup(0)
-  setlocal foldmethod=syntax
 endfunction
 
 " Source file or lines

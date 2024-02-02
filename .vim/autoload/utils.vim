@@ -127,7 +127,6 @@ endfunction
 " and simply get in habit of closing entire tabs with session#close_tab().
 function! utils#panel_setup(modifiable) abort
   setlocal nolist nonumber norelativenumber nocursorline
-  if &l:foldlevel == 0 | let &l:foldlevel = 1 | endif
   nnoremap <silent> <buffer> q :call window#close_window()<CR>
   nnoremap <silent> <buffer> <C-w> :call window#close_window()<CR>
   if &filetype ==# 'qf'  " disable <Nop> map

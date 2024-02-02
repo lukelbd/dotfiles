@@ -13,14 +13,14 @@ endfunction
 
 " Return the comment character
 function! comment#get_char() abort
-  let string = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
-  let string = substitute(string, '\s\+', '', 'g')  " ignore spaces
-  return escape(string, '[]\.*$~')  " escape magic characters
+  let char = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
+  let char = substitute(char, '\s\+', '', 'g')  " ignore spaces
+  return escape(char, '[]\.*$~')  " escape magic characters
 endfunction
 function! comment#get_regex() abort
   let char = comment#get_char()
   let char = empty(char) ? nr2char(0) : char
-  return '\s' . char
+  return char
 endfunction
 function! comment#get_insert() abort
   let parts = split(&l:commentstring, '%s')
