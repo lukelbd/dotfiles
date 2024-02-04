@@ -512,7 +512,8 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap ; @:
+nnoremap ; <Nop>
+nnoremap _ @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -669,10 +670,11 @@ noremap z] ]z
 
 " Go to folds marks or jumps with fzf
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
-" noremap g' <Cmd>BLines<CR>
 noremap gz <Cmd>Folds<CR>
 noremap g' <Cmd>call mark#fzf_marks()<CR>
 noremap g" <Cmd>call mark#fzf_jumps()<CR>
+noremap z' <Cmd>call mark#goto_mark(get(g:, 'mark_recent', 'A'))<CR>
+noremap z" <Cmd>call mark#del_marks()<CR>
 
 " Declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
@@ -682,8 +684,6 @@ command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
 noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
-noremap g~ <Cmd>call mark#del_marks()<CR>
-noremap g` <Cmd>call mark#goto_mark(get(g:, 'mark_recent', 'A'))<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -703,6 +703,8 @@ nnoremap g; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 nnoremap g: <Cmd>call grep#call_grep('rg', 3, 0)<CR>
 nnoremap z; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 nnoremap z: <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+nnoremap z/ <Cmd>BLines<CR>
+nnoremap z? <Cmd>Lines<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
