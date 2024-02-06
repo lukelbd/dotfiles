@@ -1356,7 +1356,7 @@ call plug#('kana/vim-textobj-fold')  " select current fold, object is 'z'
 call plug#('kana/vim-textobj-indent')  " indentation, object is 'i' or 'I' and 'a' includes empty lines
 call plug#('sgur/vim-textobj-parameter')  " function parameter, object is '='
 call plug#('glts/vim-textobj-comment')  " comment blocks, object is 'C' (see below)
-let g:vim_textobj_parameter_mapping = '='  " avoid ',' since conflicts with latex
+let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
 let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 
 " Formatting stuff. Conjoin plugin removes line continuation characters and is awesome.

@@ -122,5 +122,5 @@ function! grep#call_grep(cmd, global, level) abort
   let pattern = utils#input_default(prompt, 'grep#complete_search', @/)
   if empty(pattern) | return | endif
   let func = 'grep#call_' . tolower(a:cmd)
-  call call(func, [0, a:global, a:level, pattern])
+  call call(func, [a:global, a:level, pattern])
 endfunction
