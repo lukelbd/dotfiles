@@ -691,18 +691,16 @@ noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
-command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, 0, <f-args>)  " open files
-command! -bang -nargs=+ R0 call grep#call_rg(<bang>0, 1, 1, <f-args>)  " current directory
-command! -bang -nargs=+ R1 call grep#call_rg(<bang>0, 2, 0, <f-args>)  " project directory
-command! -bang -nargs=+ R2 call grep#call_rg(<bang>0, 3, 0, <f-args>)  " all projects
-command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, 0, <f-args>)  " open files
-command! -bang -nargs=+ A0 call grep#call_ag(<bang>0, 1, 1, <f-args>)  " current directory
-command! -bang -nargs=+ A1 call grep#call_ag(<bang>0, 2, 0, <f-args>)  " project directory
-command! -bang -nargs=+ A2 call grep#call_ag(<bang>0, 3, 0, <f-args>)  " open projects
-nnoremap g; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 3, 0)<CR>
-nnoremap z; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
-nnoremap z: <Cmd>call grep#call_grep('rg', 2, 0)<CR>
+command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, <f-args>)  " search file(s)
+command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 1, <f-args>)  " search folder(s)
+command! -bang -nargs=+ Rp call grep#call_rg(<bang>0, 2, <f-args>)  " search project(s)
+command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, <f-args>)  " search file(s)
+command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 1, <f-args>)  " search folder(s)
+command! -bang -nargs=+ Ap call grep#call_ag(<bang>0, 2, <f-args>)  " search project(s)
+nnoremap g; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g: <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap z; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+nnoremap z: <Cmd>call grep#call_grep('rg', 0, 2)<CR>
 nnoremap z/ <Cmd>BLines<CR>
 nnoremap z? <Cmd>Lines<CR>
 
