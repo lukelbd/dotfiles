@@ -708,15 +708,15 @@ nnoremap z? <Cmd>Lines<CR>
 " Note: Search open files for print statements and project files for others
 " Note: Native 'gp' and 'gP' almost identical to 'p' and 'P' (just moves char to right)
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
-command! -bang -nargs=* Prints call grep#call_ag(0, 2 - <bang>0, 0, '^\s*print(', <f-args>)
-command! -bang -nargs=* Debugs call grep#call_ag(0, 2 - <bang>0, 0, '^\s*ic(', <f-args>)
-command! -bang -nargs=* Notes call grep#call_ag(0, 2 - <bang>0, 0, '\<note:', <f-args>)
-command! -bang -nargs=* Todos call grep#call_ag(0, 2 - <bang>0, 0, '\<todo:', <f-args>)
-command! -bang -nargs=* Errors call grep#call_ag(0, 2 - <bang>0, 0, '\<error:', <f-args>)
-command! -bang -nargs=* Warnings call grep#call_ag(0, 2 - <bang>0, 0, '\<warning:', <f-args>)
-command! -bang -nargs=* Conflicts call grep#call_ag(0, 2 - <bang>0, 0, s:conflicts, <f-args>)
-noremap gp <Cmd>Prints<CR>
-noremap gP <Cmd>Debugs<CR>
+command! -bang -nargs=* Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
+command! -bang -nargs=* Prints call grep#call_rg(<bang>0, 2, '^\s*print(', <f-args>)
+command! -bang -nargs=* Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
+command! -bang -nargs=* Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\):', <f-args>)
+command! -bang -nargs=* Errors call grep#call_rg(<bang>0, 2, '\<\(Error\|ERROR\):', <f-args>)
+command! -bang -nargs=* Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\):', <f-args>)
+command! -bang -nargs=* Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
+noremap gp <Cmd>Debugs!<CR>
+noremap gP <Cmd>Prints<CR>
 noremap gM <Cmd>Notes<CR>
 noremap gB <Cmd>Todos<CR>
 noremap gE <Cmd>Errors<CR>
