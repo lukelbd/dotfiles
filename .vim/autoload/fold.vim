@@ -4,6 +4,7 @@
 " Format fold for specific filetypes
 " Note: This concatenates python docstring lines and uses frame title
 " for beamer presentations. In future should expand for other filetypes.
+scriptencoding utf-8
 let s:maxlines = 100  " maxumimum number of lines
 let s:docstring = '["'']\{3}'  " docstring expression
 function! fold#get_label(line, ...) abort
@@ -56,7 +57,6 @@ endfunction
 " Generate truncated fold text
 " Note: Style here is inspired by vim-anyfold. For now stick to native
 " per-filetype syntax highlighting becuase still has some useful features.
-scriptencoding utf-8
 let s:delim_open = {']': '[', ')': '(', '}': '{', '>': '<'}
 let s:delim_close = {'[': ']', '(': ')', '{': '}', '<': '>'}
 function! fold#fold_text(...) abort
@@ -100,6 +100,24 @@ endfunction
 " Note: This is based on workflow of setting standard minimum fold level then manually
 " opening other folds. Previously tried ad hoc method using foldlevel() and scrolling
 " up lines preceding line is lower-level but this fails for adjacent same-level folds.
+let s:fold_close = {}
+let s:fold_open = {
+  \ 'fortran': '^\s*\(module\|program\)\>',
+  \ 'python': '^class\>',
+  \ 'tex': '^\s*\\begin{document}',
+\ }
+function! fold#set_defaults() abort
+  if has_key(s:fold_close, &filetype)
+    let winview = winsaveview()
+    silent! exe 'global/' . s:fold_close[&filetype] . '/foldopen'
+    call winrestview(winview)
+  endif
+  if has_key(s:fold_open, &filetype)
+    let winview = winsaveview()
+    silent! exe 'global/' . s:fold_open[&filetype] . '/foldopen'
+    call winrestview(winview)
+  endif
+endfunction
 function! fold#get_closed(line1, line2, ...) abort range
   let minline = a:0 ? a:1 : 0
   let closed = 0
@@ -131,7 +149,9 @@ function! fold#get_current(...) abort
     let line2 = line('.')
   endif
   call winrestview(winview)
-  if !a:0 && !level && getline(line1) =~# '^\s*\(\\begin{document}\|class\>\)'
+  let norecurse = a:0 && a:1
+  let ignores = join(keys(s:fold_open), '\|')
+  if !level && !norecurse && !empty(ignores) && getline(line1) =~# ignores
     return fold#get_current(1)  " ignore special folds
   else  " default case
     return [line1, line2, foldlevel(line1)]
@@ -141,99 +161,74 @@ endfunction
 " Set the file fold level and optional default toggles
 " Warning: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
-" Warning: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call_
+" Warning: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
 " can produce strange internal bug. Instead rely on FastFoldUpdate to fill the cache.
-" Warning: Python block overrides b:SimPylFold_cache while markdown block overwrites
+" Note: Python block overrides b:SimPylFold_cache while markdown block overwrites
 " foldtext from $RUNTIME/syntax/[markdown|javascript] and re-applies vim-markdown.
 " Note: Native 'zm' and 'zr' accept commands but count is relative to current
-" fold level. Could use &l:foldlevel = v:vount but want to keep foldlevel truncated
-" to maximum number found in file as native 'zr' does. So use the below
-function! fold#update_folds(...) abort
+" fold level. Could use &foldlevel = v:vount but want to keep foldlevel truncated
+" to maximum number found in file as native 'zr' does. So use the below instead
+function! fold#update_folds() abort
+  let modified = getftime(@%)
+  let refresh = get(b:, 'fastfold_refresh', 0)
+  let updated = get(b:, 'fastfold_updated', modified)
+  if !refresh && modified <= updated
+    return
+  endif
   if &filetype ==# 'python'
     setlocal foldmethod=expr
     setlocal foldexpr=python#fold_expr(v:lnum)
-    silent! unlet! b:SimpylFold_cache | FastFoldUpdate
-  elseif &filetype ==# 'markdown'
+    call SimpylFold#Recache()
+  endif
+  if &filetype ==# 'markdown'
     setlocal foldmethod=expr
     setlocal foldtext=fold#fold_text()
     silent! doautocmd BufWritePost
-  elseif a:0 && a:1  " force update
-    silent! exe 'FastFoldUpdate'
   endif
+  silent! FastFoldUpdate
+  let b:fastfold_refresh = 0
+  let b:fastfold_updated = localtime()
 endfunction
-function! fold#set_defaults(...) abort
-  let pairs = {
-    \ 'tex': ['^\s*\\begin{document}', 0],
-    \ 'python': ['^class\>', 0],
-    \ 'fortran': ['^\s*\(module\|program\)\>', 0],
-  \ }
-  if has_key(pairs, &filetype)
-    let [regex, toggle] = pairs[&l:filetype]
-    let winview = winsaveview()
-    silent! exe 'global/' . regex . '/' . (toggle ? 'foldclose' : 'foldopen')
-    call winrestview(winview)
-  endif
-endfunction
-function! fold#set_level(...) abort
-  let current = &l:foldlevel
+function! fold#update_level(...) abort
+  let level = &foldlevel
   if a:0  " input direction
     let cmd = v:count1 . 'z' . a:1
-  else  " specific level
-    if !v:count
-      let cmd = ''
-    elseif v:count == current
-      let cmd = ''
-    elseif v:count > current
-      let cmd = (v:count - current) . 'zr'
-    else
-      let cmd = (current - v:count) . 'zm'
-    endif
+  elseif !v:count || v:count == level
+    let cmd = ''  " already on level
+  elseif v:count > level
+    let cmd = (v:count - level) . 'zr'
+  else
+    let cmd = (level - v:count) . 'zm'
   endif
   if !empty(cmd)
     silent! exe 'normal! ' . cmd
   endif
-  let result = &l:foldlevel
-  let msg = current == result ? current : current . ' -> ' . result
-  echom 'Fold level: ' . msg
+  if level != &foldlevel
+    call fold#update_folds() | echom 'Fold level: ' . level . ' -> ' . &foldlevel
+  else  " echo message only
+    echom 'Fold level: ' . level
+  endif
 endfunction
 
 " Toggle folds under cursor
 " Note: This is required because recursive :foldclose! also closes parent
 " and :[range]foldclose does not close children. Have to go one-by-one.
-" Note: When called on line below fold level this will close fold. So e.g. 'zCzC' will
-" first fold up to foldlevel then fold additional levels.
+" Note: When called on line below fold level this will close fold. So e.g.
+" 'zCzC' will first fold up to foldlevel then fold additional levels.
 function! s:toggle_nested(line1, line2, level, toggle) abort
   let pairs = []  " fold levels and lines
   for lnum in range(a:line1, a:line2)
     let lev = foldlevel(lnum)
-    if lev && lev > a:level
-      call add(pairs, [lev, lnum])
-    endif
+    if lev && lev > a:level | call add(pairs, [lev, lnum]) | endif
   endfor
   for [lev, lnum] in reverse(sort(pairs))
-    if foldclosed(lnum) > 0 && !a:toggle
-      exe lnum . 'foldopen'
-    endif
-    if foldclosed(lnum) <= 0 && a:toggle
-      exe lnum . 'foldclose'
-    endif
+    if foldclosed(lnum) > 0 && !a:toggle | exe lnum . 'foldopen' | endif
+    if foldclosed(lnum) <= 0 && a:toggle | exe lnum . 'foldclose' | endif
   endfor
 endfunction
-function! fold#toggle_current(...) abort
-  let [line1, line2, level] = fold#get_current()
-  let toggle = a:0 ? a:1 : -1
-  if toggle < 0  " open if current fold is closed
-    let toggle = 1 - fold#get_closed(line1, line1)
-  endif
-  if line2 > line1
-    call s:toggle_nested(line1, line2, level, toggle)
-    exe line1 . (toggle ? 'foldclose' : 'foldopen')
-  else
-    call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
-  endif
-endfunction
 function! fold#toggle_nested(...) abort
-  let [line1, line2, level] = fold#get_current()
+  call fold#update_folds()
+  let [line1, line2, level] = fold#get_current(0)
   let toggle = a:0 ? a:1 : -1  " -1 indicates switch
   if toggle < 0  " open if any nested folds are closed
     let toggle = 1 - fold#get_closed(line1, line2, line1)
@@ -244,10 +239,25 @@ function! fold#toggle_nested(...) abort
     call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
   endif
 endfunction
+function! fold#toggle_current(...) abort
+  call fold#update_folds()
+  let [line1, line2, level] = fold#get_current(0)
+  let toggle = a:0 ? a:1 : -1
+  if toggle < 0  " open if current fold is closed
+    let toggle = 1 - fold#get_closed(line1, line1)
+  endif
+  if line2 > line1
+    call s:toggle_nested(line1, line2, level, toggle) | exe line1 . (toggle ? 'foldclose' : 'foldopen')
+  else
+    call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
+  endif
+endfunction
 
 " Open or close folds over input range
-" Note: Here 'a:toggle' closes folds when 1 and opens when 0.
+" Note: Here 'a:toggle' closes folds when 1 and opens when 0. Also update folds
+" before toggling as with other toggle commands.
 function! fold#toggle_range(...) range abort
+  call fold#update_folds()
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let winview = a:0 > 2 ? a:3 : {}
   let bang = a:0 > 1 ? a:2 : 0

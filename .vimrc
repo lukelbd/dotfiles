@@ -616,47 +616,50 @@ noremap z> zs
 noremap z< ze
 
 " Reset manually open-closed folds accounting for custom overrides
-" Note: This affects only markdown and python files.
+" Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
+" and python files then applies default toggle status that differs from buffer-wide
+" &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
 for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
   silent! exe 'unmap! z' . s:char
 endfor
-noremap zx <Cmd>call fold#update_folds(1)<CR>zx<Cmd>call fold#set_defaults()<CR>zv
-noremap zX <Cmd>call fold#update_folds(1)<CR>zX<Cmd>call fold#set_defaults()<CR>
-
-" Change fold level
-" Note: Also have 'zx' and 'zX' to reset manually-opened-closed folds.
-" Note: Here 'zf' sets to input count while other commands increase or decrease by
-" count. Every command echos the change. Also 'zf' without count simply prints level.
-noremap zp <Cmd>call fold#set_level()<CR>
-noremap zP <Cmd>call fold#set_level()<CR>
-noremap zm <Cmd>call fold#set_level('m')<CR>
-noremap zM <Cmd>call fold#set_level('M')<CR>
-noremap zr <Cmd>call fold#set_level('r')<CR>
-noremap zR <Cmd>call fold#set_level('R')<CR>
+noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults()<CR>zv
+noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults()<CR>
 
 " Toggle folds under cursor non-recursively
-" Note: Previously toggled with recursive-open then non-recursive close but this is
-" annoying e.g. for huge python classes. Now use 'zi' to explicitly toggle nesting.
-" Note: This will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
-" maps. However now only call FastFoldUpdate manually for 'zx' and 'zX' (see above).
-noremap <expr> zz '<Cmd>call fold#update_folds(0)<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
-nnoremap zcc zc
-nnoremap zoo zo
-vnoremap <nowait> zc zc
-vnoremap <nowait> zo zo
+" Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
+" Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
+" maps. However now use even faster / more conservative fold#update_folds() method.
+noremap <expr> zz '<Cmd>call fold#update_folds()<CR>' . (foldclosed('.') > 0 ? 'zo' : 'zc')
+nnoremap zcc <Cmd>call fold#update_folds()<CR>zc
+nnoremap zoo <Cmd>call fold#update_folds()<CR>zo
+vnoremap <nowait> zc <Cmd>call fold#update_folds()<CR>zc
+vnoremap <nowait> zo <Cmd>call fold#update_folds()<CR>zo
 nnoremap <expr> za fold#toggle_range_expr(-1, 0)
 nnoremap <expr> zc fold#toggle_range_expr(1, 0)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 
 " Toggle folds under cursor recursively
-" Note: Here 'zZ' will close or open all nested folds under cursor up to
-" level parent. Use :echom fold#get_current() for debugging.
+" Nore: Here fold#toggle_nested() and fold#toggle_current() call fold#update_folds().
+" Note: Here 'zi' will close or open all nested folds under cursor up to level
+" parent (use :echom fold#get_current() for debugging). Previously toggled with
+" recursive-open then non-recursive close but annoying e.g. for huge classes.
 " Note: Here 'zC' will close fold only up to current level or for definitions
-" inside class (special case for python). Could also use e.g. noremap <expr>
-" zC fold#toggle_range_expr(1, 1) for recursive motion mapping.
+" inside class (special case for python). For recursive motion mapping similar
+" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
 noremap zi <Cmd>call fold#toggle_nested()<CR>
 noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
+
+" Change fold level
+" Note: Here fold#update_level() calls fold#update_folds() if level was changed
+" and echos the level change -- 'zp' sets to the input count while other commands
+" increase or decrease by count ('zp' without count simply prints the level).
+noremap zp <Cmd>call fold#update_level()<CR>
+noremap zP <Cmd>call fold#update_level()<CR>
+noremap zm <Cmd>call fold#update_level('m')<CR>
+noremap zM <Cmd>call fold#update_level('M')<CR>
+noremap zr <Cmd>call fold#update_level('r')<CR>
+noremap zR <Cmd>call fold#update_level('R')<CR>
 
 " Jump to next or previous fold or inside fold
 " Note: This is more consistent with other bracket maps
@@ -1646,7 +1649,11 @@ endif
 " See: https://www.reddit.com/r/vim/comments/c5g6d4/why_is_folding_so_slow/
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:plug_active('FastFold')
-  " Various folding plugins
+  " Fast fold settings
+  augroup fastfold_update
+    au!
+    au TextChanged,InsertLeave * let b:fastfold_refresh = 1
+  augroup END
   let g:fastfold_savehook = 1  " enough for :write but use fold#update() for e.g. :edit
   let g:fastfold_fold_command_suffixes =  []  " use custom maps instead
   let g:fastfold_fold_movement_commands = []  " use custom maps instead

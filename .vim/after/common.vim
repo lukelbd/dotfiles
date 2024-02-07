@@ -21,14 +21,14 @@ if empty(maparg('[')) && empty(maparg(']'))
 endif
 
 " Update folds and re-enforce colors
-" Note: Here fold#set_defaults() resets fold open-close status but unfortunately
-" required because vim filetype refresh seems to clean out vim-markdown definitions.
+" Note: Here fold#set_defaults() resets fold open-close status for some filetypes but
+" unfortunately required because refresh seems to clean out vim-markdown definitions.
 " Note: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
 " based on colorscheme. Leverage that instead of reproducing here. Also need special
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
 let closed = foldclosed('.') > 0
 let winview = winsaveview()
-call fold#update_folds(0)
+call fold#update_folds()
 call fold#set_defaults()
 exe 'silent! normal! ' . (closed ? '' : 'zv')
 call winrestview(winview)
