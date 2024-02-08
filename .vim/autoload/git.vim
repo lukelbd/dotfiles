@@ -145,7 +145,7 @@ endfunction
 function! git#hunk_action(stage) abort range
   call s:gitgutter_update()
   let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
-  for [id, htype, line1, lcount] in get(get(b:, 'gitgutter', {}), 'hunks', [])
+  for [id, htype, line1, lcount] in GitGutterGetHunks()
     let line2 = lcount == 0 ? line1 : line1 + lcount - 1
     if firstline <= line1 && lastline >= line2  " range encapsulates hunk
       let range = ''
