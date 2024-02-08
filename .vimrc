@@ -119,7 +119,7 @@ set ttymouse=sgr  " different cursor shapes for different modes
 set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set undofile  " save undo history
 set undolevels=500  " maximum undo level
-set updatetime=3000  " used for CursorHold autocmds and default is 4000ms
+set updatetime=1000  " used for CursorHold autocmds and default is 4000ms
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set visualbell  " prefer visual bell to beeps (see also 'noerrorbells')
@@ -1990,8 +1990,8 @@ endif
 " Note: Use custom command for toggling on/off. Older vim versions always show
 " signcolumn if signs present, so GitGutterDisable will remove signcolumn.
 " Note: Previously used text change autocomamnds to manually-refresh gitgutter since
-" plugin only defines CursorHold but under-the-hood the invoked function actually *does*
-" only fire when text is different. So leave default configuration alone.
+" plugin only defines CursorHold but under-the-hood the invoked function actually
+" *does* only fire when text is different. So leave default configuration alone.
 " Note: Staging maps below were inspired by tcomment maps 'gc', 'gcc', 'etc.', and
 " navigation maps ]g, ]G (navigate to hunks, or navigate and stage hunks) were inspired
 " by spell maps ]s, ]S (navigate to spell error, or navigate and fix error).
@@ -2006,7 +2006,7 @@ if s:plug_active('vim-gitgutter')
   call s:repeat_map(']G', 'HunkForward', '<Cmd>call git#hunk_jump(1, 1)<CR>')
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
-  noremap <Leader>h <Cmd>call git#hunk_preview()<CR>
+  noremap <Leader>h <Cmd>call git#hunk_show()<CR>
   noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
   noremap <expr> gh git#hunk_action_expr(1)
   noremap <expr> gH git#hunk_action_expr(0)

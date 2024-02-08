@@ -109,21 +109,28 @@ function! git#fugitive_setup() abort
   call mapset('n', 0, select)
 endfunction
 
-" Git gutter jumping and previewing
-" Note: These ensure git gutter is turned on at start. In general want to
-" keep off since it is really intensive especially for larger projects.
-function! git#hunk_preview() abort
-  call switch#gitgutter(1, 1)  " ensure enabled, suppress message
-  GitGutter
+" Git hunk jumping and previewing
+" Note: Git gutter works by triggering on &updatetime after CursorHold only if
+" text was changed and starts async process. Here temporarily make synchronous.
+" Note: Always ensure gitgutter on and up-to-date before actions. Note CursorHold
+" triggers conservative update gitgutter#process_buffer('.', 0) that only runs if
+" text was changed while GitGutter and staging commands trigger forced update.
+function! s:gitgutter_update(...) abort
+  call switch#gitgutter(1, 1)
+  let force = a:0 ? a:1 : 0
+  let g:gitgutter_async = 0  " update before actions
+  call gitgutter#process_buffer(bufnr(''), force)
+  let g:gitgutter_async = 1
+endfunction
+function! git#hunk_show() abort
+  call s:gitgutter_update()
   GitGutterPreviewHunk
   wincmd j
 endfunction
 function! git#hunk_jump(forward, stage) abort
-  call switch#gitgutter(1, 1)  " ensure enabled, suppress message
-  let which = a:forward ? 'Next' : 'Prev'
-  let cmd = 'GitGutter' . which . 'Hunk'  " natively expands folds
-  exe v:count1 . cmd
-  if a:stage | exe 'GitGutterStageHunk' | endif
+  call s:gitgutter_update()
+  exe v:count1 . 'GitGutter' . (a:forward ? 'Next' : 'Prev') . 'Hunk'
+  exe a:stage ? 'GitGutterStageHunk' : ''
 endfunction
 
 " Git gutter staging and unstaging
@@ -136,11 +143,9 @@ endfunction
 " gitgutter#hunk#stage() requires cursor inside lines and fails when specifying lines
 " outside of addition hunk (see s:hunk_op) so explicitly navigate lines below.
 function! git#hunk_action(stage) abort range
+  call s:gitgutter_update()
   let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
-  call switch#gitgutter(1, 1)  " ensure enabled, suppress message
-  let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
-  let hunks = get(get(b:, 'gitgutter', {}), 'hunks', [])
-  for [id, htype, line1, lcount] in hunks
+  for [id, htype, line1, lcount] in get(get(b:, 'gitgutter', {}), 'hunks', [])
     let line2 = lcount == 0 ? line1 : line1 + lcount - 1
     if firstline <= line1 && lastline >= line2  " range encapsulates hunk
       let range = ''
@@ -148,13 +153,13 @@ function! git#hunk_action(stage) abort range
       let range = htype == 0 ? line1 . ',' . lastline : ''
     elseif firstline <= line2 && line2 <= lastline  " starts outside, ends inside
       let range = htype == 0 ? firstline . ',' . line2 : ''
-    else
+    else  " no update needed
       continue
     endif
-    exe line1
-    exe range . cmd
+    let g:gitgutter_async = 0  " update before actions
+    exe line1 | exe range . 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
+    let g:gitgutter_async = 1
   endfor
-  GitGutter  " update signs (sometimes they lag)
 endfunction
 " For <expr> map accepting motion
 function! git#hunk_action_expr(...) abort
