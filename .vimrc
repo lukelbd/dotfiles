@@ -614,6 +614,7 @@ noremap z. zzze
 noremap z, z.
 noremap z> zs
 noremap z< ze
+noremap zv zvzzze
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown

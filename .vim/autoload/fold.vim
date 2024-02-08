@@ -103,9 +103,8 @@ function! fold#fold_text(...) abort
   endfor
   " Combine label and statistics
   let nline = string(line2 - line1 + 1)
-  let delta = empty(delta) ? '' : '⟨' . delta . '⟩ '
-  let space = repeat('·', len(string(line('$'))) - len(nline) + 1)
-  let stats = delta . '|' . level . space . nline . '|'
+  let level = repeat(':', level)
+  let stats = delta . level . nline
   let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
   if strwidth(label) > width - 1  " truncate fold text
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
