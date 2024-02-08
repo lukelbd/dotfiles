@@ -384,7 +384,7 @@ nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(b:, 'tabline_bufnr', '%'))<CR><Cmd
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| call fold#update_folds()<CR>
+noremap <Leader>e <Cmd>edit \| call fold#update_folds(1)<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -2013,7 +2013,7 @@ if s:plug_active('vim-gitgutter')
   nnoremap <nowait> ghh <Cmd>call git#hunk_action(1)<CR>
   nnoremap <nowait> gHH <Cmd>call git#hunk_action(0)<CR>
   noremap zg <Cmd>GitGutter<CR>
-  noremap zG <Cmd>GitGutterAll<CR>
+  noremap zG <Cmd>call fold#update_folds(1)<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
