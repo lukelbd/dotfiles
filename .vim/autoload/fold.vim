@@ -85,7 +85,7 @@ function! fold#fold_text(...) abort
   " Get git gutter statistics
   let signs = ['+', '~', '-']
   let hunks = [0, 0, 0]
-  let deltas = []
+  let delta = ''
   for [id, htype, hunk1, hcount] in GitGutterGetHunks()
     let hunk2 = hcount == 0 ? hunk1 : hunk1 + hcount - 1
     let [hunk1, hunk2] = [max([hunk1, line1]), min([hunk2, line2])]
@@ -93,20 +93,22 @@ function! fold#fold_text(...) abort
   endfor
   for htype in range(3)
     if hunks[htype]
-      let lines = string(hunks[htype])
-      call add(deltas, signs[htype] . lines)
+      let nline = string(hunks[htype])
+      let delta .= signs[htype] . nline
     endif
   endfor
   " Combine label and statistics
-  let lines = string(line2 - line1 + 1)
-  let space = repeat(' ', len(string(line('$'))) - len(lines))
-  let stats = join(deltas, '') . space . '|' . level . ':' . lines . '|'
+  let nline = string(line2 - line1 + 1)
+  let space = empty(delta) ? '' : ' '
+  let dots = repeat('·', len(string(line('$'))) - len(nline) + 1)
+  let stats = delta . space . '|' . level . dots . nline . '|'
   let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
-  if strwidth(label) > width - 4  " truncate fold text
+  if strwidth(label) > width - 1  " truncate fold text
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
     let dstr = empty(dend) ? '' : s:delim_open[dend[0]]
-    let dend = label[width - 5 - len(dend):] =~# dstr ? '' : dend
-    let label = label[:width - 6 - len(dend)] . '···' . dend . '  '
+    let dend = strpart(label, width - 4 - strwidth(dend)) =~# dstr ? '' : dend
+    let label = strpart(label, 0, width - 5 - strwidth(dend))
+    let label = label . '···' . dend . '  '
   endif
   let space = repeat(' ', width - strwidth(label))
   let text = label . space . stats
