@@ -384,7 +384,7 @@ nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(b:, 'tabline_bufnr', '%'))<CR><Cmd
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| call fold#update_folds(1)<CR>
+noremap <Leader>e <Cmd>edit \| call fold#update_folds()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -1652,9 +1652,9 @@ if &g:foldenable || s:plug_active('FastFold')
   " Fast fold settings
   augroup fastfold_update
     au!
-    au TextChanged,InsertLeave * let b:fastfold_refresh = 1
+    au TextChanged,InsertLeave * let b:fastfold_update = 1
   augroup END
-  let g:fastfold_savehook = 1  " enough for :write but use fold#update() for e.g. :edit
+  let g:fastfold_savehook = 0  " enough for :write but use fold#update() for e.g. :edit
   let g:fastfold_fold_command_suffixes =  []  " use custom maps instead
   let g:fastfold_fold_movement_commands = []  " use custom maps instead
   " Native folding settings

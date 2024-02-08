@@ -169,10 +169,7 @@ endfunction
 " fold level. Could use &foldlevel = v:vount but want to keep foldlevel truncated
 " to maximum number found in file as native 'zr' does. So use the below instead
 function! fold#update_folds() abort
-  let modified = getftime(@%)
-  let refresh = get(b:, 'fastfold_refresh', 0)
-  let updated = get(b:, 'fastfold_updated', modified)
-  if !refresh && modified <= updated
+  if !get(b:, 'fastfold_update', 0)  " .vimrc sets on TextChanged,InsertLeave
     return
   endif
   if &filetype ==# 'python'
@@ -186,8 +183,7 @@ function! fold#update_folds() abort
     silent! doautocmd BufWritePost
   endif
   silent! FastFoldUpdate
-  let b:fastfold_refresh = 0
-  let b:fastfold_updated = localtime()
+  let b:fastfold_update = 0
 endfunction
 function! fold#update_level(...) abort
   let level = &foldlevel
