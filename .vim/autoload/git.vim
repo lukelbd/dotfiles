@@ -83,6 +83,7 @@ endfunction
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
 function! git#fugitive_setup() abort
   silent! unmap! dq
+  setlocal foldlevel=1
   let open = maparg('<CR>', 'n', 0, 1)  " switch with 'O'
   let jump = maparg('O', 'n', 0, 1)  " switch with '<CR>'
   let prev = maparg('(', 'n', 0, 1)  " change to '<C-,>'
@@ -137,22 +138,25 @@ endfunction
 " Note: Currently GitGutterStageHunk only supports partial staging of additions
 " specified by visual selection, not different hunks. This supports both, iterates in
 " reverse in case lines change. See: https://github.com/airblade/vim-gitgutter/issues/279
-" Note: This was designed by looking at hunk.vim. Seems all buffer local gitgutter
-" settings are stores in g:gitgutter dictionary with 'hunks' containing lists of
-" [id, type, line, nline] where type == 0 is for addition-only hunks. Seems that
-" gitgutter#hunk#stage() requires cursor inside lines and fails when specifying lines
-" outside of addition hunk (see s:hunk_op) so explicitly navigate lines below.
+" Note: Created below by studying s:process_hunk() and gitgutter#diff#process_hunks()
+" in autoload/gitgutter/diff.vim. Hunks are stored in g:gitgutter['hunks'] list of
+" 4-item [from_start, from_count, to_start, to_count] lists i.e. the starting line and
+" counts before and after changes. Addition-only hunks have from_count '0' and to_count
+" non-zero since no text was present before the change. Also note gitgutter#hunk#stage()
+" requires cursor inside lines and fails when specifying lines outside of addition hunk
+" (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
 function! git#hunk_action(stage) abort range
   call s:gitgutter_update()
+  let hunks = gitgutter#hunk#hunks(bufnr(''))
   let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
-  for [id, htype, line1, lcount] in GitGutterGetHunks()
-    let line2 = lcount == 0 ? line1 : line1 + lcount - 1
+  for [line0, count0, line1, count1] in GitGutterGetHunks()
+    let line2 = count1 ? line1 + count1 - 1 : line1  " to closing line
     if firstline <= line1 && lastline >= line2  " range encapsulates hunk
       let range = ''
     elseif firstline <= line1 && line1 <= lastline  " starts inside, ends outside
-      let range = htype == 0 ? line1 . ',' . lastline : ''
+      let range = count0 ? '' : line1 . ',' . lastline
     elseif firstline <= line2 && line2 <= lastline  " starts outside, ends inside
-      let range = htype == 0 ? firstline . ',' . line2 : ''
+      let range = count0 ? '' : firstline . ',' . line2
     else  " no update needed
       continue
     endif

@@ -55,11 +55,12 @@ function! fold#get_label_tex(line, ...)
 endfunction
 
 " Generate truncated fold text. In future should include error cound information.
-" Todo: Add error counts from ale.vim to fold text.
 " Note: Since sign column is empty within folds include summary of changes
 " in fold text. See https://github.com/airblade/vim-gitgutter/issues/655
-" Note: Style here is inspired by vim-anyfold. For now stick to native
-" per-filetype syntax highlighting becuase still has some useful features.
+" Note: Created below by studying s:process_hunk() and e.g. s:is_added() s:is_removed()
+" in autoload/gitgutter/diff.vim. Hunks are stored in g:gitgutter['hunks'] list of
+" 4-item [from_start, from_count, to_start, to_count] lists i.e. the starting line
+" and counts before and after changes. Copy internal method here for fold statistics.
 let s:delim_open = {']': '[', ')': '(', '}': '{', '>': '<'}
 let s:delim_close = {'[': ']', '(': ')', '{': '}', '<': '>'}
 function! fold#fold_text(...) abort
@@ -86,10 +87,13 @@ function! fold#fold_text(...) abort
   let signs = ['+', '~', '-']
   let hunks = [0, 0, 0]
   let delta = ''
-  for [id, htype, hunk1, hcount] in GitGutterGetHunks()
-    let hunk2 = hcount == 0 ? hunk1 : hunk1 + hcount - 1
+  for [hunk0, count0, hunk1, count1] in GitGutterGetHunks()
+    let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
     let [hunk1, hunk2] = [max([hunk1, line1]), min([hunk2, line2])]
-    if hunk2 >= hunk1 | let hunks[htype] += hunk2 - hunk1 + 1 | endif
+    if hunk2 < hunk1 | continue | endif
+    let hunks[0] += max([count1 - count0, 0])  " added
+    let hunks[1] += min([count0, count1])  " modified
+    let hunks[2] += max([count0 - count1, 0])  " removed
   endfor
   for htype in range(3)
     if hunks[htype]
@@ -99,9 +103,9 @@ function! fold#fold_text(...) abort
   endfor
   " Combine label and statistics
   let nline = string(line2 - line1 + 1)
-  let space = empty(delta) ? '' : ' '
-  let dots = repeat('·', len(string(line('$'))) - len(nline) + 1)
-  let stats = delta . space . '|' . level . dots . nline . '|'
+  let delta = empty(delta) ? '' : '⟨' . delta . '⟩ '
+  let space = repeat('·', len(string(line('$'))) - len(nline) + 1)
+  let stats = delta . '|' . level . space . nline . '|'
   let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
   if strwidth(label) > width - 1  " truncate fold text
     let dend = trim(matchstr(label, '[\])}>]:\?\s*$'))
