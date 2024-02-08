@@ -1652,7 +1652,7 @@ if &g:foldenable || s:plug_active('FastFold')
   " Fast fold settings
   augroup fastfold_update
     au!
-    au TextChanged,InsertLeave * let b:fastfold_update = 1
+    au TextChanged,TextChangedI * let b:fastfold_update = 1
   augroup END
   let g:fastfold_savehook = 0  " enough for :write but use fold#update() for e.g. :edit
   let g:fastfold_fold_command_suffixes =  []  " use custom maps instead
