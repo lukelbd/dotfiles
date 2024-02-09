@@ -378,7 +378,7 @@ noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-e> <Cmd>exe 'Drop ' . bufname(get(b:, 'tabline_bufnr', '%'))<CR><Cmd>only<CR>ze
+nnoremap <C-e> <Cmd>exe 'Drop ' . fnameescape(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>only<CR>ze
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -458,7 +458,7 @@ command! -nargs=? Localdir call switch#localdir(<args>)
 noremap <Leader>i <Cmd>Paths<CR>
 noremap <Leader>I <Cmd>Localdir<CR>
 noremap <Leader>p <Cmd>call file#print_exists()<CR>
-noremap <Leader>P <Cmd>exe 'Drop ' . expand('<cfile>')<CR>
+noremap <Leader>P <Cmd>exe 'Drop ' . fnameescape(expand('<cfile>'))<CR>
 noremap <Leader>- <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
 noremap <Leader>_ <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
 
@@ -608,13 +608,13 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
+silent! unmap zv
 noremap zj zb
 noremap zk zt
 noremap z. zzze
 noremap z, z.
 noremap z> zs
 noremap z< ze
-noremap zv zvzzze
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown

@@ -502,7 +502,7 @@ _columnize() {
 alias du='du -h'
 alias d0='du -h -d 1'  # single directory, see also r0 a0
 alias df='df -h'
-mv() {
+function mv() {
   git mv "$@" 2>/dev/null || command mv "$@"
 }
 dl() {
