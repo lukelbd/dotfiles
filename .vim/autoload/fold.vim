@@ -174,7 +174,7 @@ function! fold#get_current(...) abort
   endif
   call winrestview(winview)
   let norecurse = a:0 && a:1
-  let ignores = join(keys(s:fold_open), '\|')
+  let ignores = join(values(s:fold_open), '\|')
   if !level && !norecurse && !empty(ignores) && getline(line1) =~# ignores
     return fold#get_current(1)  " ignore special folds
   else  " default case
@@ -232,31 +232,51 @@ function! fold#update_level(...) abort
   endif
 endfunction
 
+
 " Toggle folds under cursor
 " Note: This is required because recursive :foldclose! also closes parent
 " and :[range]foldclose does not close children. Have to go one-by-one.
+function! s:toggle_nested(line1, line2, level, ...) abort
+  let parents = []
+  let nested = []  " fold levels and lines
+  for lnum in range(a:line1, a:line2)
+    if foldlevel(lnum) > a:level
+      let item = [foldlevel(lnum), lnum]  " run in reverse level order
+      call add(nested, item)  " queue fold level and line
+    elseif foldclosed(lnum) > 0  " open before nested toggle
+      let item = [foldlevel(lnum), foldclosed(lnum)]
+      if index(parents, item) == -1 | call add(parents, item) | endif
+    endif
+  endfor
+  for [_, lnum] in sort(parents) | exe lnum . 'foldopen' | endfor  " temporary
+  let toggle = a:0 ? a:1 : 1 - fold#get_closed(a:line1, a:line2, a:line1)
+  for [_, lnum] in sort(nested)  " open nested folds by increasing level
+    if foldclosed(lnum) > 0 && !toggle
+      if foldlevel(foldclosed(lnum)) > a:level  " avoid parent fold
+        exe lnum . 'foldopen'
+      endif
+    endif
+  endfor
+  for [_, lnum] in reverse(sort(nested))  " close nested folds by decreasing level
+    if foldclosed(lnum) <= 0 && toggle
+      exe lnum . 'foldclose' | if foldlevel(foldclosed(lnum)) <= a:level  " skip parent
+        exe foldclosed(lnum) . 'foldopen'
+      endif
+    endif
+  endfor
+  for [_, lnum] in reverse(sort(parents)) | exe lnum . 'foldclose' | endfor  " restore
+endfunction
+
+" Toggle nested fold or current fold
 " Note: When called on line below fold level this will close fold. So e.g.
 " 'zCzC' will first fold up to foldlevel then fold additional levels.
-function! s:toggle_nested(line1, line2, level, toggle) abort
-  let pairs = []  " fold levels and lines
-  for lnum in range(a:line1, a:line2)
-    let lev = foldlevel(lnum)
-    if lev && lev > a:level | call add(pairs, [lev, lnum]) | endif
-  endfor
-  for [lev, lnum] in reverse(sort(pairs))
-    if foldclosed(lnum) > 0 && !a:toggle | exe lnum . 'foldopen' | endif
-    if foldclosed(lnum) <= 0 && a:toggle | exe lnum . 'foldclose' | endif
-  endfor
-endfunction
 function! fold#toggle_nested(...) abort
   call fold#update_folds()
   let [line1, line2, level] = fold#get_current(0)
-  let toggle = a:0 ? a:1 : -1  " -1 indicates switch
-  if toggle < 0  " open if any nested folds are closed
-    let toggle = 1 - fold#get_closed(line1, line2, line1)
-  endif
+  let toggle = copy(a:000)  " use default arguments
+  let args = extend([line1, line2, level], toggle)  " default s:toggle_nested
   if line2 > line1
-    call s:toggle_nested(line1, line2, level, toggle)
+    call call('s:toggle_nested', args)
   else  " compact error message
     call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
   endif
@@ -264,12 +284,10 @@ endfunction
 function! fold#toggle_current(...) abort
   call fold#update_folds()
   let [line1, line2, level] = fold#get_current(0)
-  let toggle = a:0 ? a:1 : -1
-  if toggle < 0  " open if current fold is closed
-    let toggle = 1 - fold#get_closed(line1, line1)
-  endif
+  let toggle = a:0 ? a:1 : 1 - fold#get_closed(line1, line1)  " custom toggle
+  let args = add([line1, line2, level], toggle)
   if line2 > line1
-    call s:toggle_nested(line1, line2, level, toggle) | exe line1 . (toggle ? 'foldclose' : 'foldopen')
+    call call('s:toggle_nested', args) | exe line1 . (toggle ? 'foldclose' : 'foldopen')
   else
     call feedkeys("\<Cmd>echoerr 'E490: No fold found'\<CR>", 'n')
   endif
