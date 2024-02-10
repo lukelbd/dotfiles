@@ -199,14 +199,14 @@ function! fold#update_folds(...) abort
     return
   endif
   if &filetype ==# 'python'
-    setlocal foldmethod=expr
+    setlocal foldmethod=expr  " e.g. in case stuck, then FastFoldUpdate sets to manual
     setlocal foldexpr=python#fold_expr(v:lnum)
     call SimpylFold#Recache()
   endif
   if &filetype ==# 'markdown'
-    setlocal foldmethod=expr
+    setlocal foldmethod=expr  " e.g. in case stuck, then FastFoldUpdate sets to manual
+    setlocal foldexpr=Foldexpr_markdown(v:lnum)
     setlocal foldtext=fold#fold_text()
-    silent! doautocmd BufWritePost
   endif
   silent! FastFoldUpdate
   let b:fastfold_update = 0

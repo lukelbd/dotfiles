@@ -26,7 +26,7 @@ let s:config_ignore = [
 " Note: Previously tried to update and track per-filetype refreshes but was way
 " overkill and need ':filetype detect' anyway to both detect changes and to trigger
 " e.g. markdown or python folding overrides. Note (after testing) this will also
-" apply the updates because all ':filetype' comamnd does is trigger script sourcing.
+" apply the updates because all ':filetype' command does is trigger script sourcing.
 function! vim#config_scripts(...) abort
   let suppress = a:0 > 0 ? a:1 : 0
   let regex = a:0 > 1 ? a:2 : ''
@@ -64,9 +64,11 @@ function! vim#config_refresh(bang, ...) abort
       call add(loaded, path)
     endif
   endfor
-  filetype detect  " required for e.g. folding overrides
-  source ~/.vim/after/common.vim
-  if &filetype ==# 'python' && exists('*SetCellHighlighting') | call SetCellHighlighting() | endif
+  let closed = foldclosed('.')
+  filetype detect
+  doautocmd CursorHold
+  runtime after/common.vim
+  if closed > 0 | exe 'silent! normal! zv' | endif
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   let g:refresh = localtime()
 endfunction

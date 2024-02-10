@@ -120,6 +120,7 @@ set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set undofile  " save undo history
 set undolevels=500  " maximum undo level
 set updatetime=1000  " used for CursorHold autocmds and default is 4000ms
+set verbose=0  " increment for debugging, e.g. verbose=2 prints sourced files, extremely useful
 set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set visualbell  " prefer visual bell to beeps (see also 'noerrorbells')
@@ -635,8 +636,8 @@ nnoremap zcc <Cmd>call fold#update_folds()<CR>zc
 nnoremap zoo <Cmd>call fold#update_folds()<CR>zo
 vnoremap <nowait> zc <Cmd>call fold#update_folds()<CR>zc
 vnoremap <nowait> zo <Cmd>call fold#update_folds()<CR>zo
-nnoremap <expr> za fold#toggle_range_expr(-1, 0)
-nnoremap <expr> zc fold#toggle_range_expr(1, 0)
+nnoremap <expr> za fold#toggle_range_expr(0)
+nnoremap <expr> zc fold#toggle_range_expr(0, 1)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 
 " Toggle folds under cursor recursively
@@ -1467,8 +1468,8 @@ let g:vim_markdown_conceal_code_blocks = 0  " show code fences
 let g:vim_markdown_fenced_languages = ['html', 'python']
 let g:vim_markdown_folding_level = 0  " pythonic folding level
 let g:vim_markdown_folding_style_pythonic = 1  " repair fold close issue
+let g:vim_markdown_override_foldtext = 1  " also overwrite function (see common.vim)
 let g:vim_markdown_math = 1 " turn on $$ math
-let g:vim_markdown_override_foldtext = 0  " disable due to custom fold text
 
 " Colorful stuff
 " Test: ~/.vim/plugged/colorizer/colortest.txt
