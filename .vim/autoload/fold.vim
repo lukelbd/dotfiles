@@ -37,8 +37,9 @@ function! fold#get_label_tex(line, ...)
   let [line, label] = [a:line, fold#get_label(a:line)]
   let indent = substitute(label, '\S.*$', '', 'g')
   if label =~# 'begingroup\|begin\s*{\s*\(frame\|figure\|table\|center\)\*\?\s*}'
+    let regex = label =~# '{\s*frame\*\?\s*}' ? '^\s*\\frametitle' : '^\s*\\label'
     for lnum in range(a:line + 1, a:0 ? a:1 : a:line + s:maxlines)
-      let bool = getline(lnum) =~# '^\s*\\\(label\|frametitle\)'
+      let bool = getline(lnum) =~# regex
       if bool | let [line, label] = [lnum, fold#get_label(lnum)] | break | endif
     endfor
   endif
@@ -120,17 +121,17 @@ function! fold#fold_text(...) abort
 endfunction
 
 " Return line of fold under cursor matching &l:foldlevel + 1
-" See: https://stackoverflow.com/a/4776436/4970632 (note [z never raises error)
-" Note: This also opens
+" Note: No native vimscript way to do this if fold is open so we use simple algorithm
+" improved from https://stackoverflow.com/a/4776436/4970632 (note [z never raises error)
 " Note: This is based on workflow of setting standard minimum fold level then manually
 " opening other folds. Previously tried ad hoc method using foldlevel() and scrolling
 " up lines preceding line is lower-level but this fails for adjacent same-level folds.
 let s:folds_open = [
-  \ ['python', '^class\>', '', 0],
-  \ ['tex', '^\s*\\begin{document}', '', 0],
-  \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 1],
-  \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 1],
-  \ ['fortran', '^\s*\(module\|program\)\>', '', 0],
+  \ ['python', '^class\>', '', 1],
+  \ ['tex', '^\s*\\begin{document}', '', 1],
+  \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
+  \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
+  \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
 \ ]
 function! fold#set_defaults() abort
   for [ftype, regex1, regex2, level] in s:folds_open
@@ -140,12 +141,12 @@ function! fold#set_defaults() abort
     if !empty(regex2) && !search(regex2, 'nwc')
       continue  " e.g. not talk or poster
     endif
-    for line in range(1, getline('$'))
-      if foldclosed(line) <= 0 || foldlevel(line) != level
+    for lnum in range(1, line('$'))
+      if foldclosed(lnum) <= 0 || foldlevel(lnum) != level
         continue
       endif
-      if getline(line) =~# regex1
-        exe line . 'foldopen'
+      if getline(lnum) =~# regex1
+        exe lnum . 'foldopen'
       endif
     endfor
   endfor
@@ -153,9 +154,9 @@ endfunction
 function! fold#get_current(...) abort
   let toplevel = a:0 ? a:1 : &foldlevel
   let winview = winsaveview()  " save view
-  let line = -1
-  while line('.') != line && foldlevel('.') > toplevel + 1
-    let line = line('.')
+  let lnum = -1
+  while line('.') != lnum && foldlevel('.') > toplevel + 1
+    let lnum = line('.')
     keepjumps normal! [z
   endwhile
   if foldclosed('.') > 0
@@ -177,7 +178,7 @@ function! fold#get_current(...) abort
     if ftype !=# &l:filetype
       continue
     endif
-    if level != toplevel
+    if level - 1 != toplevel
       continue
     endif
     if !empty(regex2) && !search(regex2, 'nwc')
