@@ -62,8 +62,7 @@ function! window#buffer_source() abort
 endfunction
 
 " Safely closing tabs and windows
-" Note: This moves to the left tab after closure
-" Note: Calling quit inside codei buffer triggers 'attempt to close buffer
+" Note: Calling quit inside codi buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
 function! window#close_window() abort
   let ntabs = tabpagenr('$')
@@ -84,14 +83,63 @@ function! window#close_tab() abort
     silent! quitall
   else
     silent! tabclose
-    if !islast
+    if !islast  " move to left-hannd tab
       silent! tabprevious
     endif
   endif
 endfunction
 
+" Return standard window width and height
+" Note: Numbers passed to :resize exclude tab and cmd lines but numbers passed to
+" :vertical resize include entire window (i.e. ignoring sign and number columns).
+function! s:get_size(width, ...) abort
+  if a:width  " window width
+    let direcs = ['l', 'h']
+    let size = &columns
+  else  " window height
+    let cmdheight = 1 + &l:cmdheight  " statusline and command line
+    let tabheight = &showtabline > 1 || &showtabline == 1 && tabpagenr('$') > 1
+    let direcs = ['j', 'k']
+    let size = &lines - cmdheight - tabheight
+  endif
+  let panel = bufnr() != get(b:, 'tabline_bufnr', bufnr())
+  let panes = 1
+  for direc in direcs
+    let wnum = 1
+    let prev = winnr()
+    while prev != winnr(wnum . direc)
+      let prev = winnr(wnum . direc)
+      let wnum += 1
+      let panes += 1
+      if panes > 50
+        echohl WarningMsg
+        echom 'Error: Failed to get window pane count.'
+        echohl None
+        let panes = 1
+        break
+      endif
+    endwhile
+  endfor
+  let size = size - panes + 1  " e.g. 2 panes == 1 divider
+  let space = float2nr(ceil(0.2 * size))
+  if panel && panes > 1 || a:0 && a:1  " panel window
+    return space
+  elseif panes > 1  " main window
+    return size - space
+  else  " single window
+    return size
+  endif
+endfunction
+function! window#get_width(...) abort
+  return call('s:get_size', [1] + a:000)
+endfunction
+function! window#get_height(...) abort
+  return call('s:get_size', [0] + a:000)
+endfunction
+
 " Select from open tabs
-" Note: This displays a list with the tab number and the file
+" Note: This displays a list with the tab number and the file. As with other
+" commands sorts by recent access time for ease of use.
 function! window#jump_tab(...) abort
   if a:0 && a:1
     call s:jump_tab_sink(a:1)

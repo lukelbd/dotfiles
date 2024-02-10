@@ -383,7 +383,7 @@ nnoremap <C-e> <Cmd>exe 'Drop ' . fnameescape(bufname(get(b:, 'tabline_bufnr', '
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
-command! -bang -nargs=? Refresh call vim#config_refresh(<bang>0, <q-args>)
+command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
 noremap <Leader>e <Cmd>edit \| call fold#update_folds(1)<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
@@ -420,7 +420,7 @@ nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 
-" Tab and window jumping
+" Tab and window jumping and display
 for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
 noremap g<Tab> <Nop>
 nnoremap <Tab><Tab> <Cmd>call window#jump_tab(v:count)<CR>
@@ -435,20 +435,20 @@ nnoremap <Tab>k <C-w>k
 nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
 
-" Tab and window resizing and motion
-nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>m <Cmd>call window#move_tab(v:count)<CR>
-nnoremap <Tab>= <Cmd>vertical resize 90<CR>
-nnoremap <Tab>0 <Cmd>exe 'resize ' . (&lines * (len(tabpagebuflist()) > 1 ? 0.8 : 1.0))<CR>
+" Tab and window resizing and moving
+nnoremap <Tab>0 <Cmd>exe 'resize ' . window#get_height()<CR>
 nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
 nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 6 * v:count1)<CR>
 nnoremap <Tab>+ <Cmd>exe 'resize ' . (winheight(0) + 6 * v:count1)<CR>
+nnoremap <Tab>= <Cmd>exe 'vertical resize ' . window#get_width()<CR>
 nnoremap <Tab>[ <Cmd>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
 nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
+nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>m <Cmd>call window#move_tab(v:count)<CR>
 
 " Related file utilities
 " Mnemonic is 'inside' just like Ctrl + i map
@@ -2196,7 +2196,7 @@ noremap zY <Cmd>SyncStart<CR>
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
 augroup color_scheme
   au!
-  exe 'au ColorScheme default,' . s:colorscheme . ' call vim#config_refresh(0)'
+  exe 'au ColorScheme default,' . s:colorscheme . ' Refresh'
 augroup END
 command! ColorPrev call iter#next_scheme(1)
 command! ColorNext call iter#next_scheme(0)
