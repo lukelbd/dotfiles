@@ -121,63 +121,76 @@ endfunction
 
 " Return line of fold under cursor matching &l:foldlevel + 1
 " See: https://stackoverflow.com/a/4776436/4970632 (note [z never raises error)
+" Note: This also opens
 " Note: This is based on workflow of setting standard minimum fold level then manually
 " opening other folds. Previously tried ad hoc method using foldlevel() and scrolling
 " up lines preceding line is lower-level but this fails for adjacent same-level folds.
-let s:fold_close = {}
-let s:fold_open = {
-  \ 'fortran': '^\s*\(module\|program\)\>',
-  \ 'python': '^class\>',
-  \ 'tex': '^\s*\\begin{document}',
-\ }
+let s:folds_open = [
+  \ ['python', '^class\>', '', 0],
+  \ ['tex', '^\s*\\begin{document}', '', 0],
+  \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 1],
+  \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 1],
+  \ ['fortran', '^\s*\(module\|program\)\>', '', 0],
+\ ]
 function! fold#set_defaults() abort
-  if has_key(s:fold_close, &filetype)
-    let winview = winsaveview()
-    silent! exe 'global/' . s:fold_close[&filetype] . '/foldopen'
-    call winrestview(winview)
-  endif
-  if has_key(s:fold_open, &filetype)
-    let winview = winsaveview()
-    silent! exe 'global/' . s:fold_open[&filetype] . '/foldopen'
-    call winrestview(winview)
-  endif
-endfunction
-function! fold#get_closed(line1, line2, ...) abort range
-  let minline = a:0 ? a:1 : 0
-  let closed = 0
-  for lnum in range(a:line1, a:line2)
-    let closed = closed || foldclosed(lnum) > minline
+  for [ftype, regex1, regex2, level] in s:folds_open
+    if ftype !=# &l:filetype
+      continue
+    endif
+    if !empty(regex2) && !search(regex2, 'nwc')
+      continue  " e.g. not talk or poster
+    endif
+    for line in range(1, getline('$'))
+      if foldclosed(line) <= 0 || foldlevel(line) != level
+        continue
+      endif
+      if getline(line) =~# regex1
+        exe line . 'foldopen'
+      endif
+    endfor
   endfor
-  return closed
 endfunction
 function! fold#get_current(...) abort
-  let line = -1  " default dummy line
-  let level = a:0 ? a:1 : &l:foldlevel
+  let toplevel = a:0 ? a:1 : &foldlevel
   let winview = winsaveview()  " save view
-  while line('.') != line && foldlevel('.') - 1 > level
+  let line = -1
+  while line('.') != line && foldlevel('.') > toplevel + 1
     let line = line('.')
     keepjumps normal! [z
   endwhile
   if foldclosed('.') > 0
     let [line1, line2] = [foldclosed('.'), foldclosedend('.')]
-  else  " account for '[z' behavior when inside nested folds
-    let line = line('.')
-    keepjumps normal! zk
-    if line('.') == line || foldlevel('.') > foldlevel(line)  " cursor inside fold
-      exe line | keepjumps normal! [z
-    else  " cursor went outside fold
-      keepjumps normal! zj
+  else  " check if cursor on head ('[z' moves to different fold)
+    let [line0, level] = [line('.'), foldlevel('.')]
+    keepjumps normal! [z]z
+    if line('.') >= line0 && foldlevel('.') == level  " move cursor to head
+      exe line0 | keepjumps normal! [z
+    else  " cursor already on head ([z moved to different fold)
+      exe line0
     endif
     let line1 = line('.')
     keepjumps normal! ]z
     let line2 = line('.')
   endif
+  let recurse = 0  " recursive call
+  for [ftype, regex1, regex2, level] in s:folds_open
+    if ftype !=# &l:filetype
+      continue
+    endif
+    if level != toplevel
+      continue
+    endif
+    if !empty(regex2) && !search(regex2, 'nwc')
+      continue  " e.g. not talk or poster
+    endif
+    if getline(line1) =~# regex1
+      let recurse = 1 | break
+    endif
+  endfor
   call winrestview(winview)
-  let norecurse = a:0 && a:1
-  let ignores = join(values(s:fold_open), '\|')
-  if !level && !norecurse && !empty(ignores) && getline(line1) =~# ignores
-    return fold#get_current(1)  " ignore special folds
-  else  " default case
+  if recurse
+    return fold#get_current(toplevel + 1)
+  else
     return [line1, line2, foldlevel(line1)]
   endif
 endfunction
@@ -232,10 +245,17 @@ function! fold#update_level(...) abort
   endif
 endfunction
 
-
 " Toggle folds under cursor
 " Note: This is required because recursive :foldclose! also closes parent
 " and :[range]foldclose does not close children. Have to go one-by-one.
+function! s:get_closed(line1, line2, ...) abort range
+  for lnum in range(a:line1, a:line2)
+    if foldclosed(lnum) > (a:0 ? a:1 : 0)
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
 function! s:toggle_nested(line1, line2, level, ...) abort
   let parents = []
   let nested = []  " fold levels and lines
@@ -249,7 +269,7 @@ function! s:toggle_nested(line1, line2, level, ...) abort
     endif
   endfor
   for [_, lnum] in sort(parents) | exe lnum . 'foldopen' | endfor  " temporary
-  let toggle = a:0 ? a:1 : 1 - fold#get_closed(a:line1, a:line2, a:line1)
+  let toggle = a:0 ? a:1 : 1 - s:get_closed(a:line1, a:line2, a:line1)
   for [_, lnum] in sort(nested)  " open nested folds by increasing level
     if foldclosed(lnum) > 0 && !toggle
       if foldlevel(foldclosed(lnum)) > a:level  " avoid parent fold
@@ -272,7 +292,7 @@ endfunction
 " 'zCzC' will first fold up to foldlevel then fold additional levels.
 function! fold#toggle_nested(...) abort
   call fold#update_folds()
-  let [line1, line2, level] = fold#get_current(0)
+  let [line1, line2, level] = fold#get_current()
   let toggle = copy(a:000)  " use default arguments
   let args = extend([line1, line2, level], toggle)  " default s:toggle_nested
   if line2 > line1
@@ -283,8 +303,8 @@ function! fold#toggle_nested(...) abort
 endfunction
 function! fold#toggle_current(...) abort
   call fold#update_folds()
-  let [line1, line2, level] = fold#get_current(0)
-  let toggle = a:0 ? a:1 : 1 - fold#get_closed(line1, line1)  " custom toggle
+  let [line1, line2, level] = fold#get_current()
+  let toggle = a:0 ? a:1 : 1 - s:get_closed(line1, line1)  " custom toggle
   let args = add([line1, line2, level], toggle)
   if line2 > line1
     call call('s:toggle_nested', args) | exe line1 . (toggle ? 'foldclose' : 'foldopen')
@@ -296,14 +316,12 @@ endfunction
 " Open or close folds over input range
 " Note: Here 'a:toggle' closes folds when 1 and opens when 0. Also update folds
 " before toggling as with other toggle commands.
-function! fold#toggle_range(...) range abort
+function! fold#toggle_range(bang, ...) range abort
   call fold#update_folds()
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
-  let winview = a:0 > 2 ? a:3 : {}
-  let bang = a:0 > 1 ? a:2 : 0
-  let bang = bang ? '!' : ''
-  let toggle = a:0 > 0 ? a:1 : -1  " -1 indicates switch
-  let toggle = toggle < 0 ? 1 - fold#get_closed(line1, line2) : toggle
+  let winview = a:0 > 1 ? a:2 : {}
+  let toggle = a:0 > 0 ? a:1 : 1 - s:get_closed(line1, line2)
+  let bang = a:bang ? '!' : ''
   if toggle  " close folds (no bang = single level)
     exe line1 . ',' . line2 . 'foldclose' . bang
   else  " open folds (no bang = single level)

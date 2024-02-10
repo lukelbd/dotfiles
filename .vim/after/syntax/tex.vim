@@ -47,6 +47,12 @@ syntax cluster texPreambleMatchGroup add=texCommentZone
 " are folded (see TexNewMathZone below and in $VIMRUNTIME/syntax/tex.vim)
 " Note: The 'keepend' is critical or else zone can persist beyond figures. Not sure
 " why... supposedly just ends nested environments when parent environment is found.
+syntax region texAlertZone transparent
+  \ start='\\begin\s*{\s*alertblock\s*}' end='\\end\s*{\s*alertblock\s*}'
+  \ keepend contains=@texFoldGroup,@Spell fold
+syntax region texBlockZone transparent
+  \ start='\\begin\s*{\s*block\s*}' end='\\end\s*{\s*block\s*}'
+  \ keepend contains=@texFoldGroup,@Spell fold
 syntax region texCenterZone transparent
   \ start='\\begin\s*{\s*center\s*}' end='\\end\s*{\s*center\s*}'
   \ keepend contains=@texFoldGroup,@Spell fold
@@ -65,6 +71,8 @@ syntax region texTableZone transparent
 syntax region texTabular transparent
   \ start='\\begin\s*{\s*tabular\s*}' end='\\end\s*{\s*tabular\s*}'
   \ keepend contains=@texFoldGroup,@NoSpell fold
+syntax cluster texFoldGroup add=texAlertZone
+syntax cluster texFoldGroup add=texBlockZone
 syntax cluster texFoldGroup add=texCenterZone
 syntax cluster texFoldGroup add=texFigureZone
 syntax cluster texFoldGroup add=texFrameZone
