@@ -385,9 +385,12 @@ nnoremap <C-e> <Cmd>exe 'Drop ' . fnameescape(bufname(get(b:, 'tabline_bufnr', '
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
+" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
+" to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>edit \| call fold#update_folds(1)<CR>
+noremap <Leader>e <Cmd>call git#fugitive_return()<CR>zv
+noremap <leader>E <Cmd>edit \| call fold#update_folds(1)<CR>zv
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -2064,19 +2067,19 @@ if s:plug_active('codi.vim')
   let g:codi#sync = 0  " enable async mode
   let g:codi#interpreters = {
     \ 'python': {
-        \ 'bin': ['python3', '-i', '-c', 'import readline; readline.set_auto_history(False)'],
-        \ 'prompt': '^\(>>>\|\.\.\.\) ',
-        \ 'quitcmd': 'exit()',
-        \ 'preprocess': function('calc#codi_preprocess'),
-        \ 'rephrase': function('calc#codi_rephrase'),
-        \ },
+      \ 'bin': ['python3', '-i', '-c', 'import readline; readline.set_auto_history(False)'],
+      \ 'prompt': '^\(>>>\|\.\.\.\) ',
+      \ 'quitcmd': 'exit()',
+      \ 'preprocess': function('calc#codi_preprocess'),
+      \ 'rephrase': function('calc#codi_rephrase'),
+      \ },
     \ 'julia': {
-        \ 'bin': ['julia', '-q', '-i', '--color=no', '--history-file=no'],
-        \ 'prompt': '^\(julia>\|      \)',
-        \ 'quitcmd': 'exit()',
-        \ 'preprocess': function('calc#codi_preprocess'),
-        \ 'rephrase': function('calc#codi_rephrase'),
-        \ },
+      \ 'bin': ['julia', '-q', '-i', '--color=no', '--history-file=no'],
+      \ 'prompt': '^\(julia>\|      \)',
+      \ 'quitcmd': 'exit()',
+      \ 'preprocess': function('calc#codi_preprocess'),
+      \ 'rephrase': function('calc#codi_rephrase'),
+      \ },
     \ }
 endif
 
@@ -2098,7 +2101,7 @@ if s:plug_active('undotree')
   noremap <Leader>\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
-  let g:undotree_SetFocusWhenToggle = 0
+  let g:undotree_SetFocusWhenToggle = 1
   let g:undotree_ShortIndicators = 1
   let g:undotree_SplitWidth = 25
 endif

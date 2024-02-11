@@ -25,28 +25,21 @@ function! git#run_command(cmd, ...) abort range
   if empty(get(b:, 'git_dir', ''))  " shorter error message
     call feedkeys("\<Cmd>Git\<CR>", 'n') | return
   endif
-  let cmd = a:cmd =~# '^status' ? '' : a:cmd
-  let offset = line('.') - line('w0') - winline() + 1  " closed folds and wrapped lines
   let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   let range = a:0 && a:1 || line1 != line2 ? line1 . ',' . line2 : ''
   let size = [winwidth(0), winheight(0)]  " ensure preserved
   let bnum = bufnr()  " check if panel opened
   let lnum = line('.')  " current line number
-  let mod = cmd =~# '^diff' ? 'silent ' : ''
+  let cmd = a:cmd =~# '^blame' ? a:cmd . ' -e' : a:cmd !~# '^status' ? a:cmd : ''
+  let mod = a:cmd =~# '^diff' ? 'silent ' : ''
   exe mod . range . 'Git ' . cmd
   if bnum == bufnr()  " command failure
     exe 'vertical resize ' . size[0] | exe 'resize ' . size[1] | return
-  endif
-  if cmd =~# '^blame %' && empty(range)
-    exe lnum . ' | normal! z.'
-  endif
-  if cmd =~# '^blame\( %\)\@!'  " see also undotree
-    exe 'normal! ' . offset . "\<C-e>"
-  endif
-  if cmd =~# '^blame\( %\)\@!'  " see also undotree
-    exe 'vertical resize ' . min([35, winwidth(0)]) ' | normal! 5lzs'
-  else  " standard height
+  elseif cmd !~# '^blame\( %\)\@!'  " bottom pane
     exe 'resize ' . min([&previewheight, line('$') + 1])
+  endif
+  if cmd =~# '^blame' && empty(range)  " syncbind is no-op if not vertical
+    exe lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
   endif
 endfunction
 " For <expr> map accepting motion
@@ -86,6 +79,17 @@ endfunction
 " maps and having fugitive use :Gdrop, but was getting error where after tab switch
 " an empty panel was opened in the git window. Might want to revisit.
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
+function! git#fugitive_return() abort
+  if get(b:, 'fugitive_type', '') ==# 'blob'
+    let winview = winsaveview()
+    exe 'Gedit %'
+    call winrestview(winview)
+  else
+    echohl ErrorMsg
+    echom 'Error: Not in fugitive blob'
+    echohl None
+  endif
+endfunction
 function! git#fugitive_setup() abort
   silent! unmap! dq
   setlocal foldlevel=1
@@ -113,6 +117,9 @@ function! git#fugitive_setup() abort
   call mapset('n', 0, action)
   call mapset('n', 0, command)
   call mapset('n', 0, select)
+  if &filetype !=# 'fugitiveblame' | return | endif
+  let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
+  call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
 endfunction
 
 " Git hunk jumping and previewing

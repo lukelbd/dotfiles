@@ -55,6 +55,7 @@ function! iter#next_loc(count, list, ...) abort
     echohl ErrorMsg
     echom 'Error: No errors'
     echohl None
+    return
   endif
   " Circularly jump to next loc
   let [lnum, cnum] = [line('.'), col('.')]
