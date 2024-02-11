@@ -441,19 +441,19 @@ nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
 
 " Tab and window resizing and moving
-nnoremap <Tab>0 <Cmd>exe 'resize ' . window#get_height()<CR>
-nnoremap <Tab>( <Cmd>exe 'resize ' . (winheight(0) - 3 * v:count1)<CR>
-nnoremap <Tab>) <Cmd>exe 'resize ' . (winheight(0) + 3 * v:count1)<CR>
-nnoremap <Tab>_ <Cmd>exe 'resize ' . (winheight(0) - 6 * v:count1)<CR>
-nnoremap <Tab>+ <Cmd>exe 'resize ' . (winheight(0) + 6 * v:count1)<CR>
-nnoremap <Tab>= <Cmd>exe 'vertical resize ' . window#get_width()<CR>
-nnoremap <Tab>[ <Cmd>exe 'vertical resize ' . (winwidth(0) - 5 * v:count1)<CR>
-nnoremap <Tab>] <Cmd>exe 'vertical resize ' . (winwidth(0) + 5 * v:count1)<CR>
-nnoremap <Tab>{ <Cmd>exe 'vertical resize ' . (winwidth(0) - 10 * v:count1)<CR>
-nnoremap <Tab>} <Cmd>exe 'vertical resize ' . (winwidth(0) + 10 * v:count1)<CR>
+nnoremap <Tab>: <Cmd>call window#move_tab(v:count)<CR>
+nnoremap <Tab>= <Cmd>call window#default_width()<CR>
+nnoremap <Tab>0 <Cmd>call window#default_height()<CR>
+nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
+nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
+nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
+nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
+nnoremap <Tab>( <Cmd>call window#change_height(-3 * v:count1)<CR>
+nnoremap <Tab>) <Cmd>call window#change_height(3 * v:count1)<CR>
+nnoremap <Tab>_ <Cmd>call window#change_height(-6 * v:count1)<CR>
+nnoremap <Tab>+ <Cmd>call window#change_height(6 * v:count1)<CR>
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>m <Cmd>call window#move_tab(v:count)<CR>
 
 " Related file utilities
 " Mnemonic is 'inside' just like Ctrl + i map
@@ -739,8 +739,8 @@ nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
 
 " Sort input lines
 " Note: Simply uses native ':sort' command.
-noremap <expr> \y edit#sort_lines_expr()
-noremap <expr> \\y edit#sort_lines_expr() . 'ip'
+noremap <expr> \s edit#sort_lines_expr()
+noremap <expr> \\s edit#sort_lines_expr() . 'ip'
 
 " Reverse input lines
 " See: https://superuser.com/a/189956/506762
@@ -750,22 +750,22 @@ noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
 
 " Replace tabs with spaces
 " Note: Could also use :retab?
-noremap <expr> \t edit#replace_regex_expr(
+noremap <expr> \<Tab> edit#replace_regex_expr(
   \ 'Fixed tabs.',
   \ '\t', repeat(' ', &tabstop))
 
 " Remove trailing whitespace
 " See: https://stackoverflow.com/a/3474742/4970632)
-noremap <expr> \w edit#replace_regex_expr(
+noremap <expr> \t edit#replace_regex_expr(
   \ 'Removed trailing whitespace.',
   \ '\s\+\ze$', '')
 
 " Replace consecutive spaces on current line with one space
 " only if they're not part of indentation
-noremap <expr> \s edit#replace_regex_expr(
+noremap <expr> \w edit#replace_regex_expr(
   \ 'Squeezed consecutive whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \S edit#replace_regex_expr(
+noremap <expr> \W edit#replace_regex_expr(
   \ 'Stripped all whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \+', '')
 

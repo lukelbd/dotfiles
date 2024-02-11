@@ -89,10 +89,43 @@ function! window#close_tab() abort
   endif
 endfunction
 
+" Change window size in given direction
+" Note: Vim :resize and :vertical resize expand the bottom side and right side of the
+" panel by default (respectively) unless we are on the rightmost or bottommost panel.
+" This counts the panels in each direction to figure out the correct sign for mappings
+function! window#count_panes(...) abort
+  let panes = 1
+  for direc in a:000
+    let wnum = 1
+    let prev = winnr()
+    while prev != winnr(wnum . direc)
+      let prev = winnr(wnum . direc)
+      let wnum += 1
+      let panes += 1
+      if panes > 50
+        echohl WarningMsg
+        echom 'Error: Failed to count window panes'
+        echohl None
+        let panes = 1
+        break
+      endif
+    endwhile
+  endfor
+  return panes
+endfunction
+function! window#change_width(count) abort
+  let wnum = window#count_panes('l') == 1 ? winnr('h') : winnr()
+  call win_move_separator(wnum, a:count)
+endfunction
+function! window#change_height(count) abort
+  let wnum = window#count_panes('j') == 1 ? winnr('k') : winnr()
+  call win_move_statusline(wnum, a:count)
+endfunction
+
 " Return standard window width and height
 " Note: Numbers passed to :resize exclude tab and cmd lines but numbers passed to
 " :vertical resize include entire window (i.e. ignoring sign and number columns).
-function! s:get_size(width, ...) abort
+function! window#default_size(width, ...) abort
   if a:width  " window width
     let direcs = ['l', 'h']
     let size = &columns
@@ -103,23 +136,7 @@ function! s:get_size(width, ...) abort
     let size = &lines - cmdheight - tabheight
   endif
   let panel = bufnr() != get(b:, 'tabline_bufnr', bufnr())
-  let panes = 1
-  for direc in direcs
-    let wnum = 1
-    let prev = winnr()
-    while prev != winnr(wnum . direc)
-      let prev = winnr(wnum . direc)
-      let wnum += 1
-      let panes += 1
-      if panes > 50
-        echohl WarningMsg
-        echom 'Error: Failed to get window pane count.'
-        echohl None
-        let panes = 1
-        break
-      endif
-    endwhile
-  endfor
+  let panes = call('window#count_panes', direcs)
   let size = size - panes + 1  " e.g. 2 panes == 1 divider
   let space = float2nr(ceil(0.2 * size))
   if panel && panes > 1 || a:0 && a:1  " panel window
@@ -130,11 +147,13 @@ function! s:get_size(width, ...) abort
     return size
   endif
 endfunction
-function! window#get_width(...) abort
-  return call('s:get_size', [1] + a:000)
+function! window#default_width(...) abort
+  let size = call('window#default_size', [1] + a:000)
+  exe 'resize ' . size
 endfunction
-function! window#get_height(...) abort
-  return call('s:get_size', [0] + a:000)
+function! window#default_height(...) abort
+  let size = call('window#default_size', [0] + a:000)
+  exe 'vertical resize ' . size
 endfunction
 
 " Select from open tabs
@@ -146,7 +165,7 @@ function! window#jump_tab(...) abort
   else
     call fzf#run(fzf#wrap({
       \ 'source': window#buffer_source(),
-      \ 'options': '--no-sort --prompt="Tab> "',
+      \ 'options': '--no-sort --prompt="Jump> "',
       \ 'sink': function('s:jump_tab_sink'),
       \ }))
   endif
@@ -164,7 +183,7 @@ function! window#move_tab(...) abort
   else
     call fzf#run(fzf#wrap({
       \ 'source': window#buffer_source(),
-      \ 'options': '--no-sort --prompt="Number> "',
+      \ 'options': '--no-sort --prompt="Move> "',
       \ 'sink': function('s:move_tab_sink'),
       \ }))
   endif
