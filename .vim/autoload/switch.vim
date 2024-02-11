@@ -75,23 +75,21 @@ endfunction
 " Eliminates special chars during copy
 " Note: Hide switch message during autoload
 function! switch#copy(...) abort
-  let state = exists('b:number')
+  let keys = ['list', 'number', 'scrolloff', 'relativenumber']
+  let state = empty(filter(copy(keys), "eval('&l:' . v:val)"))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
-  let copyprops = ['list', 'number', 'relativenumber', 'scrolloff']
   if state == toggle
     return
   elseif toggle
-    for prop in copyprops
-      if !exists('b:' . prop) "do not overwrite previously saved settings
-        exe 'let b:' . prop . ' = &l:' . prop
-      endif
-      exe 'let &l:' . prop . ' = 0'
+    for key in keys
+      let b:[key] = eval('&l:' . key)
+      exe 'let &l:' . key . '=0'
     endfor
   else
-    for prop in copyprops
-      exe 'silent! let &l:' . prop . ' = b:' . prop
-      exe 'silent! unlet b:' . prop
+    for key in keys
+      let value = get(b:, key, eval('&g:' . key))
+      exe 'let &l:' . key . '=' . value
     endfor
   endif
   call call('s:switch_message', ['Copy mode', toggle, suppress])

@@ -66,9 +66,8 @@ function! vim#config_refresh(bang, ...) abort
   endfor
   let closed = foldclosed('.')
   filetype detect
-  doautocmd CursorHold
   runtime after/common.vim
-  if closed > 0 | exe 'silent! normal! zv' | endif
+  if closed <= 0 | exe 'silent! normal! zv' | endif
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
   let g:refresh = localtime()
 endfunction
@@ -135,13 +134,13 @@ endfunction
 " Source file or lines
 " Note: Compare to python#run_general()
 function! vim#source_general() abort
+  let name = 'g:loaded_' . expand('%:t:r')
+  if exists(name) | exe 'unlet! ' . name | endif
   if v:count
-    let range = line('.') . ',' . (line('.') + v:count)
-    exe range . 'source'
+    exe line('.') . ',' . (line('.') + v:count) . 'source'
     echom 'Sourced ' . v:count . ' lines'
   else
-    update
-    source %
+    update | source %  " required e.g. for autoload files
     echo 'Sourced current file'
   endif
 endfunction

@@ -18,7 +18,9 @@ if empty(maparg('[')) && empty(maparg(']'))
   map <buffer> ]] <Plug>TagsForwardTop
 endif
 
-" Update folds and re-enforce colors
+" Update folds and plugin-specific settings
+" Note: Here CursorHold is needed for vim-markdown overrides and BufReadPost is needed
+" for conflict-marker overrides. No public functional way to do either of these.
 " Note: Here fold#set_defaults() resets fold open-close status for some filetypes but
 " unfortunately required because refresh seems to clean out vim-markdown definitions.
 " Note: Here overwrite native foldtext function so that vim-markdown autocommands
@@ -28,14 +30,15 @@ endif
 function! Foldtext_markdown(...)
   return call('fold#fold_text', a:000)
 endfunction
-let closed = foldclosed('.') > 0
+let closed = foldclosed('.')
 let winview = winsaveview()
 call fold#update_folds()
 call fold#set_defaults()
 call winrestview(winview)
-if closed > 0  " e.g. markdown files
-  silent! normal! zv
-endif
+if closed <= 0 | exe 'silent! normal! zv' | endif
+doautocmd CursorHold
+doautocmd ConflictMarkerDetect BufReadPost
+doautocmd conflict_marker_kludge BufWinEnter
 
 " Buffer-local syntax overrides
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084

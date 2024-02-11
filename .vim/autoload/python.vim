@@ -9,21 +9,21 @@ function! python#dict_to_kw(invert, ...) abort range
   let winview = winsaveview()
   let lines = []
   let marks = a:0 && a:1 ==# 'n' ? '[]' : '<>'
-  let firstcol = col("'" . marks[0]) - 1  " first column, note ' really means ` here
-  let lastcol = len(getline("'" . marks[1])) - 1  " last selection column
-  let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
-  for lnum in range(firstline, lastline)
+  let col1 = col("'" . marks[0]) - 1  " first column, note ' really means ` here
+  let col2 = len(getline("'" . marks[1])) - 1  " last selection column
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  for lnum in range(line1, line2)
     let [line, prefix, suffix] = [getline(lnum), '', '']
-    if lnum == firstline && lnum == lastline  " vint: -ProhibitUsingUndeclaredVariable
-      let prefix = firstcol > 0 ? line[:firstcol - 1] : ''
-      let suffix = line[lastcol + 1:]
-      let line = line[firstcol:lastcol]  " must come last
-    elseif lnum == firstline
-      let prefix = firstcol > 0 ? line[:firstcol - 1] : ''
-      let line = line[firstcol:]  " must come last
-    elseif lnum == lastline
-      let suffix = line[lastcol + 1:]
-      let line = line[:lastcol]  " must come last
+    if lnum == line1 && lnum == line2  " vint: -ProhibitUsingUndeclaredVariable
+      let prefix = col1 > 0 ? line[:col1 - 1] : ''
+      let suffix = line[col2 + 1:]
+      let line = line[col1:col2]  " must come last
+    elseif lnum == line1
+      let prefix = col1 > 0 ? line[:col1 - 1] : ''
+      let line = line[col1:]  " must come last
+    elseif lnum == line2
+      let suffix = line[col2 + 1:]
+      let line = line[:col2]  " must come last
     endif
     if !empty(matchstr(line, ':')) && !empty(matchstr(line, '='))
       echohl WarningMsg
@@ -41,10 +41,10 @@ function! python#dict_to_kw(invert, ...) abort range
     endif
     call add(lines, prefix . line . suffix)
   endfor
-  exe firstline . ',' . lastline . 'd _'
-  call append(firstline - 1, lines)  " replace with fixed lines
+  exe line1 . ',' . line2 . 'd _'
+  call append(line1 - 1, lines)  " replace with fixed lines
   call winrestview(winview)
-  call cursor(firstline, firstcol)
+  call cursor(line1, col1)
 endfunction
 " For <expr> map accepting motion
 function! python#dict_to_kw_expr(invert) abort

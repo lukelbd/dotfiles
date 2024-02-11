@@ -22,24 +22,29 @@ endfunction
 " Note: Previously used <Leader>b for toggle but now use lower and upper
 " case for blaming either range or entire file and 'zbb' for current line.
 function! git#run_command(cmd, ...) abort range
-  let bufnr = bufnr()
-  let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
-  let forcerange = a:0 ? a:1 : 0
-  let range = forcerange || a:firstline != a:lastline ? firstline . ',' . lastline : ''
-  let line = line('.')
-  echom range . 'Git ' . a:cmd
+  if empty(get(b:, 'git_dir', ''))  " shorter error message
+    call feedkeys("\<Cmd>Git\<CR>", 'n') | return
+  endif
   let cmd = a:cmd =~# '^status' ? '' : a:cmd
-  let mods = cmd =~# '^diff' ? 'silent ' : ''
-  exe mods . range . 'Git ' . cmd
-  if bufnr == bufnr()
-    return
+  let offset = line('.') - line('w0') - winline() + 1  " closed folds and wrapped lines
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  let range = a:0 && a:1 || line1 != line2 ? line1 . ',' . line2 : ''
+  let size = [winwidth(0), winheight(0)]  " ensure preserved
+  let bnum = bufnr()  " check if panel opened
+  let lnum = line('.')  " current line number
+  let mod = cmd =~# '^diff' ? 'silent ' : ''
+  exe mod . range . 'Git ' . cmd
+  if bnum == bufnr()  " command failure
+    exe 'vertical resize ' . size[0] | exe 'resize ' . size[1] | return
   endif
   if cmd =~# '^blame %' && empty(range)
-    exe line
+    exe lnum . ' | normal! z.'
   endif
-  if cmd =~# '^blame' && cmd !~# '^blame %'  " see also undotree
-    let offset = scrollwrapped#numberwidth() + scrollwrapped#signwidth()
-    exe 'vert resize ' . min([35, winwidth('.') - offset]) ' | normal! 5lzs'
+  if cmd =~# '^blame\( %\)\@!'  " see also undotree
+    exe 'normal! ' . offset . "\<C-e>"
+  endif
+  if cmd =~# '^blame\( %\)\@!'  " see also undotree
+    exe 'vertical resize ' . min([35, winwidth(0)]) ' | normal! 5lzs'
   else  " standard height
     exe 'resize ' . min([&previewheight, line('$') + 1])
   endif
@@ -148,15 +153,15 @@ endfunction
 function! git#hunk_action(stage) abort range
   call s:gitgutter_update()
   let hunks = gitgutter#hunk#hunks(bufnr(''))
-  let [firstline, lastline] = sort([a:firstline, a:lastline], 'n')
+  let [range1, range2] = sort([a:firstline, a:lastline], 'n')
   for [line0, count0, line1, count1] in GitGutterGetHunks()
     let line2 = count1 ? line1 + count1 - 1 : line1  " to closing line
-    if firstline <= line1 && lastline >= line2  " range encapsulates hunk
+    if range1 <= line1 && range2 >= line2  " range encapsulates hunk
       let range = ''
-    elseif firstline <= line1 && line1 <= lastline  " starts inside, ends outside
-      let range = count0 ? '' : line1 . ',' . lastline
-    elseif firstline <= line2 && line2 <= lastline  " starts outside, ends inside
-      let range = count0 ? '' : firstline . ',' . line2
+    elseif range1 <= line1 && line1 <= range2  " starts inside, ends outside
+      let range = count0 ? '' : line1 . ',' . range2
+    elseif range1 <= line2 && line2 <= range2  " starts outside, ends inside
+      let range = count0 ? '' : range1 . ',' . line2
     else  " no update needed
       continue
     endif

@@ -127,7 +127,7 @@ function! edit#spell_check(...) abort
 endfunction
 
 " Swap characters or lines
-" Note: This does not affect registers
+" Note: This has no effect on registers
 function! edit#swap_chars(...) abort
   let cnum = col('.')
   let text = getline('.')

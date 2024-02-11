@@ -12,32 +12,64 @@ function! iter#forward_delete() abort
   endif
 endfunction
 
-" Cyclic next error in location list.
+" Cyclic conflict marker jumping
+" Note: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim
+function! iter#next_conflict(count, ...) abort
+  let winview = winsaveview()
+  let reverse = a:0 && a:1
+  if !reverse
+    for _ in range(a:count) | let pos0 = searchpos(g:conflict_marker_begin, 'w') | endfor
+    let pos1 = searchpos(g:conflict_marker_separator, 'cW')
+    let pos2 = searchpos(g:conflict_marker_end, 'cW')
+  else
+    for _ in range(a:count) | let pos2 = searchpos(g:conflict_marker_end, 'bw') | endfor
+    let pos1 = searchpos(g:conflict_marker_separator, 'bcW')
+    let pos0 = searchpos(g:conflict_marker_begin, 'bcW')
+  endif
+  if pos2[0] > pos1[0] && pos1[0] > pos0[0]
+    call cursor(pos0)
+  else  " echo warning
+    call winrestview(winview)
+    echohl ErrorMsg
+    echom 'Error: No conflicts'
+    echohl None
+  endif
+endfunction
+
+" Cyclic next error in location list
 " See: https://vi.stackexchange.com/a/14359
 " Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
 " cursor is on final error in the file but ]x does not cycle to the next one.
 function! iter#next_loc(count, list, ...) abort
-  " Get list of loc dictionaries
+  " Generate list of loc dictionaries
+  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let func = 'get' . a:list . 'list'
   let reverse = a:0 && a:1
   let params = a:list ==# 'loc' ? [0] : []
-  let cmd = a:list ==# 'loc' ? 'll' : 'cc'
   let items = call(func, params)
-  if empty(items) | return "echoerr 'E42: No errors'" | endif
   call map(items, "extend(v:val, {'idx': v:key + 1})")
-  if reverse | call reverse(items) | endif
+  if reverse  " reverse search
+    call reverse(items)
+  endif
+  if empty(items)
+    echohl ErrorMsg
+    echom 'Error: No errors'
+    echohl None
+  endif
   " Circularly jump to next loc
   let [lnum, cnum] = [line('.'), col('.')]
   let [cmps, oper] = [[], reverse ? '<' : '>']
   call add(cmps, 'v:val.lnum ' . oper . ' lnum')
   call add(cmps, 'v:val.col ' . oper . ' cnum + 1 - reverse')
   call filter(items, join(cmps, ' || '))
-  let inext = get(get(items, 0, {}), 'idx', '')
-  if type(inext) == type(0)
-    return cmd . inext
+  let idx = get(get(items, 0, {}), 'idx', '')
+  if type(idx) != 0
+    exe reverse ? line('$') : 1 | call iter#next_loc(a:count, a:list, reverse)
+  elseif a:count > 1
+    exe cmd . ' ' . idx | call iter#next_loc(a:count - 1, a:list, reverse)
+  else  " jump to error
+    exe cmd . ' ' . idx
   endif
-  exe reverse ? line('$') : 0
-  return iter#next_loc(a:count, a:list, reverse)
 endfunction
 
 " Switch to next or previous colorschemes and print the name

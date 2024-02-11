@@ -133,28 +133,30 @@ let &g:wildignore = join(tag#get_ignores(0, '~/.wildignore'), ',')
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 
 " File types for different unified settings
+" Note: Can use plugins added to '~/forks' by adding to s:fork_plugins below
 " Note: Here 'man' is for custom man page viewing utils, 'ale-preview' is used with
 " :ALEDetail output, 'diff' is used with :GitGutterPreviewHunk output, 'git' is used
 " with :Fugitive [show|diff] displays, 'fugitive' is used with other :Fugitive comamnds,
 " and 'markdown.lsp_hover' is used with vim-lsp. The remaining filetypes are obvious.
+let s:fork_plugins = []  " add to this during development!
 let s:vim_plugins = [
   \ 'vim-succinct', 'vim-tags', 'vim-statusline', 'vim-tabline', 'vim-scrollwrapped', 'vim-toggle',
-  \ ]  " custom vim plugins
+\ ]  " custom vim plugins
 let s:copy_filetypes = [
   \ 'bib', 'log', 'qf'
-  \ ]  " for wrapping and copy toggle
+\ ]  " for wrapping and copy toggle
 let s:data_filetypes = [
   \ 'csv', 'dosini', 'json', 'jsonc', 'text'
-  \ ]  " for just copy toggle
+\ ]  " for just copy toggle
 let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
-  \ ]  " for wrapping and spell toggle
+\ ]  " for wrapping and spell toggle
 let s:panel_filetypes = [
   \ 'help', 'ale-info', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
-  \ ]  " for popup toggle
+\ ]  " for popup toggle
 let s:panel_filetypes += [
   \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
-  \ ]
+\ ]
 
 " Flake8 ignore list (also apply to autopep8):
 " Note: Keep this in sync with 'pep8' and 'black' file
@@ -528,14 +530,14 @@ nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
 
 " Cycle through location list options
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
-command! -bar -count=1 Lnext execute iter#next_loc(<count>, 'loc', 0)
-command! -bar -count=1 Lprev execute iter#next_loc(<count>, 'loc', 1)
-command! -bar -count=1 Qnext execute iter#next_loc(<count>, 'qf', 0)
-command! -bar -count=1 Qprev execute iter#next_loc(<count>, 'qf', 1)
-noremap [x <Cmd>Lprev<CR>zv
-noremap ]x <Cmd>Lnext<CR>zv
-noremap [X <Cmd>Qprev<CR>zv
-noremap ]X <Cmd>Qnext<CR>zv
+command! -count=1 Lprev call iter#next_loc(<count>, 'loc', 1)
+command! -count=1 Lnext call iter#next_loc(<count>, 'loc', 0)
+command! -count=1 Qprev call iter#next_loc(<count>, 'qf', 1)
+command! -count=1 Qnext call iter#next_loc(<count>, 'qf', 0)
+noremap [x <Cmd>exe v:count1 . 'Lprev'<CR>zv
+noremap ]x <Cmd>exe v:count1 . 'Lnext<CR>zv
+noremap [X <Cmd>exe v:count1 . 'Qprev<CR>zv
+noremap ]X <Cmd>exe v:count1 . 'Qnext<CR>zv
 
 " Cycle through wildmenu expansion with <C-,> and <C-.>
 " Note: Mapping without <expr> will type those literal keys
@@ -702,10 +704,10 @@ command! -bang -nargs=+ Rp call grep#call_rg(<bang>0, 2, <f-args>)  " search pro
 command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, <f-args>)  " search file(s)
 command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 1, <f-args>)  " search folder(s)
 command! -bang -nargs=+ Ap call grep#call_ag(<bang>0, 2, <f-args>)  " search project(s)
-nnoremap g; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g; <Cmd>call grep#call_grep('rg', 0, 2)<CR>
 nnoremap g: <Cmd>call grep#call_grep('rg', 1, 2)<CR>
-nnoremap z; <Cmd>call grep#call_grep('rg', 0, 0)<CR>
-nnoremap z: <Cmd>call grep#call_grep('rg', 0, 2)<CR>
+nnoremap z; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap z: <Cmd>call grep#call_grep('rg', 0, 0)<CR>
 nnoremap z/ <Cmd>BLines<CR>
 nnoremap z? <Cmd>Lines<CR>
 
@@ -1212,9 +1214,8 @@ call plug#('psf/black')
 call plug#('rhysd/conflict-marker.vim')  " highlight conflicts
 call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
-" let g:fugitive_no_maps = 1  " only disables nmap y<C-g> and cmap <C-r><C-g>
-let g:conflict_marker_enable_highlight = 1
 let g:conflict_marker_enable_mappings = 0
+" let g:fugitive_no_maps = 1  " only disables nmap y<C-g> and cmap <C-r><C-g>
 
 " Project-wide tags and auto-updating
 " Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
@@ -1399,11 +1400,12 @@ call plug#('junegunn/vim-easy-align')
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
 " call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
+" call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
 call plug#('heavenshell/vim-pydocstring')  " automatic docstring templates
 call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
-call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
+call plug#('lukelbd/jupyter-vim', {'branch': 'buffer-local-highlighting'})  " temporary
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
@@ -1422,7 +1424,7 @@ let g:jupytext_fmt = 'py:percent'
 " call plug#('nathanaelkane/vim-indent-guides')
 
 " ReST utilities
-" Use == tables instead of fancy ++ tables
+" Note: For now skip since use == style tables instead of fancy ++ style tables
 " call plug#('nvie/vim-rst-tables')
 " call plug#('ossobv/vim-rst-tables-py3')
 " call plug#('philpep/vim-rst-tables')
@@ -1498,19 +1500,14 @@ let g:speeddating_no_mappings = 1
 " textobj#user#plugin, (2) the initial statusline will possibly be incomplete, and
 " (3) cannot wrap indexed-search plugin with tags file.
 for s:plugin in s:vim_plugins
-  let s:local = 0
-  for s:root in ['~', '~/icloud']
-    for s:sub in ['software', 'forks']
-      let s:dir = expand(join([s:root, s:sub, s:plugin], '/'))
-      if !s:local && isdirectory(s:dir)
-        call s:plug_local(s:dir)
-        let s:local = 1
-      endif
-    endfor
-  endfor
-  if !s:local
-    call plug#('lukelbd/' . s:plugin)
-  endif
+  let s:path = expand('~/software/' . s:plugin)
+  let s:name = 'lukelbd/' . s:plugin
+  if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
+endfor
+for s:plugin in s:fork_plugins
+  let s:path = expand('~/forks/' . s:plugin)
+  let s:name = 'lukelbd/' . s:plugin
+  if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
 endfor
 let g:toggle_map = 'zb'
 let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
@@ -1934,24 +1931,26 @@ endif
 if s:plug_active('conflict-marker.vim')
   augroup conflict_marker_kludge
     au!
-    au BufEnter * silent! syntax clear ConflictMarkerOurs ConflictMarkerTheirs
+    au BufWinEnter * if conflict_marker#detect#markers()
+      \ | syntax clear ConflictMarkerOurs ConflictMarkerTheirs | endif
   augroup END
-  highlight ConflictMarker cterm=inverse gui=inverse
-  let g:conflict_marker_highlight_group = 'ConflictMarker'
-  let g:conflict_marker_begin = '^<<<<<<< .*$'
-  let g:conflict_marker_separator = '^=======$'
-  let g:conflict_marker_common_ancestors = '^||||||| .*$'
-  let g:conflict_marker_end = '^>>>>>>> .*$'
-  call s:repeat_map('[F', 'ConflictBackward',
-    \ '<Plug>(conflict-marker-prev-hunk)<Plug>(conflict-marker-themselves)', 'n', 1)
-  call s:repeat_map(']F', 'ConflictForward',
-    \ '<Plug>(conflict-marker-next-hunk)<Plug>(conflict-marker-themselves)', 'n', 1)
-  nmap [f <Plug>(conflict-marker-prev-hunk)
-  nmap ]f <Plug>(conflict-marker-next-hunk)
+  command! -count=1 Cprev call iter#next_conflict(<count>, 1)
+  command! -count=1 Cnext call iter#next_conflict(<count>, 0)
+  call s:repeat_map('[F', 'ConflictBackward', '<Cmd>Cprev<CR><Plug>(conflict-marker-themselves)', 'n', 1)
+  call s:repeat_map(']F', 'ConflictForward', '<Cmd>Cnext<CR><Plug>(conflict-marker-themselves)', 'n', 1)
+  nmap [f <Cmd>exe v:count1 . 'Cprev'<CR>zv
+  nmap ]f <Cmd>exe v:count1 . 'Cnext'<CR>zv
   nmap gf <Plug>(conflict-marker-ourselves)
   nmap gF <Plug>(conflict-marker-themselves)
   nmap zf <Plug>(conflict-marker-both)
   nmap zF <Plug>(conflict-marker-none)
+  let g:conflict_marker_enable_highlight = 1
+  let g:conflict_marker_highlight_group = 'ConflictMarker'
+  let g:conflict_marker_begin = '^<<<<<<< .*$'
+  let g:conflict_marker_end = '^>>>>>>> .*$'
+  let g:conflict_marker_separator = '^=======$'
+  let g:conflict_marker_common_ancestors = '^||||||| .*$'
+  highlight ConflictMarker cterm=inverse gui=inverse
 endif
 
 " Fugitive settings
@@ -2081,6 +2080,29 @@ if s:plug_active('codi.vim')
     \ }
 endif
 
+" Undo tree mapping and settings
+" Note: Undotree normally triggers on BufEnter but extremely slow. Now use below.
+" Todo: Currently can only clear history with 'C' in active pane not externally. Need
+" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
+if s:plug_active('undotree')
+  function! Undotree_Augroup() abort  " see autoload/undotree.vim s:undotree.Toggle()
+    if !undotree#UndotreeIsVisible() | return | endif
+    augroup Undotree
+      au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
+    augroup END
+  endfunction
+  function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
+    noremap <buffer> <nowait> u <C-u>
+    noremap <buffer> <nowait> d <C-d>
+  endfunc
+  noremap <Leader>\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
+  let g:undotree_DiffAutoOpen = 0
+  let g:undotree_RelativeTimestamp = 0
+  let g:undotree_SetFocusWhenToggle = 0
+  let g:undotree_ShortIndicators = 1
+  let g:undotree_SplitWidth = 25
+endif
+
 " Vim test settings
 " Run tests near cursor or throughout file
 if s:plug_active('vim-test')
@@ -2118,23 +2140,6 @@ else
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp <C-a>
   noremap <Plug>SpeedDatingFallbackDown <C-x>
-endif
-
-" Undo tree mapping and settings
-" Note: Preview window override fails with undotree so use below.
-" Todo: Currently can only clear history with 'C' in active pane not externally. Need
-" to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
-if s:plug_active('undotree')
-  function! Undotree_CustomMap() abort
-    noremap <buffer> <nowait> u <C-u>
-    noremap <buffer> <nowait> d <C-d>
-  endfunc
-  noremap <Leader>\ <Cmd>UndotreeToggle<CR>
-  let g:undotree_DiffAutoOpen = 0
-  let g:undotree_RelativeTimestamp = 0
-  let g:undotree_SetFocusWhenToggle = 1
-  let g:undotree_ShortIndicators = 1
-  let g:undotree_SplitWidth = 25
 endif
 
 " Session saving and updating (the $ matches marker used in statusline)
@@ -2198,10 +2203,10 @@ augroup color_scheme
   au!
   exe 'au ColorScheme default,' . s:colorscheme . ' Refresh'
 augroup END
-command! ColorPrev call iter#next_scheme(1)
-command! ColorNext call iter#next_scheme(0)
-noremap <Leader>( <Cmd>ColorPrev<CR>
-noremap <Leader>) <Cmd>ColorNext<CR>
+command! Sprev call iter#next_scheme(1)
+command! Snext call iter#next_scheme(0)
+noremap <Leader>( <Cmd>Sprev<CR>
+noremap <Leader>) <Cmd>Snext<CR>
 
 " Pick color scheme and toggle hex coloring
 " Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note
