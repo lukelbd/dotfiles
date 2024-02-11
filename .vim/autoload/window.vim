@@ -12,20 +12,24 @@ function! s:buffers_recent() abort
 endfunction
 function! window#buffer_sort(args) abort
   let unsorted = {}  " note keys auto-convert to string
-  for [bufnr, value] in items(a:args)  " valid for lists and dictionaries
-    let bufnr = type(a:args) == 3 ? bufnr(value) : bufnr
-    let unsorted[bufnr] = value
+  for [nr, value] in items(a:args)  " valid for dicts and lists
+    let nr = type(a:args) == 4 ? nr : bufnr(value)
+    let values = type(value) == 3 ? value : [value]
+    let unsorted[nr] = values
   endfor
   let sorted = []
   let bufnrs = keys(unsorted)
-  for bufnr in s:buffers_recent()
-    let idx = index(bufnrs, string(bufnr))
+  for nr in s:buffers_recent()
+    let idx = index(bufnrs, string(nr))
     if idx >= 0
-      call add(sorted, remove(unsorted, bufnrs[idx]))
+      call extend(sorted, remove(unsorted, bufnrs[idx]))
       call remove(bufnrs, idx)
     endif
   endfor
-  return sorted + values(unsorted)
+  for items in values(unsorted)
+    call extend(sorted, items)
+  endfor
+  return sorted
 endfunction
 
 " Return main buffers in each tab
@@ -35,16 +39,16 @@ function! window#buffer_source() abort
   let ndigits = len(string(tabpagenr('$')))
   let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
   let unsorted = {}
-  for tabnr in range(1, tabpagenr('$'))  " iterate through each tab
+  for tnr in range(1, tabpagenr('$'))  " iterate through each tab
     let nr = -1  " default number
-    let bufnrs = tabpagebuflist(tabnr)
-    for bufnr in bufnrs
-      if bufnr == bufnr()
+    let bufnrs = tabpagebuflist(tnr)
+    for bnr in bufnrs
+      if bnr == bufnr() && tnr == tabpagenr()
         continue
-      elseif index(tabskip, getbufvar(bufnr, '&ft')) == -1  " use if not a popup window
-        let nr = bufnr | break
-      elseif bufnr == bufnrs[-1]  " use if no non-popup windows
-        let nr = bufnr
+      elseif index(tabskip, getbufvar(bnr, '&ft')) == -1  " use if not a popup window
+        let nr = bnr | break
+      elseif bnr == bufnrs[-1]  " use if no non-popup windows
+        let nr = bnr
       endif
     endfor
     if nr < 0
@@ -54,9 +58,9 @@ function! window#buffer_source() abort
     else
       let path = fnamemodify(bufname(nr), ':~:.')
     endif
-    let pad = repeat(' ', ndigits - len(string(tabnr)))
-    let path = pad . tabnr . ': ' . path  " displayed string
-    let unsorted[nr] = path
+    let pad = repeat(' ', ndigits - len(string(tnr)))
+    let path = pad . tnr . ': ' . path  " displayed string
+    let unsorted[nr] = add(get(unsorted, nr, []), path)
   endfor
   return window#buffer_sort(unsorted)
 endfunction
@@ -209,9 +213,9 @@ function! window#show_bufs() abort
   let ndigits = len(string(bufnr('$')))
   let result = {}
   let lines = []
-  for bufnr in s:buffers_recent()
-    let pad = repeat(' ', ndigits - len(string(bufnr)))
-    call add(lines, pad . bufnr . ': ' . bufname(bufnr))
+  for bnr in s:buffers_recent()
+    let pad = repeat(' ', ndigits - len(string(bnr)))
+    call add(lines, pad . bnr . ': ' . bufname(bnr))
   endfor
   let message = "Open buffers (sorted by recent use):\n" . join(lines, "\n")
   echo message
@@ -222,14 +226,14 @@ endfunction
 " See: https://github.com/Asheq/close-buffers.vim
 function! window#wipe_bufs()
   let nums = []
-  for t in range(1, tabpagenr('$'))
-    call extend(nums, tabpagebuflist(t))
+  for tnr in range(1, tabpagenr('$'))
+    call extend(nums, tabpagebuflist(tnr))
   endfor
   let names = []
-  for b in range(1, bufnr('$'))
-    if bufexists(b) && !getbufvar(b, '&mod') && index(nums, b) == -1
-      call add(names, bufname(b))
-      silent exe 'bwipeout ' b
+  for bnr in range(1, bufnr('$'))
+    if bufexists(bnr) && !getbufvar(bnr, '&mod') && index(nums, bnr) == -1
+      call add(names, bufname(bnr))
+      silent exe 'bwipeout ' bnr
     endif
   endfor
   if !empty(names)
