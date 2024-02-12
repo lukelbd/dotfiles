@@ -89,7 +89,6 @@ endfunction
 function! shell#cmd_man(...) abort
   let g:ft_man_folding_enable = 1  " see :help Man
   let current = @%  " current file
-  let page = a:1
   if a:0  " input man
     let page = a:1
   else  " default man

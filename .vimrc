@@ -253,7 +253,7 @@ endfor
 " Helper function to suppress prefix maps. Prevents unexpected behavior due
 " to entering wrong suffix, e.g. \x in visual mode deleting the selection.
 function! s:gobble_map(prefix, mode)
-  let char = nr2char(getchar())
+  let char = getcharstr()
   if empty(maparg(a:prefix . char, a:mode))  " return no-op
     return ''
   else  " re-direct to the active mapping
@@ -356,6 +356,7 @@ endfor
 " Want to be able to *temporarily turn scrolloff to infinity* when
 " enter visual mode, to do that need to map vi and va stuff.
 nnoremap gv gv
+nnoremap gx gi
 nnoremap v mzv
 nnoremap V mzV
 nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
@@ -373,7 +374,7 @@ vnoremap <expr> A mode() =~# "\<C-v>" ? 'A' : '<Esc>`>a'
 " File and window utilities
 "-----------------------------------------------------------------------------"
 " Save or quit the current session
-" Note: To avoid accidentally closing vim do not use mapped shortcuts. Instead
+" Note: To avoid accidentally closing vim do not use mapped shortcuts.
 " require manual closure using :qall or :quitall.
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
@@ -381,16 +382,13 @@ noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-e> <Cmd>exe 'Drop ' . fnameescape(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>only<CR>ze
+nnoremap <C-e> <Cmd>exe 'Drop ' . fnameescape(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>silent! only<CR>ze
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
-" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
-" to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call vim#config_scripts(0, <q-args>)
-noremap <Leader>e <Cmd>call git#fugitive_return()<CR>zv
-noremap <leader>E <Cmd>edit \| call fold#update_folds(1)<CR>zv
+noremap <leader>e <Cmd>call window#edit_buf()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -416,8 +414,8 @@ nnoremap <C-g> <Cmd>GFiles<CR>
 " Open file with optional user input
 " Note: Here :History includes v:oldfiles and open buffers
 " Note: Currently no way to make :Buffers use custom opening command
-nnoremap <Tab>e <Cmd>History<CR>
-nnoremap <Tab>r <Cmd>call file#open_recent()<CR>
+nnoremap <Tab>r <Cmd>History<CR>
+nnoremap <Tab>e <Cmd>call file#open_recent()<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
 nnoremap <Tab>\ <Cmd>call file#open_init('vsplit', 1)<CR>
 nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
@@ -441,9 +439,8 @@ nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
 
 " Tab and window resizing and moving
-nnoremap <Tab>: <Cmd>call window#move_tab(v:count)<CR>
-nnoremap <Tab>= <Cmd>call window#default_width()<CR>
-nnoremap <Tab>0 <Cmd>call window#default_height()<CR>
+nnoremap <Tab>0 <Cmd>exe 'resize ' . window#default_height()<CR>
+nnoremap <Tab>= <Cmd>exe 'vertical resize ' . window#default_width()<CR>
 nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
 nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
@@ -454,6 +451,7 @@ nnoremap <Tab>_ <Cmd>call window#change_height(-6 * v:count1)<CR>
 nnoremap <Tab>+ <Cmd>call window#change_height(6 * v:count1)<CR>
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>: <Cmd>call window#move_tab(v:count)<CR>
 
 " Related file utilities
 " Mnemonic is 'inside' just like Ctrl + i map
@@ -465,8 +463,11 @@ noremap <Leader>i <Cmd>Paths<CR>
 noremap <Leader>I <Cmd>Localdir<CR>
 noremap <Leader>p <Cmd>call file#print_exists()<CR>
 noremap <Leader>P <Cmd>exe 'Drop ' . fnameescape(expand('<cfile>'))<CR>
-noremap <Leader>- <Cmd>exe 'leftabove 30vsplit ' . tag#find_root(@%)<CR>
-noremap <Leader>_ <Cmd>exe 'leftabove 30vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
+noremap <Leader>\ <Cmd>exe 'leftabove ' . window#default_width(1)
+  \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
+noremap <Leader>- <Cmd>exe 'rightbelow ' . window#default_height(1)
+  \ . 'split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
+" noremap <Leader>\ <Cmd>exe 'leftabove ' . g:panelwidth . 'vsplit ' . tag#find_root(@%)<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -507,9 +508,10 @@ augroup panel_setup
   au FileType man call shell#man_setup()
   au FileType gitcommit call git#commit_setup()
   au FileType git,fugitive,fugitiveblame call git#fugitive_setup()
-  for s:ft in s:panel_filetypes
-    let s:modifiable = s:ft ==# 'gitcommit'
-    exe 'au FileType ' . s:ft . ' call utils#panel_setup(' . s:modifiable . ')'
+  au FileType fugitiveblame call git#blame_setup()
+  for s:ftype in s:panel_filetypes
+    let s:modifiable = s:ftype ==# 'gitcommit'
+    exe 'au FileType ' . s:ftype . ' call utils#panel_setup(' . s:modifiable . ')'
   endfor
 augroup END
 
@@ -518,18 +520,19 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap ; <Nop>
-nnoremap _ @:
+nnoremap <Leader>' @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
+nnoremap <Leader>y <Cmd>Maps<CR>
+nnoremap <Leader>Y <Cmd>Commands<CR>
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_help()<CR>
-nnoremap <Leader>n <Cmd>Maps<CR>
-nnoremap <Leader>N <Cmd>Commands<CR>
-nnoremap <Leader>m <Cmd>call shell#fzf_help()<CR>
-nnoremap <Leader>M <Cmd>call shell#fzf_man()<CR>
+nnoremap <Leader>n <Cmd>call shell#fzf_help()<CR>
+nnoremap <Leader>N <Cmd>call shell#cmd_help()<CR>
+nnoremap <Leader>m <Cmd>call shell#fzf_man()<CR>
+nnoremap <Leader>M <Cmd>call shell#cmd_man()<CR>
 
 " Cycle through location list options
 " Note: ALE populates the window-local loc list rather than the global quickfix list.
@@ -615,10 +618,10 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
 silent! unmap zv
-noremap zj zb
-noremap zk zt
-noremap z. zzze
-noremap z, z.
+noremap g<CR> zzze
+noremap z<CR> zzze
+noremap zJ zb
+noremap zK zt
 noremap z> zs
 noremap z< ze
 
@@ -663,9 +666,11 @@ noremap zO <Cmd>call fold#toggle_current(0)<CR>
 " increase or decrease by count ('zp' without count simply prints the level).
 noremap zp <Cmd>call fold#update_level()<CR>
 noremap zP <Cmd>call fold#update_level()<CR>
+noremap z< <Cmd>call fold#update_level('m')<CR>
+noremap z> <Cmd>call fold#update_level('r')<CR>
 noremap zm <Cmd>call fold#update_level('m')<CR>
-noremap zM <Cmd>call fold#update_level('M')<CR>
 noremap zr <Cmd>call fold#update_level('r')<CR>
+noremap zM <Cmd>call fold#update_level('M')<CR>
 noremap zR <Cmd>call fold#update_level('R')<CR>
 
 " Jump to next or previous fold or inside fold
@@ -675,25 +680,25 @@ call s:repeat_map('[Z', 'FoldBackward', 'zkza')
 call s:repeat_map(']Z', 'FoldForward', 'zjza')
 noremap [z zk
 noremap ]z zj
-noremap z[ [z
-noremap z] ]z
+noremap zk [z
+noremap zj ]z
 
-" Go to folds marks or jumps with fzf
+" Jump to marks and declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: :Marks does not handle file switching and :Jumps has an fzf error so override.
-noremap gz <Cmd>Folds<CR>
-noremap g' <Cmd>call mark#fzf_marks()<CR>
-noremap g" <Cmd>call mark#fzf_jumps()<CR>
-noremap z' <Cmd>call mark#goto_mark(get(g:, 'mark_recent', 'A'))<CR>
-noremap z" <Cmd>call mark#del_marks()<CR>
-
-" Declare alphabetic marks using counts (navigate with ]` and [`)
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
 " viminfo, so use them. Also numbered marks are mostly internal, can be configured
 " to restore cursor position after restarting, also used in viminfo.
+command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
+command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap ~ <Cmd>call mark#set_marks(utils#translate_count('m'))<CR>
-noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
+noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
+noremap ; <Cmd>call mark#goto_mark(utils#translate_name('`'))<CR>
+noremap z; <Cmd>call mark#fzf_marks()<CR>
+noremap z: <Cmd>call mark#del_marks()<CR>
+noremap g; <Cmd>call mark#fzf_jumps()<CR>
+noremap g: <Cmd>call mark#fzf_changes()<CR>
+noremap gz <Cmd>Folds<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -701,16 +706,16 @@ noremap ` <Cmd>call mark#goto_mark(utils#translate_count('`'))<CR>
 " Note: These redefinitions add flexibility to native fzf.vim commands, mnemonic
 " for alternatives is 'local directory' or 'current file'. Also note Rg is faster and
 " has nicer output so use by default: https://unix.stackexchange.com/a/524094/112647
-command! -bang -nargs=+ Rg call grep#call_rg(<bang>0, 0, <f-args>)  " search file(s)
-command! -bang -nargs=+ Rf call grep#call_rg(<bang>0, 1, <f-args>)  " search folder(s)
-command! -bang -nargs=+ Rp call grep#call_rg(<bang>0, 2, <f-args>)  " search project(s)
-command! -bang -nargs=+ Ag call grep#call_ag(<bang>0, 0, <f-args>)  " search file(s)
-command! -bang -nargs=+ Af call grep#call_ag(<bang>0, 1, <f-args>)  " search folder(s)
-command! -bang -nargs=+ Ap call grep#call_ag(<bang>0, 2, <f-args>)  " search project(s)
-nnoremap g; <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap g: <Cmd>call grep#call_grep('rg', 1, 2)<CR>
-nnoremap z; <Cmd>call grep#call_grep('rg', 1, 0)<CR>
-nnoremap z: <Cmd>call grep#call_grep('rg', 0, 0)<CR>
+command! -bang -nargs=+ -complete=file Rg call grep#call_rg(<bang>0, 0, <f-args>)
+command! -bang -nargs=+ -complete=file Rf call grep#call_rg(<bang>0, 1, <f-args>)
+command! -bang -nargs=+ -complete=file Rp call grep#call_rg(<bang>0, 2, <f-args>)
+command! -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, 0, <f-args>)
+command! -bang -nargs=+ -complete=file Af call grep#call_ag(<bang>0, 1, <f-args>)
+command! -bang -nargs=+ -complete=file Ap call grep#call_ag(<bang>0, 2, <f-args>)
+nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap z" <Cmd>call grep#call_grep('rg', 1, 1)<CR>
 nnoremap z/ <Cmd>BLines<CR>
 nnoremap z? <Cmd>Lines<CR>
 
@@ -718,13 +723,13 @@ nnoremap z? <Cmd>Lines<CR>
 " Note: Search open files for print statements and project files for others
 " Note: Native 'gp' and 'gP' almost identical to 'p' and 'P' (just moves char to right)
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
-command! -bang -nargs=* Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
-command! -bang -nargs=* Prints call grep#call_rg(<bang>0, 2, '^\s*print(', <f-args>)
-command! -bang -nargs=* Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
-command! -bang -nargs=* Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\):', <f-args>)
-command! -bang -nargs=* Errors call grep#call_rg(<bang>0, 2, '\<\(Error\|ERROR\):', <f-args>)
-command! -bang -nargs=* Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\):', <f-args>)
-command! -bang -nargs=* Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
+command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
+command! -bang -nargs=* -complete=file Prints call grep#call_rg(<bang>0, 2, '^\s*print(', <f-args>)
+command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
+command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\):', <f-args>)
+command! -bang -nargs=* -complete=file Errors call grep#call_rg(<bang>0, 2, '\<\(Error\|ERROR\):', <f-args>)
+command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\):', <f-args>)
+command! -bang -nargs=* -complete=file Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
 noremap gp <Cmd>Debugs!<CR>
 noremap gP <Cmd>Prints<CR>
 noremap gM <Cmd>Notes<CR>
@@ -735,7 +740,7 @@ noremap gG <Cmd>Conflicts<CR>
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
-nmap <expr> \\ '\' . nr2char(getchar()) . 'al'
+nmap <expr> \\ '\' . getcharstr() . 'al'
 
 " Sort input lines
 " Note: Simply uses native ':sort' command.
@@ -831,48 +836,48 @@ inoremap <C-g>U <C-g>u
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
 " Note: Visual counts are ignored when starting recording
-nnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
-nnoremap <expr> , '@' . utils#translate_count('@')
-vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_count('q') : '')
-vnoremap <expr> , '@' . utils#translate_count('@')
+nnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_name('q') : '')
+nnoremap <expr> , '@' . utils#translate_name('@')
+vnoremap <expr> Q 'q' . (empty(reg_recording()) ? utils#translate_name('q') : '')
+vnoremap <expr> , '@' . utils#translate_name('@')
 
 " Declare alphabetic registers with count (consistent with mark utilities)
 " Note: Pressing ' or " followed by number uses numbered previous-deletion register,
 " and pressing ' or " followed by normal-mode command uses black hole or clipboard.
 " Note: Pressing double '' or "" triggers native or peekaboo register selection. This
 " relies on g:peekaboo_prefix = '"' below so that double '"' opens selection panel.
-nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_count('', '_', 0)
-nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_count('q', '*', 1)
-vnoremap <expr> ' utils#translate_count('', '_', 0)
-vnoremap <expr> " utils#translate_count('q', '*', 1)
+nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_name('', '_', 0)
+nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_name('q', '*', 1)
+vnoremap <expr> ' utils#translate_name('', '_', 0)
+vnoremap <expr> " utils#translate_name('q', '*', 1)
 
 " Change text, specify registers with counts.
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
-nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_count('') . 'c'
-nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_count('') . 'C'
-vnoremap <expr> c utils#translate_count('') . 'c'
-vnoremap <expr> C utils#translate_count('') . 'C'
+nnoremap <expr> c (v:count ? '<Esc>' : '') . utils#translate_name('') . 'c'
+nnoremap <expr> C (v:count ? '<Esc>' : '') . utils#translate_name('') . 'C'
+vnoremap <expr> c utils#translate_name('') . 'c'
+vnoremap <expr> C utils#translate_name('') . 'C'
 
 " Delete text, specify registers with counts (no more dd mapping)
 " Note: Visual counts are ignored, and cannot use <Esc> because that exits visual mode
-nnoremap <expr> d (v:count ? '<Esc>' : '') . utils#translate_count('') . 'd'
-nnoremap <expr> D (v:count ? '<Esc>' : '') . utils#translate_count('') . 'D'
-vnoremap <expr> d utils#translate_count('') . 'd'
-vnoremap <expr> D utils#translate_count('') . 'D'
+nnoremap <expr> d (v:count ? '<Esc>' : '') . utils#translate_name('') . 'd'
+nnoremap <expr> D (v:count ? '<Esc>' : '') . utils#translate_name('') . 'D'
+vnoremap <expr> d utils#translate_name('') . 'd'
+vnoremap <expr> D utils#translate_name('') . 'D'
 
 " Yank text, specify registers with counts (no more yy mappings)
 " Note: Here 'Y' yanks to end of line, matching 'C' and 'D' instead of 'yy' synonym
-nnoremap <expr> y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y'
-nnoremap <expr> Y (v:count ? '<Esc>' : '') . utils#translate_count('') . 'y$'
-vnoremap <expr> y utils#translate_count('') . 'y'
-vnoremap <expr> Y utils#translate_count('') . 'y'
+nnoremap <expr> y (v:count ? '<Esc>' : '') . utils#translate_name('') . 'y'
+nnoremap <expr> Y (v:count ? '<Esc>' : '') . utils#translate_name('') . 'y$'
+vnoremap <expr> y utils#translate_name('') . 'y'
+vnoremap <expr> Y utils#translate_name('') . 'y'
 
 " Paste from the nth previously deleted or changed text.
 " Note: For visual paste without overwrite see https://stackoverflow.com/a/31411902/4970632
-nnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_count('') . 'p'
-nnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_count('') . 'P'
-vnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_count('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
-vnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_count('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
+nnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_name('') . 'p'
+nnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_name('') . 'P'
+vnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_name('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
+vnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_name('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
 
 " Indenting counts improvement. Before 2> indented this line or this motion repeated,
 " now it means 'indent multiple times'. Press <Esc> to remove count from motion.
@@ -898,14 +903,15 @@ call s:repeat_map('ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>', 'n')
 call s:repeat_map('cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>', 'n')
 call s:repeat_map('cL', 'SliceLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>', 'n')
 
-" Remove character or print info
+" Single character mappings
 " Here prefer characterize since usually has more info
-nnoremap cp gi
 nnoremap cx "_s
 noremap x "_x
 noremap X "_X
-map gx <Plug>(characterize)
-noremap gX ga
+map ` <Plug>(characterize)
+noremap ~ ga
+noremap + <C-a>
+noremap - <C-x>
 
 " Toggle spell checking
 " Turn on for filetypes containing text destined for users
@@ -1177,7 +1183,7 @@ call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('Konfekt/FastFold')  " speedup folding
 call plug#('justinmk/vim-sneak')  " simple and clean
 let g:peekaboo_prefix = '"'
-let g:peekaboo_window = 'vertical topleft 30new'
+let g:peekaboo_window = 'vertical topleft ' . g:panelwidth . 'new'
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
@@ -1488,6 +1494,7 @@ let g:colorizer_nomap = 1
 let g:colorizer_startup = 0
 
 " Calculators and number stuff
+" Note: Now use forked version of toggle plugin
 " call plug#('vim-scripts/Toggle')  " toggling stuff on/off (forked instead)
 " call plug#('triglav/vim-visual-increment')  " superceded by vim-speeddating
 call plug#('sk1418/HowMuch')
@@ -1592,13 +1599,13 @@ if s:plug_active('vim-tags')
   command! -bang -nargs=* ShowTable
     \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
+  nnoremap g, <Cmd>Tags<CR>
+  nnoremap g. <Cmd>BTags<CR>
   nnoremap <Leader>t <Cmd>ShowTable<CR>
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
-  nnoremap gt <Cmd>BTags<CR>
-  nnoremap gT <Cmd>Tags<CR>
   nnoremap <Leader>O <Cmd>call switch#tags()<CR>
-  let g:tags_drop_map = 'g,'  " default is <Leader><Tab>
-  let g:tags_jump_map = 'g.'  " default is <Leader><Leader>
+  let g:tags_jump_map = 'z.'  " default is <Leader><Leader>
+  let g:tags_drop_map = 'z,'  " default is <Leader><Tab>
   let g:tags_major_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let g:tags_minor_kinds = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
 endif
@@ -1618,9 +1625,8 @@ if s:plug_active('vim-gutentags')
   augroup END
   command! -complete=dir -nargs=* SetTags call tag#set_tags(<f-args>)
   command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
-  nnoremap zt <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated file tags.'<CR>
+  nnoremap zt <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags.'<CR>
   nnoremap zT <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
-  call tag#set_tags()  " call during .vimrc refresh
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
@@ -1981,11 +1987,11 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>B <Cmd>call git#run_command('switch -')<CR>
   noremap <Leader>u <Cmd>call git#run_command('push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
-  noremap <Leader>y <Cmd>BCommits<CR>
-  noremap <Leader>Y <Cmd>Commits<CR>
   noremap <expr> gl git#run_command_expr('blame %', 1)
   noremap gll <Cmd>call git#run_command('blame %')<CR>
   noremap gL <Cmd>call git#run_command('blame')<CR>
+  noremap gt <Cmd>BCommits<CR>
+  noremap gT <Cmd>Commits<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2056,13 +2062,13 @@ if s:plug_active('codi.vim')
     au User CodiEnterPre call calc#codi_setup(1)
     au User CodiLeavePost call calc#codi_setup(0)
   augroup END
-  command! -nargs=? CodiNew call calc#codi_new(<q-args>)
-  noremap <Leader>+ <Cmd>silent! CodiNew<CR>
+  command! -nargs=* CodiNew call calc#codi_new(<f-args>)
+  noremap <Leader>+ <Cmd>CodiNew<CR>
   noremap <Leader>= <Cmd>silent! Codi!!<CR>
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
-  let g:codi#width = 30
+  let g:codi#width = g:panelwidth
   let g:codi#log = ''  " enable when debugging
   let g:codi#sync = 0  " enable async mode
   let g:codi#interpreters = {
@@ -2089,35 +2095,40 @@ endif
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
   function! Undotree_Augroup() abort  " see autoload/undotree.vim s:undotree.Toggle()
-    if !undotree#UndotreeIsVisible() | return | endif
-    augroup Undotree
-      au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
-    augroup END
+    if undotree#UndotreeIsVisible()
+      augroup Undotree
+        au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
+      augroup END
+    endif
   endfunction
   function! Undotree_CustomMap() abort  " autoload/undotree.vim s:undotree.BindKey()
+    exe 'vertical resize ' . window#default_width(1)
+    nmap <buffer> U <Plug>UndotreeRedo
     noremap <buffer> <nowait> u <C-u>
     noremap <buffer> <nowait> d <C-d>
   endfunc
-  noremap <Leader>\ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
+  noremap <Leader>_ <Cmd>UndotreeToggle<CR><Cmd>call Undotree_Augroup()<CR>
   let g:undotree_DiffAutoOpen = 0
   let g:undotree_RelativeTimestamp = 0
   let g:undotree_SetFocusWhenToggle = 1
   let g:undotree_ShortIndicators = 1
-  let g:undotree_SplitWidth = 25
+  let g:undotree_SplitWidth = 25  " overridden above
 endif
 
 " Vim test settings
 " Run tests near cursor or throughout file
 if s:plug_active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap <Leader>[ <Cmd>TestVisit<CR>
-  noremap <Leader>] <Cmd>TestVisit<CR>
+  noremap g{ <Cmd>TestVisit<CR>
+  noremap g} <Cmd>TestVisit<CR>
   noremap <Leader>, <Cmd>TestLast<CR>
-  noremap <Leader>< <Cmd>TestLast --mpl-generate<CR>
   noremap <Leader>. <Cmd>TestNearest<CR>
+  noremap <Leader>< <Cmd>TestLast --mpl-generate<CR>
   noremap <Leader>> <Cmd>TestNearest --mpl-generate<CR>
-  noremap <Leader>' <Cmd>TestFile<CR>
-  noremap <Leader>" <Cmd>TestFile --mpl-generate<CR>
+  noremap <Leader>[ <Cmd>TestFile<CR>
+  noremap <Leader>] <Cmd>TestSuite<CR>
+  noremap <Leader>{ <Cmd>TestFile --mpl-generate<CR>
+  noremap <Leader>} <Cmd>TestSuite --mpl-generate<CR>
 endif
 
 " The howmuch.vim plugin. Mnemonic for equation solving is just that parentheses
@@ -2132,13 +2143,11 @@ if s:plug_active('HowMuch')
   noremap <expr> g] edit#how_much_expr(1, 1, 1, 'py')
 endif
 
-" Speed dating, support date increments
-" Todo: Build intuition for how to use this things.
-" Note: This overwrites default increment/decrement plugins declared above.
+" Speed dating for incrementing or generating lists of numbers and dates
+" Note: This overwrites default increment/decrement plugins declared above. Works
+" by incrementing selected item(s), and if selection includes empty lines then extends
+" them using the step size from preceding lines or using a default step size.
 if !s:plug_active('vim-speeddating')
-  noremap + <C-a>
-  noremap - <C-x>
-else
   map + <Plug>SpeedDatingUp
   map - <Plug>SpeedDatingDown
   noremap <Plug>SpeedDatingFallbackUp <C-a>
@@ -2290,9 +2299,9 @@ highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 " outdated buffer marks loaded from .viminfo
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
+" au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
 augroup clear_jumps
   au!
-  au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
 augroup END
 noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 delmarks a-z

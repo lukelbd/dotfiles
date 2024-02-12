@@ -65,6 +65,7 @@ function! vim#config_refresh(bang, ...) abort
     endif
   endfor
   let closed = foldclosed('.')
+  call tag#set_tags()  " call during .vimrc refresh
   filetype detect
   runtime after/common.vim
   if closed <= 0 | exe 'silent! normal! zv' | endif
@@ -184,7 +185,11 @@ endfunction
 " is included with vim by default, and this is always used no matter the value of &tags
 " (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
 function! vim#vim_help(...) abort
-  let item = a:0 ? a:1 : input('Vim help item: ', '', 'help')
+  if a:0
+    let item = a:1
+  else
+    let item = utils#input_default('Vim help', 'help', expand('<cword>'))
+  endif
   if !empty(item)
     exe 'vert help ' . item
   endif

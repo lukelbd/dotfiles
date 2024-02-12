@@ -2,16 +2,20 @@
 " Utilities for codi windows
 "-----------------------------------------------------------------------------"
 " Setup new codi window
+" Note: This will jump to existing tab and enable codi if present
 scriptencoding utf-8
 function! calc#codi_new(...) abort
-  if a:0 && a:1 !~# '^\s*$'
-    let name = a:1
+  if a:0 && !empty(a:1)
+    let path = a:1
   else
-    let name = input('Calculator name (' . getcwd() . '): ', '', 'file')
+    let path = fnamemodify(resolve(@%), ':p:h')
+    let prompt = 'Calculator path'
+    let default = fnamemodify(path, ':p:~:.') . 'calc.py'
+    let path = utils#input_default(prompt, 'file#complete_lwd', default)
   endif
-  if name !~# '^\s*$'
-    exe 'tabe ' . fnamemodify(name, ':r') . '.py'
-    Codi!!
+  if !empty(path)
+    let path = fnamemodify(path, ':r') . '.py'
+    exe 'Drop ' . path | silent! exe 'Codi!!'
   endif
 endfunction
 
@@ -20,17 +24,16 @@ endfunction
 " See: https://github.com/metakirby5/codi.vim/issues/90
 " Note: This sets up the calculator window not the display window
 function! calc#codi_setup(toggle) abort
-  if a:toggle
-    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
-    nnoremap <buffer> q <C-w>p<Cmd>Codi!!<CR>
-    nnoremap <buffer> <C-w> <C-w>p<Cmd>Codi!!<CR>
-    exe 'augroup codi_' . bufnr('%')
+  if !a:toggle
+    exe 'augroup codi_' . bufnr()
       au!
-      exe 'au ' . cmds . ' <buffer> call codi#update()'
     augroup END
   else
-    exe 'augroup codi_' . bufnr('%')
+    let cmds = exists('##TextChanged') ? 'InsertLeave,TextChanged' : 'InsertLeave'
+    exe 'vertical resize ' . window#default_width()
+    exe 'augroup codi_' . bufnr()
       au!
+      exe 'au ' . cmds . ' <buffer> call codi#update()'
     augroup END
   endif
 endfunction

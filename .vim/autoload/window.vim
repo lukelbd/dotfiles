@@ -66,30 +66,36 @@ function! window#buffer_source() abort
 endfunction
 
 " Safely closing tabs and windows
+" Note: Currently codi emits annoying error messages when turning on/off but
+" still works so suppress messages here.
 " Note: Calling quit inside codi buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
-function! window#close_window() abort
-  let ntabs = tabpagenr('$')
-  let islast = ntabs == tabpagenr()
-  if &l:filetype !=# 'codi'
-    quit
-  else
-    wincmd p | Codi!!
-  endif
-  if ntabs != tabpagenr('$') && !islast
-    silent! tabprevious
-  endif
-endfunction
 function! window#close_tab() abort
   let ntabs = tabpagenr('$')
   let islast = ntabs == tabpagenr()
-  if ntabs == 1
-    silent! quitall
+  let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
+  if &filetype ==# 'codi'
+    wincmd p | silent! Codi!!
+  elseif index(ftypes, 'codi') != -1
+    silent! Codi!!
+  endif
+  if ntabs == 1 | quitall | else
+    tabclose | if !islast | silent! tabprevious | endif
+  endif
+endfunction
+function! window#close_window() abort
+  let ntabs = tabpagenr('$')
+  let islast = ntabs == tabpagenr()
+  let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
+  if &filetype ==# 'codi'
+    wincmd p | silent! Codi!!
+  elseif index(ftypes, 'codi') != -1
+    silent! Codi!! | quit
   else
-    silent! tabclose
-    if !islast  " move to left-hannd tab
-      silent! tabprevious
-    endif
+    quit
+  endif
+  if ntabs != tabpagenr('$') && !islast
+    silent! tabprevious
   endif
 endfunction
 
@@ -142,7 +148,7 @@ function! window#default_size(width, ...) abort
   let panel = bufnr() != get(b:, 'tabline_bufnr', bufnr())
   let panes = call('window#count_panes', direcs)
   let size = size - panes + 1  " e.g. 2 panes == 1 divider
-  let space = float2nr(ceil(0.2 * size))
+  let space = float2nr(ceil(0.22 * size))
   if panel && panes > 1 || a:0 && a:1  " panel window
     return space
   elseif panes > 1  " main window
@@ -152,12 +158,23 @@ function! window#default_size(width, ...) abort
   endif
 endfunction
 function! window#default_width(...) abort
-  let size = call('window#default_size', [1] + a:000)
-  exe 'resize ' . size
+  return call('window#default_size', [1] + a:000)
 endfunction
 function! window#default_height(...) abort
-  let size = call('window#default_size', [0] + a:000)
-  exe 'vertical resize ' . size
+  return call('window#default_size', [0] + a:000)
+endfunction
+
+" Refresh window contents
+" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
+" to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
+function! window#edit_buf() abort
+  let type = get(b:, 'fugitive_type', '')
+  if !empty(type)  " return to original file
+    call git#fugitive_return()
+  else  " reload from disk
+    edit | call fold#update_folds(1)
+  endif
+  normal! zv
 endfunction
 
 " Select from open tabs
@@ -169,7 +186,7 @@ function! window#jump_tab(...) abort
   else
     call fzf#run(fzf#wrap({
       \ 'source': window#buffer_source(),
-      \ 'options': '--no-sort --prompt="Jump> "',
+      \ 'options': '--no-sort --prompt="Tab> "',
       \ 'sink': function('s:jump_tab_sink'),
       \ }))
   endif

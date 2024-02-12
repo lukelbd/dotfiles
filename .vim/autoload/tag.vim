@@ -90,16 +90,16 @@ endfunction
 function! tag#set_tags(...) abort
   let bufs = []  " source buffers
   let paths = []  " tag paths
-  if a:0
+  if a:0  " append to existing
     let args = copy(a:000[empty(type(a:1)):])
     let toggle = empty(type(a:1)) ? a:1 : 1  " type zero i.e. number (see :help empty)
     call extend(bufs, map(args, 'bufnr(v:val)'))
-  else
+  else  " reset defaults
     setglobal tags=
     let toggle = 1
     call map(range(1, tabpagenr('$')), 'extend(bufs, tabpagebuflist(v:val))')
   endif
-  for bnr in bufs  " possibly
+  for bnr in bufs  " possible iteration
     let opts = getbufvar(bnr, 'gutentags_files', {})
     let path = get(opts, 'ctags', '')
     if empty(path)

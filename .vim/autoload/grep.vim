@@ -13,11 +13,11 @@ function! s:parse_paths(prompt, global, level, ...)
   else  " current buffer
     let paths = [resolve(@%)]
   endif
-  if a:level <= 0  " input paths
-    let paths = filter(paths, 'filereadable(v:val)')
-  elseif a:level <= 1  " path folders
+  if a:0 || a:level <= 0  " input paths and folders
+    let paths = filter(paths, 'isdirectory(v:val) || filereadable(v:val)')
+  elseif a:level <= 1  " input path folders
     let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")
-  else  " path projects
+  else  " input path projects
     let paths = map(paths, 'tag#find_root(v:val)')
   endif
   let result = []
@@ -69,6 +69,8 @@ function! s:parse_pattern(pattern)
 endfunction
 
 " Call Ag or Rg from command
+" Note: If commands called manually then always enable recursive search and disable
+" custom '~/.ignore' file (e.g. in case want to search a .vim/plugged folder).
 " Note: Native commands include final !a:bang argument toggling fullscreen but we
 " use a:bang to indicate whether to search current buffer or global open buffers.
 " Note: Use 'timer_start' to prevent issue where echom is hidden by fzf panel creation
@@ -80,16 +82,18 @@ function! s:echo_grep(regex, ...) abort
   echom 'Grep ' . a:regex
 endfunction
 function! grep#call_ag(global, level, ...) abort
-  let flags = '--path-to-ignore ~/.ignore --path-to-ignore ~/.wildignore --skip-vcs-ignores --hidden'
-  let flags .= a:level < 2 ? ' --depth 0' : ''  " files or file folders
+  let flags = '--hidden --path-to-ignore ~/.wildignore'
+  let flags .= a:0 > 1 ? '' : ' --path-to-ignore ~/.ignore --skip-vcs-ignores'
+  let flags .= a:0 > 1 || a:level > 1 ? '' : ' --depth 0'  " files or file folders
   let [regex, paths, extra] = call('s:parse_grep', [a:global, a:level] + a:000)
   let opts = fzf#vim#with_preview()
   call fzf#vim#ag_raw(join([flags, extra, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
   call timer_start(1, function('s:echo_grep', [regex]))
 endfunction
 function! grep#call_rg(global, level, ...) abort
-  let flags = '--ignore-file ~/.ignore --ignore-file ~/.wildignore --no-ignore-vcs --hidden'
-  let flags .= a:level < 2 ? ' --max-depth 1' : ''  " files or file folders
+  let flags = '--hidden --ignore-file ~/.wildignore'
+  let flags .= a:0 > 1 ? '' : ' --ignore-file ~/.ignore --no-ignore-vcs'
+  let flags .= a:0 > 1 || a:level > 1 ? '' : ' --max-depth 1'  " files or file folders
   let [regex, paths, extra] = call('s:parse_grep', [a:global, a:level] + a:000)
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'

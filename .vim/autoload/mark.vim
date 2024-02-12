@@ -13,15 +13,18 @@ let s:gui_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRe
 let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
 " Override of FZF :Jumps
+" Note: Vim natively extends jumplist when switching tabs but does not switch between
+" existing tabs. Here override default <C-o> and <C-i> by running :Drop before switch.
 " Note: This is only needed because the default FZF flag --bind start:pos:etc
 " was yielding errors. Not sure why but maybe an issue with bash fzf fork?
 function! s:jump_sink(lines) abort
-  if len(a:lines) < 2 | return | endif
-  let idx = index(s:jumplist, a:lines[1])
-  if idx == -1 | return | endif
-  let current = match(s:jumplist, '\v^\s*\>')
-  let delta = idx - current
-  let cmd = delta < 0 ? -delta . "\<C-o>" : delta . "\<C-i>"
+  let [key; lines] = a:lines  " first item is key binding for some reason
+  if empty(lines) | return | endif
+  let line = lines[-1]  " use final selection passed
+  let idx = match(s:jumplist, '\v^\s*\>')
+  let jdx = index(s:jumplist, line)
+  if idx == -1 || jdx == -1 || idx == jdx | return | endif
+  let cmd = idx > jdx ? (idx - jdx) . "\<C-o>" : (jdx - idx) . "\<C-i>"
   exe 'normal! ' . cmd
 endfunction
 function! mark#fzf_jumps(...)
@@ -32,7 +35,6 @@ function! mark#fzf_jumps(...)
   redir END
   let s:jumplist = split(cout, '\n')
   let format = snr . 'jump_format'
-  let current = -match(s:jumplist, '\v^\s*\>')
   let options = {
     \ 'source': extend(s:jumplist[0:0], map(s:jumplist[1:], 'call(format, [v:val])')),
     \ 'sink*': function('s:jump_sink'),
@@ -97,7 +99,9 @@ function! mark#del_marks(...) abort
       call remove(highlights, mrk)
     endif
     exe 'delmark ' . mrk
+    silent! unlet g:mark_recent
   endfor
+  echom 'Deleted marks: ' . join(mrks, ' ')
 endfunction
 
 " Add the mark and highlight the line

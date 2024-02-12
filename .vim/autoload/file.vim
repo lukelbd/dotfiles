@@ -53,20 +53,37 @@ function! s:path_source(base, user) abort
   let glob = substitute(glob, '/$', '', '')  " remove trailing slash
   let paths = globpath(glob, '*', 0, 1) + globpath(glob, '.?*', 0, 1)
   let paths = map(paths, "fnamemodify(v:val, ':t')")
-  if a:user | call insert(paths, s:new_file, 0) | endif
+  if a:user  " user input
+    call insert(paths, s:new_file, 0)
+  endif
   return paths
 endfunction
-function! file#path_list(lead, line, cursor) abort
+function! s:path_complete(lead) abort
   let head = fnamemodify(a:lead, ':h')
   let tail = fnamemodify(a:lead, ':t')
-  if head ==# '.'  " exclude leading component
+  if empty(head) || head ==# '.'  " exclude leading component
     let paths = glob(tail . '*', 1, 1) + glob(tail . '.*', 1, 1)
   else  " include leading component
     let paths = globpath(head, tail . '*', 1, 1) + globpath(head, tail . '.*', 1, 1)
   endif
-  let paths = filter(paths, "fnamemodify(v:val, ':t') !~# '^\\.\\+$'")
-  let paths = map(paths, "isdirectory(v:val) ? v:val . '/' : v:val")
-  return paths
+  let paths = filter(paths, 'fnamemodify(v:val, '':t'') !~# ''^\.\+$''')
+  let paths = map(paths, 'isdirectory(v:val) ? v:val . ''/'' : v:val')
+  return map(paths, 'substitute(v:val, ''^\.\/'', '''', '''')')
+endfunction
+function! file#complete_lwd(lead, line, cursor) abort
+  if exists('*RelativePath')
+    let head = RelativePath(expand('%:h'))
+  else
+    let head = expand('%:h:~:.')
+  endif
+  if head =~# '^' . a:lead
+    return s:path_complete(head)
+  else
+    return s:path_complete(a:lead)
+  endif
+endfunction
+function! file#complete_cwd(lead, line, cursor) abort
+  return s:path_complete(a:lead)
 endfunction
 
 " Open recently edited file
@@ -95,15 +112,16 @@ endfunction
 " Open from local or current directory (see also grep.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! s:open_prompt(path) abort
+function! file#open_head(path) abort
   let prompt = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
-  let prompt = prompt[:1] =~# '/' ? prompt : './' . prompt
-  return substitute(prompt, '/$', '', '') . '/'
+  let prompt = prompt[:1] ==# '/' ? prompt : './' . prompt
+  let prompt = substitute(prompt, '/$', '', '') . '/'
+  return prompt
 endfunction
 function! file#open_init(cmd, local) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
   let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
-  let init = utils#input_default(cmd, 'file#path_list', s:open_prompt(base))
+  let init = utils#input_default(cmd, 'file#complete_cwd', file#open_head(base))
   if empty(init)
     return
   elseif cmd ==# 'Files'
@@ -145,7 +163,7 @@ function! s:open_continuous(cmd, ...) abort
   for item in items
     let user = item ==# s:new_file
     if user  " should be recursed at least one level
-      let item = input(s:open_prompt(base), '', 'customlist,utils#null_list')
+      let item = input(file#open_head(base), '', 'customlist,utils#null_list')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " :p adds a slash so need two :h:h to remove then
@@ -163,23 +181,24 @@ function! s:open_continuous(cmd, ...) abort
     call fzf#run(fzf#wrap({
       \ 'sink*': function('s:open_continuous', [a:cmd, base]),
       \ 'source': s:path_source(base, 1),
-      \ 'options': "--multi --no-sort --prompt='" . s:open_prompt(base) . "'",
+      \ 'options': "--multi --no-sort --prompt='" . file#open_head(base) . "'",
       \ }))
   endif
   " Open file(s), or if it is already open just to that tab
   " Note: Use feedkeys() if only one file selected or else template loading
   " on s:new_file selection will fail.
+  let files = []
   for path in paths
     if isdirectory(path)  " false for empty string
       echohl WarningMsg
       echom "Warning: Skipping directory '" . path . "'."
       echohl None
-    elseif empty(path) || path =~# '[*?[\]]'  " unexpanded glob
-      :
-    else  " e.g. split or drop
-      call feedkeys("\<Cmd>" . a:cmd . ' ' . fnameescape(path) . "\<CR>", 'n')
+    elseif !empty(path) && path !~# '[*?[\]]'  " not unexpanded glob
+      let icmd = a:cmd . ' ' . fnameescape(path)
+      call feedkeys("\<Cmd>" . icmd . "\<CR>", 'n')
     endif
   endfor
+  return files
 endfunction
 
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
