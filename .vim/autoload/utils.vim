@@ -17,6 +17,8 @@ function! utils#null_operator_expr(...) abort
 endfunction
 
 " Get user input with requested default
+" Note: Force option forces return after single key press (used for registers). Try
+" to feed the result with feedkeys() instead of adding to opts to reduce screen flash.
 " Note: This is currently used with grep and file mappings. Specifies a default value
 " in parentheses that can be tab expanded, selects it when user presses enter, or
 " replaces it when user starts typing text or backspace. This is a bit nicer than
@@ -30,38 +32,42 @@ function! utils#input_list(lead, line, cursor)
     else
       let opts = call(funcname, [a:lead, a:line, a:cursor])
     endif
-  else
+  else  " initial iteration
     let s:complete_opts[0] = 0
-    try  " note getcharstr() returns key codes for <BS> instead of empty string
-      let char = nr2char(getchar())
-    catch  " user presses Ctrl-C
+    try  " getchar() returns strings for escape sequences and numbers otherwise
+      let char = getcharstr()
+    catch  " e.g. user presses Ctrl-C
       let char = "\<C-c>"
     endtry
-    if len(char) == 0  " clear prompt
-      let opts = [force ? default : '']
-      call feedkeys(force ? "\<CR>" : '', 't')
-    elseif char =~# '\p'  " printable character
-      let opts = [char]
-      call feedkeys(force ? "\<CR>" : '', 't')
-    elseif char ==# "\<Tab>"  " expand default
-      let opts = [default]
-      call feedkeys(force ? "\<CR>" : '', 't')
+    if char ==# "\<Esc>"  " cancellation
+      let opts = []
+      call feedkeys("\<CR>", 't')
     elseif char ==# "\<CR>"  " confirm default
-      let opts = [default]
-      call feedkeys("\<CR>", 't')
-    else  " escape or cancel
-      let opts = ['']
-      call feedkeys("\<CR>", 't')
+      let opts = []
+      call feedkeys(default ."\<CR>", 't')
+    elseif char ==# "\<Tab>"  " expand default
+      let opts = force ? [] : [default]
+      call feedkeys(force ? default . "\<CR>" : '', 't')
+    elseif char !~# '\p'  " other non-printable characters
+      let opts = force ? [] : []
+      call feedkeys(force ? "\<CR>" : '', 't')
+    elseif char ==# "\<PasteStart>"  " WARNING: this is 'printable'
+      let opts = [] | call feedkeys(char, 'it')
+      call feedkeys(force ? "\<CR>" : '', 't')
+    else  " printable input character
+      let opts = force ? [] : [char]
+      call feedkeys(force ? char . "\<CR>" : '', 't')
     endif
   endif
   return opts
 endfunction
 function! utils#input_default(prompt, funcname, default, ...) abort
-  let parenth = empty(a:default) ? '' : ' (' . a:default . ')'
-  let prompt = a:prompt . parenth . ': '
+  let result = a:prompt
+  let result .= result !~# ')$' && !empty(a:default) ? ' (' . a:default . ')' : ''
+  let result .= result =~# '\w$\|)$' ? ': ' : ' '
   let s:complete_opts = [1, a:funcname, a:default] + a:000
   call feedkeys("\<Tab>", 't')
-  return input(prompt, '', 'customlist,utils#input_list')
+  return input(result, '', 'customlist,utils#input_list')
 endfunction
 
 " Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
@@ -122,15 +128,15 @@ function! utils#operator_func(type) range abort
 endfunction
 
 " Setup panel windows. Mode can be 0 (not editable) or 1 (editable).
-" Warning: Setting nomodifiable tends to cause errors e.g. for log files run with
-" shell#job_win() or other internal stuff. So instead just try to disable normal mode
+" Warning: Setting 'modifiable' tends to cause errors e.g. for log files run with
+" shell#job_win() or other internal stuff. So instead just disable normal mode
 " commands that could accidentally modify text (aside from d used for scrolling).
 " Warning: Critical error happens if try to auto-quit when only panel window is
 " left... fzf will take up the whole window in small terminals, and even when fzf
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
-function! utils#panel_setup(modifiable) abort
+function! utils#panel_setup(level) abort
   setlocal nolist nonumber norelativenumber nocursorline
   nnoremap <buffer> q <Cmd>silent! call window#close_window()<CR>
   nnoremap <buffer> <C-w> <Cmd>silent! call window#close_window()<CR>
@@ -140,16 +146,18 @@ function! utils#panel_setup(modifiable) abort
   if &filetype ==# 'netrw'
     call utils#switch_maps(['<CR>', 't'], ['t', '<CR>'])
   endif
-  if a:modifiable == 1  " e.g. gitcommit window
+  if a:level > 1  " e.g. gitcommit window
     return
+  elseif a:level > 0
+    setlocal colorcolumn=
+  else
+    setlocal nospell colorcolumn= statusline=%{'[Panel:Z'.&l:foldlevel.']'}%=%{StatusRight()}
   endif
-  setlocal nospell colorcolumn=
-  setlocal statusline=%{'[Panel:Z'.&l:foldlevel.']'}%=%{StatusRight()}
   for char in 'du'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
   endfor
-  for char in 'uUrRxXdDcCpPaAiIoO'  " ignore buffer-local maps e.g. fugitive
-    if !get(maparg(char, 'n', 0, 1), 'buffer', 0)
+  for char in 'uUrRxXdDcCpPaAiIoO'  " in lieu of set nomodifiable
+    if !get(maparg(char, 'n', 0, 1), 'buffer', 0)  " preserve buffer-local maps
       exe 'nmap <buffer> ' char . ' <Nop>'
     endif
   endfor
@@ -170,17 +178,17 @@ function! s:eval_map(map) abort
   return rhs
 endfunction
 function! utils#switch_maps(...) abort
-  let dicts = []  " delay assignment until iteration
+  let margs = []  " delay assignment until iteration
   for [lhs1, lhs2] in a:000
-    let iarg = maparg(lhs1, 'n', 0, 1)
+    let marg = maparg(lhs1, 'n', 0, 1)
     let lhs3 = substitute(lhs2, '^<', '\\<', '')
     let lhs3 = eval('"' . lhs3 . '"')
-    let opts = {'rhs': s:eval_map(iarg), 'lhs': lhs2, 'lhsraw': lhs3}
-    call extend(iarg, opts)
-    call add(dicts, iarg)
+    let opts = {'rhs': s:eval_map(marg), 'lhs': lhs2, 'lhsraw': lhs3}
+    call extend(marg, opts)
+    call add(margs, marg)
   endfor
-  for iarg in dicts
-    call mapset('n', 0, iarg)
+  for marg in margs
+    call mapset('n', 0, marg)
   endfor
 endfunction
 
@@ -191,15 +199,15 @@ endfunction
 " Leave letters 'y' and 'z' alone for internal use (currently just used by marks).
 function! s:translate_count(mode, ...) abort
   let cnt = v:count
-  let curr = v:register
+  let name = v:register
   let warnings = []
-  if curr !=# '"' && a:mode !=# 'm'  " no translation needed
-    return [curr, '']
-  elseif a:mode =~# '[m`]'  " marks: uppercase a-z (24)
+  if name !=# '"' && a:mode !=# 'm'  " already translated (avoid recursion)
+    return [name, '']
+  elseif a:mode =~# '[m`]'  " marks: uppercase a-x (64+1-64+24)
     let [base, min, max] = [64, 1, 24]
-  elseif a:mode =~# '[q@]'  " macros: lowercase n-z (13)
+  elseif a:mode =~# '[q@]'  " macros: lowercase n-z (109+1-109+13)
     let [base, min, max] = [109, 1, 13]
-  else  " others: lowercase a-m (13)
+  else  " others: lowercase a-m (96+1-96+13)
     let [base, min, max] = [96, 0, 13]
   endif
   if cnt == 0 && a:mode ==# '`'
@@ -207,9 +215,9 @@ function! s:translate_count(mode, ...) abort
     let name = empty(stack) ? 'A' : stack[-1]  " recently set
   else
     let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
-    let adj = max([min, cnt])  " use v:count1 for 'm' and 'q'
-    let adj = min([adj, max])  " below maximum letter
-    let name = adj ? nr2char(base + adj) : ''
+    let inr = max([min, cnt])  " use v:count1 for 'm' and 'q'
+    let inr = min([inr, max])  " below maximum letter
+    let name = inr == 0 ? '' : nr2char(base + inr)
   endif
   if cnt > max  " emit warning
     let head = "Count '" . cnt . "' too high for register translation."
@@ -226,14 +234,13 @@ function! s:translate_count(mode, ...) abort
     echom 'Warning: ' . join(warnings, ' ')
     echohl None
   endif
-  return [name, empty(warnings) ? 'count ' . cnt : '']
+  let label = empty(warnings) ? 'count ' . cnt : ''
+  return [name, label]
 endfunction
 " Translate into map command
 function! s:translate_input(mode, ...) abort
-  let peekaboo = a:0 > 1 ? a:2 : ''  " whether double press should open peekaboo panel
-  let default = a:0 > 0 ? a:1 : ''  " default register after key press (e.g. 'yy or \"yy)
-  let char = ''
-  if empty(default) && empty(peekaboo)
+  if empty(a:0) || empty(a:1)  " i.e. empty(0) || empty('')
+    let char = ''
     let [name, label] = s:translate_count(a:mode)
     if a:mode =~# '[m`q@]'  " marks/macros (register mandatory)
       let result = name
@@ -242,24 +249,26 @@ function! s:translate_input(mode, ...) abort
     else  " default unnamed register
       let result = ''
     endif
-  else
+  else  " ' or \" register invocation
+    let char = ''
     let [name, label] = s:translate_count(a:mode, 0)
-    if !empty(name)  " ''/\"\"/'<command>/\"<command>
-      let result = '"' . name
-    else
-      " let char = nr2char(getchar())  " single character
+    let result = '"' . name
+    if empty(name)  " no count preceded ' or \" press
       let char = utils#input_default('Register', '', '', 1)
-      if empty(char)
+      if empty(char)  " e.g. escape character
         let name = char
         let result = ''
-      elseif char =~# '[''";_]'  " await native register selection
-        let name = peekaboo ? '"' : utils#input_default('Raw Register', '', '', 1)
+      elseif char ==# "'"  " native register selection
+        let name = utils#input_default('Register (raw)', '', '', 1)
         let result = '"' . name
+      elseif char ==# '"'  " await native register selection
+        let name = '' | echom 'Register: ...'
+        let result = peekaboo#peek(1, '"',  0)
       elseif char =~# '\d'  " use character to pick number register
         let name = char
         let result = '"' . name
-      else  " pass character to next normal mode command (e.g. d2j, ciw, yy)
-        let name = default
+      else  " pass character to normal mode (e.g. <Left>, d2j, ciw, yy)
+        let name = a:1
         let result = '"' . name . char  " including next character
       endif
       if name ==# '_'
@@ -268,7 +277,7 @@ function! s:translate_input(mode, ...) abort
         let label = 'clipboard'
       elseif name =~# '\d'  " use character to pick number register
         let label = name . get({'1': 'st', '2': 'nd', '3': 'rd'}, name, 'th') . ' delete'
-      elseif empty(name)
+      else  " default label
         let label = ''
       endif
     endif

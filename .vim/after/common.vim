@@ -38,7 +38,7 @@ call winrestview(winview)
 if closed <= 0 | exe 'silent! normal! zv' | endif
 doautocmd CursorHold
 doautocmd ConflictMarkerDetect BufReadPost
-doautocmd conflict_marker_kludge BufWinEnter
+doautocmd conflict_marker_setup BufWinEnter
 
 " Buffer-local syntax overrides
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084

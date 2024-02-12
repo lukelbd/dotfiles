@@ -204,16 +204,16 @@ let s:shellcheck_ignore =
 " necessary since tmux handles FocusLost signal itself.
 " See: https://github.com/sjl/vitality.vim/issues/29
 " See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
-" augroup cursor_fix
+" augroup cursor_repair
 "   au!
 "   au FocusLost * stopinsert
 " augroup END
 
 " Move cursor to end of insertion after leaving
-" Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left
-" Note: Critical to keep jumplist or else populated after every single insertion. Use
-" 'zi' or changelist if you actually want to find previous insertion.
-augroup insert_fix
+" Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also critical to
+" keep jumplist or else populated after every single insertion. Use 'gx' or changelist
+" if you actually want to find the previous insertion point.
+augroup insert_repair
   au!
   au InsertLeave * keepjumps normal! `^
 augroup END
@@ -424,6 +424,10 @@ nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Open file with optional user input
+silent! unmap <Tab>q
+silent! unmap <Tab>w
+silent! unmap <Tab>e
+silent! unmap <Tab>r
 nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
 nnoremap <Tab>\ <Cmd>call file#open_init('vsplit', 1)<CR>
 nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
@@ -432,6 +436,8 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 
 " Tab and window jumping
+silent! unmap <Tab>n
+silent! unmap <Tab>m
 nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>m'
 nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>m'
 nnoremap <Tab>' <Cmd>silent! tabnext #<CR>m'
@@ -443,21 +449,21 @@ nnoremap <Tab>l <C-w>l
 
 " Tab and window resizing
 nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR><Cmd>exe 'vertical resize ' . window#default_width()<CR>
-nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
-nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
-nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
-nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
 nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
 nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
+nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
+nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
 nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>call window#change_height(6 * v:count1)<CR>
+nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
+nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
 
 " Tab and window moving
 command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 nnoremap <Tab>\ <Cmd>exe 'leftabove ' . window#default_width(1)
-  \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
+  \ . 'vertical split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 nnoremap <Tab>- <Cmd>exe 'rightbelow ' . window#default_height(1)
   \ . 'split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
@@ -486,7 +492,7 @@ noremap <expr> <Plug>ExecuteMotion utils#null_operator_expr()
 
 " Literal tabs for particular filetypes.
 " Note: For some reason must be manually enabled for vim
-augroup tab_toggle
+augroup expandtab_setup
   au!
   au FileType vim,tex call switch#expandtab(0, 1)
   au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
@@ -501,7 +507,7 @@ let g:tags_skip_filetypes = s:panel_filetypes
 let g:tabline_skip_filetypes = s:panel_filetypes
 augroup panel_setup
   au!
-  au TerminalWinOpen * call utils#panel_setup(1)
+  au TerminalWinOpen * call utils#panel_setup(2)
   au CmdwinEnter * call vim#cmdwin_setup() | call utils#panel_setup(0)
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
@@ -511,8 +517,8 @@ augroup panel_setup
   au FileType git,fugitive,fugitiveblame call git#fugitive_setup()
   au FileType fugitiveblame call git#blame_setup()
   for s:ftype in s:panel_filetypes
-    let s:modifiable = s:ftype ==# 'gitcommit'
-    exe 'au FileType ' . s:ftype . ' call utils#panel_setup(' . s:modifiable . ')'
+    let s:level = s:ftype ==# 'gitcommit' ? 2 : s:ftype ==# 'git' ? 1 : 0
+    exe 'au FileType ' . s:ftype . ' call utils#panel_setup(' . s:level . ')'
   endfor
 augroup END
 
@@ -565,7 +571,7 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Go to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
-augroup add_jumps
+augroup jumplist_setup
   au!
   au BufEnter * normal! m'
 augroup END
@@ -729,7 +735,7 @@ noremap gG <Cmd>Conflicts<CR>
 " Ensure 'noignorecase' in insert mode, so that popup menu respects input case.
 " Note: Previously had issue before where InsertLeave ignorecase autocmd was getting
 " reset because MoveToNext was called with au!, which resets InsertLeave commands.
-augroup search_replace
+augroup ignorecase_setup
   au!
   au InsertEnter * set noignorecase  " default ignore case
   au InsertLeave * set ignorecase
@@ -845,12 +851,12 @@ vnoremap <expr> , '@' . utils#translate_name('@')
 " Declare alphabetic registers with count (consistent with mark utilities)
 " Note: Pressing ' or " followed by number uses numbered previous-deletion register,
 " and pressing ' or " followed by normal-mode command uses black hole or clipboard.
-" Note: Pressing double '' or "" triggers native or peekaboo register selection. This
-" relies on g:peekaboo_prefix = '"' below so that double '"' opens selection panel.
-nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_name('', '_', 0)
-nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_name('q', '*', 1)
-vnoremap <expr> ' utils#translate_name('', '_', 0)
-vnoremap <expr> " utils#translate_name('q', '*', 1)
+" Note: Pressing double '' or \"\" triggers native or peekaboo register selection. The
+" latter is handled inside utils by returning the corresponding <Plug> mapping.
+nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_name('', '_')
+vnoremap <expr> ' utils#translate_name('', '_')
+nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_name('q', '*')
+vnoremap <expr> " utils#translate_name('q', '*')
 
 " Change text, specify registers with counts.
 " Note: Uppercase registers are same as lowercase but saved in viminfo.
@@ -916,7 +922,7 @@ noremap - <C-x>
 
 " Toggle spell checking
 " Turn on for filetypes containing text destined for users
-augroup spell_toggle
+augroup spell_setup
   au!
   let s:filetypes = join(s:lang_filetypes, ',')
   exe 'au FileType ' . s:filetypes . ' setlocal spell'
@@ -1014,7 +1020,7 @@ nnoremap <expr> gO edit#paste_mode() . 'O'
 
 " Copy mode and conceal mode ('paste mode' accessible with 'g' insert mappings)
 " Turn on for filetypes containing raw possibly heavily wrapped data
-augroup copy_toggle
+augroup copy_setup
   au!
   let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
   exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
@@ -1049,7 +1055,7 @@ inoremap <expr> <Tab>
 
 " Popup menu and preview window scrolling
 " This should work with or without ddc
-augroup pum_navigation
+augroup popup_setup
   au!
   au BufEnter,InsertLeave * let b:scroll_state = 0
 augroup END
@@ -1183,8 +1189,9 @@ let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reas
 call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('Konfekt/FastFold')  " speedup folding
 call plug#('justinmk/vim-sneak')  " simple and clean
-let g:peekaboo_prefix = '"'
 let g:peekaboo_window = 'vertical topleft 25new'
+let g:peekaboo_prefix = '<Nop>'  " disable mappings in lieu of 'nomap' option
+let g:peekaboo_ins_prefix = '<Nop>'  " disable mappings in lieu of 'nomap' option
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
@@ -1389,8 +1396,8 @@ let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
 call plug#('flwyd/vim-conjoin')  " remove line continuation characters
 let g:LargeFile = 1  " megabyte limit
-let g:conjoin_map_J = '<Nop>'  " no nomap setting but this does fine
-let g:conjoin_map_gJ = '<Nop>'  " no nomap setting but this does fine
+let g:conjoin_map_J = '<Nop>'  " disable mapping in lieu of 'nomap' option
+let g:conjoin_map_gJ = '<Nop>'  " disable mapping in lieu of 'nomap' option
 let g:splitjoin_join_mapping  = 'cJ'
 let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_trailing_comma = 1
@@ -1619,7 +1626,7 @@ endif
 " bashrc grep/find utilities and with below grep/ctags utilities. For debugging
 " parsing of ignore files use below :ShowIgnores command.
 if s:plug_active('vim-gutentags')
-  augroup guten_tags
+  augroup tags_setup
     au!
     au User GutentagsUpdated call tag#set_tags()
     au BufCreate * call tag#set_tags(expand('<afile>'))
@@ -1659,7 +1666,7 @@ endif
 " See: https://github.com/Konfekt/FastFold and https://github.com/tmhedberg/SimpylFold
 if &g:foldenable || s:plug_active('FastFold')
   " Fast fold settings
-  augroup fastfold_update
+  augroup fastfold_setup
     au!
     au TextChanged,TextChangedI * let b:fastfold_update = 1
   augroup END
@@ -1705,7 +1712,7 @@ if s:plug_active('vim-lsp')
   " au User lsp_setup  " see vim-lsp readme (necessary?)
   " \ call lsp#register_server({'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']})
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
-  augroup lsp_style
+  augroup lsp_setup
     au!
     au User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
   augroup END
@@ -1841,9 +1848,9 @@ endif
 " map [x <Plug>(ale_previous_wrap)  " use universal circular scrolling
 " 'python': ['python', 'flake8', 'mypy'],  " need to improve config
 if s:plug_active('ale')
-  augroup ale_toggle
+  augroup ale_setup
     au!
-    autocmd BufRead ipython_*config.py,jupyter_*config.py let b:ale_enabled = 0
+    au BufRead ipython_*config.py,jupyter_*config.py let b:ale_enabled = 0
   augroup END
   command! -nargs=? AleToggle call switch#ale(<args>)
   noremap <Leader>x <Cmd>cclose<CR><Cmd>exe 'lopen ' . float2nr(0.15 * &lines)<CR>
@@ -1939,7 +1946,7 @@ endif
 " See: https://vi.stackexchange.com/q/31623/8084
 " See: https://github.com/rhysd/conflict-marker.vim
 if s:plug_active('conflict-marker.vim')
-  augroup conflict_marker_kludge
+  augroup conflict_marker_setup
     au!
     au BufWinEnter * if conflict_marker#detect#markers()
       \ | syntax clear ConflictMarkerOurs ConflictMarkerTheirs | endif
@@ -1964,35 +1971,36 @@ if s:plug_active('conflict-marker.vim')
 endif
 
 " Fugitive settings
-" Note: The :Gdiffsplit command repairs annoying issue where Gdiff redirects to
-" Gdiffsplit unlike other shorthand commands. For some reason 'delcommand Gdiffsplit'
-" fails (get undefined command errors in :Gdiff) so instead just overwrite.
+" Warning: Fugitive overwrites commands for some reason so re-declare them
+" whenever entering buffers and make them buffer-local.
 " Note: All of the file-opening commands throughout fugitive funnel them through
 " commands like Gedit, Gtabedit, etc. So can prevent duplicate tabs by simply
 " overwriting this with custom tab-jumping :Drop command (see also git.vim).
+" Note: The :Gdiffsplit command repairs annoying issue where Gdiff redirects to
+" Gdiffsplit unlike other shorthand commands. For some reason 'delcommand Gdiffsplit'
+" fails (get undefined command errors in :Gdiff) so instead just overwrite.
 if s:plug_active('vim-fugitive')
-  command! -bar -bang -range -nargs=* -complete=customlist,fugitive#EditComplete
-    \ Gtabedit exe fugitive#Open('Drop', <bang>0, '', <q-args>)
-  command! -nargs=* Gsplit Gvsplit <args>
-  silent! delcommand Gdiffsplit
-  command! -nargs=* -bang Gdiffsplit Git diff <args>
-  noremap <Leader>j <Cmd>call git#run_command('diff -- %')<CR>
-  noremap <Leader>k <Cmd>call git#run_command('diff --staged -- %')<CR>
-  noremap <Leader>l <Cmd>call git#run_command('diff -- :/')<CR>
-  noremap <Leader>J <Cmd>call git#run_command('stage %')<CR>
-  noremap <Leader>K <Cmd>call git#run_command('reset %')<CR>
-  noremap <Leader>L <Cmd>call git#run_command('stage :/')<CR>
-  noremap <Leader>g <Cmd>call git#run_command('status')<CR>
-  noremap <Leader>G <Cmd>call git#commit_run()<CR>
-  noremap <Leader>u <Cmd>call git#run_command('push origin')<CR>
-  noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
-  noremap <Leader>i <Cmd>call git#run_command('branches')<CR>
-  noremap <Leader>I <Cmd>call git#run_command('switch -')<CR>
+  augroup fugiive_setup
+    au!
+    au BufEnter * call git#setup_commands()
+  augroup END
+  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
+  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage %')<CR>
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset %')<CR>
+  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage :/')<CR>
+  noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
+  noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
+  noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
+  noremap <Leader>I <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
+  noremap <Leader>g <Cmd>call git#run_map(0, 0, '', 'status')<CR>
+  noremap <Leader>G <Cmd>call git#commit_safe()<CR>
   noremap <Leader>p <Cmd>BCommits<CR>
   noremap <Leader>P <Cmd>Commits<CR>
-  noremap <expr> zl git#run_command_expr('blame %', 1)
-  noremap zll <Cmd>call git#run_command('blame %')<CR>
-  noremap zL <Cmd>call git#run_command('blame')<CR>
+  noremap <expr> zl git#run_map_expr(2, 0, '', 'blame %')
+  noremap zll <Cmd>call git#run_map(2, 0, '', 'blame %')<CR>
+  noremap zL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2023,8 +2031,8 @@ if s:plug_active('vim-gitgutter')
   noremap <expr> gH git#hunk_action_expr(0)
   nnoremap <nowait> ghh <Cmd>call git#hunk_action(1)<CR>
   nnoremap <nowait> gHH <Cmd>call git#hunk_action(0)<CR>
-  noremap zh <Cmd>GitGutter \| echom 'Updated hunks'<CR>
-  noremap zH <Cmd>GitGutterAll<CR>
+  noremap zh <Cmd>GitGutter \| echom 'Updated buffer hunks'<CR>
+  noremap zH <Cmd>GitGutterAll \| echom 'Updated global hunks'<CR>
 endif
 
 " Easy-align with delimiters for case/esac block parentheses and seimcolons, chained
@@ -2034,7 +2042,7 @@ endif
 " Note: Use :EasyAlign<Delim>is, id, or in for shallowest, deepest, or no indentation
 " and use <Tab> in interactive mode to cycle through these.
 if s:plug_active('vim-easy-align')
-  augroup easy_align
+  augroup easy_align_setup
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
   augroup END
@@ -2059,7 +2067,7 @@ endif
 " Note: Recent codi versions use lua-vim which is not provided by conda-forge version.
 " However seems to run fine even without lua lines. So ignore error with silent!
 if s:plug_active('codi.vim')
-  augroup codi_mods
+  augroup codi_setup
     au!
     au User CodiEnterPre call calc#codi_setup(1)
     au User CodiLeavePost call calc#codi_setup(0)
@@ -2092,7 +2100,8 @@ if s:plug_active('codi.vim')
 endif
 
 " Undo tree mapping and settings
-" Note: Undotree normally triggers on BufEnter but extremely slow. Now use below.
+" Note: Undotree normally triggers on BufEnter but may contribute to slowdowns. Use
+" below to override built-in augroup before enabling buffer.
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
@@ -2121,8 +2130,7 @@ endif
 " Run tests near cursor or throughout file
 if s:plug_active('vim-test')
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap g{ <Cmd>TestVisit<CR>
-  noremap g} <Cmd>TestVisit<CR>
+  noremap <Leader>' <Cmd>TestVisit<CR>
   noremap <Leader>, <Cmd>TestLast<CR>
   noremap <Leader>. <Cmd>TestNearest<CR>
   noremap <Leader>< <Cmd>TestLast --mpl-generate<CR>
@@ -2161,10 +2169,10 @@ endif
 " autocommands and saved session files call let v:this_session=expand("<sfile>:p")
 " (so that v:this_session is always set when initializing with vim -S .vimsession)
 if s:plug_active('vim-obsession')  " must manually preserve cursor position
-  augroup session
+  augroup session_setup
     au!
     au VimEnter * if !empty(v:this_session) | exe 'Obsession ' . v:this_session | endif
-    au BufReadPost * if line('''"') > 0 && line('''"') <= line('$') | exe 'normal! g`"' | endif
+    au BufReadPost * if line('''"') > 0 && line('''"') <= line('$') | exe 'keepjumps normal! g`"' | endif
   augroup END
   command! -nargs=* -complete=customlist,vim#session_list Session call vim#init_session(<q-args>)
   noremap <Leader>$ <Cmd>Session<CR>
@@ -2213,7 +2221,7 @@ noremap zY <Cmd>SyncStart<CR><Cmd>echom 'Updated syntax'<CR>
 " Note: Colors uses fzf to jump between color schemes (fzf.vim command). These utils
 " are mainly used for GUI vim, otherwise use terminal themes. Some scheme ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-augroup color_scheme
+augroup colorscheme_setup
   au!
   exe 'au ColorScheme default,' . s:colorscheme . ' Refresh'
 augroup END

@@ -1,40 +1,63 @@
 "-----------------------------------------------------------------------------"
 " Utilities for fugitive windows
 "-----------------------------------------------------------------------------"
+" Set up fugitive commands
+" Note: Native fugitive command is declared with :command! Git -nargs=? -range=-1
+" fugitive#Command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
+" where <line1> is cursor line, <count> is -1 if no range supplied and <line2>
+" if any range supplied (see :help command-range), and confusingly <range> is the
+" number of range arguments supplied (i.e. 0 for :Git, 1 for e.g. :10Git, and
+" 2 for e.g. :10,20Git) where +'<range>' forces this to integer. Here, use simpler
+" implicit distinction between calls with/without range where we simply test the
+" equality of <line1> and <line2>, or allow a force-range a:range argument.
+function! git#setup_commands() abort
+  command! -buffer
+    \ -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
+    \ G exe git#run_command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
+  command! -buffer
+    \ -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
+    \ Git exe git#run_command(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
+  command! -buffer
+    \ -bar -bang -range -nargs=* -complete=customlist,fugitive#EditComplete
+    \ Gtabedit exe fugitive#Open('Drop', <bang>0, '', <q-args>)
+  command! -buffer -nargs=* -bang Gdiffsplit Git diff <args>
+  command! -buffer -nargs=* Gsplit Gvsplit <args>
+endfunction
+
 " Git command with message
 " Note: Fugitive does not currently use &previewwindow and does not respect <mods>
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
-" Note: Previously used <Leader>b for toggle but now use lower and upper
-" case for blaming either range or entire file and 'zbb' for current line.
-function! git#run_command(cmd, ...) abort range
-  if empty(get(b:, 'git_dir', ''))  " shorter error message
+function! git#run_command(line1, count, range, bang, mods, args, ...) abort range
+  let mods = a:args =~# '^diff' ? 'silent ' . a:mods : a:mods
+  let args = a:args =~# '^blame' ? a:args . ' -e' : a:args !~# '^status' ? a:args : ''
+  if empty(get(b:, 'git_dir', ''))  " built-in error, avoid 'press enter'
     call feedkeys("\<Cmd>Git\<CR>", 'n') | return
   endif
-  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
-  let range = a:0 && a:1 || line1 != line2 ? line1 . ',' . line2 : ''
-  let size = [winwidth(0), winheight(0)]  " ensure preserved
-  let bnum = bufnr()  " check if panel opened
-  let lnum = line('.')  " current line number
-  let cmd = a:cmd =~# '^blame' ? a:cmd . ' -e' : a:cmd !~# '^status' ? a:cmd : ''
-  let mod = a:cmd =~# '^diff' ? 'silent ' : ''
-  exe mod . range . 'Git ' . cmd
+  let [bnum, lnum, width, height] = [bufnr(), line('.'), winwidth(0), winheight(0)]
+  exe call('fugitive#Command', [a:line1, a:count, a:range, a:bang, mods, args] + a:000)
   if bnum == bufnr()  " pane not opened
-    exe 'vertical resize ' . size[0] | exe 'resize ' . size[1] | return
-  elseif cmd =~# '^blame\( %\)\@!'  " right pane
+    exe 'vertical resize ' . width | exe 'resize ' . height
+  elseif a:args =~# '^blame\( %\)\@!'  " right pane
     exe 'vertical resize ' . window#default_width(1)
   else  " bottom pane
     exe 'resize ' . window#default_height(1)
   endif
-  if bnum != bufnr()  " message without press enter
-    call feedkeys("\<Cmd>echom 'Git " . cmd . "'\<CR>", 'n')
-  endif
-  if cmd =~# '^blame' && empty(range)  " syncbind is no-op if not vertical
+  if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
   endif
 endfunction
+" For special range handling
+function! git#run_map(range, ...) abort range
+  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
+  if a:range || line1 != line2
+    return call('git#run_command', [line1, line2, a:range] + a:000)
+  else
+    return call('git#run_command', [line1, -1, a:range] + a:000)
+  endif
+endfunction
 " For <expr> map accepting motion
-function! git#run_command_expr(...) abort
-  return utils#motion_func('git#run_command', a:000)
+function! git#run_map_expr(...) abort
+  return utils#motion_func('git#run_map', a:000)
 endfunction
 
 " Git blame and commit setup
@@ -56,15 +79,15 @@ function! git#commit_setup(...) abort
   goto  " first row column
   startinsert
 endfunction
-function! git#commit_run() abort
-  let output = system('git diff --staged --quiet')  " see: https://stackoverflow.com/a/1587877/4970632
-  if v:shell_error  " unseccessful status if has uncommitted staged changes
-    echom 'Git commit'
-    Git commit
+function! git#commit_safe() abort
+  let cmd = 'git diff --staged --quiet'
+  call system(cmd)  " see: https://stackoverflow.com/a/1587877/4970632
+  if v:shell_error  " unseccessful status if there are uncommitted staged changes
+    call git#run_map(0, 0, '', 'commit')
   else  " successful status if has no uncommitted staged changes
     echohl WarningMsg
     echom 'Warning: No staged changes found. Unable to begin commit.'
-    echohl None | Git
+    echohl None | call git#run_map(0, 0, '', 'status')
   endif
 endfunction
 
@@ -90,9 +113,7 @@ function! git#fugitive_return() abort
   endif
 endfunction
 function! git#fugitive_setup() abort
-  if &filetype ==# 'fugitiveblame'
-    call git#blame_setup()
-  endif
+  if &filetype ==# 'fugitiveblame' | call git#blame_setup() | endif
   silent! unmap! dq
   setlocal foldlevel=1
   call utils#switch_maps(
@@ -113,20 +134,27 @@ endfunction
 " Note: Always ensure gitgutter on and up-to-date before actions. Note CursorHold
 " triggers conservative update gitgutter#process_buffer('.', 0) that only runs if
 " text was changed while GitGutter and staging commands trigger forced update.
-function! s:gitgutter_update(...) abort
-  call switch#gitgutter(1, 1)
-  let force = a:0 ? a:1 : 0
-  let g:gitgutter_async = 0  " update before actions
-  call gitgutter#process_buffer(bufnr(''), force)
+function! s:hunk_sync(cmd, ...) abort
+  let g:gitgutter_async = 0
+  if type(a:cmd) == 2  " call function
+    call call(a:cmd, a:000)
+  else  " execute command
+    exe a:cmd
+  endif
   let g:gitgutter_async = 1
 endfunction
+function! s:hunk_process(...) abort
+  let force = a:0 ? a:1 : 0
+  call switch#gitgutter(1, 1)
+  call s:hunk_sync(function('gitgutter#process_buffer'), bufnr(''), force)
+endfunction
 function! git#hunk_show() abort
-  call s:gitgutter_update()
+  call s:hunk_process()
   GitGutterPreviewHunk
   wincmd j
 endfunction
 function! git#hunk_jump(forward, stage) abort
-  call s:gitgutter_update()
+  call s:hunk_process()
   exe v:count1 . 'GitGutter' . (a:forward ? 'Next' : 'Prev') . 'Hunk'
   exe a:stage ? 'GitGutterStageHunk' : ''
 endfunction
@@ -143,7 +171,7 @@ endfunction
 " requires cursor inside lines and fails when specifying lines outside of addition hunk
 " (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
 function! git#hunk_action(stage) abort range
-  call s:gitgutter_update()
+  call s:hunk_process()
   let hunks = gitgutter#hunk#hunks(bufnr(''))
   let [range1, range2] = sort([a:firstline, a:lastline], 'n')
   for [line0, count0, line1, count1] in GitGutterGetHunks()
@@ -157,9 +185,8 @@ function! git#hunk_action(stage) abort range
     else  " no update needed
       continue
     endif
-    let g:gitgutter_async = 0  " update before actions
-    exe line1 | exe range . 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
-    let g:gitgutter_async = 1
+    let cmd = 'GitGutter' . (a:stage ? 'Stage' : 'Undo') . 'Hunk'
+    exe line1 | call s:hunk_sync(range . cmd)
   endfor
 endfunction
 " For <expr> map accepting motion
