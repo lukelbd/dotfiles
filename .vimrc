@@ -61,6 +61,7 @@ set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
 set incsearch  " show match as typed so far
+set jumpoptions=  " default behavior
 set lazyredraw  " skip redraws during macro and function calls
 set list  " show hidden characters
 set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
@@ -203,10 +204,10 @@ let s:shellcheck_ignore =
 " necessary since tmux handles FocusLost signal itself.
 " See: https://github.com/sjl/vitality.vim/issues/29
 " See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
-augroup cursor_fix
-  au!
-  au FocusLost * :      " stopinsert
-augroup END
+" augroup cursor_fix
+"   au!
+"   au FocusLost * stopinsert
+" augroup END
 
 " Move cursor to end of insertion after leaving
 " Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left
@@ -429,9 +430,9 @@ noremap g<Tab> <Nop>
 nnoremap <Tab><Tab> <Cmd>call window#jump_tab(v:count)<CR>
 nnoremap <Tab>q <Cmd>Buffers<CR>
 nnoremap <Tab>w <Cmd>Windows<CR>
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
-nnoremap <Tab>' <Cmd>silent! tabnext #<CR>
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>m'
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>m'
+nnoremap <Tab>' <Cmd>silent! tabnext #<CR>m'
 nnoremap <Tab>; <C-w><C-p>
 nnoremap <Tab>j <C-w>j
 nnoremap <Tab>k <C-w>k
@@ -467,7 +468,6 @@ noremap <Leader>\ <Cmd>exe 'leftabove ' . window#default_width(1)
   \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 noremap <Leader>- <Cmd>exe 'rightbelow ' . window#default_height(1)
   \ . 'split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
-" noremap <Leader>\ <Cmd>exe 'leftabove ' . g:panelwidth . 'vsplit ' . tag#find_root(@%)<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -562,31 +562,21 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Search and navigation utilities
 "-----------------------------------------------------------------------------"
-" Ensure 'noignorecase' turned on when in insert mode, so that
-" popup menu autocompletion respects input case.
-" Note: Previously had issue before where InsertLeave ignorecase autocmd was getting
-" reset because MoveToNext was called with au!, which resets InsertLeave commands.
-augroup search_replace
-  au!
-  au InsertEnter * set noignorecase  " default ignore case
-  au InsertLeave * set ignorecase
-augroup END
-
-" Search highlighting toggle
-" This calls 'set hlsearch!' and prints a message
-noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
-
 " Go to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
+augroup add_jumps
+  au!
+  au BufEnter * normal! m'
+augroup END
 noremap <C-n> g;zv
 noremap <F4> g,zv
 
 " Go to last and next jump
 " Note: This accounts for karabiner arrow key maps
-noremap <C-h> <C-o>zv
-noremap <C-l> <C-i>zv
-noremap <Left> <C-o>zv
-noremap <Right> <C-i>zv
+noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <C-l> <Cmd>call mark#goto_jump(+v:count1)<CR>
+noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <Right> <Cmd>call mark#goto_jump(+v:count1)<CR>
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
@@ -620,8 +610,8 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 silent! unmap zv
 noremap g<CR> zzze
 noremap z<CR> zzze
-noremap zJ zb
-noremap zK zt
+noremap z) zb
+noremap z( zt
 noremap z> zs
 noremap z< ze
 
@@ -737,6 +727,19 @@ noremap gB <Cmd>Todos<CR>
 noremap gE <Cmd>Errors<CR>
 noremap gW <Cmd>Warnings<CR>
 noremap gG <Cmd>Conflicts<CR>
+
+" Ensure 'noignorecase' in insert mode, so that popup menu respects input case.
+" Note: Previously had issue before where InsertLeave ignorecase autocmd was getting
+" reset because MoveToNext was called with au!, which resets InsertLeave commands.
+augroup search_replace
+  au!
+  au InsertEnter * set noignorecase  " default ignore case
+  au InsertLeave * set ignorecase
+augroup END
+
+" Search highlighting toggle
+" This calls 'set hlsearch!' and prints a message
+noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
@@ -1183,7 +1186,7 @@ call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('Konfekt/FastFold')  " speedup folding
 call plug#('justinmk/vim-sneak')  " simple and clean
 let g:peekaboo_prefix = '"'
-let g:peekaboo_window = 'vertical topleft ' . g:panelwidth . 'new'
+let g:peekaboo_window = 'vertical topleft 25new'
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
@@ -2068,7 +2071,7 @@ if s:plug_active('codi.vim')
   let g:codi#autocmd = 'None'
   let g:codi#rightalign = 0
   let g:codi#rightsplit = 0
-  let g:codi#width = g:panelwidth
+  let g:codi#width = 25  " overridden by user
   let g:codi#log = ''  " enable when debugging
   let g:codi#sync = 0  " enable async mode
   let g:codi#interpreters = {
@@ -2300,9 +2303,7 @@ highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 " au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
-augroup clear_jumps
-  au!
-augroup END
+augroup clear_jumps | au! | augroup END  " remove this in future
 noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 delmarks a-z
 nohlsearch  " turn off highlighting at startup
