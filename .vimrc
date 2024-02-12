@@ -398,10 +398,10 @@ let g:MRU_Open_File_Relative = 1
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call window#show_bufs()
 command! -nargs=0 WipeBufs call window#wipe_bufs()
-nnoremap <Leader>p <Cmd>Windows<CR>
-nnoremap <Leader>P <Cmd>Buffers<CR>
-noremap <Leader>q <Cmd>ShowBufs<CR>
-noremap <Leader>Q <Cmd>WipeBufs<CR>
+nnoremap <Leader>q <Cmd>Windows<CR>
+nnoremap <Leader>Q <Cmd>Buffers<CR>
+noremap <Leader>y <Cmd>ShowBufs<CR>
+noremap <Leader>Y <Cmd>WipeBufs<CR>
 
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
@@ -1409,12 +1409,12 @@ call plug#('junegunn/vim-easy-align')
 " let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
 " call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
-" call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
+" call plug#('lukelbd/jupyter-vim', {'branch': 'buffer-local-highlighting'})  " temporary
 call plug#('heavenshell/vim-pydocstring')  " automatic docstring templates
 call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
-call plug#('lukelbd/jupyter-vim', {'branch': 'buffer-local-highlighting'})  " temporary
+call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
@@ -1987,8 +1987,8 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_command('branches')<CR>
   noremap <Leader>I <Cmd>call git#run_command('switch -')<CR>
-  noremap <Leader>y <Cmd>BCommits<CR>
-  noremap <Leader>Y <Cmd>Commits<CR>
+  noremap <Leader>p <Cmd>BCommits<CR>
+  noremap <Leader>P <Cmd>Commits<CR>
   noremap <expr> zl git#run_command_expr('blame %', 1)
   noremap zll <Cmd>call git#run_command('blame %')<CR>
   noremap zL <Cmd>call git#run_command('blame')<CR>
