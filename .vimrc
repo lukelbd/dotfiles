@@ -425,9 +425,9 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 
 " Tab and window jumping and display
-for s:num in range(1, 10) | exe 'nnoremap <Tab>' . s:num . ' ' . s:num . 'gt' | endfor
+for s:num in range(1, 10) | exe 'silent! unmap <Tab>' . s:num | endfor
 noremap g<Tab> <Nop>
-nnoremap <Tab><Tab> <Cmd>call window#jump_tab(v:count)<CR>
+nnoremap <expr> <Tab> v:count ? '<Esc><Cmd>call window#jump_tab(' . v:count . ')<CR>' : ''
 nnoremap <Tab>q <Cmd>Buffers<CR>
 nnoremap <Tab>w <Cmd>Windows<CR>
 nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>m'
@@ -440,6 +440,8 @@ nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
 
 " Tab and window resizing and moving
+nnoremap gt <Cmd>call window#jump_tab()<CR>
+nnoremap gT <Cmd>call window#move_tab()<CR>
 nnoremap <Tab>0 <Cmd>exe 'resize ' . window#default_height()<CR>
 nnoremap <Tab>= <Cmd>exe 'vertical resize ' . window#default_width()<CR>
 nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
@@ -452,7 +454,6 @@ nnoremap <Tab>_ <Cmd>call window#change_height(-6 * v:count1)<CR>
 nnoremap <Tab>+ <Cmd>call window#change_height(6 * v:count1)<CR>
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>: <Cmd>call window#move_tab(v:count)<CR>
 
 " Related file utilities
 " Mnemonic is 'inside' just like Ctrl + i map
@@ -520,13 +521,13 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap <Leader>' @:
+noremap g<CR> @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
-nnoremap <Leader>y <Cmd>Maps<CR>
-nnoremap <Leader>Y <Cmd>Commands<CR>
+nnoremap <Leader>b <Cmd>Maps<CR>
+nnoremap <Leader>B <Cmd>Commands<CR>
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_help()<CR>
 nnoremap <Leader>n <Cmd>call shell#fzf_help()<CR>
@@ -608,12 +609,11 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
 silent! unmap zv
-noremap g<CR> zzze
 noremap z<CR> zzze
-noremap z) zb
 noremap z( zt
-noremap z> zs
-noremap z< ze
+noremap z) zb
+noremap z[ ze
+noremap z] zs
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
@@ -678,8 +678,9 @@ noremap zj ]z
 " Note: Uppercase marks unlike lowercase marks work between files and are saved in
 " viminfo, so use them. Also numbered marks are mostly internal, can be configured
 " to restore cursor position after restarting, also used in viminfo.
-command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
+command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
+command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
@@ -1986,15 +1987,15 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>L <Cmd>call git#run_command('stage :/')<CR>
   noremap <Leader>g <Cmd>call git#run_command('status')<CR>
   noremap <Leader>G <Cmd>call git#commit_run()<CR>
-  noremap <Leader>b <Cmd>call git#run_command('branches')<CR>
-  noremap <Leader>B <Cmd>call git#run_command('switch -')<CR>
+  noremap <Leader>y <Cmd>call git#run_command('branches')<CR>
+  noremap <Leader>Y <Cmd>call git#run_command('switch -')<CR>
   noremap <Leader>u <Cmd>call git#run_command('push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_command('pull origin')<CR>
+  noremap <Leader>' <Cmd>BCommits<CR>
+  noremap <Leader>" <Cmd>Commits<CR>
   noremap <expr> gl git#run_command_expr('blame %', 1)
   noremap gll <Cmd>call git#run_command('blame %')<CR>
   noremap gL <Cmd>call git#run_command('blame')<CR>
-  noremap gt <Cmd>BCommits<CR>
-  noremap gT <Cmd>Commits<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2305,6 +2306,7 @@ highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 " au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
 augroup clear_jumps | au! | augroup END  " remove this in future
 noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
+noremap <Tab><Tab> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 delmarks a-z
 nohlsearch  " turn off highlighting at startup
 redraw!  " prevent statusline error

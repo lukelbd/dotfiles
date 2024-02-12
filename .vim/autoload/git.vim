@@ -18,13 +18,15 @@ function! git#run_command(cmd, ...) abort range
   let cmd = a:cmd =~# '^blame' ? a:cmd . ' -e' : a:cmd !~# '^status' ? a:cmd : ''
   let mod = a:cmd =~# '^diff' ? 'silent ' : ''
   exe mod . range . 'Git ' . cmd
-  call feedkeys("\<Cmd>echom 'Git " . cmd . "'\<CR>", 'n')  " avoid press enter
-  if bnum == bufnr()  " command failure
+  if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . size[0] | exe 'resize ' . size[1] | return
   elseif cmd =~# '^blame\( %\)\@!'  " right pane
     exe 'vertical resize ' . window#default_width(1)
   else  " bottom pane
     exe 'resize ' . window#default_height(1)
+  endif
+  if bnum != bufnr()  " message without press enter
+    call feedkeys("\<Cmd>echom 'Git " . cmd . "'\<CR>", 'n')
   endif
   if cmd =~# '^blame' && empty(range)  " syncbind is no-op if not vertical
     exe lnum | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')

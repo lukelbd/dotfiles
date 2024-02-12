@@ -88,7 +88,7 @@ function! fold#fold_text(...) abort
   let signs = ['+', '~', '-']
   let hunks = [0, 0, 0]
   let delta = ''
-  for [hunk0, count0, hunk1, count1] in GitGutterGetHunks()
+  for [hunk0, count0, hunk1, count1] in gitgutter#hunk#hunks(bufnr())
     let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
     let [hunk1, hunk2] = [max([hunk1, line1]), min([hunk2, line2])]
     if hunk2 < hunk1 | continue | endif

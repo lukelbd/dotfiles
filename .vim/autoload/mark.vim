@@ -16,8 +16,8 @@ let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'Dark
 " Note: Vim natively extends jumplist when switching tabs but does not switch between
 " existing tabs. Here override default <C-o> and <C-i> by running :Drop before switch.
 function! s:goto_jump(loc) abort
-  if a:loc == s:jumploc | return | endif
   let keys = ''
+  if a:loc == s:jumploc | return | endif
   let jump = s:jumplist[a:loc]
   let tail = substitute(jump, '^\s*\(\d\+\s\+\)\{3}', '', '')
   if bufexists(tail)  " i.e. not text within this buffer but a different buffer
@@ -47,10 +47,10 @@ function! mark#goto_jump(count) abort
 endfunction
 
 " Override of FZF :Jumps to work with custom utility
-" Note: This is only needed because the default FZF flag --bind start:pos:etc
-" was yielding errors. Not sure why but maybe an issue with bash fzf fork?
+" Note: As with :Changes this removes the --bind start:pos:etc flag that triggers
+" errors and also implements new sink for navigating to paths with :Drop.
 function! s:jump_sink(lines) abort
-  let [key; lines] = a:lines  " first item is key binding for some reason
+  let [key; lines] = a:lines  " first item is key binding
   if empty(lines) | return | endif
   let line = lines[-1]  " use final selection passed
   let idx = index(s:jumplist, line)
@@ -68,6 +68,56 @@ function! mark#fzf_jumps(...)
     \ 'options': '+m -x --ansi --tiebreak=index --cycle --scroll-off 999 --sync --tac --header-lines 1 --tiebreak=begin --prompt "Jumps> "',
   \ }
   return call(snr . 'fzf', ['jumps', options, a:000])
+endfunction
+
+" Override of FZF :Changes
+" Note: This is needed to fix issue where getbufline() output can be empty (filter
+" function calls this function and assumes non-empty) and because the default FZF flag
+" --bind start:pos:etc was yielding errors. Not sure why but maybe issue with .fzf fork
+function! s:changes_sink(lines) abort
+  let keys = ''
+  let [key; lines] = a:lines  " first item is key binding
+  if empty(lines) | return | endif
+  let line = lines[-1]  " use final selection passed
+  let [bnr, offset, lnum, cnum] = split(line)[0:3]
+  if offset ==# '-'
+    let keys .= "\<Cmd>Drop " . fnameescape(bufname(str2nr(bnr))) . "\<CR>"
+    let keys .= "\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
+  elseif offset[0] ==# '+'
+    let keys .= offset[1:] . 'g,'
+  else
+    let keys .= offset . 'g;'
+  endif
+  let keys .= 'zv'
+  call feedkeys(keys, 'n')
+endfunction
+function! mark#fzf_changes(...) abort
+  let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let format1 = snr . 'format_change'
+  let format2 = snr . 'format_change_offset'
+  let changes = ['buf  offset  line  col  text']
+  let cursor = 0
+  let paths = map(window#buffer_sort(tags#buffer_paths()), 'resolve(v:val)')
+  for path in paths
+    let bnr = bufnr(path)
+    if bnr == -1
+      continue
+    endif
+    let [opts, pos_or_len] = getchangelist(bnr)
+    let current = bufnr() == bnr
+    if current | let cursor = len(opts) - pos_or_len | endif
+    let opts = filter(opts, {idx, val -> !empty(getbufline(bnr, val.lnum))})
+    let opts = reverse(opts)  " reversed changes
+    let opts = map(opts, {idx, val -> call(format1, [bnr, call(format2, [current, idx, cursor]), val])})
+    call extend(changes, opts)
+  endfor
+  let options = {
+    \ 'source':  changes,
+    \ 'sink*':   function('s:changes_sink'),
+    \ 'options': '+m -x --ansi --tiebreak=index --header-lines=1 --cycle --scroll-off 999 --sync --prompt "Changes> "',
+  \ }
+  return call(snr . 'fzf', ['changes', options, a:000])
 endfunction
 
 " Override of FZF :Marks to implement :Drop switching

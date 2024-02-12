@@ -192,7 +192,7 @@ function! window#jump_tab(...) abort
   endif
 endfunction
 function! s:jump_tab_sink(item) abort
-  exe 'normal! ' . split(a:item, ':')[0] . 'gt'
+  exe split(a:item, ':')[0] . 'tabnext'
 endfunction
 
 " Move to selected tab
