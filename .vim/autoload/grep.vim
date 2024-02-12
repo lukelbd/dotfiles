@@ -116,12 +116,14 @@ function! grep#complete_search(lead, line, cursor)
 endfunction
 function! grep#call_grep(cmd, global, level) abort
   let paths = s:parse_paths(1, a:global, a:level)
-  let name = a:level >= 2 ? 'projects' : a:level >= 1 ? 'folders' : 'buffers'
+  let name = a:level >= 2 ? 'project' : a:level >= 1 ? 'folder' : 'buffer'
   if a:global && len(paths) > 1  " open files or folders across session
-    let prompt = len(paths) . ' open ' . name
-  else  " current or input files or folders
-    let prompt = join(paths, ' ')
-  endif
+    let prompt = len(paths) . ' open ' . name . 's'
+  elseif len(paths) == 1  " current or input files or folders
+    let prompt = name . ' ' . paths[0]
+  else  " multiple objects
+    let prompt = name . 's ' . join(paths, ' ')
+  endi
   let prompt = toupper(a:cmd[0]) . a:cmd[1:] . ' search ' . prompt
   let pattern = utils#input_default(prompt, 'grep#complete_search', @/)
   if empty(pattern) | return | endif

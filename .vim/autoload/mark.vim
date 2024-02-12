@@ -167,7 +167,9 @@ function! s:match_delete(id)
 endfunction
 function! mark#del_marks(...) abort
   let highlights = get(g:, 'mark_highlights', {})
+  let recents = get(g:, 'mark_recents', [])
   let g:mark_highlights = highlights
+  let g:mark_recents = recents
   let mrks = a:0 ? a:000 : keys(highlights)
   for mrk in mrks
     if has_key(highlights, mrk) && len(highlights[mrk]) > 1
@@ -176,17 +178,22 @@ function! mark#del_marks(...) abort
     if has_key(highlights, mrk)
       call remove(highlights, mrk)
     endif
+    let idx = index(recents, mrk)
+    if idx != -1
+      call remove(recents, idx)
+    endif
     exe 'delmark ' . mrk
-    silent! unlet g:mark_recent
   endfor
-  echom 'Deleted marks: ' . join(mrks, ' ')
+  call feedkeys("\<Cmd>echom 'Deleted marks: " . join(mrks, ' ') . "'\<CR>", 'n')
 endfunction
 
 " Add the mark and highlight the line
 function! mark#set_marks(mrk) abort
   let highlights = get(g:, 'mark_highlights', {})
+  let recents = get(g:, 'mark_recents', [])
   let g:mark_highlights = highlights
-  let g:mark_recent = a:mrk  " quick jumping later
+  let g:mark_recents = recents
+  call add(recents, a:mrk)  " quick jumping later
   let name = a:mrk =~# '\u' ? 'upper_'. a:mrk : 'lower_' . a:mrk
   let name = 'mark_'. name  " different name for capital marks
   call feedkeys('m' . a:mrk, 'n')  " apply the mark

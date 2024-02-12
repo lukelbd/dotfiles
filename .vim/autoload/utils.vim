@@ -203,7 +203,8 @@ function! s:translate_count(mode, ...) abort
     let [base, min, max] = [96, 0, 13]
   endif
   if cnt == 0 && a:mode ==# '`'
-    let name = get(g:, 'mark_recent', 'A')
+    let stack = get(g:, 'mark_recents', [])
+    let name = empty(stack) ? 'A' : stack[-1]  " recently set
   else
     let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
     let adj = max([min, cnt])  " use v:count1 for 'm' and 'q'

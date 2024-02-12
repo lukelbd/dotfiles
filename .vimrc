@@ -683,12 +683,13 @@ command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
+noremap <Leader>- <Cmd>call mark#del_marks()<CR>
+noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap ; <Cmd>call mark#goto_mark(utils#translate_name('`'))<CR>
-noremap g; <Cmd>call mark#fzf_marks()<CR>
-noremap g: <Cmd>call mark#del_marks()<CR>
-noremap z; <Cmd>call mark#fzf_jumps()<CR>
-noremap z: <Cmd>call mark#fzf_changes()<CR>
+noremap z; <Cmd>call mark#fzf_marks()<CR>
+noremap g; <Cmd>call mark#fzf_jumps()<CR>
+noremap g: <Cmd>call mark#fzf_changes()<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
