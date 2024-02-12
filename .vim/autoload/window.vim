@@ -140,10 +140,10 @@ function! window#default_size(width, ...) abort
     let direcs = ['l', 'h']
     let size = &columns
   else  " window height
-    let cmdheight = 1 + &l:cmdheight  " statusline and command line
+    setlocal cmdheight=1  " override in case changed
     let tabheight = &showtabline > 1 || &showtabline == 1 && tabpagenr('$') > 1
     let direcs = ['j', 'k']
-    let size = &lines - cmdheight - tabheight
+    let size = &lines - tabheight - 2  " statusline and commandline
   endif
   let panel = bufnr() != get(b:, 'tabline_bufnr', bufnr())
   let panes = call('window#count_panes', direcs)
