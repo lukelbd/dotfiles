@@ -210,16 +210,18 @@ function! file#open_drop(...) abort
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
       for bnr in tabpagebuflist(tnr)
         if expand('#' . bnr . ':p') ==# abspath
-          let wnr = bufwinnr(bnr)
-          exe tnr . 'tabnext'
-          exe wnr . 'wincmd w'
-          return
+          try
+            exe tnr . 'tabnext' | exe bufwinnr(bnr) . 'wincmd w' | return
+          catch
+            continue
+          endtry
         endif
       endfor
     endfor
-    let fugitive = &l:filetype ==# 'git' || bufname() =~# '^fugitive:'
     let blank = !&modified && empty(bufname())
-    if blank || fugitive
+    let panel = &l:filetype =~# '^\(git\|netrw\)$'
+    let fugitive = bufname() =~# '^fugitive:'
+    if blank || panel || fugitive
       exe 'edit ' . path
     else  " create new tab
       exe 'tabnew ' . path

@@ -37,35 +37,40 @@ let s:git_aliases = {
   \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
   \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,
 \ }
-let s:git_scales = {'log': 1.5, 'tree': 1.5, 'trunk': 1.5}
-let s:git_vertical = ['log', 'tree', 'trunk']
+let s:git_vert = ['log', 'tree', 'trunk']
+let s:git_large = ['status', 'commit', 'log', 'tree', 'trunk', 'diff', 'show']
+let s:git_oneline = ['push', 'pull', 'fetch', 'commit', 'switch']
+let s:git_oneline += ['add', 'stage', 'reset', 'restore', 'checkout']
 function! git#run_command(line1, count, range, bang, mods, args, ...) abort range
   let [bnum, width, height] = [bufnr(), winwidth(0), winheight(0)]
   let [name; flags] = empty(trim(a:args)) ? [''] : split(a:args, '\\\@<!\s\+')
-  let orient = index(s:git_vertical, name) != -1
-  let scale = get(s:git_scales, name, 1.0)
-  let small = name !=# 'commit'  " currently only make commit panes big
+  let oneline = index(s:git_oneline, name) != -1  " single line command
+  let large = index(s:git_large, name) != -1  " currently only make commit panes big
+  let long = index(s:git_vert, name) != -1
   let name = get(s:git_aliases, name, name)
-  let mods = orient && empty(a:mods) ? 'topleft vert' : a:mods
+  let mods = long && empty(a:mods) ? 'topleft vert' : a:mods
   let args = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
-  let args = substitute(args, '\s--color\>', '', 'g')  " fugitive uses its own colors
+  let args = substitute(args, '--color\>', '', 'g')  " fugitive uses its own colors
   let cmd = call('fugitive#Command', [a:line1, a:count, a:range, a:bang, mods, args] + a:000)
-  if bnum != bufnr() || cmd =~# '\<v\?split\>'  " queue additional message
+  if bnum != bufnr() || cmd =~# '\<v\?split\>'
     exe cmd | call feedkeys("\<Cmd>echo 'Git " . a:args . "'\<CR>", 'n')
-  elseif args =~# '\<\(push\|pull\|fetch\|commit\)\>'  " allow overwriting
-    call echoraw('Git ' . a:args) | exe cmd
-  else  " result displayed below with press enter option
+  elseif oneline  " possibly show result after message
+    echo 'Git ' . a:args . ' ' | exe cmd
+  else  " result displayed with press enter option
     echo 'Git ' . a:args . "\n" | exe cmd
   endif
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
   elseif cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>' || a:args =~# '^blame\( %\)\@!'
-    exe 'vertical resize ' . (scale * window#default_width(small))
+    exe 'vertical resize ' . window#default_width(!large)
   else  " bottom pane
-    exe 'resize ' . (scale * window#default_height(small))
+    exe 'resize ' . window#default_height(!large)
   endif
   if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
+  endif
+  if empty(name) && bnum != bufnr()  " open change statistics
+    global/^\(Staged\|Unstaged\)\>/normal =zxgg
   endif
 endfunction
 " For special range handling
@@ -125,6 +130,31 @@ endfunction
 " maps and having fugitive use :Gdrop, but was getting error where after tab switch
 " an empty panel was opened in the git window. Might want to revisit.
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
+let s:fugitive_remove = ['dq', '<<', '>>', '==']
+let s:fugitive_switch = [
+  \ ['<CR>', 'O', 'n'],
+  \ ['O', '<2-LeftMouse>', 'n'],
+  \ ['O', '<CR>', 'n'],
+  \ ['(', '<F1>', 'nx'],
+  \ [')', '<F2>', 'nx'],
+  \ ['=', ',', 'nx'],
+  \ ['-', '.', 'nx'],
+  \ ['.', ';', 'n'],
+  \ ['[c', '[g', 'nox'],
+  \ [']c', ']g', 'nox'],
+  \ ['[m', '[f', 'nox'],
+  \ [']m', ']f', 'nox'],
+\ ]
+function! git#fugitive_setup() abort
+  if &filetype ==# 'fugitiveblame'
+    call git#blame_setup()
+  endif
+  for val in s:fugitive_remove
+    silent! exe 'unmap <buffer> ' . val
+  endfor
+  setlocal foldlevel=1
+  call call('utils#switch_maps', s:fugitive_switch)
+endfunction
 function! git#fugitive_return() abort
   if get(b:, 'fugitive_type', '') ==# 'blob'
     let winview = winsaveview()
@@ -135,21 +165,6 @@ function! git#fugitive_return() abort
     echom 'Error: Not in fugitive blob'
     echohl None
   endif
-endfunction
-function! git#fugitive_setup() abort
-  if &filetype ==# 'fugitiveblame' | call git#blame_setup() | endif
-  silent! unmap! dq
-  setlocal foldlevel=1
-  call utils#switch_maps(
-    \ ['<CR>', 'O'],
-    \ ['O', '<2-LeftMouse>'],
-    \ ['O', '<CR>'],
-    \ ['(', '<F1>'],
-    \ [')', '<F2>'],
-    \ ['=', ','],
-    \ ['-', '.'],
-    \ ['.', ';'],
-  \ )
 endfunction
 
 " Git hunk jumping and previewing

@@ -3,19 +3,31 @@
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
 " General settings
-" Note: This overrides native vim filetype navigation maps (e.g. :map [[ inside
-" vim file shows mapping that searches for functions. Also accounts for situations
-" e.g. help pages where single '[' or ']' are assigned <nowait> mappings.
+" Note: This overrides native vim filetype-specific double-bracket maps (e.g. :map [[
+" in vim files for jumping to functions) but skips mapping in presence of buffer-local
+" single-bracket maps (e.g. help file tag navigation) and buffer-local indent maps
+" (e.g. fugitive indent toggling). Should remove unmap lines after restarting vim.
 setlocal concealcursor=
 setlocal conceallevel=2
 setlocal formatoptions=lrojcq
 setlocal linebreak
 setlocal nojoinspaces
-let &l:textwidth = g:linelength  " see also .vimrc
+silent! nunmap <buffer> <Nop>@
+silent! nunmap <buffer> <Nop>"
+silent! xunmap <buffer> <Nop>"
+let &l:textwidth = g:linelength
 let &l:wrapmargin = 0
-if empty(maparg('[')) && empty(maparg(']'))
+let s:jump1 = get(maparg('[', '', 0, 1), 'buffer', 0)
+let s:jump2 = get(maparg(']', '', 0, 1), 'buffer', 0)
+let s:indent1 = get(maparg('<', '', 0, 1), 'buffer', 0)
+let s:indent2 = get(maparg('>', '', 0, 1), 'buffer', 0)
+if !s:jump1 && !s:jump2  " no single bracket mappings
   map <buffer> [[ <Plug>TagsBackwardTop
   map <buffer> ]] <Plug>TagsForwardTop
+endif
+if !s:indent1 && !s:indent2 | exe 'nnoremap <buffer> == <Esc>=='
+  nnoremap <expr> <buffer> >> '<Esc>' . repeat('>>', v:count1)
+  nnoremap <expr> <buffer> << '<Esc>' . repeat('<<', v:count1)
 endif
 
 " Update folds and plugin-specific settings

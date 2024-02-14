@@ -16,6 +16,40 @@ function! utils#null_operator_expr(...) abort
   return utils#motion_func('utils#null_operator', a:000)
 endfunction
 
+" Safely run tests without verbose error message
+" Todo: Add to this, should have custom testing features and maps.
+" Note: This prevents 'press enter to continue' error messages e.g. when
+" accidentally hitting test maps in filetypes without utilities installed.
+function! utils#catch_errors(...) abort
+  try
+    exe join(a:000, ' ')
+    return 0
+  catch /E492/
+    let msg = substitute(v:exception, '\w\+:E\d\+:', '', '')
+    echohl ErrorMsg
+    echom 'Error:' . msg
+    echohl None | return 1
+  endtry
+endfunction
+
+" Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
+" used to override fzf marks command and support jumping to existing tabs.
+" See: https://stackoverflow.com/a/49447600/4970632
+function! utils#find_snr(regex) abort
+  silent! call fzf#vim#with_preview()  " trigger autoload if not already done
+  let [paths, sids] = vim#config_scripts(1)
+  let path = filter(copy(paths), 'v:val =~# a:regex')
+  let idx = index(paths, get(path, 0, ''))
+  if !empty(path) && idx >= 0
+    return "\<snr>" . sids[idx] . '_'
+  else
+    echohl WarningMsg
+    echom "Warning: Autoload script '" . a:regex . "' not found."
+    echohl None
+    return ''
+  endif
+endfunction
+
 " Get user input with requested default
 " Note: Force option forces return after single key press (used for registers). Try
 " to feed the result with feedkeys() instead of adding to opts to reduce screen flash.
@@ -68,24 +102,6 @@ function! utils#input_default(prompt, funcname, default, ...) abort
   let s:complete_opts = [1, a:funcname, a:default] + a:000
   call feedkeys("\<Tab>", 't')
   return input(result, '', 'customlist,utils#input_list')
-endfunction
-
-" Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
-" used to override fzf marks command and support jumping to existing tabs.
-" See: https://stackoverflow.com/a/49447600/4970632
-function! utils#find_snr(regex) abort
-  silent! call fzf#vim#with_preview()  " trigger autoload if not already done
-  let [paths, sids] = vim#config_scripts(1)
-  let path = filter(copy(paths), 'v:val =~# a:regex')
-  let idx = index(paths, get(path, 0, ''))
-  if !empty(path) && idx >= 0
-    return "\<snr>" . sids[idx] . '_'
-  else
-    echohl WarningMsg
-    echom "Warning: Autoload script '" . a:regex . "' not found."
-    echohl None
-    return ''
-  endif
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)
@@ -144,7 +160,7 @@ function! utils#panel_setup(level) abort
     nnoremap <buffer> <CR> <CR>zv
   endif
   if &filetype ==# 'netrw'
-    call utils#switch_maps(['<CR>', 't'], ['t', '<CR>'])
+    call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
   endif
   if a:level > 1  " e.g. gitcommit window
     return
@@ -178,17 +194,22 @@ function! s:eval_map(map) abort
   return rhs
 endfunction
 function! utils#switch_maps(...) abort
-  let margs = []  " delay assignment until iteration
-  for [lhs1, lhs2] in a:000
-    let marg = maparg(lhs1, 'n', 0, 1)
-    let lhs3 = substitute(lhs2, '^<', '\\<', '')
-    let lhs3 = eval('"' . lhs3 . '"')
-    let opts = {'rhs': s:eval_map(marg), 'lhs': lhs2, 'lhsraw': lhs3}
-    call extend(marg, opts)
-    call add(margs, marg)
+  let queue = {}  " delay assignment until iteration
+  for [isrc, idest, imodes] in a:000
+    for imode in imodes  " string or list of chars
+      let item = maparg(isrc, imode, 0, 1)
+      let iraw = eval('"' . substitute(idest, '^<', '\\<', '') . '"')
+      let opts = {'rhs': s:eval_map(item), 'lhs': idest, 'lhsraw': iraw}
+      let items = get(queue, imode, [])
+      call extend(item, opts)
+      call add(items, item)
+      let queue[imode] = items
+    endfor
   endfor
-  for marg in margs
-    call mapset('n', 0, marg)
+  for [imode, items] in items(queue)
+    for item in items
+      call mapset(imode, 0, item)
+    endfor
   endfor
 endfunction
 

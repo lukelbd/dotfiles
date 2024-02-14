@@ -5,18 +5,22 @@
 " Note: This sorts by recent access to help replace :Buffers
 " Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
 function! window#buffer_source() abort
+  let nprocess = 5  " tablines to process
   let ndigits = len(string(tabpagenr('$')))
   let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
   let values = []
-  for [tnr, path] in tags#buffer_paths()
+  let pairs = tags#buffer_paths()
+  for idx in range(len(pairs))
+    let [tnr, path] = pairs[idx]
+    let process = idx < nprocess
     if exists('*RelativePath')
-      let path = RelativePath(path)
+      let name = RelativePath(path)
     else
-      let path = fnamemodify(path, ':~:.')
+      let name = fnamemodify(path, ':~:.')
     endif
     let pad = repeat(' ', ndigits - len(string(tnr)))
-    let flags = TablineFlags(bufnr(path))  " skip processing
-    let value = pad . tnr . ': ' . path . flags  " displayed string
+    let flags = TablineFlags(path, process)  " mostly skip processing
+    let value = pad . tnr . ': ' . name . flags  " displayed string
     call add(values, value)
   endfor
   return values

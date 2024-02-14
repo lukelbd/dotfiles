@@ -524,8 +524,8 @@ augroup END
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
 nnoremap z: @:
-nnoremap <Leader>; <Cmd>History:<CR>
-nnoremap <Leader>: q:
+nnoremap <Leader>' <Cmd>History:<CR>
+nnoremap <Leader>" q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>b <Cmd>Maps<CR>
@@ -683,14 +683,13 @@ command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <Leader>_ <Cmd>call mark#del_marks()<CR>
-noremap g_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
+noremap <Leader>- <Cmd>call mark#del_marks()<CR>
+noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap ; <Cmd>call mark#goto_mark(utils#translate_name('`'))<CR>
-noremap g;  <Cmd>call mark#goto_mark(utils#translate_name('A'))<CR>
-noremap g: <Cmd>call mark#fzf_marks()<CR>
-noremap z; <Cmd>call mark#fzf_jumps()<CR>
-noremap z: <Cmd>call mark#fzf_changes()<CR>
+noremap z; <Cmd>call mark#fzf_marks()<CR>
+noremap g; <Cmd>call mark#fzf_jumps()<CR>
+noremap g: <Cmd>call mark#fzf_changes()<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -704,10 +703,10 @@ command! -bang -nargs=+ -complete=file Rp call grep#call_rg(<bang>0, 2, <f-args>
 command! -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, 0, <f-args>)
 command! -bang -nargs=+ -complete=file Af call grep#call_ag(<bang>0, 1, <f-args>)
 command! -bang -nargs=+ -complete=file Ap call grep#call_ag(<bang>0, 2, <f-args>)
-nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap g" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
-nnoremap z' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
-nnoremap z" <Cmd>call grep#call_grep('rg', 1, 1)<CR>
+nnoremap g' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 1)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
+nnoremap z" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 nnoremap z/ <Cmd>BLines<CR>
 nnoremap z? <Cmd>Lines<CR>
 
@@ -825,14 +824,22 @@ noremap <expr> \X edit#replace_regex_expr(
 "-----------------------------------------------------------------------------"
 " Editing utilities
 "-----------------------------------------------------------------------------"
+" Handle indent counts. In native vim 2> indents this line or this motion
+" repeated, now it means 'indent multiple times'.
+" Note: To avoid overwriting fugitive inline-diff mappings implement these as
+" buffer-local .vim/autoload/common.vim maps. Also map brackets.
+" nnoremap <expr> >> '<Esc>' . repeat('>>', v:count1)
+" nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
+nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
+
 " Insert and mormal mode undo and redo (see .vim/autoload/repeat.vim)
 " Note: Here use <C-g> prefix similar to comment insert. Capital breaks the undo
 " sequence. Tried implementing 'redo' but fails because history is lost after vim
 " re-enters insert mode from the <C-o> command. Googled and no way to do it
-" nmap U <Plug>RepeatRedo  " causes weird issues
-" nmap u <Plug>RepeatUndoz
+" nmap U <Plug>RepeatRedo
+" nmap u <Plug>RepeatUndo
 nnoremap U <C-r>
-" inoremap <C-g>' <<
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 
@@ -881,15 +888,6 @@ nnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_name('') . 'p'
 nnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_name('') . 'P'
 vnoremap <expr> p (v:count ? '<Esc>' : '') . utils#translate_name('') . 'p<Cmd>let @+=@0 \| let @"=@0<CR>'
 vnoremap <expr> P (v:count ? '<Esc>' : '') . utils#translate_name('') . 'P<Cmd>let @+=@0 \| let @"=@0<CR>'
-
-" Indenting counts improvement. Before 2> indented this line or this motion repeated,
-" now it means 'indent multiple times'. Press <Esc> to remove count from motion.
-nnoremap == <Esc>==
-nnoremap == <Esc>==
-nnoremap <expr> >> '<Esc>' . repeat('>>', v:count1)
-nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
-nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
 
 " Joining counts improvement. Before 2J joined this line and next but now it means
 " 'join the two lines below'. Also wrap conjoin plugin around this.
@@ -1186,7 +1184,7 @@ call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('Konfekt/FastFold')  " speedup folding
 call plug#('justinmk/vim-sneak')  " simple and clean
 let g:peekaboo_window = 'vertical topleft 25new'
-let g:peekaboo_prefix = '<Nop>'  " disable mappings in lieu of 'nomap' option
+let g:peekaboo_prefix = '<C-w>'  " disable mappings in lieu of 'nomap' option
 let g:peekaboo_ins_prefix = '<C-g>'  " disable mappings in lieu of 'nomap' option
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
@@ -1392,8 +1390,8 @@ let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 call plug#('AndrewRadev/splitjoin.vim')  " single-line multi-line transition hardly every needed
 call plug#('flwyd/vim-conjoin')  " remove line continuation characters
 let g:LargeFile = 1  " megabyte limit
-let g:conjoin_map_J = '<Nop>'  " disable mapping in lieu of 'nomap' option
-let g:conjoin_map_gJ = '<Nop>'  " disable mapping in lieu of 'nomap' option
+let g:conjoin_map_J = '<C-w>/'  " disable mapping in lieu of 'nomap' option
+let g:conjoin_map_gJ = '<C-w>?'  " disable mapping in lieu of 'nomap' option
 let g:splitjoin_join_mapping  = 'cJ'
 let g:splitjoin_split_mapping = 'cK'
 let g:splitjoin_trailing_comma = 1
@@ -1980,16 +1978,16 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#setup_commands()
   augroup END
-  " noremap <Leader>P <Cmd>Commits<CR>
-  " noremap <Leader>p <Cmd>BCommits<CR>
   noremap <Leader>G <Cmd>call git#commit_safe()<CR>
   noremap <Leader>g <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage %')<CR>
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset %')<CR>
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet %')<CR>
+  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage :/')<CR>
+  noremap <Leader>; <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  noremap <Leader>: <Cmd>call git#run_map(0, 0, '', 'reset --quiet :/')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
@@ -2001,6 +1999,8 @@ if s:plug_active('vim-fugitive')
   noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
+  " noremap <Leader>P <Cmd>Commits<CR>
+  " noremap <Leader>p <Cmd>BCommits<CR>
 endif
 
 " Git gutter settings
@@ -2127,16 +2127,17 @@ endif
 " Vim test settings
 " Run tests near cursor or throughout file
 if s:plug_active('vim-test')
+  let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap <Leader>' <Cmd>TestVisit<CR>
-  noremap <Leader>, <Cmd>TestLast<CR>
-  noremap <Leader>. <Cmd>TestNearest<CR>
-  noremap <Leader>< <Cmd>TestLast --mpl-generate<CR>
-  noremap <Leader>> <Cmd>TestNearest --mpl-generate<CR>
-  noremap <Leader>[ <Cmd>TestFile<CR>
-  noremap <Leader>] <Cmd>TestSuite<CR>
-  noremap <Leader>{ <Cmd>TestFile --mpl-generate<CR>
-  noremap <Leader>} <Cmd>TestSuite --mpl-generate<CR>
+  noremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
+  noremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
+  noremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
+  noremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
+  noremap <Leader>> <Cmd>call utils#catch_errors('TestNearest --mpl-generate')<CR>
+  noremap <Leader>[ <Cmd>call utils#catch_errors('TestFile')<CR>
+  noremap <Leader>] <Cmd>call utils#catch_errors('TestSuite')<CR>
+  noremap <Leader>{ <Cmd>call utils#catch_errors('TestFile --mpl-generate')<CR>
+  noremap <Leader>} <Cmd>call utils#catch_errors('TestSuite --mpl-generate')<CR>
 endif
 
 " The howmuch.vim plugin. Mnemonic for equation solving is just that parentheses
