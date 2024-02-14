@@ -3,12 +3,22 @@
 "-----------------------------------------------------------------------------"
 " Return buffers by most recent
 " See: https://vi.stackexchange.com/a/22428/8084 (comment)
-" Note: For some reason some edited files have 'nobuflisted' set (so ignored by
-" e.g. :bnext). Maybe due to some plugin. Anyway do not use buflisted() filter.
-" return filter(map(info, {idx, val -> val.bufnr}), {val -> buflisted(val)})
+" Note: Here try to detect tabs that were either accessed within session or were only
+" loaded sequentially on startup by finding the minimum access time that differs from
+" its closest neighbors by more than a few seconds. Sort buffers before this threshold
+" in reverse order i.e. tab order and after this in standard order i.e. access order.
 function! s:buffers_recent() abort
-  let info = sort(getbufinfo(), {val1, val2 -> val2.lastused - val1.lastused})
-  return map(info, {idx, val -> val.bufnr})
+  let times = map(getbufinfo(), {idx, val -> val['lastused']})
+  let mintime = 0
+  for buftime in sort(times)
+    if mintime && buftime - mintime > 10 | break | endif
+    let mintime = buftime  " approximate time all buffers were loaded
+  endfor
+  let info = sort(getbufinfo(), {val1, val2 ->
+    \ val2['lastused'] <= mintime && val1['lastused'] <= mintime
+    \ ? val1['lastused'] - val2['lastused'] : val2['lastused'] - val1['lastused']}
+  \ )
+  return map(info, {idx, val -> val['bufnr']})
 endfunction
 function! window#buffer_sort(args) abort
   let unsorted = {}  " note keys auto-convert to string

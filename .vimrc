@@ -61,7 +61,6 @@ set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
 set incsearch  " show match as typed so far
-set jumpoptions=  " default behavior
 set lazyredraw  " skip redraws during macro and function calls
 set list  " show hidden characters
 set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
@@ -407,10 +406,10 @@ noremap <Leader>Y <Cmd>WipeBufs<CR>
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 " Note: Here :History includes v:oldfiles and open buffers
 for s:num in range(1, 10) | exe 'silent! unmap <Tab>' . s:num | endfor
-nnoremap z' <Cmd>History<CR>
-nnoremap z" <Cmd>call file#open_recent()<CR>
-nnoremap g' <Cmd>call window#jump_tab(v:count)<CR>
-nnoremap g" <Cmd>call window#move_tab(v:count)<CR>
+nnoremap g. <Cmd>call window#jump_tab(v:count)<CR>
+nnoremap g, <Cmd>History<CR>
+nnoremap z. <Cmd>call window#move_tab(v:count)<CR>
+nnoremap z, <Cmd>call file#open_recent()<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
@@ -428,12 +427,14 @@ silent! unmap <Tab>q
 silent! unmap <Tab>w
 silent! unmap <Tab>e
 silent! unmap <Tab>r
-nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
-nnoremap <Tab>\ <Cmd>call file#open_init('vsplit', 1)<CR>
 nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
+nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
+nnoremap <Tab>= <Cmd>call file#open_init('vsplit', 1)<CR>
+nnoremap <Tab>\ <Cmd>exe 'leftabove ' . window#default_width(1)
+  \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
 " Tab and window jumping
 silent! unmap <Tab>n
@@ -470,10 +471,6 @@ noremap zp <Cmd>Paths<CR>
 noremap zP <Cmd>Localdir<CR>
 noremap gp <Cmd>call file#print_exists()<CR>
 noremap gP <Cmd>exe 'Drop ' . fnameescape(expand('<cfile>'))<CR>
-nnoremap <Leader>\ <Cmd>exe 'leftabove ' . window#default_width(1)
-  \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
-nnoremap <Leader>- <Cmd>exe 'rightbelow ' . window#default_height(1)
-  \ . 'split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -707,10 +704,10 @@ command! -bang -nargs=+ -complete=file Rp call grep#call_rg(<bang>0, 2, <f-args>
 command! -bang -nargs=+ -complete=file Ag call grep#call_ag(<bang>0, 0, <f-args>)
 command! -bang -nargs=+ -complete=file Af call grep#call_ag(<bang>0, 1, <f-args>)
 command! -bang -nargs=+ -complete=file Ap call grep#call_ag(<bang>0, 2, <f-args>)
-nnoremap g, <Cmd>call grep#call_grep('rg', 1, 2)<CR>
-nnoremap g. <Cmd>call grep#call_grep('rg', 0, 2)<CR>
-nnoremap z, <Cmd>call grep#call_grep('rg', 1, 1)<CR>
-nnoremap z. <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap g' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
+nnoremap g" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
+nnoremap z' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
+nnoremap z" <Cmd>call grep#call_grep('rg', 1, 1)<CR>
 nnoremap z/ <Cmd>BLines<CR>
 nnoremap z? <Cmd>Lines<CR>
 
