@@ -44,6 +44,7 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   let [name; flags] = empty(trim(a:args)) ? [''] : split(a:args, '\\\@<!\s\+')
   let orient = index(s:git_vertical, name) != -1
   let scale = get(s:git_scales, name, 1.0)
+  let small = name !=# 'commit'  " currently only make commit panes big
   let name = get(s:git_aliases, name, name)
   let mods = orient && empty(a:mods) ? 'topleft vert' : a:mods
   let args = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
@@ -51,7 +52,7 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   let cmd = call('fugitive#Command', [a:line1, a:count, a:range, a:bang, mods, args] + a:000)
   if bnum != bufnr() || cmd =~# '\<v\?split\>'  " queue additional message
     exe cmd | call feedkeys("\<Cmd>echo 'Git " . a:args . "'\<CR>", 'n')
-  elseif args =~# '\<\(push\|pull\|fetch\)\>'  " allow overwriting
+  elseif args =~# '\<\(push\|pull\|fetch\|commit\)\>'  " allow overwriting
     call echoraw('Git ' . a:args) | exe cmd
   else  " result displayed below with press enter option
     echo 'Git ' . a:args . "\n" | exe cmd
@@ -59,9 +60,9 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
   elseif cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>' || a:args =~# '^blame\( %\)\@!'
-    exe 'vertical resize ' . (scale * window#default_width(1))
+    exe 'vertical resize ' . (scale * window#default_width(small))
   else  " bottom pane
-    exe 'resize ' . (scale * window#default_height(1))
+    exe 'resize ' . (scale * window#default_height(small))
   endif
   if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
@@ -96,9 +97,9 @@ endfunction
 function! git#commit_setup(...) abort
   exe 'resize ' . window#default_height()
   call switch#autosave(1, 1)  " suppress message
-  let &l:colorcolumn = 73
-  goto  " first row column
-  startinsert
+  setlocal colorcolumn=73
+  setlocal foldlevel=1
+  goto | startinsert  " first row column
 endfunction
 function! git#commit_safe() abort
   let args = ['diff', '--staged', '--quiet']

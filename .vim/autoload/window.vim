@@ -148,8 +148,8 @@ function! window#default_size(width, ...) abort
   let panel = bufnr() != get(b:, 'tabline_bufnr', bufnr())
   let panes = call('window#count_panes', direcs)
   let size = size - panes + 1  " e.g. 2 panes == 1 divider
-  let space = float2nr(ceil(0.22 * size))
-  if panel && panes > 1 || a:0 && a:1  " panel window
+  let space = float2nr(ceil(0.23 * size))
+  if a:0 && a:1 || !a:0 && panel && panes > 1  " panel window
     return space
   elseif panes > 1  " main window
     return size - space

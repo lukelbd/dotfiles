@@ -210,9 +210,10 @@ function! s:translate_count(mode, ...) abort
   else  " others: lowercase a-m (96+1-96+13)
     let [base, min, max] = [96, 0, 13]
   endif
-  if cnt == 0 && a:mode ==# '`'
+  if cnt == 0 && a:mode =~# '[m`]'
     let stack = get(g:, 'mark_recents', [])
     let name = empty(stack) ? 'A' : stack[-1]  " recently set
+    let name = a:mode ==# 'm' ? nr2char(char2nr(name) + 1) : name
   else
     let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
     let inr = max([min, cnt])  " use v:count1 for 'm' and 'q'

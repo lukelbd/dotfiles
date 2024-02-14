@@ -448,7 +448,8 @@ nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
 
 " Tab and window resizing
-nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR><Cmd>exe 'vertical resize ' . window#default_width()<CR>
+nnoremap g<CR> <Cmd>exe 'resize ' . window#default_height(0)<CR><Cmd>exe 'vert resize ' . window#default_width(0)<CR>
+nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR><Cmd>exe 'vert resize ' . window#default_width()<CR>
 nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
 nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
 nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
@@ -457,24 +458,22 @@ nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>call window#change_height(6 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
-
-" Tab and window moving
-command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
-nnoremap <Tab>\ <Cmd>exe 'leftabove ' . window#default_width(1)
-  \ . 'vertical split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
-nnoremap <Tab>- <Cmd>exe 'rightbelow ' . window#default_height(1)
-  \ . 'split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
 " Related file utilities
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
+command! -nargs=* -complete=file -bang Rename call file#rename(<q-args>, '<bang>')
 command! -nargs=? Paths call file#print_paths(<f-args>)
 command! -nargs=? Localdir call switch#localdir(<args>)
 noremap zp <Cmd>Paths<CR>
 noremap zP <Cmd>Localdir<CR>
 noremap gp <Cmd>call file#print_exists()<CR>
 noremap gP <Cmd>exe 'Drop ' . fnameescape(expand('<cfile>'))<CR>
+nnoremap <Leader>\ <Cmd>exe 'leftabove ' . window#default_width(1)
+  \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
+nnoremap <Leader>- <Cmd>exe 'rightbelow ' . window#default_height(1)
+  \ . 'split ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -527,7 +526,7 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-nnoremap g<CR> @:
+nnoremap <Leader>_ @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -687,12 +686,12 @@ command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <Leader>- <Cmd>call mark#del_marks()<CR>
-noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
+noremap g_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
+noremap z_ <Cmd>call mark#del_marks()<CR>
+noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap ; <Cmd>call mark#goto_mark(utils#translate_name('`'))<CR>
 noremap g; <Cmd>call mark#goto_mark(utils#translate_name('A'))<CR>
 noremap g: <Cmd>call mark#fzf_marks()<CR>
-noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap z; <Cmd>call mark#fzf_jumps()<CR>
 noremap z: <Cmd>call mark#fzf_changes()<CR>
 
@@ -966,11 +965,11 @@ noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
 call s:repeat_map('g-', 'DashSingle', ":<C-u>call comment#append_line('-', 0)<CR>", 'n')
-call s:repeat_map('g_', 'DashDouble', ":<C-u>call comment#append_line('-', 1)<CR>", 'n')
+call s:repeat_map('g\', 'DashDouble', ":<C-u>call comment#append_line('-', 1)<CR>", 'n')
 call s:repeat_map('g=', 'EqualSingle', ":<C-u>call comment#append_line('=', 0)<CR>", 'n')
 call s:repeat_map('g+', 'EqualDouble', ":<C-u>call comment#append_line('=', 1)<CR>", 'n')
 call s:repeat_map('g-', 'VDashSingle', ":<C-u>call comment#append_line('-', 0, '''<', '''>')<CR>", 'v')
-call s:repeat_map('g_', 'VDashDouble', ":<C-u>call comment#append_line('-', 1, '''<', '''>')<CR>", 'v')
+call s:repeat_map('g\', 'VDashDouble', ":<C-u>call comment#append_line('-', 1, '''<', '''>')<CR>", 'v')
 call s:repeat_map('g=', 'VEqualSingle', ":<C-u>call comment#append_line('=', 0, '''<', '''>')<CR>", 'v')
 call s:repeat_map('g+', 'VEqualDouble', ":<C-u>call comment#append_line('=', 1, '''<', '''>')<CR>", 'v')
 
