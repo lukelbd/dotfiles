@@ -5,7 +5,7 @@
 " Note: This sorts by recent access to help replace :Buffers
 " Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
 function! window#buffer_source() abort
-  let nprocess = 5  " tablines to process
+  let nprocess = 20  " maximum tablines to process
   let ndigits = len(string(tabpagenr('$')))
   let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
   let values = []
