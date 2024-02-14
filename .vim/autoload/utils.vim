@@ -211,14 +211,15 @@ function! s:translate_count(mode, ...) abort
     let [base, min, max] = [96, 0, 13]
   endif
   if cnt == 0 && a:mode =~# '[m`]'
-    let stack = get(g:, 'mark_recents', [])
-    let name = empty(stack) ? 'A' : stack[-1]  " recently set
-    let name = a:mode ==# 'm' ? nr2char(char2nr(name) + 1) : name
+    let stack = get(g:, 'mark_recents', [])  " goto most recent and create adjacent
+    let prev = empty(stack) ? a:mode ==# 'm' ? '@' : 'A' : stack[-1]  " @ + 1 == A
+    let char = a:mode ==# 'm' ? char2nr(prev) + 1 : char2nr(prev)
+    let name = nr2char(min([char, base + max]))
   else
     let min = a:0 ? a:1 : min  " e.g. set to '0' disables v:count1 for 'm' and 'q'
-    let inr = max([min, cnt])  " use v:count1 for 'm' and 'q'
-    let inr = min([inr, max])  " below maximum letter
-    let name = inr == 0 ? '' : nr2char(base + inr)
+    let char = max([min, cnt])  " use v:count1 for 'm' and 'q'
+    let char = min([char, max])  " below maximum letter
+    let name = char == 0 ? '' : nr2char(base + char)
   endif
   if cnt > max  " emit warning
     let head = "Count '" . cnt . "' too high for register translation."

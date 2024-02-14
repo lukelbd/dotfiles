@@ -178,10 +178,7 @@ function! mark#del_marks(...) abort
     if has_key(highlights, mrk)
       call remove(highlights, mrk)
     endif
-    let idx = index(recents, mrk)
-    if idx != -1
-      call remove(recents, idx)
-    endif
+    call filter(recents, 'v:val !=# "' . mrk . '"')
     exe 'delmark ' . mrk
   endfor
   call feedkeys("\<Cmd>echom 'Deleted marks: " . join(mrks, ' ') . "'\<CR>", 'n')
