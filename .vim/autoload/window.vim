@@ -49,28 +49,21 @@ function! window#buffer_source() abort
   let ndigits = len(string(tabpagenr('$')))
   let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
   let unsorted = {}
-  for tnr in range(1, tabpagenr('$'))  " iterate through each tab
-    let nr = -1  " default number
-    let bufnrs = tabpagebuflist(tnr)
-    for bnr in bufnrs
-      if bnr == bufnr() && tnr == tabpagenr()
-        continue
-      elseif index(tabskip, getbufvar(bnr, '&ft')) == -1  " use if not a popup window
-        let nr = bnr | break
-      elseif bnr == bufnrs[-1]  " use if no non-popup windows
-        let nr = bnr
-      endif
-    endfor
-    if nr < 0
+  let bnrs = TablineBuffers()
+  for idx in range(len(bnrs))
+    let tnr = idx + 1
+    let bnr = bnrs[idx]
+    if bnr < 0
       continue
     elseif exists('*RelativePath')
-      let path = RelativePath(bufname(nr))
+      let path = RelativePath(bufname(bnr))
     else
-      let path = fnamemodify(bufname(nr), ':~:.')
+      let path = expand('#' . bnr . ':~:.')
     endif
+    let flags = TablineFlags(bnr)  " skip processing
     let pad = repeat(' ', ndigits - len(string(tnr)))
-    let path = pad . tnr . ': ' . path  " displayed string
-    let unsorted[nr] = add(get(unsorted, nr, []), path)
+    let value = pad . tnr . ': ' . path . flags  " displayed string
+    let unsorted[bnr] = add(get(unsorted, bnr, []), value)
   endfor
   return window#buffer_sort(unsorted)
 endfunction
