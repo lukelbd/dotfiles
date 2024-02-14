@@ -206,10 +206,10 @@ endfunction
 " also takes forever. Also have run into problems with it on some vim versions.
 function! file#open_drop(...) abort
   for path in a:000
-    let compare = fnamemodify(path, ':p')
+    let abspath = fnamemodify(path, ':p')
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
       for bnr in tabpagebuflist(tnr)
-        if expand('#' . bnr . ':p') ==# compare
+        if expand('#' . bnr . ':p') ==# abspath
           let wnr = bufwinnr(bnr)
           exe tnr . 'tabnext'
           exe wnr . 'wincmd w'
@@ -217,7 +217,9 @@ function! file#open_drop(...) abort
         endif
       endfor
     endfor
-    if bufname('%') ==# '' && &modified == 0  " fill this window
+    let fugitive = &l:filetype ==# 'git' || bufname() =~# '^fugitive:'
+    let blank = !&modified && empty(bufname())
+    if blank || fugitive
       exe 'edit ' . path
     else  " create new tab
       exe 'tabnew ' . path

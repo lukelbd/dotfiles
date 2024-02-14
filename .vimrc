@@ -527,7 +527,7 @@ augroup END
 " See: https://stackoverflow.com/a/41168966/4970632
 command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
 command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
-noremap g<CR> @:
+nnoremap g<CR> @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -548,9 +548,9 @@ command! -count=1 Lnext call iter#next_loc(<count>, 'loc', 0)
 command! -count=1 Qprev call iter#next_loc(<count>, 'qf', 1)
 command! -count=1 Qnext call iter#next_loc(<count>, 'qf', 0)
 noremap [x <Cmd>exe v:count1 . 'Lprev'<CR>zv
-noremap ]x <Cmd>exe v:count1 . 'Lnext<CR>zv
-noremap [X <Cmd>exe v:count1 . 'Qprev<CR>zv
-noremap ]X <Cmd>exe v:count1 . 'Qnext<CR>zv
+noremap ]x <Cmd>exe v:count1 . 'Lnext'<CR>zv
+noremap [X <Cmd>exe v:count1 . 'Qprev'<CR>zv
+noremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>zv
 
 " Cycle through wildmenu expansion with <C-,> and <C-.>
 " Note: Mapping without <expr> will type those literal keys
@@ -571,10 +571,8 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Go to last and next changed text
 " Note: F4 is mapped to Ctrl-m in iTerm
-augroup jumplist_setup
-  au!
-  au BufEnter * normal! m'
-augroup END
+" au BufEnter * normal! m'
+augroup jumplist_setup | au! | augroup END
 noremap <C-n> g;zv
 noremap <F4> g,zv
 
@@ -618,8 +616,8 @@ silent! unmap zv
 noremap z<CR> zzze
 noremap z9 zt
 noremap z0 zb
-noremap z[ ze
-noremap z] zs
+noremap z< ze
+noremap z> zs
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
@@ -662,8 +660,8 @@ noremap zO <Cmd>call fold#toggle_current(0)<CR>
 " Note: Here fold#update_level() calls fold#update_folds() if level was changed
 " and echos the level change -- 'zp' sets to the input count while other commands
 " increase or decrease by count ('zp' without count simply prints the level).
-noremap z< <Cmd>call fold#update_level('m')<CR>
-noremap z> <Cmd>call fold#update_level('r')<CR>
+noremap z[ <Cmd>call fold#update_level('m')<CR>
+noremap z] <Cmd>call fold#update_level('r')<CR>
 noremap zm <Cmd>call fold#update_level('m')<CR>
 noremap zr <Cmd>call fold#update_level('r')<CR>
 noremap zM <Cmd>call fold#update_level('M')<CR>
@@ -691,11 +689,12 @@ command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap <Leader>- <Cmd>call mark#del_marks()<CR>
 noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
-noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap ; <Cmd>call mark#goto_mark(utils#translate_name('`'))<CR>
-noremap z; <Cmd>call mark#fzf_marks()<CR>
-noremap g; <Cmd>call mark#fzf_jumps()<CR>
-noremap g: <Cmd>call mark#fzf_changes()<CR>
+noremap g; <Cmd>call mark#goto_mark(utils#translate_name('A'))<CR>
+noremap g: <Cmd>call mark#fzf_marks()<CR>
+noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
+noremap z; <Cmd>call mark#fzf_jumps()<CR>
+noremap z: <Cmd>call mark#fzf_changes()<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -834,9 +833,10 @@ noremap <expr> \X edit#replace_regex_expr(
 " Note: Here use <C-g> prefix similar to comment insert. Capital breaks the undo
 " sequence. Tried implementing 'redo' but fails because history is lost after vim
 " re-enters insert mode from the <C-o> command. Googled and no way to do it
-" nnoremap u <Plug>RepeatUndo  " already applied
-" nnoremap U <Plug>RepeatRedo  " causes weird issues
+" nmap U <Plug>RepeatRedo  " causes weird issues
+" nmap u <Plug>RepeatUndoz
 nnoremap U <C-r>
+" inoremap <C-g>' <<
 inoremap <C-g>u <C-o>u
 inoremap <C-g>U <C-g>u
 
@@ -1191,7 +1191,7 @@ call plug#('Konfekt/FastFold')  " speedup folding
 call plug#('justinmk/vim-sneak')  " simple and clean
 let g:peekaboo_window = 'vertical topleft 25new'
 let g:peekaboo_prefix = '<Nop>'  " disable mappings in lieu of 'nomap' option
-let g:peekaboo_ins_prefix = '<Nop>'  " disable mappings in lieu of 'nomap' option
+let g:peekaboo_ins_prefix = '<C-g>'  " disable mappings in lieu of 'nomap' option
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
@@ -1984,6 +1984,10 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#setup_commands()
   augroup END
+  " noremap <Leader>P <Cmd>Commits<CR>
+  " noremap <Leader>p <Cmd>BCommits<CR>
+  noremap <Leader>G <Cmd>call git#commit_safe()<CR>
+  noremap <Leader>g <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
   noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
   noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
@@ -1994,13 +1998,11 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>I <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
-  noremap <Leader>g <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  noremap <Leader>G <Cmd>call git#commit_safe()<CR>
-  noremap <Leader>p <Cmd>BCommits<CR>
-  noremap <Leader>P <Cmd>Commits<CR>
-  noremap <expr> zl git#run_map_expr(2, 0, '', 'blame %')
-  noremap zll <Cmd>call git#run_map(2, 0, '', 'blame %')<CR>
-  noremap zL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  noremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  noremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  noremap <expr> gl git#run_map_expr(2, 0, '', 'blame %')
+  noremap gll <Cmd>-5,+5call git#run_map(2, 0, '', 'blame %')<CR>5j
+  noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2046,8 +2048,8 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
   augroup END
-  silent! unmap gll
-  map gl <Plug>(EasyAlign)
+  silent! unmap zll
+  map zl <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world

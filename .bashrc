@@ -722,17 +722,20 @@ function man() {
   fi
 }
 
+
 # Prevent git stash from running without 'git stash push' and test message length.
 # Note 'git stash --staged push' will stash only staged changes. Should use more often.
 # https://stackoverflow.com/q/48751491/4970632
 git() {
+  local idx arg1 arg2
   if [ "$#" -eq 1 ] && [ "$1" == stash ]; then
     echo 'Error: Run "git stash push --flags" instead.' 1>&2
     return 1
   fi
-  if [ "$#" -ge 3 ] && [ "$1" == commit ]; then
-    for i in $(seq 2 $#); do
-      local arg1=${*:$i:1} arg2=${*:$((i+1)):1}
+  if [ "$#" -ge 3 ] && [[ "$1" =~ commit|oops ]]; then
+    for idx in $(seq 2 $#); do
+      arg1=${*:$idx:1}
+      arg2=${*:$((idx+1)):1}
       if [ "$arg1" == '-m' ] || [ "$arg1" == '--message' ] && [ "${#arg2}" -gt 50 ]; then
         echo "Error: Message has length ${#arg2}. Must be less than or equal to 50."
         return 1

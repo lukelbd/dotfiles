@@ -67,6 +67,7 @@ function! vim#config_refresh(bang, ...) abort
   let closed = foldclosed('.')
   call tag#set_tags()  " call during .vimrc refresh
   filetype detect
+  doautocmd FileType
   runtime after/common.vim
   if closed <= 0 | exe 'silent! normal! zv' | endif
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
