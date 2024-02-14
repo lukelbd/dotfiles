@@ -42,6 +42,11 @@ let s:git_large = ['status', 'commit', 'log', 'tree', 'trunk', 'diff', 'show']
 let s:git_oneline = ['push', 'pull', 'fetch', 'commit', 'switch']
 let s:git_oneline += ['add', 'stage', 'reset', 'restore', 'checkout']
 function! git#run_command(line1, count, range, bang, mods, args, ...) abort range
+  if empty(FugitiveGitDir())
+    let args = [a:line1, a:count, a:range, a:bang, a:mods, ''] + a:000
+    let cmd = "call('fugitive#Command', " . string(args) . ')'
+    call feedkeys("\<Cmd>exe " . cmd . "\<CR>", 'n') | return
+  endif
   let [bnum, width, height] = [bufnr(), winwidth(0), winheight(0)]
   let [name; flags] = empty(trim(a:args)) ? [''] : split(a:args, '\\\@<!\s\+')
   let oneline = index(s:git_oneline, name) != -1  " single line command
