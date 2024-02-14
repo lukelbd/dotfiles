@@ -98,7 +98,7 @@ function! mark#fzf_changes(...) abort
   let format2 = snr . 'format_change_offset'
   let changes = ['buf  offset  line  col  text']
   let cursor = 0
-  let paths = map(window#buffer_sort(tags#buffer_paths()), 'resolve(v:val)')
+  let paths = map(tags#buffer_paths(), 'resolve(v:val[1])')
   for path in paths
     let bnr = bufnr(path)
     if bnr == -1

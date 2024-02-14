@@ -9,7 +9,7 @@ function! s:parse_paths(prompt, global, level, ...)
   if a:0  " input paths
     let paths = map(copy(a:000), 'resolve(v:val)')
   elseif a:global  " global buffers
-    let paths = map(window#buffer_sort(tags#buffer_paths()), 'resolve(v:val)')
+    let paths = map(reverse(tags#buffer_paths()), 'resolve(v:val[1])')
   else  " current buffer
     let paths = [resolve(@%)]
   endif

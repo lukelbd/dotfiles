@@ -1,71 +1,25 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vim windows and sessions
 "-----------------------------------------------------------------------------"
-" Return buffers by most recent
-" See: https://vi.stackexchange.com/a/22428/8084 (comment)
-" Note: Here try to detect tabs that were either accessed within session or were only
-" loaded sequentially on startup by finding the minimum access time that differs from
-" its closest neighbors by more than a few seconds. Sort buffers before this threshold
-" in reverse order i.e. tab order and after this in standard order i.e. access order.
-function! s:buffers_recent() abort
-  let times = map(getbufinfo(), {idx, val -> val['lastused']})
-  let mintime = 0
-  for buftime in sort(times)
-    if mintime && buftime - mintime > 10 | break | endif
-    let mintime = buftime  " approximate time all buffers were loaded
-  endfor
-  let info = sort(getbufinfo(), {val1, val2 ->
-    \ val2['lastused'] <= mintime && val1['lastused'] <= mintime
-    \ ? val1['lastused'] - val2['lastused'] : val2['lastused'] - val1['lastused']}
-  \ )
-  return map(info, {idx, val -> val['bufnr']})
-endfunction
-function! window#buffer_sort(args) abort
-  let unsorted = {}  " note keys auto-convert to string
-  for [nr, value] in items(a:args)  " valid for dicts and lists
-    let nr = type(a:args) == 4 ? nr : bufnr(value)
-    let values = type(value) == 3 ? value : [value]
-    let unsorted[nr] = values
-  endfor
-  let sorted = []
-  let bufnrs = keys(unsorted)
-  for nr in s:buffers_recent()
-    let idx = index(bufnrs, string(nr))
-    if idx >= 0
-      call extend(sorted, remove(unsorted, bufnrs[idx]))
-      call remove(bufnrs, idx)
-    endif
-  endfor
-  for items in values(unsorted)
-    call extend(sorted, items)
-  endfor
-  return sorted
-endfunction
-
 " Return main buffers in each tab
 " Note: This sorts by recent access to help replace :Buffers
 " Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
 function! window#buffer_source() abort
   let ndigits = len(string(tabpagenr('$')))
   let tabskip = get(g:, 'tabline_skip_filetypes', [])  " keep up to date
-  let unsorted = {}
-  let bnrs = TablineBuffers()
-  for idx in range(len(bnrs))
-    let tnr = idx + 1
-    let bnr = bnrs[idx]
-    if bnr < 0
-      continue
-    elseif exists('*RelativePath')
-      let path = RelativePath(bufname(bnr))
+  let values = []
+  for [tnr, path] in tags#buffer_paths()
+    if exists('*RelativePath')
+      let path = RelativePath(path)
     else
-      let path = expand('#' . bnr . ':~:.')
+      let path = fnamemodify(path, ':~:.')
     endif
-    let flags = TablineFlags(bnr)  " skip processing
     let pad = repeat(' ', ndigits - len(string(tnr)))
+    let flags = TablineFlags(bufnr(path))  " skip processing
     let value = pad . tnr . ': ' . path . flags  " displayed string
-    let unsorted[bnr] = add(get(unsorted, bnr, []), value)
+    call add(values, value)
   endfor
-  return window#buffer_sort(unsorted)
+  return values
 endfunction
 
 " Safely closing tabs and windows
@@ -228,14 +182,20 @@ function! s:move_tab_sink(nr) abort
 endfunction
 
 " Print currently open buffers
-" Note: This should be used in conjunction with :WipeBufs
+" Note: This should be used in conjunction with :WipeBufs. Note s:buffers_recent()
+" normally restricts output to files loaded after VimEnter but bypass that here.
 function! window#show_bufs() abort
   let ndigits = len(string(bufnr('$')))
   let result = {}
   let lines = []
-  for bnr in s:buffers_recent()
+  for bnr in tags#buffers_recent(0)  " include all buffers
     let pad = repeat(' ', ndigits - len(string(bnr)))
-    call add(lines, pad . bnr . ': ' . bufname(bnr))
+    if exists('*RelativePath')
+      let path = RelativePath(bufname(bnr))
+    else
+      let path = expand('#' . bnr . ':~:.')
+    endif
+    call add(lines, pad . bnr . ': ' . path)
   endfor
   let message = "Open buffers (sorted by recent use):\n" . join(lines, "\n")
   echo message
