@@ -37,10 +37,10 @@ let s:git_aliases = {
   \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
   \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,
 \ }
-let s:git_vert = ['log', 'tree', 'trunk']
-let s:git_large = ['status', 'commit', 'log', 'tree', 'trunk', 'diff', 'show']
-let s:git_oneline = ['push', 'pull', 'fetch', 'commit', 'switch']
-let s:git_oneline += ['add', 'stage', 'reset', 'restore', 'checkout']
+let s:git_tree = ['log', 'tree', 'trunk']
+let s:git_edit = ['merge', 'commit', 'oops']
+let s:git_main = ['status', 'show', 'diff'] + s:git_tree + s:git_edit
+let s:git_quiet = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 function! git#run_command(line1, count, range, bang, mods, args, ...) abort range
   if empty(FugitiveGitDir())
     let args = [a:line1, a:count, a:range, a:bang, a:mods, ''] + a:000
@@ -49,27 +49,28 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   endif
   let [bnum, width, height] = [bufnr(), winwidth(0), winheight(0)]
   let [name; flags] = empty(trim(a:args)) ? [''] : split(a:args, '\\\@<!\s\+')
-  let oneline = index(s:git_oneline, name) != -1  " single line command
-  let large = index(s:git_large, name) != -1  " currently only make commit panes big
-  let long = index(s:git_vert, name) != -1
+  let quiet = index(s:git_quiet, name) != -1  " commands print at most one line
+  let edit = index(s:git_edit, name) != -1  " popup windows may open an editor
+  let main = index(s:git_main, name) != -1  " popup window should have 'main' size
+  let tall = index(s:git_tree, name) != -1  " popup window should be vertical
   let name = get(s:git_aliases, name, name)
-  let mods = long && empty(a:mods) ? 'topleft vert' : a:mods
+  let mods = tall && empty(a:mods) ? 'topleft vert' : a:mods
   let args = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
   let args = substitute(args, '--color\>', '', 'g')  " fugitive uses its own colors
   let cmd = call('fugitive#Command', [a:line1, a:count, a:range, a:bang, mods, args] + a:000)
   if bnum != bufnr() || cmd =~# '\<v\?split\>'
     exe cmd | call feedkeys("\<Cmd>echo 'Git " . a:args . "'\<CR>", 'n')
-  elseif oneline  " possibly show result after message
-    echo 'Git ' . a:args . ' ' | exe cmd
-  else  " result displayed with press enter option
-    echo 'Git ' . a:args . "\n" | exe cmd
+  elseif edit  " allow buffer creation message to overwrite git message
+    call echoraw('Git ' . a:args) | exe cmd
+  else  " possibly show result after message or ensure press enter 
+    echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd
   endif
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
-  elseif cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>' || a:args =~# '^blame\( %\)\@!'
-    exe 'vertical resize ' . window#default_width(!large)
+  elseif a:args =~# '^blame\( %\)\@!' || cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
+    exe 'vertical resize ' . window#default_width(!main)
   else  " bottom pane
-    exe 'resize ' . window#default_height(!large)
+    exe 'resize ' . window#default_height(!main)
   endif
   if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
