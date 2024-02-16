@@ -2,16 +2,24 @@
 " Utilities for inserting comments
 "-----------------------------------------------------------------------------"
 " Helper functions
-function! s:input_title()
-  let result = input('Comment block name: ', '', 'customlist,utils#null_list')
-  return result
+" Note: This uses cursor line as default header value, e.g. turning header into comment
+function! s:get_indent() abort  " match current indent level
+  let regex = '^\s*\S\zs'  " location of first non-whitespace char
+  let indent = match(getline('.'), regex)
+  let indent = indent == -1 ? 0 : indent - 1
+  return repeat(' ', indent)
 endfunction
-function! s:indent_spaces() abort  " match current indent level
-  let col = match(getline('.'), '^\s*\S\zs')  " location of first non-whitespace char
-  return repeat(' ', col == -1 ? 0 : col - 1)
+function! s:get_header() abort
+  let regex = '^\s*\(' . comment#get_regex() . '\s*\)\?'
+  let default = substitute(getline('.'), regex, '', '')
+  let result = utils#input_default('Header text', default, '')
+  if result ==# default | call feedkeys('"_dd', 'n') | endif
+  return result
 endfunction
 
 " Return the comment character
+" Note: This uses non-printable dummy characters 1-32 from &isprint. Note character
+" zero is null i.e. string termination so matches empty string. See :help /\]
 function! comment#get_char() abort
   let char = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
   let char = substitute(char, '\s\+', '', 'g')  " ignore spaces
@@ -19,7 +27,7 @@ function! comment#get_char() abort
 endfunction
 function! comment#get_regex() abort
   let char = comment#get_char()
-  let char = empty(char) ? nr2char(0) : char
+  let char = empty(char) ? '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]' : char
   return char
 endfunction
 function! comment#get_insert() abort
@@ -28,10 +36,10 @@ function! comment#get_insert() abort
   return "\<C-g>u" . join(parts, ' ') . lefts . ' '
 endfunction
 
-" General comment note matching current indentation (used for author date)
-" General dashes current line length (no leading comments, used for python-markdown)
+" Add general comment matching current indentation (used for author date) or add dashes
+" up to current line length (ignoring leading comments, used for python and markdown)
 function! comment#append_note(note) abort
-  let indent = s:indent_spaces()
+  let indent = s:get_indent()
   let cchar = comment#get_char()
   let head = indent . cchar
   let append = head . ' ' . a:note
@@ -47,7 +55,7 @@ function! comment#append_line(fill, ...) abort
     let indent = repeat(' ', col1 - 1)
     let nfill = 1 + abs(col2 - col1)
   else  " default divider
-    let indent = s:indent_spaces()
+    let indent = s:get_indent()
     let nfill = match(getline('.'), regex) - len(indent)  " last non-whitespace loc
   endif
   let append = indent . repeat(a:fill, nfill)
@@ -55,36 +63,36 @@ function! comment#append_line(fill, ...) abort
   if double | call append(line('.') - 1, append) | endif
 endfunction
 
-" Header styles '# Hello world! #' and '# ---- Hello world! ---- #'
-" Header line of arbitrary length with fill characters
+" Add character or inline headers '# Hello world! #' and '# ---- Hello world! ---- #'
+" or add line headers of arbitrary width given input fill charaacters.
 function! comment#header_inchar() abort
-  let indent = s:indent_spaces()
+  let indent = s:get_indent()
   let cchar = comment#get_char()
-  let title = s:input_title()
-  if empty(title) | return | endif
-  let header = indent . cchar . ' ' . title . ' ' . cchar
-  call append(line('.'), header)
+  let header = s:get_header()
+  if empty(header) | return | endif
+  let append = indent . cchar . ' ' . header . ' ' . cchar
+  call append(line('.'), append)
 endfunction
 function! comment#header_inline(ndash) abort
-  let indent = s:indent_spaces()
+  let indent = s:get_indent()
   let cchar = comment#get_char()
-  let title = s:input_title()
-  if empty(title) | return | endif
+  let header = s:get_header()
+  if empty(header) | return | endif
   let dashes = repeat('-', a:ndash)
-  let header = indent . cchar . ' ' . dashes . ' ' . title . ' ' . dashes . ' ' . cchar
-  call append(line('.') - 1, header)
+  let append = indent . cchar . ' ' . dashes . ' ' . header . ' ' . dashes . ' ' . cchar
+  call append(line('.') - 1, append)
 endfunction
 function! comment#header_line(fill, nfill, ...) abort  " inserts above by default
   let double = a:0 && a:1
-  let indent = s:indent_spaces()
+  let indent = s:get_indent()
   let cchar = comment#get_char()
   let nfill = (a:nfill - len(indent)) / len(a:fill)  " divide by length of fill character
-  let header = indent . cchar . repeat(a:fill, nfill) . cchar
+  let append = indent . cchar . repeat(a:fill, nfill) . cchar
   if double
-    let title = s:input_title() | if empty(title) | return | endif
-    let header = [header, indent . cchar . ' ' . title, header]
+    let header = s:get_header() | if empty(header) | return | endif
+    let append = [append, indent . cchar . ' ' . header, append]
   endif
-  call append(line('.') - 1, header)
+  call append(line('.') - 1, append)
 endfunction
 
 " Jump to next or previous match

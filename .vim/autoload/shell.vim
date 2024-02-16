@@ -11,7 +11,7 @@ function! shell#cmd_help(...) abort
   if a:0  " input help
     let page = a:1
   else  " default help
-    let page = utils#input_default('Help info', 'shellcmd', expand('<cword>'))
+    let page = utils#input_default('Help info', expand('<cword>'), 'shellcmd')
   endif
   if empty(page) | return | endif
   let args = split(page, '\s\+')
@@ -92,7 +92,7 @@ function! shell#cmd_man(...) abort
   if a:0  " input man
     let page = a:1
   else  " default man
-    let page = utils#input_default('Man page', 'shellcmd', expand('<cword>'))
+    let page = utils#input_default('Man page', expand('<cword>'), 'shellcmd')
   endif
   if empty(page) | return | endif
   tabedit | set filetype=man | exe 'Man ' . page

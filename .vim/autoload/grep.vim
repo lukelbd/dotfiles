@@ -101,6 +101,7 @@ function! grep#call_rg(global, level, ...) abort
   call timer_start(1, function('s:echo_grep', [regex]))
 endfunction
 
+
 " Call Rg or Ag from mapping (see also file.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
@@ -125,7 +126,7 @@ function! grep#call_grep(cmd, global, level) abort
     let prompt = name . 's ' . join(paths, ' ')
   endi
   let prompt = toupper(a:cmd[0]) . a:cmd[1:] . ' search ' . prompt
-  let pattern = utils#input_default(prompt, 'grep#complete_search', @/)
+  let pattern = utils#input_default(prompt, @/, 'grep#complete_search')
   if empty(pattern) | return | endif
   let func = 'grep#call_' . tolower(a:cmd)
   call call(func, [a:global, a:level, pattern])

@@ -1,13 +1,11 @@
 "-----------------------------------------------------------------------------"
 " Internal utilities
 "-----------------------------------------------------------------------------"
-" Null input() completion function
-" This prevents unexpected insertion of literal tabs
-" Note: Used in various places throughout autoload
+" Null input() completion function (not currently used)
 function! utils#null_list(...) abort
   return []
 endfunction
-" Null operator motion function
+" Null operator motion function (default Z mapping)
 function! utils#null_operator(...) range abort
   return ''
 endfunction
@@ -58,13 +56,15 @@ endfunction
 " replaces it when user starts typing text or backspace. This is a bit nicer than
 " filling input prompt with default value, simply start typing to drop the default
 function! utils#input_list(lead, line, cursor)
-  let [initial, funcname, default; force] = s:complete_opts
-  let force = len(force) && force[0]
+  let [initial, default, complete; force] = s:complete_opts
+  let force = !empty(force) && force[0]
   if !initial  " get complete options
-    if funcname =~# '^[a-z_]\+$'
-      let opts = getcompletion(a:lead, funcname)
+    if empty(complete)
+      let opts = []
+    elseif complete =~# '^[a-z_]\+$'
+      let opts = getcompletion(a:lead, complete)
     else
-      let opts = call(funcname, [a:lead, a:line, a:cursor])
+      let opts = call(complete, [a:lead, a:line, a:cursor])
     endif
   else  " initial iteration
     let s:complete_opts[0] = 0
@@ -82,24 +82,26 @@ function! utils#input_list(lead, line, cursor)
     elseif char ==# "\<Tab>"  " expand default
       let opts = force ? [] : [default]
       call feedkeys(force ? default . "\<CR>" : '', 't')
-    elseif char !~# '\p'  " other non-printable characters
-      let opts = force ? [] : []
-      call feedkeys(force ? "\<CR>" : '', 't')
-    elseif char ==# "\<PasteStart>"  " WARNING: this is 'printable'
+    elseif char ==# "\<PasteStart>"  " clipboard paste
       let opts = [] | call feedkeys(char, 'it')
       call feedkeys(force ? "\<CR>" : '', 't')
-    else  " printable input character
+    elseif char !~# '^\p\+$'  " non-printables and multi-byte escpaes e.g. \<BS>
+      let opts = force ? [] : []
+      call feedkeys(force ? "\<CR>" : '', 't')
+    else  " printable input characters
       let opts = force ? [] : [char]
       call feedkeys(force ? char . "\<CR>" : '', 't')
     endif
   endif
   return opts
 endfunction
-function! utils#input_default(prompt, funcname, default, ...) abort
+function! utils#input_default(prompt, ...) abort
+  let complete = a:0 > 1 ? a:2 : ''
+  let default = a:0 > 0 ? a:1 : ''
   let result = a:prompt
-  let result .= result !~# ')$' && !empty(a:default) ? ' (' . a:default . ')' : ''
+  let result .= empty(default) ? '' : ' (' . default . ')'
   let result .= result =~# '\w$\|)$' ? ': ' : ' '
-  let s:complete_opts = [1, a:funcname, a:default] + a:000
+  let s:complete_opts = [1, default, complete] + a:000[2:]
   call feedkeys("\<Tab>", 't')
   return input(result, '', 'customlist,utils#input_list')
 endfunction
@@ -195,13 +197,13 @@ function! s:eval_map(map) abort
 endfunction
 function! utils#switch_maps(...) abort
   let queue = {}  " delay assignment until iteration
-  for [isrc, idest, imodes] in a:000
+  for [map1, map2, imodes; iopts] in a:000
     for imode in imodes  " string or list of chars
-      let item = maparg(isrc, imode, 0, 1)
-      let iraw = eval('"' . substitute(idest, '^<', '\\<', '') . '"')
-      let opts = {'rhs': s:eval_map(item), 'lhs': idest, 'lhsraw': iraw}
+      let raw = eval('"' . substitute(map2, '^<', '\\<', '') . '"')
+      let item = maparg(map1, imode, 0, 1)
       let items = get(queue, imode, [])
-      call extend(item, opts)
+      call extend(item, {'rhs': s:eval_map(item), 'lhs': map2, 'lhsraw': raw})
+      call extend(item, empty(iopts) ? {} : iopts[0])
       call add(items, item)
       let queue[imode] = items
     endfor
@@ -281,12 +283,9 @@ function! s:translate_input(mode, ...) abort
       if empty(char)  " e.g. escape character
         let name = char
         let result = ''
-      elseif char ==# "'"  " native register selection
+      elseif char =~# '[''"]'  " native register selection
         let name = utils#input_default('Register (raw)', '', '', 1)
         let result = '"' . name
-      elseif char ==# '"'  " await native register selection
-        let name = '' | echom 'Register: ...'
-        let result = peekaboo#peek(1, '"',  0)
       elseif char =~# '\d'  " use character to pick number register
         let name = char
         let result = '"' . name

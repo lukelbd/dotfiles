@@ -121,7 +121,7 @@ endfunction
 function! file#open_init(cmd, local) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
   let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
-  let init = utils#input_default(cmd, 'file#complete_cwd', file#open_head(base))
+  let init = utils#input_default(cmd, file#open_head(base), 'file#complete_cwd')
   if empty(init)
     return
   elseif cmd ==# 'Files'
@@ -163,7 +163,7 @@ function! s:open_continuous(cmd, ...) abort
   for item in items
     let user = item ==# s:new_file
     if user  " should be recursed at least one level
-      let item = input(file#open_head(base), '', 'customlist,utils#null_list')
+      let item = utils#input_default(file#open_head(base), expand('<cfile>'), 'file#complete_cwd')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " :p adds a slash so need two :h:h to remove then
@@ -202,6 +202,7 @@ function! s:open_continuous(cmd, ...) abort
 endfunction
 
 " Open file or jump to tab. From tab drop plugin: https://github.com/ohjames/tabdrop
+" Warning: Using :edit without feedkeys causes issues navigating fugitive panels.
 " Warning: The default ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
 function! file#open_drop(...) abort
@@ -222,9 +223,9 @@ function! file#open_drop(...) abort
     let panel = &l:filetype =~# '^\(git\|netrw\)$'
     let fugitive = bufname() =~# '^fugitive:'
     if blank || panel || fugitive
-      exe 'edit ' . path
+      call feedkeys("\<Cmd>edit " . path . "\<CR>", 'n')
     else  " create new tab
-      exe 'tabnew ' . path
+      call feedkeys("\<Cmd>tabnew " . path . "\<CR>", 'n')
     end
   endfor
 endfunction

@@ -3,6 +3,7 @@
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
 " General settings
+" Warning: Peekaboo mappings are set
 " Note: This overrides native vim filetype-specific double-bracket maps (e.g. :map [[
 " in vim files for jumping to functions) but skips mapping in presence of buffer-local
 " single-bracket maps (e.g. help file tag navigation) and buffer-local indent maps
@@ -12,15 +13,16 @@ setlocal conceallevel=2
 setlocal formatoptions=lrojcq
 setlocal linebreak
 setlocal nojoinspaces
-silent! nunmap <buffer> <Nop>@
-silent! nunmap <buffer> <Nop>"
-silent! xunmap <buffer> <Nop>"
 let &l:textwidth = g:linelength
 let &l:wrapmargin = 0
 let s:jump1 = get(maparg('[', '', 0, 1), 'buffer', 0)
 let s:jump2 = get(maparg(']', '', 0, 1), 'buffer', 0)
 let s:indent1 = get(maparg('<', '', 0, 1), 'buffer', 0)
 let s:indent2 = get(maparg('>', '', 0, 1), 'buffer', 0)
+if exists('*peekaboo#on') && exists('*peekaboo#on')
+  silent! call peekaboo#off()  " re-enforce mappings
+  silent! call peekaboo#on()
+endif
 if !s:jump1 && !s:jump2  " no single bracket mappings
   map <buffer> [[ <Plug>TagsBackwardTop
   map <buffer> ]] <Plug>TagsForwardTop
@@ -29,6 +31,12 @@ if !s:indent1 && !s:indent2 | exe 'nnoremap <buffer> == <Esc>=='
   nnoremap <expr> <buffer> >> '<Esc>' . repeat('>>', v:count1)
   nnoremap <expr> <buffer> << '<Esc>' . repeat('<<', v:count1)
 endif
+for s:prefix in ['<Nop>', '<C-w>', '<C-g>', '<buffer><Nop>', '<buffer><C-w>', '<buffer><C-g>', '<buffer><C-r>']
+  for s:suffix in ['@', '"', "'", '/', '?', 'g', '"', "'", '<C-w>', '<C-g>', '<C-r>']
+    exe 'silent! nunmap ' . s:prefix . s:suffix
+    exe 'silent! xunmap ' . s:prefix . s:suffix
+  endfor
+endfor
 
 " Update folds and plugin-specific settings
 " Note: Here CursorHold is needed for vim-markdown overrides and BufReadPost is needed

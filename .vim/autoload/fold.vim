@@ -8,10 +8,10 @@ scriptencoding utf-8
 let s:maxlines = 100  " maxumimum number of lines
 let s:docstring = '["'']\{3}'  " docstring expression
 function! fold#get_label(line, ...) abort
-  let char = comment#get_char()
   let regex = a:0 && a:1 ? '\(^\s*\|\s*$\)' : '\s*$'
   let label = substitute(getline(a:line), regex, '', 'g')
-  let regex = '\S\@<=\s*' . char . (len(char) == 1 ? '[^' . char . ']*$' : '.*$')
+  let regex = '\S\@<=\s*' . comment#get_regex()
+  let regex .= len(comment#get_char()) == 1 ? '[^' . comment#get_char() . ']*$' : '.*$'
   let label = substitute(label, regex, '', 'g')
   return label
 endfunction

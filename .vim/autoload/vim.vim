@@ -68,6 +68,7 @@ function! vim#config_refresh(bang, ...) abort
   call tag#set_tags()  " call during .vimrc refresh
   filetype detect
   doautocmd FileType
+  doautocmd BufNewFile
   runtime after/common.vim
   if closed <= 0 | exe 'silent! normal! zv' | endif
   echom 'Loaded: ' . join(map(loaded, "fnamemodify(v:val, ':~')[2:]"), ', ') . '.'
@@ -189,10 +190,10 @@ function! vim#vim_help(...) abort
   if a:0
     let item = a:1
   else
-    let item = utils#input_default('Vim help', 'help', expand('<cword>'))
+    let item = utils#input_default('Vim help', expand('<cword>'), 'help')
   endif
   if !empty(item)
-    exe 'vert help ' . item
+    exe 'vertical help ' . item
   endif
 endfunction
 function! vim#vim_setup() abort

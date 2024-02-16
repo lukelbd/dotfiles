@@ -12,16 +12,18 @@
 " equality of <line1> and <line2>, or allow a force-range a:range argument.
 function! git#setup_commands() abort
   command! -buffer
-    \ -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
+    \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
     \ G call git#run_command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
   command! -buffer
-    \ -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
+    \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
     \ Git call git#run_command(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
   command! -buffer
-    \ -bar -bang -range -nargs=* -complete=customlist,fugitive#EditComplete
-    \ Gtabedit exe fugitive#Open('Drop', <bang>0, '', <q-args>)
-  command! -buffer -nargs=* -bang Gdiffsplit Git diff <args>
+    \ -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#EditComplete
+    \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Drop', <bang>0, '<mods>', <q-args>)
   command! -buffer -nargs=* Gsplit Gvsplit <args>
+  command! -buffer -nargs=* -bang Gdrop Gtabedit <args>
+  command! -buffer -nargs=* -bang GDrop Gtabedit <args>
+  command! -buffer -nargs=* -bang Gdiffsplit Git diff <args>
 endfunction
 
 " Git command with message
@@ -29,6 +31,10 @@ endfunction
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
 let s:flags1 = '--graph --abbrev-commit --max-count=50'
 let s:flags2 = '--date=relative --branches --decorate'
+let s:git_tree = ['log', 'tree', 'trunk']
+let s:git_edit = ['merge', 'commit', 'oops']
+let s:git_main = ['', 'status', 'show', 'diff'] + s:git_tree + s:git_edit
+let s:git_quiet = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 let s:git_aliases = {
   \ 'status': '',
   \ 'blame': 'blame --show-email',
@@ -37,10 +43,6 @@ let s:git_aliases = {
   \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
   \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,
 \ }
-let s:git_tree = ['log', 'tree', 'trunk']
-let s:git_edit = ['merge', 'commit', 'oops']
-let s:git_main = ['status', 'show', 'diff'] + s:git_tree + s:git_edit
-let s:git_quiet = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 function! git#run_command(line1, count, range, bang, mods, args, ...) abort range
   if empty(FugitiveGitDir())
     let args = [a:line1, a:count, a:range, a:bang, a:mods, ''] + a:000
@@ -65,6 +67,7 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   else  " possibly show result after message or ensure press enter 
     echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd
   endif
+  echom 'Command: ' . a:args
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
   elseif a:args =~# '^blame\( %\)\@!' || cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
@@ -141,15 +144,15 @@ let s:fugitive_switch = [
   \ ['<CR>', 'O', 'n'],
   \ ['O', '<2-LeftMouse>', 'n'],
   \ ['O', '<CR>', 'n'],
-  \ ['(', '<F1>', 'nx'],
-  \ [')', '<F2>', 'nx'],
+  \ ['(', '[', 'nx', {'nowait': 1}],
+  \ [')', ']', 'nx', {'nowait': 1}],
+  \ ['[c', '{', 'nox'],
+  \ [']c', '}', 'nox'],
+  \ ['[m', '<F1>', 'nox'],
+  \ [']m', '<F2>', 'nox'],
   \ ['=', ',', 'nx'],
   \ ['-', '.', 'nx'],
   \ ['.', ';', 'n'],
-  \ ['[c', '[g', 'nox'],
-  \ [']c', ']g', 'nox'],
-  \ ['[m', '[f', 'nox'],
-  \ [']m', ']f', 'nox'],
 \ ]
 function! git#fugitive_setup() abort
   if &filetype ==# 'fugitiveblame'

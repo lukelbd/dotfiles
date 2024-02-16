@@ -4,5 +4,5 @@
 "-----------------------------------------------------------------------------"
 augroup filetype_overrides
   au!
-  au BufNewFile,BufRead * source ~/.vim/after/common.vim
+  au BufNewFile,BufRead * runtime after/common.vim
 augroup END

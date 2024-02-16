@@ -11,7 +11,7 @@ function! calc#codi_new(...) abort
     let path = fnamemodify(resolve(@%), ':p:h')
     let prompt = 'Calculator path'
     let default = fnamemodify(path, ':p:~:.') . 'calc.py'
-    let path = utils#input_default(prompt, 'file#complete_lwd', default)
+    let path = utils#input_default(prompt, default, 'file#complete_lwd')
   endif
   if !empty(path)
     let path = fnamemodify(path, ':r') . '.py'
