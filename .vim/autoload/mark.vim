@@ -5,17 +5,28 @@
 " Forked: Luke Davis [lukelbd@gmail.com]
 " Cleaned up and modified to handle mark definitions
 " See :help ctemrm-colors and :help gui-colors
-let s:idx = 0
-let s:idx_cterm = 0
-let s:next_id = 1
+let s:sign_id = 1
 let s:use_signs = 1
 let s:gui_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
-" Navigating jump list across windows with :Drop
-" Note: Vim natively extends jumplist when switching tabs but does not switch between
-" existing tabs. Here override default <C-o> and <C-i> by running :Drop before switch.
-function! s:goto_jump(loc) abort
+" Override of FZF :Jumps to work with custom utility and navigate with :Drop
+" Note: As with :Changes this removes the --bind start:pos:etc flag that triggers
+" errors and also implements new sink for navigating to paths with :Drop.
+function! s:jump_sink(lines) abort
+  let [key; lines] = a:lines  " first item is key binding
+  if empty(lines) | return | endif
+  let line = lines[-1]  " use final selection passed
+  let idx = index(s:jumplist, line)
+  if idx == -1 || idx == s:jumploc | return | endif | call s:select_jump(idx)
+endfunction
+function! s:update_jumps() abort
+  let lines = split(execute('silent jumps'), "\n")
+  let idx = match(lines, '\v^\s*\>')
+  let idx = idx == -1 ? len(lines) - 1 : idx
+  let [s:jumploc, s:jumplist] = [idx, lines]
+endfunction
+function! s:select_jump(loc) abort
   let keys = ''
   if a:loc == s:jumploc | return | endif
   let jump = s:jumplist[a:loc]
@@ -26,36 +37,21 @@ function! s:goto_jump(loc) abort
   endif
   let key = a:loc > s:jumploc ? "\<C-i>" : "\<C-o>"
   let keys .= abs(a:loc - s:jumploc) . key
-  let keys .= 'zv'
-  call feedkeys(keys, 'n')
-endfunction
-function! s:update_jumps() abort
-  redir => cout | silent jumps | redir END
-  let lines = split(cout, '\n')
-  let idx = match(lines, '\v^\s*\>')
-  let idx = idx == -1 ? len(lines) - 1 : idx
-  let [s:jumploc, s:jumplist] = [idx, lines]
-endfunction
-function! mark#add_jump() abort
+  call feedkeys(keys . 'zv', 'n')
 endfunction
 function! mark#goto_jump(count) abort
   call s:update_jumps()
   let idx = s:jumploc + a:count
-  let idx = min([idx, len(s:jumplist) - 1])
-  let idx = max([idx, 0])
-  call s:goto_jump(idx)
-endfunction
-
-" Override of FZF :Jumps to work with custom utility
-" Note: As with :Changes this removes the --bind start:pos:etc flag that triggers
-" errors and also implements new sink for navigating to paths with :Drop.
-function! s:jump_sink(lines) abort
-  let [key; lines] = a:lines  " first item is key binding
-  if empty(lines) | return | endif
-  let line = lines[-1]  " use final selection passed
-  let idx = index(s:jumplist, line)
-  if idx == -1 || idx == s:jumploc | return | endif
-  call s:goto_jump(idx)
+  let jdx = min([idx, len(s:jumplist) - 1])
+  let jdx = max([jdx, 0])
+  call s:select_jump(jdx)
+  if abs(a:count) == 1 && idx >= len(s:jumplist)
+    echohl ErrorMsg | echom 'Error: At end of jumplist' | echohl None
+  elseif abs(a:count) == 1 && idx < 0
+    echohl ErrorMsg | echom 'Error: At start of jumplist' | echohl None
+  else
+    call feedkeys("\<Cmd>echom 'Jump location: " . (len(s:jumplist) - jdx) . "'\<CR>", 'n')
+  endif
 endfunction
 function! mark#fzf_jumps(...)
   let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
@@ -74,47 +70,62 @@ endfunction
 " Note: This is needed to fix issue where getbufline() output can be empty (filter
 " function calls this function and assumes non-empty) and because the default FZF flag
 " --bind start:pos:etc was yielding errors. Not sure why but maybe issue with .fzf fork
-function! s:changes_sink(lines) abort
-  let keys = ''
-  let [key; lines] = a:lines  " first item is key binding
-  if empty(lines) | return | endif
-  let line = lines[-1]  " use final selection passed
-  let [bnr, offset, lnum, cnum] = split(line)[0:3]
-  if offset ==# '-'
-    let keys .= "\<Cmd>Drop " . fnameescape(bufname(str2nr(bnr))) . "\<CR>"
-    let keys .= "\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
-  elseif offset[0] ==# '+'
-    let keys .= offset[1:] . 'g,'
-  else
-    let keys .= offset . 'g;'
-  endif
-  let keys .= 'zv'
-  call feedkeys(keys, 'n')
-endfunction
-function! mark#fzf_changes(...) abort
+function! s:update_changes() abort
   let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let format1 = snr . 'format_change'
   let format2 = snr . 'format_change_offset'
   let changes = ['buf  offset  line  col  text']
-  let cursor = 0
   let paths = map(tags#buffer_paths(), 'resolve(v:val[1])')
+  if paths[0] != expand('%:p') | call insert(paths, expand('%:p')) | endif
   for path in paths
-    let bnr = bufnr(path)
-    if bnr == -1
-      continue
-    endif
-    let [opts, pos_or_len] = getchangelist(bnr)
-    let current = bufnr() == bnr
-    if current | let cursor = len(opts) - pos_or_len | endif
+    let bnr = bufnr(resolve(path))
+    if bnr == -1 | continue | endif
+    let active = bufnr() == bnr
+    let [opts, loc_or_len] = getchangelist(bnr)
+    let cursor = active ? len(opts) - loc_or_len : 0
     let opts = filter(opts, {idx, val -> !empty(getbufline(bnr, val.lnum))})
     let opts = reverse(opts)  " reversed changes
-    let opts = map(opts, {idx, val -> call(format1, [bnr, call(format2, [current, idx, cursor]), val])})
+    let opts = map(opts, {idx, val -> call(format1, [bnr, call(format2, [active, idx, cursor]), val])})
     call extend(changes, opts)
   endfor
+  return changes
+endfunction
+function! s:changes_sink(lines) abort
+  let [key; lines] = a:lines  " first item is key binding
+  if empty(lines) | return | endif
+  let line = lines[-1]  " use final selection passed
+  let [bnr, offset, lnum, cnum] = split(line)[0:3]
+  let path = fnameescape(bufname(str2nr(bnr)))
+  if offset ==# '-'
+    let keys = "\<Cmd>Drop " . path . "\<CR>\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
+  else
+    let keys .= offset[0] ==# '+' ? offset[1:] . 'g,' : offset . 'g;'
+  endif
+  call feedkeys(keys . 'zv', 'n')
+endfunction
+function! mark#goto_change(count) abort
+  let [opts, iloc] = getchangelist()
+  let idx = iloc + a:count
+  let jdx = max([idx, 0])
+  let jdx = min([idx, len(opts) - 1])
+  let cnt = jdx - iloc
+  call feedkeys(cnt > 0 ? cnt . 'g,' : cnt < 0 ? abs(cnt) . 'g;' : '', 'n')
+  if abs(a:count) == 1 && idx >= len(opts)
+    echohl WarningMsg | echom 'Error: At end of changelist' | echohl None
+  elseif abs(a:count) == 1 && idx < 0
+    echohl WarningMsg | echom 'Error: At start of changelist' | echohl None
+  else  " echo number
+    call feedkeys("\<Cmd>echom 'Change location: " . (len(opts) - jdx) . "'\<CR>", 'n')
+  endif
+endfunction
+function! mark#fzf_changes(...) abort
+  let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let changes = s:update_changes()
   let options = {
-    \ 'source':  changes,
-    \ 'sink*':   function('s:changes_sink'),
+    \ 'source': changes,
+    \ 'sink*': function('s:changes_sink'),
     \ 'options': '+m -x --ansi --tiebreak=index --header-lines=1 --cycle --scroll-off 999 --sync --prompt "Changes> "',
   \ }
   return call(snr . 'fzf', ['changes', options, a:000])
@@ -144,13 +155,10 @@ endfunction
 function! mark#fzf_marks(...) abort
   let snr = utils#find_snr('/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  redir => cout
-  silent marks
-  redir END
-  let list = split(cout, "\n")
+  let lines = split(execute('silent marks'), "\n")
   let format = snr . 'format_mark'
   let options = {
-    \ 'source': extend(list[0:0], map(list[1:], 'call(format, [v:val])')),
+    \ 'source': extend(lines[0:0], map(lines[1:], 'call(format, [v:val])')),
     \ 'sink*': function('s:mark_sink'),
     \ 'options': '+m -x --ansi --tiebreak=index --header-lines 1 --tiebreak=begin --prompt "Marks> "'
   \ }
@@ -211,9 +219,9 @@ function! mark#set_marks(mrk) abort
   if !s:use_signs
     call add(highlights[a:mrk], matchadd(name, ".*\\%'" . a:mrk . '.*', 0))
   else
-    let id = s:next_id
-    let s:next_id += 1
-    call sign_place(id, '', name, '%', {'lnum': line('.')})  " empty group critical
-    call add(highlights[a:mrk], id)
+    let sign_id = s:sign_id
+    let s:sign_id += 1
+    call sign_place(sign_id, '', name, '%', {'lnum': line('.')})  " empty group critical
+    call add(highlights[a:mrk], sign_id)
   endif
 endfunction

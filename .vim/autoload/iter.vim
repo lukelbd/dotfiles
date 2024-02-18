@@ -1,18 +1,22 @@
 "-----------------------------------------------------------------------------"
 " Menu utilities
 "-----------------------------------------------------------------------------"
-" Forward delete by tabs
+" Insert-mode forward delete by indent whitespace
 " Note: This enforced consistency with 'softtab' backspace-by-tabs behavior
 function! iter#forward_delete() abort
+  let idx = col('.') - 1
   let line = getline('.')
-  if line[col('.') - 1:col('.') - 1 + &tabstop - 1] == repeat(' ', &tabstop)
+  let indent = repeat(' ', &tabstop)
+  " vint: -ProhibitUsingUndeclaredVariable
+  let forward = line[idx:idx + &tabstop - 1]
+  if forward ==# indent
     return repeat("\<Delete>", &tabstop)
   else
     return "\<Delete>"
   endif
 endfunction
 
-" Cyclic conflict marker jumping
+" Navigate conflict markers cyclically
 " Note: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim
 function! iter#next_conflict(count, ...) abort
   let winview = winsaveview()
@@ -36,10 +40,8 @@ function! iter#next_conflict(count, ...) abort
   endif
 endfunction
 
-" Cyclic next error in location list
-" See: https://vi.stackexchange.com/a/14359
-" Note: Adding the '+ 1 - reverse' term empirically fixes vim 'vint' issue where
-" cursor is on final error in the file but ]x does not cycle to the next one.
+" Navigate location list errors cyclically: https://vi.stackexchange.com/a/14359
+" Note: Adding '+ 1 - reverse' fixes vint issue where ]x does not move from final error
 function! iter#next_loc(count, list, ...) abort
   " Generate list of loc dictionaries
   let cmd = a:list ==# 'loc' ? 'll' : 'cc'
@@ -73,6 +75,22 @@ function! iter#next_loc(count, list, ...) abort
   endif
 endfunction
 
+" Navigate search matches without editing jumplist
+" Note: This implements indexed-search directional consistency and avoids
+" adding to the jumplist to prevent overpopulation
+function! iter#next_match(reverse) abort
+  let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
+  if forward && !v:searchforward
+    let map = a:reverse ? 'n' : 'N'
+  else
+    let map = a:reverse ? 'N' : 'n'
+  endif
+  exe 'keepjumps normal! ' . map . 'zv'
+  if exists(':ShowSearchIndex')
+    ShowSearchIndex
+  endif
+endfunction
+
 " Switch to next or previous colorschemes and print the name
 " See: https://stackoverflow.com/a/2419692/4970632
 " Note: Have to trigger 'BufEnter' so status line updates. Also note g:colors_name
@@ -100,14 +118,13 @@ function! iter#next_scheme(reverse) abort
 endfunction
 
 " Insert complete menu items and scroll complete or preview windows (whichever open).
-" Note: Used 'verb function! lsp#scroll' to figure out how to detect
-" preview windows for a reference scaling (also verified that l:window.find
-" and therefore lsp#scroll do not return popup completion windows).
+" Note: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
+" (also verified lsp#scroll l:window.find does not return popup completion windows)
 function! s:scroll_default(scroll) abort
   let max = winheight(0)
   let nr = abs(type(a:scroll) == 5 ? float2nr(a:scroll * max) : a:scroll)
-  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
-  let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ', ' . rev . ")\<CR>"
+  let rv = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
+  let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ', ' . rv . ")\<CR>"
   return mode() =~# '^[iIR]' ? '' : cmd  " only allowed in normal mode
 endfunction
 function! s:scroll_preview(info, scroll) abort

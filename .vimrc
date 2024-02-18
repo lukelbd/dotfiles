@@ -56,7 +56,7 @@ set foldtext=fold#fold_text()  " default function for generating text shown on f
 set guicursor+=a:blinkon0  " skip blinking cursor
 set guifont=Monaco:h12  " match iterm settings
 set guioptions=M  " skip $VIMRUNTIME/menu.vim: https://vi.stackexchange.com/q/10348/8084
-set history=100  " search history
+set history=500  " remember 500 previous searches / commands and save in .viminfo
 set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
@@ -119,9 +119,9 @@ set ttymouse=sgr  " different cursor shapes for different modes
 set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set undofile  " save undo history
 set undolevels=500  " maximum undo level
-set updatetime=1000  " used for CursorHold autocmds and default is 4000ms
+set updatetime=1500  " used for CursorHold autocmds and default is 4000ms
 set verbose=0  " increment for debugging, e.g. verbose=2 prints sourced files, extremely useful
-set viminfo='100,:100,<100,@100,s10,f0  " commands, marks (e.g. jump history), exclude registers >10kB of text
+set viminfo='500,s50  " remember marks for 500 files (e.g. jumps), exclude registers >10kB of text
 set virtualedit=block  " allow cursor to go past line endings in visual block mode
 set visualbell  " prefer visual bell to beeps (see also 'noerrorbells')
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
@@ -448,7 +448,7 @@ nnoremap <Tab>h <C-w>h
 nnoremap <Tab>l <C-w>l
 
 " Tab and window resizing
-nnoremap <Tab><Tab> <Cmd>exe 'resize ' . window#default_height()<CR><Cmd>exe 'vert resize ' . window#default_width()<CR>
+nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR><Cmd>exe 'vert resize ' . window#default_width()<CR>
 nnoremap <Tab>n <Cmd>exe 'resize ' . window#default_height(0.5)<CR><Cmd>exe 'vert resize ' . window#default_width(0.5)<CR>
 nnoremap <Tab>m <Cmd>exe 'resize ' . window#default_height(0)<CR><Cmd>exe 'vert resize ' . window#default_width(0)<CR>
 nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
@@ -557,24 +557,49 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Navigation and searching
 "-----------------------------------------------------------------------------"
-" Go between wildmenu options with <C-,> and <C-.>
-" Note: Mapping without <expr> will type those literal keys
+" Update jumplist after resting cursor on new paragraph
+" Note: This prevents resetting when navigating backwards and forwards through
+" jumplist or when navigating within paragraph of most recently set jump
+function! s:reset_jumps() abort
+  let [line1, line2] = [line("'{"), line("'}")]
+  let [items, pos] = getjumplist()
+  let pos = min([pos, len(items) - 1])  " returns length if outside of list
+  let [prev, curr] = [line("''"), items[pos]['lnum']]
+  if (line1 > curr || line2 < curr) && (line1 > prev || line2 < prev)
+    call feedkeys("m'", 'n')  " update mark to current position
+  endif
+endfunction
+augroup jumplist_setup
+  au!
+  au CursorHold * call s:reset_jumps()
+augroup END
+
+" Navigate jumplist with <C-h>/<C-l> and changelist with <C-n>/<C-m>
+" See: https://stackoverflow.com/a/27194972/4970632
+" Note: This accounts for karabiner arrow key maps
+noremap <C-n> <Cmd>call mark#goto_change(-v:count1)<CR>
+noremap <F4> <Cmd>call mark#goto_change(v:count1)<CR>
+noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
+noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <Right> <Cmd>call mark#goto_jump(v:count1)<CR>
+
+" Navigate searches without adding to jumplist
+" Note: Core vim idea is that thes nz nzv commands take us far away from cursor but typically
+" use scrolling instead nz nzv and just add to jumplist when holding cursor in one location
+noremap ( <Cmd>keepjumps normal! (<CR>
+noremap ) <Cmd>keepjumps normal! )<CR>
+noremap { <Cmd>keepjumps normal! {<CR>
+noremap } <Cmd>keepjumps normal! }<CR>
+noremap n <Cmd>call iter#next_match(0)<CR>
+noremap N <Cmd>call iter#next_match(1)<CR>
+
+" Navigate wildmenu options and normal mode f/t with <C-,> and <C-.> in iTerm
+" Note: This is overwritten by vim-sneak, which also applies zv by default
 cnoremap <F1> <C-p>
 cnoremap <F2> <C-n>
-
-" Go to last and next changed text
-" Note: F4 is mapped to Ctrl-m in iTerm
-" au BufEnter * normal! m'
-augroup jumplist_setup | au! | augroup END
-noremap <C-n> g;zv
-noremap <F4> g,zv
-
-" Go to last and next jump
-" Note: This accounts for karabiner arrow key maps
-noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
-noremap <C-l> <Cmd>call mark#goto_jump(+v:count1)<CR>
-noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
-noremap <Right> <Cmd>call mark#goto_jump(+v:count1)<CR>
+noremap <F2> ,zv
+noremap <F1> ;zv
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
@@ -607,7 +632,7 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
 silent! unmap zv
-noremap <CR> zzze
+noremap z<CR> zzze
 noremap z9 zt
 noremap z0 zb
 noremap z< ze
@@ -742,8 +767,8 @@ nmap <expr> \\ '\' . getcharstr() . 'al'
 
 " Sort input lines
 " Note: Simply uses native ':sort' command.
-noremap <expr> \s edit#sort_lines_expr()
-noremap <expr> \\s edit#sort_lines_expr() . 'ip'
+noremap <expr> \a edit#sort_lines_expr()
+noremap <expr> \\a edit#sort_lines_expr() . 'ip'
 
 " Reverse input lines
 " See: https://superuser.com/a/189956/506762
@@ -751,24 +776,24 @@ noremap <expr> \\s edit#sort_lines_expr() . 'ip'
 noremap <expr> \r edit#reverse_lines_expr()
 noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
 
-" Replace tabs with spaces
-" Note: Could also use :retab?
-noremap <expr> \<Tab> edit#replace_regex_expr(
-  \ 'Fixed tabs.',
-  \ '\t', repeat(' ', &tabstop))
-
 " Remove trailing whitespace
 " See: https://stackoverflow.com/a/3474742/4970632)
 noremap <expr> \t edit#replace_regex_expr(
   \ 'Removed trailing whitespace.',
   \ '\s\+\ze$', '')
 
+" Replace tabs with spaces
+" Note: Could also use :retab?
+noremap <expr> \<Tab> edit#replace_regex_expr(
+  \ 'Fixed tabs.',
+  \ '\t', repeat(' ', &tabstop))
+
 " Replace consecutive spaces on current line with one space
 " only if they're not part of indentation
-noremap <expr> \w edit#replace_regex_expr(
+noremap <expr> \s edit#replace_regex_expr(
   \ 'Squeezed consecutive whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \{2,}', ' ')
-noremap <expr> \W edit#replace_regex_expr(
+noremap <expr> \S edit#replace_regex_expr(
   \ 'Stripped all whitespace.',
   \ '\S\@<=\(^ \+\)\@<! \+', '')
 
@@ -1195,6 +1220,9 @@ let g:MRU_file = '~/.vim_mru_files'  " default (custom was ignored for some reas
 call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('Konfekt/FastFold')  " speedup folding
 call plug#('justinmk/vim-sneak')  " simple and clean
+silent! unlet g:loaded_sneak_plugin
+let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
+let g:sneak#absolute_dir = 1  " same search direction no matter initial direction
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
@@ -1205,14 +1233,15 @@ call plug#('andymass/vim-matchup')
 call plug#('henrik/vim-indexed-search')
 let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
 let g:matchup_transmute_enabled = 0  " issues in latex, use vim-succinct instead
-let g:indexed_search_mappings = 1  " required even for <Plug>(mappings) to work
+let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
+let g:indexed_search_center = 0  " do not center all matches
 let g:indexed_search_colors = 0
 let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
 let g:indexed_search_line_info = 1  " show first and last line indicators
 let g:indexed_search_max_lines = 100000  " increase from default of 3000 for log files
 let g:indexed_search_shortmess = 1  " shorter message
 let g:indexed_search_numbered_only = 1  " only show numbers
-let g:indexed_search_n_always_searches_forward = 0  " disable for consistency with sneak
+let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
 
 " Error checking and testing
 " Note: Test plugin works for every filetype (simliar to ale).
@@ -1427,6 +1456,9 @@ call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually s
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
 call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
+call plug#('fs111/pydoc.vim')  " python docstring browser
+let g:pydoc_highlight = 0  " faster loading
+let g:pydoc_perform_mappings = 0  " custom mappings
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
@@ -1725,13 +1757,13 @@ if s:plug_active('vim-lsp')
     au User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
-  noremap gD gdzv<Cmd>noh<CR>
-  noremap gd <Cmd>tab LspDefinition<CR>
-  noremap [d <Cmd>LspPreviousReference<CR>
-  noremap ]d <Cmd>LspNextReference<CR>
-  noremap <Leader>f <Cmd>LspReferences<CR>
+  noremap <CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
+  noremap g<CR> gdzv<Cmd>noh<CR>
+  noremap gd <Cmd>LspReferences<CR>
+  noremap gD <Cmd>LspRename<CR>
+  noremap [r <Cmd>LspPreviousReference<CR>
+  noremap ]r <Cmd>LspNextReference<CR>
   noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>D <Cmd>LspRename<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
@@ -1760,7 +1792,7 @@ if s:plug_active('vim-lsp')
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " use ale instead
   let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_highlight_enabled = 0  " used with reference navigation
+  let g:lsp_document_highlight_enabled = 1  " used with reference navigation
   let g:lsp_fold_enabled = 0  " not yet tested, requires 'foldlevel', 'foldlevelstart'
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
