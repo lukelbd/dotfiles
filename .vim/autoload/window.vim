@@ -36,7 +36,8 @@ endfunction
 " still works so suppress messages here.
 " Note: Calling quit inside codi buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
-function! window#close_tab() abort
+function! window#close_tab(...) abort
+  let bang = a:0 && a:1 ? '!' : ''
   let ntabs = tabpagenr('$')
   let islast = ntabs == tabpagenr()
   let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
@@ -46,19 +47,20 @@ function! window#close_tab() abort
     silent! Codi!!
   endif
   if ntabs == 1 | quitall | else
-    tabclose | if !islast | silent! tabprevious | endif
+    exe 'tabclose' . bang | if !islast | silent! tabprevious | endif
   endif
 endfunction
-function! window#close_window() abort
+function! window#close_window(...) abort
+  let bang = a:0 && a:1 ? '!' : ''
   let ntabs = tabpagenr('$')
   let islast = ntabs == tabpagenr()
   let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
   if &filetype ==# 'codi'
     wincmd p | silent! Codi!!
   elseif index(ftypes, 'codi') != -1
-    silent! Codi!! | quit
+    silent! Codi!! | exe 'quit' . bang
   else
-    quit
+    exe 'quit' . bang
   endif
   if ntabs != tabpagenr('$') && !islast
     silent! tabprevious

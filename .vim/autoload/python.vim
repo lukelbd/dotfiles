@@ -201,21 +201,11 @@ endfunction
 " Todo: Use below regexes to generate suggestion lists based on file text
 " Note: This is still useful over Lsp e.g. for generalized help page browsing. And
 " everything is standardized to man-format so has consistency with man utilities.
-function! python#doc_name(...) abort
-  let curr = get(b:, 'doc_curr', '')  " existing pydoc file
-  let line = getline('.')  " current line
-  let regex = '\(\k\|\.\)\+'
-  if a:0 | let item = a:1 | else
-    let head = matchstr(line[:col('.') - 1], '\(\k\|\.\)*$')
-    let tail = matchstr(line[col('.'):], '^\k*')
-    let item = head . tail
-  endif
-  if empty(item) || empty(curr) && &l:filetype !=# 'python'
-    return get(s:, 'doc_prev', item)
-  endif
+function! s:parse_name(item)
   let winview = winsaveview()
-  let parts = split(item, '\.')
+  let parts = split(a:item, '\.')
   let module = parts[0]
+  let regex = '\(\k\|\.\)\+'
   if search('import\s\+' . regex . '\s\+as\s\+' . module, 'w')
     let name = matchlist(getline('.'), 'import\s\+\(' . regex . '\)\s\+as')[1]
     if !empty(name) | let module = name | endif
@@ -224,35 +214,50 @@ function! python#doc_name(...) abort
     let package = matchlist(getline('.'), 'from\s\+\(' . regex . '\)\s\+import')[1]
     if !empty(package) | let module = package . '.' . module | endif
   endif
-  call winrestview(winview) |
   let parts[0] = module
-  if !empty(curr) && curr !=# parts[0]
-    return curr . '.' . join(parts, '.')
-  else
-    return join(parts, '.')
+  call winrestview(winview)
+  return join(parts, '.')
+endfunction
+function! python#doc_name(...) abort
+  let curr = get(w:, 'doc_curr', '')  " existing pydoc file
+  let line = getline('.')  " current line
+  let parse = &l:filetype ==# 'python'
+  if a:0  " input value
+    let item = a:1
+  elseif !parse && empty(curr)
+    let item = ''
+  else  " cursor word in pydoc page or python file
+    let head = matchstr(line[:col('.') - 1], '\(\k\|\.\)*$')
+    let tail = matchstr(line[col('.'):], '^\k*')
+    let item = head . tail
   endif
+  let item = empty(item) ? get(s:, 'doc_prev', '') : item
+  let parts = split(parse ? s:parse_name(item) : item, '\.')
+  if !empty(curr) && item !~# curr && curr !~# item | call insert(parts, curr) | endif
+  return join(parts, '.')
 endfunction
 function! python#doc_page(...) abort
-  if a:0  " input man
-    let page = a:1
-  else  " default man
-    let page = utils#input_default('Pydoc page', python#doc_name(), 'python#doc_source')
-  endif
+  let curr = get(w:, 'doc_curr', '')
+  let page = a:0 ? a:1 : utils#input_default('Pydoc page', python#doc_name(), 'python#doc_source')
+  let page = empty(curr) ? python#doc_name(page) : page  " aliases and prefix
   if empty(page) | return | endif
-  if get(b:, 'pydoc', 0)
-    let b:doc_prev = b:doc_curr  " previously browsed
-    let page = a:0 ? a:1 : @% . '.' . page
-    silent %delete | silent exe 'file ' . page
-  else
-    let s:doc_prev = page  " previous user input
-    let page = python#doc_name(page)
-    silent exe 'tabedit ' . page
+  let bnr = bufnr(page)
+  if bnr == -1  " first time loading
+    let result = systemlist('pydoc ' . shellescape(page))
+    let result = map(result, 'substitute(v:val, ''^\( \{4}\)* | \{2,}'', ''\1'', ''ge'')')
+    let msg = 'Error: Nothing returned from "pydoc ' . page . '"'
+    if len(result) <= 5 | echohl ErrorMsg | echom msg | echohl None | return | endif
   endif
-  let b:pydoc = 1  " see shell.vim
-  let b:doc_curr = page
-  exe 'silent read !pydoc ' . shellescape(page)
-  exe 'silent! %s/^ \{5,}| \{2,}/        /ge' | goto
-  setlocal filetype=man buftype=nofile bufhidden=delete
+  if !empty(curr)
+    let w:doc_prev = w:doc_curr  " previously browsed
+    silent exe bnr == -1 ? 'enew | file ' . page : bnr . 'buffer'
+  else
+    let s:doc_prev = page  " previous input
+    silent exe bnr == -1 ? 'tabedit ' . page : 'tabedit | ' . bnr . 'buffer'
+  endif
+  if bnr == -1 | call append(0, result) | goto | endif
+  let w:doc_curr = page | setlocal filetype=man  " see shell.vim
+  setlocal nobuflisted bufhidden=hide buftype=nofile
 endfunction
 function! python#doc_source(...) abort
   let cmd = 'pip list --no-color --no-input --no-python-version-warning'

@@ -49,15 +49,15 @@ endfunction
 " Warning: Calling :Man changes the buffer, so use buffer variables specific to each
 " page to record navigation history. Order of assignment below is critical.
 function! s:doc_jump(forward) abort
-  let curr = b:doc_curr
+  let curr = w:doc_curr
   let name = a:forward ? 'doc_next' : 'doc_prev'
-  let page = get(b:, name, '')
+  let page = get(w:, name, '')
   if empty(page) | return | endif
   call python#doc_page(page)
   if a:forward
-    let b:doc_prev = curr
+    let w:doc_prev = curr
   else
-    let b:doc_next = curr
+    let w:doc_next = curr
   endif
 endfunction
 function! s:man_jump(forward) abort
@@ -88,8 +88,8 @@ function! shell#man_setup(...) abort
   setlocal tabstop=8 softtabstop=8 shiftwidth=8
   let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
   let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
-  if get(b:, 'pydoc', 0)
-    let b:doc_curr = @%
+  if !empty(get(w:, 'doc_curr', ''))
+    let w:doc_curr = @%
     noremap <nowait> <buffer> [ <Cmd>call <sid>doc_jump(0)<CR>
     noremap <nowait> <buffer> ] <Cmd>call <sid>doc_jump(1)<CR>
     noremap <silent> <buffer> <CR> <Cmd>call python#doc_page(python#doc_name())<CR>
@@ -99,8 +99,8 @@ function! shell#man_setup(...) abort
     noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
     noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
   endif
-  if get(b:, 'pydoc', 0)
-    let pad = '^\(\s\{4}\)\{1,2}'
+  if !empty(get(w:, 'doc_curr', ''))
+    let pad = '^\(\s\{4}\)*'
     let item = pad . '\zs\(class\s\+\)\?\k\+\ze(.*)'
     let data = pad . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
     let dash = pad . '\s*\zs[-=]\{3,}.*$'
@@ -109,12 +109,13 @@ function! shell#man_setup(...) abort
       \ . '\(' . pad . '\(\s*\|\s*[-=]\{3,}.*\)\n' . pad . '\s*\)\@<='
       \ . '\C[A-Z]\a\{2,}.*'
       \ . '\(\n' . pad . '\s*[-=]\{3,}.*$\)\@='
-    exe 'syntax clear manLongOptionDesc'
     exe "syntax match docItem '" . item . "'"
     exe "syntax match docData '" . data . "'"
     exe "syntax match docMess '" . mess . "'"
     exe "syntax match docHeader '" . head . "'"
     exe "syntax match docDashes '" . dash . "'"
+    silent! syntax clear manLongOptionDesc
+    silent! syntax clear manSectionHeading
     highlight link docItem manSectionHeading
     highlight link docData manSectionHeading
     highlight link docMess manHeader
@@ -136,18 +137,14 @@ function! shell#cmd_man(...) abort
   let g:ft_man_folding_enable = 1  " see :help Man
   let current = @%  " current file
   if empty(page) | return | endif
-  tabedit | set filetype=man | exe 'Man ' . page
+  tabedit | set filetype=man | silent exe 'Man ' . page
   if line('$') <= 1
-    silent! quit
-    call file#open_drop(current)
-    echom "man.vim: nothing returned from 'man " . page . "'"
+    silent! quit | call file#open_drop(current)
+    echohl ErrorMsg | echom "Error: Nothing returned from 'man " . page . "'" | echohl None
   endif
   if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
-    if has('macunix') && page !=# 'builtin'
-      Man bash
-    endif
-    let @/ = '^       ' . page . ' [.*$'
-    normal! n
+    if has('macunix') && page !=# 'builtin' | exe 'Man bash' | endif
+    let @/ = '^ \{7}' . page . ' [.*$' | normal! n
   endif
 endfunction
 function! shell#fzf_man() abort
