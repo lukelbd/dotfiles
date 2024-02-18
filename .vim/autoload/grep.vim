@@ -101,7 +101,6 @@ function! grep#call_rg(global, level, ...) abort
   call timer_start(1, function('s:echo_grep', [regex]))
 endfunction
 
-
 " Call Rg or Ag from mapping (see also file.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.

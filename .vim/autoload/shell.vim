@@ -87,13 +87,13 @@ endfunction
 " Note: Apple will have empty line then BUILTIN(1) on second line, but linux
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
 function! shell#cmd_man(...) abort
-  let g:ft_man_folding_enable = 1  " see :help Man
-  let current = @%  " current file
   if a:0  " input man
     let page = a:1
   else  " default man
     let page = utils#input_default('Man page', expand('<cword>'), 'shellcmd')
   endif
+  let g:ft_man_folding_enable = 1  " see :help Man
+  let current = @%  " current file
   if empty(page) | return | endif
   tabedit | set filetype=man | exe 'Man ' . page
   if line('$') <= 1
