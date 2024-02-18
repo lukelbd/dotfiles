@@ -383,7 +383,7 @@ noremap <Leader>W <Cmd>call switch#autosave()<CR>
 nnoremap <C-q> <Cmd>call window#close_tab()<CR>
 nnoremap <C-w> <Cmd>call window#close_window()<CR>
 nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-e> <Cmd>exe 'Drop ' . fnameescape(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>silent! only<CR>ze
+nnoremap <C-e> <Cmd>call file#open_drop(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>silent! only<CR>ze
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -438,9 +438,9 @@ nnoremap <Tab>\ <Cmd>exe 'leftabove ' . window#default_width(1)
   \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
 " Tab and window jumping
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>m'
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>m'
-nnoremap <Tab>' <Cmd>silent! tabnext #<CR>m'
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
+nnoremap <Tab>' <Cmd>silent! tabnext #<CR>
 nnoremap <Tab>; <C-w><C-p>
 nnoremap <Tab>j <C-w>j
 nnoremap <Tab>k <C-w>k
@@ -470,7 +470,7 @@ command! -nargs=? Localdir call switch#localdir(<args>)
 noremap zp <Cmd>Paths<CR>
 noremap zP <Cmd>Localdir<CR>
 noremap gp <Cmd>call file#print_exists()<CR>
-noremap gP <Cmd>exe 'Drop ' . fnameescape(expand('<cfile>'))<CR>
+noremap gP <Cmd>call file#open_drop(expand('<cfile>'))<CR>
 
 " 'Execute' script with different options
 " Note: Current idea is to use 'ZZ' for running entire file and 'Z<motion>' for
@@ -566,12 +566,12 @@ function! s:reset_jumps() abort
   let pos = min([pos, len(items) - 1])  " returns length if outside of list
   let [prev, curr] = [line("''"), items[pos]['lnum']]
   if (line1 > curr || line2 < curr) && (line1 > prev || line2 < prev)
-    call feedkeys("m'", 'n')  " update mark to current position
+    call feedkeys("m'", 'n')  " add mark to current position
   endif
 endfunction
 augroup jumplist_setup
   au!
-  au CursorHold * call s:reset_jumps()
+  au CursorHold,TextChanged,InsertLeave * call s:reset_jumps()
 augroup END
 
 " Navigate matches/sentences/paragraphs without adding to jumplist
@@ -1231,6 +1231,8 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 " disable colors for increased speed.
 call plug#('andymass/vim-matchup')
 call plug#('henrik/vim-indexed-search')
+let g:matchup_mappings_enabled = 1  " enable default mappings
+let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
 let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
 let g:matchup_transmute_enabled = 0  " issues in latex, use vim-succinct instead
 let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
@@ -1632,14 +1634,13 @@ if s:plug_active('vim-succinct')
 endif
 
 " Tag integration settings
-" Add maps for vim-tags and gutentags plus use tags for default double bracket
-" motion, except never overwrite potential single bracket mappings (e.g. help mode).
-" Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
-" instead creating tags whenever buffer is loaded and tracking tags continuously.
-" Note: Use .ctags config to ignore kinds or include below to filter bracket jumps. See
-" :ShowTable for translations. Try to use 'minor' for all single-line constructs.
 " Warning: Critical to mamba install 'universal-ctags' instead of outdated 'ctags'
 " or else will get warnings for non-existing kinds.
+" Note: Use .ctags config to ignore kinds or include below to filter bracket jumps. See
+" :ShowTable for translations. Try to use 'minor' for all single-line constructs.
+" Note: Custom plugin is similar to :Btags, but does not create or manage tag files,
+" instead creating tags whenever buffer is loaded and tracking tags continuously. Also
+" note / and ? update jumplist but cannot override without keeping interactivity.
 if s:plug_active('vim-tags')
   command! -nargs=? TagToggle call switch#tags(<args>)
   command! -bang -nargs=* ShowTable
@@ -1659,8 +1660,7 @@ endif
 
 " Gutentag tag generation
 " Note: Use gutentags for fancy navigation in buffer / across project, alongside
-" custom vim-tags utility for simple navigation in buffer. In future may also support
-" vim-tags navigation across open tabs.
+" custom vim-tags utility for simple navigation in buffer.
 " Todo: Update :Open and :Find so they also respect ignore files, consistent with
 " bashrc grep/find utilities and with below grep/ctags utilities. For debugging
 " parsing of ignore files use below :ShowIgnores command.

@@ -31,7 +31,7 @@ function! s:select_jump(loc) abort
   let jump = s:jumplist[a:loc]
   let tail = substitute(jump, '^\s*\(\d\+\s\+\)\{3}', '', '')
   if bufexists(tail)  " i.e. not text within this buffer but a different buffer
-    let cmd = 'Drop ' . fnameescape(tail) . "\<CR>"
+    let cmd = "call file#open_drop('" . tail . "')"
     let keys = "\<Cmd>" . cmd . "\<CR>"
   else
     let key = a:loc > s:jumploc ? "\<C-i>" : "\<C-o>"
@@ -96,9 +96,9 @@ function! s:changes_sink(lines) abort
   if empty(lines) | return | endif
   let line = lines[-1]  " use final selection passed
   let [bnr, offset, lnum, cnum] = split(line)[0:3]
-  let path = fnameescape(bufname(str2nr(bnr)))
+  let path = bufname(str2nr(bnr))
   if offset ==# '-'
-    let keys = "\<Cmd>Drop " . path . "\<CR>\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
+    let keys = "\<Cmd>call file#open_drop('" . path . "')\<CR>\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
   else
     let keys .= offset[0] ==# '+' ? offset[1:] . 'g,' : offset . 'g;'
   endif

@@ -5,17 +5,18 @@
 " Note: This will jump to existing tab and enable codi if present
 scriptencoding utf-8
 function! calc#codi_new(...) abort
+  let prompt = 'Calculator path'
   if a:0 && !empty(a:1)
     let path = a:1
   else
     let path = fnamemodify(resolve(@%), ':p:h')
-    let prompt = 'Calculator path'
     let default = fnamemodify(path, ':p:~:.') . 'calc.py'
     let path = utils#input_default(prompt, default, 'file#complete_lwd')
   endif
   if !empty(path)
     let path = fnamemodify(path, ':r') . '.py'
-    exe 'Drop ' . path | silent! exe 'Codi!!'
+    call file#open_drop(path)
+    silent! exe 'Codi!!'
   endif
 endfunction
 

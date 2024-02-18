@@ -106,7 +106,7 @@ function! file#open_recent() abort
     \ }))
 endfunction
 function! s:open_recent_sink(path) abort
-  exe 'Drop ' . a:path
+  call file#open_drop(a:path)
 endfunction
 
 " Open from local or current directory (see also grep.vim)
@@ -221,7 +221,7 @@ function! file#open_drop(...) abort
     if blank || panel || fugitive
       call feedkeys("\<Cmd>edit " . path . "\<CR>", 'n')
     else  " create new tab
-      call feedkeys("\<Cmd>tabnew " . path . "\<CR>", 'n')
+      exe 'tabnew ' . fnameescape(path)
     end
   endfor
 endfunction
