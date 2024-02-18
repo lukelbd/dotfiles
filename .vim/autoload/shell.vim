@@ -45,17 +45,20 @@ function! shell#fzf_help() abort
     \ }))
 endfunction
 
-" Man page utilities
+" Man page and pydoc page utilities
 " Warning: Calling :Man changes the buffer, so use buffer variables specific to each
 " page to record navigation history. Order of assignment below is critical.
-function! shell#man_setup(...) abort
-  setlocal tabstop=8 softtabstop=8 shiftwidth=8
-  let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
-  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
-  let b:man_curr = [page, pnum]  " see below
-  noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
-  noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
-  noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
+function! s:doc_jump(forward) abort
+  let curr = b:doc_curr
+  let name = a:forward ? 'doc_next' : 'doc_prev'
+  let page = get(b:, name, '')
+  if empty(page) | return | endif
+  call python#doc_page(page)
+  if a:forward
+    let b:doc_prev = curr
+  else
+    let b:doc_next = curr
+  endif
 endfunction
 function! s:man_jump(forward) abort
   let curr = b:man_curr
@@ -79,6 +82,44 @@ function! s:man_cursor() abort
   if bnr != bufnr()  " original buffer
     let b:man_prev = curr
     let b:man_curr = [page, pnum]
+  endif
+endfunction
+function! shell#man_setup(...) abort
+  setlocal tabstop=8 softtabstop=8 shiftwidth=8
+  let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
+  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
+  if get(b:, 'pydoc', 0)
+    let b:doc_curr = @%
+    noremap <nowait> <buffer> [ <Cmd>call <sid>doc_jump(0)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call <sid>doc_jump(1)<CR>
+    noremap <silent> <buffer> <CR> <Cmd>call python#doc_page(python#doc_name())<CR>
+  else
+    let b:man_curr = [page, pnum]  " see below
+    noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
+    noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
+  endif
+  if get(b:, 'pydoc', 0)
+    let pad = '^\(\s\{4}\)\{1,2}'
+    let item = pad . '\zs\(class\s\+\)\?\k\+\ze(.*)'
+    let data = pad . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
+    let dash = pad . '\s*\zs[-=]\{3,}.*$'
+    let mess = pad . '\s*\C[A-Z].*\(defined here\|resolution order\|inherited\s*from\s*\S*\):$'
+    let head = ''
+      \ . '\(' . pad . '\(\s*\|\s*[-=]\{3,}.*\)\n' . pad . '\s*\)\@<='
+      \ . '\C[A-Z]\a\{2,}.*'
+      \ . '\(\n' . pad . '\s*[-=]\{3,}.*$\)\@='
+    exe 'syntax clear manLongOptionDesc'
+    exe "syntax match docItem '" . item . "'"
+    exe "syntax match docData '" . data . "'"
+    exe "syntax match docMess '" . mess . "'"
+    exe "syntax match docHeader '" . head . "'"
+    exe "syntax match docDashes '" . dash . "'"
+    highlight link docItem manSectionHeading
+    highlight link docData manSectionHeading
+    highlight link docMess manHeader
+    highlight link docHeader manHeader
+    highlight link docDashes manHeader
   endif
 endfunction
 

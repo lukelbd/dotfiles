@@ -19,7 +19,12 @@ function! window#buffer_source() abort
       let name = fnamemodify(path, ':~:.')
     endif
     let pad = repeat(' ', ndigits - len(string(tnr)))
-    let flags = TablineFlags(path, process)  " mostly skip processing
+    let flags = TablineFlags(path, process) . ' '  " mostly skip processing
+    let hunks =  getbufvar(bufnr(path), 'gitgutter', {})
+    let [acnt, mcnt, rcnt] = get(hunks, 'summary', [0, 0, 0])
+    for [key, cnt] in [['+', acnt], ['~', mcnt], ['-', rcnt]]
+      if !empty(cnt) | let flags .= key . cnt | endif
+    endfor
     let value = pad . tnr . ': ' . name . flags  " displayed string
     call add(values, value)
   endfor

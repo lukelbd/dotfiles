@@ -132,7 +132,7 @@ endfunction
 function! python#init_jupyter() abort
   let parent = 0
   let runtime = trim(system('jupyter --runtime-dir'))  " vim 8.0.163: https://stackoverflow.com/a/53250594/4970632
-  while !exists('folder') || !empty(folder)  " note default scope is l: (g: is ignored)
+  while !exists('folder') || !empty(folder)  " note default scope is  (g: is ignored)
     let parent += 1
     let string = '%:p' . repeat(':h', parent)
     let folder = expand(string . ':t')
@@ -195,6 +195,78 @@ endfunction
 " For <expr> map accepting motion
 function! python#run_motion_expr(...) abort
   return utils#motion_func('python#run_motion', a:000)
+endfunction
+
+" Python documentation browser
+" Todo: Use below regexes to generate suggestion lists based on file text
+" Note: This is still useful over Lsp e.g. for generalized help page browsing. And
+" everything is standardized to man-format so has consistency with man utilities.
+function! python#doc_name(...) abort
+  let curr = get(b:, 'doc_curr', '')  " existing pydoc file
+  let line = getline('.')  " current line
+  let regex = '\(\k\|\.\)\+'
+  if a:0 | let item = a:1 | else
+    let head = matchstr(line[:col('.') - 1], '\(\k\|\.\)*$')
+    let tail = matchstr(line[col('.'):], '^\k*')
+    let item = head . tail
+  endif
+  if empty(item) || empty(curr) && &l:filetype !=# 'python'
+    return get(s:, 'doc_prev', item)
+  endif
+  let winview = winsaveview()
+  let parts = split(item, '\.')
+  let module = parts[0]
+  if search('import\s\+' . regex . '\s\+as\s\+' . module, 'w')
+    let name = matchlist(getline('.'), 'import\s\+\(' . regex . '\)\s\+as')[1]
+    if !empty(name) | let module = name | endif
+  endif
+  if search('from\s\+' . regex . '\s\+import\s\+(\?\(' . regex . '\(,\s*\n*\s*\)\?\)*' . module)
+    let package = matchlist(getline('.'), 'from\s\+\(' . regex . '\)\s\+import')[1]
+    if !empty(package) | let module = package . '.' . module | endif
+  endif
+  call winrestview(winview) |
+  let parts[0] = module
+  if !empty(curr) && curr !=# parts[0]
+    return curr . '.' . join(parts, '.')
+  else
+    return join(parts, '.')
+  endif
+endfunction
+function! python#doc_page(...) abort
+  if a:0  " input man
+    let page = a:1
+  else  " default man
+    let page = utils#input_default('Pydoc page', python#doc_name(), 'python#doc_source')
+  endif
+  if empty(page) | return | endif
+  if get(b:, 'pydoc', 0)
+    let b:doc_prev = b:doc_curr  " previously browsed
+    let page = a:0 ? a:1 : @% . '.' . page
+    silent %delete | silent exe 'file ' . page
+  else
+    let s:doc_prev = page  " previous user input
+    let page = python#doc_name(page)
+    silent exe 'tabedit ' . page
+  endif
+  let b:pydoc = 1  " see shell.vim
+  let b:doc_curr = page
+  exe 'silent read !pydoc ' . shellescape(page)
+  exe 'silent! %s/^ \{5,}| \{2,}/        /ge' | goto
+  setlocal filetype=man buftype=nofile bufhidden=delete
+endfunction
+function! python#doc_source(...) abort
+  let cmd = 'pip list --no-color --no-input --no-python-version-warning'
+  let pages = systemlist(cmd)[2:]
+  let pages = map(pages, 'substitute(v:val, ''\s\+.*$'', '''', ''g'')')
+  let pages = filter(pages, '!empty(v:val)')
+  return pages
+endfunction
+function! python#doc_search() abort
+  call fzf#run(fzf#wrap({
+    \ 'source': python#doc_source(),
+    \ 'options': '--no-sort --prompt="pydoc> "',
+    \ 'sink': function('python#doc_page'),
+    \ }))
 endfunction
 
 " Split docstrings over multiple lines

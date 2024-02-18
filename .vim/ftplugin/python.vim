@@ -42,5 +42,5 @@ let s:delims = {
   \ '"': '"\r"',
   \ 'd': '"""\r"""',
   \ 'D': '''''''\r''''''',
-  \ }
+\ }
 call succinct#add_delims(s:delims, 1)

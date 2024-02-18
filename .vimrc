@@ -574,25 +574,25 @@ augroup jumplist_setup
   au CursorHold * call s:reset_jumps()
 augroup END
 
-" Navigate jumplist with <C-h>/<C-l> and changelist with <C-n>/<C-m>
-" See: https://stackoverflow.com/a/27194972/4970632
-" Note: This accounts for karabiner arrow key maps
-noremap <C-n> <Cmd>call mark#goto_change(-v:count1)<CR>
-noremap <F4> <Cmd>call mark#goto_change(v:count1)<CR>
-noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
-noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
-noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
-noremap <Right> <Cmd>call mark#goto_jump(v:count1)<CR>
-
-" Navigate searches without adding to jumplist
-" Note: Core vim idea is that thes nz nzv commands take us far away from cursor but typically
-" use scrolling instead nz nzv and just add to jumplist when holding cursor in one location
+" Navigate matches/sentences/paragraphs without adding to jumplist
+" Note: Core vim idea is that these commands take us far away from cursor
+" but typically use scrolling to go far away. So use CursorHold approach
+noremap n <Cmd>call iter#next_match(0)<CR>
+noremap N <Cmd>call iter#next_match(1)<CR>
 noremap ( <Cmd>keepjumps normal! (<CR>
 noremap ) <Cmd>keepjumps normal! )<CR>
 noremap { <Cmd>keepjumps normal! {<CR>
 noremap } <Cmd>keepjumps normal! }<CR>
-noremap n <Cmd>call iter#next_match(0)<CR>
-noremap N <Cmd>call iter#next_match(1)<CR>
+
+" Navigate jumplist with <C-h>/<C-l> and changelist with <C-n>/<C-m>
+" See: https://stackoverflow.com/a/27194972/4970632
+" Note: This accounts for karabiner arrow key maps
+noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
+noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <Right> <Cmd>call mark#goto_jump(v:count1)<CR>
+noremap <C-n> <Cmd>call mark#goto_change(-v:count1)<CR>
+noremap <F4> <Cmd>call mark#goto_change(v:count1)<CR>
 
 " Navigate wildmenu options and normal mode f/t with <C-,> and <C-.> in iTerm
 " Note: This is overwritten by vim-sneak, which also applies zv by default
@@ -1447,18 +1447,16 @@ call plug#('junegunn/vim-easy-align')
 " call plug#('cjrh/vim-conda')  " for changing anconda VIRTUALENV but probably don't need it
 " call plug#('klen/python-mode')  " incompatible with jedi-vim and outdated
 " call plug#('ivanov/vim-ipython')  " replaced by jupyter-vim
-" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pyDiction plugin
 " call plug#('davidhalter/jedi-vim')  " use vim-lsp with mamba install python-lsp-server
 " call plug#('jeetsukumaran/vim-python-indent-black')  " black style indentexpr, but too buggy
 " call plug#('lukelbd/jupyter-vim', {'branch': 'buffer-local-highlighting'})  " temporary
+" call plug#('fs111/pydoc.vim')  " python docstring browser, now use custom utility
+" let g:pydiction_location = expand('~') . '/.vim/plugged/Pydiction/complete-dict'  " for pydiction
 call plug#('heavenshell/vim-pydocstring')  " automatic docstring templates
 call plug#('Vimjas/vim-python-pep8-indent')  " pep8 style indentexpr, actually seems to respect black style?
 call plug#('tweekmonster/braceless.vim')  " partial overlap with vim-textobj-indent, but these include header
 call plug#('goerz/jupytext.vim')  " edit ipython notebooks
 call plug#('jupyter-vim/jupyter-vim')  " pair with jupyter consoles, support %% highlighting
-call plug#('fs111/pydoc.vim')  " python docstring browser
-let g:pydoc_highlight = 0  " faster loading
-let g:pydoc_perform_mappings = 0  " custom mappings
 let g:braceless_block_key = 'm'  " captures if, for, def, etc.
 let g:braceless_generate_scripts = 1  " see :help, required since we active in ftplugin
 let g:pydocstring_formatter = 'numpy'  " default is google so switch to numpy
@@ -1654,6 +1652,7 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>T <Cmd>ShowTable!<CR>
   let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
   let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
+  let g:tags_find_map = '<CR>'  " default is <Leader><Tab>
   let g:tags_major_kinds = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let g:tags_minor_kinds = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
 endif
@@ -1748,22 +1747,25 @@ endif
 " native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
 if s:plug_active('vim-lsp')
   " Autocommands and mappings
+  " noremap gD gdzv<Cmd>noh<CR>
   " noremap <Leader>^ <Cmd>verbose LspStatus<CR>
   " au User lsp_setup  " see vim-lsp readme (necessary?)
   " \ call lsp#register_server({'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']})
-  let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   augroup lsp_setup
     au!
     au User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
   augroup END
+  let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   command! -nargs=? LspToggle call switch#lsp(<args>)
-  noremap <CR> <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  noremap g<CR> gdzv<Cmd>noh<CR>
-  noremap gd <Cmd>LspReferences<CR>
-  noremap gD <Cmd>LspRename<CR>
+  command! -nargs=? Pydoc call python#doc_page(<f-args>)
+  noremap gd <Cmd>LspPeekDefinition<CR>
+  noremap gD <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
+  noremap zd <Cmd>call python#doc_page()<cr>
+  noremap zD <Cmd>call python#doc_search()<cr>
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
+  noremap <Leader>d <Cmd>LspReferences<CR>
+  noremap <Leader>D <Cmd>LspRename<CR>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>

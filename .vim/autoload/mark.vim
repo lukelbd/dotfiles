@@ -27,16 +27,16 @@ function! s:update_jumps() abort
   let [s:jumploc, s:jumplist] = [idx, lines]
 endfunction
 function! s:select_jump(loc) abort
-  let keys = ''
   if a:loc == s:jumploc | return | endif
   let jump = s:jumplist[a:loc]
   let tail = substitute(jump, '^\s*\(\d\+\s\+\)\{3}', '', '')
   if bufexists(tail)  " i.e. not text within this buffer but a different buffer
-    let cmd = "\<Cmd>Drop " . fnameescape(tail) . "\<CR>"
-    let keys .= cmd
+    let cmd = 'Drop ' . fnameescape(tail) . "\<CR>"
+    let keys = "\<Cmd>" . cmd . "\<CR>"
+  else
+    let key = a:loc > s:jumploc ? "\<C-i>" : "\<C-o>"
+    let keys = abs(a:loc - s:jumploc) . key
   endif
-  let key = a:loc > s:jumploc ? "\<C-i>" : "\<C-o>"
-  let keys .= abs(a:loc - s:jumploc) . key
   call feedkeys(keys . 'zv', 'n')
 endfunction
 function! mark#goto_jump(count) abort
@@ -46,9 +46,9 @@ function! mark#goto_jump(count) abort
   let jdx = max([jdx, 0])
   call s:select_jump(jdx)
   if abs(a:count) == 1 && idx >= len(s:jumplist)
-    echohl ErrorMsg | echom 'Error: At end of jumplist' | echohl None
+    echohl WarningMsg | echom 'Error: At end of jumplist' | echohl None
   elseif abs(a:count) == 1 && idx < 0
-    echohl ErrorMsg | echom 'Error: At start of jumplist' | echohl None
+    echohl WarningMsg | echom 'Error: At start of jumplist' | echohl None
   else
     call feedkeys("\<Cmd>echom 'Jump location: " . (len(s:jumplist) - jdx) . "'\<CR>", 'n')
   endif
@@ -143,14 +143,14 @@ function! mark#goto_mark(mrk) abort
   let mrks = filter(mrks, "v:val['mark'] =~ \"'\" . a:mrk")
   if empty(mrks)  " avoid 'press enter' due to register
     let cmd = 'echohl WarningMsg '
-      \ . '| echom "Error: Mark ''' . a:mrk . ''' is unset" '
-      \ . '| echohl None'
-    call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')  " bars don't need to be escaped
+    \ . '| echom "Error: Mark ''' . a:mrk . ''' is unset"'
+    \ . '| echohl None'
   else
     let opts = mrks[0]
+    let cmd = "call setpos('.', " . string(opts['pos']) . ')'
     call file#open_drop(opts['file'])
-    call setpos('.', opts['pos'])  " can also use this to set marks
   endif
+  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! mark#fzf_marks(...) abort
   let snr = utils#find_snr('/autoload/fzf/vim.vim')

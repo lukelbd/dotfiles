@@ -122,16 +122,16 @@ endfunction
 " Note: Consistent with other utilities this uses separate tabs
 function! vim#show_colors() abort
   call file#open_drop('colortest.vim')
-  source $VIMRUNTIME/syntax/colortest.vim
-  silent call utils#panel_setup(1)
+  call feedkeys("\<Cmd>source $VIMRUNTIME/syntax/colortest.vim\<CR>", 'n')
+  call feedkeys("\<Cmd>call utils#panel_setup(1)\<CR>", 'n')
 endfunction
 function! vim#show_ftplugin() abort
   call file#open_drop($VIMRUNTIME . '/ftplugin/' . &filetype . '.vim')
-  silent call utils#panel_setup(1)
+  call feedkeys("\<Cmd>call utils#panel_setup(1)\<CR>", 'n')
 endfunction
 function! vim#show_syntax() abort
   call file#open_drop($VIMRUNTIME . '/syntax/' . &filetype . '.vim')
-  silent call utils#panel_setup(1)
+  call feedkeys("\<Cmd>call utils#panel_setup(1)\<CR>", 'n')
 endfunction
 
 " Source file or lines
@@ -197,9 +197,9 @@ function! vim#vim_help(...) abort
   endif
 endfunction
 function! vim#vim_setup() abort
-  wincmd L " moves current window to be at far-right (wincmd executes Ctrl+W maps)
-  vertical resize 80 " always certain size
+  wincmd L  " move current window to far-right
+  vertical resize 80  " help pages have fixed width
   nnoremap <buffer> <CR> <C-]>
-  nnoremap <nowait> <buffer> <silent> [ :<C-u>pop<CR>
-  nnoremap <nowait> <buffer> <silent> ] :<C-u>tag<CR>
+  nnoremap <nowait> <buffer> <silent> [ <Cmd>pop<CR>
+  nnoremap <nowait> <buffer> <silent> ] <Cmd>tag<CR>
 endfunction

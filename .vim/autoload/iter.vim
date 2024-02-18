@@ -85,9 +85,14 @@ function! iter#next_match(reverse) abort
   else
     let map = a:reverse ? 'N' : 'n'
   endif
-  exe 'keepjumps normal! ' . map . 'zv'
-  if exists(':ShowSearchIndex')
-    ShowSearchIndex
+  let b:prevpos = getcurpos()
+  if !empty(@/)
+    call feedkeys("\<Cmd>keepjumps normal! " . map . "zv\<CR>", 'n')
+  else
+    echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
+  endif
+  if !empty(@/)
+    call feedkeys("\<Cmd>exe b:prevpos == getcurpos() ? '' : 'ShowSearchIndex'\<CR>", 'n')
   endif
 endfunction
 

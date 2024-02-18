@@ -211,11 +211,7 @@ function! file#open_drop(...) abort
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
       for bnr in tabpagebuflist(tnr)
         if expand('#' . bnr . ':p') ==# abspath
-          try
-            exe tnr . 'tabnext' | exe bufwinnr(bnr) . 'wincmd w' | return
-          catch
-            continue
-          endtry
+          exe tnr . 'tabnext' | exe bufwinnr(bnr) . 'wincmd w' | return
         endif
       endfor
     endfor
