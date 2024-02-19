@@ -381,10 +381,10 @@ vnoremap <expr> A mode() =~# "\<C-v>" ? 'A' : '<Esc>`>a'
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
-nnoremap <C-q> <Cmd>call window#close_tab()<CR>
-nnoremap <C-w> <Cmd>call window#close_window()<CR>
-nnoremap <C-s> <Cmd>call file#update()<CR>
-nnoremap <C-e> <Cmd>call file#open_drop(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>silent! only<CR>ze
+nnoremap <C-s> <Cmd>call file#update()<CR>zv
+nnoremap <C-q> <Cmd>call window#close_tab()<CR>zv
+nnoremap <C-w> <Cmd>call window#close_window()<CR>zv
+nnoremap <C-e> <Cmd>call file#open_drop(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>silent! only<CR>zezv
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -529,13 +529,13 @@ xmap <F5> <Plug>(fzf-maps-x)
 imap <F5> <Plug>(fzf-maps-i)
 nnoremap z; @:
 nnoremap <F5> <Cmd>Maps<CR>
+nnoremap <Leader>b <Cmd>Commands<CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_help()<CR>
-nnoremap <Leader>b <Cmd>Commands<CR>
 
 " Shell , search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
@@ -1786,14 +1786,15 @@ if s:plug_active('vim-lsp')
   command! -nargs=? ClearDoc call iter#clear_stack('doc')
   command! -nargs=? ShowDoc call iter#show_stack('doc')
   command! -nargs=? Doc call iter#next_stack('python#doc_page', 'doc', <f-args>)
-  noremap gd <Cmd>LspPeekDefinition<CR>
-  noremap gD <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  noremap zd <Cmd>call iter#next_stack('python#doc_page', 'doc')<CR>
-  noremap zD <Cmd>call python#doc_search()<cr>
+  noremap zd <Cmd>LspReferences<CR>
+  noremap zD <Cmd>LspRename<CR>
+  noremap gd <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
+  noremap gD gdzv<Cmd>noh<CR>
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
-  noremap <Leader>d <Cmd>LspReferences<CR>
-  noremap <Leader>D <Cmd>LspRename<CR>
+  noremap <Leader>d <Cmd>LspPeekDefinition<CR>
+  noremap <Leader>f <Cmd>call iter#next_stack('python#doc_page', 'doc')<CR>
+  noremap <Leader>F <Cmd>call python#doc_search()<cr>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>

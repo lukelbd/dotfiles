@@ -198,7 +198,9 @@ function! python#run_motion_expr(...) abort
 endfunction
 
 " Parse python module abbreviations
-" Todo: Use below regexes to generate suggestion lists based on file text
+" Todo: Use below regexes to generate suggestion lists based on file text. Should
+" iterate over file lines then suggest any <import>.method matches found for all
+" imports names. Could also combine <variable>.method with every possible prefix.
 function! s:parse_name(item)
   let winview = winsaveview()
   let parts = split(a:item, '\.')
