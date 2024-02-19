@@ -233,3 +233,30 @@ function! window#wipe_bufs()
     echom 'Wiped out ' . len(names) . ' hidden buffer(s): ' . join(names, ', ')
   endif
 endfunction
+
+" Reset recent files
+" Note: This only triggers after spending time on window instead of e.g. browsing
+" across tabs with maps, similar to jumplist. Then can access jumps in each window.
+function! window#reset_recent() abort  " non-scrolling window change floats 'recent' to top
+  for bnr in tabpagebuflist()  " tab page buffers
+    call setbufvar(bnr, 'recent_scroll', 0)
+  endfor
+endfunction
+function! window#scroll_recent(...) abort  " scrolling window change preserves list order
+  let bnr = bufnr()
+  let scroll = a:0 ? a:1 : v:count1
+  call window#update_recent()  " sync location, possibly float if starting scroll
+  call iter#next_stack('file#open_drop', 'recent', scroll)
+  if bnr != bufnr() | call window#update_recent(1, 1) | endif  " apply b:recent_scroll
+endfunction
+function! window#update_recent(...) abort  " set current buffer
+  let skip = index(g:tags_skip_filetypes, &filetype)
+  let scroll = a:0 ? a:1 : get(b:, 'recent_scroll', 0)
+  let echo = a:0 > 1 ? a:2 : 0
+  let b:recent_name = expand('%:p')  " apply name
+  let b:recent_scroll = scroll
+  if skip != -1 || line('$') <= 1 || empty(&filetype)
+    if len(tabpagebuflist()) > 1 | return | endif
+  endif
+  call iter#push_stack('recent', scroll, -1, echo)  " possibly update stack
+endfunction

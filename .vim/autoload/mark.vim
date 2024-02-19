@@ -44,12 +44,12 @@ function! mark#goto_jump(count) abort
   let idx = s:jumploc + a:count
   let jdx = min([idx, len(s:jumplist) - 1])
   let jdx = max([jdx, 0])
-  call s:select_jump(jdx)
   if abs(a:count) == 1 && idx >= len(s:jumplist)
     echohl WarningMsg | echom 'Error: At end of jumplist' | echohl None
-  elseif abs(a:count) == 1 && idx < 0
+  elseif abs(a:count) == 1 && idx <= 0  " differs from changelist, but empirically tested
     echohl WarningMsg | echom 'Error: At start of jumplist' | echohl None
   else
+    call s:select_jump(jdx)
     call feedkeys("\<Cmd>echom 'Jump location: " . (len(s:jumplist) - jdx) . "'\<CR>", 'n')
   endif
 endfunction
@@ -107,15 +107,16 @@ endfunction
 function! mark#goto_change(count) abort
   let [opts, iloc] = getchangelist()
   let idx = iloc + a:count
-  let jdx = max([idx, 0])
   let jdx = min([idx, len(opts) - 1])
+  let jdx = max([jdx, 0])
   let cnt = jdx - iloc
-  call feedkeys(cnt > 0 ? cnt . 'g,' : cnt < 0 ? abs(cnt) . 'g;' : '', 'n')
+  let keys = cnt > 0 ? cnt . 'g,' : cnt < 0 ? abs(cnt) . 'g;' : ''
   if abs(a:count) == 1 && idx >= len(opts)
     echohl WarningMsg | echom 'Error: At end of changelist' | echohl None
-  elseif abs(a:count) == 1 && idx < 0
+  elseif abs(a:count) == 1 && idx < 0  " differs from jumplist, but empirically tested
     echohl WarningMsg | echom 'Error: At start of changelist' | echohl None
   else  " echo number
+    call feedkeys(keys, 'n')
     call feedkeys("\<Cmd>echom 'Change location: " . (len(opts) - jdx) . "'\<CR>", 'n')
   endif
 endfunction

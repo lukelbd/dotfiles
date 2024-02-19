@@ -67,7 +67,6 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   else  " possibly show result after message or ensure press enter 
     echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd
   endif
-  echom 'Command: ' . a:args
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
   elseif a:args =~# '^blame\( %\)\@!' || cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
@@ -84,12 +83,17 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
 endfunction
 " For special range handling
 function! git#run_map(range, ...) abort range
-  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
-  if a:range || line1 != line2
-    return call('git#run_command', [line1, line2, a:range] + a:000)
+  if a:range && a:firstline == a:lastline
+    let offset = 5 | let [line1, line2] = [a:firstline - offset, a:lastline + offset]
   else
-    return call('git#run_command', [line1, -1, a:range] + a:000)
+    let offset = 0 | let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   endif
+  if a:range || line1 != line2
+    call call('git#run_command', [line1, line2, a:range] + a:000)
+  else
+    call call('git#run_command', [line1, -1, a:range] + a:000)
+  endif
+  call feedkeys(offset ? abs(offset) . (offset > 0 ? 'j' : 'k') : '', 'n')
 endfunction
 " For <expr> map accepting motion
 function! git#run_map_expr(...) abort
@@ -139,17 +143,17 @@ endfunction
 " maps and having fugitive use :Gdrop, but was getting error where after tab switch
 " an empty panel was opened in the git window. Might want to revisit.
 " let rhs = substitute(rhs, '\C\<tabe\a*', 'drop', 'g')  " use :Git drop?
-let s:fugitive_remove = ['dq', '<<', '>>', '==']
+let s:fugitive_remove = ['dq', '<<', '>>', '==', '<F1>', '<F2>']
 let s:fugitive_switch = [
   \ ['<CR>', 'O', 'n'],
   \ ['O', '<2-LeftMouse>', 'n'],
   \ ['O', '<CR>', 'n'],
   \ ['(', '[', 'nx', {'nowait': 1}],
   \ [')', ']', 'nx', {'nowait': 1}],
-  \ ['[c', '{', 'nox'],
-  \ [']c', '}', 'nox'],
-  \ ['[m', '<F1>', 'nox'],
-  \ [']m', '<F2>', 'nox'],
+  \ ['[c', '(', 'nox'],
+  \ [']c', ')', 'nox'],
+  \ ['[m', '{', 'nox'],
+  \ [']m', '}', 'nox'],
   \ ['=', ',', 'nx'],
   \ ['-', '.', 'nx'],
   \ ['.', ';', 'n'],

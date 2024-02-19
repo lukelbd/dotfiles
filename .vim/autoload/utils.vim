@@ -155,7 +155,7 @@ endfunction
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
 function! utils#panel_setup(level) abort
-  setlocal nolist nonumber norelativenumber nocursorline
+  let g:ft_man_folding_enable = 1  " see :help Man
   nnoremap <buffer> q <Cmd>silent! call window#close_window()<CR>
   nnoremap <buffer> <C-w> <Cmd>silent! call window#close_window()<CR>
   if &filetype ==# 'qf'  " disable <Nop> map
@@ -164,19 +164,27 @@ function! utils#panel_setup(level) abort
   if &filetype ==# 'netrw'
     call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
   endif
+  if window#count_panes('h') > 1 || &l:filetype =~# 'git\|fugitive\|undotree'
+    setlocal nonumber norelativenumber nocursorline
+  else  " sign column padding
+    setlocal nonumber norelativenumber nocursorline signcolumn=yes
+  endif
   if a:level > 1  " e.g. gitcommit window
     return
   elseif a:level > 0
-    setlocal colorcolumn=
+    setlocal nolist colorcolumn=
   else
-    setlocal nospell colorcolumn= statusline=%{'[Panel:Z'.&l:foldlevel.']'}%=%{StatusRight()}
+    setlocal nolist nospell colorcolumn= statusline=%{'[Panel:Z'.&l:foldlevel.']'}%=%{StatusRight()}
   endif
   for char in 'du'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
   endfor
-  for char in 'uUrRxXdDcCpPaAiIoO'  " in lieu of set nomodifiable
+  for char in 'uUrRxXpPdDcCaAiIoO'  " in lieu of set nomodifiable
     if !get(maparg(char, 'n', 0, 1), 'buffer', 0)  " preserve buffer-local maps
       exe 'nmap <buffer> ' char . ' <Nop>'
+    endif
+    if char =~? '[aioc]' && !get(maparg('g' . char, 'n', 0, 1), 'buffer', 0)
+      exe 'nmap <buffer> g' . char . ' <Nop>'
     endif
   endfor
 endfunction
@@ -314,68 +322,3 @@ endfunction
 function! utils#translate_name(...) abort
   noautocmd return call('s:translate_input', a:000)
 endfunction
-
-" Tables of netrw mappings
-" See: :help netrw-quickmaps
-" ---     -----------------      ----
-" Map     Quick Explanation      Link
-" ---     -----------------      ----
-" <F1>    Causes Netrw to issue help
-" <cr>    Netrw will enter the directory or read the file
-" <del>   Netrw will attempt to remove the file/directory
-" <c-h>   Edit file hiding list
-" <c-l>   Causes Netrw to refresh the directory listing
-" <c-r>   Browse using a gvim server
-" <c-tab> Shrink/expand a netrw/explore window
-"   -     Makes Netrw go up one directory
-"   a     Cycles between normal display, hiding  (suppress display of files matching
-"         g:netrw_list_hide) and showing (display only files which match g:netrw_list_hide)
-"   cd    Make browsing directory the current directory
-"   C     Setting the editing window
-"   d     Make a directory
-"   D     Attempt to remove the file(s)/directory(ies)
-"   gb    Go to previous bookmarked directory
-"   gd    Force treatment as directory
-"   gf    Force treatment as file
-"   gh    Quick hide/unhide of dot-files
-"   gn    Make top of tree the directory below the cursor
-"   gp    Change local-only file permissions
-"   i     Cycle between thin, long, wide, and tree listings
-"   I     Toggle the displaying of the banner
-"   mb    Bookmark current directory
-"   mc    Copy marked files to marked-file target directory
-"   md    Apply diff to marked files (up to 3)
-"   me    Place marked files on arg list and edit them
-"   mf    Mark a file
-"   mF    Unmark files
-"   mg    Apply vimgrep to marked files
-"   mh    Toggle marked file suffices' presence on hiding list
-"   mm    Move marked files to marked-file target directory
-"   mp    Print marked files
-"   mr    Mark files using a shell-style
-"   mt    Current browsing directory becomes markfile target
-"   mT    Apply ctags to marked files
-"   mu    Unmark all marked files
-"   mv    Apply arbitrary vim   command to marked files
-"   mx    Apply arbitrary shell command to marked files
-"   mX    Apply arbitrary shell command to marked files en bloc
-"   mz    Compress/decompress marked files
-"   o     Enter the file/directory under the cursor in a new horizontal split browser.
-"   O     Obtain a file specified by cursor
-"   p     Preview the file
-"   P     Browse in the previously used window
-"   qb    List bookmarked directories and history
-"   qf    Display information on file
-"   qF    Mark files using a quickfix list
-"   qL    Mark files using a
-"   r     Reverse sorting order
-"   R     Rename the designated file(s)/directory(ies)
-"   s     Select sorting style: by name, time, or file size
-"   S     Specify suffix priority for name-sorting
-"   t     Enter the file/directory under the cursor in a new tab
-"   u     Change to recently-visited directory
-"   U     Change to subsequently-visited directory
-"   v     Enter the file/directory under the cursor in a new vertical split browser.
-"   x     View file with an associated program
-"   X     Execute filename under cursor via
-"   %  Open a new file in netrw's current directory

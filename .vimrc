@@ -61,6 +61,7 @@ set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
 set incsearch  " show match as typed so far
+set jumpoptions=  " use 'stack' to keep relative locations but lose future
 set lazyredraw  " skip redraws during macro and function calls
 set list  " show hidden characters
 set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
@@ -406,18 +407,19 @@ noremap <Leader>Y <Cmd>WipeBufs<CR>
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 " Note: Here :History includes v:oldfiles and open buffers
-for s:num in range(1, 10) | exe 'silent! unmap <Tab>' . s:num | endfor
+for s:char in range(1, 10) | exe 'silent! unmap <Tab>' . s:char | endfor
+for s:char in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:char | endfor
 nnoremap g. <Cmd>call window#jump_tab(v:count)<CR>
+nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
 nnoremap g, <Cmd>History<CR>
-nnoremap z. <Cmd>call window#move_tab(v:count)<CR>
-nnoremap z, <Cmd>call file#open_recent()<CR>
+nnoremap g< <Cmd>call file#open_recent()<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
-nnoremap <F5> <Cmd>GFiles<CR>
+nnoremap <C-g> <Cmd>GFiles<CR>
 nnoremap <F3> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
@@ -438,9 +440,9 @@ nnoremap <Tab>\ <Cmd>exe 'leftabove ' . window#default_width(1)
   \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
 " Tab and window jumping
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
-nnoremap <Tab>' <Cmd>silent! tabnext #<CR>
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR><Cmd>echom<CR>
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR><Cmd>echom<CR>
+nnoremap <Tab>' <Cmd>silent! tabnext # \| echom<CR>
 nnoremap <Tab>; <C-w><C-p>
 nnoremap <Tab>j <C-w>j
 nnoremap <Tab>k <C-w>k
@@ -525,25 +527,30 @@ augroup END
 omap <F5> <Plug>(fzf-maps-o)
 xmap <F5> <Plug>(fzf-maps-x)
 imap <F5> <Plug>(fzf-maps-i)
-nnoremap z: @:
-nnoremap <Leader>b <Cmd>Maps<CR>
-nnoremap <Leader>B <Cmd>Commands<CR>
-nnoremap <Leader>' <Cmd>History:<CR>
-nnoremap <Leader>" q:
+nnoremap z; @:
+nnoremap <F5> <Cmd>Maps<CR>
+nnoremap <Leader>; <Cmd>History:<CR>
+nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_help()<CR>
+nnoremap <Leader>b <Cmd>Commands<CR>
 
 " Shell , search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
-" See: https://stackoverflow.com/a/41168966/4970632
-command! -complete=shellcmd -nargs=? ShellHelp call shell#cmd_help(<f-args>)
-command! -complete=shellcmd -nargs=? ShellMan call shell#cmd_man(<f-args>)
+" Note: Commands 'ManPage' conflicts with existing and causes silent failure due to
+" recursive invocation. Also see: https://stackoverflow.com/a/41168966/4970632
+command! -complete=shellcmd -nargs=? ShellHelp call iter#next_stack('shell#help_page', 'help', <f-args>)
+command! -complete=shellcmd -nargs=? ShellMan call iter#next_stack('shell#man_page', 'man', <f-args>)
+command! -nargs=0 ClearHelp call iter#clear_stack('help')
+command! -nargs=0 ClearMan call iter#clear_stack('man')
+command! -nargs=0 ShowHelp call iter#show_stack('help')
+command! -nargs=0 ShowMan call iter#show_stack('man')
+nnoremap <Leader>N <Cmd>call iter#next_stack('shell#help_page', 'help')<CR>
+nnoremap <Leader>M <Cmd>call iter#next_stack('shell#man_page', 'man')<CR>
 nnoremap <Leader>n <Cmd>call shell#fzf_help()<CR>
-nnoremap <Leader>N <Cmd>call shell#cmd_help()<CR>
 nnoremap <Leader>m <Cmd>call shell#fzf_man()<CR>
-nnoremap <Leader>M <Cmd>call shell#cmd_man()<CR>
 
 " Terminal maps, map Ctrl-c to literal keypress so it does not close window
 " Mnemonic is that '!' matches the ':!' used to enter shell commands
@@ -557,36 +564,29 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Navigation and searching
 "-----------------------------------------------------------------------------"
-" Update jumplist after resting cursor on new paragraph
-" Note: This prevents resetting when navigating backwards and forwards through
-" jumplist or when navigating within paragraph of most recently set jump
-function! s:reset_jumps() abort
-  let [line1, line2] = [line("'{"), line("'}")]
-  let [items, pos] = getjumplist()
-  let pos = min([pos, len(items) - 1])  " returns length if outside of list
-  let [prev, curr] = [line("''"), items[pos]['lnum']]
-  if (line1 > curr || line2 < curr) && (line1 > prev || line2 < prev)
-    call feedkeys("m'", 'n')  " add mark to current position
-  endif
-endfunction
-augroup jumplist_setup
+" Navigate recent windows and wildmenu options with <C-,>/<C-.>
+" Note: See iter.vim for details. This uses iterm mappings.
+augroup recents_setup
   au!
-  au CursorHold,TextChanged,InsertLeave * call s:reset_jumps()
+  au TabLeave * call window#reset_recent()
+  au CursorHold * call window#update_recent()
+  au BufWinLeave * call iter#pop_stack('recent', expand('<afile>'))
+  au VimEnter * silent call iter#clear_stack('recent') | call window#update_recent()
 augroup END
-
-" Navigate matches/sentences/paragraphs without adding to jumplist
-" Note: Core vim idea is that these commands take us far away from cursor
-" but typically use scrolling to go far away. So use CursorHold approach
-noremap n <Cmd>call iter#next_match(0)<CR>
-noremap N <Cmd>call iter#next_match(1)<CR>
-noremap ( <Cmd>keepjumps normal! (<CR>
-noremap ) <Cmd>keepjumps normal! )<CR>
-noremap { <Cmd>keepjumps normal! {<CR>
-noremap } <Cmd>keepjumps normal! }<CR>
+command! -nargs=0 ClearRecent call iter#clear_stack('recent') | call window#update_recent()
+command! -nargs=0 ShowRecent call window#update_recent() | call iter#show_stack('recent')
+noremap <F1> <Cmd>call window#scroll_recent(-v:count1)<CR>
+noremap <F2> <Cmd>call window#scroll_recent(v:count1)<CR>
+cnoremap <F1> <C-p>
+cnoremap <F2> <C-n>
 
 " Navigate jumplist with <C-h>/<C-l> and changelist with <C-n>/<C-m>
 " See: https://stackoverflow.com/a/27194972/4970632
 " Note: This accounts for karabiner arrow key maps
+augroup jumplist_setup
+  au!
+  au CursorHold,TextChanged,InsertLeave * call iter#update_jumps()
+augroup END
 noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
 noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
@@ -594,12 +594,16 @@ noremap <Right> <Cmd>call mark#goto_jump(v:count1)<CR>
 noremap <C-n> <Cmd>call mark#goto_change(-v:count1)<CR>
 noremap <F4> <Cmd>call mark#goto_change(v:count1)<CR>
 
-" Navigate wildmenu options and normal mode f/t with <C-,> and <C-.> in iTerm
-" Note: This is overwritten by vim-sneak, which also applies zv by default
-cnoremap <F1> <C-p>
-cnoremap <F2> <C-n>
-noremap <F2> ,zv
-noremap <F1> ;zv
+" Navigate matches/sentences/paragraphs without adding to jumplist
+" Note: Core vim idea is that these commands take us far away from cursor
+" but typically use scrolling to go far away. So use CursorHold approach
+noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
+noremap n <Cmd>call iter#next_match(0)<CR>
+noremap N <Cmd>call iter#next_match(1)<CR>
+noremap ( <Cmd>keepjumps normal! (<CR>
+noremap ) <Cmd>keepjumps normal! )<CR>
+noremap { <Cmd>keepjumps normal! {<CR>
+noremap } <Cmd>keepjumps normal! }<CR>
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
@@ -622,7 +626,7 @@ noremap gr /[^\x00-\x7F]<CR>
 noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 
 " Go to start or end without opening folds
-" Useful for e.g. python files with docsring at top and function at bottom
+" Useful for e.g. python files with docstring at top and function at bottom
 " Note: Mapped jumping commands do not open folds by default, hence the expr below
 " Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
 noremap G G
@@ -635,8 +639,8 @@ silent! unmap zv
 noremap z<CR> zzze
 noremap z9 zt
 noremap z0 zb
-noremap z< ze
-noremap z> zs
+noremap z- ze
+noremap z= zs
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
@@ -681,6 +685,8 @@ noremap zO <Cmd>call fold#toggle_current(0)<CR>
 " increase or decrease by count ('zp' without count simply prints the level).
 noremap z[ <Cmd>call fold#update_level('m')<CR>
 noremap z] <Cmd>call fold#update_level('r')<CR>
+noremap z{ <Cmd>call fold#update_level('M')<CR>
+noremap z} <Cmd>call fold#update_level('R')<CR>
 noremap zm <Cmd>call fold#update_level('m')<CR>
 noremap zr <Cmd>call fold#update_level('r')<CR>
 noremap zM <Cmd>call fold#update_level('M')<CR>
@@ -710,9 +716,9 @@ noremap <Leader>- <Cmd>call mark#del_marks()<CR>
 noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap ; <Cmd>call mark#goto_mark(utils#translate_name('`'))<CR>
-noremap z; <Cmd>call mark#fzf_marks()<CR>
-noremap g; <Cmd>call mark#fzf_jumps()<CR>
-noremap g: <Cmd>call mark#fzf_changes()<CR>
+noremap g; <Cmd>call mark#fzf_marks()<CR>
+noremap g: <Cmd>call mark#fzf_jumps()<CR>
+noremap z: <Cmd>call mark#fzf_changes()<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -757,13 +763,15 @@ augroup ignorecase_setup
   au InsertLeave * set ignorecase
 augroup END
 
-" Search highlighting toggle
-" This calls 'set hlsearch!' and prints a message
-noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
-
 " Run replacement on this line alone
 " Note: This works recursively with the below maps
-nmap <expr> \\ '\' . getcharstr() . 'al'
+function! s:regex_line() abort
+  let char = getcharstr() | if !empty(maparg('\' . char))
+    call feedkeys('\' . char . 'al', 'm')
+  endif
+endfunction
+nnoremap \\ <Cmd>call <sid>regex_line()<CR>
+exe 'silent! unmap \c' | exe 'silent! unmap \C'
 
 " Sort input lines
 " Note: Simply uses native ':sort' command.
@@ -807,7 +815,7 @@ noremap <expr> \E edit#replace_regex_expr(
   \ '^\s*$\n', '')
 
 " Delete first-level and second-level commented text
-" Note: First is more 'strict' but more common so give it lower case
+" Note: First is more 'strict' but more common so give it easier key
 noremap <expr> \c edit#replace_regex_expr(
   \ 'Removed all comments.',
   \ '\(^\s*' . comment#get_regex() . '.\+$\n\\|\s\+' . comment#get_regex() . '.\+$\)', '')
@@ -846,19 +854,6 @@ noremap <expr> \X edit#replace_regex_expr(
 "-----------------------------------------------------------------------------"
 " Normal and insert-mode editing
 "-----------------------------------------------------------------------------"
-" Register selection utilities
-" Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
-" trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-imap <expr> <F6> peekaboo#peek(1, "\<C-r>",  0)
-nmap <expr> <F6> peekaboo#peek(1, '"', 0)
-
-" Undo history utilities
-" Note: Tried implementing 'redo' but fails because history is lost after vim
-" re-enters insert mode from the <C-o> command. Googled and no way to do it
-nnoremap U <C-r>
-inoremap <F3> <C-o>u
-inoremap <F4> <C-g>u
-
 " Spaces and tabs for particular filetypes.
 " Note: For some reason must be manually enabled for vim
 augroup expandtab_setup
@@ -869,6 +864,13 @@ augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
+" Undo history utilities
+" Note: Tried implementing 'redo' but fails because history is lost after vim
+" re-enters insert mode from the <C-o> command. Googled and no way to do it
+nnoremap U <C-r>
+inoremap <F3> <C-o>u
+inoremap <F4> <C-g>u
+
 " Handle indent counts. In native vim 2> indents this line or this motion
 " repeated, now it means 'indent multiple times'.
 " Note: To avoid overwriting fugitive inline-diff mappings implement these as
@@ -877,6 +879,12 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " nnoremap <expr> << '<Esc>' . repeat('<<', v:count1)
 nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
 nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
+
+" Register selection utilities
+" Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
+" trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
+imap <expr> <F6> peekaboo#peek(1, "\<C-r>",  0)
+nmap <expr> <F6> peekaboo#peek(1, '"', 0)
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
@@ -1008,12 +1016,13 @@ call s:repeat_map('g+', 'VEqualDouble', ":<C-u>call comment#append_line('=', 1, 
 inoremap <expr> <C-g> comment#get_insert()
 let s:author = "'Author: Luke Davis (lukelbd@gmail.com)'"
 let s:edited = "'Edited: ' . strftime('%Y-%m-%d')"
-call s:repeat_map('gc;', 'HeadLine', "<Cmd>call comment#header_line('-', 77, 0)<CR>", 'n')
-call s:repeat_map('gc/', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>', 'n')
-call s:repeat_map('gc?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>', 'n')
-call s:repeat_map('gc:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>", 'n')
-call s:repeat_map("gc'", '', '<Cmd>call comment#header_inchar()<CR>', 'n')
-call s:repeat_map('gc"', '', '<Cmd>call comment#header_inline(5)<CR>', 'n')
+for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
+call s:repeat_map('z.;', 'HeadLine', "<Cmd>call comment#header_line('-', 77, 0)<CR>", 'n')
+call s:repeat_map('z./', 'HeadAuth', '<Cmd>call comment#append_note(' . s:author . ')<CR>', 'n')
+call s:repeat_map('z.?', 'HeadEdit', '<Cmd>call comment#append_note(' . s:edited . ')<CR>', 'n')
+call s:repeat_map('z.:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>", 'n')
+call s:repeat_map("z.'", '', '<Cmd>call comment#header_inchar()<CR>', 'n')
+call s:repeat_map('z."', '', '<Cmd>call comment#header_inline(5)<CR>', 'n')
 
 " Navigate comment blocks
 " Capital uses only top-level blocks
@@ -1027,21 +1036,22 @@ noremap ]C <Cmd>call comment#next_block(0, 0)<CR>
 call s:repeat_map('[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
 call s:repeat_map(']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
 
-" Enter insert mode above or below.
-" Pressing enter on empty line preserves leading whitespace
-nnoremap o oX<Backspace>
-nnoremap O OX<Backspace>
-
 " Caps lock toggle and insert mode map that toggles it on and off
 " Note: When in paste mode this will trigger literal insert of next escape character
 inoremap <expr> <C-v> edit#lang_map()
 cnoremap <expr> <C-v> edit#lang_map()
 
+" Insert mode with better undo
+" Pressing enter on empty line preserves leading whitespace
+nnoremap o oX<Backspace><C-g>u
+nnoremap O OX<Backspace><C-g>u
+
 " Insert mode with paste toggling
 " Note: Switched easy-align mapping from ga for consistency here
 nnoremap <expr> ga edit#paste_mode() . 'a'
 nnoremap <expr> gA edit#paste_mode() . 'A'
-nnoremap <expr> gC edit#paste_mode() . 'c'
+nnoremap <expr> gc edit#paste_mode() . 'c'
+nnoremap <expr> gC edit#paste_mode() . 'C'
 nnoremap <expr> gi edit#paste_mode() . 'i'
 nnoremap <expr> gI edit#paste_mode() . 'I'
 nnoremap <expr> go edit#paste_mode() . 'o'
@@ -1087,8 +1097,8 @@ augroup popup_setup
   au!
   au BufEnter,InsertLeave * let b:scroll_state = 0
 augroup END
-inoremap <expr> <Delete> iter#forward_delete()
-inoremap <expr> <S-Tab> iter#forward_delete()
+inoremap <expr> <Delete> edit#forward_delete()
+inoremap <expr> <S-Tab> edit#forward_delete()
 noremap <expr> <Up> iter#scroll_count(-0.25)
 noremap <expr> <Down> iter#scroll_count(0.25)
 noremap <expr> <C-k> iter#scroll_count(-0.25)
@@ -1167,6 +1177,7 @@ call plug#begin('~/.vim/plugged')
 " call plug#('scrooloose/nerdcommenter')
 " call plug#('tpope/vim-commentary')  " too simple
 call plug#('tomtom/tcomment_vim')
+silent! unlet g:loaded_tcomment
 
 " General utilities
 " Note: Select mode (e.g. by typing 'gh') is same as visual but enters insert mode
@@ -1221,8 +1232,6 @@ call plug#('tmhedberg/SimpylFold')  " python folding
 call plug#('Konfekt/FastFold')  " speedup folding
 call plug#('justinmk/vim-sneak')  " simple and clean
 silent! unlet g:loaded_sneak_plugin
-let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
-let g:sneak#absolute_dir = 1  " same search direction no matter initial direction
 let g:tex_fold_override_foldtext = 0  " disable foldtext() override
 let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 
@@ -1232,18 +1241,7 @@ let g:SimpylFold_docstring_preview = 0  " disable foldtext() override
 call plug#('andymass/vim-matchup')
 call plug#('henrik/vim-indexed-search')
 let g:matchup_mappings_enabled = 1  " enable default mappings
-let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
-let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
-let g:matchup_transmute_enabled = 0  " issues in latex, use vim-succinct instead
 let g:indexed_search_mappings = 0  " note this also disables <Plug>(mappings)
-let g:indexed_search_center = 0  " do not center all matches
-let g:indexed_search_colors = 0
-let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
-let g:indexed_search_line_info = 1  " show first and last line indicators
-let g:indexed_search_max_lines = 100000  " increase from default of 3000 for log files
-let g:indexed_search_shortmess = 1  " shorter message
-let g:indexed_search_numbered_only = 1  " only show numbers
-let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
 
 " Error checking and testing
 " Note: Test plugin works for every filetype (simliar to ale).
@@ -1588,28 +1586,56 @@ if s:plug_active('vim-sneak')
   map F <Plug>Sneak_F
   map t <Plug>Sneak_t
   map T <Plug>Sneak_T
-  map <F1> <Plug>Sneak_,
-  map <F2> <Plug>Sneak_;
+  let g:sneak#label = 1  " show labels on matches for quicker jumping
+  let g:sneak#s_next = 1  " press s/f/t repeatedly to jump matches until next motion
+  let g:sneak#f_reset = 0  " keep f search separate from s
+  let g:sneak#t_reset = 0  " keep t search separate from s
+  let g:sneak#absolute_dir = 1  " same search direction no matter initial direction
+  let g:sneak#use_ic_scs = 0  " search always case-sensitive, similar to '*' or popup
+endif
+
+" Matching and searching settings
+" Note: Here vim-tags searching integrates with indexed-search and vim-succinct
+" surround delimiters integrate with matchup '%' keys.
+if s:plug_active('vim-matchup') || s:plug_active('vim-indexed-search')
+  let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
+  let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
+  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
+  let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
+  let g:matchup_surround_enabled = 1  " enable 'ya%' 'va%' etc. mappings
+  let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
+  let g:indexed_search_center = 0  " disable centered match jumping
+  let g:indexed_search_colors = 0  " disable colors for speed
+  let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
+  let g:indexed_search_line_info = 1  " show first and last line indicators
+  let g:indexed_search_max_lines = 100000  " increase from default of 3000 for log files
+  let g:indexed_search_shortmess = 1  " shorter message
+  let g:indexed_search_numbered_only = 1  " only show numbers
+  let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
 endif
 
 " Toggle comments and whatnot
 " Note: This disable several maps but keeps many others. Remove unmap commands
 " after restarting existing vim sessions.
 if s:plug_active('tcomment_vim')
-  nmap g>> g>c
-  nmap g<< g<c
-  nnoremap gcc <Cmd>call comment#toggle_motion()<CR>
-  nnoremap g>c <Cmd>call comment#toggle_motion(1)<CR>
-  nnoremap g<c <Cmd>call comment#toggle_motion(0)<CR>
-  silent! xunmap gcc
-  silent! xunmap g>c
-  silent! xunmap g<c
-  let g:tcomment_opleader1 = 'gc'  " default is 'gc'
+  for s:char in ['.', '"', "'", ':', '?', '/', ';']
+    silent! exe 'unmap g.' . s:char
+  endfor
+  for s:char1 in ['>', '<'] | for s:char2 in ['b', 'c', '>', '<>']
+    silent! exe 'unmap g' . s:char1 . s:char2
+  endfor | endfor
+  for s:char1 in add(range(1, 9), '') | for s:char2 in ['', 'b', 'c']
+    if !empty(s:char1 . s:char2) | silent! exe 'unmap g.' . s:char1 . s:char2 | endif
+  endfor | endfor
+  nnoremap z.. <Cmd>call comment#toggle_motion()<CR>
+  nnoremap z>> <Cmd>call comment#toggle_motion(1)<CR>
+  nnoremap z<< <Cmd>call comment#toggle_motion(0)<CR>
+  let g:tcomment_opleader1 = 'z.'  " default is 'gc'
   let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
   let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
   let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
-  let g:tcomment_mapleader_uncomment_anyway = 'g<'
-  let g:tcomment_mapleader_comment_anyway = 'g>'
+  let g:tcomment_mapleader_uncomment_anyway = 'z<'
+  let g:tcomment_mapleader_comment_anyway = 'z>'
 endif
 
 " Succinct settings for text objects and delimiters
@@ -1757,10 +1783,12 @@ if s:plug_active('vim-lsp')
   augroup END
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   command! -nargs=? LspToggle call switch#lsp(<args>)
-  command! -nargs=? Pydoc call python#doc_page(<f-args>)
+  command! -nargs=? ClearDoc call iter#clear_stack('doc')
+  command! -nargs=? ShowDoc call iter#show_stack('doc')
+  command! -nargs=? Doc call iter#next_stack('python#doc_page', 'doc', <f-args>)
   noremap gd <Cmd>LspPeekDefinition<CR>
   noremap gD <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
-  noremap zd <Cmd>call python#doc_page()<cr>
+  noremap zd <Cmd>call iter#next_stack('python#doc_page', 'doc')<CR>
   noremap zD <Cmd>call python#doc_search()<cr>
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
@@ -1793,8 +1821,10 @@ if s:plug_active('vim-lsp')
   let g:lsp_settings_global_settings_dir = '~/.vim_lsp_settings'  " move here next?
   let g:lsp_ale_auto_enable_linter = v:false  " default is true
   let g:lsp_diagnostics_enabled = 0  " use ale instead
+  let g:lsp_diagnostics_highlights_insert_mode_enabled = 0  " annoying
   let g:lsp_document_code_action_signs_enabled = 0  " disable annoying signs
-  let g:lsp_document_highlight_enabled = 1  " used with reference navigation
+  let g:lsp_document_highlight_delay = 3000  " increased delay time
+  let g:lsp_document_highlight_enabled = 0  " monitor, still really sucks
   let g:lsp_fold_enabled = 0  " not yet tested, requires 'foldlevel', 'foldlevelstart'
   let g:lsp_hover_ui = 'preview'  " either 'float' or 'preview'
   let g:lsp_hover_conceal = 1  " enable markdown conceale
@@ -2026,29 +2056,29 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#setup_commands()
   augroup END
-  noremap <Leader>G <Cmd>call git#commit_safe()<CR>
-  noremap <Leader>g <Cmd>call git#run_map(0, 0, '', 'status')<CR>
+  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'status')<CR>
+  noremap <Leader>" <Cmd>call git#commit_safe()<CR>
+  noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
+  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage :/')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
   noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage %')<CR>
   noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
   noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet %')<CR>
-  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'stage :/')<CR>
-  noremap <Leader>; <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  noremap <Leader>: <Cmd>call git#run_map(0, 0, '', 'reset --quiet :/')<CR>
+  noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
+  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet :/')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>I <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   noremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
   noremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
-  noremap <expr> gl git#run_map_expr(2, 0, '', 'blame %')
-  noremap gll <Cmd>-5,+5call git#run_map(2, 0, '', 'blame %')<CR>5j
+  noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
+  noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
+  noremap zl <Cmd>BCommits<CR>
+  noremap zL <Cmd>Commits<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
-  " noremap <Leader>P <Cmd>Commits<CR>
-  " noremap <Leader>p <Cmd>BCommits<CR>
 endif
 
 " Git gutter settings
@@ -2071,8 +2101,8 @@ if s:plug_active('vim-gitgutter')
   call s:repeat_map(']G', 'HunkForward', '<Cmd>call git#hunk_jump(1, 1)<CR>')
   noremap ]g <Cmd>call git#hunk_jump(1, 0)<CR>
   noremap [g <Cmd>call git#hunk_jump(0, 0)<CR>
-  noremap <Leader>h <Cmd>call git#hunk_show()<CR>
-  noremap <Leader>H <Cmd>call switch#gitgutter()<CR>
+  noremap <Leader>g <Cmd>call git#hunk_show()<CR>
+  noremap <Leader>G <Cmd>call switch#gitgutter()<CR>
   noremap <expr> gh git#hunk_action_expr(1)
   noremap <expr> gH git#hunk_action_expr(0)
   nnoremap <nowait> ghh <Cmd>call git#hunk_action(1)<CR>
@@ -2092,8 +2122,7 @@ if s:plug_active('vim-easy-align')
     au!
     au BufEnter * let g:easy_align_delimiters['c']['pattern'] = '\s' . comment#get_regex()
   augroup END
-  silent! unmap zll
-  map zl <Plug>(EasyAlign)
+  map z, <Plug>(EasyAlign)
   let s:semi_group = {'pattern': ';\+'}
   let s:case_group = {'pattern': ')', 'stick_to_left': 1, 'left_margin': 0}
   let s:chain_group = {'pattern': '\(&&\|||\)'}  " hello world
@@ -2357,9 +2386,11 @@ highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 " outdated buffer marks loaded from .viminfo
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
-" au BufReadPost * clearjumps | delmarks a-z  " see help info on exists()
-augroup clear_jumps | au! | augroup END  " remove this in future
+augroup clear_jumps
+  au!
+  au VimEnter * silent windo clearjump | exe 'normal! zv'
+  au WinNew,TabNew * silent clearjumps
+augroup END
 noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
-delmarks a-z
 nohlsearch  " turn off highlighting at startup
 redraw!  " prevent statusline error

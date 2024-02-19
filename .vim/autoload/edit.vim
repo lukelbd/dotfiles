@@ -14,6 +14,22 @@ function! edit#indent_items_expr(...) abort
   return utils#motion_func('edit#indent_items', a:000)
 endfunction
 
+" Forward delete by indent whitespace in insert mode
+" Note: This enforced consistency with 'softtab' backspace-by-tabs
+" behavior. Rarely used but kind of nice.
+function! edit#forward_delete() abort
+  let idx = col('.') - 1
+  let line = getline('.')
+  let indent = repeat(' ', &tabstop)
+  " vint: -ProhibitUsingUndeclaredVariable
+  let forward = line[idx:idx + &tabstop - 1]
+  if forward ==# indent
+    return repeat("\<Delete>", &tabstop)
+  else
+    return "\<Delete>"
+  endif
+endfunction
+
 " Toggle insert and command-mode caps lock
 " See: http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock which uses
 " iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1

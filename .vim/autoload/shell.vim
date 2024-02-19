@@ -7,7 +7,7 @@
 " Note: See also .bashrc help(). Note we previously used 'powerman/vim-plugin-AnsiEsc'
 " to preserve colors shown in 'command --help' pages but now simply redirect git
 " commands that include ANSI colors to their correponsding (identical) man pages.
-function! shell#cmd_help(...) abort
+function! shell#help_page(...) abort
   if a:0  " input help
     let page = a:1
   else  " default help
@@ -16,7 +16,7 @@ function! shell#cmd_help(...) abort
   if empty(page) | return | endif
   let args = split(page, '\s\+')
   if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
-    return shell#cmd_man(join(args, '-'))  " identical result
+    return shell#man_page(join(args, '-'))  " identical result
   endif
   if args[0] ==# 'cdo'
     call insert(args, '--help', 1)
@@ -32,8 +32,7 @@ function! shell#cmd_help(...) abort
   let bnum = bufnr(cmd)
   if bnum != -1 | exe bnum . 'bdelete' | endif
   tabedit | call append(0, result) | goto
-  set filetype=popup
-  set buftype=nofile
+  setlocal filetype=popup buftype=nofile
   exe 'file ' . cmd
   call utils#panel_setup(0)
 endfunction
@@ -41,86 +40,50 @@ function! shell#fzf_help() abort
   call fzf#run(fzf#wrap({
     \ 'source': getcompletion('', 'shellcmd'),
     \ 'options': '--no-sort --prompt="--help> "',
-    \ 'sink': function('shell#cmd_help'),
+    \ 'sink': function('iter#next_stack', ['shell#help_page', 'help'])
     \ }))
 endfunction
 
 " Man page and pydoc page utilities
 " Warning: Calling :Man changes the buffer, so use buffer variables specific to each
 " page to record navigation history. Order of assignment below is critical.
-function! s:doc_jump(forward) abort
-  let curr = w:doc_curr
-  let name = a:forward ? 'doc_next' : 'doc_prev'
-  let page = get(w:, name, '')
-  if empty(page) | return | endif
-  call python#doc_page(page)
-  if a:forward
-    let w:doc_prev = curr
-  else
-    let w:doc_next = curr
-  endif
-endfunction
-function! s:man_jump(forward) abort
-  let curr = b:man_curr
-  let name = a:forward ? 'man_next' : 'man_prev'
-  let pair = get(b:, name, '')
-  if empty(pair) | return | endif
-  exe 'Man ' . pair[1] . ' ' . pair[0]
-  if a:forward
-    let b:man_prev = curr
-  else
-    let b:man_next = curr
-  endif
-endfunction
-function! s:man_cursor() abort
-  let bnr = bufnr()
-  let curr = b:man_curr
-  let word = expand('<cWORD>')  " possibly includes trailing puncation
-  let page = matchstr(word, '\f\+')  " from highlight group
-  let pnum = matchstr(word, '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
-  exe 'Man ' . pnum . ' ' . page
-  if bnr != bufnr()  " original buffer
-    let b:man_prev = curr
-    let b:man_curr = [page, pnum]
-  endif
+function! s:doc_syntax() abort
+  let pad = '^\(\s\{4}\)*'
+  let item = pad . '\zs\(class\s\+\)\?\k\+\ze(.*)'
+  let data = pad . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
+  let dash = pad . '\s*\zs[-=]\{3,}.*$'
+  let mess = pad . '\s*\C[A-Z].*\(defined here\|resolution order\|inherited\s*from\s*\S*\):$'
+  let head = ''
+    \ . '\(' . pad . '\(\s*\|\s*[-=]\{3,}.*\)\n' . pad . '\s*\)\@<='
+    \ . '\C[A-Z]\a\{2,}.*'
+    \ . '\(\n' . pad . '\s*[-=]\{3,}.*$\)\@='
+  exe "syntax match docItem '" . item . "'"
+  exe "syntax match docData '" . data . "'"
+  exe "syntax match docMess '" . mess . "'"
+  exe "syntax match docHeader '" . head . "'"
+  exe "syntax match docDashes '" . dash . "'"
+  silent! syntax clear manLongOptionDesc
+  silent! syntax clear manSectionHeading
+  highlight link docItem manSectionHeading
+  highlight link docData manSectionHeading
+  highlight link docMess manHeader
+  highlight link docHeader manHeader
+  highlight link docDashes manHeader
 endfunction
 function! shell#man_setup(...) abort
   setlocal tabstop=8 softtabstop=8 shiftwidth=8
-  let page = tolower(matchstr(getline(1), '\f\+'))  " from highlight group
-  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from highlight group
-  if !empty(get(w:, 'doc_curr', ''))
-    let w:doc_curr = @%
-    noremap <nowait> <buffer> [ <Cmd>call <sid>doc_jump(0)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call <sid>doc_jump(1)<CR>
-    noremap <silent> <buffer> <CR> <Cmd>call python#doc_page(python#doc_name())<CR>
+  let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
+  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
+  if !empty(get(b:, 'doc_name', ''))
+    let b:doc_name = @% | call s:doc_syntax()
+    noremap <buffer> <CR> <Cmd>call iter#next_stack('python#doc_page', 'doc', '')<CR>
+    noremap <nowait> <buffer> [ <Cmd>call iter#next_stack('python#doc_page', 'doc', -v:count1)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call iter#next_stack('python#doc_page', 'doc', v:count1)<CR>
   else
-    let b:man_curr = [page, pnum]  " see below
-    noremap <nowait> <buffer> [ <Cmd>call <sid>man_jump(0)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call <sid>man_jump(1)<CR>
-    noremap <silent> <buffer> <CR> <Cmd>call <sid>man_cursor()<CR>
-  endif
-  if !empty(get(w:, 'doc_curr', ''))
-    let pad = '^\(\s\{4}\)*'
-    let item = pad . '\zs\(class\s\+\)\?\k\+\ze(.*)'
-    let data = pad . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
-    let dash = pad . '\s*\zs[-=]\{3,}.*$'
-    let mess = pad . '\s*\C[A-Z].*\(defined here\|resolution order\|inherited\s*from\s*\S*\):$'
-    let head = ''
-      \ . '\(' . pad . '\(\s*\|\s*[-=]\{3,}.*\)\n' . pad . '\s*\)\@<='
-      \ . '\C[A-Z]\a\{2,}.*'
-      \ . '\(\n' . pad . '\s*[-=]\{3,}.*$\)\@='
-    exe "syntax match docItem '" . item . "'"
-    exe "syntax match docData '" . data . "'"
-    exe "syntax match docMess '" . mess . "'"
-    exe "syntax match docHeader '" . head . "'"
-    exe "syntax match docDashes '" . dash . "'"
-    silent! syntax clear manLongOptionDesc
-    silent! syntax clear manSectionHeading
-    highlight link docItem manSectionHeading
-    highlight link docData manSectionHeading
-    highlight link docMess manHeader
-    highlight link docHeader manHeader
-    highlight link docDashes manHeader
+    let b:man_name = [page, pnum]  " see below
+    noremap <buffer> <CR> <Cmd>call iter#next_stack('shell#man_page', 'man', '')<CR>
+    noremap <nowait> <buffer> [ <Cmd>call iter#next_stack('shell#man_page', 'man', -v:count1)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call iter#next_stack('shell#man_page', 'man', v:count1)<CR>
   endif
 endfunction
 
@@ -128,18 +91,22 @@ endfunction
 " Note: See also .bashrc man(). These utils are expanded from vim-superman.
 " Note: Apple will have empty line then BUILTIN(1) on second line, but linux
 " will show as first line BASH_BUILTINS(1), so we search the first two lines.
-function! shell#cmd_man(...) abort
-  if a:0  " input man
-    let page = a:1
+function! shell#man_page(...) abort
+  let bnr = bufnr()
+  if a:0 && empty(a:1)  " input man
+    let page = matchstr(expand('<cWORD>'), '\f\+')  " from man syntax
+    let pnum = matchstr(expand('<cWORD>'), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
+  elseif a:0  " input page or [page, number]
+    let [page, pnum] = type(a:1) == 1 ? [a:1, 0] : a:1
   else  " default man
-    let page = utils#input_default('Man page', expand('<cword>'), 'shellcmd')
+    let [page, pnum] = [utils#input_default('Man page', expand('<cword>'), 'shellcmd'), 0]
   endif
-  let g:ft_man_folding_enable = 1  " see :help Man
-  let current = @%  " current file
   if empty(page) | return | endif
-  tabedit | set filetype=man | silent exe 'Man ' . page
+  if &l:filetype !=# 'man' | tabedit | setlocal filetype=man | endif
+  let args = pnum ? pnum . ' ' . page : page
+  silent! exe 'Man ' . args
   if line('$') <= 1
-    silent! quit | call file#open_drop(current)
+    silent! quit | call file#open_drop(bufname(bnr))
     echohl ErrorMsg | echom "Error: Nothing returned from 'man " . page . "'" | echohl None
   endif
   if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
@@ -151,7 +118,7 @@ function! shell#fzf_man() abort
   call fzf#run(fzf#wrap({
     \ 'source': getcompletion('', 'shellcmd'),
     \ 'options': '--no-sort --prompt="man> "',
-    \ 'sink': function('shell#cmd_man'),
+    \ 'sink': function('iter#next_stack', ['shell#man_page', 'man'])
     \ }))
 endfunction
 
@@ -199,3 +166,68 @@ function! shell#job_win(cmd, ...) abort
   let b:popup_job = job_start(cmds, opts)
   exe winnr('#') . 'wincmd w'
 endfunction
+
+" Tables of netrw mappings
+" See: :help netrw-quickmaps
+" ---     -----------------      ----
+" Map     Quick Explanation      Link
+" ---     -----------------      ----
+" <F1>    Causes Netrw to issue help
+" <cr>    Netrw will enter the directory or read the file
+" <del>   Netrw will attempt to remove the file/directory
+" <c-h>   Edit file hiding list
+" <c-l>   Causes Netrw to refresh the directory listing
+" <c-r>   Browse using a gvim server
+" <c-tab> Shrink/expand a netrw/explore window
+"   -     Makes Netrw go up one directory
+"   a     Cycles between normal display, hiding  (suppress display of files matching
+"         g:netrw_list_hide) and showing (display only files which match g:netrw_list_hide)
+"   cd    Make browsing directory the current directory
+"   C     Setting the editing window
+"   d     Make a directory
+"   D     Attempt to remove the file(s)/directory(ies)
+"   gb    Go to previous bookmarked directory
+"   gd    Force treatment as directory
+"   gf    Force treatment as file
+"   gh    Quick hide/unhide of dot-files
+"   gn    Make top of tree the directory below the cursor
+"   gp    Change local-only file permissions
+"   i     Cycle between thin, long, wide, and tree listings
+"   I     Toggle the displaying of the banner
+"   mb    Bookmark current directory
+"   mc    Copy marked files to marked-file target directory
+"   md    Apply diff to marked files (up to 3)
+"   me    Place marked files on arg list and edit them
+"   mf    Mark a file
+"   mF    Unmark files
+"   mg    Apply vimgrep to marked files
+"   mh    Toggle marked file suffices' presence on hiding list
+"   mm    Move marked files to marked-file target directory
+"   mp    Print marked files
+"   mr    Mark files using a shell-style
+"   mt    Current browsing directory becomes markfile target
+"   mT    Apply ctags to marked files
+"   mu    Unmark all marked files
+"   mv    Apply arbitrary vim   command to marked files
+"   mx    Apply arbitrary shell command to marked files
+"   mX    Apply arbitrary shell command to marked files en bloc
+"   mz    Compress/decompress marked files
+"   o     Enter the file/directory under the cursor in a new horizontal split browser.
+"   O     Obtain a file specified by cursor
+"   p     Preview the file
+"   P     Browse in the previously used window
+"   qb    List bookmarked directories and history
+"   qf    Display information on file
+"   qF    Mark files using a quickfix list
+"   qL    Mark files using a
+"   r     Reverse sorting order
+"   R     Rename the designated file(s)/directory(ies)
+"   s     Select sorting style: by name, time, or file size
+"   S     Specify suffix priority for name-sorting
+"   t     Enter the file/directory under the cursor in a new tab
+"   u     Change to recently-visited directory
+"   U     Change to subsequently-visited directory
+"   v     Enter the file/directory under the cursor in a new vertical split browser.
+"   x     View file with an associated program
+"   X     Execute filename under cursor via
+"   %  Open a new file in netrw's current directory

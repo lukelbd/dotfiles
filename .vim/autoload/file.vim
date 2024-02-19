@@ -211,7 +211,9 @@ function! file#open_drop(...) abort
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
       for bnr in tabpagebuflist(tnr)
         if expand('#' . bnr . ':p') ==# abspath
-          exe tnr . 'tabnext' | exe bufwinnr(bnr) . 'wincmd w' | return
+          let wnr = bufwinnr(bnr)
+          exe 'keepjumps ' . tnr . 'tabnext'
+          exe 'keepjumps ' . wnr . 'wincmd w' | echom | return
         endif
       endfor
     endfor
@@ -221,7 +223,7 @@ function! file#open_drop(...) abort
     if blank || panel || fugitive
       call feedkeys("\<Cmd>edit " . path . "\<CR>", 'n')
     else  " create new tab
-      exe 'tabnew ' . fnameescape(path)
+      exe 'keepjumps tabnew ' . fnameescape(path)
     end
   endfor
 endfunction

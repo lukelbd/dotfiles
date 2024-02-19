@@ -73,8 +73,8 @@ endfunction
 " custom '~/.ignore' file (e.g. in case want to search a .vim/plugged folder).
 " Note: Native commands include final !a:bang argument toggling fullscreen but we
 " use a:bang to indicate whether to search current buffer or global open buffers.
-" Note: Use 'timer_start' to prevent issue where echom is hidden by fzf panel creation
-" Delayed function calls: https://vi.stackexchange.com/a/27032/8084
+" Note: Use 1ms 'timer_start' delay to prevent issue where echom is hidden by fzf
+" panel creation delayed function calls: https://vi.stackexchange.com/a/27032/8084
 " Fzf matches paths: https://github.com/junegunn/fzf.vim/issues/346
 " Ag ripgrep flags: https://github.com/junegunn/fzf.vim/issues/921#issuecomment-1577879849
 " Ag ignore file: https://github.com/ggreer/the_silver_searcher/issues/1097

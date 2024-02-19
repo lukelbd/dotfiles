@@ -197,10 +197,8 @@ function! python#run_motion_expr(...) abort
   return utils#motion_func('python#run_motion', a:000)
 endfunction
 
-" Python documentation browser
+" Parse python module abbreviations
 " Todo: Use below regexes to generate suggestion lists based on file text
-" Note: This is still useful over Lsp e.g. for generalized help page browsing. And
-" everything is standardized to man-format so has consistency with man utilities.
 function! s:parse_name(item)
   let winview = winsaveview()
   let parts = split(a:item, '\.')
@@ -219,45 +217,69 @@ function! s:parse_name(item)
   return join(parts, '.')
 endfunction
 function! python#doc_name(...) abort
-  let curr = get(w:, 'doc_curr', '')  " existing pydoc file
   let line = getline('.')  " current line
   let parse = &l:filetype ==# 'python'
+  let current = get(b:, 'doc_name', '')  " see shell.vim
   if a:0  " input value
     let item = a:1
-  elseif !parse && empty(curr)
+  elseif !parse && empty(current)
     let item = ''
   else  " cursor word in pydoc page or python file
-    let head = matchstr(line[:col('.') - 1], '\(\k\|\.\)*$')
-    let tail = matchstr(line[col('.'):], '^\k*')
+    let head = matchstr(line[:col('.') - 1], '\h\(\w\|\.\)*$')
+    let tail = matchstr(line[col('.'):], '^\w*')
     let item = head . tail
   endif
   let item = empty(item) ? get(s:, 'doc_prev', '') : item
-  let parts = split(parse ? s:parse_name(item) : item, '\.')
-  if !empty(curr) && item !~# curr && curr !~# item | call insert(parts, curr) | endif
-  return join(parts, '.')
+  let item = parse ? s:parse_name(item) : item
+  if empty(current) || item =~# current || current =~# item
+    let name = item
+  elseif item =~# '^[a-z]\w*\.[A-Z]\w\+'  " cursor item is full class name
+    let name = item
+  else  " infer from header line
+    let header = matchstr(getline(1), '\s\+\zs\h\(\w\|\.\)*\ze:$')  " '.' is keyword in man
+    let package = matchstr(getline(1), '\s\+\zs\h\w*\ze\(\.\h\w*\)*:$')
+    if empty(header)
+      let name = item  " fallback
+    elseif getline(1) =~# 'Help on \(module\|package\)'
+      let name = current . '.' . item  " e.g. xarray.<name>
+    elseif empty(package) || item =~# '^[a-z_]\+$'
+      let name = header . '.' . item  " e.g. pd.DataFrame.read_csv
+    else  " reference package
+      let name = package . '.' . item
+    endif
+  endif
+  return name
 endfunction
+
+" Browse documentation with man-style pydoc pages
+" Note: This is still useful over Lsp e.g. for generalized help page browsing. And
+" everything is standardized to man-format so has consistency with man utilities.
 function! python#doc_page(...) abort
-  let curr = get(w:, 'doc_curr', '')
-  let page = a:0 ? a:1 : utils#input_default('Pydoc page', python#doc_name(), 'python#doc_source')
-  let page = empty(curr) ? python#doc_name(page) : page  " aliases and prefix
+  if !a:0  " user input page
+    let page = utils#input_default('Pydoc page', python#doc_name(), 'python#doc_source')
+  else  " navigation page
+    let page = empty(a:1) ? python#doc_name() : a:1
+  endif
+  let parse = &l:filetype ==# 'python'
   if empty(page) | return | endif
-  let bnr = bufnr(page)
-  if bnr == -1  " first time loading
+  if parse | let page = s:parse_name(page) | endif
+  let bnr = bufnr()  " current buffer
+  let pnr = bufnr(page)  " WARNING: only matches start of string
+  let new = !bufexists(page)  " WARNING: only matches exact string
+  if new  " create new buffer
     let result = systemlist('pydoc ' . shellescape(page))
-    let result = map(result, 'substitute(v:val, ''^\( \{4}\)* | \{2,}'', ''\1'', ''ge'')')
-    let msg = 'Error: Nothing returned from "pydoc ' . page . '"'
+    let result = map(result, 'substitute(v:val, ''^\( \{4}\)* |  '', ''\1'', ''ge'')')
+    let msg = "Error: Nothing r -eturned from 'pydoc " . page . "'"
     if len(result) <= 5 | echohl ErrorMsg | echom msg | echohl None | return | endif
   endif
-  if !empty(curr)
-    let w:doc_prev = w:doc_curr  " previously browsed
-    silent exe bnr == -1 ? 'enew | file ' . page : bnr . 'buffer'
+  let s:doc_prev = page  " previously browsed
+  if !empty(get(b:, 'doc_name', ''))  " existing path shell.vim
+    silent exe new ? 'enew | file ' . page : pnr . 'buffer'
   else
-    let s:doc_prev = page  " previous input
-    silent exe bnr == -1 ? 'tabedit ' . page : 'tabedit | ' . bnr . 'buffer'
+    silent exe new ? 'tabedit ' . page : 'tabedit | ' . pnr . 'buffer'
   endif
-  if bnr == -1 | call append(0, result) | goto | endif
-  let w:doc_curr = page | setlocal filetype=man  " see shell.vim
-  setlocal nobuflisted bufhidden=hide buftype=nofile
+  if new | call append(0, result) | goto | endif | let b:doc_name = page  " critical
+  setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man
 endfunction
 function! python#doc_source(...) abort
   let cmd = 'pip list --no-color --no-input --no-python-version-warning'
@@ -270,7 +292,7 @@ function! python#doc_search() abort
   call fzf#run(fzf#wrap({
     \ 'source': python#doc_source(),
     \ 'options': '--no-sort --prompt="pydoc> "',
-    \ 'sink': function('python#doc_page'),
+    \ 'sink': function('iter#next_stack', ['python#doc_page', 'doc'])
     \ }))
 endfunction
 
