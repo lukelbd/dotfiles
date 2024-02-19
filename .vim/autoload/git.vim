@@ -57,9 +57,10 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   let tall = index(s:git_tree, name) != -1  " popup window should be vertical
   let name = get(s:git_aliases, name, name)
   let mods = tall && empty(a:mods) ? 'topleft vert' : a:mods
-  let args = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
-  let args = substitute(args, '--color\>', '', 'g')  " fugitive uses its own colors
-  let cmd = call('fugitive#Command', [a:line1, a:count, a:range, a:bang, mods, args] + a:000)
+  let opts = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
+  let opts = substitute(opts, '--color\>', '', 'g')  " fugitive uses its own colors
+  let opts = [a:line1, a:count, a:range, a:bang, mods, opts] + a:000
+  silent let cmd = call('fugitive#Command', opts)
   if bnum != bufnr() || cmd =~# '\<v\?split\>'
     exe cmd | call feedkeys("\<Cmd>echo 'Git " . a:args . "'\<CR>", 'n')
   elseif edit  " allow buffer creation message to overwrite git message
@@ -198,8 +199,8 @@ function! s:hunk_process(...) abort
 endfunction
 function! git#hunk_show() abort
   call s:hunk_process()
-  GitGutterPreviewHunk
-  wincmd j
+  GitGutterPreviewHunk | silent wincmd j
+  call timer_start(1, function('execute', ["echom 'Hunk difference'"]))
 endfunction
 function! git#hunk_jump(forward, stage) abort
   call s:hunk_process()
@@ -219,29 +220,35 @@ endfunction
 " requires cursor inside lines and fails when specifying lines outside of addition hunk
 " (see s:hunk_op) so explicitly navigate lines below before calling stage commands.
 function! git#hunk_action(stage) abort range
-  call s:hunk_process() | let changed = 0
+  let action = a:stage ? 'Stage' : 'Undo'
+  let cmd = 'GitGutter' . action . 'Hunk'
+  call s:hunk_process()
   let hunks = gitgutter#hunk#hunks(bufnr(''))
+  let ranges = []  " ranges staged
   let [range1, range2] = sort([a:firstline, a:lastline], 'n')
   for [line0, count0, line1, count1] in hunks
     let line2 = count1 ? line1 + count1 - 1 : line1  " to closing line
     if range1 <= line1 && range2 >= line2
-      let range = ''  " selection encapsulates hunk
+      let range = []  " selection encapsulates hunk
     elseif range1 >= line1 && range2 <= line2
-      let range = count0 ? '' : range1 . ',' . range2
+      let range = count0 ? [] : [range1, range2]
     elseif range1 <= line2 && range2 >= line2  " starts inside goes outside
-      let range = count0 ? '' : range1 . ',' . line2
+      let range = count0 ? [] : [range1, line2]
     elseif range1 <= line1 && range2 >= line1  " starts outside goes inside
-      let range = count0 ? '' : line1 . ',' . range2
+      let range = count0 ? [] : [line1, range2]
     else  " no update needed
       continue
     endif
     let winview = winsaveview()
-    let action = a:stage ? 'Stage' : 'Undo'
-    let cmd = range . 'GitGutter' . action . 'Hunk'
-    exe line1 | exe cmd | let changed = 1
+    exe line1 | exe join(range, ',') . cmd
     call winrestview(winview)
+    let range = empty(range) ? [line1, line2] : range
+    call add(ranges, join(uniq(range), '-'))
   endfor
-  if changed | call s:hunk_process() | endif
+  if !empty(ranges)
+    call s:hunk_process()
+    echom action . ' hunks: ' . join(ranges, ', ')
+  endif
 endfunction
 " For <expr> map accepting motion
 function! git#hunk_action_expr(...) abort

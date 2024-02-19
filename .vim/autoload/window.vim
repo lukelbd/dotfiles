@@ -150,48 +150,54 @@ endfunction
 " Select from open tabs
 " Note: This displays a list with the tab number and the file. As with other
 " commands sorts by recent access time for ease of use.
+function! s:parse_tab(item) abort
+  if !type(a:item) | return [a:item, ''] | endif
+  let [tnr; path] = split(a:item, ':')
+  let flags = '\s\+\(\[.\]\s*\)*'  " tabline flags
+  let stats = '\([+-~]\d\+\)*'  " statusline stats
+  let path = join(path, ':')
+  let path = substitute(path, flags . stats . '$', '', 'g')
+  let path = substitute(path, '\(^\s\+\|\s\+$\)', '', 'g')
+  call file#echo_path(path)
+  return [str2nr(tnr), path]  " returns zero on error
+endfunction
+function! s:jump_tab(item) abort
+  let [tnr, path] = s:parse_tab(a:item)
+  exe tnr . 'tabnext'
+endfunction
 function! window#jump_tab(...) abort
   if a:0 && a:1
-    call s:jump_tab_sink(a:1)
-  else
-    call fzf#run(fzf#wrap({
-      \ 'source': window#buffer_source(),
-      \ 'options': '--no-sort --prompt="Tab> "',
-      \ 'sink': function('s:jump_tab_sink'),
-      \ }))
+    return s:jump_tab(a:1)
   endif
-endfunction
-function! s:jump_tab_sink(item) abort
-  exe split(a:item, ':')[0] . 'tabnext'
+  call fzf#run(fzf#wrap({
+    \ 'source': window#buffer_source(),
+    \ 'options': '--no-sort --prompt="Tab> "',
+    \ 'sink': function('s:jump_tab'),
+  \ }))
 endfunction
 
 " Move to selected tab
 " Note: This also displays the tab names in case user wants to
 " group this file appropriately amongst similar open files.
-function! window#move_tab(...) abort
-  if a:0 && a:1
-    call s:move_tab_sink(a:1)
+function! s:move_tab(item) abort
+  let [tnr, path] = s:parse_tab(a:item)
+  if tnr == 0 || tnr == tabpagenr()
+    return
+  elseif tnr > tabpagenr() && v:version[0] > 7
+    exe 'tabmove ' . min([tnr, tabpagenr('$')])
   else
-    call fzf#run(fzf#wrap({
-      \ 'source': window#buffer_source(),
-      \ 'options': '--no-sort --prompt="Move> "',
-      \ 'sink': function('s:move_tab_sink'),
-      \ }))
+    exe 'tabmove ' . min([tnr - 1, tabpagenr('$')])
   endif
 endfunction
-function! s:move_tab_sink(nr) abort
-  if type(a:nr) == 0  " input tab number
-    let nr = a:nr
-  else  " fzf selections string
-    let nr = str2nr(split(a:nr, ':')[0])
+function! window#move_tab(...) abort
+  if a:0 && a:1
+    return s:move_tab(a:1)
   endif
-  if nr == tabpagenr() || nr == 0 || nr ==# ''
-    return
-  elseif nr > tabpagenr() && v:version[0] > 7
-    exe 'tabmove ' . min([nr, tabpagenr('$')])
-  else
-    exe 'tabmove ' . min([nr - 1, tabpagenr('$')])
-  endif
+  call fzf#run(fzf#wrap({
+    \ 'source': window#buffer_source(),
+    \ 'options': '--no-sort --prompt="Move> "',
+    \ 'sink': function('s:move_tab'),
+  \ }))
 endfunction
 
 " Print currently open buffers
@@ -246,7 +252,7 @@ function! window#scroll_recent(...) abort  " scrolling window change preserves l
   let bnr = bufnr()
   let scroll = a:0 ? a:1 : v:count1
   call window#update_recent()  " sync location, possibly float if starting scroll
-  call iter#next_stack('file#open_drop', 'recent', scroll)
+  call iter#next_stack(function('file#open_drop', [1]), 'recent', scroll)  " quiet flag
   if bnr != bufnr() | call window#update_recent(1, 1) | endif  " apply b:recent_scroll
 endfunction
 function! window#update_recent(...) abort  " set current buffer

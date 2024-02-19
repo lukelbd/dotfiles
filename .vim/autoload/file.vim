@@ -39,9 +39,9 @@ function! file#print_paths(...) abort
     endif
     let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
     let work = fnamemodify(getcwd(), ':~')
-    echom 'Current file: ' . escape(show, chars)
-    echom 'Current project: ' . escape(root, chars)
-    echom 'Current directory: ' . escape(work, chars)
+    echom 'Path: ' . escape(show, chars)
+    echom 'Project: ' . escape(root, chars)
+    echom 'Session: ' . escape(work, chars)
   endfor
 endfunction
 
@@ -66,9 +66,15 @@ function! s:path_complete(lead) abort
   else  " include leading component
     let paths = globpath(head, tail . '*', 1, 1) + globpath(head, tail . '.*', 1, 1)
   endif
-  let paths = filter(paths, 'fnamemodify(v:val, '':t'') !~# ''^\.\+$''')
-  let paths = map(paths, 'isdirectory(v:val) ? v:val . ''/'' : v:val')
-  return map(paths, 'substitute(v:val, ''^\.\/'', '''', '''')')
+  let filt = 'fnamemodify(v:val, '':t'') !~# ''^\.\+$'''  " remove dots
+  let map0 = "fnamemodify(v:val, ':~:.')"  " abbreviate names
+  let map1 = 'isdirectory(v:val) ? v:val . ''/'' : v:val'  " append '/' to dirs
+  let map2 = 'substitute(v:val, ''^\.\/'', '''', '''')'  " remove current dir
+  let paths = map(map(map(filter(paths, filt), map0), map1), map2)
+  return paths
+endfunction
+function! file#complete_cwd(lead, line, cursor) abort
+  return s:path_complete(a:lead)
 endfunction
 function! file#complete_lwd(lead, line, cursor) abort
   if exists('*RelativePath')
@@ -82,14 +88,11 @@ function! file#complete_lwd(lead, line, cursor) abort
     return s:path_complete(a:lead)
   endif
 endfunction
-function! file#complete_cwd(lead, line, cursor) abort
-  return s:path_complete(a:lead)
-endfunction
 
 " Open recently edited file
 " Note: This is companion to :History with nicer behavior. Files tracked
 " in ~/.vim_mru_files across different open vim sessions.
-function! file#open_recent() abort
+function! file#open_used() abort
   let files = readfile(expand(g:MRU_file))
   if files[0] =~# '^#'
     call remove(files, 0)
@@ -100,13 +103,10 @@ function! file#open_recent() abort
     call map(files, 'fnamemodify(v:val, ":~:.")')
   endif
   call fzf#run(fzf#wrap({
-    \ 'sink': function('s:open_recent_sink'),
+    \ 'sink': function('file#open_drop'),
     \ 'source' : files,
     \ 'options': '--no-sort --prompt="Global Hist> "',
     \ }))
-endfunction
-function! s:open_recent_sink(path) abort
-  call file#open_drop(a:path)
 endfunction
 
 " Open from local or current directory (see also grep.vim)
@@ -114,7 +114,7 @@ endfunction
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
 function! file#open_head(path) abort
   let prompt = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
-  let prompt = prompt[:1] ==# '/' ? prompt : './' . prompt
+  let prompt = prompt =~# '^[~/]\|^\w\+:' ? prompt : './' . prompt
   let prompt = substitute(prompt, '/$', '', '') . '/'
   return prompt
 endfunction
@@ -205,26 +205,45 @@ endfunction
 " Warning: Using :edit without feedkeys causes issues navigating fugitive panels.
 " Warning: The default ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
+function! file#echo_path(...) abort
+  let path = expand(a:0 ? a:1 : '%')
+  if exists('*RelativePath')
+    let path = RelativePath(path)
+  else
+    let path = fnamemodify(path)
+  endif
+  echom 'Path: ' . path
+endfunction
 function! file#open_drop(...) abort
-  for path in a:000
+  if a:0 && !type(a:1)
+    let [quiet, paths] = [a:1, a:000[1:]]
+  else
+    let [quiet, paths] = [0, a:000]
+  endif
+  for path in paths
+    let nrs = []  " tab and window number
     let abspath = fnamemodify(path, ':p')
     for tnr in range(1, tabpagenr('$'))  " iterate through each tab
       for bnr in tabpagebuflist(tnr)
-        if expand('#' . bnr . ':p') ==# abspath
+        if abspath ==# expand('#' . bnr . ':p')
           let wnr = bufwinnr(bnr)
-          exe 'keepjumps ' . tnr . 'tabnext'
-          exe 'keepjumps ' . wnr . 'wincmd w' | echom | return
+          let nrs = empty(nrs) ? [tnr, wnr] : nrs  " prefer first match
         endif
       endfor
     endfor
     let blank = !&modified && empty(bufname())
     let panel = &l:filetype =~# '^\(git\|netrw\)$'
     let fugitive = bufname() =~# '^fugitive:'
-    if blank || panel || fugitive
-      call feedkeys("\<Cmd>edit " . path . "\<CR>", 'n')
+    if !empty(nrs)
+      exe nrs[0] . 'tabnext' | exe nrs[1] . 'wincmd w'
+    elseif !blank && !panel && !fugitive
+      exe 'tabnew ' . fnameescape(path)
     else  " create new tab
-      exe 'keepjumps tabnew ' . fnameescape(path)
+      call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')
     end
+    if !quiet && !blank && !panel && !fugitive  " echo path
+      call timer_start(1, function('file#echo_path', [path]))
+    endif
   endfor
 endfunction
 

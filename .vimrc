@@ -412,7 +412,7 @@ for s:char in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:char | endfor
 nnoremap g. <Cmd>call window#jump_tab(v:count)<CR>
 nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
 nnoremap g, <Cmd>History<CR>
-nnoremap g< <Cmd>call file#open_recent()<CR>
+nnoremap g< <Cmd>call file#open_used()<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
@@ -440,14 +440,14 @@ nnoremap <Tab>\ <Cmd>exe 'leftabove ' . window#default_width(1)
   \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
 
 " Tab and window jumping
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR><Cmd>echom<CR>
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR><Cmd>echom<CR>
-nnoremap <Tab>' <Cmd>silent! tabnext # \| echom<CR>
-nnoremap <Tab>; <C-w><C-p>
-nnoremap <Tab>j <C-w>j
-nnoremap <Tab>k <C-w>k
-nnoremap <Tab>h <C-w>h
-nnoremap <Tab>l <C-w>l
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>j <Cmd>silent! wincmd j<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>k <Cmd>silent! wincmd k<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>h <Cmd>silent! wincmd h<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>l <Cmd>silent! wincmd l<CR><Cmd>call file#echo_path()<CR>
 
 " Tab and window resizing
 nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR><Cmd>exe 'vert resize ' . window#default_width()<CR>
@@ -867,9 +867,9 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " Undo history utilities
 " Note: Tried implementing 'redo' but fails because history is lost after vim
 " re-enters insert mode from the <C-o> command. Googled and no way to do it
-nnoremap U <C-r>
-inoremap <F3> <C-o>u
 inoremap <F4> <C-g>u
+inoremap <F3> <C-o>u
+nnoremap U <C-r>
 
 " Handle indent counts. In native vim 2> indents this line or this motion
 " repeated, now it means 'indent multiple times'.

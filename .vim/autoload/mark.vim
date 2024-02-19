@@ -39,6 +39,12 @@ function! s:select_jump(loc) abort
   endif
   call feedkeys(keys . 'zv', 'n')
 endfunction
+function! s:echo_location(name, idx, size) abort
+  let value = (a:size - a:idx) . '/' . (a:size - 1)
+  let label = toupper(a:name[0]) . a:name[1:]
+  let cmd = "echom '" . label . ' location: ' . value . "'"
+  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
+endfunction
 function! mark#goto_jump(count) abort
   call s:update_jumps()
   let idx = s:jumploc + a:count
@@ -50,7 +56,7 @@ function! mark#goto_jump(count) abort
     echohl WarningMsg | echom 'Error: At start of jumplist' | echohl None
   else
     call s:select_jump(jdx)
-    call feedkeys("\<Cmd>echom 'Jump location: " . (len(s:jumplist) - jdx) . "'\<CR>", 'n')
+    call s:echo_location('jump', jdx, len(s:jumplist))
   endif
 endfunction
 function! mark#fzf_jumps(...)
@@ -117,7 +123,7 @@ function! mark#goto_change(count) abort
     echohl WarningMsg | echom 'Error: At start of changelist' | echohl None
   else  " echo number
     call feedkeys(keys, 'n')
-    call feedkeys("\<Cmd>echom 'Change location: " . (len(opts) - jdx) . "'\<CR>", 'n')
+    call s:echo_location('change', jdx + 1, len(opts) + 1)
   endif
 endfunction
 function! mark#fzf_changes(...) abort

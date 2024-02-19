@@ -239,11 +239,7 @@ function! fold#update_level(...) abort
   if !empty(cmd)
     silent! exe 'normal! ' . cmd
   endif
-  if level != &foldlevel
-    call fold#update_folds() | echom 'Fold level: ' . level . ' -> ' . &foldlevel
-  else  " echo message only
-    echom 'Fold level: ' . level
-  endif
+  echom 'Fold level: ' . &foldlevel
 endfunction
 
 " Toggle folds under cursor

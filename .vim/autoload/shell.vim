@@ -71,15 +71,16 @@ function! s:doc_syntax() abort
   highlight link docDashes manHeader
 endfunction
 function! shell#man_setup(...) abort
-  setlocal tabstop=8 softtabstop=8 shiftwidth=8
   let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
   let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
   if !empty(get(b:, 'doc_name', ''))
+    setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldnestmax=3
     let b:doc_name = @% | call s:doc_syntax()
     noremap <buffer> <CR> <Cmd>call iter#next_stack('python#doc_page', 'doc', '')<CR>
     noremap <nowait> <buffer> [ <Cmd>call iter#next_stack('python#doc_page', 'doc', -v:count1)<CR>
     noremap <nowait> <buffer> ] <Cmd>call iter#next_stack('python#doc_page', 'doc', v:count1)<CR>
   else
+    setlocal tabstop=7 softtabstop=7 shiftwidth=7 foldnestmax=3
     let b:man_name = [page, pnum]  " see below
     noremap <buffer> <CR> <Cmd>call iter#next_stack('shell#man_page', 'man', '')<CR>
     noremap <nowait> <buffer> [ <Cmd>call iter#next_stack('shell#man_page', 'man', -v:count1)<CR>

@@ -51,6 +51,7 @@ endfunction
 " Set up temporary paste mode
 " Note: Removed automatically when insert mode is abandoned
 function! edit#paste_mode() abort
+  echom 'Paste mode enabled.'
   let s:paste = &paste
   let s:mouse = &mouse
   set paste
@@ -63,6 +64,7 @@ function! edit#paste_mode() abort
       \   let &mouse = s:mouse |
       \   unlet s:paste |
       \   unlet s:mouse |
+      \   echom 'Paste mode disabled' |
       \ endif |
       \ autocmd! insert_paste
   augroup END
