@@ -10,7 +10,7 @@
 " 2 for e.g. :10,20Git) where +'<range>' forces this to integer. Here, use simpler
 " implicit distinction between calls with/without range where we simply test the
 " equality of <line1> and <line2>, or allow a force-range a:range argument.
-function! git#setup_commands() abort
+function! git#command_setup() abort
   command! -buffer
     \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
     \ G call git#run_command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
@@ -33,7 +33,7 @@ let s:flags1 = '--graph --abbrev-commit --max-count=50'
 let s:flags2 = '--date=relative --branches --decorate'
 let s:git_tree = ['log', 'tree', 'trunk']
 let s:git_edit = ['merge', 'commit', 'oops']
-let s:git_main = ['', 'status', 'show', 'diff'] + s:git_tree + s:git_edit
+let s:git_main = ['', 'status', 'show', 'diff'] + s:git_edit
 let s:git_quiet = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 let s:git_aliases = {
   \ 'status': '',
@@ -64,33 +64,34 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   let quiet = index(s:git_quiet, name) != -1  " commands print at most one line
   let edit = index(s:git_edit, name) != -1  " popup windows may open an editor
   let main = index(s:git_main, name) != -1  " popup window should have 'main' size
-  let tall = index(s:git_tree, name) != -1  " popup window should be vertical
+  let tree = index(s:git_tree, name) != -1  " popup window should be vertical
   let name = get(s:git_aliases, name, name)
-  let mods = tall && empty(a:mods) ? 'topleft vert' : a:mods
+  let mods = tree && empty(a:mods) ? 'topleft vert' : a:mods
   let opts = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
   let opts = substitute(opts, '--color\>', '', 'g')  " fugitive uses its own colors
   let opts = [a:line1, a:count, a:range, a:bang, mods, opts] + a:000
   silent let cmd = call('fugitive#Command', opts)
   " Parse git results
   if bnum != bufnr() || cmd =~# '\<v\?split\>'
-    silent exe cmd | let empty = line('$') <= 1
+    silent exe cmd | let empty = line('$') <= 1 | setlocal bufhidden=delete
     if empty  " empty result
-      call window#close_pane()
+      call window#close_pane(1)
     endif
-    call timer_start(200, function('s:echo_git', [a:args, empty]))
+    call timer_start(500, function('s:echo_git', [a:args, empty]))
   else  " no panes
     if edit  " allow buffer creation message to overwrite git message
       call echoraw('Git ' . a:args)
     else  " possibly show result after message or ensure press enter
       echo 'Git ' . a:args . (quiet ? ' ' : "\n")
     endif
+    exe cmd
   endif
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
   elseif a:args =~# '^blame\( %\)\@!' || cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
-    exe 'vertical resize ' . window#default_width(!main)
+    exe 'vertical resize ' . window#default_width(tree ? 0.5 : !main)
   else  " bottom pane
-    exe 'resize ' . window#default_height(!main)
+    exe 'resize ' . window#default_height(tree ? 0.5 : !main)
   endif
   if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
@@ -134,7 +135,6 @@ function! git#commit_setup(...) abort
   exe 'resize ' . window#default_height()
   call switch#autosave(1, 1)  " suppress message
   setlocal colorcolumn=73
-  setlocal foldlevel=1
   goto | startinsert  " first row column
 endfunction
 function! git#commit_safe() abort
@@ -183,7 +183,9 @@ function! git#fugitive_setup() abort
   for val in s:fugitive_remove
     silent! exe 'unmap <buffer> ' . val
   endfor
-  setlocal foldlevel=1
+  setlocal foldmethod=syntax
+  call fold#update_folds()
+  call fold#set_defaults()
   call call('utils#switch_maps', s:fugitive_switch)
 endfunction
 function! git#fugitive_return() abort

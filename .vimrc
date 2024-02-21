@@ -399,8 +399,8 @@ let g:MRU_Open_File_Relative = 1
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call window#show_bufs()
 command! -nargs=0 WipeBufs call window#wipe_bufs()
-nnoremap <Leader>q <Cmd>Windows<CR>
-nnoremap <Leader>Q <Cmd>Buffers<CR>
+nnoremap <Leader>b <Cmd>Windows<CR>
+nnoremap <Leader>B <Cmd>Buffers<CR>
 noremap <Leader>y <Cmd>ShowBufs<CR>
 noremap <Leader>Y <Cmd>WipeBufs<CR>
 
@@ -529,13 +529,14 @@ xmap <F5> <Plug>(fzf-maps-x)
 imap <F5> <Plug>(fzf-maps-i)
 nnoremap z; @:
 nnoremap <F5> <Cmd>Maps<CR>
-nnoremap <Leader>b <Cmd>Commands<CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
 nnoremap <Leader>v <Cmd>Helptags<CR>
 nnoremap <Leader>V <Cmd>call vim#vim_help()<CR>
+nnoremap <Leader>q <Cmd>Commands<CR>
+nnoremap <Leader>Q <Cmd>Maps<CR>
 
 " Shell , search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
@@ -2054,16 +2055,16 @@ endif
 if s:plug_active('vim-fugitive')
   augroup fugiive_setup
     au!
-    au BufEnter * call git#setup_commands()
+    au BufEnter * call git#command_setup()
   augroup END
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>" <Cmd>call git#commit_safe()<CR>
   noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage :/')<CR>
-  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
-  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage %')<CR>
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet %')<CR>
+  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>zv
+  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage %')<CR>zv
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>zv
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet %')<CR>zv
   noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
   noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet :/')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>

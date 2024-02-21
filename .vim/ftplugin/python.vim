@@ -21,7 +21,7 @@ noremap <buffer> <Plug>ExecuteFile2 <Cmd>JupyterDisconnect<CR>
 
 " Insert docstring (see autoload/python.vim)
 noremap <buffer> g_ <Cmd>Pydocstring<CR>
-  \<Cmd>call timer_start(200, function('python#split_docstrings'))<CR>
+  \<Cmd>call timer_start(500, function('python#split_docstrings'))<CR>
 
 " Translate dictionaries to kwargs (see autoload/python.vim)
 noremap <expr> <buffer> g{ python#dict_to_kw_expr(0)

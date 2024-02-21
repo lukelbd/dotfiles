@@ -131,10 +131,11 @@ endfunction
 " up lines preceding line is lower-level but this fails for adjacent same-level folds.
 let s:folds_open = [
   \ ['python', '^class\>', '', 1],
+  \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
+  \ ['fugitive', '^\(Unstaged\|Staged\)\>', '', 1],
   \ ['tex', '^\s*\\begin{document}', '', 1],
   \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
   \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
-  \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
 \ ]
 function! fold#set_defaults() abort
   for [ftype, regex1, regex2, level] in s:folds_open
