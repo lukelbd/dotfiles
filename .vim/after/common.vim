@@ -31,6 +31,10 @@ if !s:indent1 && !s:indent2 | exe 'nnoremap <buffer> == <Esc>=='
   nnoremap <expr> <buffer> >> '<Esc>' . repeat('>>', v:count1)
   nnoremap <expr> <buffer> << '<Esc>' . repeat('<<', v:count1)
 endif
+for s:suffix in ['g', 's', 'S', '%']
+  exe 'silent! iunmap <C-g>' . s:suffix
+  exe 'silent! iunmap <buffer><C-g>' . s:suffix
+endfor
 for s:prefix in ['<Nop>', '<C-w>', '<C-g>', '<buffer><Nop>', '<buffer><C-w>', '<buffer><C-g>', '<buffer><C-r>']
   for s:suffix in ['@', '"', "'", '/', '?', 'g', '"', "'", '<C-w>', '<C-g>', '<C-r>']
     exe 'silent! nunmap ' . s:prefix . s:suffix

@@ -43,7 +43,17 @@ let s:git_aliases = {
   \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
   \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,
 \ }
+function! s:echo_git(args, empty, ...) abort
+  if !a:empty
+    echom 'Git ' . a:args
+  else  " empty message
+    echohl WarningMsg
+    echom "Warning: 'Git " . a:args . "' was empty"
+    echohl None
+  endif
+endfunction
 function! git#run_command(line1, count, range, bang, mods, args, ...) abort range
+  " Parse git arguments
   if empty(FugitiveGitDir())
     let args = [a:line1, a:count, a:range, a:bang, a:mods, ''] + a:000
     let cmd = "call('fugitive#Command', " . string(args) . ')'
@@ -61,12 +71,19 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   let opts = substitute(opts, '--color\>', '', 'g')  " fugitive uses its own colors
   let opts = [a:line1, a:count, a:range, a:bang, mods, opts] + a:000
   silent let cmd = call('fugitive#Command', opts)
+  " Parse git results
   if bnum != bufnr() || cmd =~# '\<v\?split\>'
-    exe cmd | call feedkeys("\<Cmd>echo 'Git " . a:args . "'\<CR>", 'n')
-  elseif edit  " allow buffer creation message to overwrite git message
-    call echoraw('Git ' . a:args) | exe cmd
-  else  " possibly show result after message or ensure press enter 
-    echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd
+    silent exe cmd | let empty = line('$') <= 1
+    if empty  " empty result
+      call window#close_pane()
+    endif
+    call timer_start(200, function('s:echo_git', [a:args, empty]))
+  else  " no panes
+    if edit  " allow buffer creation message to overwrite git message
+      call echoraw('Git ' . a:args)
+    else  " possibly show result after message or ensure press enter
+      echo 'Git ' . a:args . (quiet ? ' ' : "\n")
+    endif
   endif
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
