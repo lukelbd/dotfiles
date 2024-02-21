@@ -94,7 +94,7 @@ function! iter#push_stack(head, scroll, ...) abort  " update location and possib
   endif
   call s:add_stack(a:head, stack, jdx)
   if a:0 > 1 && a:2  " delay message to ensure it displays
-    call timer_start(1, function('s:echo_stack', [a:head, name, jdx, len(stack)]))
+    call timer_start(10, function('s:echo_stack', [a:head, name, jdx, len(stack)]))
   endif
 endfunction
 

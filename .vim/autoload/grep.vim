@@ -88,7 +88,7 @@ function! grep#call_ag(global, level, ...) abort
   let [regex, paths, extra] = call('s:parse_grep', [a:global, a:level] + a:000)
   let opts = fzf#vim#with_preview()
   call fzf#vim#ag_raw(join([flags, extra, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  call timer_start(1, function('s:echo_grep', [regex]))
+  call timer_start(10, function('s:echo_grep', [regex]))
 endfunction
 function! grep#call_rg(global, level, ...) abort
   let flags = '--hidden --ignore-file ~/.wildignore'
@@ -98,7 +98,7 @@ function! grep#call_rg(global, level, ...) abort
   let opts = fzf#vim#with_preview()
   let head = 'rg --column --line-number --no-heading --color=always'
   call fzf#vim#grep(join([head, flags, '--', regex, paths], ' '), opts, 0)  " 0 is no fullscreen
-  call timer_start(1, function('s:echo_grep', [regex]))
+  call timer_start(10, function('s:echo_grep', [regex]))
 endfunction
 
 " Call Rg or Ag from mapping (see also file.vim)

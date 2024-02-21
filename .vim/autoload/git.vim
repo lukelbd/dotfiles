@@ -200,7 +200,7 @@ endfunction
 function! git#hunk_show() abort
   call s:hunk_process()
   GitGutterPreviewHunk | silent wincmd j
-  call timer_start(1, function('execute', ["echom 'Hunk difference'"]))
+  call timer_start(10, function('execute', ["echom 'Hunk difference'"]))
 endfunction
 function! git#hunk_jump(forward, stage) abort
   call s:hunk_process()
