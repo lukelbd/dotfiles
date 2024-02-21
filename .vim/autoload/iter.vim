@@ -5,8 +5,13 @@
 " Warning: Below returns name index optionally filtered to the last nmax entries
 " of the stack. Note e.g. [1, 2, 3][-5:] is empty list, careful with this.
 function! s:add_stack(head, stack, idx) abort
+  if empty(a:stack)  " initial value
+    let jdx = -1
+  else  " restrict values
+    let jdx = min([max([a:idx, 0]), len(a:stack) - 1])
+  endif
   let g:[a:head . '_stack'] = a:stack
-  let g:[a:head . '_loc'] = a:idx
+  let g:[a:head . '_loc'] = jdx
 endfunction
 function! s:echo_stack(head, name, idx, size, ...) abort
   if type(a:name) == 3
@@ -29,7 +34,7 @@ function! s:query_stack(head, buf, ...) abort
   let jdx = !nmax ? 0 : len(stack) - min([nmax, len(stack)])
   " vint: -ProhibitUsingUndeclaredVariable
   let kdx = empty(name) ? -1 : index(stack[jdx:], name)
-  let kdx = kdx != -1 ? jdx + kdx : -1
+  let kdx = kdx == -1 ? -1 : jdx + kdx
   return [stack, idx, name, kdx]
 endfunction
 
@@ -67,7 +72,6 @@ function! iter#pop_stack(head, ...) abort
   if kdx == -1 | return | endif  " remove current item, generally
   call remove(stack, kdx)
   let idx = idx > kdx ? idx - 1 : idx  " if idx == jdx float to next entry
-  let idx = empty(stack) ? -1 : min([max([idx, 0]), len(stack) - 1])
   call s:add_stack(a:head, stack, idx)
 endfunction
 function! iter#push_stack(head, scroll, ...) abort  " update location and possibly append
@@ -75,7 +79,6 @@ function! iter#push_stack(head, scroll, ...) abort  " update location and possib
   let [stack, idx, name, kdx] = s:query_stack(a:head, bufnr(), nmax)
   if empty(name) | return | endif
   let jdx = a:0 && a:1 >= 0 ? a:1 : len(stack)
-  let echo = a:0 > 1 ? a:2 : 0  " verbose mode
   if jdx >= len(stack)  " update stack?
     " vint: -ProhibitUsingUndeclaredVariable
     if kdx == -1  " add new entry
@@ -90,7 +93,7 @@ function! iter#push_stack(head, scroll, ...) abort  " update location and possib
     endif
   endif
   call s:add_stack(a:head, stack, jdx)
-  if echo  " delay message to ensure it displays
+  if a:0 > 1 && a:2  " delay message to ensure it displays
     call timer_start(1, function('s:echo_stack', [a:head, name, jdx, len(stack)]))
   endif
 endfunction

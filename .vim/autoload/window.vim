@@ -49,8 +49,9 @@ function! window#close_tab(...) abort
   if ntabs == 1 | quitall | else
     exe 'tabclose' . bang | if !islast | silent! tabprevious | endif
   endif
+  call feedkeys('zv', 'n')
 endfunction
-function! window#close_window(...) abort
+function! window#close_pane(...) abort
   let bang = a:0 && a:1 ? '!' : ''
   let ntabs = tabpagenr('$')
   let islast = ntabs == tabpagenr()
@@ -65,6 +66,14 @@ function! window#close_window(...) abort
   if ntabs != tabpagenr('$') && !islast
     silent! tabprevious
   endif
+  call feedkeys('zv', 'n')
+endfunction
+function! window#close_panes() abort
+  let bnr = get(b:, 'tabline_bufnr', '%')
+  let path = bufname(bnr)
+  call file#open_drop(path)
+  silent! only
+  call feedkeys('zezv', 'n')
 endfunction
 
 " Change window size in given direction

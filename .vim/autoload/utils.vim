@@ -156,8 +156,8 @@ endfunction
 " and simply get in habit of closing entire tabs with session#close_tab().
 function! utils#panel_setup(level) abort
   let g:ft_man_folding_enable = 1  " see :help Man
-  nnoremap <buffer> q <Cmd>silent! call window#close_window()<CR>
-  nnoremap <buffer> <C-w> <Cmd>silent! call window#close_window()<CR>
+  nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
+  nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
   if &filetype ==# 'qf'  " disable <Nop> map
     nnoremap <buffer> <CR> <CR>zv
   endif

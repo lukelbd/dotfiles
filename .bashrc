@@ -458,8 +458,8 @@ alias bindings_stty='stty -a'  # show bindings (linux and coreutils)
 kinds() { ctags --list-kinds="$*"; }  # list language shortcuts
 kinds-all() { ctags --list-kinds-full="$*"; }  # list language shortcuts
 # alias bindings_stty='stty -e'  # show bindings (native mac)
-if $_macos; then
-  alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"  # see https://apple.stackexchange.com/a/352770/214359
+if $_macos; then  # see https://apple.stackexchange.com/a/352770/214359
+  alias cores="sysctl -a | grep -E 'machdep.cpu.*(brand|count)'"
   alias hardware='sw_vers'  # see https://apple.stackexchange.com/a/255553/214359
   alias bindings="bind -Xps | egrep '\\\\C|\\\\e' | grep -v do-lowercase-version | sort"
 else  # shellcheck disable=2142
@@ -1396,27 +1396,27 @@ _dyld_ncl=$(alias ncl 2>/dev/null | cut -d= -f2- | cut -d\' -f2)
 alias r='command R -q --no-save'
 alias R='command R -q --no-save'
 
-# Perl -- hard to understand, but here it goes:
-# * The first args are passed to rlwrap (install with 'mamba install rlwrap'). The
-#   flags -A set ANSI-aware colors and -pgreen apply a green prompt.
-# * The next args are perl args. Flags -w print more warnings, -n is more obscure, and
-#   -E evaluates an expression -- say eval() prints result of $_ (default searching and
-#   pattern space, whatever that means), and $@ is set if eval string failed so the //
-#   checks for success, and if not prints error message. This is a build-your-own eval.
+# Perl -- hard to understand, but here it goes. The first args are passed to rlwrap
+# (install with 'mamba install rlwrap'). The flags -A set ANSI-aware colors and
+# -pgreen apply a green prompt. The next args are perl args. Flags -w print more
+# warnings, -n is more obscure, and -E evaluates an expression -- say eval() prints
+# result of $_ (default searching and pattern space, whatever that means), and $@ is
+# set if eval string failed so the // checks for success, and if not prints error
+# message. This is a build-your-own eval.
 iperl() {  # see this answer: https://stackoverflow.com/a/22840242/4970632
   ! hash rlwrap &>/dev/null && echo "Error: Must install rlwrap." && return 1
   rlwrap -A -p"green" -S"perl> " perl -wnE'say eval()//$@'  # rlwrap stands for readline wrapper
 }
 
 # Set up jupyter lab with necessary port-forwarding connections
+# Install nbstripout with 'pip install nbstripout', then add to global .gitattributes
+# for automatic stripping during git differencing. No need for 'jupyter contrib
+# nbextensions install --user', creates duplicate installation in ~/Library. Fix with
+# 'jupyter contrib nbextensions uninstall --user' If you have issues where themes are
+# just not changing in Chrome, open Developer tab with Cmd+Opt+I and you can
+# right-click refresh for a hard reset, cache reset.
 # See: https://github.com/Jupyter-contrib/jupyter_nbextensions_configurator/issues/25#issuecomment-287730514
 # See: https://github.com/ipython-contrib/jupyter_contrib_nbextensions/issues/1529#issuecomment-1134250842
-# * Install nbstripout with 'pip install nbstripout', then add to global .gitattributes
-#   for automatic stripping during git differencing.
-# * *Do not* need 'jupyter contrib nbextensions install --user', creates duplicate
-#   installation in ~/Library. Fix with 'jupyter contrib nbextensions uninstall --user'
-# * If you have issues where themes are just not changing in Chrome, open Developer tab
-#   with Cmd+Opt+I and you can right-click refresh for a hard reset, cache reset.
 jupyter-lab() {
   local port flag
   if [ -n "$1" ]; then
@@ -1769,14 +1769,12 @@ ncvardetails() {
 # PDF and image utilities
 #-----------------------------------------------------------------------------
 # Converting between things
-# * Flatten gets rid of transparency/renders it against white background, and
-#   the units/density specify a <N>dpi resulting bitmap file. Another option
-#   is "-background white -alpha remove", try this.
-# * Note imagemagick does *not* handle vector formats; will rasterize output
-#   image and embed in a pdf, so cannot flatten transparent components with
-#   convert -flatten in.pdf out.pdf
-# * Note the PNAS journal says 1000-1200dpi recommended for line art images
-#   and stuff with text.
+# Flatten gets rid of transparency/renders it against white background, and
+# the units/density specify a <N>dpi resulting bitmap file. Another option
+# is "-background white -alpha remove", try this. Note imagemagick does *not* handle
+# vector formats; will rasterize output image and embed in a pdf, so cannot flatten
+# transparent components with convert -flatten in.pdf out.pdf. Note the PNAS journal
+# says 1000-1200dpi recommended for line art images and stuff with text.
 pdf2text() {  # extracting text (including appropriate newlines, etc.) from file
   # See: https://stackoverflow.com/a/52184549/4970632
   # See: https://pypi.org/project/pdfminer/
@@ -1909,10 +1907,9 @@ echo 'done'
 # FZF fuzzy file completion tool
 #-----------------------------------------------------------------------------
 # Default fzf flags (see man page for more info, e.g. --bind and --select-1)
-# * Inline info puts the number line thing on same line as text.
-# * Bind slash to accept so behavior matches shell completion behavior.
-# * Enforce terminal background default color using -1 below.
-# * For ANSI color codes see: https://stackoverflow.com/a/33206814/4970632
+# Inline info puts the number line thing on same line as text. Bind slash to accept
+# so behavior matches shell completion behavior. Enforce terminal background default
+# color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
 _fzf_opts=" \
   --ansi --color=bg:-1,bg+:-1 --layout=default \
   --exit-0 --inline-info --height=6 \
@@ -2156,10 +2153,10 @@ _append_prompt() {  # input argument should be new command
 }
 
 # Set the iTerm2 window title; see https://superuser.com/a/560393/506762
-# 1. First was idea to make title match working directory but fails inside tmux
-#    export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
-# 2. Next idea was to use environment variabbles -- TERM_SESSION_ID/ITERM_SESSION_ID
-#    indicate the window/tab/pane number so we can grep and fill.
+# First was idea to make title match working directory but fails inside tmux
+# export PROMPT_COMMAND='echo -ne "\033]0;${PWD/#$HOME/~}\007"'
+# Next idea was to use environment variabbles -- TERM_SESSION_ID/ITERM_SESSION_ID
+# indicate the window/tab/pane number so we can grep and fill.
 _title_file=$HOME/.title
 if [[ "$TERM_PROGRAM" =~ Apple_Terminal ]]; then
   _win_num=0

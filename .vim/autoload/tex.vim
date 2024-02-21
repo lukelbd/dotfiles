@@ -67,39 +67,40 @@ function! s:cite_source() abort
   " Set the plugin source variables
   " Get biligraphies using grep, copied from latexmk
   " Easier than using search() because we want to get *all* results
-  let biblist = []
-  let bibfiles = system(
+  let paths = []
+  let result = system(
     \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | '
     \ . s:sed_cmd() . ' -n ''s@^\s*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}@\2@p'''
     \ )
   " Check that files all exist
   if v:shell_error == 0
-    let filedir = expand('%:h')
-    for bibfile in split(bibfiles, "\n")
-      if bibfile !~? '.bib$'
-        let bibfile .= '.bib'
+    let local = expand('%:h')
+    for path in split(result, "\n")
+      if path !~? '.bib$'
+        let path = path . '.bib'
       endif
-      let bibpath = filedir . '/' . bibfile
-      if filereadable(bibpath)
-        call add(biblist, bibpath)
+      let path = substitute(path, '\\string', '', 'g')
+      let path = path =~# '^\~\|^/' ? expand(path) : local . '/' . path
+      if filereadable(path)
+        call add(paths, path)
       else
         echohl WarningMsg
-        echom "Warning: Bib file '" . bibpath . "' does not exist.'"
+        echom "Warning: Bib file '" . path . "' does not exist.'"
         echohl None
       endif
     endfor
   endif
   " Set the environment variable and return command-line command used to
   " generate fuzzy list from the selected files.
-  if len(biblist) == 0
+  if len(paths) == 0
     echoerr 'Bibliography files not found.'
     return []
   elseif ! executable('bibtex-ls')  " see https://github.com/msprev/fzf-bibtex
     echoerr 'Command bibtex-ls not found.'
     return []
   else
-    let $FZF_BIBTEX_SOURCES = join(biblist, ':')
-    return 'bibtex-ls ' . join(biblist, ' ')
+    let $FZF_BIBTEX_SOURCES = join(paths, ':')
+    return 'bibtex-ls ' . join(paths, ' ')
   endif
 endfunction
 

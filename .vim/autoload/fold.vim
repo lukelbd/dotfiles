@@ -85,13 +85,16 @@ function! fold#fold_text(...) abort
     let label .= &ft ==# 'python' && label =~# '^\s*\(def\|class\)\>' ? ':' : ''
   endif
   " Get git gutter statistics
+  let delta = ''
   let signs = ['+', '~', '-']
   let hunks = [0, 0, 0]
-  let delta = ''
   for [hunk0, count0, hunk1, count1] in gitgutter#hunk#hunks(bufnr())
     let hunk2 = count1 ? hunk1 + count1 - 1 : hunk1
-    let [hunk1, hunk2] = [max([hunk1, line1]), min([hunk2, line2])]
-    if hunk2 < hunk1 | continue | endif
+    let [clip1, clip2] = [max([hunk1, line1]), min([hunk2, line2])]
+    if clip2 < clip1 | continue | endif
+    let offset = (hunk2 - clip2) + (clip1 - hunk1)  " count change
+    let count0 = max([count0 - offset, 0])
+    let count1 = max([count1 - offset, 0])
     let hunks[0] += max([count1 - count0, 0])  " added
     let hunks[1] += min([count0, count1])  " modified
     let hunks[2] += max([count0 - count1, 0])  " removed

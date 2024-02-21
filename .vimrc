@@ -381,10 +381,10 @@ vnoremap <expr> A mode() =~# "\<C-v>" ? 'A' : '<Esc>`>a'
 " nnoremap <C-q> <Cmd>quitall<CR>
 command! -nargs=? Autosave call switch#autosave(<args>)
 noremap <Leader>W <Cmd>call switch#autosave()<CR>
-nnoremap <C-s> <Cmd>call file#update()<CR>zv
-nnoremap <C-q> <Cmd>call window#close_tab()<CR>zv
-nnoremap <C-w> <Cmd>call window#close_window()<CR>zv
-nnoremap <C-e> <Cmd>call file#open_drop(bufname(get(b:, 'tabline_bufnr', '%')))<CR><Cmd>silent! only<CR>zezv
+nnoremap <C-s> <Cmd>call file#update()<CR>
+nnoremap <C-q> <Cmd>call window#close_tab()<CR>
+nnoremap <C-w> <Cmd>call window#close_pane()<CR>
+nnoremap <C-e> <Cmd>call window#close_panes()<CR>
 
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
@@ -786,13 +786,13 @@ noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
 
 " Remove trailing whitespace
 " See: https://stackoverflow.com/a/3474742/4970632)
-noremap <expr> \t edit#replace_regex_expr(
+noremap <expr> \w edit#replace_regex_expr(
   \ 'Removed trailing whitespace.',
   \ '\s\+\ze$', '')
 
 " Replace tabs with spaces
 " Note: Could also use :retab?
-noremap <expr> \<Tab> edit#replace_regex_expr(
+noremap <expr> \t edit#replace_regex_expr(
   \ 'Fixed tabs.',
   \ '\t', repeat(' ', &tabstop))
 
@@ -2011,11 +2011,10 @@ endif
 
 " Conflict highlight settings (warning: change below to 'BufEnter?')
 " Shortcuts mirror zf/zF/zd/zD used for manual fold deletion and creation
-" Todo: Figure out how to get highlighting closer to marks, without clearing background?
+" Todo: Figure out how to get highlighting closer to marks without clearing background.
 " May need to define custom :syn matches that are not regions. Ask stack exchange.
 " Note: Need to remove syntax regions here because they are added on per-filetype
-" basis and they wipe out syntax highlighting between the conflict markers. However
-" following is unnecessary: silent! doautocmd ConflictMarkerDetect BufReadPost
+" basis and they wipe out syntax highlighting between the conflict markers.
 " See: https://vi.stackexchange.com/q/31623/8084
 " See: https://github.com/rhysd/conflict-marker.vim
 if s:plug_active('conflict-marker.vim')

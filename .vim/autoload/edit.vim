@@ -33,7 +33,7 @@ endfunction
 " Toggle insert and command-mode caps lock
 " See: http://vim.wikia.com/wiki/Insert-mode_only_Caps_Lock which uses
 " iminsert to enable/disable lnoremap, with iminsert changed from 0 to 1
-function! edit#lang_map()
+function! edit#lang_map() abort
   let b:caps_lock = exists('b:caps_lock') ? 1 - b:caps_lock : 1
   if b:caps_lock
     for s:c in range(char2nr('A'), char2nr('Z'))
