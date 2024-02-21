@@ -606,25 +606,16 @@ noremap ) <Cmd>keepjumps normal! )<CR>
 noremap { <Cmd>keepjumps normal! {<CR>
 noremap } <Cmd>keepjumps normal! }<CR>
 
-" Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
-" underscores). This is consistent with tmux vim selection navigation
-for s:char in ['w', 'b', 'e', 'm']  " use 'g' prefix of each
-  exe 'noremap g' . s:char . ' '
-    \ . '<Cmd>let b:iskeyword = &l:iskeyword<CR>'
-    \ . '<Cmd>setlocal iskeyword=@,48-57,192-255<CR>'
-    \ . (s:char ==# 'm' ? 'ge' : s:char) . '<Cmd>let &l:iskeyword = b:iskeyword<CR>'
-endfor
-
-" Go to previous end-of-word or previous end-of-WORD
-" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
-noremap m ge
-noremap M gE
-
 " Search for non-ascii or non-printable characters
 " Note: \x7F-\x9F are actually displayable but not part of ISO standard so not shown
 " by vim (also used as dummy no-match in comment.vim). See https://www.ascii-code.com
 noremap gr /[^\x00-\x7F]<CR>
 noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
+
+" Go to previous end-of-word or previous end-of-WORD
+" This makes ge/gE a single-keystroke motion alongside with e/E, w/W, and b/B
+noremap m ge
+noremap M gE
 
 " Go to start or end without opening folds
 " Useful for e.g. python files with docstring at top and function at bottom
@@ -632,6 +623,21 @@ noremap gR /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]<CR>
 " Note: Could use e.g. :1<CR> or :$<CR> but that would exclude them from jumplist
 noremap G G
 noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
+
+" Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
+" underscores). This is consistent with tmux vim selection navigation
+function! s:move_alpha(keys) abort
+  let iskeyword = &l:iskeyword | setlocal iskeyword=@,48-57,192-255
+  call feedkeys(a:keys . "\<Cmd>setlocal iskeyword=" . iskeyword . "\<CR>", 'n')
+endfunction
+noremap gw <Cmd>call <sid>move_alpha('w')<CR>
+noremap gb <Cmd>call <sid>move_alpha('b')<CR>
+noremap ge <Cmd>call <sid>move_alpha('e')<CR>
+noremap gm <Cmd>call <sid>move_alpha('ge')<CR>
+onoremap gw <Cmd>call <sid>move_alpha(v:operator . 'w')<CR>
+onoremap gb <Cmd>call <sid>move_alpha(v:operator . 'b')<CR>
+onoremap ge <Cmd>call <sid>move_alpha(v:operator . 'e')<CR>
+onoremap gm <Cmd>call <sid>move_alpha(v:operator . 'ge')<CR>
 
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
@@ -2071,13 +2077,13 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>I <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
-  noremap <Leader>p <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
-  noremap <Leader>P <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
   noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
   noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  noremap zl <Cmd>BCommits<CR>
-  noremap zL <Cmd>Commits<CR>
+  noremap <Leader>p <Cmd>BCommits<CR>
+  noremap <Leader>P <Cmd>Commits<CR>
+  noremap zp <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  noremap zP <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
