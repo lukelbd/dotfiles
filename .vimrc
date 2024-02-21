@@ -2077,13 +2077,13 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>I <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
+  noremap <Leader>p <Cmd>BCommits<CR>
+  noremap <Leader>P <Cmd>Commits<CR>
   noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
   noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  noremap <Leader>p <Cmd>BCommits<CR>
-  noremap <Leader>P <Cmd>Commits<CR>
-  noremap zp <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
-  noremap zP <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  noremap zl <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  noremap zL <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
