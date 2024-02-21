@@ -302,7 +302,7 @@ function! iter#update_jumps() abort
   endif
   if line1 > cline || line2 < cline
     if line1 > pline || line2 < pline
-      call feedkeys("m'", 'n')
+      call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
     endif
   endif
 endfunction

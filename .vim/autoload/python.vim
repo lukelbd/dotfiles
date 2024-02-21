@@ -271,7 +271,7 @@ function! python#doc_page(...) abort
   if new  " create new buffer
     let result = systemlist('pydoc ' . shellescape(page))
     let result = map(result, 'substitute(v:val, ''^\( \{4}\)* |  '', ''\1'', ''ge'')')
-    let msg = "Error: Nothing r -eturned from 'pydoc " . page . "'"
+    let msg = "Error: Pydoc page '" . page . "' not found"
     if len(result) <= 5 | echohl ErrorMsg | echom msg | echohl None | return | endif
   endif
   let s:doc_prev = page  " previously browsed

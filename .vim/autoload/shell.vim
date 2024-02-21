@@ -47,35 +47,35 @@ endfunction
 " Man page and pydoc page utilities
 " Warning: Calling :Man changes the buffer, so use buffer variables specific to each
 " page to record navigation history. Order of assignment below is critical.
-function! s:doc_syntax() abort
-  let pad = '^\(\s\{4}\)*'
-  let item = pad . '\zs\(class\s\+\)\?\k\+\ze(.*)'
-  let data = pad . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
-  let dash = pad . '\s*\zs[-=]\{3,}.*$'
-  let mess = pad . '\s*\C[A-Z].*\(defined here\|resolution order\|inherited\s*from\s*\S*\):$'
+function! s:syntax_setup() abort  " man-style pydoc syntax
+  let indent = '^\(\s\{4}\)*'
+  let item = indent . '\zs\(class\s\+\)\?\k\+\ze(.*)'
+  let data = indent . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
+  let dash = indent . '\s*\zs[-=]\{3,}.*$'
+  let mess = indent . '\s*\C[A-Z].*\(defined here\|resolution order\|inherited\s*from\s*\S*\):$'
   let head = ''
-    \ . '\(' . pad . '\(\s*\|\s*[-=]\{3,}.*\)\n' . pad . '\s*\)\@<='
+    \ . '\(' . indent . '\(\s*\|\s*[-=]\{3,}.*\)\n' . indent . '\s*\)\@<='
     \ . '\C[A-Z]\a\{2,}.*'
-    \ . '\(\n' . pad . '\s*[-=]\{3,}.*$\)\@='
+    \ . '\(\n' . indent . '\s*[-=]\{3,}.*$\)\@='
   exe "syntax match docItem '" . item . "'"
   exe "syntax match docData '" . data . "'"
+  exe "syntax match docDash '" . dash . "'"
   exe "syntax match docMess '" . mess . "'"
-  exe "syntax match docHeader '" . head . "'"
-  exe "syntax match docDashes '" . dash . "'"
+  exe "syntax match docHead '" . head . "'"
   silent! syntax clear manLongOptionDesc
   silent! syntax clear manSectionHeading
   highlight link docItem manSectionHeading
   highlight link docData manSectionHeading
+  highlight link docDash manHeader
   highlight link docMess manHeader
-  highlight link docHeader manHeader
-  highlight link docDashes manHeader
+  highlight link docHead manHeader
 endfunction
 function! shell#man_setup(...) abort
   let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
   let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
   if !empty(get(b:, 'doc_name', ''))
     setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldnestmax=3
-    let b:doc_name = @% | call s:doc_syntax()
+    let b:doc_name = @% | call s:syntax_setup()
     noremap <buffer> <CR> <Cmd>call iter#next_stack('python#doc_page', 'doc', '')<CR>
     noremap <nowait> <buffer> [ <Cmd>call iter#next_stack('python#doc_page', 'doc', -v:count1)<CR>
     noremap <nowait> <buffer> ] <Cmd>call iter#next_stack('python#doc_page', 'doc', v:count1)<CR>
@@ -103,12 +103,26 @@ function! shell#man_page(...) abort
     let [page, pnum] = [utils#input_default('Man page', expand('<cword>'), 'shellcmd'), 0]
   endif
   if empty(page) | return | endif
-  if &l:filetype !=# 'man' | tabedit | setlocal filetype=man | endif
+  let type = &l:filetype
+  let name = page . '(' . max([pnum, 1]) . ')'
   let args = pnum ? pnum . ' ' . page : page
-  silent! exe 'Man ' . args
-  if line('$') <= 1
-    silent! quit | call file#open_drop(bufname(bnr))
-    echohl ErrorMsg | echom "Error: Nothing returned from 'man " . page . "'" | echohl None
+  if type !=# 'man'
+    tabedit | setlocal filetype=man
+  endif
+  if bufexists(name)
+    silent! exe bufnr(name) . 'buffer'
+  else
+    silent! exe 'Man ' . args . ' | goto'
+  endif
+  if line('$') > 1 | exe 'file ' . name | else
+    echohl ErrorMsg
+    echom "Error: Man page '" . page . "' not found"
+    echohl None
+    if type ==# 'man'
+      silent! quit
+      call file#open_drop(1, bufname(bnr))
+    endif
+    return
   endif
   if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
     if has('macunix') && page !=# 'builtin' | exe 'Man bash' | endif
