@@ -174,7 +174,7 @@ function! utils#panel_setup(level) abort
   elseif a:level > 0
     setlocal nolist colorcolumn=
   else
-    setlocal nolist nospell colorcolumn= statusline=%{'[Panel:Z'.&l:foldlevel.']'}%=%{StatusRight()}
+    setlocal nolist nospell colorcolumn=
   endif
   for char in 'du'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'

@@ -75,7 +75,7 @@ endfunction
 " Eliminates special chars during copy
 " Note: Hide switch message during autoload
 function! switch#copy(...) abort
-  let keys = ['list', 'number', 'scrolloff', 'relativenumber']
+  let keys = ['list', 'number', 'scrolloff', 'relativenumber', 'signcolumn']
   let state = empty(filter(copy(keys), "eval('&l:' . v:val)"))
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
@@ -84,12 +84,12 @@ function! switch#copy(...) abort
   elseif toggle
     for key in keys
       let b:[key] = eval('&l:' . key)
-      exe 'let &l:' . key . '=0'
+      exe 'let &l:' . key . '=' . (key ==# 'signcolumn' ? string('yes') : '0')
     endfor
   else
     for key in keys
       let value = get(b:, key, eval('&g:' . key))
-      exe 'let &l:' . key . '=' . value
+      exe 'let &l:' . key . '=' . (key ==# 'signcolumn' ? string(value) : value)
     endfor
   endif
   call call('s:switch_message', ['Copy mode', toggle, suppress])

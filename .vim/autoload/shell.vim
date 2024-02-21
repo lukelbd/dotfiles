@@ -23,18 +23,27 @@ function! shell#help_page(...) abort
   else
     call add(args, '--help')
   endif
+  let type = &l:filetype
+  let bnr = bufnr()
   let cmd = join(args, ' ')
-  let result = split(system(cmd . ' 2>&1'), "\n")
-  if !executable(args[0]) || len(result) < 3
-    echom "help.vim: nothing returned from '" . cmd . "'"
+  if type !=# 'popup' | tabedit | endif
+  if bufexists(cmd)
+    silent exe bufnr(cmd) . 'buffer'
+  else
+    let result = split(system(cmd . ' 2>&1'), "\n")
+    setlocal nobuflisted bufhidden=hide buftype=nofile filetype=popup
+    call utils#panel_setup(0) | call append(0, result) | goto
+  endif
+  if line('$') > 3 | exe 'file ' . fnameescape(cmd) | else
+    echohl ErrorMsg
+    echom "Error: Help info '" . cmd . "' not found"
+    echohl None
+    if type !=# 'popup'
+      silent quit!
+      call file#open_drop(1, bufname(bnr))
+    endif
     return
   endif
-  let bnum = bufnr(cmd)
-  if bnum != -1 | exe bnum . 'bdelete' | endif
-  tabedit | call append(0, result) | goto
-  setlocal filetype=popup buftype=nofile
-  exe 'file ' . cmd
-  call utils#panel_setup(0)
 endfunction
 function! shell#fzf_help() abort
   call fzf#run(fzf#wrap({
@@ -110,16 +119,16 @@ function! shell#man_page(...) abort
     tabedit | setlocal filetype=man
   endif
   if bufexists(name)
-    silent! exe bufnr(name) . 'buffer'
+    exe bufnr(name) . 'buffer'
   else
-    silent! exe 'Man ' . args . ' | goto'
+    silent exe 'Man ' . args | goto
   endif
   if line('$') > 1 | exe 'file ' . name | else
     echohl ErrorMsg
     echom "Error: Man page '" . page . "' not found"
     echohl None
-    if type ==# 'man'
-      silent! quit
+    if type !=# 'man'
+      silent quit!
       call file#open_drop(1, bufname(bnr))
     endif
     return
