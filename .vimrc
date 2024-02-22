@@ -130,7 +130,7 @@ set wildmenu  " command line completion
 set wildmode=longest:list,full  " command line completion
 let &g:breakat = ' 	!*-+;:,./?'  " break at single instances of several characters
 let &g:expandtab = 1  " global expand tab
-let &g:wildignore = join(tag#get_ignores(0, '~/.wildignore'), ',')
+let &g:wildignore = join(tag#parse_ignores(0, '~/.wildignore'), ',')
 let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 
 " File types for different unified settings
@@ -506,8 +506,8 @@ let g:tags_skip_filetypes = s:panel_filetypes
 let g:tabline_skip_filetypes = s:panel_filetypes
 augroup panel_setup
   au!
-  au TerminalWinOpen * call utils#panel_setup(2)
-  au CmdwinEnter * call vim#cmdwin_setup() | call utils#panel_setup(0)
+  au TerminalWinOpen * call window#panel_setup(2)
+  au CmdwinEnter * call vim#cmdwin_setup() | call window#panel_setup(0)
   au FileType markdown.lsp-hover let b:lsp_hover_conceal = 1 | setlocal buftype=nofile | setlocal conceallevel=2
   au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
   au FileType help call vim#vim_setup()
@@ -517,7 +517,7 @@ augroup panel_setup
   au FileType fugitiveblame call git#blame_setup()
   for s:ftype in s:panel_filetypes
     let s:level = s:ftype ==# 'gitcommit' ? 2 : s:ftype ==# 'git' ? 1 : 0
-    exe 'au FileType ' . s:ftype . ' call utils#panel_setup(' . s:level . ')'
+    exe 'au FileType ' . s:ftype . ' call window#panel_setup(' . s:level . ')'
   endfor
 augroup END
 
@@ -542,14 +542,14 @@ nnoremap <Leader>Q <Cmd>Maps<CR>
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " Note: Commands 'ManPage' conflicts with existing and causes silent failure due to
 " recursive invocation. Also see: https://stackoverflow.com/a/41168966/4970632
-command! -complete=shellcmd -nargs=? ShellHelp call iter#next_stack('shell#help_page', 'help', <f-args>)
-command! -complete=shellcmd -nargs=? ShellMan call iter#next_stack('shell#man_page', 'man', <f-args>)
-command! -nargs=0 ClearHelp call iter#clear_stack('help')
-command! -nargs=0 ClearMan call iter#clear_stack('man')
-command! -nargs=0 ShowHelp call iter#show_stack('help')
-command! -nargs=0 ShowMan call iter#show_stack('man')
-nnoremap <Leader>N <Cmd>call iter#next_stack('shell#help_page', 'help')<CR>
-nnoremap <Leader>M <Cmd>call iter#next_stack('shell#man_page', 'man')<CR>
+command! -complete=shellcmd -nargs=? ShellHelp call stack#next_item('shell#help_page', 'help', <f-args>)
+command! -complete=shellcmd -nargs=? ShellMan call stack#next_item('shell#man_page', 'man', <f-args>)
+command! -nargs=0 ClearHelp call stack#clear_stack('help')
+command! -nargs=0 ClearMan call stack#clear_stack('man')
+command! -nargs=0 ShowHelp call stack#show_stack('help')
+command! -nargs=0 ShowMan call stack#show_stack('man')
+nnoremap <Leader>N <Cmd>call stack#next_item('shell#help_page', 'help')<CR>
+nnoremap <Leader>M <Cmd>call stack#next_item('shell#man_page', 'man')<CR>
 nnoremap <Leader>n <Cmd>call shell#fzf_help()<CR>
 nnoremap <Leader>m <Cmd>call shell#fzf_man()<CR>
 
@@ -569,15 +569,15 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 " Note: See iter.vim for details. This uses iterm mappings.
 augroup recents_setup
   au!
-  au TabLeave * call window#reset_recent()
-  au CursorHold * call window#update_recent()
-  au BufWinLeave * call iter#pop_stack('recent', expand('<afile>'))
-  au VimEnter * silent call iter#clear_stack('recent') | call window#update_recent()
+  au TabLeave * call stack#reset_recent()
+  au CursorHold * call stack#update_recent()
+  au BufWinLeave * call stack#pop_stack('recent', expand('<afile>'))
+  au VimEnter * silent call stack#clear_stack('recent') | call stack#update_recent()
 augroup END
-command! -nargs=0 ClearRecent call iter#clear_stack('recent') | call window#update_recent()
-command! -nargs=0 ShowRecent call window#update_recent() | call iter#show_stack('recent')
-noremap <F1> <Cmd>call window#scroll_recent(-v:count1)<CR>
-noremap <F2> <Cmd>call window#scroll_recent(v:count1)<CR>
+command! -nargs=0 ClearRecent call stack#clear_stack('recent') | call stack#update_recent()
+command! -nargs=0 ShowRecent call stack#update_recent() | call stack#show_stack('recent')
+noremap <F1> <Cmd>call stack#scroll_recent(-v:count1)<CR>
+noremap <F2> <Cmd>call stack#scroll_recent(v:count1)<CR>
 cnoremap <F1> <C-p>
 cnoremap <F2> <C-n>
 
@@ -586,7 +586,7 @@ cnoremap <F2> <C-n>
 " Note: This accounts for karabiner arrow key maps
 augroup jumplist_setup
   au!
-  au CursorHold,TextChanged,InsertLeave * call iter#update_jumps()
+  au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
 augroup END
 noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
@@ -1309,7 +1309,7 @@ let g:fzf_action = {
   \ }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
-let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#get_ignores(1)  " added just for safety
+let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#parse_ignores(1)  " added just for safety
 
 " Language server integration
 " Note: Here vim-lsp-ale sends diagnostics generated by vim-lsp to ale, does nothing
@@ -1700,21 +1700,21 @@ endif
 if s:plug_active('vim-gutentags')
   augroup tags_setup
     au!
-    au User GutentagsUpdated call tag#set_tags()
-    au BufCreate * call tag#set_tags(expand('<afile>'))
+    au User GutentagsUpdated call tag#update_paths()
+    au BufCreate,BufReadPost * call tag#update_paths(expand('<afile>'))
   augroup END
-  command! -complete=dir -nargs=* SetTags call tag#set_tags(<f-args>)
-  command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#get_ignores(0, <q-args>), ' ')
+  command! -complete=dir -nargs=* SetTags call tag#update_paths(<f-args>)
+  command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#parse_ignores(0, <q-args>), ' ')
   nnoremap zt <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags.'<CR>
   nnoremap zT <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
   let g:gutentags_background_update = 1  " disable for debugging, printing updates
-  let g:gutentags_ctags_auto_set_tags = 0  " tag#set_tags() handles this instead
+  let g:gutentags_ctags_auto_set_tags = 0  " tag#update_paths() handles this instead
   let g:gutentags_ctags_executable = 'ctags'  " note this respects .ctags config
   let g:gutentags_ctags_exclude_wildignore = 1  " exclude &wildignore too
-  let g:gutentags_ctags_exclude = tag#get_ignores(0)  " exclude all by default
+  let g:gutentags_ctags_exclude = tag#parse_ignores(0)  " exclude all by default
   let g:gutentags_ctags_tagfile = '.vimtags'
   let g:gutentags_define_advanced_commands = 1  " debugging command
   let g:gutentags_generate_on_new = 1  " do not update tags when opening project file
@@ -1790,9 +1790,9 @@ if s:plug_active('vim-lsp')
   augroup END
   let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   command! -nargs=? LspToggle call switch#lsp(<args>)
-  command! -nargs=? ClearDoc call iter#clear_stack('doc')
-  command! -nargs=? ShowDoc call iter#show_stack('doc')
-  command! -nargs=? Doc call iter#next_stack('python#doc_page', 'doc', <f-args>)
+  command! -nargs=? ClearDoc call stack#clear_stack('doc')
+  command! -nargs=? ShowDoc call stack#show_stack('doc')
+  command! -nargs=? Doc call stack#next_item('python#doc_page', 'doc', <f-args>)
   noremap zd <Cmd>LspReferences<CR>
   noremap zD <Cmd>LspRename<CR>
   noremap gd <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
@@ -1800,13 +1800,13 @@ if s:plug_active('vim-lsp')
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
   noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>f <Cmd>call iter#next_stack('python#doc_page', 'doc')<CR>
+  noremap <Leader>f <Cmd>call stack#next_item('python#doc_page', 'doc')<CR>
   noremap <Leader>F <Cmd>call python#doc_search()<cr>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
-  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call utils#panel_setup(0)<CR>
+  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call window#panel_setup(0)<CR>
   " Lsp and server settings
   " See: https://github.com/python-lsp/python-lsp-server/issues/477
   " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are

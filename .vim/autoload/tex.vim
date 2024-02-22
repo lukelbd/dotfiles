@@ -1,22 +1,5 @@
 "-----------------------------------------------------------------------------"
-" Advanced TeX configuration of shortcuts.vim
-" Warning: File name cannot be shortcuts.vim. Maybe this only works with
-" vim-plug plugins, not local plugins manually added to rtp?
-"-----------------------------------------------------------------------------"
-function! s:sed_cmd() abort
-  if has('macunix')
-    let gsed = '/usr/local/bin/gsed'  " Todo: defer to 'gsed' alias?
-  elseif has('unix')
-    let gsed = '/usr/bin/sed'
-  else
-    let gsed = ''
-  endif
-  if !executable(gsed) | echoerr 'GNU sed not available.' | let gsed = '' | endif
-  return gsed
-endfunction
-
-"-----------------------------------------------------------------------------"
-" Selecting from tex labels (integration with idetools)
+" Utilities for tex files
 "-----------------------------------------------------------------------------"
 " Source for tex labels
 function! s:label_source() abort
@@ -60,19 +43,19 @@ endfunction
 
 "-----------------------------------------------------------------------------"
 " Selecting citations from bibtex files
-" See: https://github.com/msprev/fzf-bibtex
 "-----------------------------------------------------------------------------"
-" Basic function called every time
+" Get biligraphies using grep (copied from latexmk)
+" Easier than using search() because we want to get *all* results
+" See: https://github.com/msprev/fzf-bibtex
 function! s:cite_source() abort
-  " Set the plugin source variables
-  " Get biligraphies using grep, copied from latexmk
-  " Easier than using search() because we want to get *all* results
-  let paths = []
-  let result = system(
-    \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | '
-    \ . s:sed_cmd() . ' -n ''s@^\s*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}@\2@p'''
-    \ )
   " Check that files all exist
+  let gsed = has('macunix') ? '/usr/local/bin/gsed' : '/usr/bin/sed'
+  if !executable(gsed) | echoerr 'GNU sed not available.' | let gsed = '' | endif
+  let result = system(
+    \ 'grep -o ''^[^%]*'' ' . shellescape(@%) . ' | ' . gsed . ' -n '
+    \ . '''s@^\s*\\\(bibliography\|nobibliography\|addbibresource\){\(.*\)}@\2@p'''
+  \ )
+  let paths = []
   if v:shell_error == 0
     let local = expand('%:h')
     for path in split(result, "\n")
@@ -90,8 +73,8 @@ function! s:cite_source() abort
       endif
     endfor
   endif
-  " Set the environment variable and return command-line command used to
-  " generate fuzzy list from the selected files.
+  " Set the environment variable and return command-line command
+  " used to generate fuzzy list from the selected files.
   if len(paths) == 0
     echoerr 'Bibliography files not found.'
     return []

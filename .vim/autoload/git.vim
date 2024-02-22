@@ -45,10 +45,10 @@ let s:git_aliases = {
 \ }
 function! s:echo_git(args, empty, ...) abort
   if !a:empty
-    echom 'Git ' . a:args
+    echon 'Git ' . a:args
   else  " empty message
     echohl WarningMsg
-    echom "Warning: 'Git " . a:args . "' was empty"
+    echon "Warning: 'Git " . a:args . "' was empty"
     echohl None
   endif
 endfunction

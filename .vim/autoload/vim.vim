@@ -1,5 +1,5 @@
 "-----------------------------------------------------------------------------"
-" Utilities for sourcing vimscript
+" Utilities for vimscript files
 "-----------------------------------------------------------------------------"
 " Setup command windows and ensure local maps work
 " Note: Here 'execute' is mapped to run the selected line.
@@ -122,15 +122,15 @@ endfunction
 function! vim#show_colors() abort
   call file#open_drop('colortest.vim')
   call feedkeys("\<Cmd>source $VIMRUNTIME/syntax/colortest.vim\<CR>", 'n')
-  call feedkeys("\<Cmd>call utils#panel_setup(1)\<CR>", 'n')
+  call feedkeys("\<Cmd>call window#panel_setup(1)\<CR>", 'n')
 endfunction
 function! vim#show_ftplugin() abort
   call file#open_drop($VIMRUNTIME . '/ftplugin/' . &filetype . '.vim')
-  call feedkeys("\<Cmd>call utils#panel_setup(1)\<CR>", 'n')
+  call feedkeys("\<Cmd>call window#panel_setup(1)\<CR>", 'n')
 endfunction
 function! vim#show_syntax() abort
   call file#open_drop($VIMRUNTIME . '/syntax/' . &filetype . '.vim')
-  call feedkeys("\<Cmd>call utils#panel_setup(1)\<CR>", 'n')
+  call feedkeys("\<Cmd>call window#panel_setup(1)\<CR>", 'n')
 endfunction
 
 " Source file or lines

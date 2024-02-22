@@ -209,6 +209,50 @@ function! window#move_tab(...) abort
   \ }))
 endfunction
 
+" Setup panel windows. Mode can be 0 (not editable) or 1 (editable).
+" Warning: Setting 'modifiable' tends to cause errors e.g. for log files run with
+" shell#job_win() or other internal stuff. So instead just disable normal mode
+" commands that could accidentally modify text (aside from d used for scrolling).
+" Warning: Critical error happens if try to auto-quit when only panel window is
+" left... fzf will take up the whole window in small terminals, and even when fzf
+" immediately runs and closes as e.g. with non-tex BufNewFile template detection,
+" this causes vim to crash and breaks the terminal. Instead never auto-close windows
+" and simply get in habit of closing entire tabs with session#close_tab().
+function! window#panel_setup(level) abort
+  let g:ft_man_folding_enable = 1  " see :help Man
+  nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
+  nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
+  if &filetype ==# 'qf'  " disable <Nop> map
+    nnoremap <buffer> <CR> <CR>zv
+  endif
+  if &filetype ==# 'netrw'
+    call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
+  endif
+  if window#count_panes('h') > 1 || &l:filetype =~# 'git\|fugitive\|undotree'
+    setlocal nonumber norelativenumber nocursorline
+  else  " sign column padding
+    setlocal nonumber norelativenumber nocursorline signcolumn=yes
+  endif
+  if a:level > 1  " e.g. gitcommit window
+    return
+  elseif a:level > 0
+    setlocal nolist colorcolumn=
+  else
+    setlocal nolist nospell colorcolumn=
+  endif
+  for char in 'du'  " always remap scrolling indicators
+    exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
+  endfor
+  for char in 'uUrRxXpPdDcCaAiIoO'  " in lieu of set nomodifiable
+    if !get(maparg(char, 'n', 0, 1), 'buffer', 0)  " preserve buffer-local maps
+      exe 'nmap <buffer> ' char . ' <Nop>'
+    endif
+    if char =~? '[aioc]' && !get(maparg('g' . char, 'n', 0, 1), 'buffer', 0)
+      exe 'nmap <buffer> g' . char . ' <Nop>'
+    endif
+  endfor
+endfunction
+
 " Print currently open buffers
 " Note: This should be used in conjunction with :WipeBufs. Note s:buffers_recent()
 " normally restricts output to files loaded after VimEnter but bypass that here.
@@ -247,31 +291,4 @@ function! window#wipe_bufs()
   if !empty(names)
     echom 'Wiped out ' . len(names) . ' hidden buffer(s): ' . join(names, ', ')
   endif
-endfunction
-
-" Reset recent files
-" Note: This only triggers after spending time on window instead of e.g. browsing
-" across tabs with maps, similar to jumplist. Then can access jumps in each window.
-function! window#reset_recent() abort  " non-scrolling window change floats 'recent' to top
-  for bnr in tabpagebuflist()  " tab page buffers
-    call setbufvar(bnr, 'recent_scroll', 0)
-  endfor
-endfunction
-function! window#scroll_recent(...) abort  " scrolling window change preserves list order
-  let bnr = bufnr()
-  let scroll = a:0 ? a:1 : v:count1
-  call window#update_recent()  " sync location, possibly float if starting scroll
-  call iter#next_stack(function('file#open_drop', [1]), 'recent', scroll)  " quiet flag
-  if bnr != bufnr() | call window#update_recent(1, 1) | endif  " apply b:recent_scroll
-endfunction
-function! window#update_recent(...) abort  " set current buffer
-  let skip = index(g:tags_skip_filetypes, &filetype)
-  let scroll = a:0 ? a:1 : get(b:, 'recent_scroll', 0)
-  let echo = a:0 > 1 ? a:2 : 0
-  let b:recent_name = expand('%:p')  " apply name
-  let b:recent_scroll = scroll
-  if skip != -1 || line('$') <= 1 || empty(&filetype)
-    if len(tabpagebuflist()) > 1 | return | endif
-  endif
-  call iter#push_stack('recent', scroll, -1, echo)  " possibly update stack
 endfunction

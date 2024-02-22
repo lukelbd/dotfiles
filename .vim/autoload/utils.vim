@@ -145,50 +145,6 @@ function! utils#operator_func(type) range abort
   return ''
 endfunction
 
-" Setup panel windows. Mode can be 0 (not editable) or 1 (editable).
-" Warning: Setting 'modifiable' tends to cause errors e.g. for log files run with
-" shell#job_win() or other internal stuff. So instead just disable normal mode
-" commands that could accidentally modify text (aside from d used for scrolling).
-" Warning: Critical error happens if try to auto-quit when only panel window is
-" left... fzf will take up the whole window in small terminals, and even when fzf
-" immediately runs and closes as e.g. with non-tex BufNewFile template detection,
-" this causes vim to crash and breaks the terminal. Instead never auto-close windows
-" and simply get in habit of closing entire tabs with session#close_tab().
-function! utils#panel_setup(level) abort
-  let g:ft_man_folding_enable = 1  " see :help Man
-  nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
-  nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
-  if &filetype ==# 'qf'  " disable <Nop> map
-    nnoremap <buffer> <CR> <CR>zv
-  endif
-  if &filetype ==# 'netrw'
-    call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
-  endif
-  if window#count_panes('h') > 1 || &l:filetype =~# 'git\|fugitive\|undotree'
-    setlocal nonumber norelativenumber nocursorline
-  else  " sign column padding
-    setlocal nonumber norelativenumber nocursorline signcolumn=yes
-  endif
-  if a:level > 1  " e.g. gitcommit window
-    return
-  elseif a:level > 0
-    setlocal nolist colorcolumn=
-  else
-    setlocal nolist nospell colorcolumn=
-  endif
-  for char in 'du'  " always remap scrolling indicators
-    exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
-  endfor
-  for char in 'uUrRxXpPdDcCaAiIoO'  " in lieu of set nomodifiable
-    if !get(maparg(char, 'n', 0, 1), 'buffer', 0)  " preserve buffer-local maps
-      exe 'nmap <buffer> ' char . ' <Nop>'
-    endif
-    if char =~? '[aioc]' && !get(maparg('g' . char, 'n', 0, 1), 'buffer', 0)
-      exe 'nmap <buffer> g' . char . ' <Nop>'
-    endif
-  endfor
-endfunction
-
 " Switch buffer-local panel mappings
 " Note: Vim help recommends capturing full map settings using maparg(lhs, 'n', 0, 1)
 " then re-adding them using mapset(). This is a little easier than working with strings

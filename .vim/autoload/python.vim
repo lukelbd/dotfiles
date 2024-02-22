@@ -1,5 +1,5 @@
 "-----------------------------------------------------------------------------"
-" Python utils defined here
+" Utilities for python files
 "-----------------------------------------------------------------------------"
 " Convert between key=value pairs and 'key': value dictionaries
 " Warning: Use kludge where lastcol is always at the end of line. Accounts for weird
@@ -294,7 +294,7 @@ function! python#doc_search() abort
   call fzf#run(fzf#wrap({
     \ 'source': python#doc_source(),
     \ 'options': '--no-sort --prompt="pydoc> "',
-    \ 'sink': function('iter#next_stack', ['python#doc_page', 'doc'])
+    \ 'sink': function('stack#jump_stack', ['python#doc_page', 'doc'])
     \ }))
 endfunction
 

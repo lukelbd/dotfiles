@@ -54,7 +54,7 @@ function! s:path_source(base, user) abort
   let paths = globpath(glob, '*', 0, 1) + globpath(glob, '.?*', 0, 1)
   let paths = map(paths, "fnamemodify(v:val, ':t')")
   if a:user  " user input
-    call insert(paths, s:new_file, 0)
+    call add(paths, s:new_file)
   endif
   return paths
 endfunction

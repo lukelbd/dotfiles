@@ -1,5 +1,5 @@
 "-----------------------------------------------------------------------------"
-" Utilities for handling marks
+" Utilities for handling marks and jumps
 "-----------------------------------------------------------------------------"
 " Author: Tumbler Terrall [TumblerTerrall@gmail.com]
 " Forked: Luke Davis [lukelbd@gmail.com]
@@ -10,6 +10,31 @@ let s:use_signs = 1
 let s:gui_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'DarkRed', 'DarkGreen']
 
+" Push current location to top of jumplist
+" Note: This prevents resetting when navigating backwards and forwards through
+" jumplist or when navigating within paragraph of most recently set jump
+function! s:echo_location(name, idx, size) abort
+  let value = (a:size - a:idx) . '/' . (a:size - 1)
+  let label = toupper(a:name[0]) . a:name[1:]
+  let cmd = "echom '" . label . ' location: ' . value . "'"
+  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
+endfunction
+function! mark#push_jump() abort
+  let [line1, line2] = [line("'{"), line("'}")]
+  let [jlist, jloc] = getjumplist()
+  let pline = line("''")  " line of previous jump
+  let cline = pline
+  if !empty(jlist)
+    let opts = get(jlist, jloc, jlist[-1])
+    let cline = opts['lnum']
+  endif
+  if line1 > cline || line2 < cline
+    if line1 > pline || line2 < pline
+      call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
+    endif
+  endif
+endfunction
+
 " Override of FZF :Jumps to work with custom utility and navigate with :Drop
 " Note: As with :Changes this removes the --bind start:pos:etc flag that triggers
 " errors and also implements new sink for navigating to paths with :Drop.
@@ -18,15 +43,15 @@ function! s:jump_sink(lines) abort
   if empty(lines) | return | endif
   let line = lines[-1]  " use final selection passed
   let idx = index(s:jumplist, line)
-  if idx == -1 || idx == s:jumploc | return | endif | call s:select_jump(idx)
+  if idx == -1 || idx == s:jumploc | return | endif | call s:jump_select(idx)
 endfunction
-function! s:update_jumps() abort
+function! s:jump_update() abort
   let lines = split(execute('silent jumps'), "\n")
   let idx = match(lines, '\v^\s*\>')
   let idx = idx == -1 ? len(lines) - 1 : idx
   let [s:jumploc, s:jumplist] = [idx, lines]
 endfunction
-function! s:select_jump(loc) abort
+function! s:jump_select(loc) abort
   if a:loc == s:jumploc | return | endif
   let jump = s:jumplist[a:loc]
   let tail = substitute(jump, '^\s*\(\d\+\s\+\)\{3}', '', '')
@@ -39,14 +64,8 @@ function! s:select_jump(loc) abort
   endif
   call feedkeys(keys . 'zv', 'n')
 endfunction
-function! s:echo_location(name, idx, size) abort
-  let value = (a:size - a:idx) . '/' . (a:size - 1)
-  let label = toupper(a:name[0]) . a:name[1:]
-  let cmd = "echom '" . label . ' location: ' . value . "'"
-  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
-endfunction
 function! mark#goto_jump(count) abort
-  call s:update_jumps()
+  call s:jump_update()
   let idx = s:jumploc + a:count
   let jdx = min([idx, len(s:jumplist) - 1])
   let jdx = max([jdx, 0])
@@ -55,14 +74,14 @@ function! mark#goto_jump(count) abort
   elseif abs(a:count) == 1 && idx <= 0  " differs from changelist, but empirically tested
     echohl WarningMsg | echom 'Error: At start of jumplist' | echohl None
   else
-    call s:select_jump(jdx)
+    call s:jump_select(jdx)
     call s:echo_location('jump', jdx, len(s:jumplist))
   endif
 endfunction
 function! mark#fzf_jumps(...)
   let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  call s:update_jumps()
+  call s:jump_update()
   let format = snr . 'jump_format'
   let options = {
     \ 'source': extend(s:jumplist[0:0], map(s:jumplist[1:], 'call(format, [v:val])')),
@@ -76,7 +95,20 @@ endfunction
 " Note: This is needed to fix issue where getbufline() output can be empty (filter
 " function calls this function and assumes non-empty) and because the default FZF flag
 " --bind start:pos:etc was yielding errors. Not sure why but maybe issue with .fzf fork
-function! s:update_changes() abort
+function! s:changes_sink(lines) abort
+  let [key; lines] = a:lines  " first item is key binding
+  if empty(lines) | return | endif
+  let line = lines[-1]  " use final selection passed
+  let [bnr, offset, lnum, cnum] = split(line)[0:3]
+  let path = bufname(str2nr(bnr))
+  if offset ==# '-'
+    let keys = "\<Cmd>call file#open_drop('" . path . "')\<CR>\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
+  else
+    let keys .= offset[0] ==# '+' ? offset[1:] . 'g,' : offset . 'g;'
+  endif
+  call feedkeys(keys . 'zv', 'n')
+endfunction
+function! s:changes_update() abort
   let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let format1 = snr . 'format_change'
@@ -97,19 +129,6 @@ function! s:update_changes() abort
   endfor
   return changes
 endfunction
-function! s:changes_sink(lines) abort
-  let [key; lines] = a:lines  " first item is key binding
-  if empty(lines) | return | endif
-  let line = lines[-1]  " use final selection passed
-  let [bnr, offset, lnum, cnum] = split(line)[0:3]
-  let path = bufname(str2nr(bnr))
-  if offset ==# '-'
-    let keys = "\<Cmd>call file#open_drop('" . path . "')\<CR>\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
-  else
-    let keys .= offset[0] ==# '+' ? offset[1:] . 'g,' : offset . 'g;'
-  endif
-  call feedkeys(keys . 'zv', 'n')
-endfunction
 function! mark#goto_change(count) abort
   let [opts, iloc] = getchangelist()
   let idx = iloc + a:count
@@ -129,7 +148,7 @@ endfunction
 function! mark#fzf_changes(...) abort
   let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let changes = s:update_changes()
+  let changes = s:changes_update()
   let options = {
     \ 'source': changes,
     \ 'sink*': function('s:changes_sink'),

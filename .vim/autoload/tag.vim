@@ -49,7 +49,7 @@ endfunction
 " Note: For some reason parsing '--exclude-exception' rules for g:fzf_tags_command
 " does not work, ignores all other exclude flags, and vim-gutentags can only
 " handle excludes anyway, so just bypass all patterns starting with '!'.
-function! tag#get_ignores(join, ...) abort
+function! tag#parse_ignores(join, ...) abort
   if a:0 && !empty(a:1) " input path
     let paths = [a:1]
   else
@@ -87,7 +87,7 @@ endfunction
 " since very common to open simple config files from other projects e.g. 'proplotrc'.
 " Note: Vim resolves all symlinks so unfortunately cannot just commit to using
 " the symlinked $HOME version in other projects. Resolve below for safety.
-function! tag#set_tags(...) abort
+function! tag#update_paths(...) abort
   let bufs = []  " source buffers
   let paths = []  " tag paths
   if a:0  " append to existing
