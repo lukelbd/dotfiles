@@ -574,7 +574,7 @@ augroup recents_setup
   au!
   au TabLeave * call stack#reset_recent()
   au CursorHold * call stack#update_recent()
-  au BufWinLeave * call stack#drop_stack('recent', expand('<afile>'))
+  au BufWinLeave * call stack#pop_stack('recent', expand('<afile>'))
   au VimEnter * silent call stack#clear_stack('recent') | call stack#update_recent()
 augroup END
 command! -nargs=0 ClearRecent call stack#clear_stack('recent') | call stack#update_recent()

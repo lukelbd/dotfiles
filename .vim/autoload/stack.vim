@@ -86,8 +86,10 @@ function! stack#update_stack(head, scroll, ...) abort  " update location and pos
     endif
   endif
   call s:update_stack(a:head, stack, jdx)
-  if idx != jdx || item != name
-    call timer_start(100, function('s:echo_stack', [a:head, name, jdx, len(stack)]))
+  if v:vim_did_enter  " suppress on startup
+    if idx != jdx || item != name
+      call timer_start(100, function('s:echo_stack', [a:head, name, jdx, len(stack)]))
+    endif
   endif
 endfunction
 
@@ -143,8 +145,8 @@ endfunction
 function! stack#scroll_sink(...) abort
   call call('file#open_drop', [1] + a:000)
   let b:recent_name = expand('%:p')
-  for bnr in bufpagetablist()
-    setbufvar(bnr, 'recent_scroll', 1)
+  for bnr in tabpagebuflist()
+    call setbufvar(bnr, 'recent_scroll', 1)
   endfor
 endfunction
 function! stack#scroll_recent(...) abort
