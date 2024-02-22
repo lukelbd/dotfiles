@@ -110,31 +110,38 @@ endfunction
 " Insert complete menu items and scroll complete or preview windows (whichever open).
 " Note: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
 " (also verified lsp#scroll l:window.find does not return popup completion windows)
-function! s:scroll_default(scroll) abort
-  let max = winheight(0)
-  let nr = abs(type(a:scroll) == 5 ? float2nr(a:scroll * max) : a:scroll)
-  let rv = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
-  let cmd = "\<Cmd>call scrollwrapped#scroll(" . nr . ', ' . rv . ")\<CR>"
-  return mode() =~# '^[iIR]' ? '' : cmd  " only allowed in normal mode
+function! s:scroll_default(scroll, size) abort
+  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:size) : a:scroll
+  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
+  let cmd = 'call scrollwrapped#scroll(' . abs(nr) . ', ' . rev . ')'
+  return mode() =~# '^[iIR]' ? '' : "\<Cmd>" . cmd . "\<CR>"  " only normal mode
 endfunction
-function! s:scroll_preview(info, scroll) abort
-  let max = a:info['height']
-  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * max) : a:scroll
-  let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
-  let cmd = lsp#scroll(nr)
-  return cmd
-endfunction
-function! s:scroll_popup(info, scroll) abort
-  let max = a:info['height']
-  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * max) : a:scroll
+function! s:scroll_popup(scroll, size) abort
+  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:size) : a:scroll
   let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
   if type(a:scroll) == 5 && b:scroll_state != 0   " disable circular scroll
     let nr = max([0 - b:scroll_state + 1, nr])
-    let nr = min([max - b:scroll_state, nr])
+    let nr = min([a:size - b:scroll_state, nr])
   endif
-  let b:scroll_state += nr + (max + 1) * (1 + abs(nr) / (max + 1))
-  let b:scroll_state %= max + 1  " only works with positive integers
-  return repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
+  let b:scroll_state += nr + (a:size + 1) * (1 + abs(nr) / (a:size + 1))
+  let b:scroll_state %= a:size + 1  " only works with positive integers
+  let keys = repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
+  let keys .= "\<Cmd>doautocmd User lsp_float_opened\<CR>"
+  return keys
+endfunction
+function! s:scroll_preview(scroll, ...) abort
+  for wid in a:000
+    let info = popup_getpos(wid)
+    if !info['visible'] | continue | endif
+    let line = info['firstline']
+    let [wide, size] = [info['width'], info['height']]
+    let nr = type(a:scroll) == 5 ? float2nr(a:scroll * size) : a:scroll
+    let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
+    let nr = max([line + nr, 1])
+    let opts = {'firstline': nr, 'minwidth': wide, 'minheight': size}
+    call popup_setoptions(wid, opts)
+  endfor
+  return "\<Ignore>"
 endfunction
 
 " Scroll complete menu or preview popup windows
@@ -146,15 +153,13 @@ function! iter#scroll_reset() abort
 endfunction
 " Scroll and update the count
 function! iter#scroll_count(scroll) abort
-  let complete_info = pum_getpos()  " automatically returns empty if not present
-  let l:methods = vital#lsp#import('VS.Vim.Window')  " scope is necessary
-  let preview_ids = l:methods.find({id -> l:methods.is_floating(id)})
-  let preview_info = empty(preview_ids) ? {} : l:methods.info(preview_ids[0])
-  if !empty(complete_info)
-    return s:scroll_popup(complete_info, a:scroll)
-  elseif !empty(preview_info)
-    return s:scroll_preview(preview_info, a:scroll)
+  let popup_pos = pum_getpos()
+  let preview_ids = popup_list()
+  if !empty(popup_pos)  " automatically returns empty if not present
+    return call('s:scroll_popup', [a:scroll, popup_pos['size']])
+  elseif !empty(preview_ids)
+    return call('s:scroll_preview', [a:scroll] + preview_ids)
   else
-    return s:scroll_default(a:scroll)
+    return call('s:scroll_default', [a:scroll, winheight(0)])
   endif
 endfunction

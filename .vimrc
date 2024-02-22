@@ -574,7 +574,7 @@ augroup recents_setup
   au!
   au TabLeave * call stack#reset_recent()
   au CursorHold * call stack#update_recent()
-  au BufWinLeave * call stack#pop_stack('recent', expand('<afile>'))
+  au BufWinLeave * call stack#drop_stack('recent', expand('<afile>'))
   au VimEnter * silent call stack#clear_stack('recent') | call stack#update_recent()
 augroup END
 command! -nargs=0 ClearRecent call stack#clear_stack('recent') | call stack#update_recent()
@@ -1771,8 +1771,6 @@ if &g:foldenable || s:plug_active('FastFold')
 endif
 
 " Lsp integration settings
-" Note: The below autocmd gives signature popups the same borders as hover popups.
-" Otherwise they have ugly double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
 " Note: LspDefinition accepts <mods> and stays in current buffer for local definitions,
 " so below behavior is close to 'Drop': https://github.com/prabirshrestha/vim-lsp/pull/776
 " Note: Highlighting under keywords required for reference jumping with [d and ]d but
@@ -1785,15 +1783,12 @@ endif
 " native syntax foldmethod. Also tried tagfunc=lsp#tagfunc but now use LspDefinition
 if s:plug_active('vim-lsp')
   " Autocommands and mappings
-  " noremap gD gdzv<Cmd>noh<CR>
-  " noremap <Leader>^ <Cmd>verbose LspStatus<CR>
-  " au User lsp_setup  " see vim-lsp readme (necessary?)
-  " \ call lsp#register_server({'name': 'pylsp', 'cmd': {server_info->['pylsp']}, 'allowlist': ['python']})
+  " Note: The autocmd gives signature popups the same borders as hover popups, or else
+  " they have double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
   augroup lsp_setup
     au!
-    au User lsp_float_opened call popup_setoptions(lsp#ui#vim#output#getpreviewwinid(), s:popup_options)
+    au User lsp_float_opened call window#preview_setup()
   augroup END
-  let s:popup_options = {'borderchars': ['──', '│', '──', '│', '┌', '┐', '┘', '└']}
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=? ClearDoc call stack#clear_stack('doc')
   command! -nargs=? ShowDoc call stack#show_stack('doc')
@@ -2378,8 +2373,8 @@ highlight Comment ctermfg=Black cterm=NONE
 " Popup menu highlighting
 " Use same background as main
 highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
-highlight PmenuSel ctermbg=Magenta ctermfg=Black cterm=NONE
-highlight PmenuSbar ctermbg=NONE ctermfg=Black cterm=NONE
+highlight PmenuSel ctermbg=Magenta ctermfg=NONE cterm=NONE
+highlight PmenuSbar ctermbg=DarkGray ctermfg=NONE cterm=NONE
 
 " ANSI has no control over light
 " Switch from light to main and color to dark

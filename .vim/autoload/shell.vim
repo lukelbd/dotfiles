@@ -49,8 +49,8 @@ function! shell#fzf_help() abort
   call fzf#run(fzf#wrap({
     \ 'source': getcompletion('', 'shellcmd'),
     \ 'options': '--no-sort --prompt="--help> "',
-    \ 'sink': function('stack#jump_stack', ['shell#help_page', 'help'])
-    \ }))
+    \ 'sink': function('stack#push_stack', ['shell#help_page', 'help'])
+  \ }))
 endfunction
 
 " Man page and pydoc page utilities
@@ -85,15 +85,15 @@ function! shell#man_setup(...) abort
   if !empty(get(b:, 'doc_name', ''))
     setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldnestmax=3
     let b:doc_name = @% | call s:syntax_setup()
-    noremap <buffer> <CR> <Cmd>call stack#jump_stack('python#doc_page', 'doc', '')<CR>
-    noremap <nowait> <buffer> [ <Cmd>call stack#jump_stack('python#doc_page', 'doc', -v:count1)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call stack#jump_stack('python#doc_page', 'doc', v:count1)<CR>
+    noremap <buffer> <CR> <Cmd>call stack#push_stack('python#doc_page', 'doc', '')<CR>
+    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('python#doc_page', 'doc', -v:count1)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('python#doc_page', 'doc', v:count1)<CR>
   else
     setlocal tabstop=7 softtabstop=7 shiftwidth=7 foldnestmax=3
     let b:man_name = [page, pnum]  " see below
-    noremap <buffer> <CR> <Cmd>call stack#jump_stack('shell#man_page', 'man', '')<CR>
-    noremap <nowait> <buffer> [ <Cmd>call stack#jump_stack('shell#man_page', 'man', -v:count1)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call stack#jump_stack('shell#man_page', 'man', v:count1)<CR>
+    noremap <buffer> <CR> <Cmd>call stack#push_stack('shell#man_page', 'man', '')<CR>
+    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('shell#man_page', 'man', -v:count1)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('shell#man_page', 'man', v:count1)<CR>
   endif
 endfunction
 
@@ -142,7 +142,7 @@ function! shell#fzf_man() abort
   call fzf#run(fzf#wrap({
     \ 'source': getcompletion('', 'shellcmd'),
     \ 'options': '--no-sort --prompt="man> "',
-    \ 'sink': function('stack#jump_stack', ['shell#man_page', 'man'])
+    \ 'sink': function('stack#push_stack', ['shell#man_page', 'man'])
     \ }))
 endfunction
 

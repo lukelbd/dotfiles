@@ -65,7 +65,7 @@ function! vim#config_refresh(bang, ...) abort
     endif
   endfor
   let closed = foldclosed('.')
-  call tag#set_tags()  " call during .vimrc refresh
+  call tag#update_paths()  " call during .vimrc refresh
   filetype detect
   doautocmd FileType
   runtime after/common.vim

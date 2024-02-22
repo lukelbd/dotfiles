@@ -4,6 +4,7 @@
 " Return main buffers in each tab
 " Note: This sorts by recent access to help replace :Buffers
 " Warning: Critical to keep up-to-date with g:tabline_skip_filetypes name
+scriptencoding utf-8
 function! window#buffer_source() abort
   let nprocess = 20  " maximum tablines to process
   let ndigits = len(string(tabpagenr('$')))
@@ -40,6 +41,7 @@ function! window#close_panes(...) abort
   let bang = a:0 && a:1 ? '!' : ''
   let main = get(b:, 'tabline_bufnr', '%')
   let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
+  call map(popup_list(), 'popup_close(v:val)')
   if index(ftypes, 'codi') != -1
     silent! Codi!!
   endif
@@ -214,6 +216,31 @@ function! window#move_tab(...) abort
     \ 'options': '--no-sort --prompt="Move> "',
     \ 'sink': function('s:move_tab'),
   \ }))
+endfunction
+
+" Setup preview windows
+" Note: Here use a border for small popup windows and no border by default for
+" autocomplete. See: https://github.com/prabirshrestha/vim-lsp/issues/594
+function! window#preview_setup() abort
+  for wid in popup_list()
+    let info = popup_getpos(wid)
+    if !info['visible'] | continue | endif
+    let opts = popup_getoptions(wid)
+    echom 'Minima: ' . opts['minwidth']
+    call popup_move(wid, {'minwidth': 10})
+    let pum = pum_getpos()
+    call extend(opts, {'dragall': 1, 'resize': 1})
+    if empty(pum)  " dedicated window
+      let opts['scrollbar'] = 1
+      let opts['border'] = [0, 1, 0, 1]
+      let opts['borderchars'] = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+    else
+      let opts['scrollbar'] = 0
+      let opts['border'] = [1, 1, 1, 1]
+      let opts['borderchars'] = ['──', '│', '──', '│', '┌', '┐', '┘', '└']
+    endif
+    call popup_setoptions(wid, opts)
+  endfor
 endfunction
 
 " Setup panel windows. Mode can be 0 (not editable) or 1 (editable).
