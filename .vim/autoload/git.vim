@@ -94,9 +94,9 @@ function! git#run_command(echo, line1, count, range, bang, mods, args, ...) abor
   if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
   endif
-  " if a:args =~# '\s\+%' && bnum != bufnr()  " open single difference fold
-  "   call feedkeys('zv', 'n')
-  " endif
+  if a:args =~# '\s\+%' && bnum != bufnr()  " open single difference fold
+    call feedkeys('zv', 'n')
+  endif
   if empty(name) && bnum != bufnr()  " open change statistics
     global/^\(Staged\|Unstaged\)\>/normal =zxgg
   endif

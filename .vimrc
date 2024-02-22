@@ -1706,10 +1706,10 @@ if s:plug_active('vim-gutentags')
     au User GutentagsUpdated call tag#update_paths()
     au BufCreate,BufReadPost * call tag#update_paths(expand('<afile>'))
   augroup END
-  command! -complete=dir -nargs=* SetTags call tag#update_paths(<f-args>)
-  command! -nargs=? ShowIgnores echom 'Tag Ignores: ' . join(tag#parse_ignores(0, <q-args>), ' ')
-  nnoremap zt <Cmd>UpdateTags<CR><Cmd>GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags.'<CR>
-  nnoremap zT <Cmd>UpdateTags!<CR><Cmd>GutentagsUpdate!<CR><Cmd>echom 'Updated project tags.'<CR>
+  command! -complete=dir -nargs=* UpdatePaths call tag#update_paths(<f-args>)
+  command! -nargs=? ShowIgnores echom 'Ignored patterns: ' . join(tag#parse_ignores(0, <q-args>), ' ')
+  nnoremap zt <Cmd>UpdateTags \| GutentagsUpdate<CR><Cmd>echom 'Updated buffer tags'<CR>
+  nnoremap zT <Cmd>UpdateTags! \| GutentagsUpdate!<CR><Cmd>echom 'Updated project tags'<CR>
   " let g:gutentags_cache_dir = '~/.vim_tags_cache'  " alternative cache specification
   " let g:gutentags_ctags_tagfile = 'tags'  " used with cache dir
   " let g:gutentags_file_list_command = 'git ls-files'  " alternative to exclude ignores
