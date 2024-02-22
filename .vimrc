@@ -629,18 +629,20 @@ noremap <expr> gg 'gg' . (v:count ? 'zv' : '')
 
 " Move between alphanumeric groups of characters (i.e. excluding dots, dashes,
 " underscores). This is consistent with tmux vim selection navigation
-function! s:move_alpha(keys) abort
-  let iskeyword = &l:iskeyword | setlocal iskeyword=@,48-57,192-255
-  call feedkeys(a:keys . "\<Cmd>setlocal iskeyword=" . iskeyword . "\<CR>", 'n')
+function! s:move_alpha(keys, ...) abort
+  let op = !a:0 ? '' : a:1 !=# 'c' ? a:1 : "\<Esc>c"
+  let cmd = 'setlocal iskeyword=' . &l:iskeyword
+  setlocal iskeyword=@,48-57,192-255
+  call feedkeys(op . v:count1 . a:keys . "\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 noremap gw <Cmd>call <sid>move_alpha('w')<CR>
 noremap gb <Cmd>call <sid>move_alpha('b')<CR>
 noremap ge <Cmd>call <sid>move_alpha('e')<CR>
 noremap gm <Cmd>call <sid>move_alpha('ge')<CR>
-onoremap gw <Cmd>call <sid>move_alpha(v:operator . 'w')<CR>
-onoremap gb <Cmd>call <sid>move_alpha(v:operator . 'b')<CR>
-onoremap ge <Cmd>call <sid>move_alpha(v:operator . 'e')<CR>
-onoremap gm <Cmd>call <sid>move_alpha(v:operator . 'ge')<CR>
+onoremap gw <Cmd>call <sid>move_alpha('w', v:operator)<CR>
+onoremap gb <Cmd>call <sid>move_alpha('b', v:operator)<CR>
+onoremap ge <Cmd>call <sid>move_alpha('e', v:operator)<CR>
+onoremap gm <Cmd>call <sid>move_alpha('ge', v:operator)<CR>
 
 " Screen motion mappings
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
