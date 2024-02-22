@@ -13,10 +13,10 @@
 function! git#command_setup() abort
   command! -buffer
     \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
-    \ G call git#run_command(<line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
+    \ G call git#run_command(1, <line1>, <count>, +'<range>', <bang>0, '<mods>', <q-args>)
   command! -buffer
     \ -bar -bang -nargs=? -range=-1 -complete=customlist,fugitive#Complete
-    \ Git call git#run_command(<line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
+    \ Git call git#run_command(1, <line1>, <count>, +"<range>", <bang>0, "<mods>", <q-args>)
   command! -buffer
     \ -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#EditComplete
     \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Drop', <bang>0, '<mods>', <q-args>)
@@ -31,9 +31,9 @@ endfunction
 " so set window explicitly below. See: https://stackoverflow.com/a/8356605/4970632
 let s:flags1 = '--graph --abbrev-commit --max-count=50'
 let s:flags2 = '--date=relative --branches --decorate'
+let s:git_user = ['merge', 'commit', 'oops']
 let s:git_tree = ['log', 'tree', 'trunk']
-let s:git_edit = ['merge', 'commit', 'oops']
-let s:git_main = ['', 'status', 'show', 'diff'] + s:git_edit
+let s:git_wide = ['', 'status', 'show', 'diff'] + s:git_user
 let s:git_quiet = ['add', 'stage', 'reset', 'push', 'pull', 'fetch', 'switch', 'restore', 'checkout']
 let s:git_aliases = {
   \ 'status': '',
@@ -45,15 +45,15 @@ let s:git_aliases = {
 \ }
 function! s:echo_git(args, empty, ...) abort
   if !a:empty
-    echon 'Git ' . a:args
+    echom 'Git ' . a:args
   else  " empty message
     echohl WarningMsg
-    echon "Warning: 'Git " . a:args . "' was empty"
+    echom "Warning: 'Git " . a:args . "' was empty"
     echohl None
   endif
 endfunction
-function! git#run_command(line1, count, range, bang, mods, args, ...) abort range
-  " Parse git arguments
+function! git#run_command(echo, line1, count, range, bang, mods, args, ...) abort range
+  " Parse input arguments
   if empty(FugitiveGitDir())
     let args = [a:line1, a:count, a:range, a:bang, a:mods, ''] + a:000
     let cmd = "call('fugitive#Command', " . string(args) . ')'
@@ -62,40 +62,41 @@ function! git#run_command(line1, count, range, bang, mods, args, ...) abort rang
   let [bnum, width, height] = [bufnr(), winwidth(0), winheight(0)]
   let [name; flags] = empty(trim(a:args)) ? [''] : split(a:args, '\\\@<!\s\+')
   let quiet = index(s:git_quiet, name) != -1  " commands print at most one line
-  let edit = index(s:git_edit, name) != -1  " popup windows may open an editor
-  let main = index(s:git_main, name) != -1  " popup window should have 'main' size
+  let user = index(s:git_user, name) != -1  " commands require user interaction
+  let wide = index(s:git_wide, name) != -1  " popup window should have 'main' size
   let tree = index(s:git_tree, name) != -1  " popup window should be vertical
-  let name = get(s:git_aliases, name, name)
+  let name = get(s:git_aliases, name, name)  " e.g. '' for 'status'
   let mods = tree && empty(a:mods) ? 'topleft vert' : a:mods
+  " Generate and run command
   let opts = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
   let opts = substitute(opts, '--color\>', '', 'g')  " fugitive uses its own colors
   let opts = [a:line1, a:count, a:range, a:bang, mods, opts] + a:000
   silent let cmd = call('fugitive#Command', opts)
-  " Parse git results
-  if bnum != bufnr() || cmd =~# '\<v\?split\>'
-    silent exe cmd | let empty = line('$') <= 1 | setlocal bufhidden=delete
-    if empty  " empty result
-      call window#close_pane(1)
+  if !user && bnum == bufnr() && cmd !~# '\<v\?split\>'
+    echo 'Git ' . a:args . (quiet ? ' ' : "\n") | exe cmd
+  else
+    silent exe cmd | let empty = line('$') <= 1
+    if !user
+      setlocal bufhidden=delete | if empty | call window#close_pane(1) | endif
     endif
-    call timer_start(500, function('s:echo_git', [a:args, empty]))
-  else  " no panes
-    if edit  " allow buffer creation message to overwrite git message
-      call echoraw('Git ' . a:args)
-    else  " possibly show result after message or ensure press enter
-      echo 'Git ' . a:args . (quiet ? ' ' : "\n")
+    if a:echo  " ensure message shows
+      call timer_start(500, function('s:echo_git', [a:args, empty]))
     endif
-    exe cmd
   endif
+  " Configure resulting window
   if bnum == bufnr()  " pane not opened
     exe 'vertical resize ' . width | exe 'resize ' . height
   elseif a:args =~# '^blame\( %\)\@!' || cmd =~# '\<\(vsplit\|vert\(ical\)\?\)\>'
-    exe 'vertical resize ' . window#default_width(tree ? 0.5 : !main)
+    exe 'vertical resize ' . window#default_width(tree ? 0.5 : !wide)
   else  " bottom pane
-    exe 'resize ' . window#default_height(tree ? 0.5 : !main)
+    exe 'resize ' . window#default_height(tree ? 0.5 : !wide)
   endif
   if !a:range && a:args =~# '^blame'  " syncbind is no-op if not vertical
     exe a:line1 | exe 'normal! z.' | call feedkeys("\<Cmd>syncbind\<CR>", 'n')
   endif
+  " if a:args =~# '\s\+%' && bnum != bufnr()  " open single difference fold
+  "   call feedkeys('zv', 'n')
+  " endif
   if empty(name) && bnum != bufnr()  " open change statistics
     global/^\(Staged\|Unstaged\)\>/normal =zxgg
   endif
@@ -108,9 +109,9 @@ function! git#run_map(range, ...) abort range
     let offset = 0 | let [line1, line2] = sort([a:firstline, a:lastline], 'n')
   endif
   if a:range || line1 != line2
-    call call('git#run_command', [line1, line2, a:range] + a:000)
+    call call('git#run_command', [1, line1, line2, a:range] + a:000)
   else
-    call call('git#run_command', [line1, -1, a:range] + a:000)
+    call call('git#run_command', [1, line1, -1, a:range] + a:000)
   endif
   call feedkeys(offset ? abs(offset) . (offset > 0 ? 'j' : 'k') : '', 'n')
 endfunction
@@ -145,9 +146,9 @@ function! git#commit_safe() abort
     echohl WarningMsg
     echom 'Error: No staged changes'
     echohl None
-    call git#run_map(0, 0, '', 'status')
+    call git#run_command(0, line('.'), -1, 0, 0, '', 'status')
   else  " exits 1 if there are staged changes
-    call git#run_map(0, 0, '', 'commit')
+    call git#run_command(1, line('.'), -1, 0, 0, '', 'commit')
   endif
 endfunction
 

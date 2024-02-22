@@ -414,6 +414,34 @@ nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
 nnoremap g, <Cmd>History<CR>
 nnoremap g< <Cmd>call file#open_used()<CR>
 
+" Tab and window jumping
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>j <Cmd>silent! wincmd j<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>k <Cmd>silent! wincmd k<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>h <Cmd>silent! wincmd h<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>l <Cmd>silent! wincmd l<CR><Cmd>call file#echo_path()<CR>
+
+" Tab and window resizing
+nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR>
+  \<Cmd>exe 'vert resize ' . window#default_width()<CR>
+nnoremap <Tab>n <Cmd>exe 'resize ' . window#default_height(0.5)<CR>
+  \<Cmd>exe 'vert resize ' . window#default_width(0.5)<CR>
+nnoremap <Tab>m <Cmd>exe 'resize ' . window#default_height(0)<CR>
+  \<Cmd>exe 'vert resize ' . window#default_width(0)<CR>
+nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
+nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
+nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
+nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
+nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
+nnoremap <Tab>) <Cmd>call window#change_height(6 * v:count1)<CR>
+nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
+nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
+nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
+nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
@@ -436,33 +464,8 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
 nnoremap <Tab>= <Cmd>call file#open_init('vsplit', 1)<CR>
-nnoremap <Tab>\ <Cmd>exe 'leftabove ' . window#default_width(1)
-  \ . 'vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>goto
-
-" Tab and window jumping
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>j <Cmd>silent! wincmd j<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>k <Cmd>silent! wincmd k<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>h <Cmd>silent! wincmd h<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>l <Cmd>silent! wincmd l<CR><Cmd>call file#echo_path()<CR>
-
-" Tab and window resizing
-nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR><Cmd>exe 'vert resize ' . window#default_width()<CR>
-nnoremap <Tab>n <Cmd>exe 'resize ' . window#default_height(0.5)<CR><Cmd>exe 'vert resize ' . window#default_width(0.5)<CR>
-nnoremap <Tab>m <Cmd>exe 'resize ' . window#default_height(0)<CR><Cmd>exe 'vert resize ' . window#default_width(0)<CR>
-nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
-nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
-nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
-nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
-nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
-nnoremap <Tab>) <Cmd>call window#change_height(6 * v:count1)<CR>
-nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
-nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
-nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
-nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+nnoremap <Tab>\ <Cmd>exe 'leftabove vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
+  \<Cmd>exe 'vert resize ' . window#default_width(1)<CR>goto
 
 " Related file utilities
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
@@ -2066,13 +2069,13 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>" <Cmd>call git#commit_safe()<CR>
   noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
-  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage :/')<CR>
-  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>zv
-  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage %')<CR>zv
-  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>zv
-  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet %')<CR>zv
+  noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
+  noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
+  noremap <Leader>J <Cmd>call git#run_map(0, 0, '', 'stage -- %')<CR>
+  noremap <Leader>k <Cmd>call git#run_map(0, 0, '', 'diff --staged -- %')<CR>
+  noremap <Leader>K <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- %')<CR>
   noremap <Leader>l <Cmd>call git#run_map(0, 0, '', 'diff --staged -- :/')<CR>
-  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet :/')<CR>
+  noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>

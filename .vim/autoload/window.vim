@@ -36,20 +36,19 @@ endfunction
 " still works so suppress messages here.
 " Note: Calling quit inside codi buffer triggers 'attempt to close buffer
 " that is in use' error so instead return to main window and toggle codi.
-function! window#close_tab(...) abort
+function! window#close_panes(...) abort
   let bang = a:0 && a:1 ? '!' : ''
-  let ntabs = tabpagenr('$')
-  let islast = ntabs == tabpagenr()
+  let main = get(b:, 'tabline_bufnr', '%')
   let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
-  if &filetype ==# 'codi'
-    wincmd p | silent! Codi!!
-  elseif index(ftypes, 'codi') != -1
+  if index(ftypes, 'codi') != -1
     silent! Codi!!
   endif
-  if ntabs == 1 | quitall | else
-    exe 'tabclose' . bang | if !islast | silent! tabprevious | endif
-  endif
-  call feedkeys('zv', 'n')
+  for bnr in tabpagebuflist()
+    if bnr != main
+      exe bufwinnr(bnr) . 'windo quit' . bang
+    endif
+  endfor
+  if index(ftypes, 'gitcommit') == -1 | call feedkeys('zezv', 'n') | endif
 endfunction
 function! window#close_pane(...) abort
   let bang = a:0 && a:1 ? '!' : ''
@@ -66,14 +65,22 @@ function! window#close_pane(...) abort
   if ntabs != tabpagenr('$') && !islast
     silent! tabprevious
   endif
-  call feedkeys('zv', 'n')
+  if index(ftypes, 'gitcommit') == -1 | call feedkeys('zv', 'n') | endif
 endfunction
-function! window#close_panes() abort
-  let bnr = get(b:, 'tabline_bufnr', '%')
-  let path = bufname(bnr)
-  call file#open_drop(path)
-  silent! only
-  call feedkeys('zezv', 'n')
+function! window#close_tab(...) abort
+  let bang = a:0 && a:1 ? '!' : ''
+  let ntabs = tabpagenr('$')
+  let islast = ntabs == tabpagenr()
+  let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
+  if &filetype ==# 'codi'
+    wincmd p | silent! Codi!!
+  elseif index(ftypes, 'codi') != -1
+    silent! Codi!!
+  endif
+  if ntabs == 1 | quitall | else
+    exe 'tabclose' . bang | if !islast | silent! tabprevious | endif
+  endif
+  if index(ftypes, 'gitcommit') == -1 | call feedkeys('zv', 'n') | endif
 endfunction
 
 " Change window size in given direction
