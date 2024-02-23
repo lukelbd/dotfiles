@@ -857,37 +857,39 @@ open() {
 # NOTE: This supports internal grepping and finding utilities. Could also be
 # expanded to support .fzf finding utilities by setting the ignored files.
 ignores() {
-  local mode line args folders files
-  [ $# -gt 0 ] && [ "$1" -gt 0 ] && mode=1 || mode=0
+  local path line args files folders format exclude
+  format=${1:-0}  # whether to format result into find filter
+  exclude=$(printf '|%s' "${@:2}")  # patterns to exclude from search
   for path in ~/.ignore ~/.wildignore; do
     while read -r line; do
-      [[ "$line" =~ ^(\s*\#.*|\s*)$ ]] && continue
       [[ "$line" =~ ^! ]] && continue
+      [[ "$line" =~ ${exclude:1} ]] && continue
+      [[ "$line" =~ ^(\s*\#.*|\s*)$ ]] && continue
       if [[ "$line" =~ / ]]; then
-        [ ${#folders[@]} -eq 0 ] && args=(-name) || args=(-o -name)
-        if [ "$mode" -eq 1 ]; then
-          folders+=("${args[@]}" "*${line//\//}*")  # 'find' already supports sub directories
-        else
+        if [ "$format" -eq 0 ]; then
           folders+=(--exclude-dir "$line")
+        else  # 'find' already supports sub directories
+          [ ${#folders[@]} -eq 0 ] && args=(-name) || args=(-o -name)
+          folders+=("${args[@]}" "*${line//\//}*")
         fi
       else
-        [ ${#files[@]} -eq 0 ] && args=(-name) || args=(-o -name)
-        if [ "$mode" -eq 1 ]; then
-          files+=("${args[@]}" "${line}")  # 'find' already supports sub directories
-        else
+        if [ "$format" -eq 0 ]; then
           files+=(--exclude "$line")
+        else  # 'find' already supports sub directories
+          [ ${#files[@]} -eq 0 ] && args=(-name) || args=(-o -name)
+          files+=("${args[@]}" "${line}")
         fi
       fi
     done < "$path"
   done
   files=("${files[@]//\*/\\*}")  # prevent expansion after capture
   files=("${files[@]//\?/\\?}")
-  folders=("${folders[@]//\*/\\*}")
+  folders=("${folders[@]//\*/\\*}")  # prevent expansion after capture
   folders=("${folders[@]//\?/\\?}")
-  if [ "$mode" -eq 1 ]; then
-    echo "-type d ( ${folders[*]} ) -prune -o -type f ( ${files[*]} ) -prune -o"
-  else
+  if [ "$format" -eq 0 ]; then
     echo "${folders[*]} ${files[*]}"
+  else  # ignore folders and files
+    echo "-type d ( ${folders[*]} ) -prune -o -type f ( ${files[*]} ) -prune -o"
   fi
 }
 
@@ -920,8 +922,8 @@ _find() {
   [ "$include" -le 1 ] && exclude=($(ignores 1))  # glob patterns should be escaped
   [ "$include" -le 0 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune -o)
   exclude=("${exclude[@]//\\\*/*}") && exclude=("${exclude[@]//\\\?/?}")
-  command find "${commands[0]}" "${header[@]}" "${exclude[@]}" \
-    -name "${commands[@]:1}"  # arguments after directory
+  command find "${commands[0]}" "${header[@]}" \
+    "${exclude[@]}" -name "${commands[@]:1}"  # arguments after directory
 }
 _grep() {
   local commands exclude include
@@ -1909,21 +1911,20 @@ echo 'done'
 # Inline info puts the number line thing on same line as text. Bind slash to accept
 # so behavior matches shell completion behavior. Enforce terminal background default
 # color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
-_fzf_opts=" \
-  --ansi --color=bg:-1,bg+:-1 --layout=default \
-  --exit-0 --inline-info --height=6 \
+_fzf_options=" \
+  --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
   --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up\
 "  # critical to export so used by vim
 
 # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
 # Adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
-# NOTE: For now do not try to use universal '.ignore' files since only special
+# NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
+# searching utility. Should also ignore
+# now do not try to use universal '.ignore' files since only special
 # utilities should ignore files while basic shell navigation should show everything.
-# _fzf_ignore="$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')"  # alternative ignore
-_fzf_ignore=" \
-  \\( -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
-  -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
-  -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
+_fzf_prune_names=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
+_fzf_prune_bases=" \
+  \\( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \\) -prune -o \
 "
 
 # Run installation script; similar to the above one
@@ -1954,10 +1955,10 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # string rather than leaving the variable unset (or else it uses default).
   # shellcheck disable=2034
   {  # first option requires export
-    export FZF_DEFAULT_OPTS=$_fzf_opts
-    FZF_ALT_C_OPTS=$_fzf_opts
-    FZF_CTRL_T_OPTS=$_fzf_opts
-    FZF_COMPLETION_OPTS=$_fzf_opts
+    export FZF_DEFAULT_OPTS=$_fzf_options
+    FZF_ALT_C_OPTS=$_fzf_options
+    FZF_CTRL_T_OPTS=$_fzf_options
+    FZF_COMPLETION_OPTS=$_fzf_options
     FZF_COMPLETION_TRIGGER=''
   }
 
@@ -1966,23 +1967,23 @@ if [ "${FZF_SKIP:-0}" == 0 ] && [ -f ~/.fzf.bash ]; then
   # shellcheck disable=2034
   {  # first option requires export
     export FZF_DEFAULT_COMMAND=" \
-      set -o pipefail; command find -L . -mindepth 1 $_fzf_ignore \
+      set -o pipefail; command find -L . -mindepth 1 $_fzf_prune_bases $_fzf_prune_names \
       -type f -print -o -type l -print 2>/dev/null | cut -b3- \
     "
     FZF_ALT_C_COMMAND=" \
-      command find -L . -mindepth 1 $_fzf_ignore \
+      command find -L . -mindepth 1 $_fzf_prune_bases \
       -type d -print 2>/dev/null | cut -b3- \
     "  # recursively search directories and cd into them
     FZF_CTRL_T_COMMAND=" \
-      command find -L . -mindepth 1 $_fzf_ignore \
+      command find -L . -mindepth 1 $_fzf_prune_bases \
       \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | cut -b3- \
     "  # recursively search files
     FZF_COMPGEN_DIR_COMMAND=" \
-      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune_bases \
       -type d -print 2>/dev/null | sed 's@^.*/@@' \
     "  # complete directories with tab
     FZF_COMPGEN_PATH_COMMAND=" \
-      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_ignore \
+      command find -L \"\$1\" -maxdepth 1 -mindepth 1 $_fzf_prune_bases \
       \\( -type d -o -type f -o -type l \\) -print 2>/dev/null | sed 's@^.*/@@' \
     "  # complete paths with tab
   }

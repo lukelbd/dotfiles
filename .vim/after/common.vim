@@ -31,16 +31,6 @@ if !s:indent1 && !s:indent2 | exe 'nnoremap <buffer> == <Esc>=='
   nnoremap <expr> <buffer> >> '<Esc>' . repeat('>>', v:count1)
   nnoremap <expr> <buffer> << '<Esc>' . repeat('<<', v:count1)
 endif
-for s:suffix in ['g', 's', 'S', '%']
-  exe 'silent! iunmap <C-g>' . s:suffix
-  exe 'silent! iunmap <buffer><C-g>' . s:suffix
-endfor
-for s:prefix in ['<Nop>', '<C-w>', '<C-g>', '<buffer><Nop>', '<buffer><C-w>', '<buffer><C-g>', '<buffer><C-r>']
-  for s:suffix in ['@', '"', "'", '/', '?', 'g', '"', "'", '<C-w>', '<C-g>', '<C-r>']
-    exe 'silent! nunmap ' . s:prefix . s:suffix
-    exe 'silent! xunmap ' . s:prefix . s:suffix
-  endfor
-endfor
 
 " Update folds and plugin-specific settings
 " Note: Here CursorHold is needed for vim-markdown overrides and BufReadPost is needed
@@ -63,6 +53,16 @@ if closed <= 0 | exe 'silent! normal! zv' | endif
 doautocmd CursorHold
 doautocmd ConflictMarkerDetect BufReadPost
 doautocmd conflict_marker_setup BufWinEnter
+for s:suffix in ['g', 's', 'S', '%']
+  exe 'silent! iunmap <C-g>' . s:suffix
+  exe 'silent! iunmap <buffer><C-g>' . s:suffix
+endfor
+for s:prefix in ['<Nop>', '<C-w>', '<C-g>', '<buffer><Nop>', '<buffer><C-w>', '<buffer><C-g>', '<buffer><C-r>']
+  for s:suffix in ['@', '"', "'", '/', '?', 'g', '"', "'", '<C-w>', '<C-g>', '<C-r>']
+    exe 'silent! nunmap ' . s:prefix . s:suffix
+    exe 'silent! xunmap ' . s:prefix . s:suffix
+  endfor
+endfor
 
 " Buffer-local syntax overrides
 " Note: The URL regex is from .tmux.conf and https://vi.stackexchange.com/a/11547/8084

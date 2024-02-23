@@ -13,8 +13,6 @@ _build/
 plugged/
 *conda*/
 *mamba*/
-servers/
-externals/
 site-packages/
 
 # Trash folders
