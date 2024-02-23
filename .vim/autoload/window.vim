@@ -251,6 +251,7 @@ endfunction
 " and simply get in habit of closing entire tabs with session#close_tab().
 function! window#panel_setup(level) abort
   let g:ft_man_folding_enable = 1  " see :help Man
+  let [nleft, nright] = [window#count_panes('h'), window#count_panes('l')]
   nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
   nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
   if &filetype ==# 'qf'  " disable <Nop> map
@@ -259,7 +260,7 @@ function! window#panel_setup(level) abort
   if &filetype ==# 'netrw'
     call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
   endif
-  if window#count_panes('h') > 1 || &l:filetype =~# 'git\|fugitive\|undotree'
+  if nleft > 1 || nright > 1 && &l:filetype =~# '^\(git\|fugitive\|undotree\)'
     setlocal nonumber norelativenumber nocursorline
   else  " sign column padding
     setlocal nonumber norelativenumber nocursorline signcolumn=yes

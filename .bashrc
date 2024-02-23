@@ -880,6 +880,10 @@ ignores() {
       fi
     done < "$path"
   done
+  files=("${files[@]//\*/\\*}")  # prevent expansion after capture
+  files=("${files[@]//\?/\\?}")
+  folders=("${folders[@]//\*/\\*}")
+  folders=("${folders[@]//\?/\\?}")
   if [ "$mode" -eq 1 ]; then
     echo "-type d ( ${folders[*]} ) -prune -o -type f ( ${files[*]} ) -prune -o"
   else
@@ -915,6 +919,7 @@ _find() {
   esac
   [ "$include" -le 1 ] && exclude=($(ignores 1))  # glob patterns should be escaped
   [ "$include" -le 0 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune -o)
+  exclude=("${exclude[@]//\\\*/*}") && exclude=("${exclude[@]//\\\?/?}")
   command find "${commands[0]}" "${header[@]}" "${exclude[@]}" \
     -name "${commands[@]:1}"  # arguments after directory
 }
@@ -930,6 +935,7 @@ _grep() {
   [ "$include" -le 1 ] && exclude+=($(ignores 0))  # glob patterns should be escaped
   [ "$include" -le 0 ] && exclude+=(--exclude='[A-Z_.]*')
   [ "$include" -le 0 ] && exclude+=(--exclude-dir='.[^.]*')
+  exclude=("${exclude[@]//\\\*/*}") && exclude=("${exclude[@]//\\\?/?}")
   command grep -i -r -E --color=auto --exclude-dir='_*' \
     "${exclude[@]}" "${commands[@]}"  # only regex and paths allowed
 }
@@ -1914,8 +1920,8 @@ _fzf_opts=" \
 # NOTE: For now do not try to use universal '.ignore' files since only special
 # utilities should ignore files while basic shell navigation should show everything.
 # _fzf_ignore="$(ignores 1 | sed 's/(/\\(/g;s/)/\\)/g')"  # alternative ignore
-_fzf_ignore="\\( \
-  -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
+_fzf_ignore=" \
+  \\( -fstype 'sysfs' -o -fstype 'devfs' -o -fstype 'devtmpfs' -o -fstype 'proc' \
   -o -path '*.DS_Store' -o -path '*.git' -o -path '*.svn' \
   -o -path '*__pycache__' -o -path '*.ipynb_checkpoints' \\) -prune -o \
 "
