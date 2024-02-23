@@ -13,7 +13,7 @@ function! shell#help_page(...) abort
   else  " default help
     let page = utils#input_default('Help info', expand('<cword>'), 'shellcmd')
   endif
-  if empty(page) | return | endif
+  if empty(page) | return 1 | endif
   let args = split(page, '\s\+')
   if args[0] ==# 'git' && len(filter(args[1:], "v:val[:0] !=# '-'"))
     return shell#man_page(join(args, '-'))  " identical result
@@ -26,23 +26,25 @@ function! shell#help_page(...) abort
   let type = &l:filetype
   let bnr = bufnr()
   let cmd = join(args, ' ')
-  if type !=# 'popup' | tabedit | endif
+  if type !=# 'popup'
+    tabedit | setlocal nobuflisted bufhidden=hide buftype=nofile filetype=popup
+  endif
   if bufexists(cmd)
     silent exe bufnr(cmd) . 'buffer'
   else
-    let result = split(system(cmd . ' 2>&1'), "\n")
-    setlocal nobuflisted bufhidden=hide buftype=nofile filetype=popup
-    call window#panel_setup(0) | call append(0, result) | goto
+    let result = split(system(cmd . ' 2>&1'), "\n") | call append(0, result) | goto
   endif
-  if line('$') > 3 | exe 'file ' . fnameescape(cmd) | else
+  if line('$') > 3
+    silent exe 'file ' . fnameescape(cmd)
+    return 0
+  else
+    if type !=# 'popup' |
+      silent quit! | call file#open_drop(1, bufname(bnr))
+    endif
     echohl ErrorMsg
     echom "Error: Help info '" . cmd . "' not found"
     echohl None
-    if type !=# 'popup'
-      silent quit!
-      call file#open_drop(1, bufname(bnr))
-    endif
-    return
+    return 1
   endif
 endfunction
 function! shell#fzf_help() abort
@@ -111,7 +113,7 @@ function! shell#man_page(...) abort
   else  " default man
     let [page, pnum] = [utils#input_default('Man page', expand('<cword>'), 'shellcmd'), 0]
   endif
-  if empty(page) | return | endif
+  if empty(page) | return 1 | endif
   let type = &l:filetype
   let name = page . '(' . max([pnum, 1]) . ')'
   let args = pnum ? pnum . ' ' . page : page
@@ -123,19 +125,22 @@ function! shell#man_page(...) abort
   else
     silent exe 'Man ' . args | goto
   endif
-  if line('$') > 1 | exe 'file ' . name | else
-    echohl ErrorMsg
-    echom "Error: Man page '" . page . "' not found"
-    echohl None
+  if line('$') > 1
+    if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
+      if has('macunix') && page !=# 'builtin' | exe 'Man bash' | endif
+      goto | call search('^ \{7}' . page . ' [.*$', '')
+    endif
+    silent exe 'file ' . name
+    return 0
+  else
     if type !=# 'man'
       silent quit!
       call file#open_drop(1, bufname(bnr))
     endif
-    return
-  endif
-  if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
-    if has('macunix') && page !=# 'builtin' | exe 'Man bash' | endif
-    let @/ = '^ \{7}' . page . ' [.*$' | normal! n
+    echohl ErrorMsg
+    echom "Error: Man page '" . page . "' not found"
+    echohl None
+    return 1
   endif
 endfunction
 function! shell#fzf_man() abort

@@ -263,7 +263,7 @@ function! python#doc_page(...) abort
     let page = empty(a:1) ? python#doc_name() : a:1
   endif
   let parse = &l:filetype ==# 'python'
-  if empty(page) | return | endif
+  if empty(page) | return 1 | endif
   if parse | let page = s:parse_name(page) | endif
   let bnr = bufnr()  " current buffer
   let pnr = bufnr(page)  " WARNING: only matches start of string
@@ -272,7 +272,7 @@ function! python#doc_page(...) abort
     let result = systemlist('pydoc ' . shellescape(page))
     let result = map(result, 'substitute(v:val, ''^\( \{4}\)* |  '', ''\1'', ''ge'')')
     let msg = "Error: Pydoc page '" . page . "' not found"
-    if len(result) <= 5 | echohl ErrorMsg | echom msg | echohl None | return | endif
+    if len(result) <= 5 | echohl ErrorMsg | echom msg | echohl None | return 1 | endif
   endif
   let s:doc_prev = page  " previously browsed
   if !empty(get(b:, 'doc_name', ''))  " existing path shell.vim
@@ -281,7 +281,7 @@ function! python#doc_page(...) abort
     silent exe new ? 'tabedit ' . page : 'tabedit | ' . pnr . 'buffer'
   endif
   if new | call append(0, result) | goto | endif | let b:doc_name = page  " critical
-  setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man
+  setlocal nobuflisted bufhidden=hide buftype=nofile filetype=man | return 0
 endfunction
 function! python#doc_source(...) abort
   let cmd = 'pip list --no-color --no-input --no-python-version-warning'

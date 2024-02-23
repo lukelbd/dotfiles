@@ -157,7 +157,7 @@ let s:panel_filetypes = [
   \ 'help', 'ale-info', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
 \ ]  " for popup toggle
 let s:panel_filetypes += [
-  \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'qf', 'undotree', 'vim-plug'
+  \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'panel', 'qf', 'undotree', 'vim-plug'
 \ ]
 
 " Flake8 ignore list (also apply to autopep8):
@@ -1010,8 +1010,8 @@ silent! unmap zUU
 " already work with 'g@<motion>' invocation of wrapping operator function.
 command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
 command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
-noremap <expr> gq '<Esc>' . edit#wrap_lines_expr(v:count)
-noremap <expr> gQ '<Esc>' . edit#wrap_items_expr(v:count)
+noremap <expr> gq edit#wrap_lines_expr(v:count)
+noremap <expr> gQ edit#wrap_items_expr(v:count)
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
