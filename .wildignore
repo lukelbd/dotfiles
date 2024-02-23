@@ -1,8 +1,7 @@
 # Files to ignore when editing grepping, or finding
-# This file should be kept in sync with '.dircolors.ansi'
-# NOTE: This is not recognized by any external utilities but is used in .vimrc to
-# populate &wildignore, g:fzf_tags, and grep commands (using additional ignore path)
-# and used in .bashrc for greps/finds and for global fzf command variables.
+# NOTE: This file should be kept in sync with '.dircolors.ansi'. This is not
+# recognized by external utilities but used in .vimrc for &wildignore, g:fzf_tags,
+# and fzf grep and used for .bashrc commands 'rg' 'ag' 'g0' 'g1' 'f0' 'f1'.
 # Git ignore files
 *.sw[a-z]
 *.DS_Store

@@ -1,8 +1,8 @@
-# Ignore patterns for ripgrep 'rg' and silver searcher 'ag'
-# This file should be kept in sync with '.gitignore.default' and bashrc functions
-# NOTE: The vim integration and bash aliases actually also include '.wildignore' but
-# keep that as separate optional file to handle native vim expansion.
-# Auto-generated
+# Ignore patterns for .bashrc commands 'rg' 'ag' 'g0' 'g1' 'f0' 'f1'.
+# NOTE: This file should be kept in sync with '.gitignore.default'. The vim
+# integration and bash aliases actually also include '.wildignore' but keep
+# that as separate optional file to handle native vim expansion.
+# External or auto-generated
 *.html
 *.json
 *.xml
@@ -34,11 +34,10 @@ tags
 *.pyc
 *.ipynb
 *.egg_info/
-.ipynb_checkpoints/
-.virtual_documents/
+*.ipynb_checkpoints/
+*.virtual_documents/
 __pycache__/
 .mypy_cache/
-
 
 # Common temporary files
 *.log

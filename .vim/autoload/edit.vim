@@ -192,12 +192,12 @@ endfunction
 " commands flashing at bottom of screen. Also need feedkeys() because normal
 " doesn't work inside an expression mapping.
 function! edit#wrap_lines(...) range abort
-  let textwidth = &l:textwidth
-  let &l:textwidth = a:0 ? a:1 ? a:1 : textwidth : textwidth
-  let cmd =
-    \ a:lastline . 'gggq' . a:firstline . 'gg'
-    \ . ':silent let &l:textwidth = ' . textwidth
-    \ . " | echom 'Wrapped lines to " . &l:textwidth . " characters.'\<CR>"
+  let prevwidth = &l:textwidth
+  let textwidth = a:0 ? a:1 ? a:1 : prevwidth : prevwidth
+  let &l:textwidth = textwidth
+  let cmd = a:lastline . 'gggq' . a:firstline . 'gg'
+  let cmd .= "\<Cmd>silent setlocal textwidth=" . prevwidth . "\<CR>"
+  let cmd .= "\<Cmd>echom 'Wrapped lines to " . textwidth . " characters.'\<CR>"
   call feedkeys(cmd, 'n')
 endfunction
 " For <expr> map accepting motion

@@ -1,5 +1,6 @@
-# This file should be kept in sync with '.ignore' ag/rg file.
-# Internal or unsynced
+# Ignore patterns for git repositories.
+# NOTE: This file should be kept in sync with '.ignore' file
+# Internal or manually-synced
 notes*.md
 notes*.txt
 notes*.rst
@@ -13,14 +14,14 @@ figures*
 videos*
 !figures*.py
 !videos*.py
+deprecated*
+deprecated*/
 
-# Old or trash folders
+# Trash folders
 tmp
 tmp/
 trash*
 trash*/
-deprecated*
-deprecated*/
 
 # Vim session files and swap files
 tags
