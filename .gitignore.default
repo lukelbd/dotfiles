@@ -16,10 +16,10 @@ videos*
 
 # Old or trash folders
 tmp
-trash*
-deprecated*
 tmp/
+trash*
 trash*/
+deprecated*
 deprecated*/
 
 # Vim session files and swap files

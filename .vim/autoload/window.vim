@@ -225,11 +225,8 @@ function! window#preview_setup() abort
   for wid in popup_list()
     let info = popup_getpos(wid)
     if !info['visible'] | continue | endif
-    let opts = popup_getoptions(wid)
-    echom 'Minima: ' . opts['minwidth']
-    call popup_move(wid, {'minwidth': 10})
     let pum = pum_getpos()
-    call extend(opts, {'dragall': 1, 'resize': 1})
+    let opts = {'dragall': 1, 'resize': 1}
     if empty(pum)  " dedicated window
       let opts['scrollbar'] = 1
       let opts['border'] = [0, 1, 0, 1]

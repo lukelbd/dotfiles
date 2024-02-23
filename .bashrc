@@ -864,30 +864,26 @@ ignores() {
       [[ "$line" =~ ^(\s*\#.*|\s*)$ ]] && continue
       [[ "$line" =~ ^! ]] && continue
       if [[ "$line" =~ / ]]; then
+        [ ${#folders[@]} -eq 0 ] && args=(-name) || args=(-o -name)
         if [ "$mode" -eq 1 ]; then
-          [ ${#folders[@]} -eq 0 ] && args=(-name) || args=(-o -name)
           folders+=("${args[@]}" "*${line//\//}*")  # 'find' already supports sub directories
         else
           folders+=(--exclude-dir "$line")
         fi
       else
+        [ ${#files[@]} -eq 0 ] && args=(-name) || args=(-o -name)
         if [ "$mode" -eq 1 ]; then
-          [ ${#files[@]} -eq 0 ] && args=(-name) || args=(-o -name)
-          files+=("${args[@]}" "'$line'")  # 'find' already supports sub directories
+          files+=("${args[@]}" "${line}")  # 'find' already supports sub directories
         else
           files+=(--exclude "$line")
         fi
       fi
     done < "$path"
   done
-  files=("${files[@]//\*/\\\*}")  # prevent expansion after capture
-  files=("${files[@]//\?/\?}")
-  folders=("${folders[@]//\*/\\\*}")  # prevent expansion after capture
-  folders=("${folders[@]//\?/\\\?}")
   if [ "$mode" -eq 1 ]; then
-    echo -type d \( "${folders[@]}" \) -prune -o -type f \( "${files[@]}" \) -prune -o
+    echo "-type d ( ${folders[*]} ) -prune -o -type f ( ${files[*]} ) -prune -o"
   else
-    echo "${folders[@]}" "${files[@]}"
+    echo "${folders[*]} ${files[*]}"
   fi
 }
 
@@ -907,25 +903,6 @@ alias ag="ag $_ignore_ag --skip-vcs-ignores --hidden"  # see also .vimrc, .ignor
 alias rg="rg $_ignore_rg --no-ignore-vcs --hidden"  # see also .vimrc, .ignore
 alias a0="ag $_ignore_ag --skip-vcs-ignores --hidden --depth 0"  # see also 'd0'
 alias r0="rg $_ignore_rg --no-ignore-vcs --hidden --max-depth 1"  # see also 'd0'
-_grep() {
-  local commands exclude include
-  include="$1"
-  shift  # internal argument
-  case "$#" in
-    0) echo 'Error: qgrep() requires at least 1 arg (the pattern).' && return 1 ;;
-    1) commands=("$1" .) ;;  # pattern
-    *) commands=("$@") ;;  # pattern path(s)
-  esac
-  [ "$include" -le 1 ] && exclude+=($(ignores 0))  # glob patterns should be escaped
-  [ "$include" -le 0 ] && exclude+=(--exclude='[A-Z_.]*')
-  [ "$include" -le 0 ] && exclude+=(--exclude-dir='.[^.]*')
-  # for i in $(seq 0 2 $((${#exclude[@]} - 2))); do
-  #   echo "${exclude[i]}" "${exclude[i + 1]}"
-  # done
-  command grep \
-    -i -r -E --color=auto --exclude-dir='_*' \
-    "${exclude[@]}" "${commands[@]}"  # only regex and paths allowed
-}
 _find() {
   local commands exclude include header
   include="$1"
@@ -938,7 +915,23 @@ _find() {
   esac
   [ "$include" -le 1 ] && exclude=($(ignores 1))  # glob patterns should be escaped
   [ "$include" -le 0 ] && header=(-path '*/.*' -prune -o -name '[A-Z_]*' -prune -o)
-  command find "${commands[0]}" "${header[@]}" "${exclude[@]}" -name "${commands[@]:1}"
+  command find "${commands[0]}" "${header[@]}" "${exclude[@]}" \
+    -name "${commands[@]:1}"  # arguments after directory
+}
+_grep() {
+  local commands exclude include
+  include="$1"
+  shift  # internal argument
+  case "$#" in
+    0) echo 'Error: qgrep() requires at least 1 arg (the pattern).' && return 1 ;;
+    1) commands=("$1" .) ;;  # pattern
+    *) commands=("$@") ;;  # pattern path(s)
+  esac
+  [ "$include" -le 1 ] && exclude+=($(ignores 0))  # glob patterns should be escaped
+  [ "$include" -le 0 ] && exclude+=(--exclude='[A-Z_.]*')
+  [ "$include" -le 0 ] && exclude+=(--exclude-dir='.[^.]*')
+  command grep -i -r -E --color=auto --exclude-dir='_*' \
+    "${exclude[@]}" "${commands[@]}"  # only regex and paths allowed
 }
 g0() { _grep 0 "$@"; }  # custom grep with ignore excludes and no hidden files
 f0() { _find 0 "$@"; }  # custom find with ignore excludes and no hidden files

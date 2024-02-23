@@ -19,8 +19,8 @@ site-packages/
 
 # Trash folders
 tmp
-trash*
 tmp/
+trash*
 trash*/
 
 # Vim session files and swap files
@@ -34,9 +34,10 @@ tags
 *.pyc
 *.ipynb
 *.egg_info/
-__pycache__/
 .ipynb_checkpoints/
 .virtual_documents/
+__pycache__/
+.mypy_cache/
 
 
 # Common temporary files

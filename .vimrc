@@ -106,6 +106,7 @@ set spellcapcheck=  " disable checking for capital start of sentence
 set spelllang=en_us  " default to US english
 set splitbelow  " splitting behavior
 set splitright  " splitting behavior
+set splitkeep=screen  " preserve relative position
 set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open tab
 set tabpagemax=300  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
@@ -1135,7 +1136,7 @@ inoremap <expr> <C-f> iter#scroll_count(1.0)
 " Ad hoc enable or disable LSP for testing
 " Note: Can also use switch#lsp() interactively
 let s:enable_lsp = 1
-let s:enable_ddc = 1
+let s:enable_ddc = 0
 
 " Functions to find runtimepath and install plugins
 " See: https://github.com/junegunn/vim-plug/issues/32
@@ -1612,7 +1613,7 @@ endif
 if s:plug_active('vim-matchup') || s:plug_active('vim-indexed-search')
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
-  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
+  let g:matchup_matchparen_enabled = 0  " enable matchupt matching on startup
   let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
   let g:matchup_surround_enabled = 1  " enable 'ya%' 'va%' etc. mappings
   let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
@@ -1862,7 +1863,7 @@ if s:plug_active('ddc.vim')
   command! -nargs=? DdcToggle call switch#ddc(<args>)
   noremap <Leader>* <Cmd>call switch#ddc()<CR>
   let g:popup_preview_config = {
-    \ 'border': v:false,
+    \ 'border': v:true,
     \ 'maxWidth': g:linelength,
     \ 'maxHeight': 2 * g:linelength
     \ }
