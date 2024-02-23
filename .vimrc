@@ -542,18 +542,18 @@ nnoremap <Leader>V <Cmd>call vim#vim_help()<CR>
 nnoremap <Leader>q <Cmd>Commands<CR>
 nnoremap <Leader>Q <Cmd>Maps<CR>
 
-" Shell , search windows, help windows, man pages, and 'cmd --help'. Also
+" Shell commands, search windows, help windows, man pages, and 'cmd --help'. Also
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
-" Note: Commands 'ManPage' conflicts with existing and causes silent failure due to
-" recursive invocation. Also see: https://stackoverflow.com/a/41168966/4970632
-command! -complete=shellcmd -nargs=? ShellHelp call stack#next_item('shell#help_page', 'help', <f-args>)
-command! -complete=shellcmd -nargs=? ShellMan call stack#next_item('shell#man_page', 'man', <f-args>)
-command! -nargs=0 ClearHelp call stack#clear_stack('help')
+" Note: Here 'Man' overrides buffer-local 'Man' command defined on man filetypes, so
+" must use autoload function. Also see: https://stackoverflow.com/a/41168966/4970632
+command! -complete=shellcmd -nargs=? Help call stack#push_stack('shell#help_page', 'help', <f-args>)
+command! -complete=shellcmd -nargs=? Man call stack#push_stack('shell#man_page', 'man', <f-args>)
 command! -nargs=0 ClearMan call stack#clear_stack('man')
 command! -nargs=0 ShowHelp call stack#show_stack('help')
 command! -nargs=0 ShowMan call stack#show_stack('man')
-nnoremap <Leader>N <Cmd>call stack#next_item('shell#help_page', 'help')<CR>
-nnoremap <Leader>M <Cmd>call stack#next_item('shell#man_page', 'man')<CR>
+command! -nargs=? PopMan call stack#pop_stack('man', <f-args>)
+nnoremap <Leader>N <Cmd>call stack#push_stack('shell#help_page', 'help')<CR>
+nnoremap <Leader>M <Cmd>call stack#push_stack('shell#man_page', 'man')<CR>
 nnoremap <Leader>n <Cmd>call shell#fzf_help()<CR>
 nnoremap <Leader>m <Cmd>call shell#fzf_man()<CR>
 
@@ -569,19 +569,20 @@ nnoremap <Leader>! <Cmd>let $VIMTERMDIR=expand('%:p:h') \| terminal<CR>cd $VIMTE
 "-----------------------------------------------------------------------------"
 " Navigation and searching
 "-----------------------------------------------------------------------------"
-" Navigate recent windows and wildmenu options with <C-,>/<C-.>
+" Navigate recent tabs and wildmenu options with <C-,>/<C-.>
 " Note: See iter.vim for details. This uses iterm mappings.
 augroup recents_setup
   au!
-  au TabLeave * call stack#reset_recent()
-  au CursorHold * call stack#update_recent()
-  au BufWinLeave * call stack#pop_stack('recent', expand('<afile>'))
-  au VimEnter * silent call stack#clear_stack('recent') | call stack#update_recent()
+  au TabLeave * call stack#reset_tabs()  " reset scroll variables before leaving tab
+  au CursorHold * call stack#update_tabs()
+  au BufWinLeave * call stack#pop_stack('tab', bufnr(expand('<afile>')))
+  au VimEnter * silent call stack#clear_stack('tab') | call stack#update_tabs()
 augroup END
-command! -nargs=0 ClearRecent call stack#clear_stack('recent') | call stack#update_recent()
-command! -nargs=0 ShowRecent call stack#update_recent() | call stack#show_stack('recent')
-noremap <F1> <Cmd>call stack#scroll_recent(-v:count1)<CR>
-noremap <F2> <Cmd>call stack#scroll_recent(v:count1)<CR>
+command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
+command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
+command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
+noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
+noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 cnoremap <F1> <C-p>
 cnoremap <F2> <C-n>
 
@@ -1793,7 +1794,8 @@ if s:plug_active('vim-lsp')
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=? ClearDoc call stack#clear_stack('doc')
   command! -nargs=? ShowDoc call stack#show_stack('doc')
-  command! -nargs=? Doc call stack#next_item('python#doc_page', 'doc', <f-args>)
+  command! -nargs=? PopDoc call stack#pop_stack('doc', <f-args>)
+  command! -nargs=? Doc call stack#push_item('python#doc_page', 'doc', <f-args>)
   noremap zd <Cmd>LspReferences<CR>
   noremap zD <Cmd>LspRename<CR>
   noremap gd <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
@@ -1801,7 +1803,7 @@ if s:plug_active('vim-lsp')
   noremap [r <Cmd>LspPreviousReference<CR>
   noremap ]r <Cmd>LspNextReference<CR>
   noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>f <Cmd>call stack#next_item('python#doc_page', 'doc')<CR>
+  noremap <Leader>f <Cmd>call stack#push_stack('python#doc_page', 'doc')<CR>
   noremap <Leader>F <Cmd>call python#doc_search()<cr>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>

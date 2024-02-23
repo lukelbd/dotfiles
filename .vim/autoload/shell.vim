@@ -116,18 +116,18 @@ function! shell#man_page(...) abort
   if empty(page) | return 1 | endif
   let type = &l:filetype
   let name = page . '(' . max([pnum, 1]) . ')'
-  let args = pnum ? pnum . ' ' . page : page
+  let args = reverse(pnum ? [page, pnum] : [page])
   if type !=# 'man'
     tabedit | setlocal filetype=man
   endif
   if bufexists(name)
     exe bufnr(name) . 'buffer'
   else
-    silent exe 'Man ' . args | goto
+    call call('dist#man#GetPage', [''] + args)
   endif
   if line('$') > 1
     if getline(1) =~# 'BUILTIN' || getline(2) =~# 'BUILTIN'
-      if has('macunix') && page !=# 'builtin' | exe 'Man bash' | endif
+      if has('macunix') && page !=# 'builtin' | call dist#man#GetPage('', 'bash') | endif
       goto | call search('^ \{7}' . page . ' [.*$', '')
     endif
     silent exe 'file ' . name

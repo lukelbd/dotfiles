@@ -4,71 +4,69 @@
 " Helper functions
 " Warning: Below returns name index optionally filtered to the last nmax entries
 " of the stack. Note e.g. [1, 2, 3][-5:] is empty list, careful with this.
-function! s:echo_stack(head, name, idx, size, ...) abort
-  if type(a:name) == 3
-    let label = a:name[0] . ' (' . join(a:name[1:], ':') . ')'
-  elseif bufexists(a:name)
-    let label = RelativePath(a:name)
-  else
-    let label = string(a:name)
-  endif
-  let prefix = toupper(a:head[0]) . a:head[1:] . ': '
-  let suffix = ' (' . (a:idx + 1) . '/' . a:size . ')'
-  echom prefix . label . suffix
+function! s:set_stack(head, stack, idx) abort
+  let index = min([max([a:idx, 0]), len(a:stack) - 1])
+  let index = empty(a:stack) ? -1 : index  " initial value -1
+  let g:[a:head . '_stack'] = a:stack
+  let g:[a:head . '_loc'] = index
 endfunction
-function! s:query_stack(head, buf, ...) abort
-  let bnr = bufnr(a:buf)
-  let name = getbufvar(bnr, a:head . '_name', '')  " buffer variable to push
-  let stack = get(g:, a:head . '_stack', [])
-  let idx = get(g:, a:head . '_loc', -1)
-  let nmax = a:0 ? a:1 : -1
-  let nmax = min([nmax < 0 ? len(stack) : nmax, len(stack)])
+function! s:get_stack(head, ...) abort  " remove in future
+  let stack = a:head ==# 'tab' ? get(g:, 'recent_stack', []) : []
+  let idx = a:head ==# 'tab' ? get(g:, 'recent_loc', -1) : -1
+  let stack = get(g:, a:head . '_stack', stack)
+  let idx = get(g:, a:head . '_loc', idx)
+  let name = a:0 < 1 ? '' : type(a:1) ? a:1 : getbufvar(a:1, a:head . '_name', '')
+  let nmax = min([a:0 < 2 ? 0 : a:2 >= 0 ? a:2 : len(stack), len(stack)])
   let part = nmax ? reverse(copy(stack))[:nmax - 1] : []
-  let kdx = empty(name) ? -1 : index(part, name)
-  let kdx = kdx == -1 ? -1 : (len(stack) - nmax) + (len(part) - kdx - 1)
+  let jdx = empty(name) ? -1 : index(part, name)
+  let kdx = jdx == -1 ? -1 : (len(stack) - nmax) + (len(part) - jdx - 1)
   return [stack, idx, name, kdx]
 endfunction
 
-" Public stack operations
-" Note: Use e.g. ClearRecent ShowRecent commands in vimrc with these. All other
+" Stack printing operations
+" Note: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
 " functions are for autocommands or normal mode mappings
-function! stack#clear_stack(head) abort
-  if has_key(g:, a:head . '_stack')
-    call remove(g:, a:head . '_stack')
-    call remove(g:, a:head . '_loc')
-    echom "Cleared '" . a:head . "' buffer stack"
-  else
-    echohl WarningMsg
-    echom "Error: Buffer stack '" . a:head . "' does not exist"
-    echohl None
+function! s:show_name(head, name, ...) abort
+  if type(a:name) == 3
+    let label = join(a:name, ':')
+  elseif !bufexists(a:name)
+    let label = string(a:name)
+  else  " tab page then path
+    let winid = get(win_findbuf(bufnr(a:name)), 0, 0)
+    let tabnr = win_id2tabwin(winid)[0]
+    let label = RelativePath(a:name) . ' (' . (tabnr ? tabnr : '*') . ')'
   endif
+  let prefix = toupper(a:head[0]) . a:head[1:] . ': '
+  let suffix = a:0 > 1 ? ' (' . (a:1 + 1) . '/' . a:2 . ')' : ''
+  echom prefix . label . suffix
 endfunction
 function! stack#show_stack(head) abort
-  let [stack, idx; rest] = s:query_stack(a:head, '', -1)
-  let ndigits = len(string(len(stack)))
+  let [stack, idx; rest] = s:get_stack(a:head)
+  let digits = len(string(len(stack)))
   echom "Current '" . a:head . "' stack:"
   for jdx in range(len(stack))
     let pad = idx == jdx ? '> ' : '  '
-    let pad .= repeat(' ', ndigits - len(string(jdx)))
-    call s:echo_stack(pad . jdx, stack[jdx], jdx, len(stack))
+    let pad .= repeat(' ', digits - len(string(jdx)))
+    call s:show_name(pad . jdx, stack[jdx])
   endfor
 endfunction
 
 " Update the requested buffer stack
 " Note: This is used for man/pydoc in shell.vim and window jumps in vimrc
 " Note: Use 1ms timer_start to prevent issue where echo hidden by buffer change
-function! s:update_stack(head, stack, idx) abort
-  if empty(a:stack)  " initial value
-    let jdx = -1
-  else  " restrict values
-    let jdx = min([max([a:idx, 0]), len(a:stack) - 1])
-  endif
-  let g:[a:head . '_stack'] = a:stack
-  let g:[a:head . '_loc'] = jdx
+function! stack#clear_stack(head) abort
+  try
+    call remove(g:, a:head . '_stack')
+    call remove(g:, a:head . '_loc')
+    echom "Cleared '" . a:head . "' buffer stack"
+  catch
+    echohl WarningMsg
+    echom "Error: Buffer stack '" . a:head . "' does not exist"
+    echohl None
+  endtry
 endfunction
-function! stack#update_stack(head, scroll, ...) abort  " update location and possibly append
-  let nmax = a:scroll ? -1 : 5  " number to search
-  let [stack, idx, name, kdx] = s:query_stack(a:head, bufnr(), nmax)
+function! stack#update_stack(echo, head, scroll, ...) abort
+  let [stack, idx, name, kdx] = s:get_stack(a:head, bufnr(), a:scroll ? -1 : 5)
   if empty(name) | return | endif
   if a:0 && a:1 >= 0 && a:1 < len(stack)  " scroll to input index
     let jdx = a:1
@@ -79,83 +77,85 @@ function! stack#update_stack(head, scroll, ...) abort  " update location and pos
   else  " float existing entry
     call add(stack, remove(stack, kdx)) | let jdx = len(stack) - 1
   endif
-  call s:update_stack(a:head, stack, jdx)
-  if v:vim_did_enter  " suppress on startup
+  call s:set_stack(a:head, stack, jdx)
+  if a:echo && v:vim_did_enter  " suppress on startup
     if jdx != idx || name != get(stack, idx, '')
-      call timer_start(100, function('s:echo_stack', [a:head, name, jdx, len(stack)]))
+      call timer_start(100, function('s:show_name', [a:head, name, jdx, len(stack)]))
     endif
   endif
 endfunction
 
 " Move across a custom-built buffer stack using the input buffer-changing function
 " Note: Here 1 (0) goes backward (forward) in history, else goes to a default next
-" buffer, and popping is only used for recent window stack (are careful to keep
-" synced). Input function should return non-zero value on failure.
-function! stack#pop_stack(head, ...) abort
-  let buf = a:0 ? a:1 : ''
-  let [stack, idx, name, kdx] = s:query_stack(a:head, buf, -1)
-  if kdx == -1 | return | endif  " remove current item, generally
-  call remove(stack, kdx)
-  let idx = idx > kdx ? idx - 1 : idx  " if idx == jdx float to next entry
-  call s:update_stack(a:head, stack, idx)
+" buffer. Functions should return non-zero on failure (either manually or through
+" vim error triggered on function with abort-label, which returns -1 by default).
+function! stack#pop_stack(head, name) abort
+  let convert = type(a:name) == 1 && a:name =~# '^\d\+$'
+  let [num, nmax, name] = [0, 100, convert ? str2nr(a:name) : a:name]
+  while num < nmax
+    let [stack, idx, name, kdx] = s:get_stack(a:head, name, -1)
+    if kdx == -1 | break | endif  " remove current item, generally
+    let num += 1 | call remove(stack, kdx)
+    let idx = idx > kdx ? idx - 1 : idx  " if idx == jdx float to next entry
+    call s:set_stack(a:head, stack, idx)
+  endwhile
 endfunction
 function! stack#push_stack(func, head, ...) abort
-  let bnr = bufnr()  " current buffer
-  let scroll = a:0 > 0 && !type(a:1)
-  let stack = get(g:, a:head . '_stack', [])
-  let idx = get(g:, a:head . '_loc', -1)
-  if !scroll  " 'user-input'/'default' e.g. stack#push_stack(...[, ''])
+  let [stack, idx; rest] = s:get_stack(a:head)
+  if !a:0 || type(a:1)  " user-input or default e.g. stack#push_stack(...[, ''])
     let jdx = -1
     let args = copy(a:000)
-  else  " 'next'/'previous' e.g. stack#push_stack(..., 1)
+    let scroll = 0
+  else  " next or previous e.g. stack#push_stack(..., [1|-1])
     let jdx = idx + a:1  " arbitrary offset
     let kdx = a:1 > 0 ? idx + 1 : a:1 < 0 ? idx - 1 : idx  " error condition
     if kdx < 0 || kdx >= len(stack)
-      let direc = a:1 < 0 ? 'start' : 'end'
+      let direc = a:1 < 0 ? 'bottom' : 'top'
       echohl WarningMsg
-      echom 'Error: At ' . direc . " of '" . a:head . "' stack"
+      echom 'Error: At ' . direc . ' of ' . a:head . ' stack'
       echohl None | return
     endif
     let jdx = min([max([jdx, 0]), len(stack) - 1])
     let args = [stack[jdx]]
+    let scroll = 1
   endif
   let status = call(a:func, args)  " echo after jumping
   if status != 0 | return | endif
-  call stack#update_stack(a:head, scroll, jdx)
+  call stack#update_stack(1, a:head, scroll, jdx)
 endfunction
 
 " Reset recent files
-" Note: Recent stack will always be in sync before scrolling, since b:recent_scroll
+" Note: Recent stack will always be in sync before scrolling, since b:tab_scroll
 " is only true after scrolling to a window and before leaving that window (TabLeave).
 " Note: This only triggers after spending time on window instead of e.g. browsing
 " across tabs with maps, similar to jumplist. Then can access jumps in each window.
-function! stack#reset_recent() abort
+function! stack#reset_tabs() abort
   for bnr in tabpagebuflist()  " tab page buffers
-    call setbufvar(bnr, 'recent_scroll', 0)
+    call setbufvar(bnr, 'tab_scroll', 0)
   endfor
 endfunction
 function! stack#scroll_sink(...) abort
-  call call('file#open_drop', [1] + a:000)
-  let b:recent_name = expand('%:p')
+  call call('file#open_drop', [1] + a:000)  " triggers TabLeave and TabEnter
+  let b:tab_name = expand('%:p')
   for bnr in tabpagebuflist()
-    call setbufvar(bnr, 'recent_scroll', 1)
+    call setbufvar(bnr, 'tab_scroll', 1)
   endfor
 endfunction
-function! stack#scroll_recent(...) abort
+function! stack#scroll_tabs(...) abort
   let bnr = bufnr()
   let scroll = a:0 ? a:1 : v:count1
-  if !get(b:, 'recent_scroll', 0)
-    call stack#update_recent()  " possibly float to top
+  if !get(b:, 'tab_scroll', 0)
+    call stack#update_tabs()  " possibly float to top
   endif
-  call stack#push_stack(function('stack#scroll_sink'), 'recent', scroll)
+  call stack#push_stack(function('stack#scroll_sink'), 'tab', scroll)
 endfunction
-function! stack#update_recent() abort  " set current buffer
+function! stack#update_tabs() abort  " set current buffer
   let skip = index(g:tags_skip_filetypes, &filetype)
-  let scroll = get(b:, 'recent_scroll', 0)
-  let b:recent_name = expand('%:p')  " in case unset
-  let b:recent_scroll = scroll  " in case unset
+  let scroll = get(b:, 'tab_scroll', 0)
+  let b:tab_name = expand('%:p')  " required for update stack
+  let b:tab_scroll = scroll  " in case unset
   if skip != -1 || line('$') <= 1 || empty(&filetype)
     if len(tabpagebuflist()) > 1 | return | endif
   endif
-  call stack#update_stack('recent', scroll, -1)  " possibly update stack
+  call stack#update_stack(0, 'tab', scroll, -1)  " possibly update stack
 endfunction
