@@ -241,7 +241,8 @@ function! file#open_drop(...) abort
     else  " create new tab
       call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')
     end
-    if !quiet && !blank && !panel && !fugitive  " echo path
+    if !quiet && !blank && !panel && !fugitive && abspath !=# expand('%:p')
+      echom 'Buffers: ' . bnr . ' ' . bufnr('')
       call timer_start(1, function('file#echo_path', [path]))
     endif
   endfor

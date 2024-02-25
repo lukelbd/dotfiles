@@ -189,32 +189,40 @@ endfunction
 " Override of FZF :Marks to implement :Drop switching
 " Note: Normally the fzf function calls `A-Z, and while vim permits multi-file marks,
 " it does not have an option to open in existing tabs like 'showbufs' for loclist,
-function! s:mark_sink(lines) abort
-  if len(a:lines) < 2 | return | endif
-  return mark#goto_mark(matchstr(a:lines[1], '\S'))
+function! mark#next_mark(...) abort
+  let cnt = a:0 ? a:1 : v:count1
+  let mrk = get(g:, 'mark_name', '')
+  if !empty(mrk) && line('.') != line("'" . mrk)
+    let cnt -= cnt > 0 ? 1 : -1
+    call mark#goto_mark(mrk)
+  endif
+  call stack#push_stack('mark', 'mark#goto_mark', cnt)
 endfunction
-function! mark#goto_mark(mrk) abort
+function! mark#goto_mark(...) abort
+  if !a:0 || empty(a:1) | return | endif
+  let mrk = matchstr(a:1, '\S')
   let mrks = getmarklist()
-  let mrks = filter(mrks, "v:val['mark'] =~ \"'\" . a:mrk")
+  let mrks = filter(mrks, {idx, val -> val.mark =~# "'" . mrk})
   if empty(mrks)  " avoid 'press enter' due to register
-    let cmd = 'echohl WarningMsg '
-    \ . '| echom "Error: Mark ''' . a:mrk . ''' is unset"'
-    \ . '| echohl None'
+    let cmd = 'echohl WarningMsg | '
+    let cmd .= 'echom "Error: Mark ''' . mrk . ''' is unset" | '
+    let cmd .= 'echohl None'
   else  " note this does not affect jumplist
     call file#open_drop(mrks[0]['file'])
-    let cmd = "call setpos('.', " . string(mrks[0]['pos']) . ')'
+    let pos = string(mrks[0]['pos'])  " string list
+    let cmd = "call setpos('.', " . pos . ')'
   endif
+  let g:mark_name = mrk  " mark stack navigation
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! mark#fzf_marks(...) abort
   let snr = utils#find_snr('/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let lines = split(execute('silent marks'), "\n")
-  let format = snr . 'format_mark'
   let options = {
-    \ 'source': extend(lines[0:0], map(lines[1:], 'call(format, [v:val])')),
-    \ 'sink*': function('s:mark_sink'),
-    \ 'options': '+m -x --ansi --tiebreak=index --header-lines 1 --tiebreak=begin --prompt "Marks> "'
+    \ 'source': extend(lines[0:0], map(lines[1:], 'call(' . snr . 'format_mark, [v:val])')),
+    \ 'options': '+m -x --ansi --tiebreak=index --header-lines 1 --tiebreak=begin --prompt "Marks> "',
+    \ 'sink': function('stack#push_stack', ['mark', 'mark#goto_mark']),
   \ }
   return call(snr . 'fzf', ['marks', options, a:000])
 endfunction
@@ -229,9 +237,7 @@ function! s:match_delete(id)
 endfunction
 function! mark#del_marks(...) abort
   let highlights = get(g:, 'mark_highlights', {})
-  let recents = get(g:, 'mark_recents', [])
   let g:mark_highlights = highlights
-  let g:mark_recents = recents
   let mrks = a:0 ? a:000 : keys(highlights)
   for mrk in mrks
     if has_key(highlights, mrk) && len(highlights[mrk]) > 1
@@ -240,8 +246,8 @@ function! mark#del_marks(...) abort
     if has_key(highlights, mrk)
       call remove(highlights, mrk)
     endif
-    call filter(recents, 'v:val !=# "' . mrk . '"')
     exe 'delmark ' . mrk
+    call stack#pop_stack('mark', mrk)
   endfor
   call feedkeys("\<Cmd>echom 'Deleted marks: " . join(mrks, ' ') . "'\<CR>", 'n')
 endfunction
@@ -249,33 +255,31 @@ endfunction
 " Add the mark and highlight the line
 function! mark#set_marks(mrk) abort
   let highlights = get(g:, 'mark_highlights', {})
-  let recents = get(g:, 'mark_recents', [])
+  let g:mark_name = a:mrk  " mark stack
   let g:mark_highlights = highlights
-  let g:mark_recents = recents
-  call add(recents, a:mrk)  " quick jumping later
-  let name = a:mrk =~# '\u' ? 'upper_'. a:mrk : 'lower_' . a:mrk
-  let name = 'mark_'. name  " different name for capital marks
   call feedkeys('m' . a:mrk, 'n')  " apply the mark
+  call stack#pop_stack('mark', a:mrk)  " update mark stack
+  call stack#push_stack('mark', '', a:mrk)  " update mark stack
+  let name = 'mark_'. (a:mrk =~# '\u' ? 'upper_'. a:mrk : 'lower_' . a:mrk)
+  let base = a:mrk =~# '\u' ? 65 : 97
+  let idx = a:mrk =~# '\a' ? char2nr(a:mrk) - base : 0
   if has_key(highlights, a:mrk)
     call s:match_delete(highlights[a:mrk][1])
     call remove(highlights[a:mrk], 1)
-  else  " not previously defined
-    let base = a:mrk =~# '\u' ? 65 : 97
-    let idx = a:mrk =~# '\a' ? char2nr(a:mrk) - base : 0
+  else  " sign not defined
     let gui_color = s:gui_colors[idx % len(s:gui_colors)]
     let cterm_color = s:cterm_colors[idx % len(s:cterm_colors)]
     exe 'highlight ' . name . ' ctermbg=' . cterm_color . ' guibg=' . gui_color
-    if s:use_signs  " see :help sign define
-      call sign_define(name, {'linehl': name, 'text': "'" . a:mrk})
-    endif
     let highlights[a:mrk] = [[gui_color, cterm_color]]
+    if s:use_signs | call sign_define(name, {'linehl': name, 'text': "'" . a:mrk}) | endif
   endif
-  if !s:use_signs
-    call add(highlights[a:mrk], matchadd(name, ".*\\%'" . a:mrk . '.*', 0))
+  if s:use_signs
+    let sid = s:sign_id | let s:sign_id += 1
+    call add(highlights[a:mrk], sid)
+    call sign_place(sid, '', name, '%', {'lnum': line('.')})  " empty group critical
   else
-    let sign_id = s:sign_id
-    let s:sign_id += 1
-    call sign_place(sign_id, '', name, '%', {'lnum': line('.')})  " empty group critical
-    call add(highlights[a:mrk], sign_id)
+    let regex = '.*\%''' . a:mrk . '.*'
+    let hlid = matchadd(name, regex, 0)
+    call add(highlights[a:mrk], hlid)
   endif
 endfunction

@@ -15,7 +15,8 @@ function! s:get_stack(head, ...) abort  " remove in future
   let idx = a:head ==# 'tab' ? get(g:, 'recent_loc', -1) : -1
   let stack = get(g:, a:head . '_stack', stack)
   let idx = get(g:, a:head . '_loc', idx)
-  let name = a:0 < 1 ? '' : type(a:1) ? a:1 : getbufvar(a:1, a:head . '_name', '')
+  let key = a:head . '_name'  " variable name
+  let name = !a:0 ? '' : type(a:1) ? a:1 : getbufvar(a:1, key, get(g:, key, ''))
   let nmax = min([a:0 < 2 ? 0 : a:2 >= 0 ? a:2 : len(stack), len(stack)])
   let part = nmax ? reverse(copy(stack))[:nmax - 1] : []
   let jdx = empty(name) ? -1 : index(part, name)
@@ -26,7 +27,7 @@ endfunction
 " Stack printing operations
 " Note: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
 " functions are for autocommands or normal mode mappings
-function! s:show_name(head, name, ...) abort
+function! stack#show_loc(head, name, ...) abort
   if type(a:name) == 3
     let label = join(a:name, ':')
   elseif !bufexists(a:name)
@@ -47,7 +48,7 @@ function! stack#show_stack(head) abort
   for jdx in range(len(stack))
     let pad = idx == jdx ? '> ' : '  '
     let pad .= repeat(' ', digits - len(string(jdx)))
-    call s:show_name(pad . jdx, stack[jdx])
+    call stack#show_loc(pad . jdx, stack[jdx])
   endfor
 endfunction
 
@@ -65,8 +66,9 @@ function! stack#clear_stack(head) abort
     echohl None
   endtry
 endfunction
-function! stack#update_stack(echo, head, scroll, ...) abort
+function! stack#update_stack(head, scroll, ...) abort
   let [stack, idx, name, kdx] = s:get_stack(a:head, bufnr(), a:scroll ? -1 : 5)
+  let verbose = a:0 > 1 ? a:2 : 0  " verbose mode
   if empty(name) | return | endif
   if a:0 && a:1 >= 0 && a:1 < len(stack)  " scroll to input index
     let jdx = a:1
@@ -78,9 +80,9 @@ function! stack#update_stack(echo, head, scroll, ...) abort
     call add(stack, remove(stack, kdx)) | let jdx = len(stack) - 1
   endif
   call s:set_stack(a:head, stack, jdx)
-  if a:echo && v:vim_did_enter  " suppress on startup
+  if verbose && v:vim_did_enter  " suppress on startup
     if jdx != idx || name != get(stack, idx, '')
-      call timer_start(100, function('s:show_name', [a:head, name, jdx, len(stack)]))
+      call timer_start(100, function('stack#show_loc', [a:head, name, jdx, len(stack)]))
     endif
   endif
 endfunction
@@ -100,7 +102,7 @@ function! stack#pop_stack(head, name) abort
     call s:set_stack(a:head, stack, idx)
   endwhile
 endfunction
-function! stack#push_stack(func, head, ...) abort
+function! stack#push_stack(head, func, ...) abort
   let [stack, idx; rest] = s:get_stack(a:head)
   if !a:0 || type(a:1)  " user-input or default e.g. stack#push_stack(...[, ''])
     let jdx = -1
@@ -119,9 +121,9 @@ function! stack#push_stack(func, head, ...) abort
     let args = [stack[jdx]]
     let scroll = 1
   endif
-  let status = call(a:func, args)  " echo after jumping
+  let status = empty(a:func) ? 0 : call(a:func, args)
   if status != 0 | return | endif
-  call stack#update_stack(1, a:head, scroll, jdx)
+  call stack#update_stack(a:head, scroll, jdx, 1)  " verbose mode
 endfunction
 
 " Reset recent files
@@ -147,7 +149,7 @@ function! stack#scroll_tabs(...) abort
   if !get(b:, 'tab_scroll', 0)
     call stack#update_tabs()  " possibly float to top
   endif
-  call stack#push_stack(function('stack#scroll_sink'), 'tab', scroll)
+  call stack#push_stack('tab', function('stack#scroll_sink'), scroll)
 endfunction
 function! stack#update_tabs() abort  " set current buffer
   let skip = index(g:tags_skip_filetypes, &filetype)
@@ -157,5 +159,5 @@ function! stack#update_tabs() abort  " set current buffer
   if skip != -1 || line('$') <= 1 || empty(&filetype)
     if len(tabpagebuflist()) > 1 | return | endif
   endif
-  call stack#update_stack(0, 'tab', scroll, -1)  " possibly update stack
+  call stack#update_stack('tab', scroll)  " quiet mode
 endfunction

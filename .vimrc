@@ -550,14 +550,14 @@ nnoremap <Leader>Q <Cmd>Maps<CR>
 " add shortcut to search for all non-ASCII chars (previously used all escape chars).
 " Note: Here 'Man' overrides buffer-local 'Man' command defined on man filetypes, so
 " must use autoload function. Also see: https://stackoverflow.com/a/41168966/4970632
-command! -complete=shellcmd -nargs=? Help call stack#push_stack('shell#help_page', 'help', <f-args>)
-command! -complete=shellcmd -nargs=? Man call stack#push_stack('shell#man_page', 'man', <f-args>)
+command! -complete=shellcmd -nargs=? Help call stack#push_stack('help', 'shell#help_page', <f-args>)
+command! -complete=shellcmd -nargs=? Man call stack#push_stack('man', 'shell#man_page', <f-args>)
 command! -nargs=0 ClearMan call stack#clear_stack('man')
 command! -nargs=0 ShowHelp call stack#show_stack('help')
 command! -nargs=0 ShowMan call stack#show_stack('man')
 command! -nargs=? PopMan call stack#pop_stack('man', <f-args>)
-nnoremap <Leader>N <Cmd>call stack#push_stack('shell#help_page', 'help')<CR>
-nnoremap <Leader>M <Cmd>call stack#push_stack('shell#man_page', 'man')<CR>
+nnoremap <Leader>N <Cmd>call stack#push_stack('help', 'shell#help_page')<CR>
+nnoremap <Leader>M <Cmd>call stack#push_stack('man', 'shell#man_page')<CR>
 nnoremap <Leader>n <Cmd>call shell#fzf_help()<CR>
 nnoremap <Leader>m <Cmd>call shell#fzf_man()<CR>
 
@@ -597,12 +597,16 @@ augroup jumplist_setup
   au!
   au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
 augroup END
+command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
+command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
 noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
 noremap <Right> <Cmd>call mark#goto_jump(v:count1)<CR>
 noremap <C-n> <Cmd>call mark#goto_change(-v:count1)<CR>
 noremap <F4> <Cmd>call mark#goto_change(v:count1)<CR>
+noremap g: <Cmd>call mark#fzf_jumps()<CR>
+noremap z: <Cmd>call mark#fzf_changes()<CR>
 
 " Navigate matches/sentences/paragraphs without adding to jumplist
 " Note: Core vim idea is that these commands take us far away from cursor
@@ -726,8 +730,6 @@ noremap zj ]z
 " viminfo, so use them. Also numbered marks are mostly internal, can be configured
 " to restore cursor position after restarting, also used in viminfo.
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
-command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
-command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap <Leader>- <Cmd>call mark#del_marks()<CR>
@@ -735,8 +737,8 @@ noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap ; <Cmd>call mark#goto_mark(utils#translate_name('`'))<CR>
 noremap g; <Cmd>call mark#fzf_marks()<CR>
-noremap g: <Cmd>call mark#fzf_jumps()<CR>
-noremap z: <Cmd>call mark#fzf_changes()<CR>
+noremap [r <Cmd>call mark#next_mark(-v:count1)<CR>
+noremap ]r <Cmd>call mark#next_mark(v:count1)<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -1802,15 +1804,15 @@ if s:plug_active('vim-lsp')
   command! -nargs=? ClearDoc call stack#clear_stack('doc')
   command! -nargs=? ShowDoc call stack#show_stack('doc')
   command! -nargs=? PopDoc call stack#pop_stack('doc', <f-args>)
-  command! -nargs=? Doc call stack#push_item('python#doc_page', 'doc', <f-args>)
+  command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
   noremap zd <Cmd>LspReferences<CR>
   noremap zD <Cmd>LspRename<CR>
   noremap gd <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
   noremap gD gdzv<Cmd>noh<CR>
-  noremap [r <Cmd>LspPreviousReference<CR>
-  noremap ]r <Cmd>LspNextReference<CR>
+  noremap [d <Cmd>LspPreviousReference<CR>
+  noremap ]d <Cmd>LspNextReference<CR>
   noremap <Leader>d <Cmd>LspPeekDefinition<CR>
-  noremap <Leader>f <Cmd>call stack#push_stack('python#doc_page', 'doc')<CR>
+  noremap <Leader>f <Cmd>call stack#push_stack('doc', 'python#doc_page')<CR>
   noremap <Leader>F <Cmd>call python#doc_search()<cr>
   noremap <Leader>a <Cmd>LspHover --ui=float<CR>
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>

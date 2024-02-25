@@ -294,7 +294,7 @@ function! python#doc_search() abort
   call fzf#run(fzf#wrap({
     \ 'source': python#doc_source(),
     \ 'options': '--no-sort --prompt="pydoc> "',
-    \ 'sink': function('stack#push_stack', ['python#doc_page', 'doc'])
+    \ 'sink': function('stack#push_stack', ['doc', 'python#doc_page'])
     \ }))
 endfunction
 
