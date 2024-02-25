@@ -112,8 +112,9 @@ endfunction
 " Also ensure functions accept :[range]call function(args) for consistency with vim
 " standard paradigm and so they can be called with e.g. V<motion>:call func().
 function! utils#motion_func(funcname, args) abort
-  let funcstring = a:funcname . '(' . string(a:args)[1:-2] . ')'
-  let s:operator_func = funcstring
+  let string = string(a:args)[1:-2]
+  let string = a:funcname . '(' . string . ')'
+  let s:operator_func = string
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range
     return ":call utils#operator_func('')\<CR>"
   elseif mode() ==# 'n'

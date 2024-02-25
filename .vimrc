@@ -352,25 +352,29 @@ for s:key in [
   endif
 endfor
 
-" Enable left mouse click in visual mode to extend selection, normally impossible
-" Note: Marks y and z are reserved for internal map utilities.
-" Todo: Modify enter-visual mode maps! See: https://stackoverflow.com/a/15587011/4970632
-" Want to be able to *temporarily turn scrolloff to infinity* when
-" enter visual mode, to do that need to map vi and va stuff.
-nnoremap gv gv
-nnoremap gx gi
+" Improve visual mode mouse selections and insert toggling
+" Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
+" use 'y' for mouse click location and 'z' for visual mode entrance location, then
+" start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
 nnoremap v mzv
 nnoremap V mzV
+nnoremap <C-v> <Cmd>WrapToggle 0<CR>mz<C-v>
+vnoremap <expr> I mode() =~? '^v' ? '<Esc><Cmd>keepjumps normal! `<<CR>i' : 'I'
+vnoremap <expr> A mode() =~? '^v' ? '<Esc><Cmd>keepjumps normal! `><CR>a' : 'A'
+vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
+
+" Improve visual mode navigation
+" Note: Toggling e.g. 'v' in 'v' mode normally turns off visual mode and e.g.
+" 'V' switches to line-visual mode with same starting position. Here use <CR>
+" to turn off visual mode and other keys to start that visual mode at cursor.
+nnoremap gv gv
+nnoremap gx gi
 nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
 nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
-nnoremap <expr> <C-v> (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
+vnoremap <CR> <C-c>
 vnoremap v <Esc>mzv
 vnoremap V <Esc>mzV
-vnoremap <CR> <C-c>
-vnoremap <LeftMouse> <LeftMouse>my`z<Cmd>exe 'normal! ' . visualmode()<CR>`y<Cmd>delmark y<CR>
-vnoremap <expr> <C-v> '<Esc>' . (&l:wrap ? '<Cmd>WrapToggle 0<CR>' : '') . 'mz<C-v>'
-vnoremap <expr> I mode() =~# "\<C-v>" ? 'I' : '<Esc>`<i'
-vnoremap <expr> A mode() =~# "\<C-v>" ? 'A' : '<Esc>`>a'
+vnoremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
 
 
 "-----------------------------------------------------------------------------"
@@ -798,17 +802,20 @@ noremap <expr> \\a edit#sort_lines_expr() . 'ip'
 noremap <expr> \r edit#reverse_lines_expr()
 noremap <expr> \\r edit#reverse_lines_expr() . 'ip'
 
+" Replace tabs with spaces
+" Note: Could also use :retab?
+noremap <expr> \<Tab> edit#replace_regex_expr(
+  \ 'Fixed tabs.',
+  \ '\t', repeat(' ', &tabstop))
+
 " Remove trailing whitespace
 " See: https://stackoverflow.com/a/3474742/4970632)
+noremap <expr> \t edit#replace_regex_expr(
+  \ 'Removed trailing whitespace.',
+  \ '\s\+\ze$', '')
 noremap <expr> \w edit#replace_regex_expr(
   \ 'Removed trailing whitespace.',
   \ '\s\+\ze$', '')
-
-" Replace tabs with spaces
-" Note: Could also use :retab?
-noremap <expr> \t edit#replace_regex_expr(
-  \ 'Fixed tabs.',
-  \ '\t', repeat(' ', &tabstop))
 
 " Replace consecutive spaces on current line with one space
 " only if they're not part of indentation
@@ -959,7 +966,7 @@ call s:repeat_map('ch', 'SwapLeft', '<Cmd>call edit#swap_chars(1)<CR>', 'n')
 call s:repeat_map('cl', 'SwapRight', '<Cmd>call edit#swap_chars(0)<CR>', 'n')
 call s:repeat_map('ck', 'SwapAbove', '<Cmd>call edit#swap_lines(1)<CR>', 'n')
 call s:repeat_map('cj', 'SwapBelow', '<Cmd>call edit#swap_lines(0)<CR>', 'n')
-call s:repeat_map('cL', 'SliceLine', 'myi<CR><Esc>`y<Cmd>delmark y<CR>', 'n')
+call s:repeat_map('cL', 'SliceLine', 'myi<CR><Esc><Cmd>keepjumps normal! `y<Cmd>delmark y<CR>', 'n')
 
 " Single character mappings
 " Here prefer characterize since usually has more info
@@ -1614,7 +1621,7 @@ endif
 if s:plug_active('vim-matchup') || s:plug_active('vim-indexed-search')
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
-  let g:matchup_matchparen_enabled = 0  " enable matchupt matching on startup
+  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
   let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
   let g:matchup_surround_enabled = 1  " enable 'ya%' 'va%' etc. mappings
   let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
