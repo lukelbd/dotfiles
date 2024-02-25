@@ -220,7 +220,7 @@ function! mark#fzf_marks(...) abort
   if empty(snr) | return | endif
   let lines = split(execute('silent marks'), "\n")
   let options = {
-    \ 'source': extend(lines[0:0], map(lines[1:], 'call(' . snr . 'format_mark, [v:val])')),
+    \ 'source': extend(lines[0:0], map(lines[1:], {idx, val -> call(snr . 'format_mark', [v:val])})),
     \ 'options': '+m -x --ansi --tiebreak=index --header-lines 1 --tiebreak=begin --prompt "Marks> "',
     \ 'sink': function('stack#push_stack', ['mark', 'mark#goto_mark']),
   \ }

@@ -199,8 +199,9 @@ function! s:translate_count(mode, ...) abort
     let [base, min, max] = [96, 0, 13]
   endif
   if cnt == 0 && a:mode =~# '[m`]'
-    let stack = get(g:, 'mark_stack', [])  " goto most recent and create adjacent
-    let prev = empty(stack) ? a:mode ==# 'm' ? '@' : 'A' : stack[-1]  " @ + 1 == A
+    let stack = get(g:, 'mark_stack', [])  " recent mark stack
+    let name = get(g:, 'mark_name', '')  " position in stack
+    let prev = a:mode ==# '`' ? empty(name) ? 'A' : name : get(stack, -1, '@')  " @ + 1 == A
     let char = a:mode ==# 'm' ? char2nr(prev) + 1 : char2nr(prev)
     let name = nr2char(min([char, base + max]))
   else
