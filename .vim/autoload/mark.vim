@@ -12,13 +12,11 @@ let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'Dark
 
 " Push current location to top of jumplist
 " Note: This prevents resetting when navigating backwards and forwards through
-" jumplist or when navigating within paragraph of most recently set jump
-function! s:echo_location(name, idx, size) abort
-  let value = (a:size - a:idx) . '/' . (a:size - 1)
-  let label = toupper(a:name[0]) . a:name[1:]
-  let cmd = "echom '" . label . ' location: ' . value . "'"
-  call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
-endfunction
+" jumplist or when navigating within paragraph of most recently set jump. Also remap
+" 'jumping' motions n/N/{/}/(/)/`/[[/]] by prepending :keepjumps to reduce entries.
+" Note: Jumplist is managed from the bottom-up by remapping normal-mode 'jumping'
+" motions and conditionally updating jumplist on CursorHold. Still navigate the
+" actual jumplist using <C-o>/<C-i> navigation keys. Compare to changelist below.
 function! mark#push_jump() abort
   let [line1, line2] = [line("'{"), line("'}")]
   let [jlist, jloc] = getjumplist()
@@ -35,131 +33,162 @@ function! mark#push_jump() abort
   endif
 endfunction
 
-" Override of FZF :Jumps to work with custom utility and navigate with :Drop
-" Note: As with :Changes this removes the --bind start:pos:etc flag that triggers
-" errors and also implements new sink for navigating to paths with :Drop.
-function! s:jump_sink(lines) abort
-  let [key; lines] = a:lines  " first item is key binding
-  if empty(lines) | return | endif
-  let line = lines[-1]  " use final selection passed
-  let idx = index(s:jumplist, line)
-  if idx == -1 || idx == s:jumploc | return | endif | call s:jump_select(idx)
-endfunction
-function! s:jump_update() abort
-  let lines = split(execute('silent jumps'), "\n")
-  let idx = match(lines, '\v^\s*\>')
-  let idx = idx == -1 ? len(lines) - 1 : idx
-  let [s:jumploc, s:jumplist] = [idx, lines]
-endfunction
-function! s:jump_select(loc) abort
-  if a:loc == s:jumploc | return | endif
-  let jump = s:jumplist[a:loc]
-  let tail = substitute(jump, '^\s*\(\d\+\s\+\)\{3}', '', '')
-  if bufexists(tail)  " i.e. not text within this buffer but a different buffer
-    let cmd = "call file#open_drop('" . tail . "')"
-    let keys = "\<Cmd>" . cmd . "\<CR>"
+" Generate jump and change lists
+" Note: Similar to how stack.vim 'floats' recent tab stack entries to the top of the
+" stack of the current tab is in the most recent five, this filters jump and change
+" list entries to ensure identical line numbers are at least 10 indices apart.
+function! s:get_list(changes, ...) abort  " return location list with unique lines
+  let [tnr, wnr, bnr] = a:0 ? a:000 : [tabpagenr(), winnr(), bufnr()]
+  if a:changes
+    let [opts, loc_or_len] = getchangelist(bnr)
   else
-    let key = a:loc > s:jumploc ? "\<C-i>" : "\<C-o>"
-    let keys = abs(a:loc - s:jumploc) . key
+    let [opts, loc_or_len] = getjumplist(wnr, tnr)
   endif
+  let zero = -1  " position to preserve amid filtering
+  let base = bufnr() == bnr ? len(opts) - loc_or_len : 0
+  for idx in range(len(opts))
+    let iloc = base + idx - len(opts)  " navigation required to arrive at positions
+    let zero = iloc == 0 ? 0 : zero
+    let opts[idx]['loc'] = iloc  " e.g. base = 0, idx = n - 1, -> loc = -1
+  endfor
+  let opts = filter(opts,
+    \ {idx, val -> val.loc == zero || !empty(join(getbufline(bnr, val.lnum), ''))})
+  let opts = filter(copy(opts),
+    \ {idx, val -> val.loc == zero || empty(filter(opts[idx + 1:idx + 20], 'v:val.lnum == ' . val.lnum))})
+  let iloc = index(map(copy(opts), 'v:val.loc'), 0)
+  let iloc = iloc < 0 ? len(opts) : iloc
+  return [opts, iloc]
+endfunction
+
+" Navigate jump and change lists
+" Todo: Make this compatible with 'getmarklist()' and support mark navigation.
+" Note: The getjumplist (getchangelist) functions return the length of the list
+" instead of the current position for external windows, so when switching from
+" current window, navigate to the top of the list before the requested user position.
+function! s:feed_list(changes, iloc, ...) abort
+  " vint: -ProhibitUnnecessaryDoubleQuote
+  let [key1, key2] = a:changes ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
+  let [tnr, wnr] = a:0 ? a:000 : [tabpagenr(), winnr()]
+  let bnr = bufnr()  " ensure buffer has not changed
+  exe tnr . 'tabnext' | exe wnr . 'wincmd w'
+  let init = bnr == bufnr() ? '' : '1000' . key2  " initialize at end
+  let ikey = a:iloc > 0 ? key2 : key1  " motion key
+  let keys = init . abs(a:iloc) . ikey  " go to selection
   call feedkeys(keys . 'zv', 'n')
 endfunction
-function! mark#goto_jump(count) abort
-  call s:jump_update()
-  let idx = s:jumploc + a:count
-  let jdx = min([idx, len(s:jumplist) - 1])
-  let jdx = max([jdx, 0])
-  if abs(a:count) == 1 && idx >= len(s:jumplist)
-    echohl WarningMsg | echom 'Error: At end of jumplist' | echohl None
-  elseif abs(a:count) == 1 && idx <= 0  " differs from changelist, but empirically tested
-    echohl WarningMsg | echom 'Error: At start of jumplist' | echohl None
-  else
-    call s:jump_select(jdx)
-    call s:echo_location('jump', jdx, len(s:jumplist))
+function! s:goto_list(changes, ...) abort  " navigate to nth location in list
+  let cnt = a:0 ? a:1 : v:count
+  if cnt == 0 | return | endif
+  let [opts, idx] = s:get_list(a:changes)
+  let jdx = idx + cnt
+  let name = a:changes ? 'change' : 'jump'
+  let direc = cnt < 0 ? 'start' : 'end'
+  if abs(cnt) == 1 && (jdx < 0 || jdx >= len(opts))
+    echohl WarningMsg
+    echom 'Error: At ' . direc . ' of ' . name . 'list'
+    echohl None | return
   endif
+  let value = (jdx + 1) . '/' . len(opts)
+  let name = toupper(name[0]) . name[1:]
+  let msg = "echom '" . name . ' location: ' . value . "'"
+  call s:feed_list(a:changes, opts[jdx]['loc'])
+  call feedkeys("\<Cmd>" . msg . "\<CR>", 'n')
+endfunction
+
+" Generate location list
+" Note: Here 'loc' indicates the negative <C-o> (g;) or positive <C-i> (g,) presses
+" required to arrive at a given position in the location list (change list). If the
+" list is from another buffer then getjumplist (getchangelist) only returns the length
+" of the list not the position, so will always start at the top of the list after
+" switching buffers before navigating to the requested position with key presses.
+function! s:fmt_list(snr, tnr, wnr, bnr, item) abort
+  let format = '%6s  %3d:%1d %5d %3d  %s'
+  let iloc = get(a:item, 'loc', 0)  " should be present
+  let head = printf('%4d', -iloc)  " backwards positive
+  let head = iloc == 0 ? '>' . head : head
+  let tail = get(getbufline(a:bnr, a:item.lnum), 0, '')
+  let line = printf(format, head, a:tnr, a:wnr, a:item.lnum, a:item.col, tail)
+  let line = substitute(line, '[0-9]\+', '\=' . a:snr . 'yellow(submatch(0), "Number")', '')
+  return line
+endfunction
+function! s:list_sink(changes, line) abort
+  if a:line =~# '^\s*>\s*$' | return | endif
+  let regex = '^\s*\([+-]\?\d\+\)\s\+\(\d\+\):\(\d\+\)'  " -1 2:1 -> loc 1 tab 2 win 1
+  let parts = matchlist(a:line, regex, '', '')
+  if empty(parts)
+    echohl ErrorMsg
+    echom "Error: Invalid selection '" . a:line . "'"
+    echohl None | return
+  endif
+  let [iloc, tnr, wnr; rest] = map(parts[1:], 'str2nr(v:val)')
+  return s:feed_list(a:changes, -iloc, tnr, wnr)  " backwards is positive
+endfunction
+function! s:list_source(changes) abort
+  let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
+  if empty(snr) | return | endif
+  let name = printf('%6s', a:changes ? 'change' : 'jump')
+  let paths = map(tags#buffer_paths(), 'resolve(v:val[1])')  " sorted by recent use
+  if paths[0] != expand('%:p') | call insert(paths, expand('%:p')) | endif
+  let table = [name . '  tab:w  line col  text/file']
+  for path in paths
+    let bnr = bufnr(resolve(path))
+    if bnr == -1 | continue | endif
+    let wid = bnr == bufnr() ? win_getid() : get(win_findbuf(bnr), 0, 0)
+    let [tnr, wnr] = win_id2tabwin(wid)  " tab and window number
+    let [opts, iloc] = s:get_list(a:changes, tnr, wnr, bnr)
+    let items = map(opts, {idx, val -> s:fmt_list(snr, tnr, wnr, bnr, val)})
+    let items = slice(items, -min([&l:history - len(table), len(items)]))
+    let head = bnr == bufnr() && iloc == len(opts)
+    call extend(table, head ? [' >'] : [])
+    call extend(table, reverse(items))  " recent changes first
+    if len(table) >= &l:history | break | endif  " reached maximum number of items
+  endfor
+  return table
+endfunction
+
+" Overrides of FZF :Jumps and :Changes
+" Note: Changelist is managed from the top-down by filtering out double and empty-line
+" entries or entries with invalid lines, then navigating using using open_drop and
+" setpos('.', ...) instead of the native g,/g; keys. Compare with jumplist above.
+" Note: This is needed to fix issue where getbufline() output can be empty (filter
+" function calls this function and assumes non-empty) and because the default FZF flag
+" --bind start:pos:etc was yielding errors. Not sure why but maybe issue with .fzf fork
+function! mark#goto_jump(...) abort
+  return call('s:goto_list', [0] + a:000)
+endfunction
+function! mark#goto_change(...) abort
+  return call('s:goto_list', [1] + a:000)
+endfunction
+function! s:jump_sink(arg) abort  " first item is key binding
+  if len(a:arg) > 1 | return s:list_sink(0, a:arg[-1]) | endif
+endfunction
+function! s:change_sink(arg) abort  " first item is key binding
+  if len(a:arg) > 1 | return s:list_sink(1, a:arg[-1]) | endif
 endfunction
 function! mark#fzf_jumps(...)
   let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  call s:jump_update()
-  let format = snr . 'jump_format'
   let options = {
-    \ 'source': extend(s:jumplist[0:0], map(s:jumplist[1:], 'call(format, [v:val])')),
+    \ 'source': s:list_source(0),
     \ 'sink*': function('s:jump_sink'),
-    \ 'options': '+m -x --ansi --tiebreak=index --cycle --scroll-off 999 --sync --tac --header-lines 1 --tiebreak=begin --prompt "Jumps> "',
+    \ 'options': '+m -x --ansi --cycle --scroll-off 999 --sync --header-lines 1 --tiebreak=index --prompt "Jumps> "',
   \ }
   return call(snr . 'fzf', ['jumps', options, a:000])
-endfunction
-
-" Override of FZF :Changes
-" Note: This is needed to fix issue where getbufline() output can be empty (filter
-" function calls this function and assumes non-empty) and because the default FZF flag
-" --bind start:pos:etc was yielding errors. Not sure why but maybe issue with .fzf fork
-function! s:changes_sink(lines) abort
-  let [key; lines] = a:lines  " first item is key binding
-  if empty(lines) | return | endif
-  let line = lines[-1]  " use final selection passed
-  let [bnr, offset, lnum, cnum] = split(line)[0:3]
-  let path = bufname(str2nr(bnr))
-  if offset ==# '-'
-    let keys = "\<Cmd>call file#open_drop('" . path . "')\<CR>\<Cmd>call cursor(" . lnum . ', ' . cnum . ")\<CR>"
-  else
-    let keys .= offset[0] ==# '+' ? offset[1:] . 'g,' : offset . 'g;'
-  endif
-  call feedkeys(keys . 'zv', 'n')
-endfunction
-function! s:changes_update() abort
-  let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
-  if empty(snr) | return | endif
-  let format1 = snr . 'format_change'
-  let format2 = snr . 'format_change_offset'
-  let changes = ['buf  offset  line  col  text']
-  let paths = map(tags#buffer_paths(), 'resolve(v:val[1])')
-  if paths[0] != expand('%:p') | call insert(paths, expand('%:p')) | endif
-  for path in paths
-    let bnr = bufnr(resolve(path))
-    if bnr == -1 | continue | endif
-    let active = bufnr() == bnr
-    let [opts, loc_or_len] = getchangelist(bnr)
-    let cursor = active ? len(opts) - loc_or_len : 0
-    let opts = filter(opts, {idx, val -> !empty(getbufline(bnr, val.lnum))})
-    let opts = reverse(opts)  " reversed changes
-    let opts = map(opts, {idx, val -> call(format1, [bnr, call(format2, [active, idx, cursor]), val])})
-    call extend(changes, opts)
-  endfor
-  return changes
-endfunction
-function! mark#goto_change(count) abort
-  let [opts, iloc] = getchangelist()
-  let idx = iloc + a:count
-  let jdx = min([idx, len(opts) - 1])
-  let jdx = max([jdx, 0])
-  let cnt = jdx - iloc
-  let keys = cnt > 0 ? cnt . 'g,' : cnt < 0 ? abs(cnt) . 'g;' : ''
-  if abs(a:count) == 1 && idx >= len(opts)
-    echohl WarningMsg | echom 'Error: At end of changelist' | echohl None
-  elseif abs(a:count) == 1 && idx < 0  " differs from jumplist, but empirically tested
-    echohl WarningMsg | echom 'Error: At start of changelist' | echohl None
-  else  " echo number
-    call feedkeys(keys, 'n')
-    call s:echo_location('change', jdx + 1, len(opts) + 1)
-  endif
 endfunction
 function! mark#fzf_changes(...) abort
   let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
-  let changes = s:changes_update()
   let options = {
-    \ 'source': changes,
-    \ 'sink*': function('s:changes_sink'),
-    \ 'options': '+m -x --ansi --tiebreak=index --header-lines=1 --cycle --scroll-off 999 --sync --prompt "Changes> "',
+    \ 'source': s:list_source(1),
+    \ 'sink*': function('s:change_sink'),
+    \ 'options': '+m -x --ansi --cycle --scroll-off 999 --sync --header-lines=1 --tiebreak=index --prompt "Changes> "',
   \ }
   return call(snr . 'fzf', ['changes', options, a:000])
 endfunction
 
 " Override of FZF :Marks to implement :Drop switching
 " Note: Normally the fzf function calls `A-Z, and while vim permits multi-file marks,
-" it does not have an option to open in existing tabs like 'showbufs' for loclist.
+" it does not have an option to open in existing tabs like 'showbufs' for loclist,
 function! s:mark_sink(lines) abort
   if len(a:lines) < 2 | return | endif
   return mark#goto_mark(matchstr(a:lines[1], '\S'))
@@ -171,10 +200,9 @@ function! mark#goto_mark(mrk) abort
     let cmd = 'echohl WarningMsg '
     \ . '| echom "Error: Mark ''' . a:mrk . ''' is unset"'
     \ . '| echohl None'
-  else
-    let opts = mrks[0]
-    let cmd = "call setpos('.', " . string(opts['pos']) . ')'
-    call file#open_drop(opts['file'])
+  else  " note this does not affect jumplist
+    call file#open_drop(mrks[0]['file'])
+    let cmd = "call setpos('.', " . string(mrks[0]['pos']) . ')'
   endif
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction

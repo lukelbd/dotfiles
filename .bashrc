@@ -1912,8 +1912,9 @@ echo 'done'
 # so behavior matches shell completion behavior. Enforce terminal background default
 # color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
 _fzf_options=" \
-  --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
-  --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up\
+--ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
+--bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up,\
+ctrl-b:page-up,ctrl-f:page-down,ctrl-u:half-page-up,ctrl-d:half-page-down \
 "  # critical to export so used by vim
 
 # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
@@ -1924,7 +1925,7 @@ _fzf_options=" \
 # utilities should ignore files while basic shell navigation should show everything.
 _fzf_prune_names=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
 _fzf_prune_bases=" \
-  \\( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \\) -prune -o \
+\\( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \\) -prune -o \
 "
 
 # Run installation script; similar to the above one
