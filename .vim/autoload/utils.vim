@@ -148,11 +148,11 @@ endfunction
 
 " Switch buffer-local panel mappings
 " Note: Vim help recommends capturing full map settings using maparg(lhs, 'n', 0, 1)
-" then re-adding them using mapset(). This is a little easier than working with strings
-" returned by maparg(lhs, 'n'), for which we have to use escape(map, '"<') then
-" evaluate the resulting string with eval('"' . map . '"'). However in the dictionary
-" case, the 'rhs' entry uses <sid> instead of <snr>nr, and when calling mapset(), the
-" *current script* id is used rather than the id in the dict. Have to fix this manually.
+" then re-adding using mapset(). This is a little easier than working with strings
+" returned by maparg(lhs, 'n') which requires using escape(map, '"<') then evaluating
+" the resulting string with eval('"' . map . '"'). However in the dictionary case, the
+" 'rhs' entry uses <sid> instead of <snr>nr, and when calling mapset(), the *current
+" script* id is used rather than the id in the dict. Have to fix this manually.
 function! s:eval_map(map) abort
   let rhs = get(a:map, 'rhs', '')
   let sid = get(a:map, 'sid', '')  " see above
@@ -248,9 +248,12 @@ function! s:translate_input(mode, ...) abort
       if empty(char)  " e.g. escape character
         let name = char
         let result = ''
-      elseif char =~# '[''"]'  " native register selection
+      elseif char ==# "'"  " native register selection
         let name = utils#input_default('Register (raw)', '', '', 1)
         let result = '"' . name
+      elseif char ==# '"'  " native register selection
+        let name = ''
+        let result = peekaboo#peek(1, '"', 0)
       elseif char =~# '\d'  " use character to pick number register
         let name = char
         let result = '"' . name
@@ -269,10 +272,8 @@ function! s:translate_input(mode, ...) abort
       endif
     endif
   endif
-  if !empty(name) && !empty(label)
-    let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
-    echom head . ': ' . name[0] . ' (' . label . ')'
-  endif
+  let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
+  echom empty(name) || empty(label) ? '': head . ': ' . name[0] . ' (' . label . ')'
   return result
 endfunction
 " Public function without autocommands
