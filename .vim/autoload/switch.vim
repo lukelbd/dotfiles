@@ -1,14 +1,20 @@
 "-----------------------------------------------------------------------------"
 " Utilities for switching stuff on and off
 "-----------------------------------------------------------------------------"
-" Helper function
-" Optionally suppress message when toggling things by default
-function! s:switch_message(prefix, toggle, ...)
-  let suppress = a:0 ? a:1 : 0
-  if !suppress
+" Helper functions
+" Toggle most recent :mes and echo (but optionally suppress) arbitrary toggles
+" Note: For some reason even though :help :mes claims count N shows the N most recent
+" message, for some reason using 1 shows empty line and 2 shows previous plus newline.
+function! s:echo_state(prefix, toggle, ...)
+  if !a:0 || !a:1
     let state = a:toggle ? 'enabled' : 'disabled'
     echom toupper(a:prefix[0]) . a:prefix[1:] . ' ' . state . '.'
   endif
+endfunction
+function! switch#message(...) abort
+  let state = get(b:, 'show_message', 1)
+  let b:show_message = a:0 > 0 ? a:1 : 1 - state
+  echo b:show_message ? join(split(execute('2mes'), "\n")[-1:], '') : ''
 endfunction
 
 " Toggle ALE syntax checking
@@ -28,7 +34,7 @@ function! switch#ale(...) abort
     ALEResetBuffer | ALEDisableBuffer
   endif
   let b:ale_enabled = toggle  " ensure always applied in case API changes
-  call call('s:switch_message', ['ale linters', toggle, suppress])
+  call call('s:echo_state', ['ale linters', toggle, suppress])
 endfunction
 
 " Autosave toggle (autocommands are local to buffer as with codi)
@@ -54,12 +60,12 @@ function! switch#autosave(...) abort
     augroup END
   endif
   let b:autosave_enabled = toggle
-  call call('s:switch_message', ['Autosave', toggle, suppress])
+  call call('s:echo_state', ['Autosave', toggle, suppress])
 endfunction
 
 " Toggle conceal characters on and off
 " Note: Hide message because result is obvious and for consistency with copy mode
-" call s:switch_message('Conceal mode', toggle)
+" call s:echo_state('Conceal mode', toggle)
 function! switch#conceal(...) abort
   let state = &conceallevel > 0
   let toggle = a:0 > 0 ? a:1 : 1 - state
@@ -69,7 +75,7 @@ function! switch#conceal(...) abort
   else
     let &l:conceallevel = toggle ? 2 : 0
   endif
-  call call('s:switch_message', ['Conceal mode', toggle, suppress])
+  call call('s:echo_state', ['Conceal mode', toggle, suppress])
 endfunction
 
 " Eliminates special chars during copy
@@ -92,7 +98,7 @@ function! switch#copy(...) abort
       exe 'let &l:' . key . '=' . (key ==# 'signcolumn' ? string(value) : value)
     endfor
   endif
-  call call('s:switch_message', ['Copy mode', toggle, suppress])
+  call call('s:echo_state', ['Copy mode', toggle, suppress])
 endfunction
 
 " Toggle ddc on and off
@@ -111,7 +117,7 @@ function! switch#ddc(...) abort
     call denops#server#stop()  " must come before ddc calls
     call ddc#custom#patch_global('sources', [])  " wipe out ddc sources
   endif
-  call call('s:switch_message', ['autocomplete', toggle, suppress])
+  call call('s:echo_state', ['autocomplete', toggle, suppress])
 endfunction
 
 " Toggle literal tab characters on and off
@@ -124,7 +130,7 @@ function! switch#expandtab(...) abort
   else
     let &l:expandtab = toggle
   endif
-  call call('s:switch_message', ['Literal tabs', 1 - toggle, suppress])
+  call call('s:echo_state', ['Literal tabs', 1 - toggle, suppress])
 endfunction
 
 " Toggle git gutter and skip if input request matches current state
@@ -139,7 +145,7 @@ function! switch#gitgutter(...) abort
   else
     GitGutterBufferDisable
   endif
-  call call('s:switch_message', ['GitGutter', toggle, suppress])
+  call call('s:echo_state', ['GitGutter', toggle, suppress])
 endfunction
 
 " Toggle highlighting
@@ -156,28 +162,10 @@ function! switch#hlsearch(...) abort
     let cmd = 'nohlsearch'
   endif
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
-  call call('s:switch_message', ['Highlight search', toggle, suppress])
+  call call('s:echo_state', ['Highlight search', toggle, suppress])
 endfunction
 
-" Toggle revealing matches in folds
-" Note: Auto disable whenever set nohlsearch is restore
-function! switch#opensearch(...) abort
-  let state = !empty(b:search_folds)
-  let toggle = a:0 > 0 ? a:1 : 1 - state
-  let suppress = a:0 > 1 ? a:2 : 0
-  let winview = winsaveview()
-  if toggle
-    let cmd = 'foldopen | call add(b:search_folds, line("."))'
-    global//exe foldclosed('.') >= 0 ? cmd : '' | call feedkeys("\<Cmd>set hlsearch\<CR>")
-  else
-    for line in b:search_folds | silent! exe line . 'foldclose' | endfor
-    let b:search_folds = []
-  endif
-  call winrestview(winview)
-  call call('s:switch_message', ['Open searches', toggle, suppress])
-endfunction
-
-" Toggle directory 
+" Toggle local directory navigation
 " Note: This can be useful for browsing files
 function! switch#localdir(...) abort
   let state = haslocaldir()
@@ -196,7 +184,25 @@ function! switch#localdir(...) abort
   else
     exe 'cd ' . root
   endif
-  call call('s:switch_message', ["Local directory '" . local . "'", toggle, suppress])
+  call call('s:echo_state', ["Local directory '" . local . "'", toggle, suppress])
+endfunction
+
+" Toggle revealing matches in folds
+" Note: Auto disable whenever set nohlsearch is restore
+function! switch#opensearch(...) abort
+  let state = !empty(get(b:, 'search_folds', []))
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
+  let winview = winsaveview()
+  if toggle
+    let cmd = 'foldopen | call add(b:search_folds, line("."))'
+    global//exe foldclosed('.') >= 0 ? cmd : '' | call feedkeys("\<Cmd>set hlsearch\<CR>")
+  else
+    for line in b:search_folds | silent! exe line . 'foldclose' | endfor
+    let b:search_folds = []
+  endif
+  call winrestview(winview)
+  call call('s:echo_state', ['Open searches', toggle, suppress])
 endfunction
 
 " Enable and disable LSP engines
@@ -218,7 +224,7 @@ function! switch#lsp(...) abort
   else
     for server in running | call lsp#stop_server(server) | endfor  " de-activate server
   endif
-  call call('s:switch_message', ['lsp integration', toggle, suppress])
+  call call('s:echo_state', ['lsp integration', toggle, suppress])
 endfunction
 
 " Toggle spell check on and off
@@ -231,7 +237,7 @@ function! switch#spellcheck(...) abort
   else
     let &l:spell = toggle
   endif
-  call call('s:switch_message', ['Spell check', toggle, suppress])
+  call call('s:echo_state', ['Spell check', toggle, suppress])
 endfunction
 
 " Toggle between UK and US English
@@ -246,7 +252,7 @@ function! switch#spelllang(...) abort
   else
     setlocal spelllang=en_us
   endif
-  call call('s:switch_message', ['UK English', toggle, suppress])
+  call call('s:echo_state', ['UK English', toggle, suppress])
 endfunction
 
 " Toggle tags on and off
@@ -267,5 +273,5 @@ function! switch#tags(...) abort
       silent! call remove(b:, name)
     endfor
   endif
-  call call('s:switch_message', ['Tags', toggle, suppress])
+  call call('s:echo_state', ['Tags', toggle, suppress])
 endfunction

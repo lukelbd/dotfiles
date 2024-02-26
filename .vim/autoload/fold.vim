@@ -162,13 +162,17 @@ function! fold#get_current(...) abort
   while line('.') != lnum && foldlevel('.') > toplevel + 1
     let lnum = line('.')
     keepjumps normal! [z
+    if lnum == line('.') | exe 'normal! j' | endif
   endwhile
   if foldclosed('.') > 0
     let [line1, line2] = [foldclosed('.'), foldclosedend('.')]
   else  " check if cursor on head ('[z' moves to different fold)
-    let [line0, level] = [line('.'), foldlevel('.')]
-    keepjumps normal! [z]z
-    if line('.') >= line0 && foldlevel('.') == level  " move cursor to head
+    let [line0, level0] = [line('.'), foldlevel('.')]
+    keepjumps normal! [z
+    let level1 = foldlevel('.')  " fold level after [z
+    keepjumps normal! ]z
+    let line1 = line('.')  " end of fold after [z
+    if line1 >= line0 && level0 == level1  " move cursor to head
       exe line0 | keepjumps normal! [z
     else  " cursor already on head ([z moved to different fold)
       exe line0
@@ -270,7 +274,9 @@ function! s:toggle_nested(line1, line2, level, ...) abort
     endif
   endfor
   for [_, lnum] in sort(parents) | exe lnum . 'foldopen' | endfor  " temporary
+  " echom 'Closed: ' . a:line1 . ' ' . a:line2 . ' ' . a:line1
   let toggle = a:0 ? a:1 : 1 - s:get_closed(a:line1, a:line2, a:line1)
+  " echom 'Toggle: ' . toggle
   for [_, lnum] in sort(nested)  " open nested folds by increasing level
     if foldclosed(lnum) > 0 && !toggle
       if foldlevel(foldclosed(lnum)) > a:level  " avoid parent fold

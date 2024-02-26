@@ -221,6 +221,7 @@ let s:shellcheck_ignore =
 augroup insert_repair
   au!
   au InsertLeave * keepjumps normal! `^
+  au CmdWinLeave * let b:show_message = 1
 augroup END
 
 " Configure escape codes to restore screen after exiting
@@ -431,14 +432,14 @@ nnoremap g, <Cmd>History<CR>
 nnoremap g< <Cmd>call file#open_used()<CR>
 
 " Tab and window jumping
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR><Cmd>call file#echo_path()<CR>
 nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>; <Cmd>silent! wincmd p<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>j <Cmd>silent! wincmd j<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>k <Cmd>silent! wincmd k<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>h <Cmd>silent! wincmd h<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>l <Cmd>silent! wincmd l<CR><Cmd>call file#echo_path()<CR>
+nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
+nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
+nnoremap <Tab>; <Cmd>silent! wincmd p<CR>
+nnoremap <Tab>j <Cmd>silent! wincmd j<CR>
+nnoremap <Tab>k <Cmd>silent! wincmd k<CR>
+nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
+nnoremap <Tab>l <Cmd>silent! wincmd l<CR>
 
 " Tab and window resizing
 nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR>
@@ -553,8 +554,7 @@ nnoremap <Leader>Q <Cmd>Maps<CR>
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-noremap ; <Cmd>echo ''<CR>
-noremap z; <Cmd>echo join(split(execute('2mes'), "\n")[-1:], '')<CR>
+noremap ; <Cmd>call switch#message()<CR>
 nnoremap z: @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
@@ -695,6 +695,20 @@ noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults()<CR>zv
 noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults()<CR>
 
+" Toggle folds under cursor recursively
+" Nore: Here fold#toggle_nested() and fold#toggle_current() call fold#update_folds().
+" Note: Here 'zi' will close or open all nested folds under cursor up to level
+" parent (use :echom fold#get_current() for debugging). Previously toggled with
+" recursive-open then non-recursive close but annoying e.g. for huge classes.
+" Note: Here 'zC' will close fold only up to current level or for definitions
+" inside class (special case for python). For recursive motion mapping similar
+" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
+exe 'noremap zn zn' | exe 'noremap zN zN'
+noremap z; <Cmd>call switch#opensearch()<CR>
+noremap zi <Cmd>call fold#toggle_nested()<CR>
+noremap zC <Cmd>call fold#toggle_current(1)<CR>
+noremap zO <Cmd>call fold#toggle_current(0)<CR>
+
 " Toggle folds under cursor non-recursively
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
@@ -707,21 +721,6 @@ vnoremap <nowait> zo <Cmd>call fold#update_folds()<CR>zo
 nnoremap <expr> za fold#toggle_range_expr(0)
 nnoremap <expr> zc fold#toggle_range_expr(0, 1)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
-
-" Toggle folds under cursor recursively
-" Nore: Here fold#toggle_nested() and fold#toggle_current() call fold#update_folds().
-" Note: Here 'zi' will close or open all nested folds under cursor up to level
-" parent (use :echom fold#get_current() for debugging). Previously toggled with
-" recursive-open then non-recursive close but annoying e.g. for huge classes.
-" Note: Here 'zC' will close fold only up to current level or for definitions
-" inside class (special case for python). For recursive motion mapping similar
-" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
-noremap zN zn
-noremap zV zN
-noremap zn <Cmd>call switch#opensearch()<CR>
-noremap zi <Cmd>call fold#toggle_nested()<CR>
-noremap zC <Cmd>call fold#toggle_current(1)<CR>
-noremap zO <Cmd>call fold#toggle_current(0)<CR>
 
 " Change fold level
 " Note: Here fold#update_level() calls fold#update_folds() if level was changed
