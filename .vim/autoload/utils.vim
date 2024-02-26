@@ -15,7 +15,7 @@ function! utils#null_operator_expr(...) abort
 endfunction
 
 " Safely run tests without verbose error message
-" Todo: Add to this, should have custom testing features and maps.
+" Todo: Consider adding to this, can have some additional maps and features.
 " Note: This prevents 'press enter to continue' error messages e.g. when
 " accidentally hitting test maps in filetypes without utilities installed.
 function! utils#catch_errors(...) abort
@@ -33,19 +33,37 @@ endfunction
 " Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
 " used to override fzf marks command and support jumping to existing tabs.
 " See: https://stackoverflow.com/a/49447600/4970632
-function! utils#find_snr(regex) abort
+function! utils#get_snr(regex, ...) abort
   silent! call fzf#vim#with_preview()  " trigger autoload if not already done
-  let [paths, sids] = vim#config_scripts(1)
+  let [paths, sids] = utils#get_scripts(1)
   let path = filter(copy(paths), 'v:val =~# a:regex')
   let idx = index(paths, get(path, 0, ''))
   if !empty(path) && idx >= 0
     return "\<snr>" . sids[idx] . '_'
-  else
+  elseif a:0 && a:1  " optionally suppress warning
+    return ''
+  else  " emit warning
     echohl WarningMsg
     echom "Warning: Autoload script '" . a:regex . "' not found."
-    echohl None
-    return ''
+    echohl None | return ''
   endif
+endfunction
+function! utils#get_scripts(...) abort
+  let suppress = a:0 > 0 ? a:1 : 0
+  let regex = a:0 > 1 ? a:2 : ''
+  let [paths, sids] = [[], []]  " no dictionary because confusing
+  for path in split(execute('scriptnames'), "\n")
+    let sid = substitute(path, '^\s*\(\d*\):.*$', '\1', 'g')
+    let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
+    let path = fnamemodify(resolve(expand(path)), ':p')  " then compare to home
+    if !empty(regex) && path !~# regex
+      continue
+    endif
+    call add(paths, path)
+    call add(sids, sid)
+  endfor
+  if !suppress | echom 'Script names: ' . join(paths, ', ') | endif
+  return [paths, sids]
 endfunction
 
 " Get user input with requested default

@@ -197,7 +197,8 @@ function! s:ensure_math(value) abort
   if empty(output)
     return output
   endif
-  if empty(filter(synstack(line('.'), col('.') - 1), 'synIDattr(v:val, "name") =~? "math"'))
+  let stack = synstack(line('.'), col('.') - 1)
+  if empty(filter(stack, 'synIDattr(v:val, "name") =~? "math"'))
     let output = '$' . output . '$'
   endif
   return output

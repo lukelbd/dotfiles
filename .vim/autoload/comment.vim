@@ -23,12 +23,12 @@ endfunction
 function! comment#get_char() abort
   let char = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
   let char = substitute(char, '\s\+', '', 'g')  " ignore spaces
-  return escape(char, '[]\.*$~')  " escape magic characters
+  return char  " escape magic characters
 endfunction
-function! comment#get_regex() abort
-  let char = comment#get_char()
+function! comment#get_regex(...) abort  " pass 1 to prepend '\zs'
+  let char = escape(comment#get_char(), '[]\.*$~')
   let char = empty(char) ? '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]' : char
-  return char
+  return a:0 && a:1 ? '\zs' . char : char
 endfunction
 function! comment#get_insert() abort
   let parts = split(&l:commentstring, '%s')
@@ -95,20 +95,20 @@ function! comment#header_line(fill, nfill, ...) abort  " inserts above by defaul
   call append(line('.') - 1, append)
 endfunction
 
-" Jump to next or previous match
-" Note: Use this for e.g. [c and ]c comment block jumping
-function! comment#next_block(reverse, ...) abort
-  let nested = a:0 ? a:1 : 0
-  let header = nested ? '\s*' : ''
-  let regex = '^' . header . comment#get_char() . '.\+$\n'
-  let regex = '\(' . regex . '\)\@<!\(' . regex . '\)\+'
-  let flags = a:reverse ? 'bw' : 'w'
-  call search(regex, flags)
-endfunction
-
 " Toggle comment under cursor accounting for folds
 " Note: Required since default 'gcc' maps to g@$ operator function call
-function! comment#toggle_motion(...) abort
+function! comment#next_comment(count, ...) abort  " contiguous blocks
+  let nest = a:0 ? a:1 : 0
+  let head = nest ? '\s*' : ''
+  let tail = comment#get_regex() . '.\+$\n'
+  let regex = '^\(' . head . tail . '\)\@<!'
+  let regex .= head . '\zs' . tail . '\(' . head[1:] . tail . '\)*'
+  let flags = a:count >= 0 ? 'w' : 'bw'
+  for _ in range(abs(a:count))
+    call search(regex, flags, 0, 0, "!utils#get_inside('Comment')")
+  endfor
+endfunction
+function! comment#toggle_comment(...) abort
   call tcomment#ResetOption()
   if v:count > 0 | call tcomment#SetOption('count', v:count) | endif
   let suffix = !a:0 ? 'gcc' : a:1 ? 'Commentc' : 'Uncommentc'

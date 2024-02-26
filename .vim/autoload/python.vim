@@ -313,3 +313,15 @@ function! python#split_docstrings(...) abort
   let regex = regex . '["'']\{3}\s*$'
   exe 'global/' . regex . '/' . cmd
 endfunction
+function! python#next_docstring(count, ...) abort
+  let flags = a:count >= 0 ? 'w' : 'wb'
+  if a:0 && a:1
+    let head = '^\(\|\t\| \{' . &tabstop . '\}\)'
+  else
+    let head = '\(' . comment#get_regex() . '.*\)\@<!'
+  endif
+  let regex = head . '[frub]*["'']\{3}\_s*\zs'
+  for _ in range(abs(a:count))
+    call search(regex, flags, 0, 0, "!utils#get_inside(-1, 'Constant')")
+  endfor
+endfunction

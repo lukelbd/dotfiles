@@ -1,17 +1,23 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" Indent and calculator motion functions
+" General helper functions
 " Note: Native calculator only supports visual-mode but here add motions.
 " See: https://github.com/sk1418/HowMuch/blob/master/autoload/HowMuch.vim
-function! edit#how_much_expr(...) abort
-  return utils#motion_func('HowMuch#HowMuch', a:000)
+function! edit#echo_range(msg, num) range abort
+  let head = a:msg =~# '\s' ? a:msg . ' on' : a:msg
+  echom head . ' ' . a:num . ' line' . (a:num == 1 ? '' : 's')
 endfunction
 function! edit#indent_items(dedent, count) range abort
-  exe a:firstline . ',' . a:lastline . repeat(a:dedent ? '<' : '>', a:count)
+  let range = a:firstline . ',' . a:lastline  " use native vim message
+  exe range . repeat(a:dedent ? '<' : '>', a:count)
 endfunction
+" For <expr> map accepting motion
 function! edit#indent_items_expr(...) abort
   return utils#motion_func('edit#indent_items', a:000)
+endfunction
+function! edit#how_much_expr(...) abort
+  return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
 
 " Forward delete by indent whitespace in insert mode
@@ -71,22 +77,22 @@ function! edit#paste_mode() abort
   return ''
 endfunction
 
-" Search replace without history. Undo will move the cursor to the first line in the
-" range of lines that was changed: https://stackoverflow.com/a/52308371/4970632
-" Warning: Critical to replace line-by-line in reverse order in case substitutions
-" have different number of newlines. Cannot figure out how to do this in one command.
-function! edit#replace_regex(message, ...) range abort
+" Search replace without history
+" Note: Substitute 'n' would give exact count but then have to repeat twice, too slow
+" Note: Critical to replace reverse line-by-line in case substitution has newlines
+function! edit#replace_regex(msg, ...) range abort
+  let nlines = 0  " pattern count
   let search = @/  " hlsearch pattern
   let winview = winsaveview()
   for line in range(a:lastline, a:firstline, -1)
     for idx in range(0, a:0 - 2, 2)
-      " vint: -ProhibitUsingUndeclaredVariable
       let [regex, string] = a:000[idx:idx + 1]
-      keepjumps exe line . 's@' . regex . '@' . string . '@ge'
+      let cmd = line . 's@' . regex . '@' . string . '@gel'
+      let nlines += !empty(execute('keepjumps ' . cmd))  " or exact count with 'n'?
       call histdel('/', -1)
     endfor
   endfor
-  echom a:message
+  call edit#echo_range(a:msg, nlines)
   let @/ = search
   call winrestview(winview)
 endfunction
@@ -95,18 +101,18 @@ function! edit#replace_regex_expr(...) abort
   return utils#motion_func('edit#replace_regex', a:000)
 endfunction
 
-" Reverse or sort the input lines
+" Reverse or retab or sort the input lines
 " Note: Adaptation of hard-to-remember :g command shortcut. Adapted
 " from super old post: https://vim.fandom.com/wiki/Reverse_order_of_lines
-function! edit#sort_lines() range abort
-  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
-  exe 'silent ' . line1 . ',' . line2 . 'sort'
+function! edit#sort_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
+  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
+  exe 'silent ' . range . 'sort'
+  call edit#echo_range('Sorted', a:lastline - a:firstline + 1)
 endfunction
-function! edit#reverse_lines() range abort
-  let [line1, line2] = sort([a:firstline, a:lastline], 'n')
-  let range = line1 == line2 ? '' : line1 . ',' . line2
-  let num = empty(range) ? 0 : line1 - 1
-  exe 'silent ' . range . 'g/^/m' . num
+function! edit#reverse_lines() range abort  " vint: -ProhibitUnnecessaryDoubleQuote
+  let range = a:firstline == a:lastline ? '' : a:firstline . ',' . a:lastline
+  exe 'silent ' . range . 'g/^/m' . (empty(range) ? 0 : a:firstline - 1)
+  call edit#echo_range('Reversed', a:lastline - a:firstline + 1)
 endfunction
 " For <expr> map accepting motion
 function! edit#sort_lines_expr() range abort
@@ -124,12 +130,14 @@ function! edit#spell_bad(...) abort
   let [fixed, which] = spellbadword(word)
   return !empty(fixed)
 endfunction
-function! edit#spell_next(...) abort
-  let reverse = a:0 ? a:1 : 0
-  if !edit#spell_bad()
-    exe 'normal! ' . (reverse ? '[s' : ']s')
-  endif
-  call edit#spell_check(1)
+function! edit#spell_next(count) abort
+  let keys = a:count < 0 ? '[s' : ']s'
+  for _ in range(abs(a:count))
+    if !edit#spell_bad()
+      exe 'normal! ' . keys
+    endif
+    call edit#spell_check(1)
+  endfor
 endfunction
 function! edit#spell_check(...) abort
   if a:0 || v:count || edit#spell_bad()

@@ -61,10 +61,10 @@ function! s:get_list(changes, ...) abort  " return location list with unique lin
 endfunction
 
 " Navigate jump and change lists
-" Todo: Make this compatible with 'getmarklist()' and support mark navigation.
 " Note: The getjumplist (getchangelist) functions return the length of the list
 " instead of the current position for external windows, so when switching from
-" current window, navigate to the top of the list before the requested user position.
+" current window, jump to top of the list before the requested user position. Also
+" scroll additionally by minus 1 if 'current' position is beyond end of the list.
 function! s:feed_list(changes, iloc, ...) abort
   " vint: -ProhibitUnnecessaryDoubleQuote
   let [key1, key2] = a:changes ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
@@ -76,14 +76,15 @@ function! s:feed_list(changes, iloc, ...) abort
   let keys = init . abs(a:iloc) . ikey  " go to selection
   call feedkeys(keys . 'zv', 'n')
 endfunction
-function! s:goto_list(changes, ...) abort  " navigate to nth location in list
-  let cnt = a:0 ? a:1 : v:count
-  if cnt == 0 | return | endif
+function! s:goto_list(changes, count) abort  " navigate to nth location in list
+  if a:count == 0 | return | endif
   let [opts, idx] = s:get_list(a:changes)
-  let jdx = idx + cnt
+  let lnum = get(get(opts, -1, {}), 'lnum', 0)
+  let offset = idx == len(opts) && a:count < 0 && lnum == line('.')
+  let jdx = idx + a:count - offset
   let name = a:changes ? 'change' : 'jump'
-  let direc = cnt < 0 ? 'start' : 'end'
-  if abs(cnt) == 1 && (jdx < 0 || jdx >= len(opts))
+  let direc = a:count < 0 ? 'start' : 'end'
+  if abs(a:count) == 1 && (jdx < 0 || jdx >= len(opts))
     echohl WarningMsg
     echom 'Error: At ' . direc . ' of ' . name . 'list'
     echohl None | return
@@ -124,7 +125,7 @@ function! s:list_sink(changes, line) abort
   return s:feed_list(a:changes, -iloc, tnr, wnr)  " backwards is positive
 endfunction
 function! s:list_source(changes) abort
-  let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let name = printf('%6s', a:changes ? 'change' : 'jump')
   let paths = map(tags#buffer_paths(), 'resolve(v:val[1])')  " sorted by recent use
@@ -166,7 +167,7 @@ function! s:change_sink(arg) abort  " first item is key binding
   if len(a:arg) > 1 | return s:list_sink(1, a:arg[-1]) | endif
 endfunction
 function! mark#fzf_jumps(...)
-  let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let options = {
     \ 'source': s:list_source(0),
@@ -176,7 +177,7 @@ function! mark#fzf_jumps(...)
   return call(snr . 'fzf', ['jumps', options, a:000])
 endfunction
 function! mark#fzf_changes(...) abort
-  let snr = utils#find_snr('fzf.vim/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let options = {
     \ 'source': s:list_source(1),
@@ -196,7 +197,7 @@ function! mark#next_mark(...) abort
     let cnt -= cnt > 0 ? 1 : -1
     call mark#goto_mark(mrk)
   endif
-  call stack#push_stack('mark', 'mark#goto_mark', cnt)
+  call stack#push_stack('mark', 'mark#goto_mark', cnt, 0)
 endfunction
 function! mark#goto_mark(...) abort
   if !a:0 || empty(a:1) | return | endif
@@ -216,7 +217,7 @@ function! mark#goto_mark(...) abort
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! mark#fzf_marks(...) abort
-  let snr = utils#find_snr('/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let lines = split(execute('silent marks'), "\n")
   let options = {
@@ -259,7 +260,7 @@ function! mark#set_marks(mrk) abort
   let g:mark_highlights = highlights
   call feedkeys('m' . a:mrk, 'n')  " apply the mark
   call stack#pop_stack('mark', a:mrk)  " update mark stack
-  call stack#push_stack('mark', '', a:mrk)  " update mark stack
+  call stack#push_stack('mark', '', a:mrk, 0)  " update mark stack
   let name = 'mark_'. (a:mrk =~# '\u' ? 'upper_'. a:mrk : 'lower_' . a:mrk)
   let base = a:mrk =~# '\u' ? 65 : 97
   let idx = a:mrk =~# '\a' ? char2nr(a:mrk) - base : 0

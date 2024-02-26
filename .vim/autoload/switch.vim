@@ -155,8 +155,24 @@ function! switch#hlsearch(...) abort
   else
     let cmd = 'nohlsearch'
   endif
-  call call('s:switch_message', ['Highlight search', toggle, suppress])
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
+  call call('s:switch_message', ['Highlight search', toggle, suppress])
+endfunction
+
+" Toggle revealing matches in folds
+" Note: Auto disable whenever set nohlsearch is restore
+function! switch#opensearch(...) abort
+  let state = !empty(b:search_folds)
+  let toggle = a:0 > 0 ? a:1 : 1 - state
+  let suppress = a:0 > 1 ? a:2 : 0
+  if toggle
+    let cmd = 'foldopen | call add(b:search_folds, line("."))'
+    global//exe foldclosed('.') >= 0 ? cmd : ''
+  else
+    for line in b:search_folds | exe line . 'foldclose' | endfor
+    let b:search_folds = []
+  endif
+  call call('s:switch_message', ['Open searches', toggle, suppress])
 endfunction
 
 " Toggle directory 

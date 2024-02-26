@@ -43,7 +43,7 @@ let s:git_aliases = {
   \ 'tree': 'log --stat ' . s:flags1 . ' ' . s:flags2,
   \ 'trunk': 'log --name-status ' . s:flags1 . ' ' . s:flags2,
 \ }
-function! s:echo_git(args, empty, ...) abort
+function! s:echo_command(args, empty, ...) abort
   if !a:empty
     echom 'Git ' . a:args
   else  " empty message
@@ -80,7 +80,7 @@ function! git#run_command(echo, line1, count, range, bang, mods, args, ...) abor
       setlocal bufhidden=delete | if empty | call window#close_pane(1) | endif
     endif
     if a:echo  " ensure message shows
-      call timer_start(500, function('s:echo_git', [a:args, empty]))
+      call timer_start(500, function('s:echo_command', [a:args, empty]))
     endif
   endif
   " Configure resulting window
@@ -219,13 +219,16 @@ function! s:hunk_process(...) abort
 endfunction
 function! git#hunk_show() abort
   call s:hunk_process()
-  GitGutterPreviewHunk | silent wincmd j
+  GitGutterPreviewHunk
+  silent wincmd j
   call timer_start(10, function('execute', ["echom 'Hunk difference'"]))
 endfunction
-function! git#hunk_jump(forward, stage) abort
+function! git#hunk_jump(count, stage) abort
   call s:hunk_process()
-  exe v:count1 . 'GitGutter' . (a:forward ? 'Next' : 'Prev') . 'Hunk'
-  exe a:stage ? 'GitGutterStageHunk' : ''
+  let cmd = 'GitGutter' . (a:count < 0 ? 'Prev' : 'Next') . 'Hunk'
+  for _ in range(abs(a:count))
+    exe cmd | exe a:stage ? 'GitGutterStageHunk' : ''
+  endfor
 endfunction
 
 " Git gutter staging and unstaging

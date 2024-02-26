@@ -62,17 +62,15 @@ noremap <buffer> <Plug>ExecuteFile2 <Cmd>call <sid>latexmk('--pdf')<CR>
 " Note: Internal utility translates \r[^a-z]\@! and \1..\7 to literals. Recall that
 " vim-surround interprets '\r' as separator and '\1[prompt]\r[match]\r[replace]\1' for
 " requesting user-input and optionally formatting the input with regex (often using &).
-" let s:snippets = {
-"   \ '''': tex#make_snippet(tex#graphic_select(), '\includegraphics{', '}'),
-"   \ '"': tex#make_snippet(tex#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
-"   \ '/': tex#make_snippet(tex#label_select(), '\cref{', '}'),
-"   \ '?': tex#make_snippet(tex#label_select(), '\ref{', '}'),
-"   \ ':': tex#make_snippet(tex#cite_select(), '\citet{', '}'),
-"   \ ';': tex#make_snippet(tex#cite_select(), '\citep{', '}'),
-"   \ 'k': tex#ensure_math("^{\1Superscript: \1}"),
-"   \ 'j': tex#ensure_math("_{\1Subscript: \1}"),
-"   \ 'E': tex#ensure_math("\times 10^{\1Exponent: \1}"),
-"   \ }
+" \ '''': tex#make_snippet(tex#graphic_select(), '\includegraphics{', '}'),
+" \ '"': tex#make_snippet(tex#graphic_select(), '\makebox[\textwidth][c]{\includegraphics{', '}}'),
+" \ '/': tex#make_snippet(tex#label_select(), '\cref{', '}'),
+" \ '?': tex#make_snippet(tex#label_select(), '\ref{', '}'),
+" \ ':': tex#make_snippet(tex#cite_select(), '\citet{', '}'),
+" \ ';': tex#make_snippet(tex#cite_select(), '\citep{', '}'),
+" \ 'k': tex#ensure_math("^{\1Superscript: \1}"),
+" \ 'j': tex#ensure_math("_{\1Subscript: \1}"),
+" \ 'E': tex#ensure_math("\times 10^{\1Exponent: \1}"),
 let s:snippets = {
   \ "\<CR>": ' \textCR\r',
   \ "'": tex#ensure_math('\mathrm{d}'),
@@ -147,7 +145,7 @@ let s:snippets = {
   \ 'y': tex#ensure_math('\psi'),
   \ 'z': tex#ensure_math('\zeta'),
   \ '~': tex#ensure_math('\sim'),
-  \ }
+\ }
 call succinct#add_snippets(s:snippets, 1, 1)  " escape regex characters
 
 " Add delimiters. Currently only overwrite 'r' and 'a' global bracket surrounds the
@@ -158,15 +156,13 @@ call succinct#add_snippets(s:snippets, 1, 1)  " escape regex characters
 " \cite<prefix>{cite1,cite2} and commands are \cite and \citeA instead of \citep and
 " \citep. Solution is to add \renewcommand to preamble and do not auto-insert empty
 " brackets for filling later since synmtax is dependent on citation engine. Rejected:
-" let s:delims  = {
-"   \ 'E': '{\color{red}\r}',
-"   \ 'F': '\begin{wrapfigure}{r}{0.5\textwidth}\n\centering\r\end{wrapfigure}',
-"   \ 'G': '\hidecontent{\includegraphics{\r}}',
-"   \ 'L': '\href{\1Link: \1}{\r}',
-"   \ 'P': '\begin{minipage}{\linewidth}\r\end{minipage}',
-"   \ ',': '\begin{\1\begin{\1}\r\end{\1\1}',
-"   \ '.': '\1\1{\r}',
-"   \ }
+" \ 'E': '{\color{red}\r}',
+" \ 'F': '\begin{wrapfigure}{r}{0.5\textwidth}\n\centering\r\end{wrapfigure}',
+" \ 'G': '\hidecontent{\includegraphics{\r}}',
+" \ 'L': '\href{\1Link: \1}{\r}',
+" \ 'P': '\begin{minipage}{\linewidth}\r\end{minipage}',
+" \ ',': '\begin{\1\begin{\1}\r\end{\1\1}',
+" \ '.': '\1\1{\r}',
 let s:delims = {
   \ '.': '\1Command: \\r..*\r\\&{\1\r\1\r..*\r}\1',
   \ ',': '\1Environment: \begin{\r..*\r\\begin{&}\1\r\1\r..*\r\\end{&}\1',
@@ -250,5 +246,5 @@ let s:delims = {
   \ 'x': '\boxed{\r}',
   \ 'y': '\pyth$\r$',
   \ 'z': '\begin{column}{0.5\textwidth}\r\end{column}',
-  \ }
+\ }
 call succinct#add_delims(s:delims, 1)

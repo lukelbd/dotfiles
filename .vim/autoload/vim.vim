@@ -10,9 +10,11 @@ function! vim#cmdwin_setup() abort
   nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
 endfunction
 
-" Configuration scripts to skip when refreshing
-" Note: Accounts for external plugins, prevents redefining refresh function while
-" running, and prevents sourcing manually-sourced common script.
+" Refresh recently modified configuration files
+" Note: Previously tried to update and track per-filetype refreshes but was way
+" overkill and need ':filetype detect' anyway to both detect changes and to trigger
+" e.g. markdown or python folding overrides. Note (after testing) this will also
+" apply the updates because all ':filetype' command does is trigger script sourcing.
 let s:config_ignore = [
   \ '/.fzf/',
   \ '/plugged/',
@@ -20,33 +22,10 @@ let s:config_ignore = [
   \ '/\.\?vim/autoload/vim.vim',
   \ '/\.\?vim/after/common.vim',
   \ '/\(micro\|mini\|mamba\)\(forge\|conda\|mamba\)\d\?/'
-\ ]
-
-" Refresh recently modified configuration files
-" Note: Previously tried to update and track per-filetype refreshes but was way
-" overkill and need ':filetype detect' anyway to both detect changes and to trigger
-" e.g. markdown or python folding overrides. Note (after testing) this will also
-" apply the updates because all ':filetype' command does is trigger script sourcing.
-function! vim#config_scripts(...) abort
-  let suppress = a:0 > 0 ? a:1 : 0
-  let regex = a:0 > 1 ? a:2 : ''
-  let [paths, sids] = [[], []]  " no dictionary because confusing
-  for path in split(execute('scriptnames'), "\n")
-    let sid = substitute(path, '^\s*\(\d*\):.*$', '\1', 'g')
-    let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
-    let path = fnamemodify(resolve(expand(path)), ':p')  " then compare to home
-    if !empty(regex) && path !~# regex
-      continue
-    endif
-    call add(paths, path)
-    call add(sids, sid)
-  endfor
-  if !suppress | echom 'Script names: ' . join(paths, ', ') | endif
-  return [paths, sids]
-endfunction
+\ ]  " manually source common.vim and others are externally managed
 function! vim#config_refresh(bang, ...) abort
   let time = get(g:, 'refresh', localtime())
-  let paths = vim#config_scripts(1)[0]
+  let paths = utils#get_scripts(1)[0]
   let ignore = join(s:config_ignore, '\|')
   let loaded = []
   for path in paths

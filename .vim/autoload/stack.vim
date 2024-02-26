@@ -104,9 +104,10 @@ function! stack#pop_stack(head, name) abort
 endfunction
 function! stack#push_stack(head, func, ...) abort
   let [stack, idx; rest] = s:get_stack(a:head)
+  let verbose = a:0 > 1 ? a:2 : 1  " verbose mode
   if !a:0 || type(a:1)  " user-input or default e.g. stack#push_stack(...[, ''])
     let jdx = -1
-    let args = copy(a:000)
+    let args = a:0 ? [a:1] : []
     let scroll = 0
   else  " next or previous e.g. stack#push_stack(..., [1|-1])
     let jdx = idx + a:1  " arbitrary offset
@@ -123,7 +124,7 @@ function! stack#push_stack(head, func, ...) abort
   endif
   let status = empty(a:func) ? 0 : call(a:func, args)
   if status != 0 | return | endif
-  call stack#update_stack(a:head, scroll, jdx, 1)  " verbose mode
+  call stack#update_stack(a:head, scroll, jdx, verbose)
 endfunction
 
 " Reset recent files
@@ -159,5 +160,5 @@ function! stack#update_tabs() abort  " set current buffer
   if skip != -1 || line('$') <= 1 || empty(&filetype)
     if len(tabpagebuflist()) > 1 | return | endif
   endif
-  call stack#update_stack('tab', scroll)  " quiet mode
+  call stack#update_stack('tab', scroll)  " verbose disabled
 endfunction
