@@ -168,9 +168,9 @@ function! switch#opensearch(...) abort
   let winview = winsaveview()
   if toggle
     let cmd = 'foldopen | call add(b:search_folds, line("."))'
-    global//exe foldclosed('.') >= 0 ? cmd : ''
+    global//exe foldclosed('.') >= 0 ? cmd : '' | call feedkeys("\<Cmd>set hlsearch\<CR>")
   else
-    for line in b:search_folds | exe line . 'foldclose' | endfor
+    for line in b:search_folds | silent! exe line . 'foldclose' | endfor
     let b:search_folds = []
   endif
   call winrestview(winview)

@@ -267,37 +267,41 @@ function! s:gobble_map(prefix, mode)
   endif
 endfunction
 
-" Helper function for repeat#set
-" This is simpler than copy-pasting manual repeat#set calls
-function! s:repeat_get(mode) abort
-  return a:mode ==# 'o' ? v:operator ==# 'c' ? "\<Esc>c" : v:operator : ''
+" Helper function for repeat#set (easier than copy-pasting repeat#set calls)
+" Todo: Figure out issues with repeating e.g. 'cgw' operator mappings
+function! s:repeat_head(mode) abort
+  return a:mode ==# 'o' ? v:operator : ''
+endfunction
+function! s:repeat_tail(mode) abort
+  return a:mode ==# 'o' && v:operator ==# 'c' ? "\<C-r>.\<Esc>" : ''
 endfunction
 function! s:repeat_map(mode, lhs, name, rhs) abort
   let [map, noremap] = [a:mode . 'map', a:mode . 'noremap <silent>']
   let plug = '<Plug>' . a:name  " input mapping name
-  let head = '<sid>repeat_get(' . string(a:mode) . ') . '
+  let head = '<sid>repeat_head(' . string(a:mode) . ') . '
+  let tail = ' . <sid>repeat_tail(' . string(a:mode) . ')'
+  let iarg = head . '"\<Plug>' . a:name . '"' . tail
   if empty(a:name)  " disable repetition (e.g. require user input)
     let repeat = '<Cmd>call repeat#set("\<Ignore>")<CR>'
     exe noremap . ' ' . a:lhs . ' ' . a:rhs . repeat
   else
-    let repeat = '<Cmd>call repeat#set(' . head . '"\' . plug . '", v:prevcount)<CR>'
+    let repeat = '<Cmd>call repeat#set(' . iarg . ', v:prevcount)<CR>'
     exe noremap . ' ' . plug . ' ' . a:rhs . repeat | exe map . ' ' . a:lhs . ' ' . plug
   endif
 endfunction
 
 " Remove weird Cheyenne maps, not sure how to isolate/disable /etc/vimrc without
 " disabling other stuff we want e.g. synax highlighting
-" bar#baz#bat
+let s:insert_maps = [
+  \ '[6;2~', '[5;2~', '[3;2~', '[2;2~',
+  \ '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[3~',
+  \ '[6;5~', '[5;5~', '[3;5~', '[2;5~',
+  \ '[1;2A', '[1;2B', '[1;2C', '[1;2D', '[1;2F', '[1;2H',
+  \ '[1;3A', '[1;3B', '[1;3C', '[1;3D', '[1;3F', '[1;3H',
+  \ '[1;5A', '[1;5B', '[1;5C', '[1;5D', '[1;5F', '[1;5H',
+\ ]
 if !empty(mapcheck('<Esc>', 'n'))  " maps staring with escape
   silent! unmap <Esc>[3~
-  let s:insert_maps = [
-    \ '[6;2~', '[5;2~', '[3;2~', '[2;2~',
-    \ '[6;3~', '[5;3~', '[3;3~', '[2;3~', '[3~',
-    \ '[6;5~', '[5;5~', '[3;5~', '[2;5~',
-    \ '[1;2A', '[1;2B', '[1;2C', '[1;2D', '[1;2F', '[1;2H',
-    \ '[1;3A', '[1;3B', '[1;3C', '[1;3D', '[1;3F', '[1;3H',
-    \ '[1;5A', '[1;5B', '[1;5C', '[1;5D', '[1;5F', '[1;5H',
-  \ ]
   for s:insert_map in s:insert_maps
     exe 'silent! iunmap <Esc>' . s:insert_map
   endfor
