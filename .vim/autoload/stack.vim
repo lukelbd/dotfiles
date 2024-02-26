@@ -27,7 +27,17 @@ endfunction
 " Stack printing operations
 " Note: Use e.g. ShowTabs ClearTabs commands in vimrc with these. All other
 " functions are for autocommands or normal mode mappings
-function! stack#show_loc(head, name, ...) abort
+function! stack#show_stack(head) abort
+  let [stack, idx; rest] = s:get_stack(a:head)
+  let digits = len(string(len(stack)))
+  echom "Current '" . a:head . "' stack:"
+  for jdx in range(len(stack))
+    let pad = idx == jdx ? '> ' : '  '
+    let pad .= repeat(' ', digits - len(string(jdx)))
+    call stack#show_item(pad . jdx, stack[jdx])
+  endfor
+endfunction
+function! stack#show_item(head, name, ...) abort
   if type(a:name) == 3
     let label = join(a:name, ':')
   elseif !bufexists(a:name)
@@ -40,16 +50,6 @@ function! stack#show_loc(head, name, ...) abort
   let prefix = toupper(a:head[0]) . a:head[1:] . ': '
   let suffix = a:0 > 1 ? ' (' . (a:1 + 1) . '/' . a:2 . ')' : ''
   echom prefix . label . suffix
-endfunction
-function! stack#show_stack(head) abort
-  let [stack, idx; rest] = s:get_stack(a:head)
-  let digits = len(string(len(stack)))
-  echom "Current '" . a:head . "' stack:"
-  for jdx in range(len(stack))
-    let pad = idx == jdx ? '> ' : '  '
-    let pad .= repeat(' ', digits - len(string(jdx)))
-    call stack#show_loc(pad . jdx, stack[jdx])
-  endfor
 endfunction
 
 " Update the requested buffer stack
@@ -82,7 +82,7 @@ function! stack#update_stack(head, scroll, ...) abort
   call s:set_stack(a:head, stack, jdx)
   if verbose && v:vim_did_enter  " suppress on startup
     if jdx != idx || name != get(stack, idx, '')
-      call timer_start(100, function('stack#show_loc', [a:head, name, jdx, len(stack)]))
+      call timer_start(100, function('stack#show_item', [a:head, name, jdx, len(stack)]))
     endif
   endif
 endfunction
