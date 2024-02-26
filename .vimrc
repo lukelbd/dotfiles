@@ -52,7 +52,6 @@ set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldclose=  " use foldclose=all to auto-close folds when leaving
-set foldenable  " toggle with zi, note plugins and fastfold handle foldmethod/foldexpr
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=5  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
@@ -133,10 +132,11 @@ set visualbell  " prefer visual bell to beeps (see also 'noerrorbells')
 set whichwrap=[,],<,>,h,l  " <> = left/right insert, [] = left/right normal mode
 set wildmenu  " command line completion
 set wildmode=longest:list,full  " command line completion
-let &g:breakat = '  !*-+;:,./?'  " break at single instances of several characters
-let &g:expandtab = 1  " global expand tab
+let &g:breakat = '  !*-+;:,./?'  " break lines following punctuation
+let &g:expandtab = 1  " global expand tab (respect tab toggling)
+let &g:foldenable = 1  " global fold enable (respect 'zn' toggling)
+let &g:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " no intro when starting vim
 let &g:wildignore = join(tag#parse_ignores(0, '~/.wildignore'), ',')
-let &l:shortmess .= &buftype ==# 'nofile' ? 'I' : ''  " internal --help utility
 
 " File types for different unified settings
 " Note: Can use plugins added to '~/forks' by adding to s:fork_plugins below
@@ -695,21 +695,7 @@ noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults()<CR>zv
 noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults()<CR>
 
-" Toggle folds under cursor recursively
-" Nore: Here fold#toggle_nested() and fold#toggle_current() call fold#update_folds().
-" Note: Here 'zi' will close or open all nested folds under cursor up to level
-" parent (use :echom fold#get_current() for debugging). Previously toggled with
-" recursive-open then non-recursive close but annoying e.g. for huge classes.
-" Note: Here 'zC' will close fold only up to current level or for definitions
-" inside class (special case for python). For recursive motion mapping similar
-" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
-exe 'noremap zn zn' | exe 'noremap zN zN'
-noremap z; <Cmd>call switch#opensearch()<CR>
-noremap zi <Cmd>call fold#toggle_nested()<CR>
-noremap zC <Cmd>call fold#toggle_current(1)<CR>
-noremap zO <Cmd>call fold#toggle_current(0)<CR>
-
-" Toggle folds under cursor non-recursively
+" Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
 " Note: These will overwrite 'fastfold_fold_command_suffixes' generated fold-updating
 " maps. However now use even faster / more conservative fold#update_folds() method.
@@ -721,6 +707,20 @@ vnoremap <nowait> zo <Cmd>call fold#update_folds()<CR>zo
 nnoremap <expr> za fold#toggle_range_expr(0)
 nnoremap <expr> zc fold#toggle_range_expr(0, 1)
 nnoremap <expr> zo fold#toggle_range_expr(0, 0)
+
+" Toggle folds under cursor recursively (fold#update_folds() called internally)
+" Note: Here 'zi' will close or open all nested folds under cursor up to level
+" parent (use :echom fold#get_current() for debugging). Previously toggled with
+" recursive-open then non-recursive close but annoying e.g. for huge classes.
+" Note: Here 'zC' will close fold only up to current level or for definitions
+" inside class (special case for python). For recursive motion mapping similar
+" to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
+noremap z; <Cmd>call switch#opensearch()<CR>
+noremap zi <Cmd>call fold#toggle_nested()<CR>
+noremap zC <Cmd>call fold#toggle_current(1)<CR>
+noremap zO <Cmd>call fold#toggle_current(0)<CR>
+noremap zn zn
+noremap zN zN
 
 " Change fold level
 " Note: Here fold#update_level() calls fold#update_folds() if level was changed
@@ -1763,7 +1763,7 @@ if &g:foldenable || s:plug_active('FastFold')
   " Fast fold settings
   augroup fastfold_setup
     au!
-    au TextChanged,TextChangedI * let b:fastfold_update = 1
+    au TextChanged,TextChangedI * let b:fastfold_queued = 1
   augroup END
   let g:fastfold_savehook = 0  " enough for :write but use fold#update() for e.g. :edit
   let g:fastfold_fold_command_suffixes =  []  " use custom maps instead

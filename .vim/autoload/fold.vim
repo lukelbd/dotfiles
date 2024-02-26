@@ -216,10 +216,9 @@ endfunction
 " to maximum number found in file as native 'zr' does. So use the below instead
 function! fold#update_folds(...) abort
   let force = a:0 && a:1
-  let status = get(b:, 'fastfold_update', 1)
-  if !force && !status  " .vimrc changes b:fastfold_update on TextChanged,TextChangedI
-    return
-  endif
+  let queued = get(b:, 'fastfold_queued', 1)  " changed on TextChanged,TextChangedI
+  if !force && !queued | return | endif
+  echom 'Update!!!'
   if &filetype ==# 'python'
     setlocal foldmethod=expr  " e.g. in case stuck, then FastFoldUpdate sets to manual
     setlocal foldexpr=python#fold_expr(v:lnum)
@@ -231,7 +230,7 @@ function! fold#update_folds(...) abort
     setlocal foldtext=fold#fold_text()
   endif
   silent! FastFoldUpdate
-  let b:fastfold_update = 0
+  let b:fastfold_queued = 0
 endfunction
 function! fold#update_level(...) abort
   let level = &foldlevel
