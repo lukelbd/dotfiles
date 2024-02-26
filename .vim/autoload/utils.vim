@@ -30,42 +30,6 @@ function! utils#catch_errors(...) abort
   endtry
 endfunction
 
-" Get the fzf.vim/autoload/fzf/vim.vim script id for overriding. This is
-" used to override fzf marks command and support jumping to existing tabs.
-" See: https://stackoverflow.com/a/49447600/4970632
-function! utils#get_snr(regex, ...) abort
-  silent! call fzf#vim#with_preview()  " trigger autoload if not already done
-  let [paths, sids] = utils#get_scripts(1)
-  let path = filter(copy(paths), 'v:val =~# a:regex')
-  let idx = index(paths, get(path, 0, ''))
-  if !empty(path) && idx >= 0
-    return "\<snr>" . sids[idx] . '_'
-  elseif a:0 && a:1  " optionally suppress warning
-    return ''
-  else  " emit warning
-    echohl WarningMsg
-    echom "Warning: Autoload script '" . a:regex . "' not found."
-    echohl None | return ''
-  endif
-endfunction
-function! utils#get_scripts(...) abort
-  let suppress = a:0 > 0 ? a:1 : 0
-  let regex = a:0 > 1 ? a:2 : ''
-  let [paths, sids] = [[], []]  " no dictionary because confusing
-  for path in split(execute('scriptnames'), "\n")
-    let sid = substitute(path, '^\s*\(\d*\):.*$', '\1', 'g')
-    let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
-    let path = fnamemodify(resolve(expand(path)), ':p')  " then compare to home
-    if !empty(regex) && path !~# regex
-      continue
-    endif
-    call add(paths, path)
-    call add(sids, sid)
-  endfor
-  if !suppress | echom 'Script names: ' . join(paths, ', ') | endif
-  return [paths, sids]
-endfunction
-
 " Get user input with requested default
 " Note: Force option forces return after single key press (used for registers). Try
 " to feed the result with feedkeys() instead of adding to opts to reduce screen flash.
@@ -150,11 +114,11 @@ endfunction
 " to the function will have sorted lines. This sorts the range for safety.
 function! utils#operator_func(type) range abort
   if empty(a:type) " default behavior
-      let line1 = a:firstline
-      let line2 = a:lastline
+    let line1 = a:firstline
+    let line2 = a:lastline
   elseif a:type =~? 'line\|char\|block' " builtin g@ type strings
-      let line1 = line("'[")
-      let line2 = line("']")
+    let line1 = line("'[")
+    let line2 = line("']")
   else
     echoerr 'E474: Invalid argument: ' . string(a:type)
     return ''

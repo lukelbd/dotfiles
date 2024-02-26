@@ -402,7 +402,7 @@ nnoremap <C-e> <Cmd>call window#close_panes()<CR>
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
-command! -nargs=? Scripts call utils#get_scripts(0, <q-args>)
+command! -nargs=? Scripts call succinct#get_scripts(0, <q-args>)
 noremap <leader>e <Cmd>call window#edit_buf()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
