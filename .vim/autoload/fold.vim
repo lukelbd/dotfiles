@@ -124,6 +124,8 @@ function! fold#fold_text(...) abort
 endfunction
 
 " Return line of fold under cursor matching &l:foldlevel + 1
+" Warning: Critical to record foldlevel('.') after pressing [z instead of ]z since
+" calling foldlevel('.') on the end of a fold could return the level of its child.
 " Note: No native vimscript way to do this if fold is open so we use simple algorithm
 " improved from https://stackoverflow.com/a/4776436/4970632 (note [z never raises error)
 " Note: This is based on workflow of setting standard minimum fold level then manually
@@ -137,56 +139,42 @@ let s:folds_open = [
   \ ['tex', '^\s*\\begin{frame}', '^\s*\\begin{block}', 2],
   \ ['tex', '^\s*\\\(sub\)*section\>', '^\s*\\begin{frame}', 2],
 \ ]
-function! fold#set_defaults() abort
-  for [ftype, regex1, regex2, level] in s:folds_open
-    if ftype !=# &l:filetype
-      continue
-    endif
-    if !empty(regex2) && !search(regex2, 'nwc')
-      continue  " e.g. not talk or poster
-    endif
-    for lnum in range(1, line('$'))
-      if foldclosed(lnum) <= 0 || foldlevel(lnum) != level
-        continue
-      endif
-      if getline(lnum) =~# regex1
-        exe lnum . 'foldopen'
-      endif
-    endfor
-  endfor
+function! fold#get_bounds() abort  " used to update jumplist on CursorHold
+  let line = line('.')  " cursor line
+  let winview = winsaveview()
+  let [line1, line2, level] = fold#get_current(0)
+  if level > 0 && line1 != line2 | return [line1, line2] | endif
+  let pline1 = line == 1 ? 1 : line("'{'") + 1
+  let pline2 = line == line('$') ? line('$') : line("'}")
+  exe line | keepjumps normal! zk
+  let fline1 = line('.') == line ? 1 : line('.') + 1
+  exe line | keepjumps normal! zj
+  let fline2 = line('.') == line ? line('$') : line('.') - 1
+  call winrestview(winview)
+  return [max([pline1, fline1]), min([pline2, fline2])]
 endfunction
-function! fold#get_current(...) abort
-  let toplevel = a:0 ? a:1 : &foldlevel
+function! fold#get_current(...) abort  " current &foldlevel fold
+  let toplevel = a:0 ? a:1 : &l:foldlevel
   let winview = winsaveview()  " save view
+  let prev = 'keepjumps normal! [z'
+  let next = 'keepjumps normal! ]z'
   let lnum = -1
   while line('.') != lnum && foldlevel('.') > toplevel + 1
-    let lnum = line('.')
-    keepjumps normal! [z
-    if lnum == line('.') | exe 'normal! j' | endif
+    let lnum = line('.') | exe prev
+    exe lnum == line('.') ? 'normal! j' : ''
   endwhile
-  if foldclosed('.') > 0
-    let [line1, line2] = [foldclosed('.'), foldclosedend('.')]
-  else  " check if cursor on head ('[z' moves to different fold)
-    let [line0, level0] = [line('.'), foldlevel('.')]
-    keepjumps normal! [z
-    let level1 = foldlevel('.')  " fold level after [z
-    keepjumps normal! ]z
-    let line1 = line('.')  " end of fold after [z
-    if line1 >= line0 && level0 == level1  " move cursor to head
-      exe line0 | keepjumps normal! [z
-    else  " cursor already on head ([z moved to different fold)
-      exe line0
-    endif
-    let line1 = line('.')
-    keepjumps normal! ]z
-    let line2 = line('.')
+  let [lnum, llev] = [line('.'), foldlevel('.')]
+  let line1 = foldclosed('.')
+  let line2 = foldclosedend('.')
+  if line1 <= 0  " infer start and end from cursor motions (see above)
+    exe prev | let ilev = foldlevel('.') | exe next
+    let head = line('.') < lnum || ilev != llev
+    exe lnum | exe head ? '' : prev | let line1 = line('.')
+    exe next | let line2 = line('.')
   endif
   let recurse = 0  " recursive call
   for [ftype, regex1, regex2, level] in s:folds_open
-    if ftype !=# &l:filetype
-      continue
-    endif
-    if level - 1 != toplevel
+    if ftype !=# &l:filetype || level - 1 != toplevel
       continue
     endif
     if !empty(regex2) && !search(regex2, 'nwc')
@@ -204,7 +192,7 @@ function! fold#get_current(...) abort
   endif
 endfunction
 
-" Set the file fold level and optional default toggles
+" Update the fold bounds, level, and open-close status
 " Warning: Sometimes run into issue where opening new files or reading updates
 " permanently disables 'expr' folds. Account for this by re-applying fold method.
 " Warning: Regenerating b:SimPylFold_cache with manual SimpylFold#FoldExpr() call
@@ -218,7 +206,6 @@ function! fold#update_folds(...) abort
   let force = a:0 && a:1
   let queued = get(b:, 'fastfold_queued', 1)  " changed on TextChanged,TextChangedI
   if !force && !queued | return | endif
-  echom 'Update!!!'
   if &filetype ==# 'python'
     setlocal foldmethod=expr  " e.g. in case stuck, then FastFoldUpdate sets to manual
     setlocal foldexpr=python#fold_expr(v:lnum)
@@ -233,7 +220,7 @@ function! fold#update_folds(...) abort
   let b:fastfold_queued = 0
 endfunction
 function! fold#update_level(...) abort
-  let level = &foldlevel
+  let level = &l:foldlevel
   if a:0  " input direction
     let cmd = v:count1 . 'z' . a:1
   elseif !v:count || v:count == level
@@ -246,7 +233,25 @@ function! fold#update_level(...) abort
   if !empty(cmd)
     silent! exe 'normal! ' . cmd
   endif
-  echom 'Fold level: ' . &foldlevel
+  echom 'Fold level: ' . &l:foldlevel
+endfunction
+function! fold#update_open() abort
+  for [ftype, regex1, regex2, level] in s:folds_open
+    if ftype !=# &l:filetype
+      continue
+    endif
+    if !empty(regex2) && !search(regex2, 'nwc')
+      continue  " e.g. not talk or poster
+    endif
+    for lnum in range(1, line('$'))
+      if foldclosed(lnum) <= 0 || foldlevel(lnum) != level
+        continue
+      endif
+      if getline(lnum) =~# regex1
+        exe lnum . 'foldopen'
+      endif
+    endfor
+  endfor
 endfunction
 
 " Toggle folds under cursor

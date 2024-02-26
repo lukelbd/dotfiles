@@ -37,7 +37,7 @@ endfunction
 " in parentheses that can be tab expanded, selects it when user presses enter, or
 " replaces it when user starts typing text or backspace. This is a bit nicer than
 " filling input prompt with default value, simply start typing to drop the default
-function! utils#input_list(lead, line, cursor)
+function! utils#input_complete(lead, line, cursor)
   let [initial, default, complete; force] = s:complete_opts
   let force = !empty(force) && force[0]
   if !initial  " get complete options
@@ -68,7 +68,7 @@ function! utils#input_list(lead, line, cursor)
       let opts = [] | call feedkeys(char, 'it')
       call feedkeys(force ? "\<CR>" : '', 't')
     elseif char !~# '^\p\+$'  " non-printables and multi-byte escpaes e.g. \<BS>
-      let opts = force ? [] : []
+      let opts = force ? [char] : []
       call feedkeys(force ? "\<CR>" : '', 't')
     else  " printable input characters
       let opts = force ? [] : [char]
@@ -85,7 +85,7 @@ function! utils#input_default(prompt, ...) abort
   let result .= result =~# '\w$\|)$' ? ': ' : ' '
   let s:complete_opts = [1, default, complete] + a:000[2:]
   call feedkeys("\<Tab>", 't')
-  return input(result, '', 'customlist,utils#input_list')
+  return input(result, '', 'customlist,utils#input_complete')
 endfunction
 
 " Call over the visual line range or user motion line range (see e.g. python.vim)
@@ -223,26 +223,26 @@ function! s:translate_input(mode, ...) abort
       let result = ''
     endif
   else  " ' or \" register invocation
-    let char = ''
     let [name, label] = s:translate_count(a:mode, 0)
-    let result = '"' . name
-    if empty(name)  " no count preceded ' or \" press
+    if !empty(name)  " count preceded ' or \" press
+      let result = '"' . name
+    else  " request additional character
       let char = utils#input_default('Register', '', '', 1)
       if empty(char)  " e.g. escape character
         let name = char
         let result = ''
-      elseif char ==# "'"  " native register selection
-        let name = utils#input_default('Register (raw)', '', '', 1)
-        let result = '"' . name
-      elseif char ==# '"'  " native register selection
+      elseif char ==# "\<F8>"  " peekaboo shortcut
         let name = ''
         let result = peekaboo#peek(1, '"', 0)
-      elseif char =~# '\d'  " use character to pick number register
+      elseif char =~# '^[''"]$'  " native register selection
+        let name = utils#input_default('Register (raw)', '', '', 1)
+        let result = '"' . name
+      elseif char =~# '^\d$'  " use character to pick number register
         let name = char
         let result = '"' . name
-      else  " pass character to normal mode (e.g. <Left>, d2j, ciw, yy)
-        let name = a:1
-        let result = '"' . name . char  " including next character
+      else  " pass default to operator or cancel selection
+        let name = char =~? '^[dcyp]$' ? a:1 : ''
+        let result = empty(name) ? char : '"' . name . char
       endif
       if name ==# '_'
         let label = 'blackhole'

@@ -80,10 +80,8 @@ function! stack#update_stack(head, scroll, ...) abort
     call add(stack, remove(stack, kdx)) | let jdx = len(stack) - 1
   endif
   call s:set_stack(a:head, stack, jdx)
-  if verbose && v:vim_did_enter  " suppress on startup
-    if jdx != idx || name != get(stack, idx, '')
-      call timer_start(100, function('stack#show_item', [a:head, name, jdx, len(stack)]))
-    endif
+  if verbose && v:vim_did_enter && (verbose > 1 || jdx != idx || name != get(stack, idx, ''))
+    call timer_start(100, function('stack#show_item', [a:head, name, jdx, len(stack)]))
   endif
 endfunction
 
@@ -152,13 +150,14 @@ function! stack#scroll_tabs(...) abort
   endif
   call stack#push_stack('tab', function('stack#scroll_sink'), scroll)
 endfunction
-function! stack#update_tabs() abort  " set current buffer
+function! stack#update_tabs(...) abort  " set current buffer
   let skip = index(g:tags_skip_filetypes, &filetype)
+  let verbose = a:0 ? a:1 : 0  " disabled by default
   let scroll = get(b:, 'tab_scroll', 0)
   let b:tab_name = expand('%:p')  " required for update stack
   let b:tab_scroll = scroll  " in case unset
   if skip != -1 || line('$') <= 1 || empty(&filetype)
     if len(tabpagebuflist()) > 1 | return | endif
   endif
-  call stack#update_stack('tab', scroll)  " verbose disabled
+  call stack#update_stack('tab', scroll, -1, verbose)
 endfunction

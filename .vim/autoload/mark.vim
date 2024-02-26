@@ -18,18 +18,15 @@ let s:cterm_colors = ['DarkYellow', 'DarkCyan', 'DarkMagenta', 'DarkBlue', 'Dark
 " motions and conditionally updating jumplist on CursorHold. Still navigate the
 " actual jumplist using <C-o>/<C-i> navigation keys. Compare to changelist below.
 function! mark#push_jump() abort
-  let [line1, line2] = [line("'{"), line("'}")]
+  let jprev = line("''")  " line of previous jump
+  let jumps = jprev > 0 ? [jprev] : []
   let [jlist, jloc] = getjumplist()
-  let pline = line("''")  " line of previous jump
-  let cline = pline
-  if !empty(jlist)
-    let opts = get(jlist, jloc, jlist[-1])
-    let cline = opts['lnum']
+  let [line1, line2] = fold#get_bounds()  " current cursor bounds
+  if !empty(jlist)  " previous jump from list
+    call add(jumps, get(jlist, jloc, jlist[-1])['lnum'])
   endif
-  if line1 > cline || line2 < cline
-    if line1 > pline || line2 < pline
-      call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
-    endif
+  if empty(filter(jumps, {idx, val -> val >= line1 && val <= line2}))
+    call feedkeys("\<Cmd>normal! m'\<CR>", 'n')
   endif
 endfunction
 

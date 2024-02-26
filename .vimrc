@@ -8,12 +8,13 @@
 " F2: 1b 4f 51 (Ctrl-.)
 " F3: 1b 4f 52 (Ctrl-[)
 " F4: 1b 4f 53 (Ctrl-])
-" F5: 1b 5b 31 35 7e (Ctrl-\) (shorter codes did not work)
-" F6: 1b 5b 31 37 7e (Ctrl-;)
-" F7: 1b 5b 31 38 7e (Ctrl-')
-" F8: 1b 5b 31 39 7e (Ctrl-i)
-" F9: 1b 5b 32 30 7e (Ctrl-m)
-" See: https://github.com/c-bata/go-prompt/blob/master/input.go
+" F5: 1b 5b 31 35 7e (Ctrl-/)
+" F6: 1b 5b 31 37 7e (Ctrl-\) (shorter codes did not work)
+" F7: 1b 5b 31 38 7e (Ctrl-;)
+" F8: 1b 5b 31 39 7e (Ctrl-')
+" F9: 1b 5b 32 30 7e (Ctrl-i)
+" F10: 1b 5b 32 31 7e (Ctrl-m)
+" See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 "-----------------------------------------------------------------------------"
 " Critical stuff
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
@@ -355,7 +356,7 @@ endfor
 " * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
 " * Ctrl-z sends vim to background, disable to prevent cursor change
 for s:key in [
-  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>',
+  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>', '<F10>',
   \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
   \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
 \ ]
@@ -464,11 +465,11 @@ nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
-nnoremap <C-g> <Cmd>GFiles<CR>
-nnoremap <F8> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+nnoremap <F9> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <C-g> <Cmd>GFiles<CR>
 
 " Open file with optional user input
 silent! unmap <Tab>q
@@ -544,10 +545,10 @@ augroup END
 " Mapping and command windows
 " This uses iterm mapping of <F6> to <C-;> and works in all modes
 " See: https://stackoverflow.com/a/41168966/4970632
-omap <F6> <Plug>(fzf-maps-o)
-xmap <F6> <Plug>(fzf-maps-x)
-imap <F6> <Plug>(fzf-maps-i)
-nnoremap <F6> <Cmd>Maps<CR>
+omap <F7> <Plug>(fzf-maps-o)
+xmap <F7> <Plug>(fzf-maps-x)
+imap <F7> <Plug>(fzf-maps-i)
+nnoremap <F7> <Cmd>Maps<CR>
 nnoremap <Leader>q <Cmd>Commands<CR>
 nnoremap <Leader>Q <Cmd>Maps<CR>
 
@@ -603,6 +604,7 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
+noremap z; <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 cnoremap <F1> <C-p>
@@ -615,16 +617,22 @@ augroup jumplist_setup
   au!
   au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
 augroup END
-command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
-command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 noremap <C-h> <Cmd>call mark#goto_change(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#goto_change(v:count1)<CR>
 noremap <Left> <Cmd>call mark#goto_change(-v:count1)<CR>
 noremap <Right> <Cmd>call mark#goto_change(v:count1)<CR>
 noremap <F3> <Cmd>call mark#goto_jump(-v:count1)<CR>
 noremap <F4> <Cmd>call mark#goto_jump(v:count1)<CR>
+
+" Search across changes jumpst and lines
+" Note: This leverages custom-managed change and jump lists with redundant
+" change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
+command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
+command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 noremap g; <Cmd>call mark#fzf_changes()<CR>
 noremap g: <Cmd>call mark#fzf_jumps()<CR>
+nnoremap <F5> <Cmd>BLines<CR>
+nnoremap <F6> <Cmd>Lines<CR>
 
 " Navigate matches/sentences/paragraphs without adding to jumplist
 " Note: Core vim idea is that these commands take us far away from cursor
@@ -692,8 +700,8 @@ for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
 endfor
 noremap gz <Cmd>Folds<CR>
 noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
-noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#set_defaults()<CR>zv
-noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#set_defaults()<CR>
+noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#update_open()<CR>zv
+noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#update_open()<CR>
 
 " Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.
@@ -715,12 +723,12 @@ nnoremap <expr> zo fold#toggle_range_expr(0, 0)
 " Note: Here 'zC' will close fold only up to current level or for definitions
 " inside class (special case for python). For recursive motion mapping similar
 " to 'zc' and 'zo' could use e.g. noremap <expr> zC fold#toggle_range_expr(1, 1)
-noremap z; <Cmd>call switch#opensearch()<CR>
 noremap zi <Cmd>call fold#toggle_nested()<CR>
 noremap zC <Cmd>call fold#toggle_current(1)<CR>
 noremap zO <Cmd>call fold#toggle_current(0)<CR>
-noremap zn zn
-noremap zN zN
+noremap z/ <Cmd>call switch#opensearch()<CR>
+noremap zN zN<Cmd>call fold#update_folds()<CR>
+silent! exe 'unmap zn' | silent! exe 'unmap zv'
 
 " Change fold level
 " Note: Here fold#update_level() calls fold#update_folds() if level was changed
@@ -758,7 +766,7 @@ noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
 noremap g_ <Cmd>call mark#fzf_marks()<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
-noremap <F9> <Cmd>call mark#next_mark(v:count1)<CR>
+noremap <F10> <Cmd>call mark#next_mark(v:count1)<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -776,8 +784,6 @@ nnoremap g' <Cmd>call grep#call_grep('rg', 1, 0)<CR>
 nnoremap g" <Cmd>call grep#call_grep('rg', 1, 1)<CR>
 nnoremap z' <Cmd>call grep#call_grep('rg', 0, 2)<CR>
 nnoremap z" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
-nnoremap z/ <Cmd>BLines<CR>
-nnoremap z? <Cmd>Lines<CR>
 
 " Convenience grep maps and commands
 " Note: Search open files for print statements and project files for others
@@ -887,8 +893,8 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " history lost after vim re-enters insert mode from the <C-o> command.
 " nmap u <Plug>(RepeatUndo)
 " nmap U <Plug>(RepeatRedo)
-inoremap <F8> <C-o>u
-inoremap <F9> <C-g>u
+inoremap <F9> <C-o>u
+inoremap <F10> <C-g>u
 nnoremap U <C-r>
 
 " Handle indent counts. In native vim 2> indents this line or this motion
@@ -903,8 +909,8 @@ nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
 " Register selection utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-imap <expr> <F7> peekaboo#peek(1, "\<C-r>",  0)
-nmap <expr> <F7> peekaboo#peek(1, '"', 0)
+imap <expr> <F8> peekaboo#peek(1, "\<C-r>",  0)
+nmap <expr> <F8> peekaboo#peek(1, '"', 0)
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
