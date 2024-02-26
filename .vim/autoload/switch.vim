@@ -165,6 +165,7 @@ function! switch#opensearch(...) abort
   let state = !empty(b:search_folds)
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
+  let winview = winsaveview()
   if toggle
     let cmd = 'foldopen | call add(b:search_folds, line("."))'
     global//exe foldclosed('.') >= 0 ? cmd : ''
@@ -172,6 +173,7 @@ function! switch#opensearch(...) abort
     for line in b:search_folds | exe line . 'foldclose' | endfor
     let b:search_folds = []
   endif
+  call winrestview(winview)
   call call('s:switch_message', ['Open searches', toggle, suppress])
 endfunction
 

@@ -269,7 +269,6 @@ endfunction
 
 " Helper function for repeat#set
 " This is simpler than copy-pasting manual repeat#set calls
-" let head = a:mode ==# 'o' ? '(v:operator ==# "c" ? "\<Esc>" : "") . v:operator . ' : ''
 function! s:repeat_get(mode) abort
   return a:mode ==# 'o' ? v:operator ==# 'c' ? "\<Esc>c" : v:operator : ''
 endfunction
@@ -659,16 +658,11 @@ function! s:move_alpha(keys, ...) abort
   setlocal iskeyword=@,48-57,192-255
   let action = a:0 ? a:1 ==# 'c' ? "\<Esc>c" : a:1 : ''
   call feedkeys(action . v:count1 . a:keys . "\<Cmd>" . cmd . "\<CR>", 'n')
-  " if a:0 > 1  " repeat action
-  "   let feed = 'call repeat#set(' . action . '"\<Plug>' . a:2  . '")'
-  "   call feedkeys("\<Cmd>" . feed . "\<CR>", 'n')
-  " endif
 endfunction
 noremap gw <Cmd>call <sid>move_alpha('w')<CR>
 noremap gb <Cmd>call <sid>move_alpha('b')<CR>
 noremap ge <Cmd>call <sid>move_alpha('e')<CR>
 noremap gm <Cmd>call <sid>move_alpha('ge')<CR>
-onoremap gw <Cmd>call <sid>move_alpha('w', v:operator)<CR>
 call s:repeat_map('o', 'gw', 'NextStart', "<Cmd>call <sid>move_alpha('w', v:operator)<CR>")
 call s:repeat_map('o', 'gb', 'PrevStart', "<Cmd>call <sid>move_alpha('b', v:operator)<CR>")
 call s:repeat_map('o', 'ge', 'NextEnd',   "<Cmd>call <sid>move_alpha('e', v:operator)<CR>")
