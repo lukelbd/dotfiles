@@ -677,10 +677,10 @@ call s:repeat_map('o', 'gm', 'PrevEnd',   "<Cmd>call <sid>move_alpha('ge, v:oper
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
 silent! unmap zv
 noremap z<CR> zzze
-noremap z9 zt
-noremap z0 zb
-noremap z- ze
-noremap z= zs
+noremap z- zt
+noremap z= zb
+noremap z9 ze
+noremap z0 zs
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here 'zV' opens all folds from the most recent search
@@ -1088,8 +1088,8 @@ augroup copy_setup
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+nnoremap <Leader>c <Cmd>call switch#conceal()<CR>
+nnoremap <Leader>C <Cmd>call switch#copy()<CR>
 
 " Popup menu selection shortcuts
 " Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
