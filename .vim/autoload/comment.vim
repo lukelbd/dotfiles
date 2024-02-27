@@ -105,7 +105,7 @@ function! comment#next_comment(count, ...) abort  " contiguous blocks
   let regex .= head . '\zs' . tail . '\(' . head[1:] . tail . '\)*'
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "!utils#get_inside('Comment')")
+    call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
   endfor
 endfunction
 function! comment#toggle_comment(...) abort

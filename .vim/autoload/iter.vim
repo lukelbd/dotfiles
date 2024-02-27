@@ -60,21 +60,6 @@ function! iter#next_loc(count, list, ...) abort
   endif
 endfunction
 
-" Navigate keywords under cursor
-" Todo: Concisder adding this to vim-tags directly.
-" Note: This emulates behavior of :LspPreviousReference and :LspNextReference so
-" we can jump references without enabling annoying highlighting
-function! iter#next_keyword(count, ...) abort
-  call tags#set_match('#', 1)
-  let regex = @/ | call histdel('/', -1)
-  let flags = a:count >= 0 ? 'w' : 'bw'
-  let idx = col('.') - 1  " vint: -ProhibitUsingUndeclaredVariable
-  let cnt = getline('.')[idx:idx]
-  for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "utils#get_inside('Constant', 'Comment')")
-  endfor
-endfunction
-
 " Navigate search matches without editing jumplist
 " Note: This implements indexed-search directional consistency and avoids
 " adding to the jumplist to prevent overpopulation

@@ -322,6 +322,6 @@ function! python#next_docstring(count, ...) abort
   endif
   let regex = head . '[frub]*["'']\{3}\_s*\zs'
   for _ in range(abs(a:count))
-    call search(regex, flags, 0, 0, "!utils#get_inside(-1, 'Constant')")
+    call search(regex, flags, 0, 0, "!tags#get_inside(-1, 'Constant')")
   endfor
 endfunction
