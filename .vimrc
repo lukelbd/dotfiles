@@ -65,7 +65,6 @@ set hlsearch  " highlight as you search forward
 set ignorecase  " ignore case in search patterns
 set iminsert=0  " disable language maps (used for caps lock)
 set incsearch  " show match as typed so far
-set jumpoptions=  " use 'stack' to keep relative locations but lose future
 set lazyredraw  " skip redraws during macro and function calls
 set list  " show hidden characters
 set listchars=nbsp:¬,tab:▸\ ,eol:↘,trail:·  " other characters: ▸, ·, ¬, ↳, ⤷, ⬎, ↘, ➝, ↦,⬊
