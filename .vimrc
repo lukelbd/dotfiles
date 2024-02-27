@@ -399,7 +399,7 @@ nnoremap <C-e> <Cmd>call window#close_panes()<CR>
 " Refresh session or re-open previous files
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
-command! -nargs=? Scripts call succinct#get_scripts(0, <q-args>)
+command! -nargs=? Scripts call utils#get_scripts(0, <q-args>)
 noremap <leader>e <Cmd>call window#edit_buf()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
@@ -692,8 +692,8 @@ for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
 endfor
 noremap gz <Cmd>Folds<CR>
 noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
-noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#update_open()<CR>zv
-noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#update_open()<CR>
+noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#pseudo_level()<CR>zv
+noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#pseudo_level()<CR>
 
 " Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.

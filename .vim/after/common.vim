@@ -38,7 +38,7 @@ endif
 " Update folds and plugin-specific settings
 " Note: Here CursorHold is needed for vim-markdown overrides and BufReadPost is needed
 " for conflict-marker overrides. No public functional way to do either of these.
-" Note: Here fold#update_open() resets fold open-close status for some filetypes but
+" Note: Here fold#pseudo_level() resets fold open-close status for some filetypes but
 " unfortunately required because refresh seems to clean out vim-markdown definitions.
 " Note: Here overwrite native foldtext function so that vim-markdown autocommands
 " re-apply it along with other settings. Critical to prevent e.g. javascript.vim
@@ -50,7 +50,7 @@ endfunction
 let closed = foldclosed('.')
 let winview = winsaveview()
 call fold#update_folds()
-call fold#update_open()
+call fold#pseudo_level()
 call winrestview(winview)
 if closed <= 0 | exe 'silent! normal! zv' | endif
 doautocmd CursorHold

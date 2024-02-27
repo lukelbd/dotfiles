@@ -186,7 +186,7 @@ function! git#fugitive_setup() abort
   endfor
   setlocal foldmethod=syntax
   call fold#update_folds()
-  call fold#update_open()
+  call fold#pseudo_level()
   call call('utils#switch_maps', s:fugitive_switch)
 endfunction
 function! git#fugitive_return() abort

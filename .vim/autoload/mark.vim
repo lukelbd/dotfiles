@@ -122,7 +122,7 @@ function! s:list_sink(changes, line) abort
   return s:feed_list(a:changes, -iloc, tnr, wnr)  " backwards is positive
 endfunction
 function! s:list_source(changes) abort
-  let snr = succinct#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let name = printf('%6s', a:changes ? 'change' : 'jump')
   let paths = map(tags#buffer_paths(), 'resolve(v:val[1])')  " sorted by recent use
@@ -164,7 +164,7 @@ function! s:change_sink(arg) abort  " first item is key binding
   if len(a:arg) > 1 | return s:list_sink(1, a:arg[-1]) | endif
 endfunction
 function! mark#fzf_jumps(...)
-  let snr = succinct#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let options = {
     \ 'source': s:list_source(0),
@@ -174,7 +174,7 @@ function! mark#fzf_jumps(...)
   return call(snr . 'fzf', ['jumps', options, a:000])
 endfunction
 function! mark#fzf_changes(...) abort
-  let snr = succinct#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let options = {
     \ 'source': s:list_source(1),
@@ -214,7 +214,7 @@ function! mark#goto_mark(...) abort
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')
 endfunction
 function! mark#fzf_marks(...) abort
-  let snr = succinct#get_snr('fzf.vim/autoload/fzf/vim.vim')
+  let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
   if empty(snr) | return | endif
   let lines = split(execute('silent marks'), "\n")
   let options = {

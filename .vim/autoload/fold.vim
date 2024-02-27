@@ -235,7 +235,7 @@ function! fold#update_level(...) abort
   endif
   echom 'Fold level: ' . &l:foldlevel
 endfunction
-function! fold#update_open() abort
+function! fold#pseudo_level() abort
   for [ftype, regex1, regex2, level] in s:folds_open
     if ftype !=# &l:filetype
       continue

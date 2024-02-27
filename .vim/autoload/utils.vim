@@ -30,6 +30,43 @@ function! utils#catch_errors(...) abort
   endtry
 endfunction
 
+" Get the fzf.vim/autoload/fzf/vim.vim script id for overriding.
+" See: https://stackoverflow.com/a/49447600/4970632
+" Note: This is used to override fzf marks commands and support jumping to existing
+" tabs, and to overide jumplist and changelist command for various new settings.
+function! utils#get_snr(regex, ...) abort
+  silent! call fzf#vim#with_preview()  " trigger autoload if not already done
+  let [paths, sids] = utils#get_scripts(1)
+  let path = filter(copy(paths), 'v:val =~# a:regex')
+  let idx = index(paths, get(path, 0, ''))
+  if !empty(path) && idx >= 0
+    return "\<snr>" . sids[idx] . '_'
+  elseif a:0 && a:1  " optionally suppress warning
+    return ''
+  else  " emit warning
+    echohl WarningMsg
+    echom "Warning: Autoload script '" . a:regex . "' not found."
+    echohl None | return ''
+  endif
+endfunction
+function! utils#get_scripts(...) abort
+  let suppress = a:0 > 0 ? a:1 : 0
+  let regex = a:0 > 1 ? a:2 : ''
+  let [paths, sids] = [[], []]  " no dictionary because confusing
+  for path in split(execute('scriptnames'), "\n")
+    let sid = substitute(path, '^\s*\(\d*\):.*$', '\1', 'g')
+    let path = substitute(path, '^\s*\d*:\s*\(.*\)$', '\1', 'g')
+    let path = fnamemodify(resolve(expand(path)), ':p')  " then compare to home
+    if !empty(regex) && path !~# regex
+      continue
+    endif
+    call add(paths, path)
+    call add(sids, sid)
+  endfor
+  if !suppress | echom 'Script names: ' . join(paths, ', ') | endif
+  return [paths, sids]
+endfunction
+
 " Get user input with requested default
 " Note: Force option forces return after single key press (used for registers). Try
 " to feed the result with feedkeys() instead of adding to opts to reduce screen flash.
@@ -94,7 +131,7 @@ endfunction
 " Also ensure functions accept :[range]call function(args) for consistency with vim
 " standard paradigm and so they can be called with e.g. V<motion>:call func().
 function! utils#motion_func(funcname, args) abort
-  let string = string(a:args)[1:-2]
+  let string = string(a:args)[1:-2]  " remove square brackets
   let string = a:funcname . '(' . string . ')'
   let s:operator_func = string
   if mode() =~# '^\(v\|V\|\)$'  " call operator function with line range

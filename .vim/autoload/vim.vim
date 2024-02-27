@@ -26,7 +26,7 @@ let s:config_ignore = [
 function! vim#config_refresh(bang, ...) abort
   silent! runtime autoload/succinct.vim  " remove this after restarting sessions
   let time = get(g:, 'refresh', localtime())
-  let paths = succinct#get_scripts(1)[0]
+  let paths = utils#get_scripts(1)[0]
   let ignore = join(s:config_ignore, '\|')
   let loaded = []
   for path in paths
