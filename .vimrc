@@ -692,8 +692,8 @@ for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
 endfor
 noremap gz <Cmd>Folds<CR>
 noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
-noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#pseudo_level()<CR>zv
-noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#pseudo_level()<CR>
+noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#regex_levels()<CR>zv
+noremap zX <Cmd>call fold#update_folds()<CR>zX<Cmd>call fold#regex_levels()<CR>
 
 " Toggle folds under cursor non-recursively after updating
 " Note: Here fold#toggle_range_expr() calls fold#update_folds() before toggling.

@@ -131,7 +131,7 @@ endfunction
 " Note: This is based on workflow of setting standard minimum fold level then manually
 " opening other folds. Previously tried ad hoc method using foldlevel() and scrolling
 " up lines preceding line is lower-level but this fails for adjacent same-level folds.
-let s:folds_open = [
+let s:regex_levels = [
   \ ['python', '^class\>', '', 1],
   \ ['fortran', '^\s*\(module\|program\)\>', '', 1],
   \ ['fugitive', '^\(Unstaged\|Staged\)\>', '', 1],
@@ -173,7 +173,7 @@ function! fold#get_current(...) abort  " current &foldlevel fold
     exe next | let line2 = line('.')
   endif
   let recurse = 0  " recursive call
-  for [ftype, regex1, regex2, level] in s:folds_open
+  for [ftype, regex1, regex2, level] in s:regex_levels
     if ftype !=# &l:filetype || level - 1 != toplevel
       continue
     endif
@@ -235,8 +235,8 @@ function! fold#update_level(...) abort
   endif
   echom 'Fold level: ' . &l:foldlevel
 endfunction
-function! fold#pseudo_level() abort
-  for [ftype, regex1, regex2, level] in s:folds_open
+function! fold#regex_levels() abort
+  for [ftype, regex1, regex2, level] in s:regex_levels
     if ftype !=# &l:filetype
       continue
     endif
