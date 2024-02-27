@@ -3,7 +3,8 @@
 " See: https://stackoverflow.com/a/4301809/4970632
 "-----------------------------------------------------------------------------"
 " General settings
-" Warning: Peekaboo mappings are set
+" Note: Peekaboo mappings are local so have to override here. Also in future should
+" consider setting b:surround_indent for filetypes but for now have this for safety.
 " Note: This overrides native vim filetype-specific double-bracket maps (e.g. :map [[
 " in vim files for jumping to functions) but skips mapping in presence of buffer-local
 " single-bracket maps (e.g. help file tag navigation) and buffer-local indent maps
@@ -13,6 +14,8 @@ setlocal conceallevel=2
 setlocal formatoptions=lrojcq
 setlocal linebreak
 setlocal nojoinspaces
+silent! unlet b:surround_indent
+silent! unlet b:surround_restore
 let &l:textwidth = g:linelength
 let &l:wrapmargin = 0
 let s:jump1 = get(maparg('[', '', 0, 1), 'buffer', 0)

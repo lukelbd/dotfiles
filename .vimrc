@@ -926,8 +926,8 @@ vnoremap <expr> , '@' . utils#translate_name('@')
 " Note: Pressing double '' or \"\" triggers native or peekaboo register selection. The
 " latter is handled inside utils by returning the corresponding <Plug> mapping.
 nnoremap <expr> ' (v:count ? '<Esc>' : '') . utils#translate_name('', '_')
-vnoremap <expr> ' utils#translate_name('', '_')
 nnoremap <expr> " (v:count ? '<Esc>' : '') . utils#translate_name('q', '*')
+vnoremap <expr> ' utils#translate_name('', '_')
 vnoremap <expr> " utils#translate_name('q', '*')
 
 " Change text, specify registers with counts.
