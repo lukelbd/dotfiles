@@ -1,23 +1,30 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" General helper functions
+" General normal mode helper functions
 " Note: Native calculator only supports visual-mode but here add motions.
 " See: https://github.com/sk1418/HowMuch/blob/master/autoload/HowMuch.vim
-function! edit#echo_range(msg, num) range abort
-  let head = a:msg =~# '\s' ? a:msg . ' on' : a:msg
-  echom head . ' ' . a:num . ' line' . (a:num == 1 ? '' : 's')
+function! edit#insert_mode(...) abort  " restore insert mode
+  let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
+  let b:insert_mode = imode
+  return imode
 endfunction
+" For <expr> map accepting motion
+function! edit#how_much_expr(...) abort
+  return utils#motion_func('HowMuch#HowMuch', a:000)
+endfunction
+
+" Indentation helper functions
+" Note: Native vim indent uses count to move over number of lines, but redundant
+" with e.g. 'd2k', so instead use count to denote indentation level.
 function! edit#indent_items(dedent, count) range abort
-  let range = a:firstline . ',' . a:lastline  " use native vim message
-  exe range . repeat(a:dedent ? '<' : '>', a:count)
+  let irange = a:firstline . ',' . a:lastline  " use native vim message
+  let indent = repeat(a:dedent ? '<' : '>', a:count)
+  exe irange . indent
 endfunction
 " For <expr> map accepting motion
 function! edit#indent_items_expr(...) abort
   return utils#motion_func('edit#indent_items', a:000)
-endfunction
-function! edit#how_much_expr(...) abort
-  return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
 
 " Forward delete by indent whitespace in insert mode
@@ -95,6 +102,10 @@ function! edit#replace_regex(msg, ...) range abort
   call edit#echo_range(a:msg, nlines)
   let @/ = search
   call winrestview(winview)
+endfunction
+" Echo the number of matches
+function! edit#echo_range(msg, num) range abort
+  echo a:msg . (a:msg =~# '\s' ? ' on' : '') . ' ' . a:num . ' line(s)'
 endfunction
 " For <expr> map accepting motion
 function! edit#replace_regex_expr(...) abort
@@ -208,16 +219,6 @@ function! edit#wrap_lines(...) range abort
   let cmd .= "\<Cmd>echom 'Wrapped lines to " . textwidth . " characters.'\<CR>"
   call feedkeys(cmd, 'n')
 endfunction
-" For <expr> map accepting motion
-function! edit#wrap_lines_expr(...) abort
-  return utils#motion_func('edit#wrap_lines', a:000)
-endfunction
-
-" Fix all lines that are too long, with special consideration for bullet style lists and
-" asterisks (does not insert new bullets and adds spaces for asterisks).
-" Note: This is good example of incorporating motion support in custom functions!
-" Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
-" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
 " Return regexes for the search
 function! s:search_item(optional)
   let head = '^\(\s*\%(' . comment#get_char() . '\s*\)\?\)'  " leading spaces or comment
@@ -240,6 +241,16 @@ function! s:remove_item(line, first, last) abort
     \ . '@ge'
   call histdel('/', -1)
 endfunction
+" For <expr> map accepting motion
+function! edit#wrap_lines_expr(...) abort
+  return utils#motion_func('edit#wrap_lines', a:000)
+endfunction
+
+" Fix all lines that are too long, with special consideration for bullet style lists and
+" asterisks (does not insert new bullets and adds spaces for asterisks).
+" Note: This is good example of incorporating motion support in custom functions!
+" Note: Optional arg values is vim 8.1+ feature; see :help optional-function-argument
+" See: https://vi.stackexchange.com/a/7712/8084 and :help g@
 " Put lines on single bullet
 function! edit#wrap_items(...) range abort
   let textwidth = &l:textwidth

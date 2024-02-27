@@ -248,31 +248,10 @@ function! file#open_drop(...) abort
   endfor
 endfunction
 
-" Rename2.vim  -  Rename a buffer within Vim and on disk
-" Copyright July 2009 by Manni Heumann <vim at lxxi.org> based on Rename.vim
-" Note: Ignore missing 'b:gitgutter_was_enabled' error
-function! file#rename(name, bang)
-  let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)
-  let curfile = expand('%:p')
-  let curfilepath = expand('%:p:h')
-  let newname = curfilepath . '/' . a:name
-  let v:errmsg = ''
-  silent! exe 'saveas' . a:bang . ' ' . newname
-  if v:errmsg =~# '^$\|^E329\|^E108'
-    if expand('%:p') !=# curfile && filewritable(expand('%:p'))
-      silent exe 'bwipe! ' . curfile
-      if delete(curfile) != 0
-        throw 'Could not delete ' . curfile
-      endif
-    endif
-  else
-    throw v:errmsg
-  endif
-endfunction
-
-" Update the file
-" Note: Prevents vim bug where cancelling the save in the confirmation
-" prompt still triggers BufWritePost and resets b:tabline_filechanged.
+" Save or rename the file
+" Note: Prevents vim bug where cancelling the save in the confirmation prompt still
+" triggers BufWritePost and resets b:tabline_filechanged., and prevents Rename.vim
+" integration bug that triggers undefined b:gitgutter_was_enabled errors.
 function! file#update() abort
   let tabline_changed = exists('b:tabline_filechanged') ? b:tabline_filechanged : 0
   let statusline_changed = exists('b:statusline_filechanged') ? b:statusline_filechanged : 0
@@ -282,5 +261,22 @@ function! file#update() abort
   endif
   if &l:modified && statusline_changed && !b:statusline_filechanged
     let b:statusline_filechanged = 1
+  endif
+endfunction
+function! file#rename(name, bang)
+  let b:gitgutter_was_enabled = get(b:, 'gitgutter_was_enabled', 0)
+  let v:errmsg = ''  " reset message
+  let folder = expand('%:p:h')
+  let path1 = expand('%:p')
+  let path2 = folder . '/' . a:name
+  silent! exe 'saveas' . a:bang . ' ' . path2
+  if v:errmsg !~# '^$\|^E329\|^E108'
+    throw v:errmsg
+  endif
+  if expand('%:p') !=# path1 && filewritable(expand('%:p'))
+    silent exe 'bwipe! ' . path1
+    if delete(path1) != 0
+      throw 'Could not delete ' . path1
+    endif
   endif
 endfunction

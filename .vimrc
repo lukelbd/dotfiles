@@ -222,6 +222,7 @@ augroup insert_repair
   au!
   au InsertLeave * keepjumps normal! `^
   au CmdWinLeave * let b:show_message = 1
+  au InsertEnter * let b:insert_mode = get(b:, 'insert_mode', '')
 augroup END
 
 " Configure escape codes to restore screen after exiting
@@ -256,17 +257,6 @@ for s:spellfile in glob('~/.vim/spell/*.add', 1, 1)
     silent! exec 'mkspell! ' . fnameescape(s:spellfile)
   endif
 endfor
-
-" Helper function to suppress prefix maps. Prevents unexpected behavior due
-" to entering wrong suffix, e.g. \x in visual mode deleting the selection.
-function! s:gobble_map(prefix, mode)
-  let char = getcharstr()
-  if empty(maparg(a:prefix . char, a:mode))  " return no-op
-    return ''
-  else  " re-direct to the active mapping
-    return a:prefix . char
-  endif
-endfunction
 
 " Helper function for repeat#set (easier than copy-pasting repeat#set calls)
 " Todo: Figure out issues with repeating e.g. 'cgw' operator mappings
@@ -310,19 +300,39 @@ endif
 
 " Suppress all prefix mappings initially so that we avoid accidental actions
 " due to entering wrong suffix, e.g. \x in visual mode deleting the selection.
-for s:mapping in [
-  \ ['\', 'nv'],
-  \ ['<Tab>', 'n'],
-  \ ['<Leader>', 'nv'],
+function! s:gobble_map(prefix, mode)
+  let char = getcharstr()  " input character
+  return empty(maparg(a:prefix . char, a:mode)) ? '' : a:prefix . char
+endfunction
+for s:pair in [
+  \ ['\', 'nv'], ['<Tab>', 'n'], ['<Leader>', 'nv'],
 \ ]
-  let s:key = s:mapping[0]
-  let s:modes = split(s:mapping[1], '\zs')  " construct list
-  for s:mode in s:modes
+  let s:key = s:pair[0]
+  for s:mode in split(s:pair[1], '\zs')  " construct list
     if empty(maparg(s:key, s:mode))
-      exe s:mode . 'map <expr> ' . s:key
-        \ . " <sid>gobble_map('" . s:key . "', '" . s:mode . "')"
+      let s:func = "<sid>gobble_map('" . s:key . "', '" . s:mode . "')"
+      exe s:mode . 'map <expr> ' . s:key . ' ' . s:func
     endif
   endfor
+endfor
+
+" Disable insert mode stuff
+" * Ctrl-, and Ctrl-. do nothing, use for previous and next delimiter jumping
+" * Ctrl-x scrolls or toggles insert-mode completion, use autocomplete instead
+" * Ctrl-n, Ctrl-p cycles through menu options, use e.g. Ctrl-j and Ctrl-k instead
+" * Ctrl-d, Ctrl-t deletes and inserts shiftwidths, use backspace and tab instead
+" * Ctrl-h deletes character before cursor, use backspace instead
+" * Ctrl-l used for special 'insertmode' always-insert-mode option
+" * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
+" * Ctrl-z sends vim to background, disable to prevent cursor change
+for s:key in [
+  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>', '<F10>',
+  \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
+  \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
+\ ]
+  if empty(maparg(s:key, 'i'))
+    exe 'inoremap ' . s:key . ' <Nop>'
+  endif
 endfor
 
 " Disable normal mode stuff
@@ -345,48 +355,31 @@ for s:key in [
   endif
 endfor
 
-" Disable insert mode stuff
-" * Ctrl-, and Ctrl-. do nothing, use for previous and next delimiter jumping
-" * Ctrl-x scrolls or toggles insert-mode completion, use autocomplete instead
-" * Ctrl-n, Ctrl-p cycles through menu options, use e.g. Ctrl-j and Ctrl-k instead
-" * Ctrl-d, Ctrl-t deletes and inserts shiftwidths, use backspace and tab instead
-" * Ctrl-h deletes character before cursor, use backspace instead
-" * Ctrl-l used for special 'insertmode' always-insert-mode option
-" * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
-" * Ctrl-z sends vim to background, disable to prevent cursor change
-for s:key in [
-  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>', '<F10>',
-  \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
-  \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
-\ ]
-  if empty(maparg(s:key, 'i'))
-    exe 'inoremap ' . s:key . ' <Nop>'
-  endif
-endfor
-
-" Improve visual mode mouse selections and insert toggling
+" Improve visual mode navigation and mapings
 " Note: Throughout vimrc marks y and z are reserved for internal map utilities. Here
 " use 'y' for mouse click location and 'z' for visual mode entrance location, then
 " start new visual selection between 'y' and 'z'. Generally 'y' should be temporary
-nnoremap v mzv
-nnoremap V mzV
-nnoremap <C-v> <Cmd>WrapToggle 0<CR>mz<C-v>
+vnoremap <CR> <C-c>
+nnoremap gv gv
+nnoremap gx gi
+vnoremap o O
+vnoremap O o
 vnoremap <expr> I mode() =~? '^v' ? '<Esc><Cmd>keepjumps normal! `<<CR>i' : 'I'
 vnoremap <expr> A mode() =~? '^v' ? '<Esc><Cmd>keepjumps normal! `><CR>a' : 'A'
-vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
 
 " Improve visual mode navigation
 " Note: Toggling e.g. 'v' in 'v' mode normally turns off visual mode and e.g.
 " 'V' switches to line-visual mode with same starting position. Here use <CR>
 " to turn off visual mode and other keys to start that visual mode at cursor.
-nnoremap gv gv
-nnoremap gx gi
-nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
-nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
-vnoremap <CR> <C-c>
+nnoremap v mzv
+nnoremap V mzV
 vnoremap v <Esc>mzv
 vnoremap V <Esc>mzV
+nnoremap gn gE/<C-r>/<CR><Cmd>noh<CR>mzgn
+nnoremap gN W?<C-r>/<CR><Cmd>noh<CR>mzgN
+nnoremap <C-v> <Cmd>WrapToggle 0<CR>mz<C-v>
 vnoremap <C-v> <Esc><Cmd>WrapToggle 0<CR>mz<C-v>
+vnoremap <LeftMouse> <LeftMouse>my<Cmd>exe 'keepjumps normal! `z' . visualmode() . '`y' \| delmark y<CR>
 
 
 "-----------------------------------------------------------------------------"
@@ -433,8 +426,8 @@ nnoremap g< <Cmd>call file#open_used()<CR>
 
 " Tab and window jumping
 nnoremap <Tab>' <Cmd>silent! tabnext #<CR><Cmd>call file#echo_path()<CR>
-nnoremap <Tab>, <Cmd>exe 'tabnext -' . v:count1<CR>
-nnoremap <Tab>. <Cmd>exe 'tabnext +' . v:count1<CR>
+nnoremap <Tab>, <Cmd>silent! exe 'tabnext -' . v:count1<CR>
+nnoremap <Tab>. <Cmd>silent! exe 'tabnext +' . v:count1<CR>
 nnoremap <Tab>; <Cmd>silent! wincmd p<CR>
 nnoremap <Tab>j <Cmd>silent! wincmd j<CR>
 nnoremap <Tab>k <Cmd>silent! wincmd k<CR>
@@ -481,7 +474,7 @@ nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
 nnoremap <Tab>= <Cmd>call file#open_init('vsplit', 1)<CR>
-nnoremap <Tab>\ <Cmd>exe 'leftabove vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
+nnoremap <Tab>/ <Cmd>exe 'leftabove vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
   \<Cmd>exe 'vert resize ' . window#default_width(1)<CR>goto
 
 " Related file utilities
@@ -887,14 +880,14 @@ augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
-" Undo history utilities
+" Undo behavior and insert-mode mappings
 " Note: Tried implementing insert-mode 'redo' previously and failed because
 " history lost after vim re-enters insert mode from the <C-o> command.
-" nmap u <Plug>(RepeatUndo)
-" nmap U <Plug>(RepeatRedo)
-inoremap <F9> <C-o>u
+nmap U <C-r>
 inoremap <F10> <C-g>u
-nnoremap U <C-r>
+inoremap <expr> <F9> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
+nnoremap <expr> o edit#insert_mode('o')
+nnoremap <expr> O edit#insert_mode('O')
 
 " Handle indent counts. In native vim 2> indents this line or this motion
 " repeated, now it means 'indent multiple times'.
@@ -1073,11 +1066,6 @@ call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1
 inoremap <expr> <C-v> edit#lang_map()
 cnoremap <expr> <C-v> edit#lang_map()
 
-" Insert mode with better undo
-" Pressing enter on empty line preserves leading whitespace
-nnoremap o oX<Backspace><C-g>u
-nnoremap O OX<Backspace><C-g>u
-
 " Insert mode with paste toggling
 " Note: Switched easy-align mapping from ga for consistency here
 nnoremap <expr> ga edit#paste_mode() . 'a'
@@ -1155,7 +1143,7 @@ inoremap <expr> <C-f> iter#scroll_count(1.0)
 " Ad hoc enable or disable LSP for testing
 " Note: Can also use switch#lsp() interactively
 let s:enable_lsp = 1
-let s:enable_ddc = 0
+let s:enable_ddc = 1
 
 " Functions to find runtimepath and install plugins
 " See: https://github.com/junegunn/vim-plug/issues/32
@@ -2058,12 +2046,12 @@ if s:plug_active('conflict-marker.vim')
   command! -count=1 Cnext call iter#next_conflict(<count>, 0)
   call s:repeat_map('', '[F', 'ConflictBackward', '<Cmd>exe v:count1 . "Cprev" \| ConflictMarkerThemselves<CR>')
   call s:repeat_map('', ']F', 'ConflictForward', '<Cmd>exe v:count1 . "Cnext" \| ConflictMarkerThemselves<CR>')
-  nmap [f <Cmd>exe v:count1 . 'Cprev'<CR>zv
-  nmap ]f <Cmd>exe v:count1 . 'Cnext'<CR>zv
-  nmap gf <Plug>(conflict-marker-ourselves)
-  nmap gF <Plug>(conflict-marker-themselves)
-  nmap zf <Plug>(conflict-marker-both)
-  nmap zF <Plug>(conflict-marker-none)
+  noremap [f <Cmd>exe v:count1 . 'Cprev'<CR>zv
+  noremap ]f <Cmd>exe v:count1 . 'Cnext'<CR>zv
+  noremap gf <Cmd>ConflictMarkerOurselves<CR>
+  noremap gF <Cmd>ConflictMarkerThemselves<CR>
+  noremap zf <Cmd>ConflictMarkerBoth<CR>
+  noremap zF <Cmd>ConflictMarkerNone<CR>
   let g:conflict_marker_enable_highlight = 1
   let g:conflict_marker_highlight_group = 'ConflictMarker'
   let g:conflict_marker_begin = '^<<<<<<< .*$'
