@@ -209,10 +209,11 @@ let s:shellcheck_ignore =
 " necessary since tmux handles FocusLost signal itself.
 " See: https://github.com/sjl/vitality.vim/issues/29
 " See: https://github.com/tmux/tmux/wiki/FAQ#what-is-the-passthrough-escape-sequence-and-how-do-i-use-it
-" augroup cursor_repair
-"   au!
-"   au FocusLost * stopinsert
-" augroup END
+" au FocusLost * exe 'stopinsert'
+augroup cursor_repair
+  au!
+  au FocusLost * exe ''
+augroup END
 
 " Move cursor to end of insertion after leaving
 " Note: Otherwise repeated i<Esc>i<Esc> will drift cursor to left. Also critical to
@@ -609,20 +610,20 @@ augroup jumplist_setup
   au!
   au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
 augroup END
-noremap <C-h> <Cmd>call mark#goto_change(-v:count1)<CR>
-noremap <C-l> <Cmd>call mark#goto_change(v:count1)<CR>
-noremap <Left> <Cmd>call mark#goto_change(-v:count1)<CR>
-noremap <Right> <Cmd>call mark#goto_change(v:count1)<CR>
-noremap <F3> <Cmd>call mark#goto_jump(-v:count1)<CR>
-noremap <F4> <Cmd>call mark#goto_jump(v:count1)<CR>
+noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
+noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
+noremap <Right> <Cmd>call mark#goto_jump(v:count1)<CR>
+noremap <F3> <Cmd>call mark#goto_change(-v:count1)<CR>
+noremap <F4> <Cmd>call mark#goto_change(v:count1)<CR>
 
 " Search across changes jumpst and lines
 " Note: This leverages custom-managed change and jump lists with redundant
 " change entries removed. Here <F5>/<F6> are <Ctrl-/>/<Ctrl-\> in iterm
-command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
-noremap g; <Cmd>call mark#fzf_changes()<CR>
-noremap g: <Cmd>call mark#fzf_jumps()<CR>
+command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
+noremap g; <Cmd>call mark#fzf_jumps()<CR>
+noremap g: <Cmd>call mark#fzf_changes()<CR>
 nnoremap <F5> <Cmd>BLines<CR>
 nnoremap <F6> <Cmd>Lines<CR>
 
@@ -781,16 +782,16 @@ nnoremap z" <Cmd>call grep#call_grep('rg', 1, 2)<CR>
 " Note: Search open files for print statements and project files for others
 " Note: Currently do not use :Fixme :Error or :Xxx but these are also highlighted
 let s:conflicts = '^' . repeat('[<>=|]', 7) . '\($\|\s\)'
-command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, '^\s*\(ic\|print\)(', <f-args>)
+command! -bang -nargs=* -complete=file Debugs call grep#call_rg(<bang>0, 2, '^\s*ic(', <f-args>)
 command! -bang -nargs=* -complete=file Notes call grep#call_rg(<bang>0, 2, '\<\(Note\|NOTE\):', <f-args>)
-command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\):', <f-args>)
+command! -bang -nargs=* -complete=file Todos call grep#call_rg(<bang>0, 2, '\<\(Todo\|TODO\|Fixme\|FIXME\):', <f-args>)
 command! -bang -nargs=* -complete=file Warnings call grep#call_rg(<bang>0, 2, '\<\(Warning\|WARNING\):', <f-args>)
 command! -bang -nargs=* -complete=file Conflicts call grep#call_rg(<bang>0, 2, s:conflicts, <f-args>)
-noremap gB <Cmd>Debugs!<CR>
-noremap gE <Cmd>Notes<CR>
-noremap gM <Cmd>Todos<CR>
-noremap gW <Cmd>Warnings<CR>
 noremap gG <Cmd>Conflicts<CR>
+noremap gB <Cmd>Debugs!<CR>
+noremap gW <Cmd>Notes<CR>
+noremap gE <Cmd>Todos<CR>
+noremap gM <Cmd>Warnings<CR>
 
 " Ensure 'noignorecase' in insert mode, so that popup menu respects input case.
 " Note: Previously had issue before where InsertLeave ignorecase autocmd was getting
@@ -1049,15 +1050,30 @@ noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>zv
 noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>zv
 noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>zv
 
-" Navigate comment blocks
+" Navigate contiguous comment blocks and headers
 " Capital uses only top-level zero-indent comment blocks
-noremap [c <Cmd>call comment#next_comment(-v:count1, 1)<CR>zv
-noremap ]c <Cmd>call comment#next_comment(v:count1, 1)<CR>zv
-noremap [C <Cmd>call comment#next_comment(-v:count1, 0)<CR>zv
-noremap ]C <Cmd>call comment#next_comment(v:count1, 0)<CR>zv
+noremap [c <Cmd>call comment#next_comment(-v:count1, 0)<CR>zv
+noremap ]c <Cmd>call comment#next_comment(v:count1, 0)<CR>zv
+noremap [C <Cmd>call comment#next_comment(-v:count1, 1)<CR>zv
+noremap ]C <Cmd>call comment#next_comment(v:count1, 1)<CR>zv
+noremap [b <Cmd>call comment#next_header(-v:count1, 0)<CR>zv
+noremap ]b <Cmd>call comment#next_header(v:count1, 0)<CR>zv
+noremap [B <Cmd>call comment#next_header(-v:count1, 1)<CR>zv
+noremap ]B <Cmd>call comment#next_header(v:count1, 1)<CR>zv
+
+" Navigate notes and todos
+" Capital uses only top-level zero-indent headers
+noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>zv
+noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>zv
+noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>zv
+noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>zv
+noremap [w <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>zv
+noremap ]w <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>zv
+noremap [W <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>zv
+noremap ]W <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>zv
 
 " Insert empty lines
-" Note: See 'vim-unimpaired' for original. This drops the count but who cares.
+" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
 call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
 call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
 
@@ -1088,37 +1104,11 @@ augroup copy_setup
 augroup END
 command! -nargs=? CopyToggle call switch#copy(<args>)
 command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#conceal()<CR>
-nnoremap <Leader>C <Cmd>call switch#copy()<CR>
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 
-" Popup menu selection shortcuts
-" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
-" and default is chosen if necessary. See :h ins-special-special.
-inoremap <expr> <Space> iter#scroll_reset()
-  \ . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<C-]>\<Space>"
-inoremap <expr> <Backspace> iter#scroll_reset()
-  \ . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<Backspace>"
-inoremap <expr> <CR>
-  \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . iter#scroll_reset()
-  \ : "\<C-e>\<C-]>\<C-g>u\<CR>"
-  \ : "\<C-]>\<C-g>u\<CR>"
-inoremap <expr> <Tab>
-  \ pumvisible() ? b:scroll_state ?
-  \ "\<C-y>" . iter#scroll_reset()
-  \ : "\<C-n>\<C-y>" . iter#scroll_reset()
-  \ : "\<C-]>\<Tab>"
-
-" Popup menu and preview window scrolling. This should work with or without ddc
-" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
-augroup popup_setup
-  au!
-  au BufEnter,InsertLeave * let b:scroll_state = 0
-augroup END
-inoremap <expr> <Delete> edit#forward_delete()
-inoremap <expr> <S-Tab> edit#forward_delete()
+" Normal mode wrapped scrolling and preview window scrolling
+" Note: This requires setting let g:scrollwrapped_nomap = 1
 noremap <expr> <Up> iter#scroll_count(-0.25)
 noremap <expr> <Down> iter#scroll_count(0.25)
 noremap <expr> <C-k> iter#scroll_count(-0.25)
@@ -1127,14 +1117,33 @@ noremap <expr> <C-u> iter#scroll_count(-0.5)
 noremap <expr> <C-d> iter#scroll_count(0.5)
 noremap <expr> <C-b> iter#scroll_count(-1.0)
 noremap <expr> <C-f> iter#scroll_count(1.0)
-inoremap <expr> <Up> iter#scroll_count(-1)
-inoremap <expr> <Down> iter#scroll_count(1)
-inoremap <expr> <C-k> iter#scroll_count(-1)
-inoremap <expr> <C-j> iter#scroll_count(1)
+
+" Insert mode popup completion window and preview window scrolling
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+augroup popup_setup
+  au!
+  au BufEnter,InsertLeave * let b:scroll_state = 0
+augroup END
+inoremap <expr> <Up> iter#scroll_count(-0.25)
+inoremap <expr> <Down> iter#scroll_count(0.25)
+inoremap <expr> <C-k> iter#scroll_count(-0.25)
+inoremap <expr> <C-j> iter#scroll_count(0.25)
 inoremap <expr> <C-u> iter#scroll_count(-0.5)
 inoremap <expr> <C-d> iter#scroll_count(0.5)
 inoremap <expr> <C-b> iter#scroll_count(-1.0)
 inoremap <expr> <C-f> iter#scroll_count(1.0)
+
+" Insert mode mappings and popup behavior
+" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
+" and default is chosen if necessary. See :h ins-special-special.
+inoremap <expr> <F1> iter#scroll_count(-1, 1)
+inoremap <expr> <F2> iter#scroll_count(1, 1)
+inoremap <expr> <Delete> edit#forward_delete()
+inoremap <expr> <S-Tab> edit#forward_delete()
+inoremap <expr> <Space> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
+inoremap <expr> <Backspace> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
+inoremap <expr> <CR> pumvisible() ? b:scroll_state ? "\<C-y>" . iter#scroll_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
+inoremap <expr> <Tab> pumvisible() ? b:scroll_state ? "\<C-y>" . iter#scroll_reset() : "\<C-n>\<C-y>" . iter#scroll_reset() : "\<C-]>\<Tab>"
 
 
 "-----------------------------------------------------------------------------"
@@ -1319,7 +1328,7 @@ call plug#('roosta/fzf-folds.vim')  " jump to folds
 let g:fzf_action = {
   \ 'ctrl-m': 'Drop', 'ctrl-t': 'Drop',
   \ 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
-  \ }  " have file search and grep open to existing window if possible
+\ }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#parse_ignores(1)  " added just for safety
@@ -1394,6 +1403,7 @@ if s:enable_ddc
   call plug#('shun/ddc-source-vim-lsp')  " language server protocol completion for vim 8+
   call plug#('Shougo/ddc-source-around')  " matching words near cursor
   call plug#('LumaKernel/ddc-source-file')  " matching file names
+  call plug#('delphinus/ddc-ctags')  " current file ctags
 endif
 
 " Delimiters and stuff. Use vim-surround rather than vim-sandwich because key mappings
@@ -1432,7 +1442,9 @@ call plug#('kana/vim-textobj-fold')  " select current fold, object is 'z'
 call plug#('kana/vim-textobj-indent')  " indentation, object is 'i' or 'I' and 'a' includes empty lines
 call plug#('sgur/vim-textobj-parameter')  " function parameter, object is '='
 call plug#('glts/vim-textobj-comment')  " comment blocks, object is 'C' (see below)
-let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
+call plug#('tkhren/vim-textobj-numeral')  " numerals, e.g. 1.1234e-10
+call plug#('preservim/vim-textobj-sentence')  " sentence objects
+let g:textobj_numeral_no_default_key_mappings = 1  " defined in vim-succinct block
 let g:loaded_textobj_comment = 1  " avoid default mappings (see below)
 
 " Formatting stuff. Conjoin plugin removes line continuation characters and is awesome.
@@ -1662,14 +1674,14 @@ endif
 " Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also here
 " use custom names for several commands.
 if s:plug_active('vim-succinct')
-  let g:succinct_surround_map = '<C-s>'
-  let g:succinct_snippet_map = '<C-e>'
-  let g:succinct_prevdelim_map = '<F1>'
-  let g:succinct_nextdelim_map = '<F2>'
-  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
+  omap an <Plug>(textobj-numeral-a)
+  vmap an <Plug>(textobj-numeral-a)
+  omap in <Plug>(textobj-numeral-i)
+  vmap in <Plug>(textobj-numeral-i)
+  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
+  let g:textobj#sentence#select = 's'  " smarter sentence selection
+  let g:textobj#sentence#move_p = '('  " smarter sentence navigation
+  let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
   let s:textobj_comment = {
     \ 'select-i': 'iC',
     \ 'select-i-function': 'textobj#comment#select_i',
@@ -1677,6 +1689,14 @@ if s:plug_active('vim-succinct')
     \ 'select-a-function': 'textobj#comment#select_a',
   \ }
   call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
+  let g:succinct_surround_map = '<C-s>'
+  let g:succinct_snippet_map = '<C-e>'
+  let g:succinct_prevdelim_map = '<F3>'
+  let g:succinct_nextdelim_map = '<F4>'
+  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_jump_expansion = 0
+  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
 " Tag integration settings
@@ -1705,6 +1725,11 @@ if s:plug_active('vim-tags')
   let g:tags_keep_jumps = 1  " default is 0
   let g:tags_major_kinds = s:major
   let g:tags_minor_kinds = s:minor
+  let g:tags_prev_local_map = '[r'  " keyword jumping
+  let g:tags_next_local_map = ']r'  " keyword jumping
+  let g:tags_prev_global_map = '[R'
+  let g:tags_next_global_map = ']R'
+  silent! exe 'runtime plugin/tags.vim'
 endif
 
 " Gutentag tag generation
@@ -1805,8 +1830,8 @@ if s:plug_active('vim-lsp')
   command! -nargs=? ShowDoc call stack#show_stack('doc')
   command! -nargs=? PopDoc call stack#pop_stack('doc', <f-args>)
   command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
-  noremap [r <Cmd>LspPreviousReference<CR>
-  noremap ]r <Cmd>LspNextReference<CR>
+  noremap [v <Cmd>LspPreviousReference<CR>
+  noremap ]v <Cmd>LspNextReference<CR>
   noremap gd <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
   noremap gD gdzv<Cmd>noh<CR>
   noremap zd <Cmd>LspReferences<CR>
@@ -1877,14 +1902,14 @@ if s:plug_active('ddc.vim')
     \ 'border': v:true,
     \ 'maxWidth': g:linelength,
     \ 'maxHeight': 2 * g:linelength
-    \ }
+  \ }
   let g:denops_disable_version_check = 0  " skip check for recent versions
   let g:denops#deno = 'deno'  " deno executable should be on $PATH
   let g:denops#server#deno_args = [
-    \ '--allow-env', '--allow-net', '--allow-read', '--allow-write',
+    \ '--allow-env', '--allow-net', '--allow-read', '--allow-write', '--allow-run',
     \ '--v8-flags=--max-heap-size=100,--max-old-space-size=100',
-    \ ]
-  let g:ddc_sources = ['around', 'buffer', 'file', 'vim-lsp']
+  \ ]
+  let g:ddc_sources = ['around', 'buffer', 'ctags', 'file', 'vim-lsp']
   let g:ddc_options = {
     \ 'sourceParams': {'around': {'maxSize': 500}},
     \ 'filterParams': {'matcher_fuzzy': {'splitMode': 'word'}},
@@ -1893,12 +1918,7 @@ if s:plug_active('ddc.vim')
     \     'matchers': ['matcher_fuzzy'],
     \     'sorters': ['sorter_fuzzy'],
     \     'converters': ['converter_fuzzy'],
-    \   },
-    \   'vim-lsp': {
-    \     'mark': 'L',
-    \     'maxItems': 15,
-    \     'isVolatile': v:true,
-    \     'forceCompletionPattern': '\\.|:|->',
+    \     'minAutoCompleteLength': 1,
     \   },
     \   'around': {
     \     'mark': 'A',
@@ -1908,13 +1928,24 @@ if s:plug_active('ddc.vim')
     \     'mark': 'B',
     \     'maxItems': 5,
     \   },
+    \   'ctags': {
+    \     'mark': 'T',
+    \     'isVolatile': v:true,
+    \     'maxItems': 5,
+    \   },
     \   'file': {
     \     'mark': 'F',
     \     'isVolatile': v:true,
     \     'forceCompletionPattern': '\S/\S*',
     \     'maxItems': 5,
     \   },
-    \ }}
+    \   'vim-lsp': {
+    \     'mark': 'L',
+    \     'maxItems': 15,
+    \     'isVolatile': v:true,
+    \     'forceCompletionPattern': '\\.|:|->',
+    \   },
+  \ }}
   call ddc#custom#patch_global('ui', 'native')
   call ddc#custom#patch_global('sources', g:ddc_sources)
   call ddc#custom#patch_global(g:ddc_options)
@@ -1961,7 +1992,7 @@ if s:plug_active('ale')
     \ 'tex': ['lacheck'],
     \ 'text': [],
     \ 'vim': ['vint'],
-    \ }
+  \ }
   let g:ale_completion_enabled = 0
   let g:ale_completion_autoimport = 0
   let g:ale_cursor_detail = 0
@@ -2182,15 +2213,15 @@ if s:plug_active('codi.vim')
       \ 'quitcmd': 'exit()',
       \ 'preprocess': function('calc#codi_preprocess'),
       \ 'rephrase': function('calc#codi_rephrase'),
-      \ },
+    \ },
     \ 'julia': {
       \ 'bin': ['julia', '-q', '-i', '--color=no', '--history-file=no'],
       \ 'prompt': '^\(julia>\|      \)',
       \ 'quitcmd': 'exit()',
       \ 'preprocess': function('calc#codi_preprocess'),
       \ 'rephrase': function('calc#codi_rephrase'),
-      \ },
-    \ }
+    \ },
+  \ }
 endif
 
 " Undo tree mapping and settings

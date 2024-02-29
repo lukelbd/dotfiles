@@ -152,11 +152,11 @@ function! iter#scroll_reset() abort
   return ''
 endfunction
 " Scroll and update the count
-function! iter#scroll_count(scroll) abort
+function! iter#scroll_count(scroll, ...) abort
   let popup_pos = pum_getpos()
   let preview_ids = popup_list()
-  if !empty(popup_pos)  " automatically returns empty if not present
-    return call('s:scroll_popup', [a:scroll, popup_pos['size']])
+  if a:0 && a:1 || !empty(popup_pos)  " automatically returns empty if not present
+    return call('s:scroll_popup', [a:scroll, get(popup_pos, 'size', 1)])
   elseif !empty(preview_ids)
     return call('s:scroll_preview', [a:scroll] + preview_ids)
   else

@@ -4,7 +4,7 @@
 " General settings
 " Note: For most filetypes not necessary to set foldmethod but for some reason required
 " for vim. Also setglobal foldmethod=syntax at top of vimrc did not work. Revisit.
-setlocal iskeyword=@,48-57,_,192-255,#
+setlocal iskeyword=@,48-57,_,192-255,#,:
 setlocal foldmethod=syntax
 
 " Delimiter settings

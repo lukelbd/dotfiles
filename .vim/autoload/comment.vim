@@ -95,19 +95,41 @@ function! comment#header_line(fill, nfill, ...) abort  " inserts above by defaul
   call append(line('.') - 1, append)
 endfunction
 
-" Toggle comment under cursor accounting for folds
-" Note: Required since default 'gcc' maps to g@$ operator function call
-function! comment#next_comment(count, ...) abort  " contiguous blocks
-  let nest = a:0 ? a:1 : 0
-  let head = nest ? '\s*' : ''
+" Navigate between comment blocks and headers
+" Note: The '$' required for lookbehind for some reason
+function! comment#next_comment(count, ...) abort
+  let head = a:0 && a:1 ? '\s*' : ''  " include indented
   let tail = comment#get_regex() . '.\+$\n'
-  let regex = '^\(' . head . tail . '\)\@<!'
-  let regex .= head . '\zs' . tail . '\(' . head[1:] . tail . '\)*'
+  let back = '^\(' . head . tail . '\)\@<!'
+  let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
   let flags = a:count >= 0 ? 'w' : 'bw'
   for _ in range(abs(a:count))
     call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
   endfor
 endfunction
+function! comment#next_header(count, ...) abort
+  let head = a:0 && a:1 ? '\s*' : ''  " include indented
+  let tail = comment#get_regex() . '\s*[-=]\{3,}' . comment#get_regex() . '\?\s*$'
+  let back = '^\(' . head . comment#get_regex() . '.\+$\n\)\@<!'
+  let regex = back . head . '\zs' . tail
+  let flags = a:count >= 0 ? 'w' : 'bw'
+  for _ in range(abs(a:count))
+    call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
+  endfor
+endfunction
+function! comment#next_label(count, ...) abort
+  let [flag, opts] = a:0 && !type(a:1) ? [a:1, a:000[1:]] : [0, a:000]
+  let head = (flag ? '^\s*' : '') . comment#get_regex() . '\s*'
+  let tail = '\c\zs\(' . join(opts, '\|') . '\).*$'
+  let regex = head . '\zs' . tail
+  let flags = a:count >= 0 ? 'w' : 'bw'
+  for _ in range(abs(a:count))
+    call search(regex, flags, 0, 0, "!tags#get_inside('Comment')")
+  endfor
+endfunction
+
+" Toggle comment under cursor accounting for folds
+" Note: Required since default 'gcc' maps to g@$ operator function call
 function! comment#toggle_comment(...) abort
   call tcomment#ResetOption()
   if v:count > 0 | call tcomment#SetOption('count', v:count) | endif
