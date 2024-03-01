@@ -872,10 +872,11 @@ noremap <expr> \X edit#replace_regex_expr('Removed bibtex entries',
 " Normal and insert-mode editing
 "-----------------------------------------------------------------------------"
 " Spaces and tabs for particular filetypes.
-" Note: For some reason must be manually enabled for vim
+" Note: For some reason must be manually enabled for vim and shell scripts. Not
+" sure why but should explore other plugins.
 augroup expandtab_setup
   au!
-  au FileType vim,tex call switch#expandtab(0, 1)
+  au FileType vim,tex,sh call switch#expandtab(0, 1)
   au FileType xml,make,text,gitconfig call switch#expandtab(1, 1)
 augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
@@ -2083,7 +2084,9 @@ if s:plug_active('conflict-marker.vim')
   noremap gF <Cmd>ConflictMarkerThemselves<CR>
   noremap zf <Cmd>ConflictMarkerBoth<CR>
   noremap zF <Cmd>ConflictMarkerNone<CR>
+  let g:conflict_marker_enable_detect = 1
   let g:conflict_marker_enable_highlight = 1
+  let g:conflict_marker_enable_matchit = 1
   let g:conflict_marker_highlight_group = 'ConflictMarker'
   let g:conflict_marker_begin = '^<<<<<<< .*$'
   let g:conflict_marker_end = '^>>>>>>> .*$'
@@ -2441,6 +2444,7 @@ augroup clear_jumps
   au VimEnter * silent windo clearjump | exe 'normal! zv'
   au WinNew,TabNew * silent clearjumps
 augroup END
-noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 nohlsearch  " turn off highlighting at startup
+noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
+runtime after/common.vim
 redraw!  " prevent statusline error

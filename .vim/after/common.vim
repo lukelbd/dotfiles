@@ -52,8 +52,8 @@ call fold#regex_levels()
 call winrestview(winview)
 if closed <= 0 | exe 'silent! normal! zv' | endif
 doautocmd CursorHold
-doautocmd ConflictMarkerDetect BufReadPost
-doautocmd conflict_marker_setup BufWinEnter
+silent! doautocmd ConflictMarkerDetect BufReadPost
+silent! doautocmd conflict_marker_setup BufWinEnter
 for s:suffix in ['g', 's', 'S', '%']
   exe 'silent! iunmap <C-g>' . s:suffix
   exe 'silent! iunmap <buffer><C-g>' . s:suffix
