@@ -1067,10 +1067,10 @@ noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>zv
 noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>zv
 noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>zv
 noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>zv
-noremap [w <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>zv
-noremap ]w <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>zv
-noremap [W <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>zv
-noremap ]W <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>zv
+noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>zv
+noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>zv
+noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>zv
+noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>zv
 
 " Insert empty lines
 " Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
@@ -1671,8 +1671,8 @@ if s:plug_active('tcomment_vim')
 endif
 
 " Succinct settings for text objects and delimiters
-" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also here
-" use custom names for several commands.
+" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also
+" use custom names for several mappings and define textobj mappings.
 if s:plug_active('vim-succinct')
   omap an <Plug>(textobj-numeral-a)
   vmap an <Plug>(textobj-numeral-a)
@@ -1725,10 +1725,10 @@ if s:plug_active('vim-tags')
   let g:tags_keep_jumps = 1  " default is 0
   let g:tags_major_kinds = s:major
   let g:tags_minor_kinds = s:minor
-  let g:tags_prev_local_map = '[r'  " keyword jumping
-  let g:tags_next_local_map = ']r'  " keyword jumping
-  let g:tags_prev_global_map = '[R'
-  let g:tags_next_global_map = ']R'
+  let g:tags_prev_local_map = '[w'  " keyword jumping
+  let g:tags_next_local_map = ']w'  " keyword jumping
+  let g:tags_prev_global_map = '[W'
+  let g:tags_next_global_map = ']W'
   silent! exe 'runtime plugin/tags.vim'
 endif
 
@@ -1830,8 +1830,8 @@ if s:plug_active('vim-lsp')
   command! -nargs=? ShowDoc call stack#show_stack('doc')
   command! -nargs=? PopDoc call stack#pop_stack('doc', <f-args>)
   command! -nargs=? Doc call stack#push_stack('doc', 'python#doc_page', <f-args>)
-  noremap [v <Cmd>LspPreviousReference<CR>
-  noremap ]v <Cmd>LspNextReference<CR>
+  noremap [r <Cmd>LspPreviousReference<CR>
+  noremap ]r <Cmd>LspNextReference<CR>
   noremap gd <Cmd>call lsp#ui#vim#definition(0, "call feedkeys('zv', 'n') \| tab")<CR>
   noremap gD gdzv<Cmd>noh<CR>
   noremap zd <Cmd>LspReferences<CR>
@@ -1918,7 +1918,7 @@ if s:plug_active('ddc.vim')
     \     'matchers': ['matcher_fuzzy'],
     \     'sorters': ['sorter_fuzzy'],
     \     'converters': ['converter_fuzzy'],
-    \     'minAutoCompleteLength': 1,
+    \     'minAutoCompleteLength': 2,
     \   },
     \   'around': {
     \     'mark': 'A',
