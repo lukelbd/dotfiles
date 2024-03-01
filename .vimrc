@@ -1672,24 +1672,32 @@ if s:plug_active('tcomment_vim')
 endif
 
 " Succinct settings for text objects and delimiters
-" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also
-" use custom names for several mappings and define textobj mappings.
+" Note: Use mnemonic 'v' for 'value'. Avoid conflicts with ftplugin/tex.vim
+" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also use
+" custom names for several mappings and define textobj mappings.
 if s:plug_active('vim-succinct')
-  omap an <Plug>(textobj-numeral-a)
-  vmap an <Plug>(textobj-numeral-a)
-  omap in <Plug>(textobj-numeral-i)
-  vmap in <Plug>(textobj-numeral-i)
+  map ]v <Plug>(textobj-numeral-n)
+  map [v <Plug>(textobj-numeral-p)
+  map ]V <Plug>(textobj-numeral-N)
+  map ]V <Plug>(textobj-numeral-P)
+  omap av <Plug>(textobj-numeral-a)
+  vmap av <Plug>(textobj-numeral-a)
+  omap iv <Plug>(textobj-numeral-i)
+  vmap iv <Plug>(textobj-numeral-i)
+  let s:textobj_alpha = {
+    \ 'g': '\_[^0-9A-Za-z]\r\_[^0-9A-Za-z]',
+    \ 'G': '\(\W\|^\|\%^\)\r\(\W\|$\|\%$\)',
+  \ }
+  let s:textobj_comment = {
+    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
+    \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_a',
+  \ }
+  call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
+  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1, 1)
   let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
   let g:textobj#sentence#select = 's'  " smarter sentence selection
   let g:textobj#sentence#move_p = '('  " smarter sentence navigation
   let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
-  let s:textobj_comment = {
-    \ 'select-i': 'iC',
-    \ 'select-i-function': 'textobj#comment#select_i',
-    \ 'select-a': 'aC',
-    \ 'select-a-function': 'textobj#comment#select_a',
-  \ }
-  call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
   let g:succinct_surround_map = '<C-s>'
   let g:succinct_snippet_map = '<C-e>'
   let g:succinct_prevdelim_map = '<F3>'

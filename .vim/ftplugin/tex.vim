@@ -163,6 +163,8 @@ call succinct#add_snippets(s:snippets, 1, 1)  " escape regex characters
 " \ 'P': '\begin{minipage}{\linewidth}\r\end{minipage}',
 " \ ',': '\begin{\1\begin{\1}\r\end{\1\1}',
 " \ '.': '\1\1{\r}',
+" \ 'Y': '\begin{python}\r\end{python}',
+" \ 'y': '\pyth$\r$',
 let s:delims = {
   \ '.': '\1Command: \\r..*\r\\&{\1\r\1\r..*\r}\1',
   \ ',': '\1Environment: \begin{\r..*\r\\begin{&}\1\r\1\r..*\r\\end{&}\1',
@@ -221,9 +223,8 @@ let s:delims = {
   \ 'S': '\begingroup\n\usebackgroundtemplate{}\n\begin{frame}\r\end{frame}\n\endgroup',
   \ 'T': '\begin{table}\n\centering\r\end{table}',
   \ 'U': '\uncover<+->{%\r\}',
-  \ 'V': '\begin{verbatim}\r\end{verbatim}',
   \ 'X': '\fbox{\parbox{\textwidth}{\r}}\medskip',
-  \ 'Y': '\begin{python}\r\end{python}',
+  \ 'Y': '\begin{verbatim}\r\end{verbatim}',
   \ 'Z': '\begin{columns}\r\end{columns}',
   \ 'a': '\caption{\r}',
   \ 'd': '\dot{\r}',
@@ -242,9 +243,8 @@ let s:delims = {
   \ 's': '\begin{frame}\r\end{frame}',
   \ 't': '\1Alignment: \r..*\r\\begin{tabular}{&}\1\r\1\r..*\r\\end{tabular}\1',
   \ 'u': '\underline{\r}',
-  \ 'v': '\verb$\r$',
   \ 'x': '\boxed{\r}',
-  \ 'y': '\pyth$\r$',
+  \ 'y': '\verb$\r$',
   \ 'z': '\begin{column}{0.5\textwidth}\r\end{column}',
 \ }
 call succinct#add_delims(s:delims, 1)
