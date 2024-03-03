@@ -221,13 +221,12 @@ endfunction
 " Setup preview windows
 " Note: Here use a border for small popup windows and no border by default for
 " autocomplete. See: https://github.com/prabirshrestha/vim-lsp/issues/594
-function! window#preview_setup() abort
-  for wid in popup_list()
-    let info = popup_getpos(wid)
+function! window#preview_setup(...) abort
+  for winid in popup_list()
+    let info = popup_getpos(winid)
     if !info['visible'] | continue | endif
-    let pum = pum_getpos()
     let opts = {'dragall': 1, 'resize': 1}
-    if empty(pum)  " dedicated window
+    if a:0 && a:1  " previously if empty(pum_getpos())
       let opts['scrollbar'] = 1
       let opts['border'] = [0, 1, 0, 1]
       let opts['borderchars'] = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
@@ -236,7 +235,10 @@ function! window#preview_setup() abort
       let opts['border'] = [1, 1, 1, 1]
       let opts['borderchars'] = ['──', '│', '──', '│', '┌', '┐', '┘', '└']
     endif
-    call popup_setoptions(wid, opts)
+    call popup_setoptions(winid, opts)
+    let bnr = winbufnr(winid)
+    echom 'Buffer: ' . bnr
+    exe 'noremap <buffer=' . bnr . '> <Esc> <Cmd>call popup_close(' . winid . ')<CR><Esc>'
   endfor
 endfunction
 

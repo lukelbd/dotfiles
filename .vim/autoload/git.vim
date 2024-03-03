@@ -221,6 +221,7 @@ function! git#hunk_show() abort
   call s:hunk_process()
   GitGutterPreviewHunk
   silent wincmd j
+  call window#preview_setup()
   call timer_start(10, function('execute', ["echom 'Hunk difference'"]))
 endfunction
 function! git#hunk_jump(count, stage) abort

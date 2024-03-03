@@ -190,19 +190,23 @@ endfunction
 " Toggle revealing matches in folds
 " Note: Auto disable whenever set nohlsearch is restore
 function! switch#opensearch(...) abort
-  let state = !empty(get(b:, 'search_folds', []))
+  let folds = get(b:, 'search_folds', [])
+  let state = !empty(folds)
   let toggle = a:0 > 0 ? a:1 : 1 - state
   let suppress = a:0 > 1 ? a:2 : 0
   let winview = winsaveview()
+  let b:search_folds = folds
   if toggle
-    let cmd = 'foldopen | call add(b:search_folds, line("."))'
-    silent! global//exe foldclosed('.') >= 0 ? cmd : ''
-    call feedkeys("\<Cmd>set hlsearch\<CR>")
+    silent! global//call extend(folds, foldclosed('.') < 0 ? [] : [line('.')])
+    for line in folds
+      silent! exe line . 'foldopen'
+    endfor | call feedkeys("\<Cmd>set hlsearch\<CR>")
   else
-    for line in b:search_folds
+    for line in folds
       silent! exe line . 'foldclose'
-    endfor | let b:search_folds = []
+    endfor | let folds = []
   endif
+  let b:search_folds = folds
   call winrestview(winview)
   call call('s:echo_state', ['Open searches', toggle, suppress])
 endfunction
