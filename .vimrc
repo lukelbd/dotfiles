@@ -1835,7 +1835,7 @@ if s:plug_active('vim-lsp')
   augroup lsp_setup
     au!
     au User lsp_float_opened call window#preview_setup()
-    au FileType markdown.lsp-hover let b:lsp_hover_conceal = 2 | setlocal buftype=nofile | setlocal conceallevel=2
+    au FileType markdown.lsp-hover let b:lsp_do_conceal = 1 | setlocal conceallevel=2
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
   command! -nargs=? ClearDoc call stack#clear_stack('doc')

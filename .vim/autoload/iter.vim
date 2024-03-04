@@ -110,36 +110,38 @@ endfunction
 " Insert complete menu items and scroll complete or preview windows (whichever open).
 " Note: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
 " (also verified lsp#scroll l:window.find does not return popup completion windows)
-function! s:scroll_default(scroll, size) abort
-  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:size) : a:scroll
+function! s:scroll_default(scroll, height) abort
+  let cnt = type(a:scroll) == 5 ? float2nr(a:scroll * a:height) : a:scroll
   let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
-  let cmd = 'call scrollwrapped#scroll(' . abs(nr) . ', ' . rev . ')'
+  let cmd = 'call scrollwrapped#scroll(' . abs(cnt) . ', ' . rev . ')'
   return mode() =~# '^[iIR]' ? '' : "\<Cmd>" . cmd . "\<CR>"  " only normal mode
 endfunction
-function! s:scroll_popup(scroll, size) abort
-  let nr = type(a:scroll) == 5 ? float2nr(a:scroll * a:size) : a:scroll
-  let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
+function! s:scroll_popup(scroll, height) abort
+  let cnt = type(a:scroll) == 5 ? float2nr(a:scroll * a:height) : a:scroll
+  let cnt = a:scroll > 0 ? max([cnt, 1]) : min([cnt, -1])
   if type(a:scroll) == 5 && b:scroll_state != 0   " disable circular scroll
-    let nr = max([0 - b:scroll_state + 1, nr])
-    let nr = min([a:size - b:scroll_state, nr])
+    let cnt = max([0 - b:scroll_state + 1, cnt])
+    let cnt = min([a:height - b:scroll_state, cnt])
   endif
-  let b:scroll_state += nr + (a:size + 1) * (1 + abs(nr) / (a:size + 1))
-  let b:scroll_state %= a:size + 1  " only works with positive integers
-  let keys = repeat(nr > 0 ? "\<C-n>" : "\<C-p>", abs(nr))
+  let b:scroll_state += cnt + (a:height + 1) * (1 + abs(cnt) / (a:height + 1))
+  let b:scroll_state %= a:height + 1  " only works with positive integers
+  let keys = repeat(cnt > 0 ? "\<C-n>" : "\<C-p>", abs(cnt))
   let keys .= "\<Cmd>doautocmd User lsp_float_opened\<CR>"
   return keys
 endfunction
 function! s:scroll_preview(scroll, ...) abort
-  for wid in a:000
-    let info = popup_getpos(wid)
-    if !info['visible'] | continue | endif
-    let line = info['firstline']
-    let [wide, size] = [info['width'], info['height']]
-    let nr = type(a:scroll) == 5 ? float2nr(a:scroll * size) : a:scroll
-    let nr = a:scroll > 0 ? max([nr, 1]) : min([nr, -1])
-    let nr = max([line + nr, 1])
-    let opts = {'firstline': nr, 'minwidth': wide, 'minheight': size}
-    call popup_setoptions(wid, opts)
+  for winid in a:000
+    let info = popup_getpos(winid)
+    if !info.visible | continue | endif
+    let width = info.core_width  " excluding borders (as with minwidth)
+    let height = info.core_height  " excluding borders (as with minheight)
+    let cnt = type(a:scroll) == 5 ? float2nr(a:scroll * height) : a:scroll
+    let cnt = a:scroll > 0 ? max([cnt, 1]) : min([cnt, -1])
+    let lmax = max([line('$', winid) - height + 2, 1])  " up to one after end
+    let lnum = info.firstline + cnt
+    let lnum = min([max([lnum, 1]), lmax])
+    let opts = {'firstline': lnum, 'minwidth': width, 'minheight': height}
+    call popup_setoptions(winid, opts)
   endfor
   return "\<Ignore>"
 endfunction

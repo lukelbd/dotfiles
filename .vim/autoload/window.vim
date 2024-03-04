@@ -224,21 +224,17 @@ endfunction
 function! window#preview_setup(...) abort
   for winid in popup_list()
     let info = popup_getpos(winid)
-    if !info['visible'] | continue | endif
-    let opts = {'dragall': 1, 'resize': 1}
+    if !info.visible | continue | endif
+    let scroll = line('$', winid) > info.core_height
+    let opts = {'dragall': 1, 'scrollbar': scroll}
     if a:0 && a:1  " previously if empty(pum_getpos())
-      let opts['scrollbar'] = 1
-      let opts['border'] = [0, 1, 0, 1]
-      let opts['borderchars'] = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+      let opts.border  = [0, 1, 0, 1]
+      let opts.borderchars  = [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
     else
-      let opts['scrollbar'] = 0
-      let opts['border'] = [1, 1, 1, 1]
-      let opts['borderchars'] = ['──', '│', '──', '│', '┌', '┐', '┘', '└']
+      let opts.border  = [1, 1, 1, 1]
+      let opts.borderchars  = ['──', '│', '──', '│', '┌', '┐', '┘', '└']
     endif
     call popup_setoptions(winid, opts)
-    let bnr = winbufnr(winid)
-    echom 'Buffer: ' . bnr
-    exe 'noremap <buffer=' . bnr . '> <Esc> <Cmd>call popup_close(' . winid . ')<CR><Esc>'
   endfor
 endfunction
 
