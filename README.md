@@ -1,11 +1,11 @@
-dotfiles
+Dotfiles
 ========
 
 This repo synchronizes various settings for `bash`, `vim`, `git`, `tmux`, `ipython`,
 and `jupyter`. It also includes some handy shell functions and shell scripts.
 
-Bash config
------------
+Shell configuration
+-------------------
 
 The `.bashrc` file is utterly massive. Among other things, it provides `nc<suffix>`
 functions that summarize NetCDF files by parsing `ncdump`, provides tools for working
@@ -13,8 +13,8 @@ over SSH connections and maintaining connections to remote `jupyter` sessions, a
 configures FZF fuzzy autocompletion and the conda environment. It also evaluates
 `.dircolors.ansi` to keep color-coding of `ls` results consistent between workstations.
 
-Vim config
-----------
+Vim configuration
+-----------------
 
 The `.vimrc` is even more utterly massive. Among other things, it configures a few dozen
 vim plugins, configures FZF fuzzy autocompletion integration features, and defines a
@@ -28,8 +28,8 @@ mappings that "run", "compile", or "open" the current file (mapped to `Z` by def
 I have also written a number of vim plugins over the years: [vim-succinct](https://github.com/lukelbd/vim-succinct),
 [vim-tags](https://github.com/lukelbd/vim-tags), [vim-statusline](https://github.com/lukelbd/vim-statusline), [vim-tabline](https://github.com/lukelbd/vim-tabline), [vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped), and [vim-toggle](https://github.com/lukelbd/vim-toggle).
 
-Other config
-------------
+Other configuration
+-------------------
 
 You can find various shell script utilities in `bin` and `git` commands in `.gitconfig`,
 including a `latexmk` shell script integrated with `ftplugin` for convenient LaTeX
