@@ -25,7 +25,7 @@ and `z` for folding actions.
 You can also find filetype-specific features in the `ftplugin`, `syntax`, and
 `after/syntax` folders, including improved syntax highlighting and `<Plug>Execute`
 mappings that "run", "compile", or "open" the current file (mapped to `Z` by default).
-I have also written a number of vim plugins over the years: [vim-succinct](https://github.com/lukelbd/vim-templates),
+I have also written a number of vim plugins over the years: [vim-succinct](https://github.com/lukelbd/vim-succinct),
 [vim-tags](https://github.com/lukelbd/vim-tags), [vim-statusline](https://github.com/lukelbd/vim-statusline), [vim-tabline](https://github.com/lukelbd/vim-tabline), [vim-scrollwrapped](https://github.com/lukelbd/vim-scrollwrapped), and [vim-toggle](https://github.com/lukelbd/vim-toggle).
 
 Other config
