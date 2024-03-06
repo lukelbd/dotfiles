@@ -762,9 +762,10 @@ noremap zj ]z
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <Leader>_ <Cmd>call mark#del_marks()<CR>
+noremap <Leader>- <Cmd>call mark#del_marks()<CR>
+noremap <Leader>_ <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
+noremap <expr> g_ v:count ? '`' . utils#translate_name('`') : '<Cmd>call mark#fzf_marks()<CR>'
 noremap z_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
-noremap g_ <Cmd>call mark#fzf_marks()<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
 noremap <F12> <Cmd>call mark#next_mark(v:count1)<CR>
