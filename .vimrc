@@ -2,19 +2,18 @@
 " An enormous vim configuration that does all sorts of magical things.
 " Note: Use karabiner to convert ctrl-j/k/h/l into arrow keys. So anything
 " mapped to these control combinations below must also be assigned to arrow keys.
-" Note: Use iterm to convert following ctrl+key combinations that are either impossible
-" or trigger escape (i.e. can't be used for normal maps) to function key presses.
-" F1: 1b 4f 50 (Ctrl-,) (longer codes did not work)
+" Note: Use iterm to convert impossible or normal-mode-incompatible ctrl+key combos
+" to function keys: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
+" F1: 1b 4f 50 (Ctrl-,) (5-digit codes failed)
 " F2: 1b 4f 51 (Ctrl-.)
 " F3: 1b 4f 52 (Ctrl-[)
 " F4: 1b 4f 53 (Ctrl-])
-" F5: 1b 5b 31 35 7e (Ctrl-/)
-" F6: 1b 5b 31 37 7e (Ctrl-\) (shorter codes did not work)
+" F5: 1b 5b 31 35 7e (Ctrl-/) (3-digit codes failed)
+" F6: 1b 5b 31 37 7e (Ctrl-\)
 " F7: 1b 5b 31 38 7e (Ctrl-;)
 " F8: 1b 5b 31 39 7e (Ctrl-')
 " F9: 1b 5b 32 30 7e (Ctrl-i)
 " F10: 1b 5b 32 31 7e (Ctrl-m)
-" See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 "-----------------------------------------------------------------------------"
 " Critical stuff
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
