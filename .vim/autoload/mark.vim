@@ -269,7 +269,7 @@ function! mark#set_marks(mrk) abort
     let cterm_color = s:cterm_colors[idx % len(s:cterm_colors)]
     exe 'highlight ' . name . ' ctermbg=' . cterm_color . ' guibg=' . gui_color
     let highlights[a:mrk] = [[gui_color, cterm_color]]
-    if s:use_signs | call sign_define(name, {'linehl': name, 'text': "'" . a:mrk}) | endif
+    if s:use_signs | call sign_define(name, {'texthl': name, 'linehl': 'None', 'text': "'" . a:mrk}) | endif
   endif
   if s:use_signs
     let sid = s:sign_id | let s:sign_id += 1
