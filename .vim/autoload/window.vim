@@ -247,21 +247,24 @@ endfunction
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
+function! s:netrw_setup() abort
+  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
+  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
+endfunction
 function! window#panel_setup(level) abort
   let g:ft_man_folding_enable = 1  " see :help Man
   let [nleft, nright] = [window#count_panes('h'), window#count_panes('l')]
   nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
   nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
-  if &filetype ==# 'qf'  " disable <Nop> map
+  if &filetype ==# 'netrw'
+    call s:netrw_setup()
+  elseif &filetype ==# 'qf'  " disable <Nop> map
     nnoremap <buffer> <CR> <CR>zv
   endif
-  if &filetype ==# 'netrw'
-    call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
-  endif
   if nleft > 1 || nright > 1 && &l:filetype =~# '^\(git\|fugitive\|undotree\)'
-    setlocal nonumber norelativenumber nocursorline
-  else  " sign column padding
-    setlocal nonumber norelativenumber nocursorline signcolumn=yes
+    setlocal nonumber norelativenumber nocursorline 
+  else " sign column padding 
+    setlocal nonumber norelativenumber nocursorline signcolumn=yes 
   endif
   if a:level > 1  " e.g. gitcommit window
     return
@@ -290,7 +293,7 @@ function! window#show_bufs() abort
   let ndigits = len(string(bufnr('$')))
   let result = {}
   let lines = []
-  for bnr in tags#buffers_recent(0)  " include all buffers
+  for bnr in tags#bufs_recent(0)  " include all buffers
     let pad = repeat(' ', ndigits - len(string(bnr)))
     if exists('*RelativePath')
       let path = RelativePath(bufname(bnr))

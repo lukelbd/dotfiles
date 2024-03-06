@@ -205,7 +205,7 @@ endfunction
 function! fold#update_folds(...) abort
   let force = a:0 && a:1
   let queued = get(b:, 'fastfold_queued', 1)  " changed on TextChanged,TextChangedI
-  if !force && !queued | return | endif
+  if !force && !queued || !v:vim_did_enter | return | endif
   if &filetype ==# 'python'
     setlocal foldmethod=expr  " e.g. in case stuck, then FastFoldUpdate sets to manual
     setlocal foldexpr=python#fold_expr(v:lnum)
@@ -216,6 +216,8 @@ function! fold#update_folds(...) abort
     setlocal foldexpr=Foldexpr_markdown(v:lnum)
     setlocal foldtext=fold#fold_text()
   endif
+  " echom 'Filetype: ' . &l:filetype . ' ' . v:vim_did_enter
+  " echom 'Filetype: ' . v:vim_did_enter
   silent! FastFoldUpdate
   let b:fastfold_queued = 0
 endfunction

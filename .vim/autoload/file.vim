@@ -1,50 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
-" Helper functions and variables
-" Warning: For some reason including 'down' in fzf#run prevents fzf from returning
-" a list (version 0.29). However exluding it produces weird behavior that blacks
-" out rest of screen. Workaround is to factor out an unnecessary source function.
-let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
-
-" Print whether current file exists
-" Useful when trying to debug 'go to this file' mapping
-function! file#print_exists() abort
-  let files = glob(expand('<cfile>'), 0, 1)
-  if exists('*RelativePath')  " statusline function
-    let files = map(files, 'RelativePath(v:val)')
-  else
-    let files = map(files, "fnamemodify(v:val, ':~:.')")
-  endif
-  if empty(files)
-    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
-  else
-    echom 'File(s) ' . join(map(files, '"''".v:val."''"'), ', ') . ' exist.'
-  endif
-endfunction
-
-" Print current file information
-" Useful before using 'go to this local directory' mapping
-function! file#print_paths(...) abort
-  let chars = ' *[]()?!#%&<>'
-  let paths = a:0 ? a:000 : [@%]
-  for path in paths
-    let root = tag#find_root(path)
-    if exists('*RelativePath')  " statusline function
-      let root = RelativePath(root)
-      let show = RelativePath(path)
-    else
-      let root = fnamemodify(root, ':~:.')
-      let show = fnamemodify(path, ':~:.')
-    endif
-    let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
-    let work = fnamemodify(getcwd(), ':~')
-    echom 'Path: ' . escape(show, chars)
-    echom 'Project: ' . escape(root, chars)
-    echom 'Session: ' . escape(work, chars)
-  endfor
-endfunction
-
 " Generate list of files in directory
 " Warning: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
@@ -89,9 +45,68 @@ function! file#complete_lwd(lead, line, cursor) abort
   endif
 endfunction
 
+" Helper functions and variables
+" Warning: For some reason including 'down' in fzf#run prevents fzf from returning
+" a list (version 0.29). However exluding it produces weird behavior that blacks
+" out rest of screen. Workaround is to factor out an unnecessary source function.
+let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
+function! file#echo_path(...) abort
+  let path = expand(a:0 ? a:1 : '%')
+  if exists('*RelativePath')
+    let path = RelativePath(path)
+  else
+    let path = fnamemodify(path)
+  endif
+  echom 'Path: ' . path
+endfunction
+
+" Print whether current file exists
+" Useful when trying to debug 'go to this file' mapping
+function! file#print_exists() abort
+  let files = glob(expand('<cfile>'), 0, 1)
+  if exists('*RelativePath')  " statusline function
+    let files = map(files, 'RelativePath(v:val)')
+  else
+    let files = map(files, "fnamemodify(v:val, ':~:.')")
+  endif
+  if empty(files)
+    echom "File or pattern '" . expand('<cfile>') . "' does not exist."
+  else
+    echom 'File(s) ' . join(map(files, '"''".v:val."''"'), ', ') . ' exist.'
+  endif
+endfunction
+
+" Print current file information
+" Useful before using 'go to this local directory' mapping
+function! file#print_paths(...) abort
+  let chars = ' *[]()?!#%&<>'
+  let paths = a:0 ? a:000 : [@%]
+  for path in paths
+    let root = tag#find_root(path)
+    if exists('*RelativePath')  " statusline function
+      let root = RelativePath(root)
+      let show = RelativePath(path)
+    else
+      let root = fnamemodify(root, ':~:.')
+      let show = fnamemodify(path, ':~:.')
+    endif
+    let root = empty(root) ? fnamemodify(getcwd(), ':~:.') : root
+    let work = fnamemodify(getcwd(), ':~')
+    echom 'Path: ' . escape(show, chars)
+    echom 'Project: ' . escape(root, chars)
+    echom 'Session: ' . escape(work, chars)
+  endfor
+endfunction
+
 " Open recently edited file
 " Note: This is companion to :History with nicer behavior. Files tracked
 " in ~/.vim_mru_files across different open vim sessions.
+function! s:open_prompt(path) abort
+  let prompt = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
+  let prompt = prompt =~# '^[~/]\|^\w\+:' ? prompt : './' . prompt
+  let prompt = substitute(prompt, '/$', '', '') . '/'
+  return prompt
+endfunction
 function! file#open_used() abort
   let files = readfile(expand(g:MRU_file))
   if files[0] =~# '^#'
@@ -112,16 +127,16 @@ endfunction
 " Open from local or current directory (see also grep.vim)
 " Note: Using <expr> instead of this tiny helper function causes <C-c> to
 " display annoying 'Press :qa' helper message and <Esc> to enter fuzzy mode.
-function! file#open_head(path) abort
-  let prompt = fnamemodify(a:path, ':p:~:.')  " note do not use RelativePath
-  let prompt = prompt =~# '^[~/]\|^\w\+:' ? prompt : './' . prompt
-  let prompt = substitute(prompt, '/$', '', '') . '/'
-  return prompt
+function! file#open_netrw(cmd, local) abort
+  let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
+  exe a:cmd . ' ' . base
+  exe 'vert resize ' . window#default_width(1)
+  exe 'resize ' . window#default_height(1) | goto
 endfunction
 function! file#open_init(cmd, local) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
   let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
-  let init = utils#input_default(cmd, file#open_head(base), 'file#complete_cwd')
+  let init = utils#input_default(cmd, s:open_prompt(base), 'file#complete_cwd')
   if empty(init)
     return
   elseif cmd ==# 'Files'
@@ -152,18 +167,17 @@ function! s:open_continuous(cmd, ...) abort
     let base = a:1
     let items = a:2
   endif
-  if !exists(':' . a:cmd)
+  if !exists(':' . get(split(a:cmd), 0, ''))
     echohl WarningMsg
     echom "Error: Open command '" . a:cmd . "' not found."
-    echohl None
-    return
+    echohl None | return
   endif
   " Process paths input manually or from fzf
   let paths = []
   for item in items
     let user = item ==# s:new_file
     if user  " should be recursed at least one level
-      let item = utils#input_default(file#open_head(base), expand('<cfile>'), 'file#complete_cwd')
+      let item = utils#input_default(s:open_prompt(base), expand('<cfile>'), 'file#complete_cwd')
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " :p adds a slash so need two :h:h to remove then
@@ -181,7 +195,7 @@ function! s:open_continuous(cmd, ...) abort
     call fzf#run(fzf#wrap({
       \ 'sink*': function('s:open_continuous', [a:cmd, base]),
       \ 'source': s:path_source(base, 1),
-      \ 'options': "--multi --no-sort --prompt='" . file#open_head(base) . "'",
+      \ 'options': "--multi --no-sort --prompt='" . s:open_prompt(base) . "'",
       \ }))
   endif
   " Open file(s), or if it is already open just to that tab
@@ -205,15 +219,6 @@ endfunction
 " Warning: Using :edit without feedkeys causes issues navigating fugitive panels.
 " Warning: The default ':tab drop' seems to jump to the last tab on failure and
 " also takes forever. Also have run into problems with it on some vim versions.
-function! file#echo_path(...) abort
-  let path = expand(a:0 ? a:1 : '%')
-  if exists('*RelativePath')
-    let path = RelativePath(path)
-  else
-    let path = fnamemodify(path)
-  endif
-  echom 'Path: ' . path
-endfunction
 function! file#open_drop(...) abort
   if a:0 && !type(a:1)
     let [quiet, paths] = [a:1, a:000[1:]]

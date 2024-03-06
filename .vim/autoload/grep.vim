@@ -13,12 +13,12 @@ function! s:parse_paths(prompt, global, level, ...)
   else  " current buffer
     let paths = [resolve(@%)]
   endif
-  if a:0 || a:level <= 0  " input paths and folders
-    let paths = filter(paths, 'isdirectory(v:val) || filereadable(v:val)')
-  elseif a:level <= 1  " input path folders
-    let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")
-  else  " input path projects
+  if !a:0 && a:level >= 2  " path projects
     let paths = map(paths, 'tag#find_root(v:val)')
+  elseif !a:0 && a:level >= 1  " path folders
+    let paths = map(paths, "empty(v:val) || isdirectory(v:val) ? v:val : fnamemodify(v:val, ':h')")
+  else  " general paths and folders
+    let paths = filter(paths, 'isdirectory(v:val) || filereadable(v:val)')
   endif
   let result = []
   for path in filter(copy(paths), 'index(paths, v:val, v:key + 1) == -1')  " unique

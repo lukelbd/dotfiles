@@ -3,17 +3,21 @@
 " Note: Use karabiner to convert ctrl-j/k/h/l into arrow keys. So anything
 " mapped to these control combinations below must also be assigned to arrow keys.
 " Note: Use iterm to convert impossible or normal-mode-incompatible ctrl+key combos
-" to function keys: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
+" to function keys (settings -> keys -> key bindings -> 'send hex codes') various hex codes.
+" See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
+" See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
 " F1: 1b 4f 50 (Ctrl-,) (5-digit codes failed)
 " F2: 1b 4f 51 (Ctrl-.)
 " F3: 1b 4f 52 (Ctrl-[)
 " F4: 1b 4f 53 (Ctrl-])
 " F5: 1b 5b 31 35 7e (Ctrl-/) (3-digit codes failed)
 " F6: 1b 5b 31 37 7e (Ctrl-\)
-" F7: 1b 5b 31 38 7e (Ctrl-;)
-" F8: 1b 5b 31 39 7e (Ctrl-')
-" F9: 1b 5b 32 30 7e (Ctrl-i)
-" F10: 1b 5b 32 31 7e (Ctrl-m)
+" F7: 1b 5b 31 38 7e (Ctrl--)
+" F8: 1b 5b 31 39 7e (Ctrl-=)
+" F9: 1b 5b 32 30 7e (Ctrl-;)
+" F10: 1b 5b 32 31 7e (Ctrl-')
+" F11: 1b 5b 32 33 7e (Ctrl-i) (forum codes required)
+" F12: 1b 5b 32 34 7e (Ctrl-m)
 "-----------------------------------------------------------------------------"
 " Critical stuff
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
@@ -52,6 +56,7 @@ set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldclose=  " use foldclose=all to auto-close folds when leaving
+set foldcolumn=1  " show fold boundaries on column
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=5  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
@@ -326,7 +331,7 @@ endfor
 " * Ctrl-b enabled reverse insert-mode entry in older vim, disable in case
 " * Ctrl-z sends vim to background, disable to prevent cursor change
 for s:key in [
-  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>', '<F10>',
+  \ '<F1>', '<F2>', '<F3>', '<F4>', '<F5>', '<F6>', '<F7>', '<F8>', '<F9>', '<F10>', '<F11>', '<F12>',
   \ '<C-n>', '<C-p>', '<C-d>', '<C-t>', '<C-h>', '<C-l>', '<C-b>', '<C-z>',
   \ '<C-x><C-n>', '<C-x><C-p>', '<C-x><C-e>', '<C-x><C-y>',
 \ ]
@@ -410,16 +415,16 @@ let g:MRU_Open_File_Relative = 1
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call window#show_bufs()
 command! -nargs=0 WipeBufs call window#wipe_bufs()
-nnoremap <Leader>b <Cmd>Windows<CR>
-nnoremap <Leader>B <Cmd>Buffers<CR>
-noremap <Leader>y <Cmd>ShowBufs<CR>
-noremap <Leader>Y <Cmd>WipeBufs<CR>
+nnoremap <Leader>w <Cmd>Windows<CR>
+nnoremap <Leader>W <Cmd>Buffers<CR>
+noremap <Leader>p <Cmd>ShowBufs<CR>
+noremap <Leader>P <Cmd>WipeBufs<CR>
 
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
 " Note: Here :History includes v:oldfiles and open buffers
-for s:char in range(1, 10) | exe 'silent! unmap <Tab>' . s:char | endfor
-for s:char in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:char | endfor
+for s:key in range(1, 10) | exe 'silent! unmap <Tab>' . s:key | endfor
+for s:key in ['.', ',', '>', '<'] | exe 'silent! xunmap z' . s:key | endfor
 nnoremap g. <Cmd>call window#jump_tab(v:count)<CR>
 nnoremap g> <Cmd>call window#move_tab(v:count)<CR>
 nnoremap g, <Cmd>History<CR>
@@ -444,39 +449,45 @@ nnoremap <Tab>m <Cmd>exe 'resize ' . window#default_height(0)<CR>
   \<Cmd>exe 'vert resize ' . window#default_width(0)<CR>
 nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
 nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
-nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
-nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
 nnoremap <Tab>( <Cmd>call window#change_height(-6 * v:count1)<CR>
 nnoremap <Tab>) <Cmd>call window#change_height(6 * v:count1)<CR>
+nnoremap <Tab>[ <Cmd>call window#change_width(-5 * v:count1)<CR>
+nnoremap <Tab>] <Cmd>call window#change_width(5 * v:count1)<CR>
 nnoremap <Tab>{ <Cmd>call window#change_width(-10 * v:count1)<CR>
 nnoremap <Tab>} <Cmd>call window#change_width(10 * v:count1)<CR>
 nnoremap <Tab>> <Cmd>call window#move_tab(tabpagenr() + v:count1)<CR>
 nnoremap <Tab>< <Cmd>call window#move_tab(tabpagenr() - v:count1)<CR>
+
+" Open file with optional user input
+" Note: The <Leader> maps open up views of the current file directory
+for s:key in ['q', 'w', 'e', 'r'] | silent! exe 'unmap <Tab>' . s:key | endfor
+nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
+nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
+nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
+nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
+nnoremap <Tab>r <Cmd>call file#open_init('Vsplit', 1)<CR>
+nnoremap <Tab>t <Cmd>call file#open_init('Vsplit', 0)<CR>
+nnoremap <Tab>- <Cmd>call file#open_init('Split', 1)<CR>
+nnoremap <Tab>= <Cmd>call file#open_init('Split', 0)<CR>
+nnoremap <Tab>/ <Cmd>call file#open_netrw('topleft vsplit', 1)<CR>
+nnoremap <Tab>\ <Cmd>call file#open_netrw('topleft vsplit', 0)<CR>
 
 " Open file in current directory or some input directory
 " Note: Anything that is not :Files gets passed to :Drop command
 " nnoremap <C-g> <Cmd>Locate<CR>  " uses giant database from Unix 'locate'
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
-nnoremap <F9> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+command! -nargs=* -complete=file Split call file#open_continuous('botright split', <f-args>)
+command! -nargs=* -complete=file Vsplit call file#open_continuous('topleft vsplit', <f-args>)
+nnoremap <F7> <Cmd>exe 'Split ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+nnoremap <F8> <Cmd>exe 'Split ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
+nnoremap <C-t> <Cmd>exe 'Vsplit ' . fnameescape(tag#find_root(@%))<CR>
+nnoremap <F11> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-p> <Cmd>exe 'Files ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <C-g> <Cmd>GFiles<CR>
-
-" Open file with optional user input
-silent! unmap <Tab>q
-silent! unmap <Tab>w
-silent! unmap <Tab>e
-silent! unmap <Tab>r
-nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
-nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
-nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
-nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
-nnoremap <Tab>- <Cmd>call file#open_init('split', 1)<CR>
-nnoremap <Tab>= <Cmd>call file#open_init('vsplit', 1)<CR>
-nnoremap <Tab>/ <Cmd>exe 'leftabove vsplit ' . fnamemodify(resolve(@%), ':p:h')<CR>
-  \<Cmd>exe 'vert resize ' . window#default_width(1)<CR>goto
 
 " Related file utilities
 " Note: Here :Rename is adapted from the :Rename2 plugin. Usage is :Rename! <dest>
@@ -537,18 +548,18 @@ augroup END
 " Mapping and command windows
 " This uses iterm mapping of <F6> to <C-;> and works in all modes
 " See: https://stackoverflow.com/a/41168966/4970632
-omap <F7> <Plug>(fzf-maps-o)
-xmap <F7> <Plug>(fzf-maps-x)
-imap <F7> <Plug>(fzf-maps-i)
-nnoremap <F7> <Cmd>Maps<CR>
-nnoremap <Leader>q <Cmd>Commands<CR>
-nnoremap <Leader>Q <Cmd>Maps<CR>
+omap <F9> <Plug>(fzf-maps-o)
+xmap <F9> <Plug>(fzf-maps-x)
+imap <F9> <Plug>(fzf-maps-i)
+nnoremap <F9> <Cmd>Maps<CR>
+nnoremap <Leader>b <Cmd>Commands<CR>
+nnoremap <Leader>B <Cmd>Maps<CR>
 
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-noremap ; <Cmd>call switch#message()<CR>
-nnoremap z: @:
+noremap <Leader>y <Cmd>call switch#message()<CR>
+noremap <Leader>Y @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -596,7 +607,7 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-noremap z; <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
+noremap <Leader>t <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 cnoremap <F1> <C-p>
@@ -629,7 +640,7 @@ nnoremap <F6> <Cmd>Lines<CR>
 " Navigate matches/sentences/paragraphs without adding to jumplist
 " Note: Core vim idea is that these commands take us far away from cursor
 " but typically use scrolling to go far away. So use CursorHold approach
-noremap <Leader>o <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
+noremap ; <Cmd>call switch#hlsearch(1 - v:hlsearch, 1)<CR>
 noremap n <Cmd>call iter#next_match(0)<CR>
 noremap N <Cmd>call iter#next_match(1)<CR>
 noremap ( <Cmd>keepjumps normal! (<CR>
@@ -687,9 +698,7 @@ noremap z0 zs
 " Note: Here fold#update_folds() re-enforces special expr fold settings for markdown
 " and python files then applies default toggle status that differs from buffer-wide
 " &foldlevel for fortran python and tex files (e.g. always open \begin{document}).
-for s:char in ['s', 'e', 'f', 'F', 'n', 'N']  " remove this in future
-  silent! exe 'unmap! z' . s:char
-endfor
+for s:key in ['s', 'e', 'f', 'F', 'n', 'N'] | silent! exe 'unmap! z' . s:key | endfor
 noremap gz <Cmd>Folds<CR>
 noremap zg <Cmd>call fold#update_folds(1)<CR><Cmd>echom 'Updated folds'<CR>
 noremap zx <Cmd>call fold#update_folds()<CR>zx<Cmd>call fold#regex_levels()<CR>zv
@@ -753,12 +762,12 @@ noremap zj ]z
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <Leader>- <Cmd>call mark#del_marks()<CR>
-noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
+noremap <Leader>_ <Cmd>call mark#del_marks()<CR>
+noremap z_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
 noremap g_ <Cmd>call mark#fzf_marks()<CR>
 noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
 noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
-noremap <F10> <Cmd>call mark#next_mark(v:count1)<CR>
+noremap <F12> <Cmd>call mark#next_mark(v:count1)<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -884,9 +893,10 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " Undo behavior and insert-mode mappings
 " Note: Tried implementing insert-mode 'redo' previously and failed because
 " history lost after vim re-enters insert mode from the <C-o> command.
-nmap U <C-r>
-inoremap <F10> <C-g>u
-inoremap <expr> <F9> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
+nmap u <Plug>(RepeatUndo)
+nmap U <Plug>(RepeatRedo)
+inoremap <F12> <C-g>u
+inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 nnoremap <expr> o edit#insert_mode('o')
 nnoremap <expr> O edit#insert_mode('O')
 
@@ -902,8 +912,8 @@ nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
 " Register selection utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-imap <expr> <F8> peekaboo#peek(1, "\<C-r>",  0)
-nmap <expr> <F8> peekaboo#peek(1, '"', 0)
+imap <expr> <F10> peekaboo#peek(1, "\<C-r>",  0)
+nmap <expr> <F10> peekaboo#peek(1, '"', 0)
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
@@ -997,19 +1007,13 @@ noremap zs zg
 noremap zS zug
 
 " Change case for word or motion
+for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
 call s:repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
 call s:repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
 nnoremap guu guiw
 nnoremap gUU gUiw
-vnoremap zu ~
+vnoremap zu g~
 vnoremap zU gu<Esc>`<~h
-
-" Enforce csae maps
-" Todo: Remove unmaps after sessions restarted
-noremap gu gu
-noremap gU gU
-silent! unmap zuu
-silent! unmap zUU
 
 " Auto wrap lines or items within motion
 " Note: Previously tried to make this operator map but not necessary, should
@@ -1603,6 +1607,8 @@ noremap <Leader>w <Cmd>WrapToggle<CR>
 " Note every BufRead autocmd inside an ftdetect/filename.vim file is automatically
 " made part of the 'filetypedetect' augroup (that's why it exists!).
 call plug#end()
+silent! delcommand SplitjoinJoin
+silent! delcommand SplitjoinSplit
 
 
 "-----------------------------------------------------------------------------"
@@ -1650,14 +1656,14 @@ endif
 " Note: This disable several maps but keeps many others. Remove unmap commands
 " after restarting existing vim sessions.
 if s:plug_active('tcomment_vim')
-  for s:char in ['.', '"', "'", ':', '?', '/', ';']
-    silent! exe 'unmap g.' . s:char
+  for s:key in ['.', '"', "'", ':', '?', '/', ';']
+    silent! exe 'unmap g.' . s:key
   endfor
-  for s:char1 in ['>', '<'] | for s:char2 in ['b', 'c', '>', '<>']
-    silent! exe 'unmap g' . s:char1 . s:char2
+  for s:key1 in ['>', '<'] | for s:key2 in ['b', 'c', '>', '<>']
+    silent! exe 'unmap g' . s:key1 . s:key2
   endfor | endfor
-  for s:char1 in add(range(1, 9), '') | for s:char2 in ['', 'b', 'c']
-    if !empty(s:char1 . s:char2) | silent! exe 'unmap g.' . s:char1 . s:char2 | endif
+  for s:key1 in add(range(1, 9), '') | for s:key2 in ['', 'b', 'c']
+    if !empty(s:key1 . s:key2) | silent! exe 'unmap g.' . s:key1 . s:key2 | endif
   endfor | endfor
   nnoremap z.. <Cmd>call comment#toggle_comment()<CR>
   nnoremap z>> <Cmd>call comment#toggle_comment(1)<CR>
@@ -1722,14 +1728,14 @@ if s:plug_active('vim-tags')
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
   nnoremap gy <Cmd>BTags<CR>
   nnoremap gY <Cmd>Tags<CR>
-  nnoremap <Leader>O <Cmd>call switch#tags()<CR>
-  nnoremap <Leader>t <Cmd>ShowTable<CR>
-  nnoremap <Leader>T <Cmd>ShowTable!<CR>
+  nnoremap <Leader>o <Cmd>ShowTable<CR>
+  nnoremap <Leader>O <Cmd>ShowTable!<CR>
+  nnoremap <Leader>T <Cmd>call switch#tags()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
-  let g:tags_jump_map = 'gt'  " default is <Leader><Leader>
-  let g:tags_drop_map = 'gT'  " default is <Leader><Tab>
-  let g:tags_find_map = '<CR>'  " default is <Leader><Tab>
+  let g:tags_bselect_map = 'gt'  " default is <Leader><Leader>
+  let g:tags_select_map = 'gT'  " default is <Leader><Tab>
+  let g:tags_jump_map = '<CR>'  " default is <Leader><CR>
   let g:tags_keep_jumps = 1  " default is 0
   let g:tags_major_kinds = s:major
   let g:tags_minor_kinds = s:minor
@@ -2133,13 +2139,13 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
   noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
   noremap <Leader>I <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
-  noremap <Leader>p <Cmd>BCommits<CR>
-  noremap <Leader>P <Cmd>Commits<CR>
   noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
   noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
   noremap zl <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
   noremap zL <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  noremap z; <Cmd>BCommits<CR>
+  noremap z: <Cmd>Commits<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2394,7 +2400,8 @@ noremap <Leader>5 <Cmd>ShowSyntax<CR>
 noremap <Leader>6 <Cmd>ShowPlugin<CR>
 
 " Show folds with dark against light
-highlight Folded ctermbg=Black ctermfg=White cterm=Bold
+highlight Folded ctermbg=NONE ctermfg=White cterm=Bold
+highlight FoldColumn ctermbg=NONE ctermfg=Gray cterm=NONE
 
 " Use default colors for transparent conceal and terminal background
 highlight Conceal ctermbg=NONE ctermfg=NONE
@@ -2445,16 +2452,15 @@ highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
 highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 
-" Clear past jumps to ignore stuff from plugin files and vimrc and ignore
-" outdated buffer marks loaded from .viminfo
+" Clear past jumps to ignore stuff from plugin files and vimrc
+" and ignore outdated buffer marks loaded from .viminfo
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  au VimEnter * silent windo clearjump | exe 'normal! zv'
-  au WinNew,TabNew * silent clearjumps
+  au VimEnter * silent windo clearjumps | runtime after/common.vim | exe 'normal! zv'
+  au WinNew * silent clearjumps
 augroup END
 nohlsearch  " turn off highlighting at startup
 noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
-runtime after/common.vim
 redraw!  " prevent statusline error
