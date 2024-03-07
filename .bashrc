@@ -118,22 +118,23 @@ _prompt_set=1
 
 # Readline settings and bingins (could also put strings in .inputrc)
 # Use nr2char(printf('%d', '0xN')) to convert iterm hex to sequences used below
+# See: https://stackoverflow.com/a/12191699/4970632
 # bind 'set editing-mode vi'
 # bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
 # bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block curso
 _setup_bindings() {
   complete -r        # remove previous completions
+  bind -r '"\C-d"'   # enable ctrl-d and ctrl-u in Vim
+  bind -r '"\C-s"'   # enable ctrl-s in Vim (normally caught as start/stop signal)
   stty werase undef  # disable ctrl-w word delete function
   stty stop undef    # disable ctrl-s start/stop binding
   stty eof undef     # disable ctrl-d end-of-file binding
-  bind -r '"\C-d"'   # enable ctrl-d and ctrl-u in Vim
-  bind -r '"\C-s"'   # enable ctrl-s in Vim (normally caught as start/stop signal)
   bind 'set keyseq-timeout 50'                # see: https://unix.stackexchange.com/a/318497/112647
   bind 'set show-mode-in-prompt off'          # do not show mode
   bind 'set disable-completion off'           # ensure on
   bind 'set completion-ignore-case on'        # want dat
   bind 'set completion-map-case on'           # treat hyphens and underscores as same
-  bind 'set show-all-if-ambiguous on'         # one tab press instead of two; from this: https://unix.stackexchange.com/a/76625/112647
+  bind 'set show-all-if-ambiguous on'         # one tab press for fzf: https://unix.stackexchange.com/a/76625/112647
   bind 'set menu-complete-display-prefix on'  # show string typed so far as 'member' while cycling through completion options
   bind 'set completion-display-width 1'       # easier to read
   bind 'set bell-style visible'               # only let readlinke/shell do visual bell; use 'none' to disable totally
@@ -142,52 +143,53 @@ _setup_bindings() {
   bind 'set page-completions off'             # no more --more-- pager when list too big
   bind 'set completion-query-items 0'         # never ask for user confirmation if there's too much stuff
   bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
-  bind '"\e-1\C-i": menu-complete-backward'   # complete backward without changing scroll history
-  bind '"\e[Z": "\e-1\C-i"'                   # complete backward without changing scroll history
-  bind '"\C-i": menu-complete'                # complete forward without changing scroll history
-  bind '"\eOP": menu-complete-backward'       # complete backward with F1 = ctrl-,
   bind '"\eOQ": menu-complete'                # complete forward with F2 = ctrl-.
-  # bind '"\e[1;3C" forward-word'
-  # bind '"\e[1;3D" backward-word'
-  # bind '"\e[1;3C" home'
-  # bind '"\e[1;3D" end'
+  bind '"\eOP": menu-complete-backward'       # complete backward with F1 = ctrl-,
+  bind '"\C-i": menu-complete'                # complete forward without changing scroll history
+  bind '"\e[Z": menu-complete-backward'       # complete backward without changing scroll history
+  bind '"\e[F": end-of-line'                  # <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
+  bind '"\e[H": beginning-of-line'            # <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
+  bind '"\e[1;3D" backward-word'              # <Alt-Left> key from sed -n l <Alt-Up>
+  bind '"\e[1;3C" forward-word'               # <Alt-Right> key from sed -n -l <Alt-Down>
+  bind '"\e[1;2D": backward-word'             # <Shift-Left> key from sed -n l <Shift-Up>
+  bind '"\e[1;2C": forward-word'              # <Shift-Right> key from sed -n -l <Shift-Down>
 }
-_setup_bindings 2>/dev/null  # ignore any errors
+_setup_bindings 2>/dev/null  # ignore an errors
 
 # Shell Options
-# Check out 'shopt -p' to see possibly interesting shell options
-# Note diff between .inputrc and .bashrc settings: https://unix.stackexchange.com/a/420362/112647
+# Check out 'shopt -p' to see possibly iteresting shell options
+# Note diff between .inputrc and .bashrcsettings: https://unix.stackexchange.com/a/420362/112647
 _setup_opts() {
-  set +H  # turn off history expand so can have '!' in strings: https://unix.stackexchange.com/a/33341/112647
-  set -o ignoreeof  # never close terminal with ctrl-d
-  stty -ixon  # disable start stop output control to alloew ctrl-s
-  shopt -s autocd  # typing naked directory name will cd into it
-  shopt -s cdspell  # attempt spelling correction of cd arguments
-  shopt -s cdable_vars  # cd into shell variable directories, no $ necessary
-  shopt -s checkwinsize  # allow window resizing
-  shopt -s cmdhist  # save multi-line commands as one command in history
-  shopt -s direxpand  # expand directories
-  shopt -s dirspell  # attempt spelling correction of dirname
-  shopt -s globstar  # **/ matches all subdirectories, searches recursively
-  shopt -s histappend  # append to the history file, don't overwrite it
-  shopt -u dotglob  # include dot patterns in glob matches
-  shopt -u extglob  # extended globbing; allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
-  shopt -u failglob  # no error message if expansion is empty
-  shopt -u nocaseglob  # match case in glob expressions
-  shopt -u nocasematch  # match case in case/esac and [[ =~ ]] instances
-  shopt -u nullglob  # turn off nullglob; so e.g. no null-expansion of string with ?, * if no matches
-  shopt -u no_empty_cmd_completion  # enable empty command completion
-  export PROMPT_DIRTRIM=2  # trim long paths in prompt
-  export HISTSIZE=5000  # enable huge history
-  export HISTFILESIZE=5000  # enable huge history
-  export HISTIGNORE='&:bg:fg:exit:clear'  # don't record some commands
-  export HISTCONTROL=''  # note ignoreboth = ignoredups + ignorespace
+  set +H  # turn off history expand so cn have '!' in strings: https://unix.stackexchange.com/a/33341/112647
+  set -o ignoreeof  # never close terminl with ctrl-d
+  stty -ixon  # disable start stop outpu control to alloew ctrl-s
+  shopt -s autocd  # typing naked directry name will cd into it
+  shopt -s cdspell  # attempt spelling crrection of cd arguments
+  shopt -s cdable_vars  # cd into shell ariable directories, no $ necessary
+  shopt -s checkwinsize  # allow window esizing
+  shopt -s cmdhist  # save multi-line comands as one command in history
+  shopt -s direxpand  # expand directoris
+  shopt -s dirspell  # attempt spelling orrection of dirname
+  shopt -s globstar  # **/ matches all sbdirectories, searches recursively
+  shopt -s histappend  # append to the hstory file, don't overwrite it
+  shopt -u dotglob  # include dot patters in glob matches
+  shopt -u extglob  # extended globbing;allows use of ?(), *(), +(), +(), @(), and !() with separation "|" for OR options
+  shopt -u failglob  # no error message f expansion is empty
+  shopt -u nocaseglob  # match case in gob expressions
+  shopt -u nocasematch  # match case in ase/esac and [[ =~ ]] instances
+  shopt -u nullglob  # turn off nullglob so e.g. no null-expansion of string with ?, * if no matches
+  shopt -u no_empty_cmd_completion  # enble empty command completion
+  export PROMPT_DIRTRIM=2  # trim long pths in prompt
+  export HISTSIZE=5000  # enable huge hitory
+  export HISTFILESIZE=5000  # enable hug history
+  export HISTIGNORE='&:bg:fg:exit:clear' # don't record some commands
+  export HISTCONTROL=''  # note ignoreboh = ignoredups + ignorespace
 }
-_setup_opts 2>/dev/null  # ignore if option unavailable
+_setup_opts 2>/dev/null  # ignore if opton unavailable
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
 # Settings for particular machines
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------------
 # Reset all aliases
 # Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
 unalias -a
