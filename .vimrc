@@ -48,12 +48,12 @@ set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cpoptions=aABceFs  " vim compatibility options
 set cursorline  " highlight cursor line
-set diffopt=filler,context:5,foldcolumn:1,vertical  " vim-difference display options
+set diffopt=filler,context:5,foldcolumn:2,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
 set foldclose=  " use foldclose=all to auto-close folds when leaving
-set foldcolumn=1  " show fold boundaries on column
+set foldcolumn=2  " show fold boundaries on column
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=5  " allow only a few folding levels
 set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
@@ -103,7 +103,7 @@ set shiftwidth=2  " default 2 spaces
 set showcmd  " show operator pending command
 set shortmess=atqcT  " snappy messages, 'a' does a bunch of common stuff
 set showtabline=1  " default 2 spaces
-set signcolumn=auto  " auto may cause lag after startup but unsure
+set signcolumn=number  " show signs in number column
 set smartcase  " search case insensitive, unless has capital letter
 set softtabstop=2  " default 2 spaces
 set spellcapcheck=  " disable checking for capital start of sentence
@@ -2383,18 +2383,6 @@ noremap <Leader>3 <Cmd>ShowColors<CR>
 noremap <Leader>4 <Cmd>ShowSyntax<CR>
 noremap <Leader>5 <Cmd>ShowPlugin<CR>
 
-" Use default colors for transparent conceal and terminal background
-highlight Conceal ctermbg=NONE ctermfg=NONE
-highlight Terminal ctermbg=NONE ctermfg=NONE
-
-" Use default colors under error and warning lines
-highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
-highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
-
-" Special characters
-highlight NonText ctermfg=Black cterm=NONE
-highlight SpecialKey ctermfg=Black cterm=NONE
-
 " Matching parentheses
 highlight Todo ctermbg=Red ctermfg=NONE
 highlight MatchParen ctermbg=Blue ctermfg=NONE
@@ -2407,16 +2395,19 @@ highlight Search ctermbg=Magenta ctermfg=NONE
 highlight ColorColumn ctermbg=Gray cterm=NONE
 highlight SignColumn ctermbg=NONE ctermfg=Black cterm=NONE
 
-" Comment highlighting
-" Only works in iTerm with minimum contrast enabled (else use gray)
-highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
-highlight Comment ctermfg=Black cterm=NONE
-
 " Cursor line and fold lines
-" Use the cterm color mapping
 highlight Folded ctermbg=NONE ctermfg=White cterm=Bold
 highlight CursorLine ctermbg=Black cterm=NONE
-highlight CursorLineNR ctermbg=None ctermfg=White cterm=NONE
+
+" Line number highlighting
+highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
+highlight CursorLineNR ctermbg=None ctermfg=Black cterm=NONE
+
+" Comments and special characters
+" Only works in iTerm with minimum contrast enabled (else use gray)
+highlight Comment ctermfg=Black cterm=NONE
+highlight NonText ctermfg=Black cterm=NONE
+highlight SpecialKey ctermfg=Black cterm=NONE
 
 " Popup menu highlighting
 " Use same background as theme
@@ -2431,8 +2422,15 @@ highlight DiffAdd ctermbg=Black ctermfg=NONE cterm=Bold
 highlight DiffChange ctermbg=Black ctermfg=NONE cterm=NONE
 highlight DiffDelete ctermbg=NONE ctermfg=Black cterm=NONE
 
-" ANSI has no control over light
-" Switch from light to main and color to dark
+" Highlighting disabled
+" Use signs for error messages instead
+highlight Conceal ctermbg=NONE ctermfg=NONE
+highlight Terminal ctermbg=NONE ctermfg=NONE
+highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
+
+" General highlighting
+" Use main colors instead of light and dark colors instead of main
 highlight Type ctermbg=NONE ctermfg=DarkGreen
 highlight Constant ctermbg=NONE ctermfg=Red
 highlight Special ctermbg=NONE ctermfg=DarkRed
