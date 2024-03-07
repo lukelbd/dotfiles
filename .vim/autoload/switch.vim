@@ -88,13 +88,11 @@ function! switch#copy(...) abort
   if state == toggle
     retur
   elseif toggle
-    let &l:foldcolumn = 2
     for key in keys
       let b:[key] = eval('&l:' . key)
       exe 'let &l:' . key . '=' . (key ==# 'signcolumn' ? string('no') : '0')
     endfor
   else
-    let &l:foldcolumn = &g:foldcolumn
     for key in keys
       let value = get(b:, key, eval('&g:' . key))
       exe 'let &l:' . key . '=' . (key ==# 'signcolumn' ? string(value) : value)

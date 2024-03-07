@@ -48,7 +48,7 @@ set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cpoptions=aABceFs  " vim compatibility options
 set cursorline  " highlight cursor line
-set diffopt=filler,context:5,foldcolumn:0,vertical  " vim-difference display options
+set diffopt=filler,context:5,foldcolumn:1,vertical  " vim-difference display options
 set display=lastline  " displays as much of wrapped lastline as possible;
 set esckeys  " make sure enabled, allows keycodes
 set fillchars=vert:\|,fold:\ ,foldopen:\>,foldclose:<,eob:~,lastline:@  " e.g. fold markers
@@ -2443,7 +2443,7 @@ highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 " Critical for color scheme cyling and macvim
 highlight! link SignColumn LineNR
 highlight! link FoldColumn LineNR
-highlight! link CursorLineFold CursorLineNR
+highlight! link CursorLineFold LineNR
 
 " Clear past jumps to ignore stuff from plugin files and vimrc
 " and ignore outdated buffer marks loaded from .viminfo
