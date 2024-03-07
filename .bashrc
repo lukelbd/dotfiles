@@ -116,9 +116,8 @@ _prompt_dirs() {  # show full dirs path from base to current instead of just cur
   || export PS1='$(_prompt_branch)\[\033[1;37m\]\h[\j]:$(_prompt_dirs)\$ \[\033[0m\]'
 _prompt_set=1
 
-# Readline/inputrc settings
-# Use ctrl-r to search previous commands
-# Equivalent to putting lines in single quotes inside .inputrc
+# Readline settings and bingins (could also put strings in .inputrc)
+# Use nr2char(printf('%d', '0xN')) to convert iterm hex to sequences used below
 # bind 'set editing-mode vi'
 # bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
 # bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block curso
