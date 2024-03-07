@@ -123,10 +123,12 @@ _prompt_set=1
 # bind 'set vi-cmd-mode-string "\1\e[2 q\2"' # insert mode as line cursor
 # bind 'set vi-ins-mode-string "\1\e[6 q\2"' # normal mode as block curso
 _setup_bindings() {
-  complete -r  # remove completions
-  bind -r '"\C-i"'
-  bind -r '"\C-d"'
-  bind -r '"\C-s"'  # enable Ctrl-s in Vim (normally caught by terminal as start/stop signal)
+  complete -r        # remove previous completions
+  stty werase undef  # disable ctrl-w word delete function
+  stty stop undef    # disable ctrl-s start/stop binding
+  stty eof undef     # disable ctrl-d end-of-file binding
+  bind -r '"\C-d"'   # enable ctrl-d and ctrl-u in Vim
+  bind -r '"\C-s"'   # enable ctrl-s in Vim (normally caught as start/stop signal)
   bind 'set keyseq-timeout 50'                # see: https://unix.stackexchange.com/a/318497/112647
   bind 'set show-mode-in-prompt off'          # do not show mode
   bind 'set disable-completion off'           # ensure on
@@ -141,14 +143,15 @@ _setup_bindings() {
   bind 'set page-completions off'             # no more --more-- pager when list too big
   bind 'set completion-query-items 0'         # never ask for user confirmation if there's too much stuff
   bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
-  bind '"\C-i": menu-complete'                # this will not pollute scroll history; better
-  bind '"\e-1\C-i": menu-complete-backward'   # this will not pollute scroll history; better
-  bind '"\e[Z": "\e-1\C-i"'                   # shift tab to go backwards
-  bind '"\eOP": menu-complete'
-  bind '"\eOQ": menu-complete-backward'
-  stty werase undef  # no more ctrl-w word delete function; allows c-w re-binding to work
-  stty stop undef    # no more ctrl-s
-  stty eof undef     # no more ctrl-d
+  bind '"\e-1\C-i": menu-complete-backward'   # complete backward without changing scroll history
+  bind '"\e[Z": "\e-1\C-i"'                   # complete backward without changing scroll history
+  bind '"\C-i": menu-complete'                # complete forward without changing scroll history
+  bind '"\eOP": menu-complete-backward'       # complete backward with F1 = ctrl-,
+  bind '"\eOQ": menu-complete'                # complete forward with F2 = ctrl-.
+  # bind '"\e[1;3C" forward-word'
+  # bind '"\e[1;3D" backward-word'
+  # bind '"\e[1;3C" home'
+  # bind '"\e[1;3D" end'
 }
 _setup_bindings 2>/dev/null  # ignore any errors
 
