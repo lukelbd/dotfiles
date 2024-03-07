@@ -24,17 +24,14 @@
 " buffer-local syntax and 'conceal-', 'format-' 'linebreak', and 'joinspaces'.
 " Note: The refresh variable used in .vim/autoload/vim.vim to autoload recently
 " updated script and line length variable used in linting tools below.
+" vint: -ProhibitSetNoCompatible
+let $PATH = (has('gui_running') && $PATH !~# '/mambaforge/' ? $HOME . '/mambaforge/bin:' : '') . $PATH
+set nocompatible
+set encoding=utf-8
+scriptencoding utf-8
 let g:linelength = 88  " see below configuration
 let g:mapleader = "\<Space>"  " see <Leader> mappings
 let g:refresh = get(g:, 'refresh', localtime())
-" vint: -ProhibitSetNoCompatible
-set nocompatible
-set encoding=utf-8  " enable utf characters
-scriptencoding utf-8
-runtime autoload/repeat.vim
-if has('gui_running') && $PATH !~# '/mambaforge/'  " enforce macvim path
-  let $PATH = $HOME . '/mambaforge/bin:' . $PATH
-endif
 
 " Global settings
 " Warning: Tried setting default 'foldmethod' and 'foldexpr' can cause buffer-local
@@ -535,6 +532,7 @@ augroup panel_setup
   au FileType gitcommit call git#commit_setup()
   au FileType git,fugitive,fugitiveblame call git#fugitive_setup()
   au FileType fugitiveblame call git#blame_setup()
+  au BufRead fugitive://* if &filetype !=# 'fugitive' | call window#panel_setup(1) | endif
   for s:ftype in s:panel_filetypes
     let s:level = s:ftype ==# 'gitcommit' ? 2 : s:ftype ==# 'git' ? 1 : 0
     exe 'au FileType ' . s:ftype . ' call window#panel_setup(' . s:level . ')'
@@ -2354,10 +2352,10 @@ command! SyncSmart exe 'Sync ' . max([0, line('.') - get(tags#close_tag(line('w0
 noremap zy <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR><Cmd>echom 'Syncing from closest tag'<CR>
 noremap zY <Cmd>SyncStart<CR><Cmd>echom 'Syncing from first line'<CR>
 
-" Scroll over color schemes
-" Todo: Finish terminal vim support. Currently sign column gets messed up
-" Note: Colors uses fzf to jump between color schemes (fzf.vim command). These utils
-" are mainly used for GUI vim, otherwise use terminal themes. Some scheme ideas:
+" Scroll color schemes and toggle colorize
+" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note coloring
+" hex strings can cause massive slowdowns so disable by default.
+" Todo: Finish terminal vim support. Currently sign column gets messed up. Some ideas:
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
 augroup colorscheme_setup
   au!
@@ -2367,37 +2365,31 @@ command! Sprev call iter#next_scheme(1)
 command! Snext call iter#next_scheme(0)
 noremap <Leader>( <Cmd>Sprev<CR>
 noremap <Leader>) <Cmd>Snext<CR>
-
-" Pick color scheme and toggle hex coloring
-" Note: Here :Colorize is from colorizer.vim and :Colors from fzf.vim. Note
-" coloring hex strings can cause massive slowdowns so disable by default
 noremap <Leader>0 <Cmd>Colors<CR>
 noremap <Leader>8 <Cmd>Colorize<CR>
 
 " Show syntax under cursor and syntax types
-" Note: Here 'groups' opens up the page
-command! -nargs=0 SyntaxGroup call vim#syntax_group()
-command! -nargs=? SyntaxList call vim#syntax_list(<q-args>)
-command! -nargs=0 ShowGroups help group-name | call search('\*Comment') | normal! zt
-noremap <Leader>1 <Cmd>SyntaxGroup<CR>
-noremap <Leader>2 <Cmd>SyntaxList<CR>
-noremap <Leader>3 <Cmd>ShowGroups<CR>
-
-" Show runtime filetype information
+" Note: This shows syntax highlight groups and colors.
+command! -nargs=? ShowStack call vim#show_stack(<f-args>)
+command! -nargs=0 ShowPlugin call vim#show_runtime('ftplugin')
+command! -nargs=0 ShowSyntax call vim#show_runtime('syntax')
+command! -nargs=0 ShowGroups exe 'help highlight-groups' | exe 'normal! zt'
+command! -nargs=0 ShowBases exe 'help group-name' | exe 'normal! zt'
 command! -nargs=0 ShowColors call vim#show_colors()
-command! -nargs=0 ShowPlugin call vim#show_ftplugin()
-command! -nargs=0 ShowSyntax call vim#show_syntax()
-noremap <Leader>4 <Cmd>ShowColors<CR>
-noremap <Leader>5 <Cmd>ShowSyntax<CR>
-noremap <Leader>6 <Cmd>ShowPlugin<CR>
-
-" Show folds with dark against light
-highlight Folded ctermbg=NONE ctermfg=White cterm=Bold
-highlight FoldColumn ctermbg=NONE ctermfg=Black cterm=NONE
+noremap <Leader>` <Cmd>ShowStack<CR>
+noremap <Leader>1 <Cmd>ShowGroups<CR>
+noremap <Leader>2 <Cmd>ShowBases<CR>
+noremap <Leader>3 <Cmd>ShowColors<CR>
+noremap <Leader>4 <Cmd>ShowSyntax<CR>
+noremap <Leader>5 <Cmd>ShowPlugin<CR>
 
 " Use default colors for transparent conceal and terminal background
 highlight Conceal ctermbg=NONE ctermfg=NONE
 highlight Terminal ctermbg=NONE ctermfg=NONE
+
+" Use default colors under error and warning lines
+highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
+highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
 
 " Special characters
 highlight NonText ctermfg=Black cterm=NONE
@@ -2415,21 +2407,29 @@ highlight Search ctermbg=Magenta ctermfg=NONE
 highlight ColorColumn ctermbg=Gray cterm=NONE
 highlight SignColumn ctermbg=NONE ctermfg=Black cterm=NONE
 
-" Cursor line or column highlighting
-" Use the cterm color mapping
-highlight CursorLine ctermbg=Black cterm=NONE
-highlight CursorLineNR ctermbg=Black ctermfg=White cterm=NONE
-
 " Comment highlighting
 " Only works in iTerm with minimum contrast enabled (else use gray)
 highlight LineNR ctermbg=NONE ctermfg=Black cterm=NONE
 highlight Comment ctermfg=Black cterm=NONE
 
+" Cursor line and fold lines
+" Use the cterm color mapping
+highlight Folded ctermbg=NONE ctermfg=White cterm=Bold
+highlight CursorLine ctermbg=Black cterm=NONE
+highlight CursorLineNR ctermbg=None ctermfg=White cterm=NONE
+
 " Popup menu highlighting
-" Use same background as main
+" Use same background as theme
 highlight Pmenu ctermbg=NONE ctermfg=White cterm=NONE
 highlight PmenuSel ctermbg=Magenta ctermfg=NONE cterm=NONE
 highlight PmenuSbar ctermbg=DarkGray ctermfg=NONE cterm=NONE
+
+" Fugitive difference highlighting
+" Use same background as cursorline background
+highlight DiffText cterm=Inverse gui=Inverse
+highlight DiffAdd ctermbg=Black ctermfg=NONE cterm=Bold
+highlight DiffChange ctermbg=Black ctermfg=NONE cterm=NONE
+highlight DiffDelete ctermbg=NONE ctermfg=Black cterm=NONE
 
 " ANSI has no control over light
 " Switch from light to main and color to dark
@@ -2439,10 +2439,11 @@ highlight Special ctermbg=NONE ctermfg=DarkRed
 highlight PreProc ctermbg=NONE ctermfg=DarkCyan
 highlight Indentifier ctermbg=NONE ctermfg=Cyan cterm=Bold
 
-" Error highlighting
-" Use Red or Magenta for increased prominence
-highlight ALEErrorLine ctermfg=NONE ctermbg=NONE cterm=NONE
-highlight ALEWarningLine ctermfg=NONE ctermbg=NONE cterm=NONE
+" Synchronize fold and sign columns
+" Critical for color scheme cyling and macvim
+highlight! link SignColumn LineNR
+highlight! link FoldColumn LineNR
+highlight! link CursorLineFold CursorLineNR
 
 " Clear past jumps to ignore stuff from plugin files and vimrc
 " and ignore outdated buffer marks loaded from .viminfo
@@ -2453,5 +2454,6 @@ augroup clear_jumps
   au VimEnter * silent windo clearjumps | runtime after/common.vim | exe 'normal! zv'
   au WinNew * silent clearjumps
 augroup END
+runtime autoload/repeat.vim
 nohlsearch  " turn off highlighting at startup
 redraw!  " prevent statusline error

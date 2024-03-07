@@ -101,20 +101,39 @@ endfunction
 " Note: Consistent with other utilities this uses separate tabs
 function! vim#show_colors() abort
   call file#open_drop('colortest.vim')
-  call feedkeys("\<Cmd>source $VIMRUNTIME/syntax/colortest.vim\<CR>", 'n')
-  call feedkeys("\<Cmd>call window#panel_setup(1)\<CR>", 'n')
+  let path = $VIMRUNTIME . '/syntax/colortest.vim'
+  exe 'source ' . path
+  call window#panel_setup(1)
 endfunction
-function! vim#show_ftplugin() abort
-  call file#open_drop($VIMRUNTIME . '/ftplugin/' . &filetype . '.vim')
-  call feedkeys("\<Cmd>call window#panel_setup(1)\<CR>", 'n')
+function! vim#show_runtime(...) abort
+  let path = a:0 ? a:1 : 'ftplugin'
+  let path = $VIMRUNTIME . '/' . path . '/' . &l:filetype . '.vim'
+  call file#open_drop(path)
+  call window#panel_setup(1)
 endfunction
-function! vim#show_syntax() abort
-  call file#open_drop($VIMRUNTIME . '/syntax/' . &filetype . '.vim')
-  call feedkeys("\<Cmd>call window#panel_setup(1)\<CR>", 'n')
+function! vim#show_stack(...) abort
+  let sids = a:0 ? map(copy(a:000), 'hlID(v:val)') : synstack(line('.'), col('.'))
+  let [names, labels] = [[], []]
+  for sid in sids
+    let name = synIDattr(sid, 'name')
+    let group = synIDattr(synIDtrans(sid), 'name')
+    let label = empty(group) ? name : name . ' (' . group . ')'
+    call add(names, name)
+    call add(labels, label)
+  endfor
+  if !empty(names)
+    echohl Title | echom '--- Syntax names ---' | echohl None
+    for label in labels | echom label | endfor
+    exe 'syntax list ' . join(names, ' ')
+  else  " no syntax
+    echohl WarningMsg
+    echom 'Warning: No syntax under cursor.'
+    echohl None
+  endif
 endfunction
 
-" Source file or lines
-" Note: Compare to python#run_general()
+" Source file, lines, or motion
+" Todo: Add generalization for running chunks of arbitrary filetypes?
 function! vim#source_general() abort
   let name = 'g:loaded_' . expand('%:t:r')
   if exists(name) | exe 'unlet! ' . name | endif
@@ -126,9 +145,7 @@ function! vim#source_general() abort
     echo 'Sourced current file'
   endif
 endfunction
-
-" Source input motion
-" Todo: Add generalization for running chunks of arbitrary filetypes?
+" For input line range
 function! vim#source_motion() range abort
   update
   let range = a:firstline . ',' . a:lastline
@@ -138,26 +155,6 @@ endfunction
 " For <expr> map accepting motion
 function! vim#source_motion_expr(...) abort
   return utils#motion_func('vim#source_motion', a:000)
-endfunction
-
-" Print information about syntax group
-" Note: Top command more verbose than bottom
-function! vim#syntax_list(...) abort
-  if a:0 && !empty(a:1)
-    exe 'verb syntax list ' . join(a:000, ' ')
-  else
-    exe 'verb syntax list ' . synIDattr(synID(line('.'), col('.'), 0), 'name')
-  endif
-endfunction
-function! vim#syntax_group() abort
-  let names = []
-  for id in synstack(line('.'), col('.'))
-    let name = synIDattr(id, 'name')
-    let group = synIDattr(synIDtrans(id), 'name')
-    if name != group | let name .= ' (' . group . ')' | endif
-    let names += [name]
-  endfor
-  echom 'Syntax Group: ' . join(names, ', ')
 endfunction
 
 " Show and setup vim help page

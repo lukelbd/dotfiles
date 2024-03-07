@@ -187,7 +187,7 @@ function! edit#swap_lines(...) abort
   endif
   let fold = &l:foldmethod ==# 'manual'  " fast fold enabled
   let line2 = delta > 0 ? line12 + delta : line11 + delta
-  let [fold1, fold2] = [foldlevel(line1) >= 0, foldlevel(line2) >= 0]
+  let [fold1, fold2] = [foldlevel(line1) > 0, foldlevel(line2) > 0]
   let [close1, close2] = [foldclosed(line1) > 0, foldclosed(line2) > 0]
   if foldclosed(line2) > 0
     let [line21, line22] = [foldclosed(line2), foldclosedend(line2)]
