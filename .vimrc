@@ -415,10 +415,10 @@ let g:MRU_Open_File_Relative = 1
 " Note: Here :WipeBufs replaces :Wipeout plugin since has more sources
 command! -nargs=0 ShowBufs call window#show_bufs()
 command! -nargs=0 WipeBufs call window#wipe_bufs()
-nnoremap <Leader>w <Cmd>Windows<CR>
-nnoremap <Leader>W <Cmd>Buffers<CR>
-noremap <Leader>p <Cmd>ShowBufs<CR>
-noremap <Leader>P <Cmd>WipeBufs<CR>
+noremap <Leader>q <Cmd>ShowBufs<CR>
+noremap <Leader>Q <Cmd>WipeBufs<CR>
+nnoremap <F5> <Cmd>Windows<CR>
+nnoremap <F6> <Cmd>Buffers<CR>
 
 " Tab selection and management
 " Note: Previously used e.g. '<tab>1' maps but not parse count on one keypress
@@ -441,11 +441,11 @@ nnoremap <Tab>h <Cmd>silent! wincmd h<CR>
 nnoremap <Tab>l <Cmd>silent! wincmd l<CR>
 
 " Tab and window resizing
-nnoremap <Tab><CR> <Cmd>exe 'resize ' . window#default_height()<CR>
+nnoremap <Tab>1 <Cmd>exe 'resize ' . window#default_height()<CR>
   \<Cmd>exe 'vert resize ' . window#default_width()<CR>
-nnoremap <Tab>n <Cmd>exe 'resize ' . window#default_height(0.5)<CR>
+nnoremap <Tab>2 <Cmd>exe 'resize ' . window#default_height(0.5)<CR>
   \<Cmd>exe 'vert resize ' . window#default_width(0.5)<CR>
-nnoremap <Tab>m <Cmd>exe 'resize ' . window#default_height(0)<CR>
+nnoremap <Tab>3 <Cmd>exe 'resize ' . window#default_height(0)<CR>
   \<Cmd>exe 'vert resize ' . window#default_width(0)<CR>
 nnoremap <Tab>9 <Cmd>call window#change_height(-3 * v:count1)<CR>
 nnoremap <Tab>0 <Cmd>call window#change_height(3 * v:count1)<CR>
@@ -465,8 +465,6 @@ nnoremap <Tab>o <Cmd>call file#open_init('Drop', 0)<CR>
 nnoremap <Tab>p <Cmd>call file#open_init('Files', 0)<CR>
 nnoremap <Tab>i <Cmd>call file#open_init('Drop', 1)<CR>
 nnoremap <Tab>y <Cmd>call file#open_init('Files', 1)<CR>
-nnoremap <Tab>r <Cmd>call file#open_init('Vsplit', 1)<CR>
-nnoremap <Tab>t <Cmd>call file#open_init('Vsplit', 0)<CR>
 nnoremap <Tab>- <Cmd>call file#open_init('Split', 1)<CR>
 nnoremap <Tab>= <Cmd>call file#open_init('Split', 0)<CR>
 nnoremap <Tab>/ <Cmd>call file#open_netrw('topleft vsplit', 1)<CR>
@@ -478,11 +476,9 @@ nnoremap <Tab>\ <Cmd>call file#open_netrw('topleft vsplit', 0)<CR>
 command! -nargs=* -complete=file Drop call file#open_drop(<f-args>)
 command! -nargs=* -complete=file Open call file#open_continuous('Drop', <f-args>)
 command! -nargs=* -complete=file Split call file#open_continuous('botright split', <f-args>)
-command! -nargs=* -complete=file Vsplit call file#open_continuous('topleft vsplit', <f-args>)
+command! -nargs=* -complete=file Vsplit call file#open_continuous('botright vsplit', <f-args>)
 nnoremap <F7> <Cmd>exe 'Split ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <F8> <Cmd>exe 'Split ' . fnameescape(tag#find_root(@%))<CR>
-nnoremap <C-r> <Cmd>exe 'Vsplit ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
-nnoremap <C-t> <Cmd>exe 'Vsplit ' . fnameescape(tag#find_root(@%))<CR>
 nnoremap <F11> <Cmd>exe 'Open ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-y> <Cmd>exe 'Files ' . fnameescape(fnamemodify(resolve(@%), ':p:h'))<CR>
 nnoremap <C-o> <Cmd>exe 'Open ' . fnameescape(tag#find_root(@%))<CR>
@@ -552,14 +548,14 @@ omap <F9> <Plug>(fzf-maps-o)
 xmap <F9> <Plug>(fzf-maps-x)
 imap <F9> <Plug>(fzf-maps-i)
 nnoremap <F9> <Cmd>Maps<CR>
-nnoremap <Leader>b <Cmd>Commands<CR>
-nnoremap <Leader>B <Cmd>Maps<CR>
+nnoremap <Leader>\ <Cmd>Commands<CR>
+nnoremap <Leader>\| <Cmd>Maps<CR>
 
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-noremap <Leader>y <Cmd>call switch#message()<CR>
-noremap <Leader>Y @:
+noremap <Leader><Leader> <Cmd>call switch#message()<CR>
+noremap <Leader><CR> @:
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -607,7 +603,7 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
-noremap <Leader>t <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
+noremap <Tab><CR> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 cnoremap <F1> <C-p>
@@ -634,8 +630,8 @@ command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 command! -bang -nargs=0 Changes call mark#fzf_changes(<bang>0)
 noremap g; <Cmd>call mark#fzf_jumps()<CR>
 noremap g: <Cmd>call mark#fzf_changes()<CR>
-nnoremap <F5> <Cmd>BLines<CR>
-nnoremap <F6> <Cmd>Lines<CR>
+nnoremap z; <Cmd>BLines<CR>
+nnoremap z: <Cmd>Lines<CR>
 
 " Navigate matches/sentences/paragraphs without adding to jumplist
 " Note: Core vim idea is that these commands take us far away from cursor
@@ -894,8 +890,8 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " Undo behavior and insert-mode mappings
 " Note: Tried implementing insert-mode 'redo' previously and failed because
 " history lost after vim re-enters insert mode from the <C-o> command.
-nmap u <Plug>(RepeatUndo)
-nmap U <Plug>(RepeatRedo)
+nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
+nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
 inoremap <F12> <C-g>u
 inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 nnoremap <expr> o edit#insert_mode('o')
@@ -1330,10 +1326,7 @@ let g:gutentags_enabled = 1
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
-let g:fzf_action = {
-  \ 'ctrl-m': 'Drop', 'ctrl-t': 'Drop',
-  \ 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit'
-\ }  " have file search and grep open to existing window if possible
+let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#parse_ignores(1)  " added just for safety
@@ -1423,7 +1416,6 @@ call plug#('raimondi/delimitmate')
 
 " Snippets and stuff
 " Todo: Investigate further, but so far primitive vim-succinct snippets are fine
-" call plug#('SirVer/ultisnips')  " fancy snippet actions
 " call plug#('honza/vim-snippets')  " reference snippet files supplied to e.g. ultisnips
 " call plug#('LucHermitte/mu-template')  " file template and snippet engine mashup, not popular
 " call plug#('Shougo/neosnippet.vim')  " snippets consistent with ddc
@@ -1431,6 +1423,7 @@ call plug#('raimondi/delimitmate')
 " call plug#('Shougo/deoppet.nvim')  " next generation snippets (does not work in vim8)
 " call plug#('hrsh7th/vim-vsnip')  " snippets
 " call plug#('hrsh7th/vim-vsnip-integ')  " integration with ddc.vim
+" call plug#('SirVer/ultisnips')  " fancy snippet actions
 
 " Additional text objects (inner/outer selections)
 " Todo: Generalized function converting text objects into navigation commands? Or
@@ -1729,9 +1722,10 @@ if s:plug_active('vim-tags')
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
   nnoremap gy <Cmd>BTags<CR>
   nnoremap gY <Cmd>Tags<CR>
-  nnoremap <Leader>o <Cmd>ShowTable<CR>
-  nnoremap <Leader>O <Cmd>ShowTable!<CR>
-  nnoremap <Leader>T <Cmd>call switch#tags()<CR>
+  nnoremap <Leader>t <Cmd>ShowTable<CR>
+  nnoremap <Leader>T <Cmd>ShowTable!<CR>
+  nnoremap <Leader>y <Cmd>CurrentTag<CR>
+  nnoremap <Leader>Y <Cmd>call switch#tags()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
   let g:tags_bselect_map = 'gt'  " default is <Leader><Leader>
@@ -2118,16 +2112,15 @@ endif
 " Note: All of the file-opening commands throughout fugitive funnel them through
 " commands like Gedit, Gtabedit, etc. So can prevent duplicate tabs by simply
 " overwriting this with custom tab-jumping :Drop command (see also git.vim).
-" Note: The :Gdiffsplit command repairs annoying issue where Gdiff redirects to
-" Gdiffsplit unlike other shorthand commands. For some reason 'delcommand Gdiffsplit'
-" fails (get undefined command errors in :Gdiff) so instead just overwrite.
 if s:plug_active('vim-fugitive')
   augroup fugitive_setup
     au!
     au BufEnter * call git#command_setup()
   augroup END
-  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  noremap <Leader>" <Cmd>call git#commit_safe()<CR>
+  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
+  noremap <Leader>o <Cmd>call git#run_map(0, 0, '', 'status')<CR>
+  noremap <Leader>O <Cmd>call git#commit_safe('commit')<CR>
   noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
@@ -2138,15 +2131,13 @@ if s:plug_active('vim-fugitive')
   noremap <Leader>L <Cmd>call git#run_map(0, 0, '', 'reset --quiet -- :/')<CR>
   noremap <Leader>u <Cmd>call git#run_map(0, 0, '', 'push origin')<CR>
   noremap <Leader>U <Cmd>call git#run_map(0, 0, '', 'pull origin')<CR>
-  noremap <Leader>i <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
-  noremap <Leader>I <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
+  noremap <Leader>b <Cmd>call git#run_map(0, 0, '', 'branches')<CR>
+  noremap <Leader>B <Cmd>call git#run_map(0, 0, '', 'switch -')<CR>
   noremap <expr> gl git#run_map_expr(2, 0, '', 'blame ')
   noremap gll <Cmd>call git#run_map(2, 0, '', 'blame ')<CR>
   noremap gL <Cmd>call git#run_map(0, 0, '', 'blame')<CR>
-  noremap zl <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
-  noremap zL <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
-  noremap z; <Cmd>BCommits<CR>
-  noremap z: <Cmd>Commits<CR>
+  noremap zl <Cmd>BCommits<CR>
+  noremap zL <Cmd>Commits<CR>
   let g:fugitive_legacy_commands = 1  " include deprecated :Git status to go with :Git
   let g:fugitive_dynamic_colors = 1  " fugitive has no HighlightRecent option
 endif
@@ -2277,7 +2268,7 @@ endif
 if s:plug_active('vim-test')
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap <Leader>\ <Cmd>call utils#catch_errors('TestVisit')<CR>
+  noremap z\ <Cmd>call utils#catch_errors('TestVisit')<CR>
   noremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
   noremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
   noremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
@@ -2357,11 +2348,11 @@ endif
 " Repair highlighting. Leveraging ctags integration almost always works.
 " Note: This says get the closest tag to the first line in the window, all tags
 " rather than top-level only, searching backward, and without circular wrapping.
-command! -nargs=1 Sync syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
+command! -nargs=1 SyncLines syntax sync minlines=<args> maxlines=0  " maxlines is an *offset*
 command! SyncStart syntax sync fromstart
 command! SyncSmart exe 'Sync ' . max([0, line('.') - get(tags#close_tag(line('w0'), 0, 0, 0), 1, 0)])
-noremap zy <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR><Cmd>echom 'Updated syntax'<CR>
-noremap zY <Cmd>SyncStart<CR><Cmd>echom 'Updated syntax'<CR>
+noremap zy <Cmd>exe v:count ? 'Sync ' . v:count : 'SyncSmart'<CR><Cmd>echom 'Syncing from closest tag'<CR>
+noremap zY <Cmd>SyncStart<CR><Cmd>echom 'Syncing from first line'<CR>
 
 " Scroll over color schemes
 " Todo: Finish terminal vim support. Currently sign column gets messed up
@@ -2402,7 +2393,7 @@ noremap <Leader>6 <Cmd>ShowPlugin<CR>
 
 " Show folds with dark against light
 highlight Folded ctermbg=NONE ctermfg=White cterm=Bold
-highlight FoldColumn ctermbg=NONE ctermfg=Gray cterm=NONE
+highlight FoldColumn ctermbg=NONE ctermfg=Black cterm=NONE
 
 " Use default colors for transparent conceal and terminal background
 highlight Conceal ctermbg=NONE ctermfg=NONE
@@ -2463,5 +2454,4 @@ augroup clear_jumps
   au WinNew * silent clearjumps
 augroup END
 nohlsearch  " turn off highlighting at startup
-noremap <Leader><Leader> <Cmd>echo system('curl https://icanhazdadjoke.com/')<CR>
 redraw!  " prevent statusline error

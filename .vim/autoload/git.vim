@@ -20,10 +20,12 @@ function! git#command_setup() abort
   command! -buffer
     \ -bar -bang -range=-1 -nargs=* -complete=customlist,fugitive#EditComplete
     \ Gtabedit exe fugitive#Open(<q-args> =~# '^+' ? 'edit' : 'Drop', <bang>0, '<mods>', <q-args>)
-  command! -buffer -nargs=* Gsplit Gvsplit <args>
-  command! -buffer -nargs=* -bang Gdrop Gtabedit <args>
-  command! -buffer -nargs=* -bang GDrop Gtabedit <args>
-  command! -buffer -nargs=* -bang Gdiffsplit Git diff <args>
+  for cmd in ['drop', 'Drop']  " tab drop sinks
+    exe 'command! -buffer -nargs=* -bang G' . cmd . ' Gtabedit <args>'
+  endfor
+  for cmd in ['diff', 'split', 'diffsplit']  " outdated commands
+    silent! exe 'delcommand -buffer G' . cmd
+  endfor
 endfunction
 
 " Git command with message
@@ -66,7 +68,7 @@ function! git#run_command(echo, line1, count, range, bang, mods, args, ...) abor
   let wide = index(s:git_wide, name) != -1  " popup window should have 'main' size
   let tree = index(s:git_tree, name) != -1  " popup window should be vertical
   let name = get(s:git_aliases, name, name)  " e.g. '' for 'status'
-  let mods = tree && empty(a:mods) ? 'topleft vert' : a:mods
+  let mods = tree && empty(a:mods) ? 'botright vert' : a:mods
   " Generate and run command
   let opts = name . (empty(flags) ? '' : ' ' . join(flags, ' '))
   let opts = substitute(opts, '--color\>', '', 'g')  " fugitive uses its own colors
@@ -138,7 +140,7 @@ function! git#commit_setup(...) abort
   setlocal colorcolumn=73
   goto | startinsert  " first row column
 endfunction
-function! git#commit_safe() abort
+function! git#commit_safe(...) abort
   let args = ['diff', '--staged', '--quiet']
   let result = FugitiveExecute(args)  " see: https://stackoverflow.com/a/1587877/4970632
   let status = get(result, 'exit_status', 1)
@@ -148,7 +150,7 @@ function! git#commit_safe() abort
     echohl None
     call git#run_command(0, line('.'), -1, 0, 0, '', 'status')
   else  " exits 1 if there are staged changes
-    call git#run_command(1, line('.'), -1, 0, 0, '', 'commit')
+    call git#run_command(1, line('.'), -1, 0, 0, '', a:0 ? a:1 : 'commit')
   endif
 endfunction
 

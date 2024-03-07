@@ -1914,7 +1914,9 @@ echo 'done'
 _fzf_options=" \
 --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
 --bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-j:down,ctrl-k:up,\
-ctrl-b:page-up,ctrl-f:page-down,ctrl-u:half-page-up,ctrl-d:half-page-down \
+f1:preview-half-page-up,f2:preview-half-page-down,f3:preview-page-up,f4:preview-page-down,\
+ctrl-b:page-up,ctrl-f:page-down,ctrl-u:half-page-up,ctrl-d:half-page-down,\
+ctrl-q:cancel,ctrl-w:cancel,ctrl-e:cancel,ctrl-r:clear-query \
 "  # critical to export so used by vim
 
 # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
