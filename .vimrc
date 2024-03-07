@@ -6,18 +6,18 @@
 " to function keys (settings -> keys -> key bindings -> 'send hex codes') various hex codes.
 " See: https://github.com/c-bata/go-prompt/blob/82a9122/input.go#L94-L125
 " See: https://eevblog.com/forum/microcontrollers/mystery-of-vt100-keyboard-codes/
-" F1: 1b 4f 50 (Ctrl-,) (5-digit codes failed)
-" F2: 1b 4f 51 (Ctrl-.)
-" F3: 1b 4f 52 (Ctrl-[)
-" F4: 1b 4f 53 (Ctrl-])
-" F5: 1b 5b 31 35 7e (Ctrl-/) (3-digit codes failed)
-" F6: 1b 5b 31 37 7e (Ctrl-\)
-" F7: 1b 5b 31 38 7e (Ctrl--)
-" F8: 1b 5b 31 39 7e (Ctrl-=)
-" F9: 1b 5b 32 30 7e (Ctrl-;)
-" F10: 1b 5b 32 31 7e (Ctrl-')
-" F11: 1b 5b 32 33 7e (Ctrl-i) (forum codes required)
-" F12: 1b 5b 32 34 7e (Ctrl-m)
+" F1: 0x1b 0x4f 0x50 (Ctrl-,) (5-digit codes failed)
+" F2: 0x1b 0x4f 0x51 (Ctrl-.)
+" F3: 0x1b 0x4f 0x52 (Ctrl-[)
+" F4: 0x1b 0x4f 0x53 (Ctrl-])
+" F5: 0x1b 0x5b 0x31 0x35 0x7e (Ctrl-/) (3-digit codes failed)
+" F6: 0x1b 0x5b 0x31 0x37 0x7e (Ctrl-\)
+" F7: 0x1b 0x5b 0x31 0x38 0x7e (Ctrl--)
+" F8: 0x1b 0x5b 0x31 0x39 0x7e (Ctrl-=)
+" F9: 0x1b 0x5b 0x32 0x30 0x7e (Ctrl-;)
+" F10: 0x1b 0x5b 0x32 0x31 0x7e (Ctrl-')
+" F11: 0x1b 0x5b 0x32 0x33 0x7e (Ctrl-i) (forum codes required)
+" F12: 0x1b 0x5b 0x32 0x34 0x7e (Ctrl-m)
 "-----------------------------------------------------------------------------"
 " Critical stuff
 " Note: See .vim/after/common.vim and .vim/after/filetype.vim for overrides of
@@ -2115,10 +2115,12 @@ if s:plug_active('vim-fugitive')
     au!
     au BufEnter * call git#command_setup()
   augroup END
-  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'trunk')<CR>
+  noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
-  noremap <Leader>o <Cmd>call git#run_map(0, 0, '', 'status')<CR>
-  noremap <Leader>O <Cmd>call git#commit_safe('commit')<CR>
+  noremap <Leader>i <Cmd>call git#commit_safe(0, 'oops')<CR>
+  noremap <Leader>I <Cmd>call git#commit_safe(1, 'oops')<CR>
+  noremap <Leader>o <Cmd>call git#commit_safe(0, 'commit')<CR>
+  noremap <Leader>O <Cmd>call git#commit_safe(1, 'commit')<CR>
   noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>

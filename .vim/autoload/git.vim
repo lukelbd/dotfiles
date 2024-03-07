@@ -140,17 +140,20 @@ function! git#commit_setup(...) abort
   setlocal colorcolumn=73
   goto | startinsert  " first row column
 endfunction
-function! git#commit_safe(...) abort
+function! git#commit_safe(editor, ...) abort
+  let cmd = a:0 ? a:1 : 'commit'  " commit version
+  let msg = a:editor ? '' : utils#input_default('Git ' . cmd, '', '')
   let args = ['diff', '--staged', '--quiet']
   let result = FugitiveExecute(args)  " see: https://stackoverflow.com/a/1587877/4970632
   let status = get(result, 'exit_status', 1)
   if status == 0  " exits 0 if there are no staged changes
     echohl WarningMsg
     echom 'Error: No staged changes'
-    echohl None
-    call git#run_command(0, line('.'), -1, 0, 0, '', 'status')
+    echohl None | call git#run_command(0, line('.'), -1, 0, 0, '', 'status')
   else  " exits 1 if there are staged changes
-    call git#run_command(1, line('.'), -1, 0, 0, '', a:0 ? a:1 : 'commit')
+    if empty(msg) && !a:editor | return | endif
+    let msg = empty(msg) ? '' : ' --message ' . shellescape(msg)
+    call git#run_command(1, line('.'), -1, 0, 0, '', cmd . msg)
   endif
 endfunction
 
