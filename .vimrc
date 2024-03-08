@@ -604,6 +604,8 @@ command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
 noremap <Tab><CR> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F3> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F4> <Cmd>call stack#scroll_tabs(v:count1)<CR>
+cnoremap <F1> <Tab>
+cnoremap <F2> <Tab>
 cnoremap <Up> <C-p>
 cnoremap <Down> <C-n>
 
@@ -614,12 +616,12 @@ augroup jumplist_setup
   au!
   au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
 augroup END
-noremap <C-h> <Cmd>call mark#next_jump(-v:count1)<CR>
-noremap <C-l> <Cmd>call mark#next_jump(v:count1)<CR>
-noremap <Left> <Cmd>call mark#next_jump(-v:count1)<CR>
-noremap <Right> <Cmd>call mark#next_jump(v:count1)<CR>
-noremap <F1> <Cmd>call mark#next_change(-v:count1)<CR>
-noremap <F2> <Cmd>call mark#next_change(v:count1)<CR>
+noremap <C-h> <Cmd>call mark#next_change(-v:count1)<CR>
+noremap <C-l> <Cmd>call mark#next_change(v:count1)<CR>
+noremap <Left> <Cmd>call mark#next_change(-v:count1)<CR>
+noremap <Right> <Cmd>call mark#next_change(v:count1)<CR>
+noremap <F1> <Cmd>call mark#next_jump(-v:count1)<CR>
+noremap <F2> <Cmd>call mark#next_jump(v:count1)<CR>
 
 " Search across changes jumpst and lines
 " Note: This leverages custom-managed change and jump lists with redundant
