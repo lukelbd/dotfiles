@@ -1134,8 +1134,6 @@ augroup popup_setup
   au!
   au BufEnter,InsertLeave * let b:scroll_state = 0
 augroup END
-silent! exe 'iunmap <F3>'
-silent! exe 'iunmap <F4>'
 inoremap <expr> <Up> iter#scroll_count(-1)
 inoremap <expr> <Down> iter#scroll_count(1)
 inoremap <expr> <C-k> iter#scroll_count(-1)
@@ -1161,6 +1159,8 @@ inoremap <expr> <S-Tab> edit#forward_delete()
 inoremap <C-w> <C-]><Cmd>pclose<CR>
 inoremap <C-q> <C-]><Cmd>pclose<CR>
 inoremap <C-e> <C-]><Cmd>pclose<CR>
+inoremap <F3> <Nop>
+inoremap <F4> <Nop>
 
 "-----------------------------------------------------------------------------"
 " External plugins
