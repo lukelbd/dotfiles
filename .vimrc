@@ -43,7 +43,7 @@ set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
 set cmdheight=1  " increse to avoid pressing enter to continue 
 set colorcolumn=89,121  " color column after recommended length of 88
-set complete+=k  " enable dictionary search through 'dictionary' setting
+set complete=.,w,b,u,k  " tag complete slow so handle with ddc ctags source
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cpoptions=aABceFs  " vim compatibility options
@@ -890,7 +890,7 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " history lost after vim re-enters insert mode from the <C-o> command.
 nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
-inoremap <F12> <C-g>u
+inoremap <C-p> <Cmd>let b:insert_mode = 'a'<CR><C-g>u
 inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 nnoremap <expr> o edit#insert_mode('o')
 nnoremap <expr> O edit#insert_mode('O')
@@ -1108,14 +1108,14 @@ nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 
 " Normal mode wrapped scrolling and preview window scrolling
 " Note: This requires setting let g:scrollwrapped_nomap = 1
-noremap <expr> <Up> iter#scroll_count(-0.25)
-noremap <expr> <Down> iter#scroll_count(0.25)
-noremap <expr> <C-k> iter#scroll_count(-0.25)
-noremap <expr> <C-j> iter#scroll_count(0.25)
-noremap <expr> <C-u> iter#scroll_count(-0.5)
-noremap <expr> <C-d> iter#scroll_count(0.5)
-noremap <expr> <C-b> iter#scroll_count(-1.0)
-noremap <expr> <C-f> iter#scroll_count(1.0)
+noremap <expr> <Up> iter#scroll_count(-0.25, 0)
+noremap <expr> <Down> iter#scroll_count(0.25, 0)
+noremap <expr> <C-k> iter#scroll_count(-0.25, 0)
+noremap <expr> <C-j> iter#scroll_count(0.25, 0)
+noremap <expr> <C-u> iter#scroll_count(-0.5, 0)
+noremap <expr> <C-d> iter#scroll_count(0.5, 0)
+noremap <expr> <C-b> iter#scroll_count(-1.0, 0)
+noremap <expr> <C-f> iter#scroll_count(1.0, 0)
 
 " Insert mode popup completion window and preview window scrolling
 " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
@@ -1127,23 +1127,29 @@ inoremap <expr> <Up> iter#scroll_count(-0.25)
 inoremap <expr> <Down> iter#scroll_count(0.25)
 inoremap <expr> <C-k> iter#scroll_count(-0.25)
 inoremap <expr> <C-j> iter#scroll_count(0.25)
-inoremap <expr> <C-u> iter#scroll_count(-0.5)
-inoremap <expr> <C-d> iter#scroll_count(0.5)
-inoremap <expr> <C-b> iter#scroll_count(-1.0)
-inoremap <expr> <C-f> iter#scroll_count(1.0)
+inoremap <expr> <C-u> iter#scroll_count(-0.5, 0)
+inoremap <expr> <C-d> iter#scroll_count(0.5, 0)
+inoremap <expr> <C-b> iter#scroll_count(-1.0, 0)
+inoremap <expr> <C-f> iter#scroll_count(1.0, 0)
+inoremap <expr> <F1> iter#scroll_count(-1, 1)
+inoremap <expr> <F2> iter#scroll_count(1, 1)
 
 " Insert mode mappings and popup behavior
 " Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
 " and default is chosen if necessary. See :h ins-special-special.
-inoremap <expr> <F1> iter#scroll_count(-1, 1)
-inoremap <expr> <F2> iter#scroll_count(1, 1)
+inoremap <expr> <CR> pumvisible() && b:scroll_state ? "\<C-y>" . iter#scroll_reset()
+  \ : (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<C-g>u\<C-r>=delimitMate#ExpandReturn()\<CR>"
+inoremap <expr> <Tab> pumvisible() && b:scroll_state ? "\<C-y>" . iter#scroll_reset()
+  \ : pumvisible() ? "\<C-n>\<C-y>" . iter#scroll_reset() : "\<C-]>\<Tab>"
+inoremap <expr> <Space> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<C-]>\<C-R>=delimitMate#ExpandSpace()\<CR>""
+inoremap <expr> <Backspace> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '')
+  \ . "\<C-r>=delimitMate#BS()\<CR>"
 inoremap <expr> <Delete> edit#forward_delete()
 inoremap <expr> <S-Tab> edit#forward_delete()
-inoremap <expr> <Space> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<Space>"
-inoremap <expr> <Backspace> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '') . "\<Backspace>"
-inoremap <expr> <CR> pumvisible() ? b:scroll_state ? "\<C-y>" . iter#scroll_reset() : "\<C-e>\<C-]>\<C-g>u\<CR>" : "\<C-]>\<C-g>u\<CR>"
-inoremap <expr> <Tab> pumvisible() ? b:scroll_state ? "\<C-y>" . iter#scroll_reset() : "\<C-n>\<C-y>" . iter#scroll_reset() : "\<C-]>\<Tab>"
-
+inoremap <C-w> <C-]><Cmd>pclose<CR>
+inoremap <C-q> <C-]><Cmd>pclose<CR>
+inoremap <C-e> <C-]><Cmd>pclose<CR>
 
 "-----------------------------------------------------------------------------"
 " External plugins
@@ -1928,7 +1934,7 @@ if s:plug_active('ddc.vim')
     \     'matchers': ['matcher_fuzzy'],
     \     'sorters': ['sorter_fuzzy'],
     \     'converters': ['converter_fuzzy'],
-    \     'minAutoCompleteLength': 2,
+    \     'minAutoCompleteLength': 1,
     \   },
     \   'around': {
     \     'mark': 'A',

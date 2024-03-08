@@ -161,7 +161,9 @@ function! iter#scroll_count(scroll, ...) abort
     return call('s:scroll_popup', [a:scroll, get(popup_pos, 'size', 1)])
   elseif !empty(preview_ids)
     return call('s:scroll_preview', [a:scroll] + preview_ids)
-  else
+  elseif a:0 && !a:1
     return call('s:scroll_default', [a:scroll, winheight(0)])
+  else  " default fallback is arrow press
+    return a:scroll > 0 ? "\<Down>" : a:scroll < 0 ? "\<Up>" : ''
   endif
 endfunction
