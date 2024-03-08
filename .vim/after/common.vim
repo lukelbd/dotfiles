@@ -20,8 +20,9 @@ let s:jump1 = get(maparg('[', '', 0, 1), 'buffer', 0)
 let s:jump2 = get(maparg(']', '', 0, 1), 'buffer', 0)
 let s:indent1 = get(maparg('<', '', 0, 1), 'buffer', 0)
 let s:indent2 = get(maparg('>', '', 0, 1), 'buffer', 0)
-inoremap <buffer> <F12> <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
-inoremap <buffer> <C-n> <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
+silent! iunmap <buffer> <C-n>
+inoremap <buffer> <F5> <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
+inoremap <buffer> <F6> <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
 if exists('*peekaboo#on') && exists('*peekaboo#on')
   silent! call peekaboo#off()
   silent! call peekaboo#on()

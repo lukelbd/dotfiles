@@ -124,7 +124,8 @@ set ttimeout ttimeoutlen=0  " wait zero seconds for multi-key *keycodes* e.g. <S
 set ttymouse=sgr  " different cursor shapes for different modes
 set undodir=~/.vim_undo_hist  " ./setup enforces existence
 set undofile  " save undo history
-set undolevels=500  " maximum undo level
+set undolevels=1000  " maximum undo level
+set undoreload=0  " disable reloading
 set updatetime=1500  " used for CursorHold autocmds and default is 4000ms
 set verbose=0  " increment for debugging, e.g. verbose=2 prints sourced files, extremely useful
 set viminfo='500,s50  " remember marks for 500 files (e.g. jumps), exclude registers >10kB of text
@@ -600,8 +601,8 @@ command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
 silent! exe 'cunmap <Up>' | silent! exe 'cunmap <Down>'
 noremap <Tab><CR> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
-noremap <F3> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
-noremap <F4> <Cmd>call stack#scroll_tabs(v:count1)<CR>
+noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
+noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
 
 " Navigate window jumplist with left/right arrows
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -613,10 +614,10 @@ augroup END
 command! -bang -nargs=0 Jumps call mark#fzf_jumps(<bang>0)
 noremap z; <Cmd>BLines<CR>
 noremap g; <Cmd>call mark#fzf_jumps()<CR>
-noremap <C-k> <Cmd>call mark#next_jump(-v:count1)<CR>
-noremap <C-j> <Cmd>call mark#next_jump(v:count1)<CR>
-noremap <Up> <Cmd>call mark#next_jump(-v:count1)<CR>
-noremap <Down> <Cmd>call mark#next_jump(v:count1)<CR>
+noremap <C-j> <Cmd>call mark#next_jump(-v:count1)<CR>
+noremap <C-k> <Cmd>call mark#next_jump(v:count1)<CR>
+noremap <Down> <Cmd>call mark#next_jump(-v:count1)<CR>
+noremap <Up> <Cmd>call mark#next_jump(v:count1)<CR>
 
 " Navigate buffer changelist with up/down arrows
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -888,8 +889,8 @@ nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 " history lost after vim re-enters insert mode from the <C-o> command.
 nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
-inoremap <F11> <Cmd>let b:insert_mode = 'a'<CR><C-g>u
-inoremap <expr> <C-p> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
+inoremap <F12> <Cmd>let b:insert_mode = 'a'<CR><C-g>u
+inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
 nnoremap <expr> o edit#insert_mode('o')
 nnoremap <expr> O edit#insert_mode('O')
 
@@ -1102,8 +1103,8 @@ nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
 
 " Normal mode wrapped scrolling and preview window scrolling
 " Note: This requires setting let g:scrollwrapped_nomap = 1
-noremap <expr> <F1> iter#scroll_count(-0.25, 0)
-noremap <expr> <F2> iter#scroll_count(0.25, 0)
+noremap <expr> <F3> iter#scroll_count(-0.25, 0)
+noremap <expr> <F4> iter#scroll_count(0.25, 0)
 noremap <expr> <C-u> iter#scroll_count(-0.5, 0)
 noremap <expr> <C-d> iter#scroll_count(0.5, 0)
 noremap <expr> <C-b> iter#scroll_count(-1.0, 0)
@@ -1659,8 +1660,8 @@ if s:plug_active('vim-succinct') || s:plug_active('vim-matchup')
   let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
   let g:succinct_surround_map = '<C-s>'
   let g:succinct_snippet_map = '<C-a>'
-  let g:succinct_prevdelim_map = '<F6>'  " set manually above
-  let g:succinct_nextdelim_map = '<F5>'  " set manually above
+  let g:succinct_prevdelim_map = '<F3>'  " set manually above
+  let g:succinct_nextdelim_map = '<F4>'  " set manually above
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
   let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
