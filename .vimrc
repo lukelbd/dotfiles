@@ -223,8 +223,8 @@ augroup END
 augroup insert_repair
   au!
   au InsertLeave * keepjumps normal! `^
-  au CmdWinLeave * let b:show_message = 1
   au InsertEnter * let b:insert_mode = get(b:, 'insert_mode', '')
+  au CmdlineLeave * let b:show_message = 1
 augroup END
 
 " Configure escape codes to restore screen after exiting
@@ -601,13 +601,10 @@ augroup END
 command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_tabs()
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
+silent! exe 'cunmap <Up>' | silent! exe 'cunmap <Down>'
 noremap <Tab><CR> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
 noremap <F3> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
 noremap <F4> <Cmd>call stack#scroll_tabs(v:count1)<CR>
-cnoremap <F1> <Tab>
-cnoremap <F2> <Tab>
-cnoremap <Up> <C-p>
-cnoremap <Down> <C-n>
 
 " Navigate jumplist with <C-[>/<C-]> and changelist with <C-h>/<C-l>
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -616,12 +613,12 @@ augroup jumplist_setup
   au!
   au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
 augroup END
-noremap <C-h> <Cmd>call mark#next_change(-v:count1)<CR>
-noremap <C-l> <Cmd>call mark#next_change(v:count1)<CR>
-noremap <Left> <Cmd>call mark#next_change(-v:count1)<CR>
-noremap <Right> <Cmd>call mark#next_change(v:count1)<CR>
-noremap <F1> <Cmd>call mark#next_jump(-v:count1)<CR>
-noremap <F2> <Cmd>call mark#next_jump(v:count1)<CR>
+noremap <C-h> <Cmd>call mark#next_jump(-v:count1)<CR>
+noremap <C-l> <Cmd>call mark#next_jump(v:count1)<CR>
+noremap <Left> <Cmd>call mark#next_jump(-v:count1)<CR>
+noremap <Right> <Cmd>call mark#next_jump(v:count1)<CR>
+noremap <F1> <Cmd>call mark#next_change(-v:count1)<CR>
+noremap <F2> <Cmd>call mark#next_change(v:count1)<CR>
 
 " Search across changes jumpst and lines
 " Note: This leverages custom-managed change and jump lists with redundant
@@ -1117,6 +1114,19 @@ noremap <expr> <C-u> iter#scroll_count(-0.5, 0)
 noremap <expr> <C-d> iter#scroll_count(0.5, 0)
 noremap <expr> <C-b> iter#scroll_count(-1.0, 0)
 noremap <expr> <C-f> iter#scroll_count(1.0, 0)
+
+" Command mode scrolling and completion
+" Note: Could also use wildmenumode() but would not work after first tab
+augroup complete_setup
+  au!
+  au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
+augroup END
+cnoremap <F1> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
+cnoremap <F2> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
+cnoremap <Tab> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
+cnoremap <S-Tab> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
+cnoremap <expr> <Up> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-p>' : '<C-p>'
+cnoremap <expr> <Down> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-n>' : '<C-n>'
 
 " Insert mode popup completion window and preview window scrolling
 " Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.

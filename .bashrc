@@ -126,8 +126,6 @@ _setup_bindings() {
   complete -r        # remove previous completions
   bind -r '"\C-d"'   # enable ctrl-d and ctrl-u in Vim
   bind -r '"\C-s"'   # enable ctrl-s in Vim (normally caught as start/stop signal)
-  bind -r '"\eOQ"'   # disable previous F1 mapping
-  bind -r '"\eOP"'   # disable previous F2 mapping
   stty werase undef  # disable ctrl-w word delete function
   stty stop undef    # disable ctrl-s start/stop binding
   stty eof undef     # disable ctrl-d end-of-file binding
@@ -147,6 +145,8 @@ _setup_bindings() {
   bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
   bind '"\C-i": menu-complete'                # complete forward without changing scroll history
   bind '"\e[Z": menu-complete-backward'       # complete backward without changing scroll history
+  bind '"\eOQ": menu-complete'                # complete forward with F2 = ctrl-.
+  bind '"\eOP": menu-complete-backward'       # complete backward with F1 = ctrl-,
   bind '"\e[F": end-of-line'                  # <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
   bind '"\e[H": beginning-of-line'            # <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
   bind '"\e[1;3D" backward-word'              # <Alt-Left> key from sed -n l <Alt-Up>
