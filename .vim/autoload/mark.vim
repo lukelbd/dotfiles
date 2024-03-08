@@ -58,6 +58,9 @@ function! s:get_list(changes, ...) abort  " return location list with unique lin
 endfunction
 
 " Navigate jump and change lists
+" Note: This improves on native bug where e.g. going backwards in jumplist (changelist)
+" from top of changelist (jumplist) keeps the 'current position' at top of stack so
+" cannot return with forward press. Note 'col' stored in lists is relative to zero.
 " Note: The getjumplist (getchangelist) functions return the length of the list
 " instead of the current position for external windows, so when switching from
 " current window, jump to top of the list before the requested user position. Also
@@ -65,31 +68,33 @@ endfunction
 function! s:feed_list(changes, iloc, ...) abort
   " vint: -ProhibitUnnecessaryDoubleQuote
   let [key1, key2] = a:changes ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
-  let [tnr, wnr] = a:0 ? a:000 : [tabpagenr(), winnr()]
+  let [tnr, wnr; rest] = a:0 ? a:000 : [tabpagenr(), winnr(), 0]
   exe tnr . 'tabnext' | exe wnr . 'wincmd w'
   let init = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2
   let ikey = a:iloc > 0 ? key2 : key1  " motion key
-  let keys = init . abs(a:iloc) . ikey  " go to selection
-  call feedkeys(keys . 'zv', 'n')
+  let ikeys = a:iloc == 0 ? '' : abs(a:iloc) . ikey
+  call feedkeys(init . ikeys . 'zv', 'n')
 endfunction
 function! s:next_list(changes, count) abort  " navigate to nth location in list
-  if a:count == 0 | return | endif
   let [opts, idx] = s:get_list(a:changes)
   let lnum = get(get(opts, -1, {}), 'lnum', 0)
-  let offset = idx == len(opts) && a:count < 0 && lnum == line('.')
-  let jdx = idx + a:count - offset
+  let cnum = get(get(opts, -1, {}), 'col', 0)
+  let bnum = get(get(opts, -1, {}), 'bufnr', bufnr())
+  let iend = bnum == bufnr() && lnum == line('.') && cnum + 1 == col('.')
+  let idel = iend && idx == len(opts) && a:count < 0 ? -1 : 0
+  let jdx = idx + a:count + idel  " jump from e.g. '11'/10 to 9/10
   let name = a:changes ? 'change' : 'jump'
-  let direc = a:count < 0 ? 'start' : 'end'
-  if abs(a:count) == 1 && (jdx < 0 || jdx >= len(opts))
-    echohl WarningMsg
-    echom 'Error: At ' . direc . ' of ' . name . 'list'
-    echohl None | return
+  let head = toupper(name[0]) . name[1:] . ' location: '
+  if jdx >= 0 && jdx < len(opts)  " jump to location
+    call s:feed_list(a:changes, opts[jdx]['loc'], tabpagenr(), winnr())
+    call feedkeys("\<Cmd>echom '" . head . (jdx + 1) . '/' . len(opts) . "'\<CR>", 'n')
+  elseif !iend && a:count == 1 && jdx == len(opts)  " silently restore position
+    if bnum != bufnr() | exe bnum . 'buffer' | endif | call cursor(lnum, cnum + 1)
+    call feedkeys("\<Cmd>echom '" . head . jdx . '/' . len(opts) . "'\<CR>", 'n')
+  else  " no-op warning message
+    let direc = a:count < 0 ? 'start' : 'end'
+    echohl WarningMsg | echom 'Error: At ' . direc . ' of ' . name . 'list' | echohl None
   endif
-  let value = (jdx + 1) . '/' . len(opts)
-  let name = toupper(name[0]) . name[1:]
-  let msg = "echom '" . name . ' location: ' . value . "'"
-  call s:feed_list(a:changes, opts[jdx]['loc'], tabpagenr(), winnr())
-  call feedkeys("\<Cmd>" . msg . "\<CR>", 'n')
 endfunction
 
 " Generate location list

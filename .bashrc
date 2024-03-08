@@ -145,8 +145,8 @@ _setup_bindings() {
   bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
   bind '"\C-i": menu-complete'                # complete forward without changing scroll history
   bind '"\e[Z": menu-complete-backward'       # complete backward without changing scroll history
-  bind '"\eOQ": menu-complete'                # complete forward with F2 = ctrl-.
-  bind '"\eOP": menu-complete-backward'       # complete backward with F1 = ctrl-,
+  bind '"\eOQ": menu-complete'                # tab-like complete forward with F2 = ctrl-. (see .vimrc)
+  bind '"\eOP": menu-complete-backward'       # tab-like complete backward with F1 = ctrl-, (see .vimrc)
   bind '"\e[F": end-of-line'                  # <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
   bind '"\e[H": beginning-of-line'            # <Home> key from sed -n l <Ctrl-Left> i.e. 0x1b 0x5b 0x48
   bind '"\e[1;3D" backward-word'              # <Alt-Left> key from sed -n l <Alt-Up>
@@ -190,11 +190,9 @@ _setup_opts 2>/dev/null  # ignore if opton unavailable
 #----------------------------------------------------------------------------
 # Settings for particular machines
 #----------------------------------------------------------------------------
-# Reset all aliases
-# Very important! Sometimes we wrap new aliases around existing ones, e.g. ncl!
+# Reset all aliases and functions
+# Very important! Sometimes we wrap new aliases around existing ones e.g. ncl!
 unalias -a
-
-# Reset functions? Nah, no decent way to do it
 # declare -F  # to view current ones
 
 # Helper function to load modules automatically
@@ -1915,6 +1913,8 @@ echo 'done'
 # Inline info puts the number line thing on same line as text. Bind slash to accept
 # so behavior matches shell completion behavior. Enforce terminal background default
 # color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
+# NOTE: General idea is <F1> and <F2> i.e. <Ctrl-,> and <Ctrl-.> should be tab-like
+# for command mode cycling. See top of .vimrc for details.
 _fzf_options=" \
 --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
 --bind=ctrl-k:up,ctrl-j:down,btab:clear-query,tab:accept,f1:clear-query,f2:accept,\
@@ -1926,9 +1926,7 @@ ctrl-r:clear-query,ctrl-q:cancel,ctrl-w:cancel,ctrl-e:cancel\
 # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
 # Adapted defaults from defaultCommand in .fzf/src/constants.go and key-bindings.bash
 # NOTE: Only apply universal 'ignore' file to default command used by vim fzf file
-# searching utility. Should also ignore
-# now do not try to use universal '.ignore' files since only special
-# utilities should ignore files while basic shell navigation should show everything.
+# searching utility. Exclude common external packages for e.g. :Files.
 _fzf_prune_names=$(ignores 1 plugged packages | sed 's/(/\\(/g;s/)/\\)/g')
 _fzf_prune_bases=" \
 \\( -fstype devfs -o -fstype devtmpfs -o -fstype proc -o -fstype sysfs \\) -prune -o \
@@ -2011,8 +2009,9 @@ fi
 #-----------------------------------------------------------------------------
 # Conda stuff
 #-----------------------------------------------------------------------------
-# Find conda base
+# Add conda base
 # NOTE: Must save brew path before setup (conflicts with conda; try 'brew doctor')
+# See: https://github.com/conda-forge/miniforge
 alias brew="PATH=\"$PATH\" brew"
 if [ -d "$HOME/mambaforge" ]; then
   _conda=$HOME/mambaforge
@@ -2212,9 +2211,9 @@ _title_update() {
 }
 title_update() { _title_update "$@"; }
 
-# Ask for a title when we create pane 0
+# Request title on first pane
 if $_macos; then
-  [[ "$PROMPT_COMMAND" =~ "_title_update" ]] || _append_prompt _title_update
+  [[ "$PROMPT_COMMAND" =~ _title_update ]] || _append_prompt _title_update
   [[ "$TERM_SESSION_ID" =~ w?t?p0: ]] && _title_update
 fi
 alias title='_title_set'  # easier for user

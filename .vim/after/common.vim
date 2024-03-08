@@ -20,8 +20,10 @@ let s:jump1 = get(maparg('[', '', 0, 1), 'buffer', 0)
 let s:jump2 = get(maparg(']', '', 0, 1), 'buffer', 0)
 let s:indent1 = get(maparg('<', '', 0, 1), 'buffer', 0)
 let s:indent2 = get(maparg('>', '', 0, 1), 'buffer', 0)
+inoremap <buffer> <F12> <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
+inoremap <buffer> <C-n> <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
 if exists('*peekaboo#on') && exists('*peekaboo#on')
-  silent! call peekaboo#off()  " re-enforce mappings
+  silent! call peekaboo#off()
   silent! call peekaboo#on()
 endif
 if !s:jump1 && !s:jump2  " no single bracket mappings

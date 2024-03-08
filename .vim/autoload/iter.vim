@@ -63,16 +63,16 @@ endfunction
 " Navigate search matches without editing jumplist
 " Note: This implements indexed-search directional consistency and avoids
 " adding to the jumplist to prevent overpopulation
-function! iter#next_match(reverse) abort
+function! iter#next_match(count) abort
   let forward = get(g:, 'indexed_search_n_always_searches_forward', 0)  " default
   if forward && !v:searchforward
-    let map = a:reverse ? 'n' : 'N'
+    let map = a:count > 0 ? 'N' : 'n'
   else
-    let map = a:reverse ? 'N' : 'n'
+    let map = a:count > 0 ? 'n' : 'N'
   endif
   let b:prevpos = getcurpos()
   if !empty(@/)
-    call feedkeys("\<Cmd>keepjumps normal! " . map . "zv\<CR>", 'n')
+    call feedkeys("\<Cmd>keepjumps normal! " . abs(a:count) . map . "zv\<CR>", 'n')
   else
     echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
   endif
@@ -85,21 +85,14 @@ endfunction
 " See: https://stackoverflow.com/a/2419692/4970632
 " Note: Have to trigger 'BufEnter' so status line updates. Also note g:colors_name
 " is convention shared by most color schemes, otherwise there is no vim setting.
-function! iter#next_scheme(reverse) abort
-  " Get list of color schemes
-  let step = a:reverse ? 1 : -1
+function! iter#next_scheme(count) abort
   if !exists('g:all_colorschemes')
     let g:all_colorschemes = getcompletion('', 'color')
   endif
   let active_colorscheme = get(g:, 'colors_name', 'default')
   let idx = index(g:all_colorschemes, active_colorscheme)
-  let idx = step + (idx < 0 ? -step : idx)   " if idx < 0, set to 0 by default
-  " Jump to next color scheme circularly
-  if idx < 0
-   let idx += len(g:all_colorschemes)
-  elseif idx >= len(g:all_colorschemes)
-    let idx -= len(g:all_colorschemes)
-  endif
+  let idx = idx == -1 ? 0 : idx + a:count   " set to zero if not present
+  let idx = idx % len(g:all_colorschemes)
   let scheme = g:all_colorschemes[idx]
   echom 'Colorscheme: ' . scheme
   exe 'colorscheme ' . scheme

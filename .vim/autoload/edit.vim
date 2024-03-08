@@ -28,19 +28,33 @@ function! edit#indent_items_expr(...) abort
 endfunction
 
 " Forward delete by indent whitespace in insert mode
-" Note: This enforced consistency with 'softtab' backspace-by-tabs
-" behavior. Rarely used but kind of nice.
-function! edit#forward_delete() abort
-  let idx = col('.') - 1
+" Note: Remove single tab or up to &tabstop spaces to the right of cursor. This
+" enforces consistency with 'softtab' backspace-by-tabs behavior.
+function! edit#forward_delete(...) abort
+  let icol = col('.') - 1  " vint: -ProhibitUsingUndeclaredVariable
   let line = getline('.')
-  let indent = repeat(' ', &tabstop)
-  " vint: -ProhibitUsingUndeclaredVariable
-  let forward = line[idx:idx + &tabstop - 1]
-  if forward ==# indent
-    return repeat("\<Delete>", &tabstop)
-  else
-    return "\<Delete>"
-  endif
+  let line = line[icol:icol + &tabstop - 1]
+  let regex = '^\(\t\| \{,' . &tabstop . '}\).*$'
+  let pad = substitute(line, regex, '\1', '')
+  let cnt = empty(pad) ? a:0 && a:1 : len(pad)
+  let head = cnt && pumvisible() ? "\<C-e>" : ''
+  let tail = repeat("\<Delete>", cnt)
+  return head . "\<C-]>" . tail
+endfunction
+
+" Join v:count next lines
+" Note: This joins v:count following lines, optionally above or below. Note
+" mapping with <silent> and using :\<C-u> is critical for visual command.
+function! edit#join_lines(before, spaces, ...) abort
+  let njoin = a:0 ? a:1 : v:count1 + (v:count > 1)
+  let nmove = a:0 ? a:1 : v:count1
+  let key = a:spaces ? 'gJ' : 'J'
+  let head = mode() =~? '^n' ? a:before ? nmove . 'k' . njoin : njoin : ''
+  let name = mode() =~? '^n' ? 'Normal' : 'Visual'
+  let conjoin = 'call conjoin#join' . name . '(' . string(key) . ')'
+  let cursor = "call cursor('.', " . col('.') . ')'
+  call feedkeys(head . ":\<C-u>" . conjoin . "\<CR>", 'n')
+  call feedkeys("\<Cmd>" . cursor . "\<CR>", 'n')
 endfunction
 
 " Toggle insert and command-mode caps lock

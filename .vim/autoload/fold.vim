@@ -336,9 +336,9 @@ function! fold#toggle_range(bang, ...) range abort
   let toggle = a:0 > 0 ? a:1 : 1 - s:get_closed(line1, line2)
   let bang = a:bang ? '!' : ''
   if toggle  " close folds (no bang = single level)
-    exe line1 . ',' . line2 . 'foldclose' . bang
+    silent! exe line1 . ',' . line2 . 'foldclose' . bang
   else  " open folds (no bang = single level)
-    exe line1 . ',' . line2 . 'foldopen' . bang
+    silent! exe line1 . ',' . line2 . 'foldopen' . bang
   endif
   if !empty(winview)
     call winrestview(winview)
