@@ -43,7 +43,7 @@ set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
 set cmdheight=1  " increse to avoid pressing enter to continue 
 set colorcolumn=89,121  " color column after recommended length of 88
-set complete=.,w,b,u,k  " tag complete slow so handle with ddc ctags source
+set complete=.,w,b,u,t,i,k  " prevent slowdowns with ddc
 set completeopt-=preview  " use custom denops-popup-preview plugin
 set confirm  " require confirmation if you try to quit
 set cpoptions=aABceFs  " vim compatibility options
@@ -602,10 +602,10 @@ command! -nargs=0 ClearTabs call stack#clear_stack('tab') | call stack#update_ta
 command! -nargs=0 ShowTabs call stack#update_tabs() | call stack#show_stack('tab')
 command! -nargs=? PopTabs call stack#pop_stack('tab', <f-args>)
 noremap <Tab><CR> <Cmd>call stack#reset_tabs()<CR><Cmd>call stack#update_tabs(2)<CR>
-noremap <F1> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
-noremap <F2> <Cmd>call stack#scroll_tabs(v:count1)<CR>
-cnoremap <F1> <C-p>
-cnoremap <F2> <C-n>
+noremap <F3> <Cmd>call stack#scroll_tabs(-v:count1)<CR>
+noremap <F4> <Cmd>call stack#scroll_tabs(v:count1)<CR>
+cnoremap <Up> <C-p>
+cnoremap <Down> <C-n>
 
 " Navigate jumplist with <C-[>/<C-]> and changelist with <C-h>/<C-l>
 " Note: This accounts for iterm function-key maps and karabiner arrow-key maps
@@ -618,8 +618,8 @@ noremap <C-h> <Cmd>call mark#next_jump(-v:count1)<CR>
 noremap <C-l> <Cmd>call mark#next_jump(v:count1)<CR>
 noremap <Left> <Cmd>call mark#next_jump(-v:count1)<CR>
 noremap <Right> <Cmd>call mark#next_jump(v:count1)<CR>
-noremap <F3> <Cmd>call mark#next_change(-v:count1)<CR>
-noremap <F4> <Cmd>call mark#next_change(v:count1)<CR>
+noremap <F1> <Cmd>call mark#next_change(-v:count1)<CR>
+noremap <F2> <Cmd>call mark#next_change(v:count1)<CR>
 
 " Search across changes jumpst and lines
 " Note: This leverages custom-managed change and jump lists with redundant
@@ -1122,16 +1122,16 @@ augroup popup_setup
   au!
   au BufEnter,InsertLeave * let b:scroll_state = 0
 augroup END
-inoremap <expr> <Up> iter#scroll_count(-0.25)
-inoremap <expr> <Down> iter#scroll_count(0.25)
-inoremap <expr> <C-k> iter#scroll_count(-0.25)
-inoremap <expr> <C-j> iter#scroll_count(0.25)
+silent! exe 'iunmap <F3>'
+silent! exe 'iunmap <F4>'
+inoremap <expr> <Up> iter#scroll_count(-1)
+inoremap <expr> <Down> iter#scroll_count(1)
+inoremap <expr> <C-k> iter#scroll_count(-1)
+inoremap <expr> <C-j> iter#scroll_count(1)
 inoremap <expr> <C-u> iter#scroll_count(-0.5, 0)
 inoremap <expr> <C-d> iter#scroll_count(0.5, 0)
 inoremap <expr> <C-b> iter#scroll_count(-1.0, 0)
 inoremap <expr> <C-f> iter#scroll_count(1.0, 0)
-inoremap <expr> <F1> iter#scroll_count(-1, 1)
-inoremap <expr> <F2> iter#scroll_count(1, 1)
 
 " Insert mode mappings and popup behavior
 " Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
@@ -1650,8 +1650,8 @@ if s:plug_active('vim-succinct') || s:plug_active('vim-matchup')
   let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
   let g:succinct_surround_map = '<C-s>'
   let g:succinct_snippet_map = '<C-a>'
-  let g:succinct_prevdelim_map = '<F3>'
-  let g:succinct_nextdelim_map = '<F4>'
+  let g:succinct_prevdelim_map = '<F1>'
+  let g:succinct_nextdelim_map = '<F2>'
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
   let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup

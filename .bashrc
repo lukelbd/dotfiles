@@ -126,6 +126,8 @@ _setup_bindings() {
   complete -r        # remove previous completions
   bind -r '"\C-d"'   # enable ctrl-d and ctrl-u in Vim
   bind -r '"\C-s"'   # enable ctrl-s in Vim (normally caught as start/stop signal)
+  bind -r '"\eOQ"'   # disable previous F1 mapping
+  bind -r '"\eOP"'   # disable previous F2 mapping
   stty werase undef  # disable ctrl-w word delete function
   stty stop undef    # disable ctrl-s start/stop binding
   stty eof undef     # disable ctrl-d end-of-file binding
@@ -143,8 +145,6 @@ _setup_bindings() {
   bind 'set page-completions off'             # no more --more-- pager when list too big
   bind 'set completion-query-items 0'         # never ask for user confirmation if there's too much stuff
   bind 'set mark-symlinked-directories on'    # add trailing slash to directory symlink
-  bind '"\eOQ": menu-complete'                # complete forward with F2 = ctrl-.
-  bind '"\eOP": menu-complete-backward'       # complete backward with F1 = ctrl-,
   bind '"\C-i": menu-complete'                # complete forward without changing scroll history
   bind '"\e[Z": menu-complete-backward'       # complete backward without changing scroll history
   bind '"\e[F": end-of-line'                  # <End> key from sed -n l <Ctrl-Right> i.e. 0x1b 0x5b 0x46
@@ -1917,10 +1917,10 @@ echo 'done'
 # color using -1 below. ANSI codes: https://stackoverflow.com/a/33206814/4970632
 _fzf_options=" \
 --ansi --color=bg:-1,bg+:-1 --layout=default --exit-0 --inline-info --height=6 \
---bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,f1:up,f2:down,\
-f3:preview-page-up,f4:preview-page-down,up:half-page-up,down:half-page-down,\
-ctrl-k:half-page-up,ctrl-j:half-page-down,ctrl-u:half-page-up,ctrl-d:half-page-down,\
-ctrl-b:page-up,ctrl-f:page-down,ctrl-q:cancel,ctrl-w:cancel,ctrl-e:cancel,ctrl-r:clear-query \
+--bind=tab:accept,ctrl-a:toggle-all,ctrl-s:toggle,ctrl-g:jump,ctrl-k:up,ctrl-j:down,\
+f1:preview-half-page-up,f2:preview-half-page-down,f3:preview-page-up,f4:preview-page-down,\
+ctrl-u:half-page-up,ctrl-d:half-page-down,ctrl-b:page-up,ctrl-f:page-down,\
+ctrl-q:cancel,ctrl-w:cancel,ctrl-e:cancel,ctrl-r:clear-query \
 "  # critical to export so used by vim
 
 # Defualt fzf find commands. The compgen ones were addd by fork, others are native.
