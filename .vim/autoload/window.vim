@@ -252,6 +252,7 @@ function! s:netrw_setup() abort
   for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
 endfunction
 function! window#panel_setup(level) abort
+  setlocal nonumber norelativenumber nocursorline signcolumn=yes 
   let g:ft_man_folding_enable = 1  " see :help Man
   let [nleft, nright] = [window#count_panes('h'), window#count_panes('l')]
   nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
@@ -260,11 +261,6 @@ function! window#panel_setup(level) abort
     call s:netrw_setup()
   elseif &filetype ==# 'qf'  " disable <Nop> map
     nnoremap <buffer> <CR> <CR>zv
-  endif
-  if nleft > 1 || nright > 1 && &l:filetype =~# '^\(git\|fugitive\|undotree\)'
-    setlocal nonumber norelativenumber nocursorline 
-  else " sign column padding 
-    setlocal nonumber norelativenumber nocursorline signcolumn=yes 
   endif
   if a:level > 1  " e.g. gitcommit window
     return

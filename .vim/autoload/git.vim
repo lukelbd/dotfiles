@@ -143,6 +143,7 @@ endfunction
 function! git#commit_safe(editor, ...) abort
   let cmd = a:0 ? a:1 : 'commit'  " commit version
   let msg = a:editor ? '' : utils#input_default('Git ' . cmd, '', '')
+  if empty(msg) && !a:editor | return | endif
   let args = ['diff', '--staged', '--quiet']
   let result = FugitiveExecute(args)  " see: https://stackoverflow.com/a/1587877/4970632
   let status = get(result, 'exit_status', 1)
@@ -151,7 +152,6 @@ function! git#commit_safe(editor, ...) abort
     echom 'Error: No staged changes'
     echohl None | call git#run_command(0, line('.'), -1, 0, 0, '', 'status')
   else  " exits 1 if there are staged changes
-    if empty(msg) && !a:editor | return | endif
     let msg = empty(msg) ? '' : ' --message ' . shellescape(msg)
     call git#run_command(1, line('.'), -1, 0, 0, '', cmd . msg)
   endif

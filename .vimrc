@@ -1031,7 +1031,6 @@ call s:repeat_map('v', 'g+', 'VEqualDouble', "<Cmd>call comment#append_line('=',
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands
-inoremap <expr> <C-g> comment#get_insert()
 let s:author = "'Author: Luke Davis (lukelbd@gmail.com)'"
 let s:edited = "'Edited: ' . strftime('%Y-%m-%d')"
 for s:key in ';:/?''"' | silent! exe 'unmap gc' . s:key | endfor
@@ -1299,7 +1298,6 @@ call plug#('rhysd/conflict-marker.vim')  " highlight conflicts
 call plug#('airblade/vim-gitgutter')
 call plug#('tpope/vim-fugitive')
 let g:conflict_marker_enable_mappings = 0
-" let g:fugitive_no_maps = 1  " only disables nmap y<C-g> and cmap <C-r><C-g>
 
 " Project-wide tags and auto-updating
 " Note: This should work for both fzf ':Tags' (uses 'tags' since relies on tagfiles()
@@ -1615,7 +1613,7 @@ silent! delcommand SplitjoinSplit
 " Sneak between two-character patterns
 " Note: Tried easy motion but way too complicated / slows everything down
 " See: https://www.reddit.com/r/vim/comments/2ydw6t/large_plugins_vs_small_easymotion_vs_sneak/
-if s:plug_active('vim-sneak')
+if s:plug_active('vim-sneak') || s:plug_active('vim-indexed-search')
   map s <Plug>Sneak_s
   map S <Plug>Sneak_S
   map f <Plug>Sneak_f
@@ -1628,18 +1626,6 @@ if s:plug_active('vim-sneak')
   let g:sneak#t_reset = 0  " keep t search separate from s
   let g:sneak#absolute_dir = 1  " same search direction no matter initial direction
   let g:sneak#use_ic_scs = 0  " search always case-sensitive, similar to '*' or popup
-endif
-
-" Matching and searching settings
-" Note: Here vim-tags searching integrates with indexed-search and vim-succinct
-" surround delimiters integrate with matchup '%' keys.
-if s:plug_active('vim-matchup') || s:plug_active('vim-indexed-search')
-  let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
-  let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
-  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
-  let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
-  let g:matchup_surround_enabled = 1  " enable 'ya%' 'va%' etc. mappings
-  let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
   let g:indexed_search_center = 0  " disable centered match jumping
   let g:indexed_search_colors = 0  " disable colors for speed
   let g:indexed_search_dont_move = 1  " irrelevant due to custom mappings
@@ -1648,6 +1634,58 @@ if s:plug_active('vim-matchup') || s:plug_active('vim-indexed-search')
   let g:indexed_search_shortmess = 1  " shorter message
   let g:indexed_search_numbered_only = 1  " only show numbers
   let g:indexed_search_n_always_searches_forward = 1  " see also vim-sneak
+endif
+
+" Matching and searching settings
+" Note: Here vim-tags searching integrates with indexed-search and vim-succinct
+" surround delimiters integrate with matchup '%' keys.
+" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also use
+" custom names for several mappings and define textobj mappings.
+if s:plug_active('vim-succinct') || s:plug_active('vim-matchup')
+  imap <S-Tab> <Plug>delimitMateS-Tab
+  imap <S-Tab> <Plug>delimitMateJumpMany
+  let g:delimitMate_expand_cr = 2  " expand even if non empty
+  let g:delimitMate_expand_space = 1
+  let g:delimitMate_jump_expansion = 1
+  let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
+  let g:succinct_surround_map = '<C-s>'
+  let g:succinct_snippet_map = '<C-a>'
+  let g:succinct_prevdelim_map = '<F3>'
+  let g:succinct_nextdelim_map = '<F4>'
+  let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
+  let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
+  let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
+  let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
+  let g:matchup_surround_enabled = 1  " enable 'ya%' 'va%' etc. mappings
+  let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
+endif
+
+" Text object settings
+" Note: Here use mnemonic 'v' for 'value' and 'C' for comment. The first avoids
+" conflicts with ftplugin/tex.vim and the second with 'c' curly braces.
+if s:plug_active('vim-textobj-user')
+  map ]v <Plug>(textobj-numeral-n)
+  map [v <Plug>(textobj-numeral-p)
+  map ]V <Plug>(textobj-numeral-N)
+  map ]V <Plug>(textobj-numeral-P)
+  omap av <Plug>(textobj-numeral-a)
+  vmap av <Plug>(textobj-numeral-a)
+  omap iv <Plug>(textobj-numeral-i)
+  vmap iv <Plug>(textobj-numeral-i)
+  let g:textobj#sentence#select = 's'  " smarter sentence selection
+  let g:textobj#sentence#move_p = '('  " smarter sentence navigation
+  let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
+  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
+  let s:textobj_alpha = {
+    \ 'g': '\_[^0-9A-Za-z]\r\_[^0-9A-Za-z]',
+    \ 'G': '\(\W\|^\|\%^\)\r\(\W\|$\|\%$\)',
+  \ }
+  let s:textobj_comment = {
+    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
+    \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_a',
+  \ }
+  call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
+  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1, 1)
 endif
 
 " Toggle comments and whatnot
@@ -1666,49 +1704,14 @@ if s:plug_active('tcomment_vim')
   nnoremap z.. <Cmd>call comment#toggle_comment()<CR>
   nnoremap z>> <Cmd>call comment#toggle_comment(1)<CR>
   nnoremap z<< <Cmd>call comment#toggle_comment(0)<CR>
+  inoremap <silent> <F5> <Space><C-\><C-o>v:TCommentInline mode=#<CR><Delete>
+  inoremap <silent> <F6> <Space><C-\><C-o>:TCommentBlock mode=#<CR><Delete>
   let g:tcomment_opleader1 = 'z.'  " default is 'gc'
   let g:tcomment_mapleader1 = ''  " disables <C-_> insert mode maps
   let g:tcomment_mapleader2 = ''  " disables <Leader><Space> normal mode maps
   let g:tcomment_textobject_inlinecomment = ''  " default of 'ic' disables text object
   let g:tcomment_mapleader_uncomment_anyway = 'z<'
   let g:tcomment_mapleader_comment_anyway = 'z>'
-endif
-
-" Succinct settings for text objects and delimiters
-" Note: Use mnemonic 'v' for 'value'. Avoid conflicts with ftplugin/tex.vim
-" Note: Most custom delimiters defined in succinct.vim and ftplugin files. Also use
-" custom names for several mappings and define textobj mappings.
-if s:plug_active('vim-succinct')
-  map ]v <Plug>(textobj-numeral-n)
-  map [v <Plug>(textobj-numeral-p)
-  map ]V <Plug>(textobj-numeral-N)
-  map ]V <Plug>(textobj-numeral-P)
-  omap av <Plug>(textobj-numeral-a)
-  vmap av <Plug>(textobj-numeral-a)
-  omap iv <Plug>(textobj-numeral-i)
-  vmap iv <Plug>(textobj-numeral-i)
-  let s:textobj_alpha = {
-    \ 'g': '\_[^0-9A-Za-z]\r\_[^0-9A-Za-z]',
-    \ 'G': '\(\W\|^\|\%^\)\r\(\W\|$\|\%$\)',
-  \ }
-  let s:textobj_comment = {
-    \ 'select-i': 'iC', 'select-i-function': 'textobj#comment#select_i',
-    \ 'select-a': 'aC', 'select-a-function': 'textobj#comment#select_a',
-  \ }
-  call textobj#user#plugin('comment', {'textobj_comment': s:textobj_comment})
-  call succinct#add_objects('alpha', s:textobj_alpha, 0, 1, 1)
-  let g:vim_textobj_parameter_mapping = 'k'  " i.e. 'keyword' or 'keyword argument'
-  let g:textobj#sentence#select = 's'  " smarter sentence selection
-  let g:textobj#sentence#move_p = '('  " smarter sentence navigation
-  let g:textobj#sentence#move_n = ')'  " smarter sentence navigation
-  let g:succinct_surround_map = '<C-s>'
-  let g:succinct_snippet_map = '<C-e>'
-  let g:succinct_prevdelim_map = '<F3>'
-  let g:succinct_nextdelim_map = '<F4>'
-  let g:delimitMate_expand_cr = 2  " expand even if it is not empty!
-  let g:delimitMate_expand_space = 1
-  let g:delimitMate_jump_expansion = 0
-  let g:delimitMate_excluded_regions = 'String'  " by default is disabled inside, don't want that
 endif
 
 " Tag integration settings

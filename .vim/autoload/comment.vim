@@ -2,7 +2,19 @@
 " Utilities for inserting comments
 "-----------------------------------------------------------------------------"
 " Helper functions
-" Note: This uses cursor line as default header value, e.g. turning header into comment
+" Note: This uses cursor line as default header value, e.g. turning header into comment,
+" and searches non-printable dummy characters 1-32 from &isprint. Note character
+" zero is null i.e. string termination so matches empty string. See :help /\]
+function! comment#get_char() abort
+  let char = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
+  let char = substitute(char, '\s\+', '', 'g')  " ignore spaces
+  return char  " escape magic characters
+endfunction
+function! comment#get_regex(...) abort  " pass 1 to prepend '\zs'
+  let char = escape(comment#get_char(), '[]\.*$~')
+  let char = empty(char) ? '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]' : char
+  return a:0 && a:1 ? '\zs' . char : char
+endfunction
 function! s:get_indent() abort  " match current indent level
   let regex = '^\s*\S\zs'  " location of first non-whitespace char
   let indent = match(getline('.'), regex)
@@ -15,25 +27,6 @@ function! s:get_header() abort
   let result = utils#input_default('Header text', default, '')
   if result ==# default | call feedkeys('"_dd', 'n') | endif
   return result
-endfunction
-
-" Return the comment character
-" Note: This uses non-printable dummy characters 1-32 from &isprint. Note character
-" zero is null i.e. string termination so matches empty string. See :help /\]
-function! comment#get_char() abort
-  let char = substitute(&commentstring, '%s.*', '', '')  " leading comment indicator
-  let char = substitute(char, '\s\+', '', 'g')  " ignore spaces
-  return char  " escape magic characters
-endfunction
-function! comment#get_regex(...) abort  " pass 1 to prepend '\zs'
-  let char = escape(comment#get_char(), '[]\.*$~')
-  let char = empty(char) ? '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]' : char
-  return a:0 && a:1 ? '\zs' . char : char
-endfunction
-function! comment#get_insert() abort
-  let parts = split(&l:commentstring, '%s')
-  let lefts = repeat("\<Left>", len(parts) > 1 ? len(parts[1]) + 1 : 0)
-  return "\<C-g>u" . join(parts, ' ') . lefts . ' '
 endfunction
 
 " Add general comment matching current indentation (used for author date) or add dashes
