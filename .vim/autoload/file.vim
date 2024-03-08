@@ -247,7 +247,6 @@ function! file#open_drop(...) abort
       call feedkeys("\<Cmd>silent edit " . path . "\<CR>", 'n')
     end
     if !quiet && !blank && !panel && !fugitive && abspath !=# expand('%:p')
-      echom 'Buffers: ' . bnr . ' ' . bufnr('')
       call timer_start(1, function('file#echo_path', [path]))
     endif
   endfor

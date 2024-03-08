@@ -49,7 +49,7 @@ function! s:get_list(changes, ...) abort  " return location list with unique lin
     let opts[idx]['loc'] = iloc  " e.g. base = 0, idx = n - 1, -> loc = -1
   endfor
   let opts = filter(opts,
-    \ {idx, val -> val.loc == zero || !empty(join(getbufline(bnr, val.lnum), ''))})
+    \ {idx, val -> val.loc == zero || !a:changes && val.bufnr != bnr || !empty(join(getbufline(bnr, val.lnum), ''))})
   let opts = filter(copy(opts),
     \ {idx, val -> val.loc == zero || empty(filter(opts[idx + 1:idx + 20], 'v:val.lnum == ' . val.lnum))})
   let iloc = index(map(copy(opts), 'v:val.loc'), 0)
@@ -66,14 +66,13 @@ function! s:feed_list(changes, iloc, ...) abort
   " vint: -ProhibitUnnecessaryDoubleQuote
   let [key1, key2] = a:changes ? ["g;", "g,"] : ["\<C-o>", "\<C-i>"]
   let [tnr, wnr] = a:0 ? a:000 : [tabpagenr(), winnr()]
-  let bnr = bufnr()  " ensure buffer has not changed
   exe tnr . 'tabnext' | exe wnr . 'wincmd w'
-  let init = bnr == bufnr() ? '' : '1000' . key2  " initialize at end
+  let init = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2
   let ikey = a:iloc > 0 ? key2 : key1  " motion key
   let keys = init . abs(a:iloc) . ikey  " go to selection
   call feedkeys(keys . 'zv', 'n')
 endfunction
-function! s:goto_list(changes, count) abort  " navigate to nth location in list
+function! s:next_list(changes, count) abort  " navigate to nth location in list
   if a:count == 0 | return | endif
   let [opts, idx] = s:get_list(a:changes)
   let lnum = get(get(opts, -1, {}), 'lnum', 0)
@@ -89,7 +88,7 @@ function! s:goto_list(changes, count) abort  " navigate to nth location in list
   let value = (jdx + 1) . '/' . len(opts)
   let name = toupper(name[0]) . name[1:]
   let msg = "echom '" . name . ' location: ' . value . "'"
-  call s:feed_list(a:changes, opts[jdx]['loc'])
+  call s:feed_list(a:changes, opts[jdx]['loc'], tabpagenr(), winnr())
   call feedkeys("\<Cmd>" . msg . "\<CR>", 'n')
 endfunction
 
@@ -102,9 +101,14 @@ endfunction
 function! s:fmt_list(snr, tnr, wnr, bnr, item) abort
   let format = '%6s  %3d:%1d %5d %3d  %s'
   let iloc = get(a:item, 'loc', 0)  " should be present
+  let ibuf = get(a:item, 'bufnr', a:bnr)  " item buffer
   let head = printf('%4d', -iloc)  " backwards positive
   let head = iloc == 0 ? '>' . head : head
-  let tail = get(getbufline(a:bnr, a:item.lnum), 0, '')
+  if ibuf == a:bnr  " show the text
+    let tail = get(getbufline(ibuf, a:item.lnum), 0, '')
+  else  " show the path as with :jumps
+    let tail = expand('#' . ibuf . ':p')
+  endif
   let line = printf(format, head, a:tnr, a:wnr, a:item.lnum, a:item.col, tail)
   let line = substitute(line, '[0-9]\+', '\=' . a:snr . 'yellow(submatch(0), "Number")', '')
   return line
@@ -112,14 +116,16 @@ endfunction
 function! s:list_sink(changes, line) abort
   if a:line =~# '^\s*>\s*$' | return | endif
   let regex = '^\s*\([+-]\?\d\+\)\s\+\(\d\+\):\(\d\+\)'  " -1 2:1 -> loc 1 tab 2 win 1
+  let regex .= '\s\+\(\d\+\)\s\+\(\d\+\)\s\+\(.*\)$'  " lnum cnum <text_or_file>
   let parts = matchlist(a:line, regex, '', '')
+  let g:length = len(parts)
   if empty(parts)
     echohl ErrorMsg
     echom "Error: Invalid selection '" . a:line . "'"
     echohl None | return
   endif
-  let [iloc, tnr, wnr; rest] = map(parts[1:], 'str2nr(v:val)')
-  return s:feed_list(a:changes, -iloc, tnr, wnr)  " backwards is positive
+  let [iloc, tnr, wnr, _, _, item; rest] = map(parts[1:], 'str2nr(v:val)')
+  return s:feed_list(a:changes, -iloc, tnr, wnr)
 endfunction
 function! s:list_source(changes) abort
   let snr = utils#get_snr('fzf.vim/autoload/fzf/vim.vim')
@@ -136,10 +142,10 @@ function! s:list_source(changes) abort
     let [opts, iloc] = s:get_list(a:changes, tnr, wnr, bnr)
     let items = map(opts, {idx, val -> s:fmt_list(snr, tnr, wnr, bnr, val)})
     let items = slice(items, -min([&l:history - len(table), len(items)]))
-    let head = bnr == bufnr() && iloc == len(opts)
-    call extend(table, head ? [' >'] : [])
+    call extend(table, bnr == bufnr() && iloc == len(opts) ? [' >'] : [])
     call extend(table, reverse(items))  " recent changes first
     if len(table) >= &l:history | break | endif  " reached maximum number of items
+    break
   endfor
   return table
 endfunction
@@ -151,11 +157,11 @@ endfunction
 " Note: This is needed to fix issue where getbufline() output can be empty (filter
 " function calls this function and assumes non-empty) and because the default FZF flag
 " --bind start:pos:etc was yielding errors. Not sure why but maybe issue with .fzf fork
-function! mark#goto_jump(...) abort
-  return call('s:goto_list', [0] + a:000)
+function! mark#next_jump(...) abort
+  return call('s:next_list', [0] + a:000)
 endfunction
-function! mark#goto_change(...) abort
-  return call('s:goto_list', [1] + a:000)
+function! mark#next_change(...) abort
+  return call('s:next_list', [1] + a:000)
 endfunction
 function! s:jump_sink(arg) abort  " first item is key binding
   if len(a:arg) > 1 | return s:list_sink(0, a:arg[-1]) | endif

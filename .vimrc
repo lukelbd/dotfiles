@@ -614,12 +614,12 @@ augroup jumplist_setup
   au!
   au CursorHold,TextChanged,InsertLeave * call mark#push_jump()
 augroup END
-noremap <C-h> <Cmd>call mark#goto_jump(-v:count1)<CR>
-noremap <C-l> <Cmd>call mark#goto_jump(v:count1)<CR>
-noremap <Left> <Cmd>call mark#goto_jump(-v:count1)<CR>
-noremap <Right> <Cmd>call mark#goto_jump(v:count1)<CR>
-noremap <F3> <Cmd>call mark#goto_change(-v:count1)<CR>
-noremap <F4> <Cmd>call mark#goto_change(v:count1)<CR>
+noremap <C-h> <Cmd>call mark#next_jump(-v:count1)<CR>
+noremap <C-l> <Cmd>call mark#next_jump(v:count1)<CR>
+noremap <Left> <Cmd>call mark#next_jump(-v:count1)<CR>
+noremap <Right> <Cmd>call mark#next_jump(v:count1)<CR>
+noremap <F3> <Cmd>call mark#next_change(-v:count1)<CR>
+noremap <F4> <Cmd>call mark#next_change(v:count1)<CR>
 
 " Search across changes jumpst and lines
 " Note: This leverages custom-managed change and jump lists with redundant
@@ -2445,14 +2445,13 @@ highlight! link SignColumn LineNR
 highlight! link FoldColumn LineNR
 highlight! link CursorLineFold LineNR
 
-" Clear past jumps to ignore stuff from plugin files and vimrc
-" and ignore outdated buffer marks loaded from .viminfo
+" Clear jumps for new tabs and to ignore stuff from vimrc and plugin files
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  au VimEnter * silent windo clearjumps | runtime after/common.vim | exe 'normal! zv'
-  au WinNew * silent clearjumps
+  au VimEnter * silent bufdo clearjumps | runtime after/common.vim | exe 'normal! zv'
+  au WinNew * call feedkeys("\<Cmd>silent clearjumps\<CR>", 'n')
 augroup END
 runtime autoload/repeat.vim
 nohlsearch  " turn off highlighting at startup
