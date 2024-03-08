@@ -403,7 +403,7 @@ nnoremap <C-e> <Cmd>call window#close_panes()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call utils#get_scripts(0, <q-args>)
-noremap <leader>e <Cmd>call window#edit_buf()<CR>
+noremap <leader>e <Cmd>call window#refresh_buf()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -906,8 +906,8 @@ nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
 " Register selection utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
 " trigger the mapping. See https://vi.stackexchange.com/q/5803/8084
-imap <expr> <F10> peekaboo#peek(1, "\<C-r>",  0)
-nmap <expr> <F10> peekaboo#peek(1, '"', 0)
+imap <expr> <F10> utils#catch_events('WinNew', 'peekaboo#peek', 1, "\<C-r>",  0)
+nmap <expr> <F10> utils#catch_events('WinNew', 'peekaboo#peek', 1, '"', 0)
 
 " Record macro by pressing Q (we use lowercase for quitting popup windows)
 " and execute macro using ,. Also disable multi-window recordings.
@@ -2466,13 +2466,14 @@ highlight! link SignColumn LineNR
 highlight! link FoldColumn LineNR
 highlight! link CursorLineFold LineNR
 
-" Clear jumps for new tabs and to ignore stuff from vimrc and plugin files
+" Clear jumps for new tabs and to ignore stuff from vimrc and plugin files. Note
+" that feedkeys required or else this fails for e.g.
 " See: https://stackoverflow.com/a/2419692/4970632
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
   au VimEnter * silent bufdo clearjumps | runtime after/common.vim | exe 'normal! zv'
-  au WinNew * call feedkeys("\<Cmd>silent clearjumps\<CR>", 'n')
+  au WinNew * call feedkeys("\<Cmd>clearjumps\<CR>", 'n')
 augroup END
 runtime autoload/repeat.vim
 nohlsearch  " turn off highlighting at startup

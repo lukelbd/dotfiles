@@ -152,19 +152,6 @@ function! window#default_height(...) abort
   return call('window#default_size', [0] + a:000)
 endfunction
 
-" Refresh window contents
-" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
-" to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
-function! window#edit_buf() abort
-  let type = get(b:, 'fugitive_type', '')
-  if !empty(type)  " return to original file
-    call git#fugitive_return()
-  else  " reload from disk
-    edit | call fold#update_folds(1)
-  endif
-  normal! zv
-endfunction
-
 " Select from open tabs
 " Note: This displays a list with the tab number and the file. As with other
 " commands sorts by recent access time for ease of use.
@@ -280,6 +267,19 @@ function! window#panel_setup(level) abort
       exe 'nmap <buffer> g' . char . ' <Nop>'
     endif
   endfor
+endfunction
+
+" Refresh window contents
+" Note: Here :Gedit returns to head after viewing a blob. Can also use e.g. :Mru
+" to return but this is faster. See https://github.com/tpope/vim-fugitive/issues/543
+function! window#refresh_buf() abort
+  let type = get(b:, 'fugitive_type', '')
+  if !empty(type)  " return to original file
+    call git#fugitive_return()
+  else  " reload from disk
+    edit | call fold#update_folds(1)
+  endif
+  normal! zv
 endfunction
 
 " Print currently open buffers

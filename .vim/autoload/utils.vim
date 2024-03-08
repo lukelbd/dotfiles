@@ -10,8 +10,7 @@ function! utils#null_operator_expr(...) abort
   return utils#motion_func('utils#null_operator', a:000)
 endfunction
 
-" Safely run tests without verbose error message
-" Todo: Consider adding to this, can have some additional maps and features.
+" Catch errors while running tests or events while calling peekaboo
 " Note: This prevents 'press enter to continue' error messages e.g. when
 " accidentally hitting test maps in filetypes without utilities installed.
 function! utils#catch_errors(...) abort
@@ -20,11 +19,20 @@ function! utils#catch_errors(...) abort
     return 0
   catch /E492/
     let msg = substitute(v:exception, '\w\+:E\d\+:', '', '')
-    echohl ErrorMsg
-    echom 'Error:' . msg
-    echohl None | return 1
+    echohl ErrorMsg | echom 'Error:' . msg | echohl None | return 1
   endtry
 endfunction
+function! utils#catch_events(events, func, ...) abort
+  let &l:eventignore = a:events
+  try
+    let result = call(a:func, a:000)
+  catch /.*/
+    let &l:eventignore = ''
+  endtry
+  call timer_start(10, function('execute', ['setlocal eventignore=']))
+  return result
+endfunction
+
 
 " Get the fzf.vim/autoload/fzf/vim.vim script id for overriding.
 " See: https://stackoverflow.com/a/49447600/4970632
@@ -263,7 +271,7 @@ function! s:translate_input(mode, ...) abort
       if empty(char)  " e.g. escape character
         let name = char
         let result = ''
-      elseif char ==# "\<F8>"  " peekaboo shortcut
+      elseif char ==# "\<F10>"  " peekaboo shortcut
         let name = ''
         let result = peekaboo#peek(1, '"', 0)
       elseif char =~# '^[''"]$'  " native register selection
