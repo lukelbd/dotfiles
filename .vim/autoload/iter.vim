@@ -1,6 +1,16 @@
 "-----------------------------------------------------------------------------"
 " Utilities for scrolling and iterating
 "-----------------------------------------------------------------------------"
+" Helper functions
+" Note: This auto opens folds when jumping from quickfix and removes taglist
+" normal-mode mappings. Should add to this in future.
+function! iter#setup_quickfix() abort
+  exe 'nnoremap <buffer> <CR> <CR>zv'
+endfunction
+function! iter#setup_taglist() abort
+  for char in 'ud' | silent! exe 'nunmap <buffer> ' . char | endfor
+endfunction
+
 " Navigate conflict markers cyclically
 " Note: This is adapted from conflict-marker.vim/autoload/conflict_marker.vim. Only
 " searches for complete blocks, ignores false-positive block matches e.g. markdown ===

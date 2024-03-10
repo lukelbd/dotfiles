@@ -39,7 +39,7 @@ endfunction
 " that is in use' error so instead return to main window and toggle codi.
 function! window#close_panes(...) abort
   let bang = a:0 && a:1 ? '!' : ''
-  let main = get(b:, 'tabline_bufnr', '%')
+  let main = get(b:, 'tabline_bufnr', bufnr())
   let ftypes = map(tabpagebuflist(), "getbufvar(v:val, '&filetype', '')")
   call map(popup_list(), 'popup_close(v:val)')
   if index(ftypes, 'codi') != -1
@@ -208,7 +208,7 @@ endfunction
 " Setup preview windows
 " Note: Here use a border for small popup windows and no border by default for
 " autocomplete. See: https://github.com/prabirshrestha/vim-lsp/issues/594
-function! window#preview_setup(...) abort
+function! window#setup_preview(...) abort
   for winid in popup_list()
     let info = popup_getpos(winid)
     if !info.visible | continue | endif
@@ -234,27 +234,18 @@ endfunction
 " immediately runs and closes as e.g. with non-tex BufNewFile template detection,
 " this causes vim to crash and breaks the terminal. Instead never auto-close windows
 " and simply get in habit of closing entire tabs with session#close_tab().
-function! s:netrw_setup() abort
-  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
-  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
-endfunction
-function! window#panel_setup(level) abort
+function! window#setup_panel(level) abort
   setlocal nonumber norelativenumber nocursorline signcolumn=yes 
   let g:ft_man_folding_enable = 1  " see :help Man
   let [nleft, nright] = [window#count_panes('h'), window#count_panes('l')]
   nnoremap <buffer> q <Cmd>silent! call window#close_pane()<CR>
   nnoremap <buffer> <C-w> <Cmd>silent! call window#close_pane()<CR>
-  if &filetype ==# 'netrw'
-    call s:netrw_setup()
-  elseif &filetype ==# 'qf'  " disable <Nop> map
-    nnoremap <buffer> <CR> <CR>zv
-  endif
   if a:level > 1  " e.g. gitcommit window
     return
   elseif a:level > 0
-    setlocal nolist colorcolumn=
+    setlocal colorcolumn= nolist
   else
-    setlocal nolist nospell colorcolumn=
+    setlocal colorcolumn= nolist nospell
   endif
   for char in 'du'  " always remap scrolling indicators
     exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
@@ -275,7 +266,7 @@ endfunction
 function! window#refresh_buf() abort
   let type = get(b:, 'fugitive_type', '')
   if !empty(type)  " return to original file
-    call git#fugitive_return()
+    call git#safe_return()
   else  " reload from disk
     edit | call fold#update_folds(1)
   endif

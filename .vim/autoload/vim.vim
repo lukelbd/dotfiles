@@ -1,15 +1,6 @@
 "-----------------------------------------------------------------------------"
 " Utilities for vimscript files
 "-----------------------------------------------------------------------------"
-" Setup command windows and ensure local maps work
-" Note: Here 'execute' is mapped to run the selected line.
-" Note: This is used e.g. when browsing past commands or searches
-function! vim#cmdwin_setup() abort
-  inoremap <buffer> <expr> <CR> ""
-  nnoremap <buffer> <CR> <C-c><CR>
-  nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>
-endfunction
-
 " Refresh recently modified configuration files
 " Note: Previously tried to update and track per-filetype refreshes but was way
 " overkill and need ':filetype detect' anyway to both detect changes and to trigger
@@ -103,13 +94,13 @@ function! vim#show_colors() abort
   call file#open_drop('colortest.vim')
   let path = $VIMRUNTIME . '/syntax/colortest.vim'
   exe 'source ' . path
-  call window#panel_setup(1)
+  call window#setup_panel(1)
 endfunction
 function! vim#show_runtime(...) abort
   let path = a:0 ? a:1 : 'ftplugin'
   let path = $VIMRUNTIME . '/' . path . '/' . &l:filetype . '.vim'
   call file#open_drop(path)
-  call window#panel_setup(1)
+  call window#setup_panel(1)
 endfunction
 function! vim#show_stack(...) abort
   let sids = a:0 ? map(copy(a:000), 'hlID(v:val)') : synstack(line('.'), col('.'))
@@ -130,6 +121,32 @@ function! vim#show_stack(...) abort
     echom 'Warning: No syntax under cursor.'
     echohl None
   endif
+endfunction
+
+" Show and setup vim help page
+" Note: All vim tag utilities including <C-]>, :pop, :tag work by searching 'tags' files
+" and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags
+" is included with vim by default, and this is always used no matter the value of &tags
+" (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
+function! vim#show_help(...) abort
+  if a:0
+    let item = a:1
+  else
+    let item = utils#input_default('Vim help', expand('<cword>'), 'help')
+  endif
+  if !empty(item)
+    exe 'vertical help ' . item
+  endif
+endfunction
+function! vim#setup_cmdwin() abort
+  inoremap <buffer> <expr> <CR> ""
+  exe 'nnoremap <buffer> <CR> <C-c><CR>'
+  exe 'nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>'
+endfunction
+function! vim#setup_help() abort
+  wincmd L | vert resize 80 | nnoremap <buffer> <CR> <C-]>
+  nnoremap <nowait> <buffer> <silent> [ <Cmd>pop<CR>
+  nnoremap <nowait> <buffer> <silent> ] <Cmd>tag<CR>
 endfunction
 
 " Source file, lines, or motion
@@ -155,27 +172,4 @@ endfunction
 " For <expr> map accepting motion
 function! vim#source_motion_expr(...) abort
   return utils#motion_func('vim#source_motion', a:000)
-endfunction
-
-" Show and setup vim help page
-" Note: All vim tag utilities including <C-]>, :pop, :tag work by searching 'tags' files
-" and updating the tag 'stack' (effectively a cache). Seems that $VIMRUNTIME/docs/tags
-" is included with vim by default, and this is always used no matter the value of &tags
-" (try ':echo tagfiles()' when inside help page, shows various doc/tags files).
-function! vim#vim_help(...) abort
-  if a:0
-    let item = a:1
-  else
-    let item = utils#input_default('Vim help', expand('<cword>'), 'help')
-  endif
-  if !empty(item)
-    exe 'vertical help ' . item
-  endif
-endfunction
-function! vim#vim_setup() abort
-  wincmd L  " move current window to far-right
-  vertical resize 80  " help pages have fixed width
-  nnoremap <buffer> <CR> <C-]>
-  nnoremap <nowait> <buffer> <silent> [ <Cmd>pop<CR>
-  nnoremap <nowait> <buffer> <silent> ] <Cmd>tag<CR>
 endfunction

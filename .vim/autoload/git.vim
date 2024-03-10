@@ -122,25 +122,12 @@ function! git#run_map_expr(...) abort
   return utils#motion_func('git#run_map', a:000)
 endfunction
 
-" Git blame and commit setup
+" Git commit and edit actions
 " Note: Git commit is asynchronous unlike others so resize must be reapplied here. In
 " general do not apply resize to setup functions since could be panel or full-screen.
 " Note: This prevents annoying <press enter to continue> message showing up when
 " committing with no staged changes, issues a warning instead of showing the message.
-function! git#blame_setup() abort
-  let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
-  call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
-  if window#count_panes('h') == 1
-    call feedkeys("\<Cmd>vertical resize " . window#default_width(1) . "\<CR>", 'n')
-  endif
-endfunction
-function! git#commit_setup(...) abort
-  exe 'resize ' . window#default_height()
-  call switch#autosave(1, 1)  " suppress message
-  setlocal colorcolumn=73
-  goto | startinsert  " first row column
-endfunction
-function! git#commit_safe(editor, ...) abort
+function! git#safe_commit(editor, ...) abort
   let cmd = a:0 ? a:1 : 'commit'  " commit version
   let msg = a:editor ? '' : utils#input_default('Git ' . cmd, '', '')
   if empty(msg) && !a:editor | return | endif
@@ -156,8 +143,18 @@ function! git#commit_safe(editor, ...) abort
     call git#run_command(1, line('.'), -1, 0, 0, '', cmd . msg)
   endif
 endfunction
+function! git#safe_edit() abort
+  let type = get(b:, 'fugitive_type', '')
+  if empty(type)  " edit from disk
+    edit | call fold#update_folds(1) | normal! zv
+  elseif type ==# 'blob'  " return to file
+    call git#safe_return() | normal! zv
+  else  " unknown
+    echohl ErrorMsg | echom 'Error: Not in fugitive blob' | echohl None
+  endif
+endfunction
 
-" Fugitive popup setup
+" Git panel window setup
 " Note: Fugitive maps get re-applied when re-opening existing fugitive buffers due to
 " its FileType autocommands, so should not have issues modifying already-modified maps.
 " Note: Many mappings call script-local functions with strings like 'tabedit', and
@@ -182,29 +179,27 @@ let s:fugitive_switch = [
   \ ['-', '.', 'nx'],
   \ ['.', ';', 'n'],
 \ ]
-function! git#fugitive_setup() abort
-  if &filetype ==# 'fugitiveblame'
-    call git#blame_setup()
+function! git#setup_blame() abort
+  let regex = '^\x\{8}\s\+\d\+\s\+(\zs<\S\+>\s\+'
+  call matchadd('Conceal', regex, 0, -1, {'conceal': ''})
+  if window#count_panes('h') == 1
+    call feedkeys("\<Cmd>vertical resize " . window#default_width(1) . "\<CR>", 'n')
   endif
-  for val in s:fugitive_remove
-    silent! exe 'unmap <buffer> ' . val
-  endfor
+endfunction
+function! git#setup_commit(...) abort
+  exe 'resize ' . window#default_height()
+  call switch#autosave(1, 1)  " suppress message
+  setlocal colorcolumn=73
+  goto | startinsert  " first row column
+endfunction
+function! git#setup_fugitive() abort
+  for val in s:fugitive_remove | silent! exe 'unmap <buffer> ' . val | endfor
   setlocal foldmethod=syntax
   call fold#update_folds()
   call fold#regex_levels()
   call call('utils#switch_maps', s:fugitive_switch)
 endfunction
-function! git#fugitive_return() abort
-  if get(b:, 'fugitive_type', '') ==# 'blob'
-    let winview = winsaveview()
-    exe 'Gedit %'
-    call winrestview(winview)
-  else
-    echohl ErrorMsg
-    echom 'Error: Not in fugitive blob'
-    echohl None
-  endif
-endfunction
+
 
 " Git hunk jumping and previewing
 " Note: Git gutter works by triggering on &updatetime after CursorHold only if
@@ -226,7 +221,7 @@ function! git#hunk_show() abort
   call s:hunk_process()
   GitGutterPreviewHunk
   silent wincmd j
-  call window#preview_setup()
+  call window#setup_preview()
   call timer_start(10, function('execute', ["echom 'Hunk difference'"]))
 endfunction
 function! git#hunk_jump(count, stage) abort

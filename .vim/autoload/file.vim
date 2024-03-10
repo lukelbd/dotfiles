@@ -1,6 +1,25 @@
 "-----------------------------------------------------------------------------"
 " Utilities for managing files
 "-----------------------------------------------------------------------------"
+" Helper functions and variables
+" Warning: For some reason including 'down' in fzf#run prevents fzf from returning
+" a list (version 0.29). However exluding it produces weird behavior that blacks
+" out rest of screen. Workaround is to factor out an unnecessary source function.
+let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
+function! file#echo_path(...) abort
+  let path = expand(a:0 ? a:1 : '%')
+  if exists('*RelativePath')
+    let path = RelativePath(path)
+  else
+    let path = fnamemodify(path)
+  endif
+  echom 'Path: ' . path
+endfunction
+function! file#setup_netrw() abort
+  call utils#switch_maps(['<CR>', 't', 'n'], ['t', '<CR>', 'n'])
+  for char in 'fbFL' | silent! exe 'unmap <buffer> q' . char | endfor
+endfunction
+
 " Generate list of files in directory
 " Warning: Critical that the list options match the prompt lead or else
 " when a single path is returned <Tab> during input() does not complete it.
@@ -30,34 +49,12 @@ function! s:path_complete(lead) abort
   return paths
 endfunction
 function! file#complete_cwd(lead, line, cursor) abort
+  let head = exists('*RelativePath') ? RelativePath(expand('%:h')) : expand('%:h:~:.')
   return s:path_complete(a:lead)
 endfunction
 function! file#complete_lwd(lead, line, cursor) abort
-  if exists('*RelativePath')
-    let head = RelativePath(expand('%:h'))
-  else
-    let head = expand('%:h:~:.')
-  endif
-  if head =~# '^' . a:lead
-    return s:path_complete(head)
-  else
-    return s:path_complete(a:lead)
-  endif
-endfunction
-
-" Helper functions and variables
-" Warning: For some reason including 'down' in fzf#run prevents fzf from returning
-" a list (version 0.29). However exluding it produces weird behavior that blacks
-" out rest of screen. Workaround is to factor out an unnecessary source function.
-let s:new_file = '[new file]'  " dummy entry for requesting new file in current directory
-function! file#echo_path(...) abort
-  let path = expand(a:0 ? a:1 : '%')
-  if exists('*RelativePath')
-    let path = RelativePath(path)
-  else
-    let path = fnamemodify(path)
-  endif
-  echom 'Path: ' . path
+  let head = exists('*RelativePath') ? RelativePath(expand('%:h')) : expand('%:h:~:.')
+  return s:path_complete(head =~# '^' . a:lead ? head : a:lead)
 endfunction
 
 " Print whether current file exists

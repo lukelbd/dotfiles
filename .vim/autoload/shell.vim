@@ -55,50 +55,6 @@ function! shell#fzf_help() abort
   \ }))
 endfunction
 
-" Man page and pydoc page utilities
-" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
-" page to record navigation history. Order of assignment below is critical.
-function! s:syntax_setup() abort  " man-style pydoc syntax
-  let indent = '^\(\s\{4}\)*'
-  let item = indent . '\zs\(class\s\+\)\?\k\+\ze(.*)'
-  let data = indent . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
-  let dash = indent . '\s*\zs[-=]\{3,}.*$'
-  let mess = indent . '\s*\C[A-Z].*\(defined here\|resolution order\|inherited\s*from\s*\S*\):$'
-  let head = ''
-    \ . '\(' . indent . '\(\s*\|\s*[-=]\{3,}.*\)\n' . indent . '\s*\)\@<='
-    \ . '\C[A-Z]\a\{2,}.*'
-    \ . '\(\n' . indent . '\s*[-=]\{3,}.*$\)\@='
-  exe "syntax match docItem '" . item . "'"
-  exe "syntax match docData '" . data . "'"
-  exe "syntax match docDash '" . dash . "'"
-  exe "syntax match docMess '" . mess . "'"
-  exe "syntax match docHead '" . head . "'"
-  silent! syntax clear manLongOptionDesc
-  silent! syntax clear manSectionHeading
-  highlight link docItem manSectionHeading
-  highlight link docData manSectionHeading
-  highlight link docDash manHeader
-  highlight link docMess manHeader
-  highlight link docHead manHeader
-endfunction
-function! shell#man_setup(...) abort
-  let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
-  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
-  if !empty(get(b:, 'doc_name', ''))
-    setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldnestmax=3
-    let b:doc_name = @% | call s:syntax_setup()
-    noremap <buffer> <CR> <Cmd>call stack#push_stack('doc', 'python#doc_page', '')<CR>
-    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('doc', 'python#doc_page', -v:count1)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('doc', 'python#doc_page', v:count1)<CR>
-  else
-    setlocal tabstop=7 softtabstop=7 shiftwidth=7 foldnestmax=3
-    let b:man_name = [page, pnum]  " see below
-    noremap <buffer> <CR> <Cmd>call stack#push_stack('man', 'shell#man_page', '')<CR>
-    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('man', 'shell#man_page', -v:count1)<CR>
-    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('man', 'shell#man_page', v:count1)<CR>
-  endif
-endfunction
-
 " Popup tab with man page and navigation tools
 " Note: See also .bashrc man(). These utils are expanded from vim-superman.
 " Note: Apple will have empty line then BUILTIN(1) on second line, but linux
@@ -194,6 +150,50 @@ function! shell#job_win(cmd, ...) abort
   endif
   let b:popup_job = job_start(cmds, opts)
   exe winnr('#') . 'wincmd w'
+endfunction
+
+" Man page and pydoc page utilities
+" Warning: Calling :Man changes the buffer, so use buffer variables specific to each
+" page to record navigation history. Order of assignment below is critical.
+function! s:setup_syntax() abort  " man-style pydoc syntax
+  let indent = '^\(\s\{4}\)*'
+  let item = indent . '\zs\(class\s\+\)\?\k\+\ze(.*)'
+  let data = indent . '\zs\k\+\ze\s*=\s*\(<.*>\|\(class\s\+\)\?\k\+(.*)\)'
+  let dash = indent . '\s*\zs[-=]\{3,}.*$'
+  let mess = indent . '\s*\C[A-Z].*\(defined here\|resolution order\|inherited\s*from\s*\S*\):$'
+  let head = ''
+    \ . '\(' . indent . '\(\s*\|\s*[-=]\{3,}.*\)\n' . indent . '\s*\)\@<='
+    \ . '\C[A-Z]\a\{2,}.*'
+    \ . '\(\n' . indent . '\s*[-=]\{3,}.*$\)\@='
+  exe "syntax match docItem '" . item . "'"
+  exe "syntax match docData '" . data . "'"
+  exe "syntax match docDash '" . dash . "'"
+  exe "syntax match docMess '" . mess . "'"
+  exe "syntax match docHead '" . head . "'"
+  silent! syntax clear manLongOptionDesc
+  silent! syntax clear manSectionHeading
+  highlight link docItem manSectionHeading
+  highlight link docData manSectionHeading
+  highlight link docDash manHeader
+  highlight link docMess manHeader
+  highlight link docHead manHeader
+endfunction
+function! shell#setup_man(...) abort
+  let page = tolower(matchstr(getline(1), '\f\+'))  " from man syntax group
+  let pnum = matchstr(getline(1), '(\@<=[1-9][a-z]\=)\@=')  " from man syntax
+  if !empty(get(b:, 'doc_name', ''))
+    setlocal tabstop=4 softtabstop=4 shiftwidth=4 foldnestmax=3
+    let b:doc_name = @% | call s:setup_syntax()
+    noremap <buffer> <CR> <Cmd>call stack#push_stack('doc', 'python#doc_page', '')<CR>
+    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('doc', 'python#doc_page', -v:count1)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('doc', 'python#doc_page', v:count1)<CR>
+  else
+    setlocal tabstop=7 softtabstop=7 shiftwidth=7 foldnestmax=3
+    let b:man_name = [page, pnum]  " see below
+    noremap <buffer> <CR> <Cmd>call stack#push_stack('man', 'shell#man_page', '')<CR>
+    noremap <nowait> <buffer> [ <Cmd>call stack#push_stack('man', 'shell#man_page', -v:count1)<CR>
+    noremap <nowait> <buffer> ] <Cmd>call stack#push_stack('man', 'shell#man_page', v:count1)<CR>
+  endif
 endfunction
 
 " Tables of netrw mappings

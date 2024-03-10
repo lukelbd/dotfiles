@@ -160,10 +160,10 @@ let s:lang_filetypes = [
   \ 'html', 'liquid', 'markdown', 'rst', 'tex'
 \ ]  " for wrapping and spell toggle
 let s:panel_filetypes = [
-  \ 'help', 'ale-info', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame',
+  \ 'ale-info', 'ale-preview', 'checkhealth', 'codi', 'diff', 'fugitive', 'fugitiveblame', 'git', 'gitcommit',
 \ ]  " for popup toggle
 let s:panel_filetypes += [
-  \ 'git', 'gitcommit', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'panel', 'qf', 'undotree', 'vim-plug'
+  \ 'help', 'netrw', 'job', '*lsp-hover', 'man', 'mru', 'panel', 'qf', 'undotree', 'taglist', 'vim-plug'
 \ ]
 
 " Flake8 ignore list (also apply to autopep8):
@@ -401,7 +401,7 @@ nnoremap <C-e> <Cmd>call window#close_panes()<CR>
 " Note: Here :Mru shows tracked files during session, will replace current buffer.
 command! -bang -nargs=? Refresh runtime autoload/vim.vim | call vim#config_refresh(<bang>0, <q-args>)
 command! -nargs=? Scripts call utils#get_scripts(0, <q-args>)
-noremap <leader>e <Cmd>call window#refresh_buf()<CR>
+noremap <leader>e <Cmd>call git#safe_edit()<CR>
 noremap <Leader>r <Cmd>redraw! \| echo ''<CR>
 noremap <Leader>R <Cmd>Refresh<CR>
 let g:MRU_Open_File_Relative = 1
@@ -516,24 +516,28 @@ noremap [X <Cmd>exe v:count1 . 'Qprev'<CR>zv
 noremap ]X <Cmd>exe v:count1 . 'Qnext'<CR>zv
 
 " Helper window style adjustments with less-like shortcuts
-" Note: Tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues
-" due to e.g. buffer not loaded before autocmds trigger. Instead use below.
+" Note: Also
+" tried 'FugitiveIndex' and 'FugitivePager' but kept getting confusing issues due
+" to e.g. buffer not loaded before autocmds trigger. Instead use below.
 let g:tags_skip_filetypes = s:panel_filetypes
 let g:tabline_skip_filetypes = s:panel_filetypes
 augroup panel_setup
   au!
-  au TerminalWinOpen * call window#panel_setup(2)
-  au CmdwinEnter * call vim#cmdwin_setup() | call window#panel_setup(0)
-  au FileType undotree nmap <buffer> U <Plug>UndotreeRedo
-  au FileType help call vim#vim_setup()
-  au FileType man call shell#man_setup()
-  au FileType gitcommit call git#commit_setup()
-  au FileType git,fugitive,fugitiveblame call git#fugitive_setup()
-  au FileType fugitiveblame call git#blame_setup()
-  au BufRead fugitive://* if &filetype !=# 'fugitive' | call window#panel_setup(1) | endif
+  au TerminalWinOpen * call window#setup_panel(2)
+  au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(0)
+  au BufEnter *__Tag_List__* call iter#setup_taglist() | call window#setup_panel(0)
+  au BufRead fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel(1) | endif
+  au FileType help call vim#setup_help()
+  au FileType qf call iter#setup_quickfix()
+  au FileType taglist call iter#setup_taglist()
+  au FileType netrw call file#setup_netrw()
+  au FileType man call shell#setup_man()
+  au FileType gitcommit call git#setup_commit()
+  au FileType fugitiveblame call git#setup_blame() | call git#setup_fugitive()
+  au FileType git,fugitive call git#setup_fugitive()
   for s:ftype in s:panel_filetypes
     let s:level = s:ftype ==# 'gitcommit' ? 2 : s:ftype ==# 'git' ? 1 : 0
-    exe 'au FileType ' . s:ftype . ' call window#panel_setup(' . s:level . ')'
+    exe 'au FileType ' . s:ftype . ' call window#setup_panel(' . s:level . ')'
   endfor
 augroup END
 
@@ -556,7 +560,7 @@ nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
 nnoremap <Leader>? q/
-nnoremap <Leader>v <Cmd>call vim#vim_help()<CR>
+nnoremap <Leader>v <Cmd>call vim#show_help()<CR>
 nnoremap <Leader>V <Cmd>Helptags<CR>
 
 " Shell commands, search windows, help windows, man pages, and 'cmd --help'. Also
@@ -1239,7 +1243,6 @@ call plug#('tpope/vim-characterize')  " print character info (nicer version of '
 " call plug#('vim-scripts/EnhancedJumps')  " unnecessary
 " call plug#('jistr/vim-nerdtree-tabs')  " unnecessary
 " call plug#('scrooloose/nerdtree')  " unnecessary
-" call plug#('preservim/tagbar')  " unnecessary
 call plug#('junegunn/vim-peekaboo')  " popup display
 call plug#('mbbill/undotree')
 let g:peekaboo_window = 'vertical topleft 30new'
@@ -1313,7 +1316,10 @@ let g:conflict_marker_enable_mappings = 0
 " for both detection and writing).
 " call plug#('xolox/vim-misc')  " dependency for easytags
 " call plug#('xolox/vim-easytags')  " kind of old and not that useful honestly
-call plug#('ludovicchabant/vim-gutentags')  " note slows things down without config
+" call plug#('preservim/tagbar')  " unnecessarily complex interface
+call plug#('yegappan/taglist')  " simpler interface plus mult-file support
+call plug#('ludovicchabant/vim-gutentags')  " slows things down without config
+let g:Tlist_Use_Right_Window = 1
 let g:gutentags_enabled = 1
 " let g:gutentags_enabled = 0
 
@@ -1676,7 +1682,7 @@ endif
 if s:plug_active('vim-textobj-user')
   augroup textobj_setup
     au!
-    au BufWinEnter * call textobj#sentence#init()
+    au VimEnter * call textobj#sentence#init()
   augroup END
   map ]v <Plug>(textobj-numeral-n)
   map [v <Plug>(textobj-numeral-p)
@@ -1853,7 +1859,7 @@ if s:plug_active('vim-lsp')
   " they have double border. See: https://github.com/prabirshrestha/vim-lsp/issues/594
   augroup lsp_setup
     au!
-    au User lsp_float_opened call window#preview_setup()
+    au User lsp_float_opened call window#setup_preview()
     au FileType markdown.lsp-hover let b:lsp_do_conceal = 1 | setlocal conceallevel=2
   augroup END
   command! -nargs=? LspToggle call switch#lsp(<args>)
@@ -1874,7 +1880,7 @@ if s:plug_active('vim-lsp')
   noremap <Leader>A <Cmd>LspSignatureHelp<CR>
   noremap <Leader>& <Cmd>call switch#lsp()<CR>
   noremap <Leader>% <Cmd>CheckHealth<CR>
-  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call window#panel_setup(0)<CR>
+  noremap <Leader>^ <Cmd>tabnew \| LspManage<CR><Cmd>file lspservers \| call window#setup_panel(0)<CR>
   " Lsp and server settings
   " See: https://github.com/python-lsp/python-lsp-server/issues/477
   " Note: See 'jupyterlab-lsp/plugin.jupyterlab-settings' for examples. Results are
@@ -2138,10 +2144,10 @@ if s:plug_active('vim-fugitive')
   augroup END
   noremap <Leader>' <Cmd>call git#run_map(0, 0, '', 'status')<CR>
   noremap <Leader>" <Cmd>call git#run_map(0, 0, '', 'tree')<CR>
-  noremap <Leader>i <Cmd>call git#commit_safe(0, 'oops')<CR>
-  noremap <Leader>I <Cmd>call git#commit_safe(1, 'oops')<CR>
-  noremap <Leader>o <Cmd>call git#commit_safe(0, 'commit')<CR>
-  noremap <Leader>O <Cmd>call git#commit_safe(1, 'commit')<CR>
+  noremap <Leader>i <Cmd>call git#safe_commit(0, 'oops')<CR>
+  noremap <Leader>I <Cmd>call git#safe_commit(1, 'oops')<CR>
+  noremap <Leader>o <Cmd>call git#safe_commit(0, 'commit')<CR>
+  noremap <Leader>O <Cmd>call git#safe_commit(1, 'commit')<CR>
   noremap <Leader>h <Cmd>call git#run_map(0, 0, '', 'diff -- :/')<CR>
   noremap <Leader>H <Cmd>call git#run_map(0, 0, '', 'stage -- :/')<CR>
   noremap <Leader>j <Cmd>call git#run_map(0, 0, '', 'diff -- %')<CR>
@@ -2226,10 +2232,10 @@ endif
 if s:plug_active('codi.vim')
   augroup codi_setup
     au!
-    au User CodiEnterPre call calc#codi_setup(1)
-    au User CodiLeavePost call calc#codi_setup(0)
+    au User CodiEnterPre call calc#setup_codi(1)
+    au User CodiLeavePost call calc#setup_codi(0)
   augroup END
-  command! -nargs=* CodiNew call calc#codi_new(<f-args>)
+  command! -nargs=* CodiNew call calc#start_codi(<f-args>)
   noremap <Leader>+ <Cmd>CodiNew<CR>
   noremap <Leader>= <Cmd>silent! Codi!!<CR>
   let g:codi#autocmd = 'None'
@@ -2262,7 +2268,7 @@ endif
 " Todo: Currently can only clear history with 'C' in active pane not externally. Need
 " to submit PR for better command. See: https://github.com/mbbill/undotree/issues/158
 if s:plug_active('undotree')
-  function! Undotree_Augroup() abort  " see autoload/undotree.vim s:undotree.Toggle()
+  function! Undotree_Augroup() abort  " autoload/undotree.vim s:undotree.Toggle()
     if undotree#UndotreeIsVisible()
       augroup Undotree
         au! | au InsertLeave,TextChanged * call undotree#UndotreeUpdate()
@@ -2473,7 +2479,7 @@ highlight! link CursorLineFold LineNR
 augroup clear_jumps
   au!
   au VimEnter * runtime after/common.vim | exe 'normal! zv'
-  au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
+  " au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
 runtime autoload/repeat.vim
 nohlsearch  " turn off highlighting at startup
