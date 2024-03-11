@@ -82,7 +82,7 @@ function! iter#next_match(count) abort
   endif
   let b:prevpos = getcurpos()
   if !empty(@/)
-    call feedkeys("\<Cmd>keepjumps normal! " . abs(a:count) . map . "zv\<CR>", 'n')
+    call feedkeys("\<Cmd>keepjumps normal! " . abs(a:count) . map . "\<CR>", 'n')
   else
     echohl ErrorMsg | echom 'Error: Pattern not set' | echohl None
   endif

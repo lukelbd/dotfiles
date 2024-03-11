@@ -73,7 +73,7 @@ function! s:feed_list(changes, iloc, ...) abort
   let init = tnr == tabpagenr() && wnr == winnr() ? '' : '1000' . key2
   let ikey = a:iloc > 0 ? key2 : key1  " motion key
   let ikeys = a:iloc == 0 ? '' : abs(a:iloc) . ikey
-  call feedkeys(init . ikeys . 'zv', 'n')
+  call feedkeys(init . ikeys, 'n')
 endfunction
 function! s:next_list(changes, count) abort  " navigate to nth location in list
   let [opts, idx] = s:get_list(a:changes)

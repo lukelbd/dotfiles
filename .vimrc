@@ -56,7 +56,7 @@ set foldclose=  " use foldclose=all to auto-close folds when leaving
 set foldcolumn=2  " show fold boundaries on column
 set foldlevelstart=0  " hide folds when opening (then 'foldlevel' sets current status)
 set foldnestmax=5  " allow only a few folding levels
-set foldopen=block,jump,mark,percent,quickfix,search,tag,undo  " opening folds on cursor movement, disallow block folds
+set foldopen=insert,mark,quickfix,tag,undo  " opening folds on cursor movement, disallow block folds
 set foldtext=fold#fold_text()  " default function for generating text shown on fold line
 set guicursor+=a:blinkon0  " skip blinking cursor
 set guifont=Monaco:h12  " match iterm settings
