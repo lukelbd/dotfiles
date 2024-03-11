@@ -91,7 +91,7 @@ endfunction
 " Navigate between comment blocks and headers
 " Note: The '$' required for lookbehind for some reason
 function! comment#next_comment(count, ...) abort
-  let head = a:0 && a:1 ? '\s*' : ''  " include indented
+  let head = a:0 && a:1 ? '' : '\s*'  " include indented
   let tail = comment#get_regex() . '.\+$\n'
   let back = '^\(' . head . tail . '\)\@<!'
   let regex = back . head . '\zs' . tail . '\(' . head . tail . '\)*'
@@ -101,7 +101,7 @@ function! comment#next_comment(count, ...) abort
   endfor
 endfunction
 function! comment#next_header(count, ...) abort
-  let head = a:0 && a:1 ? '\s*' : ''  " include indented
+  let head = a:0 && a:1 ? '' : '\s*'  " include indented
   let tail = comment#get_regex() . '\s*[-=]\{3,}' . comment#get_regex() . '\?\s*$'
   let back = '^\(' . head . comment#get_regex() . '.\+$\n\)\@<!'
   let regex = back . head . '\zs' . tail

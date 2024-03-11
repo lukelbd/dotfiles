@@ -1319,8 +1319,12 @@ let g:conflict_marker_enable_mappings = 0
 " call plug#('preservim/tagbar')  " unnecessarily complex interface
 call plug#('yegappan/taglist')  " simpler interface plus mult-file support
 call plug#('ludovicchabant/vim-gutentags')  " slows things down without config
-let g:Tlist_Use_Right_Window = 1
 let g:gutentags_enabled = 1
+let g:Tlist_Compact_Format = 1
+let g:Tlist_Enable_Fold_Column = 1
+let g:Tlist_File_Fold_Auto_Close = 1
+let g:Tlist_Use_Right_Window = 1
+let g:Tlist_WinWidth = 40
 " let g:gutentags_enabled = 0
 
 " User fuzzy selection stuff
