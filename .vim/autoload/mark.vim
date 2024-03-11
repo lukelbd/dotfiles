@@ -220,6 +220,7 @@ function! mark#goto_mark(...) abort
     call file#open_drop(mrks[0]['file'])
     let pos = string(mrks[0]['pos'])  " string list
     let cmd = "call setpos('.', " . pos . ')'
+    if &l:foldopen =~# 'mark' | exe 'normal! zv' | endif
   endif
   let g:mark_name = mrk  " mark stack navigation
   call feedkeys("\<Cmd>" . cmd . "\<CR>", 'n')

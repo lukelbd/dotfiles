@@ -236,6 +236,7 @@ function! file#open_drop(...) abort
     let blank = !&modified && empty(bufname())
     let panel = &l:filetype =~# '^\(git\|netrw\)$'
     let fugitive = bufname() =~# '^fugitive:'
+    call stack#update_tabs()  " update before leaving
     if !empty(nrs)
       exe nrs[0] . 'tabnext' | exe nrs[1] . 'wincmd w'
     elseif !blank && !panel && !fugitive

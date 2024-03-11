@@ -233,13 +233,13 @@ function! s:translate_count(mode, ...) abort
     let name = char == 0 ? '' : nr2char(base + char)
   endif
   if cnt > max  " emit warning
-    let head = "Count '" . cnt . "' too high for register translation."
-    let tail = "Using maximum '" . name . "' (" . max . ').'
+    let head = "Count '" . cnt . "' too high for register translation"
+    let tail = "Using maximum '" . name . "' (" . max . ')'
     call add(warnings, head . ' ' . tail)
   endif
   if a:mode ==# 'm' && index(map(getmarklist(), "v:val['mark']"), "'" . name) != -1
     let head = 'Overwriting existing mark'
-    let tail = "'" . name . "' (" . cnt . ').'
+    let tail = string(name) . (cnt ? "' (" . cnt . ')' : '')
     call add(warnings, head . ' ' . tail)
   endif
   if !empty(warnings)
@@ -296,7 +296,9 @@ function! s:translate_input(mode, ...) abort
     endif
   endif
   let head = a:mode =~# '[m`]' ? 'Mark' : 'Register'
-  echom empty(name) || empty(label) ? '': head . ': ' . name[0] . ' (' . label . ')'
+  if !empty(name) && !empty(label)  " mark name label
+    echom head . ': ' . name[0] . ' (' . label . ')'
+  endif
   return result
 endfunction
 " Public function without autocommands
