@@ -207,6 +207,17 @@ function! mark#next_mark(...) abort
   endif
   call stack#push_stack('mark', 'mark#goto_mark', cnt, 0)
 endfunction
+function! mark#init_stack() abort
+  let stack = get(g:, 'mark_stack', [])
+  if !empty(stack) | return stack | endif
+  let imarks = getmarklist()
+  let stack = []
+  for imark in imarks
+    let iname = imark['mark'][1]
+    if iname =~# '\u' | call add(stack, iname) | endif
+  endfor
+  let g:mark_stack = stack | return stack
+endfunction
 function! mark#goto_mark(...) abort
   if !a:0 || empty(a:1) | return | endif
   let mrk = matchstr(a:1, '\S')

@@ -759,13 +759,13 @@ noremap zj ]z
 command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
-noremap <Leader>- <Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
-noremap <Leader>_ <Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
 noremap <expr> g_ v:count ? '`' . utils#translate_name('`') : '<Cmd>call mark#fzf_marks()<CR>'
-noremap _ <Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
-noremap z_ <Cmd>call mark#del_marks()<CR>
-noremap <C-n> <Cmd>call mark#next_mark(-v:count1)<CR>
-noremap <F12> <Cmd>call mark#next_mark(v:count1)<CR>
+noremap <Leader>- <Cmd>call mark#init_stack()<CR><Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
+noremap <Leader>_ <Cmd>call mark#init_stack()<CR><Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
+noremap _ <Cmd>call mark#init_stack()<CR><Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
+noremap z_ <Cmd>call mark#init_stack()<CR><Cmd>call mark#del_marks()<CR>
+noremap <C-n> <Cmd>call mark#init_stack()<CR><Cmd>call mark#next_mark(-v:count1)<CR>
+noremap <F12> <Cmd>call mark#init_stack()<CR><Cmd>call mark#next_mark(v:count1)<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -1135,7 +1135,6 @@ augroup popup_setup
 augroup END
 inoremap <expr> <C-w> iter#scroll_reset() . '<C-]><Cmd>pclose<CR>'
 inoremap <expr> <C-q> iter#scroll_reset() . '<C-]><Cmd>pclose<CR>'
-inoremap <expr> <C-e> iter#scroll_reset() . '<C-]><Cmd>pclose<CR>'
 inoremap <expr> <Up> iter#scroll_count(-1)
 inoremap <expr> <Down> iter#scroll_count(1)
 inoremap <expr> <C-k> iter#scroll_count(-1)
@@ -1669,7 +1668,7 @@ if s:plug_active('vim-succinct') || s:plug_active('vim-matchup')
   let g:delimitMate_jump_expansion = 1
   let g:delimitMate_excluded_regions = 'String'  " disabled inside by default
   let g:succinct_surround_map = '<C-s>'
-  let g:succinct_snippet_map = '<C-a>'
+  let g:succinct_snippet_map = '<C-e>'
   let g:succinct_prevdelim_map = '<F3>'  " set manually above
   let g:succinct_nextdelim_map = '<F4>'  " set manually above
   let g:matchup_delim_nomids = 1  " skip e.g. 'else' during % jumps and text objects
