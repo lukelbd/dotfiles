@@ -207,17 +207,6 @@ function! mark#next_mark(...) abort
   endif
   call stack#push_stack('mark', 'mark#goto_mark', cnt, 0)
 endfunction
-function! mark#init_stack() abort
-  let stack = get(g:, 'mark_stack', [])
-  if !empty(stack) | return stack | endif
-  let imarks = getmarklist()
-  let stack = []
-  for imark in imarks
-    let iname = imark['mark'][1]
-    if iname =~# '\u' | call add(stack, iname) | endif
-  endfor
-  let g:mark_stack = stack | return stack
-endfunction
 function! mark#goto_mark(...) abort
   if !a:0 || empty(a:1) | return | endif
   let mrk = matchstr(a:1, '\S')
@@ -271,6 +260,25 @@ function! mark#del_marks(...) abort
     call stack#pop_stack('mark', mrk)
   endfor
   call feedkeys("\<Cmd>echom 'Deleted marks: " . join(mrks, ' ') . "'\<CR>", 'n')
+endfunction
+
+" Iniitialize the marks and highlights
+function! mark#init_marks() abort
+  let highlights = get(g:, 'mark_highlights', {})
+  let stack = get(g:, 'mark_stack', [])
+  let name = get(g:, 'mark_name', get(stack, -1, 'A'))
+  let stack = []
+  for imark in getmarklist()
+    let iname = imark['mark'][1]
+    if iname =~# '\u' && index(stack, iname) == -1
+      call add(stack, iname)
+    endif
+    if iname =~# '\u' && !has_key(highlights, iname)
+      call mark#set_marks(iname)
+    endif
+  endfor
+  let g:mark_name = name
+  let g:mark_stack = stack
 endfunction
 
 " Add the mark and highlight the line

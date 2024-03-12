@@ -760,12 +760,12 @@ command! -bang -nargs=0 Marks call mark#fzf_marks(<bang>0)
 command! -nargs=* SetMarks call mark#set_marks(<f-args>)
 command! -nargs=* DelMarks call mark#del_marks(<f-args>)
 noremap <expr> g_ v:count ? '`' . utils#translate_name('`') : '<Cmd>call mark#fzf_marks()<CR>'
-noremap <Leader>- <Cmd>call mark#init_stack()<CR><Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
-noremap <Leader>_ <Cmd>call mark#init_stack()<CR><Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
-noremap _ <Cmd>call mark#init_stack()<CR><Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
-noremap z_ <Cmd>call mark#init_stack()<CR><Cmd>call mark#del_marks()<CR>
-noremap <C-n> <Cmd>call mark#init_stack()<CR><Cmd>call mark#next_mark(-v:count1)<CR>
-noremap <F12> <Cmd>call mark#init_stack()<CR><Cmd>call mark#next_mark(v:count1)<CR>
+noremap <Leader>- <Cmd>call mark#init_marks()<CR><Cmd>call mark#del_marks(get(g:, 'mark_name', 'A'))<CR>
+noremap <Leader>_ <Cmd>call mark#init_marks()<CR><Cmd>call mark#del_marks(utils#translate_name('`'))<CR>
+noremap _ <Cmd>call mark#init_marks()<CR><Cmd>call mark#set_marks(utils#translate_name('m'))<CR>
+noremap z_ <Cmd>call mark#init_marks()<CR><Cmd>call mark#del_marks()<CR>
+noremap <C-n> <Cmd>call mark#init_marks()<CR><Cmd>call mark#next_mark(-v:count1)<CR>
+noremap <F12> <Cmd>call mark#init_marks()<CR><Cmd>call mark#next_mark(v:count1)<CR>
 
 " Interactive file jumping with grep commands
 " Note: Maps use default search pattern '@/'. Commands can be called with arguments
@@ -2481,8 +2481,8 @@ highlight! link CursorLineFold LineNR
 " See: http://vim.1045645.n5.nabble.com/Clearing-Jumplist-td1152727.html
 augroup clear_jumps
   au!
-  au VimEnter * runtime after/common.vim | exe 'normal! zv'
-  " au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
+  au VimEnter * runtime after/common.vim | call mark#init_marks()
+  au VimEnter,BufWinEnter * if get(w:, 'clear_jumps', 1) | silent clearjumps | let w:clear_jumps = 0 | endif
 augroup END
 runtime autoload/repeat.vim
 nohlsearch  " turn off highlighting at startup
