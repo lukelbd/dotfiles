@@ -3,13 +3,13 @@
 "-----------------------------------------------------------------------------"
 " Source for tex labels
 function! s:label_source() abort
-  if !exists('b:tags_by_name')
-    echoerr 'No tags present in file.'
-    let tags = []
-  else
-    let tags = filter(copy(b:tags_by_name), 'v:val[2] ==# "l"')
-    let tags = map(tags, 'v:val[0] . " (" . v:val[1] . ")"')  " label (line number)
-    if empty(tags) | echoerr 'No tex labels found.' | endif
+  let tags = get(b:, 'tags_by_name', [])
+  let tags = filter(copy(tags), 'v:val[2] ==# "l"')
+  let tags = map(tags, 'v:val[0] . " (" . v:val[1] . ")"')  " label (line number)
+  if empty(tags)
+    echohl WarningMsg
+    echom 'Error: No ' . (exists('b:tags_by_name') ? 'tags in file' : 'labels found')
+    echohl None
   endif
   return tags
 endfunction
@@ -28,13 +28,13 @@ endfunction
 
 " Fuzzy select tex labels
 " Note: To get multiple items hit <Shift><Tab>
-" Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
+" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
 function! s:label_select() abort
   call fzf#run({
-    \ 'sink*': function('s:label_sink'),
     \ 'source': s:label_source(),
-    \ 'options': '--multi --height=100% --prompt="Label> "',
-    \ })
+    \ 'options': '--height=100% --prompt="Label> "',
+    \ 'sink*': function('s:label_sink'),
+  \ })
   return ''  " text inserted by sink function
 endfunction
 function! tex#label_select(...) abort
@@ -105,7 +105,7 @@ endfunction
 
 " Fuzzy select citation
 " Note: To get multiple items hit <Shift><Tab>
-" Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
+" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
 function! s:cite_select() abort
   call fzf#run({
     \ 'sink*': function('s:cite_sink'),
@@ -172,7 +172,7 @@ function! s:graphic_sink(items) abort
 endfunction
 
 " Fuzzy select graphics
-" Warning: See notes in succinct/autoload/internal.vim for why fzf#wrap not allowed.
+" Warning: See notes in succinct/autoload/utils.vim for why fzf#wrap not allowed.
 function! s:graphic_select() abort
   call fzf#run({
     \ 'sink*': function('s:graphic_sink'),

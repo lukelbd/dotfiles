@@ -144,7 +144,7 @@ function! vim#setup_cmdwin() abort
   exe 'nnoremap <buffer> <Plug>ExecuteFile1 <C-c><CR>'
 endfunction
 function! vim#setup_help() abort
-  wincmd L | vert resize 80 | nnoremap <buffer> <CR> <C-]>
+  wincmd L | vert resize 88 | nnoremap <buffer> <CR> <C-]>
   nnoremap <nowait> <buffer> <silent> [ <Cmd>pop<CR>
   nnoremap <nowait> <buffer> <silent> ] <Cmd>tag<CR>
 endfunction

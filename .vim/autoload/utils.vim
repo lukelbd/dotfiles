@@ -93,10 +93,10 @@ function! utils#input_complete(lead, line, cursor)
     let s:complete_opts[0] = 0
     try  " getchar() returns strings for escape sequences and numbers otherwise
       let char = getcharstr()
-    catch  " e.g. user presses Ctrl-C
+    catch /^Vim:Interrupt$/  " e.g. user presses Ctrl-C
       let char = "\<C-c>"
     endtry
-    if char ==# "\<Esc>"  " cancellation
+    if char ==# "\<Esc>" || char ==# "\<C-c>"  " cancellation
       let opts = []
       call feedkeys("\<CR>", 't')
     elseif char ==# "\<CR>"  " confirm default

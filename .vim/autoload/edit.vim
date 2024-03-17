@@ -1,20 +1,28 @@
 "-----------------------------------------------------------------------------"
 " Utilities for formatting text
 "-----------------------------------------------------------------------------"
-" General normal mode helper functions
-" Note: Native calculator only supports visual-mode but here add motions.
-" See: https://github.com/sk1418/HowMuch/blob/master/autoload/HowMuch.vim
+" Helper function
+" Note: This helps restore insert mode after mapping
 function! edit#insert_mode(...) abort  " restore insert mode
   let imode = a:0 ? a:1 : get(b:, 'insert_mode', '')
-  let b:insert_mode = imode
-  return imode
+  let b:insert_mode = imode | return imode
+endfunction
+
+" Call external plugins
+" Note: Native delimitMate#ExpandReturn() issues <Esc> then fails to split brackets due
+" to InsertLeave autocommand that repositions cursor. Use <C-c> to avoid InsertLeave.
+let s:delimit_mate = {'s': 'ExpandSpace', 'r': 'ExpandReturn', 'b': 'BS'}
+function! edit#delimit_mate(key, ...) abort
+  let name = get(s:delimit_mate, a:key, a:key)
+  let keys = call('delimitMate#' . name, a:000)
+  return substitute(keys, "\<Esc>", "\<C-c>", 'g')
 endfunction
 " For <expr> map accepting motion
-function! edit#how_much_expr(...) abort
+function! edit#how_much(...) abort
   return utils#motion_func('HowMuch#HowMuch', a:000)
 endfunction
 
-" Indentation helper functions
+" Indent lines by count
 " Note: Native vim indent uses count to move over number of lines, but redundant
 " with e.g. 'd2k', so instead use count to denote indentation level.
 function! edit#indent_items(dedent, count) range abort
@@ -178,7 +186,8 @@ function! edit#spell_check(...) abort
 endfunction
 
 " Swap characters or lines
-" Note: This has no effect on registers
+" Note: This keeps existing registers and folds. If calling on line with closed fold
+" will transfer entire fold contents and define new FastFold-managed manual folds.
 function! edit#swap_chars(...) abort
   let cnum = col('.')
   let text = getline('.')
@@ -199,7 +208,7 @@ function! edit#swap_lines(...) abort
   else
     let [line11, line12] = [line1, line1]
   endif
-  let fold = &l:foldmethod ==# 'manual'  " fast fold enabled
+  let fold = &l:foldmethod ==# 'manual'  " e.g. fast fold enabled
   let line2 = delta > 0 ? line12 + delta : line11 + delta
   let [fold1, fold2] = [foldlevel(line1) > 0, foldlevel(line2) > 0]
   let [close1, close2] = [foldclosed(line1) > 0, foldclosed(line2) > 0]
@@ -221,9 +230,8 @@ function! edit#swap_lines(...) abort
 endfunction
 
 " Wrap the lines to 'count' columns rather than 'text width'
-" Note: Could put all commands in feedkeys() but then would get multiple
-" commands flashing at bottom of screen. Also need feedkeys() because normal
-" doesn't work inside an expression mapping.
+" Note: Need feedkeys() because normal mode commands fail inside expression maps.
+" Note: Need 'exe keepjumps' instead of 'keepjumps exe' or else keepjumps fails (tried)
 function! edit#wrap_lines(...) range abort
   let prevwidth = &l:textwidth
   let textwidth = a:0 ? a:1 ? a:1 : prevwidth : prevwidth
@@ -249,11 +257,10 @@ function! s:remove_item(line, first, last) abort
   let pattern_optional = s:search_item(1)
   let match_head = substitute(a:line, pattern, '\1', '')
   let match_item = substitute(a:line, pattern, '\2', '')
-  keepjumps exe a:first . ',' . a:last
+  exe 'keepjumps ' . a:first . ',' . a:last
     \ . 's@' . pattern_optional
     \ . '@' . match_head . repeat(' ', len(match_item)) . '\3'
-    \ . '@ge'
-  call histdel('/', -1)
+    \ . '@ge' | call histdel('/', -1)
 endfunction
 " For <expr> map accepting motion
 function! edit#wrap_lines_expr(...) abort

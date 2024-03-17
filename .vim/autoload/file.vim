@@ -132,8 +132,10 @@ function! file#open_netrw(cmd, local) abort
 endfunction
 function! file#open_init(cmd, local) abort
   let cmd = a:cmd ==# 'Drop' ? 'Open' : a:cmd  " recursive fzf or non-resucrive internal
-  let base = a:local ? fnamemodify(resolve(@%), ':p:h') : tag#find_root(@%)
-  let init = utils#input_default(cmd, s:open_prompt(base), 'file#complete_cwd')
+  let path = resolve(expand('%:p'))
+  let folder = a:local ? fnamemodify(path, ':p:h') : tag#find_root(path)
+  let prompt = s:open_prompt(folder)
+  let init = utils#input_default(cmd, prompt, 'file#complete_cwd')
   if empty(init)
     return
   elseif cmd ==# 'Files'
@@ -144,8 +146,8 @@ function! file#open_init(cmd, local) abort
 endfunction
 
 " Check if user selection is directory, descend until user selects a file.
-" Warning: Must use expand() rather than glob() or new file names are not completed.
-" Warning: FZF executes asynchronously so cannot do loop recursion inside driver
+" Note: Must use expand() not glob() or new file names are not completed. Also
+" since fzf executes asynchronously cannot do loop recursion inside the driver
 " function. See https://github.com/junegunn/fzf/issues/1577#issuecomment-492107554
 function! file#open_continuous(cmd, ...) abort
   let paths = []
@@ -174,7 +176,13 @@ function! s:open_continuous(cmd, ...) abort
   for item in items
     let user = item ==# s:new_file
     if user  " should be recursed at least one level
-      let item = utils#input_default(s:open_prompt(base), expand('<cfile>'), 'file#complete_cwd')
+      let [prompt, default] = [s:open_prompt(base), expand('<cfile>')]
+      try
+        let item = utils#input_default(prompt, default, 'file#complete_cwd')
+      catch /^Vim:Interrupt$/
+        let item = ''  " avoid error message
+      endtry
+      if empty(item) | continue | endif
     endif
     let item = substitute(item, '\s', '\ ', 'g')
     if item ==# '..'  " :p adds a slash so need two :h:h to remove then

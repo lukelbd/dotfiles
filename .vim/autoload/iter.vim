@@ -113,32 +113,30 @@ endfunction
 " Insert complete menu items and scroll complete or preview windows (whichever open).
 " Note: Used 'verb function! lsp#scroll' to figure out how to detect preview windows
 " (also verified lsp#scroll l:window.find does not return popup completion windows)
-function! s:scroll_default(scroll, height) abort
-  let cnt = type(a:scroll) == 5 ? float2nr(a:scroll * a:height) : a:scroll
-  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
-  let cmd = 'call scrollwrapped#scroll(' . abs(cnt) . ', ' . rev . ')'
-  return mode() =~# '^[iIR]' ? '' : "\<Cmd>" . cmd . "\<CR>"  " only normal mode
-endfunction
-function! s:scroll_popup(scroll, height) abort
-  let cnt = type(a:scroll) == 5 ? float2nr(a:scroll * a:height) : a:scroll
+function! s:scroll_popup(scroll, ...) abort
+  let size = a:0 ? a:1 : get(pum_getpos(), 'size', 1)
+  let state = get(b:, 'scroll_state', 0)
+  echom 'Popup!!! ' . size
+  let cnt = type(a:scroll) ? float2nr(a:scroll * size) : a:scroll
   let cnt = a:scroll > 0 ? max([cnt, 1]) : min([cnt, -1])
-  if type(a:scroll) == 5 && b:scroll_state != 0   " disable circular scroll
-    let cnt = max([0 - b:scroll_state + 1, cnt])
-    let cnt = min([a:height - b:scroll_state, cnt])
+  if type(a:scroll) && state != 0   " disable circular scroll
+    let cnt = max([0 - state + 1, cnt])
+    let cnt = min([size - state, cnt])
   endif
-  let b:scroll_state += cnt + (a:height + 1) * (1 + abs(cnt) / (a:height + 1))
-  let b:scroll_state %= a:height + 1  " only works with positive integers
+  let cmax = size + 1  " i.e. nothing selected
+  let state += cnt + cmax * (1 + abs(cnt) / cmax)
+  let state %= cmax  " only works with positive integers
   let keys = repeat(cnt > 0 ? "\<C-n>" : "\<C-p>", abs(cnt))
-  let keys .= "\<Cmd>doautocmd User lsp_float_opened\<CR>"
-  return keys
+  echom 'Keys: ' . keys . ' ' . state
+  let b:scroll_state = state | return keys
 endfunction
 function! s:scroll_preview(scroll, ...) abort
-  for winid in a:000
+  for winid in a:000  " iterate previews
     let info = popup_getpos(winid)
     if !info.visible | continue | endif
     let width = info.core_width  " excluding borders (as with minwidth)
     let height = info.core_height  " excluding borders (as with minheight)
-    let cnt = type(a:scroll) == 5 ? float2nr(a:scroll * height) : a:scroll
+    let cnt = type(a:scroll) ? float2nr(a:scroll * height) : a:scroll
     let cnt = a:scroll > 0 ? max([cnt, 1]) : min([cnt, -1])
     let lmax = max([line('$', winid) - height + 2, 1])  " up to one after end
     let lnum = info.firstline + cnt
@@ -146,27 +144,33 @@ function! s:scroll_preview(scroll, ...) abort
     let opts = {'firstline': lnum, 'minwidth': width, 'minheight': height}
     call popup_setoptions(winid, opts)
   endfor
-  return "\<Ignore>"
+  return "\<Cmd>doautocmd User lsp_float_opened\<CR>"
 endfunction
 
 " Scroll complete menu or preview popup windows
 " Note: This prevents vim's baked-in circular complete menu scrolling.
-" Reset the scroll count (for <expr> maps)
-function! iter#scroll_reset() abort
-  let b:scroll_state = 0
-  return ''
+" Scroll normal mode lines
+function! iter#scroll_normal(scroll, ...) abort
+  let height = a:0 ? a:1 : winheight(0)
+  let cnt = type(a:scroll) ? float2nr(a:scroll * height) : a:scroll
+  let rev = a:scroll > 0 ? 0 : 1  " forward or reverse scroll
+  let cmd = 'call scrollwrapped#scroll(' . abs(cnt) . ', ' . rev . ')'
+  return mode() =~? '^[ir]' ? '' : "\<Cmd>" . cmd . "\<CR>"  " only normal mode
 endfunction
 " Scroll and update the count
-function! iter#scroll_count(scroll, ...) abort
+function! iter#scroll_infer(scroll, ...) abort
   let popup_pos = pum_getpos()
   let preview_ids = popup_list()
   if a:0 && a:1 || !empty(popup_pos)  " automatically returns empty if not present
-    return call('s:scroll_popup', [a:scroll, get(popup_pos, 'size', 1)])
+    return call('s:scroll_popup', [a:scroll])
   elseif !empty(preview_ids)
+    echom 'Preview!!!'
     return call('s:scroll_preview', [a:scroll] + preview_ids)
   elseif a:0 && !a:1
-    return call('s:scroll_default', [a:scroll, winheight(0)])
+    echom 'Normal!!!'
+    return call('iter#scroll_normal', [a:scroll])
   else  " default fallback is arrow press
+    echom 'Arrow!!!'
     return a:scroll > 0 ? "\<Down>" : a:scroll < 0 ? "\<Up>" : ''
   endif
 endfunction

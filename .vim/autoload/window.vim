@@ -247,8 +247,11 @@ function! window#setup_panel(level) abort
   else
     setlocal colorcolumn= nolist nospell
   endif
-  for char in 'du'  " always remap scrolling indicators
-    exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
+  " for char in 'du'  " always remap scrolling indicators
+  "   exe 'map <buffer> <nowait> ' . char . ' <C-' . char . '>'
+  " endfor
+  for [char, frac] in [['d', 0.5], ['u', -0.5]]
+    exe 'noremap <expr> <nowait> <buffer> ' . char . ' iter#scroll_normal(' . frac . ')'
   endfor
   for char in 'uUrRxXpPdDcCaAiIoO'  " in lieu of set nomodifiable
     if !get(maparg(char, 'n', 0, 1), 'buffer', 0)  " preserve buffer-local maps

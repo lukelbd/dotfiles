@@ -216,8 +216,6 @@ function! fold#update_folds(...) abort
     setlocal foldexpr=Foldexpr_markdown(v:lnum)
     setlocal foldtext=fold#fold_text()
   endif
-  " echom 'Filetype: ' . &l:filetype . ' ' . v:vim_did_enter
-  " echom 'Filetype: ' . v:vim_did_enter
   silent! FastFoldUpdate
   let b:fastfold_queued = 0
 endfunction

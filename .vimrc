@@ -38,7 +38,7 @@ let g:refresh = get(g:, 'refresh', localtime())
 " expression folding e.g. simpylfold to disappear and not retrigger, while using
 " setglobal didn't work for filetypes with folding not otherwise auto-triggered (vim)
 set autoindent  " indents new lines
-set backspace=indent,eol,start  " backspace by indent - handy
+set backspace=indent,eol,start  " backspace by indent
 set breakindent  " visually indent wrapped lines
 set buflisted  " list all buffers by default
 set cmdheight=1  " increse to avoid pressing enter to continue 
@@ -115,7 +115,6 @@ set switchbuf=useopen,usetab,newtab,uselast  " when switching buffers use open t
 set tabpagemax=300  " allow opening shit load of tabs at once
 set tabstop=2  " default 2 spaces
 set tagcase=ignore  " ignore case when matching paths
-set tagfunc=  " :tag, :pop, and <C-]> jumping function (requires physical tags file)
 set tagrelative  " paths in tags file are relative to location
 set tags=.vimtags,./.vimtags  " home, working dir, or file dir
 set tagstack  " auto-add to tagstack with :tag commands
@@ -223,7 +222,7 @@ augroup END
 " if you actually want to find the previous insertion point.
 augroup insert_repair
   au!
-  au InsertLeave * keepjumps normal! `^
+  au InsertLeave * exe 'keepjumps normal! `^'
   au InsertEnter * let b:insert_mode = get(b:, 'insert_mode', '')
   au CmdlineLeave * let b:show_message = 1
 augroup END
@@ -524,9 +523,9 @@ let g:tabline_skip_filetypes = s:panel_filetypes
 augroup panel_setup
   au!
   au TerminalWinOpen * call window#setup_panel(2)
+  au BufRead,BufEnter fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel(1) | endif
   au CmdwinEnter * call vim#setup_cmdwin() | call window#setup_panel(0)
   au BufEnter *__Tag_List__* call iter#setup_taglist() | call window#setup_panel(0)
-  au BufRead fugitive://* if &filetype !=# 'fugitive' | call window#setup_panel(1) | endif
   au FileType help call vim#setup_help()
   au FileType qf call iter#setup_quickfix()
   au FileType taglist call iter#setup_taglist()
@@ -554,8 +553,8 @@ nnoremap <Leader>\| <Cmd>Maps<CR>
 " Vim help and history windows
 " Note: For some reason even though :help :mes claims count N shows the N most recent
 " message, for some reason using 1 shows empty line and 2 shows previous plus newline.
-noremap <Leader><Leader> <Cmd>call switch#message()<CR>
 noremap <Leader><CR> @:
+noremap <Leader><Space> <Cmd>call switch#message()<CR>
 nnoremap <Leader>; <Cmd>History:<CR>
 nnoremap <Leader>: q:
 nnoremap <Leader>/ <Cmd>History/<CR>
@@ -684,11 +683,13 @@ call s:repeat_map('o', 'gm', 'PrevEnd',   "<Cmd>call <sid>move_alpha('ge, v:oper
 " Note: This is consistent with 'zl', 'zL', 'zh', 'zH' horizontal scrolling
 " and lets us use 'zt' for title case 'zb' for boolean toggle.
 silent! unmap zv
+noremap z<Space> zz
 noremap z<CR> zzze
-noremap z- zt
-noremap z= zb
-noremap z9 ze
 noremap z0 zs
+noremap z9 ze
+noremap z\ zz
+noremap z( zt
+noremap z) zb
 
 " Reset manually open-closed folds accounting for custom overrides
 " Note: Here 'zV' opens all folds from the most recent search
@@ -729,9 +730,8 @@ noremap zN zN<Cmd>call fold#update_folds()<CR>
 silent! exe 'unmap zn' | silent! exe 'unmap zv'
 
 " Change fold level
-" Note: Here fold#update_level() calls fold#update_folds() if level was changed
-" and echos the level change -- 'zp' sets to the input count while other commands
-" increase or decrease by count ('zp' without count simply prints the level).
+" Note: Here fold#update_level() without arguments calls fold#update_folds()
+" if the level was changed and prints the level change.
 noremap z[ <Cmd>call fold#update_level('m')<CR>
 noremap z] <Cmd>call fold#update_level('r')<CR>
 noremap z{ <Cmd>call fold#update_level('M')<CR>
@@ -799,22 +799,41 @@ noremap gW <Cmd>Notes<CR>
 noremap gE <Cmd>Todos<CR>
 noremap gM <Cmd>Warnings<CR>
 
-" Ensure 'noignorecase' in insert mode, so that popup menu respects input case.
-" Note: Previously had issue before where InsertLeave ignorecase autocmd was getting
-" reset because MoveToNext was called with au!, which resets InsertLeave commands.
-augroup ignorecase_setup
-  au!
-  au InsertEnter * set noignorecase  " default ignore case
-  au InsertLeave * set ignorecase
-augroup END
+" Navigate docstrings and methods
+" Capital uses only non-variable-assignment zero-level or first-level docstrings
+noremap [d <Cmd>call python#next_docstring(-v:count1, 0)<CR>zv
+noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>zv
+noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>zv
+noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>zv
+
+" Navigate contiguous comment blocks and headers
+" Capital uses only top-level zero-indent comment blocks
+noremap [c <Cmd>call comment#next_comment(-v:count1, 0)<CR>zv
+noremap ]c <Cmd>call comment#next_comment(v:count1, 0)<CR>zv
+noremap [C <Cmd>call comment#next_comment(-v:count1, 1)<CR>zv
+noremap ]C <Cmd>call comment#next_comment(v:count1, 1)<CR>zv
+noremap [b <Cmd>call comment#next_header(-v:count1, 0)<CR>zv
+noremap ]b <Cmd>call comment#next_header(v:count1, 0)<CR>zv
+noremap [B <Cmd>call comment#next_header(-v:count1, 1)<CR>zv
+noremap ]B <Cmd>call comment#next_header(v:count1, 1)<CR>zv
+
+" Navigate notes and todos
+" Capital uses only top-level zero-indent headers
+noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>zv
+noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>zv
+noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>zv
+noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>zv
+noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>zv
+noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>zv
+noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>zv
+noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>zv
 
 " Run replacement on this line alone
 " Note: This works recursively with the below maps. Also map confusing \w
 " 'whitespace' mnemonic to most common/harmless whitespace replacement \t.
 function! s:regex_line() abort
-  let char = getcharstr() | if !empty(maparg('\' . char))
-    call feedkeys('\' . char . 'al', 'm')
-  endif
+  let map = '\' . getcharstr()
+  if !empty(maparg(map)) | call feedkeys(map . 'al', 'm') | endif
 endfunction
 exe 'map \w \t' | nnoremap \\ <Cmd>call <sid>regex_line()<CR>
 
@@ -888,6 +907,20 @@ augroup END
 command! -nargs=? TabToggle call switch#expandtab(<args>)
 nnoremap <Leader><Tab> <Cmd>call switch#expandtab()<CR>
 
+" Increase and decrease indent to level v:count
+" Note: To avoid overwriting fugitive inline-diff mappings implement these as
+" buffer-local .vim/autoload/common.vim maps. Also map brackets.
+nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
+nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
+
+" Auto wrap the lines or items within motion
+" Note: Previously tried to make this operator map but not necessary, should
+" already work with 'g@<motion>' invocation of wrapping operator function.
+command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
+command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
+noremap <expr> gq edit#wrap_lines_expr(v:count)
+noremap <expr> gQ edit#wrap_items_expr(v:count)
+
 " Undo behavior and insert-mode mappings
 " Note: Tried implementing insert-mode 'redo' previously and failed because
 " history lost after vim re-enters insert mode from the <C-o> command.
@@ -895,14 +928,13 @@ nmap u <Cmd>call repeat#wrap('u', v:count)<CR>
 nmap U <Cmd>call repeat#wrap("\<C-r>", v:count)<CR>
 inoremap <F12> <Cmd>let b:insert_mode = 'a'<CR><C-g>u
 inoremap <expr> <F11> '<Cmd>undo<CR><Esc>' . edit#insert_mode()
+
+" Insert empty lines
+" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
+call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
+call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
 nnoremap <expr> o edit#insert_mode('o')
 nnoremap <expr> O edit#insert_mode('O')
-
-" Increase and decrease indent to level v:count
-" Note: To avoid overwriting fugitive inline-diff mappings implement these as
-" buffer-local .vim/autoload/common.vim maps. Also map brackets.
-nnoremap <expr> > '<Esc>' . edit#indent_items_expr(0, v:count1)
-nnoremap <expr> < '<Esc>' . edit#indent_items_expr(1, v:count1)
 
 " Register selection utilities
 " Note: For some reason cannot set g:peekaboo_ins_prefix = '' and simply have <C-r>
@@ -981,6 +1013,15 @@ noremap x "_x
 noremap X "_X
 nnoremap cx "_s
 
+" Change case for word or motion
+for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
+call s:repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
+call s:repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
+nnoremap guu guiw
+nnoremap gUU gUiw
+vnoremap zu g~
+vnoremap zU gu<Esc>`<~h
+
 " Toggle spell checking
 " Turn on for filetypes containing text destined for users
 augroup spell_setup
@@ -1001,33 +1042,109 @@ noremap gS <Cmd>call edit#spell_check(v:count)<CR>
 noremap zs zg
 noremap zS zug
 
-" Change case for word or motion
-for s:key in ['u', 'U'] | silent! exe 'unmap g' . s:key | silent! exe 'unmap z' . repeat(s:key, 2) | endfor
-call s:repeat_map('n', 'zu', 'CaseToggle', 'my~h`y<Cmd>delmark y<CR>')
-call s:repeat_map('n', 'zU', 'CaseTitle', 'myguiw~h`y<Cmd>delmark y<CR>')
-nnoremap guu guiw
-nnoremap gUU gUiw
-vnoremap zu g~
-vnoremap zU gu<Esc>`<~h
+" Copy conceal and caps lock toggle ('paste mode' accessible with 'g' insert mappings)
+" Turn on for filetypes containing raw possibly heavily wrapped data
+augroup copy_setup
+  au!
+  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
+  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
+  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
+augroup END
+command! -nargs=? CopyToggle call switch#copy(<args>)
+command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
+nnoremap <Leader>c <Cmd>call switch#copy()<CR>
+nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
+cnoremap <expr> <C-v> edit#lang_map()
+inoremap <expr> <C-v> edit#lang_map()
 
-" Auto wrap lines or items within motion
-" Note: Previously tried to make this operator map but not necessary, should
-" already work with 'g@<motion>' invocation of wrapping operator function.
-command! -range -nargs=? WrapLines <line1>,<line2>call edit#wrap_lines(<args>)
-command! -range -nargs=? WrapItems <line1>,<line2>call edit#wrap_items(<args>)
-noremap <expr> gq edit#wrap_lines_expr(v:count)
-noremap <expr> gQ edit#wrap_items_expr(v:count)
+" Enter insert mode with paste toggle
+" Note: Switched easy-align mapping from ga for consistency here
+nnoremap <expr> ga edit#paste_mode() . edit#insert_mode('a')
+nnoremap <expr> gA edit#paste_mode() . edit#insert_mode('A')
+nnoremap <expr> gc edit#paste_mode() . edit#insert_mode('c')
+nnoremap <expr> gC edit#paste_mode() . edit#insert_mode('C')
+nnoremap <expr> gi edit#paste_mode() . edit#insert_mode('i')
+nnoremap <expr> gI edit#paste_mode() . edit#insert_mode('I')
+nnoremap <expr> go edit#paste_mode() . edit#insert_mode('o')
+nnoremap <expr> gO edit#paste_mode() . edit#insert_mode('O')
+
+" General and popup or preview window scrolling
+" Note: This requires setting let g:scrollwrapped_nomap = 1
+function! s:scroll_state(...) abort
+  let b:scroll_state = a:0 ? a:1 : 0 | return ''
+endfunction
+noremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
+noremap <expr> <C-d> iter#scroll_infer(0.33, 0)
+noremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
+noremap <expr> <C-f> iter#scroll_infer(0.66, 0)
+inoremap <expr> <C-u> iter#scroll_infer(-0.33, 0)
+inoremap <expr> <C-d> iter#scroll_infer(0.33, 0)
+inoremap <expr> <C-b> iter#scroll_infer(-0.66, 0)
+inoremap <expr> <C-f> iter#scroll_infer(0.66, 0)
+
+" Insert mode selection and completion
+" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
+augroup popup_setup
+  au!
+  au InsertEnter * set noignorecase | call s:scroll_state(0)
+  au InsertLeave * set ignorecase | call s:scroll_state(0)
+augroup END
+inoremap <expr> <Delete> <sid>scroll_state() . edit#forward_delete(1)
+inoremap <expr> <S-Tab> <sid>scroll_state() . edit#forward_delete(0)
+inoremap <expr> <F1> <sid>scroll_state() . edit#forward_delete(0)
+inoremap <expr> <Tab> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
+  \ : pumvisible() ? '<C-n><C-y>' . <sid>scroll_state() : '<C-]><Tab>'
+inoremap <expr> <F2> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
+  \ : pumvisible() ? '<C-n><C-y>' . <sid>scroll_state() : ddc#map#manual_complete()
+inoremap <expr> <Up> iter#scroll_infer(-1)
+inoremap <expr> <Down> iter#scroll_infer(1)
+inoremap <expr> <C-k> iter#scroll_infer(-1)
+inoremap <expr> <C-j> iter#scroll_infer(1)
+
+" Command mode selection and completion
+" Note: Could also use wildmenumode() but would not work after first tab
+function! s:complete_state(...) abort
+  let b:complete_state = a:0 ? a:1 : 1 | return ''
+endfunction
+augroup complete_setup
+  au!
+  au CmdlineEnter,CmdlineLeave * call s:complete_state(0)
+augroup END
+cnoremap <F1> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
+cnoremap <F2> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
+cnoremap <S-Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
+cnoremap <Tab> <Cmd>call <sid>complete_state(1)<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
+cnoremap <expr> <Up> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-p>' : '<C-p>'
+cnoremap <expr> <Down> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-n>' : '<C-n>'
+
+" Insert mode general behavior
+" Note: Enter is 'accept' only if we scrolled down while tab always means 'accept'
+inoremap <expr> <C-w> <sid>scroll_state() . '<C-]><Cmd>pclose<CR>'
+inoremap <expr> <C-q> <sid>scroll_state() . '<C-]><Cmd>pclose<CR>'
+inoremap <expr> <C-g><CR> <sid>scroll_state()
+  \ . (pumvisible() ? '<C-e>' : '') . '<CR>'
+inoremap <expr> <C-g><Space> <sid>scroll_state()
+  \ . (pumvisible() ? '<C-e>' : '') . '<Space>'
+inoremap <expr> <C-g><BackSpace> <sid>scroll_state()
+  \ . (pumvisible() ? '<C-e>' : '') . '<BackSpace>'
+inoremap <expr> <CR> pumvisible() && get(b:, 'scroll_state', 0) ? '<C-y>' . <sid>scroll_state()
+  \ : (pumvisible() ? '<C-e>' : '') . '<C-]><C-g>u<C-r>=edit#delimit_mate("r")<CR>'
+inoremap <expr> <Space> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '')
+  \ . '<C-]><C-R>=edit#delimit_mate("s")<CR>'
+inoremap <expr> <Backspace> <sid>scroll_state() . (pumvisible() ? '<C-e>' : '')
+  \ . '<C-r>=edit#delimit_mate("b")<CR>'
 
 " ReST section comment headers
 " Warning: <Plug> name should not be subset of other name or results in delay!
 call s:repeat_map('n', 'g-', 'DashSingle', "<Cmd>call comment#append_line('-', 0)<CR>")
-call s:repeat_map('n', 'g\', 'DashDouble', "<Cmd>call comment#append_line('-', 1)<CR>")
+call s:repeat_map('n', 'z-', 'DashDouble', "<Cmd>call comment#append_line('-', 1)<CR>")
 call s:repeat_map('n', 'g=', 'EqualSingle', "<Cmd>call comment#append_line('=', 0)<CR>")
-call s:repeat_map('n', 'g+', 'EqualDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
+call s:repeat_map('n', 'z=', 'EqualDouble', "<Cmd>call comment#append_line('=', 1)<CR>")
 call s:repeat_map('v', 'g-', 'VDashSingle', "<Cmd>call comment#append_line('-', 0, '''<', '''>')<CR>")
-call s:repeat_map('v', 'g\', 'VDashDouble', "<Cmd>call comment#append_line('-', 1, '''<', '''>')<CR>")
+call s:repeat_map('v', 'z-', 'VDashDouble', "<Cmd>call comment#append_line('-', 1, '''<', '''>')<CR>")
 call s:repeat_map('v', 'g=', 'VEqualSingle', "<Cmd>call comment#append_line('=', 0, '''<', '''>')<CR>")
-call s:repeat_map('v', 'g+', 'VEqualDouble', "<Cmd>call comment#append_line('=', 1, '''<', '''>')<CR>")
+call s:repeat_map('v', 'z=', 'VEqualDouble', "<Cmd>call comment#append_line('=', 1, '''<', '''>')<CR>")
 
 " Insert various comment blocks
 " Note: No need to repeat any of other commands
@@ -1041,125 +1158,6 @@ call s:repeat_map('n', 'z.:', '', "<Cmd>call comment#header_line('-', 77, 1)<CR>
 call s:repeat_map('n', "z.'", '', '<Cmd>call comment#header_inchar()<CR>')
 call s:repeat_map('n', 'z."', '', '<Cmd>call comment#header_inline(5)<CR>')
 
-" Navigate docstrings and methods
-" Capital uses only non-variable-assignment zero-level or first-level docstrings
-noremap [d <Cmd>call python#next_docstring(-v:count1, 0)<CR>zv
-noremap ]d <Cmd>call python#next_docstring(v:count1, 0)<CR>zv
-noremap [D <Cmd>call python#next_docstring(-v:count1, 1)<CR>zv
-noremap ]D <Cmd>call python#next_docstring(v:count1, 1)<CR>zv
-
-" Navigate contiguous comment blocks and headers
-" Capital uses only top-level zero-indent comment blocks
-noremap [c <Cmd>call comment#next_comment(-v:count1, 0)<CR>zv
-noremap ]c <Cmd>call comment#next_comment(v:count1, 0)<CR>zv
-noremap [C <Cmd>call comment#next_comment(-v:count1, 1)<CR>zv
-noremap ]C <Cmd>call comment#next_comment(v:count1, 1)<CR>zv
-noremap [b <Cmd>call comment#next_header(-v:count1, 0)<CR>zv
-noremap ]b <Cmd>call comment#next_header(v:count1, 0)<CR>zv
-noremap [B <Cmd>call comment#next_header(-v:count1, 1)<CR>zv
-noremap ]B <Cmd>call comment#next_header(v:count1, 1)<CR>zv
-
-" Navigate notes and todos
-" Capital uses only top-level zero-indent headers
-noremap [q <Cmd>call comment#next_label(-v:count1, 0, 'todo', 'fixme')<CR>zv
-noremap ]q <Cmd>call comment#next_label(v:count1, 0, 'todo', 'fixme')<CR>zv
-noremap [Q <Cmd>call comment#next_label(-v:count1, 1, 'todo', 'fixme')<CR>zv
-noremap ]Q <Cmd>call comment#next_label(v:count1, 1, 'todo', 'fixme')<CR>zv
-noremap [a <Cmd>call comment#next_label(-v:count1, 0, 'note', 'warning')<CR>zv
-noremap ]a <Cmd>call comment#next_label(v:count1, 0, 'note', 'warning')<CR>zv
-noremap [A <Cmd>call comment#next_label(-v:count1, 1, 'note', 'warning')<CR>zv
-noremap ]A <Cmd>call comment#next_label(v:count1, 1, 'note', 'warning')<CR>zv
-
-" Insert empty lines
-" Note: See 'vim-unimpaired' for original. This is similar to vim-succinct 'e' object
-call s:repeat_map('n', '[e', 'BlankUp', '<Cmd>put!=repeat(nr2char(10), v:count1) \| '']+1<CR>')
-call s:repeat_map('n', ']e', 'BlankDown', '<Cmd>put=repeat(nr2char(10), v:count1) \| ''[-1<CR>')
-
-" Caps lock toggle and insert mode map that toggles it on and off
-" Note: When in paste mode this will trigger literal insert of next escape character
-inoremap <expr> <C-v> edit#lang_map()
-cnoremap <expr> <C-v> edit#lang_map()
-
-" Insert mode with paste toggling
-" Note: Switched easy-align mapping from ga for consistency here
-nnoremap <expr> ga edit#paste_mode() . 'a'
-nnoremap <expr> gA edit#paste_mode() . 'A'
-nnoremap <expr> gc edit#paste_mode() . 'c'
-nnoremap <expr> gC edit#paste_mode() . 'C'
-nnoremap <expr> gi edit#paste_mode() . 'i'
-nnoremap <expr> gI edit#paste_mode() . 'I'
-nnoremap <expr> go edit#paste_mode() . 'o'
-nnoremap <expr> gO edit#paste_mode() . 'O'
-
-" Copy mode and conceal mode ('paste mode' accessible with 'g' insert mappings)
-" Turn on for filetypes containing raw possibly heavily wrapped data
-augroup copy_setup
-  au!
-  let s:filetypes = join(s:data_filetypes + s:copy_filetypes, ',')
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(1, 1)'
-  let s:filetypes = 'tmux'  " file sub types that otherwise inherit copy toggling
-  exe 'au FileType ' . s:filetypes . ' call switch#copy(0, 1)'
-augroup END
-command! -nargs=? CopyToggle call switch#copy(<args>)
-command! -nargs=? ConcealToggle call switch#conceal(<args>)  " mainly just for tex
-nnoremap <Leader>c <Cmd>call switch#copy()<CR>
-nnoremap <Leader>C <Cmd>call switch#conceal()<CR>
-
-" Normal mode wrapped scrolling and preview window scrolling
-" Note: This requires setting let g:scrollwrapped_nomap = 1
-noremap <expr> <F3> iter#scroll_count(-0.25, 0)
-noremap <expr> <F4> iter#scroll_count(0.25, 0)
-noremap <expr> <C-u> iter#scroll_count(-0.5, 0)
-noremap <expr> <C-d> iter#scroll_count(0.5, 0)
-noremap <expr> <C-b> iter#scroll_count(-1.0, 0)
-noremap <expr> <C-f> iter#scroll_count(1.0, 0)
-
-" Command mode scrolling and completion
-" Note: Could also use wildmenumode() but would not work after first tab
-augroup complete_setup
-  au!
-  au CmdlineEnter,CmdlineLeave * let b:complete_state = 0
-augroup END
-cnoremap <F1> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
-cnoremap <F2> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
-cnoremap <S-Tab> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<S-Tab>", 'tn')<CR>
-cnoremap <Tab> <Cmd>let b:complete_state = 1<CR><Cmd>call feedkeys("\<Tab>", 'tn')<CR>
-cnoremap <expr> <Up> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-p>' : '<C-p>'
-cnoremap <expr> <Down> get(b:, 'complete_state', 0) ? '<C-c><Cmd>redraw<CR>:' . getcmdline() . '<C-n>' : '<C-n>'
-
-" Insert mode popup completion window and preview window scrolling
-" Todo: Consider using Shuougo pum.vim but hard to implement <CR>/<Tab> features.
-augroup popup_setup
-  au!
-  au BufEnter,InsertLeave * let b:scroll_state = 0
-augroup END
-inoremap <expr> <C-w> iter#scroll_reset() . '<C-]><Cmd>pclose<CR>'
-inoremap <expr> <C-q> iter#scroll_reset() . '<C-]><Cmd>pclose<CR>'
-inoremap <expr> <Up> iter#scroll_count(-1)
-inoremap <expr> <Down> iter#scroll_count(1)
-inoremap <expr> <C-k> iter#scroll_count(-1)
-inoremap <expr> <C-j> iter#scroll_count(1)
-inoremap <expr> <C-u> iter#scroll_count(-0.5, 0)
-inoremap <expr> <C-d> iter#scroll_count(0.5, 0)
-inoremap <expr> <C-b> iter#scroll_count(-1.0, 0)
-inoremap <expr> <C-f> iter#scroll_count(1.0, 0)
-
-" Insert mode mappings and popup behavior
-" Note: Enter is 'accept' only if we scrolled down, while tab always means 'accept'
-" and default is chosen if necessary. See :h ins-special-special.
-inoremap <expr> <Delete> iter#scroll_reset() . edit#forward_delete(1)
-inoremap <expr> <F1> iter#scroll_reset() . edit#forward_delete(0)
-inoremap <expr> <S-Tab> iter#scroll_reset() . edit#forward_delete(0)
-inoremap <expr> <F2> pumvisible() && b:scroll_state ? "\<C-y>" . iter#scroll_reset()
-  \ : pumvisible() ? "\<C-n>\<C-y>" . iter#scroll_reset() : ddc#map#manual_complete()
-inoremap <expr> <Tab> pumvisible() && b:scroll_state ? "\<C-y>" . iter#scroll_reset()
-  \ : pumvisible() ? "\<C-n>\<C-y>" . iter#scroll_reset() : "\<C-]>\<Tab>"
-inoremap <expr> <CR> pumvisible() && b:scroll_state ? "\<C-y>" . iter#scroll_reset()
-  \ : (pumvisible() ? "\<C-e>" : '') . "\<C-]>\<C-g>u\<C-r>=delimitMate#ExpandReturn()\<CR>"
-inoremap <expr> <Space> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<C-]>\<C-R>=delimitMate#ExpandSpace()\<CR>""
-inoremap <expr> <Backspace> iter#scroll_reset() . (pumvisible() ? "\<C-e>" : '')
-  \ . "\<C-r>=delimitMate#BS()\<CR>"
 
 "-----------------------------------------------------------------------------"
 " External plugins
@@ -1345,7 +1343,7 @@ let g:Tlist_WinWidth = 40
 call plug#('~/.fzf')  " fzf installation location, will add helptags and runtimepath
 call plug#('junegunn/fzf.vim')  " pin to version supporting :Drop
 call plug#('roosta/fzf-folds.vim')  " jump to folds
-let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-i': 'silent!', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
+let g:fzf_action = {'ctrl-m': 'Drop', 'ctrl-t': 'Drop', 'ctrl-x': 'split', 'ctrl-v': 'vsplit' }  " have file search and grep open to existing window if possible
 let g:fzf_layout = {'down': '~33%'}  " for some reason ignored (version 0.29.0)
 let g:fzf_buffers_jump = 1  " have fzf jump to existing window if possible
 let g:fzf_tags_command = 'ctags -R -f .vimtags ' . tag#parse_ignores(1)  " added just for safety
@@ -1613,7 +1611,7 @@ for s:plugin in s:fork_plugins
   if isdirectory(s:path) | call s:plug_local(s:path) | else | call plug#(s:name) | endif
 endfor
 let g:toggle_map = 'zb'
-let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_count maps
+let g:scrollwrapped_nomap = 1  " instead have advanced iter#scroll_infer maps
 let g:scrollwrapped_wrap_filetypes = s:copy_filetypes + ['tex', 'text']
 noremap zb <Cmd>Toggle<CR>
 noremap <Leader>w <Cmd>WrapToggle<CR>
@@ -1675,8 +1673,9 @@ if s:plug_active('vim-succinct') || s:plug_active('vim-matchup')
   let g:matchup_delim_noskips = 1  " skip e.g. 'if' 'endif' in comments
   let g:matchup_matchparen_enabled = 1  " enable matchupt matching on startup
   let g:matchup_motion_keepjumps = 1  " preserve jumps when navigating
-  let g:matchup_surround_enabled = 1  " enable 'ya%' 'va%' etc. mappings
+  let g:matchup_surround_enabled = 1  " enable 'ds%' 'cs%' mappings
   let g:matchup_transmute_enabled = 0  " issues with tex, use vim-succinct instead
+  let g:matchup_text_obj_linewise_operators = ['y', 'd', 'c', 'v', 'V', "\<C-v>"]
 endif
 
 " Text object settings
@@ -1744,10 +1743,13 @@ endif
 " instead creating tags whenever buffer is loaded and tracking tags continuously. Also
 " note / and ? update jumplist but cannot override without keeping interactivity.
 if s:plug_active('vim-tags')
-  command! -nargs=? TagToggle call switch#tags(<args>)
+  command! -nargs=? TagToggle
+    \ call switch#tags(<args>)
   command! -bang -nargs=* ShowTable
     \ echo call('tags#table_kinds', <bang>0 ? ['all'] : [<f-args>])
     \ | echo call('tags#table_tags', <bang>0 ? ['all'] : [<f-args>])
+  noremap g[ <Cmd>pop<CR>
+  noremap g] <Cmd>tag<CR>
   nnoremap gy <Cmd>BTags<CR>
   nnoremap gY <Cmd>Tags<CR>
   nnoremap <Leader>t <Cmd>ShowTable<CR>
@@ -1756,9 +1758,9 @@ if s:plug_active('vim-tags')
   nnoremap <Leader>Y <Cmd>call switch#tags()<CR>
   let s:major = {'fortran': 'fsmp', 'python': 'fmc', 'vim': 'af', 'tex': 'csub'}
   let s:minor = {'fortran': 'ekltvEL', 'python': 'xviI', 'vim': 'vnC', 'tex': 'gioetBCN'}
+  let g:tags_cursor_map = '<CR>'  " default is <Leader><CR>
   let g:tags_bselect_map = 'gt'  " default is <Leader><Leader>
   let g:tags_select_map = 'gT'  " default is <Leader><Tab>
-  let g:tags_jump_map = '<CR>'  " default is <Leader><CR>
   let g:tags_keep_jumps = 1  " default is 0
   let g:tags_major_kinds = s:major
   let g:tags_minor_kinds = s:minor
@@ -1820,9 +1822,9 @@ if &g:foldenable || s:plug_active('FastFold')
     au!
     au TextChanged,TextChangedI * let b:fastfold_queued = 1
   augroup END
-  let g:fastfold_savehook = 0  " enough for :write but use fold#update() for e.g. :edit
-  let g:fastfold_fold_command_suffixes =  []  " use custom maps instead
-  let g:fastfold_fold_movement_commands = []  " use custom maps instead
+  let g:fastfold_savehook = 0  " use custom instead
+  let g:fastfold_fold_command_suffixes =  []  " use custom instead
+  let g:fastfold_fold_movement_commands = []  " use custom instead
   " Native folding settings
   let g:baan_fold = 1
   let g:clojure_fold = 1
@@ -2298,7 +2300,7 @@ endif
 if s:plug_active('vim-test')
   let test#strategy = 'iterm'
   let g:test#python#pytest#options = '--mpl --verbose'
-  noremap z\ <Cmd>call utils#catch_errors('TestVisit')<CR>
+  noremap g\ <Cmd>call utils#catch_errors('TestVisit')<CR>
   noremap <Leader>, <Cmd>call utils#catch_errors('TestLast')<CR>
   noremap <Leader>. <Cmd>call utils#catch_errors('TestNearest')<CR>
   noremap <Leader>< <Cmd>call utils#catch_errors('TestLast --mpl-generate')<CR>
@@ -2315,10 +2317,10 @@ endif
 " says whether to replace or append, withEq says whether to include equals sign, sum
 " says whether to sum the numbers, and engine is one of 'py', 'bc', 'vim', 'auto'.
 if s:plug_active('HowMuch')
-  nnoremap g[[ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
-  nnoremap g]] :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
-  noremap <expr> g[ edit#how_much_expr(0, 0, 1, 'py')
-  noremap <expr> g] edit#how_much_expr(1, 1, 1, 'py')
+  nnoremap g++ :call HowMuch#HowMuch(0, 0, 1, 'py')<CR>
+  nnoremap z++ :call HowMuch#HowMuch(1, 1, 1, 'py')<CR>
+  noremap <expr> g+ edit#how_much(0, 0, 1, 'py')
+  noremap <expr> z+ edit#how_much(1, 1, 1, 'py')
 endif
 
 " Speed dating for incrementing or generating lists of numbers and dates
