@@ -78,8 +78,7 @@ function! syntax#update_scheme(arg) abort
     let name = g:all_colorschemes[idx]
   endif
   let g:colors_name = name
-  " noautocmd colorscheme default
-  silent! silent exe 'colorscheme ' . name
+  silent! noautocmd exe 'colorscheme ' . name
   silent call syntax#update_groups()  " required for vim comment
   silent call syntax#update_highlights()  " override highlights
   let default = get(g:, 'colors_default', 'default')
@@ -166,12 +165,13 @@ endfunction
 " Update syntax highlight groups
 " Note: This enforces core grayscale-style defaults, with dark comments against
 " darker background and sign and number columns that blend into the main window.
+" Note: ALE highlights point to nothing when scrolling color schemes, but are still
+" used for sign definitions, so manually enable here (note getcompletion() will fail)
 " Note: Plugins vim-tabline and vim-statusline use custom auto-calculated colors
 " based on colorscheme. Leverage that instead of reproducing here. Also need special
 " workaround to apply bold gui syntax. See https://stackoverflow.com/a/73783079/4970632
 function! syntax#update_highlights() abort
   let pairs = []  " highlight links
-  call s:update_highlight('Normal', '', '', '')
   call s:update_highlight('LineNR', '', 'black', '')
   call s:update_highlight('Folded', '', 'white', 'Bold')
   call s:update_highlight('CursorLine', 'black', 0, '')
@@ -186,10 +186,16 @@ function! syntax#update_highlights() abort
   for group in ['SignColumn', 'FoldColumn', 'CursorLineNR', 'CursorLineFold', 'Comment', 'NonText', 'SpecialKey']
     call add(pairs, [group, 'LineNR'])
   endfor
-  for group in getcompletion('ALE*Line', 'highlight')
+  for group in ['ALEErrorLine', 'ALEWarningLine', 'ALEInfoLine']  " see above
     call add(pairs, [group, 'Conceal'])
   endfor
-  for group in getcompletion('GitGutter', 'highlight')
+  for group in ['ALEErrorSign', 'ALEStyleErrorSign', 'ALESignColumnWithErrors']  " see above
+    call add(pairs, [group, 'Error'])
+  endfor
+  for group in ['ALEWarningSign', 'ALEStyleWarningSign', 'ALEInfoSign']  " see above
+    call add(pairs, [group, 'Todo'])
+  endfor
+  for group in getcompletion('GitGutter', 'highlight')  " see above
     call add(pairs, [group, 'Folded'])
   endfor
   for [tail, dest] in [['Link', 'Underlined'], ['Header', 'Todo'], ['Shebang', 'Special']]

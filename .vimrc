@@ -2403,8 +2403,8 @@ noremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 let s:colorscheme = 'badwolf'
 let s:colorscheme = 'fahrenheit'
 let s:colorscheme = 'gruvbox'
-let s:colorscheme = 'oceanicnext'
 let s:colorscheme = 'molokai'
+let s:colorscheme = 'oceanicnext'
 if has('gui_running') && empty(get(g:, 'colors_name', ''))
   exe 'noautocmd colorscheme ' . s:colorscheme
 endif
