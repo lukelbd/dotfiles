@@ -114,14 +114,11 @@ function! fold#fold_text(...) abort
     let delta .= signs[idx] . nline
   endfor
   " Combine label and statistics
-  let level = repeat('|', level)
-  " let level = get(s:dots_types, level, s:dots_types[-1])
+  let level = repeat('|', level)  " identical to foldcolumn
   let nline = string(line2 - line1 + 1)
   let nmax = len(string(line('$')))
   let dots = repeat('·', nmax - len(nline))
   let stats = delta . level . dots . nline
-  " let stats = delta . level . dots . nline . strcharpart(level, 0, 1)
-  " let stats = delta . nline
   let width = get(g:, 'linelength', 88) - 1 - strwidth(stats)
   if strwidth(label) > width - 1  " truncate fold text
     let dclose = trim(matchstr(label, '[\])}>]*:\?\s*$'))

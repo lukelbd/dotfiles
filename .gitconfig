@@ -148,8 +148,8 @@
 	stashed  = diff stash@{0}^ stash@{0} --stat=80
 	stashes  = stash list
 	stored   = diff HEAD stash@{0} --stat=80
-	status1  = "!git head1 && git status --short"
-	status2  = "!git head2 && git diff HEAD stash@{0} --name-status"
+	status1  = "!git head1 2>/dev/null && git status --short"
+	status2  = "!git head2 2>/dev/null && git stash show --name-status 2>/dev/null"
 	tags     = tag --list
 	top      = rev-parse --show-toplevel
 	tree     = log --graph --abbrev-commit --date=relative --branches --stat --decorate --color
