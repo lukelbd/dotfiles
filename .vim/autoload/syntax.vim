@@ -56,34 +56,36 @@ endfunction
 
 " Switch to next or previous colorschemes and print the name
 " See: https://stackoverflow.com/a/2419692/4970632
+" Note: Here getcompletion(..., 'color') will follow &wildignorecase which follows
+" &fileignorecase and filters out 'duplicate' color schemes with same case. This can
+" cause errors where we land on unknown schemes so add set nofileignorecase to vimrc.
 " Note: Have to trigger 'InsertLeave' so status line updates (for some reason only
 " works after timer when :colorscheme triggers ColorScheme autocommand). Also note
 " g:colors_name is convention shared by most color schemes, no official vim setting.
 function! s:echo_scheme(...) abort
-  let default = get(g:, 'colors_default', 'default')
   let name = get(g:, 'colors_name', 'default')
-  exe name ==# default ? 'silent doautocmd BufEnter' : ''
   echom 'Colorscheme: ' . name
 endfunction
 function! syntax#update_scheme(arg) abort
-  if !exists('g:all_colorschemes')
-    let g:all_colorschemes = getcompletion('', 'color')
+  let default = get(g:, 'colors_default', 'default')
+  if !exists('g:colors_all')
+    let g:colors_all = getcompletion('', 'color')
   endif
   if type(a:arg)  " use input scheme
     let name = a:arg
   else  " iterate over schemes
-    let idx = index(g:all_colorschemes, get(g:, 'colors_name', 'default'))
-    let idx = idx == -1 ? 0 : idx + a:arg   " set to zero if not present
-    let idx = idx % len(g:all_colorschemes)
-    let name = g:all_colorschemes[idx]
+    let name = get(g:, 'colors_name', default)
+    let idx = indexof(g:colors_all, {idx, val -> val ==# name})
+    let idx = idx == -1 ? index(g:colors_all, default) : idx + a:arg
+    let idx = idx % len(g:colors_all)
+    let name = g:colors_all[idx]
   endif
-  let g:colors_name = name
-  silent! noautocmd exe 'colorscheme ' . name
-  silent call syntax#update_groups()  " required for vim comment
-  silent call syntax#update_highlights()  " override highlights
-  let default = get(g:, 'colors_default', 'default')
-  exe name ==# default ? '' : 'silent doautocmd BufEnter'
+  silent! exe 'colorscheme ' . name
+  silent call syntax#update_groups()  " override vim comments
+  silent call syntax#update_highlights()  " override highlight colors
+  silent! doautocmd BufEnter
   call timer_start(1, 's:echo_scheme')
+  let g:colors_name = name  " in case differs
 endfunction
 
 " Updaet syntax match groups. Could move to after/syntax but annoying

@@ -77,6 +77,7 @@ set noautowrite  " disable auto write for file jumping commands (ask user instea
 set noautowriteall  " disable autowrite for :exit, :quit, etc. (ask user instead)
 set nobackup  " no backups when overwriting files, use tabline/statusline features
 set noerrorbells  " disable error bells (see also visualbell and t_vb)
+set nofileignorecase  " disable ignoring case (needed for color scheme iteration)
 set nohidden  " unload buffers when not open in window
 set noinfercase  " do not replace insert-completion with case inferred from typed text
 set nostartofline  " when switching buffers, doesn't move to start of line (weird default)
@@ -2400,13 +2401,26 @@ noremap <Leader>0 <Cmd>exe 'Scheme ' . g:colors_default<CR>
 " Apply color scheme from flazz/vim-colorschemes
 " Note: This has to come after color schemes are loaded.
 " https://www.reddit.com/r/vim/comments/4xd3yd/vimmers_what_are_your_favourite_colorschemes/
-let s:colorscheme = 'badwolf'
-let s:colorscheme = 'fahrenheit'
-let s:colorscheme = 'gruvbox'
-let s:colorscheme = 'molokai'
-let s:colorscheme = 'oceanicnext'
+let g:colors_best = [
+  \ 'adventurous',
+  \ 'badwolf',
+  \ 'fahrenheit',
+  \ 'falcoln',
+  \ 'gruvbox',
+  \ 'manuscript',
+  \ 'molokai',
+  \ 'oceanicnext',
+  \ 'sierra',
+  \ 'sourcerer',
+  \ 'slatedark',
+  \ 'spacegray',
+  \ 'tender',
+  \ 'ubaryd',
+  \ 'vimbrant',
+  \ 'manuscript',
+\ ]
 if has('gui_running') && empty(get(g:, 'colors_name', ''))
-  exe 'noautocmd colorscheme ' . s:colorscheme
+  noautocmd colorscheme manuscript
 endif
 if !exists('g:colors_default')
   let g:colors_default = get(g:, 'colors_name', 'default')
